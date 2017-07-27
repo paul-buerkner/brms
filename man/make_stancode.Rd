@@ -92,7 +92,10 @@ all parameters must have proper priors.}
 
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 
-of the generated \pkg{Stan} code.}
+of the generated \pkg{Stan} code. 
+Note that these functions must additionally be defined 
+as \emph{vectorized} \R functions in the global environment for 
+various post-processing methods to work on the returned model object.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is

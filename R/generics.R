@@ -26,6 +26,8 @@
 #'   information criterion after model fitting
 #' @slot waic An empty slot for adding the \code{\link[brms:waic]{waic}} 
 #'   information criterion after model fitting
+#' @slot R2 An empty slot for adding the \code{\link[brms:bayes_R2]{bayes_R2}}
+#'   (Bayesian R-squared) value after model fitting 
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
 #' @slot exclude The names of the parameters for which samples are not saved
@@ -44,8 +46,8 @@ NULL
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
-                    cov_ranef = NULL, loo = NULL, waic = NULL, fit = NA, 
-                    exclude = NULL, algorithm = "sampling") {
+                    cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
+                    fit = NA, exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
@@ -54,7 +56,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   x <- nlist(
     formula, family, data, data.name, model, 
     prior, autocor, ranef, cov_ranef, loo, 
-    waic, fit, exclude, algorithm, version
+    waic, R2, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
   x
@@ -510,13 +512,14 @@ LOO <- function(x, ...) {
   UseMethod("LOO")
 }
 
-#' Add information criteria to fitted model objects
+#' Add information criteria and fit indices to fitted model objects
 #' 
 #' @param x An \R object typically of class \code{brmsfit}.
 #' @param ic Names of the information criteria to compute.
-#'   Currently supported are \code{"loo"} and \code{"waic"}.
-#' @param ... Further arguments passed to 
-#'   \code{\link[brms:LOO]{LOO}} or \code{\link[brms:WAIC]{WAIC}}.
+#'   Currently supported are \code{"loo"}, \code{"waic"}, 
+#'   \code{"kfold"}, and \code{"R2"}.
+#' @param ... Further arguments passed to the underlying 
+#'   functions computing the information criteria.
 #'   
 #' @return An object of the same class as \code{x}, but
 #'   with information criteria added for later usage.
@@ -1185,6 +1188,13 @@ control_params <- function(x, ...) {
 #' @export
 bayes_factor <- function(x1, x2, ...) {
   UseMethod("bayes_factor")
+}
+
+#' @rdname bayes_R2.brmsfit
+#' @export
+bayes_R2 <- function(object, ...) {
+  # replace as soon as rstantools 1.3.0 is on CRAN
+  UseMethod("bayes_R2")
 }
 
 #' Extract Diagnostic Quantities of \pkg{brms} Models

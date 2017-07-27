@@ -107,6 +107,9 @@
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
 #'   of the generated \pkg{Stan} code. 
+#'   Note that these functions must additionally be defined 
+#'   as \emph{vectorized} \R functions in the global environment for 
+#'   various post-processing methods to work on the returned model object.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
 #'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
@@ -182,12 +185,11 @@
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @details Fit a generalized (non-)linear multilevel model
-#'   via full Bayesian inference using Stan. 
-#'   See \code{vignette("brms_overview")} for a general 
-#'   introduction and overview of \pkg{brms}.
-#'   For a full list of available vignettes see
-#'   \code{vignette(package = "brms")}.
-#'   
+#'   via full Bayesian inference using Stan. A general overview is provided 
+#'   in the vignettes \code{vignette("brms_overview")} and 
+#'   \code{vignette("brms_multilevel")}. For a full list of available 
+#'   vignettes see \code{vignette(package = "brms")}.
+#'  
 #'   \bold{Formula syntax of brms models}
 #'   
 #'   Details of the formula syntax applied in \pkg{brms} 

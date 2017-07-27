@@ -212,14 +212,18 @@ add_ic.brmsfit <- function(x, ic = "loo", ...) {
   }
   model_name <- deparse(substitute(x))
   ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic", "kfold")
+  valid_ics <- c("loo", "waic", "kfold", "r2")
   if (!length(ic) || !all(ic %in% valid_ics)) {
     stop2("Argument 'ic' should be a subset of ",
           collapse_comma(valid_ics))
   }
-  for (i in seq_along(ic)) {
+  for (i in seq_along(setdiff(ic, "r2"))) {
     x[[ic[i]]] <- do.call(ic[i], c(list(x), dots))
     x[[ic[i]]]$model_name <- model_name
+  }
+  if ("r2" %in% ic) {
+    dots$summary <- FALSE
+    x[["R2"]] <- do.call(bayes_R2, c(list(x), dots))
   }
   x
 }

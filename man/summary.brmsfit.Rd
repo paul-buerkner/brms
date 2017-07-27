@@ -4,7 +4,7 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, waic = FALSE, loo = FALSE,
+\method{summary}{brmsfit}(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   priors = FALSE, use_cache = TRUE, ...)
 }
 \arguments{
@@ -12,6 +12,10 @@
 
 \item{waic, loo}{Logical; Indicating if the LOO or WAIC information
 criteria should be computed and shown in the summary. 
+Defaults to \code{FALSE}.}
+
+\item{R2}{Logical; Indicating if the Bayesian R-squared
+should be computed and shown in the summary. 
 Defaults to \code{FALSE}.}
 
 \item{priors}{Logical; Indicating if priors should be included 

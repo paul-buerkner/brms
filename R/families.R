@@ -1,7 +1,7 @@
 #' Special Family Functions for \pkg{brms} Models
 #' 
 #' Family objects provide a convenient way to specify the details of the models 
-#' used by many model fitting functions. The familiy functions present here are 
+#' used by many model fitting functions. The familiy functions presented here are 
 #' currently for use with \pkg{brms} only and will NOT work with other model 
 #' fitting functions such as \code{glm} or \code{glmer}. 
 #' However, the standard family functions as decribed in

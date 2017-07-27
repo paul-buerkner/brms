@@ -648,6 +648,9 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @param waic,loo Logical; Indicating if the LOO or WAIC information
 #'   criteria should be computed and shown in the summary. 
 #'   Defaults to \code{FALSE}.
+#' @param R2 Logical; Indicating if the Bayesian R-squared
+#'   should be computed and shown in the summary. 
+#'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param use_cache Logical; Indicating if summary results should
@@ -662,7 +665,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
+summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
                             priors = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(formula(object), family = family(object))
@@ -675,9 +678,8 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     ngrps = ngrps(object), 
     autocor = object$autocor,
     prior = empty_brmsprior(),
-    waic = "Not computed",
-    loo = "Not computed",
-    algorithm = algorithm(object)
+    algorithm = algorithm(object),
+    waic = NA, loo = NA, R2 = NA
   )
   class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
@@ -698,6 +700,9 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   }
   if (waic || is.ic(object[["waic"]])) {
     out$waic <- SW(WAIC(object)$waic)
+  }
+  if (R2 || is.matrix(object[["R2"]])) {
+    out$R2 <- mean(bayes_R2(object, summary = FALSE))
   }
   
   pars <- parnames(object)
@@ -879,11 +884,13 @@ standata.brmsfit <- function(object, ...) {
     dots$control$old_cat <- is_old_categorical(object)
     sample_prior <- attr(object$prior, "sample_prior")
     sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
-    args <- list(formula = new_formula, data = model.frame(object), 
-                 family = object$family, prior = object$prior, 
-                 autocor = object$autocor, cov_ranef = object$cov_ranef, 
-                 knots = attr(model.frame(object), "knots"),
-                 sample_prior = sample_prior)
+    args <- list(
+      formula = new_formula, data = model.frame(object), 
+      family = object$family, prior = object$prior, 
+      autocor = object$autocor, cov_ranef = object$cov_ranef, 
+      knots = attr(model.frame(object), "knots"),
+      sample_prior = sample_prior
+    )
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
@@ -1998,9 +2005,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   family <- family(object)
   if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Residuals not implemented for family '", family$family, "'.")
+    stop2("Residuals not defined for family '", family$family, "'.")
   }
-  
   newd_args <- nlist(
     newdata, fit = object, re_formula, allow_new_levels,
     new_objects, check_response = TRUE
@@ -2015,20 +2021,19 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels,
     sample_new_levels, new_objects, incl_autocor, 
-    subset, sort, nug, summary = FALSE
+    subset, nug, summary = FALSE, sort = TRUE
   )
   mu <- do.call(method, pred_args)
-  Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
-              nrow = nrow(mu), byrow = TRUE)
+  Y <- as_draws_matrix(as.numeric(standata$Y), dim = dim(mu))
   res <- Y - mu
-  colnames(res) <- NULL
+  remove(Y, mu)
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     pred_args$summary <- TRUE
-    sd <- do.call(predict, pred_args)[, 2]
-    sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-    res <- res / sd
+    sd_pred <- do.call(predict, pred_args)[, 2]
+    res <- res / as_draws_matrix(sd_pred, dim = dim(res))
   }
+  res <- reorder_obs(res, attr(standata, "old_order"), sort = sort)
   if (summary) {
     res <- get_summary(res, probs = probs, robust = robust)
   }
@@ -2054,6 +2059,85 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   cl[[1]] <- quote(residuals)
   cl[c("method", "summary")] <- list(quote("predict"), quote(FALSE))
   eval(cl, parent.frame())
+}
+
+#' Compute a Bayesian version of R-squared for regression models
+#' 
+#' @aliases bayes_R2
+#' 
+#' @inheritParams predict.brmsfit
+#' 
+#' @return If \code{summary = TRUE} a 1 x C matrix is returned
+#'  (\code{C = length(probs) + 2}) containing summary statistics
+#'  of Bayesian R-squared values.
+#'  If \code{summary = FALSE} the posterior samples of the R-squared values
+#'  are returned in a S x 1 matrix (S is the number of samples).
+#'  
+#' @details For an introduction to the approach, see
+#'   \url{https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf}.
+#'  
+#' @examples 
+#' \dontrun{
+#' fit <- brm(mpg ~ wt + cyl, data = mtcars)
+#' summary(fit)
+#' bayes_R2(fit)
+#' 
+#' # compute R2 with new data
+#' nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
+#' bayes_R2(fit, newdata = nd)
+#' }
+#' 
+#' @export
+bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                             allow_new_levels = FALSE, 
+                             sample_new_levels = "uncertainty",
+                             new_objects = list(), incl_autocor = TRUE, 
+                             subset = NULL, nsamples = NULL, 
+                             nug = NULL, summary = TRUE, robust = FALSE, 
+                             probs = c(0.025, 0.975), ...) {
+  # do it like residuals.brmsfit
+  contains_samples(object)
+  object <- restructure(object)
+  family <- family(object)
+  if (is_ordinal(family) || is_categorical(family)) {
+    stop2("Residuals not defined for family '", family$family, "'.")
+  }
+  use_stored_ic <- !length(
+    intersect(names(match.call()), args_not_for_reloo())
+  )
+  if (use_stored_ic && is.matrix(object[["R2"]])) {
+    R2 <- object[["R2"]]
+  } else {
+    newd_args <- nlist(
+      newdata, fit = object, re_formula, allow_new_levels,
+      new_objects, check_response = TRUE
+    )
+    standata <- do.call(amend_newdata, newd_args)
+    if (!is.null(standata$cens)) {
+      warning2("Residuals may not be meaningful for censored models.")
+    }
+    if (is.null(subset) && !is.null(nsamples)) {
+      subset <- sample(nsamples(object), nsamples)
+    }
+    pred_args <- nlist(
+      object, newdata, re_formula, allow_new_levels,
+      sample_new_levels, new_objects, incl_autocor, 
+      subset, nug, summary = FALSE, sort = TRUE
+    )
+    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+    ypred <- do.call(fitted, pred_args)
+    y <- as.numeric(standata$Y)
+    e <- - 1 * sweep(ypred, 2, y)
+    var_ypred <- matrixStats::rowVars(ypred)
+    var_e <- matrixStats::rowVars(e)
+    R2 <- as.matrix(var_ypred / (var_ypred + var_e))
+    colnames(R2) <- "R2"
+  }
+  if (summary) {
+    R2 <- get_summary(R2, probs = probs, robust = robust)
+    rownames(R2) <- "R2"
+  }
+  R2
 }
 
 #' Update \pkg{brms} models
