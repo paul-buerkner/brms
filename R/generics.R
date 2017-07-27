@@ -28,6 +28,9 @@
 #'   information criterion after model fitting
 #' @slot R2 An empty slot for adding the \code{\link[brms:bayes_R2]{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
+#' @slot bridge An empty slot for adding a \code{bridge} object 
+#'   (see \code{\link[brms:bridge_sampler]{bridge_sampler}})
+#'   after model fitting
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
 #' @slot exclude The names of the parameters for which samples are not saved
@@ -47,16 +50,17 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
-                    fit = NA, exclude = NULL, algorithm = "sampling") {
+                    bridge = NULL, fit = NA, exclude = NULL, 
+                    algorithm = "sampling") {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
-    formula, family, data, data.name, model, 
-    prior, autocor, ranef, cov_ranef, loo, 
-    waic, R2, fit, exclude, algorithm, version
+    formula, family, data, data.name, model, prior, 
+    autocor, ranef, cov_ranef, loo, waic, R2, bridge, 
+    fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
   x
@@ -515,9 +519,10 @@ LOO <- function(x, ...) {
 #' Add information criteria and fit indices to fitted model objects
 #' 
 #' @param x An \R object typically of class \code{brmsfit}.
-#' @param ic Names of the information criteria to compute.
-#'   Currently supported are \code{"loo"}, \code{"waic"}, 
-#'   \code{"kfold"}, and \code{"R2"}.
+#' @param ic,value Names of the information criteria / fit indices 
+#'   to compute. Currently supported are \code{"loo"}, 
+#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+#'   \code{"bridge"} (log marginal likelihood).
 #' @param ... Further arguments passed to the underlying 
 #'   functions computing the information criteria.
 #'   

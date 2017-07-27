@@ -2818,6 +2818,11 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @export bridge_sampler 
 #' @export
 bridge_sampler.brmsfit <- function(samples, ...) {
+  if (inherits(samples[["bridge"]], "bridge")) {
+    if (!is.na(samples[["bridge"]]$logml)) {
+      return(samples[["bridge"]]) 
+    }
+  }
   samples <- restructure(samples)
   if (samples$version$brms <= "1.8.0") {
     stop2(
@@ -2834,7 +2839,17 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   }
   # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
-  bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...)
+  out <- try(
+    bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...),
+    silent = TRUE
+  )
+  if (is(out, "try-error")) {
+    stop2(
+      "Bridgesampling failed. Did you set 'save_all_pars' ",
+      "to TRUE when fitting your model?"
+    )
+  }
+  out
 }
 
 #' Bayes Factors from Marginal Likelihoods
@@ -2895,9 +2910,9 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' @export
 bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
   match_response(list(x1, x2))
-  bs1 <- bridge_sampler(x1, ...)
-  bs2 <- bridge_sampler(x2, ...)
-  bridgesampling::bf(bs1, bs2, log = log)
+  bridge1 <- bridge_sampler(x1, ...)
+  bridge2 <- bridge_sampler(x2, ...)
+  bridgesampling::bf(bridge1, bridge2, log = log)
 }
 
 #' Posterior Model Probabilities from Marginal Likelihoods
