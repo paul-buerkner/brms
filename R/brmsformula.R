@@ -602,13 +602,21 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     dpars <- names(out$pforms)[dpars]
     for (ap in names(out$pforms)) {
       if (!ap %in% dpars) {
-        if (!isTRUE(out$nl)) {
-          stop2("The parameter '", ap, "' is not an auxiliary parameter.\n",
-                "Set 'nl = TRUE' if you want to specify non-linear models.")
-        }
         # indicate the correspondence to distributional parameter 
         if (is.null(attr(out$pforms[[ap]], "dpar"))) {
           attr(out$pforms[[ap]], "dpar") <- "mu"
+        }
+        dpar <- attr(out$pforms[[ap]], "dpar")
+        nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
+        if (dpar == "mu") {
+          nl_allowed <- nl_allowed || isTRUE(attr(out$formula, "nl"))
+        }
+        if (!nl_allowed) {
+          stop2(
+            "The parameter '", ap, "' is not a valid ", 
+            "distributional or non-linear parameter. ",
+            "Did you forget to set 'nl = TRUE'?"
+          )
         }
       }
     }
