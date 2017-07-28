@@ -474,8 +474,8 @@ stan_llh_sigma <- function(family, bterms, mix = "") {
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nsigma <- llh_adj || has_se || nzchar(mix) || 
-            is_exgaussian(family) || is_gev(family)
+  nsigma <- llh_adj || has_se || nzchar(mix) ||
+    family %in% c("exgaussian", "gen_extreme_value", "asym_laplace")
   nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
