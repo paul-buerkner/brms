@@ -463,7 +463,7 @@ test_that("make_standata allows fixed auxiliary parameters", {
   expect_equal(make_standata(bf(y ~ 1, nu = 3), dat, student())$nu, 3)
   expect_equal(make_standata(y ~ 1, dat, acat())$disc, 1)
   expect_error(make_standata(bf(y ~ 1, bias = 0.5), dat),
-               "Invalid auxiliary parameters: 'bias'")
+               "Invalid fixed parameters: 'bias'")
 })
 
 test_that("make_standata correctly includes offsets", {

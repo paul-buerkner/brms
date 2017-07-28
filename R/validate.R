@@ -52,6 +52,8 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     } else { 
       y$response <- parse_resp(y$respform, keep_dot_usc = old_mv)
     }
+    # will be changed as soon as MV models are fully implemented
+    y$resp <- ""
   }
   
   # extract addition arguments
@@ -59,6 +61,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all.vars))
   y$adforms[names(adforms)] <- adforms
   
+  # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   terms <- try(terms(rhs(formula)), silent = TRUE)
   has_terms <- is(terms, "try-error") || 
@@ -70,12 +73,14 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       mui <- paste0("mu", i)
       if (!is.formula(x$pforms[[mui]])) {
         x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
+        attr(x$pforms[[mui]], "nl") <- attr(formula, "nl")
         rhs_needed <- TRUE
       }
     }
   } else {
     if (!is.formula(x$pforms[["mu"]])) { 
       x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
+      attr(x$pforms[["mu"]], "nl") <- attr(formula, "nl")
       rhs_needed <- TRUE
     }
     x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
@@ -85,37 +90,41 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
           "the right-hand side of 'formula' is unused.")
   }
   
-  auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
-  auxpars <- names(x$pforms)[auxpars]
-  # amend when generalizing non-linear models to auxiliary parameters
-  nlpars <- setdiff(names(x$pforms), auxpars)
-  if (isTRUE(x[["nl"]])) {
-    if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
-      stop2("Non-linear formulas are not yet allowed for this family.")
+  # predicted distributional parameters
+  dpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
+  dpars <- names(x$pforms)[dpars]
+  dpar_forms <- x$pforms[dpars]
+  nlpars <- setdiff(names(x$pforms), dpars)
+  nlpar_forms <- x$pforms[nlpars]
+  dpar_of_nlpars <- rep(NA, length(nlpars))
+  for (i in seq_along(nlpar_forms)) {
+    dpar <- attr(nlpar_forms[[i]], "dpar", TRUE)
+    if (length(dpar) != 1L) {
+      stop2("Parameter '", nlpars[i], "' is not part of the model")
     }
-    y$auxpars[["mu"]] <- parse_nlf(x$pforms[["mu"]], x$pforms[nlpars])
-    y$auxpars[["mu"]]$family <- auxpar_family(family, "mu")
-    auxpars <- setdiff(auxpars, "mu")
-  } else {
-    if (length(nlpars)) {
-      stop2("Parameter '", nlpars[1], "' is not part of the model.")
+    dpar_of_nlpars[i] <- dpar
+  }
+  for (dp in dpars) {
+    if (isTRUE(attr(dpar_forms[[dp]], "nl"))) {
+      if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
+        stop2("Non-linear formulas are not yet allowed for this family.")
+      }
+      dpar_nlpar_forms <- nlpar_forms[dpar_of_nlpars %in% dp]
+      y$auxpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms)
+    } else {
+      y$auxpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
     }
+    y$auxpars[[dp]]$family <- auxpar_family(family, dp)
+    y$auxpars[[dp]]$dpar <- dp
   }
-  
-  # predicted auxiliary parameters
-  for (ap in auxpars) {
-    y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
-    y$auxpars[[ap]]$family <- auxpar_family(family, ap)
+  # fixed distributional parameters
+  inv_fixed_dpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
+  if (length(inv_fixed_dpars)) {
+    stop2("Invalid fixed parameters: ", collapse_comma(inv_fixed_dpars))
   }
-  if (!is.null(y$auxpars[["mu"]])) {
-    y$auxpars[["mu"]][["autocor"]] <- autocor
+  for (dp in names(x$pfix)) {
+    y$fauxpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
   }
-  # fixed auxiliary parameters
-  inv_fauxpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
-  if (length(inv_fauxpars)) {
-    stop2("Invalid auxiliary parameters: ", collapse_comma(inv_fauxpars))
-  }
-  y$fauxpars <- x$pfix
   check_fauxpars(y$fauxpars)
   # check for illegal use of cs terms
   if (has_cs(y) && !(is.null(family) || allows_cs(family))) {
@@ -123,6 +132,9 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
           "families 'sratio', 'cratio', and 'acat'.")
   }
   # parse autocor formula
+  if (!is.null(y$auxpars[["mu"]])) {
+    y$auxpars[["mu"]][["autocor"]] <- autocor
+  }
   y$time <- parse_time(autocor)
   
   # make a formula containing all required variables
@@ -243,6 +255,7 @@ parse_nlf <- function(formula, nlpar_forms) {
     y$nlpars <- named_list(nlpars)
     for (nlp in nlpars) {
       y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
+      y$nlpars[[nlp]]$nlpar <- nlp
     }
     model_vars <- all.vars(formula)
     missing_pars <- setdiff(names(y$nlpars), model_vars)
@@ -602,10 +615,11 @@ check_fauxpars <- function(x) {
   prob_pars <- c("zi", "hu", "bias", "quantile")
   for (ap in names(x)) {
     apc <- auxpar_class(ap)
-    if (apc %in% pos_pars && x[[ap]] < 0) {
+    value <- x[[ap]]$value
+    if (apc %in% pos_pars && value < 0) {
       stop2("Parameter '", ap, "' must be positive.")
     }
-    if (apc %in% prob_pars && (x[[ap]] < 0 || x[[ap]] > 1)) {
+    if (apc %in% prob_pars && (value < 0 || value > 1)) {
       stop2("Parameter '", ap, "' must be between 0 and 1.")
     }
   }

@@ -201,7 +201,7 @@ make_standata <- function(formula, data, family = gaussian(),
       out <- c(out, data_aux_eff)
     }
     for (ap in names(bterms$fauxpars)) {
-      out[[ap]] <- bterms$fauxpars[[ap]]
+      out[[ap]] <- bterms$fauxpars[[ap]]$value
     }
     out <- c(out,
       data_gr(ranef, data, cov_ranef = cov_ranef),

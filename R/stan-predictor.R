@@ -175,15 +175,15 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
         sparse = sparse, order_mixture = x$family$order
       )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
-    } else if (is.numeric(x$fauxpars[[ap]])) {
+    } else if (is.numeric(x$fauxpars[[ap]]$value)) {
       out[[ap]] <- list(data = stan_auxpar_defs(ap))
-    } else if (is.character(x$fauxpars[[ap]])) {
-      if (!x$fauxpars[[ap]] %in% valid_auxpars) {
-        stop2("Parameter '", x$fauxpars[[ap]], "' cannot be found.")
+    } else if (is.character(x$fauxpars[[ap]]$value)) {
+      if (!x$fauxpars[[ap]]$value %in% valid_auxpars) {
+        stop2("Parameter '", x$fauxpars[[ap]]$value, "' cannot be found.")
       }
       out[[ap]] <- list(
         transD = stan_auxpar_defs(ap),
-        transC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]], "; \n") 
+        transC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]]$value, "; \n") 
       )
     } else {
       def_temp <- stan_auxpar_defs_temp(ap)

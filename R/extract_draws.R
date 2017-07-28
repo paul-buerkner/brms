@@ -54,8 +54,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       more_args <- nlist(x = bterms$auxpars[[ap]], nlpar = ap)
       draws[[ap]] <- do.call(extract_draws, c(args, more_args))
       draws[[ap]][["f"]] <- bterms$auxpars[[ap]]$family
-    } else if (is.numeric(bterms$fauxpars[[ap]])) {
-      draws[[ap]] <- bterms$fauxpars[[ap]]
+    } else if (is.numeric(bterms$fauxpars[[ap]]$value)) {
+      draws[[ap]] <- bterms$fauxpars[[ap]]$value
     } else if (any(grepl(ap_regex, parnames(x)))) {
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = ap_regex))
     }

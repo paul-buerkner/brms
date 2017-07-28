@@ -86,7 +86,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   text_mv <- stan_mv(family, response = bterms$response, prior = prior)
   disc <- "disc" %in% names(bterms$auxpars) || 
-    isTRUE(bterms$fauxpars$disc != 1)
+    isTRUE(bterms$fauxpars$disc$value != 1)
   text_ordinal <- stan_ordinal(
     family, prior = prior, cs = has_cs(bterms), disc = disc
   )

@@ -586,28 +586,29 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     }
   }
   if (!is.null(nl)) {
-    nl <- as.logical(nl)[1]
-    if (!nl %in% c(TRUE, FALSE)) {
-      stop2("Argument 'nl' could not be coerced to logical.")
-    }
-    out[["nl"]] <- nl
+    out[["nl"]] <- attr(out$formula, "nl") <- as_one_logical(nl)
+  } else if (!is.null(out[["nl"]])) {
+    # for backwards compatibility with brms <= 1.8.0
+    attr(out$formula, "nl") <- out[["nl"]]
+  } else {
+    out[["nl"]] <- attr(out$formula, "nl") <- FALSE
   }
   if (!is.null(family)) {
     out[["family"]] <- check_family(family)
   }
   if (!is.null(out[["family"]])) {
     # check for the presence of non-linear parameters
-    auxpars <- is_auxpar_name(names(out$pforms), out$family)
-    auxpars <- names(out$pforms)[auxpars]
+    dpars <- is_auxpar_name(names(out$pforms), out$family)
+    dpars <- names(out$pforms)[dpars]
     for (ap in names(out$pforms)) {
-      if (!ap %in% auxpars) {
+      if (!ap %in% dpars) {
         if (!isTRUE(out$nl)) {
           stop2("The parameter '", ap, "' is not an auxiliary parameter.\n",
                 "Set 'nl = TRUE' if you want to specify non-linear models.")
         }
-        # indicate the correspondence to an auxiliary parameter 
-        if (is.null(attr(out$pforms[[ap]], "auxpar"))) {
-          attr(out$pforms[[ap]], "auxpar") <- "mu"
+        # indicate the correspondence to distributional parameter 
+        if (is.null(attr(out$pforms[[ap]], "dpar"))) {
+          attr(out$pforms[[ap]], "dpar") <- "mu"
         }
       }
     }

@@ -94,6 +94,6 @@ test_that("exclude_pars returns expected parameter names", {
   bterms <- parse_bf(y ~ x + s(z))
   data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
   expect_true("zs_1_1" %in% exclude_pars(bterms, data))
-  bterms <- parse_bf(bf(y ~ eta, eta ~ x + s(z), nl = TRUE))
+  bterms <- parse_bf(bf(y ~ eta, eta ~ x + s(z), family = gaussian(), nl = TRUE))
   expect_true("zs_eta_1_1" %in% exclude_pars(bterms, data))
 })

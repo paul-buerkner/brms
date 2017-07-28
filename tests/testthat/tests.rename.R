@@ -43,7 +43,8 @@ test_that("change_prior returns expected lists", {
 
 test_that("change_old_re and change_old_re2 return expected lists", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
-  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), nl = TRUE))
+  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), 
+                        family = gaussian(), nl = TRUE))
   ranef <- brms:::tidy_ranef(bterms, data = data)
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
