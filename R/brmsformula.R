@@ -651,6 +651,71 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
               nl = nl, nonlinear = nonlinear)
 }
 
+#' Linear and Non-linear formulas in \pkg{brms}
+#' 
+#' @aliases lf
+#' 
+#' Helper functions to specify linear and non-linear
+#' formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
+#' 
+#' @param formula Non-linear formula for a distributional parameter.
+#'   The name of the distributional parameter can either be specified
+#'   on the left-hand side of \code{formula} or via argument \code{dpar}.
+#' @param dpar Optional character string specifying the distributional 
+#'   parameter to which the formulas passed via \code{...} and
+#'   \code{flist} belong. 
+#' @inheritParams brmsformula
+#' 
+#' @value A \code{list}, which can be passed to 
+#'   \code{\link[brms:brmsformula]{brmsformula}} or added to an
+#'   existing \code{brmsformula} object.
+#' 
+#' @export
+nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
+  formula <- as.formula(formula)
+  resp_pars <- all.vars(formula[[2]])
+  if (length(resp_pars) == 0L) {
+    if (is.null(dpar)) {
+      stop2("No parameter name passed via the LHS of ", 
+            "'formula' or argument 'dpar'.")
+    }
+  } else if (length(resp_pars) == 1L) {
+    dpar <- resp_pars
+  } else {
+    stop2("LHS of non-linear formula should contain only one variable.")
+  }
+  attr(formula, "nl") <- TRUE
+  c(setNames(list(formula), dpar), lf(..., flist = flist, dpar = dpar))
+}
+
+#' @rdname nlf
+#' @export
+lf <- function(..., flist = NULL, dpar = NULL) {
+  out <- c(list(...), flist)
+  if (!is.null(dpar)) {
+    for (i in seq_along(out)) {
+      attr(out[[i]], "dpar") <- dpar
+    }
+  }
+  out
+}
+
+#' @export
+"+.brmsformula" <- function(e1, e2) {
+  if (is.function(e2)) {
+    e2 <- try(e2(), silent = TRUE)
+    if (!is.family(e2)) {
+      stop2("Don't know how to handle non-family functions.")
+    }
+  } 
+  if (is.family(e2)) {
+    e1 <- bf(e1, family = e2)
+  } else {
+    e1 <- bf(e1, e2)
+  }
+  e1
+}
+
 prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   # validate and prepare a formula of an auxiliary parameter
   # Args:
