@@ -542,14 +542,19 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   
   # parse and validate dots arguments
   dots <- c(list(...), flist, nonlinear)
+  dots <- lapply(dots, 
+    function(x) if (is.list(x)) x else list(x)
+  )
+  dots <- unlist(dots, recursive = FALSE)
   forms <- list()
   for (i in seq_along(dots)) {
     forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
   }
-  dupl_pars <- names(forms)[duplicated(names(forms))]
-  if (length(dupl_pars)) {
-    dupl_pars <- collapse_comma(dupl_pars)
-    stop2("Duplicated specification of parameters ", dupl_pars)
+  dupl_pars <- duplicated(names(forms), fromLast = TRUE)
+  if (any(dupl_pars)) {
+    dupl_pars <- collapse_comma(names(forms)[dupl_pars])
+    message("Replacing initial definitions of parameters ", dupl_pars)
+    forms[dupl_pars] <- NULL
   }
   not_form <- ulapply(forms, function(x) !is.formula(x))
   fix <- forms[not_form]
@@ -651,7 +656,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
-      stop2("Expecting a single value when fixing auxiliary parameters.")
+      stop2("Expecting a single value when fixing parameters.")
     }
     scalar <- SW(as.numeric(formula))
     if (!is.na(scalar)) {

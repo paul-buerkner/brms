@@ -28,7 +28,7 @@ test_that("brm produces expected errors", {
   expect_error(brm(cbind(y, x) | se(z) ~ x, dat, family = gaussian()),
                "allow only addition argument 'weights'")
   expect_error(brm(bf(y ~ x, shape ~ x), family = gaussian()),
-               "The parameter 'shape' is not an auxiliary parameter")
+               "The parameter 'shape' is not a valid distributional")
   expect_error(brm(y ~ x + (1|abc|g/x), dat), 
                "Can only combine group-level terms")
   expect_error(brm(y ~ x + (1|g) + (x|g), dat), 
