@@ -519,9 +519,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     class(formula) <- "formula"
   }
   if (!is.null(nonlinear)) {
-    warning2("Argument 'nonlinear' is deprecated. ", 
-             "See help(brmsformula) for the new way ", 
-             "of specifying non-linear models.")
+    warning2(
+      "Argument 'nonlinear' is deprecated. ", 
+      "See help(brmsformula) for the new way ", 
+      "of specifying non-linear models."
+    )
   }
   old_nonlinear <- attr(formula, "nonlinear")
   if (is.list(old_nonlinear)) {
@@ -541,24 +543,24 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   out$pforms[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments
-  dots <- c(list(...), flist, nonlinear)
-  dots <- lapply(dots, 
-    function(x) if (is.list(x)) x else list(x)
-  )
+  dots <- c(out$pforms, out$pfix, list(...), flist, nonlinear)
+  dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
   dots <- unlist(dots, recursive = FALSE)
   forms <- list()
   for (i in seq_along(dots)) {
     forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
   }
-  dupl_pars <- duplicated(names(forms), fromLast = TRUE)
-  if (any(dupl_pars)) {
-    dupl_pars <- collapse_comma(names(forms)[dupl_pars])
+  is_dupl_pars <- duplicated(names(forms), fromLast = TRUE)
+  if (any(is_dupl_pars)) {
+    dupl_pars <- collapse_comma(names(forms)[is_dupl_pars])
     message("Replacing initial definitions of parameters ", dupl_pars)
-    forms[dupl_pars] <- NULL
+    forms[is_dupl_pars] <- NULL
   }
   not_form <- ulapply(forms, function(x) !is.formula(x))
   fix <- forms[not_form]
   forms[names(fix)] <- NULL
+  out$pforms <- forms
+  # validate fixed distributional parameters
   fix_theta <- fix[auxpar_class(names(fix)) %in% "theta"]
   if (length(fix_theta)) {
     # normalize mixing proportions
@@ -566,8 +568,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     fix_theta <- lapply(fix_theta, "/", sum_theta)
     fix[names(fix_theta)] <- fix_theta
   }
-  out$pforms[names(forms)] <- forms
-  out$pfix[names(fix)] <- fix
+  out$pfix <- fix
   for (ap in names(out$pfix)) {
     if (is.character(out$pfix[[ap]])) {
       if (identical(ap, out$pfix[[ap]])) {
@@ -612,9 +613,14 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
           attr(out$pforms[[ap]], "dpar") <- "mu"
         }
         dpar <- attr(out$pforms[[ap]], "dpar")
-        nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
-        if (dpar == "mu") {
-          nl_allowed <- nl_allowed || isTRUE(attr(out$formula, "nl"))
+        if (!is.null(out$pforms[[dpar]])) {
+          nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
+        } else {
+          if (auxpar_class(dpar) == "mu") {
+            nl_allowed <- isTRUE(attr(out$formula, "nl"))
+          } else {
+            nl_allowed <- FALSE
+          }
         }
         if (!nl_allowed) {
           stop2(
