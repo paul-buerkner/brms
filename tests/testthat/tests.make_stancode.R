@@ -980,7 +980,7 @@ test_that("Stan code of quantile regression models is correct", {
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile)")
   
   scode <- make_stancode(bf(y ~ x, sigma ~ x), data, family = asym_laplace())
-  expect_match2(scode, "Y[n] ~ asym_laplace(mu[n], sigma[n], quantile)")
+  expect_match2(scode, "target += asym_laplace_lpdf(Y[n] | mu[n], sigma[n], quantile)")
 })
 
 test_that("Stan code of GEV models is correct", {
