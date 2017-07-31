@@ -355,9 +355,15 @@ SW <- function(expr) {
   base::suppressWarnings(expr)
 }
 
-get_matches <- function(pattern, text, simplify = TRUE, ...) {
+get_matches <- function(pattern, text, simplify = TRUE, 
+                        first = FALSE, ...) {
   # get pattern matches in text as vector
-  x <- regmatches(text, gregexpr(pattern, text, ...))
+  if (first) {
+    x <- regexpr(pattern, text, ...)
+  } else {
+    x <- gregexpr(pattern, text, ...)
+  }
+  x <- regmatches(text, x)
   if (simplify) {
     x <- unlist(x)
   }
@@ -608,17 +614,18 @@ softmax <- function(x) {
   x / rowSums(x)
 }
 
-wsp <- function(x, nsp = 1) {
+wsp <- function(x = "", nsp = 1) {
   # add leading and trailing whitespaces
   # Args:
   #   x: object accepted by paste
   #   nsp: number of whitespaces to add
   sp <- collapse(rep(" ", nsp))
   if (length(x)) {
-    paste0(sp, x, sp)
+    out <- ifelse(nzchar(x), paste0(sp, x, sp), sp)
   } else {
-    NULL
+    out <- NULL
   } 
+  out
 }
 
 limit_chars <- function(x, chars = NULL, lsuffix = 4) {

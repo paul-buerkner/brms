@@ -2,6 +2,18 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.8.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Perform model comparisons based on 
+      marginal likelihoods using the methods
+      \code{bridge_sampler}, \code{bayes_factor},
+      and \code{post_prob} all powered by the
+      \pkg{bridgesampling} package.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.8.0}{
   \subsection{NEW FEATURES}{
     \itemize{

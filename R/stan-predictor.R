@@ -182,8 +182,8 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
         stop2("Parameter '", x$fauxpars[[ap]]$value, "' cannot be found.")
       }
       out[[ap]] <- list(
-        transD = stan_auxpar_defs(ap),
-        transC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]]$value, "; \n") 
+        tparD = stan_auxpar_defs(ap),
+        tparC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]]$value, "; \n")
       )
     } else {
       def_temp <- stan_auxpar_defs_temp(ap)
@@ -301,7 +301,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         hs_scale_global, 
         paste0("hs_scale_slab", p, "^2 * hs_c2", p)
       )
-      str_add(out$transD) <- paste0(
+      str_add(out$tparD) <- paste0(
         "  // population-level effects \n",
         "  vector[K", ct, p, "] b", p,
         " = horseshoe(", hs_args, "); \n"
@@ -363,7 +363,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
        if (identical(auxpar_class(nlpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
          ap_id <- auxpar_id(nlpar)
-         str_add(out$transD) <- paste0(
+         str_add(out$tparD) <- paste0(
            "  // identify mixtures via ordering of the intercepts \n",                   
            "  real temp", p, "_Intercept",
            " = ordered_Intercept[", ap_id, "]; \n"
@@ -458,9 +458,9 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     str_add(out$prior) <- paste0( 
       stan_prior(prior, class = "L", group = r$group[1],
                  suffix = paste0("_", id)),
-      "  to_vector(z_", id, ") ~ normal(0, 1); \n"
+      "  target += normal_lpdf(to_vector(z_", id, ") | 0, 1); \n"
     )
-    str_add(out$transD) <- paste0(
+    str_add(out$tparD) <- paste0(
       "  // group-level effects \n",
       "  matrix[N_", id, ", M_", id, "] r_", id, 
       if (ccov) {
@@ -503,9 +503,9 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       "  // unscaled group-level effects \n"
     )
     str_add(out$prior) <- collapse(
-      "  z_", id, "[", 1:nrow(r), "] ~ normal(0, 1); \n"
+      "  target += normal_lpdf(z_", id, "[", 1:nrow(r), "] | 0, 1); \n"
     )
-    str_add(out$transD) <- paste0(
+    str_add(out$tparD) <- paste0(
       "  // group-level effects \n", 
       collapse(
         "  vector[N_", id, "] r_", idp, "_", r$cn,
@@ -549,13 +549,13 @@ stan_sm <- function(smooths, prior, nlpar = "") {
           "  real<lower=0> sds", pi, "_", nb, "; \n"
         )
       )
-      str_add(out$transD) <- collapse(
+      str_add(out$tparD) <- collapse(
         "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
         " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
       )
       str_add(out$prior) <- paste0(
         collapse(
-          "  zs", pi, "_", nb, " ~ normal(0, 1); \n"
+          "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
         ),
         stan_prior(prior, class = "sds", coef = smooths[i], 
                    nlpar = nlpar, suffix = paste0(pi, "_", nb))
@@ -598,8 +598,8 @@ stan_mo <- function(monef, ranef, prior, nlpar = "") {
       stan_prior(prior, class = "b", coef = monef,
                  nlpar = nlpar, suffix = paste0("mo", p)),
       collapse(
-        "  simplex", p, "_", I, 
-        " ~ dirichlet(con_simplex", p, "_", I, "); \n"
+        "  target += dirichlet_lpdf(",
+        "simplex", p, "_", I, " | con_simplex", p, "_", I, "); \n"
       )
     )
     str_add(out$eta) <- stan_eta_mo(monef, ranef = ranef, nlpar = nlpar)
@@ -738,7 +738,9 @@ stan_me <- function(meef, ranef, prior, nlpar = "") {
     str_add(out$prior) <- paste0(
       stan_prior(prior, class = "b", coef = meef, 
                  nlpar = nlpar, suffix = paste0("me", p)),
-      collapse("  Xme", pK, " ~ normal(Xn", pK, ", noise", pK,"); \n")
+      collapse(
+        "  target += normal_lpdf(Xme", pK, " | Xn", pK, ", noise", pK,"); \n"
+      )
     )
   }
   out
@@ -785,7 +787,7 @@ stan_gp <- function(gpef, prior, nlpar = "") {
                  nlpar = nlpar, suffix = pi),
       stan_prior(prior, class = "lscale", coef = rgpef, 
                  nlpar = nlpar, suffix = pi),
-      collapse("  zgp", pi, " ~ normal(0, 1); \n")
+      collapse(tp(), "normal_lpdf(zgp", pi, " | 0, 1); \n")
     )
     if (byfac) {
       Jgp <- paste0("Jgp", pi, "_", J)

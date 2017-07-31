@@ -2262,10 +2262,13 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   if (is.null(dots$save_ranef)) {
-    dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+    dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
   }
   if (is.null(dots$save_mevars)) {
-    dots$save_mevars <- any(grepl("^Xme_", pnames))
+    dots$save_mevars <- isTRUE(attr(object$exclude, "save_mevars"))
+  }
+  if (is.null(dots$save_all_pars)) {
+    dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
   }
   if (is.null(dots$sparse)) {
     dots$sparse <- grepl("sparse matrix", stancode(object))
@@ -2309,18 +2312,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
-    if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
-      if (is.null(dots$save_ranef)) {
-        dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
-      }
-      if (is.null(dots$save_mevars)) {
-        dots$save_mevars <- any(grepl("^Xme_", pnames))
-      }
-      object$exclude <- exclude_pars(
-        bterms, data = object$data, ranef = object$ranef, 
-        save_ranef = dots$save_ranef, save_mevars = dots$save_mevars
-      )
-    }
+    object$exclude <- exclude_pars(
+      bterms, data = object$data, ranef = object$ranef, 
+      save_ranef = dots$save_ranef, save_mevars = dots$save_mevars,
+      save_all_pars = dots$save_all_pars
+    )
     if (!is.null(dots$algorithm)) {
       aopts <- c("sampling", "meanfield", "fullrank")
       algorithm <- match.arg(dots$algorithm, aopts)
@@ -2764,4 +2760,247 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
     out <- out[pars]
   }
   out
+}
+
+#' Log Marginal Likelihood via Bridge Sampling
+#' 
+#' Computes log marginal likelihood via bridge sampling,
+#' which can be used in the computation of bayes factors
+#' and posterior model probabilities.
+#' The \code{brmsfit} method is just a thin wrapper around
+#' the corresponding method for \code{stanfit} objects.
+#' 
+#' @aliases bridge_sampler
+#' 
+#' @param samples A \code{brmsfit} object.
+#' @param ... Additional arguments passed to 
+#'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.
+#' 
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{bridge_sampler} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{bridge_sampler} to your models.
+#' 
+#'   More details are provided under
+#'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler}}.
+#'   
+#' @seealso \code{
+#'   \link[brms:bayes_factor]{bayes_factor},
+#'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' bridge_sampler(fit1)
+#' 
+#' # model without the treatment effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' bridge_sampler(fit2)
+#' }
+#' 
+#' @method bridge_sampler brmsfit
+#' @importFrom bridgesampling bridge_sampler 
+#' @export bridge_sampler 
+#' @export
+bridge_sampler.brmsfit <- function(samples, ...) {
+  if (inherits(samples[["bridge"]], "bridge")) {
+    if (!is.na(samples[["bridge"]]$logml)) {
+      return(samples[["bridge"]]) 
+    }
+  }
+  samples <- restructure(samples)
+  if (samples$version$brms <= "1.8.0") {
+    stop2(
+      "Models fitted with brms 1.8.0 or lower are not ",
+      "usable in method 'bridge_sampler'."
+    )
+  }
+  sample_prior <- attr(samples$prior, "sample_prior")
+  if (isTRUE(sample_prior %in% c("yes", "only"))) {
+    stop2(
+      "Models including prior samples are not usable ",
+      "in method 'bridge_sampler'."
+    )
+  }
+  # otherwise bridge_sampler might not work in a new R session
+  stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
+  out <- try(
+    bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...),
+    silent = TRUE
+  )
+  if (is(out, "try-error")) {
+    stop2(
+      "Bridgesampling failed. Did you set 'save_all_pars' ",
+      "to TRUE when fitting your model?"
+    )
+  }
+  out
+}
+
+#' Bayes Factors from Marginal Likelihoods
+#' 
+#' Compute Bayes factors from marginal likelihoods.
+#' 
+#' @aliases bayes_factor
+#' 
+#' @param x1 A \code{brmsfit} object
+#' @param x2 Another \code{brmsfit} object based on the same responses.
+#' @param log Report Bayes factors on the log-scale?
+#' @param ... Additional arguments passed to 
+#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#' 
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{bayes_factor} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{bayes_factor} to your models.
+#' 
+#'   More details are provided under \code{\link[bridgesampling:bf]{bf}}.
+#'   
+#' @note The \code{bayes_factor} method is an alias of the
+#'  \code{\link[bridgesampling:bf]{bf}} method provided by
+#'  the \pkg{bridge_sampler} package. Using an alias
+#'  is necessary, because the function name \code{bf}
+#'  is already taken in \pkg{brms}. 
+#'  
+#' @seealso \code{
+#'   \link[brms:bridge_sampler]{bridge_sampler},
+#'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' 
+#' # model without the treatment effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' 
+#' # compute the bayes factor
+#' bayes_factor(fit1, fit2)
+#' }
+#' 
+#' @export
+bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
+  match_response(list(x1, x2))
+  bridge1 <- bridge_sampler(x1, ...)
+  bridge2 <- bridge_sampler(x2, ...)
+  bridgesampling::bf(bridge1, bridge2, log = log)
+}
+
+#' Posterior Model Probabilities from Marginal Likelihoods
+#' 
+#' Compute posterior model probabilities from marginal likelihoods.
+#' The \code{brmsfit} method is just a thin wrapper around
+#' the corresponding method for \code{bridge} objects.
+#' 
+#' @aliases post_prob
+#' 
+#' @param x A \code{brmsfit} object.
+#' @param ... More \code{brmsfit} objects.
+#' @param prior_prob Numeric vector with prior model probabilities. 
+#'   If omitted, a uniform prior is used (i.e., all models are equally 
+#'   likely a priori). The default \code{NULL} corresponds to equal 
+#'   prior model weights.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
+#' @param bs_args A list of additional arguments passed to 
+#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#'   
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{post_prob} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{post_prob} to your models.
+#' 
+#'   More details are provided under 
+#'   \code{\link[bridgesampling:post_prob]{post_prob}}. 
+#'   
+#' @seealso \code{
+#'   \link[brms:bridge_sampler]{bridge_sampler},
+#'   \link[brms:bayes_factor]{bayes_factor}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' 
+#' # model without the treatent effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' 
+#' # compute the posterior model probabilities
+#' post_prob(fit1, fit2)
+#' 
+#' # specify prior model probabilities
+#' post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
+#' }
+#' 
+#' @method post_prob brmsfit
+#' @importFrom bridgesampling post_prob
+#' @export post_prob 
+#' @export
+post_prob.brmsfit <- function(x, ..., prior_prob = NULL, 
+                              model_names = NULL,
+                              bs_args = list()) {
+  models <- list(x, ...)
+  if (is.null(model_names)) {
+    model_names <- c(
+      deparse_combine(substitute(x)),
+      ulapply(substitute(list(...))[-1], deparse_combine)
+    )
+  } else if (length(model_names) != length(models)) {
+    stop2("Number of model names is not equal to the number of models.") 
+  }
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
+    }
+  }
+  match_response(models)
+  bs <- vector("list", length(models))
+  for (i in seq_along(models)) {
+    bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), bs_args))
+  }
+  do.call(post_prob, c(bs, nlist(prior_prob, model_names)))
 }

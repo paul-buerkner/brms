@@ -29,16 +29,15 @@ test_that("rm_int_fe works as expected", {
 test_that("change_prior returns expected lists", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")
-  expect_equal(change_prior(class = "b", pars = pars, 
-                           names = c("x1", "x3", "x2")),
-               list(list(pos = 6, oldname = "prior_b_1", 
-                         pnames = "prior_b_x1", fnames = "prior_b_x1"),
-                    list(pos = 7, oldname = "prior_b_3", 
-                         pnames = "prior_b_x2", fnames = "prior_b_x2")))
-  expect_equal(change_prior(class = "bp", pars = pars, 
-                           names = c("x1", "x2"), new_class = "b"),
-               list(list(pos = 9, oldname = "prior_bp_1", 
-                         pnames = "prior_b_x1", fnames = "prior_b_x1")))
+  expect_equal(
+    change_prior(class = "b", pars = pars, names = c("x1", "x3", "x2")),
+    list(list(pos = 6, fnames = "prior_b_x1"),
+         list(pos = 7, fnames = "prior_b_x2"))
+  )
+  expect_equal(
+    change_prior(class = "bp", pars = pars, 
+                 names = c("x1", "x2"), new_class = "b"),
+    list(list(pos = 9, fnames = "prior_b_x1")))
 })
 
 test_that("change_old_re and change_old_re2 return expected lists", {

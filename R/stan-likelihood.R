@@ -326,7 +326,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
     mix = stan_llh_mix(llh_pre, family, mix, ptheta, bounds),
     cens = stan_llh_cens(llh_pre, family, interval, has_weights, bounds),
     weights = stan_llh_weights(llh_pre, family, bounds),
-    general = stan_llh_general(llh_pre, reqn, bounds)
+    general = stan_llh_general(llh_pre, family, reqn, bounds)
   ) 
   if (reqn && !is_mix) {
     # loop over likelihood if it cannot be vectorized
@@ -360,16 +360,17 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   )
 }
 
-stan_llh_general <- function(llh_pre, reqn, bounds = NULL) {
+stan_llh_general <- function(llh_pre, family, reqn, bounds = NULL) {
   # default likelihood in Stan language
   # Args:
   #   reqn: does Y require the index 'n'?
   #   bounds: a list containing elements lb and ub
   stopifnot(length(llh_pre) == 2L)
+  lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   tr <- stan_llh_trunc(llh_pre, bounds = bounds)
   paste0(
-    "  Y", ifelse(reqn, "[n]", ""), " ~ ", llh_pre[1], 
-    "(", llh_pre[2], ")", tr, "; \n"
+    tp(), llh_pre[1], lpdf, "(Y", ifelse(reqn, "[n]", ""), 
+    " | ", llh_pre[2], ")", tr, "; \n"
   )
 }
 
@@ -381,16 +382,15 @@ stan_llh_cens <- function(llh_pre, family, interval,
   #   weights: is the model additionally weighted?
   stopifnot(length(llh_pre) == 2L)
   s <- collapse(rep(" ", 6))
-  tp <- "  target += "
-  lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
+  lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   w <- ifelse(weights, "weights[n] * ", "")
-  tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
+  tr <- stan_llh_trunc(llh_pre, bounds = bounds)
+  tp <- tp()
   if (interval) {
     int_cens <- paste0(
       s, "} else if (cens[n] == 2) { \n",
       s, tp, w, "log_diff_exp(", 
-      llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), \n",
-      collapse(rep(" ", 31)),
+      llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), ",
       llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2], "))", tr, "; \n"
     )
   } else {
@@ -399,7 +399,7 @@ stan_llh_cens <- function(llh_pre, family, interval,
   paste0(
     "  // special treatment of censored data \n",
     s, "if (cens[n] == 0) {\n", 
-    s, tp, w, llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2], ")", tr, ";\n",
+    s, tp, w, llh_pre[1], lpdf, "(Y[n] | ", llh_pre[2], ")", tr, ";\n",
     s, "} else if (cens[n] == 1) {\n",         
     s, tp, w, llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2], ")", tr, ";\n",
     s, "} else if (cens[n] == -1) {\n",
@@ -411,7 +411,7 @@ stan_llh_cens <- function(llh_pre, family, interval,
 stan_llh_weights <- function(llh_pre, family, bounds = NULL) {
   # weighted likelihood in Stan language
   stopifnot(length(llh_pre) == 2L)
-  tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
+  tr <- stan_llh_trunc(llh_pre, bounds = bounds)
   lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
   paste0(
     "  lp_pre[n] = ", llh_pre[1], "_", lpdf, 
@@ -425,7 +425,7 @@ stan_llh_mix <- function(llh_pre, family, mix, ptheta, bounds = NULL) {
   theta <- ifelse(ptheta,
     paste0("theta", mix, "[n]"), paste0("log(theta", mix, ")")
   )
-  tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
+  tr <- stan_llh_trunc(llh_pre, bounds = bounds)
   lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
   paste0(
     "  ps[", mix, "] = ", theta, " + ",
@@ -433,11 +433,11 @@ stan_llh_mix <- function(llh_pre, family, mix, ptheta, bounds = NULL) {
   )
 }
 
-stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
+stan_llh_trunc <- function(llh_pre, bounds, short = FALSE) {
   # truncated part of the likelihood
   # Args:
-  #   general: use the T[, ] syntax?
-  if (general) {
+  #   short: use the T[, ] syntax?
+  if (short) {
     if (any(bounds$lb > -Inf) || any(bounds$ub < Inf)) {
       # truncation using T[, ] syntax
       lb <- ifelse(any(bounds$lb > -Inf), "lb[n]", "")
@@ -448,7 +448,7 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
     }
   } else {
     # truncation making use of _lcdf functions
-    ms <- paste0(" - \n", collapse(rep(" ", 18)))
+    ms <- paste0(" - \n", collapse(rep(" ", 8)))
     if (any(bounds$lb > -Inf) && !any(bounds$ub < Inf)) {
       tr <- paste0(ms, llh_pre[1], "_lccdf(lb[n] | ", llh_pre[2], ")")
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
@@ -456,10 +456,7 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
     } else if (any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
       trr <- paste0(llh_pre[1], "_lcdf(ub[n] | ", llh_pre[2], ")")
       trl <- paste0(llh_pre[1], "_lcdf(lb[n] | ", llh_pre[2], ")")
-      tr <- paste0(
-        ms, "log_diff_exp(", trr, ", \n",
-        collapse(rep(" ", 31)), trl, ")"
-      )
+      tr <- paste0(ms, "log_diff_exp(", trr, ", ", trl, ")")
     } else {
       tr <- ""
     }
@@ -474,8 +471,8 @@ stan_llh_sigma <- function(family, bterms, mix = "") {
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nsigma <- llh_adj || has_se || nzchar(mix) || 
-            is_exgaussian(family) || is_gev(family)
+  nsigma <- llh_adj || has_se || nzchar(mix) ||
+    family %in% c("exgaussian", "gen_extreme_value", "asym_laplace")
   nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
@@ -528,4 +525,9 @@ stan_llh_adj <- function(adforms, adds = c("weights", "cens", "trunc")) {
 sargs <- function(...) {
   # prepare arguments of Stan likelihood statements
   paste0(c(...), collapse = ", ")
+}
+
+tp <- function(wsp = 2) {
+  wsp <- collapse(rep(" ", wsp))
+  paste0(wsp, "target += ")
 }

@@ -2,10 +2,13 @@
 % Please edit documentation in R/generics.R, R/loo-helpers.R
 \name{add_ic}
 \alias{add_ic}
+\alias{add_ic<-}
 \alias{add_ic.brmsfit}
 \title{Add information criteria and fit indices to fitted model objects}
 \usage{
 add_ic(x, ...)
+
+add_ic(x, ...) <- value
 
 \method{add_ic}{brmsfit}(x, ic = "loo", ...)
 }
@@ -15,9 +18,10 @@ add_ic(x, ...)
 \item{...}{Further arguments passed to the underlying 
 functions computing the information criteria.}
 
-\item{ic}{Names of the information criteria to compute.
-Currently supported are \code{"loo"}, \code{"waic"}, 
-\code{"kfold"}, and \code{"R2"}.}
+\item{ic, value}{Names of the information criteria / fit indices 
+to compute. Currently supported are \code{"loo"}, 
+\code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+\code{"bridge"} (log marginal likelihood).}
 }
 \value{
 An object of the same class as \code{x}, but

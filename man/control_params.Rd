@@ -10,7 +10,7 @@
 control_params(x, ...)
 }
 \arguments{
-\item{x}{an \R object}
+\item{x}{An \R object}
 
 \item{pars}{Optional names of the control parameters to be returned.
 If \code{NULL} (the default) all control parameters are returned.
