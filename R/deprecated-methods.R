@@ -35,14 +35,13 @@ old_ranef_brmsfit <- function(object, estimate = c("mean", "median"),
     if (!length(rpars)) {
       return(NULL)
     }
-    rdims <- object$fit@sim$dims_oi[[paste0("r_", group, usc_nlpar)]]
-    if (is.na(rdims[2])) rdims[2] <- 1
     levels <- attr(object$ranef, "levels")[[group]]
     if (is.null(levels)) {
       # avoid error in dimnames if levels are NULL 
       # for backwards compatibility with brms < 0.5.0 
       levels <- seq_len(rdims[1])
     }
+    rdims <- c(length(levels), length(rnames))
     rs <- posterior_samples(object, pars = rpars, exact_match = TRUE)
     rs_array <- array(dim = c(rdims[1], rdims[2], nrow(rs)))
     k <- 0

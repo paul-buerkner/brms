@@ -529,6 +529,7 @@ get_prior <- function(formula, data, family = gaussian(),
     bs = "gamma(1, 1)", 
     ndt = "uniform(0, min_Y)", 
     bias = "beta(1, 1)", 
+    quantile = "beta(1, 1)",
     xi = "normal(0, 2.5)",
     alpha = "normal(0, 4)",
     disc = NA,
@@ -558,7 +559,8 @@ get_prior <- function(formula, data, family = gaussian(),
   prior <- rbind(prior, prior_re)
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(family) && is_equal(family$threshold, "equidistant")) {
-    prior <- rbind(prior, brmsprior(class = "delta"))
+    bound <- ifelse(family$family == "cumulative", "<lower=0>", "")
+    prior <- rbind(prior, brmsprior(class = "delta", bound = bound))
   }
   # priors for mixture models
   ap_classes <- auxpar_class(names(c(bterms$auxpars, bterms$fauxpars)))
@@ -1009,9 +1011,15 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
     lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-    nb_pars <- c("b", "Intercept", if (!family %in% "cumulative") "delta")
-    lb_pars <- c("sd", "sigma", "nu", "shape", "phi", "kappa",
-                 if (family %in% "cumulative") "delta")
+    nb_pars <- c(
+      "b", "Intercept", "alpha", "xi",
+      if (!family %in% "cumulative") "delta"
+    )
+    lb_pars <- c(
+      "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
+      "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale", 
+      if (family %in% "cumulative") "delta"
+    )
     cor_pars <- c("cor", "L", "rescor", "Lrescor")
     autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
@@ -1021,17 +1029,17 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
       # priors with nchar(coef) inherit their boundaries 
-      j <- with(prior, 
-        which(class == class[i] & group == group[i] & 
-              nlpar == nlpar[i] & !nchar(coef))
-      )
+      j <- which(with(prior, 
+        class == class[i] & group == group[i] & 
+        nlpar == nlpar[i] & !nchar(coef)
+      ))
       bound <- if (length(j)) prior$bound[j] else ""
       has_lb <- grepl("lower", bound)
       has_ub <- grepl("upper", bound)
       if (prior$class[i] %in% nb_pars) {
         if ((has_lb_prior || has_ulb_prior) && !has_lb) {
           lb_warning <- paste0(lb_warning, msg_prior, "\n")
-        } 
+        }
         if (has_ulb_prior && !has_ub) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
@@ -1048,7 +1056,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       } else if (prior$class[i] %in% autocor_pars) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
-        } 
+        }
       } else if (prior$class[i] %in% c("simplex", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2("Currently 'dirichlet' is the only valid prior ",
@@ -1056,7 +1064,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
                 "for more details.")
         }
       }
-    }  # end for  
+    } 
     if (nchar(lb_warning) && warn) {
       warning2("It appears as if you have specified a lower bounded ", 
                "prior on a parameter that has no natural lower bound.",
@@ -1222,6 +1230,75 @@ empty_brmsprior <- function() {
   brmsprior(prior = character(0), class = character(0), 
             coef = character(0), group = character(0),
             nlpar = character(0), bound = character(0))
+}
+
+prior_bounds <- function(prior) {
+  # natural upper and lower bounds for priors
+  # Returns:
+  #   A named list with elements 'lb and 'ub'
+  switch(prior,
+    lognormal = list(lb = 0, ub = Inf),
+    chi_square = list(lb = 0, ub = Inf),
+    inv_chi_square = list(lb = 0, ub = Inf),
+    scaled_inv_chi_square = list(lb = 0, ub = Inf),
+    exponential = list(lb = 0, ub = Inf),
+    gamma = list(lb = 0, ub = Inf),
+    inv_gamma = list(lb = 0, ub = Inf),
+    weibull = list(lb = 0, ub = Inf),
+    frechet = list(lb = 0, ub = Inf),
+    rayleigh = list(lb = 0, ub = Inf),
+    pareto = list(lb = 0, ub = Inf),
+    pareto_type_2 = list(lb = 0, ub = Inf),
+    beta = list(lb = 0, ub = 1),
+    von_mises = list(lb = -pi, ub = pi),
+    list(lb = -Inf, ub = Inf)
+  )
+}
+
+par_bounds <- function(par, bound = "") {
+  # upper and lower bounds for parameter classes
+  # Returns:
+  #   A named list with elements 'lb and 'ub'
+  out <- switch(par,
+    sigma = list(lb = 0, ub = Inf),
+    shape = list(lb = 0, ub = Inf),
+    nu = list(lb = 1, ub = Inf),
+    phi = list(lb = 0, ub = Inf),
+    kappa = list(lb = 0, ub = Inf), 
+    beta = list(lb = 0, ub = Inf),
+    zi = list(lb = 0, ub = 1),
+    hu = list(lb = 0, ub = 1),
+    zoi = list(lb = 0, ub = 1),
+    coi = list(lb = 0, ub = 1),
+    bs = list(lb = 0, ub = Inf),
+    ndt = list(lb = 0, ub = "min_Y"), 
+    bias = list(lb = 0, ub = 1), 
+    disc = list(lb = 0, ub = Inf),
+    quantile = list(lb = 0, ub = 1),
+    ar = list(lb = -1, ub = 1),
+    ma = list(lb = -1, ub = 1),
+    lagsar = list(lb = 0, ub = 1),
+    errorsar = list(lb = 0, ub = 1),
+    car = list(lb = 0, ub = 1),
+    sdcar = list(lb = 0, ub = Inf),
+    sigmaLL = list(lb = 0, ub = Inf),
+    sd = list(lb = 0, ub = Inf),
+    sds = list(lb = 0, ub = Inf),
+    sdgp = list(lb = 0, ub = Inf),
+    lscale = list(lb = 0, ub = Inf),
+    list(lb = -Inf, ub = Inf)
+  )
+  if (isTRUE(nzchar(bound))) {
+    opt_lb <- get_matches("(<|,)lower=[^,>]+", bound)
+    if (isTRUE(nzchar(opt_lb))) {
+      out$lb <- substr(opt_lb, 8, nchar(opt_lb))
+    } 
+    opt_ub <- get_matches("(<|,)upper=[^,>]+", bound)
+    if (isTRUE(nzchar(opt_ub))) {
+      out$ub <- substr(opt_ub, 8, nchar(opt_ub)) 
+    } 
+  }
+  out
 }
 
 #' Checks if argument is a \code{brmsprior} object

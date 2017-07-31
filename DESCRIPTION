@@ -2,7 +2,7 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using Stan
-Version: 1.8.0
+Version: 1.8.0.1
 Date: 2017-07-19
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
@@ -19,6 +19,7 @@ Imports:
     rstantools (>= 1.2.0),
     bayesplot (>= 1.2.0),
     matrixStats,
+    bridgesampling,
     nlme,
     coda,
     abind,

@@ -201,6 +201,12 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
   x
 }
 
+#' @rdname add_ic 
+#' @export
+'add_ic<-' <- function(x, ..., value) {
+  add_ic(x, ic = value, ...)
+}
+
 #' @rdname add_ic
 #' @export
 add_ic.brmsfit <- function(x, ic = "loo", ...) {
@@ -212,18 +218,21 @@ add_ic.brmsfit <- function(x, ic = "loo", ...) {
   }
   model_name <- deparse(substitute(x))
   ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic", "kfold", "r2")
+  valid_ics <- c("loo", "waic", "kfold", "r2", "bridge")
   if (!length(ic) || !all(ic %in% valid_ics)) {
     stop2("Argument 'ic' should be a subset of ",
           collapse_comma(valid_ics))
   }
-  for (i in seq_along(setdiff(ic, "r2"))) {
-    x[[ic[i]]] <- do.call(ic[i], c(list(x), dots))
-    x[[ic[i]]]$model_name <- model_name
+  for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
+    x[[fun]] <- do.call(fun, c(list(x), dots))
+    x[[fun]]$model_name <- model_name
   }
   if ("r2" %in% ic) {
     dots$summary <- FALSE
     x[["R2"]] <- do.call(bayes_R2, c(list(x), dots))
+  }
+  if ("bridge" %in% ic) {
+    x[["bridge"]] <- do.call(bridge_sampler, c(list(x), dots))
   }
   x
 }
