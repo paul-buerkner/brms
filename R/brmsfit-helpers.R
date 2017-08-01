@@ -98,7 +98,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       # update gaussian("log") to lognormal() family
       nresp <- length(bterms$response)
       if (is_old_lognormal(x$family, nresp = nresp, version = version)) {
-        object$family <- object$formula$family <- lognormal()
+        x$family <- x$formula$family <- lognormal()
       }
     }
     if (version <= "0.10.0.9000") {
@@ -127,14 +127,14 @@ restructure <- function(x, rstr_summary = FALSE) {
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
     }
     if (version <= "1.8.0") {
-      att <- attributes(object$exclude)
+      att <- attributes(x$exclude)
       if (is.null(att$save_ranef)) {
-        attr(object$exclude, "save_ranef") <- 
-          any(grepl("^r_", parnames(object))) || !nrow(object$ranef)
+        attr(x$exclude, "save_ranef") <- 
+          any(grepl("^r_", parnames(x))) || !nrow(x$ranef)
       }
       if (is.null(att$save_mevars)) {
-        attr(object$exclude, "save_mevars") <- 
-          any(grepl("^Xme_", parnames(object)))
+        attr(x$exclude, "save_mevars") <- 
+          any(grepl("^Xme_", parnames(x)))
       }
     }
     if (version <= "1.8.0.1") {
