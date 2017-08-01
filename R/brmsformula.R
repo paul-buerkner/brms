@@ -666,7 +666,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #'   \code{flist} belong. 
 #' @inheritParams brmsformula
 #' 
-#' @value A \code{list}, which can be passed to 
+#' @return A \code{list}, which can be passed to 
 #'   \code{\link[brms:brmsformula]{brmsformula}} or added to an
 #'   existing \code{brmsformula} object.
 #' 

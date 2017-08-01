@@ -66,6 +66,11 @@ same way as formulas passed via the \code{...} argument.}
 parameter to which the formulas passed via \code{...} and
 \code{flist} belong.}
 }
+\value{
+A \code{list}, which can be passed to 
+  \code{\link[brms:brmsformula]{brmsformula}} or added to an
+  existing \code{brmsformula} object.
+}
 \description{
 Linear and Non-linear formulas in \pkg{brms}
 }

@@ -9,8 +9,8 @@
 \alias{prior_string}
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
-set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
-  resp = NULL, lb = NULL, ub = NULL, check = TRUE)
+set_prior(prior, class = "b", coef = "", group = "", resp = "",
+  dpar = "", nlpar = "", lb = NULL, ub = NULL, check = TRUE)
 
 prior(prior, ...)
 
@@ -29,12 +29,14 @@ See 'Details' for other valid parameter classes.}
 
 \item{group}{Grouping factor of group-level parameters.}
 
-\item{nlpar}{Name of a non-linear / auxiliary parameter. 
-Only used in non-linear / distributional models.}
-
 \item{resp}{Name of the response variable / category.
-Only used in multivariate and categorical models.
-Is internally handled as an alias of \code{nlpar}.}
+Only used in multivariate and categorical models.}
+
+\item{dpar}{Name of a distributional parameter.
+Only used in distributional models.}
+
+\item{nlpar}{Name of a non-linear parameter. 
+Only used in non-linear models.}
 
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
 for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.

@@ -137,6 +137,9 @@ restructure <- function(x, rstr_summary = FALSE) {
           any(grepl("^Xme_", parnames(object)))
       }
     }
+    if (version <= "1.8.0.1") {
+      x$prior[, c("resp", "dpar")] <- ""
+    }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
       stan_summary <- get("summary", stan_env)

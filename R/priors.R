@@ -10,11 +10,12 @@
 #'   See 'Details' for other valid parameter classes. 
 #' @param coef Name of the (population- or group-level) parameter.  
 #' @param group Grouping factor of group-level parameters.
-#' @param nlpar Name of a non-linear / auxiliary parameter. 
-#'   Only used in non-linear / distributional models.
 #' @param resp Name of the response variable / category.
 #'   Only used in multivariate and categorical models.
-#'   Is internally handled as an alias of \code{nlpar}.
+#' @param dpar Name of a distributional parameter.
+#'   Only used in distributional models.
+#' @param nlpar Name of a non-linear parameter. 
+#'   Only used in non-linear models.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 #'   Defaults to \code{NULL}, that is no restriction.
@@ -312,19 +313,21 @@
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
-                      nlpar = "", resp = NULL, lb = NULL, ub = NULL,
-                      check = TRUE) {
+                      resp = "", dpar = "", nlpar = "", 
+                      lb = NULL, ub = NULL, check = TRUE) {
   prior <- as.character(prior)
   class <- as.character(class)
   group <- as.character(group)
   coef <- as.character(coef)
-  nlpar <- as.character(use_alias(nlpar, resp, warn = FALSE))
+  resp <- as.character(resp)
+  dpar <- as.character(dpar)
+  nlpar <- as.character(nlpar)
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   check <- as.logical(check)[1]
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
-      length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
-      length(ub) > 1) {
+      length(group) != 1 || length(resp) != 1 || length(dpar) != 1 ||
+      length(nlpar) != 1 || length(lb) > 1 || length(ub) > 1) {
     stop2("All arguments of set_prior must be of length 1.")
   }
     
@@ -340,8 +343,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop2("Argument 'group' is not meaningful for class '", class, "'.")
   }
   coef_classes <- c(
-    "Intercept", "b", "sd", "sds", "sigma", 
-    "simplex", "sdgp", "lscale"
+    "Intercept", "b", "sd", "sds", "sigma", "simplex", "sdgp", "lscale"
   )
   if (nchar(coef) && !class %in% coef_classes) {
     stop2("Argument 'coef' ia not meaningful for class '", class, "'.")
@@ -378,9 +380,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
   if (!check) {
     # prior will be added to the log-posterior as is
-    class <- coef <- group <- nlpar <- bound <- ""
+    class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
   }
-  do.call(brmsprior, nlist(prior, class, coef, group, nlpar, bound))
+  do.call(brmsprior, 
+    nlist(prior, class, coef, group, resp, dpar, nlpar, bound)
+  )
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to 
@@ -879,13 +883,13 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     prior$class, symbols = c("^cor$", "^rescor$"), 
     subs = c("L", "Lrescor"), fixed = FALSE
   )
-  duplicated_input <- duplicated(prior[, 2:5])
+  duplicated_input <- duplicated(prior[, 2:7])
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
   }
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
+    valid <- which(duplicated(rbind(all_priors[, 2:7], prior[, 2:7])))
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
@@ -912,7 +916,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior <- check_prior_special(bterms, prior)
   # merge user-specified priors with default priors
   prior <- rbind(prior, all_priors)
-  prior <- prior[!duplicated(prior[, 2:5]), ]
+  prior <- prior[!duplicated(prior[, 2:7]), ]
   rows2remove <- NULL
   # copy over the global population-level prior in MV models
   if (length(bterms$response) > 1L) {
@@ -1216,20 +1220,24 @@ get_bound <- function(prior, class = "b", coef = "",
 }
 
 brmsprior <- function(prior = "", class = "", coef = "", group = "", 
-                      nlpar = "", bound = "") {
+                      resp = "", dpar = "", nlpar = "", bound = "") {
   # helper function to create data.frames containing prior information 
-  out <- data.frame(prior = prior, class = class, coef = coef, 
-                    group = group, nlpar = nlpar, bound = bound, 
-                    stringsAsFactors = FALSE)
+  out <- data.frame(
+    prior, class, coef, group, resp, dpar, nlpar, bound, 
+    stringsAsFactors = FALSE
+  )
   class(out) <- c("brmsprior", "data.frame")
   out
 }
 
 empty_brmsprior <- function() {
   # define a brmsprior object with zero rows
-  brmsprior(prior = character(0), class = character(0), 
-            coef = character(0), group = character(0),
-            nlpar = character(0), bound = character(0))
+  char0 <- character(0)
+  brmsprior(
+    prior = char0, class = char0, coef = char0, 
+    group = char0, resp = char0, dpar = char0,
+    nlpar = char0, bound = char0
+  )
 }
 
 prior_bounds <- function(prior) {
@@ -1334,14 +1342,17 @@ print.brmsprior <- function(x, show_df, ...) {
 .print_prior <- function(x) {
   # prepare text for print.brmsprior
   group <-  usc(x$group)
+  resp <- usc(x$resp)
+  dpar <- usc(x$dpar)
   nlpar <- usc(x$nlpar)
   coef <- usc(x$coef)
-  nlpar <- ifelse(nchar(group), usc(nlpar), nlpar)
-  coef <- ifelse(nchar(group) & !nchar(nlpar), usc(coef), coef)
-  bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
-  tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
-  prior <- ifelse(nchar(x$prior), x$prior, "(no prior)")
-  paste0(bound, x$class, group, nlpar, coef, tilde, prior)
+  if (any(nzchar(c(resp, dpar, nlpar, coef)))) {
+    group <- usc(group, "suffix")
+  }
+  bound <- ifelse(nzchar(x$bound), paste0(x$bound, " "), "")
+  tilde <- ifelse(nzchar(x$class) | nzchar(group) | nzchar(coef), " ~ ", "")
+  prior <- ifelse(nzchar(x$prior), x$prior, "(no prior)")
+  paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)
 }
 
 #' @export

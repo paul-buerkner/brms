@@ -428,9 +428,9 @@ test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
   prior <- c(
     prior(normal(0, 5), "b"),
-    prior(normal(0, 10), "b", resp = X2),
+    prior(normal(0, 10), "b", nlpar = X2),
     prior(cauchy(0, 1), "Intercept"),
-    prior(normal(0, 2), "Intercept", resp = X3)
+    prior(normal(0, 2), "Intercept", nlpar = X3)
   )
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
