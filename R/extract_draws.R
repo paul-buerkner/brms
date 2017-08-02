@@ -36,26 +36,26 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     draws$mu[["mv"]] <- named_list(resp)
     for (j in seq_along(resp)) {
       r <- resp[j]
-      more_args <- list(x = bterms$auxpars[["mu"]], nlpar = r, mv = TRUE)
+      more_args <- list(x = bterms$dpars[["mu"]], nlpar = r, mv = TRUE)
       draws$mu[["mv"]][[r]] <- do.call(extract_draws, c(args, more_args))
-      draws$mu[["mv"]][[r]][["f"]] <- bterms$auxpars[["mu"]]$family
+      draws$mu[["mv"]][[r]][["f"]] <- bterms$dpars[["mu"]]$family
       if (isTRUE(ncol(draws$mu[["mv"]][[r]]$data$Y) > 1L)) {
         draws$mu[["mv"]][[r]]$data$Y <- draws$mu[["mv"]][[r]]$data$Y[, j]
       }
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   }
   # extract draws of auxiliary parameters
   am_args <- nlist(x, subset)
-  valid_auxpars <- valid_auxpars(family(x), bterms = bterms)
-  for (ap in valid_auxpars) {
+  valid_dpars <- valid_dpars(family(x), bterms = bterms)
+  for (ap in valid_dpars) {
     ap_regex <- paste0("^", ap, "($|_)")
-    if (is.btl(bterms$auxpars[[ap]]) || is.btnl(bterms$auxpars[[ap]])) {
-      more_args <- nlist(x = bterms$auxpars[[ap]], nlpar = ap)
+    if (is.btl(bterms$dpars[[ap]]) || is.btnl(bterms$dpars[[ap]])) {
+      more_args <- nlist(x = bterms$dpars[[ap]], nlpar = ap)
       draws[[ap]] <- do.call(extract_draws, c(args, more_args))
-      draws[[ap]][["f"]] <- bterms$auxpars[[ap]]$family
-    } else if (is.numeric(bterms$fauxpars[[ap]]$value)) {
-      draws[[ap]] <- bterms$fauxpars[[ap]]$value
+      draws[[ap]][["f"]] <- bterms$dpars[[ap]]$family
+    } else if (is.numeric(bterms$fdpars[[ap]]$value)) {
+      draws[[ap]] <- bterms$fdpars[[ap]]$value
     } else if (any(grepl(ap_regex, parnames(x)))) {
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = ap_regex))
     }
@@ -181,9 +181,9 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   fixef <- colnames(draws$data[["X"]])
   monef <- colnames(draws$data[["Xmo"]])
   csef <- colnames(draws$data[["Xcs"]])
-  meef <- get_me_labels(bterms$auxpars$mu, fit$data)
-  smooths <- get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE)
-  gpef <- get_gp_labels(bterms$auxpars$mu, fit$data, covars = TRUE)
+  meef <- get_me_labels(bterms$dpars$mu, fit$data)
+  smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
+  gpef <- get_gp_labels(bterms$dpars$mu, fit$data, covars = TRUE)
   sdata_old <- NULL
   if (length(gpef) && new) {
     oldd_args <- newd_args[!names(newd_args) %in% "newdata"]

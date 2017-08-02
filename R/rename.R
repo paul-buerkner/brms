@@ -20,18 +20,18 @@ rename_pars <- function(x) {
     # rename effects in multivaraite models
     for (r in resp) {
       change_eff <- change_effects(
-        bterms$auxpars[["mu"]], model.frame(x), pars, 
+        bterms$dpars[["mu"]], model.frame(x), pars, 
         dims = x$fit@sim$dims_oi, nlpar = r, 
         stancode = stancode(x)
       )
       change <- c(change, change_eff)
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   }
   # rename effects of auxilliary parameters
-  for (ap in names(bterms$auxpars)) {
+  for (ap in names(bterms$dpars)) {
     change_eff <- change_effects(
-      bterms$auxpars[[ap]], model.frame(x), pars, 
+      bterms$dpars[[ap]], model.frame(x), pars, 
       dims = x$fit@sim$dims_oi, nlpar = ap, 
       stancode = stancode(x)
     )
@@ -562,12 +562,12 @@ change_old_sm <- function(bterms, pars, dims) {
   change <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      change <- c(change, .change_old_sm(bterms$auxpars$mu, nlpar = r))
+      change <- c(change, .change_old_sm(bterms$dpars$mu, nlpar = r))
     }
-    bterms$auxpars$mu <- NULL
+    bterms$dpars$mu <- NULL
   }
-  for (ap in names(bterms$auxpars)) {
-    bt <- bterms$auxpars[[ap]]
+  for (ap in names(bterms$dpars)) {
+    bt <- bterms$dpars[[ap]]
     if (length(bt$nlpars)) {
       for (nlp in names(bt$nlpars)) {
         change <- c(change, 
@@ -737,7 +737,7 @@ reorder_pars <- function(x) {
   all_classes <- c(
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
-    "sdgp", "lscale", auxpars(), "temp", "rescor", "delta", 
+    "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simplex", "r", "s", "zgp", "rcar", "loclev", 
     "Xme", "prior", "lp"
   )

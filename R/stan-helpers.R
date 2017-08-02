@@ -53,7 +53,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is.formula(bterms$adforms$disp)) {
         stop2(err_msg, " when specifying 'disp'.")
       }
-      if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+      if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
         stop2(err_msg, " when predicting 'sigma' or 'nu'.")
       }
       str_add(out$data) <- paste0( 
@@ -108,7 +108,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(bterms$auxpars[["mu"]]$nlpars)) {
+      if (length(bterms$dpars[["mu"]]$nlpars)) {
         stop2(err_msg, " in non-linear models.")
       }
       if (!identical(family$link, "identity")) {
@@ -148,7 +148,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
   if (Karr) {
     # autoregressive effects of the response
     err_msg <- "ARR models are not yet working"
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     if (is_mv) {
@@ -176,7 +176,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is.formula(bterms$adforms$disp)) {
       stop2(err_msg, " when specifying 'disp'.")
     }
-    if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+    if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
       stop2(err_msg, " when predicting 'sigma' or 'nu'.")
     }
     str_add(out$data) <- paste0(
@@ -221,7 +221,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     str_add(out$data) <- paste0(
@@ -288,7 +288,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     str_add(out$data) <- 
@@ -575,7 +575,7 @@ stan_families <- function(family, bterms) {
     # as suggested by Stephen Martin use sigma and mu of CP 
     # but the skewness parameter alpha of DP
     str_add(out$tdataD) <- "  real sqrt_2_div_pi = sqrt(2 / pi()); \n"
-    ap_names <- names(bterms$auxpars)
+    ap_names <- names(bterms$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- ifelse(length(families) == 1L, "", i)
       ns <- ifelse(paste0("sigma", id) %in% ap_names, "[n]", "")
@@ -611,7 +611,7 @@ stan_families <- function(family, bterms) {
       "  #include 'fun_gen_extreme_value.stan' \n",
       "  #include 'fun_scale_xi.stan' \n"
     )
-    ap_names <- c(names(bterms$auxpars), names(bterms$fauxpars))
+    ap_names <- c(names(bterms$dpars), names(bterms$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- ifelse(length(families) == 1L, "", i)
       xi <- paste0("xi", id)
@@ -620,7 +620,7 @@ stan_families <- function(family, bterms) {
            "  real ", xi, ";  // scaled shape parameter \n"
         )
         sigma <- paste0("sigma", id)
-        v <- ifelse(sigma %in% names(bterms$auxpars), "_vector", "")
+        v <- ifelse(sigma %in% names(bterms$dpars), "_vector", "")
         args <- sargs(paste0("temp_", xi), "Y", paste0("mu", id), sigma)
         str_add(out$modelC) <- paste0(
            "  ", xi, " = scale_xi", v, "(", args, "); \n"
@@ -636,10 +636,10 @@ stan_mixture <- function(bterms, prior) {
   out <- list()
   if (is.mixfamily(bterms$family)) {
     nmix <- length(bterms$family$mix)
-    theta_pred <- grepl("^theta", names(bterms$auxpars))
-    theta_pred <- bterms$auxpars[theta_pred]
-    theta_fix <- grepl("^theta", names(bterms$fauxpars))
-    theta_fix <- bterms$fauxpars[theta_fix]
+    theta_pred <- grepl("^theta", names(bterms$dpars))
+    theta_pred <- bterms$dpars[theta_pred]
+    theta_fix <- grepl("^theta", names(bterms$fdpars))
+    theta_fix <- bterms$fdpars[theta_fix]
     def_thetas <- collapse(
       "  real<lower=0,upper=1> theta", 1:nmix, ";",
       "  // mixing proportion \n"
@@ -648,7 +648,7 @@ stan_mixture <- function(bterms, prior) {
       if (length(theta_pred) != nmix - 1) {
         stop2("Can only predict all but one mixing proportion.")
       }
-      missing_id <- setdiff(1:nmix, auxpar_id(names(theta_pred)))
+      missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
       str_add(out$modelD) <- paste0(
         "  vector[N] theta", missing_id, " = rep_vector(0, N); \n",                   
         "  real log_sum_exp_theta; \n"      

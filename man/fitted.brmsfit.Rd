@@ -7,7 +7,7 @@
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, auxpar = NULL, subset = NULL, nsamples = NULL,
+  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL,
   sort = FALSE, nug = NULL, summary = TRUE, robust = FALSE,
   probs = c(0.025, 0.975), ...)
 }
@@ -57,7 +57,7 @@ parameters should be included in the predictions. Defaults to
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
 
-\item{auxpar}{Optional name of a predicted auxiliary parameter.
+\item{dpar}{Optional name of a predicted distributional parameter.
 If specified, fitted values of this parameters are returned.}
 
 \item{subset}{A numeric vector specifying

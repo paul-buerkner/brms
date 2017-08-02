@@ -11,13 +11,13 @@ test_that("parse_bf handles very long RE terms", {
   formula <- paste(sprintf("y ~ 0 + trait + trait:(%s)", covariate_vector),
                    sprintf("(1+%s|id)", covariate_vector), sep = " + ")
   bterms <- parse_bf(as.formula(formula))
-  expect_equal(bterms$auxpars$mu$re$group, "id")
+  expect_equal(bterms$dpars$mu$re$group, "id")
 })
 
 test_that("parse_bf correctly handles auxiliary parameter 'mu'", {
   bterms1 <- parse_bf(y ~ x + (x|g))
   bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
-  expect_equal(bterms1$auxpars$mu, bterms2$auxpars$mu)
+  expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
   expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g))),
                "All 'mu' parameters are specified")
 })

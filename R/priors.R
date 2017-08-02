@@ -336,7 +336,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     "L", "ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", 
     "sigmaLL", "rescor", "Lrescor", "delta", "theta", if (!check) ""
   )
-  if (!(class %in% valid_classes || auxpar_class(class) %in% auxpars())) {
+  if (!(class %in% valid_classes || dpar_class(class) %in% dpars())) {
     stop2("'", class, "' is not a valid parameter class.")
   }
   if (nchar(group) && !class %in% c("sd", "cor", "L")) {
@@ -503,13 +503,13 @@ get_prior <- function(formula, data, family = gaussian(),
     # priors for effects in multivariate models
     for (r in bterms$response) {
       prior_eff <- prior_effects(
-        bterms$auxpars[["mu"]], data = data,
+        bterms$dpars[["mu"]], data = data,
         def_scale_prior = def_scale_prior,
         nlpar = r, internal = internal
       )
       prior <- rbind(prior, prior_eff)
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
     # add "global" priors for population-level effects
     # in 1.8.0 as users keep asking about this
     for (cl in c("b", "Intercept")) {
@@ -539,12 +539,12 @@ get_prior <- function(formula, data, family = gaussian(),
     disc = NA,
     mu = NA
   )
-  valid_auxpars <- valid_auxpars(family, bterms = bterms)
-  for (ap in valid_auxpars) {
-    ap_class <- auxpar_class(ap)
-    if (!is.null(bterms$auxpars[[ap]])) {
+  valid_dpars <- valid_dpars(family, bterms = bterms)
+  for (ap in valid_dpars) {
+    ap_class <- dpar_class(ap)
+    if (!is.null(bterms$dpars[[ap]])) {
       auxprior <- prior_effects(
-        bterms$auxpars[[ap]], data = data, nlpar = ap,
+        bterms$dpars[[ap]], data = data, nlpar = ap,
         def_scale_prior = def_scale_prior
       )
     } else if (!is.na(def_auxprior[ap_class])) {
@@ -567,7 +567,7 @@ get_prior <- function(formula, data, family = gaussian(),
     prior <- rbind(prior, brmsprior(class = "delta", bound = bound))
   }
   # priors for mixture models
-  ap_classes <- auxpar_class(names(c(bterms$auxpars, bterms$fauxpars)))
+  ap_classes <- dpar_class(names(c(bterms$dpars, bterms$fdpars)))
   if (is.mixfamily(family) && !any(ap_classes == "theta")) {
     prior <- rbind(prior, brmsprior(class = "theta"))
   }
@@ -620,7 +620,9 @@ get_prior <- function(formula, data, family = gaussian(),
     )
   }
   # do not remove unique(.)
-  prior <- unique(prior[with(prior, order(nlpar, class, group, coef)), ])
+  prior <- unique(prior[with(prior, 
+    order(resp, dpar, nlpar, class, group, coef)
+  ), ])
   rownames(prior) <- NULL
   structure(prior, class = c("brmsprior", "data.frame"))
 }
@@ -874,7 +876,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   if (is.null(prior)) {
     prior <- all_priors  
   }
-  # temporarily exclude priors priors that should not be checked
+  # temporarily exclude priors that should not be checked
   no_checks <- !nzchar(prior$class)
   prior_no_checks <- prior[no_checks, ]
   prior <- prior[!no_checks, ]
@@ -903,7 +905,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
   check_prior_content(prior, family = family, warn = warn)
   # check if priors for non-linear parameters are defined
-  nlpars <- names(bterms$auxpars$mu$nlpars)
+  nlpars <- names(bterms$dpars$mu$nlpars)
   for (nlp in nlpars) {
     nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
     if (!any(nzchar(nlp_prior))) {
@@ -922,8 +924,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   if (length(bterms$response) > 1L) {
     for (cl in c("b", "Intercept")) {
       g_index <- with(prior, nlpar == "" & class == cl & coef == "")
-      for (resp in bterms$response) {
-        r_index <- with(prior, nlpar == resp & class == cl & coef == "")
+      for (r in bterms$response) {
+        r_index <- with(prior, nlpar == r & class == cl & coef == "")
         if (isTRUE(!nzchar(prior$prior[r_index]))) {
           prior$prior[r_index] <- prior$prior[g_index]
         }
@@ -1099,11 +1101,11 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
-  simple_sigma <- has_sigma(x$family, x) && is.null(x$auxpars$sigma)
-  for (ap in names(x$auxpars)) {
+  simple_sigma <- has_sigma(x$family, x) && is.null(x$dpars$sigma)
+  for (ap in names(x$dpars)) {
     allow_autoscale <- simple_sigma && identical(ap, "mu") 
     prior <- check_prior_special(
-      x$auxpars[[ap]], prior, nlpar = ap,
+      x$dpars[[ap]], prior, nlpar = ap,
       allow_autoscale = allow_autoscale, ... 
     )
   }

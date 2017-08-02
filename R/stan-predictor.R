@@ -88,7 +88,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # possibly transform eta before it is passed to the likelihood
   if (sum(nzchar(ilink))) {
     # make sure mu comes last as it might depend on other parameters
-    not_mu <- nzchar(nlpar) && auxpar_class(nlpar) != "mu"
+    not_mu <- nzchar(nlpar) && dpar_class(nlpar) != "mu"
     position <- ifelse(not_mu, "modelC3", "modelC4")
     str_add(out[[position]]) <- paste0(
       "    ", eta, "[n] = ", ilink[1], eta, "[n]", ilink[2], "; \n"
@@ -160,14 +160,14 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
   #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
   out <- list()
-  valid_auxpars <- valid_auxpars(x$family, bterms = x)
+  valid_dpars <- valid_dpars(x$family, bterms = x)
   args <- nlist(data, ranef, prior)
-  for (ap in valid_auxpars) {
-    ap_terms <- x$auxpars[[ap]]
+  for (ap in valid_dpars) {
+    ap_terms <- x$dpars[[ap]]
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
       ilink <- stan_eta_ilink(
-        ap_terms$family, auxpars = names(x$auxpars), 
-        adforms = x$adforms, mix = auxpar_id(ap)
+        ap_terms$family, dpars = names(x$dpars), 
+        adforms = x$adforms, mix = dpar_id(ap)
       )
       eta <- ifelse(ap == "mu", "mu", "")
       ap_args <- list(
@@ -175,19 +175,19 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
         sparse = sparse, order_mixture = x$family$order
       )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
-    } else if (is.numeric(x$fauxpars[[ap]]$value)) {
-      out[[ap]] <- list(data = stan_auxpar_defs(ap))
-    } else if (is.character(x$fauxpars[[ap]]$value)) {
-      if (!x$fauxpars[[ap]]$value %in% valid_auxpars) {
-        stop2("Parameter '", x$fauxpars[[ap]]$value, "' cannot be found.")
+    } else if (is.numeric(x$fdpars[[ap]]$value)) {
+      out[[ap]] <- list(data = stan_dpar_defs(ap))
+    } else if (is.character(x$fdpars[[ap]]$value)) {
+      if (!x$fdpars[[ap]]$value %in% valid_dpars) {
+        stop2("Parameter '", x$fdpars[[ap]]$value, "' cannot be found.")
       }
       out[[ap]] <- list(
-        tparD = stan_auxpar_defs(ap),
-        tparC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]]$value, "; \n")
+        tparD = stan_dpar_defs(ap),
+        tparC1 = paste0("  ", ap, " = ", x$fdpars[[ap]]$value, "; \n")
       )
     } else {
-      def_temp <- stan_auxpar_defs_temp(ap)
-      def <- stan_auxpar_defs(ap)
+      def_temp <- stan_dpar_defs_temp(ap)
+      def <- stan_dpar_defs(ap)
       if (nzchar(def_temp)) {
         out[[ap]] <- list(par = def_temp,
           prior = stan_prior(prior, class = ap, prefix = "temp_")
@@ -211,7 +211,7 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
   resp <- bterms$response
   if (length(resp) > 1L) {
     args <- nlist(
-      x = bterms$auxpars[["mu"]], data, ranef, prior, sparse,
+      x = bterms$dpars[["mu"]], data, ranef, prior, sparse,
       ilink = stan_eta_ilink(bterms$family, adforms = bterms$adforms)
     )
     resp <- bterms$response
@@ -360,9 +360,9 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         " = temp_Intercept", sub_X_means, "; \n" 
       )
     } else {
-       if (identical(auxpar_class(nlpar), order_mixture)) {
+       if (identical(dpar_class(nlpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
-         ap_id <- auxpar_id(nlpar)
+         ap_id <- dpar_id(nlpar)
          str_add(out$tparD) <- paste0(
            "  // identify mixtures via ordering of the intercepts \n",                   
            "  real temp", p, "_Intercept",
@@ -387,7 +387,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
       prefix = prefix, suffix = suffix
     )
   } else {
-    if (identical(auxpar_class(nlpar), order_mixture)) {
+    if (identical(dpar_class(nlpar), order_mixture)) {
       stop2("Identifying mixture components via ordering requires ",
             "population-level intercepts to be present.\n",
             "Try setting order = 'none' in function 'mixture'.")
@@ -972,12 +972,12 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, auxpars = NULL, 
+stan_eta_ilink <- function(family, dpars = NULL, 
                            adforms = NULL, mix = "") {
   # correctly apply inverse link to eta
   # Args:
   #   family: a list with elements 'family' and 'link
-  #   auxpars: names of auxiliary parameters
+  #   dpars: names of auxiliary parameters
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
@@ -987,10 +987,10 @@ stan_eta_ilink <- function(family, auxpars = NULL,
     shape <- paste0("shape", mix)
     shape <- ifelse(
       is.formula(adforms$disp), paste0("disp_", shape, "[n]"), 
-      ifelse(shape %in% auxpars, paste0(shape, "[n]"), shape)
+      ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
     )
     nu <- paste0("nu", mix)
-    nu <- ifelse(nu %in% auxpars, paste0(nu, "[n]"), nu)
+    nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
     fl <- ifelse(
       family %in% c("gamma", "hurdle_gamma", "exponential"), 
       paste0(family, "_", link), family
@@ -1022,7 +1022,7 @@ stan_eta_ilink <- function(family, auxpars = NULL,
   out
 }
 
-stan_auxpar_defs <- function(auxpar) {
+stan_dpar_defs <- function(dpar) {
   # default Stan definitions for auxiliary parameters
   default_defs <- list(
     sigma = c(
@@ -1095,16 +1095,16 @@ stan_auxpar_defs <- function(auxpar) {
     )
     # theta is handled in stan_mixture
   )
-  def <- default_defs[[auxpar_class(auxpar)]]
+  def <- default_defs[[dpar_class(dpar)]]
   if (!is.null(def)) {
-    def <- paste0(def[1], auxpar, def[2])
+    def <- paste0(def[1], dpar, def[2])
   } else {
     def <- ""
   }
   def
 }
 
-stan_auxpar_defs_temp <- function(auxpar) {
+stan_dpar_defs_temp <- function(dpar) {
   # default Stan definitions for temporary auxiliary parameters
   default_defs <- list(
     xi = c(
@@ -1112,9 +1112,9 @@ stan_auxpar_defs_temp <- function(auxpar) {
       ";  // unscaled shape parameter \n"
     )
   )
-  def <- default_defs[[auxpar_class(auxpar)]]
+  def <- default_defs[[dpar_class(dpar)]]
   if (!is.null(def)) {
-    def <- paste0(def[1], auxpar, def[2])
+    def <- paste0(def[1], dpar, def[2])
   } else {
     def <- ""
   }

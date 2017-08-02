@@ -247,7 +247,7 @@ old_VarCorr_brmsfit <- function(x, estimate = "mean", ...) {
   } 
   # special treatment of residuals variances in linear models
   has_sigma <- has_sigma(family, bterms, incmv = TRUE)
-  if (has_sigma && !"sigma" %in% names(bterms$auxpars)) {
+  if (has_sigma && !"sigma" %in% names(bterms$dpars)) {
     cor_pars <- get_cornames(
       bterms$response, type = "rescor", brackets = FALSE
     )

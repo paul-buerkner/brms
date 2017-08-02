@@ -754,7 +754,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
-  spec_pars <- c(auxpars(), "delta", "theta", "rescor")
+  spec_pars <- c(dpars(), "delta", "theta", "rescor")
   spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
   spec_pars <- pars[grepl(spec_pars, pars)]
   spec_pars <- setdiff(spec_pars, "sigmaLL")
@@ -1486,12 +1486,12 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   lee <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      lee <- c(lee, setNames(bterms$auxpars["mu"], r))
+      lee <- c(lee, setNames(bterms$dpars["mu"], r))
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   }
-  for (ap in names(bterms$auxpars)) {
-    bt <- bterms$auxpars[ap]
+  for (ap in names(bterms$dpars)) {
+    bt <- bterms$dpars[ap]
     if (is.btnl(bt[[1]])) {
       lee <- c(lee, bt[[1]]$nlpars)
     } else {
@@ -1753,10 +1753,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.list(draws$mu[["mv"]])) {
     draws$mu <- get_eta(draws$mu)
   }
-  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-  for (ap in auxpars) {
+  dpars <- intersect(valid_dpars(family(object)), names(draws))
+  for (ap in dpars) {
     if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_auxpar(draws[[ap]])
+      draws[[ap]] <- get_dpar(draws[[ap]])
     }
   }
   # see predict.R
@@ -1840,7 +1840,7 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  If \code{"response"} results are returned on the scale 
 #'  of the response variable. If \code{"linear"} 
 #'  fitted values are returned on the scale of the linear predictor.
-#' @param auxpar Optional name of a predicted auxiliary parameter.
+#' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
 #'
 #' @return Fitted values extracted from \code{object}. 
@@ -1878,10 +1878,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           auxpar = NULL, subset = NULL, 
+                           dpar = NULL, subset = NULL, 
                            nsamples = NULL, sort = FALSE, nug = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
+  dots <- list(...)
+  dpar <- use_alias(dpar, dots[["auxpar"]])
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
@@ -1890,14 +1892,14 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     sample_new_levels, new_objects, subset, nsamples, nug 
   )
   draws <- do.call(extract_draws, draws_args)
-  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-  if (!length(auxpar)) {
+  dpars <- intersect(valid_dpars(family(object)), names(draws))
+  if (!length(dpar)) {
     if (is.list(draws[["mu"]][["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    for (ap in auxpars) {
+    for (ap in dpars) {
       if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_auxpar(draws[[ap]])
+        draws[[ap]] <- get_dpar(draws[[ap]])
       }
     }
     if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
@@ -1912,23 +1914,23 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- fitted_fun(draws)
     }
   } else {
-    auxpars <- auxpars[auxpar_class(auxpars) != "mu"]
-    if (length(auxpar) != 1L || !auxpar %in% auxpars) {
-      stop2("Invalid argument 'auxpar'. Valid auxiliary ",
-            "parameters are: ", collapse_comma(auxpars))
+    dpars <- dpars[dpar_class(dpars) != "mu"]
+    if (length(dpar) != 1L || !dpar %in% dpars) {
+      stop2("Invalid argument 'dpar'. Valid distributional ",
+            "parameters are: ", collapse_comma(dpars))
     }
-    if (!isTRUE(attr(draws[[auxpar]], "predicted"))) {
-      stop2("Auxiliary parameter '", auxpar, "' was not predicted.")
+    if (!isTRUE(attr(draws[[dpar]], "predicted"))) {
+      stop2("Distributional parameter '", dpar, "' was not predicted.")
     }
-    if (scale == "linear" && is.list(draws[[auxpar]])) {
-      draws[[auxpar]]$f$link <- "identity"
+    if (scale == "linear" && is.list(draws[[dpar]])) {
+      draws[[dpar]]$f$link <- "identity"
     }
-    if (auxpar_class(auxpar) == "theta" && scale == "response") {
-      ap_id <- as.numeric(auxpar_id(auxpar))
+    if (dpar_class(dpar) == "theta" && scale == "response") {
+      ap_id <- as.numeric(dpar_id(dpar))
       draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
       dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
     } else {
-      draws$mu <- get_auxpar(draws[[auxpar]]) 
+      draws$mu <- get_dpar(draws[[dpar]]) 
     }
   }
   if (is.null(dim(draws$mu))) {
@@ -2609,10 +2611,10 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (is.list(draws$mu[["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-    for (ap in auxpars) {
+    dpars <- intersect(valid_dpars(family(object)), names(draws))
+    for (ap in dpars) {
       if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_auxpar(draws[[ap]])
+        draws[[ap]] <- get_dpar(draws[[ap]])
       }
     }
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
@@ -2660,10 +2662,10 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   draws$pp_mixture <- TRUE
   
-  auxpars <- intersect(valid_auxpars(family(x)), names(draws))
-  for (ap in auxpars) {
+  dpars <- intersect(valid_dpars(family(x)), names(draws))
+  for (ap in dpars) {
     if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_auxpar(draws[[ap]])
+      draws[[ap]] <- get_dpar(draws[[ap]])
     }
   }
   N <- choose_N(draws)

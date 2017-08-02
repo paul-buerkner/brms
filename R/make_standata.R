@@ -174,10 +174,10 @@ make_standata <- function(formula, data, family = gaussian(),
     resp <- bterms$response
     if (length(resp) > 1L && !old_mv) {
       args_eff_spec <- list(
-        x = bterms$auxpars[["mu"]], smooths = control$smooths[["mu"]],
+        x = bterms$dpars[["mu"]], smooths = control$smooths[["mu"]],
         gps = control$gps[["mu"]], Jmo = control$Jmo[["mu"]]
       )
-      bterms$auxpars[["mu"]] <- NULL
+      bterms$dpars[["mu"]] <- NULL
       for (r in resp) {
         data_eff <- do.call(
           data_effects, c(args_eff_spec, args_eff, nlpar = r)
@@ -191,17 +191,17 @@ make_standata <- function(formula, data, family = gaussian(),
       }
     }
     # data for predictors of auxiliary parameters
-    for (ap in names(bterms$auxpars)) {
+    for (ap in names(bterms$dpars)) {
       args_eff_spec <- list(
-        x = bterms$auxpars[[ap]], nlpar = ap, 
+        x = bterms$dpars[[ap]], nlpar = ap, 
         smooths = control$smooths[[ap]],
         gps = control$gps[[ap]], Jmo = control$Jmo[[ap]]
       )
       data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       out <- c(out, data_aux_eff)
     }
-    for (ap in names(bterms$fauxpars)) {
-      out[[ap]] <- bterms$fauxpars[[ap]]$value
+    for (ap in names(bterms$fdpars)) {
+      out[[ap]] <- bterms$fdpars[[ap]]$value
     }
     out <- c(out,
       data_gr(ranef, data, cov_ranef = cov_ranef),

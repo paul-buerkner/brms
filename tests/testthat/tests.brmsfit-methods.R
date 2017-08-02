@@ -104,16 +104,16 @@ test_that("all S3 methods have reasonable ouputs", {
     Age = 0, visit = c("a", "b"), Trt = 0, 
     count = 20, patient = 1, Exp = 2
   )
-  fi <- fitted(fit1, auxpar = "sigma")
+  fi <- fitted(fit1, dpar = "sigma")
   expect_equal(dim(fi), c(nobs(fit1), 4))
   expect_true(all(fi > 0))
-  fi_lin <- fitted(fit1, auxpar = "sigma", scale = "linear")
+  fi_lin <- fitted(fit1, dpar = "sigma", scale = "linear")
   expect_equal(dim(fi_lin), c(nobs(fit1), 4))
   expect_true(!isTRUE(all.equal(fi, fi_lin)))
-  expect_error(fitted(fit1, auxpar = "inv"),
-               "Invalid argument 'auxpar'")
-  expect_error(fitted(fit1, auxpar = "nu"),
-               "Auxiliary parameter 'nu' was not predicted")
+  expect_error(fitted(fit1, dpar = "inv"),
+               "Invalid argument 'dpar'")
+  expect_error(fitted(fit1, dpar = "nu"),
+               "Distributional parameter 'nu' was not predicted")
 
   fi <- fitted(fit2)
   expect_equal(dim(fi), c(nobs(fit2), 4))

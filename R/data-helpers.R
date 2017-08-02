@@ -150,7 +150,7 @@ data_rsv_intercept <- function(data, bterms) {
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
-  rsv_int <- ulapply(bterms$auxpars, function(x) attr(x$fe, "rsv_intercept"))
+  rsv_int <- ulapply(bterms$dpars, function(x) attr(x$fe, "rsv_intercept"))
   if (any(rsv_int)) {
     if ("intercept" %in% names(data)) {
       stop2("Variable name 'intercept' is resevered in models ",
@@ -389,7 +389,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # some components should not be computed based on newdata
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
-      pars <- c(names(bterms$nlpars), intersect(auxpars(), names(bterms)))
+      pars <- c(names(bterms$nlpars), intersect(dpars(), names(bterms)))
       comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
       old_standata <- rmNULL(standata(fit)[comp])
       control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
@@ -547,9 +547,9 @@ make_smooth_list.btnl <- function(x, data, ...) {
 
 #' @export
 make_smooth_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$auxpars))
+  out <- named_list(names(x$dpars))
   for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$auxpars[[i]], data, ...)
+    out[[i]] <- make_smooth_list(x$dpars[[i]], data, ...)
   }
   out
 }
@@ -577,9 +577,9 @@ make_gp_list.btnl <- function(x, data, ...) {
 
 #' @export
 make_gp_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$auxpars))
+  out <- named_list(names(x$dpars))
   for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$auxpars[[i]], data, ...)
+    out[[i]] <- make_gp_list(x$dpars[[i]], data, ...)
   }
   out
 }

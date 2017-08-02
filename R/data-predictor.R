@@ -129,7 +129,7 @@ data_fe <- function(bterms, data, knots = NULL, nlpar = "",
     X <- structure(X, smooth_cols = scols, by_levels = by_levels)
     colnames(X) <- rename(colnames(X))
   }
-  avoid_auxpars(colnames(X), bterms = bterms)
+  avoid_dpars(colnames(X), bterms = bterms)
   c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
 }
 
@@ -143,7 +143,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   out <- list()
   if (is.formula(bterms[["mo"]])) {
     Xmo <- prepare_mo_vars(bterms$mo, data, check = is.null(Jmo))
-    avoid_auxpars(colnames(Xmo), bterms = bterms)
+    avoid_dpars(colnames(Xmo), bterms = bterms)
     if (is.null(Jmo)) {
       Jmo <- as.array(apply(Xmo, 2, max))
     }
@@ -300,7 +300,7 @@ data_cs <- function(bterms, data, nlpar = "") {
   if (length(all_terms(bterms[["cs"]]))) {
     stopifnot(!nzchar(nlpar))
     Xcs <- get_model_matrix(bterms$cs, data)
-    avoid_auxpars(colnames(Xcs), bterms = bterms)
+    avoid_dpars(colnames(Xcs), bterms = bterms)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
   }
   out
@@ -316,7 +316,7 @@ data_me <- function(bterms, data, nlpar = "") {
   if (length(meef)) {
     p <- usc(nlpar, "prefix")
     Cme <- get_model_matrix(bterms$me, data)
-    avoid_auxpars(colnames(Cme), bterms = bterms)
+    avoid_dpars(colnames(Cme), bterms = bterms)
     Cme <- Cme[, attr(meef, "not_one"), drop = FALSE]
     Cme <- lapply(seq_len(ncol(Cme)), function(i) Cme[, i])
     if (length(Cme)) {
@@ -404,8 +404,8 @@ data_mixture <- function(bterms, prior = brmsprior()) {
   out <- list()
   if (is.mixfamily(bterms$family)) {
     families <- family_names(bterms$family)
-    ap_classes <- auxpar_class(
-      names(c(bterms$auxpars, bterms$fauxpars))
+    ap_classes <- dpar_class(
+      names(c(bterms$dpars, bterms$fdpars))
     )
     if (!any(ap_classes %in% "theta")) {
       # estimate mixture probabilities directly

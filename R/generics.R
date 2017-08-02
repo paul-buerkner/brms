@@ -1247,9 +1247,9 @@ check_prior_special <- function(x, ...) {
   UseMethod("check_prior_special")
 }
 
-auxpar_family <- function(family, auxpar, ...) {
+dpar_family <- function(family, dpar, ...) {
   # generate a family object of an auxiliary parameter
-  UseMethod("auxpar_family")
+  UseMethod("dpar_family")
 }
 
 family_names <- function(family, ...) {
@@ -1257,9 +1257,9 @@ family_names <- function(family, ...) {
   UseMethod("family_names")
 }
 
-valid_auxpars <- function(family, ...) {
+valid_dpars <- function(family, ...) {
   # get valid auxiliary parameters for a family
-  UseMethod("valid_auxpars")
+  UseMethod("valid_dpars")
 }
 
 stan_llh <- function(family, ...) {

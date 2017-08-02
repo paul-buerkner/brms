@@ -532,8 +532,8 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (length(nonlinear)) {
     nl <- TRUE
   }
-  old_forms <- rmNULL(attributes(formula)[auxpars()])
-  attributes(formula)[c(auxpars(), "nonlinear")] <- NULL
+  old_forms <- rmNULL(attributes(formula)[dpars()])
+  attributes(formula)[c(dpars(), "nonlinear")] <- NULL
   
   if (is.brmsformula(formula)) {
     out <- formula
@@ -561,7 +561,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   forms[names(fix)] <- NULL
   out$pforms <- forms
   # validate fixed distributional parameters
-  fix_theta <- fix[auxpar_class(names(fix)) %in% "theta"]
+  fix_theta <- fix[dpar_class(names(fix)) %in% "theta"]
   if (length(fix_theta)) {
     # normalize mixing proportions
     sum_theta <- sum(unlist(fix_theta))
@@ -574,11 +574,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
       if (identical(ap, out$pfix[[ap]])) {
         stop2("Equating '", ap, "' with itself is not meaningful.")
       }
-      ap_class <- auxpar_class(ap)
+      ap_class <- dpar_class(ap)
       if (ap_class == "mu") {
         stop2("Equating parameters of class 'mu' is not allowed.")
       }
-      if (!identical(ap_class, auxpar_class(out$pfix[[ap]]))) {
+      if (!identical(ap_class, dpar_class(out$pfix[[ap]]))) {
         stop2("Can only equate parameters of the same class.")
       }
       if (out$pfix[[ap]] %in% names(out$pfix)) {
@@ -604,7 +604,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   }
   if (!is.null(out[["family"]])) {
     # check for the presence of non-linear parameters
-    dpars <- is_auxpar_name(names(out$pforms), out$family)
+    dpars <- is_dpar_name(names(out$pforms), out$family)
     dpars <- names(out$pforms)[dpars]
     for (ap in names(out$pforms)) {
       if (!ap %in% dpars) {
@@ -616,7 +616,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
         if (!is.null(out$pforms[[dpar]])) {
           nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
         } else {
-          if (auxpar_class(dpar) == "mu") {
+          if (dpar_class(dpar) == "mu") {
             nl_allowed <- isTRUE(attr(out$formula, "nl"))
           } else {
             nl_allowed <- FALSE
@@ -764,14 +764,14 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   out
 }
 
-auxpars <- function() {
+dpars <- function() {
   # names of auxiliary parameters
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
     "quantile", "alpha", "theta")
 }
 
-links_auxpars <- function(ap) {
+links_dpars <- function(ap) {
   # link functions for auxiliary parameters
   switch(ap,
     mu = "identity",
@@ -798,7 +798,7 @@ links_auxpars <- function(ap) {
 }
 
 #' @export
-valid_auxpars.default <- function(family, bterms = NULL, ...) {
+valid_dpars.default <- function(family, bterms = NULL, ...) {
   # convenience function to find relevant auxiliary parameters
   x <- c(
     mu = TRUE,
@@ -824,45 +824,45 @@ valid_auxpars.default <- function(family, bterms = NULL, ...) {
 }
 
 #' @export
-valid_auxpars.mixfamily <- function(family, ...) {
-  out <- lapply(family$mix, valid_auxpars, ...)
+valid_dpars.mixfamily <- function(family, ...) {
+  out <- lapply(family$mix, valid_dpars, ...)
   for (i in seq_along(out)) {
     out[[i]] <- paste0(out[[i]], i)
   }
   c(unlist(out), paste0("theta", seq_along(out)))
 }
 
-is_auxpar_name <- function(auxpars, family = NULL, ...) {
+is_dpar_name <- function(dpars, family = NULL, ...) {
   # check if provided names of auxiliar parameters are valid
   # Args:
-  #   auxpars: character vector to be checked
+  #   dpars: character vector to be checked
   #   family: the model family
-  #   ...: further arguments passed to valid_auxpars
-  auxpars <- as.character(auxpars)
-  if (!length(auxpars)) {
+  #   ...: further arguments passed to valid_dpars
+  dpars <- as.character(dpars)
+  if (!length(dpars)) {
     return(logical(0))
   }
   if (is.null(family)) {
-    patterns <- paste0("^", auxpars(), "[[:digit:]]*$")
-    .is_auxpar_name <- function(auxpar, ...) {
-      any(ulapply(patterns, grepl, x = auxpar))
+    patterns <- paste0("^", dpars(), "[[:digit:]]*$")
+    .is_dpar_name <- function(dpar, ...) {
+      any(ulapply(patterns, grepl, x = dpar))
     }
-    out <- ulapply(auxpars, .is_auxpar_name)
+    out <- ulapply(dpars, .is_dpar_name)
   } else {
-    out <- auxpars %in% valid_auxpars(family, ...)
+    out <- dpars %in% valid_dpars(family, ...)
   }
   as.logical(out)
 }
 
-auxpar_class <- function(auxpar) {
+dpar_class <- function(dpar) {
   # class of an auxiliary parameter
-  out <- get_matches("^[^[:digit:]]+", auxpar, simplify = FALSE)
+  out <- get_matches("^[^[:digit:]]+", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-auxpar_id <- function(auxpar) {
+dpar_id <- function(dpar) {
   # id of an auxiliary parameter
-  out <- get_matches("[[:digit:]]+$", auxpar, simplify = FALSE)
+  out <- get_matches("[[:digit:]]+$", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
