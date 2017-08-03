@@ -795,7 +795,7 @@ stan_misc_functions <- function(family, prior, kronecker) {
 }
 
 stan_prior <- function(prior, class, coef = "", group = "", 
-                       nlpar = "", prefix = "", suffix = "",
+                       px = list(), prefix = "", suffix = "", 
                        wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
@@ -816,32 +816,36 @@ stan_prior <- function(prior, class, coef = "", group = "",
   tp <- tp(wsp)
   wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
-  keep <- prior$class == class & 
-    prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
+  prior <- subset2(prior, 
+    class = class, coef = c(coef, ""), group = c(group, "")
+  )
   if (class %in% c("sd", "cor")) {
     # only sd and cor parameters have global priors
-    keep <- keep & prior$nlpar %in% c(nlpar, "") 
+    px_tmp <- lapply(px, function(x) c(x, ""))
+    prior <- subset2(prior, ls = px_tmp)
   } else {
-    keep <- keep & prior$nlpar %in% nlpar
+    prior <- subset2(prior, ls = px)
   }
-  prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
     # unchecked prior statements are directly passed to Stan
     return(collapse(wsp, prior$prior, "; \n"))
   } 
   
-  unlpar <- unique(nlpar)
-  if (length(unlpar) > 1L) {
+  px <- as.data.frame(px)
+  upx <- unique(px)
+  if (nrow(upx) > 1L) {
     # can only happen for SD parameters of the same ID
-    base_prior <- rep(NA, length(unlpar))
-    for (i in seq_along(unlpar)) {
-      nlpar_prior <- prior[prior$nlpar %in% c("", unlpar[i]), ]
-      base_prior[i] <- stan_base_prior(nlpar_prior)
+    base_prior <- rep(NA, nrow(upx))
+    for (i in seq_len(nrow(upx))) {
+      sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
+      sub_prior <- subset2(prior, ls = sub_upx) 
+      base_prior[i] <- stan_base_prior(sub_prior)
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
       # as there is not single base_prior anymore
-      take <- match(prior[nzchar(prior$coef), "nlpar"], unlpar)
+      prior_of_coefs <- prior[nzchar(prior$coef), vars_prefix()]
+      take <- match_rows(prior_of_coefs, upx)
       prior[nzchar(prior$coef), "prior"] <- base_prior[take]
     }
     base_prior <- base_prior[1]
@@ -851,15 +855,15 @@ stan_prior <- function(prior, class, coef = "", group = "",
     bound <- prior[!nzchar(prior$coef), "bound"]
   }
   
-  individual_prior <- function(i, max_index) {
+  individual_prior <- function(i, prior, max_index) {
     # individual priors for each parameter of a class
     if (max_index > 1L || matrix) {
       index <- paste0("[", i, "]")      
     } else {
       index <- ""
     }
-    if (length(nlpar) > 1L) {
-      prior <- prior[prior$nlpar == nlpar[i], ]
+    if (nrow(px) > 1L) {
+      prior <- subset2(prior, ls = px[i, ])
     }
     uc_prior <- prior$prior[match(coef[i], prior$coef)]
     if (!is.na(uc_prior) & nchar(uc_prior)) { 
@@ -885,8 +889,10 @@ stan_prior <- function(prior, class, coef = "", group = "",
   class <- paste0(prefix, class, suffix)
   if (any(with(prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
-    out <- sapply(seq_along(coef), individual_prior, 
-                  max_index = length(coef))
+    out <- sapply(
+      seq_along(coef), individual_prior, 
+      prior = prior, max_index = length(coef)
+    )
   } else if (nchar(base_prior) > 0) {
     if (matrix) {
       class <- paste0("to_vector(", class, ")")
@@ -899,7 +905,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
     out <- ""
   }
   special_prior <- stan_special_prior(
-    class, prior, ncoef = length(coef), nlpar = nlpar
+    class, prior, ncoef = length(coef), px = px
   )
   out <- collapse(c(out, special_prior))
   if (prior_only && nzchar(class) && !nchar(out)) {
@@ -915,21 +921,19 @@ stan_base_prior <- function(prior) {
   # Args:
   #   prior: a prior.frame
   stopifnot(length(unique(prior$class)) <= 1L) 
-  igroup <- which(with(prior, !nchar(coef) & nchar(group) & nchar(prior)))
-  inlpar <- which(with(prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
-  iclass <- which(with(prior, !nchar(coef) & !nchar(group) & nchar(prior)))
-  if (length(igroup)) {  
-    # if there is a global prior for this group
-    base_prior <- prior[igroup, "prior"]
-  } else if (length(inlpar)) {
-    # if there is a global prior for this non-linear parameter
-    base_prior <- prior[inlpar, "prior"]
-  } else if (length(iclass)) {  
-    # if there is a global prior for this class
-    base_prior <- prior[iclass, "prior"]
-  } else {  
-    # no proper prior for this class
-    base_prior <- ""
+  prior <- prior[with(prior, !nzchar(coef) & nzchar(prior)), ]
+  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  i <- 1
+  found <- FALSE
+  base_prior <- ""
+  take <- rep(FALSE, nrow(prior))
+  while (!found && i <= length(vars)) {
+    take <- nzchar(prior[[vars[i]]]) & !take
+    if (any(take)) {
+      base_prior <- prior[take, "prior"]
+      found <- TRUE
+    }
+    i <- i + 1
   }
   stopifnot(length(base_prior) == 1L)
   base_prior
@@ -979,16 +983,16 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   out
 }
 
-stan_special_prior <- function(class, prior, ncoef, nlpar = "") {
+stan_special_prior <- function(class, prior, ncoef, px = list()) {
   # add special priors such as horseshoe and lasso
   out <- ""
-  p <- usc(nlpar)
+  p <- usc(combine_prefix(px))
   if (all(class == paste0("b", p))) {
-    stopifnot(length(nlpar) == 1L)
+    stopifnot(length(p) == 1L)
     tp <- tp()
     # add horseshoe and lasso shrinkage priors
-    orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
-    special <- attributes(prior)$special[[orig_nlpar]]
+    prefix <- combine_prefix(px, keep_mu = TRUE)
+    special <- attributes(prior)$special[[prefix]]
     if (!is.null(special$hs_df)) {
       local_args <- paste0("0.5 * hs_df", p)
       local_args <- sargs(local_args, local_args)
@@ -1108,11 +1112,11 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
       # use parameters sampled from priors for use in other priors
       spars <- NULL
       # cannot sample from the horseshoe prior anymore as of brms 1.5.0
-      lasso_nlpars <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
-      lasso_nlpars <- names(prior_special)[lasso_nlpars]
-      lasso_nlpars <- usc(ulapply(lasso_nlpars, check_nlpar))
-      if (length(lasso_nlpars)) {
-        spars <- c(spars, paste0("lasso_inv_lambda", lasso_nlpars))
+      lasso_prefix <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
+      lasso_prefix <- names(prior_special)[lasso_prefix]
+      lasso_prefix <- usc(sub("^mu(_|$)", "", lasso_prefix))
+      if (length(lasso_prefix)) {
+        spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
       }
       if (length(spars)) {
         bpars <- grepl("^b(|mo|cs|me)(_|$)", pars)

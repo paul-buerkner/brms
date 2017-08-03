@@ -24,7 +24,7 @@ brmsfit_example1 <- brm(
   autocor = cor_arma(~visit|patient, 1, 1),
   prior = c(set_prior("normal(0,5)", class = "b"),
             set_prior("cauchy(0,2)", class = "sd"),
-            set_prior("normal(0,3)", nlpar = "sigma")),
+            set_prior("normal(0,3)", dpar = "sigma")),
   sample_prior = TRUE, warmup = 150, iter = 200, chains = 2,
   save_dso = FALSE, testmode = TRUE
 )
@@ -56,9 +56,9 @@ brmsfit_example4 <- brm(
 brmsfit_example5 <- brm(
   bf(count ~ Age + (1|visit), mu2 ~ Age), dat,
   family = mixture(gaussian, exponential),
-  prior = c(prior(normal(0, 10), Intercept, nlpar = mu1),
-            prior(normal(0, 1), Intercept, nlpar = mu2),
-            prior(normal(0, 1), nlpar = mu2)),
+  prior = c(prior(normal(0, 10), Intercept, dpar = mu1),
+            prior(normal(0, 1), Intercept, dpar = mu2),
+            prior(normal(0, 1), dpar = mu2)),
   warmup = 150, iter = 200, chains = 2,
   save_dso = FALSE, testmode = TRUE
 )

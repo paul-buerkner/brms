@@ -48,7 +48,7 @@ test_that("specified priors appear in the Stan code", {
              prior(lkj(2), class = cor, group = g))
   scode <- make_stancode(
     bf(y ~ a * exp(-b * x1), a + b ~ (1|ID|g), nl = TRUE),
-    data = dat, prior = prior,sample_prior = TRUE
+    data = dat, prior = prior, sample_prior = TRUE
   )
   expect_match2(scode, "target += normal_lpdf(b_a | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(b_b | 0, 10)")
@@ -97,7 +97,7 @@ test_that("specified priors appear in the Stan code", {
   
   # test for problem described in #213
   prior <- c(prior(normal(0, 1), coef = x1),
-             prior(normal(0, 2), coef = x1, nlpar = sigma))
+             prior(normal(0, 2), coef = x1, dpar = sigma))
   scode <- make_stancode(bf(y ~ x1, sigma ~ x1), dat, prior = prior)
   expect_match2(scode, "target += normal_lpdf(b | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(b_sigma | 0, 2);")
@@ -428,9 +428,9 @@ test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
   prior <- c(
     prior(normal(0, 5), "b"),
-    prior(normal(0, 10), "b", nlpar = X2),
+    prior(normal(0, 10), "b", resp = X2),
     prior(cauchy(0, 1), "Intercept"),
-    prior(normal(0, 2), "Intercept", nlpar = X3)
+    prior(normal(0, 2), "Intercept", resp = X3)
   )
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
@@ -535,7 +535,7 @@ test_that("ordinal disc parameters appear in the Stan code", {
   scode <- make_stancode(
     bf(rating ~ period + carry + treat, disc ~ period),
     data = inhaler, family = cumulative(), 
-    prior = prior(normal(0,5), nlpar = disc)
+    prior = prior(normal(0,5), dpar = disc)
   )
   expect_match2(scode, 
     "target += cumulative_lpmf(Y[n] | mu[n], temp_Intercept, disc[n])"

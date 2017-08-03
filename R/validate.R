@@ -52,8 +52,6 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     } else { 
       y$response <- parse_resp(y$respform, keep_dot_usc = old_mv)
     }
-    # will be changed as soon as MV models are fully implemented
-    y$resp <- ""
   }
   
   # extract addition arguments
@@ -110,12 +108,14 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
         stop2("Non-linear formulas are not yet allowed for this family.")
       }
       dpar_nlpar_forms <- nlpar_forms[dpar_of_nlpars %in% dp]
-      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms)
+      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms, dp)
     } else {
       y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
+    # temporary until brms 2.0.0
+    y$dpars[[dp]]$resp <- ""
   }
   # fixed distributional parameters
   inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars(family, y))
@@ -238,7 +238,7 @@ parse_lf <- function(formula, family = NULL) {
   structure(y, class = "btl")
 }
 
-parse_nlf <- function(formula, nlpar_forms) {
+parse_nlf <- function(formula, nlpar_forms, dpar) {
   # parse non-linear formulas
   # Args:
   #   formula: formula of the non-linear model
@@ -247,6 +247,7 @@ parse_nlf <- function(formula, nlpar_forms) {
   # Returns:
   #   object of class 'btnl'
   stopifnot(is.list(nlpar_forms))
+  stopifnot(length(dpar) == 1L)
   formula <- rhs(as.formula(formula))
   y <- list()
   if (length(nlpar_forms)) {
@@ -256,6 +257,9 @@ parse_nlf <- function(formula, nlpar_forms) {
     for (nlp in nlpars) {
       y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
       y$nlpars[[nlp]]$nlpar <- nlp
+      y$nlpars[[nlp]]$dpar <- dpar
+      # temporary until brms 2.0.0
+      y$nlpars[[nlp]]$resp <- ""
     }
     model_vars <- all.vars(formula)
     missing_pars <- setdiff(names(y$nlpars), model_vars)
@@ -600,9 +604,49 @@ avoid_dpars <- function(names, bterms) {
 }
 
 check_nlpar <- function(nlpar) {
+  if (is.null(nlpar)) {
+    nlpar <- ""
+  }
   stopifnot(length(nlpar) == 1L)
   nlpar <- as.character(nlpar)
   ifelse(nlpar == "mu", "", nlpar)
+}
+
+vars_prefix <- function() {
+  c("dpar", "resp", "nlpar") 
+}
+
+check_prefix <- function(x, keep_mu = FALSE) {
+  vpx <- vars_prefix()
+  if (is.data.frame(x) && nrow(x) == 0) {
+    # avoids a bug in data.frames with zero rows
+    x <- list()
+  }
+  x[setdiff(vpx, names(x))] <- ""
+  x <- x[vpx]
+  for (i in seq_along(x)) {
+    x[[i]] <- as.character(x[[i]])
+    if (!length(x[[i]])) {
+      x[[i]] <- ""
+    }
+    x[[i]] <- ifelse(
+      !keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "mu", 
+      yes = "", no = x[[i]]
+    )
+    x[[i]] <- ifelse(
+      keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "", 
+      yes = "mu", no = x[[i]]
+    )
+  }
+  x
+}
+
+combine_prefix <- function(prefix, keep_mu = FALSE) {
+  prefix <- check_prefix(prefix, keep_mu = keep_mu)
+  prefix <- lapply(prefix, function(x)
+    ifelse(nzchar(x), paste0("_", x), "")
+  )
+  sub("^_", "", do.call(paste0, prefix))
 }
 
 check_fdpars <- function(x) {
@@ -613,14 +657,14 @@ check_fdpars <- function(x) {
     "beta", "disc", "bs", "ndt", "theta"
   )
   prob_pars <- c("zi", "hu", "bias", "quantile")
-  for (ap in names(x)) {
-    apc <- dpar_class(ap)
-    value <- x[[ap]]$value
+  for (dp in names(x)) {
+    apc <- dpar_class(dp)
+    value <- x[[dp]]$value
     if (apc %in% pos_pars && value < 0) {
-      stop2("Parameter '", ap, "' must be positive.")
+      stop2("Parameter '", dp, "' must be positive.")
     }
     if (apc %in% prob_pars && (value < 0 || value > 1)) {
-      stop2("Parameter '", ap, "' must be between 0 and 1.")
+      stop2("Parameter '", dp, "' must be between 0 and 1.")
     }
   }
   invisible(TRUE)
@@ -869,10 +913,9 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
   old_mv <- isTRUE(attr(x$formula, "old_mv"))
   if (all) {
     re <- named_list(names(x$dpars))
-    for (ap in names(re)) {
-      re[[ap]] <- get_re(
-        x$dpars[[ap]], nlpar = ap,
-        response = x$response, old_mv = old_mv
+    for (dp in names(re)) {
+      re[[dp]] <- get_re(
+        x$dpars[[dp]], response = x$response, old_mv = old_mv
       )
     }
     re <- do.call(rbind, re)
@@ -884,21 +927,22 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
 }
 
 #' @export
-get_re.btl <- function(x, nlpar = "", response = "", old_mv = FALSE, ...) {
+get_re.btl <- function(x, response = "", old_mv = FALSE, ...) {
   stopifnot(is.data.frame(x$re))
-  nlpar <- check_nlpar(nlpar)
+  px <- check_prefix(x)
   re <- x$re
   nresp <- length(response)
   if (!old_mv && nresp > 1L && nrow(re)) {
-    # new MV models are also using the 'nlpar' argument
     re <- replicate(nresp, re, simplify = FALSE)
     for (i in seq_len(nresp)) {
-      re[[i]]$nlpar <- rep(response[i], nrow(re[[i]]))
+      re[[i]]$resp <- rep(response[i], nrow(re[[i]]))
     }
     re <- do.call(rbind, re)
   } else {
-    re$nlpar <- rep(nlpar, nrow(re)) 
+    re$resp <- rep(px$resp, nrow(re)) 
   }
+  re$dpar <- rep(px$dpar, nrow(re))
+  re$nlpar <- rep(px$nlpar, nrow(re)) 
   re
 }
 
@@ -906,7 +950,7 @@ get_re.btl <- function(x, nlpar = "", response = "", old_mv = FALSE, ...) {
 get_re.btnl <- function(x, ...) {
   re <- named_list(names(x$nlpars))
   for (nlp in names(re)) {
-    re[[nlp]] <- get_re(x$nlpars[[nlp]], nlpar = nlp)
+    re[[nlp]] <- get_re(x$nlpars[[nlp]])
   }
   do.call(rbind, re)
 }
@@ -919,8 +963,8 @@ get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
   #   all: logical; include effects of nlpars and dpars?
   if (all) {
     out <- named_list(names(x$dpars))
-    for (ap in names(out)) {
-      out[[ap]] <- get_effect(x$dpars[[ap]], target = target)
+    for (dp in names(out)) {
+      out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
     }
   } else {
     x$dpars[["mu"]]$nlpars <- NULL
@@ -972,8 +1016,8 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
   #stopifnot(is.brmsterms(bterms))
   stopifnot(is.atomic(rsv_vars))
   out <- list()
-  for (ap in names(x$dpars)) {
-    out <- c(out, get_all_effects(x$dpars[[ap]]))
+  for (dp in names(x$dpars)) {
+    out <- c(out, get_all_effects(x$dpars[[dp]]))
   }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
   if (comb_all) {
@@ -1300,6 +1344,8 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       gn = re$gn[[i]],
       gtype = re$gtype[[i]],
       coef = coef, cn = NA,
+      resp = re$resp[[i]],
+      dpar = re$dpar[[i]],
       nlpar = re$nlpar[[i]],
       cor = re$cor[[i]],
       type = re$type[[i]],
@@ -1340,7 +1386,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
     stop2("Grouping factor names ", inv_groups, " are resevered.")
   }
   # check for duplicated and thus not identified effects
-  dup <- duplicated(ranef[, c("group", "coef", "nlpar")])
+  dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
     stop2("Duplicated group-level effects are not allowed.")
   }
@@ -1370,8 +1416,9 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
 empty_ranef <- function() {
   data.frame(
     id = numeric(0), group = character(0), gn = numeric(0),
-    coef = character(0), cn = numeric(0), nlpar = character(0),
-    cor = logical(0), type = character(0), form = character(0), 
+    coef = character(0), cn = numeric(0), resp = character(0),
+    dpar = character(0), nlpar = character(0), cor = logical(0), 
+    type = character(0), form = character(0), 
     stringsAsFactors = FALSE
   )
 }
@@ -1482,14 +1529,14 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       }
       bterms$dpars$mu <- NULL
     }
-    for (ap in names(bterms$dpars)) {
-      bt <- bterms$dpars[[ap]]
+    for (dp in names(bterms$dpars)) {
+      bt <- bterms$dpars[[dp]]
       if (length(bt$nlpars)) {
         for (nlp in names(bt$nlpars)) {
           out <- c(out, .exclude_pars(bt$nlpars[[nlp]], nlpar = nlp))
         }
       } else {
-        out <- c(out, .exclude_pars(bt, nlpar = ap))
+        out <- c(out, .exclude_pars(bt, nlpar = dp))
       }
     }
   }

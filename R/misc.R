@@ -18,6 +18,37 @@ p <- function(x, i = NULL, row = TRUE) {
   }
 }
 
+match_rows <- function(x, y, ...) {
+  # match rows in x with rows in y
+  x <- as.data.frame(x)
+  y <- as.data.frame(y)
+  x <- do.call("paste", c(x, sep = "\r"))
+  y <- do.call("paste", c(y, sep = "\r"))
+  match(x, y, ...)
+}
+
+find_rows <- function(x, ..., ls = list(), fun = '%in%') {
+  # finding rows matching columns passed via ls and ...
+  x <- as.data.frame(x)
+  out <- rep(TRUE, nrow(x))
+  ls <- c(ls, list(...))
+  if (!length(ls)) {
+    return(out)
+  }
+  if (is.null(names(ls))) {
+    stop("Argument 'ls' must be named.")
+  }
+  for (name in names(ls)) {
+    out <- out & do.call(fun, list(x[[name]], ls[[name]]))
+  }
+  out
+}
+
+subset2 <- function(x, ..., ls = list(), fun = '%in%') {
+  # subset x using arguments passed via ls and ...
+  x[find_rows(x, ..., ls = ls, fun = fun), ]
+}
+
 select_indices <- function(x, i) {
   # select indices and restart indexing at 1
   # Args:
