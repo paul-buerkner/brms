@@ -167,7 +167,7 @@ fitted_hurdle_gamma <- function(draws) {
 }
 
 fitted_hurdle_lognormal <- function(draws) {
-  sigma <- get_sigma(
+  draws$sigma <- get_sigma(
     draws$sigma, data = draws$data, dim = dim_mu(draws)
   )
   draws$hu <- get_zi_hu(draws, par = "hu")
