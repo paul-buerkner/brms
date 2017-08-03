@@ -1144,13 +1144,6 @@ bayes_factor <- function(x1, x2, ...) {
   UseMethod("bayes_factor")
 }
 
-#' @rdname bayes_R2.brmsfit
-#' @export
-bayes_R2 <- function(object, ...) {
-  # replace as soon as rstantools 1.3.0 is on CRAN
-  UseMethod("bayes_R2")
-}
-
 #' Extract Diagnostic Quantities of \pkg{brms} Models
 #' 
 #' Extract quantities that can be used to diagnose sampling behavior

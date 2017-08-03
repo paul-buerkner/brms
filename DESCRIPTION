@@ -16,7 +16,7 @@ Imports:
     loo (>= 1.1.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
-    rstantools (>= 1.2.0),
+    rstantools (>= 1.3.0),
     bayesplot (>= 1.2.0),
     matrixStats,
     bridgesampling,

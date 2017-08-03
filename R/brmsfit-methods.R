@@ -2087,6 +2087,9 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' bayes_R2(fit, newdata = nd)
 #' }
 #' 
+#' @method bayes_R2 brmsfit
+#' @importFrom rstantools bayes_R2
+#' @export bayes_R2
 #' @export
 bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                              allow_new_levels = FALSE, 
