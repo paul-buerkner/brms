@@ -309,7 +309,7 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   expect_equal(sdata$con_simplex_1, rep(1, 3))
   
   prior <- set_prior("dirichlet(1:3)", coef = "x1", 
-                     class = "simplex", nlpar = "sigma")
+                     class = "simplex", dpar = "sigma")
   sdata <- make_standata(bf(y ~ 1, sigma ~ mono(x1)), 
                          data = data, prior = prior)
   expect_equal(sdata$con_simplex_sigma_1, 1:3)

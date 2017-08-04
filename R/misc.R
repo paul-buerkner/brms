@@ -30,6 +30,9 @@ match_rows <- function(x, y, ...) {
 find_rows <- function(x, ..., ls = list(), fun = '%in%') {
   # finding rows matching columns passed via ls and ...
   x <- as.data.frame(x)
+  if (!nrow(x)) {
+    return(logical(0))
+  }
   out <- rep(TRUE, nrow(x))
   ls <- c(ls, list(...))
   if (!length(ls)) {

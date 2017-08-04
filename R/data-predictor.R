@@ -1,8 +1,8 @@
 #' @export
 data_effects.btl <- function(x, data, ranef = empty_ranef(), 
                              prior = brmsprior(), knots = NULL, 
-                             nlpar = "", not4stan = FALSE, 
-                             smooths = NULL, gps = NULL, Jmo = NULL) {
+                             not4stan = FALSE, smooths = NULL, 
+                             gps = NULL, Jmo = NULL) {
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
@@ -18,19 +18,20 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   #   Jmo: optional precomputed values of Jmo for monotonic effects
   # Returns:
   #   A named list of data to be passed to Stan
-  nlpar <- check_nlpar(nlpar)
+  px <- check_prefix(x)
+  # nlpar <- check_nlpar(nlpar)
   data_fe <- data_fe(x, data = data, knots = knots,
-                     nlpar = nlpar, not4stan = not4stan,
+                     px = px, not4stan = not4stan,
                      smooths = smooths)
   data_mo <- data_mo(x, data = data, ranef = ranef,
-                     prior = prior, Jmo = Jmo, nlpar = nlpar)
-  data_re <- data_re(ranef, data = data, nlpar = nlpar,
+                     prior = prior, Jmo = Jmo, px = px)
+  data_re <- data_re(ranef, data = data, px = px,
                      not4stan = not4stan)
-  data_me <- data_me(x, data = data, nlpar = nlpar)
-  data_cs <- data_cs(x, data = data, nlpar = nlpar)
-  data_gp <- data_gp(x, data = data, nlpar = nlpar, gps = gps)
-  data_offset <- data_offset(x, data = data, nlpar = nlpar)
-  data_prior <- data_prior(prior, data = data, nlpar = nlpar)
+  data_me <- data_me(x, data = data, px = px)
+  data_cs <- data_cs(x, data = data, px = px)
+  data_gp <- data_gp(x, data = data, px = px, gps = gps)
+  data_offset <- data_offset(x, data = data, px = px)
+  data_prior <- data_prior(prior, data = data, px = px)
   c(data_fe, data_mo, data_re, data_me, data_cs, 
     data_gp, data_offset, data_prior)
 }
@@ -38,7 +39,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
 #' @export 
 data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
                               prior = brmsprior(), knots = NULL, 
-                              nlpar = "", not4stan = FALSE, 
+                              px = list(), not4stan = FALSE, 
                               smooths = NULL, gps = NULL, Jmo = NULL) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
@@ -64,22 +65,20 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
     out <- c(out,
       data_effects(
         x$nlpars[[nlp]], data, ranef = ranef,
-        prior = prior, knots = knots, nlpar = nlp,
-        not4stan = not4stan, smooths = smooths[[nlp]], 
-        gps = gps, Jmo = Jmo
+        prior = prior, knots = knots, not4stan = not4stan, 
+        smooths = smooths[[nlp]], gps = gps, Jmo = Jmo
       )
     )
   }
   out
 }
 
-data_fe <- function(bterms, data, knots = NULL, nlpar = "", 
+data_fe <- function(bterms, data, knots = NULL, px = list(), 
                     not4stan = FALSE, smooths = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args: see data_effects
-  stopifnot(length(nlpar) == 1L)
   out <- list()
-  p <- usc(nlpar, "prefix")
+  p <- usc(combine_prefix(px))
   is_ordinal <- is_ordinal(bterms$family)
   is_bsts <- inherits(bterms$autocor, "cor_bsts")
   # the intercept is removed inside the Stan code for ordinal models
@@ -134,12 +133,11 @@ data_fe <- function(bterms, data, knots = NULL, nlpar = "",
 }
 
 data_mo <- function(bterms, data, ranef = empty_ranef(),
-                    prior = brmsprior(), nlpar = "",
+                    prior = brmsprior(), px = list(),
                     Jmo = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects
-  stopifnot(length(nlpar) == 1L)
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  p <- usc(combine_prefix(px))
   out <- list()
   if (is.formula(bterms[["mo"]])) {
     Xmo <- prepare_mo_vars(bterms$mo, data, check = is.null(Jmo))
@@ -153,9 +151,13 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
     # validate and assign vectors for dirichlet prior
     monef <- colnames(Xmo)
     for (i in seq_along(monef)) {
-      take <- prior$class == "simplex" & prior$coef == monef[i] & 
-        prior$nlpar == nlpar  
-      simplex_prior <- prior$prior[take]
+      simplex_prior <- subset2(prior,
+        class = "simplex", coef = monef[i], ls = px
+      )
+      simplex_prior <- simplex_prior$prior
+      # take <- prior$class == "simplex" & prior$coef == monef[i] & 
+      #   prior$nlpar == nlpar  
+      # simplex_prior <- prior$prior[take]
       if (isTRUE(nzchar(simplex_prior))) {
         simplex_prior <- eval2(simplex_prior)
         if (length(simplex_prior) != Jmo[i]) {
@@ -171,20 +173,21 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   out
 }
 
-data_re <- function(ranef, data, nlpar = "", not4stan = FALSE) {
+data_re <- function(ranef, data, px = list(), not4stan = FALSE) {
   # prepare data for group-level effects for use in Stan
   # Args: see data_effects
-  stopifnot(length(nlpar) == 1L)
   out <- list()
-  take <- ranef$nlpar == nlpar & !ranef$type %in% c("mo", "me")
+  take <- find_rows(ranef, ls = px) &
+    !find_rows(ranef, type = c("mo", "me"))
+  # take <- ranef$nlpar == nlpar & !ranef$type %in% c("mo", "me")
   ranef <- ranef[take, ]
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)
     gn <- unique(ranef$gn)
     for (i in seq_along(gn)) {
-      r <- ranef[ranef$gn == gn[i], ]
-      idp <- paste0(r$id[1], usc(nlpar, "prefix"))
+      r <- subset2(ranef, gn = gn[i])
+      idp <- paste0(r$id[1], usc(combine_prefix(px)))
       if (isTRUE(not4stan)) {
         # for internal use in S3 methods
         if (ncol(Z[[i]]) == 1L) {
@@ -291,14 +294,13 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
   out
 }
 
-data_cs <- function(bterms, data, nlpar = "") {
+data_cs <- function(bterms, data, px = list()) {
   # prepare data for category specific effects for use in Stan
   # Args:
   #   bterms: object of class brmsterms
   #   data: the data passed by the user
   out <- list()
   if (length(all_terms(bterms[["cs"]]))) {
-    stopifnot(!nzchar(nlpar))
     Xcs <- get_model_matrix(bterms$cs, data)
     avoid_dpars(colnames(Xcs), bterms = bterms)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
@@ -306,7 +308,7 @@ data_cs <- function(bterms, data, nlpar = "") {
   out
 }
 
-data_me <- function(bterms, data, nlpar = "") {
+data_me <- function(bterms, data, px = list()) {
   # prepare data of meausurement error variables for use in Stan
   # Args:
   #   bterms: object of class brmsterms
@@ -314,7 +316,7 @@ data_me <- function(bterms, data, nlpar = "") {
   out <- list()
   meef <- get_me_labels(bterms, data)
   if (length(meef)) {
-    p <- usc(nlpar, "prefix")
+    p <- usc(combine_prefix(px))
     Cme <- get_model_matrix(bterms$me, data)
     avoid_dpars(colnames(Cme), bterms = bterms)
     Cme <- Cme[, attr(meef, "not_one"), drop = FALSE]
@@ -337,14 +339,14 @@ data_me <- function(bterms, data, nlpar = "") {
   out
 }
 
-data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
+data_gp <- function(bterms, data, px = list(), gps = NULL) {
   # prepare data for Gaussian process terms
   # Args:
   #   see data_effects.btl
   out <- list()
   gpef <- get_gp_labels(bterms)
   if (length(gpef)) {
-    p <- usc(nlpar, "prefix")
+    p <- usc(combine_prefix(px))
     for (i in seq_along(gpef)) {
       pi <- paste0(p, "_", i)
       gp <- eval2(gpef[i])
@@ -388,12 +390,13 @@ data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
   out
 } 
 
-data_offset <- function(bterms, data, nlpar = "") {
+data_offset <- function(bterms, data, px = list()) {
   # prepare data of offsets for use in Stan
   out <- list()
   if (is.formula(bterms$offset)) {
+    p <- usc(combine_prefix(px))
     mf <- model.frame(bterms$offset, rm_attr(data, "terms"))
-    out[[paste0("offset", usc(nlpar))]] <- model.offset(mf)
+    out[[paste0("offset", p)]] <- model.offset(mf)
   }
   out
 }
@@ -426,12 +429,12 @@ data_mixture <- function(bterms, prior = brmsprior()) {
   out
 }
 
-data_prior <- function(prior, data, nlpar = "") {
+data_prior <- function(prior, data, px = list()) {
   # data for special priors such as horseshoe and lasso
   out <- list()
-  orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
-  nlpar <- usc(nlpar)
-  special <- attr(prior, "special")[[orig_nlpar]]
+  p <- usc(combine_prefix(px))
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attr(prior, "special")[[prefix]]
   if (!is.null(special[["hs_df"]])) {
     # data for the horseshoe prior
     hs_obj_names <- paste0("hs_", 
@@ -443,13 +446,13 @@ data_prior <- function(prior, data, nlpar = "") {
     } else {
       hs_data$hs_scale_global <- special$hs_par_ratio / sqrt(nrow(data))
     }
-    names(hs_data) <- paste0(hs_obj_names, nlpar) 
+    names(hs_data) <- paste0(hs_obj_names, p) 
     out <- c(out, hs_data)
   }
   if (!is.null(special[["lasso_df"]])) {
     lasso_obj_names <- paste0("lasso_", c("df", "scale"))
     lasso_data <- special[lasso_obj_names]
-    names(lasso_data) <- paste0(lasso_obj_names, nlpar) 
+    names(lasso_data) <- paste0(lasso_obj_names, p) 
     out <- c(out, lasso_data)
   }
   out

@@ -179,9 +179,8 @@ make_standata <- function(formula, data, family = gaussian(),
       )
       bterms$dpars[["mu"]] <- NULL
       for (r in resp) {
-        data_eff <- do.call(
-          data_effects, c(args_eff_spec, args_eff, nlpar = r)
-        )
+        args_eff_spec$x$resp <- r
+        data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
         out <- c(out, data_eff)
       }
       if (is_linear(family)) {
@@ -193,9 +192,10 @@ make_standata <- function(formula, data, family = gaussian(),
     # data for predictors of auxiliary parameters
     for (ap in names(bterms$dpars)) {
       args_eff_spec <- list(
-        x = bterms$dpars[[ap]], nlpar = ap, 
+        x = bterms$dpars[[ap]], 
         smooths = control$smooths[[ap]],
-        gps = control$gps[[ap]], Jmo = control$Jmo[[ap]]
+        gps = control$gps[[ap]], 
+        Jmo = control$Jmo[[ap]]
       )
       data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       out <- c(out, data_aux_eff)
