@@ -696,7 +696,7 @@ stan_me <- function(meef, ranef, prior, px = list()) {
     # prepare linear predictor component
     meef <- rename(meef)
     meef_terms <- gsub(":", " .* ", meef_terms)
-    ranef <- subset2(ranef, type = "mu", ls = px)
+    ranef <- subset2(ranef, type = "me", ls = px)
     invalid_coef <- setdiff(ranef$coef, meef)
     if (length(invalid_coef)) {
       stop2("Noisy group-level terms require ", 

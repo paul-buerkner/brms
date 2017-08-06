@@ -18,7 +18,7 @@ test_that("rm_int_fe works as expected", {
   code <- make_stancode(y ~ 1, data = dat)
   expect_equal(rm_int_fe("Intercept", code), character(0))
   code <- make_stancode(cbind(y, y) ~ x, data = dat)
-  expect_equal(rm_int_fe(c("Intercept", "x"), code, nlpar = "y"), "x")
+  expect_equal(rm_int_fe(c("Intercept", "x"), code, px = list(resp = "y")), "x")
   code <- make_stancode(y ~ x, data = dat, family = sratio())
   expect_equal(rm_int_fe(c("Intercept", "x"), code), "x")
   code <- make_stancode(y ~ 0 + intercept + x, data = dat)

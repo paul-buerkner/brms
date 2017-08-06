@@ -863,8 +863,8 @@ test_that("priors on intercepts appear in the Stan code", {
   )
   scode <- make_stancode(cbind(count, count) ~ log_Age_c + log_Base4_c * Trt_c,
                       data = epilepsy, family = gaussian(), 
-                      prior = c(prior(student_t(5,0,10), class = b, nlpar = count),
-                                prior(normal(0,5), class = Intercept, nlpar = count)),
+                      prior = c(prior(student_t(5,0,10), class = b, resp = count),
+                                prior(normal(0,5), class = Intercept, resp = count)),
                       sample_prior = TRUE)
   expect_match2(scode, 
     paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
