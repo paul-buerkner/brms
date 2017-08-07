@@ -6,16 +6,17 @@ p <- function(x, i = NULL, row = TRUE) {
   #   row: indicating if rows or cols should be indexed
   #        only relevant if x has two dimensions
   if (!length(i)) {
-    x
+    out <- x
   } else if (length(dim(x)) == 2L) {
     if (row) {
-      x[i, , drop = FALSE]
+      out <- x[i, , drop = FALSE]
     } else {
-      x[, i, drop = FALSE]
+      out <- x[, i, drop = FALSE]
     }
   } else {
-    x[i]
+    out <- x[i]
   }
+  out
 }
 
 match_rows <- function(x, y, ...) {
