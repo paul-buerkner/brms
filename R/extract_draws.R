@@ -25,9 +25,9 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     data = do.call(amend_newdata, c(newd_args, list(...)))
   )
   args <- c(newd_args, nlist(
-    sample_new_levels, subset, nsamples, nug, C = draws$data[["C"]]
+    sample_new_levels, subset, nsamples, nug
   ))
-  keep <- !grepl("^(X|Z|J|C)", names(draws$data))
+  keep <- !grepl("^(X|Z|J)", names(draws$data))
   draws$data <- subset_attr(draws$data, keep)
   
   # special treatment of multivariate models
@@ -52,7 +52,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   for (ap in valid_dpars) {
     ap_regex <- paste0("^", ap, "($|_)")
     if (is.btl(bterms$dpars[[ap]]) || is.btnl(bterms$dpars[[ap]])) {
-      more_args <- nlist(x = bterms$dpars[[ap]])
+      p <- usc(combine_prefix(bterms$dpars[[ap]]))
+      more_args <- nlist(
+        x = bterms$dpars[[ap]], C = draws$data[[paste0("C", p)]]
+      )
       draws[[ap]] <- do.call(extract_draws, c(args, more_args))
       draws[[ap]][["f"]] <- bterms$dpars[[ap]]$family
     } else if (is.numeric(bterms$fdpars[[ap]]$value)) {

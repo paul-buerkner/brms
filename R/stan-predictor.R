@@ -106,45 +106,48 @@ stan_effects.btnl <- function(x, data, ranef, prior,
   #   ...: passed to stan_effects.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
-  if (length(x$nlpars)) {
-    nlpars <- names(x$nlpars)
-    for (nlp in nlpars) {
-      nl_text <- stan_effects(
-        x = x$nlpars[[nlp]], data = data, 
-        ranef = ranef, prior = prior, 
-        center_X = FALSE, ...
-      )
-      out <- collapse_lists(out, nl_text)
-    }
-    # prepare non-linear model
-    new_nlpars <- paste0(" ", x$dpar, "_", nlpars, "[n] ")
-    # covariates in the non-linear model
-    covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
-    if (length(covars)) {
-      # use vectors as indexing matrices in Stan is slow
-      str_add(out$data) <- paste0( 
-        "  // covariate vectors \n",
-        collapse("  vector[N] C_", seq_along(covars), ";\n")
-      )
-      new_covars <- paste0(" C_", seq_along(covars), "[n] ")
-    } else {
-      new_covars <- NULL
-    }
-    # add whitespaces to be able to replace parameters and covariates
-    meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
-    nlmodel <- gsub(" ", "", collapse(deparse(x$formula[[2]])))
-    nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
-    nlmodel <- rename(nlmodel, 
-      c(wsp(nlpars), covars, " ( ", " ) "), 
-      c(new_nlpars, new_covars, "(", ")")
-    )
-    # possibly transform eta in the transformed params block
-    str_add(out$modelD) <- paste0("  vector[N] ", x$dpar, "; \n")
-    str_add(out$modelC4) <- paste0(
-      "    // compute non-linear predictor \n",
-      "    ", x$dpar, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
-    )
+  if (!length(x$nlpars)) {
+    return(out)
   }
+  nlpars <- names(x$nlpars)
+  for (nlp in nlpars) {
+    nl_text <- stan_effects(
+      x = x$nlpars[[nlp]], data = data, 
+      ranef = ranef, prior = prior, 
+      center_X = FALSE, ...
+    )
+    out <- collapse_lists(out, nl_text)
+  }
+  # prepare non-linear model
+  par <- combine_prefix(x, keep_mu = TRUE)
+  new_nlpars <- paste0(" ", par, "_", nlpars, "[n] ")
+  # covariates in the non-linear model
+  covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
+  if (length(covars)) {
+    # use vectors as indexing matrices in Stan is slow
+    p <- usc(combine_prefix(x), "suffix")
+    str_add(out$data) <- paste0( 
+      "  // covariate vectors \n",
+      collapse("  vector[N] C_", p, seq_along(covars), ";\n")
+    )
+    new_covars <- paste0(" C_", p, seq_along(covars), "[n] ")
+  } else {
+    new_covars <- NULL
+  }
+  # add whitespaces to be able to replace parameters and covariates
+  meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
+  nlmodel <- gsub(" ", "", collapse(deparse(x$formula[[2]])))
+  nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
+  nlmodel <- rename(nlmodel, 
+    c(wsp(nlpars), covars, " ( ", " ) "), 
+    c(new_nlpars, new_covars, "(", ")")
+  )
+  # possibly transform eta in the transformed params block
+  str_add(out$modelD) <- paste0("  vector[N] ", par, "; \n")
+  str_add(out$modelC4) <- paste0(
+    "    // compute non-linear predictor \n",
+    "    ", par, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
+  )
   out
 }
 

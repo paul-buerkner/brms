@@ -50,14 +50,15 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   }
   # fixes issue #127 occuring for factorial covariates
   colnames(C) <- all.vars(x$covars)
+  p <- usc(combine_prefix(x))
   if (not4stan) {
-    out <- c(out, nlist(C))
+    out[[paste0("C", p)]] <- C
   } else {
     # use vectors as indexing matrices in Stan is slow
     if (ncol(C)) {
       out <- c(out, setNames(
         as.list(as.data.frame(C)), 
-        paste0("C_", seq_len(ncol(C)))
+        paste0("C", p, "_", seq_len(ncol(C)))
       ))
     }
   }
