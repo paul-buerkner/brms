@@ -181,7 +181,7 @@ test_that("make_standata rejects incorrect addition terms", {
   expect_error(make_standata(y | cens(c) ~ 1, data = dat))
   expect_error(make_standata(z | trials(t) ~ 1, data = dat, 
                              family = "binomial"),
-               "Number of trials is smaller than the response variable")
+               "Number of trials is smaller than the number of events")
 })
 
 test_that("make_standata handles multivariate models", {

@@ -232,8 +232,8 @@ make_standata <- function(formula, data, family = gaussian(),
               "might be a more efficient choice.")
     }
     if (check_response && any(out$Y > out$trials)) {
-      stop2("Number of trials is smaller than the response ", 
-            "variable would suggest.")
+      stop2("Number of trials is smaller than ", 
+            "the number of events.")
     }
     out$trials <- as.array(out$trials)
   }

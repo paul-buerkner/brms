@@ -176,9 +176,8 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     groups <- unique(ranef$group)
     out <- named_list(groups)
     for (g in groups) {
-      take <- ranef$group == g
-      nlpars_usc <- usc(ranef[take, "nlpar"], "suffix")
-      coefs <- paste0(nlpars_usc, ranef[take, "coef"])
+      r <- subset2(ranef, group = g)
+      coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
       levels <- attr(ranef, "levels")[[g]]
       rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
       out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
@@ -385,8 +384,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     if (nrow(x$ranef)) {
       get_names <- function(group) {
         # get names of group-level parameters
-        r <- x$ranef[x$ranef$group == group, ]
-        rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
+        r <- subset2(x$ranef, group = group)
+        rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
         cor_type <- paste0("cor_", group)
         sd_pars <- paste0("sd_", group, "__", rnames)
         cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
@@ -775,8 +774,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   # summary of group-level effects
   for (g in out$group) {
     r <- object$ranef[object$ranef$group == g, ]
-    nlpar_usc <- usc(r$nlpar, "suffix")
-    rnames <- paste0(nlpar_usc, r$coef)
+    rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
     sd_pars <- paste0("sd_", g, "__", rnames)
     sd_names <- paste0("sd", "(", rnames ,")")
     # construct correlation names

@@ -389,9 +389,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # some components should not be computed based on newdata
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
-      pars <- c(names(bterms$nlpars), intersect(dpars(), names(bterms)))
-      comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
-      old_standata <- rmNULL(standata(fit)[comp])
+      # TODO: only call relevant parts of make_standata
+      old_standata <- standata(fit)
       control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
       Jmo <- old_standata[grepl("^Jmo", names(old_standata))]
       names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
