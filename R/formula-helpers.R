@@ -611,3 +611,19 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
 is.formula <- function(x) {
   inherits(x, "formula")
 }
+
+expand_dot_formula <- function(formula, data = NULL) {
+  # expand the '.' variable in formula using stats::terms
+  if (isTRUE("." %in% all.vars(formula))) {
+    att <- attributes(formula)
+    try_terms <- try(
+      stats::terms(formula, data = data), 
+      silent = TRUE
+    )
+    if (!is(try_terms, "try-error")) {
+      formula <- formula(try_terms)
+    }
+    attributes(formula) <- att
+  }
+  formula
+}

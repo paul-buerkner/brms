@@ -592,12 +592,14 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     }
   }
   if (!is.null(nl)) {
-    out[["nl"]] <- attr(out$formula, "nl") <- as_one_logical(nl)
+    attr(out$formula, "nl") <- as_one_logical(nl)
   } else if (!is.null(out[["nl"]])) {
     # for backwards compatibility with brms <= 1.8.0
     attr(out$formula, "nl") <- out[["nl"]]
-  } else {
-    out[["nl"]] <- attr(out$formula, "nl") <- FALSE
+    out[["nl"]] <- NULL
+  }
+  if (is.null(attr(out$formula, "nl"))) {
+    attr(out$formula, "nl") <- FALSE
   }
   if (!is.null(family)) {
     out[["family"]] <- check_family(family)
@@ -635,7 +637,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
-    nl = FALSE, response = NULL, old_mv = FALSE
+    response = NULL, old_mv = FALSE
   )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
@@ -890,18 +892,19 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   if (is.null(out$family)) {
     out <- bf(out, family = family)
   }
-  # to allow the '.' symbol in formula
-  try_terms <- try(terms(out$formula, data = data), silent = TRUE)
-  if (!is(try_terms, "try-error")) {
-    out$formula <- formula(try_terms)
+  # allow the '.' symbol in the formulas
+  out$formula <- expand_dot_formula(out$formula)
+  for (i in seq_along(out$pforms)) {
+    out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]])
   }
   if (is_ordinal(out$family)) {
     # fix discrimination to 1 by default
     if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
       out <- bf(out, disc = 1)
     }
-    no_intercept <- isTRUE(attr(try_terms, "intercept", TRUE) == 0)
-    if (!is(try_terms, "try-error") && no_intercept) {
+    try_terms <- try(stats::terms(out$formula), silent = TRUE)
+    intercept <- attr(try_terms, "intercept", TRUE)
+    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
@@ -1001,5 +1004,5 @@ is.brmsformula <- function(x) {
 
 is_nonlinear <- function(x) {
   stopifnot(is.brmsfit(x))
-  bf(x$formula)[["nl"]]
+  isTRUE(attr(bf(x$formula)$formula, "nl", TRUE))
 }

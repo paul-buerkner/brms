@@ -604,7 +604,7 @@ test_that("all S3 methods have reasonable ouputs", {
   up <- update(fit2, formula. = bf(. ~ ., a + b ~ 1, nl = TRUE), 
                testmode = TRUE)
   expect_true(is(up, "brmsfit"))
-  up <- update(fit2, formula. = count ~ a + b, testmode = TRUE)
+  up <- update(fit2, formula. = bf(count ~ a + b, nl = TRUE), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   up <- update(fit3, family = acat(), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
