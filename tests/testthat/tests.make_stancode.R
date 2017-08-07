@@ -116,8 +116,8 @@ test_that("specified priors appear in the Stan code", {
                   "no natural upper bound")
 })
 
-test_that("deprecated priors for the population-level intercept are used", {
-  dat <- data.frame(y = 1:10)
+test_that("deprecated priors are used", {
+  dat <- data.frame(y = 1:10, x = 1:10)
   prior <- prior(normal(0, 5), coef = Intercept)
   expect_warning(scode <- make_stancode(y~1, dat, prior = prior),
                  "Setting a prior on the population-level intercept")
@@ -126,6 +126,20 @@ test_that("deprecated priors for the population-level intercept are used", {
   prior <- c(prior, prior(normal(0, 10), class = Intercept))
   expect_error(make_stancode(y~1, dat, prior = prior),
                "Duplicated prior definitions detected")
+  
+  prior <- prior(normal(0, 10), nlpar = sigma)
+  expect_warning(
+    scode <- make_stancode(bf(y~1, sigma~x), dat, prior = prior),
+    "Specifying priors of distributional parameters via 'nlpar' is deprecated"
+  )
+  expect_match2(scode, "normal_lpdf(b_sigma | 0, 10)")
+  
+  prior <- prior(normal(0, 5), Intercept, nlpar = y)
+  expect_warning(
+    scode <- make_stancode(cbind(y, x) ~ 1, dat, prior = prior),
+    "Specifying priors in multivairate models via 'nlpar' is deprecated"
+  )
+  expect_match2(scode, "normal_lpdf(temp_y_Intercept | 0, 5)")
 })
 
 test_that("special shrinkage priors appear in the Stan code", {

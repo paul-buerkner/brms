@@ -895,7 +895,27 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
   }
-  # TODO: copy nlpar to dpar and resp for backwards compatibility
+  valid_dpars <- valid_dpars(family, bterms)
+  nlpars_in_dpars <- prior$nlpar %in% valid_dpars
+  if (any(nlpars_in_dpars)) {
+    warning2(
+      "Specifying priors of distributional parameters via ",
+      "'nlpar' is deprecated. Please use argument 'dpar' instead."
+    )
+    prior$dpar[nlpars_in_dpars] <- prior$nlpar[nlpars_in_dpars]
+    prior$nlpar[nlpars_in_dpars] <- ""
+  }
+  if (length(bterms$response) > 1L) {
+    nlpars_in_resp <- prior$nlpar %in% bterms$response
+    if (any(nlpars_in_resp)) {
+      warning2(
+        "Specifying priors in multivairate models via ",
+        "'nlpar' is deprecated. Please use argument 'resp' instead."
+      )
+      prior$resp[nlpars_in_resp] <- prior$nlpar[nlpars_in_resp]
+      prior$nlpar[nlpars_in_resp] <- ""
+    }
+  }
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:7], prior[, 2:7])))
