@@ -296,6 +296,16 @@ test_that("make_standata correctly prepares data for non-linear models", {
   sdata <- make_standata(bf(y ~ a - b^z, flist = flist, nl = TRUE), 
                          data = data, control = list(not4stan = TRUE))
   expect_equal(colnames(sdata$C), "z")
+  
+  bform <- bf(y ~ x) + 
+    nlf(sigma ~ a1 * exp(-x/(a2 + z)),
+        a1 ~ 1, a2 ~ z + (x|g)) +
+    lf(alpha ~ x)
+  sdata <- make_standata(bform, data, family = skew_normal())
+  sdata_names <- c("C_sigma_1", "C_sigma_2", "X_sigma_a2", "Z_1_sigma_a2_1")
+  expect_true(
+    all(sdata_names %in% names(sdata))
+  )
 })
 
 test_that("make_standata correctly prepares data for monotonic effects", {

@@ -597,12 +597,32 @@ test_that("Stan code for non-linear models is correct", {
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
              set_prior("normal(0,1)", nlpar = "a2"))
-  scode <- make_stancode(bf(y ~ a1 * exp(-x/(a2 + z)), 
-                               flist = flist, nl = TRUE),
-                            data = data, family = Gamma("log"), prior = prior)
+  scode <- make_stancode(
+    bf(y ~ a1 * exp(-x/(a2 + z)), 
+       flist = flist, nl = TRUE),
+    data = data, family = Gamma("log"), 
+    prior = prior
+  )
   expect_match2(scode,
     paste("mu[n] = shape * exp(-(mu_a1[n] *", 
           "exp( - C_1[n] / (mu_a2[n] + C_2[n]))));"))
+  
+  bform <- bf(y ~ x) + 
+    nlf(sigma ~ a1 * exp(-x/(a2 + z)),
+        a1 ~ 1, a2 ~ z + (x|g)) +
+    lf(alpha ~ x)
+  scode <- make_stancode(
+    bform, data, family = skew_normal(),
+    prior = c(
+      prior(normal(0, 1), dpar = sigma, nlpar = a1),
+      prior(normal(0, 5), dpar = sigma, nlpar = a2)
+    )
+  )
+  expect_match2(scode, "sigma_a1 = X_sigma_a1 * b_sigma_a1")
+  expect_match2(scode,
+    "sigma[n] = exp(sigma_a1[n] * exp( - C_sigma_1[n] / (sigma_a2[n] + C_sigma_2[n])))"
+  )
+  expect_match2(scode, "target += normal_lpdf(b_sigma_a2 | 0, 5)")
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {

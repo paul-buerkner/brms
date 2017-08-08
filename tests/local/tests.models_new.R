@@ -296,6 +296,21 @@ test_that("Non-linear models work correctly", {
   expect_range(LOO(fit_loss)$looic, 700, 720)
 })
 
+test_that("Non-linear models of auxiliary parameters work correctly", {
+  x <- rnorm(100)
+  y <- rnorm(100, 1, exp(x))
+  dat <- data.frame(y, x, g = rep(1:10, each = 10))
+  bform <- bf(y ~ x + (1|V|g)) +
+    nlf(sigma ~ a, a ~ x + (1|V|g)) + 
+    gaussian()
+  bprior <- prior(normal(0, 3), dpar = sigma, nlpar = a)
+  fit <- brm(bform, dat, prior = bprior, chains = 2, cores = 2)
+  print(fit)
+  expect_ggplot(plot(marginal_effects(fit, method = "predict"))[[1]])
+  expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
+  expect_range(LOO(fit)$looic, 240, 350)
+})
+
 test_that("Multivariate GAMMs work correctly", {
   n <- 200
   sig <- 2
