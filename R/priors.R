@@ -932,13 +932,17 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
   check_prior_content(prior, family = family, warn = warn)
   # check if priors for non-linear parameters are defined
-  nlpars <- names(bterms$dpars$mu$nlpars)
-  for (nlp in nlpars) {
-    nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
-    if (!any(nzchar(nlp_prior))) {
-      stop2("Priors on population-level effects are required in ",
-            "non-linear models,\nbut none were found for parameter ", 
-            "'", nlp, "'. \nSee help(set_prior) for more details.")
+  for (dp in names(bterms$dpars)) {
+    nlpars <- names(bterms$dpars[[dp]]$nlpars)
+    for (nlp in nlpars) {
+      nlp_prior <- subset2(prior, dpar = dp, nlpar = nlp, class = "b")
+      if (!any(nzchar(nlp_prior$prior))) {
+        stop2(
+          "Priors on population-level effects are required in ",
+          "non-linear models,but none were found for parameter ", 
+          "'", nlp, "'. See help(set_prior) for more details."
+        )
+      }
     }
   }
   # prepare special priors for use in Stan
