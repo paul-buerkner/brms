@@ -1402,13 +1402,18 @@ print.brmsprior <- function(x, show_df, ...) {
 
 #' @export
 c.brmsprior <- function(x, ...) {
-  # combines multiple brmsprior objects into one brmsprior
-  if (all(sapply(list(...), is, class2 = "brmsprior"))) {
+  # combine multiple brmsprior objects into one brmsprior
+  if (all(sapply(list(...), is.brmsprior))) {
     out <- do.call(rbind, list(x, ...)) 
   } else {
     out <- c(as.data.frame(x), ...)
   }
   out
+}
+
+#' @export
+"+.brmsprior" <- function(e1, e2) {
+  c(e1, e2)
 }
 
 dirichlet <- function(...) {
