@@ -19,6 +19,7 @@ rename_pars <- function(x) {
   if (length(resp) > 1L) {
     # rename effects in multivaraite models
     for (r in resp) {
+      bterms$dpars[["mu"]]$resp <- r
       change_eff <- change_effects(
         bterms$dpars[["mu"]], model.frame(x), pars, 
         dims = x$fit@sim$dims_oi, stancode = stancode(x)
