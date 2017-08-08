@@ -934,6 +934,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   # check if priors for non-linear parameters are defined
   for (dp in names(bterms$dpars)) {
     nlpars <- names(bterms$dpars[[dp]]$nlpars)
+    dp <- ifelse(dp == "mu", "", dp)
     for (nlp in nlpars) {
       nlp_prior <- subset2(prior, dpar = dp, nlpar = nlp, class = "b")
       if (!any(nzchar(nlp_prior$prior))) {

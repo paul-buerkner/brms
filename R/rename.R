@@ -424,7 +424,7 @@ change_old_re <- function(ranef, pars, dims) {
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
-    r <- ranef[ranef$id == id, ]
+    r <- subset2(ranef, id = id)
     g <- r$group[1]
     nlpar <- r$nlpar[1]
     stopifnot(nzchar(nlpar))
@@ -478,7 +478,7 @@ change_old_re2 <- function(ranef, pars, dims) {
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
-    r <- ranef[ranef$id == id, ]
+    r <- subset2(ranef, id = id)
     g <- r$group[1]
     nlpars_usc <- usc(r$nlpar, "suffix")
     # rename sd-parameters
@@ -525,12 +525,11 @@ change_old_sm <- function(bterms, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing smooths with multiple covariates
   stopifnot(is.brmsterms(bterms))
-  .change_old_sm <- function(bt, nlpar = "") {
-    nlpar <- check_nlpar(nlpar)
+  .change_old_sm <- function(bt) {
     change <- list()
     sm_labels <- get_sm_labels(bt)
     if (length(sm_labels)) {
-      p <- usc(nlpar, "suffix")
+      p <- usc(combine_prefix(bt), "suffix")
       old_smooths <- rename(paste0(p, sm_labels))
       new_smooths <- rename(paste0(p, get_sm_labels(bt, covars = TRUE)))
       old_sds_pars <- paste0("sds_", old_smooths)
@@ -557,20 +556,19 @@ change_old_sm <- function(bterms, pars, dims) {
   change <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      change <- c(change, .change_old_sm(bterms$dpars$mu, nlpar = r))
+      bterms$dpars$mu$resp <- r
+      change <- c(change, .change_old_sm(bterms$dpars$mu))
     }
     bterms$dpars$mu <- NULL
   }
-  for (ap in names(bterms$dpars)) {
-    bt <- bterms$dpars[[ap]]
+  for (dp in names(bterms$dpars)) {
+    bt <- bterms$dpars[[dp]]
     if (length(bt$nlpars)) {
       for (nlp in names(bt$nlpars)) {
-        change <- c(change, 
-          .change_old_sm(bt$nlpars[[nlp]], nlpar = nlp)
-        )
+        change <- c(change, .change_old_sm(bt$nlpars[[nlp]]))
       }
     } else {
-      change <- c(change, .change_old_sm(bt, nlpar = ap))
+      change <- c(change, .change_old_sm(bt))
     }
   }
   change

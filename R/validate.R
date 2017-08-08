@@ -603,15 +603,6 @@ avoid_dpars <- function(names, bterms) {
   invisible(NULL)
 }
 
-check_nlpar <- function(nlpar) {
-  if (is.null(nlpar)) {
-    nlpar <- ""
-  }
-  stopifnot(length(nlpar) == 1L)
-  nlpar <- as.character(nlpar)
-  ifelse(nlpar == "mu", "", nlpar)
-}
-
 vars_prefix <- function() {
   c("dpar", "resp", "nlpar") 
 }
@@ -1488,23 +1479,23 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   #   save_mevars: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  .exclude_pars <- function(bt, nlpar = "") {
+  .exclude_pars <- function(bt) {
     stopifnot(is.btl(bt))
-    nlpar <- usc(check_nlpar(nlpar))
+    p <- usc(combine_prefix(bt))
     out <- c(
-      paste0("temp", nlpar, "_Intercept"),
-      paste0(c("hs_local", "hs_global", "zb"), nlpar)
+      paste0("temp", p, "_Intercept"),
+      paste0(c("hs_local", "hs_global", "zb"), p)
     )
     sms <- get_sm_labels(bt, data)
     if (length(sms) && !is.null(data)) {
       for (i in seq_along(sms)) {
         nb <- seq_len(attr(sms, "nbases")[[i]])
-        out <- c(out, paste0("zs", nlpar, "_", i, "_", nb))
+        out <- c(out, paste0("zs", p, "_", i, "_", nb))
       } 
     }
     meef <- get_me_labels(bt, data)
     if (!save_mevars && length(meef)) {
-      out <- c(out, paste0("Xme", nlpar, "_", seq_along(meef)))
+      out <- c(out, paste0("Xme", p, "_", seq_along(meef)))
     }
     return(out)
   }
@@ -1524,7 +1515,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     )
     if (length(bterms$response) > 1L) {
       for (r in bterms$response) {
-        out <- c(out, .exclude_pars(bterms$dpars$mu, nlpar = r))
+        bterms$dpars$mu$resp <- r
+        out <- c(out, .exclude_pars(bterms$dpars$mu))
       }
       bterms$dpars$mu <- NULL
     }
@@ -1532,10 +1524,10 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       bt <- bterms$dpars[[dp]]
       if (length(bt$nlpars)) {
         for (nlp in names(bt$nlpars)) {
-          out <- c(out, .exclude_pars(bt$nlpars[[nlp]], nlpar = nlp))
+          out <- c(out, .exclude_pars(bt$nlpars[[nlp]]))
         }
       } else {
-        out <- c(out, .exclude_pars(bt, nlpar = dp))
+        out <- c(out, .exclude_pars(bt))
       }
     }
   }
@@ -1546,8 +1538,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       out <- c(out, paste0(rm_re_pars, "_", id))
     }
     if (!save_ranef) {
-      usc_nlpar <- usc(ranef$nlpar, "prefix")
-      out <- c(out, paste0("r_", ranef$id, usc_nlpar, "_", ranef$cn))
+      p <- usc(combine_prefix(ranef))
+      out <- c(out, paste0("r_", ranef$id, p, "_", ranef$cn))
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)
