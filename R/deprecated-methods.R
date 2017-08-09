@@ -23,15 +23,15 @@ old_fixef_brmsfit <- function(object, estimate = "mean", ...) {
 old_ranef_brmsfit <- function(object, estimate = c("mean", "median"), 
                               var = FALSE, ...) {
   # ranef.brmsfit as implemented prior to brms 1.7.0
-  .ranef <- function(group, nlpar = "") {
+  .ranef <- function(group, px = list()) {
     # get group-level effects of a grouping factor
     # Args:
     #   group: name of a grouping factor
     #   nlpar: name of a non-linear parameter
-    take <- object$ranef$group == group & object$ranef$nlpar == nlpar
-    rnames <- object$ranef[take, "coef"]
-    usc_nlpar <- usc(usc(nlpar))
-    rpars <- pars[grepl(paste0("^r_", group, usc_nlpar, "\\["), pars)]
+    rnames <- subset2(object$ranef, group = group, ls = px)$coef
+    px <- check_prefix(px)
+    p <- usc(usc(combine_prefix(px)))
+    rpars <- pars[grepl(paste0("^r_", group, p, "\\["), pars)]
     if (!length(rpars)) {
       return(NULL)
     }
@@ -71,21 +71,19 @@ old_ranef_brmsfit <- function(object, estimate = c("mean", "median"),
       attr(out, "var") <- Var
     }
     rownames(out) <- levels
-    if (nchar(nlpar)) {
-      attr(out, "nlpar") <- nlpar
-    }
+    attr(out, "prefix") <- px
     return(out)
   }
   
   stopifnot(is.brmsfit(object))
   estimate <- match.arg(estimate)
   pars <- parnames(object)
-  group_nlpar <- unique(object$ranef[, c("group", "nlpar")])
-  ranef <- named_list(group_nlpar$group)
+  sub_ranef <- unique(object$ranef[, c("group", vars_prefix())])
+  ranef <- named_list(sub_ranef$group)
   for (i in seq_along(ranef)) {
     ranef[[i]] <- .ranef(
-      group = group_nlpar$group[i], 
-      nlpar = group_nlpar$nlpar[i]
+      group = sub_ranef$group[i], 
+      px = sub_ranef[i, vars_prefix()]
     )
   }
   rmNULL(ranef)
@@ -144,20 +142,22 @@ old_coef_brmsfit <- function(object, estimate = c("mean", "median"), ...) {
   estimate <- match.arg(estimate)
   fixef <- fixef(object, estimate = estimate, old = TRUE, ...)
   ranef <- ranef(object, estimate = estimate, old = TRUE, ...)
-  nlpars <- ulapply(ranef, attr, "nlpar")
-  if (length(nlpars)) {
+  px <- do.call(rbind, lapply(ranef, attr, "prefix"))
+  p_all <- combine_prefix(px)
+  if (length(px)) {
     # do not combine effects of different nlpars
-    unique_nlpars <- unique(nlpars)
-    coef <- named_list(unique_nlpars)
-    for (p in unique_nlpars) {
-      ranef_temp <- ranef[nlpars %in% p]
-      rx <- paste0("^", p, "_")
+    unique_px <- unique(px)
+    p <- combine_prefix(unique_px)
+    coef <- named_list(p)
+    for (j in seq_along(p)) {
+      ranef_temp <- ranef[p_all %in% p[j]]
+      rx <- paste0("^", usc(p[j], "suffix"))
       take_rows <- grepl(rx, rownames(fixef))
       fixef_temp <- fixef[take_rows, , drop = FALSE]
       rownames(fixef_temp) <- sub(rx, "", rownames(fixef_temp))
-      coef[[p]] <- .coef(ranef_temp, fixef_temp)
-      for (i in seq_along(coef[[p]])) {
-        attr(coef[[p]][[i]], "nlpar") <- p
+      coef[[p[j]]] <- .coef(ranef_temp, fixef_temp)
+      for (i in seq_along(coef[[p[j]]])) {
+        attr(coef[[p[j]]][[i]], "prefix") <- unique_px[j, ]
       }
     }
     coef <- unlist(unname(coef), recursive = FALSE)
@@ -234,7 +234,7 @@ old_VarCorr_brmsfit <- function(x, estimate = "mean", ...) {
     get_names <- function(group) {
       # get names of group-level parameters
       r <- x$ranef[x$ranef$group == group, ]
-      rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
+      rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)

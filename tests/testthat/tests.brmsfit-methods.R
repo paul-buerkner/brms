@@ -55,7 +55,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(coef1$visit), c(4, 8))
   coef2 <- coef(fit2, old = TRUE)
   expect_equal(dim(coef2[[2]]), c(59, 2))
-  expect_equal(attr(coef2[[1]], "nlpar"), "a")
+  expect_equal(attr(coef2[[1]], "prefix")$nlpar, "a")
   coef4 <- coef(fit4, old = TRUE)
   expect_equal(dim(coef4$subject), c(10, 8))
   
