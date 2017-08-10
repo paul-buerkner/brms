@@ -279,9 +279,10 @@ posterior_samples <- function(x, pars = NA, ...) {
 #' @export 
 posterior.samples <- function(x, pars = NA, ...) {
   # deprecated alias of posterior_samples
-  warning("Method 'posterior.samples' is deprecated. ", 
-          "Please use method 'posterior_samples' instead.", 
-          call. = FALSE)
+  warning2(
+    "Method 'posterior.samples' is deprecated. ", 
+    "Please use method 'posterior_samples' instead." 
+  )
   UseMethod("posterior_samples")
 }
 
@@ -668,35 +669,15 @@ reloo <- function(x, ...) {
 kfold <- function(x, ...) {
   UseMethod("kfold")
 }
-  
-#' Interface to \pkg{shinystan}
-#' 
-#' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
-#' 
-#' @aliases launch_shiny.brmsfit
-#' 
-#' @param x A fitted model object typically of class \code{brmsfit}. 
-#' @param rstudio Only relevant for RStudio users. 
-#' The default (\code{rstudio=FALSE}) is to launch the app 
-#' in the default web browser rather than RStudio's pop-up Viewer. 
-#' Users can change the default to \code{TRUE} 
-#' by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.
-#' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
-#' 
-#' @return An S4 shinystan object
-#' 
-#' @examples
-#' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, family = "gaussian")
-#' launch_shiny(fit)                         
-#' }
-#' 
-#' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
-#' 
+
 #' @export
-launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
-  UseMethod("launch_shiny")
+launch_shiny <- function(object, rstudio = getOption("shinystan.rstudio"), ...) {
+  # deprecated alias of launch_shinystan
+  warning2(
+    "Method 'launch_shiny' is deprecated. ", 
+    "Please use method 'launch_shinystan' instead."
+  )
+  UseMethod("launch_shinystan")
 }
 
 #' Extract Stan Model Code
