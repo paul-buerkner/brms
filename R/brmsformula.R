@@ -55,6 +55,8 @@
 #'   is essentially a \code{list} containing all model
 #'   formulas as well as some additional information.
 #'   
+#' @seealso \code{\link[brms:brmsformula-helpers]{brmsformula-helpers}}
+#'   
 #' @details 
 #' 
 #'   \bold{General formula structure}
@@ -510,6 +512,12 @@
 #' # fix both residual standard deviations to the same value
 #' bf(y ~ x, sigma2 = "sigma1", family = mix)
 #' 
+#' # use the '+' operator to specify models
+#' bf(y ~ 1) + 
+#'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
+#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   gaussian()
+#' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         nl = NULL, nonlinear = NULL) {
@@ -655,22 +663,39 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 
 #' Linear and Non-linear formulas in \pkg{brms}
 #' 
-#' @aliases lf
-#' 
 #' Helper functions to specify linear and non-linear
 #' formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
+#' 
+#' @name brmsformula-helpers
+#' @aliases bf-helpers nlf lf set_nl
 #' 
 #' @param formula Non-linear formula for a distributional parameter.
 #'   The name of the distributional parameter can either be specified
 #'   on the left-hand side of \code{formula} or via argument \code{dpar}.
 #' @param dpar Optional character string specifying the distributional 
 #'   parameter to which the formulas passed via \code{...} and
-#'   \code{flist} belong. 
+#'   \code{flist} belong.
 #' @inheritParams brmsformula
 #' 
-#' @return A \code{list}, which can be passed to 
-#'   \code{\link[brms:brmsformula]{brmsformula}} or added to an
-#'   existing \code{brmsformula} object.
+#' @return For \code{lf} and \code{nlf} a \code{list} that can be 
+#'   passed to \code{\link[brms:brmsformula]{brmsformula}} or added 
+#'   to an existing \code{brmsformula} object. For \code{set_nl} 
+#'   a \code{list} that can be added to an existing
+#'   \code{brmsformula} object.
+#'
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' 
+#' @examples
+#' # add more formulas to the model
+#' bf(y ~ 1) + 
+#'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
+#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   gaussian()
+#'
+#' # specify 'nl' later on
+#' bf(y ~ a * inv_logit(x * b)) +
+#'   lf(a + b ~ z) +
+#'   set_nl(TRUE)
 #' 
 #' @export
 nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
@@ -690,16 +715,33 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
   c(setNames(list(formula), dpar), lf(..., flist = flist, dpar = dpar))
 }
 
-#' @rdname nlf
+#' @rdname brmsformula-helpers
 #' @export
 lf <- function(..., flist = NULL, dpar = NULL) {
   out <- c(list(...), flist)
   if (!is.null(dpar)) {
+    dpar <- as.character(dpar)
+    if (length(dpar) != 1L) {
+      stop2("Argument 'dpar' should be of length 1.")
+    }
     for (i in seq_along(out)) {
       attr(out[[i]], "dpar") <- dpar
     }
   }
   out
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+set_nl <- function(nl = TRUE, dpar = NULL) {
+  nl <- as_one_logical(nl)
+  if (!is.null(dpar)) {
+    dpar <- as.character(dpar)
+    if (length(dpar) != 1L) {
+      stop2("Argument 'dpar' should be of length 1.")
+    }
+  }
+  structure(nlist(nl, dpar), class = "setnl")
 }
 
 #' @export
@@ -712,6 +754,16 @@ lf <- function(..., flist = NULL, dpar = NULL) {
   } 
   if (is.family(e2)) {
     e1 <- bf(e1, family = e2)
+  } else if (inherits(e2, "setnl")) {
+    if (is.null(e2$dpar)) {
+      e1 <- bf(e1, nl = e2$nl)
+    } else {
+      if (is.null(e1$pforms[[e2$dpar]])) {
+        stop2("Parameter '", e2$dpar, "' has no formula.")
+      }
+      attr(e1$pforms[[e2$dpar]], "nl") <- e2$nl
+      e1 <- bf(e1)
+    }
   } else {
     e1 <- bf(e1, e2)
   }

@@ -534,4 +534,13 @@ bf(y ~ 1, mu1 ~ x, mu2 ~ z, family = mix)
 # fix both residual standard deviations to the same value
 bf(y ~ x, sigma2 = "sigma1", family = mix)
 
+# use the '+' operator to specify models
+bf(y ~ 1) + 
+  nlf(sigma ~ a * exp(b * x), a ~ x) + 
+  lf(b ~ z + (1|g), dpar = "sigma") +
+  gaussian()
+
+}
+\seealso{
+\code{\link[brms:brmsformula-helpers]{brmsformula-helpers}}
 }
