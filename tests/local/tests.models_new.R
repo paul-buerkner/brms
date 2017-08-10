@@ -106,7 +106,7 @@ test_that("bridgesampling methods work correctly", {
   # model with the treatment effect
   fit1 <- brm(
     count ~ log_Age_c + log_Base4_c + Trt_c,
-    data = epilepsy, family = negbinomial(), 
+    data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
   )
@@ -114,12 +114,12 @@ test_that("bridgesampling methods work correctly", {
   # model without the treatment effect
   fit2 <- brm(
     count ~ log_Age_c + log_Base4_c,
-    data = epilepsy, family = negbinomial(), 
+    data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
   )
   print(fit2)
-  
+
   # compute the bayes factor
   expect_gt(bayes_factor(fit1, fit2)$bf, 1)
   # compute the posterior model probabilities
@@ -141,7 +141,7 @@ test_that("varying slopes without a fixed effect work", {
   # test reloo
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
-  expect_range(reloo1$looic, 1620, 1700)
+  expect_range(reloo1$looic, 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
   me <- marginal_effects(fit1, conditions = conditions)
@@ -215,7 +215,7 @@ test_that("multivariate normal models work correctly", {
   tim <- sample(1:N, 100)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(cbind(y1,y2) ~ s(x) + poly(month, 3) + (1|x|id),
+  fit_mv1 <- brm(cbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
                   data = data, autocor = cor_arma(~tim|id, p = 1),
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
@@ -388,7 +388,7 @@ test_that("generalized extreme value models work correctly", {
   expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
 })
 
-test_that("update works correclty for some special cases", {
+test_that("update works correctly for some special cases", {
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy, cores = 2)
   fit2 <- update(fit1, ~ . + Trt_c, newdata = epilepsy, cores = 2)
