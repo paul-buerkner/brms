@@ -324,41 +324,22 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   nlpar <- as.character(nlpar)
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
-  check <- as.logical(check)[1]
+  check <- as_one_logical(check)
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(resp) != 1 || length(dpar) != 1 ||
       length(nlpar) != 1 || length(lb) > 1 || length(ub) > 1) {
     stop2("All arguments of set_prior must be of length 1.")
   }
-    
-  valid_classes <- c(
-    "Intercept", "b", "sd", "sds", "sdgp", "lscale", "simplex", "cor", 
-    "L", "ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", 
-    "sigmaLL", "rescor", "Lrescor", "delta", "theta", if (!check) ""
-  )
-  if (!(class %in% valid_classes || dpar_class(class) %in% dpars())) {
-    stop2("'", class, "' is not a valid parameter class.")
-  }
-  if (nchar(group) && !class %in% c("sd", "cor", "L")) {
-    stop2("Argument 'group' is not meaningful for class '", class, "'.")
-  }
-  coef_classes <- c(
-    "Intercept", "b", "sd", "sds", "sigma", "simplex", "sdgp", "lscale"
-  )
-  if (nchar(coef) && !class %in% coef_classes) {
-    stop2("Argument 'coef' ia not meaningful for class '", class, "'.")
-  }
-  if (nchar(nlpar) && !class %in% valid_classes[1:7]) {
-    stop2("Argument 'nlpar' is not meaningful for class '", class, "'.")
-  }
+  # validate boundaries
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
-    if (!(class %in% c("b", "arr") || is_arma))
+    if (!(class %in% c("b", "ar", "ma", "arr"))) {
       stop2(
         "Currently boundaries are only allowed for ", 
         "population-level and autocorrelation parameters."
-      )
-    if (nchar(coef)) {
+      ) 
+    }
+    if (nzchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
     }
     if (is_arma) {
