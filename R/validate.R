@@ -156,7 +156,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
             "addition argument 'weights'.")
     }
     if (length(y$dpars) > 1L) {
-      stop2("Auxiliary parameters cannot yet be ", 
+      stop2("Distributional parameters cannot yet be ", 
             "predicted in multivariate models.")
     }
   }
@@ -641,7 +641,7 @@ combine_prefix <- function(prefix, keep_mu = FALSE) {
 }
 
 check_fdpars <- function(x) {
-  # check validity of fixed auxiliary parameters
+  # check validity of fixed distributional parameters
   stopifnot(is.null(x) || is.list(x))
   pos_pars <- c(
     "sigma", "shape", "nu", "phi", "kappa", 
@@ -1289,7 +1289,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   # Args:
   #   bterms: object of class brmsterms
   #   data: data passed to brm after updating
-  #   all: include REs of non-linear and auxiliary parameters?
+  #   all: include REs of non-linear and distributional parameters?
   #   ncat: optional number of response categories
   #         only used for category specific group-level effects
   # Returns: 
@@ -1311,7 +1311,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (re$type[[i]] == "mo") {
-      coef <- prepare_mo_vars(re$form[[i]], data, check = FALSE)
+      coef <- mo_design_matrix(re$form[[i]], data, check = FALSE)
       coef <- colnames(coef)
     } else if (re$type[[i]] == "cs") {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))

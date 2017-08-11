@@ -1223,8 +1223,14 @@ extract_draws <- function(x, ...) {
   UseMethod("extract_draws")
 }
 
+make_Jmo_list <- function(x, data, ...) {
+  # compute Jmo values based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_Jmo_list")
+}
+
 make_smooth_list <- function(x, data, ...) {
-  # compute smoothing objects based on the original data
+  # compute smooth objects based on the original data
   # as the basis for doing predictions with new data
   UseMethod("make_smooth_list")
 }

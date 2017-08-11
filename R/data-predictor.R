@@ -67,7 +67,8 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
       data_effects(
         x$nlpars[[nlp]], data, ranef = ranef,
         prior = prior, knots = knots, not4stan = not4stan, 
-        smooths = smooths[[nlp]], gps = gps, Jmo = Jmo
+        smooths = smooths[[nlp]], gps = gps[[nlp]], 
+        Jmo = Jmo[[nlp]]
       )
     )
   }
@@ -141,13 +142,16 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   p <- usc(combine_prefix(px))
   out <- list()
   if (is.formula(bterms[["mo"]])) {
-    Xmo <- prepare_mo_vars(bterms$mo, data, check = is.null(Jmo))
+    Xmo <- mo_design_matrix(bterms$mo, data, check = is.null(Jmo))
     avoid_dpars(colnames(Xmo), bterms = bterms)
     if (is.null(Jmo)) {
       Jmo <- as.array(apply(Xmo, 2, max))
     }
     out <- c(out, 
-      setNames(list(ncol(Xmo), Xmo, Jmo), paste0(c("Kmo", "Xmo", "Jmo"), p))
+      setNames(
+        list(ncol(Xmo), Xmo, Jmo), 
+        paste0(c("Kmo", "Xmo", "Jmo"), p)
+      )
     )
     # validate and assign vectors for dirichlet prior
     monef <- colnames(Xmo)
@@ -156,9 +160,6 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
         class = "simplex", coef = monef[i], ls = px
       )
       simplex_prior <- simplex_prior$prior
-      # take <- prior$class == "simplex" & prior$coef == monef[i] & 
-      #   prior$nlpar == nlpar  
-      # simplex_prior <- prior$prior[take]
       if (isTRUE(nzchar(simplex_prior))) {
         simplex_prior <- eval2(simplex_prior)
         if (length(simplex_prior) != Jmo[i]) {
