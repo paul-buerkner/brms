@@ -41,7 +41,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
           has_sigma && has_se && !use_cov(autocor) ||
           any(c("phi", "kappa") %in% dpars)
   n <- ifelse(reqn, "[n]", "")
-  # prepare auxiliary parameters
+  # prepare distributional parameters
   p <- named_list(dpars())
   p$mu <- paste0(ifelse(is_mv || is_categorical, "Mu", "mu"), mix, n)
   p$sigma <- stan_llh_sigma(family, bterms, mix)
@@ -504,11 +504,11 @@ stan_llh_shape <- function(family, bterms, mix = "") {
 }
 
 stan_llh_dpar_usc_logit <- function(dpars, bterms) {
-  # prepare _logit suffix for auxiliary parameters
+  # prepare _logit suffix for distributional parameters
   # currently only used in zero-inflated and hurdle models
   stopifnot(is.brmsterms(bterms))
-  use_logit <- any(ulapply(dpars, function(ap) 
-    isTRUE(bterms$dpars[[ap]]$family$link == "logit")
+  use_logit <- any(ulapply(dpars, function(dp) 
+    isTRUE(bterms$dpars[[dp]]$family$link == "logit")
   ))
   ifelse(use_logit, "_logit", "")
 }

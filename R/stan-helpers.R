@@ -1200,7 +1200,7 @@ stan_has_built_in_fun <- function(family) {
   #   family: a list with elements 'family' and 'link'
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
-  par <- family$par
+  dpar <- family$dpar
   family <- family$family
   log_families <- c(
     "poisson", "negbinomial", "geometric", 
@@ -1214,7 +1214,7 @@ stan_has_built_in_fun <- function(family) {
   isTRUE(
     family %in% log_families && link == "log" ||
     family %in% logit_families && link == "logit" ||
-    isTRUE(par %in% c("zi", "hu")) && link == "logit"
+    isTRUE(dpar %in% c("zi", "hu")) && link == "logit"
   )
 }
 

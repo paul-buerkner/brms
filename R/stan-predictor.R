@@ -153,7 +153,7 @@ stan_effects.btnl <- function(x, data, ranef, prior,
 
 stan_effects.brmsterms <- function(x, data, ranef, prior, 
                                    sparse = FALSE, ...) {
-  # Stan code for auxiliary parameters
+  # Stan code for distributional parameters
   # Args:
   #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
@@ -982,7 +982,7 @@ stan_eta_ilink <- function(family, dpars = NULL,
   # correctly apply inverse link to eta
   # Args:
   #   family: a list with elements 'family' and 'link
-  #   dpars: names of auxiliary parameters
+  #   dpars: names of distributional parameters
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
@@ -1028,7 +1028,7 @@ stan_eta_ilink <- function(family, dpars = NULL,
 }
 
 stan_dpar_defs <- function(dpar) {
-  # default Stan definitions for auxiliary parameters
+  # default Stan definitions for distributional parameters
   default_defs <- list(
     sigma = c(
       "  real<lower=0> ", 
@@ -1110,7 +1110,7 @@ stan_dpar_defs <- function(dpar) {
 }
 
 stan_dpar_defs_temp <- function(dpar) {
-  # default Stan definitions for temporary auxiliary parameters
+  # default Stan definitions for temporary distributional parameters
   default_defs <- list(
     xi = c(
       "  real temp_", 

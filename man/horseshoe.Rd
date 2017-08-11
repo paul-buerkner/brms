@@ -34,7 +34,7 @@ of observations in the data.}
 \item{autoscale}{Logical; indicating whether the horseshoe
 prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
-Autoscaling is not applied for auxiliary parameters or 
+Autoscaling is not applied for distributional parameters or 
 when the model does not contain the parameter \code{sigma}.}
 }
 \value{

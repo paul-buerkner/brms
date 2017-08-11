@@ -22,10 +22,10 @@ The name of the distributional parameter can either be specified
 on the left-hand side of \code{formula} or via argument \code{dpar}.}
 
 \item{...}{Additional \code{formula} objects to specify 
-predictors of non-linear and auxiliary parameters. 
+predictors of non-linear and distributional parameters. 
 Formulas can either be named directly or contain
 names on their left-hand side. 
-The following are auxiliary parameters of specific families
+The following are distributional parameters of specific families
 (all other parameters are treated as non-linear parameters):
 \code{sigma} (residual standard deviation or scale of
 the \code{gaussian}, \code{student}, \code{lognormal} 
@@ -48,7 +48,7 @@ of the \code{exgaussian} family);
 \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 non-decision time, and initial bias of the \code{wiener}
 diffusion model).
-All auxiliary parameters are modeled 
+All distributional parameters are modeled 
 on the log or logit scale to ensure correct definition
 intervals after transformation.
 See 'Details' for more explanation.}

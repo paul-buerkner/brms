@@ -354,8 +354,10 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
     if (!(class %in% c("b", "arr") || is_arma))
-      stop2("Currently boundaries are only allowed for ", 
-            "population-level and autocorrelation parameters.")
+      stop2(
+        "Currently boundaries are only allowed for ", 
+        "population-level and autocorrelation parameters."
+      )
     if (nchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
     }
@@ -363,8 +365,10 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       lb <- ifelse(length(lb), lb, -1)
       ub <- ifelse(length(ub), ub, 1) 
       if (is.na(lb) || is.na(ub) || abs(lb) > 1 || abs(ub) > 1) {
-        warning2("Setting boundaries of autocorrelation parameters ", 
-                 "outside of [-1,1] may not be appropriate.")
+        warning2(
+          "Setting boundaries of autocorrelation parameters ", 
+          "outside of [-1,1] may not be appropriate."
+        )
       }
     }
     # don't put spaces in boundary declarations
@@ -519,7 +523,7 @@ get_prior <- function(formula, data, family = gaussian(),
       }
     }
   }
-  # priors for auxiliary parameters
+  # priors for distributional parameters
   def_auxprior <- c(
     sigma = def_scale_prior, 
     shape = "gamma(0.01, 0.01)",
@@ -572,7 +576,7 @@ get_prior <- function(formula, data, family = gaussian(),
   if (is.mixfamily(family) && !any(ap_classes == "theta")) {
     prior <- rbind(prior, brmsprior(class = "theta"))
   }
-  # priors for auxiliary parameters of multivariate models
+  # priors for distributional parameters of multivariate models
   if (is_linear(family) && length(bterms$response) > 1L) {
     sigma_coef <- c("", bterms$response)
     sigma_prior <- c(def_scale_prior, rep("", length(bterms$response)))
@@ -1087,9 +1091,11 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         }
       } else if (prior$class[i] %in% cor_pars) {
         if (nchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
-          stop2("Currently 'lkj' is the only valid prior ",
-                "for group-level correlations. See help(set_prior) ",
-                "for more details.")
+          stop2(
+            "Currently 'lkj' is the only valid prior ",
+            "for group-level correlations. See help(set_prior) ",
+            "for more details."
+          )
         }
       } else if (prior$class[i] %in% autocor_pars) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
@@ -1097,29 +1103,37 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         }
       } else if (prior$class[i] %in% c("simplex", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
-          stop2("Currently 'dirichlet' is the only valid prior ",
-                "for simplex parameters. See help(set_prior) ",
-                "for more details.")
+          stop2(
+            "Currently 'dirichlet' is the only valid prior ",
+            "for simplex parameters. See help(set_prior) ",
+            "for more details."
+          )
         }
       }
     } 
     if (nchar(lb_warning) && warn) {
-      warning2("It appears as if you have specified a lower bounded ", 
-               "prior on a parameter that has no natural lower bound.",
-               "\nIf this is really what you want, please specify ",
-               "argument 'lb' of 'set_prior' appropriately.",
-               "\nWarning occurred for prior \n", lb_warning)
+      warning2(
+        "It appears as if you have specified a lower bounded ", 
+        "prior on a parameter that has no natural lower bound.",
+        "\nIf this is really what you want, please specify ",
+        "argument 'lb' of 'set_prior' appropriately.",
+        "\nWarning occurred for prior \n", lb_warning
+      )
     }
     if (nchar(ub_warning) && warn) {
-      warning2("It appears as if you have specified an upper bounded ", 
-               "prior on a parameter that has no natural upper bound.",
-               "\nIf this is really what you want, please specify ",
-               "argument 'ub' of 'set_prior' appropriately.",
-               "\nWarning occurred for prior \n", ub_warning)
+      warning2(
+        "It appears as if you have specified an upper bounded ", 
+        "prior on a parameter that has no natural upper bound.",
+        "\nIf this is really what you want, please specify ",
+        "argument 'ub' of 'set_prior' appropriately.",
+        "\nWarning occurred for prior \n", ub_warning
+      )
     }
     if (autocor_warning && warn) {
-      warning2("Changing the boundaries of autocorrelation ", 
-               "parameters is not recommended.")
+      warning2(
+        "Changing the boundaries of autocorrelation ", 
+        "parameters is not recommended."
+      )
     }
   }
   invisible(TRUE)
@@ -1160,9 +1174,7 @@ check_prior_special.btl <- function(x, prior, allow_autoscale = TRUE, ...) {
   #   allow_autoscale: allow autoscaling using sigma?
   # Returns:
   #   a possibly amended brmsprior object with additional attributes
-  # nlpar_original <- nlpar
   px <- check_prefix(x)
-  # nlpar <- check_nlpar(nlpar)
   prior_special <- list()
   b_index <- which(find_rows(prior, class = "b", coef = "", ls = px))
   stopifnot(length(b_index) <= 1L)
@@ -1183,9 +1195,11 @@ check_prior_special.btl <- function(x, prior, allow_autoscale = TRUE, ...) {
           !find_rows(prior, coef = c("", "Intercept"))
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
-        stop2("Defining priors for single population-level parameters",
-              "is not allowed when using horseshoe or lasso priors",
-              "(except for the Intercept).")
+        stop2(
+          "Defining priors for single population-level parameters",
+          "is not allowed when using horseshoe or lasso priors",
+          "(except for the Intercept)."
+        )
       }
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
@@ -1452,7 +1466,7 @@ dirichlet <- function(...) {
 #' @param autoscale Logical; indicating whether the horseshoe
 #'   prior should be scaled using the residual standard deviation
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
-#'   Autoscaling is not applied for auxiliary parameters or 
+#'   Autoscaling is not applied for distributional parameters or 
 #'   when the model does not contain the parameter \code{sigma}.
 #'   
 #' @return A character string obtained by \code{match.call()} with

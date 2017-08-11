@@ -19,14 +19,17 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   # Returns:
   #   A named list of data to be passed to Stan
   px <- check_prefix(x)
-  # nlpar <- check_nlpar(nlpar)
-  data_fe <- data_fe(x, data = data, knots = knots,
-                     px = px, not4stan = not4stan,
-                     smooths = smooths)
-  data_mo <- data_mo(x, data = data, ranef = ranef,
-                     prior = prior, Jmo = Jmo, px = px)
-  data_re <- data_re(ranef, data = data, px = px,
-                     not4stan = not4stan)
+  data_fe <- data_fe(
+    x, data = data, knots = knots, px = px, 
+    not4stan = not4stan, smooths = smooths
+  )
+  data_mo <- data_mo(
+    x, data = data, ranef = ranef, 
+    prior = prior, Jmo = Jmo, px = px
+  )
+  data_re <- data_re(
+    ranef, data = data, px = px, not4stan = not4stan
+  )
   data_me <- data_me(x, data = data, px = px)
   data_cs <- data_cs(x, data = data, px = px)
   data_gp <- data_gp(x, data = data, px = px, gps = gps)

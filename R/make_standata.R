@@ -101,7 +101,7 @@ make_standata <- function(formula, data, family = gaussian(),
     if (!factors_allowed && !is.numeric(out$Y)) {
       stop2("Family '", family4error, "' requires numeric responses.")
     }
-    # transform and check response variable for different families
+    # transform and check response variables for different families
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
     if (any(grepl(regex_pos_int, families))) {
       if (!all(is_wholenumber(out$Y)) || min(out$Y) < 0) {
@@ -168,8 +168,10 @@ make_standata <- function(formula, data, family = gaussian(),
   # data for various kinds of effects
   only_response <- isTRUE(control$only_response)
   if (!only_response) {
-    ranef <- tidy_ranef(bterms, data, ncat = control$ncat, 
-                        old_levels = control$old_levels)
+    ranef <- tidy_ranef(
+      bterms, data, ncat = control$ncat, 
+      old_levels = control$old_levels
+    )
     args_eff <- nlist(data, ranef, prior, knots, not4stan)
     resp <- bterms$response
     if (length(resp) > 1L && !old_mv) {
@@ -189,19 +191,19 @@ make_standata <- function(formula, data, family = gaussian(),
         colnames(out$Y) <- resp
       }
     }
-    # data for predictors of auxiliary parameters
-    for (ap in names(bterms$dpars)) {
+    # data for predictors of distributional parameters
+    for (dp in names(bterms$dpars)) {
       args_eff_spec <- list(
-        x = bterms$dpars[[ap]], 
-        smooths = control$smooths[[ap]],
-        gps = control$gps[[ap]], 
-        Jmo = control$Jmo[[ap]]
+        x = bterms$dpars[[dp]], 
+        smooths = control$smooths[[dp]],
+        gps = control$gps[[dp]], 
+        Jmo = control$Jmo[[dp]]
       )
       data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       out <- c(out, data_aux_eff)
     }
-    for (ap in names(bterms$fdpars)) {
-      out[[ap]] <- bterms$fdpars[[ap]]$value
+    for (dp in names(bterms$fdpars)) {
+      out[[dp]] <- bterms$fdpars[[dp]]$value
     }
     out <- c(out,
       data_gr(ranef, data, cov_ranef = cov_ranef),

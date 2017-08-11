@@ -17,21 +17,21 @@ rename_pars <- function(x) {
   change <- list()
   resp <- bterms$response
   if (length(resp) > 1L) {
-    # rename effects in multivaraite models
+    # rename effects in multivariate models
     for (r in resp) {
       bterms$dpars[["mu"]]$resp <- r
       change_eff <- change_effects(
-        bterms$dpars[["mu"]], model.frame(x), pars, 
+        bterms$dpars[["mu"]], data = model.frame(x), pars = pars,
         dims = x$fit@sim$dims_oi, stancode = stancode(x)
       )
       change <- c(change, change_eff)
     }
     bterms$dpars[["mu"]] <- NULL
   }
-  # rename effects of auxilliary parameters
+  # rename effects of distributional parameters
   for (ap in names(bterms$dpars)) {
     change_eff <- change_effects(
-      bterms$dpars[[ap]], model.frame(x), pars, 
+      bterms$dpars[[ap]], data = model.frame(x), pars = pars, 
       dims = x$fit@sim$dims_oi, stancode = stancode(x)
     )
     change <- c(change, change_eff)

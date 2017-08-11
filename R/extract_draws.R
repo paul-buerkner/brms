@@ -154,7 +154,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   if (nzchar(p)) {
     # make sure not to evaluate family specific stuff
     fit$formula[["response"]] <- NA
-    fit$family <- fit$formula$family <- par_family()
+    fit$family <- fit$formula$family <- .dpar_family()
   }
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula, family = family(fit))
@@ -669,7 +669,8 @@ subset_levels <- function(x, levels, nranef) {
   #   levels: grouping factor levels to keep
   #   nranef: number of group-level effects
   take_levels <- ulapply(levels, 
-    function(l) ((l - 1) * nranef + 1):(l * nranef))
+    function(l) ((l - 1) * nranef + 1):(l * nranef)
+  )
   x[, take_levels, drop = FALSE]
 }
 
@@ -683,8 +684,10 @@ prepare_Z <- function(Z, gf, max_level = max(unlist(gf)),
   #   weights: optional list of weights of the same length as gf
   nranef <- ncol(Z)
   levels <- unique(unlist(gf))
-  Z <- mapply(expand_matrix, x = gf, weights = weights,
-              MoreArgs = nlist(A = Z, max_level))
+  Z <- mapply(
+    expand_matrix, x = gf, weights = weights,
+    MoreArgs = nlist(A = Z, max_level)
+  )
   Z <- Reduce("+", Z)
   subset_levels(Z, levels, nranef)
 }

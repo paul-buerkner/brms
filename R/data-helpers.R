@@ -148,7 +148,7 @@ check_data_old_mv <- function(data, bterms) {
 }
 
 data_rsv_intercept <- function(data, bterms) {
-  # introduces the resevered variable "intercept" to the data
+  # add the resevered variable 'intercept' to the data
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms

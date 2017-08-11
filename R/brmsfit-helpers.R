@@ -666,7 +666,7 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
 }
 
 get_dpar <- function(x, i = NULL) {
-  # get samples of an auxiliary parameter
+  # get samples of an distributional parameter
   # Args:
   #   x: object to extract postarior samples from
   #   i: the current observation number
@@ -676,7 +676,7 @@ get_dpar <- function(x, i = NULL) {
     family <- x[["f"]]
     x <- get_eta(x, i = i)
     if (!nzchar(family$family)) {
-      # apply links for auxiliary parameters only
+      # apply links for distributional parameters only
       # the main family link is applied later on
       x <- ilink(x, family$link)
     }
