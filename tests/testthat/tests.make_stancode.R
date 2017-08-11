@@ -1148,14 +1148,20 @@ test_that("Stan code for Gaussian processes is correct", {
     "sdgp_2[2], lscale_2[2], zgp_2[Jgp_2_2]);"
   ))
   
-  prior <- c(prior(normal(0, 10), lscale, nlpar = eta),
-             prior(gamma(0.1, 0.1), sdgp, nlpar = eta),
-             prior(normal(0, 1), b, nlpar = eta))
-  scode <- make_stancode(bf(y ~ eta, eta ~ gp(x1), nl = TRUE), 
+  prior <- c(prior(normal(0, 10), lscale, nlpar = a),
+             prior(gamma(0.1, 0.1), sdgp, nlpar = a),
+             prior(normal(0, 1), b, nlpar = a))
+  scode <- make_stancode(bf(y ~ a, a ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_eta_1 | 0, 10)")
-  expect_match2(scode, "target += gamma_lpdf(sdgp_eta_1 | 0.1, 0.1)")
-  expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta_1[1], lscale_eta_1[1], zgp_eta_1)")
+  expect_match2(scode, "target += normal_lpdf(lscale_a_1 | 0, 10)")
+  expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
+  expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
+  
+  scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z), nl = TRUE),
+                         data = dat, prior = prior, silent = TRUE)
+  expect_match2(scode, 
+    "mu_a[Jgp_a_1_1] = mu_a[Jgp_a_1_1] + gp(Xgp_a_1[Jgp_a_1_1],"
+  )
 })
 
 test_that("Stan code for SAR models is correct", {

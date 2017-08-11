@@ -793,7 +793,7 @@ stan_gp <- function(gpef, prior, px = list()) {
     )
     if (byfac) {
       Jgp <- paste0("Jgp", pi, "_", J)
-      eta <- paste0(ifelse(nzchar(px$dpar), px$dpar, "mu"), "[", Jgp, "]")
+      eta <- paste0(combine_prefix(px, keep_mu = TRUE), "[", Jgp, "]")
       gp_args <- paste0(
         "Xgp", pi, "[", Jgp, "], sdgp", pi, "[", J, "], ", 
         "lscale", pi, "[", J, "], zgp", pi, "[", Jgp, "]"
