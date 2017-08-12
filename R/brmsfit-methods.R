@@ -429,7 +429,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                                       ...) {
   pars <- use_alias(pars, parameters, default = NA)
   add_chain <- use_alias(add_chain, add_chains, default = FALSE)
-  if (all(c(as.matrix, as.array))) {
+  if (as.matrix && as.array) {
     stop2("Cannot use 'as.matrix' and 'as.array' at the same time.")
   }
   if (add_chain && as.array) {
@@ -517,22 +517,27 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
   contains_samples(x)
-  pars <- extract_pars(pars, all_pars = parnames(x),
-                       exact_match = exact_match, ...)
+  pars <- extract_pars(
+    pars, all_pars = parnames(x),
+    exact_match = exact_match, ...
+  )
   if (combine_chains) {
     if (inc_warmup) {
       stop2("Cannot include warmup samples when 'combine_chains' is TRUE.")
     }
     out <- as.matrix(x$fit, pars)
-    mcpar <- c(x$fit@sim$warmup * x$fit@sim$chain + 1, 
-               x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin)
+    mcpar <- c(
+      x$fit@sim$warmup * x$fit@sim$chain + 1, 
+      x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin
+    )
     attr(out, "mcpar") <- mcpar
     class(out) <- "mcmc"
   } else {
-    ps <- extract(x$fit, pars, permuted = FALSE, 
-                  inc_warmup = inc_warmup)
-    mcpar <- c(if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
-               x$fit@sim$iter, x$fit@sim$thin)
+    ps <- extract(x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup)
+    mcpar <- c(
+      if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
+      x$fit@sim$iter, x$fit@sim$thin
+    )
     out <- vector("list", length = dim(ps)[2])
     for (i in seq_along(out)) {
       out[[i]] <- ps[, i, ]
@@ -902,7 +907,6 @@ standata.brmsfit <- function(object, ...) {
 #' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), 
                                  ...) {
-  require_package("shinystan")
   contains_samples(x)
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
 }
@@ -974,8 +978,9 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  samples <- posterior_samples(x, pars = pars, add_chain = TRUE,
-                               exact_match = exact_match)
+  samples <- posterior_samples(
+    x, pars = pars, add_chain = TRUE, exact_match = exact_match
+  )
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (!length(pars)) {
     stop2("No valid parameters selected.")
@@ -991,8 +996,9 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
   for (i in seq_len(n_plots)) {
     sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
-    plots[[i]] <- bayesplot::mcmc_combo(sub_samples, combo = combo, 
-                                        gg_theme = theme, ...)
+    plots[[i]] <- bayesplot::mcmc_combo(
+      sub_samples, combo = combo, gg_theme = theme, ...
+    )
     if (plot) {
       plot(plots[[i]], newpage = newpage || i > 1)
       if (i == 1) {
@@ -1315,9 +1321,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   } else if (is_categorical(x$family)) {
     stop2("Marginal plots are not yet implemented for categorical models.")
   } else if (is_ordinal(x$family)) {
-    warning2("Predictions are treated as continuous variables ", 
-             "in marginal plots, \nwhich is likely an invalid ", 
-             "assumption for family ", x$family$family, ".")
+    warning2(
+      "Predictions are treated as continuous variables ", 
+      "in marginal_effects, which is likely an invalid ", 
+      "assumption for family ", x$family$family, "."
+    )
   }
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
@@ -1349,15 +1357,19 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
       invalid <- effects[setdiff(seq_along(effects), sort(matches))]  
       invalid <- ulapply(invalid, paste, collapse = ":")
-      warning2("Some specified effects are invalid for this model: ",
-               collapse_comma(invalid), "\nValid effects are ", 
-               "(combinations of): ", collapse_comma(ae_coll))
+      warning2(
+        "Some specified effects are invalid for this model: ",
+        collapse_comma(invalid), "\nValid effects are ", 
+        "(combinations of): ", collapse_comma(ae_coll)
+      )
     }
     effects <- unique(effects[sort(matches)])
     if (!length(effects)) {
-      stop2("All specified effects are invalid for this model.\n", 
-            "Valid effects are (combinations of): ", 
-            collapse_comma(ae_coll))
+      stop2(
+        "All specified effects are invalid for this model.\n", 
+        "Valid effects are (combinations of): ", 
+        collapse_comma(ae_coll)
+      )
     }
   }
   if (length(probs) != 2L) {
@@ -2224,8 +2236,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   
-  arg_names <- c("prior", "autocor", "nonlinear", "threshold", 
-                 "cov_ranef", "sparse", "sample_prior")
+  arg_names <- c(
+    "prior", "autocor", "nonlinear", "threshold", 
+    "cov_ranef", "sparse", "sample_prior"
+  )
   new_args <- intersect(arg_names, names(dots))
   old_args <- setdiff(arg_names, new_args)
   dots[old_args] <- object[old_args]

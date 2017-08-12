@@ -137,7 +137,7 @@ test_that("deprecated priors are used", {
   prior <- prior(normal(0, 5), Intercept, nlpar = y)
   expect_warning(
     scode <- make_stancode(cbind(y, x) ~ 1, dat, prior = prior),
-    "Specifying priors in multivairate models via 'nlpar' is deprecated"
+    "Specifying priors in multivariate models via 'nlpar' is deprecated"
   )
   expect_match2(scode, "normal_lpdf(temp_y_Intercept | 0, 5)")
 })

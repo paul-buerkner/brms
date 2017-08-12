@@ -407,7 +407,7 @@ test_that("update works correctly for some special cases", {
 
 test_that("Wiener diffusion models work correctly", {
   x <- rnorm(100, mean = 1)
-  dat <- brms:::rwiener(n=1, alpha=2, tau=.3, beta=.5, delta=.5+x)
+  dat <- rwiener(n=1, alpha=2, tau=.3, beta=.5, delta=.5+x)
   dat$x <- x
 
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,
