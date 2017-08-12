@@ -10,7 +10,25 @@
       \code{bridge_sampler}, \code{bayes_factor},
       and \code{post_prob} all powered by the
       \pkg{bridgesampling} package.
+      \item Specify non-linear models for all
+      distributional parameters.
+      \item Combine multiple model formulas using 
+      the \code{+} operator and the helper functions 
+      \code{lf}, \code{nlf}, and \code{set_nl}.
+      \item Combine multiple priors using the 
+      \code{+} operator.
+      \item Split the \code{nlpar} argument of
+      \code{set_prior} into the three arguments
+      \code{resp}, \code{dpar}, and \code{nlpar}
+      to allow for more flexible prior specifications.
     }
+  }
+  \subsection{OTHER CHANGES}{
+    \item Refactor parts of the package to prepare
+    for the implementation of more flexible 
+    multivariate models in future updates.
+    \item Rename argument \code{auxpar} of 
+    \code{fitted.brmsfit} to \code{dpar}.
   }
 }
 
