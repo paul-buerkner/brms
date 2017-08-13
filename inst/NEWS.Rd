@@ -24,11 +24,13 @@
     }
   }
   \subsection{OTHER CHANGES}{
-    \item Refactor parts of the package to prepare
-    for the implementation of more flexible 
-    multivariate models in future updates.
-    \item Rename argument \code{auxpar} of 
-    \code{fitted.brmsfit} to \code{dpar}.
+    \itemize{
+      \item Refactor parts of the package to prepare
+      for the implementation of more flexible 
+      multivariate models in future updates.
+      \item Rename argument \code{auxpar} of 
+      \code{fitted.brmsfit} to \code{dpar}.
+    }
   }
 }
 
