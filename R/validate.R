@@ -808,6 +808,10 @@ update_re_terms <- function(x, re_formula = NULL) {
     # add valid group-level terms of re_formula
     # Args:
     #   formula: object of class 'formula'
+    if (isTRUE(attr(formula, "nl"))) {
+      # non-linear formulas contain no group-level effects
+      return(formula)
+    }
     re_formula <- check_re_formula(re_formula, formula)
     new_formula <- formula2str(formula)
     old_re_terms <- get_re_terms(formula)
@@ -830,9 +834,7 @@ update_re_terms <- function(x, re_formula = NULL) {
   if (is.formula(x)) {
     x <- .update_re_terms(x, re_formula) 
   } else if (is.brmsformula(x)) {
-    if (!isTRUE(attr(x, "nl"))) {
-      x$formula <- .update_re_terms(x$formula, re_formula)
-    }
+    x$formula <- .update_re_terms(x$formula, re_formula)
     x$pforms <- lapply(pforms(x), .update_re_terms, re_formula)
   } else {
     stop("Don't know how to handle objects of class ",
