@@ -1,13 +1,19 @@
-bibentry(bibtype = "Article",
-         title = "{brms}: An {R} Package for Bayesian Multilevel Models using Stan",
-         author = c(person(given = "Paul-Christian",
-                           family = "Bürkner")),
-         journal = "Journal of Statistical Software",
-         year  = "in press",
-         header = "To cite brms in publications use:",
-         textVersion  =
-           paste("Paul-Christian Bürkner (in press).",
-                 "brms: An R Package for Bayesian Multilevel Models using Stan.",
-                 "Journal of Statistical Software."),
-         encoding = "UTF-8"
+bibentry(
+  bibtype = "Article",
+  title = "{brms}: An {R} Package for Bayesian Multilevel Models Using {Stan}",
+  author = person(given = "Paul-Christian", family = "Bürkner"),
+  journal = "Journal of Statistical Software",
+  year = "2017",
+  volume = "80",
+  number = "1",
+  pages = "1--28",
+  doi = "10.18637/jss.v080.i01",
+  header = "To cite brms in publications use:",
+  textVersion = paste(
+    "Paul-Christian Bürkner (2017).",
+    "brms: An R Package for Bayesian Multilevel Models Using Stan.",
+    "Journal of Statistical Software, 80(1), 1-28.",
+    "doi:10.18637/jss.v080.i01"
+  ),
+  encoding = "UTF-8"
 )

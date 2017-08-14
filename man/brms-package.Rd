@@ -56,6 +56,10 @@ Paul-Christian Buerkner
 Maintainer: Paul-Christian Buerkner <paul.buerkner@gmail.com>
 }
 \references{
+Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+Models Using Stan. Journal of Statistical Software, 80(1), 1-28. 
+doi:10.18637/jss.v080.i01
+
 The Stan Development Team Stan Modeling Language User's Guide and Reference Manual. 
 \url{http://mc-stan.org/}.
 }
