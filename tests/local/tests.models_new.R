@@ -68,9 +68,23 @@ test_that("Binomial model from brm doc works correctly", {
               family = binomial("probit"),
               cores = 2)
   print(fit4)
-  expect_message(me4 <- marginal_effects(fit4),
-                 "median number of trials")
-  expect_ggplot(plot(me4, ask = FALSE)[[1]])
+  expect_message(
+    me <- marginal_effects(fit4), "median number of trials"
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+
+test_that("Non-linear model from brm doc works correctly", {
+  x <- rnorm(100)
+  y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
+  data5 <- data.frame(x, y)
+  fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
+              data = data5,
+              prior = c(prior(normal(0, 2), nlpar = a1),
+                        prior(normal(0, 2), nlpar = a2)))
+  print(fit5)
+  me <- marginal_effects(fit5)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
 })
 
 test_that("Models from hypothesis doc work correctly", {
