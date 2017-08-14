@@ -45,12 +45,6 @@ test_that("brm produces expected errors", {
                "not yet implemented for family 'poisson'")
   
   # ordinal models
-  expect_error(brm(rating ~ treat + period + carry + cse(treat) + (1|subject), 
-                   data = inhaler, family = cratio("logit")), 
-               "Error occured for variables: 'treat'")
-  expect_error(brm(rating ~ treat + period + carry + monotonic(carry),
-                   data = inhaler, family = cratio("logit")), 
-               "Error occured for variables: 'carry'")
   expect_error(brm(rating ~ treat + (cs(period)|subject),
                    data = inhaler, family = categorical()), 
                "Category specific effects are only meaningful")
@@ -62,7 +56,7 @@ test_that("brm produces expected errors", {
                "'inverse' is not a supported link for family 'poisson'")
   expect_error(brm(y ~ x, dat, family = c("weibull", "sqrt")),
                "'sqrt' is not a supported link for family 'weibull'")
-  expect_error(brm(y ~ x, dat, family = c("categorical","probit")),
+  expect_error(brm(y ~ x, dat, family = c("categorical", "probit")),
                "'probit' is not a supported link for family 'categorical'")
   expect_error(brm(y ~ x, dat, family = "ordinal"),
               "ordinal is not a supported family")

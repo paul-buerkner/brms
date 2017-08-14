@@ -1089,10 +1089,8 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
     if (return_covars && !combine) {
       stop("Invalid combination of arguments. Please report a bug.")
     }
-    x_tmp <- x
-    x_tmp[vars_prefix()] <- ""
-    sdata_fe <- data_fe(x_tmp, data, knots = attr(data, "knots"))
-    by_levels <- attr(sdata_fe[["X"]], "by_levels")
+    sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
+    by_levels <- attr(sdata_fe$X, "by_levels")
     nby <- lengths(by_levels)
     sms <- as.list(sms)
     for (i in seq_along(sms)) {

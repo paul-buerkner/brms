@@ -619,16 +619,12 @@ prior_effects.btl <- function(x, data, spec_intercept = TRUE,
   #   def_scale_prior: default prior for SD parameters
   # Return:
   #   An object of class brmsprior 
-  px <- check_prefix(x)
-  fixef <- colnames(data_fe(x, data)$X)
-  spec_intercept <- has_intercept(x$fe) && spec_intercept
-  csef <- colnames(get_model_matrix(x$cs, data = data))
-  prior_fe(fixef, spec_intercept = spec_intercept, px = px) +
-    prior_cs(csef, fixef = fixef, px = px) +
-    prior_mo(all_terms(x$mo), fixef = fixef, px = px) +
-    prior_sm(get_sm_labels(x), def_scale_prior, px = px) + 
-    prior_me(get_me_labels(x, data), px = px) + 
-    prior_gp(get_gp_labels(x), def_scale_prior, px = px)
+  prior_fe(x, data, spec_intercept = spec_intercept) +
+    prior_cs(x, data) +
+    prior_mo(x, data) +
+    prior_sm(x, data, def_scale_prior = def_scale_prior) + 
+    prior_me(x, data) + 
+    prior_gp(x, data, def_scale_prior = def_scale_prior)
 }
 
 #' @export
@@ -649,15 +645,16 @@ prior_effects.btnl <- function(x, data, def_scale_prior = "", ...) {
   prior
 }
 
-prior_fe <- function(fixef, spec_intercept = TRUE, px = list()) {
+prior_fe <- function(bterms, data, spec_intercept = TRUE) {
   # priors for population-level parameters
   # Args:
-  #   fixef: names of the population-level effects
   #   spec_intercept: special parameter class for the Intercept? 
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
-  if (spec_intercept) {
+  fixef <- colnames(data_fe(bterms, data)$X)
+  px <- check_prefix(bterms)
+  if (has_intercept(bterms$fe) && spec_intercept) {
     prior <- prior +
       brmsprior(class = "Intercept", coef = "", ls = px) +
       brmsprior(class = "b", coef = "Intercept", ls = px)
@@ -670,23 +667,14 @@ prior_fe <- function(fixef, spec_intercept = TRUE, px = list()) {
   prior
 }
 
-prior_mo <- function(monef, fixef = NULL, px = list()) {
+prior_mo <- function(bterms, data) {
   # priors for monotonic effects parameters
-  # Args:
-  #   monef: names of the monotonic effects
-  #   fixef: names of the population-level effects
-  #   nlpar: optional name of a non-linear parameter
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
+  monef <- all_terms(bterms$mo)
   if (length(monef)) {
-    invalid <- intersect(fixef, monef)
-    if (length(invalid)) {
-      stop2("Variables cannot be modeled as fixed and ", 
-            "monotonic effects at the same time. ", 
-            "\nError occured for variables: ", 
-            collapse_comma(invalid))
-    }
+    px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", monef), ls = px) + 
       brmsprior(class = "simplex", coef = monef, ls = px)
@@ -694,46 +682,44 @@ prior_mo <- function(monef, fixef = NULL, px = list()) {
   prior
 }
 
-prior_cs <- function(csef, fixef = NULL, px = list()) {
+prior_cs <- function(bterms, data) {
   # priors for category spcific effects parameters
-  # Args:
-  #   csef: names of the category specific effects
-  #   fixef: names of the population-level effects
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
+  csef <- colnames(get_model_matrix(bterms$cs, data = data))
   if (length(csef)) {
-    invalid <- intersect(fixef, csef)
-    if (length(invalid)) {
-      stop2("Variables cannot be modeled as fixed and ", 
-            "category specific effects at the same time. ", 
-            "\nError occured for variables: ", 
-            collapse_comma(invalid))
-    }
+    px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", csef), ls = px)
   }
   prior
 }
 
-prior_me <- function(meef, px = list()) {
+prior_me <- function(bterms, data) {
   # default priors of coefficients of noisy terms
-  # Args:
-  #   meef: terms containing noisy variables
+  # Returns:
+  #   an object of class brmsprior
   prior <- empty_brmsprior()
+  meef <- get_me_labels(bterms, data)
   if (length(meef)) {
+    px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", rename(meef)), ls = px)
   }
   prior
 }
 
-prior_gp <- function(gpef, def_scale_prior, px = list()) {
-  # default priors of coefficients of noisy terms
-  # Args:
-  #   meef: terms containing noisy variables
+prior_gp <- function(bterms, data, def_scale_prior) {
+  # default priors of gaussian processes
+  # Returns:
+  #   an object of class brmsprior
+  #   def_scale_prior: a character string defining 
+  #     the default prior for random effects SDs
   prior <- empty_brmsprior()
+  gpef <- get_gp_labels(bterms)
   if (length(gpef)) {
+    px <- check_prefix(bterms)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
       brmsprior(class = "sdgp", coef = gpef, ls = px) +
@@ -810,21 +796,20 @@ prior_re <- function(ranef, def_scale_prior, global_sd = FALSE,
   prior
 }
 
-prior_sm <- function(smooths, def_scale_prior, px = list()) {
+prior_sm <- function(bterms, data, def_scale_prior) {
   # priors for smooth terms
   # Args:
-  #   smooths: names of the smooth terms
-  #   def_scale_prior: a character string defining the default
-  #                    prior for smooth SDs
-  #   nlpar: optional name of a non-linear parameter
+  #   def_scale_prior: a character string defining 
+  #     the default prior for smooth SDs
+  prior <- empty_brmsprior()
+  smooths <- get_sm_labels(bterms)
   if (length(smooths)) {
+    px <- check_prefix(bterms)
     prior_strings <- c(def_scale_prior, rep("", length(smooths)))
-    prior <- brmsprior(
+    prior <- prior + brmsprior(
       class = "sds", coef = c("", smooths), 
       prior = prior_strings, ls = px
     )
-  } else {
-    prior <- empty_brmsprior()
   }
   prior
 }

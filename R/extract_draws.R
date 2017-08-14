@@ -179,6 +179,8 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   
   args <- nlist(x = fit, subset)
   new <- !is.null(newdata)
+  # deviate from the usual way of passing bterms and data
+  # as bterms and px do not coincide in extract_draws.btl
   fixef <- colnames(draws$data[["X"]])
   monef <- colnames(draws$data[["Xmo"]])
   csef <- colnames(draws$data[["Xcs"]])
