@@ -4,43 +4,26 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
-  #   eta: prefix of the linear predictor variable
+  #   sparse: should the population-level design matrix be treated as sparse?
+  #   ilink: character vector of lenght 2 defining the link to be applied
+  #   order_mixture: indicates how to identify mixture models via ordering
   stopifnot(length(ilink) == 2L)
   px <- check_prefix(x)
   eta <- combine_prefix(px, keep_mu = TRUE)
   stopifnot(nzchar(eta))
   ranef <- subset2(ranef, ls = px)
-  
-  out <- list()
-  # include population-level effects
   center_X <- center_X && has_intercept(x$fe) && 
     !is(x$autocor, "cor_bsts") && !sparse
-  rm_int <- center_X || is(x$autocor, "cor_bsts") || is_ordinal(x$family)
-  cols2remove <- if (rm_int) "Intercept"
-  fixef <- setdiff(colnames(data_fe(x, data)$X), cols2remove)
-  text_fe <- stan_fe(
-    fixef, center_X = center_X, family = x$family, 
-    prior = prior, px = px, sparse = sparse, 
-    order_mixture = order_mixture
-  )
-  # include smooth terms
-  smooths <- get_sm_labels(x, data = data)
-  text_sm <- stan_sm(smooths, prior = prior, px = px)
-  # include category specific effects
-  csef <- colnames(get_model_matrix(x$cs, data))
-  text_cs <- stan_cs(csef, ranef, prior = prior)
-  # include monotonic effects
-  monef <- all_terms(x$mo)
-  text_mo <- stan_mo(monef, ranef, prior = prior, px = px)
-  # include measurement error variables
-  meef <- get_me_labels(x, data = data)
-  text_me <- stan_me(meef, ranef, prior = prior, px = px)
-  # include gaussian processes
-  gpef <- get_gp_labels(x, data = data)
-  text_gp <- stan_gp(gpef, prior = prior, px = px)
-  
   out <- collapse_lists(
-    out, text_fe, text_cs, text_mo, text_me, text_sm, text_gp
+    text_fe <- stan_fe(
+      x, data, prior = prior, center_X = center_X,
+      sparse = sparse, order_mixture = order_mixture
+    ),
+    text_cs <- stan_cs(x, data, ranef = ranef, prior = prior),
+    text_mo <- stan_mo(x, data, ranef = ranef, prior = prior),
+    text_me <- stan_me(x, data, ranef = ranef, prior = prior),
+    text_sm <- stan_sm(x, data, prior = prior),
+    text_gp <- stan_gp(x, data, prior = prior)
   )
   p <- usc(combine_prefix(px))
   if (is.formula(x$offset)) {
@@ -102,7 +85,7 @@ stan_effects.btnl <- function(x, data, ranef, prior,
   #   prior: a brmsprior object
   #   nlpar: currently unused but should not be part of ...
   #   ilink: character vector of length 2 containing
-  #          Stan code for the link function
+  #     Stan code for the link function
   #   ...: passed to stan_effects.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
@@ -238,22 +221,24 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
   out
 }
 
-stan_fe <- function(fixef, prior, family = gaussian(),
-                    center_X = TRUE, px = list(),
+stan_fe <- function(bterms, data, prior, center_X = TRUE,
                     sparse = FALSE, order_mixture = 'none') {
   # Stan code for population-level effects
   # Args:
-  #   fixef: names of the population-level effects
   #   center_X: center the design matrix?
-  #   family: the model family
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior 
+  #   sparse: should the design matrix be treated as sparse?
   #   order_mixture: order intercepts to identify mixture models?
   # Returns:
   #   a list containing Stan code related to population-level effects
-  p <- usc(combine_prefix(px))
-  ct <- ifelse(center_X, "c", "")
   out <- list()
+  fixef <- colnames(data_fe(bterms, data)$X)
+  rm_intercept <- center_X || is.cor_bsts(bterms$autocor) || 
+    is_ordinal(bterms$family)
+  if (rm_intercept) {
+    fixef <- setdiff(fixef, "Intercept")
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   if (length(fixef)) {
     str_add(out$data) <- paste0( 
       "  int<lower=1> K", p, ";",
@@ -274,6 +259,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
       )
     }
     # prepare population-level coefficients
+    ct <- ifelse(center_X, "c", "")
     prefix <- combine_prefix(px, keep_mu = TRUE)
     special <- attr(prior, "special")[[prefix]]
     if (!is.null(special[["hs_df"]])) {
@@ -342,7 +328,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  } \n"
       )
       # cumulative and sratio models are parameterized as thres - eta
-      use_plus <- family$family %in% c("cumulative", "sratio")
+      use_plus <- bterms$family$family %in% c("cumulative", "sratio")
       sub_X_means <- paste0(
         ifelse(use_plus, " + ", " - "), 
         "dot_product(means_X", p, ", b", p, ")"
@@ -350,7 +336,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     } else {
       sub_X_means <- ""
     }
-    if (is_ordinal(family)) {
+    if (is_ordinal(bterms$family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       str_add(out$genD) <- paste0(
         "  // compute actual thresholds \n",
@@ -379,7 +365,9 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
     prefix <- paste0("temp", p, "_")
-    suffix <- ifelse(is_equal(family$threshold, "equidistant"), "1", "")
+    suffix <- ifelse(
+      is_equal(bterms$family$threshold, "equidistant"), "1", ""
+    )
     str_add(out$prior) <- stan_prior(
       prior, class = "Intercept", px = px,
       prefix = prefix, suffix = suffix
@@ -404,12 +392,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   #   cov_ranef: a list of custom covariance matrices 
   # Returns:
   #   A list of strings containing Stan code
+  out <- list()
   r <- subset2(ranef, id = id)
   ccov <- r$group[1] %in% names(cov_ranef)
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(px)))
-  out <- list()
   str_add(out$data) <- paste0(
     "  // data for group-level effects of ID ", id, " \n",
     if (r$gtype[1] == "mm") {
@@ -517,15 +505,11 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   out
 }
 
-stan_sm <- function(smooths, prior, px = list()) {
+stan_sm <- function(bterms, data, prior) {
   # Stan code of smooth terms
-  # Args:
-  #   smooths: names of the smooth terms
-  #   prior: object of class brmsprior
-  #   nlpar: optional name of a non-linear parameter
-  # Returns:
-  #   A list of strings containing Stan code
   out <- list()
+  smooths <- get_sm_labels(bterms, data = data)
+  px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   if (length(smooths)) {
     stopifnot(!is.null(attr(smooths, "nbases")))
@@ -565,14 +549,12 @@ stan_sm <- function(smooths, prior, px = list()) {
   out
 }
 
-stan_mo <- function(monef, ranef, prior, px = list()) {
+stan_mo <- function(bterms, data, ranef, prior) {
   # Stan code for monotonic effects
-  # Args:
-  #   monef: names of the monotonic effects
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
-  p <- usc(combine_prefix(px))
   out <- list()
+  monef <- all_terms(bterms$mo)
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   if (length(monef)) {
     I <- seq_along(monef)
     str_add(out$data) <- paste0(
@@ -584,7 +566,6 @@ stan_mo <- function(monef, ranef, prior, px = list()) {
         " con_simplex", p, "_", I, "; \n"
       )
     )
-    # FIXME: pass px
     bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- paste0(
       "  // monotonic effects \n", 
@@ -609,15 +590,13 @@ stan_mo <- function(monef, ranef, prior, px = list()) {
   out
 }
 
-stan_cs <- function(csef, ranef, prior, px = list()) {
+stan_cs <- function(bterms, data, ranef, prior) {
   # Stan code for category specific effects
-  # Args:
-  #   csef: names of the category specific effects
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
-  # (!) Not yet implemented for non-linear models
-  ranef <- subset2(ranef, type = "cs", ls = px)
+  # (!) Not implemented for non-linear models
   out <- list()
+  csef <- colnames(get_model_matrix(bterms$cs, data))
+  px <- check_prefix(bterms)
+  ranef <- subset2(ranef, type = "cs", ls = px)
   if (length(csef)) {
     str_add(out$data) <- paste0(
       "  int<lower=1> Kcs;  // number of category specific effects \n",
@@ -667,14 +646,14 @@ stan_cs <- function(csef, ranef, prior, px = list()) {
   out
 } 
 
-stan_me <- function(meef, ranef, prior, px = list()) {
-  # stan code for measurement error effects
-  # Args:
-  #   meef: vector of terms containing noisy predictors
+stan_me <- function(bterms, data, ranef, prior) {
+  # Stan code for measurement error effects
   out <- list()
+  meef <- get_me_labels(bterms, data = data)
   if (length(meef)) {
     not_one <- attr(meef, "not_one")
     uni_me <- attr(meef, "uni_me")
+    px <- check_prefix(bterms)
     p <- usc(combine_prefix(px))
     pK <- paste0(p, "_", seq_along(uni_me))
     
@@ -748,12 +727,12 @@ stan_me <- function(meef, ranef, prior, px = list()) {
   out
 }
 
-stan_gp <- function(gpef, prior, px = list()) {
+stan_gp <- function(bterms, data, prior) {
   # Stan code for latent gaussian processes
-  # Args:
-  #   gpef: names of the gaussian process terms
-  p <- usc(combine_prefix(px))
   out <- list()
+  gpef <- get_gp_labels(bterms, data = data)
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   for (i in seq_along(gpef)) {
     pi <- paste0(p, "_", i)
     byvar <- attr(gpef, "byvars")[[i]]

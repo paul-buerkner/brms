@@ -570,11 +570,11 @@ test_that("all S3 methods have reasonable ouputs", {
   # do not actually refit the model as is causes CRAN checks to fail
   up <- update(fit1, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
+  
   new_data <- data.frame(Age = rnorm(18), visit = rep(c(3, 2, 4), 6),
                          Trt = rep(c(0, 0.5, -0.5), 6), 
                          count = rep(c(5, 17, 28), 6),
                          patient = 1, Exp = 4)
-  
   up <- update(fit1, newdata = new_data, ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(up$data.name, "new_data")

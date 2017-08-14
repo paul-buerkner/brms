@@ -1500,8 +1500,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
     }
     bterms$dpars[["mu"]] <- NULL
   }
-  for (ap in names(bterms$dpars)) {
-    bt <- bterms$dpars[ap]
+  for (dp in names(bterms$dpars)) {
+    bt <- bterms$dpars[dp]
     if (is.btnl(bt[[1]])) {
       lee <- c(lee, bt[[1]]$nlpars)
     } else {
@@ -1764,9 +1764,9 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     draws$mu <- get_eta(draws$mu)
   }
   dpars <- intersect(valid_dpars(family(object)), names(draws))
-  for (ap in dpars) {
-    if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_dpar(draws[[ap]])
+  for (dp in dpars) {
+    if (is.list(draws[[dp]])) {
+      draws[[dp]] <- get_dpar(draws[[dp]])
     }
   }
   # see predict.R
@@ -1907,9 +1907,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (is.list(draws[["mu"]][["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    for (ap in dpars) {
-      if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_dpar(draws[[ap]])
+    for (dp in dpars) {
+      if (is.list(draws[[dp]])) {
+        draws[[dp]] <- get_dpar(draws[[dp]])
       }
     }
     if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
@@ -2627,9 +2627,9 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- get_eta(draws$mu)
     }
     dpars <- intersect(valid_dpars(family(object)), names(draws))
-    for (ap in dpars) {
-      if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_dpar(draws[[ap]])
+    for (dp in dpars) {
+      if (is.list(draws[[dp]])) {
+        draws[[dp]] <- get_dpar(draws[[dp]])
       }
     }
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
@@ -2678,9 +2678,9 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   draws$pp_mixture <- TRUE
   
   dpars <- intersect(valid_dpars(family(x)), names(draws))
-  for (ap in dpars) {
-    if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_dpar(draws[[ap]])
+  for (dp in dpars) {
+    if (is.list(draws[[dp]])) {
+      draws[[dp]] <- get_dpar(draws[[dp]])
     }
   }
   N <- choose_N(draws)
