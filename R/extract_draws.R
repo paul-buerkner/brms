@@ -185,21 +185,20 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   meef <- get_me_labels(bterms$dpars$mu, fit$data)
   smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
   gpef <- get_gp_labels(bterms$dpars$mu, fit$data, covars = TRUE)
-  sdata_old <- NULL
-  if (length(gpef) && new) {
-    oldd_args <- newd_args[!names(newd_args) %in% "newdata"]
-    sdata_old <- do.call(amend_newdata, c(oldd_args, list(newdata = NULL)))
-  }
   draws <- c(draws,
     extract_draws_fe(fixef, args, px = px, old_cat = draws$old_cat),
     extract_draws_mo(monef, args, sdata = draws$data, px = px),
     extract_draws_cs(csef, args, px = px, old_cat = draws$old_cat),
     extract_draws_me(meef, args, sdata = draws$data, px = px, new = new),
     extract_draws_sm(smooths, args, sdata = draws$data, px = px),
-    extract_draws_gp(gpef, args, sdata = draws$data, sdata_old = sdata_old, 
-                     px = px, new = new, nug = nug),
-    extract_draws_re(new_ranef, args, sdata = draws$data, px = px,
-                     sample_new_levels = sample_new_levels)
+    extract_draws_gp(
+      gpef, args, sdata = draws$data, px = px, 
+      new = new, nug = nug, newd_args = newd_args
+    ),
+    extract_draws_re(
+      new_ranef, args, sdata = draws$data, px = px,
+      sample_new_levels = sample_new_levels
+    )
   )
   if (!use_cov(fit$autocor) && (!nzchar(p) || mv)) {
     # only include autocorrelation parameters in draws for mu
@@ -396,12 +395,18 @@ extract_draws_sm <- function(smooths, args, sdata, px = list()) {
   draws
 }
 
-extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
-                             px = list(), new = FALSE, nug = NULL) {
+extract_draws_gp <- function(gpef, args, sdata, px = list(), 
+                             new = FALSE, nug = NULL,
+                             newd_args = list()) {
   # extract draws for gaussian processes
   # Args:
   #   gpef: names of the gaussian process terms
   stopifnot("x" %in% names(args))
+  sdata_old <- NULL
+  if (length(gpef) && new) {
+    newd_args["newdata"] <- list(NULL)
+    sdata_old <- do.call(amend_newdata, newd_args)
+  }
   p <- usc(combine_prefix(px), "suffix")
   draws <- list()
   if (length(gpef)) {
