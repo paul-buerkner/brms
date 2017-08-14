@@ -16,8 +16,7 @@ marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
   rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
-  "raster"), theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE,
-  ...)
+  "raster"), theme = NULL, ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}

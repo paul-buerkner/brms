@@ -244,6 +244,11 @@
 #'   default of \code{10}. For more details on the \code{control} argument 
 #'   see \code{\link[rstan:stan]{stan}}.
 #'   
+#' @references 
+#'   Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+#'   Models Using Stan. Journal of Statistical Software, 80(1), 1-28. 
+#'   doi:10.18637/jss.v080.i01
+#'   
 #' @seealso
 #'   \code{\link[brms:brms]{brms}}, 
 #'   \code{\link[brms:brmsformula]{brmsformula}}, 

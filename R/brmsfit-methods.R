@@ -903,12 +903,41 @@ standata.brmsfit <- function(object, ...) {
   }
   standata
 }
-  
+
+#' Interface to \pkg{shinystan}
+#' 
+#' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
+#' 
+#' @aliases launch_shinystan launch_shiny
+#' 
+#' @param object A fitted model object typically of class \code{brmsfit}. 
+#' @param rstudio Only relevant for RStudio users. 
+#' The default (\code{rstudio=FALSE}) is to launch the app 
+#' in the default web browser rather than RStudio's pop-up Viewer. 
+#' Users can change the default to \code{TRUE} 
+#' by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.
+#' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
+#' 
+#' @return An S4 shinystan object
+#' 
+#' @examples
+#' \dontrun{
+#' fit <- brm(rating ~ treat + period + carry + (1|subject),
+#'            data = inhaler, family = "gaussian")
+#' launch_shinystan(fit)                         
+#' }
+#' 
+#' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
+#' 
+#' @method launch_shinystan brmsfit
+#' @importFrom shinystan launch_shinystan
+#' @export launch_shinystan
 #' @export
-launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), 
-                                 ...) {
-  contains_samples(x)
-  shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
+launch_shinystan.brmsfit <- function(
+  object, rstudio = getOption("shinystan.rstudio"), ...
+) {
+  contains_samples(object)
+  launch_shinystan(object$fit, rstudio = rstudio, ...)
 }
 
 #' Trace and Density Plots for MCMC Samples

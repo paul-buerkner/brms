@@ -5,8 +5,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
                                      rug = FALSE, mean = TRUE, 
                                      jitter_width = 0,
                                      stype = c("contour", "raster"),
-                                     theme = bayesplot::theme_default(), 
-                                     ask = TRUE, plot = TRUE, ...) {
+                                     theme = NULL, ask = TRUE, 
+                                     plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
   #   A list of ggplot objects
@@ -138,8 +138,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
                                 chars = 40, colors = NULL,
-                                theme = bayesplot::theme_default(),
-                                ask = TRUE, plot = TRUE,  ...) {
+                                theme = NULL, ask = TRUE, 
+                                plot = TRUE,  ...) {
   dots <- list(...)
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found", call. = FALSE)
