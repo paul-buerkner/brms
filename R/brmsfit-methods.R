@@ -2347,7 +2347,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    bterms <- parse_bf(object$formula, family = object$family)
+    bterms <- with(object, 
+      parse_bf(formula, family = family, autocor = autocor)
+    )
     object$data <- update_data(dots$data, bterms = bterms)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
@@ -2874,6 +2876,13 @@ bridge_sampler.brmsfit <- function(samples, ...) {
     stop2(
       "Models fitted with brms 1.8.0 or lower are not ",
       "usable in method 'bridge_sampler'."
+    )
+  }
+  if (is.cor_car(samples$autocor)) {
+    warning2(
+      "Some constants were dropped from the log-posterior ",
+      "of CAR models so that the output of 'bridge_sampler' ",
+      "may not be valid."
     )
   }
   sample_prior <- attr(samples$prior, "sample_prior")
