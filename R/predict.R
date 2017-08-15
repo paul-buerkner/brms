@@ -17,7 +17,7 @@ predict_gaussian <- function(i, draws, ...) {
 }
 
 predict_student <- function(i, draws, ...) {
-  args <- list(df = get_auxpar(draws$nu, i = i), 
+  args <- list(df = get_dpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "student_t", args = args, 
@@ -40,7 +40,7 @@ predict_lognormal <- function(i, draws, ...) {
 
 predict_skew_normal <- function(i, draws, ...) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
-  alpha <- get_auxpar(draws$alpha, i = i)
+  alpha <- get_dpar(draws$alpha, i = i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, alpha)
   rng_continuous(nrng = draws$nsamples, dist = "skew_normal", args = args, 
@@ -69,7 +69,7 @@ predict_student_mv <- function(i, draws, ...) {
   } else {
     mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
-  nu <- get_auxpar(draws$nu, i = i)
+  nu <- get_dpar(draws$nu, i = i)
   .fun <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], 
                      Sigma = draws$Sigma[s, , ])
@@ -142,7 +142,7 @@ predict_student_cov <- function(i, draws, ...) {
     # identity matrix
     Sigma <- do.call(get_cov_matrix_ident, args)
   }
-  nu <- get_auxpar(draws$nu, i = i)
+  nu <- get_dpar(draws$nu, i = i)
   .fun <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], 
                      Sigma = Sigma[s, , ])
@@ -179,7 +179,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   N <- draws$data$N
   mu <- ilink(get_eta(draws$mu), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data)
-  nu <- get_auxpar(draws$nu)
+  nu <- get_dpar(draws$nu)
   do.call(rbind, lapply(1:draws$nsamples, .predict_student_lagsar))
 }
 
@@ -204,7 +204,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   }
   mu <- ilink(get_eta(draws$mu), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data)
-  nu <- get_auxpar(draws$nu)
+  nu <- get_dpar(draws$nu)
   do.call(rbind, lapply(1:draws$nsamples, .predict_student_errorsar))
 }
 
@@ -220,7 +220,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
 predict_student_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
-  nu <- get_auxpar(draws$nu, 1:nrow(draws$data$V))
+  nu <- get_dpar(draws$nu, 1:nrow(draws$data$V))
   .fun <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$data$V)
   }
@@ -292,7 +292,7 @@ predict_weibull <- function(i, draws, ...) {
 }
 
 predict_frechet <- function(i, draws, ...) {
-  nu <- get_auxpar(draws$nu, i = i)
+  nu <- get_dpar(draws$nu, i = i)
   scale <- ilink(get_eta(draws$mu, i), draws$f$link) / gamma(1 - 1 / nu)
   args <- list(scale = scale, shape = nu)
   rng_continuous(nrng = draws$nsamples, dist = "frechet", args = args, 
@@ -301,7 +301,7 @@ predict_frechet <- function(i, draws, ...) {
 
 predict_gen_extreme_value <- function(i, draws, ...) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
-  xi <- get_auxpar(draws$xi, i = i)
+  xi <- get_dpar(draws$xi, i = i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, xi)
   rng_continuous(nrng = draws$nsamples, dist = "gen_extreme_value", 
@@ -318,7 +318,7 @@ predict_inverse.gaussian <- function(i, draws, ...) {
 predict_exgaussian <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
-               beta = get_auxpar(draws$beta, i = i))
+               beta = get_dpar(draws$beta, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "exgaussian", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
@@ -326,9 +326,9 @@ predict_exgaussian <- function(i, draws, ...) {
 predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
   args <- list(
     delta = ilink(get_eta(draws$mu, i), draws$f$link), 
-    alpha = get_auxpar(draws$bs, i = i),
-    tau = get_auxpar(draws$ndt, i = i),
-    beta = get_auxpar(draws$bias, i = i),
+    alpha = get_dpar(draws$bs, i = i),
+    tau = get_dpar(draws$ndt, i = i),
+    beta = get_dpar(draws$bias, i = i),
     types = if (negative_rt) c("q", "resp") else "q"
   )
   out <- rng_continuous(
@@ -344,7 +344,7 @@ predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
 
 predict_beta <- function(i, draws, ...) {
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
-  phi <- get_auxpar(draws$phi, i = i)
+  phi <- get_dpar(draws$phi, i = i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   rng_continuous(nrng = draws$nsamples, dist = "beta", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
@@ -352,7 +352,7 @@ predict_beta <- function(i, draws, ...) {
 
 predict_von_mises <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
-               kappa = get_auxpar(draws$kappa, i = i))
+               kappa = get_dpar(draws$kappa, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "von_mises", args = args,
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
@@ -360,7 +360,7 @@ predict_von_mises <- function(i, draws, ...) {
 predict_asym_laplace <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
-               quantile = get_auxpar(draws$quantile, i = i))
+               quantile = get_dpar(draws$quantile, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "asym_laplace", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
@@ -418,7 +418,7 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_zi_hu(draws, i, par = "zi")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
-  phi <- get_auxpar(draws$phi, i = i)
+  phi <- get_dpar(draws$phi, i = i)
   # compare with theta to incorporate the hurdle process
   hu <- runif(draws$nsamples, 0, 1)
   ifelse(hu < theta, 0, rbeta(draws$nsamples, shape1 = mu * phi, 
@@ -426,10 +426,10 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
 }
 
 predict_zero_one_inflated_beta <- function(i, draws, ...) {
-  zoi <- get_auxpar(draws$zoi, i)
-  coi <- get_auxpar(draws$coi, i)
+  zoi <- get_dpar(draws$zoi, i)
+  coi <- get_dpar(draws$coi, i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
-  phi <- get_auxpar(draws$phi, i = i)
+  phi <- get_dpar(draws$phi, i = i)
   hu <- runif(draws$nsamples, 0, 1)
   one_or_zero <- runif(draws$nsamples, 0, 1)
   ifelse(hu < zoi, 
@@ -512,13 +512,13 @@ predict_mixture <- function(i, draws, ...) {
     if (length(sample_ids)) {
       predict_fun <- paste0("predict_", families[j])
       predict_fun <- get(predict_fun, asNamespace("brms"))
-      auxpars <- valid_auxpars(families[j])
+      dpars <- valid_dpars(families[j])
       tmp_draws <- list(
         f = draws$f$mix[[j]],
         nsamples = length(sample_ids),
         data = draws[["data"]]
       )
-      for (ap in auxpars) {
+      for (ap in dpars) {
         tmp_draws[[ap]] <- p(draws[[paste0(ap, j)]], sample_ids, row = TRUE)
       }
       out[sample_ids] <- predict_fun(i, tmp_draws, ...)

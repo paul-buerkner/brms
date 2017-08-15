@@ -6,16 +6,51 @@ p <- function(x, i = NULL, row = TRUE) {
   #   row: indicating if rows or cols should be indexed
   #        only relevant if x has two dimensions
   if (!length(i)) {
-    x
+    out <- x
   } else if (length(dim(x)) == 2L) {
     if (row) {
-      x[i, , drop = FALSE]
+      out <- x[i, , drop = FALSE]
     } else {
-      x[, i, drop = FALSE]
+      out <- x[, i, drop = FALSE]
     }
   } else {
-    x[i]
+    out <- x[i]
   }
+  out
+}
+
+match_rows <- function(x, y, ...) {
+  # match rows in x with rows in y
+  x <- as.data.frame(x)
+  y <- as.data.frame(y)
+  x <- do.call("paste", c(x, sep = "\r"))
+  y <- do.call("paste", c(y, sep = "\r"))
+  match(x, y, ...)
+}
+
+find_rows <- function(x, ..., ls = list(), fun = '%in%') {
+  # finding rows matching columns passed via ls and ...
+  x <- as.data.frame(x)
+  if (!nrow(x)) {
+    return(logical(0))
+  }
+  out <- rep(TRUE, nrow(x))
+  ls <- c(ls, list(...))
+  if (!length(ls)) {
+    return(out)
+  }
+  if (is.null(names(ls))) {
+    stop("Argument 'ls' must be named.")
+  }
+  for (name in names(ls)) {
+    out <- out & do.call(fun, list(x[[name]], ls[[name]]))
+  }
+  out
+}
+
+subset2 <- function(x, ..., ls = list(), fun = '%in%') {
+  # subset x using arguments passed via ls and ...
+  x[find_rows(x, ..., ls = ls, fun = fun), ]
 }
 
 select_indices <- function(x, i) {

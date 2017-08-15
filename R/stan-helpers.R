@@ -53,7 +53,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is.formula(bterms$adforms$disp)) {
         stop2(err_msg, " when specifying 'disp'.")
       }
-      if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+      if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
         stop2(err_msg, " when predicting 'sigma' or 'nu'.")
       }
       str_add(out$data) <- paste0( 
@@ -108,7 +108,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(bterms$auxpars[["mu"]]$nlpars)) {
+      if (length(bterms$dpars[["mu"]]$nlpars)) {
         stop2(err_msg, " in non-linear models.")
       }
       if (!identical(family$link, "identity")) {
@@ -148,7 +148,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
   if (Karr) {
     # autoregressive effects of the response
     err_msg <- "ARR models are not yet working"
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     if (is_mv) {
@@ -176,7 +176,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is.formula(bterms$adforms$disp)) {
       stop2(err_msg, " when specifying 'disp'.")
     }
-    if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+    if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
       stop2(err_msg, " when predicting 'sigma' or 'nu'.")
     }
     str_add(out$data) <- paste0(
@@ -221,7 +221,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     str_add(out$data) <- paste0(
@@ -288,7 +288,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
-    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+    if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
     str_add(out$data) <- 
@@ -575,7 +575,7 @@ stan_families <- function(family, bterms) {
     # as suggested by Stephen Martin use sigma and mu of CP 
     # but the skewness parameter alpha of DP
     str_add(out$tdataD) <- "  real sqrt_2_div_pi = sqrt(2 / pi()); \n"
-    ap_names <- names(bterms$auxpars)
+    ap_names <- names(bterms$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- ifelse(length(families) == 1L, "", i)
       ns <- ifelse(paste0("sigma", id) %in% ap_names, "[n]", "")
@@ -611,7 +611,7 @@ stan_families <- function(family, bterms) {
       "  #include 'fun_gen_extreme_value.stan' \n",
       "  #include 'fun_scale_xi.stan' \n"
     )
-    ap_names <- c(names(bterms$auxpars), names(bterms$fauxpars))
+    ap_names <- c(names(bterms$dpars), names(bterms$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- ifelse(length(families) == 1L, "", i)
       xi <- paste0("xi", id)
@@ -620,7 +620,7 @@ stan_families <- function(family, bterms) {
            "  real ", xi, ";  // scaled shape parameter \n"
         )
         sigma <- paste0("sigma", id)
-        v <- ifelse(sigma %in% names(bterms$auxpars), "_vector", "")
+        v <- ifelse(sigma %in% names(bterms$dpars), "_vector", "")
         args <- sargs(paste0("temp_", xi), "Y", paste0("mu", id), sigma)
         str_add(out$modelC) <- paste0(
            "  ", xi, " = scale_xi", v, "(", args, "); \n"
@@ -636,10 +636,10 @@ stan_mixture <- function(bterms, prior) {
   out <- list()
   if (is.mixfamily(bterms$family)) {
     nmix <- length(bterms$family$mix)
-    theta_pred <- grepl("^theta", names(bterms$auxpars))
-    theta_pred <- bterms$auxpars[theta_pred]
-    theta_fix <- grepl("^theta", names(bterms$fauxpars))
-    theta_fix <- bterms$fauxpars[theta_fix]
+    theta_pred <- grepl("^theta", names(bterms$dpars))
+    theta_pred <- bterms$dpars[theta_pred]
+    theta_fix <- grepl("^theta", names(bterms$fdpars))
+    theta_fix <- bterms$fdpars[theta_fix]
     def_thetas <- collapse(
       "  real<lower=0,upper=1> theta", 1:nmix, ";",
       "  // mixing proportion \n"
@@ -648,7 +648,7 @@ stan_mixture <- function(bterms, prior) {
       if (length(theta_pred) != nmix - 1) {
         stop2("Can only predict all but one mixing proportion.")
       }
-      missing_id <- setdiff(1:nmix, auxpar_id(names(theta_pred)))
+      missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
       str_add(out$modelD) <- paste0(
         "  vector[N] theta", missing_id, " = rep_vector(0, N); \n",                   
         "  real log_sum_exp_theta; \n"      
@@ -795,7 +795,7 @@ stan_misc_functions <- function(family, prior, kronecker) {
 }
 
 stan_prior <- function(prior, class, coef = "", group = "", 
-                       nlpar = "", prefix = "", suffix = "",
+                       px = list(), prefix = "", suffix = "", 
                        wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
@@ -816,32 +816,36 @@ stan_prior <- function(prior, class, coef = "", group = "",
   tp <- tp(wsp)
   wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
-  keep <- prior$class == class & 
-    prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
+  prior <- subset2(prior, 
+    class = class, coef = c(coef, ""), group = c(group, "")
+  )
   if (class %in% c("sd", "cor")) {
     # only sd and cor parameters have global priors
-    keep <- keep & prior$nlpar %in% c(nlpar, "") 
+    px_tmp <- lapply(px, function(x) c(x, ""))
+    prior <- subset2(prior, ls = px_tmp)
   } else {
-    keep <- keep & prior$nlpar %in% nlpar
+    prior <- subset2(prior, ls = px)
   }
-  prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
     # unchecked prior statements are directly passed to Stan
     return(collapse(wsp, prior$prior, "; \n"))
   } 
   
-  unlpar <- unique(nlpar)
-  if (length(unlpar) > 1L) {
+  px <- as.data.frame(px)
+  upx <- unique(px)
+  if (nrow(upx) > 1L) {
     # can only happen for SD parameters of the same ID
-    base_prior <- rep(NA, length(unlpar))
-    for (i in seq_along(unlpar)) {
-      nlpar_prior <- prior[prior$nlpar %in% c("", unlpar[i]), ]
-      base_prior[i] <- stan_base_prior(nlpar_prior)
+    base_prior <- rep(NA, nrow(upx))
+    for (i in seq_len(nrow(upx))) {
+      sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
+      sub_prior <- subset2(prior, ls = sub_upx) 
+      base_prior[i] <- stan_base_prior(sub_prior)
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually
       # as there is not single base_prior anymore
-      take <- match(prior[nzchar(prior$coef), "nlpar"], unlpar)
+      prior_of_coefs <- prior[nzchar(prior$coef), vars_prefix()]
+      take <- match_rows(prior_of_coefs, upx)
       prior[nzchar(prior$coef), "prior"] <- base_prior[take]
     }
     base_prior <- base_prior[1]
@@ -851,15 +855,15 @@ stan_prior <- function(prior, class, coef = "", group = "",
     bound <- prior[!nzchar(prior$coef), "bound"]
   }
   
-  individual_prior <- function(i, max_index) {
+  individual_prior <- function(i, prior, max_index) {
     # individual priors for each parameter of a class
     if (max_index > 1L || matrix) {
       index <- paste0("[", i, "]")      
     } else {
       index <- ""
     }
-    if (length(nlpar) > 1L) {
-      prior <- prior[prior$nlpar == nlpar[i], ]
+    if (nrow(px) > 1L) {
+      prior <- subset2(prior, ls = px[i, ])
     }
     uc_prior <- prior$prior[match(coef[i], prior$coef)]
     if (!is.na(uc_prior) & nchar(uc_prior)) { 
@@ -885,8 +889,10 @@ stan_prior <- function(prior, class, coef = "", group = "",
   class <- paste0(prefix, class, suffix)
   if (any(with(prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
-    out <- sapply(seq_along(coef), individual_prior, 
-                  max_index = length(coef))
+    out <- sapply(
+      seq_along(coef), individual_prior, 
+      prior = prior, max_index = length(coef)
+    )
   } else if (nchar(base_prior) > 0) {
     if (matrix) {
       class <- paste0("to_vector(", class, ")")
@@ -899,7 +905,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
     out <- ""
   }
   special_prior <- stan_special_prior(
-    class, prior, ncoef = length(coef), nlpar = nlpar
+    class, prior, ncoef = length(coef), px = px
   )
   out <- collapse(c(out, special_prior))
   if (prior_only && nzchar(class) && !nchar(out)) {
@@ -915,21 +921,19 @@ stan_base_prior <- function(prior) {
   # Args:
   #   prior: a prior.frame
   stopifnot(length(unique(prior$class)) <= 1L) 
-  igroup <- which(with(prior, !nchar(coef) & nchar(group) & nchar(prior)))
-  inlpar <- which(with(prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
-  iclass <- which(with(prior, !nchar(coef) & !nchar(group) & nchar(prior)))
-  if (length(igroup)) {  
-    # if there is a global prior for this group
-    base_prior <- prior[igroup, "prior"]
-  } else if (length(inlpar)) {
-    # if there is a global prior for this non-linear parameter
-    base_prior <- prior[inlpar, "prior"]
-  } else if (length(iclass)) {  
-    # if there is a global prior for this class
-    base_prior <- prior[iclass, "prior"]
-  } else {  
-    # no proper prior for this class
-    base_prior <- ""
+  prior <- prior[with(prior, !nzchar(coef) & nzchar(prior)), ]
+  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  i <- 1
+  found <- FALSE
+  base_prior <- ""
+  take <- rep(FALSE, nrow(prior))
+  while (!found && i <= length(vars)) {
+    take <- nzchar(prior[[vars[i]]]) & !take
+    if (any(take)) {
+      base_prior <- prior[take, "prior"]
+      found <- TRUE
+    }
+    i <- i + 1
   }
   stopifnot(length(base_prior) == 1L)
   base_prior
@@ -979,16 +983,16 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   out
 }
 
-stan_special_prior <- function(class, prior, ncoef, nlpar = "") {
+stan_special_prior <- function(class, prior, ncoef, px = list()) {
   # add special priors such as horseshoe and lasso
   out <- ""
-  p <- usc(nlpar)
+  p <- usc(combine_prefix(px))
   if (all(class == paste0("b", p))) {
-    stopifnot(length(nlpar) == 1L)
+    stopifnot(length(p) == 1L)
     tp <- tp()
     # add horseshoe and lasso shrinkage priors
-    orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
-    special <- attributes(prior)$special[[orig_nlpar]]
+    prefix <- combine_prefix(px, keep_mu = TRUE)
+    special <- attributes(prior)$special[[prefix]]
     if (!is.null(special$hs_df)) {
       local_args <- paste0("0.5 * hs_df", p)
       local_args <- sargs(local_args, local_args)
@@ -1108,11 +1112,11 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
       # use parameters sampled from priors for use in other priors
       spars <- NULL
       # cannot sample from the horseshoe prior anymore as of brms 1.5.0
-      lasso_nlpars <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
-      lasso_nlpars <- names(prior_special)[lasso_nlpars]
-      lasso_nlpars <- usc(ulapply(lasso_nlpars, check_nlpar))
-      if (length(lasso_nlpars)) {
-        spars <- c(spars, paste0("lasso_inv_lambda", lasso_nlpars))
+      lasso_prefix <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
+      lasso_prefix <- names(prior_special)[lasso_prefix]
+      lasso_prefix <- usc(sub("^mu(_|$)", "", lasso_prefix))
+      if (length(lasso_prefix)) {
+        spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
       }
       if (length(spars)) {
         bpars <- grepl("^b(|mo|cs|me)(_|$)", pars)
@@ -1196,7 +1200,7 @@ stan_has_built_in_fun <- function(family) {
   #   family: a list with elements 'family' and 'link'
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
-  par <- family$par
+  dpar <- family$dpar
   family <- family$family
   log_families <- c(
     "poisson", "negbinomial", "geometric", 
@@ -1210,7 +1214,7 @@ stan_has_built_in_fun <- function(family) {
   isTRUE(
     family %in% log_families && link == "log" ||
     family %in% logit_families && link == "logit" ||
-    isTRUE(par %in% c("zi", "hu")) && link == "logit"
+    isTRUE(dpar %in% c("zi", "hu")) && link == "logit"
   )
 }
 

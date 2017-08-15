@@ -276,19 +276,19 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     list(family = family, link = slink), 
     class = c("brmsfamily", "family")
   )
-  for (ap in valid_auxpars(out$family)) {
-    alink <- as.character(aux_links[[paste0("link_", ap)]])
+  for (dp in valid_dpars(out$family)) {
+    alink <- as.character(aux_links[[paste0("link_", dp)]])
     if (length(alink)) {
       if (length(alink) > 1L) {
         stop2("Link functions must be of length 1.")
       }
-      valid_links <- links_auxpars(ap)
+      valid_links <- links_dpars(dp)
       if (!alink %in% valid_links) {
         stop2("'", alink, "' is not a supported link ", 
-              "for parameter '", ap, "'.\nSupported links are: ", 
+              "for parameter '", dp, "'.\nSupported links are: ", 
               collapse_comma(valid_links))
       }
-      out[[paste0("link_", ap)]] <- alink
+      out[[paste0("link_", dp)]] <- alink
     }
   }
   if (is_ordinal(out$family)) {
@@ -539,33 +539,6 @@ acat <- function(link = "logit", link_disc = "log",
               link_disc = link_disc, threshold = threshold)
 }
 
-par_family <- function(par = NULL, link = NULL) {
-  # set up special family objects for parameters
-  # Args:
-  #   par: name of the parameter
-  #   link: optional link function of the parameter
-  ap_class <- auxpar_class(par)
-  if (!is.null(par) && !isTRUE(ap_class %in% auxpars())) {
-    stop2("Parameter '", par, "' is invalid.")
-  }
-  if (is.null(par)) {
-    link <- "identity"
-  } else {
-    links <- links_auxpars(ap_class)
-    if (is.null(link)) {
-      link <- links[1]
-    } else {
-      if (!isTRUE(link %in% links)) {
-        stop2("Link '", link, "' is invalid for parameter '", par, "'.")
-      }
-    }
-  }
-  structure(
-    list(family = "", link = link, par = par),
-    class = c("brmsfamily", "family")
-  )
-}
-
 check_family <- function(family, link = NULL, threshold = NULL) {
   # checks and corrects validity of the model family
   # Args:
@@ -765,22 +738,59 @@ family_names.mixfamily <- function(family, ...) {
 }
 
 #' @export
-auxpar_family.default <- function(family, auxpar, ...) {
-  ap_class <- auxpar_class(auxpar)
-  if (!identical(ap_class, "mu")) {
-    link <- family[[paste0("link_", ap_class)]]
-    family <- par_family(auxpar, link)
+family_names.brmsformula <- function(family, ...) {
+  family_names(family$family)
+}
+
+#' @export
+family_names.brmsterms <- function(family, ...) {
+  family_names(family$family)
+}
+
+#' @export
+dpar_family.default <- function(family, dpar, ...) {
+  dp_class <- dpar_class(dpar)
+  if (!identical(dp_class, "mu")) {
+    link <- family[[paste0("link_", dp_class)]]
+    family <- .dpar_family(dpar, link)
   }
   family
 }
 
 #' @export
-auxpar_family.mixfamily <- function(family, auxpar, ...) {
-  ap_id <- as.numeric(auxpar_id(auxpar))
-  if (!(length(ap_id) == 1L && is.numeric(ap_id))) {
-    stop2("Parameter '", auxpar, "' is not a valid mixture parameter.")
+dpar_family.mixfamily <- function(family, dpar, ...) {
+  dp_id <- as.numeric(dpar_id(dpar))
+  if (!(length(dp_id) == 1L && is.numeric(dp_id))) {
+    stop2("Parameter '", dpar, "' is not a valid mixture parameter.")
   }
-  auxpar_family(family$mix[[ap_id]], auxpar, ...)
+  dpar_family(family$mix[[dp_id]], dpar, ...)
+}
+
+.dpar_family <- function(dpar = NULL, link = NULL) {
+  # set up special family objects for distributional parameters
+  # Args:
+  #   dpar: name of the distributional parameter
+  #   link: optional link function of the parameter
+  dp_class <- dpar_class(dpar)
+  if (!is.null(dpar) && !isTRUE(dp_class %in% dpars())) {
+    stop2("Parameter '", dpar, "' is invalid.")
+  }
+  if (is.null(dpar)) {
+    link <- "identity"
+  } else {
+    links <- links_dpars(dp_class)
+    if (is.null(link)) {
+      link <- links[1]
+    } else {
+      if (!isTRUE(link %in% links)) {
+        stop2("Link '", link, "' is invalid for parameter '", dpar, "'.")
+      }
+    }
+  }
+  structure(
+    nlist(family = "", link, dpar),
+    class = c("brmsfamily", "family")
+  )
 }
 
 #' @export
@@ -794,13 +804,13 @@ print.brmsfamily <- function(x, links = FALSE, newline = TRUE, ...) {
     cat("Threshold:", x$threshold, "\n")
   }
   if (isTRUE(links) || is.character(links)) {
-    ap_links <- x[grepl("^link_", names(x))]
-    names(ap_links) <- sub("^link_", "", names(ap_links))
+    dp_links <- x[grepl("^link_", names(x))]
+    names(dp_links) <- sub("^link_", "", names(dp_links))
     if (is.character(links)) {
-      ap_links <- rmNULL(ap_links[links])
+      dp_links <- rmNULL(dp_links[links])
     }
-    for (ap in names(ap_links)) {
-      cat(paste0("Link function of ", ap, ": ", ap_links[[ap]], " \n")) 
+    for (dp in names(dp_links)) {
+      cat(paste0("Link function of ", dp, ": ", dp_links[[dp]], " \n")) 
     }
   }
   if (newline) {

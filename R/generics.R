@@ -1204,8 +1204,14 @@ extract_draws <- function(x, ...) {
   UseMethod("extract_draws")
 }
 
+make_Jmo_list <- function(x, data, ...) {
+  # compute Jmo values based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_Jmo_list")
+}
+
 make_smooth_list <- function(x, data, ...) {
-  # compute smoothing objects based on the original data
+  # compute smooth objects based on the original data
   # as the basis for doing predictions with new data
   UseMethod("make_smooth_list")
 }
@@ -1221,9 +1227,9 @@ check_prior_special <- function(x, ...) {
   UseMethod("check_prior_special")
 }
 
-auxpar_family <- function(family, auxpar, ...) {
+dpar_family <- function(family, dpar, ...) {
   # generate a family object of an auxiliary parameter
-  UseMethod("auxpar_family")
+  UseMethod("dpar_family")
 }
 
 family_names <- function(family, ...) {
@@ -1231,9 +1237,9 @@ family_names <- function(family, ...) {
   UseMethod("family_names")
 }
 
-valid_auxpars <- function(family, ...) {
+valid_dpars <- function(family, ...) {
   # get valid auxiliary parameters for a family
-  UseMethod("valid_auxpars")
+  UseMethod("valid_dpars")
 }
 
 stan_llh <- function(family, ...) {

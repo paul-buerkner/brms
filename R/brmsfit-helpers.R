@@ -102,7 +102,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       }
     }
     if (version <= "0.10.0.9000") {
-      if (length(bterms$auxpars$mu$nlpars)) {
+      if (length(bterms$dpars$mu$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_re(x$ranef, pars = parnames(x),
                                 dims = x$fit@sim$dims_oi)
@@ -136,6 +136,9 @@ restructure <- function(x, rstr_summary = FALSE) {
         attr(x$exclude, "save_mevars") <- 
           any(grepl("^Xme_", parnames(x)))
       }
+    }
+    if (version <= "1.8.0.1") {
+      x$prior[, c("resp", "dpar")] <- ""
     }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
@@ -238,7 +241,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     lapply(get_effect(bterms, "offset"), rhs),
     re$form, lapply(re$gcall, "[[", "weightvars"),
     bterms$adforms[c("se", "disp", "trials", "cat")],
-    bterms$auxpars$mu$covars
+    bterms$dpars$mu$covars
   )
   req_vars <- unique(ulapply(req_vars, all.vars))
   req_vars <- setdiff(req_vars, rsv_vars)
@@ -662,8 +665,8 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_auxpar <- function(x, i = NULL) {
-  # get samples of an auxiliary parameter
+get_dpar <- function(x, i = NULL) {
+  # get samples of an distributional parameter
   # Args:
   #   x: object to extract postarior samples from
   #   i: the current observation number
@@ -673,7 +676,7 @@ get_auxpar <- function(x, i = NULL) {
     family <- x[["f"]]
     x <- get_eta(x, i = i)
     if (!nzchar(family$family)) {
-      # apply links for auxiliary parameters only
+      # apply links for distributional parameters only
       # the main family link is applied later on
       x <- ilink(x, family$link)
     }
@@ -692,21 +695,21 @@ get_auxpar <- function(x, i = NULL) {
 get_sigma <- function(x, data, i = NULL, dim = NULL) {
   # get the residual standard devation of linear models
   # Args: 
-  #    see get_auxpar
+  #    see get_dpar
   #    dim: target dimension of output matrices (used in fitted)
   stopifnot(is.atomic(x) || is.list(x))
   out <- get_se(data = data, i = i, dim = dim)
   if (!is.null(x)) {
-    out <- sqrt(out^2 + get_auxpar(x, i = i)^2)
+    out <- sqrt(out^2 + get_dpar(x, i = i)^2)
   }
   mult_disp(out, data = data, i = i, dim = dim)
 }
 
 get_shape <- function(x, data, i = NULL, dim = NULL) {
   # get the shape parameter of gamma, weibull and negbinomial models
-  # Args: see get_auxpar
+  # Args: see get_dpar
   stopifnot(is.atomic(x) || is.list(x))
-  x <- get_auxpar(x, i = i)
+  x <- get_dpar(x, i = i)
   mult_disp(x, data = data, i = i, dim = dim)
 }
 
@@ -715,14 +718,14 @@ get_zi_hu <- function(draws, i = NULL, par = c("zi", "hu")) {
   # also works with deprecated models fitted with brms < 1.0.0 
   # which were using multivariate syntax
   # Args:
-  #   see get_auxpar
+  #   see get_dpar
   #   par: parameter to extract; either 'zi' or 'hu'
   par <- match.arg(par)
   if (!is.null(draws$data$N_trait)) {
     j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
     out <- ilink(get_eta(draws$mu, j + draws$data$N_trait), "logit")
   } else {
-    out <- get_auxpar(draws[[par]], i = i)
+    out <- get_dpar(draws[[par]], i = i)
   }
   out
 }
@@ -736,7 +739,7 @@ get_theta <- function(draws, i = NULL) {
     families <- family_names(draws$f)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      theta[[j]] <- get_auxpar(draws[[paste0("theta", j)]], i = i)
+      theta[[j]] <- get_dpar(draws[[paste0("theta", j)]], i = i)
     }
     theta <- do.call(abind, c(theta, along = 3))
     for (n in seq_len(dim(theta)[2])) {
@@ -752,10 +755,10 @@ get_theta <- function(draws, i = NULL) {
 get_disc <- function(draws, i = NULL, ncat = NULL) {
   # convenience function to extract discrimination parameters
   # Args:
-  #   see get_auxpar 
+  #   see get_dpar 
   #   ncat: number of response categories
   if (!is.null(draws[["disc"]])) {
-    disc <- get_auxpar(draws[["disc"]], i)
+    disc <- get_dpar(draws[["disc"]], i)
     if (!is.null(dim(disc))) {
       stopifnot(is.numeric(ncat))
       disc <- array(disc, dim = c(dim(disc), ncat - 1))
@@ -768,7 +771,7 @@ get_disc <- function(draws, i = NULL, ncat = NULL) {
 
 get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
-  # Args: see get_auxpar
+  # Args: see get_dpar
   se <- data[["se"]]
   if (!is.null(se)) {
     if (!is.null(i)) {
@@ -785,7 +788,7 @@ get_se <- function(data, i = NULL, dim = NULL) {
 
 mult_disp <- function(x, data, i = NULL, dim = NULL) {
   # multiply existing samples by 'disp' data
-  # Args: see get_auxpar
+  # Args: see get_dpar
   if (!is.null(data$disp)) {
     if (!is.null(i)) {
       x <- x * data$disp[i]
@@ -884,7 +887,7 @@ fixef_pars <- function() {
 default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$",
+    paste0("^", dpars(), "[[:digit:]]*$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
     "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }

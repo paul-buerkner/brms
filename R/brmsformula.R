@@ -11,10 +11,10 @@
 #'   a symbolic description of the model to be fitted. 
 #'   The details of model specification are given in 'Details'.
 #' @param ... Additional \code{formula} objects to specify 
-#'   predictors of non-linear and auxiliary parameters. 
+#'   predictors of non-linear and distributional parameters. 
 #'   Formulas can either be named directly or contain
 #'   names on their left-hand side. 
-#'   The following are auxiliary parameters of specific families
+#'   The following are distributional parameters of specific families
 #'   (all other parameters are treated as non-linear parameters):
 #'   \code{sigma} (residual standard deviation or scale of
 #'   the \code{gaussian}, \code{student}, \code{lognormal} 
@@ -37,7 +37,7 @@
 #'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 #'   non-decision time, and initial bias of the \code{wiener}
 #'   diffusion model).
-#'   All auxiliary parameters are modeled 
+#'   All distributional parameters are modeled 
 #'   on the log or logit scale to ensure correct definition
 #'   intervals after transformation.
 #'   See 'Details' for more explanation.
@@ -54,6 +54,8 @@
 #' @return An object of class \code{brmsformula}, which
 #'   is essentially a \code{list} containing all model
 #'   formulas as well as some additional information.
+#'   
+#' @seealso \code{\link[brms:brmsformula-helpers]{brmsformula-helpers}}
 #'   
 #' @details 
 #' 
@@ -299,7 +301,7 @@
 #'   
 #'   As of \pkg{brms} 1.0.0, zero-inflated and hurdle models are specfied 
 #'   in the same way as as their non-inflated counterparts. 
-#'   However, they have additional auxiliary parameters 
+#'   However, they have additional distributional parameters 
 #'   (named \code{zi} and \code{hu} respectively)
 #'   modeling the zero-inflation / hurdle probability depending on which 
 #'   model you choose. These parameters can also be affected by predictors
@@ -365,15 +367,15 @@
 #'   For this reason it is mandatory to specify priors on the non-linear parameters.
 #'   For instructions on how to do that, see \code{\link[brms:set_prior]{set_prior}}.
 #'   
-#'   \bold{Formula syntax for predicting auxiliary parameters}
+#'   \bold{Formula syntax for predicting distributional parameters}
 #'   
-#'   It is also possible to predict auxiliary parameters of the response
+#'   It is also possible to predict parameters of the response
 #'   distribution such as the residual standard deviation \code{sigma} 
 #'   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
 #'   The syntax closely resembles that of a non-linear 
 #'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
-#'   Alternatively, one may fix auxiliary parameters to certain values.
+#'   Alternatively, one may fix distributional parameters to certain values.
 #'   However, this is mainly useful when models become too 
 #'   complicated and otherwise have convergence issues. 
 #'   We thus suggest to be generally careful when making use of this option. 
@@ -390,19 +392,19 @@
 #'   the negative binomial distribution with \code{shape = 1}.
 #'   Furthermore, the parameter \code{disc} ('discrimination') in ordinal 
 #'   models is fixed to \code{1} by default and not estimated,
-#'   but may be modeled as any other auxiliary parameter if desired
+#'   but may be modeled as any other distributional parameter if desired
 #'   (see examples). For reasons of identification, \code{'disc'}
 #'   can only be positive, which is achieved by applying the log-link.
 #'   
-#'   All auxiliary parameters currently supported by \code{brmsformula}
+#'   All distributional parameters currently supported by \code{brmsformula}
 #'   have to positive (a negative standard deviation or precision parameter 
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
 #'   hurdle proabilities, quantiles, or the intial bias parameter of 
 #'   drift-diffusion models). 
 #'   However, linear predictors can be positive or negative, and thus the log link 
 #'   (for positive parameters) or logit link (for probability parameters) are used 
-#'   by default to ensure that auxiliary parameters are within their valid intervals.
-#'   This implies that, by default, effects for auxiliary parameters are estimated 
+#'   by default to ensure that distributional parameters are within their valid intervals.
+#'   This implies that, by default, effects for distributional parameters are estimated 
 #'   on the log / logit scale and one has to apply the inverse link function to get 
 #'   to the effects on the original scale.
 #'   Alternatively, it is possible to use the identity link to predict parameters
@@ -421,17 +423,17 @@
 #'   terms allowed in non-mixture models are allowed in mixture models
 #'   as well.
 #'   
-#'   Auxiliary parameters of mixture distributions have the same 
+#'   distributional parameters of mixture distributions have the same 
 #'   name as those of the corresponding ordinary distributions, but with 
 #'   a number at the end to indicate the mixture component. For instance, if
-#'   you use family \code{mixture(gaussian, gaussian)}, the auxiliary
+#'   you use family \code{mixture(gaussian, gaussian)}, the distributional
 #'   parameters are \code{sigma1} and \code{sigma2}.
-#'   Auxiliary parameters of the same class can be fixed to the same value. 
+#'   distributional parameters of the same class can be fixed to the same value. 
 #'   For the above example, we could write \code{sigma2 = "sigma1"} to make
 #'   sure that both components have the same residual standard deviation,
 #'   which is in turn estimated from the data.
 #'   
-#'   In addition, there are two types of special auxiliary parameters.
+#'   In addition, there are two types of special distributional parameters.
 #'   The first are named \code{mu<ID>}, that allow for modeling different 
 #'   predictors for the mean parameters of different mixture components. 
 #'   For instance, if you want to predict the mean of the first component 
@@ -510,6 +512,12 @@
 #' # fix both residual standard deviations to the same value
 #' bf(y ~ x, sigma2 = "sigma1", family = mix)
 #' 
+#' # use the '+' operator to specify models
+#' bf(y ~ 1) + 
+#'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
+#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   gaussian()
+#' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         nl = NULL, nonlinear = NULL) {
@@ -519,9 +527,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     class(formula) <- "formula"
   }
   if (!is.null(nonlinear)) {
-    warning2("Argument 'nonlinear' is deprecated. ", 
-             "See help(brmsformula) for the new way ", 
-             "of specifying non-linear models.")
+    warning2(
+      "Argument 'nonlinear' is deprecated. ", 
+      "See help(brmsformula) for the new way ", 
+      "of specifying non-linear models."
+    )
   }
   old_nonlinear <- attr(formula, "nonlinear")
   if (is.list(old_nonlinear)) {
@@ -530,8 +540,8 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (length(nonlinear)) {
     nl <- TRUE
   }
-  old_forms <- rmNULL(attributes(formula)[auxpars()])
-  attributes(formula)[c(auxpars(), "nonlinear")] <- NULL
+  old_forms <- rmNULL(attributes(formula)[dpars()])
+  attributes(formula)[c(dpars(), "nonlinear")] <- NULL
   
   if (is.brmsformula(formula)) {
     out <- formula
@@ -541,73 +551,93 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   out$pforms[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments
-  dots <- c(list(...), flist, nonlinear)
+  dots <- c(out$pforms, out$pfix, list(...), flist, nonlinear)
+  dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
+  dots <- unlist(dots, recursive = FALSE)
   forms <- list()
   for (i in seq_along(dots)) {
     forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
   }
-  dupl_pars <- names(forms)[duplicated(names(forms))]
-  if (length(dupl_pars)) {
-    dupl_pars <- collapse_comma(dupl_pars)
-    stop2("Duplicated specification of parameters ", dupl_pars)
+  is_dupl_pars <- duplicated(names(forms), fromLast = TRUE)
+  if (any(is_dupl_pars)) {
+    dupl_pars <- collapse_comma(names(forms)[is_dupl_pars])
+    message("Replacing initial definitions of parameters ", dupl_pars)
+    forms[is_dupl_pars] <- NULL
   }
   not_form <- ulapply(forms, function(x) !is.formula(x))
   fix <- forms[not_form]
   forms[names(fix)] <- NULL
-  fix_theta <- fix[auxpar_class(names(fix)) %in% "theta"]
+  out$pforms <- forms
+  # validate fixed distributional parameters
+  fix_theta <- fix[dpar_class(names(fix)) %in% "theta"]
   if (length(fix_theta)) {
     # normalize mixing proportions
     sum_theta <- sum(unlist(fix_theta))
     fix_theta <- lapply(fix_theta, "/", sum_theta)
     fix[names(fix_theta)] <- fix_theta
   }
-  out$pforms[names(forms)] <- forms
-  out$pfix[names(fix)] <- fix
-  for (ap in names(out$pfix)) {
-    if (is.character(out$pfix[[ap]])) {
-      if (identical(ap, out$pfix[[ap]])) {
-        stop2("Equating '", ap, "' with itself is not meaningful.")
+  out$pfix <- fix
+  for (dp in names(out$pfix)) {
+    if (is.character(out$pfix[[dp]])) {
+      if (identical(dp, out$pfix[[dp]])) {
+        stop2("Equating '", dp, "' with itself is not meaningful.")
       }
-      ap_class <- auxpar_class(ap)
+      ap_class <- dpar_class(dp)
       if (ap_class == "mu") {
         stop2("Equating parameters of class 'mu' is not allowed.")
       }
-      if (!identical(ap_class, auxpar_class(out$pfix[[ap]]))) {
+      if (!identical(ap_class, dpar_class(out$pfix[[dp]]))) {
         stop2("Can only equate parameters of the same class.")
       }
-      if (out$pfix[[ap]] %in% names(out$pfix)) {
+      if (out$pfix[[dp]] %in% names(out$pfix)) {
         stop2("Cannot use fixed parameters on ", 
               "the right-hand side of an equation.")
       }
-      if (out$pfix[[ap]] %in% names(out$pforms)) {
+      if (out$pfix[[dp]] %in% names(out$pforms)) {
         stop2("Cannot use predicted parameters on ", 
               "the right-hand side of an equation.")
       }
     }
   }
   if (!is.null(nl)) {
-    nl <- as.logical(nl)[1]
-    if (!nl %in% c(TRUE, FALSE)) {
-      stop2("Argument 'nl' could not be coerced to logical.")
-    }
-    out[["nl"]] <- nl
+    attr(out$formula, "nl") <- as_one_logical(nl)
+  } else if (!is.null(out[["nl"]])) {
+    # for backwards compatibility with brms <= 1.8.0
+    attr(out$formula, "nl") <- out[["nl"]]
+    out[["nl"]] <- NULL
+  }
+  if (is.null(attr(out$formula, "nl"))) {
+    attr(out$formula, "nl") <- FALSE
   }
   if (!is.null(family)) {
     out[["family"]] <- check_family(family)
   }
   if (!is.null(out[["family"]])) {
     # check for the presence of non-linear parameters
-    auxpars <- is_auxpar_name(names(out$pforms), out$family)
-    auxpars <- names(out$pforms)[auxpars]
-    for (ap in names(out$pforms)) {
-      if (!ap %in% auxpars) {
-        if (!isTRUE(out$nl)) {
-          stop2("The parameter '", ap, "' is not an auxiliary parameter.\n",
-                "Set 'nl = TRUE' if you want to specify non-linear models.")
+    dpars <- is_dpar_name(names(out$pforms), out$family)
+    dpars <- names(out$pforms)[dpars]
+    for (dp in names(out$pforms)) {
+      if (!dp %in% dpars) {
+        # indicate the correspondence to distributional parameter 
+        if (is.null(attr(out$pforms[[dp]], "dpar"))) {
+          attr(out$pforms[[dp]], "dpar") <- "mu"
         }
-        # indicate the correspondence to an auxiliary parameter 
-        if (is.null(attr(out$pforms[[ap]], "auxpar"))) {
-          attr(out$pforms[[ap]], "auxpar") <- "mu"
+        dpar <- attr(out$pforms[[dp]], "dpar")
+        if (!is.null(out$pforms[[dpar]])) {
+          nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
+        } else {
+          if (dpar_class(dpar) == "mu") {
+            nl_allowed <- isTRUE(attr(out$formula, "nl"))
+          } else {
+            nl_allowed <- FALSE
+          }
+        }
+        if (!nl_allowed) {
+          stop2(
+            "The parameter '", dp, "' is not a valid ", 
+            "distributional or non-linear parameter. ",
+            "Did you forget to set 'nl = TRUE'?"
+          )
         }
       }
     }
@@ -615,7 +645,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
-    nl = FALSE, response = NULL, old_mv = FALSE
+    response = NULL, old_mv = FALSE
   )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
@@ -631,8 +661,117 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
               nl = nl, nonlinear = nonlinear)
 }
 
+#' Linear and Non-linear formulas in \pkg{brms}
+#' 
+#' Helper functions to specify linear and non-linear
+#' formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
+#' 
+#' @name brmsformula-helpers
+#' @aliases bf-helpers nlf lf set_nl
+#' 
+#' @param formula Non-linear formula for a distributional parameter.
+#'   The name of the distributional parameter can either be specified
+#'   on the left-hand side of \code{formula} or via argument \code{dpar}.
+#' @param dpar Optional character string specifying the distributional 
+#'   parameter to which the formulas passed via \code{...} and
+#'   \code{flist} belong.
+#' @inheritParams brmsformula
+#' 
+#' @return For \code{lf} and \code{nlf} a \code{list} that can be 
+#'   passed to \code{\link[brms:brmsformula]{brmsformula}} or added 
+#'   to an existing \code{brmsformula} object. For \code{set_nl} 
+#'   a \code{list} that can be added to an existing
+#'   \code{brmsformula} object.
+#'
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' 
+#' @examples
+#' # add more formulas to the model
+#' bf(y ~ 1) + 
+#'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
+#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   gaussian()
+#'
+#' # specify 'nl' later on
+#' bf(y ~ a * inv_logit(x * b)) +
+#'   lf(a + b ~ z) +
+#'   set_nl(TRUE)
+#' 
+#' @export
+nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
+  formula <- as.formula(formula)
+  resp_pars <- all.vars(formula[[2]])
+  if (length(resp_pars) == 0L) {
+    if (is.null(dpar)) {
+      stop2("No parameter name passed via the LHS of ", 
+            "'formula' or argument 'dpar'.")
+    }
+  } else if (length(resp_pars) == 1L) {
+    dpar <- resp_pars
+  } else {
+    stop2("LHS of non-linear formula should contain only one variable.")
+  }
+  attr(formula, "nl") <- TRUE
+  c(setNames(list(formula), dpar), lf(..., flist = flist, dpar = dpar))
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+lf <- function(..., flist = NULL, dpar = NULL) {
+  out <- c(list(...), flist)
+  if (!is.null(dpar)) {
+    dpar <- as.character(dpar)
+    if (length(dpar) != 1L) {
+      stop2("Argument 'dpar' should be of length 1.")
+    }
+    for (i in seq_along(out)) {
+      attr(out[[i]], "dpar") <- dpar
+    }
+  }
+  out
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+set_nl <- function(nl = TRUE, dpar = NULL) {
+  nl <- as_one_logical(nl)
+  if (!is.null(dpar)) {
+    dpar <- as.character(dpar)
+    if (length(dpar) != 1L) {
+      stop2("Argument 'dpar' should be of length 1.")
+    }
+  }
+  structure(nlist(nl, dpar), class = "setnl")
+}
+
+#' @export
+"+.brmsformula" <- function(e1, e2) {
+  if (is.function(e2)) {
+    e2 <- try(e2(), silent = TRUE)
+    if (!is.family(e2)) {
+      stop2("Don't know how to handle non-family functions.")
+    }
+  } 
+  if (is.family(e2)) {
+    e1 <- bf(e1, family = e2)
+  } else if (inherits(e2, "setnl")) {
+    if (is.null(e2$dpar)) {
+      e1 <- bf(e1, nl = e2$nl)
+    } else {
+      if (is.null(e1$pforms[[e2$dpar]])) {
+        stop2("Parameter '", e2$dpar, "' has no formula.")
+      }
+      attr(e1$pforms[[e2$dpar]], "nl") <- e2$nl
+      e1 <- bf(e1)
+    }
+  } else {
+    e1 <- bf(e1, e2)
+  }
+  e1
+}
+
 prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
-  # validate and prepare a formula of an auxiliary parameter
+  # validate and prepare a formula of an distributional parameter
   # Args:
   #   formula: an object of class formula
   #   par: optional name of the parameter; if not specified
@@ -642,7 +781,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
-      stop2("Expecting a single value when fixing auxiliary parameters.")
+      stop2("Expecting a single value when fixing parameters.")
     }
     scalar <- SW(as.numeric(formula))
     if (!is.na(scalar)) {
@@ -679,16 +818,16 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   out
 }
 
-auxpars <- function() {
-  # names of auxiliary parameters
+dpars <- function() {
+  # names of distributional parameters
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
     "quantile", "alpha", "theta")
 }
 
-links_auxpars <- function(ap) {
-  # link functions for auxiliary parameters
-  switch(ap,
+links_dpars <- function(dp) {
+  # link functions for distributional parameters
+  switch(dp,
     mu = "identity",
     sigma = c("log", "identity"), 
     shape = c("log", "identity"),
@@ -708,13 +847,13 @@ links_auxpars <- function(ap) {
     xi = c("log1p", "identity"),
     alpha = c("identity", "log"),
     theta = c("identity"), 
-    stop2("Parameter '", ap, "' is not supported.")
+    stop2("Parameter '", dp, "' is not supported.")
   )
 }
 
 #' @export
-valid_auxpars.default <- function(family, bterms = NULL, ...) {
-  # convenience function to find relevant auxiliary parameters
+valid_dpars.default <- function(family, bterms = NULL, ...) {
+  # convenience function to find relevant distributional parameters
   x <- c(
     mu = TRUE,
     sigma = has_sigma(family, bterms = bterms),
@@ -739,45 +878,45 @@ valid_auxpars.default <- function(family, bterms = NULL, ...) {
 }
 
 #' @export
-valid_auxpars.mixfamily <- function(family, ...) {
-  out <- lapply(family$mix, valid_auxpars, ...)
+valid_dpars.mixfamily <- function(family, ...) {
+  out <- lapply(family$mix, valid_dpars, ...)
   for (i in seq_along(out)) {
     out[[i]] <- paste0(out[[i]], i)
   }
   c(unlist(out), paste0("theta", seq_along(out)))
 }
 
-is_auxpar_name <- function(auxpars, family = NULL, ...) {
+is_dpar_name <- function(dpars, family = NULL, ...) {
   # check if provided names of auxiliar parameters are valid
   # Args:
-  #   auxpars: character vector to be checked
+  #   dpars: character vector to be checked
   #   family: the model family
-  #   ...: further arguments passed to valid_auxpars
-  auxpars <- as.character(auxpars)
-  if (!length(auxpars)) {
+  #   ...: further arguments passed to valid_dpars
+  dpars <- as.character(dpars)
+  if (!length(dpars)) {
     return(logical(0))
   }
   if (is.null(family)) {
-    patterns <- paste0("^", auxpars(), "[[:digit:]]*$")
-    .is_auxpar_name <- function(auxpar, ...) {
-      any(ulapply(patterns, grepl, x = auxpar))
+    patterns <- paste0("^", dpars(), "[[:digit:]]*$")
+    .is_dpar_name <- function(dpar, ...) {
+      any(ulapply(patterns, grepl, x = dpar))
     }
-    out <- ulapply(auxpars, .is_auxpar_name)
+    out <- ulapply(dpars, .is_dpar_name)
   } else {
-    out <- auxpars %in% valid_auxpars(family, ...)
+    out <- dpars %in% valid_dpars(family, ...)
   }
   as.logical(out)
 }
 
-auxpar_class <- function(auxpar) {
-  # class of an auxiliary parameter
-  out <- get_matches("^[^[:digit:]]+", auxpar, simplify = FALSE)
+dpar_class <- function(dpar) {
+  # class of an distributional parameter
+  out <- get_matches("^[^[:digit:]]+", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-auxpar_id <- function(auxpar) {
-  # id of an auxiliary parameter
-  out <- get_matches("[[:digit:]]+$", auxpar, simplify = FALSE)
+dpar_id <- function(dpar) {
+  # id of an distributional parameter
+  out <- get_matches("[[:digit:]]+$", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
@@ -805,18 +944,19 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   if (is.null(out$family)) {
     out <- bf(out, family = family)
   }
-  # to allow the '.' symbol in formula
-  try_terms <- try(terms(out$formula, data = data), silent = TRUE)
-  if (!is(try_terms, "try-error")) {
-    out$formula <- formula(try_terms)
+  # allow the '.' symbol in the formulas
+  out$formula <- expand_dot_formula(out$formula)
+  for (i in seq_along(out$pforms)) {
+    out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]])
   }
   if (is_ordinal(out$family)) {
     # fix discrimination to 1 by default
     if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
       out <- bf(out, disc = 1)
     }
-    no_intercept <- isTRUE(attr(try_terms, "intercept", TRUE) == 0)
-    if (!is(try_terms, "try-error") && no_intercept) {
+    try_terms <- try(stats::terms(out$formula), silent = TRUE)
+    intercept <- attr(try_terms, "intercept", TRUE)
+    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
@@ -916,5 +1056,5 @@ is.brmsformula <- function(x) {
 
 is_nonlinear <- function(x) {
   stopifnot(is.brmsfit(x))
-  bf(x$formula)[["nl"]]
+  isTRUE(attr(bf(x$formula)$formula, "nl", TRUE))
 }

@@ -61,7 +61,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       bterms, data = data, ranef = ranef, 
       prior = prior, sparse = sparse
     )
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   } else {
     text_effects_mv <- list()
   }
@@ -85,8 +85,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     autocor, bterms = bterms, family = family, prior = prior
   )
   text_mv <- stan_mv(family, response = bterms$response, prior = prior)
-  disc <- "disc" %in% names(bterms$auxpars) || 
-    isTRUE(bterms$fauxpars$disc != 1)
+  disc <- "disc" %in% names(bterms$dpars) || 
+    isTRUE(bterms$fdpars$disc$value != 1)
   text_ordinal <- stan_ordinal(
     family, prior = prior, cs = has_cs(bterms), disc = disc
   )
@@ -215,7 +215,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # generate model block
-  # list auxpars before pred as part of fixing issue #124
+  # list dpars before pred as part of fixing issue #124
   text_model_loop <- paste0(
     text_effects$modelC2, 
     text_autocor$modelC2,

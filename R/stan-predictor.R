@@ -1,52 +1,31 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
-                             sparse = FALSE, nlpar = "", eta = "mu", 
-                             ilink = rep("", 2), order_mixture = 'none',  
-                             ...) {
+                             sparse = FALSE, ilink = rep("", 2), 
+                             order_mixture = 'none',  ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
-  #   eta: prefix of the linear predictor variable
-  nlpar <- check_nlpar(nlpar)
-  if (nzchar(eta) && nzchar(nlpar)) {
-    eta <- usc(eta, "suffix") 
-  }
-  eta <- paste0(eta, nlpar)
-  stopifnot(nzchar(eta))
+  #   sparse: should the population-level design matrix be treated as sparse?
+  #   ilink: character vector of lenght 2 defining the link to be applied
+  #   order_mixture: indicates how to identify mixture models via ordering
   stopifnot(length(ilink) == 2L)
-  
-  ranef <- ranef[ranef$nlpar == nlpar, ]
-  out <- list()
-  # include population-level effects
+  px <- check_prefix(x)
+  eta <- combine_prefix(px, keep_mu = TRUE)
+  stopifnot(nzchar(eta))
+  ranef <- subset2(ranef, ls = px)
   center_X <- center_X && has_intercept(x$fe) && 
     !is(x$autocor, "cor_bsts") && !sparse
-  rm_int <- center_X || is(x$autocor, "cor_bsts") || is_ordinal(x$family)
-  cols2remove <- if (rm_int) "Intercept"
-  fixef <- setdiff(colnames(data_fe(x, data)$X), cols2remove)
-  text_fe <- stan_fe(
-    fixef, center_X = center_X, family = x$family, 
-    prior = prior, nlpar = nlpar, sparse = sparse, 
-    order_mixture = order_mixture
-  )
-  # include smooth terms
-  smooths <- get_sm_labels(x, data = data)
-  text_sm <- stan_sm(smooths, prior = prior, nlpar = nlpar)
-  # include category specific effects
-  csef <- colnames(get_model_matrix(x$cs, data))
-  text_cs <- stan_cs(csef, ranef, prior = prior)
-  # include monotonic effects
-  monef <- all_terms(x$mo)
-  text_mo <- stan_mo(monef, ranef, prior = prior, nlpar = nlpar)
-  # include measurement error variables
-  meef <- get_me_labels(x, data = data)
-  text_me <- stan_me(meef, ranef, prior = prior, nlpar = nlpar)
-  # include gaussian processes
-  gpef <- get_gp_labels(x, data = data)
-  text_gp <- stan_gp(gpef, prior = prior, nlpar = nlpar)
-  
   out <- collapse_lists(
-    out, text_fe, text_cs, text_mo, text_me, text_sm, text_gp
+    text_fe <- stan_fe(
+      x, data, prior = prior, center_X = center_X,
+      sparse = sparse, order_mixture = order_mixture
+    ),
+    text_cs <- stan_cs(x, data, ranef = ranef, prior = prior),
+    text_mo <- stan_mo(x, data, ranef = ranef, prior = prior),
+    text_me <- stan_me(x, data, ranef = ranef, prior = prior),
+    text_sm <- stan_sm(x, data, prior = prior),
+    text_gp <- stan_gp(x, data, prior = prior)
   )
-  p <- usc(nlpar, "prefix")
+  p <- usc(combine_prefix(px))
   if (is.formula(x$offset)) {
     str_add(out$data) <- paste0( 
       "  vector[N] offset", p, "; \n"
@@ -67,9 +46,9 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   
   # repare loop over eta
   eta_loop <- paste0(
-    stan_eta_re(ranef, nlpar = nlpar),
+    stan_eta_re(ranef, px = px),
     text_mo$eta, text_me$eta,
-    stan_eta_ma(x$autocor, nlpar = p), 
+    stan_eta_ma(x$autocor, px = px), 
     stan_eta_car(x$autocor),
     stan_eta_bsts(x$autocor)
   )
@@ -88,7 +67,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # possibly transform eta before it is passed to the likelihood
   if (sum(nzchar(ilink))) {
     # make sure mu comes last as it might depend on other parameters
-    not_mu <- nzchar(nlpar) && auxpar_class(nlpar) != "mu"
+    not_mu <- nzchar(x$dpar) && dpar_class(x$dpar) != "mu"
     position <- ifelse(not_mu, "modelC3", "modelC4")
     str_add(out[[position]]) <- paste0(
       "    ", eta, "[n] = ", ilink[1], eta, "[n]", ilink[2], "; \n"
@@ -97,8 +76,8 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   out
 }
 
-stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu", 
-                              nlpar = "", ilink = rep("", 2), ...) {
+stan_effects.btnl <- function(x, data, ranef, prior,
+                              ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
@@ -106,95 +85,97 @@ stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu",
   #   prior: a brmsprior object
   #   nlpar: currently unused but should not be part of ...
   #   ilink: character vector of length 2 containing
-  #          Stan code for the link function
+  #     Stan code for the link function
   #   ...: passed to stan_effects.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
-  if (length(x$nlpars)) {
-    nlpars <- names(x$nlpars)
-    for (nlp in nlpars) {
-      nl_text <- stan_effects(
-        x = x$nlpars[[nlp]], data = data, 
-        ranef = ranef, prior = prior, 
-        nlpar = nlp, center_X = FALSE, 
-        ...
-      )
-      out <- collapse_lists(out, nl_text)
-    }
-    # prepare non-linear model
-    new_nlpars <- paste0(" ", eta, "_", nlpars, "[n] ")
-    # covariates in the non-linear model
-    covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
-    if (length(covars)) {
-      # use vectors as indexing matrices in Stan is slow
-      str_add(out$data) <- paste0( 
-        "  // covariate vectors \n",
-        collapse("  vector[N] C_", seq_along(covars), ";\n")
-      )
-      new_covars <- paste0(" C_", seq_along(covars), "[n] ")
-    } else {
-      new_covars <- NULL
-    }
-    # add whitespaces to be able to replace parameters and covariates
-    meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
-    nlmodel <- gsub(" ", "", collapse(deparse(x$formula[[2]])))
-    nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
-    nlmodel <- rename(nlmodel, 
-      c(wsp(nlpars), covars, " ( ", " ) "), 
-      c(new_nlpars, new_covars, "(", ")")
-    )
-    # possibly transform eta in the transformed params block
-    str_add(out$modelD) <- paste0("  vector[N] ", eta, "; \n")
-    str_add(out$modelC4) <- paste0(
-      "    // compute non-linear predictor \n",
-      "    ", eta, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
-    )
+  if (!length(x$nlpars)) {
+    return(out)
   }
+  nlpars <- names(x$nlpars)
+  for (nlp in nlpars) {
+    nl_text <- stan_effects(
+      x = x$nlpars[[nlp]], data = data, 
+      ranef = ranef, prior = prior, 
+      center_X = FALSE, ...
+    )
+    out <- collapse_lists(out, nl_text)
+  }
+  # prepare non-linear model
+  par <- combine_prefix(x, keep_mu = TRUE)
+  new_nlpars <- paste0(" ", par, "_", nlpars, "[n] ")
+  # covariates in the non-linear model
+  covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
+  if (length(covars)) {
+    # use vectors as indexing matrices in Stan is slow
+    p <- usc(combine_prefix(x), "suffix")
+    str_add(out$data) <- paste0( 
+      "  // covariate vectors \n",
+      collapse("  vector[N] C_", p, seq_along(covars), ";\n")
+    )
+    new_covars <- paste0(" C_", p, seq_along(covars), "[n] ")
+  } else {
+    new_covars <- NULL
+  }
+  # add whitespaces to be able to replace parameters and covariates
+  meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
+  nlmodel <- gsub(" ", "", collapse(deparse(x$formula[[2]])))
+  nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
+  nlmodel <- rename(nlmodel, 
+    c(wsp(nlpars), covars, " ( ", " ) "), 
+    c(new_nlpars, new_covars, "(", ")")
+  )
+  # possibly transform eta in the transformed params block
+  str_add(out$modelD) <- paste0("  vector[N] ", par, "; \n")
+  str_add(out$modelC4) <- paste0(
+    "    // compute non-linear predictor \n",
+    "    ", par, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
+  )
   out
 }
 
 stan_effects.brmsterms <- function(x, data, ranef, prior, 
                                    sparse = FALSE, ...) {
-  # Stan code for auxiliary parameters
+  # Stan code for distributional parameters
   # Args:
   #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
   out <- list()
-  valid_auxpars <- valid_auxpars(x$family, bterms = x)
+  valid_dpars <- valid_dpars(x$family, bterms = x)
   args <- nlist(data, ranef, prior)
-  for (ap in valid_auxpars) {
-    ap_terms <- x$auxpars[[ap]]
+  for (dp in valid_dpars) {
+    ap_terms <- x$dpars[[dp]]
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
       ilink <- stan_eta_ilink(
-        ap_terms$family, auxpars = names(x$auxpars), 
-        adforms = x$adforms, mix = auxpar_id(ap)
+        ap_terms$family, dpars = names(x$dpars), 
+        adforms = x$adforms, mix = dpar_id(dp)
       )
-      eta <- ifelse(ap == "mu", "mu", "")
+      eta <- ifelse(dp == "mu", "mu", "")
       ap_args <- list(
-        ap_terms, nlpar = ap, eta = eta, ilink = ilink,
+        ap_terms, eta = eta, ilink = ilink,
         sparse = sparse, order_mixture = x$family$order
       )
-      out[[ap]] <- do.call(stan_effects, c(ap_args, args))
-    } else if (is.numeric(x$fauxpars[[ap]])) {
-      out[[ap]] <- list(data = stan_auxpar_defs(ap))
-    } else if (is.character(x$fauxpars[[ap]])) {
-      if (!x$fauxpars[[ap]] %in% valid_auxpars) {
-        stop2("Parameter '", x$fauxpars[[ap]], "' cannot be found.")
+      out[[dp]] <- do.call(stan_effects, c(ap_args, args))
+    } else if (is.numeric(x$fdpars[[dp]]$value)) {
+      out[[dp]] <- list(data = stan_dpar_defs(dp))
+    } else if (is.character(x$fdpars[[dp]]$value)) {
+      if (!x$fdpars[[dp]]$value %in% valid_dpars) {
+        stop2("Parameter '", x$fdpars[[dp]]$value, "' cannot be found.")
       }
-      out[[ap]] <- list(
-        tparD = stan_auxpar_defs(ap),
-        tparC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]], "; \n") 
+      out[[dp]] <- list(
+        tparD = stan_dpar_defs(dp),
+        tparC1 = paste0("  ", dp, " = ", x$fdpars[[dp]]$value, "; \n")
       )
     } else {
-      def_temp <- stan_auxpar_defs_temp(ap)
-      def <- stan_auxpar_defs(ap)
+      def_temp <- stan_dpar_defs_temp(dp)
+      def <- stan_dpar_defs(dp)
       if (nzchar(def_temp)) {
-        out[[ap]] <- list(par = def_temp,
-          prior = stan_prior(prior, class = ap, prefix = "temp_")
+        out[[dp]] <- list(par = def_temp,
+          prior = stan_prior(prior, class = dp, prefix = "temp_")
         )
       } else if (nzchar(def)) {
-        out[[ap]] <- list(par = def,
-          prior = stan_prior(prior, class = ap)
+        out[[dp]] <- list(par = def,
+          prior = stan_prior(prior, class = dp)
         )
       }
     }
@@ -211,13 +192,14 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
   resp <- bterms$response
   if (length(resp) > 1L) {
     args <- nlist(
-      x = bterms$auxpars[["mu"]], data, ranef, prior, sparse,
+      x = bterms$dpars[["mu"]], data, ranef, prior, sparse,
       ilink = stan_eta_ilink(bterms$family, adforms = bterms$adforms)
     )
     resp <- bterms$response
     tmp_list <- named_list(resp)
     for (r in resp) {
-      tmp_list[[r]] <- do.call(stan_effects, c(args, nlpar = r))
+      args$x$resp <- r
+      tmp_list[[r]] <- do.call(stan_effects, args)
     }
     out <- collapse_lists(ls = tmp_list)
     if (is_linear(bterms$family)) {
@@ -239,22 +221,24 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
   out
 }
 
-stan_fe <- function(fixef, prior, family = gaussian(),
-                    center_X = TRUE, nlpar = "", sparse = FALSE,
-                    order_mixture = 'none') {
+stan_fe <- function(bterms, data, prior, center_X = TRUE,
+                    sparse = FALSE, order_mixture = 'none') {
   # Stan code for population-level effects
   # Args:
-  #   fixef: names of the population-level effects
   #   center_X: center the design matrix?
-  #   family: the model family
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior 
+  #   sparse: should the design matrix be treated as sparse?
   #   order_mixture: order intercepts to identify mixture models?
   # Returns:
   #   a list containing Stan code related to population-level effects
-  p <- usc(nlpar, "prefix")
-  ct <- ifelse(center_X, "c", "")
   out <- list()
+  fixef <- colnames(data_fe(bterms, data)$X)
+  rm_intercept <- center_X || is.cor_bsts(bterms$autocor) || 
+    is_ordinal(bterms$family)
+  if (rm_intercept) {
+    fixef <- setdiff(fixef, "Intercept")
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   if (length(fixef)) {
     str_add(out$data) <- paste0( 
       "  int<lower=1> K", p, ";",
@@ -275,8 +259,9 @@ stan_fe <- function(fixef, prior, family = gaussian(),
       )
     }
     # prepare population-level coefficients
-    orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
-    special <- attr(prior, "special")[[orig_nlpar]]
+    ct <- ifelse(center_X, "c", "")
+    prefix <- combine_prefix(px, keep_mu = TRUE)
+    special <- attr(prior, "special")[[prefix]]
     if (!is.null(special[["hs_df"]])) {
       str_add(out$data) <- paste0(
         "  real<lower=0> hs_df", p, "; \n",
@@ -307,7 +292,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         " = horseshoe(", hs_args, "); \n"
       )
     } else {
-      bound <- get_bound(prior, class = "b", nlpar = nlpar)
+      bound <- get_bound(prior, class = "b", px = px)
       str_add(out$par) <- paste0(
         "  vector", bound, "[K", ct, p, "] b", p, ";",
         "  // population-level effects \n"
@@ -324,8 +309,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
       )
     }
     str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = fixef,
-      nlpar = nlpar, suffix = p
+      prior, class = "b", coef = fixef, px = px, suffix = p
     )
   }
   if (center_X) {
@@ -344,7 +328,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  } \n"
       )
       # cumulative and sratio models are parameterized as thres - eta
-      use_plus <- family$family %in% c("cumulative", "sratio")
+      use_plus <- bterms$family$family %in% c("cumulative", "sratio")
       sub_X_means <- paste0(
         ifelse(use_plus, " + ", " - "), 
         "dot_product(means_X", p, ", b", p, ")"
@@ -352,7 +336,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     } else {
       sub_X_means <- ""
     }
-    if (is_ordinal(family)) {
+    if (is_ordinal(bterms$family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       str_add(out$genD) <- paste0(
         "  // compute actual thresholds \n",
@@ -360,9 +344,9 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         " = temp_Intercept", sub_X_means, "; \n" 
       )
     } else {
-       if (identical(auxpar_class(nlpar), order_mixture)) {
+       if (identical(dpar_class(px$dpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
-         ap_id <- auxpar_id(nlpar)
+         ap_id <- dpar_id(px$dpar)
          str_add(out$tparD) <- paste0(
            "  // identify mixtures via ordering of the intercepts \n",                   
            "  real temp", p, "_Intercept",
@@ -381,19 +365,21 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
     prefix <- paste0("temp", p, "_")
-    suffix <- ifelse(is_equal(family$threshold, "equidistant"), "1", "")
+    suffix <- ifelse(
+      is_equal(bterms$family$threshold, "equidistant"), "1", ""
+    )
     str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", nlpar = nlpar,
+      prior, class = "Intercept", px = px,
       prefix = prefix, suffix = suffix
     )
   } else {
-    if (identical(auxpar_class(nlpar), order_mixture)) {
+    if (identical(dpar_class(px$dpar), order_mixture)) {
       stop2("Identifying mixture components via ordering requires ",
             "population-level intercepts to be present.\n",
             "Try setting order = 'none' in function 'mixture'.")
     }
   }
-  out$eta <- stan_eta_fe(fixef, center_X, sparse, nlpar)
+  out$eta <- stan_eta_fe(fixef, center_X, sparse, px = px)
   out
 }
 
@@ -406,11 +392,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   #   cov_ranef: a list of custom covariance matrices 
   # Returns:
   #   A list of strings containing Stan code
-  r <- ranef[ranef$id == id, ]
+  out <- list()
+  r <- subset2(ranef, id = id)
   ccov <- r$group[1] %in% names(cov_ranef)
   ng <- seq_along(r$gcall[[1]]$groups)
-  idp <- paste0(r$id, usc(r$nlpar, "prefix"))
-  out <- list()
+  px <- check_prefix(r)
+  idp <- paste0(r$id, usc(combine_prefix(px)))
   str_add(out$data) <- paste0(
     "  // data for group-level effects of ID ", id, " \n",
     if (r$gtype[1] == "mm") {
@@ -429,8 +416,8 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     )
   )
   str_add(out$prior) <- stan_prior(
-    prior, class = "sd", group = r$group[1], coef = r$coef, 
-    nlpar = r$nlpar, suffix = paste0("_", id)
+    prior, class = "sd", group = r$group[1], coef = r$coef,
+    px = px, suffix = paste0("_", id)
   )
   J <- seq_len(nrow(r))
   has_def_type <- !r$type %in% c("mo", "me")
@@ -518,16 +505,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   out
 }
 
-stan_sm <- function(smooths, prior, nlpar = "") {
+stan_sm <- function(bterms, data, prior) {
   # Stan code of smooth terms
-  # Args:
-  #   smooths: names of the smooth terms
-  #   prior: object of class brmsprior
-  #   nlpar: optional name of a non-linear parameter
-  # Returns:
-  #   A list of strings containing Stan code
   out <- list()
-  p <- usc(nlpar)
+  smooths <- get_sm_labels(bterms, data = data)
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   if (length(smooths)) {
     stopifnot(!is.null(attr(smooths, "nbases")))
     for (i in seq_along(smooths)) {
@@ -558,22 +541,20 @@ stan_sm <- function(smooths, prior, nlpar = "") {
           "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
         ),
         stan_prior(prior, class = "sds", coef = smooths[i], 
-                   nlpar = nlpar, suffix = paste0(pi, "_", nb))
+                   px = px, suffix = paste0(pi, "_", nb))
       )
     }
-    out$eta <- stan_eta_sm(smooths, nlpar = nlpar)
+    out$eta <- stan_eta_sm(smooths, px = px)
   }
   out
 }
 
-stan_mo <- function(monef, ranef, prior, nlpar = "") {
+stan_mo <- function(bterms, data, ranef, prior) {
   # Stan code for monotonic effects
-  # Args:
-  #   monef: names of the monotonic effects
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
-  p <- usc(nlpar)
   out <- list()
+  monef <- all_terms(bterms$mo)
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   if (length(monef)) {
     I <- seq_along(monef)
     str_add(out$data) <- paste0(
@@ -585,7 +566,7 @@ stan_mo <- function(monef, ranef, prior, nlpar = "") {
         " con_simplex", p, "_", I, "; \n"
       )
     )
-    bound <- get_bound(prior, class = "b", nlpar = nlpar)
+    bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- paste0(
       "  // monotonic effects \n", 
       "  vector", bound, "[Kmo", p, "] bmo", p, "; \n",
@@ -595,28 +576,27 @@ stan_mo <- function(monef, ranef, prior, nlpar = "") {
       )
     ) 
     str_add(out$prior) <- paste0(
-      stan_prior(prior, class = "b", coef = monef,
-                 nlpar = nlpar, suffix = paste0("mo", p)),
+      stan_prior(prior, class = "b", coef = monef, 
+                 px = px, suffix = paste0("mo", p)),
       collapse(
         "  target += dirichlet_lpdf(",
         "simplex", p, "_", I, " | con_simplex", p, "_", I, "); \n"
       )
     )
-    str_add(out$eta) <- stan_eta_mo(monef, ranef = ranef, nlpar = nlpar)
+    str_add(out$eta) <- stan_eta_mo(
+      monef, ranef = ranef, px = px
+    )
   }
   out
 }
 
-stan_cs <- function(csef, ranef, prior, nlpar = "") {
+stan_cs <- function(bterms, data, ranef, prior) {
   # Stan code for category specific effects
-  # Args:
-  #   csef: names of the category specific effects
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
-  # (!) Not yet implemented for non-linear models
-  stopifnot(!nzchar(nlpar))
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "cs", ]
+  # (!) Not implemented for non-linear models
   out <- list()
+  csef <- colnames(get_model_matrix(bterms$cs, data))
+  px <- check_prefix(bterms)
+  ranef <- subset2(ranef, type = "cs", ls = px)
   if (length(csef)) {
     str_add(out$data) <- paste0(
       "  int<lower=1> Kcs;  // number of category specific effects \n",
@@ -642,7 +622,7 @@ stan_cs <- function(csef, ranef, prior, nlpar = "") {
       str_add(out$modelD) <- paste0(
         "  // linear predictor for category specific effects \n",               
         "  matrix[N, ncat - 1] mucs = rep_matrix(0, N, ncat - 1); \n"
-      ) 
+      )
     }
     cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
     ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
@@ -653,7 +633,8 @@ stan_cs <- function(csef, ranef, prior, nlpar = "") {
       )
       for (id in unique(r_cat$id)) {
         r <- r_cat[r_cat$id == id, ]
-        idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+        rpx <- check_prefix(r)
+        idp <- paste0(r$id, usc(combine_prefix(rpx)))
         str_add(out$modelC2) <- collapse(
           " + r_", idp, "_", r$cn, "[J_", r$id, "[n]]",
           " * Z_", idp, "_", r$cn, "[n]"
@@ -665,15 +646,15 @@ stan_cs <- function(csef, ranef, prior, nlpar = "") {
   out
 } 
 
-stan_me <- function(meef, ranef, prior, nlpar = "") {
-  # stan code for measurement error effects
-  # Args:
-  #   meef: vector of terms containing noisy predictors
+stan_me <- function(bterms, data, ranef, prior) {
+  # Stan code for measurement error effects
   out <- list()
+  meef <- get_me_labels(bterms, data = data)
   if (length(meef)) {
     not_one <- attr(meef, "not_one")
     uni_me <- attr(meef, "uni_me")
-    p <- usc(nlpar)
+    px <- check_prefix(bterms)
+    p <- usc(combine_prefix(px))
     pK <- paste0(p, "_", seq_along(uni_me))
     
     me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
@@ -697,14 +678,14 @@ stan_me <- function(meef, ranef, prior, nlpar = "") {
     # prepare linear predictor component
     meef <- rename(meef)
     meef_terms <- gsub(":", " .* ", meef_terms)
-    ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "me", ]
+    ranef <- subset2(ranef, type = "me", ls = px)
     invalid_coef <- setdiff(ranef$coef, meef)
     if (length(invalid_coef)) {
       stop2("Noisy group-level terms require ", 
             "corresponding population-level terms.")
     }
     for (i in seq_along(meef)) {
-      r <- ranef[ranef$coef == meef[i], ]
+      r <- subset2(ranef, coef = meef[i])
       if (nrow(r)) {
         rpars <- paste0(" + ", stan_eta_r(r))
       } else {
@@ -737,7 +718,7 @@ stan_me <- function(meef, ranef, prior, nlpar = "") {
     )
     str_add(out$prior) <- paste0(
       stan_prior(prior, class = "b", coef = meef, 
-                 nlpar = nlpar, suffix = paste0("me", p)),
+                 px = px, suffix = paste0("me", p)),
       collapse(
         "  target += normal_lpdf(Xme", pK, " | Xn", pK, ", noise", pK,"); \n"
       )
@@ -746,12 +727,12 @@ stan_me <- function(meef, ranef, prior, nlpar = "") {
   out
 }
 
-stan_gp <- function(gpef, prior, nlpar = "") {
+stan_gp <- function(bterms, data, prior) {
   # Stan code for latent gaussian processes
-  # Args:
-  #   gpef: names of the gaussian process terms
-  p <- usc(nlpar)
   out <- list()
+  gpef <- get_gp_labels(bterms, data = data)
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
   for (i in seq_along(gpef)) {
     pi <- paste0(p, "_", i)
     byvar <- attr(gpef, "byvars")[[i]]
@@ -784,14 +765,14 @@ stan_gp <- function(gpef, prior, nlpar = "") {
     rgpef <- rename(gpef[i])
     str_add(out$prior) <- paste0(
       stan_prior(prior, class = "sdgp", coef = rgpef, 
-                 nlpar = nlpar, suffix = pi),
+                 px = px, suffix = pi),
       stan_prior(prior, class = "lscale", coef = rgpef, 
-                 nlpar = nlpar, suffix = pi),
+                 px = px, suffix = pi),
       collapse(tp(), "normal_lpdf(zgp", pi, " | 0, 1); \n")
     )
     if (byfac) {
       Jgp <- paste0("Jgp", pi, "_", J)
-      eta <- paste0(ifelse(nzchar(nlpar), nlpar, "mu"), "[", Jgp, "]")
+      eta <- paste0(combine_prefix(px, keep_mu = TRUE), "[", Jgp, "]")
       gp_args <- paste0(
         "Xgp", pi, "[", Jgp, "], sdgp", pi, "[", J, "], ", 
         "lscale", pi, "[", J, "], zgp", pi, "[", Jgp, "]"
@@ -810,15 +791,15 @@ stan_gp <- function(gpef, prior, nlpar = "") {
   out
 }
 
-stan_eta_fe <- function(fixef, center_X = TRUE, 
-                        sparse = FALSE, nlpar = "") {
+stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, 
+                        px = list()) {
   # define Stan code to compute the fixef part of eta
   # Args:
   #   fixef: names of the population-level effects
   #   center_X: use the centered design matrix?
   #   sparse: use sparse matrix multiplication?
   #   nlpar: optional name of a non-linear parameter
-  p <- usc(nlpar)
+  p <- usc(combine_prefix(px))
   if (length(fixef)) {
     if (sparse) {
       stopifnot(!center_X)
@@ -836,16 +817,17 @@ stan_eta_fe <- function(fixef, center_X = TRUE,
   eta_fe
 }
 
-stan_eta_re <- function(ranef, nlpar = "") {
+stan_eta_re <- function(ranef, px = list()) {
   # write the group-level part of the linear predictor
   # Args:
   #   ranef: a named list returned by tidy_ranef
   #   nlpar: optional name of a non-linear parameter
   eta_re <- ""
-  ranef <- ranef[ranef$nlpar == nlpar & !nzchar(ranef$type), ]
+  ranef <- subset2(ranef, type = "", ls = px)
   for (id in unique(ranef$id)) {
-    r <- ranef[ranef$id == id, ]
-    idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+    r <- subset2(ranef, id = id)
+    rpx <- check_prefix(r)
+    idp <- paste0(r$id, usc(combine_prefix(rpx)))
     str_add(eta_re) <- collapse(
       " + (", stan_eta_r(r), ") * Z_", idp, "_", r$cn, "[n]"
     )
@@ -860,7 +842,8 @@ stan_eta_r <- function(r) {
   # Returns:
   #   A character vector, one element per row of 'r' 
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
-  idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+  rpx <- check_prefix(r)
+  idp <- paste0(r$id, usc(combine_prefix(rpx)))
   if (r$gtype[1] == "mm") {
     ng <- seq_along(r$gcall[[1]]$groups)
     out <- rep("", nrow(r))
@@ -876,22 +859,22 @@ stan_eta_r <- function(r) {
   out
 }
 
-stan_eta_mo <- function(monef, ranef, nlpar = "") {
+stan_eta_mo <- function(monef, ranef, px = list()) {
   # write the linear predictor for monotonic effects
   # Args:
   #   monef: names of the monotonic effects
   #   nlpar: an optional character string to add to the varnames
   #         (used for non-linear models)
-  p <- usc(nlpar)
+  p <- usc(combine_prefix(px))
   eta_mo <- ""
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "mo", ]
+  ranef <- subset2(ranef, type = "mo", ls = px)
   invalid_coef <- setdiff(ranef$coef, monef)
   if (length(invalid_coef)) {
     stop2("Monotonic group-level terms require ", 
           "corresponding population-level terms.")
   }
   for (i in seq_along(monef)) {
-    r <- ranef[ranef$coef == monef[i], ]
+    r <- subset2(ranef, coef = monef[i])
     if (nrow(r)) {
       rpars <- paste0(" + ", stan_eta_r(r))
     } else {
@@ -905,12 +888,12 @@ stan_eta_mo <- function(monef, ranef, nlpar = "") {
   eta_mo
 }
 
-stan_eta_sm <- function(smooths, nlpar = "") {
+stan_eta_sm <- function(smooths, px = list()) {
   # write the linear predictor for smooth terms
   # Args:
   #   smooths: names of the smooth terms
   #   nlpar: optional character string to add to the varnames
-  p <- usc(nlpar)
+  p <- usc(combine_prefix(px))
   eta_smooths <- ""
   if (length(smooths)) {
     stopifnot(!is.null(attr(smooths, "nbases")))
@@ -925,14 +908,15 @@ stan_eta_sm <- function(smooths, nlpar = "") {
   eta_smooths
 }
 
-stan_eta_ma <- function(autocor, nlpar = "") {
+stan_eta_ma <- function(autocor, px = list()) {
   # write the linear predictor for MA terms
   # Args:
   #   autocor: object of class cor_brms
   #   nlpar: optional character string to add to the varnames
   out <- ""
   if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out) <- paste0(" + head(E", nlpar, "[n], Kma) * ma")
+    px <- combine_prefix(px)
+    str_add(out) <- paste0(" + head(E", px, "[n], Kma) * ma")
   }
   out
 }
@@ -972,12 +956,12 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, auxpars = NULL, 
+stan_eta_ilink <- function(family, dpars = NULL, 
                            adforms = NULL, mix = "") {
   # correctly apply inverse link to eta
   # Args:
   #   family: a list with elements 'family' and 'link
-  #   auxpars: names of auxiliary parameters
+  #   dpars: names of distributional parameters
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
@@ -987,10 +971,10 @@ stan_eta_ilink <- function(family, auxpars = NULL,
     shape <- paste0("shape", mix)
     shape <- ifelse(
       is.formula(adforms$disp), paste0("disp_", shape, "[n]"), 
-      ifelse(shape %in% auxpars, paste0(shape, "[n]"), shape)
+      ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
     )
     nu <- paste0("nu", mix)
-    nu <- ifelse(nu %in% auxpars, paste0(nu, "[n]"), nu)
+    nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
     fl <- ifelse(
       family %in% c("gamma", "hurdle_gamma", "exponential"), 
       paste0(family, "_", link), family
@@ -1022,8 +1006,8 @@ stan_eta_ilink <- function(family, auxpars = NULL,
   out
 }
 
-stan_auxpar_defs <- function(auxpar) {
-  # default Stan definitions for auxiliary parameters
+stan_dpar_defs <- function(dpar) {
+  # default Stan definitions for distributional parameters
   default_defs <- list(
     sigma = c(
       "  real<lower=0> ", 
@@ -1095,26 +1079,26 @@ stan_auxpar_defs <- function(auxpar) {
     )
     # theta is handled in stan_mixture
   )
-  def <- default_defs[[auxpar_class(auxpar)]]
+  def <- default_defs[[dpar_class(dpar)]]
   if (!is.null(def)) {
-    def <- paste0(def[1], auxpar, def[2])
+    def <- paste0(def[1], dpar, def[2])
   } else {
     def <- ""
   }
   def
 }
 
-stan_auxpar_defs_temp <- function(auxpar) {
-  # default Stan definitions for temporary auxiliary parameters
+stan_dpar_defs_temp <- function(dpar) {
+  # default Stan definitions for temporary distributional parameters
   default_defs <- list(
     xi = c(
       "  real temp_", 
       ";  // unscaled shape parameter \n"
     )
   )
-  def <- default_defs[[auxpar_class(auxpar)]]
+  def <- default_defs[[dpar_class(dpar)]]
   if (!is.null(def)) {
-    def <- paste0(def[1], auxpar, def[2])
+    def <- paste0(def[1], dpar, def[2])
   } else {
     def <- ""
   }

@@ -48,7 +48,7 @@ test_that("specified priors appear in the Stan code", {
              prior(lkj(2), class = cor, group = g))
   scode <- make_stancode(
     bf(y ~ a * exp(-b * x1), a + b ~ (1|ID|g), nl = TRUE),
-    data = dat, prior = prior,sample_prior = TRUE
+    data = dat, prior = prior, sample_prior = TRUE
   )
   expect_match2(scode, "target += normal_lpdf(b_a | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(b_b | 0, 10)")
@@ -97,7 +97,7 @@ test_that("specified priors appear in the Stan code", {
   
   # test for problem described in #213
   prior <- c(prior(normal(0, 1), coef = x1),
-             prior(normal(0, 2), coef = x1, nlpar = sigma))
+             prior(normal(0, 2), coef = x1, dpar = sigma))
   scode <- make_stancode(bf(y ~ x1, sigma ~ x1), dat, prior = prior)
   expect_match2(scode, "target += normal_lpdf(b | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(b_sigma | 0, 2);")
@@ -116,8 +116,8 @@ test_that("specified priors appear in the Stan code", {
                   "no natural upper bound")
 })
 
-test_that("deprecated priors for the population-level intercept are used", {
-  dat <- data.frame(y = 1:10)
+test_that("deprecated priors are used", {
+  dat <- data.frame(y = 1:10, x = 1:10)
   prior <- prior(normal(0, 5), coef = Intercept)
   expect_warning(scode <- make_stancode(y~1, dat, prior = prior),
                  "Setting a prior on the population-level intercept")
@@ -126,6 +126,20 @@ test_that("deprecated priors for the population-level intercept are used", {
   prior <- c(prior, prior(normal(0, 10), class = Intercept))
   expect_error(make_stancode(y~1, dat, prior = prior),
                "Duplicated prior definitions detected")
+  
+  prior <- prior(normal(0, 10), nlpar = sigma)
+  expect_warning(
+    scode <- make_stancode(bf(y~1, sigma~x), dat, prior = prior),
+    "Specifying priors of distributional parameters via 'nlpar' is deprecated"
+  )
+  expect_match2(scode, "normal_lpdf(b_sigma | 0, 10)")
+  
+  prior <- prior(normal(0, 5), Intercept, nlpar = y)
+  expect_warning(
+    scode <- make_stancode(cbind(y, x) ~ 1, dat, prior = prior),
+    "Specifying priors in multivariate models via 'nlpar' is deprecated"
+  )
+  expect_match2(scode, "normal_lpdf(temp_y_Intercept | 0, 5)")
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
@@ -535,7 +549,7 @@ test_that("ordinal disc parameters appear in the Stan code", {
   scode <- make_stancode(
     bf(rating ~ period + carry + treat, disc ~ period),
     data = inhaler, family = cumulative(), 
-    prior = prior(normal(0,5), nlpar = disc)
+    prior = prior(normal(0,5), dpar = disc)
   )
   expect_match2(scode, 
     "target += cumulative_lpmf(Y[n] | mu[n], temp_Intercept, disc[n])"
@@ -583,12 +597,32 @@ test_that("Stan code for non-linear models is correct", {
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
              set_prior("normal(0,1)", nlpar = "a2"))
-  scode <- make_stancode(bf(y ~ a1 * exp(-x/(a2 + z)), 
-                               flist = flist, nl = TRUE),
-                            data = data, family = Gamma("log"), prior = prior)
+  scode <- make_stancode(
+    bf(y ~ a1 * exp(-x/(a2 + z)), 
+       flist = flist, nl = TRUE),
+    data = data, family = Gamma("log"), 
+    prior = prior
+  )
   expect_match2(scode,
     paste("mu[n] = shape * exp(-(mu_a1[n] *", 
           "exp( - C_1[n] / (mu_a2[n] + C_2[n]))));"))
+  
+  bform <- bf(y ~ x) + 
+    nlf(sigma ~ a1 * exp(-x/(a2 + z)),
+        a1 ~ 1, a2 ~ z + (x|g)) +
+    lf(alpha ~ x)
+  scode <- make_stancode(
+    bform, data, family = skew_normal(),
+    prior = c(
+      prior(normal(0, 1), dpar = sigma, nlpar = a1),
+      prior(normal(0, 5), dpar = sigma, nlpar = a2)
+    )
+  )
+  expect_match2(scode, "sigma_a1 = X_sigma_a1 * b_sigma_a1")
+  expect_match2(scode,
+    "sigma[n] = exp(sigma_a1[n] * exp( - C_sigma_1[n] / (sigma_a2[n] + C_sigma_2[n])))"
+  )
+  expect_match2(scode, "target += normal_lpdf(b_sigma_a2 | 0, 5)")
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {
@@ -863,8 +897,8 @@ test_that("priors on intercepts appear in the Stan code", {
   )
   scode <- make_stancode(cbind(count, count) ~ log_Age_c + log_Base4_c * Trt_c,
                       data = epilepsy, family = gaussian(), 
-                      prior = c(prior(student_t(5,0,10), class = b, nlpar = count),
-                                prior(normal(0,5), class = Intercept, nlpar = count)),
+                      prior = c(prior(student_t(5,0,10), class = b, resp = count),
+                                prior(normal(0,5), class = Intercept, resp = count)),
                       sample_prior = TRUE)
   expect_match2(scode, 
     paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
@@ -1114,14 +1148,20 @@ test_that("Stan code for Gaussian processes is correct", {
     "sdgp_2[2], lscale_2[2], zgp_2[Jgp_2_2]);"
   ))
   
-  prior <- c(prior(normal(0, 10), lscale, nlpar = eta),
-             prior(gamma(0.1, 0.1), sdgp, nlpar = eta),
-             prior(normal(0, 1), b, nlpar = eta))
-  scode <- make_stancode(bf(y ~ eta, eta ~ gp(x1), nl = TRUE), 
+  prior <- c(prior(normal(0, 10), lscale, nlpar = a),
+             prior(gamma(0.1, 0.1), sdgp, nlpar = a),
+             prior(normal(0, 1), b, nlpar = a))
+  scode <- make_stancode(bf(y ~ a, a ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_eta_1 | 0, 10)")
-  expect_match2(scode, "target += gamma_lpdf(sdgp_eta_1 | 0.1, 0.1)")
-  expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta_1[1], lscale_eta_1[1], zgp_eta_1)")
+  expect_match2(scode, "target += normal_lpdf(lscale_a_1 | 0, 10)")
+  expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
+  expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
+  
+  scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z), nl = TRUE),
+                         data = dat, prior = prior, silent = TRUE)
+  expect_match2(scode, 
+    "mu_a[Jgp_a_1_1] = mu_a[Jgp_a_1_1] + gp(Xgp_a_1[Jgp_a_1_1],"
+  )
 })
 
 test_that("Stan code for SAR models is correct", {

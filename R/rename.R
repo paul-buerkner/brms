@@ -17,30 +17,27 @@ rename_pars <- function(x) {
   change <- list()
   resp <- bterms$response
   if (length(resp) > 1L) {
-    # rename effects in multivaraite models
+    # rename effects in multivariate models
     for (r in resp) {
+      bterms$dpars[["mu"]]$resp <- r
       change_eff <- change_effects(
-        bterms$auxpars[["mu"]], model.frame(x), pars, 
-        dims = x$fit@sim$dims_oi, nlpar = r, 
-        stancode = stancode(x)
+        bterms$dpars[["mu"]], data = model.frame(x), 
+        pars = pars, stancode = stancode(x)
       )
       change <- c(change, change_eff)
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   }
-  # rename effects of auxilliary parameters
-  for (ap in names(bterms$auxpars)) {
+  # rename effects of distributional parameters
+  for (ap in names(bterms$dpars)) {
     change_eff <- change_effects(
-      bterms$auxpars[[ap]], model.frame(x), pars, 
-      dims = x$fit@sim$dims_oi, nlpar = ap, 
-      stancode = stancode(x)
+      bterms$dpars[[ap]], data = model.frame(x), 
+      pars = pars, stancode = stancode(x)
     )
     change <- c(change, change_eff)
   }
   # rename group-level parameters separately
-  change <- c(change,
-    change_re(x$ranef, pars = pars, dims = x$fit@sim$dims_oi)
-  )
+  change <- c(change, change_re(x$ranef, pars = pars))
   # rename residual parameters of multivariate linear models
   if (is_linear(family) && length(bterms$response) > 1L) {
     corfnames <- paste0("sigma_", bterms$response)
@@ -74,53 +71,46 @@ rename_pars <- function(x) {
 }
 
 #' @export
-change_effects.btl <- function(x, data, pars, dims, nlpar = "",
-                               stancode = "", ...) {
+change_effects.btl <- function(x, data, pars, stancode = "", ...) {
   # helps in renaming various kinds of effects
-  nlpar <- check_nlpar(nlpar)
-  fixef <- colnames(data_fe(x, data)$X)
-  fixef <- rm_int_fe(fixef, stancode, nlpar = nlpar)
-  change_fe <- change_fe(fixef, pars, nlpar = nlpar)
-  smooths = get_sm_labels(x, data, covars = TRUE)
-  change_sm <- change_sm(smooths, pars, nlpar = nlpar)
-  csef <- colnames(data_cs(x, data)$Xcs)
-  change_cs <- change_cs(csef, pars, nlpar = nlpar)
-  monef <- colnames(data_mo(x, data)$Xmo)
-  change_mo <- change_mo(monef, pars, nlpar = nlpar)
-  meef <- get_me_labels(x, data)
-  change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
-  gpef <- get_gp_labels(x, data = data, covars = TRUE)
-  change_gp <- change_gp(gpef, pars, dims = dims, nlpar = nlpar)
-  c(change_fe, change_sm, change_cs, change_mo, change_me, change_gp)
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
+  c(
+    change_fe(x, data, pars, stancode = stancode),
+    change_sm(x, data, pars),
+    change_cs(x, data, pars),
+    change_mo(x, data, pars),
+    change_me(x, data, pars),
+    change_gp(x, data, pars)
+  )
 }
 
-change_effects.btnl <- function(x, data, pars, dims, ...) {
+change_effects.btnl <- function(x, data, pars, ...) {
   # helps in renaming effects for non-linear parameters
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (nlp in names(x$nlpars)) {
     change <- c(change, 
-      change_effects(x$nlpars[[nlp]], data, pars, dims, nlpar = nlp)
+      change_effects(x$nlpars[[nlp]], data, pars, ...)
     )
   }
   change
 }
 
-change_fe <- function(fixef, pars, nlpar = "") {
+change_fe <- function(bterms, data, pars, stancode = "") {
   # helps in renaming fixed effects parameters
-  # Args:
-  #   fixef: names of the fixed effects
-  #   pars: names of all model parameters
-  #   nlpar: optional string naming a non-linear parameter
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  px <- check_prefix(bterms)
+  fixef <- colnames(data_fe(bterms, data)$X)
+  fixef <- rm_int_fe(fixef, stancode, px = px)
   if (length(fixef)) {
-    b <- paste0("b", usc(nlpar, "prefix"))
+    b <- paste0("b", usc(combine_prefix(px), "prefix"))
     pos <- grepl(paste0("^", b, "\\["), pars)
     bnames <- paste0(b, "_", fixef)
-    change <- lc(change, 
-      list(pos = pos, fnames = bnames)
-    )
+    change <- lc(change, list(pos = pos, fnames = bnames))
     change <- c(change,
       change_prior(class = b, pars = pars, names = fixef)
     )
@@ -128,17 +118,14 @@ change_fe <- function(fixef, pars, nlpar = "") {
   change
 }
 
-change_mo <- function(monef, pars, nlpar = "") {
+change_mo <- function(bterms, data, pars) {
   # helps in renaming monotonous effects parameters
-  # Args:
-  #   monef: names of the monotonous effects
-  #   pars: names of all model parameters
-  #   nlpar: optional string naming a non-linear parameter
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  monef <- colnames(data_mo(bterms, data)$Xmo)
   if (length(monef)) {
-    p <- usc(nlpar, "prefix")
+    p <- usc(combine_prefix(bterms), "prefix")
     bmo <- paste0("bmo", p)
     newnames <- paste0("bmo", p, "_", monef)
     change <- lc(change, 
@@ -168,16 +155,13 @@ change_mo <- function(monef, pars, nlpar = "") {
   change
 }
 
-change_cs <- function(csef, pars, nlpar = "") {
+change_cs <- function(bterms, data, pars) {
   # helps in renaming category specific effects parameters
-  # Args:
-  #   csef: names of the category specific effects
-  #   pars: names of all model parameters
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  csef <- colnames(data_cs(bterms, data)$Xcs)
   if (length(csef)) {
-    stopifnot(!nzchar(nlpar))
     ncse <- length(csef)
     thres <- sum(grepl("^b_Intercept\\[", pars))
     csenames <- t(outer(csef, paste0("[", 1:thres, "]"), FUN = paste0))
@@ -193,11 +177,14 @@ change_cs <- function(csef, pars, nlpar = "") {
   change
 }
 
-change_me <- function(meef, pars, dims, nlpar = "") {
-  # rename parameters of noisy variables
+change_me <- function(bterms, data, pars) {
+  # helps in renaming parameters of noisy variables
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  meef <- get_me_labels(bterms, data)
   if (length(meef)) {
-    p <- usc(nlpar, "prefix")
+    p <- usc(combine_prefix(bterms), "prefix")
     meef <- rename(meef)
     # rename coefficients of noise free terms
     bme <- paste0("bme", p)
@@ -224,9 +211,13 @@ change_me <- function(meef, pars, dims, nlpar = "") {
   change
 }
 
-change_gp <- function(gpef, pars, dims, nlpar = "") {
+change_gp <- function(bterms, data, pars) {
+  # helps in renaming parameters of gaussian processes
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  p <- usc(nlpar, "prefix")
+  gpef <- get_gp_labels(bterms, data = data, covars = TRUE)
+  p <- usc(combine_prefix(bterms), "prefix")
   for (i in seq_along(gpef)) {
     # rename GP hyperparameters
     by_levels = attr(gpef, "by_levels")[[i]]
@@ -263,18 +254,15 @@ change_gp <- function(gpef, pars, dims, nlpar = "") {
   change
 }
 
-change_sm <- function(smooths, pars, nlpar = "") {
+change_sm <- function(bterms, data, pars) {
   # helps in renaming smoothing term parameters
-  # Args:
-  #   smooths: smoothing terms
-  #   pars: names of all model parameters
-  #   nlpar: optional string naming a non-linear parameter
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  smooths <- get_sm_labels(bterms, data, covars = TRUE)
   if (length(smooths)) {
     stopifnot(!is.null(attr(smooths, "nbases")))
-    p <- usc(nlpar, "prefix")
+    p <- usc(combine_prefix(bterms), "prefix")
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smooths)
     s <- paste0("s", p)
@@ -304,21 +292,19 @@ change_sm <- function(smooths, pars, nlpar = "") {
 }
   
 
-change_re <- function(ranef, pars, dims) {
+change_re <- function(ranef, pars) {
   # helps in renaming group-level parameters
   # Args:
   #   ranef: list returned by tidy_ranef
   #   pars: names of all model parameters
-  #   dims: named list containing parameter dimensions
-  #   nlpar: optional string naming a non-linear parameter
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
-      r <- ranef[ranef$id == id, ]
+      r <- subset2(ranef, id = id)
       g <- r$group[1]
-      suffix <- paste0(usc(r$nlpar, "suffix"), r$coef)
+      suffix <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
       rfnames <- paste0("sd_", g, "__", suffix)
       rpos <- grepl(paste0("^sd_", id, "(\\[|$)"), pars)
       change <- lc(change, list(pos = rpos, fnames = rfnames))
@@ -346,29 +332,27 @@ change_re <- function(ranef, pars, dims) {
       }
     }
     if (any(grepl("^r_", pars))) {
-      rc_args <- nlist(ranef, pars, dims)
-      change <- c(change, do.call(change_re_levels, rc_args))
+      change <- c(change, change_re_levels(ranef, pars = pars))
     }
   }
   change
 } 
 
-change_re_levels <- function(ranef, pars, dims)  {
+change_re_levels <- function(ranef, pars)  {
   # helps in renaming random effects 'r_.' parameters
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all model parameters
-  #   dims: named list containing parameter dimensions
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (i in seq_len(nrow(ranef))) {
     r <- ranef[i, ]
-    usc_nlpar <- usc(r$nlpar)
-    r_parnames <- paste0("r_", r$id, usc_nlpar, "_", r$cn)
+    p <- usc(combine_prefix(r))
+    r_parnames <- paste0("r_", r$id, p, "_", r$cn)
     r_regex <- paste0("^", r_parnames, "(\\[|$)")
     change_rl <- list(pos = grepl(r_regex, pars))
-    r_new_parname <- paste0("r_", r$group, usc(usc_nlpar))
+    r_new_parname <- paste0("r_", r$group, usc(p))
     # rstan doesn't like whitespaces in parameter names
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[r$group]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
@@ -429,7 +413,7 @@ change_old_re <- function(ranef, pars, dims) {
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
-    r <- ranef[ranef$id == id, ]
+    r <- subset2(ranef, id = id)
     g <- r$group[1]
     nlpar <- r$nlpar[1]
     stopifnot(nzchar(nlpar))
@@ -483,7 +467,7 @@ change_old_re2 <- function(ranef, pars, dims) {
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
-    r <- ranef[ranef$id == id, ]
+    r <- subset2(ranef, id = id)
     g <- r$group[1]
     nlpars_usc <- usc(r$nlpar, "suffix")
     # rename sd-parameters
@@ -530,12 +514,11 @@ change_old_sm <- function(bterms, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing smooths with multiple covariates
   stopifnot(is.brmsterms(bterms))
-  .change_old_sm <- function(bt, nlpar = "") {
-    nlpar <- check_nlpar(nlpar)
+  .change_old_sm <- function(bt) {
     change <- list()
     sm_labels <- get_sm_labels(bt)
     if (length(sm_labels)) {
-      p <- usc(nlpar, "suffix")
+      p <- usc(combine_prefix(bt), "suffix")
       old_smooths <- rename(paste0(p, sm_labels))
       new_smooths <- rename(paste0(p, get_sm_labels(bt, covars = TRUE)))
       old_sds_pars <- paste0("sds_", old_smooths)
@@ -562,20 +545,19 @@ change_old_sm <- function(bterms, pars, dims) {
   change <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      change <- c(change, .change_old_sm(bterms$auxpars$mu, nlpar = r))
+      bterms$dpars$mu$resp <- r
+      change <- c(change, .change_old_sm(bterms$dpars$mu))
     }
-    bterms$auxpars$mu <- NULL
+    bterms$dpars$mu <- NULL
   }
-  for (ap in names(bterms$auxpars)) {
-    bt <- bterms$auxpars[[ap]]
+  for (dp in names(bterms$dpars)) {
+    bt <- bterms$dpars[[dp]]
     if (length(bt$nlpars)) {
       for (nlp in names(bt$nlpars)) {
-        change <- c(change, 
-          .change_old_sm(bt$nlpars[[nlp]], nlpar = nlp)
-        )
+        change <- c(change, .change_old_sm(bt$nlpars[[nlp]]))
       }
     } else {
-      change <- c(change, .change_old_sm(bt, nlpar = ap))
+      change <- c(change, .change_old_sm(bt))
     }
   }
   change
@@ -594,10 +576,10 @@ change_simple <- function(oldname, fnames, pars, dims,
   out
 }
 
-rm_int_fe <- function(fixef, stancode, nlpar = "") {
+rm_int_fe <- function(fixef, stancode, px = list()) {
   # identifies if the intercept has to be removed from fixef
   # and returns adjusted fixef names
-  p <- usc(nlpar, "suffix")
+  p <- usc(combine_prefix(px), "suffix")
   int <- paste0("b_", p, "Intercept = temp_", p, "Intercept")
   loclev <- "vector[N] loclev;"
   if (any(ulapply(c(int, loclev), grepl, stancode, fixed = TRUE))) {
@@ -737,7 +719,7 @@ reorder_pars <- function(x) {
   all_classes <- c(
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
-    "sdgp", "lscale", auxpars(), "temp", "rescor", "delta", 
+    "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simplex", "r", "s", "zgp", "rcar", "loclev", 
     "Xme", "prior", "lp"
   )

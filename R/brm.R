@@ -462,7 +462,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     if (future) {
       require_package("future")
       if (cores > 1L) {
-        warning("Argument 'cores' is ignored when using 'future'.")
+        warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
       futures <- fits <- vector("list", chains)

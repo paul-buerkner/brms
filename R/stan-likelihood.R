@@ -32,30 +32,30 @@ stan_llh.default <- function(family, bterms, data, autocor,
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
   llh_adj <- stan_llh_adj(bterms$adforms)
   
-  auxpars <- names(bterms$auxpars)
+  dpars <- names(bterms$dpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || is_mix ||
           is_zero_one_inflated(family) ||
           is_wiener(family) || is_exgaussian(family) || 
           is_asym_laplace(family) || is_gev(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
-          any(c("phi", "kappa") %in% auxpars)
+          any(c("phi", "kappa") %in% dpars)
   n <- ifelse(reqn, "[n]", "")
-  # prepare auxiliary parameters
-  p <- named_list(auxpars())
+  # prepare distributional parameters
+  p <- named_list(dpars())
   p$mu <- paste0(ifelse(is_mv || is_categorical, "Mu", "mu"), mix, n)
   p$sigma <- stan_llh_sigma(family, bterms, mix)
   p$shape <- stan_llh_shape(family, bterms, mix)
-  for (ap in setdiff(auxpars(), c("mu", "sigma", "shape"))) {
-    p[[ap]] <- paste0(ap, mix, if (reqn && ap %in% auxpars) "[n]")
+  for (ap in setdiff(dpars(), c("mu", "sigma", "shape"))) {
+    p[[ap]] <- paste0(ap, mix, if (reqn && ap %in% dpars) "[n]")
   }
   if (family == "skew_normal") {
     # required because of CP parameterization of mu and sigma
-    nomega <- if (reqn && any(c("sigma", "alpha") %in% auxpars)) "[n]"
+    nomega <- if (reqn && any(c("sigma", "alpha") %in% dpars)) "[n]"
     p$omega <- paste0("omega", mix, nomega)
   }
   ord_args <- sargs(p$mu, if (has_cs) "mucs[n]", "temp_Intercept", p$disc)
-  usc_logit <- stan_llh_auxpar_usc_logit(c("zi", "hu"), bterms)
+  usc_logit <- stan_llh_dpar_usc_logit(c("zi", "hu"), bterms)
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
   
   if (is_mv) {
@@ -84,7 +84,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
   }
   
   simplify <- stan_has_built_in_fun(nlist(family, link)) &&
-    !has_trunc && !has_cens && !"disc" %in% auxpars
+    !has_trunc && !has_cens && !"disc" %in% dpars
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c(
@@ -337,14 +337,14 @@ stan_llh.default <- function(family, bterms, data, autocor,
 
 #' @export
 stan_llh.mixfamily <- function(family, bterms, ...) {
-  ap_ids <- auxpar_id(names(bterms$auxpars))
-  fap_ids <- auxpar_id(names(bterms$fauxpars))
-  ptheta <- any(auxpar_class(names(bterms$auxpars)) %in% "theta")
+  ap_ids <- dpar_id(names(bterms$dpars))
+  fap_ids <- dpar_id(names(bterms$fdpars))
+  ptheta <- any(dpar_class(names(bterms$dpars)) %in% "theta")
   llh <- rep(NA, length(family$mix))
   for (i in seq_along(family$mix)) {
     sbterms <- bterms
-    sbterms$auxpars <- sbterms$auxpars[ap_ids == i]
-    sbterms$fauxpars <- sbterms$fauxpars[fap_ids == i]
+    sbterms$dpars <- sbterms$dpars[ap_ids == i]
+    sbterms$fdpars <- sbterms$fdpars[fap_ids == i]
     llh[i] <- stan_llh(
       family$mix[[i]], sbterms, mix = i, ptheta = ptheta, ...
     )
@@ -470,10 +470,10 @@ stan_llh_sigma <- function(family, bterms, mix = "") {
   has_se <- is.formula(bterms$adforms$se)
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
-  auxpars <- names(bterms$auxpars)
+  dpars <- names(bterms$dpars)
   nsigma <- llh_adj || has_se || nzchar(mix) ||
     family %in% c("exgaussian", "gen_extreme_value", "asym_laplace")
-  nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% auxpars)
+  nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% dpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
   if (has_sigma) {
@@ -496,19 +496,19 @@ stan_llh_shape <- function(family, bterms, mix = "") {
   # prepare the code for 'shape' in the likelihood statement
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
-  auxpars <- names(bterms$auxpars)
+  dpars <- names(bterms$dpars)
   nshape <- (llh_adj || is_forked(family) || nzchar(mix)) &&
-            (has_disp || paste0("shape", mix) %in% auxpars)
+            (has_disp || paste0("shape", mix) %in% dpars)
   nshape <- if (nshape) "[n]"
   paste0(if (has_disp) "disp_", "shape", mix, nshape)
 }
 
-stan_llh_auxpar_usc_logit <- function(auxpars, bterms) {
-  # prepare _logit suffix for auxiliary parameters
+stan_llh_dpar_usc_logit <- function(dpars, bterms) {
+  # prepare _logit suffix for distributional parameters
   # currently only used in zero-inflated and hurdle models
   stopifnot(is.brmsterms(bterms))
-  use_logit <- any(ulapply(auxpars, function(ap) 
-    isTRUE(bterms$auxpars[[ap]]$family$link == "logit")
+  use_logit <- any(ulapply(dpars, function(dp) 
+    isTRUE(bterms$dpars[[dp]]$family$link == "logit")
   ))
   ifelse(use_logit, "_logit", "")
 }

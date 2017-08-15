@@ -176,9 +176,8 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     groups <- unique(ranef$group)
     out <- named_list(groups)
     for (g in groups) {
-      take <- ranef$group == g
-      nlpars_usc <- usc(ranef[take, "nlpar"], "suffix")
-      coefs <- paste0(nlpars_usc, ranef[take, "coef"])
+      r <- subset2(ranef, group = g)
+      coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
       levels <- attr(ranef, "levels")[[g]]
       rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
       out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
@@ -385,8 +384,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     if (nrow(x$ranef)) {
       get_names <- function(group) {
         # get names of group-level parameters
-        r <- x$ranef[x$ranef$group == group, ]
-        rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
+        r <- subset2(x$ranef, group = group)
+        rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
         cor_type <- paste0("cor_", group)
         sd_pars <- paste0("sd_", group, "__", rnames)
         cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
@@ -430,7 +429,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                                       ...) {
   pars <- use_alias(pars, parameters, default = NA)
   add_chain <- use_alias(add_chain, add_chains, default = FALSE)
-  if (all(c(as.matrix, as.array))) {
+  if (as.matrix && as.array) {
     stop2("Cannot use 'as.matrix' and 'as.array' at the same time.")
   }
   if (add_chain && as.array) {
@@ -518,22 +517,27 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
   contains_samples(x)
-  pars <- extract_pars(pars, all_pars = parnames(x),
-                       exact_match = exact_match, ...)
+  pars <- extract_pars(
+    pars, all_pars = parnames(x),
+    exact_match = exact_match, ...
+  )
   if (combine_chains) {
     if (inc_warmup) {
       stop2("Cannot include warmup samples when 'combine_chains' is TRUE.")
     }
     out <- as.matrix(x$fit, pars)
-    mcpar <- c(x$fit@sim$warmup * x$fit@sim$chain + 1, 
-               x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin)
+    mcpar <- c(
+      x$fit@sim$warmup * x$fit@sim$chain + 1, 
+      x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin
+    )
     attr(out, "mcpar") <- mcpar
     class(out) <- "mcmc"
   } else {
-    ps <- extract(x$fit, pars, permuted = FALSE, 
-                  inc_warmup = inc_warmup)
-    mcpar <- c(if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
-               x$fit@sim$iter, x$fit@sim$thin)
+    ps <- extract(x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup)
+    mcpar <- c(
+      if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
+      x$fit@sim$iter, x$fit@sim$thin
+    )
     out <- vector("list", length = dim(ps)[2])
     for (i in seq_along(out)) {
       out[[i]] <- ps[, i, ]
@@ -754,7 +758,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
-  spec_pars <- c(auxpars(), "delta", "theta", "rescor")
+  spec_pars <- c(dpars(), "delta", "theta", "rescor")
   spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
   spec_pars <- pars[grepl(spec_pars, pars)]
   spec_pars <- setdiff(spec_pars, "sigmaLL")
@@ -775,8 +779,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   # summary of group-level effects
   for (g in out$group) {
     r <- object$ranef[object$ranef$group == g, ]
-    nlpar_usc <- usc(r$nlpar, "suffix")
-    rnames <- paste0(nlpar_usc, r$coef)
+    rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
     sd_pars <- paste0("sd_", g, "__", rnames)
     sd_names <- paste0("sd", "(", rnames ,")")
     # construct correlation names
@@ -934,7 +937,7 @@ launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
   contains_samples(object)
-  shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...)
+  launch_shinystan(object$fit, rstudio = rstudio, ...)
 }
 
 #' Trace and Density Plots for MCMC Samples
@@ -1004,8 +1007,9 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  samples <- posterior_samples(x, pars = pars, add_chain = TRUE,
-                               exact_match = exact_match)
+  samples <- posterior_samples(
+    x, pars = pars, add_chain = TRUE, exact_match = exact_match
+  )
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (!length(pars)) {
     stop2("No valid parameters selected.")
@@ -1021,8 +1025,9 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
   for (i in seq_len(n_plots)) {
     sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
-    plots[[i]] <- bayesplot::mcmc_combo(sub_samples, combo = combo, 
-                                        gg_theme = theme, ...)
+    plots[[i]] <- bayesplot::mcmc_combo(
+      sub_samples, combo = combo, gg_theme = theme, ...
+    )
     if (plot) {
       plot(plots[[i]], newpage = newpage || i > 1)
       if (i == 1) {
@@ -1345,9 +1350,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   } else if (is_categorical(x$family)) {
     stop2("Marginal plots are not yet implemented for categorical models.")
   } else if (is_ordinal(x$family)) {
-    warning2("Predictions are treated as continuous variables ", 
-             "in marginal plots, \nwhich is likely an invalid ", 
-             "assumption for family ", x$family$family, ".")
+    warning2(
+      "Predictions are treated as continuous variables ", 
+      "in marginal_effects, which is likely an invalid ", 
+      "assumption for family ", x$family$family, "."
+    )
   }
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
@@ -1379,15 +1386,19 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
       invalid <- effects[setdiff(seq_along(effects), sort(matches))]  
       invalid <- ulapply(invalid, paste, collapse = ":")
-      warning2("Some specified effects are invalid for this model: ",
-               collapse_comma(invalid), "\nValid effects are ", 
-               "(combinations of): ", collapse_comma(ae_coll))
+      warning2(
+        "Some specified effects are invalid for this model: ",
+        collapse_comma(invalid), "\nValid effects are ", 
+        "(combinations of): ", collapse_comma(ae_coll)
+      )
     }
     effects <- unique(effects[sort(matches)])
     if (!length(effects)) {
-      stop2("All specified effects are invalid for this model.\n", 
-            "Valid effects are (combinations of): ", 
-            collapse_comma(ae_coll))
+      stop2(
+        "All specified effects are invalid for this model.\n", 
+        "Valid effects are (combinations of): ", 
+        collapse_comma(ae_coll)
+      )
     }
   }
   if (length(probs) != 2L) {
@@ -1514,12 +1525,12 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   lee <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      lee <- c(lee, setNames(bterms$auxpars["mu"], r))
+      lee <- c(lee, setNames(bterms$dpars["mu"], r))
     }
-    bterms$auxpars[["mu"]] <- NULL
+    bterms$dpars[["mu"]] <- NULL
   }
-  for (ap in names(bterms$auxpars)) {
-    bt <- bterms$auxpars[ap]
+  for (dp in names(bterms$dpars)) {
+    bt <- bterms$dpars[dp]
     if (is.btnl(bt[[1]])) {
       lee <- c(lee, bt[[1]]$nlpars)
     } else {
@@ -1781,10 +1792,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.list(draws$mu[["mv"]])) {
     draws$mu <- get_eta(draws$mu)
   }
-  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-  for (ap in auxpars) {
-    if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_auxpar(draws[[ap]])
+  dpars <- intersect(valid_dpars(family(object)), names(draws))
+  for (dp in dpars) {
+    if (is.list(draws[[dp]])) {
+      draws[[dp]] <- get_dpar(draws[[dp]])
     }
   }
   # see predict.R
@@ -1868,7 +1879,7 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  If \code{"response"} results are returned on the scale 
 #'  of the response variable. If \code{"linear"} 
 #'  fitted values are returned on the scale of the linear predictor.
-#' @param auxpar Optional name of a predicted auxiliary parameter.
+#' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
 #'
 #' @return Fitted values extracted from \code{object}. 
@@ -1906,10 +1917,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           auxpar = NULL, subset = NULL, 
+                           dpar = NULL, subset = NULL, 
                            nsamples = NULL, sort = FALSE, nug = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
+  dots <- list(...)
+  dpar <- use_alias(dpar, dots[["auxpar"]])
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
@@ -1918,14 +1931,14 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     sample_new_levels, new_objects, subset, nsamples, nug 
   )
   draws <- do.call(extract_draws, draws_args)
-  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-  if (!length(auxpar)) {
+  dpars <- intersect(valid_dpars(family(object)), names(draws))
+  if (!length(dpar)) {
     if (is.list(draws[["mu"]][["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    for (ap in auxpars) {
-      if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_auxpar(draws[[ap]])
+    for (dp in dpars) {
+      if (is.list(draws[[dp]])) {
+        draws[[dp]] <- get_dpar(draws[[dp]])
       }
     }
     if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
@@ -1940,23 +1953,23 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- fitted_fun(draws)
     }
   } else {
-    auxpars <- auxpars[auxpar_class(auxpars) != "mu"]
-    if (length(auxpar) != 1L || !auxpar %in% auxpars) {
-      stop2("Invalid argument 'auxpar'. Valid auxiliary ",
-            "parameters are: ", collapse_comma(auxpars))
+    dpars <- dpars[dpar_class(dpars) != "mu"]
+    if (length(dpar) != 1L || !dpar %in% dpars) {
+      stop2("Invalid argument 'dpar'. Valid distributional ",
+            "parameters are: ", collapse_comma(dpars))
     }
-    if (!isTRUE(attr(draws[[auxpar]], "predicted"))) {
-      stop2("Auxiliary parameter '", auxpar, "' was not predicted.")
+    if (!isTRUE(attr(draws[[dpar]], "predicted"))) {
+      stop2("Distributional parameter '", dpar, "' was not predicted.")
     }
-    if (scale == "linear" && is.list(draws[[auxpar]])) {
-      draws[[auxpar]]$f$link <- "identity"
+    if (scale == "linear" && is.list(draws[[dpar]])) {
+      draws[[dpar]]$f$link <- "identity"
     }
-    if (auxpar_class(auxpar) == "theta" && scale == "response") {
-      ap_id <- as.numeric(auxpar_id(auxpar))
+    if (dpar_class(dpar) == "theta" && scale == "response") {
+      ap_id <- as.numeric(dpar_id(dpar))
       draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
       dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
     } else {
-      draws$mu <- get_auxpar(draws[[auxpar]]) 
+      draws$mu <- get_dpar(draws[[dpar]]) 
     }
   }
   if (is.null(dim(draws$mu))) {
@@ -2252,8 +2265,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   
-  arg_names <- c("prior", "autocor", "nonlinear", "threshold", 
-                 "cov_ranef", "sparse", "sample_prior")
+  arg_names <- c(
+    "prior", "autocor", "nonlinear", "threshold", 
+    "cov_ranef", "sparse", "sample_prior"
+  )
   new_args <- intersect(arg_names, names(dots))
   old_args <- setdiff(arg_names, new_args)
   dots[old_args] <- object[old_args]
@@ -2640,10 +2655,10 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (is.list(draws$mu[["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    auxpars <- intersect(valid_auxpars(family(object)), names(draws))
-    for (ap in auxpars) {
-      if (is.list(draws[[ap]])) {
-        draws[[ap]] <- get_auxpar(draws[[ap]])
+    dpars <- intersect(valid_dpars(family(object)), names(draws))
+    for (dp in dpars) {
+      if (is.list(draws[[dp]])) {
+        draws[[dp]] <- get_dpar(draws[[dp]])
       }
     }
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
@@ -2691,10 +2706,10 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   draws$pp_mixture <- TRUE
   
-  auxpars <- intersect(valid_auxpars(family(x)), names(draws))
-  for (ap in auxpars) {
-    if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_auxpar(draws[[ap]])
+  dpars <- intersect(valid_dpars(family(x)), names(draws))
+  for (dp in dpars) {
+    if (is.list(draws[[dp]])) {
+      draws[[dp]] <- get_dpar(draws[[dp]])
     }
   }
   N <- choose_N(draws)

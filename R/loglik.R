@@ -20,7 +20,7 @@ loglik_gaussian <- function(i, draws, data = data.frame()) {
 }
 
 loglik_student <- function(i, draws, data = data.frame()) {
-  args <- list(df = get_auxpar(draws$nu, i = i), 
+  args <- list(df = get_dpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   out <- loglik_censor(dist = "student_t", args = args, 
@@ -51,7 +51,7 @@ loglik_lognormal <- function(i, draws, data = data.frame()) {
 
 loglik_skew_normal <- function(i, draws, data = data.frame()) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
-  alpha <- get_auxpar(draws$alpha, i = i)
+  alpha <- get_dpar(draws$alpha, i = i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, alpha)
   out <- loglik_censor(
@@ -84,7 +84,7 @@ loglik_student_mv <- function(i, draws, data = data.frame()) {
   } else {
     mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
-  nu <- get_auxpar(draws$nu, obs)
+  nu <- get_dpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s) 
     dmulti_student_t(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
@@ -154,7 +154,7 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
     Sigma <- do.call(get_cov_matrix_arma1, args)
   }
   mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
-  nu <- get_auxpar(draws$nu, obs)
+  nu <- get_dpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s)
     dmulti_student_t(
       draws$data$Y[obs], df = nu[s, ], mu = mu[s, ], 
@@ -198,7 +198,7 @@ loglik_student_lagsar <- function(i, draws, data = data.frame()) {
   N <- draws$data$N
   mu <- ilink(get_eta(draws$mu), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data)
-  nu <- get_auxpar(draws$nu)
+  nu <- get_dpar(draws$nu)
   # weights, truncation and censoring not yet allowed
   sapply(1:draws$nsamples, .loglik_student_lagsar)
 }
@@ -228,7 +228,7 @@ loglik_student_errorsar <- function(i, draws, data = data.frame()) {
   }
   mu <- ilink(get_eta(draws$mu), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data)
-  nu <- get_auxpar(draws$nu)
+  nu <- get_dpar(draws$nu)
   # weights, truncation and censoring not yet allowed
   sapply(1:draws$nsamples, .loglik_student_errorsar)
 }
@@ -244,7 +244,7 @@ loglik_gaussian_fixed <- function(i, draws, data = data.frame()) {
 loglik_student_fixed <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
-  nu <- get_auxpar(draws$nu, 1:nrow(draws$data$V))
+  nu <- get_dpar(draws$nu, 1:nrow(draws$data$V))
   sapply(1:draws$nsamples, function(s) 
     dmulti_student_t(draws$data$Y, df = nu[s, ], mu = mu[s, ],
                    Sigma = draws$data$V, log = TRUE))
@@ -332,7 +332,7 @@ loglik_weibull <- function(i, draws, data = data.frame()) {
 }
 
 loglik_frechet <- function(i, draws, data = data.frame()) {
-  nu <- get_auxpar(draws$nu, i = i)
+  nu <- get_dpar(draws$nu, i = i)
   scale <- ilink(get_eta(draws$mu, i), draws$f$link) / gamma(1 - 1 / nu)
   args <- list(scale = scale, shape = nu)
   out <- loglik_censor(dist = "frechet", args = args, 
@@ -344,7 +344,7 @@ loglik_frechet <- function(i, draws, data = data.frame()) {
 
 loglik_gen_extreme_value <- function(i, draws, data = data.frame()) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
-  xi <- get_auxpar(draws$xi, i = i)
+  xi <- get_dpar(draws$xi, i = i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, xi)
   out <- loglik_censor(dist = "gen_extreme_value", args = args, 
@@ -367,7 +367,7 @@ loglik_inverse.gaussian <- function(i, draws, data = data.frame()) {
 loglik_exgaussian <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
-               beta = get_auxpar(draws$beta, i = i))
+               beta = get_dpar(draws$beta, i = i))
   out <- loglik_censor(dist = "exgaussian", args = args, 
                        i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pexgaussian, args = args,
@@ -377,9 +377,9 @@ loglik_exgaussian <- function(i, draws, data = data.frame()) {
 
 loglik_wiener <- function(i, draws, data = data.frame()) {
   args <- list(delta = ilink(get_eta(draws$mu, i), draws$f$link), 
-               alpha = get_auxpar(draws$bs, i = i),
-               tau = get_auxpar(draws$ndt, i = i),
-               beta = get_auxpar(draws$bias, i = i),
+               alpha = get_dpar(draws$bs, i = i),
+               tau = get_dpar(draws$ndt, i = i),
+               beta = get_dpar(draws$bias, i = i),
                resp = draws$data[["dec"]][i])
   out <- do.call("dwiener", c(draws$data$Y[i], args, log = TRUE))
   loglik_weight(out, i = i, data = draws$data)
@@ -387,7 +387,7 @@ loglik_wiener <- function(i, draws, data = data.frame()) {
 
 loglik_beta <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
-  phi <- get_auxpar(draws$phi, i)
+  phi <- get_dpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   out <- loglik_censor(dist = "beta", args = args, i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pbeta, args = args,
@@ -397,7 +397,7 @@ loglik_beta <- function(i, draws, data = data.frame()) {
 
 loglik_von_mises <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
-               kappa = get_auxpar(draws$kappa, i = i))
+               kappa = get_dpar(draws$kappa, i = i))
   out <- loglik_censor(dist = "von_mises", args = args, 
                        i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pvon_mises, args = args,
@@ -408,7 +408,7 @@ loglik_von_mises <- function(i, draws, data = data.frame()) {
 loglik_asym_laplace <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
-               quantile = get_auxpar(draws$quantile, i = i))
+               quantile = get_dpar(draws$quantile, i = i))
   out <- loglik_censor(dist = "asym_laplace", args = args, 
                        i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pvon_mises, args = args,
@@ -481,7 +481,7 @@ loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
 loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
   theta <- get_zi_hu(draws, i, par = "zi")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
-  phi <- get_auxpar(draws$phi, i)
+  phi <- get_dpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   # zi_beta is technically a hurdle model
   out <- loglik_hurdle_continuous(pdf = dbeta, theta = theta, 
@@ -490,13 +490,13 @@ loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
-  zoi <- get_auxpar(draws$zoi, i)
-  coi <- get_auxpar(draws$coi, i)
+  zoi <- get_dpar(draws$zoi, i)
+  coi <- get_dpar(draws$coi, i)
   if (draws$data$Y[i] %in% c(0, 1)) {
     out <- dbinom(1, size = 1, prob = zoi, log = TRUE) + 
       dbinom(draws$data$Y[i], size = 1, prob = coi, log = TRUE)
   } else {
-    phi <- get_auxpar(draws$phi, i)
+    phi <- get_dpar(draws$phi, i)
     mu <- ilink(get_eta(draws$mu, i), draws$f$link)
     args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
     out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
@@ -605,13 +605,13 @@ loglik_mixture <- function(i, draws, data = data.frame()) {
   for (j in seq_along(families)) {
     loglik_fun <- paste0("loglik_", families[j])
     loglik_fun <- get(loglik_fun, asNamespace("brms"))
-    auxpars <- valid_auxpars(families[j])
+    dpars <- valid_dpars(families[j])
     tmp_draws <- list(
       f = draws$f$mix[[j]],
       nsamples = draws[["nsamples"]],
       data = draws[["data"]]
     )
-    for (ap in auxpars) {
+    for (ap in dpars) {
       tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
     }
     out[, j] <- exp(log(theta[, j]) + loglik_fun(i, tmp_draws))

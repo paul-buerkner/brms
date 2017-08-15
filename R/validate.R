@@ -59,6 +59,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all.vars))
   y$adforms[names(adforms)] <- adforms
   
+  # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   terms <- try(terms(rhs(formula)), silent = TRUE)
   has_terms <- is(terms, "try-error") || 
@@ -70,12 +71,14 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       mui <- paste0("mu", i)
       if (!is.formula(x$pforms[[mui]])) {
         x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
+        attr(x$pforms[[mui]], "nl") <- attr(formula, "nl")
         rhs_needed <- TRUE
       }
     }
   } else {
     if (!is.formula(x$pforms[["mu"]])) { 
       x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
+      attr(x$pforms[["mu"]], "nl") <- attr(formula, "nl")
       rhs_needed <- TRUE
     }
     x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
@@ -85,51 +88,60 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
           "the right-hand side of 'formula' is unused.")
   }
   
-  auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
-  auxpars <- names(x$pforms)[auxpars]
-  # amend when generalizing non-linear models to auxiliary parameters
-  nlpars <- setdiff(names(x$pforms), auxpars)
-  if (isTRUE(x[["nl"]])) {
-    if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
-      stop2("Non-linear formulas are not yet allowed for this family.")
+  # predicted distributional parameters
+  dpars <- is_dpar_name(names(x$pforms), family, bterms = y)
+  dpars <- names(x$pforms)[dpars]
+  dpar_forms <- x$pforms[dpars]
+  nlpars <- setdiff(names(x$pforms), dpars)
+  nlpar_forms <- x$pforms[nlpars]
+  dpar_of_nlpars <- rep(NA, length(nlpars))
+  for (i in seq_along(nlpar_forms)) {
+    dpar <- attr(nlpar_forms[[i]], "dpar", TRUE)
+    if (length(dpar) != 1L) {
+      stop2("Parameter '", nlpars[i], "' is not part of the model")
     }
-    y$auxpars[["mu"]] <- parse_nlf(x$pforms[["mu"]], x$pforms[nlpars])
-    y$auxpars[["mu"]]$family <- auxpar_family(family, "mu")
-    auxpars <- setdiff(auxpars, "mu")
-  } else {
-    if (length(nlpars)) {
-      stop2("Parameter '", nlpars[1], "' is not part of the model.")
+    dpar_of_nlpars[i] <- dpar
+  }
+  for (dp in dpars) {
+    if (isTRUE(attr(dpar_forms[[dp]], "nl"))) {
+      if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
+        stop2("Non-linear formulas are not yet allowed for this family.")
+      }
+      dpar_nlpar_forms <- nlpar_forms[dpar_of_nlpars %in% dp]
+      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms, dp)
+    } else {
+      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
     }
+    y$dpars[[dp]]$family <- dpar_family(family, dp)
+    y$dpars[[dp]]$dpar <- dp
+    # temporary until brms 2.0.0
+    y$dpars[[dp]]$resp <- ""
   }
-  
-  # predicted auxiliary parameters
-  for (ap in auxpars) {
-    y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
-    y$auxpars[[ap]]$family <- auxpar_family(family, ap)
+  # fixed distributional parameters
+  inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars(family, y))
+  if (length(inv_fixed_dpars)) {
+    stop2("Invalid fixed parameters: ", collapse_comma(inv_fixed_dpars))
   }
-  if (!is.null(y$auxpars[["mu"]])) {
-    y$auxpars[["mu"]][["autocor"]] <- autocor
+  for (dp in names(x$pfix)) {
+    y$fdpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
   }
-  # fixed auxiliary parameters
-  inv_fauxpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
-  if (length(inv_fauxpars)) {
-    stop2("Invalid auxiliary parameters: ", collapse_comma(inv_fauxpars))
-  }
-  y$fauxpars <- x$pfix
-  check_fauxpars(y$fauxpars)
+  check_fdpars(y$fdpars)
   # check for illegal use of cs terms
   if (has_cs(y) && !(is.null(family) || allows_cs(family))) {
     stop2("Category specific effects are only meaningful for ", 
           "families 'sratio', 'cratio', and 'acat'.")
   }
   # parse autocor formula
+  if (!is.null(y$dpars[["mu"]])) {
+    y$dpars[["mu"]][["autocor"]] <- autocor
+  }
   y$time <- parse_time(autocor)
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all.vars(y$respform)
   lformula <- c(
     lhsvars, advars, 
-    lapply(y$auxpars, "[[", "allvars"), 
+    lapply(y$dpars, "[[", "allvars"), 
     y$time$allvars
   )
   y$allvars <- allvars_formula(lformula)
@@ -143,8 +155,8 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       stop2("Multivariate models currently allow only ",
             "addition argument 'weights'.")
     }
-    if (length(y$auxpars) > 1L) {
-      stop2("Auxiliary parameters cannot yet be ", 
+    if (length(y$dpars) > 1L) {
+      stop2("Distributional parameters cannot yet be ", 
             "predicted in multivariate models.")
     }
   }
@@ -226,7 +238,7 @@ parse_lf <- function(formula, family = NULL) {
   structure(y, class = "btl")
 }
 
-parse_nlf <- function(formula, nlpar_forms) {
+parse_nlf <- function(formula, nlpar_forms, dpar) {
   # parse non-linear formulas
   # Args:
   #   formula: formula of the non-linear model
@@ -235,6 +247,7 @@ parse_nlf <- function(formula, nlpar_forms) {
   # Returns:
   #   object of class 'btnl'
   stopifnot(is.list(nlpar_forms))
+  stopifnot(length(dpar) == 1L)
   formula <- rhs(as.formula(formula))
   y <- list()
   if (length(nlpar_forms)) {
@@ -243,6 +256,10 @@ parse_nlf <- function(formula, nlpar_forms) {
     y$nlpars <- named_list(nlpars)
     for (nlp in nlpars) {
       y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
+      y$nlpars[[nlp]]$nlpar <- nlp
+      y$nlpars[[nlp]]$dpar <- dpar
+      # temporary until brms 2.0.0
+      y$nlpars[[nlp]]$resp <- ""
     }
     model_vars <- all.vars(formula)
     missing_pars <- setdiff(names(y$nlpars), model_vars)
@@ -567,46 +584,78 @@ is.btnl <- function(x) {
   inherits(x, "btnl")
 }
 
-avoid_auxpars <- function(names, bterms) {
+avoid_dpars <- function(names, bterms) {
   # avoid ambiguous parameter names
   # Args:
   #   names: names to check for ambiguity
   #   bterms: object of class brmsterms
   #stopifnot(is.brmsterms(bterms))
-  auxpars <- c(names(bterms$auxpars), "mo", "cs", "me")
-  if (length(auxpars)) {
-    auxpars_prefix <- paste0("^", auxpars, "_")
-    invalid <- any(ulapply(auxpars_prefix, grepl, names))
+  dpars <- c(names(bterms$dpars), "mo", "cs", "me")
+  if (length(dpars)) {
+    dpars_prefix <- paste0("^", dpars, "_")
+    invalid <- any(ulapply(dpars_prefix, grepl, names))
     if (invalid) {
-      auxpars <- paste0("'", auxpars, "_'", collapse = ", ")
-      stop2("Variable names starting with ", auxpars,
+      dpars <- paste0("'", dpars, "_'", collapse = ", ")
+      stop2("Variable names starting with ", dpars,
             " are not allowed for this model.")
     }
   }
   invisible(NULL)
 }
 
-check_nlpar <- function(nlpar) {
-  stopifnot(length(nlpar) == 1L)
-  nlpar <- as.character(nlpar)
-  ifelse(nlpar == "mu", "", nlpar)
+vars_prefix <- function() {
+  c("dpar", "resp", "nlpar") 
 }
 
-check_fauxpars <- function(x) {
-  # check validity of fixed auxiliary parameters
+check_prefix <- function(x, keep_mu = FALSE) {
+  vpx <- vars_prefix()
+  if (is.data.frame(x) && nrow(x) == 0) {
+    # avoids a bug in data.frames with zero rows
+    x <- list()
+  }
+  x[setdiff(vpx, names(x))] <- ""
+  x <- x[vpx]
+  for (i in seq_along(x)) {
+    x[[i]] <- as.character(x[[i]])
+    if (!length(x[[i]])) {
+      x[[i]] <- ""
+    }
+    x[[i]] <- ifelse(
+      !keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "mu", 
+      yes = "", no = x[[i]]
+    )
+    x[[i]] <- ifelse(
+      keep_mu & names(x)[i] == "dpar" & x[[i]] %in% "", 
+      yes = "mu", no = x[[i]]
+    )
+  }
+  x
+}
+
+combine_prefix <- function(prefix, keep_mu = FALSE) {
+  prefix <- check_prefix(prefix, keep_mu = keep_mu)
+  prefix <- lapply(prefix, function(x)
+    ifelse(nzchar(x), paste0("_", x), "")
+  )
+  sub("^_", "", do.call(paste0, prefix))
+}
+
+check_fdpars <- function(x) {
+  # check validity of fixed distributional parameters
   stopifnot(is.null(x) || is.list(x))
   pos_pars <- c(
     "sigma", "shape", "nu", "phi", "kappa", 
     "beta", "disc", "bs", "ndt", "theta"
   )
   prob_pars <- c("zi", "hu", "bias", "quantile")
-  for (ap in names(x)) {
-    apc <- auxpar_class(ap)
-    if (apc %in% pos_pars && x[[ap]] < 0) {
-      stop2("Parameter '", ap, "' must be positive.")
+  for (dp in names(x)) {
+    apc <- dpar_class(dp)
+    value <- x[[dp]]$value
+    if (apc %in% pos_pars && value < 0) {
+      stop2("Parameter '", dp, "' must be positive.")
     }
-    if (apc %in% prob_pars && (x[[ap]] < 0 || x[[ap]] > 1)) {
-      stop2("Parameter '", ap, "' must be between 0 and 1.")
+    if (apc %in% prob_pars && (value < 0 || value > 1)) {
+      stop2("Parameter '", dp, "' must be between 0 and 1.")
     }
   }
   invisible(TRUE)
@@ -714,8 +763,8 @@ check_re_formula <- function(re_formula, formula) {
     re_formula <- ~ 1
   } else {
     re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
-    new <- parse_bf(re_formula, check_response = FALSE)$auxpars$mu$re
-    old <- parse_bf(old_re_formula, check_response = FALSE)$auxpars$mu$re
+    new <- parse_bf(re_formula, check_response = FALSE)$dpars$mu$re
+    old <- parse_bf(old_re_formula, check_response = FALSE)$dpars$mu$re
     if (nrow(new)) {
       new_terms <- lapply(new$form, terms)
       found <- rep(FALSE, nrow(new))
@@ -759,7 +808,10 @@ update_re_terms <- function(x, re_formula = NULL) {
     # add valid group-level terms of re_formula
     # Args:
     #   formula: object of class 'formula'
-    formula <- as.formula(formula)
+    if (isTRUE(attr(formula, "nl"))) {
+      # non-linear formulas contain no group-level effects
+      return(formula)
+    }
     re_formula <- check_re_formula(re_formula, formula)
     new_formula <- formula2str(formula)
     old_re_terms <- get_re_terms(formula)
@@ -775,16 +827,14 @@ update_re_terms <- function(x, re_formula = NULL) {
     new_re_terms <- get_re_terms(re_formula)
     new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
     new_formula <- formula(new_formula)
-    environment(new_formula) <- environment(formula)
+    attributes(new_formula) <- attributes(formula)
     return(new_formula)
   }
   
   if (is.formula(x)) {
     x <- .update_re_terms(x, re_formula) 
   } else if (is.brmsformula(x)) {
-    if (!x[["nl"]]) {
-      x$formula <- .update_re_terms(x$formula, re_formula)
-    }
+    x$formula <- .update_re_terms(x$formula, re_formula)
     x$pforms <- lapply(pforms(x), .update_re_terms, re_formula)
   } else {
     stop("Don't know how to handle objects of class ",
@@ -854,37 +904,37 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
   #   all: logical; include ranefs of nl and aux parameters?
   old_mv <- isTRUE(attr(x$formula, "old_mv"))
   if (all) {
-    re <- named_list(names(x$auxpars))
-    for (ap in names(re)) {
-      re[[ap]] <- get_re(
-        x$auxpars[[ap]], nlpar = ap,
-        response = x$response, old_mv = old_mv
+    re <- named_list(names(x$dpars))
+    for (dp in names(re)) {
+      re[[dp]] <- get_re(
+        x$dpars[[dp]], response = x$response, old_mv = old_mv
       )
     }
     re <- do.call(rbind, re)
   } else {
-    x$auxpars[["mu"]]$nlpars <- NULL
-    re <- get_re(x$auxpars[["mu"]])
+    x$dpars[["mu"]]$nlpars <- NULL
+    re <- get_re(x$dpars[["mu"]])
   }
   re
 }
 
 #' @export
-get_re.btl <- function(x, nlpar = "", response = "", old_mv = FALSE, ...) {
+get_re.btl <- function(x, response = "", old_mv = FALSE, ...) {
   stopifnot(is.data.frame(x$re))
-  nlpar <- check_nlpar(nlpar)
+  px <- check_prefix(x)
   re <- x$re
   nresp <- length(response)
   if (!old_mv && nresp > 1L && nrow(re)) {
-    # new MV models are also using the 'nlpar' argument
     re <- replicate(nresp, re, simplify = FALSE)
     for (i in seq_len(nresp)) {
-      re[[i]]$nlpar <- rep(response[i], nrow(re[[i]]))
+      re[[i]]$resp <- rep(response[i], nrow(re[[i]]))
     }
     re <- do.call(rbind, re)
   } else {
-    re$nlpar <- rep(nlpar, nrow(re)) 
+    re$resp <- rep(px$resp, nrow(re)) 
   }
+  re$dpar <- rep(px$dpar, nrow(re))
+  re$nlpar <- rep(px$nlpar, nrow(re)) 
   re
 }
 
@@ -892,7 +942,7 @@ get_re.btl <- function(x, nlpar = "", response = "", old_mv = FALSE, ...) {
 get_re.btnl <- function(x, ...) {
   re <- named_list(names(x$nlpars))
   for (nlp in names(re)) {
-    re[[nlp]] <- get_re(x$nlpars[[nlp]], nlpar = nlp)
+    re[[nlp]] <- get_re(x$nlpars[[nlp]])
   }
   do.call(rbind, re)
 }
@@ -902,15 +952,15 @@ get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
   # get formulas of certain effects in a list
   # Args:
   #   target: type of effects to return
-  #   all: logical; include effects of nlpars and auxpars?
+  #   all: logical; include effects of nlpars and dpars?
   if (all) {
-    out <- named_list(names(x$auxpars))
-    for (ap in names(out)) {
-      out[[ap]] <- get_effect(x$auxpars[[ap]], target = target)
+    out <- named_list(names(x$dpars))
+    for (dp in names(out)) {
+      out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
     }
   } else {
-    x$auxpars[["mu"]]$nlpars <- NULL
-    out <- get_effect(x$auxpars[["mu"]], target = target)
+    x$dpars[["mu"]]$nlpars <- NULL
+    out <- get_effect(x$dpars[["mu"]], target = target)
   }
   unlist(out, recursive = FALSE)
 }
@@ -958,8 +1008,8 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
   #stopifnot(is.brmsterms(bterms))
   stopifnot(is.atomic(rsv_vars))
   out <- list()
-  for (ap in names(x$auxpars)) {
-    out <- c(out, get_all_effects(x$auxpars[[ap]]))
+  for (dp in names(x$dpars)) {
+    out <- c(out, get_all_effects(x$dpars[[dp]]))
   }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
   if (comb_all) {
@@ -1011,7 +1061,7 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
   #            or just return the covariate names (FALSE)?
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
-    sm_form <- x$auxpars$mu[["sm"]]
+    sm_form <- x$dpars$mu[["sm"]]
   } else {
     sm_form <- x[["sm"]] 
   }
@@ -1040,7 +1090,7 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
       stop("Invalid combination of arguments. Please report a bug.")
     }
     sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
-    by_levels <- attr(sdata_fe[["X"]], "by_levels")
+    by_levels <- attr(sdata_fe$X, "by_levels")
     nby <- lengths(by_levels)
     sms <- as.list(sms)
     for (i in seq_along(sms)) {
@@ -1066,7 +1116,7 @@ get_me_labels <- function(x, data) {
   #   data: data frame containing the noisy variables
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
-    me_form <- x$auxpars$mu[["me"]]
+    me_form <- x$dpars$mu[["me"]]
   } else {
     me_form <- x[["me"]]
   }
@@ -1088,7 +1138,7 @@ get_gp_labels <- function(x, data = NULL, covars = FALSE) {
   #           returned instead of the full term names?
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
-    gp_form <- x$auxpars$mu[["gp"]]
+    gp_form <- x$dpars$mu[["gp"]]
   } else {
     gp_form <- x[["gp"]]
   }
@@ -1241,7 +1291,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   # Args:
   #   bterms: object of class brmsterms
   #   data: data passed to brm after updating
-  #   all: include REs of non-linear and auxiliary parameters?
+  #   all: include REs of non-linear and distributional parameters?
   #   ncat: optional number of response categories
   #         only used for category specific group-level effects
   # Returns: 
@@ -1263,7 +1313,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (re$type[[i]] == "mo") {
-      coef <- prepare_mo_vars(re$form[[i]], data, check = FALSE)
+      coef <- mo_design_matrix(re$form[[i]], data, check = FALSE)
       coef <- colnames(coef)
     } else if (re$type[[i]] == "cs") {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
@@ -1279,13 +1329,15 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
     } else {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
     }
-    avoid_auxpars(coef, bterms = bterms)
+    avoid_dpars(coef, bterms = bterms)
     rdat <- data.frame(
       id = re$id[[i]],
       group = re$group[[i]],
       gn = re$gn[[i]],
       gtype = re$gtype[[i]],
       coef = coef, cn = NA,
+      resp = re$resp[[i]],
+      dpar = re$dpar[[i]],
       nlpar = re$nlpar[[i]],
       cor = re$cor[[i]],
       type = re$type[[i]],
@@ -1326,7 +1378,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
     stop2("Grouping factor names ", inv_groups, " are resevered.")
   }
   # check for duplicated and thus not identified effects
-  dup <- duplicated(ranef[, c("group", "coef", "nlpar")])
+  dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
     stop2("Duplicated group-level effects are not allowed.")
   }
@@ -1356,8 +1408,9 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
 empty_ranef <- function() {
   data.frame(
     id = numeric(0), group = character(0), gn = numeric(0),
-    coef = character(0), cn = numeric(0), nlpar = character(0),
-    cor = logical(0), type = character(0), form = character(0), 
+    coef = character(0), cn = numeric(0), resp = character(0),
+    dpar = character(0), nlpar = character(0), cor = logical(0), 
+    type = character(0), form = character(0), 
     stringsAsFactors = FALSE
   )
 }
@@ -1371,7 +1424,7 @@ rsv_vars <- function(bterms, incl_intercept = TRUE) {
   nresp <- length(bterms$response)
   family <- bterms$family
   old_mv <- isTRUE(attr(bterms$formula, "old_mv"))
-  rsv_intercept <- any(ulapply(bterms$auxpars, has_rsv_intercept))
+  rsv_intercept <- any(ulapply(bterms$dpars, has_rsv_intercept))
   if (old_mv) {
     if (is_linear(family) && nresp > 1L || is_categorical(family)) {
       rsv <- c("trait", "response")
@@ -1428,23 +1481,23 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   #   save_mevars: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  .exclude_pars <- function(bt, nlpar = "") {
+  .exclude_pars <- function(bt) {
     stopifnot(is.btl(bt))
-    nlpar <- usc(check_nlpar(nlpar))
+    p <- usc(combine_prefix(bt))
     out <- c(
-      paste0("temp", nlpar, "_Intercept"),
-      paste0(c("hs_local", "hs_global", "zb"), nlpar)
+      paste0("temp", p, "_Intercept"),
+      paste0(c("hs_local", "hs_global", "zb"), p)
     )
     sms <- get_sm_labels(bt, data)
     if (length(sms) && !is.null(data)) {
       for (i in seq_along(sms)) {
         nb <- seq_len(attr(sms, "nbases")[[i]])
-        out <- c(out, paste0("zs", nlpar, "_", i, "_", nb))
+        out <- c(out, paste0("zs", p, "_", i, "_", nb))
       } 
     }
     meef <- get_me_labels(bt, data)
     if (!save_mevars && length(meef)) {
-      out <- c(out, paste0("Xme", nlpar, "_", seq_along(meef)))
+      out <- c(out, paste0("Xme", p, "_", seq_along(meef)))
     }
     return(out)
   }
@@ -1455,7 +1508,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   save_all_pars <- as_one_logical(save_all_pars)
   out <- c(
     "Rescor", "Sigma", "res_cov_matrix",
-    intersect(auxpars(), names(bterms$auxpars))
+    intersect(dpars(), names(bterms$dpars))
   )
   if (!save_all_pars) {
     out <- c(out,
@@ -1464,18 +1517,19 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     )
     if (length(bterms$response) > 1L) {
       for (r in bterms$response) {
-        out <- c(out, .exclude_pars(bterms$auxpars$mu, nlpar = r))
+        bterms$dpars$mu$resp <- r
+        out <- c(out, .exclude_pars(bterms$dpars$mu))
       }
-      bterms$auxpars$mu <- NULL
+      bterms$dpars$mu <- NULL
     }
-    for (ap in names(bterms$auxpars)) {
-      bt <- bterms$auxpars[[ap]]
+    for (dp in names(bterms$dpars)) {
+      bt <- bterms$dpars[[dp]]
       if (length(bt$nlpars)) {
         for (nlp in names(bt$nlpars)) {
-          out <- c(out, .exclude_pars(bt$nlpars[[nlp]], nlpar = nlp))
+          out <- c(out, .exclude_pars(bt$nlpars[[nlp]]))
         }
       } else {
-        out <- c(out, .exclude_pars(bt, nlpar = ap))
+        out <- c(out, .exclude_pars(bt))
       }
     }
   }
@@ -1486,8 +1540,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       out <- c(out, paste0(rm_re_pars, "_", id))
     }
     if (!save_ranef) {
-      usc_nlpar <- usc(ranef$nlpar, "prefix")
-      out <- c(out, paste0("r_", ranef$id, usc_nlpar, "_", ranef$cn))
+      p <- usc(combine_prefix(ranef))
+      out <- c(out, paste0("r_", ranef$id, p, "_", ranef$cn))
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)

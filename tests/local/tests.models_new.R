@@ -68,9 +68,23 @@ test_that("Binomial model from brm doc works correctly", {
               family = binomial("probit"),
               cores = 2)
   print(fit4)
-  expect_message(me4 <- marginal_effects(fit4),
-                 "median number of trials")
-  expect_ggplot(plot(me4, ask = FALSE)[[1]])
+  expect_message(
+    me <- marginal_effects(fit4), "median number of trials"
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+
+test_that("Non-linear model from brm doc works correctly", {
+  x <- rnorm(100)
+  y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
+  data5 <- data.frame(x, y)
+  fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
+              data = data5,
+              prior = c(prior(normal(0, 2), nlpar = a1),
+                        prior(normal(0, 2), nlpar = a2)))
+  print(fit5)
+  me <- marginal_effects(fit5)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
 })
 
 test_that("Models from hypothesis doc work correctly", {
@@ -106,7 +120,7 @@ test_that("bridgesampling methods work correctly", {
   # model with the treatment effect
   fit1 <- brm(
     count ~ log_Age_c + log_Base4_c + Trt_c,
-    data = epilepsy, family = negbinomial(), 
+    data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
   )
@@ -114,12 +128,12 @@ test_that("bridgesampling methods work correctly", {
   # model without the treatment effect
   fit2 <- brm(
     count ~ log_Age_c + log_Base4_c,
-    data = epilepsy, family = negbinomial(), 
+    data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
   )
   print(fit2)
-  
+
   # compute the bayes factor
   expect_gt(bayes_factor(fit1, fit2)$bf, 1)
   # compute the posterior model probabilities
@@ -141,7 +155,7 @@ test_that("varying slopes without a fixed effect work", {
   # test reloo
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
-  expect_range(reloo1$looic, 1620, 1700)
+  expect_range(reloo1$looic, 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
   me <- marginal_effects(fit1, conditions = conditions)
@@ -215,7 +229,7 @@ test_that("multivariate normal models work correctly", {
   tim <- sample(1:N, 100)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(cbind(y1,y2) ~ s(x) + poly(month, 3) + (1|x|id),
+  fit_mv1 <- brm(cbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
                   data = data, autocor = cor_arma(~tim|id, p = 1),
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
@@ -296,6 +310,21 @@ test_that("Non-linear models work correctly", {
   expect_range(LOO(fit_loss)$looic, 700, 720)
 })
 
+test_that("Non-linear models of auxiliary parameters work correctly", {
+  x <- rnorm(100)
+  y <- rnorm(100, 1, exp(x))
+  dat <- data.frame(y, x, g = rep(1:10, each = 10))
+  bform <- bf(y ~ x + (1|V|g)) +
+    nlf(sigma ~ a, a ~ x + (1|V|g)) + 
+    gaussian()
+  bprior <- prior(normal(0, 3), dpar = sigma, nlpar = a)
+  fit <- brm(bform, dat, prior = bprior, chains = 2, cores = 2)
+  print(fit)
+  expect_ggplot(plot(marginal_effects(fit, method = "predict"))[[1]])
+  expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
+  expect_range(LOO(fit)$looic, 240, 350)
+})
+
 test_that("Multivariate GAMMs work correctly", {
   n <- 200
   sig <- 2
@@ -373,7 +402,7 @@ test_that("generalized extreme value models work correctly", {
   expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
 })
 
-test_that("update works correclty for some special cases", {
+test_that("update works correctly for some special cases", {
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy, cores = 2)
   fit2 <- update(fit1, ~ . + Trt_c, newdata = epilepsy, cores = 2)
@@ -392,7 +421,7 @@ test_that("update works correclty for some special cases", {
 
 test_that("Wiener diffusion models work correctly", {
   x <- rnorm(100, mean = 1)
-  dat <- brms:::rwiener(n=1, alpha=2, tau=.3, beta=.5, delta=.5+x)
+  dat <- rwiener(n=1, alpha=2, tau=.3, beta=.5, delta=.5+x)
   dat$x <- x
 
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,

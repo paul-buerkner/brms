@@ -92,7 +92,7 @@ fitted_gen_extreme_value <- function(draws) {
   draws$sigma <- get_sigma(
     draws$sigma, data = draws$data, dim = dim_mu(draws)
   )
-  draws$xi <- get_auxpar(draws$xi)
+  draws$xi <- get_dpar(draws$xi)
   draws$mu <- ilink(draws$mu, draws$f$link)
   if (!is_trunc(draws$data)) {
     draws$mu <- with(draws, mu + sigma * (gamma(1 - xi) - 1) / xi)
@@ -107,16 +107,16 @@ fitted_inverse.gaussian <- function(draws) {
 }
 
 fitted_exgaussian <- function(draws) {
-  draws$mu <- ilink(draws$mu, draws$f$link) + get_auxpar(draws$beta)
+  draws$mu <- ilink(draws$mu, draws$f$link) + get_dpar(draws$beta)
   fitted_trunc(draws)
 }
 
 fitted_wiener <- function(draws) {
   # mu is the drift rate
   draws$mu <- ilink(draws$mu, draws$f$link)
-  draws$bs <- get_auxpar(draws$bs)
-  draws$ndt <- get_auxpar(draws$ndt)
-  draws$bias <- get_auxpar(draws$bias)
+  draws$bs <- get_dpar(draws$bs)
+  draws$ndt <- get_dpar(draws$ndt)
+  draws$bias <- get_dpar(draws$bias)
   with(draws,
    ndt - bias / mu + bs / mu * 
      (exp(- 2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
@@ -132,7 +132,7 @@ fitted_von_mises <- function(draws) {
 }
 
 fitted_asym_laplace <- function(draws) {
-  draws$quantile <- get_auxpar(draws$quantile)
+  draws$quantile <- get_dpar(draws$quantile)
   draws$sigma <- get_sigma(
     draws$sigma, data = draws$data, dim = dim_mu(draws)
   )
@@ -208,8 +208,8 @@ fitted_zero_inflated_beta <- function(draws) {
 }
 
 fitted_zero_one_inflated_beta <- function(draws) {
-  draws$zoi <- get_auxpar(draws$zoi)
-  draws$coi <- get_auxpar(draws$coi)
+  draws$zoi <- get_dpar(draws$zoi)
+  draws$coi <- get_dpar(draws$coi)
   draws$zoi * draws$coi + 
     ilink(draws$mu, draws$f$link) * (1 - draws$zoi)
 }
@@ -249,13 +249,13 @@ fitted_mixture <- function(draws) {
   for (j in seq_along(families)) {
     fitted_fun <- paste0("fitted_", families[j])
     fitted_fun <- get(fitted_fun, asNamespace("brms"))
-    auxpars <- valid_auxpars(families[j])
+    dpars <- valid_dpars(families[j])
     tmp_draws <- list(
       f = draws$f$mix[[j]],
       nsamples = draws[["nsamples"]],
       data = draws[["data"]]
     )
-    for (ap in auxpars) {
+    for (ap in dpars) {
       tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
     }
     if (length(dim(draws$theta)) == 3L) {
@@ -372,7 +372,7 @@ fitted_trunc_student <- function(draws, lb, ub) {
   draws$sigma <- get_sigma(
     draws$sigma, data = draws$data, dim = dim_mu(draws)
   )
-  draws$nu <- get_auxpar(draws$nu)
+  draws$nu <- get_dpar(draws$nu)
   zlb <- (lb - draws$mu) / draws$sigma
   zub <- (ub - draws$mu) / draws$sigma
   # see Kim 2008: Moments of truncated Student-t distribution

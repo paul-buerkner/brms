@@ -15,10 +15,10 @@ a symbolic description of the model to be fitted.
 The details of model specification are given in 'Details'.}
 
 \item{...}{Additional \code{formula} objects to specify 
-predictors of non-linear and auxiliary parameters. 
+predictors of non-linear and distributional parameters. 
 Formulas can either be named directly or contain
 names on their left-hand side. 
-The following are auxiliary parameters of specific families
+The following are distributional parameters of specific families
 (all other parameters are treated as non-linear parameters):
 \code{sigma} (residual standard deviation or scale of
 the \code{gaussian}, \code{student}, \code{lognormal} 
@@ -41,7 +41,7 @@ of the \code{exgaussian} family);
 \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 non-decision time, and initial bias of the \code{wiener}
 diffusion model).
-All auxiliary parameters are modeled 
+All distributional parameters are modeled 
 on the log or logit scale to ensure correct definition
 intervals after transformation.
 See 'Details' for more explanation.}
@@ -323,7 +323,7 @@ models for all parameters of the assumed response distribution.
   
   As of \pkg{brms} 1.0.0, zero-inflated and hurdle models are specfied 
   in the same way as as their non-inflated counterparts. 
-  However, they have additional auxiliary parameters 
+  However, they have additional distributional parameters 
   (named \code{zi} and \code{hu} respectively)
   modeling the zero-inflation / hurdle probability depending on which 
   model you choose. These parameters can also be affected by predictors
@@ -389,15 +389,15 @@ models for all parameters of the assumed response distribution.
   For this reason it is mandatory to specify priors on the non-linear parameters.
   For instructions on how to do that, see \code{\link[brms:set_prior]{set_prior}}.
   
-  \bold{Formula syntax for predicting auxiliary parameters}
+  \bold{Formula syntax for predicting distributional parameters}
   
-  It is also possible to predict auxiliary parameters of the response
+  It is also possible to predict parameters of the response
   distribution such as the residual standard deviation \code{sigma} 
   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
   The syntax closely resembles that of a non-linear 
   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
   
-  Alternatively, one may fix auxiliary parameters to certain values.
+  Alternatively, one may fix distributional parameters to certain values.
   However, this is mainly useful when models become too 
   complicated and otherwise have convergence issues. 
   We thus suggest to be generally careful when making use of this option. 
@@ -414,19 +414,19 @@ models for all parameters of the assumed response distribution.
   the negative binomial distribution with \code{shape = 1}.
   Furthermore, the parameter \code{disc} ('discrimination') in ordinal 
   models is fixed to \code{1} by default and not estimated,
-  but may be modeled as any other auxiliary parameter if desired
+  but may be modeled as any other distributional parameter if desired
   (see examples). For reasons of identification, \code{'disc'}
   can only be positive, which is achieved by applying the log-link.
   
-  All auxiliary parameters currently supported by \code{brmsformula}
+  All distributional parameters currently supported by \code{brmsformula}
   have to positive (a negative standard deviation or precision parameter 
   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
   hurdle proabilities, quantiles, or the intial bias parameter of 
   drift-diffusion models). 
   However, linear predictors can be positive or negative, and thus the log link 
   (for positive parameters) or logit link (for probability parameters) are used 
-  by default to ensure that auxiliary parameters are within their valid intervals.
-  This implies that, by default, effects for auxiliary parameters are estimated 
+  by default to ensure that distributional parameters are within their valid intervals.
+  This implies that, by default, effects for distributional parameters are estimated 
   on the log / logit scale and one has to apply the inverse link function to get 
   to the effects on the original scale.
   Alternatively, it is possible to use the identity link to predict parameters
@@ -445,17 +445,17 @@ models for all parameters of the assumed response distribution.
   terms allowed in non-mixture models are allowed in mixture models
   as well.
   
-  Auxiliary parameters of mixture distributions have the same 
+  distributional parameters of mixture distributions have the same 
   name as those of the corresponding ordinary distributions, but with 
   a number at the end to indicate the mixture component. For instance, if
-  you use family \code{mixture(gaussian, gaussian)}, the auxiliary
+  you use family \code{mixture(gaussian, gaussian)}, the distributional
   parameters are \code{sigma1} and \code{sigma2}.
-  Auxiliary parameters of the same class can be fixed to the same value. 
+  distributional parameters of the same class can be fixed to the same value. 
   For the above example, we could write \code{sigma2 = "sigma1"} to make
   sure that both components have the same residual standard deviation,
   which is in turn estimated from the data.
   
-  In addition, there are two types of special auxiliary parameters.
+  In addition, there are two types of special distributional parameters.
   The first are named \code{mu<ID>}, that allow for modeling different 
   predictors for the mean parameters of different mixture components. 
   For instance, if you want to predict the mean of the first component 
@@ -534,4 +534,13 @@ bf(y ~ 1, mu1 ~ x, mu2 ~ z, family = mix)
 # fix both residual standard deviations to the same value
 bf(y ~ x, sigma2 = "sigma1", family = mix)
 
+# use the '+' operator to specify models
+bf(y ~ 1) + 
+  nlf(sigma ~ a * exp(b * x), a ~ x) + 
+  lf(b ~ z + (1|g), dpar = "sigma") +
+  gaussian()
+
+}
+\seealso{
+\code{\link[brms:brmsformula-helpers]{brmsformula-helpers}}
 }

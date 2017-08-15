@@ -18,7 +18,7 @@ test_that("rm_int_fe works as expected", {
   code <- make_stancode(y ~ 1, data = dat)
   expect_equal(rm_int_fe("Intercept", code), character(0))
   code <- make_stancode(cbind(y, y) ~ x, data = dat)
-  expect_equal(rm_int_fe(c("Intercept", "x"), code, nlpar = "y"), "x")
+  expect_equal(rm_int_fe(c("Intercept", "x"), code, px = list(resp = "y")), "x")
   code <- make_stancode(y ~ x, data = dat, family = sratio())
   expect_equal(rm_int_fe(c("Intercept", "x"), code), "x")
   code <- make_stancode(y ~ 0 + intercept + x, data = dat)
@@ -42,7 +42,8 @@ test_that("change_prior returns expected lists", {
 
 test_that("change_old_re and change_old_re2 return expected lists", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
-  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), nl = TRUE))
+  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), 
+                        family = gaussian(), nl = TRUE))
   ranef <- brms:::tidy_ranef(bterms, data = data)
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),

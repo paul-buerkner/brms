@@ -56,7 +56,7 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), 
                     z = rnorm(10), g = rep(1:2, 5))
   prior <- get_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
-  prior <- prior[prior$nlpar == "phi", ]
+  prior <- prior[prior$dpar == "phi", ]
   pdata <- data.frame(class = c("b", "b", "b", "Intercept", rep("sd", 3)), 
                       coef = c("", "Intercept", "z", "", "", "", "Intercept"),
                       group = c(rep("", 5), "g", "g"),
@@ -71,16 +71,16 @@ test_that("get_prior returns global priors in multivariate models", {
   # MV normal
   prior <- get_prior(cbind(y1, y2) ~ x + (x|ID1|g), 
                      data = dat, family = gaussian())
-  expect_equal(prior[prior$nlpar == "y1" & prior$class == "b", "coef"],
+  expect_equal(prior[prior$resp == "y1" & prior$class == "b", "coef"],
                c("", "Intercept", "x"))
-  expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
+  expect_equal(prior[prior$resp == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))
   # categorical
   prior <- get_prior(y2 ~ x + (x|ID1|g), 
                      data = dat, family = categorical())
-  expect_equal(prior[prior$nlpar == "X2" & prior$class == "b", "coef"],
+  expect_equal(prior[prior$resp == "X2" & prior$class == "b", "coef"],
                c("", "Intercept", "x"))
-  expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
+  expect_equal(prior[prior$resp == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))
 })
 

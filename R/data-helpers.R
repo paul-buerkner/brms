@@ -7,7 +7,7 @@ update_data <- function(data, bterms, na.action = na.omit,
   #   bterms: object of class brmsterms
   #   na.action: function defining how to treat NAs
   #   drop.unused.levels: indicates if unused factor levels
-  #                       should be removed
+  #     should be removed
   #   terms_attr: a list of attributes of the terms object of 
   #     the original model.frame; only used with newdata;
   #     this ensures that (1) calls to 'poly' work correctly
@@ -15,7 +15,7 @@ update_data <- function(data, bterms, na.action = na.omit,
   #     of variable names; fixes issue #73
   #   knots: a list of knot values for GAMMS
   # Returns:
-  #   model.frame in long format with combined grouping variables if present
+  #   model.frame for use in brms functions
   if (missing(data)) {
     stop2("Argument 'data' is missing.")
   }
@@ -45,8 +45,10 @@ update_data <- function(data, bterms, na.action = na.omit,
       stop2("The following variables are missing in 'data':\n",
             collapse_comma(missing_vars))
     }
-    data <- model.frame(bterms$allvars, data, na.action = na.pass,
-                        drop.unused.levels = drop.unused.levels)
+    data <- model.frame(
+      bterms$allvars, data, na.action = na.pass,
+      drop.unused.levels = drop.unused.levels
+    )
     nrow_with_NA <- nrow(data)
     data <- na.action(data)
     if (nrow(data) != nrow_with_NA) {
@@ -146,11 +148,13 @@ check_data_old_mv <- function(data, bterms) {
 }
 
 data_rsv_intercept <- function(data, bterms) {
-  # introduces the resevered variable "intercept" to the data
+  # add the resevered variable 'intercept' to the data
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
-  rsv_int <- ulapply(bterms$auxpars, function(x) attr(x$fe, "rsv_intercept"))
+  rsv_int <- ulapply(bterms$dpars, 
+    function(x) attr(x$fe, "rsv_intercept")
+  )
   if (any(rsv_int)) {
     if ("intercept" %in% names(data)) {
       stop2("Variable name 'intercept' is resevered in models ",
@@ -172,7 +176,7 @@ combine_groups <- function(data, ...) {
   group <- c(...)
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
-    if (length(sgroup) > 1) {
+    if (length(sgroup) > 1L) {
       new.var <- get(sgroup[1], data)
       for (j in 2:length(sgroup)) {
         new.var <- paste0(new.var, "_", get(sgroup[j], data))
@@ -189,7 +193,7 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   # Args:
   #   data: a data.frame
   #   optdata: optional data.frame from which contrasts
-  #            are taken if present
+  #     are taken if present
   #   ignore: names of variables for which not to fix contrasts
   # Returns:
   #   a data.frame with amended contrasts attributes
@@ -254,10 +258,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = family(fit),
-                     autocor = fit$autocor, resp_rhs_all = FALSE)
-  resp_only_vars <- setdiff(all.vars(bterms$respform), 
-                            all.vars(rhs(bterms$allvars)))
+  bterms <- parse_bf(
+    new_formula, family = family(fit),
+    autocor = fit$autocor, resp_rhs_all = FALSE
+  )
+  resp_only_vars <- setdiff(
+    all.vars(bterms$respform), all.vars(rhs(bterms$allvars))
+  )
   # fixes #162
   resp_only_vars <- c(resp_only_vars, all.vars(bterms$adforms$dec))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
@@ -322,9 +329,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           old_contrasts <- rbind(old_contrasts, zero__ = 0)
         }
         if (any(!new_levels %in% old_levels)) {
-          stop2("New factor levels are not allowed.",
-                "\nLevels found: ", paste(new_levels, collapse = ", ") ,
-                "\nLevels allowed: ", paste(old_levels, collapse = ", "))
+          stop2(
+            "New factor levels are not allowed.",
+            "\nLevels allowed: ", paste(old_levels, collapse = ", "),
+            "\nLevels found: ", paste(new_levels, collapse = ", ")
+          )
         }
         newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
         # don't use contrasts(.) here to avoid dimension checks
@@ -342,11 +351,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       new_values <- get(v, newdata)
       min_value <- min(list_data[[v]])
       invalid <- new_values < min_value | 
-                 new_values > max(list_data[[v]]) |
-                 !is_wholenumber(new_values)
+        new_values > max(list_data[[v]]) |
+        !is_wholenumber(new_values)
       if (sum(invalid)) {
-        stop2("Invalid values in variable '", v, "': ",
-              paste(new_values[invalid], collapse = ","))
+        stop2(
+          "Invalid values in variable '", v, "': ",
+          paste0(new_values[invalid], collapse = ", ")
+        )
       }
       attr(newdata[[v]], "min") <- min_value
     }
@@ -368,9 +379,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
     if (!allow_new_levels && length(unknown_levels)) {
       unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
-      stop2("Levels ", unknown_levels, " of grouping factor '", g, "' ",
-            "cannot be found in the fitted model. ",
-            "Consider setting argument 'allow_new_levels' to TRUE.")
+      stop2(
+        "Levels ", unknown_levels, " of grouping factor '", g, "' ",
+        "cannot be found in the fitted model. ",
+        "Consider setting argument 'allow_new_levels' to TRUE."
+      )
     }
   }
   if (return_standata) {
@@ -386,16 +399,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     old_terms <- attr(model.frame(fit), "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    # some components should not be computed based on newdata
-    has_mo <- length(get_effect(bterms, "mo")) > 0L
-    if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
-      pars <- c(names(bterms$nlpars), intersect(auxpars(), names(bterms)))
-      comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
-      old_standata <- rmNULL(standata(fit)[comp])
+    if (has_trials(fit$family) || has_cat(fit$family)) {
+      # trials and cat should not be computed based on newdata
+      old_standata <- standata(fit, control = list(only_response = TRUE))
       control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
-      Jmo <- old_standata[grepl("^Jmo", names(old_standata))]
-      names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
-      control[["Jmo"]] <- Jmo 
     }
     if (is.cor_car(fit$autocor)) {
       if (isTRUE(nzchar(bterms$time$group))) {
@@ -405,6 +412,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     control$smooths <- make_smooth_list(bterms, model.frame(fit))
     control$gps <- make_gp_list(bterms, model.frame(fit))
+    control$Jmo <- make_Jmo_list(bterms, model.frame(fit)) 
     knots <- attr(model.frame(fit), "knots")
     newdata <- make_standata(
       new_formula, data = newdata, family = fit$family, 
@@ -479,14 +487,12 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
-prepare_mo_vars <- function(formula, data, check = TRUE) {
-  # prepare monotonic variables for use in Stan
+mo_design_matrix <- function(formula, data, check = TRUE) {
+  # compute the design matrix of monotonic effects
   # Args:
   #   formula: formula containing mononotic terms
   #   data: a data.frame or named list
   #   check: check the number of levels? 
-  # Returns:
-  #   'data' with amended monotonic variables
   data <- model.frame(formula, data)
   vars <- names(data)
   for (i in seq_along(vars)) {
@@ -501,85 +507,22 @@ prepare_mo_vars <- function(formula, data, check = TRUE) {
       }
       data[[vars[i]]] <- data[[vars[i]]] - min_value
     } else {
-      stop2("Monotonic predictors must be either integers or ",
-            "ordered factors. Error occured for variable '", 
-            vars[i], "'.")
+      stop2(
+        "Monotonic predictors must be either integers or ",
+        "ordered factors. Error occured for variable '", 
+        vars[i], "'."
+      )
     }
     if (check && max(data[[vars[i]]]) < 2L) {
-      stop2("Monotonic predictors must have at least 3 different ", 
-            "values. Error occured for variable '", vars[i], "'.")
+      stop2(
+        "Monotonic predictors must have at least 3 different ", 
+        "values. Error occured for variable '", vars[i], "'."
+      )
     }
   }
   out <- get_model_matrix(formula, data, cols2remove = "(Intercept)")
   if (any(grepl(":", colnames(out), fixed = TRUE))) {
     stop2("Modeling interactions as monotonic is not meaningful.")
-  }
-  out
-}
-
-#' @export
-make_smooth_list.btl <- function(x, data, ...) {
-  if (has_smooths(x)) {
-    knots <- attr(data, "knots")
-    data <- rm_attr(data, "terms")
-    gam_args <- list(data = data, knots = knots, 
-                     absorb.cons = TRUE, modCon = 3)
-    sm_labels <- get_sm_labels(x)
-    out <- named_list(sm_labels)
-    for (i in seq_along(sm_labels)) {
-      sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
-      out[[i]] <- do.call(mgcv::smoothCon, sc_args)
-    }
-  } else {
-    out <- list()
-  }
-  out
-}
-
-#' @export
-make_smooth_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_smooth_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$auxpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$auxpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_gp_list.btl <- function(x, data, ...) {
-  gpef <- get_gp_labels(x)
-  out <- named_list(gpef)
-  for (i in seq_along(gpef)) {
-    gp <- eval2(gpef[i])
-    Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
-    out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
-  }
-  out
-}
-
-#' @export
-make_gp_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_gp_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$auxpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$auxpars[[i]], data, ...)
   }
   out
 }
@@ -612,5 +555,103 @@ arr_design_matrix <- function(Y, r, group)  {
   } else {
     out <- NULL
   } 
+  out
+}
+
+#' @export
+make_Jmo_list.btl <- function(x, data, ...) {
+  if (!is.null(x$mo)) {
+    Xmo <- mo_design_matrix(x$mo, data, ...)
+    out <- as.array(apply(Xmo, 2, max)) 
+  } else {
+    out <- NULL
+  }
+  out
+}
+
+#' @export
+make_Jmo_list.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_Jmo_list(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_Jmo_list.brmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$dpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_Jmo_list(x$dpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_smooth_list.btl <- function(x, data, ...) {
+  if (has_smooths(x)) {
+    knots <- attr(data, "knots")
+    data <- rm_attr(data, "terms")
+    gam_args <- list(
+      data = data, knots = knots, 
+      absorb.cons = TRUE, modCon = 3
+    )
+    sm_labels <- get_sm_labels(x)
+    out <- named_list(sm_labels)
+    for (i in seq_along(sm_labels)) {
+      sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
+      out[[i]] <- do.call(mgcv::smoothCon, sc_args)
+    }
+  } else {
+    out <- list()
+  }
+  out
+}
+
+#' @export
+make_smooth_list.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_smooth_list.brmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$dpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_smooth_list(x$dpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_gp_list.btl <- function(x, data, ...) {
+  gpef <- get_gp_labels(x)
+  out <- named_list(gpef)
+  for (i in seq_along(gpef)) {
+    gp <- eval2(gpef[i])
+    Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
+    out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
+  }
+  out
+}
+
+#' @export
+make_gp_list.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_gp_list(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_gp_list.brmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$dpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_gp_list(x$dpars[[i]], data, ...)
+  }
   out
 }
