@@ -150,7 +150,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   }
   environment(y$allvars) <- environment(formula)
   
-  if (is_linear(family) && length(y$response) > 1L) {
+  if (length(y$response) > 1L) {
     if (any(!names(y$adforms) %in% "weights")) {
       stop2("Multivariate models currently allow only ",
             "addition argument 'weights'.")
@@ -158,6 +158,10 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     if (length(y$dpars) > 1L) {
       stop2("Distributional parameters cannot yet be ", 
             "predicted in multivariate models.")
+    }
+    if (length(y$dpars$mu$nlpars)) {
+      stop2("Multivariate non-linear models are not ",
+            "yet implemented.")
     }
   }
   if (check_response && old_mv) {
