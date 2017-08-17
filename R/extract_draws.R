@@ -13,8 +13,9 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   #   A named list to be interpreted by linear_predictor
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
+  x <- restructure(x)
   x <- remove_autocor(x, incl_autocor)
-  bterms <- with(x, parse_bf(formula, family = family, autocor = autocor))
+  bterms <- parse_bf(x$formula)
   subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
   newd_args <- nlist(
@@ -48,7 +49,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   }
   # extract draws of auxiliary parameters
   am_args <- nlist(x, subset)
-  valid_dpars <- valid_dpars(family(x), bterms = bterms)
+  valid_dpars <- valid_dpars(x$family, bterms = bterms)
   for (ap in valid_dpars) {
     ap_regex <- paste0("^", ap, "($|_)")
     if (is.btl(bterms$dpars[[ap]]) || is.btnl(bterms$dpars[[ap]])) {
@@ -64,8 +65,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = ap_regex))
     }
   }
-  if (is.mixfamily(family(x))) {
-    families <- family_names(family(x))
+  if (is.mixfamily(x$family)) {
+    families <- family_names(x$family)
     thetas <- paste0("theta", seq_along(families))
     if (any(ulapply(draws[thetas], is.list))) {
       # theta was predicted
@@ -85,7 +86,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       }
     }
   }
-  if (is_linear(family(x)) && length(bterms$response) > 1L) {
+  if (is_linear(x$family) && length(bterms$response) > 1L) {
     # parameters for multivariate normal models
     draws$sigma <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
     draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
@@ -157,7 +158,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     fit$family <- fit$formula$family <- .dpar_family()
   }
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = family(fit))
+  bterms <- parse_bf(new_formula)
   new_ranef <- tidy_ranef(bterms, model.frame(fit))
   newd_args <- nlist(
     fit, newdata, re_formula, allow_new_levels, 
@@ -281,7 +282,7 @@ extract_draws_cs <- function(csef, args, px = list(), old_cat = 0L) {
   stopifnot("x" %in% names(args))
   p <- usc(combine_prefix(px), "suffix")
   draws <- list()
-  if (is_ordinal(family(args$x))) {
+  if (is_ordinal(args$x$family)) {
     draws[["Intercept"]] <- do.call(as.matrix, 
       c(args, list(pars = "^b_Intercept\\["))
     )

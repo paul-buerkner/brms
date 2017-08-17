@@ -397,7 +397,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
       tmp <- group <- NULL
     }
     # special treatment of residuals variances in linear models
-    bterms <- parse_bf(x$formula, family = family(x))
+    bterms <- parse_bf(x$formula)
     has_sigma <- has_sigma(family(x), bterms, incmv = TRUE)
     if (has_sigma && any(grepl("^sigma($|_)", parnames(x)))) {
       response <- bterms$response
@@ -672,10 +672,10 @@ print.brmsfit <- function(x, digits = 2, ...) {
 summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
                             priors = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
-  bterms <- parse_bf(formula(object), family = family(object))
+  bterms <- parse_bf(object$formula)
   out <- list(
-    formula = formula(object), 
-    family = family(object), 
+    formula = object$formula, 
+    family = object$family, 
     data.name = object$data.name, 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
@@ -1209,7 +1209,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
   if ("x" %in% names(formals(ppc_fun)) && !is.null(x)) {
-    bterms <- parse_bf(formula(object), family = family(object))
+    bterms <- parse_bf(object$formula)
     ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
     if (!x %in% ae_coll) {
       stop2("Variable '", x, "' is not a valid variable for this model.",
@@ -1343,7 +1343,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = x$family, autocor = x$autocor)
+  bterms <- parse_bf(new_formula)
   if (is_linear(x$family) && length(bterms$response) > 1L) {
     stop2("Marginal plots are not yet implemented for multivariate models.")
   } else if (is_categorical(x$family)) {
@@ -1520,7 +1520,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   mf <- model.frame(x)
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
-  bterms <- parse_bf(formula(x), family = family(x))
+  bterms <- parse_bf(x$formula)
   lee <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {

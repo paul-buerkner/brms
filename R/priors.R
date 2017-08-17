@@ -459,9 +459,9 @@ get_prior <- function(formula, data, family = gaussian(),
     autocor = autocor, threshold = threshold,
     nonlinear = nonlinear
   )
+  family <- formula$family
+  autocor <- formula$autocor
   bterms <- parse_bf(formula)
-  family <- bterms$family
-  autocor <- bterms$autocor
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
   
@@ -834,9 +834,9 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     return(prior)
   }
   formula <- bf(formula, family = family, autocor = autocor)
+  family <- formula$family
+  autocor <- formula$autocor
   bterms <- parse_bf(formula)
-  family <- bterms$family
-  autocor <- bterms$autocor
   all_priors <- get_prior(formula = formula, data = data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  

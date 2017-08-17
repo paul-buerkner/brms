@@ -46,9 +46,9 @@ make_standata <- function(formula, data, family = gaussian(),
     formula, data = data, family = family, 
     autocor = autocor, nonlinear = nonlinear
   )
+  family <- formula$family
+  autocor <- formula$autocor
   bterms <- parse_bf(formula)
-  family <- bterms$family
-  autocor <- bterms$autocor
   old_mv <- isTRUE(formula[["old_mv"]])
   is_linear <- is_linear(family)
   is_ordinal <- is_ordinal(family)

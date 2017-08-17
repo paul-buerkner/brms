@@ -398,9 +398,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       autocor = autocor, threshold = threshold, 
       nonlinear = nonlinear
     )
+    family <- formula$family
+    autocor <- formula$autocor
     bterms <- parse_bf(formula)
-    family <- bterms$family
-    autocor <- bterms$autocor
     check_brm_input(nlist(family))
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
