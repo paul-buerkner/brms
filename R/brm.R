@@ -393,15 +393,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
-    family <- check_family(family, threshold = threshold)
     formula <- amend_formula(
       formula, data = data, family = family, 
-      autocor = autocor, nonlinear = nonlinear
+      autocor = autocor, threshold = threshold, 
+      nonlinear = nonlinear
     )
-    family <- formula$family
-    autocor <- formula$autocor
-    check_brm_input(nlist(family))
     bterms <- parse_bf(formula)
+    family <- bterms$family
+    autocor <- bterms$autocor
+    check_brm_input(nlist(family))
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {
@@ -410,8 +410,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
-      prior, formula = formula, data = data, family = family, 
-      sample_prior = sample_prior, autocor = autocor, warn = TRUE
+      prior, formula, data = data,  
+      sample_prior = sample_prior, warn = TRUE
     )
     # initialize S3 object
     x <- brmsfit(
@@ -427,8 +427,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_all_pars = save_all_pars
     )
     x$model <- make_stancode(
-      formula = formula, data = data, family = family, 
-      prior = prior, autocor = autocor, 
+      formula = formula, data = data, prior = prior, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stan_funs = stan_funs, save_model = save_model, 

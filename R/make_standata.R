@@ -46,15 +46,15 @@ make_standata <- function(formula, data, family = gaussian(),
     formula, data = data, family = family, 
     autocor = autocor, nonlinear = nonlinear
   )
-  family <- formula$family
-  autocor <- formula$autocor
+  bterms <- parse_bf(formula)
+  family <- bterms$family
+  autocor <- bterms$autocor
   old_mv <- isTRUE(formula[["old_mv"]])
   is_linear <- is_linear(family)
   is_ordinal <- is_ordinal(family)
   is_count <- is_count(family)
   is_forked <- is_forked(family)
   is_categorical <- is_categorical(family)
-  bterms <- parse_bf(formula, family = family, autocor = autocor)
   sample_prior <- check_sample_prior(sample_prior)
   check_prior_content(prior, family = family, warn = FALSE)
   prior <- check_prior_special(bterms, prior = prior)

@@ -454,15 +454,14 @@ get_prior <- function(formula, data, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  family <- check_family(family, threshold = threshold)
   formula <- amend_formula(
     formula, data = data, family = family, 
-    autocor = autocor, nonlinear = nonlinear
+    autocor = autocor, threshold = threshold,
+    nonlinear = nonlinear
   )
-  family <- formula$family
-  link <- family$link
-  autocor <- formula$autocor
   bterms <- parse_bf(formula)
+  family <- bterms$family
+  autocor <- bterms$autocor
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
   
@@ -470,6 +469,7 @@ get_prior <- function(formula, data, family = gaussian(),
   # a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 10
+  link <- family$link
   if (is_lognormal(family)) {
     link <- "log"
   }
@@ -817,8 +817,7 @@ prior_sm <- function(bterms, data, def_scale_prior) {
 }
 
 check_prior <- function(prior, formula, data = NULL, family = NULL, 
-                        sample_prior = c("no", "yes", "only"), 
-                        autocor = NULL, threshold = "flexible", 
+                        autocor = NULL, sample_prior = c("no", "yes", "only"),
                         check_rows = NULL, warn = FALSE) {
   # check prior input and amend it if needed
   # Args:
@@ -835,11 +834,10 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     return(prior)
   }
   formula <- bf(formula, family = family, autocor = autocor)
-  bterms <- parse_bf(formula)  
-  all_priors <- get_prior(
-    formula = formula, data = data, family = family, 
-    autocor = autocor, threshold = threshold, internal = TRUE
-  )
+  bterms <- parse_bf(formula)
+  family <- bterms$family
+  autocor <- bterms$autocor
+  all_priors <- get_prior(formula = formula, data = data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   }

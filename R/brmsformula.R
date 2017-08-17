@@ -963,13 +963,14 @@ pfix <- function(x, ...) {
 }
 
 amend_formula <- function(formula, data = NULL, family = gaussian(),
-                          autocor = NULL, nonlinear = NULL) {
+                          autocor = NULL, threshold = NULL,
+                          nonlinear = NULL) {
   # incorporate additional arguments into formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
   #   data: optional data.frame
   #   family: optional object of class 'family'
-  #   nonlinear, partial: deprecated arguments of brm
+  #   nonlinear, threshold: deprecated arguments of brm
   # Returns:
   #   a brmsformula object compatible with the current version of brms
   out <- bf(formula, nonlinear = nonlinear)
@@ -985,6 +986,9 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]])
   }
   if (is_ordinal(out$family)) {
+    if (!is.null(threshold)) {
+      out$family <- check_family(out$family, threshold = threshold)
+    }
     # fix discrimination to 1 by default
     if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
       out <- bf(out, disc = 1)

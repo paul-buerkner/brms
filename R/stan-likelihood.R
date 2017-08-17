@@ -1,6 +1,6 @@
 #' @export
-stan_llh.default <- function(family, bterms, data, autocor, 
-                             mix = "", ptheta = FALSE, ...) {
+stan_llh.default <- function(family, bterms, data, mix = "", 
+                             ptheta = FALSE, ...) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
@@ -9,11 +9,10 @@ stan_llh.default <- function(family, bterms, data, autocor,
   #   autocor: object of classe cor_brms
   #   mix: optional mixture component ID
   #   ptheta: are mixing proportions predicted?
-  stopifnot(is.family(family))
-  stopifnot(is.brmsterms(bterms))
-  stopifnot(length(mix) == 1L)
+  stopifnot(is.family(family), is.brmsterms(bterms), length(mix) == 1L)
   link <- family$link
   family <- family$family
+  autocor <- bterms$autocor
   mix <- as.character(mix)
   is_mix <- nzchar(mix)
   is_categorical <- is_categorical(family)
@@ -358,6 +357,11 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
     "      ", lhs, "log_sum_exp(ps); \n",
     "    } \n"
   )
+}
+
+#' @export
+stan_llh.brmsterms <- function(family, ...) {
+  stan_llh(family$family, bterms = family, ...)
 }
 
 stan_llh_general <- function(llh_pre, family, reqn, bounds = NULL) {

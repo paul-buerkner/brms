@@ -889,8 +889,7 @@ standata.brmsfit <- function(object, ...) {
     sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
     args <- list(
       formula = new_formula, data = model.frame(object), 
-      family = object$family, prior = object$prior, 
-      autocor = object$autocor, cov_ranef = object$cov_ranef, 
+      prior = object$prior, cov_ranef = object$cov_ranef, 
       knots = attr(model.frame(object), "knots"),
       sample_prior = sample_prior
     )
