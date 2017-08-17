@@ -216,6 +216,35 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   data
 }
 
+order_data <- function(data, bterms, old_mv = FALSE) {
+  # order data for use in time-series models
+  # Args:
+  #   data: data.frame to be ordered
+  #   bterms: brmsterm object
+  #   old_mv: indicator if the model is an old multivariate one
+  # Returns:
+  #   potentially ordered data
+  if (old_mv) {
+    to_order <- rmNULL(list(
+      data[["trait"]], 
+      data[[bterms$time$group]], 
+      data[[bterms$time$time]]
+    ))
+  } else {
+    to_order <- rmNULL(list(
+      data[[bterms$time$group]], 
+      data[[bterms$time$time]]
+    ))
+  }
+  if (length(to_order)) {
+    new_order <- do.call(order, to_order)
+    data <- data[new_order, , drop = FALSE]
+    # old_order will allow to retrieve the initial order of the data
+    attr(data, "old_order") <- order(new_order)
+  }
+  data
+}
+
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
                           allow_new_levels = FALSE,
                           check_response = FALSE,
@@ -288,15 +317,16 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     newdata[[v]] <- 1
   }
   new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
-  group_vars <- unique(ulapply(new_ranef$gcall, "[[", "groups"))
-  if (nrow(fit$ranef)) {
-    if (nrow(new_ranef) && allow_new_levels) {
-      # grouping factors do not need to be specified 
-      # by the user if new levels are allowed
-      new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
-      missing_gf <- setdiff(new_gf, names(newdata))
-      newdata[, missing_gf] <- NA
-    }
+  group_vars <- union(
+    ulapply(new_ranef$gcall, "[[", "groups"), 
+    bterms$time$group
+  )
+  if (allow_new_levels) {
+    # grouping factors do not need to be specified 
+    # by the user if new levels are allowed
+    new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
+    missing_gf <- setdiff(new_gf, names(newdata))
+    newdata[, missing_gf] <- NA
   }
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
@@ -362,7 +392,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       attr(newdata[[v]], "min") <- min_value
     }
   }
-  # brms:::update_data expects all original variables to be present
+  # update_data expects all original variables to be present
   # even if not actually used later on
   rsv_vars <- rsv_vars(bterms)
   used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))

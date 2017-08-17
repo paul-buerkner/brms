@@ -575,7 +575,7 @@ str2formula <- function(x, ...) {
   #   ...: passed to formula(.)
   # Returns:
   #   a formula
-  if (length(x)) {
+  if (length(x) && any(nzchar(x))) {
     x <- paste(x, collapse = "+") 
   } else {
     x <- "1"

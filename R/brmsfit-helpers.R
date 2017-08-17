@@ -218,7 +218,7 @@ ilink <- function(x, link) {
 
 prepare_conditions <- function(x, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
-  # prepare marginal conditions
+  # prepare conditions for use in marginal_effects
   # Args:
   #   x: an object of class 'brmsfit'
   #   conditions: optional data.frame containing user defined conditions
@@ -229,7 +229,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   #   A data.frame with (possibly updated) conditions
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = family(x))
+  bterms <- parse_bf(new_formula, family = family(x), autocor = x$autocor)
   re <- get_re(bterms)
   req_vars <- c(
     lapply(get_effect(bterms, "fe"), rhs), 
@@ -240,8 +240,9 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     lapply(get_effect(bterms, "gp"), rhs),
     lapply(get_effect(bterms, "offset"), rhs),
     re$form, lapply(re$gcall, "[[", "weightvars"),
+    lapply(bterms$dpars, "[[", "covars"),
     bterms$adforms[c("se", "disp", "trials", "cat")],
-    bterms$dpars$mu$covars
+    str2formula(bterms$time$time)
   )
   req_vars <- unique(ulapply(req_vars, all.vars))
   req_vars <- setdiff(req_vars, rsv_vars)

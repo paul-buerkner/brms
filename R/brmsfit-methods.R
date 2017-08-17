@@ -1344,7 +1344,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = x$family)
+  bterms <- parse_bf(new_formula, family = x$family, autocor = x$autocor)
   if (is_linear(x$family) && length(bterms$response) > 1L) {
     stop2("Marginal plots are not yet implemented for multivariate models.")
   } else if (is_categorical(x$family)) {

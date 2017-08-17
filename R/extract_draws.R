@@ -14,7 +14,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   x <- remove_autocor(x, incl_autocor)
-  bterms <- parse_bf(formula(x), family = family(x))
+  bterms <- with(x, parse_bf(formula, family = family, autocor = autocor))
   subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
   newd_args <- nlist(
@@ -657,7 +657,7 @@ extract_draws_autocor <- function(fit, subset = NULL,
     rcar <- rcar[, unique(gcar), drop = FALSE]
     draws[["rcar"]] <- rcar
   }
-  if (is(fit$autocor, "cor_bsts")) {
+  if (is.cor_bsts(fit$autocor)) {
     if (is_newdata) {
       warning2("Local level terms are currently ignored ", 
                "when 'newdata' is specified.")
