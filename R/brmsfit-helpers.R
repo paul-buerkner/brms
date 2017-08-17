@@ -81,11 +81,12 @@ restructure <- function(x, rstr_summary = FALSE) {
     # slot 'nonlinear' deprecated as of brms > 0.9.1
     x$formula <- SW(amend_formula(
       formula(x), data = model.frame(x), 
-      family = family(x), nonlinear = x$nonlinear
+      family = family(x), autocor = x$autocor,
+      nonlinear = x$nonlinear
     ))
     x$nonlinear <- x$partial <- NULL
     x$formula[["old_mv"]] <- is_old_mv(x)
-    bterms <- parse_bf(formula(x), family = family(x))
+    bterms <- parse_bf(formula(x))
     x$ranef <- tidy_ranef(bterms, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
       class(x$prior) <- c("brmsprior", "data.frame") 

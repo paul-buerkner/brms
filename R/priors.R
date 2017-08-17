@@ -455,12 +455,14 @@ get_prior <- function(formula, data, family = gaussian(),
                       internal = FALSE) {
   # note that default priors are stored in this function
   family <- check_family(family, threshold = threshold)
-  formula <- amend_formula(formula, data = data, family = family, 
-                           nonlinear = nonlinear)
+  formula <- amend_formula(
+    formula, data = data, family = family, 
+    autocor = autocor, nonlinear = nonlinear
+  )
   family <- formula$family
   link <- family$link
-  autocor <- check_autocor(autocor)
-  bterms <- parse_bf(formula, family = family)
+  autocor <- formula$autocor
+  bterms <- parse_bf(formula)
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
   
@@ -832,8 +834,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     attr(prior, "sample_prior") <- sample_prior
     return(prior)
   }
-  formula <- bf(formula)
-  bterms <- parse_bf(formula, family = family)  
+  formula <- bf(formula, family = family, autocor = autocor)
+  bterms <- parse_bf(formula)  
   all_priors <- get_prior(
     formula = formula, data = data, family = family, 
     autocor = autocor, threshold = threshold, internal = TRUE

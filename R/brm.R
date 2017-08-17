@@ -395,11 +395,13 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # build new model
     family <- check_family(family, threshold = threshold)
     formula <- amend_formula(
-      formula, data = data, family = family, nonlinear = nonlinear
+      formula, data = data, family = family, 
+      autocor = autocor, nonlinear = nonlinear
     )
     family <- formula$family
+    autocor <- formula$autocor
     check_brm_input(nlist(family))
-    bterms <- parse_bf(formula, autocor = autocor)
+    bterms <- parse_bf(formula)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {

@@ -520,7 +520,7 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        nl = NULL, nonlinear = NULL) {
+                        autocor = NULL, nl = NULL, nonlinear = NULL) {
   # ensure backwards compatibility
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
@@ -610,7 +610,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     attr(out$formula, "nl") <- FALSE
   }
   if (!is.null(family)) {
-    out[["family"]] <- check_family(family)
+    out$family <- check_family(family)
+  }
+  if (!is.null(autocor)) {
+    out$autocor <- check_autocor(autocor)
   }
   if (!is.null(out[["family"]])) {
     # check for the presence of non-linear parameters
@@ -645,7 +648,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
-    response = NULL, old_mv = FALSE
+    autocor = NULL, response = NULL, old_mv = FALSE
   )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
@@ -655,10 +658,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, 
-               nl = NULL, nonlinear = NULL) {
+               autocor = NULL, nl = NULL, nonlinear = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., flist = flist, family = family,
-              nl = nl, nonlinear = nonlinear)
+              autocor = autocor, nl = nl, nonlinear = nonlinear)
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
@@ -754,6 +757,8 @@ set_nl <- function(nl = TRUE, dpar = NULL) {
   } 
   if (is.family(e2)) {
     e1 <- bf(e1, family = e2)
+  } else if (is.cor_brms(e2)) {
+    e1 <- bf(e1, autocor = e2)
   } else if (inherits(e2, "setnl")) {
     if (is.null(e2$dpar)) {
       e1 <- bf(e1, nl = e2$nl)
@@ -931,7 +936,7 @@ pfix <- function(x, ...) {
 }
 
 amend_formula <- function(formula, data = NULL, family = gaussian(),
-                          nonlinear = NULL) {
+                          autocor = NULL, nonlinear = NULL) {
   # incorporate additional arguments into formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
@@ -943,6 +948,9 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   out <- bf(formula, nonlinear = nonlinear)
   if (is.null(out$family)) {
     out <- bf(out, family = family)
+  }
+  if (is.null(out$autocor)) {
+    out <- bf(out, autocor = autocor)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula)

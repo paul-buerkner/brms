@@ -2241,11 +2241,17 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   if (missing(formula.)) {
     family <- get_arg("family", dots, object)
-    dots$formula <- bf(object$formula, family = family)
+    autocor <- get_arg("autocor", dots, object)
+    dots$formula <- bf(object$formula, family = family, autocor = autocor)
   } else {
     family <- get_arg("family", formula., dots, object)
-    nl <- get_arg("nl", formula., formula(object))
-    dots$formula <- bf(formula., family = family, nl = nl)
+    autocor <- get_arg("autocor", formula., dots, object)
+    if (is.brmsformula(formula.)) {
+      nl <- isTRUE(attr(formula.$formula, "nl"))
+    } else {
+      nl <- isTRUE(attr(formula(object)$formula, "nl"))
+    }
+    dots$formula <- bf(formula., family = family, autocor = autocor, nl = nl)
     if (is_nonlinear(object)) {
       if (length(setdiff(all.vars(dots$formula$formula), ".")) == 0L) {
         dots$formula <- update(object$formula, dots$formula, mode = "keep")
@@ -2266,7 +2272,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   
   arg_names <- c(
-    "prior", "autocor", "nonlinear", "threshold", 
+    "prior", "nonlinear", "threshold", 
     "cov_ranef", "sparse", "sample_prior"
   )
   new_args <- intersect(arg_names, names(dots))
@@ -2347,9 +2353,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    bterms <- with(object, 
-      parse_bf(formula, family = family, autocor = autocor)
-    )
+    bterms <- parse_bf(object$formula)
     object$data <- update_data(dots$data, bterms = bterms)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))

@@ -43,11 +43,12 @@ make_standata <- function(formula, data, family = gaussian(),
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks
   formula <- amend_formula(
-    formula, data = data, family = family, nonlinear = nonlinear
+    formula, data = data, family = family, 
+    autocor = autocor, nonlinear = nonlinear
   )
   family <- formula$family
+  autocor <- formula$autocor
   old_mv <- isTRUE(formula[["old_mv"]])
-  autocor <- check_autocor(autocor)
   is_linear <- is_linear(family)
   is_ordinal <- is_ordinal(family)
   is_count <- is_count(family)

@@ -30,13 +30,11 @@
 #' @export
 parse_bf <- function(formula, family = NULL, autocor = NULL, 
                      check_response = TRUE, resp_rhs_all = TRUE) {
-  x <- bf(formula, family = family)
+  x <- bf(formula, family = family, autocor = autocor)
   old_mv <- isTRUE(x[["old_mv"]])
-  if (!(is.null(autocor) || is.cor_brms(autocor))) {
-    stop2("Argument 'autocor' has to be of class 'cor_brms'")
-  }
   formula <- x$formula
   family <- x$family
+  autocor <- x$autocor
   y <- nlist(formula, family, autocor) 
   class(y) <- "brmsterms"
   
@@ -759,7 +757,7 @@ check_re_formula <- function(re_formula, formula) {
   #   re_formula: see predict.brmsfit for documentation
   #   formula: formula to match re_formula with
   # Returns:
-  #   updated re_formula containign only terms existent in formula
+  #   updated re_formula containing only terms existent in formula
   old_re_formula <- get_re_terms(formula, formula = TRUE)
   if (is.null(re_formula)) {
     re_formula <- old_re_formula

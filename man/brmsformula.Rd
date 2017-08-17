@@ -5,8 +5,8 @@
 \alias{bf}
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
-brmsformula(formula, ..., flist = NULL, family = NULL, nl = NULL,
-  nonlinear = NULL)
+brmsformula(formula, ..., flist = NULL, family = NULL, autocor = NULL,
+  nl = NULL, nonlinear = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -52,6 +52,13 @@ same way as formulas passed via the \code{...} argument.}
 \item{family}{Same argument as in \code{\link[brms:brm]{brm}}.
 If \code{family} is specified \code{brmsformula}, it will overwrite
 the value specified in \code{\link[brms:brm]{brm}}.}
+
+\item{autocor}{An optional \code{\link{cor_brms}} object describing 
+the correlation structure within the response variable 
+(i.e., the 'autocorrelation'). 
+See the documentation of \code{\link{cor_brms}} for a description 
+of the available correlation structures. Defaults to \code{NULL}, 
+corresponding to no correlations.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 

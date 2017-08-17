@@ -35,11 +35,12 @@ make_stancode <- function(formula, data, family = gaussian(),
   # some input checks
   family <- check_family(family, threshold = threshold)
   formula <- amend_formula(
-    formula, data = data, family = family, nonlinear = nonlinear
+    formula, data = data, family = family, 
+    autocor = autocor, nonlinear = nonlinear
   )
   family <- formula$family
-  autocor <- check_autocor(autocor)
-  bterms <- parse_bf(formula, family = family, autocor = autocor)
+  autocor <- formula$autocor
+  bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
     prior, formula = formula, data = data, family = family, 
