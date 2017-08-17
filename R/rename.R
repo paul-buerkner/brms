@@ -9,8 +9,9 @@ rename_pars <- function(x) {
     return(x) 
   }
   x <- reorder_pars(x)
+  bterms <- with(x, parse_bf(formula, family = family, autocor = autocor))
   family <- family(x)
-  bterms <- parse_bf(x$formula, family = family)
+  data <- model.frame(x)
   pars <- parnames(x)
   
   # find positions of parameters and define new names
@@ -21,7 +22,7 @@ rename_pars <- function(x) {
     for (r in resp) {
       bterms$dpars[["mu"]]$resp <- r
       change_eff <- change_effects(
-        bterms$dpars[["mu"]], data = model.frame(x), 
+        bterms$dpars[["mu"]], data = data, 
         pars = pars, stancode = stancode(x)
       )
       change <- c(change, change_eff)
@@ -31,13 +32,16 @@ rename_pars <- function(x) {
   # rename effects of distributional parameters
   for (ap in names(bterms$dpars)) {
     change_eff <- change_effects(
-      bterms$dpars[[ap]], data = model.frame(x), 
+      bterms$dpars[[ap]], data = data, 
       pars = pars, stancode = stancode(x)
     )
     change <- c(change, change_eff)
   }
-  # rename group-level parameters separately
-  change <- c(change, change_re(x$ranef, pars = pars))
+  # rename group-level and autocor parameters separately
+  change <- c(change,
+    change_re(x$ranef, pars = pars),
+    change_autocor(bterms, data = data, pars = pars)
+  )
   # rename residual parameters of multivariate linear models
   if (is_linear(family) && length(bterms$response) > 1L) {
     corfnames <- paste0("sigma_", bterms$response)
@@ -358,6 +362,29 @@ change_re_levels <- function(ranef, pars)  {
     index_names <- make_index_names(levels, r$coef, dim = 2)
     change_rl$fnames <- paste0(r_new_parname, index_names)
     change <- lc(change, change_rl)
+  }
+  change
+}
+
+change_autocor <- function(bterms, data, pars) {
+  # helps in renaming autocor parameters
+  change <- list()
+  if (is.cor_bsts(bterms$autocor)) {
+    data <- order_data(data, bterms = bterms)
+    if (nzchar(bterms$time$group)) {
+      group <- gsub("[ \t\r\n]", "", get(bterms$time$group, data))
+    } else {
+      group <- rep(1, nrow(data)) 
+    }
+    if (nzchar(bterms$time$time)) {
+      time <- gsub("[ \t\r\n]", "", get(bterms$time$time, data))
+    } else {
+      time <- ulapply(unique(group), function(g) seq_len(sum(group == g)))
+    }
+    loclev_pars <- paste0("loclev[", group, ",", time, "]")
+    change <- lc(change, 
+      list(pos = grepl("^loclev\\[", pars), fnames = loclev_pars)             
+    )
   }
   change
 }
