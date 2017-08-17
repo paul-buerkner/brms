@@ -547,6 +547,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out <- formula
   } else {
     out <- list(formula = as.formula(formula))
+    class(out) <- "brmsformula"
   }
   out$pforms[names(old_forms)] <- old_forms
   
@@ -627,10 +628,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
         }
         dpar <- attr(out$pforms[[dp]], "dpar")
         if (!is.null(out$pforms[[dpar]])) {
-          nl_allowed <- isTRUE(attr(out$pforms[[dpar]], "nl"))
+          nl_allowed <- get_nl(out, dpar = dpar)
         } else {
           if (dpar_class(dpar) == "mu") {
-            nl_allowed <- isTRUE(attr(out$formula, "nl"))
+            nl_allowed <- get_nl(out)
           } else {
             nl_allowed <- FALSE
           }
@@ -773,6 +774,32 @@ set_nl <- function(nl = TRUE, dpar = NULL) {
     e1 <- bf(e1, e2)
   }
   e1
+}
+
+get_nl <- function(x, dpar = NULL, aol = TRUE) {
+  # extract the 'nl' attribute from a (brms)formula object
+  # Args:
+  #   x: object to extract 'nl' from
+  #   dpar: optional name of a distributional parameter
+  #     for which 'nl' should be extracted
+  #   aol: (as one logical) apply isTRUE to the result?
+  .get_nl <- function(x) {
+    attr(x, "nl", TRUE)
+  }
+  if (is.brmsformula(x)) {
+    if (is.null(dpar)) {
+      nl <- .get_nl(x$formula)
+    } else {
+      stopifnot(length(dpar) == 1L)
+      nl <- .get_nl(x$pforms[[dpar]])
+    }
+  } else {
+    nl <- .get_nl(x)
+  }
+  if (aol) {
+    nl <- isTRUE(nl)
+  }
+  nl
 }
 
 prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
@@ -1008,9 +1035,13 @@ update.brmsformula <- function(object, formula.,
   if (is.null(up_family)) {
     up_family <- object[["family"]]
   }
-  up_nl <- formula.[["nl"]]
+  up_autocor <- formula.[["autocor"]]
+  if (is.null(up_autocor)) {
+    up_autocor <- object[["autocor"]]
+  }
+  up_nl <- get_nl(formula, aol = FALSE)
   if (is.null(up_nl)) {
-    up_nl <- object[["nl"]]
+    up_nl <- get_nl(object)
   }
   # already use up_nl here to avoid ordinary parsing of NL formulas
   formula. <- bf(formula., nl = up_nl)
@@ -1023,14 +1054,9 @@ update.brmsformula <- function(object, formula.,
   } else if (mode == "keep") {
     new_form <- old_form
   }
-  pforms <- pforms(object)
-  up_pforms <- pforms(formula.)
-  pforms[names(up_pforms)] <- up_pforms
-  pfix <- pfix(object)
-  up_pfix <- pfix(formula.)
-  pfix[names(up_pfix)] <- up_pfix
-  bf(new_form, flist = c(pforms, pfix),
-     family = up_family, nl = up_nl)
+  flist <- c(object$pforms, object$pfix, formula.$pforms, formula.$pfix)
+  bf(new_form, flist = flist, family = up_family, 
+     autocor = up_autocor, nl = up_nl)
 }
 
 #' @export
@@ -1064,5 +1090,5 @@ is.brmsformula <- function(x) {
 
 is_nonlinear <- function(x) {
   stopifnot(is.brmsfit(x))
-  isTRUE(attr(bf(x$formula)$formula, "nl", TRUE))
+  get_nl(bf(x$formula))
 }

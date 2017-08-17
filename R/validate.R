@@ -101,7 +101,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     dpar_of_nlpars[i] <- dpar
   }
   for (dp in dpars) {
-    if (isTRUE(attr(dpar_forms[[dp]], "nl"))) {
+    if (get_nl(dpar_forms[[dp]])) {
       if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
         stop2("Non-linear formulas are not yet allowed for this family.")
       }
@@ -810,7 +810,7 @@ update_re_terms <- function(x, re_formula = NULL) {
     # add valid group-level terms of re_formula
     # Args:
     #   formula: object of class 'formula'
-    if (isTRUE(attr(formula, "nl"))) {
+    if (get_nl(formula)) {
       # non-linear formulas contain no group-level effects
       return(formula)
     }

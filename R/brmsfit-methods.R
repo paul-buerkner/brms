@@ -2247,9 +2247,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     family <- get_arg("family", formula., dots, object)
     autocor <- get_arg("autocor", formula., dots, object)
     if (is.brmsformula(formula.)) {
-      nl <- isTRUE(attr(formula.$formula, "nl"))
+      nl <- get_nl(formula.)
     } else {
-      nl <- isTRUE(attr(formula(object)$formula, "nl"))
+      nl <- get_nl(formula(object))
     }
     dots$formula <- bf(formula., family = family, autocor = autocor, nl = nl)
     if (is_nonlinear(object)) {
