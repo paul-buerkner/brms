@@ -431,7 +431,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stan_funs = stan_funs, save_model = save_model, 
-      brm_call = TRUE, silent = silent
+      brm_call = TRUE
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
