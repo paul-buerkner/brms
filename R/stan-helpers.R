@@ -933,6 +933,7 @@ stan_base_prior <- function(prior) {
 }
 
 stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
+  prior <- gsub("( |\\t)+\\(", "(", prior)
   prior_name <- get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
   for (i in seq_along(prior_name)) {
     if (length(prior_name[[i]]) != 1L) {

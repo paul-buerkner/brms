@@ -316,7 +316,7 @@ test_that("make_stancode correctly restricts FE parameters", {
   expect_match2(scode, "vector<lower=2>[Kc] b")
   
   scode <- make_stancode(
-    y ~ x, data, prior = set_prior("normal(0, 2)", ub = "4")
+    y ~ x, data, prior = set_prior("normal (0, 2)", ub = "4")
   )
   expect_match2(scode, "vector<upper=4>[Kc] b")
   expect_match2(scode, "- 1 * normal_lcdf(4 | 0, 2)")
