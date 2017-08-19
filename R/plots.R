@@ -191,8 +191,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
       xlab("") + ylab("") + theme
   }
   
-  if (ignore_prior) {
-    x$samples[x$samples$Type == "prior", ] <- NA
+  samples <- cbind(x$samples, Type = "Posterior")
+  if (!ignore_prior) {
+    samples <- rbind(samples, cbind(x$prior_samples, Type = "Prior"))
   }
   if (plot) {
     default_ask <- devAskNewPage()
@@ -200,14 +201,14 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     devAskNewPage(ask = FALSE)
   }
   hyps <- limit_chars(rownames(x$hypothesis), chars = chars)
-  names(x$samples)[seq_along(hyps)] <- hyps
+  names(samples)[seq_along(hyps)] <- hyps
   n_plots <- ceiling(length(hyps) / N)
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
     rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
     sub_samples <- cbind(
-      utils::stack(x$samples[, rel_hyps, drop = FALSE]),
-      x$samples[, "Type", drop = FALSE]
+      utils::stack(samples[, rel_hyps, drop = FALSE]),
+      samples[, "Type", drop = FALSE]
     )
     # make sure that parameters appear in the original order
     sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))

@@ -1160,14 +1160,15 @@ hypothesis_internal <- function(x, hypothesis, class = "", alpha = 0.05, ...) {
   pars <- parnames(x)[grepl("^", class, parnames(x))]
   hlist <- lapply(hypothesis, .eval_hypothesis)
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
-  samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
-  samples <- cbind(as.data.frame(samples), Type = "Posterior")
-  prior_samples <- do.call(cbind, lapply(hlist, function(h) h$prior_samples))
-  prior_samples <- cbind(as.data.frame(prior_samples), Type = "Prior")
-  samples <- rbind(samples, prior_samples)
-  names(samples) <- c(paste0("H", seq_along(hlist)), "Type")
+  samples <- as.data.frame(
+    do.call(cbind, lapply(hlist, function(h) h$samples))
+  )
+  prior_samples <- as.data.frame(
+    do.call(cbind, lapply(hlist, function(h) h$prior_samples))
+  )
+  names(samples) <- names(prior_samples) <- paste0("H", seq_along(hlist))
   class <- sub("_+$", "", class)
-  out <- nlist(hypothesis = hs, samples, class, alpha)
+  out <- nlist(hypothesis = hs, samples, prior_samples, class, alpha)
   class(out) <- "brmshypothesis"
   out
 }
