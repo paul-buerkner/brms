@@ -18,6 +18,15 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     stop2("Argument 'points' is invalid for objects ", 
           "returned by 'marginal_smooths'.")
   }
+  if (!is.null(theme)) {
+    if (!is.theme(theme)) {
+      stop2("Argument 'theme' should be a 'theme' object.")
+    }
+    pb_colour <- theme$plot.background$colour
+  } else {
+    pb_colour <- theme_get()$plot.background$colour
+  }
+  is_theme_black <- isTRUE(pb_colour == "black")
   if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
@@ -37,8 +46,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
         aes_string(effects[1], effects[2])
       if (stype == "contour") {
         plots[[i]] <- plots[[i]] + 
-          geom_contour(aes_(z = ~ estimate__, colour = ~ ..level..),
-                       bins = 30, size = 1.3) +
+          geom_contour(
+            aes_(z = ~ estimate__, colour = ~ ..level..),
+            bins = 30, size = 1.3
+          ) +
           scale_color_gradientn(colors = viridis6(), name = response)
       } else if (stype == "raster") {
         plots[[i]] <- plots[[i]] + 
@@ -46,8 +57,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
           scale_fill_gradientn(colors = viridis6(), name = response)
       }
     } else {
-      # plot effects of single predictors / smooths
-      # as well as two-way interactions
+      # plot effects of single predictors or two-way interactions
       gvar <- if (length(effects) == 2L) effects[2]
       spaghetti <- attr(x[[i]], "spaghetti")
       plots[[i]] <- ggplot(x[[i]]) + 
@@ -61,15 +71,20 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
       colors <- ggplot_build(plots[[i]])
       colors <- unique(colors$data[[1]][["colour"]])
       if (points) {
-        # add points first so that they appear behind the regression lines
-        aes_points <- aes_string(x = effects[1], y = "resp__")
-        if (is.factor(attr(x[[i]], "points")[, gvar])) {
-          aes_points$colour <- parse(text = gvar)[[1]]
+        # add points first so that they appear behind the predictions
+        jitter_args <- list(
+          mapping = aes_string(x = effects[1], y = "resp__"),
+          data = attr(x[[i]], "points"), inherit.aes = FALSE,
+          size = 2 / ncond^0.25, height = 0, width = jitter_width
+        )
+        is_factor_gvar <- is.factor(attr(x[[i]], "points")[, gvar])
+        if (is_factor_gvar) {
+          jitter_args$mapping$colour <- parse(text = gvar)[[1]]
+        } else if (is_theme_black) {
+          jitter_args$colour <- "white"
         }
         plots[[i]] <- plots[[i]] + 
-          geom_jitter(aes_points, size = 2 / ncond^0.25,
-                      data = attr(x[[i]], "points"), inherit.aes = FALSE,
-                      height = 0, width = jitter_width)
+          do.call(geom_jitter, jitter_args)
       }
       if (!is.null(spaghetti)) {
         # add a regression line for each sample separately
@@ -100,18 +115,32 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
             do.call(geom_smooth, smooth_args)
         }
         if (rug) {
-          plots[[i]] <- plots[[i]] +
-            geom_rug(aes_string(x = effects[1]),
-                     sides = "b", data = attr(x[[i]], "points"), 
-                     inherit.aes = FALSE)
+          rug_args <- list(
+            aes_string(x = effects[1]), sides = "b", 
+            data = attr(x[[i]], "points"), inherit.aes = FALSE
+          )
+          if (is.null(gvar) && is_theme_black) {
+            rug_args$colour <- "white"
+          }
+          plots[[i]] <- plots[[i]] + 
+            do.call(geom_rug, rug_args)
         }
       } else {
         # points and errorbars for factors
+        point_args <- list(
+          position = position_dodge(width = 0.4),
+          size = 4 / ncond^0.25
+        )
+        errorbar_args <- list(
+          position = position_dodge(width = 0.4), 
+          width = 0.3
+        )
+        if (is.null(gvar) && is_theme_black) {
+          point_args$colour <- errorbar_args$colour <- "white"
+        }
         plots[[i]] <- plots[[i]] + 
-          geom_point(position = position_dodge(width = 0.4),
-                     size = 4 / ncond^0.25) + 
-          geom_errorbar(position = position_dodge(width = 0.4),
-                        width = 0.3)
+          do.call(geom_point, point_args) +
+          do.call(geom_errorbar, errorbar_args)
       }
     }
     if (ncond > 1L) {
@@ -176,8 +205,10 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
     rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
-    sub_samples <- cbind(utils::stack(x$samples[, rel_hyps, drop = FALSE]),
-                         x$samples[, "Type", drop = FALSE])
+    sub_samples <- cbind(
+      utils::stack(x$samples[, rel_hyps, drop = FALSE]),
+      x$samples[, "Type", drop = FALSE]
+    )
     # make sure that parameters appear in the original order
     sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
     plots[[i]] <- .plot_fun(sub_samples)
