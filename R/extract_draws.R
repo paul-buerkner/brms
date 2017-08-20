@@ -147,6 +147,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   px <- check_prefix(x)
   p <- combine_prefix(px)
   nsamples <- nsamples(fit, subset = subset)
+  all_group_vars <- get_all_group_vars(fit)
   fit$formula$formula <- update(fit$formula$formula, rhs(x$formula))
   # ensure that auxiliary parameters are not included (fixes #154)
   fit$formula$pforms <- fit$formula$pfix <- NULL
@@ -162,7 +163,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   new_ranef <- tidy_ranef(bterms, model.frame(fit))
   newd_args <- nlist(
     fit, newdata, re_formula, allow_new_levels, 
-    new_objects, check_response = FALSE
+    new_objects, all_group_vars, check_response = FALSE
   )
   draws <- list(
     # supresses messages of add_new_objects

@@ -251,18 +251,23 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                           only_response = FALSE,
                           incl_autocor = TRUE,
                           return_standata = TRUE,
+                          all_group_vars = NULL,
                           new_objects = list()) {
   # amend newdata passed to predict and fitted methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
   #   fit: an object of class brmsfit
   #   re_formula: a group-level formula
-  #   allow_new_levels: Are new group-leveld allowed?
+  #   allow_new_levels: Are new group-levels allowed?
   #   check_response: Should response variables be checked
-  #                   for existence and validity?
+  #     for existence and validity?
+  #   only_response: compute only response related stuff
+  #     in make_standata?
   #   incl_autocor: Check data of autocorrelation terms?
   #   return_standata: Compute the data to be passed to Stan
-  #                    or just return the updated newdata?
+  #     or just return the updated newdata?
+  #   all_group_vars: optional names of all grouping 
+  #     variables in the model
   #   new_objects: see function 'add_new_objects'
   # Returns:
   #   updated data.frame being compatible with formula(fit)
@@ -287,10 +292,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
-  bterms <- parse_bf(
-    new_formula, family = family(fit),
-    autocor = fit$autocor, resp_rhs_all = FALSE
-  )
+  bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(
     all.vars(bterms$respform), all.vars(rhs(bterms$allvars))
   )
@@ -302,25 +304,22 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           "Missing variables: ", collapse_comma(missing_resp))
   } else {
     for (resp in missing_resp) {
-      # add irrelevant response variables but make sure they pass all checks
+      # add irrelevant response variables
       newdata[[resp]] <- NA 
     }
   }
+  # censoring and weighting vars are unused in post-processing methods
   cens_vars <- all.vars(bterms$adforms$cens)
   for (v in setdiff(cens_vars, names(newdata))) {
-    # censoring vars are unused in predict and related methods
     newdata[[v]] <- 0
   }
   weights_vars <- all.vars(bterms$adforms$weights)
   for (v in setdiff(weights_vars, names(newdata))) {
-    # weighting vars are unused in predict and related methods
     newdata[[v]] <- 1
   }
   new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
-  group_vars <- union(
-    ulapply(new_ranef$gcall, "[[", "groups"), 
-    bterms$time$group
-  )
+  group_vars <- ulapply(new_ranef$gcall, "[[", "groups")
+  group_vars <- union(group_vars, bterms$time$group)
   if (allow_new_levels) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
@@ -330,16 +329,17 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
+  if (is.null(all_group_vars)) {
+    all_group_vars <- get_all_group_vars(fit) 
+  }
   list_data <- lapply(as.list(fit$data), function(x)
     if (is_like_factor(x)) as.factor(x) else x)
   is_factor <- sapply(list_data, is.factor)
-  all_group_vars <- ulapply(fit$ranef$gcall, "[[", "groups")
   dont_check <- c(all_group_vars, cens_vars)
   dont_check <- names(list_data) %in% dont_check
   factors <- list_data[is_factor & !dont_check]
   if (length(factors)) {
     factor_names <- names(factors)
-    factor_levels <- lapply(factors, levels) 
     for (i in seq_along(factors)) {
       new_factor <- newdata[[factor_names[i]]]
       if (!is.null(new_factor)) {
@@ -347,7 +347,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           new_factor <- factor(new_factor)
         }
         new_levels <- levels(new_factor)
-        old_levels <- factor_levels[[i]]
+        old_levels <- levels(factors[[i]])
         old_contrasts <- contrasts(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
         # don't add the 'zero__' level to response variables
@@ -369,6 +369,17 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         # don't use contrasts(.) here to avoid dimension checks
         attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
       }
+    }
+  }
+  # check if originally numeric variables are still numeric
+  num_names <- names(list_data)[!is_factor]
+  num_names <- setdiff(num_names, all_group_vars)
+  for (nm in num_names) {
+    if (nm %in% names(newdata) && !is.numeric(newdata[[nm]])) {
+      stop2(
+        "Variable '", nm, "' was originally ", 
+        "numeric but is not in 'newdata'."
+      )
     }
   }
   # validate monotonic variables
@@ -408,7 +419,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   for (g in gnames) {
     unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
     if (!allow_new_levels && length(unknown_levels)) {
-      unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
+      unknown_levels <- collapse_comma(unknown_levels)
       stop2(
         "Levels ", unknown_levels, " of grouping factor '", g, "' ",
         "cannot be found in the fitted model. ",

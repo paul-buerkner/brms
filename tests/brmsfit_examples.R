@@ -3,7 +3,8 @@ dat <- data.frame(
   count = rpois(236, lambda = 20),
   visit = rep(1:4, each = 59),
   patient = factor(rep(1:59, 4)),
-  Age = rnorm(236), Trt = rnorm(236),
+  Age = rnorm(236), 
+  Trt = factor(sample(0:1, 236, TRUE)),
   AgeSD = abs(rnorm(236, 1)),
   Exp = sample(1:5, 236, TRUE)
 )

@@ -77,7 +77,7 @@ test_that("all S3 methods have reasonable ouputs", {
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   
   newdata <- data.frame(
-    Age = c(0, -0.2), visit = c(1, 4), Trt = c(-0.2, 0.5), 
+    Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
     count = c(20, 13), patient = c(1, 42), Exp = c(2, 4)
   )
   fi <- fitted(fit1, newdata = newdata)
@@ -135,14 +135,14 @@ test_that("all S3 methods have reasonable ouputs", {
   # fixef
   fixef1 <- SM(fixef(fit1))
   expect_equal(rownames(fixef1), 
-    c("Intercept", "sigma_Intercept", "Trt", "Age", 
-      "Trt:Age", "sAge_1", "sigma_Trt", "Exp")
+    c("Intercept", "sigma_Intercept", "Trt1", "Age", 
+      "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp")
   )
   # deprecated as of brms 1.7.0
   fixef1 <- fixef(fit1, old = TRUE, estimate = c("mean", "sd"))  
   expect_equal(rownames(fixef1), 
-   c("Intercept", "sigma_Intercept", "Trt", "Age", 
-     "Trt:Age", "sAge_1", "sigma_Trt", "Exp")
+   c("Intercept", "sigma_Intercept", "Trt1", "Age", 
+     "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp")
   )
   expect_equal(colnames(fixef1), c("mean", "sd"))
   fixef2 <- fixef(fit2, estimate = c("median", "quantile"), 
@@ -157,7 +157,7 @@ test_that("all S3 methods have reasonable ouputs", {
     count ~ Trt * Age + mono(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
   
   # hypothesis
-  hyp <- hypothesis(fit1, c("Intercept > Trt", "Trt:Age = -1"))
+  hyp <- hypothesis(fit1, c("Intercept > Trt1", "Trt1:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 6))
   expect_output(print(hyp), "(Intercept)-(Trt) > 0", fixed = TRUE)
   expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))

@@ -68,6 +68,37 @@ select_indices <- function(x, i) {
   x
 }
 
+array2list <- function(x) {
+  # convert array to list of elements with reduced dimension
+  # Args: 
+  #   x: an arrary of dimension d
+  # Returns: 
+  #   A list of arrays of dimension d-1
+  if (is.null(dim(x))) {
+    stop("Argument 'x' has no dimension.")
+  }
+  ndim <- length(dim(x))
+  l <- list(length = dim(x)[ndim])
+  ind <- collapse(rep(",", ndim - 1))
+  for (i in seq_len(dim(x)[ndim])) {
+    l[[i]] <- eval(parse(text = paste0("x[", ind, i, "]"))) 
+  }
+  names(l) <- dimnames(x)[[ndim]]
+  l
+}
+
+first_greater <- function(A, target, i = 1) {
+  # find the first element in A that is greater than target
+  # Args: 
+  #   A: a matrix
+  #   target: a vector of length nrow(A)
+  #   i: column of A being checked first
+  # Returns: 
+  #   A vector of the same length as target containing the column ids 
+  #   where A[,i] was first greater than target
+  ifelse(target <= A[, i] | ncol(A) == i, i, first_greater(A, target, i + 1))
+}
+
 isNULL <- function(x) {
   # check if an object is NULL
   is.null(x) || ifelse(is.vector(x), all(sapply(x, is.null)), FALSE)
