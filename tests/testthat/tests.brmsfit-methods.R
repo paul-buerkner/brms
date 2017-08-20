@@ -159,7 +159,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # hypothesis
   hyp <- hypothesis(fit1, c("Intercept > Trt1", "Trt1:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 6))
-  expect_output(print(hyp), "(Intercept)-(Trt) > 0", fixed = TRUE)
+  expect_output(print(hyp), "(Intercept)-(Trt1) > 0", fixed = TRUE)
   expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))
   
   hyp <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
@@ -270,19 +270,19 @@ test_that("all S3 methods have reasonable ouputs", {
   me <- marginal_effects(fit1, "Trt", select_points = 0.1)
   expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
   
-  me <- marginal_effects(fit1, "Trt:Age", surface = TRUE, 
+  me <- marginal_effects(fit1, "Exp:Age", surface = TRUE, 
                          resolution = 15, too_far = 0.2)
   meplot <- plot(me, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   meplot <- plot(me, stype = "raster", plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
-  me <- marginal_effects(fit1, "Trt", spaghetti = TRUE, nsamples = 10)
-  expect_equal(nrow(attr(me$Trt, "spaghetti")), 1000)
+  me <- marginal_effects(fit1, "Age", spaghetti = TRUE, nsamples = 10)
+  expect_equal(nrow(attr(me$Age, "spaghetti")), 1000)
   meplot <- plot(me, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   expect_error(
-    marginal_effects(fit1, "Trt", spaghetti = TRUE, surface = TRUE),
+    marginal_effects(fit1, "Age", spaghetti = TRUE, surface = TRUE),
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
   
@@ -292,21 +292,21 @@ test_that("all S3 methods have reasonable ouputs", {
     Exp = c(1, 3, 5)
   )
   exp_nrow <- nrow(mdata) * 100
-  me <- marginal_effects(fit1, effects = "Trt", conditions = mdata)
+  me <- marginal_effects(fit1, effects = "Age", conditions = mdata)
   expect_equal(nrow(me[[1]]), exp_nrow)
   
   mdata$visit <- 1:3
   me <- marginal_effects(fit1, re_formula = NULL, conditions = mdata)
-  expect_equal(nrow(me[[1]]), exp_nrow)
+  expect_equal(nrow(me$Age), exp_nrow)
   
   me <- marginal_effects(
-    fit1, "Trt:Age", int_conditions = list(Age = rnorm(5))
+    fit1, "Age:Trt", int_conditions = list(Age = rnorm(5))
   )
-  expect_equal(nrow(me[[1]]), 500)
+  expect_equal(nrow(me[[1]]), 200)
   me <- marginal_effects(
-    fit1, "Trt:Age", int_conditions = list(Age = quantile)
+    fit1, "Age:Trt", int_conditions = list(Age = quantile)
   )
-  expect_equal(nrow(me[[1]]), 500)
+  expect_equal(nrow(me[[1]]), 200)
   
   expect_error(marginal_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
@@ -319,7 +319,7 @@ test_that("all S3 methods have reasonable ouputs", {
   mdata$patient <- 1
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
   me <- marginal_effects(fit2, re_formula = NULL, conditions = mdata)
-  expect_equal(nrow(me[[1]]), exp_nrow)
+  expect_equal(nrow(me$Age), exp_nrow)
   
   expect_warning(me4 <- marginal_effects(fit4),
                  "Predictions are treated as continuous variables")
@@ -361,8 +361,8 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # parnames 
   expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46, 47)],
-               c("b_Intercept", "bmo_Exp", "ar[1]", "cor_visit__Intercept__Trt", 
-                 "nu", "simplex_Exp[2]", "r_visit[4,Trt]", "s_sAge_1[8]", 
+               c("b_Intercept", "bmo_Exp", "ar[1]", "cor_visit__Intercept__Trt1", 
+                 "nu", "simplex_Exp[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
   expect_equal(parnames(fit2)[c(1, 4, 6, 7, 9, 71, 129)],
                c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
@@ -385,8 +385,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
   expect_equal(names(ps), parnames(fit1))
   expect_equal(names(posterior_samples(fit1, pars = "^b_")),
-               c("b_Intercept", "b_sigma_Intercept", "b_Trt", 
-                 "b_Age", "b_Trt:Age", "b_sAge_1", "b_sigma_Trt"))
+               c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
+                 "b_Age", "b_Trt1:Age", "b_sAge_1", "b_sigma_Trt1"))
   
   # test default method
   ps <- posterior_samples(fit1$fit, "b_Intercept")
@@ -415,7 +415,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp, "ggplot"))
   
   expect_true(is(pp_check(fit3), "ggplot"))
-  expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
+  expect_true(is(pp_check(fit2, "ribbon", x = "Age"), "ggplot"))
   expect_error(pp_check(fit2, "ribbon", x = "x"),
                "Variable 'x' is not a valid variable")
   expect_error(pp_check(fit1, "wrong_type"))
@@ -442,7 +442,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(pred), c(nobs(fit1), 5))
   
   newdata <- data.frame(Age = c(0, -0.2), visit = c(1, 4),
-                        Trt = c(-0.2, 0.5), count = c(2, 10),
+                        Trt = c(1, 0), count = c(2, 10),
                         patient = c(1, 42), Exp = c(1, 2))
   pred <- predict(fit1, newdata = newdata)
   expect_equal(dim(pred), c(2, 4))
@@ -486,8 +486,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dimnames(prs1),
                list(as.character(1:nsamples(fit1)), prior_names))
   
-  prs2 <- prior_samples(fit1, pars = "b_Trt")
-  expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt"))
+  prs2 <- prior_samples(fit1, pars = "b_Trt1")
+  expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt1"))
   expect_equal(sort(prs1$b), sort(prs2$b_Trt))
   
   # test default method
@@ -551,13 +551,13 @@ test_that("all S3 methods have reasonable ouputs", {
   summary1 <- SW(summary(fit1, waic = TRUE, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
-               c("Intercept", "sigma_Intercept", "Trt", "Age", 
-                 "Trt:Age", "sAge_1", "sigma_Trt", "Exp"))
+               c("Intercept", "sigma_Intercept", "Trt1", "Age", 
+                 "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp"))
   expect_equal(colnames(summary1$fixed), 
                c("Estimate", "Est.Error", "l-95% CI", 
                  "u-95% CI", "Eff.Sample", "Rhat"))
   expect_equal(rownames(summary1$random$visit), 
-               c("sd(Intercept)", "sd(Trt)", "cor(Intercept,Trt)"))
+               c("sd(Intercept)", "sd(Trt1)", "cor(Intercept,Trt1)"))
   expect_true(is.numeric(summary1$waic))
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
@@ -571,10 +571,11 @@ test_that("all S3 methods have reasonable ouputs", {
   up <- update(fit1, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   
-  new_data <- data.frame(Age = rnorm(18), visit = rep(c(3, 2, 4), 6),
-                         Trt = rep(c(0, 0.5, -0.5), 6), 
-                         count = rep(c(5, 17, 28), 6),
-                         patient = 1, Exp = 4)
+  new_data <- data.frame(
+    Age = rnorm(18), visit = rep(c(3, 2, 4), 6),
+    Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
+    patient = 1, Exp = 4
+  )
   up <- update(fit1, newdata = new_data, ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(up$data.name, "new_data")
@@ -582,13 +583,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true("r_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")
   
-  up <- update(fit1, formula = ~ . + I(exp(Trt)), testmode = TRUE,
+  up <- update(fit1, formula = ~ . + I(exp(Age)), testmode = TRUE,
                prior = set_prior("normal(0,10)"))
   expect_true(is(up, "brmsfit"))
-  up <- update(fit1, ~ . - Trt + factor(Trt),  testmode = TRUE)
+  up <- update(fit1, ~ . - Age + factor(Age),  testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   
-  up <- update(fit1, formula = ~ . + I(exp(Trt)), newdata = new_data,
+  up <- update(fit1, formula = ~ . + I(exp(Age)), newdata = new_data,
                sample_prior = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_error(update(fit1, formula. = ~ . + wrong_var),
@@ -614,7 +615,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # VarCorr
   vc <- SM(VarCorr(fit1))
   expect_equal(names(vc), c("visit"))
-  Names <- c("Intercept", "Trt")
+  Names <- c("Intercept", "Trt1")
   expect_equal(dimnames(vc$visit$cov)[c(1, 3)], list(Names, Names))
   vc <- SM(VarCorr(fit2))
   expect_equal(names(vc), c("patient"))
@@ -625,7 +626,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # deprecated as of brms 1.7.0
   vc <- VarCorr(fit1, old = TRUE)
   expect_equal(names(vc), c("visit"))
-  Names <- c("Intercept", "Trt")
+  Names <- c("Intercept", "Trt1")
   expect_equivalent(dimnames(vc$visit$cov$mean), list(Names, Names))
   expect_output(print(vc), "visit")
   data_vc <- as.data.frame(vc)
