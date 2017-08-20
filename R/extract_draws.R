@@ -157,7 +157,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     fit$formula[["response"]] <- NA
     fit$family <- fit$formula$family <- .dpar_family()
   }
-  new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
+  new_formula <- update_re_terms(fit$formula, re_formula)
   bterms <- parse_bf(new_formula)
   new_ranef <- tidy_ranef(bterms, model.frame(fit))
   newd_args <- nlist(
@@ -170,15 +170,17 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     old_cat = is_old_categorical(fit)
   )
   draws[names(dots)] <- dots
-  
+  args <- nlist(x = fit, subset)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
-    keep_elements <- setdiff(names(draws$data), c("Xm", "Xcs", "offset"))
-    draws$data <- draws$data[keep_elements]
-    new_ranef <- empty_ranef()
+    fixef <- colnames(draws$data[["X"]])
+    smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
+    draws <- c(draws,
+      extract_draws_fe(fixef, args, px = px, old_cat = draws$old_cat),
+      extract_draws_sm(smooths, args, sdata = draws$data, px = px)
+    )
+    return(draws)
   }
-  
-  args <- nlist(x = fit, subset)
   new <- !is.null(newdata)
   # deviate from the usual way of passing bterms and data
   # as bterms and px do not coincide in extract_draws.btl
@@ -203,13 +205,15 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
       sample_new_levels = sample_new_levels
     )
   )
-  if (!use_cov(fit$autocor) && (!nzchar(p) || mv)) {
-    # only include autocorrelation parameters in draws for mu
-    draws <- c(draws, 
-      extract_draws_autocor(
-        fit, subset, newdata = newdata, sdata = draws$data
+  if (!nzchar(p) || mv) {
+    # only include autocorrelation parameters in draws of mu
+    if (!(use_cov(fit$autocor) || is.cor_sar(fit$autocor))) {
+      draws <- c(draws, 
+        extract_draws_autocor(
+          fit, subset, newdata = newdata, sdata = draws$data
+        )
       )
-    )
+    }
   }
   structure(draws, predicted = TRUE)
 }
@@ -259,8 +263,9 @@ extract_draws_mo <- function(monef, args, sdata, px = list()) {
       draws[["bmo"]][[i]] <- do.call(as.matrix,
         c(args, list(pars = bmo_par, exact = TRUE))
       )
-      simplex_par <- paste0("simplex_", p, monef[i], 
-                            "[", seq_len(sdata$Jm[i]), "]")
+      simplex_par <- paste0(
+        "simplex_", p, monef[i], "[", seq_len(sdata$Jm[i]), "]"
+      )
       draws[["simplex"]][[i]] <- do.call(as.matrix, 
         c(args, list(pars = simplex_par, exact = TRUE))
       )
@@ -473,9 +478,11 @@ extract_draws_re <- function(ranef, args, sdata, px = list(),
     r_pars <- paste0("^r_", g, usc(usc(p)), "\\[")
     r <- do.call(as.matrix, c(args, list(pars = r_pars)))
     if (is.null(r)) {
-      stop2("Group-level effects for each level of group ", 
-            "'", g, "' not found. Please set save_ranef = TRUE ",
-            "when calling brm.")
+      stop2(
+        "Group-level effects for each level of group ", 
+        "'", g, "' not found. Please set save_ranef = TRUE ",
+        "when calling brm."
+      )
     }
     nlevels <- ngrps(args$x)[[g]]
     old_r <- subset2(args$x$ranef, group = g)
