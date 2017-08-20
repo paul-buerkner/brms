@@ -290,22 +290,17 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
-  # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
-  resp_only_vars <- setdiff(
-    all.vars(bterms$respform), all.vars(rhs(bterms$allvars))
-  )
-  # fixes #162
-  resp_only_vars <- c(resp_only_vars, all.vars(bterms$adforms$dec))
-  missing_resp <- setdiff(resp_only_vars, names(newdata))
-  if (check_response && length(missing_resp)) {
-    stop2("Response variables must be specified in 'newdata'.\n",
-          "Missing variables: ", collapse_comma(missing_resp))
-  } else {
-    for (resp in missing_resp) {
-      # add irrelevant response variables
-      newdata[[resp]] <- NA 
+  only_resp <- c(all.vars(bterms$respform), all.vars(bterms$adforms$dec))
+  only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
+  missing_resp <- setdiff(only_resp, names(newdata))
+  if (length(missing_resp)) {
+    if (check_response) {
+      stop2("Response variables must be specified in 'newdata'.\n",
+            "Missing variables: ", collapse_comma(missing_resp))
+    } else {
+      newdata[, missing_resp] <- NA
     }
   }
   # censoring and weighting vars are unused in post-processing methods
@@ -318,7 +313,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     newdata[[v]] <- 1
   }
   new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
-  group_vars <- ulapply(new_ranef$gcall, "[[", "groups")
+  group_vars <- get_all_group_vars(new_ranef)
   group_vars <- union(group_vars, bterms$time$group)
   if (allow_new_levels) {
     # grouping factors do not need to be specified 
@@ -329,15 +324,19 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
+  mf <- model.frame(fit)
+  for (i in seq_along(mf)) {
+    if (is_like_factor(mf[[i]])) {
+      mf[[i]] <- as.factor(mf[[i]])
+    }
+  }
   if (is.null(all_group_vars)) {
     all_group_vars <- get_all_group_vars(fit) 
   }
-  list_data <- lapply(as.list(fit$data), function(x)
-    if (is_like_factor(x)) as.factor(x) else x)
-  is_factor <- sapply(list_data, is.factor)
   dont_check <- c(all_group_vars, cens_vars)
-  dont_check <- names(list_data) %in% dont_check
-  factors <- list_data[is_factor & !dont_check]
+  dont_check <- names(mf) %in% dont_check
+  is_factor <- ulapply(mf, is.factor)
+  factors <- mf[is_factor & !dont_check]
   if (length(factors)) {
     factor_names <- names(factors)
     for (i in seq_along(factors)) {
@@ -361,8 +360,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         if (any(!new_levels %in% old_levels)) {
           stop2(
             "New factor levels are not allowed.",
-            "\nLevels allowed: ", paste(old_levels, collapse = ", "),
-            "\nLevels found: ", paste(new_levels, collapse = ", ")
+            "\nLevels allowed: ", collapse_comma(old_levels),
+            "\nLevels found: ", collapse_comma(new_levels)
           )
         }
         newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
@@ -372,60 +371,55 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   # check if originally numeric variables are still numeric
-  num_names <- names(list_data)[!is_factor]
+  num_names <- names(mf)[!is_factor]
   num_names <- setdiff(num_names, all_group_vars)
-  for (nm in num_names) {
-    if (nm %in% names(newdata) && !is.numeric(newdata[[nm]])) {
-      stop2(
-        "Variable '", nm, "' was originally ", 
-        "numeric but is not in 'newdata'."
-      )
+  for (nm in intersect(num_names, names(newdata))) {
+    if (!anyNA(newdata[[nm]]) && !is.numeric(newdata[[nm]])) {
+      stop2("Variable '", nm, "' was originally ", 
+            "numeric but is not in 'newdata'.")
     }
   }
   # validate monotonic variables
-  if (is.formula(bterms$mo)) {
-    take_num <- !is_factor & names(list_data) %in% all.vars(bterms$mo)
+  mo_forms <- get_effect(bterms, "mo")
+  if (length(mo_forms)) {
+    mo_vars <- unique(ulapply(mo_forms, all.vars))
     # factors have already been checked
-    num_mo_vars <- names(list_data)[take_num]
+    num_mo_vars <- names(mf)[!is_factor & names(mf) %in% mo_vars]
     for (v in num_mo_vars) {
-      # use 'get' to check whether v is defined in newdata
       new_values <- get(v, newdata)
-      min_value <- min(list_data[[v]])
-      invalid <- new_values < min_value | 
-        new_values > max(list_data[[v]]) |
-        !is_wholenumber(new_values)
+      min_value <- min(mf[[v]])
+      invalid <- new_values < min_value | new_values > max(mf[[v]])
+      invalid <- invalid | !is_wholenumber(new_values)
       if (sum(invalid)) {
-        stop2(
-          "Invalid values in variable '", v, "': ",
-          paste0(new_values[invalid], collapse = ", ")
-        )
+        stop2("Invalid values in variable '", v, "': ",
+              paste0(new_values[invalid], collapse = ", "))
       }
       attr(newdata[[v]], "min") <- min_value
     }
   }
   # update_data expects all original variables to be present
-  # even if not actually used later on
-  rsv_vars <- rsv_vars(bterms)
-  used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))
-  all_vars <- all.vars(str2formula(names(model.frame(fit))))
+  used_vars <- c(names(newdata), all.vars(bterms$allvars))
+  used_vars <- union(used_vars, rsv_vars(bterms))
+  all_vars <- all.vars(str2formula(names(mf)))
   unused_vars <- setdiff(all_vars, used_vars)
   if (length(unused_vars)) {
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
-  gnames <- unique(new_ranef$group)
   old_levels <- attr(new_ranef, "levels")
-  new_levels <- attr(tidy_ranef(bterms, data = newdata), "levels")
-  for (g in gnames) {
-    unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
-    if (!allow_new_levels && length(unknown_levels)) {
-      unknown_levels <- collapse_comma(unknown_levels)
-      stop2(
-        "Levels ", unknown_levels, " of grouping factor '", g, "' ",
-        "cannot be found in the fitted model. ",
-        "Consider setting argument 'allow_new_levels' to TRUE."
-      )
-    }
+  if (!allow_new_levels) {
+    new_levels <- attr(tidy_ranef(bterms, data = newdata), "levels")
+    for (g in names(old_levels)) {
+      unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
+      if (length(unknown_levels)) {
+        unknown_levels <- collapse_comma(unknown_levels)
+        stop2(
+          "Levels ", unknown_levels, " of grouping factor '", g, "' ",
+          "cannot be found in the fitted model. ",
+          "Consider setting argument 'allow_new_levels' to TRUE."
+        )
+      }
+    } 
   }
   if (return_standata) {
     fit <- add_new_objects(fit, newdata, new_objects)

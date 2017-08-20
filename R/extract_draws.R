@@ -151,7 +151,6 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   fit$formula$formula <- update(fit$formula$formula, rhs(x$formula))
   # ensure that auxiliary parameters are not included (fixes #154)
   fit$formula$pforms <- fit$formula$pfix <- NULL
-  fit$formula$nl <- FALSE
   fit$ranef <- tidy_ranef(parse_bf(fit$formula), data = fit$data)
   if (nzchar(p)) {
     # make sure not to evaluate family specific stuff
