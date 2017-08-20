@@ -70,7 +70,7 @@ Two-dimensional smooth terms will be visualized using
 \examples{
 \dontrun{
 set.seed(0) 
-dat <- mgcv::gamSim(1, n = 200,scale = 2)
+dat <- mgcv::gamSim(1, n = 200, scale = 2)
 fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 # show all smooth terms
 plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)

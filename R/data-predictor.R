@@ -89,7 +89,7 @@ data_fe <- function(bterms, data, knots = NULL,
       smooths <- named_list(sm_labels)
       for (i in seq_along(sm_labels)) {
         smooths[[i]] <- mgcv::smoothCon(
-          eval_smooth(sm_labels[i]), data = data, 
+          eval2(sm_labels[i]), data = data, 
           knots = knots, absorb.cons = TRUE
         )
       }

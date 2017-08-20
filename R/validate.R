@@ -380,7 +380,7 @@ parse_sm <- function(formula) {
     }
     covars <- byvars <- named_list(sm_terms)
     for (i in seq_along(sm_terms)) {
-      es <- eval_smooth(sm_terms[i])
+      es <- eval2(sm_terms[i])
       covars[[i]] <- es$term
       if (es$by != "NA") {
         byvars[[i]] <- es$by 

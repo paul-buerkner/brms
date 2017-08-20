@@ -386,10 +386,6 @@ eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
   out
 }
 
-eval_smooth <- function(x) {
-  eval2(paste0("mgcv::", x))
-}
-
 stop2 <- function(...) {
   stop(..., call. = FALSE)
 }

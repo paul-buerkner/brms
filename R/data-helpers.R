@@ -634,7 +634,7 @@ make_smooth_list.btl <- function(x, data, ...) {
     sm_labels <- get_sm_labels(x)
     out <- named_list(sm_labels)
     for (i in seq_along(sm_labels)) {
-      sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
+      sc_args <- c(list(eval2(sm_labels[i])), gam_args)
       out[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
   } else {

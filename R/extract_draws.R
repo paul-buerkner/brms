@@ -480,8 +480,8 @@ extract_draws_re <- function(ranef, args, sdata, px = list(),
     if (is.null(r)) {
       stop2(
         "Group-level effects for each level of group ", 
-        "'", g, "' not found. Please set save_ranef = TRUE ",
-        "when calling brm."
+        "'", g, "' not found. Please set 'save_ranef' to ", 
+        "TRUE when fitting your model."
       )
     }
     nlevels <- ngrps(args$x)[[g]]

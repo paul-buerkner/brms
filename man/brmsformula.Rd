@@ -102,7 +102,8 @@ models for all parameters of the assumed response distribution.
   call them 'group-level' effects or (adopting frequentist 
   vocabulary) 'random' effects, although the latter name is misleading
   in a Bayesian context.
-  For more details type \code{vignette("brms_overview")}.
+  For more details type \code{vignette("brms_overview")} and
+  \code{vignette("brms_multilevel")}. 
   
   \bold{Group-level terms}
   
@@ -127,13 +128,12 @@ models for all parameters of the assumed response distribution.
   
   \bold{Special predictor terms}
   
-  Smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
-  and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
-  in the \code{pterms} part of the model formula.
-  This allows to fit generalized additive mixed models (GAMMs) with \pkg{brms}. 
-  The implementation is similar to that used in the \pkg{gamm4} package.
-  For more details on this model class see \code{\link[mgcv:gam]{gam}} 
-  and \code{\link[mgcv:gamm]{gamm}}.
+  Smoothing terms can modeled using the \code{\link[brms:s]{s}}
+  and \code{\link[brms:t2]{t2}} functions in the \code{pterms} part 
+  of the model formula. This allows to fit generalized additive mixed
+  models (GAMMs) with \pkg{brms}. The implementation is similar to that 
+  used in the \pkg{gamm4} package. For more details on this model class 
+  see \code{\link[mgcv:gam]{gam}} and \code{\link[mgcv:gamm]{gamm}}.
   
   Gaussian process terms can be fitted using the \code{\link[brms:gp]{gp}}
   function in the \code{pterms} part of the model formula. Similar to
