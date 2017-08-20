@@ -587,7 +587,7 @@ remove_autocor <- function(x, keep = FALSE) {
   excl_cor <- is.cor_arma(x$autocor) || 
     is.cor_sar(x$autocor) || is.cor_car(x$autocor)
   if (!keep && excl_cor) {
-    x$autocor <- cor_arma()
+    x$autocor <- x$formula$autocor <- cor_empty()
   }
   x
 }
