@@ -171,31 +171,27 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   )
   draws[names(dots)] <- dots
   args <- nlist(x = fit, subset)
-  if (smooths_only) {
-    # make sure only smooth terms will be included in draws
-    fixef <- colnames(draws$data[["X"]])
-    smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
-    draws <- c(draws,
-      extract_draws_fe(fixef, args, px = px, old_cat = draws$old_cat),
-      extract_draws_sm(smooths, args, sdata = draws$data, px = px)
-    )
-    return(draws)
-  }
   new <- !is.null(newdata)
   # deviate from the usual way of passing bterms and data
   # as bterms and px do not coincide in extract_draws.btl
   fixef <- colnames(draws$data[["X"]])
+  smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
+  draws <- c(draws,
+    extract_draws_fe(fixef, args, px = px, old_cat = draws$old_cat),
+    extract_draws_sm(smooths, args, sdata = draws$data, px = px)
+  )
+  if (smooths_only) {
+    # make sure only smooth terms will be included in draws
+    return(structure(draws, predicted = TRUE))
+  }
   monef <- colnames(draws$data[["Xmo"]])
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$dpars$mu, fit$data)
-  smooths <- get_sm_labels(bterms$dpars$mu, fit$data, covars = TRUE)
   gpef <- get_gp_labels(bterms$dpars$mu, fit$data, covars = TRUE)
   draws <- c(draws,
-    extract_draws_fe(fixef, args, px = px, old_cat = draws$old_cat),
     extract_draws_mo(monef, args, sdata = draws$data, px = px),
     extract_draws_cs(csef, args, px = px, old_cat = draws$old_cat),
     extract_draws_me(meef, args, sdata = draws$data, px = px, new = new),
-    extract_draws_sm(smooths, args, sdata = draws$data, px = px),
     extract_draws_gp(
       gpef, args, sdata = draws$data, px = px, 
       new = new, nug = nug, newd_args = newd_args
