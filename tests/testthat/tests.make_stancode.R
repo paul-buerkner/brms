@@ -908,18 +908,24 @@ test_that("priors on intercepts appear in the Stan code", {
 
 test_that("noise-free terms appear in the Stan code", {
   N <- 30
-  dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
-                    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
-                    ID = rep(1:5, each = N / 5))
-  scode <- make_stancode(y ~ me(x, xsd)*me(z, zsd)*x, data = dat,
-                      prior = prior(normal(0,5)))
+  dat <- data.frame(
+    y = rnorm(N), x = rnorm(N), z = rnorm(N),
+    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
+    ID = rep(1:5, each = N / 5)
+  )
+  scode <- make_stancode(
+    y ~ me(x, xsd)*me(z, zsd)*x, data = dat,
+    prior = prior(normal(0,5))
+  )
   expect_match2(scode,
-    "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] .* Xme_2[n]")
+    "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] * Xme_2[n]")
   expect_match2(scode, 
-    "(bme[6]) * Xme_1[n] .* Xme_2[n] .* Cme_3[n]")
+    "(bme[6]) * Xme_1[n] * Xme_2[n] * Cme_3[n]")
   expect_match2(scode, "target += normal_lpdf(Xme_2 | Xn_2, noise_2)")
   expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
-  scode <- make_stancode(y ~ me(x, xsd)*me(z, zsd) + (me(x, xsd)|ID), data = dat)
+  scode <- make_stancode(
+    y ~ me(x, xsd)*me(z, zsd) + (me(x, xsd)|ID), data = dat
+  )
   expect_match2(scode, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]")
   expect_match2(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
                "(bme[1]) * Xme_1[n]^2")

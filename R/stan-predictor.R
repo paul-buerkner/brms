@@ -656,7 +656,6 @@ stan_me <- function(bterms, data, ranef, prior) {
     px <- check_prefix(bterms)
     p <- usc(combine_prefix(px))
     pK <- paste0(p, "_", seq_along(uni_me))
-    
     me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
     meef_terms <- rep(NA, length(me_sp))
     for (i in seq_along(me_sp)) {
@@ -672,12 +671,12 @@ stan_me <- function(bterms, data, ranef, prior) {
     new_me <- paste0("Xme", pK, "[n]")
     meef_terms <- rename(meef_terms, uni_me, new_me)
     ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-    covars <- ifelse(not_one, paste0(" .* Cme", p, "_", ci, "[n]"), "")
+    covars <- ifelse(not_one, paste0(" * Cme", p, "_", ci, "[n]"), "")
     ncovars <- sum(not_one)
     
     # prepare linear predictor component
     meef <- rename(meef)
-    meef_terms <- gsub(":", " .* ", meef_terms)
+    meef_terms <- gsub(":", " * ", meef_terms)
     ranef <- subset2(ranef, type = "me", ls = px)
     invalid_coef <- setdiff(ranef$coef, meef)
     if (length(invalid_coef)) {

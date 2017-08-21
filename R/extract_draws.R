@@ -321,7 +321,7 @@ extract_draws_me <- function(meef, args, sdata, px = list(),
     }
     if (!any(grepl(paste0("Xme_", p), parnames(args$x)))) {
       stop2("Noise-free variables were not saved. Please set ",
-            "argument 'save_mevars' to TRUE when calling 'brm'.")
+            "argument 'save_mevars' to TRUE when fitting your model.")
     }
     uni_me <- attr(meef, "uni_me")
     not_one <- attr(meef, "not_one")
