@@ -1337,8 +1337,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   dots <- list(...)
   method <- match.arg(method)
   conditions <- use_alias(conditions, dots[["data"]])
-  spaghetti <- as.logical(spaghetti)
-  surface <- as.logical(use_alias(surface, dots[["contour"]]))
+  spaghetti <- as_one_logical(spaghetti)
+  surface <- as_one_logical(use_alias(surface, dots[["contour"]]))
   dots[["data"]] <- dots[["contour"]] <- NULL
   contains_samples(x)
   x <- restructure(x)
@@ -1514,7 +1514,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
                                      resolution = 100, too_far = 0,
                                      subset = NULL, nsamples = NULL,
                                      ...) {
-  spaghetti <- as.logical(spaghetti)
+  spaghetti <- as_one_logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)
   mf <- model.frame(x)

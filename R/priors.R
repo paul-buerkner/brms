@@ -1519,10 +1519,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
       stop2("Argument 'par_ratio' must be within [0, 1].")
     }
   }
-  autoscale <- as.logical(autoscale)
-  if (length(autoscale) != 1L || is.na(autoscale)) {
-    stop2("Argument 'autoscale' must be either TRUE or FALSE.")
-  }
+  autoscale <- as_one_logical(autoscale)
   att <- nlist(
     df, df_global, df_slab, scale_global, 
     scale_slab, par_ratio, autoscale

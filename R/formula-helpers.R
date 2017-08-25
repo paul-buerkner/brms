@@ -85,10 +85,7 @@ resp_se <- function(x, sigma = FALSE) {
   if (min(x) < 0) {
     stop2("Standard errors must be non-negative.")
   }
-  sigma <- as.logical(sigma)
-  if (length(sigma) != 1L) {
-    stop2("Argument 'sigma' must be either TRUE or FALSE.")
-  }
+  sigma <- as_one_logical(sigma)
   structure(x, sigma = sigma)  
 }
 
@@ -188,11 +185,13 @@ resp_cens <- function(x, y2 = NULL) {
   }
   cens <- unname(ulapply(x, prepare_cens))
   if (!all(is_wholenumber(cens) & cens %in% -1:2)) {
-    stop2("Invalid censoring data. Accepted values are ", 
-          "'left', 'none', 'right', and 'interval'\n",
-          "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
-          "TRUE and FALSE are also accepted ",
-          "and refer to 'right' and 'none' respectively.")
+    stop2(
+      "Invalid censoring data. Accepted values are ", 
+      "'left', 'none', 'right', and 'interval'\n",
+      "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
+      "TRUE and FALSE are also accepted ",
+      "and refer to 'right' and 'none' respectively."
+    )
   }
   if (any(cens %in% 2)) {
     if (length(y2) != length(cens)) {
@@ -487,10 +486,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   by <- deparse(substitute(by)) 
-  scale <- as.logical(scale)
-  if (anyNA(scale) || length(scale) != 1L) {
-    stop2("'scale' should be either TRUE or FALSE.")
-  }
+  scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
   structure(nlist(term, label, by, cov, scale), class = "gpterm")
 }
@@ -577,10 +573,7 @@ mm <- function(..., weights = NULL, scale = TRUE) {
             "only variable names combined by the symbol ':'")
     }
   }
-  scale <- as.logical(scale)
-  if (anyNA(scale) || length(scale) != 1L) {
-    stop2("'scale' should be either TRUE or FALSE.")
-  }
+  scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all.vars(weights)
   allvars <- str2formula(c(groups, weightvars))
