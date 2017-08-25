@@ -3,7 +3,7 @@
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
                                      rug = FALSE, mean = TRUE, 
-                                     jitter_width = 0,
+                                     jitter_width = 0, points_alpha = 1,
                                      stype = c("contour", "raster"),
                                      theme = NULL, ask = TRUE, 
                                      plot = TRUE, ...) {
@@ -75,7 +75,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
         jitter_args <- list(
           mapping = aes_string(x = effects[1], y = "resp__"),
           data = attr(x[[i]], "points"), inherit.aes = FALSE,
-          size = 2 / ncond^0.25, height = 0, width = jitter_width
+          size = 2 / ncond^0.25, height = 0, width = jitter_width,
+          alpha = points_alpha
         )
         is_factor_gvar <- is.factor(attr(x[[i]], "points")[, gvar])
         if (is_factor_gvar) {

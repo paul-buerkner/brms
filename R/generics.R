@@ -869,6 +869,9 @@ stanplot <- function(object, ...) {
 #'   Amount of horizontal jittering of the data points.
 #'   Mainly useful for ordinal models. Defaults to \code{0} that 
 #'   is no jittering.
+#' @param points_alpha Only used if \code{points = TRUE}:
+#'   Value in [0, 1] specifying the transparency of
+#'   the data points. Defaults to \code{1} that is no transparency.
 #' @param stype Indicates how surface plots should be displayed.
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @inheritParams plot.brmsfit
