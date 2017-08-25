@@ -73,7 +73,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
   ic <- match.arg(ic)
   contains_samples(x)
   if (ic == "kfold") {
-    IC <- do.call(kfold_internal, c(list(x), update_args))
+    IC <- do.call(kfold_internal, c(list(x, ...), update_args))
   } else {
     loo_args$x <- log_lik(x, ...)
     pointwise <- is.function(loo_args$x)
@@ -414,15 +414,19 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
   x
 }
 
-kfold_internal <- function(x, K = 10, save_fits = FALSE, ...) {
+kfold_internal <- function(x, K = 10, newdata = NULL, save_fits = FALSE, ...) {
   # most of the code is taken from rstanarm::kfold
   stopifnot(is.brmsfit(x))
-  N <- nobs(x)
+  if (is.null(newdata)) {
+    mf <- model.frame(x) 
+  } else {
+    mf <- as.data.frame(newdata)
+  }
+  N <- nrow(mf)
   if (K < 1 || K > N) {
     stop2("'K' must be greater than one and smaller or ", 
           "equal to the number of observations in the model.")
   }
-  mf <- model.frame(x)
   perm <- sample.int(N)
   idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
   bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)

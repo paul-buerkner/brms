@@ -5,8 +5,8 @@
 \alias{kfold}
 \title{K-Fold Cross-Validation}
 \usage{
-\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, save_fits = FALSE,
-  update_args = list())
+\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, newdata = NULL,
+  save_fits = FALSE, update_args = list())
 
 kfold(x, ...)
 }
@@ -25,6 +25,9 @@ into which the data will be randomly partitioned for performing
 leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 number of observations in the data then \eqn{K}-fold cross-validation is
 equivalent to exact leave-one-out cross-validation.}
+
+\item{newdata}{An optional data.frame for which to evaluate predictions.
+If \code{NULL} (default), the orginal data of the model is used.}
 
 \item{save_fits}{If \code{TRUE}, a component \code{fits} is added to 
 the returned object to store the cross-validated \code{brmsfit} 
