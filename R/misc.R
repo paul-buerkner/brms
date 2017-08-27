@@ -754,8 +754,7 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
     "Useful instructions\n", 
     "can be found by typing help('brms'). A more detailed introduction\n", 
     "to the package is available through vignette('brms_overview').\n",
-    "Plotting theme set to bayesplot::theme_default()."
+    "Run theme_set(theme_default()) to use the default bayesplot theme."
   )
-  ggplot2::theme_set(bayesplot::theme_default())
   invisible(NULL)
 }

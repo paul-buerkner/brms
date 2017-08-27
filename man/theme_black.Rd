@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggplot-themes.R
 \name{theme_black}
 \alias{theme_black}
-\title{Black Theme for ggplot Graphics}
+\title{Black Theme for \pkg{ggplot2} Graphics}
 \usage{
 theme_black(base_size = 12, base_family = "")
 }

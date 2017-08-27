@@ -207,7 +207,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   #   A data.frame with (possibly updated) conditions
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
-  bterms <- parse_bf(new_formula, family = family(x), autocor = x$autocor)
+  bterms <- parse_bf(new_formula)
   re <- get_re(bterms)
   req_vars <- c(
     lapply(get_effect(bterms, "fe"), rhs), 
@@ -806,7 +806,7 @@ choose_N <- function(draws) {
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
-  nresp <- length(parse_bf(x$formula, family = family)$response)
+  nresp <- length(parse_bf(x$formula)$response)
   if (is_old_lognormal(family, nresp = nresp, version = x$version$brms)) {
     family <- lognormal()
   } else if (is_linear(family) && nresp > 1L) {
