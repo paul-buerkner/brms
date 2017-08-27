@@ -1521,19 +1521,19 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
   bterms <- parse_bf(x$formula)
-  lee <- list()
+  bt_list <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      lee <- c(lee, setNames(bterms$dpars["mu"], r))
+      bt_list[[r]] <- bterms$dpars["mu"]
     }
     bterms$dpars[["mu"]] <- NULL
   }
   for (dp in names(bterms$dpars)) {
-    bt <- bterms$dpars[dp]
-    if (is.btnl(bt[[1]])) {
-      lee <- c(lee, bt[[1]]$nlpars)
+    bt <- bterms$dpars[[dp]]
+    if (is.btnl(bt)) {
+      bt_list[names(bt$nlpars)] <- bt$nlpars
     } else {
-      lee <- c(lee, bt)
+      bt_list[[dp]] <- bt
     }
   }
   subset <- subset_samples(x, subset, nsamples)
@@ -1545,16 +1545,15 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   )
   too_many_covars <- FALSE
   results <- list()
-  for (k in seq_along(lee)) {
+  for (k in seq_along(bt_list)) {
     # loop over elements that may contain smooth terms
-    sm_labels <- get_sm_labels(lee[[k]])
-    sm_labels_by <- get_sm_labels(lee[[k]], data = mf)
-    covars <- get_sm_labels(lee[[k]], covars = TRUE, combine = FALSE)
+    sm_labels <- get_sm_labels(bt_list[[k]])
+    sm_labels_by <- get_sm_labels(bt_list[[k]], data = mf)
+    covars <- get_sm_labels(bt_list[[k]], covars = TRUE, combine = FALSE)
     for (i in seq_along(sm_labels)) {
       # loop over smooth terms and compute their predictions
-      covars_no_by_factor <- covars[[i]]
       byvars <- attr(covars, "byvars")[[i]]
-      byfactors <- !sapply(mf[, byvars, drop = FALSE], is.numeric)
+      byfactors <- ulapply(mf[, byvars, drop = FALSE], is_like_factor)
       byfactors <- byvars[byfactors]
       covars_no_byfactor <- setdiff(covars[[i]], byfactors)
       ncovars <- length(covars_no_byfactor)
@@ -1566,8 +1565,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         values <- named_list(covars[[i]])
         for (cv in names(values)) {
           if (is.numeric(mf[[cv]])) {
-            values[[cv]] <- seq(min(mf[[cv]]), max(mf[[cv]]), 
-                                length.out = resolution)
+            values[[cv]] <- seq(
+              min(mf[[cv]]), max(mf[[cv]]), length.out = resolution
+            )
           } else {
             values[[cv]] <- levels(factor(mf[[cv]]))
           }
@@ -1587,7 +1587,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         other_vars <- setdiff(names(conditions), covars[[i]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor
-        more_args <- nlist(x = lee[[k]], newdata, nlpar = names(lee)[k])
+        par <- names(bt_list)[k]
+        more_args <- nlist(x = bt_list[[k]], newdata, nlpar = par)
         draws <- do.call(extract_draws, c(args, more_args))
         J <- which(attr(sm_labels_by, "termnum") == i)
         scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
@@ -1612,10 +1613,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         if (length(byfactors)) {
           res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
         }
-        response <- sm_labels[[i]]
-        if (isTRUE(nzchar(names(lee)[k]))) {
-          response <- paste0(names(lee)[k], ": ", response)
-        }
+        response <- paste0(par, ": ", sm_labels[[i]])
         attr(res, "response") <- response
         attr(res, "effects") <- covars_no_byfactor
         attr(res, "surface") <- ncovars == 2L
