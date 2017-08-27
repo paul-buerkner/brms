@@ -141,8 +141,8 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   #   other arguments: see extract_draws.brmsfit
   # Returns:
   #   A named list to be interpreted by linear_predictor
+  stopifnot(is.brmsfit(fit))
   dots <- list(...)
-  stopifnot(is.brmsfit(fit), is.brmsformula(fit$formula))
   fit <- remove_autocor(fit, incl_autocor)
   px <- check_prefix(x)
   p <- combine_prefix(px)
@@ -151,7 +151,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   fit$formula$formula <- update(fit$formula$formula, rhs(x$formula))
   # ensure that auxiliary parameters are not included (fixes #154)
   fit$formula$pforms <- fit$formula$pfix <- NULL
-  fit$ranef <- tidy_ranef(parse_bf(fit$formula), data = fit$data)
+  fit$ranef <- tidy_ranef(parse_bf(fit$formula), fit$data)
   if (nzchar(p)) {
     # make sure not to evaluate family specific stuff
     fit$formula[["response"]] <- NA
@@ -159,7 +159,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   }
   new_formula <- update_re_terms(fit$formula, re_formula)
   bterms <- parse_bf(new_formula)
-  new_ranef <- tidy_ranef(bterms, model.frame(fit))
+  new_ranef <- tidy_ranef(bterms, fit$data)
   newd_args <- nlist(
     fit, newdata, re_formula, allow_new_levels, 
     new_objects, all_group_vars, check_response = FALSE

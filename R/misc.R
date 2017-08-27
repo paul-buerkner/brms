@@ -346,7 +346,27 @@ named_list <- function(names, values = NULL) {
     values <- vector("list", length(names))
   }
   setNames(values, names)
-} 
+}
+
+'replace_args<-' <- function(x, dont_replace = NULL, value) {
+  # replace elements in x with elements in value
+  # Args:
+  #   x: named list like object
+  #   value: another named list like object
+  #   dont_replace names of elements that cannot be replaced
+  value_name <- deparse_combine(substitute(value))
+  value <- as.list(value)
+  if (length(value) && is.null(names(value))) {
+    stop2("Argument '", value_name, "' must be named.")
+  }
+  invalid <- names(value)[names(value) %in% dont_replace]
+  if (length(invalid)) {
+    invalid <- collapse_comma(invalid)
+    stop2("Argument(s) ", invalid, " cannot be replaced.")
+  }
+  x[names(value)] <- value
+  x
+}
 
 deparse_no_string <- function(x) {
   # deparse x if it is no string

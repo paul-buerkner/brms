@@ -848,11 +848,15 @@ stanplot <- function(object, ...) {
 #'   the unit interval and then points more than \code{select_points} 
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
+#' @param ... Further arguments such as \code{subset} or \code{nsamples}
+#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
+#' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
-#'   on the number of rows of \code{data}.
+#'   on the number of rows of \code{conditions}.
 #' @param points Logical; indicating whether the original data points
-#'   should be added via \code{\link[ggplot2:geom_point]{geom_point}}.
+#'   should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
 #'   Default is \code{FALSE}. Note that only those data points will be added
 #'   that match the specified conditions defined in \code{conditions}.
 #'   For categorical predictors, the conditions have to match exactly. 
@@ -869,15 +873,31 @@ stanplot <- function(object, ...) {
 #'   Amount of horizontal jittering of the data points.
 #'   Mainly useful for ordinal models. Defaults to \code{0} that 
 #'   is no jittering.
-#' @param points_alpha Only used if \code{points = TRUE}:
-#'   Value in [0, 1] specifying the transparency of
-#'   the data points. Defaults to \code{1} that is no transparency.
 #' @param stype Indicates how surface plots should be displayed.
 #'   Either \code{"contour"} or \code{"raster"}.
-#' @inheritParams plot.brmsfit
-#' @param ... Further arguments such as \code{subset} or \code{nsamples}
-#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
+#' @param line_args Only used in plots of continuous predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#' @param cat_args Only used in plots of categorical predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_point]{geom_point}}.
+#' @param errorbar_args Only used in plots of categorical predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
+#' @param surface_args Only used in surface plots:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
+#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
+#'   (depending on argument \code{stype}).
+#' @param spaghetti_args Only used in spaghetti plots:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#' @param point_args Only used if \code{points = TRUE}: 
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#' @param rug_args Only used if \code{rug = TRUE}: 
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #' 
 #' @return An object of class \code{brmsMarginalEffects}, which is a named list
 #'   with one data.frame per effect containing all information required 

@@ -15,9 +15,11 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, mean = TRUE, jitter_width = 0, points_alpha = 1,
-  stype = c("contour", "raster"), theme = NULL, ask = TRUE, plot = TRUE,
-  ...)
+  rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
+  "raster"), line_args = list(), cat_args = list(),
+  errorbar_args = list(), surface_args = list(), spaghetti_args = list(),
+  point_args = list(), rug_args = list(), theme = NULL, ask = TRUE,
+  plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}
@@ -109,10 +111,10 @@ passed to \code{\link[brms:predict.brmsfit]{predict}} or
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based
-on the number of rows of \code{data}.}
+on the number of rows of \code{conditions}.}
 
 \item{points}{Logical; indicating whether the original data points
-should be added via \code{\link[ggplot2:geom_point]{geom_point}}.
+should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
 Default is \code{FALSE}. Note that only those data points will be added
 that match the specified conditions defined in \code{conditions}.
 For categorical predictors, the conditions have to match exactly. 
@@ -133,12 +135,38 @@ Amount of horizontal jittering of the data points.
 Mainly useful for ordinal models. Defaults to \code{0} that 
 is no jittering.}
 
-\item{points_alpha}{Only used if \code{points = TRUE}:
-Value in [0, 1] specifying the transparency of
-the data points. Defaults to \code{1} that is no transparency.}
-
 \item{stype}{Indicates how surface plots should be displayed.
 Either \code{"contour"} or \code{"raster"}.}
+
+\item{line_args}{Only used in plots of continuous predictors:
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_smooth]{geom_smooth}}.}
+
+\item{cat_args}{Only used in plots of categorical predictors:
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_point]{geom_point}}.}
+
+\item{errorbar_args}{Only used in plots of categorical predictors:
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.}
+
+\item{surface_args}{Only used in surface plots:
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_contour]{geom_contour}} or
+\code{\link[ggplot2:geom_raster]{geom_raster}}
+(depending on argument \code{stype}).}
+
+\item{spaghetti_args}{Only used in spaghetti plots:
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_smooth]{geom_smooth}}.}
+
+\item{point_args}{Only used if \code{points = TRUE}: 
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_jitter]{geom_jitter}}.}
+
+\item{rug_args}{Only used if \code{rug = TRUE}: 
+A named list of arguments passed to 
+\code{\link[ggplot2:geom_rug]{geom_rug}}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 
