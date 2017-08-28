@@ -83,6 +83,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_ordinal <- stan_ordinal(bterms, prior = prior)
   text_families <- stan_families(bterms)
   text_mixture <- stan_mixture(bterms, prior = prior)
+  text_Xme <- stan_Xme(bterms)
   text_se <- stan_se(bterms)
   text_cens <- stan_cens(bterms, data)
   text_disp <- stan_disp(bterms)
@@ -94,6 +95,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_prior <- paste0(
     text_effects$prior,
     text_ranef$prior,
+    text_Xme$prior,
     text_ordinal$prior,
     text_autocor$prior,
     text_mv$prior,
@@ -129,6 +131,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     },
     text_effects$data,
     text_ranef$data,
+    text_Xme$data,
     text_ordinal$data,
     text_families$data,
     text_mixture$data,
@@ -168,6 +171,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_parameters <- paste0(
     text_effects$par,
     text_ranef$par,
+    text_Xme$par,
     text_ordinal$par,
     text_autocor$par,
     text_mv$par,

@@ -119,7 +119,7 @@ stan_effects.btnl <- function(x, data, ranef, prior,
   }
   # add whitespaces to be able to replace parameters and covariates
   meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
-  nlmodel <- gsub(" ", "", collapse(deparse(x$formula[[2]])))
+  nlmodel <- rm_wsp(collapse(deparse(x$formula[[2]])))
   nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
   nlmodel <- rename(nlmodel, 
     c(wsp(nlpars), covars, " ( ", " ) "), 
@@ -655,8 +655,7 @@ stan_me <- function(bterms, data, ranef, prior) {
     uni_me <- attr(meef, "uni_me")
     px <- check_prefix(bterms)
     p <- usc(combine_prefix(px))
-    pK <- paste0(p, "_", seq_along(uni_me))
-    me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
+    me_sp <- strsplit(rm_wsp(meef), ":")
     meef_terms <- rep(NA, length(me_sp))
     for (i in seq_along(me_sp)) {
       # remove non-me parts from the terms
@@ -665,10 +664,10 @@ stan_me <- function(bterms, data, ranef, prior) {
       # remove 'I' (identity) function calls that 
       # were used solely to separate formula terms
       I <- grepl("^I\\(", me_sp[[i]])
-      me_sp[[i]][I] <- substr(me_sp[[i]][I], 3, nchar(me_sp[[i]][I]) - 1)
+      me_sp[[i]][I] <- gsub("^I\\(|\\)$", "", me_sp[[i]][I])
       meef_terms[i] <- paste0(me_sp[[i]], collapse = ":")
     }
-    new_me <- paste0("Xme", pK, "[n]")
+    new_me <- paste0("Xme_", seq_along(uni_me), "[n]")
     meef_terms <- rename(meef_terms, uni_me, new_me)
     ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
     covars <- ifelse(not_one, paste0(" * Cme", p, "_", ci, "[n]"), "")
@@ -700,27 +699,18 @@ stan_me <- function(bterms, data, ranef, prior) {
     str_add(out$data) <- paste0(
       "  int<lower=0> Kme", p, ";",
       "  // number of terms of noise free variables \n",
-      "  // noisy variables \n",
-      collapse("  vector[N] Xn", pK, "; \n"),
-      "  // measurement noise \n",
-      collapse("  vector<lower=0>[N] noise", pK, "; \n"),
       if (ncovars > 0L) paste0(
         "  // covariates of noise free variables \n",
         collapse("  vector[N] Cme", p, "_", seq_len(ncovars), "; \n")
       )
     )
     str_add(out$par) <- paste0(
-      "  // noise free variables \n",
-      collapse("  vector[N] Xme", pK, "; \n"),  
       "  vector[Kme", p, "] bme", p, ";",
       "  // coefficients of noise-free terms \n"
     )
-    str_add(out$prior) <- paste0(
-      stan_prior(prior, class = "b", coef = meef, 
-                 px = px, suffix = paste0("me", p)),
-      collapse(
-        "  target += normal_lpdf(Xme", pK, " | Xn", pK, ", noise", pK,"); \n"
-      )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "b", coef = meef, 
+      px = px, suffix = paste0("me", p)
     )
   }
   out

@@ -319,14 +319,14 @@ extract_draws_me <- function(meef, args, sdata, px = list(),
       stop2("Predictions with noise-free variables are not yet ",
             "possible when passing new data.")
     }
-    if (!any(grepl(paste0("Xme_", p), parnames(args$x)))) {
+    if (!any(grepl("^Xme_", parnames(args$x)))) {
       stop2("Noise-free variables were not saved. Please set ",
             "argument 'save_mevars' to TRUE when fitting your model.")
     }
     uni_me <- attr(meef, "uni_me")
     not_one <- attr(meef, "not_one")
     # prepare calls to evaluate noise-free data
-    me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
+    me_sp <- strsplit(rm_wsp(meef), ":")
     meef_terms <- rep(NA, length(me_sp))
     for (i in seq_along(me_sp)) {
       # remove non-me parts from the terms
@@ -352,10 +352,9 @@ extract_draws_me <- function(meef, args, sdata, px = list(),
     # extract noise-free variable samples
     uni_me <- rename(uni_me)
     draws[["Xme"]] <- named_list(uni_me)
+    N <- seq_len(nobs(args$x))
     for (j in seq_along(draws[["Xme"]])) {
-      Xme_pars <- paste0(
-        "Xme_", p, uni_me[j], "[", seq_len(nobs(args$x)), "]"
-      )
+      Xme_pars <- paste0("Xme_", uni_me[j], "[", N, "]")
       draws[["Xme"]][[j]] <- do.call(as.matrix,
         c(args, list(pars = Xme_pars, exact = TRUE))
       )

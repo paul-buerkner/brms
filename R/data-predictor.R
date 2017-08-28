@@ -214,7 +214,6 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
   # compute data specific for each group-level-ID
   # Args:
   #   ranef: data.frame returned by tidy_ranef
-  #   data: the model.frame
   #   cov_ranef: name list of user-defined covariance matrices
   out <- list()
   ids <- unique(ranef$id)
@@ -293,10 +292,8 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
 }
 
 data_cs <- function(bterms, data) {
-  # prepare data for category specific effects for use in Stan
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: the data passed by the user
+  # prepare data for category specific effects
+  # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
   if (length(all_terms(bterms[["cs"]]))) {
@@ -308,10 +305,8 @@ data_cs <- function(bterms, data) {
 }
 
 data_me <- function(bterms, data) {
-  # prepare data of meausurement error variables for use in Stan
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: the data passed by the user
+  # prepare formula specific data of noise-free variables
+  # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
   meef <- get_me_labels(bterms, data)
@@ -324,25 +319,35 @@ data_me <- function(bterms, data) {
     if (length(Cme)) {
       Cme <- setNames(Cme, paste0("Cme", p, "_", seq_along(Cme)))
     }
-    uni_me <- attr(meef, "uni_me")
+    Kme <- setNames(list(length(meef)), paste0("Kme", p))
+    out <- c(out, Cme, Kme)
+  }
+  out
+}
+
+data_Xme <- function(bterms, data) {
+  # prepare global data for noise free variables
+  stopifnot(is.brmsterms(bterms))
+  out <- list()
+  uni_me <- get_uni_me(bterms)
+  if (length(uni_me)) {
     Xn <- noise <- named_list(uni_me)
     for (i in seq_along(uni_me)) {
       temp <- eval2(uni_me[i], data)
       Xn[[i]] <- as.array(attr(temp, "var"))
       noise[[i]] <- as.array(attr(temp, "noise"))
     }
-    names(Xn) <- paste0("Xn", p, "_", seq_along(Xn))
-    names(noise) <- paste0("noise", p, "_", seq_along(Xn))
-    Kme <- setNames(list(length(meef)), paste0("Kme", p))
-    out <- c(out, Xn, noise, Cme, Kme)
+    K <- seq_along(uni_me)
+    names(Xn) <- paste0("Xn_", K)
+    names(noise) <- paste0("noise_", K)
+    out <- c(out, Xn, noise)
   }
   out
 }
 
 data_gp <- function(bterms, data, gps = NULL) {
   # prepare data for Gaussian process terms
-  # Args:
-  #   see data_effects.btl
+  # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
   gpef <- get_gp_labels(bterms)
@@ -393,6 +398,7 @@ data_gp <- function(bterms, data, gps = NULL) {
 
 data_offset <- function(bterms, data) {
   # prepare data of offsets for use in Stan
+  # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
   if (is.formula(bterms$offset)) {

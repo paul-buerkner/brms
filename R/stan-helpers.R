@@ -693,6 +693,30 @@ stan_mixture <- function(bterms, prior) {
   out
 }
 
+stan_Xme <- function(bterms) {
+  # global Stan definitions for noise-free variables
+  stopifnot(is.brmsterms(bterms))
+  out <- list()
+  uni_me <- get_uni_me(bterms)
+  if (length(uni_me)) {
+    K <- paste0("_", seq_along(uni_me))
+    str_add(out$data) <- paste0(
+      "  // noisy variables \n",
+      collapse("  vector[N] Xn", K, "; \n"),
+      "  // measurement noise \n",
+      collapse("  vector<lower=0>[N] noise", K, "; \n")
+    )
+    str_add(out$par) <- paste0(
+      "  // noise free variables \n",
+      collapse("  vector[N] Xme", K, "; \n")  
+    )
+    str_add(out$prior) <- collapse(
+      "  target += normal_lpdf(Xme", K, " | Xn", K, ", noise", K, ");\n"
+    )
+  }
+  out
+}
+
 stan_se <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   out <- list()

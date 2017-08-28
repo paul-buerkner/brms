@@ -710,6 +710,11 @@ wsp <- function(x = "", nsp = 1) {
   out
 }
 
+rm_wsp <- function(x) {
+  # remove whitespaces from strings
+  gsub("[ \t\r\n]+", "", x, perl = TRUE)
+}
+
 limit_chars <- function(x, chars = NULL, lsuffix = 4) {
   # limit the number of characters of a vector
   # Args:

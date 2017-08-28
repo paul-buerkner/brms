@@ -37,9 +37,9 @@ rename_pars <- function(x) {
     )
     change <- c(change, change_eff)
   }
-  # rename group-level and autocor parameters separately
   change <- c(change,
     change_re(x$ranef, pars = pars),
+    change_Xme(bterms, pars = pars),
     change_autocor(bterms, data = data, pars = pars)
   )
   # rename residual parameters of multivariate linear models
@@ -194,22 +194,28 @@ change_me <- function(bterms, data, pars) {
     bme <- paste0("bme", p)
     pos <- grepl(paste0("^", bme, "\\["), pars)
     bmenames <- paste0(bme, "_", meef)
-    change <- lc(change, 
-      nlist(pos, fnames = bmenames)
-    )
+    change <- lc(change, nlist(pos, fnames = bmenames))
     change <- c(change,
       change_prior(class = bme, pars = pars, names = meef)
     )
-    # rename noise free variables
-    uni_me <- attr(meef, "uni_me")
-    if (any(grepl("^Xme", pars))) {
-      for (i in seq_along(uni_me)) {
-        Xme <- paste0("Xme", p, "_", i)
-        pos <- grepl(paste0("^", Xme, "\\["), pars)
-        Xme_new <- paste0("Xme", p, "_", rename(uni_me[i]))
-        fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
-        change <- lc(change, nlist(pos, fnames))
-      }
+  }
+  change
+}
+
+change_Xme <- function(bterms, pars) {
+  # helps in renaming global noise free variables
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
+  stopifnot(is.brmsterms(bterms))
+  change <- list()
+  if (any(grepl("^Xme_", pars))) {
+    uni_me <- get_uni_me(bterms)
+    for (i in seq_along(uni_me)) {
+      Xme <- paste0("Xme_", i)
+      pos <- grepl(paste0("^", Xme, "\\["), pars)
+      Xme_new <- paste0("Xme_", rename(uni_me[i]))
+      fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+      change <- lc(change, nlist(pos, fnames))
     }
   }
   change

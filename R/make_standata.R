@@ -191,6 +191,7 @@ make_standata <- function(formula, data, family = gaussian(),
     }
     out <- c(out,
       data_gr(ranef, data, cov_ranef = cov_ranef),
+      data_Xme(bterms, data),
       data_mixture(bterms, prior = prior)
     )
   }

@@ -115,6 +115,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     # temporary until brms 2.0.0
     y$dpars[[dp]]$resp <- ""
   }
+  y <- store_uni_me(y)
   # fixed distributional parameters
   inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars(family, y))
   if (length(inv_fixed_dpars)) {
@@ -408,10 +409,9 @@ parse_me <- function(formula) {
   pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
   me_terms <- all_terms[pos_me_terms]
   if (length(me_terms)) {
+    uni_me <- rm_wsp(get_matches_expr("^me\\([^:]*\\)$", me_terms))
     me_terms <- str2formula(me_terms)
-    if (!length(all.vars(me_terms))) {
-      stop2("No variable supplied to function 'me'.")
-    }
+    attr(me_terms, "uni_me") <- uni_me
     attr(me_terms, "rsv_intercept") <- TRUE
   }
   structure(me_terms, pos = pos_me_terms)
@@ -981,6 +981,37 @@ get_effect.btnl <- function(x, target = "fe", ...) {
   rmNULL(out)
 }
 
+get_uni_me <- function(x) {
+  # extract unique names of noise-free terms 
+  unique(ulapply(get_effect(x, "me"), attr, "uni_me"))
+}
+
+store_uni_me <- function(x) {
+  # store unique names of noise-free terms in all 'me' elements
+  stopifnot(is.brmsterms(x))
+  uni_me <- get_uni_me(x)
+  if (!length(uni_me)) {
+    return(x)
+  }
+  'uni_me<-' <- function(bt, value) {
+    stopifnot(is.btl(bt))
+    if (is.formula(bt[["me"]])) {
+      attr(bt[["me"]], "uni_me") <- value
+    }
+    return(bt)
+  }
+  for (i in seq_along(x$dpars)) {
+    if (is.btnl(x$dpars[[i]])) {
+      for (j in seq_along(x$dpars[[i]]$nlpars)) {
+        uni_me(x$dpars[[i]]$nlpars[[j]]) <- uni_me
+      }
+    } else {
+      uni_me(x$dpars[[i]]) <- uni_me
+    }
+  }
+  x
+}
+
 get_var_combs <- function(..., alist = list()) {
   # get all variable combinations occuring in elements of ...
   # Args:
@@ -1127,9 +1158,9 @@ get_me_labels <- function(x, data) {
   }
   mm <- get_model_matrix(me_form, data, rename = FALSE)
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  uni_me <- get_matches_expr("^me\\([^:]*\\)$", colnames(mm))
-  uni_me <- unique(gsub("[[:space:]]", "", uni_me))
-  structure(colnames(mm), not_one = not_one, uni_me = uni_me)
+  structure(colnames(mm), 
+    not_one = not_one, uni_me = attr(me_form, "uni_me")
+  )
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {
@@ -1177,9 +1208,11 @@ get_gp_labels <- function(x, data = NULL, covars = FALSE) {
 }
 
 all_terms <- function(formula) {
-  if (is.null(formula)) return(NULL)
+  if (is.null(formula)) {
+    return(NULL)
+  }
   terms <- terms(as.formula(formula))
-  gsub("[ \t\r\n]+", "", x = attr(terms, "term.labels"), perl = TRUE)
+  rm_wsp(attr(terms, "term.labels"))
 }
 
 lhs_terms <- function(re_terms) {
@@ -1497,10 +1530,6 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
         out <- c(out, paste0("zs", p, "_", i, "_", nb))
       } 
     }
-    meef <- get_me_labels(bt, data)
-    if (!save_mevars && length(meef)) {
-      out <- c(out, paste0("Xme", p, "_", seq_along(meef)))
-    }
     return(out)
   }
   
@@ -1517,6 +1546,11 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       "temp_Intercept1", "ordered_Intercept", 
       "Lrescor", "LSigma", "theta", "zcar"
     )
+    if (!save_mevars) {
+      # exclude noise-free variables
+      uni_me <- get_uni_me(bterms)
+      out <- c(out, paste0("Xme_", seq_along(uni_me)))
+    }
     if (length(bterms$response) > 1L) {
       for (r in bterms$response) {
         bterms$dpars$mu$resp <- r

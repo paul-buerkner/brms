@@ -440,10 +440,15 @@ test_that("make_standata handles wiener diffusion models", {
 
 test_that("make_standata handles noise-free terms", {
   N <- 30
-  dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
-                    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
-                    ID = rep(1:5, each = N / 5))
-  sdata <- make_standata(y ~ me(x, xsd)*me(z, zsd)*x, data = dat)
+  dat <- data.frame(
+    y = rnorm(N), x = rnorm(N), z = rnorm(N),
+    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
+    ID = rep(1:5, each = N / 5)
+  )
+  sdata <- make_standata(
+    bf(y ~ me(x, xsd)*me(z, zsd)*x, sigma ~ me(x, xsd)), 
+    data = dat
+  )
   expect_equal(sdata$Xn_1, as.array(dat$x))
   expect_equal(sdata$noise_2, as.array(dat$zsd))
   expect_equal(unname(sdata$Cme_3), dat$x)
