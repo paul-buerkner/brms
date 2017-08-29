@@ -71,7 +71,7 @@ Currently there are methods for \code{brmsfit} objects.
   \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
   \code{as.array.brmsfit} are basically aliases of 
   \code{posterior_samples.brmsfit} and differ from
-  each other only in type of the returend object.
+  each other only in type of the returned object.
 }
 \examples{
 \dontrun{

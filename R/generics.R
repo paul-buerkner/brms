@@ -250,7 +250,8 @@ NULL
 #'   \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
 #'   \code{as.array.brmsfit} are basically aliases of 
 #'   \code{posterior_samples.brmsfit} and differ from
-#'   each other only in type of the returend object.
+#'   each other only in type of the returned object.
+#'   
 #' @return A data frame (matrix or array) containing the posterior samples, 
 #'   with one column per parameter. In case an array is returned,
 #'   it contains one additional dimension for the chains.
@@ -336,7 +337,7 @@ prior_samples <- function(x, pars = NA, ...) {
 #' @aliases par.names parnames.brmsfit par.names.brmsfit
 #' 
 #' @param x An \R object
-#' @param ... Further arguments passed to or from other methods
+#' @param ... Further arguments passed to or from other methods.
 #' 
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' 
@@ -355,7 +356,7 @@ parnames <- function(x, ...) {
 #' stored in a fitted Bayesian model.
 #' 
 #' @param x An \R object
-#' @param ... Further arguments passed to or from other methods
+#' @param ... Further arguments passed to or from other methods.
 #' @param subset An optional integer vector defining a 
 #'   subset of samples to be considered.
 #' @param incl_warmup A flag indicating whether to also 

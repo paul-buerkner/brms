@@ -18,7 +18,7 @@ subset of samples to be considered.}
 \item{incl_warmup}{A flag indicating whether to also 
 count warmup / burn-in samples.}
 
-\item{...}{Further arguments passed to or from other methods}
+\item{...}{Further arguments passed to or from other methods.}
 }
 \description{
 Extract the number of posterior samples 
