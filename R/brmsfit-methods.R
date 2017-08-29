@@ -657,6 +657,8 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
+#' @param prob A value between 0 and 1 indicating the desired probability 
+#'   to be covered by the uncertainty intervals. The default is 0.95.
 #' @param use_cache Logical; Indicating if summary results should
 #'   be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
 #'   For models fitted with earlier versions of \pkg{brms},
@@ -669,8 +671,9 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
-                            priors = FALSE, use_cache = TRUE, ...) {
+summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, 
+                            R2 = FALSE, priors = FALSE, prob = 0.95,
+                            use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
   out <- list(
@@ -696,6 +699,9 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   out$thin <- object$fit@sim$thin
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
+  if (length(prob) != 1L || prob < 0 || prob > 1) {
+    stop2("'prob' must be a single numeric value in [0, 1].")
+  }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
   }
@@ -712,16 +718,19 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
   pars <- parnames(object)
   meta_pars <- object$fit@sim$pars_oi
   meta_pars <- meta_pars[!grepl("^(r|s|zgp|Xme|prior|lp)_", meta_pars)]
-  fit_summary <- summary(object$fit, pars = meta_pars,
-                         probs = c(0.025, 0.975),
-                         use_cache = use_cache)$summary
+  probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+  fit_summary <- summary(
+    object$fit, pars = meta_pars, 
+    probs = probs, use_cache = use_cache
+  )
+  fit_summary <- fit_summary$summary
+  colnames_summary <- c(
+    "Estimate", "Est.Error", paste0(c("l-", "u-"), prob * 100, "% CI")
+  )
   algorithm <- algorithm(object)
   if (algorithm == "sampling") {
     fit_summary <- fit_summary[, -2, drop = FALSE]
-    colnames(fit_summary) <- c(
-      "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
-      "Eff.Sample", "Rhat"
-    )
+    colnames(fit_summary) <- c(colnames_summary, "Eff.Sample", "Rhat")
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
       warning2(
@@ -747,9 +756,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
       }
     }
   } else {
-    colnames(fit_summary) <- c(
-      "Estimate", "Est.Error", "l-95% CI", "u-95% CI"
-    )
+    colnames(fit_summary) <- colnames_summary
   }
   
   # fixed effects summary
