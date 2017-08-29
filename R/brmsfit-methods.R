@@ -495,6 +495,39 @@ as.array.brmsfit <- function(x, ...) {
   posterior_samples(x, ..., as.array = TRUE)
 }
 
+#' Compute posterior uncertainty intervals 
+#' 
+#' Compute posterior uncertainty intervals for \code{brmsfit} objects.
+#' 
+#' @inheritParams summary.brmsfit
+#' @param pars Names of parameters for which posterior samples should be 
+#'   returned, as given by a character vector or regular expressions. 
+#'   By default, all posterior samples of all parameters are extracted.
+#' @param ... More arguments passed to 
+#'   \code{\link[brms:as.matrix.brmsfit]{as.matrix.brmsfit}}.
+#' 
+#' @return A \code{matrix} with lower and upper interval bounds
+#'   as columns and as many rows as selected parameters.
+#'   
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c,
+#'            data = epilepsy, family = negbinomial())
+#' posterior_interval(fit)
+#' }
+#' 
+#' @aliases posterior_interval
+#' @method posterior_interval brmsfit
+#' @export
+#' @export posterior_interval
+#' @importFrom rstantools posterior_interval
+posterior_interval.brmsfit <- function(
+  object, pars = NA, prob = 0.95, ...
+) {
+  ps <- as.matrix(object, pars = pars, ...)
+  rstantools::posterior_interval(ps, prob = prob)
+}
+
 #' Extract posterior samples for use with the \pkg{coda} package
 #' 
 #' @aliases as.mcmc
