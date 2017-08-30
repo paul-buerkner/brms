@@ -2,6 +2,52 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.9.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Introduce methods \code{posterior_linpred}
+      and \code{posterior_interval} for consistency
+      with other model fitting packages based on 
+      \pkg{Stan}.
+      \item Introduce function \code{theme_black}
+      providing a black \pkg{ggplot2} theme.
+      \item Add argument \code{prob} to 
+      \code{summary}, which allows to control the 
+      width of the computed uncertainty intervals.
+      \item Add argument \code{newdata} to the 
+      \code{kfold} method.
+      \item Add several arguments to the \code{plot}
+      method of \code{marginal_effects} to improve
+      control over the appearences of the plots.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Use the same noise-free variables
+      for all model parts in measurement error models.
+      \item Make names of local-level terms used
+      in the \code{cor_bsts} structure more informative.
+      \item Store the \code{autocor} argument
+      within \code{brmsformula} objects.
+      \item Store posterior and prior samples in separate
+      slots in the output of method \code{hypothesis}.
+      \item No longer change the default theme of
+      \pkg{ggplot2} when attaching \pkg{brms}.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Do not silence the \pkg{Stan} parser
+      when calling \code{brm} to get informative
+      error messages about invalid priors.
+      \item Fix problems with spaces in priors
+      passed to \code{set_prior}.
+      \item Handle non \code{data.frame} objects 
+      correctly in \code{hypothesis.default}.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.9.0}{
   \subsection{NEW FEATURES}{
     \itemize{
