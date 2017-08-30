@@ -20,13 +20,14 @@ linear_predictor <- function(draws, i = NULL) {
   eta <- matrix(0, nrow = draws$nsamples, ncol = N)
   if (!is.null(draws[["b"]])) {
     eta_fe <- try(
-      fe_predictor(X = p(draws$data[["X"]], i), b = draws[["b"]]),
+      fe_predictor(X = p(draws$data[["X"]], i), b = draws[["b"]])
     )
     if (is(eta_fe, "try-error")) {
       stop2(
-        "Something went wrong. Did you use 'factor()' in the formula?",
-        "\nIf yes, please convert your variables to factors beforehand.",
-        "\nIf no, this might be a bug. Please tell me about it."
+        "Something went wrong. Did you transform numeric variables ", 
+        "to factors or vice versa within the model formula? ",
+        "If yes, please convert your variables beforehand. ",
+        "If no, this might be a bug. Please tell me about it."
       )
     }
     eta <- eta + eta_fe
