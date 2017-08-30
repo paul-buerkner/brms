@@ -197,5 +197,5 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname hypothesis
 #' @export
 hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
-  hypothesis_internal(x, hypothesis, alpha = alpha, ...)
+  hypothesis_internal(as.data.frame(x), hypothesis, alpha = alpha, ...)
 }
