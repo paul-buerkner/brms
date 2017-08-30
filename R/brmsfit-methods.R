@@ -1896,7 +1896,7 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
-  cl[["summary"]] <- quote(FALSE)
+  cl[["summary"]] <- FALSE
   eval(cl, parent.frame())
 }
 
@@ -1916,6 +1916,12 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  If \code{"response"} results are returned on the scale 
 #'  of the response variable. If \code{"linear"} 
 #'  fitted values are returned on the scale of the linear predictor.
+#' @param transform Logical; alias of \code{scale}.
+#'  If \code{TRUE}, \code{scale} is set to \code{"response"}.
+#'  If \code{FALSE}, \code{scale} is set to \code{"linear"}. 
+#'  Only implemented for compatibility with the 
+#'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
+#'  generic. 
 #' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
 #'
@@ -1934,7 +1940,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'   when using sum coding.
 #'   
 #'   Method \code{posterior_linpred.brmsfit} is an alias of 
-#'   \code{fitted.brmsfit} with \code{summary = FALSE}. 
+#'   \code{fitted.brmsfit} with \code{scale = "linear"} and
+#'   \code{summary = FALSE}. 
 #'
 #' @examples 
 #' \dontrun{
@@ -2031,15 +2038,16 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export posterior_linpred
 #' @importFrom rstantools posterior_linpred
 posterior_linpred.brmsfit <- function(
-  object, newdata = NULL, re_formula = NULL,
-  scale = c("response", "linear"), allow_new_levels = FALSE, 
-  sample_new_levels = "uncertainty", new_objects = list(), 
-  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL, 
-  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975), ...
+  object, transform = FALSE, newdata = NULL, re_formula = NULL,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty", 
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL, 
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
+  robust = FALSE, probs = c(0.025, 0.975), ...
 ) {
   cl <- match.call()
   cl[[1]] <- quote(fitted)
-  cl[["summary"]] <- quote(FALSE)
+  cl[["summary"]] <- FALSE
+  cl[["scale"]] <- if (transform) "response" else "linear"
   eval(cl, parent.frame())
 }
 
@@ -2157,7 +2165,7 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                      ...) {
   cl <- match.call()
   cl[[1]] <- quote(residuals)
-  cl[c("method", "summary")] <- list(quote("predict"), quote(FALSE))
+  cl[c("method", "summary")] <- list("predict", FALSE)
   eval(cl, parent.frame())
 }
 

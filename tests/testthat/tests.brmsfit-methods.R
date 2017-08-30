@@ -392,8 +392,16 @@ test_that("all S3 methods have reasonable ouputs", {
   ps <- posterior_samples(fit1$fit, "b_Intercept")
   expect_equal(dim(ps), c(nsamples(fit1), 1))
   
+  # posterior_interval
+  expect_equal(dim(posterior_interval(fit1)), 
+               c(length(parnames(fit1)), 2))
+  
   # posterior_predict
   expect_equal(dim(posterior_predict(fit1)), 
+               c(nsamples(fit1), nobs(fit1)))
+  
+  # posterior_linpred
+  expect_equal(dim(posterior_linpred(fit1)), 
                c(nsamples(fit1), nobs(fit1)))
   
   # pp_check

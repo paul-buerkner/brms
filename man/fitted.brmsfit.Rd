@@ -13,12 +13,12 @@
   sort = FALSE, nug = NULL, summary = TRUE, robust = FALSE,
   probs = c(0.025, 0.975), ...)
 
-\method{posterior_linpred}{brmsfit}(object, newdata = NULL,
-  re_formula = NULL, scale = c("response", "linear"),
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, dpar = NULL, subset = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+\method{posterior_linpred}{brmsfit}(object, transform = FALSE,
+  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
+  sample_new_levels = "uncertainty", new_objects = list(),
+  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL,
+  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975),
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -103,6 +103,13 @@ Only used if \code{summary} is \code{TRUE}.}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored.}
+
+\item{transform}{Logical; alias of \code{scale}.
+If \code{TRUE}, \code{scale} is set to \code{"response"}.
+If \code{FALSE}, \code{scale} is set to \code{"linear"}. 
+Only implemented for compatibility with the 
+\code{\link[rstantools:posterior_linpred]{posterior_linpred}}
+generic.}
 }
 \value{
 Fitted values extracted from \code{object}. 
@@ -131,7 +138,8 @@ The estimated means of both methods should, however, be very similar.
   when using sum coding.
   
   Method \code{posterior_linpred.brmsfit} is an alias of 
-  \code{fitted.brmsfit} with \code{summary = FALSE}.
+  \code{fitted.brmsfit} with \code{scale = "linear"} and
+  \code{summary = FALSE}.
 }
 \examples{
 \dontrun{
