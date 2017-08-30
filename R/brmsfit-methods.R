@@ -1932,6 +1932,9 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'   are interpreted as if all dummy variables of this factor are 
 #'   zero. This allows, for instance, to make predictions of the grand mean 
 #'   when using sum coding.
+#'   
+#'   Method \code{posterior_linpred.brmsfit} is an alias of 
+#'   \code{fitted.brmsfit} with \code{summary = FALSE}. 
 #'
 #' @examples 
 #' \dontrun{
@@ -2019,6 +2022,25 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     rownames(draws$mu) <- seq_len(nrow(draws$mu))
   }
   draws$mu
+}
+
+#' @rdname fitted.brmsfit
+#' @aliases posterior_linpred
+#' @method posterior_linpred brmsfit
+#' @export
+#' @export posterior_linpred
+#' @importFrom rstantools posterior_linpred
+posterior_linpred.brmsfit <- function(
+  object, newdata = NULL, re_formula = NULL,
+  scale = c("response", "linear"), allow_new_levels = FALSE, 
+  sample_new_levels = "uncertainty", new_objects = list(), 
+  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL, 
+  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975), ...
+) {
+  cl <- match.call()
+  cl[[1]] <- quote(fitted)
+  cl[["summary"]] <- quote(FALSE)
+  eval(cl, parent.frame())
 }
 
 #' Extract Model Residuals from brmsfit Objects

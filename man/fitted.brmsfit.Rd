@@ -2,6 +2,8 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{fitted.brmsfit}
 \alias{fitted.brmsfit}
+\alias{posterior_linpred.brmsfit}
+\alias{posterior_linpred}
 \title{Extract Model Fitted Values of \code{brmsfit} Objects}
 \usage{
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
@@ -9,6 +11,13 @@
   sample_new_levels = "uncertainty", new_objects = list(),
   incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL,
   sort = FALSE, nug = NULL, summary = TRUE, robust = FALSE,
+  probs = c(0.025, 0.975), ...)
+
+\method{posterior_linpred}{brmsfit}(object, newdata = NULL,
+  re_formula = NULL, scale = c("response", "linear"),
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL, subset = NULL,
+  nsamples = NULL, sort = FALSE, nug = NULL, robust = FALSE,
   probs = c(0.025, 0.975), ...)
 }
 \arguments{
@@ -120,6 +129,9 @@ The estimated means of both methods should, however, be very similar.
   are interpreted as if all dummy variables of this factor are 
   zero. This allows, for instance, to make predictions of the grand mean 
   when using sum coding.
+  
+  Method \code{posterior_linpred.brmsfit} is an alias of 
+  \code{fitted.brmsfit} with \code{summary = FALSE}.
 }
 \examples{
 \dontrun{
