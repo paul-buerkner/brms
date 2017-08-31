@@ -115,7 +115,8 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
   if (is.formula(x)) {
     x <- all_terms(x)
   }
-  re_terms <- x[grepl("\\|", x)]
+  re_pos <- grepl("\\|", x)
+  re_terms <- x[re_pos]
   if (brackets && length(re_terms)) {
     re_terms <- paste0("(", re_terms, ")")
   } 
@@ -126,7 +127,7 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
       re_terms <- ~ 1
     }
   }
-  re_terms
+  structure(re_terms, pos = re_pos)
 }
 
 check_re_formula <- function(re_formula, formula) {

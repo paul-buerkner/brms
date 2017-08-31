@@ -187,49 +187,19 @@ parse_lf <- function(formula, family = NULL) {
   #   object of class 'btl'
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
-  
-  terms <- terms(formula)
-  all_terms <- all_terms(terms)
-  pos_re_terms <- grepl("\\|", all_terms)
-  re_terms <- all_terms[pos_re_terms]
-  mo_form <- parse_mo(formula)
-  if (is.formula(mo_form)) {
-    y[["mo"]] <- mo_form
+  types <- c("re", "mo", "cs", "me", "sm", "gp", "offset")
+  for (t in types) {
+    tmp <- do.call(paste0("parse_", t), list(formula))
+    if (is.data.frame(tmp) || is.formula(tmp)) {
+      y[[t]] <- tmp 
+    }
   }
-  cs_form <- parse_cs(formula)
-  if (is.formula(cs_form)) {
-    y[["cs"]] <- cs_form
-  }
-  me_form <- parse_me(formula)
-  if (is.formula(me_form)) {
-    y[["me"]] <- me_form
-  }
-  sm_form <- parse_sm(formula)
-  if (is.formula(sm_form)) {
-    y[["sm"]] <- sm_form
-  }
-  gp_form <- parse_gp(formula)
-  if (is.formula(gp_form)) {
-    y[["gp"]] <- gp_form
-  }
-  offset_form <- parse_offset(formula)
-  if (is.formula(offset_form)) {
-    y[["offset"]] <- offset_form
-  }
-  rm_pos <- list(mo_form, cs_form, me_form, sm_form, gp_form)
-  rm_pos <- c(lapply(rm_pos, attr, "pos"), list(pos_re_terms))
-  int_term <- attr(terms, "intercept")
-  fe_terms <- all_terms[!Reduce("|", rm_pos)]
-  fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
-  y[["fe"]] <- str2formula(fe_terms)
-  if (has_rsv_intercept(y[["fe"]])) {
-    attr(y[["fe"]], "rsv_intercept") <- TRUE
-  }
+  pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
+  y$fe <- parse_fe(formula, pos_special)
   if (is_forked(family)) {
-    attr(y[["fe"]], "forked") <- TRUE
+    # retained for backwards compatibility with brms < 1.0.0
+    attr(y$fe, "forked") <- TRUE
   }
-  # parse group-level terms
-  y$re <- parse_re(re_terms)
   lformula <- c(
     y[c("fe", "cs", "mo", "me")], 
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
@@ -334,6 +304,27 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     }
   }
   x
+}
+
+parse_fe <- function(formula, pos_special = NULL) {
+  # extract fixed effects terms
+  # Args:
+  #   pos_special: logical position vector of non-FE terms
+  terms <- terms(formula)
+  all_terms <- all_terms(terms)
+  if (length(pos_special)) {
+    stopifnot(length(pos_special) == length(all_terms))
+    fe_terms <- all_terms[!pos_special]
+  } else {
+    fe_terms <- all_terms
+  }
+  int_term <- attr(terms, "intercept")
+  fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
+  fe_form <- str2formula(fe_terms)
+  if (has_rsv_intercept(fe_form)) {
+    attr(fe_form, "rsv_intercept") <- TRUE
+  }
+  fe_form
 }
 
 parse_mo <- function(formula) {
@@ -460,10 +451,12 @@ parse_offset <- function(formula) {
   offset_terms
 }
 
-parse_re <- function(re_terms) {
+parse_re <- function(formula) {
   # generate a data.frame with all information about the group-level terms
   # Args:
   #   re_terms: A vector of group-level terms in extended lme4 syntax
+  re_terms <- get_re_terms(formula, brackets = FALSE)
+  re_pos <- attr(re_terms, "pos")
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
   out <- vector("list", length(re_terms))
@@ -492,7 +485,7 @@ parse_re <- function(re_terms) {
       type = character(0), form = character(0)
     )
   }
-  out
+  structure(out, pos = re_pos)
 }
 
 parse_resp <- function(formula, keep_dot_usc = FALSE) {
@@ -903,7 +896,7 @@ get_gp_labels <- function(x, data = NULL, covars = FALSE) {
 }
 
 all_terms <- function(x) {
-  if (is.null(x)) {
+  if (!length(x)) {
     return(character(0))
   }
   if (!inherits(x, "terms")) {
