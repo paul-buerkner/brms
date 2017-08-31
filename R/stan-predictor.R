@@ -1,3 +1,8 @@
+stan_effects <- function(x, ...) {
+  # generate stan code various kind of effects 
+  UseMethod("stan_effects")
+}
+
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
                              sparse = FALSE, ilink = rep("", 2), 
                              order_mixture = 'none',  ...) {

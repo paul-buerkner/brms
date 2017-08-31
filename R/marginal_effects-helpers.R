@@ -16,6 +16,11 @@ get_var_combs <- function(..., alist = list()) {
   unique(unlist(dots, recursive = FALSE))
 }
 
+get_all_effects <- function(x, ...) {
+  # extract combinations of predictor variables
+  UseMethod("get_all_effects")
+}
+
 #' @export
 get_all_effects.brmsterms <- function(x, rsv_vars = NULL, 
                                       comb_all = FALSE) {

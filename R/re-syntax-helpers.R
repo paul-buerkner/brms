@@ -224,6 +224,11 @@ update_re_terms <- function(x, re_formula = NULL) {
   x
 }
 
+get_re <- function(x, ...) {
+  # extract group-level terms
+  UseMethod("get_re")
+}
+
 #' @export
 get_re.brmsterms <- function(x, all = TRUE, ...) {
   # get group-level information in a data.frame

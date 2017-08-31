@@ -722,6 +722,11 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   family
 }
 
+family_names <- function(family, ...) {
+  # extract family names
+  UseMethod("family_names")
+}
+
 #' @export
 family_names.default <- function(family, ...) {
   family
@@ -745,6 +750,11 @@ family_names.brmsformula <- function(family, ...) {
 #' @export
 family_names.brmsterms <- function(family, ...) {
   family_names(family$family)
+}
+
+dpar_family <- function(family, dpar, ...) {
+  # generate a family object of an auxiliary parameter
+  UseMethod("dpar_family")
 }
 
 #' @export

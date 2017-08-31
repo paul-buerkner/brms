@@ -1,3 +1,8 @@
+extract_draws <- function(x, ...) {
+  # extract data and posterior draws
+  UseMethod("extract_draws")
+}
+
 #' @export
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
                                   allow_new_levels = FALSE, 

@@ -612,6 +612,11 @@ get_prior <- function(formula, data, family = gaussian(),
   structure(prior, class = c("brmsprior", "data.frame"))
 }
 
+prior_effects <- function(x, ...) {
+  # generate priors various kind of effects 
+  UseMethod("prior_effects")
+}
+
 #' @export
 prior_effects.btl <- function(x, data, spec_intercept = TRUE,
                               def_scale_prior = "", ...) {
@@ -1092,6 +1097,11 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
     }
   }
   invisible(TRUE)
+}
+
+check_prior_special <- function(x, ...) {
+  # prepare special priors for use in Stan
+  UseMethod("check_prior_special")
 }
 
 #' @export

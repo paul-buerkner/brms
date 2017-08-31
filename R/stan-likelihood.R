@@ -1,3 +1,8 @@
+stan_llh <- function(family, ...) {
+  # Stan code for the model likelihood 
+  UseMethod("stan_llh")
+}
+
 #' @export
 stan_llh.default <- function(family, bterms, data, mix = "", 
                              ptheta = FALSE, ...) {

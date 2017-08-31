@@ -706,6 +706,11 @@ plus_rhs <- function(x) {
   out
 }
 
+get_effect <- function(x, ...) {
+  # extract various kind of effects
+  UseMethod("get_effect")
+}
+
 #' @export
 get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
   # get formulas of certain effects in a list

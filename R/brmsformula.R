@@ -883,6 +883,11 @@ links_dpars <- function(dp) {
   )
 }
 
+valid_dpars <- function(family, ...) {
+  # get valid auxiliary parameters for a family
+  UseMethod("valid_dpars")
+}
+
 #' @export
 valid_dpars.default <- function(family, bterms = NULL, ...) {
   # convenience function to find relevant distributional parameters

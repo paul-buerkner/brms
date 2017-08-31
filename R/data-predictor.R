@@ -1,3 +1,8 @@
+data_effects <- function(x, ...) {
+  # generate data for various kind of effects 
+  UseMethod("data_effects")
+}
+
 #' @export
 data_effects.btl <- function(x, data, ranef = empty_ranef(), 
                              prior = brmsprior(), knots = NULL, 

@@ -74,6 +74,11 @@ rename_pars <- function(x) {
   x
 }
 
+change_effects <- function(x, ...) {
+  # helps in renaming parameters after model fitting
+  UseMethod("change_effects")
+}
+
 #' @export
 change_effects.btl <- function(x, data, pars, stancode = "", ...) {
   # helps in renaming various kinds of effects

@@ -593,6 +593,12 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+make_Jmo_list <- function(x, data, ...) {
+  # compute Jmo values based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_Jmo_list")
+}
+
 #' @export
 make_Jmo_list.btl <- function(x, data, ...) {
   if (!is.null(x$mo)) {
@@ -620,6 +626,12 @@ make_Jmo_list.brmsterms <- function(x, data, ...) {
     out[[i]] <- make_Jmo_list(x$dpars[[i]], data, ...)
   }
   out
+}
+
+make_smooth_list <- function(x, data, ...) {
+  # compute smooth objects based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_smooth_list")
 }
 
 #' @export
@@ -659,6 +671,12 @@ make_smooth_list.brmsterms <- function(x, data, ...) {
     out[[i]] <- make_smooth_list(x$dpars[[i]], data, ...)
   }
   out
+}
+
+make_gp_list <- function(x, data, ...) {
+  # compute objects for GP terms based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_gp_list")
 }
 
 #' @export
