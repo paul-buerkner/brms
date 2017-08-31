@@ -27,7 +27,7 @@ dat <- data.frame(income, ls)
 
 ## ---- results='hide'--------------------------------------------------------------------
 library(brms)
-fit1 <- brm(ls ~ monotonic(income), data = dat)
+fit1 <- brm(ls ~ mo(income), data = dat)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit1)
@@ -53,7 +53,7 @@ LOO(fit1, fit2, fit3)
 
 ## ---- results='hide'--------------------------------------------------------------------
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
-fit4 <- brm(ls ~ monotonic(income), data = dat,
+fit4 <- brm(ls ~ mo(income), data = dat,
            prior = prior4, sample_prior = TRUE)
 
 ## ---------------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ var_city <- rnorm(10, sd = 10)
 dat$ls <- dat$ls + var_city[dat$city]
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
+fit5 <- brm(ls ~ mo(income) + (mo(income) | city), data = dat)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit5)

@@ -571,7 +571,7 @@ test_that("monotonic effects appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(bmo[1] | 0, 1)")
   expect_match2(scode, "target += dirichlet_lpdf(simplex_1 | con_simplex_1);")
   expect_match2(scode, "target += dirichlet_lpdf(simplex_2 | con_simplex_2);")
-  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), dat)
+  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
   expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simplex_1, Xmo[n, 1]);")
   # test that Z_1_1 is (correctly) undefined
   expect_match2(scode, paste0("  int<lower=1> M_1; \n",

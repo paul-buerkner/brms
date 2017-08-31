@@ -11,6 +11,8 @@
       \pkg{Stan}.
       \item Introduce function \code{theme_black}
       providing a black \pkg{ggplot2} theme.
+      \item Specify special group-level effects within 
+      the same terms as ordinary group-level effects.
       \item Add argument \code{prob} to 
       \code{summary}, which allows to control the 
       width of the computed uncertainty intervals.

@@ -189,7 +189,7 @@ parse_lf <- function(formula, family = NULL) {
   y <- nlist(formula)
   
   terms <- terms(formula)
-  all_terms <- all_terms(formula)
+  all_terms <- all_terms(terms)
   pos_re_terms <- grepl("\\|", all_terms)
   re_terms <- all_terms[pos_re_terms]
   mo_form <- parse_mo(formula)
@@ -218,8 +218,8 @@ parse_lf <- function(formula, family = NULL) {
   }
   rm_pos <- list(mo_form, cs_form, me_form, sm_form, gp_form)
   rm_pos <- c(lapply(rm_pos, attr, "pos"), list(pos_re_terms))
+  int_term <- attr(terms, "intercept")
   fe_terms <- all_terms[!Reduce("|", rm_pos)]
-  int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
   fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
   y[["fe"]] <- str2formula(fe_terms)
   if (has_rsv_intercept(y[["fe"]])) {
@@ -678,7 +678,7 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
   # Args:
   #   x: formula or character vector
   #   formula: return a formula containing only ranefs?
-  if (is(x, "formula")) {
+  if (is.formula(x)) {
     x <- all_terms(x)
   }
   re_terms <- x[grepl("\\|", x)]
@@ -696,59 +696,71 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
 }
 
 split_re_terms <- function(re_terms) {
-  # split nested group-level terms by the '/' sign
+  # split nested group-level terms 
   # and check for special effects terms
   # Args:
   #   re_terms: group-level terms in extended lme4 syntax
   stopifnot(!length(re_terms) || is.character(re_terms))
+  # spliter after grouping factor terms
   lhs_terms <- lhs_terms(re_terms)
   mid_terms <- mid_terms(re_terms)
   rhs_terms <- rhs_terms(re_terms)
   new_re_terms <- vector("list", length(re_terms))
-  type <- as.list(rep("", length(re_terms)))
   for (i in seq_along(re_terms)) {
-    # check for special terms
-    lhs_form <- formula(paste("~", lhs_terms[i]))
-    lhs_all_terms <- all_terms(lhs_form)
-    lhs_form_mo <- parse_mo(lhs_form)
-    if (is.formula(lhs_form_mo)) {
-      pos_mo <- attr(lhs_form_mo, "pos")
-      if (!all(pos_mo)) {
-        stop2("Please specify monotonic effects ", 
-              "in separate group-level terms.")
-      }
-      lhs_terms[i] <- formula2str(lhs_form_mo, rm = 1)
-      type[[i]] <- "mo"
-    }
-    lhs_form_cs <- parse_cs(lhs_form)
-    if (is.formula(lhs_form_cs)) {
-      pos_cs <- attr(lhs_form_cs, "pos")
-      if (!all(pos_cs)) {
-        stop2("Please specify category specific effects ", 
-              "in separate group-level terms.")
-      }
-      lhs_terms[i] <- formula2str(lhs_form_cs, rm = 1)
-      type[[i]] <- "cs"
-    }
-    lhs_form_me <- parse_me(lhs_form)
-    if (is.formula(lhs_form_me)) {
-      pos_me <- attr(lhs_form_me, "pos")
-      if (!all(pos_me)) {
-        stop2("Please specify terms of noisy variables ", 
-              "in separate group-level terms.")
-      }
-      lhs_terms[i] <- formula2str(lhs_form_me, rm = 1)
-      type[[i]] <- "me"
-    }
-    # expand grouping factor terms
     groups <- terms(formula(paste0("~", rhs_terms[i])))
     groups <- attr(groups, "term.labels")
-    groups <- ifelse(!grepl("^(gr|mm)\\(", groups), 
-                     paste0("gr(", groups, ")"), groups)
+    groups <- ifelse(
+      !grepl("^(gr|mm)\\(", groups), 
+      paste0("gr(", groups, ")"), groups
+    )
     new_re_terms[[i]] <- paste0(lhs_terms[i], mid_terms[i], groups)
-    type[[i]] <- rep(type[[i]], length(new_re_terms[[i]]))
   }
-  structure_not_null(unlist(new_re_terms), type = unlist(type))
+  re_terms <- unlist(new_re_terms)
+  
+  # split after coefficient types
+  lhs_terms <- lhs_terms(re_terms)
+  mid_terms <- mid_terms(re_terms)
+  rhs_terms <- rhs_terms(re_terms)
+  new_re_terms <- type <- vector("list", length(re_terms))
+  for (i in seq_along(re_terms)) {
+    lhs_form <- formula(paste("~", lhs_terms[i]))
+    lhs_all_terms <- all_terms(lhs_form)
+    fe_pos <- rep(TRUE, length(lhs_all_terms))
+    new_lhs_terms <- NULL
+    for (t in c("cs", "mo", "me")) {
+      lhs_form_t <- do.call(paste0("parse_", t), list(lhs_form))
+      if (is.formula(lhs_form_t)) {
+        t_pos <- attr(lhs_form_t, "pos")
+        if (t == "cs" && !all(t_pos)) {
+          stop2("Please specify category specific effects ",
+                "in separate group-level terms.")
+        }
+        fe_pos <- fe_pos & !t_pos
+        new_lhs_terms <- c(new_lhs_terms, formula2str(lhs_form_t, rm = 1))
+        type[[i]] <- c(type[[i]], t)
+      }
+    }
+    int_term <- attr(terms(lhs_form), "intercept")
+    fe_terms <- lhs_all_terms[fe_pos]
+    if (length(fe_terms) || int_term && !"cs" %in% type[[i]]) {
+      fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
+      new_lhs_terms <- c(new_lhs_terms, fe_terms)
+      type[[i]] <- c(type[[i]], "")
+    }
+    if (length(new_lhs_terms) > 1 && !mid_terms[i] == "||") {
+      id <- gsub("\\|", "", mid_terms[i])
+      if (!nzchar(id)) {
+        # ID is required to model coefficients as correlated 
+        # if multiple types are provided within the same term
+        id <- collapse(sample(0:9, 10, TRUE))
+        mid_terms[i] <- paste0("|", id, "|")
+      }
+    }
+    new_re_terms[[i]] <- paste0(new_lhs_terms, mid_terms[i], rhs_terms[i])
+  }
+  re_terms <- unlist(new_re_terms)
+  type <- unlist(type)
+  structure_not_null(re_terms, type = type)
 }
 
 check_re_formula <- function(re_formula, formula) {
@@ -1207,12 +1219,14 @@ get_gp_labels <- function(x, data = NULL, covars = FALSE) {
   structure_not_null(out, byvars = byvars, by_levels = by_levels)
 }
 
-all_terms <- function(formula) {
-  if (is.null(formula)) {
-    return(NULL)
+all_terms <- function(x) {
+  if (is.null(x)) {
+    return(character(0))
   }
-  terms <- terms(as.formula(formula))
-  rm_wsp(attr(terms, "term.labels"))
+  if (!inherits(x, "terms")) {
+    x <- terms(as.formula(x))
+  }
+  rm_wsp(attr(x, "term.labels"))
 }
 
 lhs_terms <- function(re_terms) {

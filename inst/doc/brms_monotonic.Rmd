@@ -43,7 +43,7 @@ We now proceed with analyzing the data modeling `income` as a monotonic effect.
 
 ```{r, results='hide'}
 library(brms)
-fit1 <- brm(ls ~ monotonic(income), data = dat)
+fit1 <- brm(ls ~ mo(income), data = dat)
 ```
 
 The summary methods yield
@@ -93,7 +93,7 @@ In the previous monotonic model, we have implicitly assumed that all differences
 
 ```{r, results='hide'}
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
-fit4 <- brm(ls ~ monotonic(income), data = dat,
+fit4 <- brm(ls ~ mo(income), data = dat,
            prior = prior4, sample_prior = TRUE)
 ```
 
@@ -122,9 +122,8 @@ dat$ls <- dat$ls + var_city[dat$city]
 With the following code, we fit a multilevel model assuming the intercept and the effect of `income` to vary by city:
 
 ```{r, results='hide'}
-fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
+fit5 <- brm(ls ~ mo(income) + (mo(income) | city), data = dat)
 ```
-For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mo` for `monotonic`, which helps in shortening the formula. The summary output
 
 ```{r}
 summary(fit5)
