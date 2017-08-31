@@ -69,7 +69,7 @@ split_re_terms <- function(re_terms) {
   for (i in seq_along(re_terms)) {
     lhs_form <- formula(paste("~", re_parts$lhs[i]))
     lhs_all_terms <- all_terms(lhs_form)
-    fe_pos <- rep(TRUE, length(lhs_all_terms))
+    basic_pos <- rep(TRUE, length(lhs_all_terms))
     new_lhs <- NULL
     for (t in c("cs", "mo", "me")) {
       lhs_tform <- do.call(paste0("parse_", t), list(lhs_form))
@@ -79,16 +79,16 @@ split_re_terms <- function(re_terms) {
           stop2("Please specify category specific effects ",
                 "in separate group-level terms.")
         }
-        fe_pos <- fe_pos & !tpos
+        basic_pos <- basic_pos & !tpos
         new_lhs <- c(new_lhs, formula2str(lhs_tform, rm = 1))
         type[[i]] <- c(type[[i]], t)
       }
     }
     int_term <- attr(terms(lhs_form), "intercept")
-    fe_terms <- lhs_all_terms[fe_pos]
-    if (length(fe_terms) || int_term && !"cs" %in% type[[i]]) {
-      fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
-      new_lhs <- c(new_lhs, fe_terms)
+    basic_terms <- lhs_all_terms[basic_pos]
+    if (length(basic_terms) || int_term && !"cs" %in% type[[i]]) {
+      basic_terms <- paste(c(int_term, basic_terms), collapse = "+")
+      new_lhs <- c(new_lhs, basic_terms)
       type[[i]] <- c(type[[i]], "")
     }
     if (length(new_lhs) > 1 && re_parts$mid[i] != "||") {
