@@ -957,15 +957,16 @@ stan_base_prior <- function(prior) {
 }
 
 stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
-  prior <- gsub("( |\\t)+\\(", "(", prior)
-  prior_name <- get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
+  prior <- gsub("[[:space:]]+\\(", "(", prior)
+  prior_name <- get_matches(
+    "^[^\\(]+(?=\\()", prior, perl = TRUE, simplify = FALSE
+  )
   for (i in seq_along(prior_name)) {
     if (length(prior_name[[i]]) != 1L) {
       stop2("The prior '", prior[i], "' is invalid.")
     }
   }
   prior_name <- unlist(prior_name)
-  prior_name <- substr(prior_name, 1, nchar(prior_name) - 1)
   prior_args <- rep(NA, length(prior))
   for (i in seq_along(prior)) {
     prior_args[i] <- sub(
@@ -1056,41 +1057,36 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   if (identical(sample_prior, "yes")) {
     prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
     prior <- prior[nzchar(prior)]
-    pars <- get_matches("_lpdf\\([^|]+", prior, first = TRUE)
-    pars <- gsub("^_lpdf\\(|to_vector\\(|\\)$", "", pars)
-    regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\("
-    take <- !grepl(regex, pars)
-    pars <- rename(
-      pars[take], symbols = c("^L_", "^Lrescor"), 
-      subs = c("cor_", "rescor"), fixed = FALSE
-    )
-    dis <- get_matches("target\\+=[^\\(]+", prior, first = TRUE)
-    dis <- gsub("target\\+=|_lpdf", "", dis[take])
-    args <- get_matches("\\|[^$\\|]+\\)($|-)", prior, first = TRUE)
-    args <- gsub("\\||(;|-)$", "", args[take])
+    pars_regex <- "(?<=_lpdf\\()[^|]+" 
+    pars <- get_matches(pars_regex, prior, perl = TRUE, first = TRUE)
+    pars <- gsub("to_vector\\(|\\)$", "", pars)
+    excl_regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\("
+    take <- !grepl(excl_regex, pars)
+    prior <- prior[take]
+    pars <- sub("^L_", "cor_", pars[take])
+    pars <- sub("^Lrescor", "rescor", pars)
+    dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
+    dis <- get_matches(dis_regex, prior, perl = TRUE, first = TRUE)
+    dis <- sub("corr_cholesky$", "corr", dis)
+    args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
+    args <- get_matches(args_regex, prior, perl = TRUE, first = TRUE)
+    args <- ifelse(grepl("^lkj_corr$", dis), paste0("2,", args), args)
     type <- rep("real", length(pars))
     
     # rename parameters containing indices
     has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
     pars[has_ind] <- ulapply(pars[has_ind], function(par) {
-      ind <- regmatches(par, gregexpr("\\[[[:digit:]]+\\]", par))
-      ind <- as.numeric(substr(ind, 2, nchar(ind) - 1))
+      ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
+      ind <- get_matches(ind_regex, par, perl = TRUE)
       gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
     })
-    
-    # special treatment of lkj_corr_cholesky priors
-    args <- ifelse(
-      grepl("corr_cholesky$", dis), 
-      paste0("2,", args, "[1, 2]"), args
-    )
-    dis <- sub("corr_cholesky$", "corr", dis)
     
     # extract information from the initial parameter definition
     par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
     par_declars <- gsub("^[[:blank:]]*", "", par_declars)
     par_declars <- par_declars[!grepl("^//", par_declars)]
-    all_pars <- get_matches(" [^[:blank:]]+;", par_declars) 
-    all_pars <- substr(all_pars, 2, nchar(all_pars) - 1)
+    all_pars_regex <- "(?<= )[^[:blank:]]+(?=;)"
+    all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE) 
     all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
     all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
     all_types <- get_matches("^[^[:blank:]]+", par_declars)
@@ -1121,7 +1117,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         "  // additionally draw samples from priors\n",
         collapse(
           "  target += ", dis[has_bounds], "_lpdf(",
-          "prior_", pars[has_bounds], " | ", args[has_bounds], "; \n"
+          "prior_", pars[has_bounds], " | ", args[has_bounds], "); \n"
         )
       )
     }
@@ -1140,12 +1136,14 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         bpars <- grepl("^b(|mo|cs|me)(_|$)", pars)
         args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
       }
+      lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")
       # unbounded parameters can be sampled in the generatated quantities block
       str_add(out$genD) <- paste0(
         "  // additionally draw samples from priors \n",
         collapse(
           "  ", types[no_bounds], " prior_", pars[no_bounds], 
-          " = ", dis[no_bounds], "_rng(", args[no_bounds], "; \n"
+          " = ", dis[no_bounds], "_rng(", args[no_bounds], ")",
+          lkj_index, "; \n"
         )
       )
     }

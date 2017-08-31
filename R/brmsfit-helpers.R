@@ -739,12 +739,12 @@ find_names <- function(x) {
   if (!is.character(x) || length(x) > 1) {
     stop2("Argument 'x' must be a character string of length one.")
   }
-  x <- gsub(" ", "", x)
-  reg_all <- paste0("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.\\:]*", 
-                    "(\\[[^],]+(,[^],]+)*\\])?")
-  pos_all <- gregexpr(reg_all, x)[[1]]
-  reg_fun <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\("
-  pos_fun <- gregexpr(reg_fun, x)[[1]]
+  x <- gsub("[[:space:]]", "", x)
+  regex_all <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.\\:]*"
+  regex_all <- paste0(regex_all, "(\\[[^],]+(,[^],]+)*\\])?")
+  pos_all <- gregexpr(regex_all, x)[[1]]
+  regex_fun <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\("
+  pos_fun <- gregexpr(regex_fun, x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
   pos_var <- list(rmMatch(pos_all, pos_fun, pos_decnum))
   unlist(regmatches(x, pos_var))

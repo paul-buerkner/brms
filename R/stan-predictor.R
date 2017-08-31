@@ -624,8 +624,9 @@ stan_cs <- function(bterms, data, ranef, prior) {
         "  matrix[N, ncat - 1] mucs = rep_matrix(0, N, ncat - 1); \n"
       )
     }
-    cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
-    ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
+    cats_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
+    cats <- get_matches(cats_regex, ranef$coef, perl = TRUE)
+    ncatM1 <- max(as.numeric(cats))
     for (i in seq_len(ncatM1)) {
       r_cat <- ranef[grepl(paste0("\\[", i, "\\]$"), ranef$coef), ]
       str_add(out$modelC2) <- paste0(

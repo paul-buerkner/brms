@@ -644,7 +644,7 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
 test_that("known standard errors appear in the Stan code", {
   scode <- make_stancode(time | se(age) ~ sex, data = kidney)
   expect_match2(scode, "target += normal_lpdf(Y | mu, se)")
-  scode <- make_stancode(time | se(age) | weights(age) ~ sex, data = kidney)
+  scode <- make_stancode(time | se(age) + weights(age) ~ sex, data = kidney)
   expect_match2(scode, "lp_pre[n] = normal_lpdf(Y[n] | mu[n], se[n])")
   scode <- make_stancode(time | se(age, sigma = TRUE) ~ sex, data = kidney)
   expect_match2(scode, "target += normal_lpdf(Y[n] | mu[n], sqrt(sigma^2 + se2[n]))")

@@ -262,11 +262,10 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   ad_funs <- sub("^resp_", "", ad_funs)
   families <- family_names(family)
   if (is.family(family) && any(nzchar(families))) {
-    ad <- get_matches("\\|[^~]*~", formula2str(formula))
+    str_formula <- formula2str(formula)
+    ad <- get_matches("(?<=\\|)[^~]*(?=~)", str_formula, perl = TRUE)
     if (length(ad)) {
-      # replace deprecated '|' by '+'
-      ad <- paste("~", rename(substr(ad, 2, nchar(ad) - 1), "|", "+"))
-      ad_terms <- attr(terms(formula(ad)), "term.labels")
+      ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
       for (a in ad_funs) {
         matches <- grep(paste0("^(resp_)?", a, "\\(.+\\)$"), ad_terms)
         if (length(matches) == 1L) {
