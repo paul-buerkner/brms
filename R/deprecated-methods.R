@@ -1,8 +1,12 @@
-message_new_method <- function(method, version) {
-  message(
-    "The '", method, "' method has been revised in brms ", version, ".\n",
-    "To get the old output, set argument 'old' to TRUE."
-  )
+message_new_method <- function(method, version, old = NULL) {
+  # Args:
+  #   old: argument 'old' as explicitely specified by the user
+  if (is.null(old)) {
+    message(
+      "The '", method, "' method has been revised in brms ", version, ".\n",
+      "To get the old output, set argument 'old' to TRUE."
+    )
+  }
   invisible(NULL)
 }
 

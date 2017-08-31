@@ -57,7 +57,8 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   if (old) {
     out <- old_fixef_brmsfit(object, estimate, probs = probs, ...)
   } else {
-    message_new_method("fixef", version = "1.7.0")
+    cl_old <- match.call()[["old"]]
+    message_new_method("fixef", version = "1.7.0", old = cl_old)
     if (!is_equal(estimate, "mean")) {
       warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
     }
@@ -163,7 +164,8 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   if (old) {
     out <- old_ranef_brmsfit(object, estimate, var = var, ...)
   } else {
-    message_new_method("ranef", version = "1.7.0")
+    cl_old <- match.call()[["old"]]
+    message_new_method("ranef", version = "1.7.0", old = cl_old)
     estimate <- match.arg(estimate)
     if (!is_equal(estimate, "mean")) {
       warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
@@ -236,7 +238,8 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   if (old) {
     coef <- old_coef_brmsfit(object, estimate, ...)
   } else {
-    message_new_method("coef", version = "1.7.0")
+    cl_old <- match.call()[["old"]]
+    message_new_method("coef", version = "1.7.0", old = cl_old)
     fixef <- suppressMessages(fixef(object, summary = FALSE, ...))
     coef <- suppressMessages(ranef(object, summary = FALSE, ...))
     # add missing coefficients to fixef
@@ -342,7 +345,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
   if (old) {
     out <- old_VarCorr_brmsfit(x, estimate, probs = probs, ...)
   } else {
-    message_new_method("VarCorr", version = "1.7.0")
+    cl_old <- match.call()[["old"]]
+    message_new_method("VarCorr", version = "1.7.0", old = cl_old)
     if (!is_equal(estimate, "mean")) {
       warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
     }
