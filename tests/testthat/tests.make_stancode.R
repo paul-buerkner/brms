@@ -574,8 +574,7 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
   expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simplex_1, Xmo[n, 1]);")
   # test that Z_1_1 is (correctly) undefined
-  expect_match2(scode, paste0("  int<lower=1> M_1; \n",
-    "  // data for group-level effects of ID 2"))
+  expect_true(!grepl("Z_1_1", scode))
   expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), dat),
                "Monotonic group-level terms require")
   expect_error(make_stancode(y ~ mo(x1), dat, 
@@ -923,10 +922,13 @@ test_that("noise-free terms appear in the Stan code", {
     "(bme[6]) * Xme_1[n] * Xme_2[n] * Cme_3[n]")
   expect_match2(scode, "target += normal_lpdf(Xme_2 | Xn_2, noise_2)")
   expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
+  
   scode <- make_stancode(
-    y ~ me(x, xsd)*me(z, zsd) + (me(x, xsd)|ID), data = dat
+    y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
   )
   expect_match2(scode, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]")
+  expect_match2(scode, "(bme[2] + r_1_2[J_1[n]]) * Xme_1[n] * Cme_1[n]")
+  
   expect_match2(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
                "(bme[1]) * Xme_1[n]^2")
   
