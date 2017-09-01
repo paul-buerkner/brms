@@ -374,20 +374,40 @@ cse <- function(expr) {
 #' } 
 #'  
 #' @export
-mo <- function(expr) {
-  deparse_no_string(substitute(expr))
+mo <- function(x) {
+  x_name <- attr(x, "x_name")
+  if (is.null(x_name)) {
+    x_name <- deparse_combine(substitute(x))  
+  }
+  if (is.ordered(x)) {
+    # counting starts at zero
+    x <- as.numeric(x) - 1 
+  } else if (all(is_wholenumber(x))) {
+    min_value <- attr(x, "min")
+    if (is.null(min_value)) {
+      min_value <- min(x)
+    }
+    x <- x - min_value
+  } else {
+    stop2(
+      "Monotonic predictors must be integers or ordered ", 
+      "factors. Error occured for variable '", x_name, "'."
+    )
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x) 
 }
 
 #' @export
-mono <- function(expr) {
-  # alias of function 'mo'
-  deparse_no_string(substitute(expr))
+mono <- function(x) {
+  attr(x, "x_name") <- deparse_combine(substitute(x)) 
+  mo(x)
 }
 
 #' @export
-monotonic <- function(expr) {
-  # alias of function 'mo'
-  deparse_no_string(substitute(expr))
+monotonic <- function(x) {
+  attr(x, "x_name") <- deparse_combine(substitute(x))
+  mo(x)
 }
 
 #' Set up Gaussian process terms in \pkg{brms}

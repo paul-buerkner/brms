@@ -331,14 +331,12 @@ parse_mo <- function(formula) {
   # Args:
   #   formula: a formula object
   all_terms <- all_terms(formula)
-  pos_mo_terms <- grepl("^mo((no)?|(notonic)?)\\([^\\|]+$", all_terms)
+  # do not include group-level terms
+  all_terms[grepl("\\|", all_terms)] <- ""
+  pos_mo_terms <- grepl_expr(regex_mo(), all_terms)
   mo_terms <- all_terms[pos_mo_terms]
   if (length(mo_terms)) {
-    mo_terms <- ulapply(mo_terms, eval2)
     mo_terms <- str2formula(mo_terms)
-    if (!length(all.vars(mo_terms))) {
-      stop2("No variable supplied to function 'mo'.")
-    }
     attr(mo_terms, "rsv_intercept") <- TRUE
   }
   structure(mo_terms, pos = pos_mo_terms)
@@ -832,6 +830,52 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
     attributes(sms)[names(alist)] <- alist
   }
   structure_not_null(sms, byvars = byvars)
+}
+
+get_mo_labels <- function(x, data) {
+  # get labels of monotonic terms
+  # Args:
+  #   x: either a formula or a list containing an element "mo"
+  #   data: data frame containing the monotonic variables
+  if (is.formula(x)) {
+    x <- parse_bf(x, check_response = FALSE)
+    mo_form <- x$dpars$mu[["mo"]]
+  } else {
+    mo_form <- x[["mo"]]
+  }
+  if (!is.formula(mo_form)) {
+    return(character(0))
+  }
+  mm <- get_model_matrix(mo_form, data, rename = FALSE)
+  not_one <- apply(mm, 2, function(x) any(x != 1))
+  out <- colnames(mm)
+  Imo <- calls_mo <- named_list(out)
+  k <- 0
+  for (i in seq_along(out)) {
+    calls_mo[[i]] <- get_matches_expr(regex_mo(), out[i])
+    j <- length(calls_mo[[i]])
+    Imo[[i]] <- (k+1):(k+j)
+    k <- k + j
+  }
+  att <- nlist(not_one, calls_mo, Imo)
+  do.call(structure, c(list(out), att))
+}
+
+get_simo_labels <- function(monef) {
+  # extract names of monotonic simplex parameters 
+  # Args:
+  #   monef: output of get_me_labels
+  stopifnot(is.character(monef))
+  Imo <- attr(monef, "Imo")
+  stopifnot(is.list(Imo))
+  monef <- rename(monef)
+  ulapply(seq_along(monef), 
+    function(i) paste0(monef[i], seq_along(Imo[[i]]))
+  )
+}
+
+regex_mo <- function() {
+  "^mo((no)?|(notonic)?)\\([^:]*\\)$"
 }
 
 get_me_labels <- function(x, data) {
