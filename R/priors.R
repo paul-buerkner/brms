@@ -679,12 +679,14 @@ prior_mo <- function(bterms, data) {
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
-  monef <- all_terms(bterms$mo)
+  monef <- get_mo_labels(bterms, data)
   if (length(monef)) {
     px <- check_prefix(bterms)
+    simo_coef <- get_simo_labels(monef)
+    monef <- rename(monef)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", monef), ls = px) + 
-      brmsprior(class = "simplex", coef = monef, ls = px)
+      brmsprior(class = "simo", coef = simo_coef, ls = px)
   }
   prior
 }
