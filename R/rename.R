@@ -132,34 +132,32 @@ change_mo <- function(bterms, data, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  monef <- colnames(data_mo(bterms, data)$Xmo)
-  if (length(monef)) {
-    p <- usc(combine_prefix(bterms), "prefix")
-    bmo <- paste0("bmo", p)
-    newnames <- paste0("bmo", p, "_", monef)
-    change <- lc(change, 
-      list(
-        pos = grepl(paste0("^", bmo, "\\["), pars), 
-        fnames = newnames
+  monef <- get_mo_labels(bterms, data)
+  if (!length(monef)) {
+    return(change) 
+  }
+  p <- usc(combine_prefix(bterms))
+  simo_coef <- get_simo_labels(monef)
+  monef <- rename(monef)
+  bmo <- paste0("bmo", p)
+  pos <- grepl(paste0("^", bmo, "\\["), pars)
+  newnames <- paste0("bmo", p, "_", monef)
+  change <- lc(change, nlist(pos, fnames = newnames))
+  change <- c(change, 
+    change_prior(class = bmo, pars = pars, names = monef)
+  )
+  for (i in seq_along(simo_coef)) {
+    simo_old <- paste0("simo", p, "_", i)
+    simo_new <- paste0("simo", p, "_", simo_coef[i])
+    pos <- grepl(paste0("^", simo_old, "\\["), pars)
+    simo_names <- paste0(simo_new, "[", seq_len(sum(pos)), "]")
+    change <- lc(change, list(pos = pos, fnames = simo_names))
+    change <- c(change,
+      change_prior(
+        class = simo_old, new_class = simo_new,
+        pars = pars, is_vector = TRUE
       )
     )
-    change <- c(change, 
-      change_prior(class = bmo, pars = pars, names = monef)
-    )
-    for (i in seq_along(monef)) {
-      simplex <- paste0(paste0("simplex", p, "_"), c(i, monef[i]))
-      pos <- grepl(paste0("^", simplex[1], "\\["), pars)
-      simplex_names <- paste0(simplex[2], "[", seq_len(sum(pos)), "]")
-      change <- lc(change, 
-        list(pos = pos, fnames = simplex_names)
-      )
-      change <- c(change,
-        change_prior(
-          class = simplex[1], new_class = simplex[2],
-          pars = pars, is_vector = TRUE
-        )
-      )
-    }
   }
   change
 }
@@ -758,7 +756,7 @@ reorder_pars <- function(x) {
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
-    "lasso", "simplex", "r", "s", "zgp", "rcar", "loclev", 
+    "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
     "Xme", "prior", "lp"
   )
   # reorder parameter classes
