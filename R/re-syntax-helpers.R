@@ -308,8 +308,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (re$type[[i]] == "mo") {
-      coef <- mo_design_matrix(re$form[[i]], data, check = FALSE)
-      coef <- colnames(coef)
+      coef <- rename(get_mo_labels(re$form[[i]], data))
     } else if (re$type[[i]] == "cs") {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       if (is.null(ncat)) {

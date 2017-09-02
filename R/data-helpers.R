@@ -522,46 +522,6 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
-mo_design_matrix <- function(formula, data, check = TRUE) {
-  # compute the design matrix of monotonic effects
-  # Args:
-  #   formula: formula containing mononotic terms
-  #   data: a data.frame or named list
-  #   check: check the number of levels? 
-  data <- model.frame(formula, data)
-  vars <- names(data)
-  for (i in seq_along(vars)) {
-    # validate predictors to be modeled as monotonic
-    if (is.ordered(data[[vars[i]]])) {
-      # counting starts at zero
-      data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
-    } else if (all(is_wholenumber(data[[vars[i]]]))) {
-      min_value <- attr(data[[vars[i]]], "min")
-      if (is.null(min_value)) {
-        min_value <- min(data[[vars[i]]])
-      }
-      data[[vars[i]]] <- data[[vars[i]]] - min_value
-    } else {
-      stop2(
-        "Monotonic predictors must be either integers or ",
-        "ordered factors. Error occured for variable '", 
-        vars[i], "'."
-      )
-    }
-    if (check && max(data[[vars[i]]]) < 2L) {
-      stop2(
-        "Monotonic predictors must have at least 3 different ", 
-        "values. Error occured for variable '", vars[i], "'."
-      )
-    }
-  }
-  out <- get_model_matrix(formula, data, cols2remove = "(Intercept)")
-  if (any(grepl(":", colnames(out), fixed = TRUE))) {
-    stop2("Modeling interactions as monotonic is not meaningful.")
-  }
-  out
-}
-
 arr_design_matrix <- function(Y, r, group)  { 
   # compute the design matrix for ARR effects
   # Args:
@@ -602,8 +562,13 @@ make_Jmo_list <- function(x, data, ...) {
 #' @export
 make_Jmo_list.btl <- function(x, data, ...) {
   if (!is.null(x$mo)) {
-    Xmo <- mo_design_matrix(x$mo, data, ...)
-    out <- as.array(apply(Xmo, 2, max)) 
+    # do it like data_mo()
+    monef <- get_mo_labels(x, data)
+    calls_mo <- unlist(attr(monef, "calls_mo"))
+    Xmo <- lapply(calls_mo, 
+      function(x) attr(eval2(x, data), "var")
+    )
+    out <- as.array(ulapply(Xmo, max))
   } else {
     out <- NULL
   }
