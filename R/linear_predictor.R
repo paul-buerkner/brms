@@ -82,12 +82,11 @@ nonlinear_predictor <- function(draws, i = NULL) {
 
 predictor_fe <- function(draws, i) {
   # compute eta for fixed effects
-  if (is.null(draws[["b"]])) {
+  fe <- draws[["fe"]]
+  if (!length(fe)) {
     return(0) 
   }
-  eta <- try(
-    .predictor_fe(X = p(draws$data[["X"]], i), b = draws[["b"]])
-  )
+  eta <- try(.predictor_fe(X = p(fe[["X"]], i), b = fe[["b"]]))
   if (is(eta, "try-error")) {
     stop2(
       "Something went wrong. Did you transform numeric variables ", 
@@ -111,12 +110,13 @@ predictor_fe <- function(draws, i) {
 predictor_re <- function(draws, i) {
   # compute eta for group-level effects
   eta <- 0
-  group <- names(draws[["r"]])
+  re <- draws[["re"]]
+  group <- names(re[["r"]])
   for (g in group) {
     eta <- eta + 
       .predictor_re(
-        Z = p(draws[["Z"]][[g]], i),
-        r = draws[["r"]][[g]]
+        Z = p(re[["Z"]][[g]], i),
+        r = re[["r"]][[g]]
       )
   }
   eta
@@ -134,34 +134,34 @@ predictor_re <- function(draws, i) {
 predictor_mo <- function(draws, i) {
   # compute eta for monotonic effects
   eta <- 0
-  monef <- names(draws[["bmo"]])
-  if (!length(monef)) {
+  mo <- draws[["mo"]]
+  if (!length(mo)) {
     return(eta) 
   }
   eval_list <- list()
-  for (j in seq_along(draws[["simo"]])) {
-    Xmo_j <- paste0("Xmo_", j)
-    eval_list[[Xmo_j]] <- p(draws$data[[Xmo_j]], i)
-    eval_list[[paste0("simo_", j)]] <- draws[["simo"]][[j]]
+  for (j in seq_along(mo[["simo"]])) {
+    eval_list[[paste0("Xmo_", j)]] <- p(mo[["Xmo"]][[j]], i)
+    eval_list[[paste0("simo_", j)]] <- mo[["simo"]][[j]]
   }
-  for (j in seq_along(draws[["Cmo"]])) {
+  for (j in seq_along(mo[["Cmo"]])) {
     eval_list[[paste0("Cmo_", j)]] <- 
-      p(draws[["Cmo"]][[j]], i, row = FALSE)
+      p(mo[["Cmo"]][[j]], i, row = FALSE)
   }
-  calls <- attr(draws[["bmo"]], "calls")
+  re <- draws[["re"]]
+  monef <- names(mo[["bmo"]])
   for (j in seq_along(monef)) {
     # prepare monotonic group-level effects
-    rmo <- named_list(names(draws[["rmo"]][[monef[j]]]))
+    rmo <- named_list(names(re[["rmo"]][[monef[j]]]))
     for (g in names(rmo)) {
       rmo[[g]] <- .predictor_re(
-        Z = p(draws[["Zmo"]][[g]], i), 
-        r = draws[["rmo"]][[monef[j]]][[g]]
+        Z = p(re[["Zmo"]][[g]], i), 
+        r = re[["rmo"]][[monef[j]]][[g]]
       )
     }
     eta <- eta + 
       .predictor_mo(
-        eval_list, call = calls[[j]],
-        b = draws[["bmo"]][[j]], 
+        eval_list, call = mo[["calls"]][[j]],
+        b = mo[["bmo"]][[j]], 
         r = Reduce("+", rmo)
       )
   }
@@ -197,33 +197,34 @@ predictor_mo <- function(draws, i) {
 predictor_me <- function(draws, i) {
   # compute eta for noise-free effects
   eta <- 0
-  meef <- names(draws[["bme"]])
-  if (!length(meef)) {
+  me <- draws[["me"]]
+  if (!length(me)) {
     return(eta) 
   }
   eval_list <- list()
-  for (j in seq_along(draws[["Xme"]])) {
+  for (j in seq_along(me[["Xme"]])) {
     eval_list[[paste0("Xme_", j)]] <- 
-      p(draws[["Xme"]][[j]], i, row = FALSE)
+      p(me[["Xme"]][[j]], i, row = FALSE)
   }
-  for (j in seq_along(draws[["Cme"]])) {
+  for (j in seq_along(me[["Cme"]])) {
     eval_list[[paste0("Cme_", j)]] <- 
-      p(draws[["Cme"]][[j]], i, row = FALSE)
+      p(me[["Cme"]][[j]], i, row = FALSE)
   }
-  calls <- attr(draws[["bme"]], "calls")
+  re <- draws[["re"]]
+  meef <- names(me[["bme"]])
   for (j in seq_along(meef)) {
     # prepare noise-free group-level effects
-    rme_temp <- draws[["rme"]][[meef[j]]]
+    rme_temp <- re[["rme"]][[meef[j]]]
     rme <- named_list(names(rme_temp))
     for (g in names(rme)) {
       rme[[g]] <- .predictor_re(
-        Z = p(draws[["Zme"]][[g]], i), r = rme_temp[[g]]
+        Z = p(re[["Zme"]][[g]], i), r = rme_temp[[g]]
       )
     }
     eta <- eta + 
       .predictor_me(
-        eval_list, call = calls[[j]],
-        b = draws[["bme"]][[j]],
+        eval_list, call = me[["calls"]][[j]],
+        b = me[["bme"]][[j]],
         r = Reduce("+", rme)
       )
   }
@@ -243,12 +244,13 @@ predictor_me <- function(draws, i) {
 predictor_sm <- function(draws, i) {
   # compute eta for smooth terms
   eta <- 0
-  smooths <- names(draws[["s"]])
+  smooths <- names(draws[["sm"]])
   for (k in seq_along(smooths)) {
-    nb <- seq_len(length(draws[["s"]][[smooths[k]]]))
+    sm <- draws[["sm"]][[k]]
+    nb <- seq_len(length(sm[["s"]]))
     for (j in nb) {
-      Zs <- p(draws[["Zs"]][[smooths[k]]][[j]], i)
-      s <- draws[["s"]][[smooths[k]]][[j]]
+      Zs <- p(sm[["Zs"]][[j]], i)
+      s <- sm[["s"]][[j]]
       eta <- eta + .predictor_fe(X = Zs, b = s)
     }
   }
@@ -392,17 +394,19 @@ predictor_gp <- function(draws, i) {
 predictor_cs <- function(eta, draws, i) {
   # compute eta for category specific effects
   # returns 3-dimensional eta if cs terms are present
+  cs <- draws[["cs"]]
+  re <- draws[["re"]]
+  ncat <- draws$data[["ncat"]]
   if (is_ordinal(draws$f)) {
-    if (!is.null(draws[["cs"]]) || !is.null(draws[["rcs"]])) {
-      ncat <- draws$data$ncat
-      if (!is.null(draws[["rcs"]])) {
+    if (!is.null(cs) || !is.null(re[["rcs"]])) {
+      if (!is.null(re[["rcs"]])) {
         rcs <- named_list(seq_len(ncat - 1))
         for (k in names(rcs)) {
-          rcs[[k]] <- named_list(names(draws[["rcs"]][[k]]))
+          rcs[[k]] <- named_list(names(re[["rcs"]][[k]]))
           for (g in names(rcs[[k]])) {
             rcs[[k]][[g]] <- .predictor_re(
-              Z = p(draws[["Zcs"]][[g]], i),
-              r = draws[["rcs"]][[k]][[g]]
+              Z = p(re[["Zcs"]][[g]], i),
+              r = re[["rcs"]][[k]][[g]]
             )
           }
           rcs[[k]] <- Reduce("+", rcs[[k]])
@@ -411,42 +415,41 @@ predictor_cs <- function(eta, draws, i) {
         rcs <- NULL
       }
       eta <- .predictor_cs(
-        X = p(draws$data[["Xcs"]], i), 
-        b = draws[["cs"]], eta = eta, 
-        ncat = ncat, r = rcs
+        eta, X = p(cs[["Xcs"]], i), 
+        b = cs[["bcs"]], ncat = ncat, r = rcs
       )
       rm(rcs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
+      eta <- array(eta, dim = c(dim(eta), ncat - 1))
     } 
-    for (k in seq_len(draws$data$ncat - 1)) {
+    for (k in seq_len(ncat - 1)) {
       if (draws$f$family %in% c("cumulative", "sratio")) {
-        eta[, , k] <- draws$Intercept[, k] - eta[, , k]
+        eta[, , k] <- cs[["Intercept"]][, k] - eta[, , k]
       } else {
-        eta[, , k] <- eta[, , k] - draws$Intercept[, k]
+        eta[, , k] <- eta[, , k] - cs[["Intercept"]][, k]
       }
     }
   } else if (isTRUE(draws$old_cat > 0L)) {
     if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
-      if (!is.null(draws[["cs"]])) {
+      if (!is.null(cs[["bcs"]])) {
         eta <- .predictor_cs(
-          X = p(draws$data[["X"]], i), b = draws[["cs"]], 
-          eta = eta, ncat = draws$data$ncat
+          eta, X = p(cs[["Xcs"]], i), b = cs[["bcs"]], 
+          ncat = ncat
         )
       } else {
-        eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
+        eta <- array(eta, dim = c(dim(eta), ncat - 1))
       }
     } else if (draws$old_cat == 2L) {
       # deprecated as of brms > 0.10.0
-      ncat1 <- draws$data$ncat - 1 
+      ncat1 <- ncat - 1 
       eta <- array(eta, dim = c(nrow(eta), ncol(eta) / ncat1, ncat1))
     }
   }
   eta
 }
 
-.predictor_cs <- function(X, b, eta, ncat, r = NULL) {
+.predictor_cs <- function(eta, X, b, ncat, r = NULL) {
   # add category specific effects to eta
   # Args:
   #   X: category specific design matrix 
@@ -499,12 +502,12 @@ predictor_autocor <- function(eta, draws, i) {
       ma = draws[["ma"]], link = draws$f$link
     )
   }
-  if (!is.null(draws[["rcar"]])) {
-    eta <- eta + 
-      .predictor_re(Z = p(draws[["Zcar"]], i), r = draws[["rcar"]])
+  if (!is.null(draws[["car"]])) {
+    car <- draws[["car"]]
+    eta <- eta + .predictor_re(Z = p(car[["Zcar"]], i), r = car[["rcar"]])
   }
   if (!is.null(draws[["loclev"]])) {
-    eta <- eta + p(draws$loclev, i, row = FALSE)
+    eta <- eta + p(draws[["loclev"]], i, row = FALSE)
   }
   eta
 }
