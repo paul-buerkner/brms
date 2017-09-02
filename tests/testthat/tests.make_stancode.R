@@ -86,8 +86,8 @@ test_that("specified priors appear in the Stan code", {
   )
   expect_match2(scode, "target += double_exponential_lpdf(arr | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(bmo | 0, 5)")
-  expect_match2(scode, "target += dirichlet_lpdf(simplex_1 | con_simplex_1)")
-  expect_match2(scode, "prior_simplex_1 = dirichlet_rng(con_simplex_1)")
+  expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
+  expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
   expect_match2(scode, "target += uniform_lpdf(prior_ar | -1,1)")
   
   # test for problem described in #197
@@ -559,27 +559,36 @@ test_that("ordinal disc parameters appear in the Stan code", {
 })
 
 test_that("monotonic effects appear in the Stan code", {
-  prior <- c(prior(normal(0,1), class = b, coef = x1),
-             prior(dirichlet(c(1,0.5,2)), simplex, coef = x1),
-             prior(dirichlet(c(1,0.5,2)), simplex, coef = x2))
+  prior <- c(prior(normal(0,1), class = b, coef = mox1),
+             prior(dirichlet(c(1,0.5,2)), simo, coef = mox11),
+             prior(dirichlet(c(1,0.5,2)), simo, coef = mox21))
   dat <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  scode <- make_stancode(y ~ mo(x1) + mo(x2), dat, prior = prior)
-  expect_match2(scode, "int Xmo[N, Kmo];")
-  expect_match2(scode, "simplex[Jmo[1]] simplex_1;")
-  expect_match2(scode, "(bmo[2]) * mo(simplex_2, Xmo[n, 2]);")
+  scode <- make_stancode(y ~ y*mo(x1)*mo(x2), dat, prior = prior)
+  expect_match2(scode, "int Xmo_3[N];")
+  expect_match2(scode, "simplex[Jmo[1]] simo_1;")
+  expect_match2(scode, "(bmo[2]) * mo(simo_2, Xmo_2[n])")
+  expect_match2(scode, 
+    "(bmo[6]) * mo(simo_7, Xmo_7[n]) * mo(simo_8, Xmo_8[n]) * Cmo_3[n]"
+  )
   expect_match2(scode, "target += normal_lpdf(bmo[1] | 0, 1)")
-  expect_match2(scode, "target += dirichlet_lpdf(simplex_1 | con_simplex_1);")
-  expect_match2(scode, "target += dirichlet_lpdf(simplex_2 | con_simplex_2);")
+  expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
+  expect_match2(scode, "target += dirichlet_lpdf(simo_8 | con_simo_8);")
+  
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
-  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simplex_1, Xmo[n, 1]);")
-  # test that Z_1_1 is (correctly) undefined
+  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
   expect_true(!grepl("Z_1_1", scode))
-  expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), dat),
-               "Monotonic group-level terms require")
-  expect_error(make_stancode(y ~ mo(x1), dat, 
-                             prior = prior(beta(1, 1), simplex, coef = x1)),
-               "'dirichlet' is the only valid prior for simplex parameters")
+  
+  expect_error(
+    make_stancode(y ~ mono(x1) + (mono(x2)|x2), dat),
+    "Monotonic group-level terms require"
+  )
+  
+  prior <- prior(beta(1, 1), simo, coef = mox11)
+  expect_error(
+    make_stancode(y ~ mo(x1), dat, prior = prior),
+    "'dirichlet' is the only valid prior for simplex parameters"
+  )
 })
 
 test_that("Stan code for non-linear models is correct", {

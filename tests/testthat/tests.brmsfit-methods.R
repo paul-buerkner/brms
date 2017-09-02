@@ -136,13 +136,13 @@ test_that("all S3 methods have reasonable ouputs", {
   fixef1 <- SM(fixef(fit1))
   expect_equal(rownames(fixef1), 
     c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-      "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp")
+      "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
   )
   # deprecated as of brms 1.7.0
   fixef1 <- fixef(fit1, old = TRUE, estimate = c("mean", "sd"))  
   expect_equal(rownames(fixef1), 
    c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-     "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp")
+     "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
   )
   expect_equal(colnames(fixef1), c("mean", "sd"))
   fixef2 <- fixef(fit2, estimate = c("median", "quantile"), 
@@ -154,7 +154,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # formula
   expect_equal(formula(fit1)$formula, 
-    count ~ Trt * Age + mono(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
+    count ~ Trt * Age + mo(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
   
   # hypothesis
   hyp <- hypothesis(fit1, c("Intercept > Trt1", "Trt1:Age = -1"))
@@ -361,8 +361,8 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # parnames 
   expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46, 47)],
-               c("b_Intercept", "bmo_Exp", "ar[1]", "cor_visit__Intercept__Trt1", 
-                 "nu", "simplex_Exp[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
+               c("b_Intercept", "bmo_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
+                 "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
   expect_equal(parnames(fit2)[c(1, 4, 6, 7, 9, 71, 129)],
                c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
@@ -488,9 +488,10 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # prior_samples
   prs1 <- prior_samples(fit1)
-  prior_names <- c("sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
-                   paste0("simplex_Exp[", 1:4, "]"), "b_sigma",
-                   "cor_visit")
+  prior_names <- c(
+    "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
+    paste0("simo_moExp1[", 1:4, "]"), "b_sigma", "cor_visit"
+  )
   expect_equal(dimnames(prs1),
                list(as.character(1:nsamples(fit1)), prior_names))
   
@@ -545,14 +546,16 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # standata
   expect_equal(names(standata(fit1)),
-               c("N", "Y", "nb_1", "knots_1", "Zs_1_1", "K", "X", 
-                 "Kmo", "Xmo", "Jmo", "con_simplex_1", "Z_1_1", "Z_1_2", 
-                 "offset", "K_sigma", "X_sigma", "J_1", "N_1", "M_1", 
-                 "NC_1", "Kar", "Kma", "J_lag", "prior_only"))
+    c("N", "Y", "nb_1", "knots_1", "Zs_1_1", "K", "X", 
+      "Kmo", "Imo", "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", 
+      "offset", "K_sigma", "X_sigma", "J_1", "N_1", "M_1", 
+      "NC_1", "Kar", "Kma", "J_lag", "prior_only")
+  )
   expect_equal(names(standata(fit2)),
-               c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1",
-                 "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
-                 "NC_1", "weights", "prior_only"))
+    c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1",
+      "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
+      "NC_1", "weights", "prior_only")
+  )
   
   # stanplot tested in tests.plots.R
   # summary
@@ -560,7 +563,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
                c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-                 "Trt1:Age", "sAge_1", "sigma_Trt1", "Exp"))
+                 "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp"))
   expect_equal(colnames(summary1$fixed), 
                c("Estimate", "Est.Error", "l-95% CI", 
                  "u-95% CI", "Eff.Sample", "Rhat"))

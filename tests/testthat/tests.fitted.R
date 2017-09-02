@@ -53,7 +53,7 @@ test_that("fitted helper functions run without errors", {
   
   # pseudo hurdle poisson model
   fit$family <- hurdle_poisson()
-  fit$formula <- bf(count ~ Trt*Age + mono(Exp) + offset(Age) + (1+Trt|visit),
+  fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
                     family = family(fit))
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
