@@ -6,7 +6,7 @@
 \alias{monotonic}
 \title{Monotonic Predictors in \pkg{brms} Models}
 \usage{
-mo(expr)
+mo(x)
 }
 \arguments{
 \item{expr}{Expression containing predictors,
@@ -41,6 +41,15 @@ fit <- brm(ls ~ mo(income), data = dat)
 summary(fit)
 plot(fit, N = 6)
 plot(marginal_effects(fit), points = TRUE)
+
+
+# model interaction with other variables
+dat$x <- sample(c("a", "b", "c"), 100, TRUE)
+fit2 <- brm(ls ~ mo(income)*x, data = dat)
+
+# summarise the model
+summary(fit2)
+plot(marginal_effects(fit2), points = TRUE)
 } 
  
 }

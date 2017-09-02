@@ -218,8 +218,9 @@
 #'   monotonic effects make use of a special parameter vector to
 #'   estimate the 'normalized distances' between consecutive predictor 
 #'   categories. This is realized in \pkg{Stan} using the \code{simplex}
-#'   parameter type and thus this class is also named \code{"simplex"} in
-#'   \pkg{brms}. The only valid prior for simplex parameters is the
+#'   parameter type. This class is named \code{"simo"} (short for 
+#'   simplex monotonic) in \pkg{brms}. 
+#'   The only valid prior for simplex parameters is the
 #'   dirichlet prior, which accepts a vector of length \code{K - 1}
 #'   (K = number of predictor categories) as input defining the
 #'   'concentration' of the distribution. Explaining the dirichlet prior 
@@ -227,7 +228,10 @@
 #'   how to define this prior syntactically correct.
 #'   If a predictor \code{x} with \code{K} categories is modeled as monotonic, 
 #'   we can define a prior on its corresponding simplex via \cr
-#'   \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
+#'   \code{prior(dirichlet(<vector>), class = simo, coef = mox1)}.
+#'   The \code{1} in the end of \code{coef} indicates that this is the first
+#'   simplex in this term. If interactions between multiple monotonic
+#'   variables are modeled, multiple simplexes per term are required.  
 #'   For \code{<vector>}, we can put in any \code{R} expression
 #'   defining a vector of length \code{K - 1}. The default is a uniform 
 #'   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
