@@ -38,22 +38,34 @@ linear_predictor <- function(draws, i = NULL) {
   }
   # incorporate monotonic effects
   monef <- names(draws[["bmo"]])
-  for (j in seq_along(monef)) {
-    # prepare monotonic group-level effects
-    rmo <- named_list(names(draws[["rmo"]][[monef[j]]]))
-    for (g in names(rmo)) {
-      rmo[[g]] <- re_predictor(
-        Z = p(draws[["Zmo"]][[g]], i), 
-        r = draws[["rmo"]][[monef[j]]][[g]]
-      )
+  if (length(monef)) {
+    eval_list <- list()
+    for (j in seq_along(draws[["simo"]])) {
+      Xmo_j <- paste0("Xmo_", j)
+      eval_list[[Xmo_j]] <- p(draws$data[[Xmo_j]], i)
+      eval_list[[paste0("simo_", j)]] <- draws[["simo"]][[j]]
     }
-    eta <- eta + 
-      mo_predictor(
-        X = p(draws$data$Xmo[, j], i), 
-        b = draws[["bmo"]][[j]], 
-        simplex = draws$simplex[[j]],
-        r = Reduce("+", rmo)
-      )
+    for (j in seq_along(draws[["Cmo"]])) {
+      eval_list[[paste0("Cmo_", j)]] <- 
+        p(draws[["Cmo"]][[j]], i, row = FALSE)
+    }
+    calls <- attr(draws[["bmo"]], "calls")
+    for (j in seq_along(monef)) {
+      # prepare monotonic group-level effects
+      rmo <- named_list(names(draws[["rmo"]][[monef[j]]]))
+      for (g in names(rmo)) {
+        rmo[[g]] <- re_predictor(
+          Z = p(draws[["Zmo"]][[g]], i), 
+          r = draws[["rmo"]][[monef[j]]][[g]]
+        )
+      }
+      eta <- eta + 
+        mo_predictor(
+          eval_list, call = calls[[j]],
+          b = draws[["bmo"]][[j]], 
+          r = Reduce("+", rmo)
+        )
+    }
   }
   # incorporate noise-free effects
   meef <- names(draws[["bme"]])
@@ -257,24 +269,30 @@ fe_predictor <- function(X, b) {
   tcrossprod(b, X)
 }
 
-mo_predictor <- function(X, b, simplex, r = NULL) {
+mo_predictor <- function(eval_list, call, b, r = NULL) {
   # compute eta for monotonic effects
   # Args:
-  #   X: a vector of data for the monotonic effect
+  #   call: expression for evaluation of monotonic effects
+  #   eval_list: list containing variables for 'call'
   #   b: monotonic effects samples
-  #   simplex: matrix of samples of the simplex
-  #            corresponding to bm
   #   r: matrix with monotonic group-level samples
-  stopifnot(is.vector(X))
-  stopifnot(is.matrix(simplex))
   b <- as.vector(b)
+  if (is.null(r)) r <- 0 
+  (b + r) * eval(call, eval_list)
+}
+
+.mo <- function(simplex, X) {
+  # R implementation of the user define Stan function 'mo'
+  # Args:
+  #   simplex: posterior samples of a simplex parameter vector
+  #   X: variable modeled as monotonic
+  stopifnot(is.matrix(simplex), is.atomic(X))
+  simplex <- cbind(0, simplex)
   for (i in 2:ncol(simplex)) {
     # compute the cumulative representation of the simplex 
     simplex[, i] <- simplex[, i] + simplex[, i - 1]
   }
-  simplex <- cbind(0, simplex)
-  if (is.null(r)) r <- 0 
-  (b + r) * simplex[, X + 1]
+  simplex[, X + 1]
 }
 
 me_predictor <- function(eval_list, call, b, r = NULL) {

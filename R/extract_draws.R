@@ -189,7 +189,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     # make sure only smooth terms will be included in draws
     return(structure(draws, predicted = TRUE))
   }
-  monef <- colnames(draws$data[["Xmo"]])
+  monef <- get_mo_labels(bterms$dpars$mu, fit$data)
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$dpars$mu, fit$data)
   gpef <- get_gp_labels(bterms$dpars$mu, fit$data, covars = TRUE)
@@ -246,31 +246,55 @@ extract_draws_mo <- function(monef, args, sdata, px = list()) {
   #   monef: names of the monotonic effects
   #   args: list of arguments passed to as.matrix.brmsfit
   #   sdata: list returned by make_standata
-  #   nlpar: name of a non-linear parameter
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   stopifnot("x" %in% names(args))
   p <- usc(combine_prefix(px), "suffix")
   draws <- list()
-  if (length(monef)) {
-    draws[["bmo"]] <- draws$simplex <- named_list(monef)
-    # as of brms > 1.2.0 the prefix 'bmo' is used
-    bmo <- ifelse(
-      any(grepl("^bmo_", parnames(args$x))), "bmo_",
-      ifelse(any(grepl("^bm_", parnames(args$x))), "bm_", "b_")
-    )
-    for (i in seq_along(monef)) {
-      bmo_par <- paste0(bmo, p, monef[i])
-      draws[["bmo"]][[i]] <- do.call(as.matrix,
-        c(args, list(pars = bmo_par, exact = TRUE))
-      )
-      simplex_par <- paste0(
-        "simplex_", p, monef[i], "[", seq_len(sdata$Jm[i]), "]"
-      )
-      draws[["simplex"]][[i]] <- do.call(as.matrix, 
-        c(args, list(pars = simplex_par, exact = TRUE))
-      )
+  if (!length(monef)) {
+    return(draws) 
+  }
+  att <- attributes(monef)
+  # prepare calls evaluated in 'mo_predictor()'
+  calls <- rep(NA, length(monef))
+  for (i in seq_along(calls)) {
+    tmp <- paste0(".mo(simo_", att$Imo[[i]], ", Xmo_", att$Imo[[i]], ")")
+    calls[i] <- paste0(tmp, collapse = " * ")
+    if (att$not_one[i]) {
+      str_add(calls[i]) <- paste0(" * Cmo_", att$Icmo[i])
     }
+  }
+  calls <- parse(text = paste0(calls))
+  # extract data and parameters for monotonic effects
+  monef <- rename(monef)
+  draws$bmo <- named_list(monef)
+  # as of brms > 1.2.0 the prefix 'bmo' is used
+  bmo <- ifelse(
+    any(grepl("^bmo_", parnames(args$x))), "bmo_",
+    ifelse(any(grepl("^bm_", parnames(args$x))), "bm_", "b_")
+  )
+  for (i in seq_along(monef)) {
+    bmo_par <- paste0(bmo, p, monef[i])
+    draws[["bmo"]][[i]] <- do.call(as.matrix,
+      c(args, list(pars = bmo_par, exact = TRUE))
+    )
+  }
+  attr(draws[["bmo"]], "calls") <- calls
+  simo_coef <- get_simo_labels(monef)
+  draws$simo <- named_list(simo_coef)
+  for (i in seq_along(simo_coef)) {
+    simo_par <- paste0(
+      "simo_", p, simo_coef[i], "[", seq_len(sdata$Jmo[i]), "]"
+    )
+    draws[["simo"]][[i]] <- do.call(as.matrix, 
+      c(args, list(pars = simo_par, exact = TRUE))
+    )
+  }
+  ncovars <- sum(att$not_one)
+  dim <- c(nrow(draws[["bmo"]][[1]]), sdata[["N"]])
+  for (i in seq_len(ncovars)) {
+    cmo <- paste0("Cmo_", i)
+    draws[["Cmo"]][[i]] <- as_draws_matrix(sdata[[cmo]], dim)
   }
   draws
 }
