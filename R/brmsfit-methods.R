@@ -843,10 +843,10 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     rownames(out$splines) <- paste0(gsub("^sds_", "sds(", sm_pars), ")")
   }
   # summary of monotonic parameters
-  mo_pars <- pars[grepl("^simplex_", pars)]
+  mo_pars <- pars[grepl("^simo_", pars)]
   if (length(mo_pars)) {
     out$mo <- fit_summary[mo_pars, , drop = FALSE]
-    rownames(out$mo) <- gsub("^simplex_", "", mo_pars)
+    rownames(out$mo) <- gsub("^simo_", "", mo_pars)
   }
   # summary of gaussian processes
   gp_pars <- pars[grepl("^(sdgp|lscale)_", pars)]
