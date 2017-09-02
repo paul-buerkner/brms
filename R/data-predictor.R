@@ -142,16 +142,15 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   if (!length(monef)) {
     return(out) 
   }
-  not_one <- attr(monef, "not_one")
-  calls_mo <- attr(monef, "calls_mo")
-  Imo <- attr(monef, "Imo")
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  att <- attributes(monef)
   # store monotonic variables
   out[[paste0("Kmo", p)]] <- length(monef)
-  out[[paste0("Imo", p)]] <- max(unlist(Imo))
-  calls_mo <- unlist(calls_mo)
-  Xmo <- lapply(calls_mo, function(x) attr(eval2(x, data), "var"))
+  out[[paste0("Imo", p)]] <- max(unlist(att$Imo))
+  Xmo <- lapply(unlist(att$calls_mo), 
+    function(x) attr(eval2(x, data), "var")
+  )
   Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
   out <- c(out, setNames(Xmo, Xmo_names))
   compute_Jmo <- is.null(Jmo)
@@ -162,7 +161,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   # store covariates of monotonic variables
   Cmo <- get_model_matrix(bterms$mo, data)
   avoid_dpars(colnames(Cmo), bterms = bterms)
-  Cmo <- Cmo[, not_one, drop = FALSE]
+  Cmo <- Cmo[, att$not_one, drop = FALSE]
   Cmo <- lapply(seq_len(ncol(Cmo)), function(i) Cmo[, i])
   if (length(Cmo)) {
     Cmo_names <- paste0("Cmo", p, "_", seq_along(Cmo))

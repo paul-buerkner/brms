@@ -847,18 +847,29 @@ get_mo_labels <- function(x, data) {
     return(character(0))
   }
   mm <- get_model_matrix(mo_form, data, rename = FALSE)
+  monef <- colnames(mm)
+  # prepare attributes of monef
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  out <- colnames(mm)
-  Imo <- calls_mo <- named_list(out)
+  Icmo <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  Imo <- calls_mo <- named_list(monef)
   k <- 0
-  for (i in seq_along(out)) {
-    calls_mo[[i]] <- get_matches_expr(regex_mo(), out[i])
+  for (i in seq_along(monef)) {
+    calls_mo[[i]] <- get_matches_expr(regex_mo(), monef[i])
     j <- length(calls_mo[[i]])
     Imo[[i]] <- (k+1):(k+j)
     k <- k + j
+    mo_split <- strsplit(rm_wsp(monef[i]), ":")[[1]]
+    # remove non monotonic parts from the terms
+    mo_split <- mo_split[grepl_expr(regex_mo(), mo_split)]
+    for (j in seq_along(mo_split)) {
+      mo_match <- get_matches_expr(regex_mo(), mo_split[j])
+      if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_split[j])) {
+        stop2("The monotonic term '",  mo_split[j], "' is invalid.")
+      }
+    }
   }
-  att <- nlist(not_one, calls_mo, Imo)
-  do.call(structure, c(list(out), att))
+  att <- nlist(not_one, Icmo, calls_mo, Imo)
+  do.call(structure, c(list(monef), att))
 }
 
 get_simo_labels <- function(monef) {

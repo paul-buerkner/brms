@@ -561,37 +561,24 @@ stan_mo <- function(bterms, data, ranef, prior) {
   if (!length(monef)) {
     return(out)
   }
-  not_one <- attr(monef, "not_one")
-  Imo <- attr(monef, "Imo")
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  mo_split <- strsplit(rm_wsp(monef), ":")
-  monef_terms <- rep(NA, length(mo_split))
-  for (i in seq_along(mo_split)) {
-    # remove non monotonic parts from the terms
-    take <- grepl_expr(regex_mo(), mo_split[[i]])
-    mo_split[[i]] <- mo_split[[i]][take]
-    # expand monotonic terms for use in Stan
-    for (j in seq_along(mo_split[[i]])) {
-      mo <- mo_split[[i]][j]
-      mo_matches <- get_matches_expr(regex_mo(), mo)
-      if (length(mo_matches) > 1L || nchar(mo_matches) < nchar(mo)) {
-        stop2("The monotonic term '",  mo, "' is invalid.")
-      }
-      k <- Imo[[i]][j]
-      repl <- paste0("mo(simo", p, "_", k, ", Xmo", p, "_", k, "[n])")
-      mo_split[[i]][[j]] <- repl
-    }
-    monef_terms[i] <- paste0(mo_split[[i]], collapse = ":")
-  }
-  # prepare covariates of monotonic terms
-  ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  covars <- ifelse(not_one, paste0(" * Cmo", p, "_", ci, "[n]"), "")
-  ncovars <- sum(not_one)
-  
+  att <- attributes(monef)
   # prepare linear predictor component
   monef <- rename(monef)
-  monef_terms <- gsub(":", " * ", monef_terms)
+  monef_terms <- rep(NA, length(monef))
+  for (i in seq_along(monef)) {
+    monef_terms[i] <- paste0(
+      "mo(simo", p, "_", att$Imo[[i]], 
+      ", Xmo", p, "_", att$Imo[[i]], "[n])",
+      collapse = " * "
+    )
+    if (att$not_one[i]) {
+      str_add(monef_terms[i]) <- paste0(
+        " * Cmo", p, "_", att$Icmo[i], "[n]"
+      )
+    }
+  }
   ranef <- subset2(ranef, type = "mo", ls = px)
   invalid_coef <- setdiff(ranef$coef, monef)
   if (length(invalid_coef)) {
@@ -606,13 +593,12 @@ stan_mo <- function(bterms, data, ranef, prior) {
       rpars <- ""
     }
     str_add(out$eta) <- paste0(
-      " + (bmo", p, "[", i, "]", rpars, ") * ",
-      monef_terms[i], covars[i]
+      " + (bmo", p, "[", i, "]", rpars, ") * ", monef_terms[i]
     )
   }
-  
-  # prepare Stan code
-  I <- seq_len(max(unlist(Imo)))
+  # prepare rest of the Stan code
+  I <- seq_len(max(unlist(att$Imo)))
+  ncovars <- sum(att$not_one)
   str_add(out$data) <- paste0(
     "  int<lower=1> Kmo", p, ";  // number of monotonic effects\n",
     "  int<lower=1> Imo", p, ";  // number of monotonig variables\n",
