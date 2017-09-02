@@ -268,13 +268,8 @@ extract_draws_mo <- function(monef, args, sdata, px = list()) {
   # extract data and parameters for monotonic effects
   monef <- rename(monef)
   draws$bmo <- named_list(monef)
-  # as of brms > 1.2.0 the prefix 'bmo' is used
-  bmo <- ifelse(
-    any(grepl("^bmo_", parnames(args$x))), "bmo_",
-    ifelse(any(grepl("^bm_", parnames(args$x))), "bm_", "b_")
-  )
   for (i in seq_along(monef)) {
-    bmo_par <- paste0(bmo, p, monef[i])
+    bmo_par <- paste0("bmo_", p, monef[i])
     draws[["bmo"]][[i]] <- do.call(as.matrix,
       c(args, list(pars = bmo_par, exact = TRUE))
     )

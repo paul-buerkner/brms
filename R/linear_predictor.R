@@ -16,7 +16,6 @@ linear_predictor <- function(draws, i = NULL) {
     i <- seq(i, nobs, draws$data$N_trait)
   }
   N <- ifelse(!is.null(i), length(i), draws$data$N) 
-  
   eta <- matrix(0, nrow = draws$nsamples, ncol = N)
   if (!is.null(draws[["b"]])) {
     eta_fe <- try(
@@ -282,7 +281,7 @@ mo_predictor <- function(eval_list, call, b, r = NULL) {
 }
 
 .mo <- function(simplex, X) {
-  # R implementation of the user define Stan function 'mo'
+  # R implementation of the user defined Stan function 'mo'
   # Args:
   #   simplex: posterior samples of a simplex parameter vector
   #   X: variable modeled as monotonic

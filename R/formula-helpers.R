@@ -342,9 +342,8 @@ cse <- function(expr) {
 #' 
 #' @aliases mono monotonic
 #' 
-#' @param expr Expression containing predictors,
-#'  for which monotonic effects should be estimated. 
-#'  For evaluation, \R formula syntax is applied.
+#' @param x An integer variable or an orderd factor
+#'   to be modeled as monotonic.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
 #'   as well as \code{vignette("brms_monotonic")}.

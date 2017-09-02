@@ -137,7 +137,7 @@ restructure <- function(x, rstr_summary = FALSE) {
     if (version <= "1.9.0.3") {
       # names of monotonic parameters had to be changed after
       # allowing for interactions in monotonic terms
-      change <- change_old_mo(bterms, data, pars = parnames(x))
+      change <- change_old_mo(bterms, x$data, pars = parnames(x))
       x <- do_renaming(x, change)
     }
     stan_env <- attributes(x$fit)$.MISC
