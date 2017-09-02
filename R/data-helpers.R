@@ -13,11 +13,14 @@ update_data <- function(data, bterms, na.action = na.omit,
   #     this ensures that (1) calls to 'poly' work correctly
   #     and (2) that the number of variables matches the number 
   #     of variable names; fixes issue #73
-  #   knots: a list of knot values for GAMMS
+  #   knots: a list of knot values for GAMMs
   # Returns:
   #   model.frame for use in brms functions
   if (missing(data)) {
     stop2("Argument 'data' is missing.")
+  }
+  if (is.null(knots)) {
+    knots <- attr(data, "knots", TRUE)
   }
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
     # to avoid error described in #30

@@ -599,9 +599,70 @@ change_old_sm <- function(bterms, pars, dims) {
   change
 }
 
+change_old_mo <- function(bterms, data, pars) {
+  # change names of monotonic effects fitted with brms <= 1.9.0
+  # this became necessary after implementing monotonic interactions
+  stopifnot(is.brmsterms(bterms))
+  .change_old_mo <- function(bt) {
+    change <- list()
+    monef <- get_mo_labels(bt, data)
+    if (!length(monef)) {
+      return(change)
+    }
+    p <- usc(combine_prefix(bt))
+    bmo_prefix <- paste0("bmo", p, "_")
+    bmo_regex <- paste0("^", bmo_prefix, "[^_]+$")
+    bmo_old <- pars[grepl(bmo_regex, pars)]
+    bmo_new <- paste0(bmo_prefix, rename(monef))
+    if (length(bmo_old) != length(bmo_new)) {
+      stop2("Restructuring failed. Please refit your ", 
+            "model with the latest version of brms.")
+    }
+    for (i in seq_along(bmo_old)) {
+      pos <- grepl(paste0("^", bmo_old[i]), pars)
+      change <- lc(change, nlist(pos, fnames = bmo_new[i]))
+    }
+    simo_regex <- paste0("^simplex", p, "_[^_]+$")
+    simo_old_all <- pars[grepl(simo_regex, pars)]
+    simo_index <- get_matches("\\[[[:digit:]]+\\]$", simo_old_all)
+    simo_old <- unique(sub("\\[[[:digit:]]+\\]$", "", simo_old_all))
+    simo_coef <- get_simo_labels(monef)
+    for (i in seq_along(simo_old)) {
+      regex_pos <- paste0("^", simo_old[i])
+      pos <- grepl(regex_pos, pars)
+      simo_new <- paste0("simo", p, "_", simo_coef[i])
+      simo_index_part <- simo_index[grepl(regex_pos, simo_old_all)]
+      simo_new <- paste0(simo_new, simo_index_part)
+      change <- lc(change, nlist(pos, fnames = simo_new))
+    }
+    return(change)
+  }
+  
+  change <- list()
+  if (length(bterms$response) > 1L) {
+    for (r in bterms$response) {
+      bterms$dpars$mu$resp <- r
+      change <- c(change, .change_old_mo(bterms$dpars$mu))
+    }
+    bterms$dpars$mu <- NULL
+  }
+  for (dp in names(bterms$dpars)) {
+    bt <- bterms$dpars[[dp]]
+    if (length(bt$nlpars)) {
+      for (nlp in names(bt$nlpars)) {
+        change <- c(change, .change_old_mo(bt$nlpars[[nlp]]))
+      }
+    } else {
+      change <- c(change, .change_old_mo(bt))
+    }
+  }
+  change
+}
+
 change_simple <- function(oldname, fnames, pars, dims,
                           pnames = fnames) {
   # helper function for very simple renaming
+  # only used in renaming of old models
   pos <- grepl(paste0("^", oldname), pars)
   if (any(pos)) {
     out <- nlist(pos, oldname, pnames, fnames,

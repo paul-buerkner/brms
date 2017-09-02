@@ -76,6 +76,10 @@ restructure <- function(x, rstr_summary = FALSE) {
     x$nonlinear <- x$partial <- NULL
     x$formula[["old_mv"]] <- is_old_mv(x)
     bterms <- parse_bf(formula(x))
+    if (!isTRUE(x$formula[["old_mv"]])) {
+      x$data <- rm_attr(x$data, "brmsframe")
+      x$data <- update_data(x$data, bterms) 
+    }
     x$ranef <- tidy_ranef(bterms, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
       class(x$prior) <- c("brmsprior", "data.frame") 
@@ -129,6 +133,12 @@ restructure <- function(x, rstr_summary = FALSE) {
     }
     if (version <= "1.8.0.1") {
       x$prior[, c("resp", "dpar")] <- ""
+    }
+    if (version <= "1.9.0.3") {
+      # names of monotonic parameters had to be changed after
+      # allowing for interactions in monotonic terms
+      change <- change_old_mo(bterms, data, pars = parnames(x))
+      x <- do_renaming(x, change)
     }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
