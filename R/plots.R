@@ -80,9 +80,11 @@ plot.brmsMarginalEffects <- function(
           data = attr(x[[i]], "points"), inherit.aes = FALSE,
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
-        is_factor_gvar <- is.factor(attr(x[[i]], "points")[, gvar])
+        is_factor_gvar <- is_like_factor(attr(x[[i]], "points")[, gvar])
         if (is_factor_gvar) {
-          .point_args$mapping$colour <- parse(text = gvar)[[1]]
+          expr_gvar <- parse(text = gvar)[[1]]
+          .point_args$mapping$colour <- expr_gvar
+          .point_args$mapping$fill <- expr_gvar
         } else if (is_theme_black) {
           .point_args$colour <- "white"
         }
