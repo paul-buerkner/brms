@@ -149,7 +149,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   out[[paste0("Kmo", p)]] <- length(monef)
   out[[paste0("Imo", p)]] <- max(unlist(att$Imo))
   Xmo <- lapply(unlist(att$calls_mo), 
-    function(x) attr(eval2(x, data), "var")
+    function(x) as.array(attr(eval2(x, data), "var"))
   )
   Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
   out <- c(out, setNames(Xmo, Xmo_names))
@@ -162,7 +162,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   Cmo <- get_model_matrix(bterms$mo, data)
   avoid_dpars(colnames(Cmo), bterms = bterms)
   Cmo <- Cmo[, att$not_one, drop = FALSE]
-  Cmo <- lapply(seq_len(ncol(Cmo)), function(i) Cmo[, i])
+  Cmo <- lapply(seq_len(ncol(Cmo)), function(i) as.array(Cmo[, i]))
   if (length(Cmo)) {
     Cmo_names <- paste0("Cmo", p, "_", seq_along(Cmo))
     out <- c(out, setNames(Cmo, Cmo_names))

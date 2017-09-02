@@ -891,7 +891,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
       stop2(
         "The following priors do not correspond ", 
         "to any model parameter: \n",
-        collapse(.print_prior(prior[invalid, ]), "\n")
+        collapse(.print_prior(prior[invalid, ]), "\n"),
+        "Function 'get_prior' might be helpful to you."
       )
     }
   }
@@ -962,14 +963,14 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
       take <- with(prior,
-        class == "simplex" & coef == monef[i] & nlpar == names(mo_forms)[k]
+        class == "simo" & coef == monef[i] & nlpar == names(mo_forms)[k]
       )
-      simplex_prior <- prior$prior[take]
-      if (isTRUE(nzchar(simplex_prior))) {
+      simo_prior <- prior$prior[take]
+      if (isTRUE(nzchar(simo_prior))) {
         # hard code prior concentration 
         # in order not to depend on external objects
-        simplex_prior <- paste0(eval2(simplex_prior), collapse = ", ")
-        prior$prior[take] <- paste0("dirichlet(c(", simplex_prior, "))")
+        simo_prior <- paste0(eval2(simo_prior), collapse = ", ")
+        prior$prior[take] <- paste0("dirichlet(c(", simo_prior, "))")
       }
     }
   }
@@ -1063,7 +1064,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
         }
-      } else if (prior$class[i] %in% c("simplex", "theta")) {
+      } else if (prior$class[i] %in% c("simo", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2(
             "Currently 'dirichlet' is the only valid prior ",
