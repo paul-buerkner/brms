@@ -19,7 +19,7 @@ dat2 <- data.frame(
 
 library(brms)
 brmsfit_example1 <- brm(
-  bf(count ~ Trt*Age + mono(Exp) + s(Age) +
+  bf(count ~ Trt*Age + mo(Exp) + s(Age) +
       offset(Age) + (1+Trt|visit), sigma ~ Trt),
   data = dat, family = student(), 
   autocor = cor_arma(~visit|patient, 1, 1),
