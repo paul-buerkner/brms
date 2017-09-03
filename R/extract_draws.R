@@ -682,6 +682,7 @@ extract_draws_autocor <- function(fit, subset = NULL,
         stop2("Without a grouping factor, CAR models cannot handle newdata.")
       }
     }
+    draws[["car"]] <- named_list(c("Zcar", "rcar"))
     gcar <- sdata[["Jloc"]]
     Zcar <- matrix(rep(1, length(gcar)))
     draws[["car"]][["Zcar"]] <- prepare_Z(Zcar, list(gcar))

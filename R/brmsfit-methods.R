@@ -1568,7 +1568,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   bt_list <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      bt_list[[r]] <- bterms$dpars["mu"]
+      bt_list[[r]] <- bterms$dpars[["mu"]]
     }
     bterms$dpars[["mu"]] <- NULL
   }

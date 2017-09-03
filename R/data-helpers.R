@@ -295,8 +295,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
-  only_resp <- c(all.vars(bterms$respform), all.vars(bterms$adforms$dec))
+  only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
+  # always include 'dec' variables in 'only_resp'
+  only_resp <- c(only_resp, all.vars(bterms$adforms$dec))
   missing_resp <- setdiff(only_resp, names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
