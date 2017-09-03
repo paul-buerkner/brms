@@ -6,12 +6,11 @@
 \alias{monotonic}
 \title{Monotonic Predictors in \pkg{brms} Models}
 \usage{
-mo(expr)
+mo(x)
 }
 \arguments{
-\item{expr}{Expression containing predictors,
-for which monotonic effects should be estimated. 
-For evaluation, \R formula syntax is applied.}
+\item{x}{An integer variable or an orderd factor
+to be modeled as monotonic.}
 }
 \description{
 Monotonic Predictors in \pkg{brms} Models
@@ -35,12 +34,20 @@ ls <- mean_ls[income] + rnorm(100, sd = 7)
 dat <- data.frame(income, ls)
 
 # fit a simple monotonic model
-fit <- brm(ls ~ mo(income), data = dat)
+fit1 <- brm(ls ~ mo(income), data = dat)
 
 # summarise the model
-summary(fit)
-plot(fit, N = 6)
-plot(marginal_effects(fit), points = TRUE)
+summary(fit1)
+plot(fit1, N = 6)
+plot(marginal_effects(fit1), points = TRUE)
+
+# model interaction with other variables
+dat$x <- sample(c("a", "b", "c"), 100, TRUE)
+fit2 <- brm(ls ~ mo(income)*x, data = dat)
+
+# summarise the model
+summary(fit2)
+plot(marginal_effects(fit2), points = TRUE)
 } 
  
 }

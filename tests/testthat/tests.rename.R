@@ -124,3 +124,32 @@ test_that("change_old_sm return expected lists", {
                      family = gaussian())
   expect_equal(brms:::change_old_sm(bterms, pars, dims), target)
 })
+
+test_that("change_old_mo returns expected lists", {
+  bterms <- parse_bf(bf(y ~ mo(x), sigma ~ mo(x)))
+  data <- data.frame(y = rnorm(10), x = rep(1:5, 2))
+  pars <- c(
+    "bmo_x", "bmo_sigma_x", 
+    paste0("simplex_x[", 1:5, "]"),
+    paste0("simplex_sigma_x[", 1:5, "]")
+  )
+  target <- list(
+    list(
+      pos = c(TRUE, rep(FALSE, 11)),
+      fnames = "bmo_mox"
+    ),
+    list(
+      pos = c(FALSE, FALSE, rep(TRUE, 5), rep(FALSE, 5)),
+      fnames = paste0("simo_mox1[", 1:5, "]")
+    ),
+    list(
+      pos = c(FALSE, TRUE, rep(FALSE, 10)),
+      fnames = "bmo_sigma_mox"
+    ),
+    list(
+      pos = c(rep(FALSE, 7), rep(TRUE, 5)),
+      fnames = paste0("simo_sigma_mox1[", 1:5, "]")
+    )
+  )
+  expect_equal(brms:::change_old_mo(bterms, data, pars), target)
+})

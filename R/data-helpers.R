@@ -13,11 +13,14 @@ update_data <- function(data, bterms, na.action = na.omit,
   #     this ensures that (1) calls to 'poly' work correctly
   #     and (2) that the number of variables matches the number 
   #     of variable names; fixes issue #73
-  #   knots: a list of knot values for GAMMS
+  #   knots: a list of knot values for GAMMs
   # Returns:
   #   model.frame for use in brms functions
   if (missing(data)) {
     stop2("Argument 'data' is missing.")
+  }
+  if (is.null(knots)) {
+    knots <- attr(data, "knots", TRUE)
   }
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
     # to avoid error described in #30
@@ -292,8 +295,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
-  only_resp <- c(all.vars(bterms$respform), all.vars(bterms$adforms$dec))
+  only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
+  # always include 'dec' variables in 'only_resp'
+  only_resp <- c(only_resp, all.vars(bterms$adforms$dec))
   missing_resp <- setdiff(only_resp, names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
@@ -522,46 +527,6 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
-mo_design_matrix <- function(formula, data, check = TRUE) {
-  # compute the design matrix of monotonic effects
-  # Args:
-  #   formula: formula containing mononotic terms
-  #   data: a data.frame or named list
-  #   check: check the number of levels? 
-  data <- model.frame(formula, data)
-  vars <- names(data)
-  for (i in seq_along(vars)) {
-    # validate predictors to be modeled as monotonic
-    if (is.ordered(data[[vars[i]]])) {
-      # counting starts at zero
-      data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
-    } else if (all(is_wholenumber(data[[vars[i]]]))) {
-      min_value <- attr(data[[vars[i]]], "min")
-      if (is.null(min_value)) {
-        min_value <- min(data[[vars[i]]])
-      }
-      data[[vars[i]]] <- data[[vars[i]]] - min_value
-    } else {
-      stop2(
-        "Monotonic predictors must be either integers or ",
-        "ordered factors. Error occured for variable '", 
-        vars[i], "'."
-      )
-    }
-    if (check && max(data[[vars[i]]]) < 2L) {
-      stop2(
-        "Monotonic predictors must have at least 3 different ", 
-        "values. Error occured for variable '", vars[i], "'."
-      )
-    }
-  }
-  out <- get_model_matrix(formula, data, cols2remove = "(Intercept)")
-  if (any(grepl(":", colnames(out), fixed = TRUE))) {
-    stop2("Modeling interactions as monotonic is not meaningful.")
-  }
-  out
-}
-
 arr_design_matrix <- function(Y, r, group)  { 
   # compute the design matrix for ARR effects
   # Args:
@@ -602,8 +567,13 @@ make_Jmo_list <- function(x, data, ...) {
 #' @export
 make_Jmo_list.btl <- function(x, data, ...) {
   if (!is.null(x$mo)) {
-    Xmo <- mo_design_matrix(x$mo, data, ...)
-    out <- as.array(apply(Xmo, 2, max)) 
+    # do it like data_mo()
+    monef <- get_mo_labels(x, data)
+    calls_mo <- unlist(attr(monef, "calls_mo"))
+    Xmo <- lapply(calls_mo, 
+      function(x) attr(eval2(x, data), "var")
+    )
+    out <- as.array(ulapply(Xmo, max))
   } else {
     out <- NULL
   }

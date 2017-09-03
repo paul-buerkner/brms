@@ -137,39 +137,53 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
                     prior = brmsprior(), Jmo = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects
+  out <- list()
+  monef <- get_mo_labels(bterms, data)
+  if (!length(monef)) {
+    return(out) 
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  out <- list()
-  if (is.formula(bterms[["mo"]])) {
-    Xmo <- mo_design_matrix(bterms$mo, data, check = is.null(Jmo))
-    avoid_dpars(colnames(Xmo), bterms = bterms)
-    if (is.null(Jmo)) {
-      Jmo <- as.array(apply(Xmo, 2, max))
-    }
-    out <- c(out, 
-      setNames(
-        list(ncol(Xmo), Xmo, Jmo), 
-        paste0(c("Kmo", "Xmo", "Jmo"), p)
-      )
+  att <- attributes(monef)
+  # store monotonic variables
+  out[[paste0("Kmo", p)]] <- length(monef)
+  out[[paste0("Imo", p)]] <- max(unlist(att$Imo))
+  Xmo <- lapply(unlist(att$calls_mo), 
+    function(x) as.array(attr(eval2(x, data), "var"))
+  )
+  Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
+  out <- c(out, setNames(Xmo, Xmo_names))
+  compute_Jmo <- is.null(Jmo)
+  if (is.null(Jmo)) {
+    Jmo <- as.array(ulapply(Xmo, max))
+  }
+  out[[paste0("Jmo", p)]] <- Jmo
+  # store covariates of monotonic variables
+  Cmo <- get_model_matrix(bterms$mo, data)
+  avoid_dpars(colnames(Cmo), bterms = bterms)
+  Cmo <- Cmo[, att$not_one, drop = FALSE]
+  Cmo <- lapply(seq_len(ncol(Cmo)), function(i) as.array(Cmo[, i]))
+  if (length(Cmo)) {
+    Cmo_names <- paste0("Cmo", p, "_", seq_along(Cmo))
+    out <- c(out, setNames(Cmo, Cmo_names))
+  }
+  # store prior concentration of simplex parameters
+  simo_coef <- get_simo_labels(monef)
+  for (i in seq_along(simo_coef)) {
+    simo_prior <- subset2(prior, 
+      class = "simo", coef = simo_coef[i], ls = px
     )
-    # validate and assign vectors for dirichlet prior
-    monef <- colnames(Xmo)
-    for (i in seq_along(monef)) {
-      simplex_prior <- subset2(prior,
-        class = "simplex", coef = monef[i], ls = px
-      )
-      simplex_prior <- simplex_prior$prior
-      if (isTRUE(nzchar(simplex_prior))) {
-        simplex_prior <- eval2(simplex_prior)
-        if (length(simplex_prior) != Jmo[i]) {
-          stop2("Invalid Dirichlet prior for the simplex of coefficient '",
-                monef[i], "'. Expected input of length ", Jmo[i], ".")
-        }
-        out[[paste0("con_simplex", p, "_", i)]] <- simplex_prior
-      } else {
-        out[[paste0("con_simplex", p, "_", i)]] <- rep(1, Jmo[i]) 
+    simo_prior <- simo_prior$prior
+    if (isTRUE(nzchar(simo_prior))) {
+      simo_prior <- eval2(simo_prior)
+      if (length(simo_prior) != Jmo[i]) {
+        stop2("Invalid Dirichlet prior for the simplex of coefficient '",
+              simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
       }
+    } else {
+      simo_prior <- rep(1, Jmo[i])
     }
+    out[[paste0("con_simo", p, "_", i)]] <- simo_prior
   }
   out
 }
@@ -316,10 +330,11 @@ data_me <- function(bterms, data) {
   px <- check_prefix(bterms)
   meef <- get_me_labels(bterms, data)
   if (length(meef)) {
+    att <- attributes(meef)
     p <- usc(combine_prefix(px))
     Cme <- get_model_matrix(bterms$me, data)
     avoid_dpars(colnames(Cme), bterms = bterms)
-    Cme <- Cme[, attr(meef, "not_one"), drop = FALSE]
+    Cme <- Cme[, att$not_one, drop = FALSE]
     Cme <- lapply(seq_len(ncol(Cme)), function(i) Cme[, i])
     if (length(Cme)) {
       Cme <- setNames(Cme, paste0("Cme", p, "_", seq_along(Cme)))

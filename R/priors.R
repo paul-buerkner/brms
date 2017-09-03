@@ -218,8 +218,9 @@
 #'   monotonic effects make use of a special parameter vector to
 #'   estimate the 'normalized distances' between consecutive predictor 
 #'   categories. This is realized in \pkg{Stan} using the \code{simplex}
-#'   parameter type and thus this class is also named \code{"simplex"} in
-#'   \pkg{brms}. The only valid prior for simplex parameters is the
+#'   parameter type. This class is named \code{"simo"} (short for 
+#'   simplex monotonic) in \pkg{brms}. 
+#'   The only valid prior for simplex parameters is the
 #'   dirichlet prior, which accepts a vector of length \code{K - 1}
 #'   (K = number of predictor categories) as input defining the
 #'   'concentration' of the distribution. Explaining the dirichlet prior 
@@ -227,7 +228,10 @@
 #'   how to define this prior syntactically correct.
 #'   If a predictor \code{x} with \code{K} categories is modeled as monotonic, 
 #'   we can define a prior on its corresponding simplex via \cr
-#'   \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
+#'   \code{prior(dirichlet(<vector>), class = simo, coef = mox1)}.
+#'   The \code{1} in the end of \code{coef} indicates that this is the first
+#'   simplex in this term. If interactions between multiple monotonic
+#'   variables are modeled, multiple simplexes per term are required.  
 #'   For \code{<vector>}, we can put in any \code{R} expression
 #'   defining a vector of length \code{K - 1}. The default is a uniform 
 #'   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
@@ -679,12 +683,14 @@ prior_mo <- function(bterms, data) {
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
-  monef <- all_terms(bterms$mo)
+  monef <- get_mo_labels(bterms, data)
   if (length(monef)) {
     px <- check_prefix(bterms)
+    simo_coef <- get_simo_labels(monef)
+    monef <- rename(monef)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", monef), ls = px) + 
-      brmsprior(class = "simplex", coef = monef, ls = px)
+      brmsprior(class = "simo", coef = simo_coef, ls = px)
   }
   prior
 }
@@ -889,7 +895,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
       stop2(
         "The following priors do not correspond ", 
         "to any model parameter: \n",
-        collapse(.print_prior(prior[invalid, ]), "\n")
+        collapse(.print_prior(prior[invalid, ]), "\n"),
+        "Function 'get_prior' might be helpful to you."
       )
     }
   }
@@ -960,14 +967,14 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
       take <- with(prior,
-        class == "simplex" & coef == monef[i] & nlpar == names(mo_forms)[k]
+        class == "simo" & coef == monef[i] & nlpar == names(mo_forms)[k]
       )
-      simplex_prior <- prior$prior[take]
-      if (isTRUE(nzchar(simplex_prior))) {
+      simo_prior <- prior$prior[take]
+      if (isTRUE(nzchar(simo_prior))) {
         # hard code prior concentration 
         # in order not to depend on external objects
-        simplex_prior <- paste0(eval2(simplex_prior), collapse = ", ")
-        prior$prior[take] <- paste0("dirichlet(c(", simplex_prior, "))")
+        simo_prior <- paste0(eval2(simo_prior), collapse = ", ")
+        prior$prior[take] <- paste0("dirichlet(c(", simo_prior, "))")
       }
     }
   }
@@ -1061,7 +1068,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
         }
-      } else if (prior$class[i] %in% c("simplex", "theta")) {
+      } else if (prior$class[i] %in% c("simo", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2(
             "Currently 'dirichlet' is the only valid prior ",

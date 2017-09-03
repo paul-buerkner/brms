@@ -342,9 +342,8 @@ cse <- function(expr) {
 #' 
 #' @aliases mono monotonic
 #' 
-#' @param expr Expression containing predictors,
-#'  for which monotonic effects should be estimated. 
-#'  For evaluation, \R formula syntax is applied.
+#' @param x An integer variable or an orderd factor
+#'   to be modeled as monotonic.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
 #'   as well as \code{vignette("brms_monotonic")}.
@@ -365,29 +364,57 @@ cse <- function(expr) {
 #' dat <- data.frame(income, ls)
 #' 
 #' # fit a simple monotonic model
-#' fit <- brm(ls ~ mo(income), data = dat)
+#' fit1 <- brm(ls ~ mo(income), data = dat)
 #' 
 #' # summarise the model
-#' summary(fit)
-#' plot(fit, N = 6)
-#' plot(marginal_effects(fit), points = TRUE)
+#' summary(fit1)
+#' plot(fit1, N = 6)
+#' plot(marginal_effects(fit1), points = TRUE)
+#' 
+#' # model interaction with other variables
+#' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
+#' fit2 <- brm(ls ~ mo(income)*x, data = dat)
+#' 
+#' # summarise the model
+#' summary(fit2)
+#' plot(marginal_effects(fit2), points = TRUE)
 #' } 
 #'  
 #' @export
-mo <- function(expr) {
-  deparse_no_string(substitute(expr))
+mo <- function(x) {
+  x_name <- attr(x, "x_name")
+  if (is.null(x_name)) {
+    x_name <- deparse_combine(substitute(x))  
+  }
+  if (is.ordered(x)) {
+    # counting starts at zero
+    x <- as.numeric(x) - 1 
+  } else if (all(is_wholenumber(x))) {
+    min_value <- attr(x, "min")
+    if (is.null(min_value)) {
+      min_value <- min(x)
+    }
+    x <- x - min_value
+  } else {
+    stop2(
+      "Monotonic predictors must be integers or ordered ", 
+      "factors. Error occured for variable '", x_name, "'."
+    )
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x) 
 }
 
 #' @export
-mono <- function(expr) {
-  # alias of function 'mo'
-  deparse_no_string(substitute(expr))
+mono <- function(x) {
+  attr(x, "x_name") <- deparse_combine(substitute(x)) 
+  mo(x)
 }
 
 #' @export
-monotonic <- function(expr) {
-  # alias of function 'mo'
-  deparse_no_string(substitute(expr))
+monotonic <- function(x) {
+  attr(x, "x_name") <- deparse_combine(substitute(x))
+  mo(x)
 }
 
 #' Set up Gaussian process terms in \pkg{brms}

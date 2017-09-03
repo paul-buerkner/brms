@@ -5,6 +5,9 @@
 \section{CHANGES IN VERSION 1.9.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Rebuild monotonic effects from scratch
+      to allow specifying interactions with other
+      variables.
       \item Introduce methods \code{posterior_linpred}
       and \code{posterior_interval} for consistency
       with other model fitting packages based on 
@@ -35,6 +38,9 @@
       slots in the output of method \code{hypothesis}.
       \item No longer change the default theme of
       \pkg{ggplot2} when attaching \pkg{brms}.
+      \item Refactor parts of \code{extract_draws}
+      and \code{linear_predictor} to be more consistent
+      with the rest of the package.
     }
   }
   \subsection{BUG FIXES}{
@@ -46,6 +52,8 @@
       passed to \code{set_prior}.
       \item Handle non \code{data.frame} objects 
       correctly in \code{hypothesis.default}.
+      \item Fix a problem relating to the colour
+      of points displayed in \code{marginal_effects}.
     }
   }
 }

@@ -286,8 +286,8 @@ test_that("make_standata correctly prepares data for non-linear models", {
                          data = data)
   expect_equal(names(sdata), 
     c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1", 
-      "K_b", "X_b", "Kmo_b", "Xmo_b", "Jmo_b", 
-      "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
+      "K_b", "X_b", "Kmo_b", "Imo_b", "Xmo_b_1", "Jmo_b", 
+      "con_simo_b_1", "Z_1_b_2", "J_1", "N_1", 
       "M_1", "NC_1", "prior_only")
   )
   expect_equal(colnames(sdata$X_a), c("Intercept", "x"))
@@ -311,28 +311,38 @@ test_that("make_standata correctly prepares data for non-linear models", {
 test_that("make_standata correctly prepares data for monotonic effects", {
   data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                      x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  sdata <- make_standata(y ~ mono(x1 + x2), data = data)
-  expect_true(all(c("Xmo", "Jmo", "con_simplex_1", "con_simplex_2") %in% names(sdata)))
-  expect_equivalent(sdata$Xmo, cbind(data$x1 - 1, as.numeric(data$x2) - 1))
-  expect_equal(as.vector(unname(sdata$Jmo)), 
-               c(max(data$x1) - 1, length(unique(data$x2)) - 1))
-  expect_equal(sdata$con_simplex_1, rep(1, 3))
+  sdata <- make_standata(y ~ mo(x1)*mo(x2)*y, data = data)
+  sdata_names <- c("Xmo_1", "Imo", "Jmo",  "con_simo_8", "con_simo_5")
+  expect_true(all(sdata_names %in% names(sdata)))
+  expect_equivalent(sdata$Xmo_1, as.array(data$x1 - 1))
+  expect_equivalent(sdata$Xmo_2, as.array(as.numeric(data$x2) - 1))
+  expect_equal(
+    as.vector(unname(sdata$Jmo)), 
+    rep(c(max(data$x1) - 1, length(unique(data$x2)) - 1), 4)
+  )
+  expect_equal(sdata$con_simo_1, rep(1, 3))
   
-  prior <- set_prior("dirichlet(1:3)", coef = "x1", 
-                     class = "simplex", dpar = "sigma")
-  sdata <- make_standata(bf(y ~ 1, sigma ~ mono(x1)), 
+  prior <- set_prior("dirichlet(1:3)", coef = "mox11", 
+                     class = "simo", dpar = "sigma")
+  sdata <- make_standata(bf(y ~ 1, sigma ~ mo(x1)), 
                          data = data, prior = prior)
-  expect_equal(sdata$con_simplex_sigma_1, 1:3)
+  expect_equal(sdata$con_simo_sigma_1, 1:3)
   
-  prior <- c(set_prior("normal(0,1)", class = "b", coef = "x"),
-             set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x1"))
-  sdata <- make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior)
-  expect_equal(sdata$con_simplex_1, c(1,0.5,2))
+  prior <- c(
+    set_prior("normal(0,1)", class = "b", coef = "mox1"),
+    set_prior("dirichlet(c(1, 0.5, 2))", class = "simo", coef = "mox11"),
+    prior_(~dirichlet(c(1, 0.5, 2)), class = "simo", coef = "mox1:mox21")
+  )
+  sdata <- make_standata(y ~ mo(x1)*mo(x2), data = data, prior = prior)
+  expect_equal(sdata$con_simo_1, c(1, 0.5, 2))
+  expect_equal(sdata$con_simo_3, c(1, 0.5, 2))
   
-  prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
-  expect_error(make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior),
-               "Invalid Dirichlet prior for the simplex of coefficient 'x2'", 
-               fixed = TRUE)
+  prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simo", coef = "mox21"))
+  expect_error(
+    make_standata(y ~ mo(x2), data = data, prior = prior),
+    "Invalid Dirichlet prior for the simplex of coefficient 'mox21'", 
+    fixed = TRUE
+  )
 })
 
 test_that("make_standata returns fixed residual covariance matrices", {

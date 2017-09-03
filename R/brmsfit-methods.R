@@ -843,10 +843,10 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     rownames(out$splines) <- paste0(gsub("^sds_", "sds(", sm_pars), ")")
   }
   # summary of monotonic parameters
-  mo_pars <- pars[grepl("^simplex_", pars)]
+  mo_pars <- pars[grepl("^simo_", pars)]
   if (length(mo_pars)) {
     out$mo <- fit_summary[mo_pars, , drop = FALSE]
-    rownames(out$mo) <- gsub("^simplex_", "", mo_pars)
+    rownames(out$mo) <- gsub("^simo_", "", mo_pars)
   }
   # summary of gaussian processes
   gp_pars <- pars[grepl("^(sdgp|lscale)_", pars)]
@@ -1568,7 +1568,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   bt_list <- list()
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
-      bt_list[[r]] <- bterms$dpars["mu"]
+      bt_list[[r]] <- bterms$dpars[["mu"]]
     }
     bterms$dpars[["mu"]] <- NULL
   }
@@ -1636,10 +1636,10 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         draws <- do.call(extract_draws, c(args, more_args))
         J <- which(attr(sm_labels_by, "termnum") == i)
         scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
-        draws$data[["X"]] <- draws$data[["X"]][, scs, drop = FALSE]
-        draws[["b"]] <- draws[["b"]][, scs, drop = FALSE]
-        draws[["Zs"]] <- draws[["Zs"]][J] 
-        draws[["s"]] <- draws[["s"]][J]
+        draws[["fe"]][["X"]] <- draws[["fe"]][["X"]][, scs, drop = FALSE]
+        draws[["fe"]][["b"]] <- draws[["fe"]][["b"]][, scs, drop = FALSE]
+        draws[["sm"]][["Zs"]] <- draws[["sm"]][["Zs"]][J] 
+        draws[["sm"]][["s"]] <- draws[["sm"]][["s"]][J]
         eta <- get_eta(draws = draws, i = NULL)
         if (spaghetti && ncovars == 1L) {
           sample <- rep(seq_len(nrow(eta)), each = ncol(eta))

@@ -1097,7 +1097,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     for (i in seq_along(all_pars)) {
       k <- which(grepl(paste0("^", all_pars[i]), pars))
       bounds[k] <- all_bounds[i]
-      if (grepl("^simplex", all_pars[i])) {
+      if (grepl("^simo", all_pars[i])) {
         types[k] <- all_types[i]
       }
     }
