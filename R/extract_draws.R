@@ -349,21 +349,13 @@ extract_draws_me <- function(meef, args, sdata, px = list(),
     stop2("Noise-free variables were not saved. Please set ",
           "argument 'save_mevars' to TRUE when fitting your model.")
   }
-  uni_me <- attr(meef, "uni_me")
-  not_one <- attr(meef, "not_one")
+  att <- attributes(meef)
+  uni_me <- att$uni_me
   # prepare calls to evaluate noise-free data
-  me_sp <- strsplit(rm_wsp(meef), ":")
-  meef_terms <- rep(NA, length(me_sp))
-  for (i in seq_along(me_sp)) {
-    # remove non-me parts from the terms
-    take <- grepl_expr("^me\\([^:]*\\)$", me_sp[[i]])
-    me_sp[[i]] <- me_sp[[i]][take]
-    meef_terms[i] <- paste0(me_sp[[i]], collapse = " * ")
-  }
+  meef_terms <- ulapply(att$calls_me, paste0, collapse = " * ")
   new_me <- paste0("Xme_", seq_along(uni_me))
   meef_terms <- rename(meef_terms, uni_me, new_me)
-  ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  covars <- ifelse(not_one, paste0(" * Cme_", ci), "")
+  covars <- ifelse(att$not_one, paste0(" * Cme_", att$Icme), "")
   meef_terms <- paste0(meef_terms, covars)
   draws[["calls"]] <- parse(text = meef_terms)
   # extract coefficient samples
@@ -386,7 +378,7 @@ extract_draws_me <- function(meef, args, sdata, px = list(),
     )
   }
   # prepare covariates
-  ncovars <- sum(not_one)
+  ncovars <- sum(att$not_one)
   for (j in seq_len(ncovars)) {
     cme <- paste0("Cme_", j)
     draws[["Cme"]][[j]] <- as_draws_matrix(

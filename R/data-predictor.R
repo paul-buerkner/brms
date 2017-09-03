@@ -330,10 +330,11 @@ data_me <- function(bterms, data) {
   px <- check_prefix(bterms)
   meef <- get_me_labels(bterms, data)
   if (length(meef)) {
+    att <- attributes(meef)
     p <- usc(combine_prefix(px))
     Cme <- get_model_matrix(bterms$me, data)
     avoid_dpars(colnames(Cme), bterms = bterms)
-    Cme <- Cme[, attr(meef, "not_one"), drop = FALSE]
+    Cme <- Cme[, att$not_one, drop = FALSE]
     Cme <- lapply(seq_len(ncol(Cme)), function(i) Cme[, i])
     if (length(Cme)) {
       Cme <- setNames(Cme, paste0("Cme", p, "_", seq_along(Cme)))

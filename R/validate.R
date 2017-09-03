@@ -904,10 +904,22 @@ get_me_labels <- function(x, data) {
     return(character(0))
   }
   mm <- get_model_matrix(me_form, data, rename = FALSE)
+  meef <- colnames(mm)
+  # prepare attributes of meef
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  structure(colnames(mm), 
-    not_one = not_one, uni_me = attr(me_form, "uni_me")
-  )
+  Icme <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  uni_me <- attr(me_form, "uni_me")
+  calls_me <- strsplit(rm_wsp(meef), ":")
+  for (i in seq_along(meef)) {
+    # remove non-me parts from the terms
+    take <- grepl_expr("^me\\([^:]*\\)$", calls_me[[i]])
+    calls_me[[i]] <- calls_me[[i]][take]
+    # remove 'I' (identity) function calls that 
+    # were used solely to separate formula terms
+    calls_me[[i]] <- gsub("^I\\(", "(", calls_me[[i]])
+  }
+  att <- nlist(not_one, Icme, uni_me, calls_me)
+  do.call(structure, c(list(meef), att))
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {

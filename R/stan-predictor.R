@@ -694,31 +694,18 @@ stan_me <- function(bterms, data, ranef, prior) {
   out <- list()
   meef <- get_me_labels(bterms, data = data)
   if (length(meef)) {
-    not_one <- attr(meef, "not_one")
-    uni_me <- attr(meef, "uni_me")
+    att <- attributes(meef)
     px <- check_prefix(bterms)
     p <- usc(combine_prefix(px))
-    me_sp <- strsplit(rm_wsp(meef), ":")
-    meef_terms <- rep(NA, length(me_sp))
-    for (i in seq_along(me_sp)) {
-      # remove non-me parts from the terms
-      take <- grepl_expr("^me\\([^:]*\\)$", me_sp[[i]])
-      me_sp[[i]] <- me_sp[[i]][take]
-      # remove 'I' (identity) function calls that 
-      # were used solely to separate formula terms
-      I <- grepl("^I\\(", me_sp[[i]])
-      me_sp[[i]][I] <- gsub("^I\\(|\\)$", "", me_sp[[i]][I])
-      meef_terms[i] <- paste0(me_sp[[i]], collapse = ":")
-    }
-    new_me <- paste0("Xme_", seq_along(uni_me), "[n]")
-    meef_terms <- rename(meef_terms, uni_me, new_me)
-    ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-    covars <- ifelse(not_one, paste0(" * Cme", p, "_", ci, "[n]"), "")
-    ncovars <- sum(not_one)
+    meef_terms <- ulapply(att$calls_me, paste0, collapse = " * ")
+    new_me <- paste0("Xme_", seq_along(att$uni_me), "[n]")
+    meef_terms <- rename(meef_terms, att$uni_me, new_me)
+    str_add(meef_terms) <- ifelse(att$not_one,
+      paste0(" * Cme", p, "_", att$Icme, "[n]"), ""
+    )
     
     # prepare linear predictor component
     meef <- rename(meef)
-    meef_terms <- gsub(":", " * ", meef_terms)
     ranef <- subset2(ranef, type = "me", ls = px)
     invalid_coef <- setdiff(ranef$coef, meef)
     if (length(invalid_coef)) {
@@ -733,12 +720,12 @@ stan_me <- function(bterms, data, ranef, prior) {
         rpars <- ""
       }
       str_add(out$eta) <- paste0(
-        " + (bme", p, "[", i, "]", rpars, ") * ", 
-        meef_terms[i], covars[i]
+        " + (bme", p, "[", i, "]", rpars, ") * ", meef_terms[i]
       )
     }
     
-    # prepare Stan code
+    # prepare rest of the Stan code
+    ncovars <- sum(att$not_one)
     str_add(out$data) <- paste0(
       "  int<lower=0> Kme", p, ";",
       "  // number of terms of noise free variables \n",

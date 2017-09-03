@@ -939,7 +939,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "(bme[2] + r_1_2[J_1[n]]) * Xme_1[n] * Cme_1[n]")
   
   expect_match2(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
-               "(bme[1]) * Xme_1[n]^2")
+               "(bme[1]) * (Xme_1[n]^2)")
   
   # test that noise-free variables are unique across model parts
   scode <- make_stancode(
