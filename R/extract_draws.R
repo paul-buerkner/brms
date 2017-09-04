@@ -52,22 +52,23 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     }
     bterms$dpars[["mu"]] <- NULL
   }
-  # extract draws of auxiliary parameters
+  # extract draws of distributional parameters
   am_args <- nlist(x, subset)
   valid_dpars <- valid_dpars(x$family, bterms = bterms)
-  for (ap in valid_dpars) {
-    ap_regex <- paste0("^", ap, "($|_)")
-    if (is.btl(bterms$dpars[[ap]]) || is.btnl(bterms$dpars[[ap]])) {
-      p <- usc(combine_prefix(bterms$dpars[[ap]]))
-      more_args <- nlist(
-        x = bterms$dpars[[ap]], C = draws$data[[paste0("C", p)]]
-      )
-      draws[[ap]] <- do.call(extract_draws, c(args, more_args))
-      draws[[ap]][["f"]] <- bterms$dpars[[ap]]$family
-    } else if (is.numeric(bterms$fdpars[[ap]]$value)) {
-      draws[[ap]] <- bterms$fdpars[[ap]]$value
-    } else if (any(grepl(ap_regex, parnames(x)))) {
-      draws[[ap]] <- do.call(as.matrix, c(am_args, pars = ap_regex))
+  for (dp in valid_dpars) {
+    dp_regex <- paste0("^", dp, "($|_)")
+    if (is.btl(bterms$dpars[[dp]]) || is.btnl(bterms$dpars[[dp]])) {
+      more_args <- list(x = bterms$dpars[[dp]])
+      if (is.btnl(bterms$dpars[[dp]])) {
+        p <- usc(combine_prefix(bterms$dpars[[dp]]))
+        more_args$C <- draws$data[[paste0("C", p)]]
+      }
+      draws[[dp]] <- do.call(extract_draws, c(args, more_args))
+      draws[[dp]][["f"]] <- bterms$dpars[[dp]]$family
+    } else if (is.numeric(bterms$fdpars[[dp]]$value)) {
+      draws[[dp]] <- bterms$fdpars[[dp]]$value
+    } else if (any(grepl(dp_regex, parnames(x)))) {
+      draws[[dp]] <- do.call(as.matrix, c(am_args, pars = dp_regex))
     }
   }
   if (is.mixfamily(x$family)) {

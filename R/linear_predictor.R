@@ -488,7 +488,7 @@ predictor_offset <- function(draws, i, N) {
 predictor_autocor <- function(eta, draws, i) {
   # compute eta for autocorrelation structures
   # eta has to be passed to this function in order for
-  # ARMA structure to work correctly
+  # ARMA structures to work correctly
   if (!is.null(draws[["arr"]])) {
     eta <- eta + 
       .predictor_fe(X = p(draws$data$Yarr, i), b = draws[["arr"]])
@@ -516,7 +516,6 @@ predictor_autocor <- function(eta, draws, i) {
                             link = "identity") {
   # compute eta for ARMA effects
   # TODO: use C++ for this function
-  # TODO: handle 3-dimensional eta
   # Args:
   #   eta: previous linear predictor samples
   #   sdata: the data initially passed to Stan
