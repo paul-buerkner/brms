@@ -79,7 +79,8 @@
 #'   \bold{Group-level terms}
 #'   
 #'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. 
+#'   are possible (of course can also run models without any
+#'   group-level effects). 
 #'   Instead of \code{|} you may use \code{||} in grouping terms
 #'   to prevent correlations from being modeled. 
 #'   Alternatively, it is possible to model different group-level terms of 
@@ -115,7 +116,7 @@
 #'   
 #'   The \code{pterms} and \code{gterms} parts may contain three non-standard
 #'   effect types namely monotonic, measurement error, and category specific effects,
-#'   which can be specified using terms of the form \code{mo(<predictors>)},
+#'   which can be specified using terms of the form \code{mo(predictor)},
 #'   \code{me(predictor, sd_predictor)}, and \code{cs(<predictors>)}, 
 #'   respectively. Category specific effects can only be estimated in
 #'   ordinal models and are explained in more detail in the package's 
@@ -366,6 +367,7 @@
 #'   Non-linear models may not be uniquely identified and / or show bad convergence.
 #'   For this reason it is mandatory to specify priors on the non-linear parameters.
 #'   For instructions on how to do that, see \code{\link[brms:set_prior]{set_prior}}.
+#'   For some examples of non-linear models, see \code{vignette("brms_nonlinear")}.
 #'   
 #'   \bold{Formula syntax for predicting distributional parameters}
 #'   
@@ -373,7 +375,8 @@
 #'   distribution such as the residual standard deviation \code{sigma} 
 #'   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
 #'   The syntax closely resembles that of a non-linear 
-#'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
+#'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}. 
+#'   For some examples of distributional models, see \code{vignette("brms_distreg")}.
 #'   
 #'   Alternatively, one may fix distributional parameters to certain values.
 #'   However, this is mainly useful when models become too 
