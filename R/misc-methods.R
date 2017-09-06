@@ -121,7 +121,7 @@ print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
     }
   }
   print(out, quote = FALSE, right = TRUE)
-  invisible(out)
+  invisible(x)
 }
 
 #' @export
