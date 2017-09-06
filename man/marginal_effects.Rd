@@ -228,27 +228,27 @@ When creating \code{marginal_effects} for a particular predictor
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1 | patient),
            data = epilepsy, family = poisson()) 
            
 ## plot all marginal effects
 plot(marginal_effects(fit), ask = FALSE)
 
 ## change colours to grey scale
-me <- marginal_effects(fit, "log_Base4_c:Trt_c")
+me <- marginal_effects(fit, "log_Base4_c:Trt")
 plot(me, plot = FALSE)[[1]] + 
   scale_color_grey() +
   scale_fill_grey()
 
-## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
+## only plot the marginal interaction effect of 'log_Base4_c:Trt'
 ## for different values for 'log_Age_c'
 conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
+plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
                       conditions = conditions))
                       
 ## also incorporate random effects variance over patients
 ## also add data points and a rug representation of predictor values
-plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
+plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
                       conditions = conditions, re_formula = NULL), 
      points = TRUE, rug = TRUE)
  
@@ -256,21 +256,21 @@ plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c",
 int_conditions <- list(
   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
 )
-marginal_effects(fit, effects = "Trt_c:log_Base4_c",
+marginal_effects(fit, effects = "Trt:log_Base4_c",
                  int_conditions = int_conditions)
-marginal_effects(fit, effects = "Trt_c:log_Base4_c",
+marginal_effects(fit, effects = "Trt:log_Base4_c",
                  int_conditions = list(log_Base4_c = quantile))        
      
 ## fit a model to illustrate how to plot 3-way interactions
-fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
+fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
 conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
 marginal_effects(
-  fit3way, "log_Base4_c:Trt_c", conditions = conditions
+  fit3way, "log_Base4_c:Trt", conditions = conditions
 )
 ## only include points close to the specified values of log_Age_c
 me <- marginal_effects(
- fit3way, "log_Base4_c:Trt_c", conditions = conditions, 
+ fit3way, "log_Base4_c:Trt", conditions = conditions, 
  select_points = 0.1
 )
 plot(me, points = TRUE)
