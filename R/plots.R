@@ -16,6 +16,10 @@ plot.brmsMarginalEffects <- function(
     stop2("Argument 'points' is invalid for objects ", 
           "returned by 'marginal_smooths'.")
   }
+  if (!is_equal(jitter_width, 0)) {
+    warning2("'jitter_width' is deprecated. Please use ",
+             "'point_args = list(width = <width>)' instead.")
+  }
   if (!is.null(theme)) {
     if (!is.theme(theme)) {
       stop2("Argument 'theme' should be a 'theme' object.")
