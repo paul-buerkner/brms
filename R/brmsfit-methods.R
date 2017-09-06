@@ -760,14 +760,12 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     object$fit, pars = meta_pars, 
     probs = probs, use_cache = use_cache
   )
-  fit_summary <- fit_summary$summary
-  colnames_summary <- c(
-    "Estimate", "Est.Error", paste0(c("l-", "u-"), prob * 100, "% CI")
+  fit_summary <- fit_summary$summary[, -2, drop = FALSE]
+  CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
+  colnames(fit_summary) <- c(
+    "Estimate", "Est.Error", CIs, "Eff.Sample", "Rhat"
   )
-  algorithm <- algorithm(object)
-  if (algorithm == "sampling") {
-    fit_summary <- fit_summary[, -2, drop = FALSE]
-    colnames(fit_summary) <- c(colnames_summary, "Eff.Sample", "Rhat")
+  if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
       warning2(
@@ -792,8 +790,6 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
         )
       }
     }
-  } else {
-    colnames(fit_summary) <- colnames_summary
   }
   
   # fixed effects summary
