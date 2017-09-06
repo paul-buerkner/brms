@@ -12,8 +12,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
   }
   cat("Formula: ")
   print(x$formula, wsp = 9)
-  cat(paste0("   Data: ", x$data.name, 
-             " (Number of observations: ", x$nobs, ") \n"))
+  cat(paste0(
+    "   Data: ", x$data.name, 
+    " (Number of observations: ", x$nobs, ") \n"
+  ))
   if (!isTRUE(nzchar(x$sampler))) {
     cat("\nThe model does not contain posterior samples.\n")
   } else {
@@ -36,100 +38,90 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0(
       "    ICs: LOO = ", x$loo, "; WAIC = ", x$waic, "; R2 = ", x$R2, "\n \n"
     ))
-    
     if (nrow(x$prior)) {
       cat("Priors: \n")
       print(x$prior, show_df = FALSE)
       cat("\n")
     }
-    
     if (length(x$splines)) {
       cat("Smooth Terms: \n")
-      if (x$algorithm == "sampling") {
-        x$splines[, "Eff.Sample"] <- 
-          round(x$splines[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$splines, digits = digits)) 
+      print_format(x$splines, digits)
       cat("\n")
     }
-    
     if (length(x$gp)) {
       cat("Gaussian Process Terms: \n")
-      if (x$algorithm == "sampling") {
-        x$gp[, "Eff.Sample"] <- 
-          round(x$gp[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$gp, digits = digits)) 
+      print_format(x$gp, digits)
       cat("\n")
     }
-    
     if (length(x$random)) {
       cat("Group-Level Effects: \n")
       for (i in seq_along(x$random)) {
         g <- names(x$random)[i]
         cat(paste0("~", g, " (Number of levels: ", x$ngrps[[g]], ") \n"))
-        if (x$algorithm == "sampling") {
-          x$random[[g]][, "Eff.Sample"] <- 
-            round(x$random[[g]][, "Eff.Sample"], digits = 0)
-        }
-        print(round(x$random[[g]], digits = digits))
+        print_format(x$random[[g]], digits)
         cat("\n")
       }
     }
-    
     if (nrow(x$cor_pars)) {
       cat("Correlation Structure: ")
       print(x$autocor)
       cat("\n")
-      if (x$algorithm == "sampling") {
-        x$cor_pars[, "Eff.Sample"] <- 
-          round(x$cor_pars[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$cor_pars, digits = digits))
+      print_format(x$cor_pars, digits)
       cat("\n")
     }
-    
     if (nrow(x$fixed)) {
       cat("Population-Level Effects: \n")
-      if (x$algorithm == "sampling") {
-        x$fixed[, "Eff.Sample"] <- 
-          round(x$fixed[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$fixed, digits = digits)) 
+      print_format(x$fixed, digits)
       cat("\n")
     }
-    
     if (length(x$mo)) {
       cat("Simplex Parameters: \n")
-      if (x$algorithm == "sampling") {
-        x$mo[, "Eff.Sample"] <- 
-          round(x$mo[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$mo, digits = digits)) 
+      print_format(x$mo, digits)
       cat("\n")
     }
-    
     if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
-      if (x$algorithm == "sampling") {
-        x$spec_pars[, "Eff.Sample"] <- 
-          round(x$spec_pars[, "Eff.Sample"], digits = 0)
-      }
-      print(round(x$spec_pars, digits = digits))
+      print_format(x$spec_pars, digits)
       cat("\n")
     }
-    
     cat(paste0("Samples were drawn using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
-      cat(paste0("For each parameter, Eff.Sample \n",
-          "is a crude measure of effective sample size, ", 
-          "and Rhat is the potential \n",
-          "scale reduction factor on split chains ",
-          "(at convergence, Rhat = 1)."))
+      cat(paste0(
+        "For each parameter, Eff.Sample \n",
+        "is a crude measure of effective sample size, ", 
+        "and Rhat is the potential \n",
+        "scale reduction factor on split chains ",
+        "(at convergence, Rhat = 1)."
+      ))
     }
     cat("\n")
   }
   invisible(x)
+}
+
+print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
+  # helper function to print summary matrices
+  # in nice format, also showing -0.00 (#263)
+  # Args:
+  #   x: object to be printed; coerced to matrix
+  #   digits: number of digits to show
+  #   no_digits: names of columns for which no digits should be shown
+  x <- as.matrix(x)
+  digits <- as.numeric(digits)
+  if (length(digits) != 1L) {
+    stop2("'digits' should be a single numeric value.")
+  }
+  out <- x
+  fmt <- paste0("%.", digits, "f")
+  for (i in seq_len(ncol(x))) {
+    if (isTRUE(colnames(x)[i] %in% no_digits)) {
+      out[, i] <- sprintf("%.0f", x[, i])
+    } else {
+      out[, i] <- sprintf(fmt, x[, i])
+    }
+  }
+  print(out, quote = FALSE, right = TRUE)
+  invisible(out)
 }
 
 #' @export
