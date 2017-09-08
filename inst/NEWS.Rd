@@ -2,12 +2,12 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.9.0++}{
+\section{CHANGES IN VERSION 1.10.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Rebuild monotonic effects from scratch
       to allow specifying interactions with other
-      variables.
+      variables. (#239)
       \item Introduce methods \code{posterior_linpred}
       and \code{posterior_interval} for consistency
       with other model fitting packages based on 
@@ -18,7 +18,7 @@
       the same terms as ordinary group-level effects.
       \item Add argument \code{prob} to 
       \code{summary}, which allows to control the 
-      width of the computed uncertainty intervals.
+      width of the computed uncertainty intervals. (#259)
       \item Add argument \code{newdata} to the 
       \code{kfold} method.
       \item Add several arguments to the \code{plot}
@@ -29,7 +29,7 @@
   \subsection{OTHER CHANGES}{
     \itemize{
       \item Use the same noise-free variables
-      for all model parts in measurement error models.
+      for all model parts in measurement error models. (#257)
       \item Make names of local-level terms used
       in the \code{cor_bsts} structure more informative.
       \item Store the \code{autocor} argument
@@ -37,7 +37,9 @@
       \item Store posterior and prior samples in separate
       slots in the output of method \code{hypothesis}.
       \item No longer change the default theme of
-      \pkg{ggplot2} when attaching \pkg{brms}.
+      \pkg{ggplot2} when attaching \pkg{brms}. (#256)
+      \item Make sure signs of estimates are not dropped 
+      when rounding to zero in \code{summary.brmsfit}. (#263)
       \item Refactor parts of \code{extract_draws}
       and \code{linear_predictor} to be more consistent
       with the rest of the package.
