@@ -67,7 +67,7 @@ get_all_effects.btnl <- function(x, ...) {
   covars_comb <- as.list(covars)
   if (length(covars) > 1L) {
     covars_comb <- c(covars_comb, 
-                     utils::combn(covars, 2, simplify = FALSE)
+      utils::combn(covars, 2, simplify = FALSE)
     )
   }
   nl_effects <- lapply(x$nlpars, get_all_effects)

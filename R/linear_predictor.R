@@ -233,9 +233,10 @@ predictor_me <- function(draws, i) {
 
 .predictor_me <- function(eval_list, call, b, r = NULL) {
   # Args:
-  #   Xme: a matrix of samples of the noise-free variable
+  #   call: expression for evaluation of noise-free effects
+  #   eval_list: list containing variables for 'call'
   #   b: samples of the noise-free coefficient
-  #   r: matrix with meef group-level samples
+  #   r: matrix with noise-free group-level samples
   b <- as.vector(b)
   if (is.null(r)) r <- 0 
   (b + r) * eval(call, eval_list)
