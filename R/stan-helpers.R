@@ -512,7 +512,7 @@ stan_ordinal <- function(bterms, prior) {
           )
         }
       }
-      str_add(out$fun) <- "    return categorical_lpmf(y | p); \n   } \n"
+      str_add(out$fun) <- "     return categorical_lpmf(y | p); \n   } \n"
     }
   }
   out
