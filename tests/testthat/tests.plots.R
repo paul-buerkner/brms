@@ -10,7 +10,9 @@ test_that("plotting functions don't throw unexpected errors", {
   # stanplot.brmsfit
   expect_silent(p <- stanplot(fit))
   expect_silent(p <- stanplot(fit, pars = "^b"))
-  expect_silent(p <- stanplot(fit, type = "trace", pars = "^b_"))
+  expect_silent(p <- suppressMessages(
+    stanplot(fit, type = "trace", pars = "^b_")
+  ))
   expect_silent(p <- stanplot(fit, type = "hist", pars = "^sd_"))
   expect_silent(p <- stanplot(fit, type = "dens"))
   expect_silent(p <- stanplot(fit, type = "scatter",
