@@ -851,6 +851,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   all_priors <- get_prior(formula = formula, data = data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
+  } else if (!is.brmsprior(prior)) {
+    stop2("Argument 'prior' must be a 'brmsprior' object.")
   }
   # temporarily exclude priors that should not be checked
   no_checks <- !nzchar(prior$class)
