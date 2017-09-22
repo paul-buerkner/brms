@@ -33,6 +33,8 @@ test_that("brm produces expected errors", {
                "Duplicated group-level effects are not allowed")
   expect_error(brm(bf(cbind(y, x) ~ a, a ~ x, nl = TRUE), dat),
                "Multivariate non-linear models are not yet implemented")
+  expect_error(brm(y~mo(g)*me(x, g), dat),
+               "Cannot use multiple special terms within one term")
   
   # autocorrelation
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~x+y|g)), 

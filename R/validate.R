@@ -186,6 +186,7 @@ parse_lf <- function(formula, family = NULL) {
   # Returns:
   #   object of class 'btl'
   formula <- rhs(as.formula(formula))
+  check_multiple_special_terms(formula)
   y <- nlist(formula)
   types <- c("re", "mo", "cs", "me", "sm", "gp", "offset")
   for (t in types) {
@@ -647,6 +648,30 @@ check_fdpars <- function(x) {
     if (apc %in% prob_pars && (value < 0 || value > 1)) {
       stop2("Parameter '", dp, "' must be between 0 and 1.")
     }
+  }
+  invisible(TRUE)
+}
+
+check_multiple_special_terms <- function(x) {
+  # check if one formula term contains multiple special terms
+  # Args:
+  #   x: (coerced to) a character vector of formula terms
+  # Returns:
+  #   This function is called for its side effects (errors)
+  if (is.formula(x)) {
+    x <- all_terms(x)
+  }
+  x <- as.character(x)
+  sterms <- c("mo((no)?|(notonic)?)", "me", "cse?", "(s|t2|te|ti)", "gp")
+  sterms <- paste0("^", sterms, "\\([^:]*\\)$") 
+  smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
+  for (i in seq_along(sterms)) {
+    smatches[, i] <- grepl_expr(sterms[i], x)
+  }
+  invalid <- x[rowSums(smatches) > 1]
+  if (length(invalid)) {
+    stop2("Cannot use multiple special terms within one term.\n",
+          "Occured for: ", collapse_comma(invalid))
   }
   invisible(TRUE)
 }
