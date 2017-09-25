@@ -425,13 +425,25 @@ test_that("invalid combinations of modeling options are detected", {
 
 test_that("Stan code for multivariate models is correct", {
   dat <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
-  scode <- make_stancode(cbind(y1, y2) ~ x, dat)
+  scode <- make_stancode(cbind(y1, y2) ~ x, dat,
+                         prior = prior(horseshoe(2)))
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
+  expect_match2(scode, "target += normal_lpdf(hs_local_y1[1] | 0, 1)")
+  expect_match2(scode, 
+    "target += inv_gamma_lpdf(hs_local_y2[2] | 0.5 * hs_df_y2, 0.5 * hs_df_y2)"
+  )
   
-  scode <- make_stancode(cbind(y1, y2) ~ x, dat, student())
+  scode <- make_stancode(cbind(y1, y2) ~ x, dat, student(),
+                         prior = prior(lasso(2, 10)))
   expect_match2(scode, "target += multi_student_t_lpdf(Y | nu, Mu, Sigma);")
   expect_match2(scode, "cov_matrix[nresp] Sigma = multiply_lower_")
+  expect_match2(scode, 
+    "target += chi_square_lpdf(lasso_inv_lambda_y1 | lasso_df_y1)"
+  )
+  expect_match2(scode, 
+    "target += chi_square_lpdf(lasso_inv_lambda_y2 | lasso_df_y2)"
+  )
   
   expect_match2(make_stancode(cbind(y1, y2) | weights(x) ~ 1, dat),
                 "lp_pre[n] = multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);"

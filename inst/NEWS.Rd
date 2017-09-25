@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.10.0++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Ensure correct behavior of horseshoe
+      and lasso priors in multivariate models
+      thanks to Donald Williams.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.10.0}{
   \subsection{NEW FEATURES}{
     \itemize{
