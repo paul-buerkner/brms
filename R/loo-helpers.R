@@ -30,6 +30,7 @@ compute_ics <- function(models, model_names,
       ic_obj <- models[[i]][[ic]]
       if (use_stored_ic[i] && is.ic(ic_obj)) {
         out[[i]] <- ic_obj
+        out[[i]]$model_name <- model_names[i]
       } else {
         args$x <- models[[i]]
         args$model_name <- model_names[i]
@@ -46,6 +47,7 @@ compute_ics <- function(models, model_names,
     stopifnot(length(use_stored_ic) == 1L)
     if (use_stored_ic && is.ic(ic_obj)) {
       out <- ic_obj
+      out$model_name <- model_names
     } else {
       args$x <- models[[1]]
       args$model_name <- model_names
