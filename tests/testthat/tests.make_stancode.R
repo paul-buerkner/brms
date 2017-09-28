@@ -1268,9 +1268,9 @@ test_that("Stan code for skew_normal models is correct", {
   expect_match2(scode, "omega[n] = sigma[n] / sqrt(1 - sqrt_2_div_pi^2 * delta^2);")
   expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta * sqrt_2_div_pi;")
   
-  scode <- make_stancode(bf(y ~ x, alpha ~ x), dat, skew_normal())
+  scode <- make_stancode(bf(y | se(x) ~ x, alpha ~ x), dat, skew_normal())
   expect_match2(scode, "delta[n] = alpha[n] / sqrt(1 + alpha[n]^2);")
-  expect_match2(scode, "omega[n] = sigma / sqrt(1 - sqrt_2_div_pi^2 * delta[n]^2);")
+  expect_match2(scode, "omega[n] = se[n] / sqrt(1 - sqrt_2_div_pi^2 * delta[n]^2);")
   expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta[n] * sqrt_2_div_pi;")
   
   scode <- make_stancode(y ~ x, dat, mixture(skew_normal, nmix = 2))

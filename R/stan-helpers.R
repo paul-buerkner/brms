@@ -569,7 +569,8 @@ stan_families <- function(bterms) {
     ap_names <- names(bterms$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- ifelse(length(families) == 1L, "", i)
-      ns <- ifelse(paste0("sigma", id) %in% ap_names, "[n]", "")
+      sigma <- stan_family_sigma("skew_normal", bterms, mix = id)
+      ns <- ifelse(grepl("\\[n\\]", sigma), "[n]", "")
       na <- ifelse(paste0("alpha", id) %in% ap_names, "[n]", "")
       type_delta <- ifelse(nzchar(na), "vector[N]", "real")
       no <- ifelse(any(nzchar(c(ns, na))), "[n]", "")
@@ -583,7 +584,7 @@ stan_families <- function(bterms) {
         " / sqrt(1 + alpha", id, na, "^2); \n"
       )
       comp_omega <- paste0(
-        "  omega", id, no, " = sigma", id, ns, 
+        "  omega", id, no, " = ", sigma,
         " / sqrt(1 - sqrt_2_div_pi^2 * delta", id, na, "^2); \n"
       )
       str_add(out$modelC) <- paste0(
@@ -620,6 +621,26 @@ stan_families <- function(bterms) {
     }
   }
   out
+}
+
+stan_family_sigma <- function(family, bterms, mix) {
+  # prepare stan code of sigma for use in family specific code
+  # currently only used in skew_normal models
+  ap_names <- names(bterms$dpars)
+  ns <- ifelse(paste0("sigma", mix) %in% ap_names, "[n]", "")
+  has_sigma <- has_sigma(family, bterms)
+  has_se <- is.formula(bterms$adforms$se)
+  if (has_se) {
+    if (has_sigma) {
+      sigma <- paste0("sqrt(sigma", mix, ns, "^2 + se2[n])")
+    } else {
+      sigma <- "se[n]"
+    }
+  } else {
+    stopifnot(has_sigma)
+    sigma <- paste0("sigma", mix, ns)
+  }
+  sigma
 }
 
 stan_mixture <- function(bterms, prior) {
