@@ -628,17 +628,13 @@ stan_family_sigma <- function(family, bterms, mix) {
   # currently only used in skew_normal models
   ap_names <- names(bterms$dpars)
   ns <- ifelse(paste0("sigma", mix) %in% ap_names, "[n]", "")
-  has_sigma <- has_sigma(family, bterms)
-  has_se <- is.formula(bterms$adforms$se)
-  if (has_se) {
-    if (has_sigma) {
-      sigma <- paste0("sqrt(sigma", mix, ns, "^2 + se2[n])")
+  sigma <- ifelse(has_sigma(family, bterms), paste0("sigma", mix, ns), "")
+  if (is.formula(bterms$adforms$se)) {
+    if (nzchar(sigma)) {
+      sigma <- paste0("sqrt(", sigma, "^2 + se2[n])")
     } else {
       sigma <- "se[n]"
     }
-  } else {
-    stopifnot(has_sigma)
-    sigma <- paste0("sigma", mix, ns)
   }
   sigma
 }
