@@ -680,7 +680,7 @@ ad_families <- function(x) {
   # names of valid families for addition arguments
   switch(x, 
     weights = "all",
-    se = c("gaussian", "student", "cauchy"),
+    se = c("gaussian", "student", "cauchy", "skew_normal"),
     trials = c("binomial", "zero_inflated_binomial"),
     cat = c("cumulative", "cratio", "sratio", "acat"), 
     cens = c(

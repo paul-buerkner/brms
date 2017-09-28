@@ -3,6 +3,12 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.10.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Allow addition argument \code{se}
+      in \code{skew_normal} models.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Ensure correct behavior of horseshoe
