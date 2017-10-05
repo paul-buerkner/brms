@@ -5,8 +5,8 @@
 \alias{kfold}
 \title{K-Fold Cross-Validation}
 \usage{
-\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, newdata = NULL,
-  save_fits = FALSE, update_args = list())
+\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, group = NULL,
+  newdata = NULL, save_fits = FALSE, update_args = list())
 
 kfold(x, ...)
 }
@@ -19,12 +19,16 @@ kfold(x, ...)
 of the models should be compared to each other
 via \code{\link[brms:compare_ic]{compare_ic}}.}
 
-\item{K}{For \code{kfold}, the number of subsets of equal (if possible) size
+\item{K}{The number of subsets of equal (if possible) size
 into which the data will be randomly partitioned for performing
 \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
 leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 number of observations in the data then \eqn{K}-fold cross-validation is
 equivalent to exact leave-one-out cross-validation.}
+
+\item{group}{Optional name of a singla grouping variable of factor in the model 
+by which to split the data into subsets, each time omitting one of the
+factor levels. If \code{group} is specified, argument \code{K} is ignored.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}

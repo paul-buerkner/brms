@@ -1233,13 +1233,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
   # validate argument 'group'
   object <- restructure(object)
-  not_num <- !sapply(model.frame(object), is.numeric)
-  valid_groups <- c(
-    names(model.frame(object))[not_num],
-    parse_time(object$autocor$formula)$group,
-    object$ranef$group
-  )
-  valid_groups <- unique(valid_groups[nzchar(valid_groups)])
+  valid_groups <- get_valid_groups(object)
   if (!is.null(group) && !group %in% valid_groups) {
     stop2("Group '", group, "' is not a valid grouping factor. ",
           "Valid groups are: \n", collapse_comma(valid_groups))
@@ -2546,7 +2540,8 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
 #' @export
 #' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
 kfold.brmsfit <- function(x, ..., compare = TRUE,
-                          K = 10, newdata = NULL, 
+                          K = 10, group = NULL,
+                          newdata = NULL, 
                           save_fits = FALSE,
                           update_args = list()) {
   models <- list(x, ...)
@@ -2559,7 +2554,7 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
   )
   args <- nlist(
     models, model_names, ic = "kfold", K, save_fits, 
-    use_stored_ic, compare, update_args, newdata
+    use_stored_ic, compare, update_args, newdata, group
   )
   do.call(compute_ics, args)
 }

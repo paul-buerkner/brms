@@ -416,8 +416,12 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
   x
 }
 
-kfold_internal <- function(x, K = 10, newdata = NULL, save_fits = FALSE, ...) {
+kfold_internal <- function(x, K = 10, group = NULL, 
+                           newdata = NULL, save_fits = FALSE, ...) {
   # most of the code is taken from rstanarm::kfold
+  # Args:
+  #   group: character string of length one naming 
+  #     a variable to group excluded chunks
   stopifnot(is.brmsfit(x))
   if (is.null(newdata)) {
     mf <- model.frame(x) 
@@ -425,14 +429,26 @@ kfold_internal <- function(x, K = 10, newdata = NULL, save_fits = FALSE, ...) {
     mf <- as.data.frame(newdata)
   }
   N <- nrow(mf)
-  if (K < 1 || K > N) {
-    stop2("'K' must be greater than one and smaller or ", 
-          "equal to the number of observations in the model.")
+  if (is.null(group)) {
+    if (K < 1 || K > N) {
+      stop2("'K' must be greater than one and smaller or ", 
+            "equal to the number of observations in the model.")
+    }
+    perm <- sample.int(N)
+    idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
+    bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
+  } else {
+    # validate argument 'group'
+    valid_groups <- get_valid_groups(x)
+    if (length(group) != 1L || !group %in% valid_groups) {
+      stop2("Group '", group, "' is not a valid grouping factor. ",
+            "Valid groups are: \n", collapse_comma(valid_groups))
+    }
+    gvar <- factor(model.frame(x)[[group]])
+    bin <- as.numeric(gvar)
+    K <- length(levels(gvar))
+    message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
   }
-  perm <- sample.int(N)
-  idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
-  bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
-  
   lppds <- list()
   if (save_fits) {
     fits <- array(list(), c(K, 2), list(NULL, c("fit", "omitted")))    

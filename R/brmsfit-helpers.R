@@ -242,6 +242,18 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
+get_valid_groups <- function(x) {
+  # extract names of valid grouping variables or factors
+  stopifnot(is.brmsfit(x))
+  like_factor <- sapply(model.frame(x), is_like_factor)
+  valid_groups <- c(
+    names(model.frame(x))[like_factor],
+    parse_time(x$autocor$formula)$group,
+    x$ranef$group
+  )
+  unique(valid_groups[nzchar(valid_groups)])
+}
+
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   # calculate estimates over posterior samples 
   # Args:
