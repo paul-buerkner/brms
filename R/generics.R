@@ -635,8 +635,8 @@ reloo <- function(x, ...) {
 #'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 #'   number of observations in the data then \eqn{K}-fold cross-validation is
 #'   equivalent to exact leave-one-out cross-validation.
-#' @param group Optional name of a singla grouping variable of factor in the model 
-#'   by which to split the data into subsets, each time omitting one of the
+#' @param group Optional name of a single grouping variable or factor in the model 
+#'   by which to split up the data into subsets, each time omitting one of the
 #'   factor levels. If \code{group} is specified, argument \code{K} is ignored.
 #' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
 #'   the returned object to store the cross-validated \code{brmsfit} 
