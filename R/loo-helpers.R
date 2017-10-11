@@ -416,7 +416,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
   x
 }
 
-kfold_internal <- function(x, K = 10, group = NULL, 
+kfold_internal <- function(x, K = 10, exact_loo = FALSE, group = NULL, 
                            newdata = NULL, save_fits = FALSE, ...) {
   # most of the code is taken from rstanarm::kfold
   # Args:
@@ -429,6 +429,10 @@ kfold_internal <- function(x, K = 10, group = NULL,
     mf <- as.data.frame(newdata)
   }
   N <- nrow(mf)
+  if (exact_loo) {
+    K <- N
+    message("Setting 'K' to the number of observations (", K, ")")
+  }
   if (is.null(group)) {
     if (K < 1 || K > N) {
       stop2("'K' must be greater than one and smaller or ", 
@@ -444,10 +448,13 @@ kfold_internal <- function(x, K = 10, group = NULL,
       stop2("Group '", group, "' is not a valid grouping factor. ",
             "Valid groups are: \n", collapse_comma(valid_groups))
     }
-    gvar <- factor(model.frame(x)[[group]])
+    gvar <- factor(get(group, mf))
     bin <- as.numeric(gvar)
-    K <- length(levels(gvar))
-    message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
+    if (!exact_loo) {
+      # K was already set to N if exact_loo is TRUE
+      K <- length(levels(gvar))
+      message("Setting 'K' to the number of levels of '", group, "' (", K, ")") 
+    }
   }
   lppds <- list()
   if (save_fits) {
@@ -455,11 +462,16 @@ kfold_internal <- function(x, K = 10, group = NULL,
   }
   for (k in seq_len(K)) {
     message("Fitting model ", k, " out of ", K)
-    omitted <- which(bin == k)
+    if (exact_loo && !is.null(group)) {
+      omitted <- which(bin == bin[k])
+      predicted <- k
+    } else {
+      omitted <- predicted <- which(bin == k)
+    }
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
     lppds[[k]] <- log_lik(
-      fit_k, newdata = mf[omitted, , drop = FALSE], 
+      fit_k, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE
     )
     if (save_fits) {
@@ -473,7 +485,7 @@ kfold_internal <- function(x, K = 10, group = NULL,
     elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
     se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
     pointwise = cbind(elpd_kfold = elpds),
-    K = K, model_name = deparse(substitute(x))
+    K, exact_loo, group, model_name = deparse(substitute(x))
   )
   if (save_fits) {
     out$fits <- fits 

@@ -5,8 +5,8 @@
 \alias{kfold}
 \title{K-Fold Cross-Validation}
 \usage{
-\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, group = NULL,
-  newdata = NULL, save_fits = FALSE, update_args = list())
+\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, exact_loo = FALSE,
+  group = NULL, newdata = NULL, save_fits = FALSE, update_args = list())
 
 kfold(x, ...)
 }
@@ -26,9 +26,20 @@ leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 number of observations in the data then \eqn{K}-fold cross-validation is
 equivalent to exact leave-one-out cross-validation.}
 
-\item{group}{Optional name of a single grouping variable or factor in the model 
-by which to split up the data into subsets, each time omitting one of the
-factor levels. If \code{group} is specified, argument \code{K} is ignored.}
+\item{exact_loo}{Logical; If \code{TRUE}, exact leave-one-out cross-validation
+will be performed and \code{K} will be ignored. This argument alters
+the way argument \code{group} is handled as described below. 
+Defaults to \code{FALSE}.}
+
+\item{group}{Optional name of a grouping variable or factor in the model.
+How this variable is handled depends on argument \code{exact_loo}.
+If \code{exact_loo} is \code{FALSE}, the data is split 
+up into subsets, each time omitting all observations of one of the 
+factor levels, while ignoriing argument \code{K}. 
+If \code{exact_loo} is \code{TRUE}, all observations corresponding 
+to the factor level of the currently predicted single value are omitted. 
+Thus, in this case, the predicted values are only a subset of the 
+omitted ones.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}

@@ -5,9 +5,10 @@
 \section{CHANGES IN VERSION 1.10.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
-      \item Add argument \code{group} to method
-      \code{kfold} for defining omitted subsets
-      according to a grouping variable or factor.
+      \item Add argument \code{exact_loo} and 
+      \code{group} to method \code{kfold} for 
+      defining omitted subsets according to a
+      grouping variable or factor.
       \item Allow addition argument \code{se}
       in \code{skew_normal} models.
     }

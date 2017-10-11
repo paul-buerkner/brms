@@ -2532,9 +2532,8 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
 #' @export
 #' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
 kfold.brmsfit <- function(x, ..., compare = TRUE,
-                          K = 10, group = NULL,
-                          newdata = NULL, 
-                          save_fits = FALSE,
+                          K = 10, exact_loo = FALSE, group = NULL,
+                          newdata = NULL, save_fits = FALSE,
                           update_args = list()) {
   models <- list(x, ...)
   model_names <- c(
@@ -2546,7 +2545,8 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
   )
   args <- nlist(
     models, model_names, ic = "kfold", K, save_fits, 
-    use_stored_ic, compare, update_args, newdata, group
+    use_stored_ic, compare, update_args, newdata, 
+    exact_loo, group
   )
   do.call(compute_ics, args)
 }

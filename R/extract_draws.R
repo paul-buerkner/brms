@@ -574,7 +574,9 @@ extract_draws_re <- function(ranef, args, sdata, px = list(),
           for (k in seq_len(nranef)) {
             # sample values for the new level
             indices <- ((k - 1) * nlevels + 1):(k * nlevels)
-            new_r_levels[[i]][, k] <- apply(r[, indices], 1, sample, size = 1)
+            new_r_levels[[i]][, k] <- apply(
+              r[, indices, drop = FALSE], 1, sample, size = 1
+            )
           }
           max_level <- max_level + 1
           gf[[i]][gf[[i]] > nlevels] <- max_level
