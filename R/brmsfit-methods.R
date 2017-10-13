@@ -2013,6 +2013,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (summary) {
     draws$mu <- get_summary(draws$mu, probs = probs, robust = robust)
     rownames(draws$mu) <- seq_len(nrow(draws$mu))
+    if (scale == "linear" && is_ordinal(object$family)) {
+      dimnames(draws$mu)[[3]] <- paste0("eta", seq_len(dim(draws$mu)[[3]]))
+    }
   }
   draws$mu
 }

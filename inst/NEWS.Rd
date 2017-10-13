@@ -20,6 +20,9 @@
       \item Ensure correct behavior of horseshoe
       and lasso priors in multivariate models
       thanks to Donald Williams.
+      \item Use reasonable dimnames in the output
+      of \code{fitted} when returning linear predictors
+      of ordinal models thanks to the GitHub user atrolle.
     }
   }
 }
