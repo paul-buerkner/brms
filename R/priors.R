@@ -553,6 +553,8 @@ get_prior <- function(formula, data, family = gaussian(),
     internal = internal
   )
   prior <- prior + prior_re
+  # priors for noise-free variables
+  prior <- prior + prior_Xme(bterms)
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(family) && is_equal(family$threshold, "equidistant")) {
     bound <- ifelse(family$family == "cumulative", "<lower=0>", "")
@@ -719,6 +721,19 @@ prior_me <- function(bterms, data) {
     px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", rename(meef)), ls = px)
+  }
+  prior
+}
+
+prior_Xme <- function(bterms) {
+  # default priors of noise-free variables
+  # Returns:
+  #   an object of class brmsprior
+  prior <- empty_brmsprior()
+  uni_me <- get_uni_me(bterms)
+  if (length(uni_me)) {
+    prior <- prior + 
+      brmsprior(class = "Xme", coef = c("", rename(uni_me)))
   }
   prior
 }

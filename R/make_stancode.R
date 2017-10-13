@@ -83,7 +83,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_ordinal <- stan_ordinal(bterms, prior = prior)
   text_families <- stan_families(bterms)
   text_mixture <- stan_mixture(bterms, prior = prior)
-  text_Xme <- stan_Xme(bterms)
+  text_Xme <- stan_Xme(bterms, prior = prior)
   text_se <- stan_se(bterms)
   text_cens <- stan_cens(bterms, data)
   text_disp <- stan_disp(bterms)

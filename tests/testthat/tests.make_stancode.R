@@ -935,14 +935,17 @@ test_that("noise-free terms appear in the Stan code", {
   )
   scode <- make_stancode(
     y ~ me(x, xsd)*me(z, zsd)*x, data = dat,
-    prior = prior(normal(0,5))
+    prior = prior(normal(0,5)) + prior(normal(0, 10), "Xme") +
+      prior(normal(0, 20), "Xme", coef = "mezzsd")
   )
   expect_match2(scode,
     "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] * Xme_2[n]")
   expect_match2(scode, 
     "(bme[6]) * Xme_1[n] * Xme_2[n] * Cme_3[n]")
-  expect_match2(scode, "target += normal_lpdf(Xme_2 | Xn_2, noise_2)")
+  expect_match2(scode, "target += normal_lpdf(Xn_2 | Xme_2, noise_2)")
   expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(Xme_1 | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(Xme_2 | 0, 20)")
   
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
