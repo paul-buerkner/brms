@@ -416,8 +416,9 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
   x
 }
 
-kfold_internal <- function(x, K = 10, exact_loo = FALSE, group = NULL, 
-                           newdata = NULL, save_fits = FALSE, ...) {
+kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE, 
+                           group = NULL, newdata = NULL, 
+                           save_fits = FALSE, ...) {
   # most of the code is taken from rstanarm::kfold
   # Args:
   #   group: character string of length one naming 
@@ -456,11 +457,27 @@ kfold_internal <- function(x, K = 10, exact_loo = FALSE, group = NULL,
       message("Setting 'K' to the number of levels of '", group, "' (", K, ")") 
     }
   }
-  lppds <- list()
-  if (save_fits) {
-    fits <- array(list(), c(K, 2), list(NULL, c("fit", "omitted")))    
+  if (is.null(Ksub)) {
+    Ksub <- seq_len(K)
+  } else {
+    Ksub <- as.integer(Ksub)
+    if (any(Ksub <= 0 | Ksub > K)) {
+      stop2("'Ksub' must contain positive integers not larger than 'K'.")
+    }
+    if (length(Ksub) == 1L) {
+      Ksub <- sort(sample(seq_len(K), Ksub))
+    } else {
+      Ksub <- unique(Ksub)
+    }
   }
-  for (k in seq_len(K)) {
+  lppds <- vector("list", length(Ksub))
+  if (save_fits) {
+    fits <- array(
+      list(), dim = c(length(Ksub), 2), 
+      dimnames = list(NULL, c("fit", "omitted"))
+    )    
+  }
+  for (k in Ksub) {
     message("Fitting model ", k, " out of ", K)
     if (exact_loo && !is.null(group)) {
       omitted <- which(bin == bin[k])
@@ -470,12 +487,13 @@ kfold_internal <- function(x, K = 10, exact_loo = FALSE, group = NULL,
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
-    lppds[[k]] <- log_lik(
+    ks <- match(k, Ksub)
+    lppds[[ks]] <- log_lik(
       fit_k, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE
     )
     if (save_fits) {
-      fits[k, ] <- list(fit = fit_k, omitted = omitted) 
+      fits[ks, ] <- list(fit = fit_k, omitted = omitted) 
     }
   }
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
@@ -485,7 +503,8 @@ kfold_internal <- function(x, K = 10, exact_loo = FALSE, group = NULL,
     elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
     se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
     pointwise = cbind(elpd_kfold = elpds),
-    K, exact_loo, group, model_name = deparse(substitute(x))
+    K, Ksub, exact_loo, group, 
+    model_name = deparse(substitute(x))
   )
   if (save_fits) {
     out$fits <- fits 

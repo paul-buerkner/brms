@@ -7,8 +7,8 @@
     \itemize{
       \item Allow setting priors on noise-free
       variables specified via function \code{me}.
-      \item Add argument \code{exact_loo} and 
-      \code{group} to method \code{kfold} for 
+      \item Add arguments \code{Ksub}, \code{exact_loo} 
+      and \code{group} to method \code{kfold} for 
       defining omitted subsets according to a
       grouping variable or factor.
       \item Allow addition argument \code{se}

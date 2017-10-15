@@ -5,8 +5,9 @@
 \alias{kfold}
 \title{K-Fold Cross-Validation}
 \usage{
-\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, exact_loo = FALSE,
-  group = NULL, newdata = NULL, save_fits = FALSE, update_args = list())
+\method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, Ksub = NULL,
+  exact_loo = FALSE, group = NULL, newdata = NULL, save_fits = FALSE,
+  update_args = list())
 
 kfold(x, ...)
 }
@@ -25,6 +26,14 @@ into which the data will be randomly partitioned for performing
 leaving out one of the \code{K} subsets. If \code{K} is equal to the total
 number of observations in the data then \eqn{K}-fold cross-validation is
 equivalent to exact leave-one-out cross-validation.}
+
+\item{Ksub}{Optional number of subsets (of those subsets defined by \code{K}) 
+to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
+will be performed on all subsets. If \code{Ksub} is a single integer, 
+\code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
+If \code{Ksub} consists of multiple integers, the corresponding subsets 
+will be used. This argument is primarily useful, if evaluation of all 
+subsets is infeasible for some reason.}
 
 \item{exact_loo}{Logical; If \code{TRUE}, exact leave-one-out cross-validation
 will be performed and \code{K} will be ignored. This argument alters
