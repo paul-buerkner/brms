@@ -477,7 +477,6 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       dimnames = list(NULL, c("fit", "omitted"))
     )    
   }
-  N_predicted <- 0  # number of observations actually predicted
   for (k in Ksub) {
     message("Fitting model ", k, " out of ", K)
     if (exact_loo && !is.null(group)) {
@@ -486,7 +485,6 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     } else {
       omitted <- predicted <- which(bin == k)
     }
-    N_predicted <- N_predicted + length(predicted)
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
     ks <- match(k, Ksub)
@@ -500,13 +498,13 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
   }
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
   elpd_kfold <- sum(elpds)
-  se_elpd_kfold <- sqrt(N_predicted * var(elpds))
+  se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
   out <- nlist(
     elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
     se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
     pointwise = cbind(elpd_kfold = elpds),
-    K, Ksub, exact_loo, group, 
-    model_name = deparse(substitute(x))
+    model_name = deparse(substitute(x)),
+    K, Ksub, exact_loo, group 
   )
   if (save_fits) {
     out$fits <- fits 
