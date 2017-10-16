@@ -181,6 +181,11 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
     if (!all(Ks %in% Ks[1])) {
       stop2("'K' differs across kfold objects.")
     }
+    subs <- lengths(lapply(x, "[[", "Ksub"))
+    subs <- ifelse(subs %in% 0, Ks, subs)
+    if (!all(subs %in% subs[1])) {
+      stop2("The number of subsets differs across kfold objects.")
+    }
   }
   names(x) <- ulapply(x, "[[", "model_name")
   n_models <- length(x)
@@ -582,7 +587,9 @@ print.iclist <- function(x, digits = 2, ...) {
   }
   print(round(mat, digits = digits), na.print = "")
   if (is_equal(ic, "kfoldic")) {
-    cat(paste0("\nBased on ", x[[1]]$K, "-fold cross-validation\n"))
+    sub <- length(x[[1]]$Ksub)
+    sub <- ifelse(sub > 0 & sub < x[[1]]$K, paste0(sub, " subsets of "), "")
+    cat(paste0("\nBased on ", sub, x[[1]]$K, "-fold cross-validation\n"))
   }
   invisible(x)
 }
