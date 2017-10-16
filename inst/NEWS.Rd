@@ -20,9 +20,12 @@
       \item Ensure correct behavior of horseshoe
       and lasso priors in multivariate models
       thanks to Donald Williams.
+      \item Allow using \code{identity} links on
+      all parameters of the \code{wiener} family
+      thanks to Henrik Singmann. (#276)
       \item Use reasonable dimnames in the output
       of \code{fitted} when returning linear predictors
-      of ordinal models thanks to the GitHub user atrolle.
+      of ordinal models thanks to the GitHub user atrolle. (#274)
     }
   }
 }

@@ -390,7 +390,9 @@ exgaussian <- function(link = "identity", link_sigma = "log",
 wiener <- function(link = "identity", link_bs = "log", 
                    link_ndt = "log", link_bias = "logit") {
   slink <- substitute(link)
-  .brmsfamily("wiener", link = link, slink = slink)
+  .brmsfamily("wiener", link = link, slink = slink,
+              link_bs = link_bs, link_ndt = link_ndt,
+              link_bias = link_bias)
 }
 
 #' @rdname brmsfamily
