@@ -6,13 +6,6 @@ test_that("make_index_names returns correct 1 and 2 dimensional indices", {
                c("[a,1]", "[b,1]", "[a,2]", "[b,2]", "[a,3]", "[b,3]"))
 })
 
-test_that("combine_duplicates works as expected", {
-  expect_equal(combine_duplicates(list(a = c(2,2), b = c("a", "c"))),
-               list(a = c(2,2), b = c("a", "c")))
-  expect_equal(combine_duplicates(list(a = c(2,2), b = c("a", "c"), a = c(4,2))),
-               list(a = c(2,2,4,2), b = c("a", "c")))
-})
-
 test_that("rm_int_fe works as expected", {
   dat <- data.frame(y = 1:3, x = rnorm(3))
   code <- make_stancode(y ~ 1, data = dat)
