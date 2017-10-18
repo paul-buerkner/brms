@@ -255,7 +255,7 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
           )
         }
         if (scale) {
-          if (any(weights < 0)) {
+          if (isTRUE(any(weights < 0))) {
             stop2("Cannot scale negative weights.")
           }         
           weights <- sweep(weights, 1, rowSums(weights), "/")

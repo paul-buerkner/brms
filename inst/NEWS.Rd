@@ -26,6 +26,9 @@
       \item Use reasonable dimnames in the output
       of \code{fitted} when returning linear predictors
       of ordinal models thanks to the GitHub user atrolle. (#274)
+      \item Fix problems in \code{marginal_smooths}
+      occuring for multi-membership models thanks to
+      Hans Tierens.
     }
   }
 }
