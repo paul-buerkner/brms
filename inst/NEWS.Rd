@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.10.0++}{
+\section{CHANGES IN VERSION 1.10.2}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Allow setting priors on noise-free

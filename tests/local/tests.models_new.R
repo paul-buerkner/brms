@@ -78,7 +78,7 @@ test_that("Non-linear model from brm doc works correctly", {
   x <- rnorm(100)
   y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
   data5 <- data.frame(x, y)
-  fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
+  fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),
               data = data5,
               prior = c(prior(normal(0, 2), nlpar = a1),
                         prior(normal(0, 2), nlpar = a2)))
