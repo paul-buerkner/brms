@@ -401,7 +401,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     family <- formula$family
     autocor <- formula$autocor
     bterms <- parse_bf(formula)
-    check_brm_input(nlist(family))
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {
@@ -495,26 +494,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   x
 }
 
-check_brm_input <- function(x) {
-  # misc checks on brm arguments 
-  # Args:
-  #   x: A named list
-  family <- check_family(x$family) 
-  if (family$family == "inverse.gaussian") {
-    warning2("Inverse gaussian models require carefully chosen ", 
-             "prior distributions to ensure convergence of the chains.")
-  }
-  if (family$family == "geometric") {
-    warning2("Family 'geometric' is deprecated. Use 'negbinomial' ", 
-             "instead and fix the 'shape' parameter to 1.")
-  }
-  if (family$link == "sqrt") {
-    warning2(family$family, " model with sqrt link may not be ", 
-             "uniquely identified")
-  }
-  invisible(NULL)
-}
-
 deprecated_brm_args <- function() {
   # list all deprecated arguments of the brm function
   c("n.iter", "n.warmup", "n.thin", "n.chains", "cluster", "cov.ranef",
@@ -560,8 +539,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   )
   if (!save_all_pars) {
     out <- c(out,
-             "temp_Intercept1", "ordered_Intercept", 
-             "Lrescor", "LSigma", "theta", "zcar"
+      "temp_Intercept1", "ordered_Intercept", 
+      "Lrescor", "LSigma", "theta", "zcar"
     )
     if (!save_mevars) {
       # exclude noise-free variables

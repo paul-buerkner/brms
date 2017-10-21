@@ -63,10 +63,3 @@ test_that("brm produces expected errors", {
   expect_error(brm(y ~ x, dat, family = "ordinal"),
               "ordinal is not a supported family")
 })
-
-test_that("check_brm_input returns correct warnings", {
-  x <- list(family = inverse.gaussian(), algorithm = "sampling")
-  expect_warning(check_brm_input(x))
-  x$family <- poisson("sqrt")
-  expect_warning(check_brm_input(x))
-})
