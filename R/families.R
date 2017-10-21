@@ -809,9 +809,6 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
 print.brmsfamily <- function(x, links = FALSE, newline = TRUE, ...) {
   cat("\nFamily:", x$family, "\n")
   cat("Link function:", x$link, "\n")
-  if (!is.null(x$type)) {
-    cat("Type:", x$type, "\n") 
-  }
   if (!is.null(x$threshold)) {
     cat("Threshold:", x$threshold, "\n")
   }
@@ -822,7 +819,10 @@ print.brmsfamily <- function(x, links = FALSE, newline = TRUE, ...) {
       dp_links <- rmNULL(dp_links[links])
     }
     for (dp in names(dp_links)) {
-      cat(paste0("Link function of ", dp, ": ", dp_links[[dp]], " \n")) 
+      cat(paste0(
+        "Link function of '", dp, "' (if predicted): ", 
+        dp_links[[dp]], "\n"
+      )) 
     }
   }
   if (newline) {

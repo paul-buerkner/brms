@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.10.2++}{
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Show the link functions of all
+      distributional parameters in the \code{summary}
+      output. (#277)
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.10.2}{
   \subsection{NEW FEATURES}{
     \itemize{

@@ -5,11 +5,9 @@ print.brmssummary <- function(x, digits = 2, ...) {
     x[["waic"]] <- x[["WAIC"]]
   }
   cat(" Family: ")
-  if (is.family(x$family)) {
-    cat(summary(x$family), "\n")
-  } else {
-    cat(paste0(x$family, " (", x$link, ") \n"))  
-  }
+  cat(summary(x$family, link = FALSE), "\n")
+  cat("  Links: ")
+  cat(paste0(names(x$links), " = ", x$links, collapse = "; "), "\n")
   cat("Formula: ")
   print(x$formula, wsp = 9)
   cat(paste0(

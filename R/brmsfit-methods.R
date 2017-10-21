@@ -705,9 +705,14 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
                             use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
+  dpars <- valid_dpars(object$family, bterms)
+  links <- setNames(rep("identity", length(dpars)), dpars)
+  links_pred <- ulapply(bterms$dpars, function(x) x$family$link)
+  links[names(links_pred)] <- links_pred
   out <- list(
     formula = object$formula, 
     family = object$family, 
+    links = links,
     data.name = object$data.name, 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
