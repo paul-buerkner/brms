@@ -10,6 +10,14 @@
       output. (#277)
     }
   }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix problems in various post-processing methods 
+      when applied to models with the reserved variable 
+      \code{intercept} in group-level terms thanks to
+      the GitHub user ASKurz. (#279)
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 1.10.2}{

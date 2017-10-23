@@ -159,7 +159,7 @@ data_rsv_intercept <- function(data, bterms) {
     function(x) attr(x$fe, "rsv_intercept")
   )
   if (any(rsv_int)) {
-    if ("intercept" %in% names(data)) {
+    if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
     }
@@ -317,6 +317,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
+  # fixes issue #279
+  newdata <- data_rsv_intercept(newdata, bterms)
   new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
   group_vars <- get_all_group_vars(new_ranef)
   group_vars <- union(group_vars, bterms$time$group)
