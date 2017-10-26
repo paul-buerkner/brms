@@ -688,6 +688,8 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
 #'   to be covered by the uncertainty intervals. The default is 0.95.
+#' @param mc_se Logical; Indicating if the uncertainty caused by the 
+#'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
 #' @param use_cache Logical; Indicating if summary results should
 #'   be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
 #'   For models fitted with earlier versions of \pkg{brms},
@@ -702,7 +704,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @export
 summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, 
                             R2 = FALSE, priors = FALSE, prob = 0.95,
-                            use_cache = TRUE, ...) {
+                            mc_se = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
   dpars <- valid_dpars(object$family, bterms)
@@ -757,10 +759,14 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     object$fit, pars = meta_pars, 
     probs = probs, use_cache = use_cache
   )
-  fit_summary <- fit_summary$summary[, -2, drop = FALSE]
+  fit_summary <- fit_summary$summary
+  if (!mc_se) {
+    fit_summary <- fit_summary[, -2, drop = FALSE] 
+  }
   CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
   colnames(fit_summary) <- c(
-    "Estimate", "Est.Error", CIs, "Eff.Sample", "Rhat"
+    "Estimate", if (mc_se) "MC.Error", 
+    "Est.Error", CIs, "Eff.Sample", "Rhat"
   )
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]

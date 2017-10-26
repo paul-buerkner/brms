@@ -5,7 +5,7 @@
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
 \method{summary}{brmsfit}(object, waic = FALSE, loo = FALSE, R2 = FALSE,
-  priors = FALSE, prob = 0.95, use_cache = TRUE, ...)
+  priors = FALSE, prob = 0.95, mc_se = FALSE, use_cache = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -23,6 +23,9 @@ in the summary. Default is \code{FALSE}.}
 
 \item{prob}{A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.}
+
+\item{mc_se}{Logical; Indicating if the uncertainty caused by the 
+MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.}
 
 \item{use_cache}{Logical; Indicating if summary results should
 be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
