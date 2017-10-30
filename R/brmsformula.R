@@ -228,7 +228,7 @@
 #'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
 #'   If not given, the number of categories is calculated from the data.
 #'   
-#'   With the expection of \code{categorical} and ordinal families, 
+#'   With the exception of \code{categorical} and ordinal families, 
 #'   left, right, and interval censoring can be modeled through 
 #'   \code{y | cens(censored) ~ predictors}. The censoring variable 
 #'   (named \code{censored} in this example) should contain the values 
@@ -243,7 +243,7 @@
 #'   censored data. Intervals are assumed to be open on the left and closed 
 #'   on the right: \code{(y, y2]}.
 #'   
-#'   With the expection of \code{categorical} and ordinal families, the response 
+#'   With the exception of \code{categorical} and ordinal families, the response 
 #'   distribution can be truncated using the \code{trunc} function in the addition part.
 #'   If the response variable is truncated between, say, 0 and 100, we can specify this via
 #'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. 
