@@ -16,6 +16,10 @@
       when applied to models with the reserved variable 
       \code{intercept} in group-level terms thanks to
       the GitHub user ASKurz. (#279)
+      \item Fix an unexpected error in \code{predict} and related 
+      methods when setting \code{sample_new_levels = "gaussian"}
+      in models with only one group-level effect.
+      Thanks to Timothy Mastny. (#286)
     }
   }
 }

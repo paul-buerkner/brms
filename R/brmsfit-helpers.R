@@ -235,19 +235,10 @@ get_cov_matrix <- function(sd, cor = NULL) {
   # Args:
   #   sd: samples of standard deviations
   #   cor: samples of correlations
-  # Notes: 
-  #   used in VarCorr.brmsfit
   # Returns: 
   #   samples of covariance and correlation matrices
   sd <- as.matrix(sd)
   stopifnot(all(sd >= 0))
-  if (!is.null(cor)) {
-    cor <- as.matrix(cor)
-    stopifnot(
-      ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
-      nrow(sd) == nrow(cor), min(cor) >= -1 && max(cor) <= 1
-    )
-  }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
   cor_matrix <- array(diag(1, nranef), dim = c(nranef, nranef, nsamples))
@@ -256,7 +247,12 @@ get_cov_matrix <- function(sd, cor = NULL) {
   for (i in seq_len(nranef)) { 
     cov_matrix[, i, i] <- sd[, i]^2
   }
-  if (!is.null(cor)) {
+  if (length(cor)) {
+    cor <- as.matrix(cor)
+    stopifnot(
+      ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
+      nrow(sd) == nrow(cor), min(cor) >= -1, max(cor) <= 1
+    )
     k <- 0 
     for (i in 2:nranef) {
       for (j in 1:(i-1)) {
