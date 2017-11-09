@@ -73,10 +73,10 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
   #   an object of class 'ic' which inherits from class 'loo'
   stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
-  contains_samples(x)
   if (ic == "kfold") {
     IC <- do.call(kfold_internal, c(list(x, ...), update_args))
   } else {
+    contains_samples(x)
     loo_args$x <- log_lik(x, ...)
     pointwise <- is.function(loo_args$x)
     if (pointwise) {

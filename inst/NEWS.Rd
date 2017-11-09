@@ -12,6 +12,9 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
+      \item Store \code{stan_funs} in \code{brmsfit} objects
+      to allow using \code{update} on models with user-defined
+      Stan functions thanks to Tom Wallis. (#288)
       \item Fix problems in various post-processing methods 
       when applied to models with the reserved variable 
       \code{intercept} in group-level terms thanks to

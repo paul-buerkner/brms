@@ -417,7 +417,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, family = family, data = data, 
       data.name = data.name, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
-      algorithm = algorithm
+      stan_funs = stan_funs, algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(

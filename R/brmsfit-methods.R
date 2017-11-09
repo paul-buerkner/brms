@@ -2341,8 +2341,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   
   arg_names <- c(
-    "prior", "nonlinear", "threshold", 
-    "cov_ranef", "sparse", "sample_prior"
+    "prior", "nonlinear", "threshold", "cov_ranef", 
+    "sparse", "sample_prior", "stan_funs"
   )
   new_args <- intersect(arg_names, names(dots))
   old_args <- setdiff(arg_names, new_args)
@@ -2402,8 +2402,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   new_stancode <- suppressMessages(
     do.call(make_stancode, dots[!names(dots) %in% "testmode"])
   )
+  # stan code may differ just because of the version number (#288)
+  new_stancode <- sub("^[^\n]+\n", "", new_stancode)
+  old_stancode <- sub("^[^\n]+\n", "", stancode(object))
   # only recompile if new and old stan code do not match
-  if (recompile || !identical(new_stancode, stancode(object))) {
+  if (recompile || !is_equal(new_stancode, old_stancode)) {
     # recompliation is necessary
     message("The desired updates require recompling the model")
     dots$fit <- NA
