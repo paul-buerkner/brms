@@ -1997,7 +1997,6 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- fitted_fun(draws)
     }
   } else {
-    dpars <- dpars[dpar_class(dpars) != "mu"]
     if (length(dpar) != 1L || !dpar %in% dpars) {
       stop2("Invalid argument 'dpar'. Valid distributional ",
             "parameters are: ", collapse_comma(dpars))
