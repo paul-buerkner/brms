@@ -37,11 +37,11 @@ update_data <- function(data, bterms, na.action = na.omit,
     }
     bterms$allvars <- terms(bterms$allvars)
     attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
-    if (isTRUE(attr(bterms$formula, "old_mv"))) {
-      data <- melt_data(data, bterms = bterms)
-    } else {
-      check_data_old_mv(data, bterms = bterms)
-    }
+    # if (isTRUE(attr(bterms$formula, "old_mv"))) {
+    #   data <- melt_data(data, bterms = bterms)
+    # } else {
+    #   check_data_old_mv(data, bterms = bterms)
+    # }
     data <- data_rsv_intercept(data, bterms = bterms)
     missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
     if (length(missing_vars)) {
@@ -61,7 +61,7 @@ update_data <- function(data, bterms, na.action = na.omit,
       stop2("Variable names may not contain double underscores ",
             "or underscores at the end.")
     }
-    groups <- c(get_re(bterms)$group, bterms$time$group)
+    groups <- get_groups(bterms)
     data <- combine_groups(data, groups)
     data <- fix_factor_contrasts(data, ignore = groups)
     attr(data, "knots") <- knots

@@ -56,7 +56,7 @@ make_standata <- function(formula, data, family = gaussian(),
   is_forked <- is_forked(family)
   is_categorical <- is_categorical(family)
   sample_prior <- check_sample_prior(sample_prior)
-  check_prior_content(prior, family = family, warn = FALSE)
+  check_prior_content(prior, warn = FALSE)
   prior <- check_prior_special(bterms, prior = prior)
   na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(
