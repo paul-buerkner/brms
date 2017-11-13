@@ -155,6 +155,17 @@ as_one_logical <- function(x) {
   x
 }
 
+as_one_character <- function(x) {
+  # coerce 'x' to a single character string
+  s <- substitute(x)
+  x <- as.character(x)
+  if (anyNA(x) || length(x) != 1L) {
+    s <- substr(deparse_combine(s), 1L, 100L)
+    stop2("Cannot coerce ", s, " to a single character value.")
+  }
+  x
+}
+
 expand <- function(..., dots = list(), length = NULL) {
   # expand arguments of be of the same length
   # Args:
