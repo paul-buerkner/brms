@@ -4,8 +4,7 @@
 \alias{parse_bf}
 \title{Parse Formulas of \pkg{brms} Models}
 \usage{
-parse_bf(formula, family = NULL, autocor = NULL, check_response = TRUE,
-  resp_rhs_all = TRUE)
+parse_bf(formula, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -16,22 +15,7 @@ A symbolic description of the model to be fitted.
 The details of model specification are explained in 
 \code{\link[brms:brmsformula]{brmsformula}}.}
 
-\item{family}{A description of the response distribution and link function 
-to be used in the model. This can be a family function, 
-a call to a family function or a character string naming the family.
-Every family function has a \code{link} argument allowing to specify
-the link function to be applied on the response variable.
-If not specified, default links are used.
-For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
-
-\item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure within the response variable 
-(i.e., the 'autocorrelation'). 
-See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
+\item{...}{Further arguments to be passed to Stan.}
 
 \item{check_response}{Logical; Indicates whether the left-hand side 
 of \code{formula} (i.e. response variables and addition arguments) 

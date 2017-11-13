@@ -6,15 +6,19 @@
 \alias{bf-helpers}
 \alias{lf}
 \alias{set_nl}
+\alias{set_rescor}
 \alias{lf}
 \alias{set_nl}
+\alias{set_rescor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
-nlf(formula, ..., flist = NULL, dpar = NULL)
+nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL)
 
-lf(..., flist = NULL, dpar = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL)
 
-set_nl(nl = TRUE, dpar = NULL)
+set_nl(nl = TRUE, dpar = NULL, resp = NULL)
+
+set_rescor(rescor = TRUE)
 }
 \arguments{
 \item{formula}{Non-linear formula for a distributional parameter.
@@ -59,6 +63,10 @@ same way as formulas passed via the \code{...} argument.}
 \item{dpar}{Optional character string specifying the distributional 
 parameter to which the formulas passed via \code{...} and
 \code{flist} belong.}
+
+\item{resp}{Optional character string specifying the response 
+variable to which the formulas passed via \code{...} and
+\code{flist} belong. Only relevant in multivariate models.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
