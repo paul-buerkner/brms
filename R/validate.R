@@ -28,9 +28,16 @@
 #'   \code{\link[brms:brmsformula]{brmsformula}}
 #' 
 #' @export
-parse_bf <- function(formula, family = NULL, autocor = NULL, 
-                     check_response = TRUE, resp_rhs_all = TRUE) {
+parse_bf <- function(formula, ...) {
+  UseMethod("parse_bf")
+}
+
+#' @export
+parse_bf.default <- function(formula, family = NULL, autocor = NULL, 
+                             check_response = TRUE, resp_rhs_all = TRUE,
+                             mv = FALSE, ...) {
   x <- bf(formula, family = family, autocor = autocor)
+  mv <- as_one_logical(mv)
   old_mv <- isTRUE(x[["old_mv"]])
   formula <- x$formula
   family <- x$family
@@ -45,11 +52,18 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       stop2("Invalid formula: response variable is missing.")
     }
     y$respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(y$respform)))
-    if (!is.null(x$response)) {
-      y$response <- x$response
-    } else { 
-      y$response <- parse_resp(y$respform, keep_dot_usc = old_mv)
+    if (mv) {
+      y$resp <- parse_resp(y$respform) 
+    } else {
+      y$resp <- ""
     }
+    # resp and response may differ for categorical and old MV models
+    # TODO: check if this is still needed in the new MV syntax
+    # if (!is.null(x$response)) {
+    #   y$response <- x$response
+    # } else { 
+    #   y$response <- y$resp
+    # }
   }
   
   # extract addition arguments
@@ -87,6 +101,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   }
   
   # predicted distributional parameters
+  resp <- ifelse(mv && !is.null(y$resp), y$resp, "")
   dpars <- is_dpar_name(names(x$pforms), family, bterms = y)
   dpars <- names(x$pforms)[dpars]
   dpar_forms <- x$pforms[dpars]
@@ -106,14 +121,13 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
         stop2("Non-linear formulas are not yet allowed for this family.")
       }
       dpar_nlpar_forms <- nlpar_forms[dpar_of_nlpars %in% dp]
-      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms, dp)
+      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], dpar_nlpar_forms, dp, resp)
     } else {
       y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
-    # temporary until brms 2.0.0
-    y$dpars[[dp]]$resp <- ""
+    y$dpars[[dp]]$resp <- resp
   }
   y <- store_uni_me(y)
   # fixed distributional parameters
@@ -149,33 +163,47 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   }
   environment(y$allvars) <- environment(formula)
   
-  if (length(y$response) > 1L) {
-    if (any(!names(y$adforms) %in% "weights")) {
-      stop2("Multivariate models currently allow only ",
-            "addition argument 'weights'.")
-    }
-    if (length(y$dpars) > 1L) {
-      stop2("Distributional parameters cannot yet be ", 
-            "predicted in multivariate models.")
-    }
-    if (length(y$dpars$mu$nlpars)) {
-      stop2("Multivariate non-linear models are not ",
-            "yet implemented.")
-    }
-  }
-  if (check_response && old_mv) {
-    # multivariate ('trait') syntax is deprecated as of brms 1.0.0
-    if (is_hurdle(family)) {
-      y$response <- c(y$response, paste0("hu_", y$response))
-    } else if (is_zero_inflated(family)) {
-      y$response <- c(y$response, paste0("zi_", y$response))
-    }
-    if (length(y$response) > 1L) {
-      y$allvars[[2]] <- quote(response)
-    }
-    attr(y$formula, "old_mv") <- TRUE
-  }
+  # if (length(y$response) > 1L) {
+  #   if (any(!names(y$adforms) %in% "weights")) {
+  #     stop2("Multivariate models currently allow only ",
+  #           "addition argument 'weights'.")
+  #   }
+  #   if (length(y$dpars) > 1L) {
+  #     stop2("Distributional parameters cannot yet be ", 
+  #           "predicted in multivariate models.")
+  #   }
+  #   if (length(y$dpars$mu$nlpars)) {
+  #     stop2("Multivariate non-linear models are not ",
+  #           "yet implemented.")
+  #   }
+  # }
+  # if (check_response && old_mv) {
+  #   # multivariate ('trait') syntax is deprecated as of brms 1.0.0
+  #   if (is_hurdle(family)) {
+  #     y$response <- c(y$response, paste0("hu_", y$response))
+  #   } else if (is_zero_inflated(family)) {
+  #     y$response <- c(y$response, paste0("zi_", y$response))
+  #   }
+  #   if (length(y$response) > 1L) {
+  #     y$allvars[[2]] <- quote(response)
+  #   }
+  #   attr(y$formula, "old_mv") <- TRUE
+  # }
   y
+}
+
+#' @export
+parse_bf.mvbrmsformula <- function(formula, ...) {
+  out <- list()
+  out$terms <- lapply(formula$forms, parse_bf, mv = TRUE, ...)
+  out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
+  out$responses <- ulapply(out$terms, "[[", "resp")
+  out$rescor <- isTRUE(formula$rescor)
+  for (i in seq_along(out$terms)) {
+    # for autocor checks all univariate models must be aware of rescor
+    out$terms[[i]]$rescor <- out$rescor
+  }
+  structure(out, class = "mvbrmsterms")
 }
 
 parse_lf <- function(formula, family = NULL) {
@@ -212,7 +240,7 @@ parse_lf <- function(formula, family = NULL) {
   structure(y, class = "btl")
 }
 
-parse_nlf <- function(formula, nlpar_forms, dpar) {
+parse_nlf <- function(formula, nlpar_forms, dpar, resp = "") {
   # parse non-linear formulas
   # Args:
   #   formula: formula of the non-linear model
@@ -232,8 +260,7 @@ parse_nlf <- function(formula, nlpar_forms, dpar) {
       y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$dpar <- dpar
-      # temporary until brms 2.0.0
-      y$nlpars[[nlp]]$resp <- ""
+      y$nlpars[[nlp]]$resp <- resp
     }
     model_vars <- all.vars(formula)
     missing_pars <- setdiff(names(y$nlpars), model_vars)
@@ -486,37 +513,27 @@ parse_re <- function(formula) {
   structure(out, pos = re_pos)
 }
 
-parse_resp <- function(formula, keep_dot_usc = FALSE) {
+parse_resp <- function(formula, check_names = TRUE) {
   # extract response variable names
-  # Args:
-  #   formula: a two-sided formula
-  #   keep_dot_usc: keep dots and underscores in the names?
-  # Returns:
-  #   a vector of names of the response variables (columns)
+  # assumes multiple response variables to be combined via cbind
   formula <- lhs(as.formula(formula))
-  all_vars <- all.vars(formula)
-  if (!length(all_vars)) {
-    stop2("The formula contains no response variables.")
+  if (is.null(formula)) {
+    return(NULL)
   }
-  mf <- as.data.frame(named_list(all_vars, values = 1))
-  mf <- model.frame(formula, data = mf, na.action = NULL)
-  pseudo_resp <- model.response(mf)
-  if (is.null(dim(pseudo_resp))) {
-    # response is a vector
-    out <- all_vars[1]
-  } else if (length(dim(pseudo_resp)) == 2L) {
-    # response is a matrix
-    out <- colnames(pseudo_resp)
-    empty_names <- which(!nchar(out))
-    if (length(empty_names)) {
-      out[empty_names] <- paste0("response", empty_names)
-    }
+  str_formula <- gsub("\\|+[^~]*~", "~", formula2str(formula))
+  expr <- formula(str_formula)[[2]]
+  if (length(expr) <= 1L) {
+    return(deparse_no_string(expr))
+  }
+  str_fun <- deparse_no_string(expr[[1]]) 
+  use_cbind <- identical(str_fun, "cbind")
+  if (use_cbind) {
+    out <- ulapply(expr[-1], deparse_no_string)
   } else {
-    stop2("Response part of 'formula' is invalid.")
+    out <- deparse_no_string(expr) 
   }
-  out <- make.names(out, unique = TRUE)
-  if (!keep_dot_usc) {
-    out <- gsub("\\.|_", "", out)
+  if (check_names) {
+    out <- gsub("\\.|_", "", make.names(out))
   }
   out
 }
@@ -567,12 +584,39 @@ is.brmsterms <- function(x) {
   inherits(x, "brmsterms")
 }
 
+#' Checks if argument is a \code{mvbrmsterms} object
+#' 
+#' @param x An \R object
+#' 
+#' @seealso \code{\link[brms:parse_bf]{parse_bf}}
+#' 
+#' @export
+is.mvbrmsterms <- function(x) {
+  inherits(x, "mvbrmsterms")
+}
+
 is.btl <- function(x) {
   inherits(x, "btl")
 }
 
 is.btnl <- function(x) {
   inherits(x, "btnl")
+}
+
+as.brmsterms <- function(x) {
+  stopifnot(is.mvbrmsterms(x), x$rescor)
+  families <- ulapply(x$terms, function(f) f$family$family)
+  stopifnot(all(families == families[1]))
+  out <- structure(list(), class = "brmsterms")
+  out$family <- structure(
+    list(family = paste0(families[1], "_mv"), link = "identity"),
+    class = c("brmsfamily", "family")
+  )
+  out$sigma_pred <- any(ulapply(x$terms, 
+    function(x) "sigma" %in% names(x$dpar) || is.formula(x$adforms$se)
+  ))
+  # TODO: store weights if used in all responses
+  out
 }
 
 avoid_dpars <- function(names, bterms) {
@@ -697,11 +741,7 @@ ad_families <- function(x) {
       "exgaussian", "frechet", "asym_laplace", "skew_normal",
       "gen_extreme_value"
     ),
-    disp = c(
-      "gaussian", "student", "cauchy", "lognormal", 
-      "gamma", "weibull", "negbinomial", "exgaussian",
-      "asym_laplace"
-    ),
+    disp = stop2("Addition argument 'disp' has been removed in brms 2.0."),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
   )
@@ -732,6 +772,11 @@ plus_rhs <- function(x) {
 get_effect <- function(x, ...) {
   # extract various kind of effects
   UseMethod("get_effect")
+}
+
+#' @export
+get_effect.mvbrmsterms <- function(x, ...) {
+  unlist(lapply(x$terms, get_effect, ...), recursive = FALSE)
 }
 
 #' @export

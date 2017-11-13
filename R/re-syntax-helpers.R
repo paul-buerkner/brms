@@ -11,6 +11,19 @@ illegal_group_expr <- function(group) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
+get_groups <- function(x) {
+  if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
+    x <- parse_bf(x)
+  }
+  if (is.brmsterms(x)) {
+    cor_group <- x$time$group
+  } else if (is.mvbrmsterms(x)) {
+    cor_group <- ulapply(x$terms, function(t) t$time$group)
+  }
+  out <- c(get_re(x)$group, cor_group)
+  unique(out[nzchar(out)])
+}
+
 re_lhs <- function(re_terms) {
   get_matches("^[^\\|]*", re_terms) 
 }
@@ -249,6 +262,11 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
     re <- get_re(x$dpars[["mu"]])
   }
   re
+}
+
+#' @export
+get_re.mvbrmsterms <- function(x, ...) {
+  do.call(rbind, lapply(x$terms, get_re, ...))
 }
 
 #' @export

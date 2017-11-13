@@ -685,13 +685,14 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (length(families) < 2L) {
     stop2("Expecting at least 2 mixture components.")
   }
-  non_mix_families <- c("categorical")
+  # do not allow ordinal families until compatibility with disc is ensured
+  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
+  non_mix_families <- c("categorical", ordinal_families)
   non_mix_families <- intersect(families, non_mix_families)
   if (length(non_mix_families)) {
     stop2("Families ", collapse_comma(non_mix_families), 
           " are currently not allowed in mixture models.")
   }
-  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
   if (is_ordinal(family) && any(!families %in% ordinal_families)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
   }
@@ -735,23 +736,29 @@ family_names.default <- function(family, ...) {
 }
 
 #' @export
-family_names.family <- function(family, ...) {
-  family$family
+family_names.family <- function(family, link = FALSE, ...) {
+  link <- as_one_logical(link)
+  ifelse(link, family$link, family$family)
 }
 
 #' @export
 family_names.mixfamily <- function(family, ...) {
-  ulapply(family$mix, "[[", "family")
+  ulapply(family$mix, family_names, ...)
 }
 
 #' @export
 family_names.brmsformula <- function(family, ...) {
-  family_names(family$family)
+  family_names(family$family, ...)
 }
 
 #' @export
 family_names.brmsterms <- function(family, ...) {
-  family_names(family$family)
+  family_names(family$family, ...)
+}
+
+#' @export
+family_names.mvbrmsterms <- function(family, ...) {
+  ulapply(family$terms, family_names, ...)
 }
 
 dpar_family <- function(family, dpar, ...) {
@@ -944,6 +951,7 @@ is_zero_one_inflated <- function(family, zi_beta = FALSE) {
   any(family_names(family) %in% "zero_one_inflated_beta")
 }
 
+# TODO: remove
 is_2PL <- function(family) {
   # do not remove to provide an informative error message
   # why the special 2PL implementation is not supported anymore
@@ -960,11 +968,13 @@ is_2PL <- function(family) {
   out
 }
 
+# TODO: remove
 is_forked <- function(family) {
   # indicate if family has two separate model parts
   is_hurdle(family) || is_zero_inflated(family) || is_2PL(family)
 }
 
+# TODO: remove
 is_mv <- function(family, response = NULL) {
   # indicate if the model uses multiple responses
   nresp <- length(response)

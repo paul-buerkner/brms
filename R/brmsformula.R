@@ -619,6 +619,12 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(autocor)) {
     out$autocor <- check_autocor(autocor)
   }
+  respform <- lhs(formula)
+  if (!is.null(respform)) {
+    # TODO: amend if allowing cbind notation
+    respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(respform)))
+    out$resp <- parse_resp(respform)
+  }
   if (!is.null(out[["family"]])) {
     # check for the presence of non-linear parameters
     dpars <- is_dpar_name(names(out$pforms), out$family)
@@ -652,12 +658,12 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
-    autocor = NULL, response = NULL, old_mv = FALSE
+    autocor = NULL, resp = NULL, old_mv = FALSE
   )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
-  class(out) <- "brmsformula"
-  out
+  class(out) <- c("brmsformula", "bform")
+  split_bf(out)
 }
 
 #' @export
@@ -674,7 +680,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
 #' 
 #' @name brmsformula-helpers
-#' @aliases bf-helpers nlf lf set_nl
+#' @aliases bf-helpers nlf lf set_nl set_rescor
 #' 
 #' @param formula Non-linear formula for a distributional parameter.
 #'   The name of the distributional parameter can either be specified
@@ -682,6 +688,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' @param dpar Optional character string specifying the distributional 
 #'   parameter to which the formulas passed via \code{...} and
 #'   \code{flist} belong.
+#' @param resp Optional character string specifying the response 
+#'   variable to which the formulas passed via \code{...} and
+#'   \code{flist} belong. Only relevant in multivariate models.
 #' @inheritParams brmsformula
 #' 
 #' @return For \code{lf} and \code{nlf} a \code{list} that can be 
@@ -705,7 +714,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #'   set_nl(TRUE)
 #' 
 #' @export
-nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
+nlf <- function(formula, ..., flist = NULL, dpar = NULL, resp = NULL) {
   formula <- as.formula(formula)
   resp_pars <- all.vars(formula[[2]])
   if (length(resp_pars) == 0L) {
@@ -718,41 +727,119 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL) {
   } else {
     stop2("LHS of non-linear formula should contain only one variable.")
   }
-  attr(formula, "nl") <- TRUE
-  c(setNames(list(formula), dpar), lf(..., flist = flist, dpar = dpar))
+  out <- c(
+    setNames(list(structure(formula, nl = TRUE)), dpar),
+    lf(..., flist = flist, dpar = dpar)
+  )
+  structure(out, dpar = dpar, resp = resp)
 }
 
 #' @rdname brmsformula-helpers
 #' @export
-lf <- function(..., flist = NULL, dpar = NULL) {
+lf <- function(..., flist = NULL, dpar = NULL, resp = NULL) {
   out <- c(list(...), flist)
   if (!is.null(dpar)) {
-    dpar <- as.character(dpar)
-    if (length(dpar) != 1L) {
-      stop2("Argument 'dpar' should be of length 1.")
-    }
+    dpar <- as_one_character(dpar)
     for (i in seq_along(out)) {
       attr(out[[i]], "dpar") <- dpar
     }
   }
-  out
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
+  }
+  structure(out, dpar = dpar, resp = resp)
 }
 
 #' @rdname brmsformula-helpers
 #' @export
-set_nl <- function(nl = TRUE, dpar = NULL) {
+set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
   nl <- as_one_logical(nl)
   if (!is.null(dpar)) {
-    dpar <- as.character(dpar)
-    if (length(dpar) != 1L) {
-      stop2("Argument 'dpar' should be of length 1.")
-    }
+    dpar <- as_one_character(dpar)
   }
-  structure(nlist(nl, dpar), class = "setnl")
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
+  }
+  structure(nl, dpar = dpar, resp = resp, class = "setnl")
 }
 
 #' @export
-"+.brmsformula" <- function(e1, e2) {
+mvbf <- function(..., flist = NULL, rescor = NULL) {
+  dots <- c(list(...), flist)
+  if (!length(dots)) {
+    stop2("No objects passed to 'mvbf'.")
+  }
+  forms <- list()
+  for (i in seq_along(dots)) {
+    if (is.mvbrmsformula(dots[[i]])) {
+      forms <- c(forms, dots[[i]]$forms)
+      if (is.null(rescor)) {
+        rescor <- dots[[i]]$rescor
+      }
+    } else {
+      forms <- c(forms, list(bf(dots[[i]])))
+    }
+  }
+  if (!is.null(rescor)) {
+    rescor <- as_one_logical(rescor)
+  }
+  responses <- ulapply(forms, "[[", "resp")
+  if (any(duplicated(responses))) {
+    stop2("Cannot use the same response variable twice in the same model.")
+  }
+  structure(
+    nlist(forms, responses, rescor),
+    class = c("mvbrmsformula", "bform")
+  )
+}
+
+split_bf <- function(x) {
+  # build a mvbrmsformula object based on a brmsformula object
+  # which uses cbind on the left-hand side to specify MV models
+  stopifnot(is.brmsformula(x))
+  resp <- parse_resp(x$formula)
+  if (length(resp) > 1L) {
+    # cbind syntax used to specify MV model
+    flist <- named_list(resp)
+    for (i in seq_along(resp)) {
+      flist[[i]] <- x
+      flist[[i]]$formula[[2]] <- parse(text = resp[[i]])[[1]]
+      flist[[i]]$resp <- resp[[i]]
+    }
+    x <- mvbf(flist = flist) 
+  }
+  x
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+set_rescor <- function(rescor = TRUE) {
+  structure(as_one_logical(rescor), class = "setrescor")
+}
+
+allow_rescor <- function(x) {
+  # indicate if estimating 'rescor' is allowed for this model
+  if (!(is.mvbrmsformula(x) || is.mvbrmsterms(x))) {
+    return(FALSE)
+  }
+  parts <- if (is.mvbrmsformula(x)) x$forms else x$terms 
+  families <- ulapply(parts, function(f) f$family$family)
+  all(families == "gaussian") || all(families == "student")
+}
+
+#' @export
+"+.bform" <- function(e1, e2) {
+  if (is.brmsformula(e1)) {
+    out <- plus_brmsformula(e1, e2)
+  } else if (is.mvbrmsformula(e1)) {
+    out <- plus_mvbrmsformula(e1, e2)
+  } else {
+    stop2("Method '+.bf' not implemented for ", class(e1), " objects.")
+  }
+  out
+}
+  
+plus_brmsformula <- function(e1, e2) {
   if (is.function(e2)) {
     e2 <- try(e2(), silent = TRUE)
     if (!is.family(e2)) {
@@ -764,17 +851,53 @@ set_nl <- function(nl = TRUE, dpar = NULL) {
   } else if (is.cor_brms(e2)) {
     e1 <- bf(e1, autocor = e2)
   } else if (inherits(e2, "setnl")) {
-    if (is.null(e2$dpar)) {
-      e1 <- bf(e1, nl = e2$nl)
+    dpar <- attr(e2, "dpar")
+    if (is.null(dpar)) {
+      e1 <- bf(e1, nl = e2)
     } else {
-      if (is.null(e1$pforms[[e2$dpar]])) {
-        stop2("Parameter '", e2$dpar, "' has no formula.")
+      if (is.null(e1$pforms[[dpar]])) {
+        stop2("Parameter '", dpar, "' has no formula.")
       }
-      attr(e1$pforms[[e2$dpar]], "nl") <- e2$nl
+      attr(e1$pforms[[dpar]], "nl") <- e2
       e1 <- bf(e1)
     }
+  } else if (is.brmsformula(e2)) {
+    e1 <- mvbf(e1, e2)
+  } else if (inherits(e2, "setrescor")) {
+    stop2("Setting 'rescor' is only possible in multivariate models.")
   } else {
     e1 <- bf(e1, e2)
+  }
+  e1
+}
+
+#' @export
+plus_mvbrmsformula <- function(e1, e2) {
+  if (is.function(e2)) {
+    e2 <- try(e2(), silent = TRUE)
+    if (!is.family(e2)) {
+      stop2("Don't know how to handle non-family functions.")
+    }
+  } 
+  if (is.family(e2) || is.cor_brms(e2)) {
+    e1$forms <- lapply(e1$forms, "+", e2)
+  } else if (inherits(e2, "setrescor")) {
+    e1$rescor <- e2
+  } else if (is.brmsformula(e2)) {
+    e1 <- mvbf(e1, e2)
+  } else {
+    resp <- attr(e2, "resp", TRUE)
+    if (is.null(resp)) {
+      stop2(
+        "Don't know how to add a ", class(e2), " object ",
+        "without the response variable name. ",
+        "See help('brmsformula-helpers') for more details."
+      )
+    }
+    if (!isTRUE(resp %in% e1$responses)) {
+      stop2("'resp' should be one of ", collapse_comma(e1$responses), ".")
+    }
+    e1$forms[[resp]] <- e1$forms[[resp]] + e2
   }
   e1
 }
@@ -970,10 +1093,16 @@ pfix <- function(x, ...) {
   bf(x, ...)[["pfix"]]
 }
 
-amend_formula <- function(formula, data = NULL, family = gaussian(),
-                          autocor = NULL, threshold = NULL,
-                          nonlinear = NULL) {
-  # incorporate additional arguments into formula
+amend_formula <- function(formula, ...) {
+  # incorporate additional arguments into the model formula
+  UseMethod("amend_formula")
+}
+
+#' @export
+amend_formula.default <- function(formula, data = NULL, family = gaussian(),
+                                  autocor = NULL, threshold = NULL,
+                                  nonlinear = NULL, ...) {
+  # incorporate additional arguments into the model formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
   #   data: optional data.frame
@@ -1026,6 +1155,22 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   out
 }
 
+amend_formula.mvbrmsformula <- function(formula, ...) {
+  formula$forms <- lapply(formula$forms, amend_formula, ...)
+  allow_rescor <- allow_rescor(formula)
+  if (is.null(formula$rescor)) {
+    formula$rescor <- allow_rescor
+    message(
+      "Setting 'rescor' to ", formula$rescor, 
+      " by default for this combination of families"
+    )
+  } else if (formula$rescor && !allow_rescor) {
+    stop2("Currently, estimating 'rescor' is only possible ", 
+          "in multivariate gaussian or student models.")
+  }
+  formula
+}
+
 #' @export
 update.brmsformula <- function(object, formula., 
                                mode = c("update", "replace", "keep"), 
@@ -1074,11 +1219,11 @@ update.brmsformula <- function(object, formula.,
 #' @export
 print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
-  wsp <- collapse(rep(" ", wsp))
+  str_wsp <- collapse(rep(" ", wsp))
   pforms <- x$pforms
   if (length(pforms)) {
     pforms <- ulapply(pforms, formula2str, space = "trim")
-    cat(collapse(wsp, pforms, "\n"))
+    cat(collapse(str_wsp, pforms, "\n"))
   }
   pfix <- x$pfix
   if (length(pfix)) {
@@ -1086,7 +1231,16 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
       ifelse(is.numeric(x), round(x, digits), x)
     )
     pfix <- paste0(names(pfix), " = ", unlist(pfix))
-    cat(collapse(wsp, pfix, "\n"))
+    cat(collapse(str_wsp, pfix, "\n"))
+  }
+  invisible(x)
+}
+
+#' @export
+print.mvbrmsformula <- function(x, wsp = 0, ...) {
+  for (i in seq_along(x$forms)) {
+    print(x$forms[[i]], wsp = wsp, ...)
+    cat("\n")
   }
   invisible(x)
 }
@@ -1098,6 +1252,15 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
 #' @export
 is.brmsformula <- function(x) {
   inherits(x, "brmsformula")
+}
+
+#' Checks if argument is a \code{mvbrmsformula} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.mvbrmsformula <- function(x) {
+  inherits(x, "mvbrmsformula")
 }
 
 is_nonlinear <- function(x) {
