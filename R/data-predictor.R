@@ -618,7 +618,7 @@ data_response.mvbrmsterms <- function(x, ...) {
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
-    out$nrescor <- length(out$nresp) * (length(out$nresp) - 1) / 2
+    out$nrescor <- out$nresp * (out$nresp - 1) / 2
   }
   out
 }

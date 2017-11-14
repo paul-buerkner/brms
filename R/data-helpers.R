@@ -228,11 +228,11 @@ order_data <- function(data, bterms) {
   #   potentially ordered data
   get_time_group <- function(x) {
     # ordering does not matter for the CAR structure
-    if (!is_cor_car(x$autocor)) x$time$group
+    if (!is.cor_car(x$autocor)) x$time$group
   }
   if (is.mvbrmsterms(bterms)) {
     time <- unique(ulapply(bterms$terms, function(x) x$time$time))
-    group <- unqiue(ulapply(bterms$terms, get_time_group))
+    group <- unique(ulapply(bterms$terms, get_time_group))
     if (length(time) > 1L || length(group) > 1L) {
       stop2("All autocorrelation structures must have the same ",
             "time and group variables.")
