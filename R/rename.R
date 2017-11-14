@@ -8,65 +8,16 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- with(x, parse_bf(formula, family = family, autocor = autocor))
-  family <- family(x)
+  bterms <- parse_bf(x$formula) 
   data <- model.frame(x)
   pars <- parnames(x)
-  
   # find positions of parameters and define new names
-  change <- list()
-  resp <- bterms$response
-  if (length(resp) > 1L) {
-    # rename effects in multivariate models
-    for (r in resp) {
-      bterms$dpars[["mu"]]$resp <- r
-      change_eff <- change_effects(
-        bterms$dpars[["mu"]], data = data, 
-        pars = pars, stancode = stancode(x)
-      )
-      change <- c(change, change_eff)
-    }
-    bterms$dpars[["mu"]] <- NULL
-  }
-  # rename effects of distributional parameters
-  for (ap in names(bterms$dpars)) {
-    change_eff <- change_effects(
-      bterms$dpars[[ap]], data = data, 
-      pars = pars, stancode = stancode(x)
-    )
-    change <- c(change, change_eff)
-  }
-  change <- c(change,
+  change <- c(
+    change_effects(bterms, data = data, pars = pars, stancode = stancode(x)),
     change_re(x$ranef, pars = pars),
     change_Xme(bterms, pars = pars),
     change_autocor(bterms, data = data, pars = pars)
   )
-  # rename residual parameters of multivariate linear models
-  if (is_linear(family) && length(bterms$response) > 1L) {
-    corfnames <- paste0("sigma_", bterms$response)
-    change <- lc(change, 
-      list(
-        pos = grepl("^sigma\\[", pars), oldname = "sigma",
-        pnames = corfnames, fnames = corfnames
-      )
-    )
-    change <- c(change, 
-      change_prior(
-        class = "sigma", pars = pars, 
-        names = bterms$response
-      )
-    )
-    rescor_names <- get_cornames(
-      bterms$response, type = "rescor", brackets = FALSE
-    )
-    change <- lc(change, 
-      list(
-        pos = grepl("^rescor\\[", pars), 
-        oldname = "rescor", pnames = rescor_names,
-        fnames = rescor_names
-      )
-    )
-  }
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
   x <- compute_quantities(x)
@@ -77,6 +28,32 @@ rename_pars <- function(x) {
 change_effects <- function(x, ...) {
   # helps in renaming parameters after model fitting
   UseMethod("change_effects")
+}
+
+#' @export
+change_effects.mvbrmsterms <- function(x, ...) {
+  change <- list()
+  for (i in seq_along(x$terms)) {
+    change <- c(change, change_effects(x$terms[[i]], ...))
+  }
+  if (x$rescor) {
+    rescor_names <- get_cornames(
+      x$responses, type = "rescor", brackets = FALSE
+    )
+    change <- lc(change,
+      list(pos = grepl("^rescor\\[", pars), fnames = rescor_names)
+    )
+  }
+  change
+}
+
+#' @export
+change_effects.brmsterms <- function(x, ...) {
+  change <- list()
+  for (dp in names(x$dpars)) {
+    change <- c(change, change_effects(x$dpars[[dp]], ...))
+  }
+  change
 }
 
 #' @export
@@ -209,7 +186,6 @@ change_Xme <- function(bterms, pars) {
   # helps in renaming global noise free variables
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
-  stopifnot(is.brmsterms(bterms))
   change <- list()
   if (any(grepl("^Xme_", pars))) {
     uni_me <- get_uni_me(bterms)
