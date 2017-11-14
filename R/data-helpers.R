@@ -219,26 +219,31 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   data
 }
 
-order_data <- function(data, bterms, old_mv = FALSE) {
+order_data <- function(data, bterms) {
   # order data for use in time-series models
   # Args:
   #   data: data.frame to be ordered
-  #   bterms: brmsterm object
-  #   old_mv: indicator if the model is an old multivariate one
+  #   bterms: brmsterms of mvbrmsterms object
   # Returns:
   #   potentially ordered data
-  if (old_mv) {
-    to_order <- rmNULL(list(
-      data[["trait"]], 
-      data[[bterms$time$group]], 
-      data[[bterms$time$time]]
-    ))
-  } else {
-    to_order <- rmNULL(list(
-      data[[bterms$time$group]], 
-      data[[bterms$time$time]]
-    ))
+  get_time_group <- function(x) {
+    # ordering does not matter for the CAR structure
+    if (!is_cor_car(x$autocor)) x$time$group
   }
+  if (is.mvbrmsterms(bterms)) {
+    time <- unique(ulapply(bterms$terms, function(x) x$time$time))
+    group <- unqiue(ulapply(bterms$terms, get_time_group))
+    if (length(time) > 1L || length(group) > 1L) {
+      stop2("All autocorrelation structures must have the same ",
+            "time and group variables.")
+    }
+  } else {
+    time <- bterms$time$time 
+    group <- get_time_group(bterms)
+  }
+  time_var <- if (length(time)) data[[time]]
+  group_var <- if (length(group)) data[[group]]
+  to_order <- rmNULL(list(group_var, time_var))
   if (length(to_order)) {
     new_order <- do.call(order, to_order)
     data <- data[new_order, , drop = FALSE]

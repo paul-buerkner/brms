@@ -545,6 +545,7 @@ parse_time <- function(autocor) {
   # Returns: 
   #   a list with elements time, group, and all, where all contains a 
   #   formula with all variables in formula
+  out <- list()
   formula <- autocor$formula
   if (is.null(formula)) {
     formula <- ~ 1 
@@ -554,23 +555,28 @@ parse_time <- function(autocor) {
   }
   formula <- formula2str(formula)
   time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
-  time <- all.vars(time)
-  if (is.cor_car(autocor) && length(time) > 0L) {
+  time_vars <- all.vars(time)
+  if (is.cor_car(autocor) && length(time_vars) > 0L) {
     stop2("The CAR structure should not contain a 'time' variable.")
   }
-  if (length(time) > 1L) {
+  if (length(time_vars) > 1L) {
     stop2("Autocorrelation structures may only contain 1 time variable.")
   }
-  x <- list(time = ifelse(length(time), time, ""))
+  if (length(time_vars)) {
+    out$time <- time_vars
+  }
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
   if (illegal_group_expr(group)) {
     stop2("Illegal grouping term: ", group, "\nIt may contain only ", 
           "variable names combined by the symbol ':'")
   }
   group <- formula(paste("~", ifelse(nchar(group), group, "1")))
-  x$group <- paste0(all.vars(group), collapse = ":")
-  x$allvars <- str2formula(c(time, all.vars(group)))
-  x
+  group_vars <- all.vars(group)
+  if (length(group_vars)) {
+    out$group <- paste0(group_vars, collapse = ":")
+  }
+  out$allvars <- str2formula(c(time, group_vars))
+  out
 }
 
 #' Checks if argument is a \code{brmsterms} object

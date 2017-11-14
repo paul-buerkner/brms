@@ -4,6 +4,42 @@ data_effects <- function(x, ...) {
 }
 
 #' @export
+data_effects.mvbrmsterms <- function(x, ...) {
+  out <- list()
+  for (i in seq_along(x$terms)) {
+    out <- c(out, data_effects(x$terms[[i]], ...))
+  }
+  out
+}
+
+#' @export
+data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
+                                   knots = NULL, not4stan = FALSE, 
+                                   smooths = NULL, gps = NULL, Jmo = NULL,
+                                   old_locations = NULL) {
+  # TODO: find a better interface for smooths, gps etc.
+  out <- list()
+  args_eff <- nlist(data, ranef, prior, knots, not4stan)
+  for (dp in names(x$dpars)) {
+    args_eff_spec <- list(
+      x = x$dpars[[dp]], smooths = smooths[[dp]],
+      gps = gps[[dp]], Jmo = Jmo[[dp]]
+    )
+    data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+    out <- c(out, data_aux_eff)
+  }
+  for (dp in names(x$fdpars)) {
+    out[[dp]] <- x$fdpars[[dp]]$value
+  }
+  c(out,
+    data_gr(ranef, data, cov_ranef = cov_ranef),
+    data_Xme(x, data),
+    data_mixture(x, prior = prior),
+    data_autocor(x, data, old_locations = old_locations)
+  )
+}
+
+#' @export
 data_effects.btl <- function(x, data, ranef = empty_ranef(), 
                              prior = brmsprior(), knots = NULL, 
                              not4stan = FALSE, smooths = NULL, 
@@ -414,7 +450,7 @@ data_gp <- function(bterms, data, gps = NULL) {
     }
   }
   out
-} 
+}
 
 data_offset <- function(bterms, data) {
   # prepare data of offsets for use in Stan
@@ -427,6 +463,341 @@ data_offset <- function(bterms, data) {
     out[[paste0("offset", p)]] <- model.offset(mf)
   }
   out
+}
+
+data_autocor <- function(bterms, data, old_locations = NULL) {
+  # data for autocorrelation variables
+  # Args:
+  #   old_locations: optional locations for CAR models 
+  #     used when fitting the model
+  stopifnot(is.brmsterms(bterms))
+  autocor <- bterms$autocor
+  out <- list()
+  if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
+    if (length(bterms$time$group)) {
+      tgroup <- as.numeric(factor(data[[bterms$time$group]]))
+    } else {
+      tgroup <- rep(1, nrow(data)) 
+    }
+  }
+  if (has_arma(autocor)) {
+    Kar <- get_ar(autocor)
+    Kma <- get_ma(autocor)
+    Karr <- get_arr(autocor)
+    if (Kar || Kma) {
+      # ARMA correlations (of residuals)
+      out$Kar <- Kar
+      out$Kma <- Kma
+      if (use_cov(autocor)) {
+        # data for the 'covariance' version of ARMA 
+        out$N_tg <- length(unique(tgroup))
+        out$begin_tg <- as.array(
+          ulapply(unique(tgroup), match, tgroup)
+        )
+        out$nobs_tg <- as.array(with(out, 
+          c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+        ))
+        out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+      } else {
+        # data for the 'predictor' version of ARMA
+        max_lag <- max(Kar, Kma)
+        out$J_lag <- rep(0, N)
+        for (n in seq_len(N)) {
+          for (i in seq_len(max_lag)) {
+            valid_lag <- n + 1 - i > 0 && n < N && 
+              tgroup[n + 1] == tgroup[n + 1 - i]
+            if (valid_lag) {
+              out$J_lag[n] <- i
+            }
+          }
+        }
+      }
+    }
+    if (Karr) {
+      # ARR effects (autoregressive effects of the response)
+      out$Yarr <- arr_design_matrix(out$Y, Karr, tgroup)
+      out$Karr <- Karr
+    }
+  } else if (is.cor_sar(autocor)) {
+    if (!identical(dim(autocor$W), rep(N, 2))) {
+      stop2("Dimensions of 'W' must be equal to the number of observations.")
+    }
+    out$W <- autocor$W
+    # simplifies code of choose_N
+    out$N_tg <- 1
+  } else if (is.cor_car(autocor)) {
+    if (isTRUE(nzchar(bterms$time$group))) {
+      loc_data <- get(bterms$time$group, data)
+      locations <- levels(factor(loc_data))
+      if (!is.null(old_locations)) {
+        # old_locations <- control$old_locations
+        new_locations <- setdiff(locations, old_locations)
+        if (length(new_locations)) {
+          stop2("Cannot handle new locations in CAR models.")
+        }
+      } else {
+        old_locations <- locations
+      }
+      Nloc <- length(locations)
+      Jloc <- as.array(match(loc_data, old_locations))
+      found_locations <- rownames(autocor$W)
+      if (is.null(found_locations)) {
+        stop2("Row names are required for 'W'.")
+      }
+      colnames(autocor$W) <- found_locations
+      found <- locations %in% found_locations
+      if (any(!found)) {
+        stop2("Row names of 'W' do not match ", 
+              "the names of the grouping levels.")
+      }
+      autocor$W <- autocor$W[locations, locations, drop = FALSE]
+    } else {
+      Nloc <- N
+      Jloc <- as.array(seq_len(Nloc))
+      if (!identical(dim(autocor$W), rep(Nloc, 2))) {
+        if (is_newdata) {
+          stop2("Cannot handle new data in CAR models ",
+                "without a grouping factor.")
+        } else {
+          stop2("Dimensions of 'W' must be equal ", 
+                "to the number of observations.") 
+        }
+      }
+    }
+    W_tmp <- autocor$W
+    W_tmp[upper.tri(W_tmp)] <- NA
+    edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+    Nneigh <- Matrix::colSums(autocor$W)
+    if (any(Nneigh == 0)) {
+      stop2("All locations should have at least one neighbor.")
+    }
+    inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+    eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+    eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+    out <- c(out, nlist(
+      Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
+      edges1 = as.array(edges[, 1]), edges2 = as.array(edges[, 2])
+    ))
+  } else if (is.cor_bsts(autocor)) {
+    out$tg <- as.array(tgroup)
+  } else if (is.cor_fixed(autocor)) {
+    V <- autocor$V
+    rmd_rows <- attr(data, "na.action")
+    if (!is.null(rmd_rows)) {
+      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+    }
+    if (nrow(V) != nrow(data)) {
+      stop2("'V' must have the same number of rows as 'data'.")
+    }
+    if (min(eigen(V)$values <= 0)) {
+      stop2("'V' must be positive definite.")
+    }
+    out$V <- V
+    # simplifies code of choose_N
+    out$N_tg <- 1
+  }
+  if (length(out)) {
+    p <- usc(combine_prefix(bterms))
+    out <- setNames(out, paste0(names(out), p))
+  }
+  out
+}
+
+data_response <- function(x, ...) {
+  # prepare data for the response variable to be passed to Stan
+  # this shouldn't be part of stan_effects() to allow for
+  # preparation of response variables without anything else
+  UseMethod("data_response")
+}
+
+#' @export
+data_response.mvbrmsterms <- function(x, ...) {
+  out <- list()
+  for (i in seq_along(x$terms)) {
+    out <- c(out, data_response(x$terms[[i]], ...))
+  }
+  if (x$rescor) {
+    out$nresp <- length(x$responses)
+    out$nrescor <- length(out$nresp) * (length(out$nresp) - 1) / 2
+  }
+  out
+}
+
+#' @export
+data_response.brmsterms <- function(x, data, check_response = TRUE,
+                                    trials = NULL, ncat = NULL) {
+  # prepare data for the response variable
+  # TODO: document special args
+  N <- nrow(data)
+  out <- list(Y = unname(model.response(model.frame(x$respform, data))))
+  families <- family_names(x$family)
+  if (is.mixfamily(x$family)) {
+    family4error <- paste0(families, collapse = ", ")
+    family4error <- paste0("mixture(", family4error, ")")
+  } else {
+    family4error <- families
+  }
+  if (check_response) {
+    factors_allowed <- is_ordinal(x$family) || 
+      any(families %in% c("bernoulli", "categorical"))
+    if (!factors_allowed && !is.numeric(out$Y)) {
+      stop2("Family '", family4error, "' requires numeric responses.")
+    }
+    # transform and check response variables for different families
+    regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
+    if (any(grepl(regex_pos_int, families))) {
+      if (!all(is_wholenumber(out$Y)) || min(out$Y) < 0) {
+        stop2("Family '", family4error, "' requires responses ", 
+              "to be non-negative integers.")
+      }
+    } else if (any(families %in% "bernoulli")) {
+      out$Y <- as.numeric(as.factor(out$Y)) - 1
+      if (any(!out$Y %in% c(0, 1))) {
+        stop2("Family '", family4error, "' requires responses ", 
+              "to contain only two different values.")
+      }
+    } else if (any(grepl("(^|_)beta$", families))) {
+      if (any(families %in% "beta")) {
+        lower <- any(out$Y <= 0)
+      } else {
+        lower <- any(out$Y < 0) 
+      } 
+      if (any(families %in% "zero_one_inflated_beta")) {
+        upper <- any(out$Y > 1) 
+      } else {
+        upper <- any(out$Y >= 1) 
+      }
+      if (lower || upper) {
+        stop2("Family '", family4error, "' requires responses ", 
+              "between 0 and 1.")
+      }
+    } else if (any(families %in% "von_mises")) {
+      if (any(out$Y < -pi | out$Y > pi)) {
+        stop2("Family '", family4error, "' requires responses ",
+              "between -pi and pi.")
+      }
+    } else if (is_categorical(x$family)) { 
+      out$Y <- as.numeric(factor(out$Y))
+      if (length(unique(out$Y)) < 3L) {
+        stop2("At least three response categories are required.")
+      }
+    } else if (is_ordinal(x$family)) {
+      if (is.ordered(out$Y)) {
+        out$Y <- as.numeric(out$Y)
+      } else if (all(is_wholenumber(out$Y))) {
+        out$Y <- out$Y - min(out$Y) + 1
+      } else {
+        stop2("Family '", family4error, "' requires either integers or ",
+              "ordered factors as responses.")
+      }
+      if (length(unique(out$Y)) < 2L) {
+        stop2("At least two response categories are required.")
+      }
+    } else if (is_skewed(x$family) || is_lognormal(x$family) || 
+               is_wiener(x$family)) {
+      if (min(out$Y) <= 0) {
+        stop2("Family '", family4error, "' requires responses ", 
+              "to be positive.")
+      }
+    } else if (is_zero_inflated(x$family) || is_hurdle(x$family)) {
+      if (min(out$Y) < 0) {
+        stop2("Family '", family4error, "' requires responses ", 
+              "to be non-negative.")
+      }
+    }
+    out$Y <- as.array(out$Y)
+  }
+  # data for addition arguments of the response
+  if (has_trials(x$family)) {
+    if (!length(x$adforms$trials)) {
+      if (!is.null(trials)) {
+        out$trials <- trials
+      } else {
+        message("Using the maximum of the response ",
+                "variable as the number of trials.")
+        out$trials <- max(out$Y)
+      }
+    } else if (is.formula(x$adforms$trials)) {
+      out$trials <- eval_rhs(x$adforms$trials, data = data)
+    } else {
+      stop2("Argument 'trials' is misspecified.")
+    }
+    if (length(out$trials) == 1L) {
+      out$trials <- rep(out$trials, nrow(data))
+    }
+    if (max(out$trials) == 1L && !not4stan) {
+      message("Only 2 levels detected so that family 'bernoulli' ",
+              "might be a more efficient choice.")
+    }
+    if (check_response && any(out$Y > out$trials)) {
+      stop2("Number of trials is smaller than ",
+            "the number of events.")
+    }
+    out$trials <- as.array(out$trials)
+  }
+  if (has_cat(x$family)) {
+    if (!length(x$adforms$cat)) {
+      if (!is.null(ncat)) {
+        out$ncat <- ncat
+      } else {
+        out$ncat <- length(unique(out$Y))
+      }
+    } else if (is.formula(x$adforms$cat)) {
+      out$ncat <- eval_rhs(x$adforms$cat, data = data)
+    } else {
+      stop2("Argument 'cat' is misspecified.")
+    }
+    if (max(out$ncat) == 2L) {
+      message("Only 2 levels detected so that family 'bernoulli' ",
+              "might be a more efficient choice.")
+    }
+    if (check_response && any(out$Y > out$ncat)) {
+      stop2("Number of categories is smaller than the response ",
+            "variable would suggest.")
+    }
+  }
+  if (is.formula(x$adforms$se)) {
+    out$se <- as.array(eval_rhs(x$adforms$se, data = data))
+  }
+  if (is.formula(x$adforms$weights)) {
+    out$weights <- as.array(eval_rhs(x$adforms$weights, data = data))
+  }
+  if (is.formula(x$adforms$dec)) {
+    out$dec <- as.array(eval_rhs(x$adforms$dec, data = data))
+  }
+  if (is.formula(x$adforms$cens) && check_response) {
+    cens <- eval_rhs(x$adforms$cens, data = data)
+    out$cens <- rm_attr(cens, "y2")
+    y2 <- attr(cens, "y2")
+    if (!is.null(y2)) {
+      icens <- cens %in% 2
+      if (any(out$Y[icens] >= y2[icens])) {
+        stop2("Left censor points must be smaller than right ",
+              "censor points for interval censored data.")
+      }
+      y2[!icens] <- 0  # not used in Stan
+      out$rcens <- as.array(y2)
+    }
+    out$cens <- as.array(out$cens)
+  }
+  if (is.formula(x$adforms$trunc)) {
+    out <- c(out, eval_rhs(x$adforms$trunc, data = data))
+    if (length(out$lb) == 1L) {
+      out$lb <- rep(out$lb, N)
+    }
+    if (length(out$ub) == 1L) {
+      out$ub <- rep(out$ub, N)
+    }
+    if (length(out$lb) != N || length(out$ub) != N) {
+      stop2("Invalid truncation bounds.")
+    }
+    inv_bounds <- out$Y < out$lb | out$Y > out$ub
+    if (check_response && any(inv_bounds)) {
+      stop2("Some responses are outside of the truncation bounds.")
+    }
+  }
+  p <- usc(combine_prefix(x))
+  setNames(out, paste0(names(out), p))
 }
 
 data_mixture <- function(bterms, prior = brmsprior()) {

@@ -1091,6 +1091,9 @@ check_prior_special <- function(x, ...) {
 
 #' @export
 check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
+  if (isTRUE(attr(prior, "checked"))) {
+    return(prior) 
+  }
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level prior in MV models
     g_index <- find_rows(prior, class = cl, coef = "", resp = "")
