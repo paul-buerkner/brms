@@ -2012,7 +2012,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
       dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
     } else {
-      draws$mu <- get_dpar(draws[[dpar]]) 
+      draws$mu <- get_dpar(draws[[dpar]], apply_ilink = TRUE)
     }
   }
   if (is.null(dim(draws$mu))) {

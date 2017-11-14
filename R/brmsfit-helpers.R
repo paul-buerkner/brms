@@ -368,19 +368,24 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_dpar <- function(x, i = NULL) {
+get_dpar <- function(x, i = NULL, apply_ilink = NULL) {
   # get samples of an distributional parameter
   # Args:
   #   x: object to extract postarior samples from
   #   i: the current observation number
   #      (used in predict and log_lik)
+  #   apply_ilink: should the inverse link function be applied?
+  #     if NULL the value is chosen internally
   if (is.list(x)) {
     # compute samples of a predicted parameter
     family <- x[["f"]]
     x <- get_eta(x, i = i)
-    if (!nzchar(family$family)) {
+    if (is.null(apply_ilink)) {
       # apply links for distributional parameters only
-      # the main family link is applied later on
+      # the main family link is applied later on by default
+      apply_ilink <- !nzchar(family$family)
+    }
+    if (apply_ilink) {
       x <- ilink(x, family$link)
     }
   } else {
