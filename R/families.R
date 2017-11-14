@@ -867,6 +867,45 @@ summary.mixfamily <- function(object, link = FALSE, ...) {
   paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
+summarise_families <- function(x) {
+  # summary of families used in summary.brmsfit
+  UseMethod("summarise_families")
+}
+
+#' @export
+summarise_families.mvbrmsformula <- function(x, ...) {
+  out <- ulapply(x$forms, summarise_families, ...)
+  paste0("MV(", paste0(out, collapse = ", "), ")")
+}
+
+#' @export
+summarise_families.brmsformula <- function(x, ...) {
+  summary(x$family, link = FALSE, ...)
+}
+
+summarise_links <- function(x, ...) {
+  # summary of link functions used in summary.brmsfit
+  UseMethod("summarise_links")
+}
+
+#' @export
+summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
+  str_wsp <- collapse(rep(" ", wsp))
+  paste0(ulapply(x$forms, summarise_links, ...), 
+         collapse = paste0("\n", str_wsp))
+}
+
+#' @export
+summarise_links.brmsformula <- function(x, ...) {
+  dpars <- valid_dpars(x$family, x)
+  links <- setNames(rep("identity", length(dpars)), dpars)
+  links_pred <- ulapply(x$dpars, function(x) x$family$link)
+  links[names(links_pred)] <- links_pred
+  p <- usc(combine_prefix(x))
+  names(links) <- paste0(names(links), p)
+  paste0(names(links), " = ", links, collapse = "; ")
+}
+
 is.family <- function(x) {
   inherits(x, "family")
 }

@@ -1099,9 +1099,14 @@ amend_formula <- function(formula, ...) {
 }
 
 #' @export
-amend_formula.default <- function(formula, data = NULL, family = gaussian(),
-                                  autocor = NULL, threshold = NULL,
-                                  nonlinear = NULL, ...) {
+amend_formula.default <- function(formula, ...) {
+  amend_formula(bf(formula), ...)
+}
+
+#' @export
+amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
+                                      autocor = NULL, threshold = NULL,
+                                      nonlinear = NULL, ...) {
   # incorporate additional arguments into the model formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
@@ -1239,8 +1244,8 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
 #' @export
 print.mvbrmsformula <- function(x, wsp = 0, ...) {
   for (i in seq_along(x$forms)) {
+    if (i > 1) cat(collapse(rep(" ", wsp)))
     print(x$forms[[i]], wsp = wsp, ...)
-    cat("\n")
   }
   invisible(x)
 }
