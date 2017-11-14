@@ -31,10 +31,10 @@ change_effects <- function(x, ...) {
 }
 
 #' @export
-change_effects.mvbrmsterms <- function(x, ...) {
+change_effects.mvbrmsterms <- function(x, pars, ...) {
   change <- list()
   for (i in seq_along(x$terms)) {
-    change <- c(change, change_effects(x$terms[[i]], ...))
+    change <- c(change, change_effects(x$terms[[i]], pars = pars, ...))
   }
   if (x$rescor) {
     rescor_names <- get_cornames(

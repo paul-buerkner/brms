@@ -51,6 +51,14 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print_format(x$gp, digits)
       cat("\n")
     }
+    if (nrow(x$cor_pars)) {
+      cat("Correlation Structures:\n")
+      # TODO: better printing for correlation structures?
+      # print(x$autocor) 
+      # cat("\n")
+      print_format(x$cor_pars, digits)
+      cat("\n")
+    }
     if (length(x$random)) {
       cat("Group-Level Effects: \n")
       for (i in seq_along(x$random)) {
@@ -59,13 +67,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
         print_format(x$random[[g]], digits)
         cat("\n")
       }
-    }
-    if (nrow(x$cor_pars)) {
-      cat("Correlation Structure: ")
-      print(x$autocor)
-      cat("\n")
-      print_format(x$cor_pars, digits)
-      cat("\n")
     }
     if (nrow(x$fixed)) {
       cat("Population-Level Effects: \n")

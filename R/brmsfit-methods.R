@@ -708,7 +708,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
   out <- list(
-    formula = object$formula, 
+    formula = object$formula,
     data.name = object$data.name, 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
