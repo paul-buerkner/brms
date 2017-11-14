@@ -192,49 +192,48 @@ check_re_formula <- function(re_formula, formula) {
   re_formula
 }
 
-update_re_terms <- function(x, re_formula = NULL) {
-  # update group-level terms
-  # Args:
-  #   x: Either 'formula' or 'brmsformula' object
-  #   re_formula: formula containing new RE terms
-  .update_re_terms <- function(formula, re_formula = NULL) {
-    # remove existing group-level terms in formula and
-    # add valid group-level terms of re_formula
-    # Args:
-    #   formula: object of class 'formula'
-    if (get_nl(formula)) {
-      # non-linear formulas contain no group-level effects
-      return(formula)
-    }
-    re_formula <- check_re_formula(re_formula, formula)
-    new_formula <- formula2str(formula)
-    old_re_terms <- get_re_terms(formula)
-    if (length(old_re_terms)) {
-      # make sure that + before group-level terms are also removed
-      rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
-      new_formula <- rename(new_formula, rm_terms, "")
-      if (grepl("~$", new_formula)) {
-        # lhs only formulas are not allowed
-        new_formula <- paste(new_formula, "1")
-      }
-    }
-    new_re_terms <- get_re_terms(re_formula)
-    new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
-    new_formula <- formula(new_formula)
-    attributes(new_formula) <- attributes(formula)
-    return(new_formula)
+update_re_terms <- function(formula, re_formula) {
+  # remove existing group-level terms in formula and
+  # add valid group-level terms of re_formula
+  UseMethod("update_re_terms")
+}
+
+#' @export
+update_re_terms.mvbrmsformula <- function(formula, re_formula) {
+  formula$forms <- lapply(formula$forms, update_re_terms, re_formula)
+  formula
+}
+
+#' @export
+update_re_terms.brmsformula <- function(formula, re_formula) {
+  formula$formula <- update_re_terms(formula$formula, re_formula)
+  formula$pforms <- lapply(formula$pforms, update_re_terms, re_formula)
+  formula
+}
+
+#' @export
+update_re_terms.formula <- function(formula, re_formula = NULL) {
+  if (get_nl(formula)) {
+    # non-linear formulas contain no group-level effects
+    return(formula)
   }
-  
-  if (is.formula(x)) {
-    x <- .update_re_terms(x, re_formula) 
-  } else if (is.brmsformula(x)) {
-    x$formula <- .update_re_terms(x$formula, re_formula)
-    x$pforms <- lapply(pforms(x), .update_re_terms, re_formula)
-  } else {
-    stop("Don't know how to handle objects of class ",
-         collapse_comma(class(x)))
+  re_formula <- check_re_formula(re_formula, formula)
+  new_formula <- formula2str(formula)
+  old_re_terms <- get_re_terms(formula)
+  if (length(old_re_terms)) {
+    # make sure that + before group-level terms are also removed
+    rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
+    new_formula <- rename(new_formula, rm_terms, "")
+    if (grepl("~$", new_formula)) {
+      # lhs only formulas are not allowed
+      new_formula <- paste(new_formula, "1")
+    }
   }
-  x
+  new_re_terms <- get_re_terms(re_formula)
+  new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
+  new_formula <- formula(new_formula)
+  attributes(new_formula) <- attributes(formula)
+  new_formula
 }
 
 get_re <- function(x, ...) {
