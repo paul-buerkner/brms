@@ -35,14 +35,14 @@ parse_bf <- function(formula, ...) {
 #' @export
 parse_bf.default <- function(formula, family = NULL, autocor = NULL, 
                              check_response = TRUE, resp_rhs_all = TRUE,
-                             mv = FALSE, ...) {
+                             mv = FALSE, rescor = FALSE, ...) {
   x <- bf(formula, family = family, autocor = autocor)
   mv <- as_one_logical(mv)
-  old_mv <- isTRUE(x[["old_mv"]])
+  rescor <- as_one_logical(rescor)
   formula <- x$formula
   family <- x$family
   autocor <- x$autocor
-  y <- nlist(formula, family, autocor) 
+  y <- nlist(formula, family, autocor, mv, rescor) 
   class(y) <- "brmsterms"
   
   if (check_response) {
@@ -575,7 +575,7 @@ parse_time <- function(autocor) {
   if (length(group_vars)) {
     out$group <- paste0(group_vars, collapse = ":")
   }
-  out$allvars <- str2formula(c(time, group_vars))
+  out$allvars <- str2formula(c(time_vars, group_vars))
   out
 }
 
@@ -610,6 +610,7 @@ is.btnl <- function(x) {
 }
 
 as.brmsterms <- function(x) {
+  # transoform an mvbrmsterms object for use in stan_llh.brmsterms
   stopifnot(is.mvbrmsterms(x), x$rescor)
   families <- ulapply(x$terms, function(f) f$family$family)
   stopifnot(all(families == families[1]))
@@ -621,7 +622,14 @@ as.brmsterms <- function(x) {
   out$sigma_pred <- any(ulapply(x$terms, 
     function(x) "sigma" %in% names(x$dpar) || is.formula(x$adforms$se)
   ))
-  # TODO: store weights if used in all responses
+  weight_forms <- rmNULL(lapply(x$terms, function(x) x$adforms$weights))
+  if (length(weight_forms)) {
+    str_wf <- unique(ulapply(weight_forms, formula2str))
+    if (length(str_wf) > 1L) {
+      stop2("All responses should use the same weights if 'rescor' is estimated.")
+    }
+    out$adforms$weights <- weight_forms[[1]]
+  }
   out
 }
 

@@ -45,14 +45,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     warn = !isTRUE(dots$brm_call)
   )
   data <- update_data(data, bterms = bterms)
-  
-  # flags to indicate the family type
-  is_categorical <- is_categorical(family)
-  is_mv <- is_linear(family) && length(bterms$response) > 1L
-  is_forked <- is_forked(family)
-  bounds <- get_bounds(bterms$adforms$trunc, data = data)
-  
   ranef <- tidy_ranef(bterms, data = data)
+  
   text_effects <- stan_effects(
     bterms, data = data, ranef = ranef, 
     prior = prior, sparse = sparse
@@ -140,18 +134,9 @@ make_stancode <- function(formula, data, family = gaussian(),
       "  for (n in 1:N) { \n", text_model_loop, "  } \n"
     )
   }
-  text_lp_pre <- list()
-  if (is.formula(bterms$adforms$weights) && 
-      !is.formula(bterms$adforms$cens)) {
-    text_lp_pre <- list(
-      modelD = "  vector[N] lp_pre; \n",
-      modelC = "    target += dot_product(weights, lp_pre); \n"
-    )
-  }
   text_model <- paste0(
     "model { \n",
       text_effects$modelD,
-      text_lp_pre$modelD,
       text_effects$modelC1,
       text_effects$modelCgp1,
       text_model_loop,
@@ -161,7 +146,6 @@ make_stancode <- function(formula, data, family = gaussian(),
       "  // likelihood including all constants \n",
       "  if (!prior_only) { \n",
       text_llh, 
-      text_lp_pre$modelC,
       "  } \n", 
       text_rngprior$model,
     "} \n"

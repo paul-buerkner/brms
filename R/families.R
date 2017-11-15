@@ -1064,9 +1064,17 @@ has_shape <- function(family) {
           "hurdle_gamma", "zero_inflated_negbinomial"))
 }
 
-has_nu <- function(family) {
+has_nu <- function(family, bterms = NULL) {
   # indicate if family needs a nu parameter
-  any(family_names(family) %in% c("student", "frechet"))
+  out <- any(family_names(family) %in% c("student", "frechet"))
+  if (isTRUE(bterms$rescor) && family_names(family) %in% "student") {
+    # the multi_student_t family only has a single nu parameter
+    if ("nu" %in% c(names(bterms$dpars), names(bterms$fdpars))) {
+      stop2("Cannot predict or fix 'nu' when 'rescor' is estimated.")
+    }
+    out <- FALSE
+  }
+  out
 }
 
 has_phi <- function(family) {
@@ -1119,7 +1127,7 @@ has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
     se_only <- FALSE
   }
   out <- (is_linear(family) || is_ln_eg) && 
-          !se_only && !is(bterms$autocor, "cov_fixed")
+    !se_only && !is(bterms$autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is_linear(family) && length(bterms$response) > 1L
     out <- out && !is_multi

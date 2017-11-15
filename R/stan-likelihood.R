@@ -45,7 +45,8 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   p <- named_list(dpars())
   p$sigma <- stan_llh_sigma(family, bterms, resp = resp, mix = mix)
   for (ap in setdiff(dpars(), "sigma")) {
-    p[[ap]] <- paste0(ap, mix, resp, if (reqn && ap %in% dpars) "[n]")
+    is_ap_pred <- ap %in% dpar_class(dpars)
+    p[[ap]] <- paste0(ap, mix, resp, if (reqn && is_ap_pred) "[n]")
   }
   if (family == "skew_normal") {
     # required because of CP parameterization of mu and sigma
@@ -59,6 +60,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   ord_family <- paste0(family, "_", link, if (has_cs) "_cs")
   usc_logit <- stan_llh_dpar_usc_logit(c("zi", "hu"), bterms)
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
+  nSigma <- ifelse(is_mv && isTRUE(bterms$sigma_pred), "[n]", "")
   
   if (use_cov(autocor)) {
     # ARMA effects in covariance matrix formulation
@@ -148,7 +150,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       gaussian_mv = c(
         "multi_normal_cholesky", 
-        sargs(paste0(c("Mu", "LSigma"), n))
+        sargs(paste0("Mu", n), paste0("LSigma", nSigma))
       ),
       gaussian_fixed = c(
         "multi_normal_cholesky", 
@@ -173,7 +175,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       student_mv = c(
         "multi_student_t", 
-        sargs(p$nu, paste0(c("Mu", "Sigma"), n))
+        sargs(p$nu, paste0("Mu", n), paste0("LSigma", nSigma))
       ),
       student_fixed = c(
         "multi_student_t", 
@@ -354,13 +356,14 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
       family$mix[[i]], sbterms, mix = i, ptheta = ptheta, ...
     )
   }
+  resp <- usc(combine_prefix(bterms))
   has_weights <- is.formula(bterms$adforms$weights)  
-  lhs <- ifelse(has_weights, "lp_pre[n] = ", "target += ")
+  weights <- if (has_weights) paste0("weights", resp, "[n] * ")
   paste0(
     "  for (n in 1:N) { \n",
     "      real ps[", length(llh), "]; \n",
     collapse("    ", llh),
-    "      ", lhs, "log_sum_exp(ps); \n",
+    "    ", tp(), weights, "log_sum_exp(ps); \n",
     "    } \n"
   )
 }
@@ -404,7 +407,7 @@ stan_llh_cens <- function(llh_pre, family, interval, resp = "",
   stopifnot(length(llh_pre) == 2L)
   s <- collapse(rep(" ", 6))
   lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
-  w <- ifelse(weights, "weights[n] * ", "")
+  w <- if (weights) paste0("weights", resp, "[n] * ")
   tr <- stan_llh_trunc(llh_pre, bounds = bounds)
   tp <- tp()
   if (interval) {
@@ -436,7 +439,7 @@ stan_llh_weights <- function(llh_pre, family, resp = "",
   tr <- stan_llh_trunc(llh_pre, bounds = bounds)
   lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
   paste0(
-    "  lp_pre[n] = ", llh_pre[1], "_", lpdf, 
+    tp(), "weights", resp, "[n] * ", llh_pre[1], "_", lpdf, 
     "(Y", resp, "[n] | ", llh_pre[2],")", tr, "; \n"
   )
 }

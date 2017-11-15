@@ -797,13 +797,17 @@ split_bf <- function(x) {
   # build a mvbrmsformula object based on a brmsformula object
   # which uses cbind on the left-hand side to specify MV models
   stopifnot(is.brmsformula(x))
-  resp <- parse_resp(x$formula)
+  resp <- parse_resp(x$formula, check_names = FALSE)
+  str_adform <- get_matches(
+    "\\|[^~]*(?=~)", formula2str(x$formula), perl = TRUE
+  )
   if (length(resp) > 1L) {
     # cbind syntax used to specify MV model
     flist <- named_list(resp)
     for (i in seq_along(resp)) {
       flist[[i]] <- x
-      flist[[i]]$formula[[2]] <- parse(text = resp[[i]])[[1]]
+      str_lhs <- paste0(resp[[i]], str_adform)
+      flist[[i]]$formula[[2]] <- parse(text = str_lhs)[[1]]
       flist[[i]]$resp <- resp[[i]]
     }
     x <- mvbf(flist = flist) 
@@ -1021,7 +1025,7 @@ valid_dpars.default <- function(family, bterms = NULL, ...) {
     mu = TRUE,
     sigma = has_sigma(family, bterms = bterms),
     shape = has_shape(family), 
-    nu = has_nu(family), 
+    nu = has_nu(family, bterms = bterms), 
     phi = has_phi(family),
     kappa = has_kappa(family),
     beta = has_beta(family),
@@ -1162,6 +1166,9 @@ amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
 
 amend_formula.mvbrmsformula <- function(formula, ...) {
   formula$forms <- lapply(formula$forms, amend_formula, ...)
+  if (length(formula$forms) < 2L) {
+    stop2("Multivariate models require at least two responses.")
+  }
   allow_rescor <- allow_rescor(formula)
   if (is.null(formula$rescor)) {
     formula$rescor <- allow_rescor
@@ -1169,9 +1176,18 @@ amend_formula.mvbrmsformula <- function(formula, ...) {
       "Setting 'rescor' to ", formula$rescor, 
       " by default for this combination of families"
     )
-  } else if (formula$rescor && !allow_rescor) {
-    stop2("Currently, estimating 'rescor' is only possible ", 
-          "in multivariate gaussian or student models.")
+  } 
+  if (formula$rescor) {
+    if (!allow_rescor) {
+      stop2("Currently, estimating 'rescor' is only possible ", 
+            "in multivariate gaussian or student models.")
+    }
+    if (all(family_names(formula) == "student")) {
+      # the multi_student_t family only has a single nu parameter
+      for (i in seq_along(formula$forms)[-1]) {
+        formula$forms[[i]] <- bf(formula$forms[[i]], nu = 1)
+      }
+    }
   }
   formula
 }

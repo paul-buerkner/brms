@@ -139,11 +139,11 @@ stan_effects.btnl <- function(x, data, ranef, prior,
 
 #' @export
 stan_effects.brmsterms <- function(x, data, ranef, prior, 
-                                   sparse = FALSE, ...) {
+                                   sparse = FALSE, rescor = FALSE, 
+                                   ...) {
   # Stan code for distributional parameters
   # Args:
-  #   bterms: object of class brmsterms
-  #   other arguments: same as make_stancode
+  #   rescor: indicate if this is part of an MV model estimating rescor
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   out <- list(stan_response(x, data = data))
@@ -200,11 +200,15 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
 #' @export
 stan_effects.mvbrmsterms <- function(x, prior, ...) {
   out <- collapse_lists(
-    ls = lapply(x$terms, stan_effects, prior = prior, ...)
+    ls = lapply(x$terms, stan_effects, prior = prior, rescor = x$rescor, ...)
   )
   if (x$rescor) {
     # we already know at this point that all families are identical
-    # TODO: check for unsupported addition arguments
+    adnames <- unique(ulapply(x$terms, function(x) names(x$adforms)))
+    if (!all(adnames %in% c("se", "weights"))) {
+      stop2("Only 'se' and 'weights' are supported addition ",
+            "arguments when 'rescor' is estimated.")
+    }
     family <- family_names(x)[1]
     resp <- x$responses
     nresp <- length(resp)
@@ -225,11 +229,20 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
       "    Y[n] = ", stan_vector(paste0("Y_", resp, "[n]")), ";\n",
       "  }\n"
     )
+    if (any(adnames %in% "weights")) {
+      str_add(out$tdataD) <- paste0(
+        "  vector<lower=0>[N] weights = weights_", resp[1], ";\n" 
+      )
+    }
     str_add(out$par) <- paste0(
       "  // parameters for multivariate linear models \n",
       "  cholesky_factor_corr[nresp] Lrescor; \n"
     )
     str_add(out$prior) <- stan_prior(prior, class = "Lrescor")
+    if (family == "student") {
+      str_add(out$par) <- stan_dpar_defs("nu")
+      str_add(out$prior) <- stan_prior(prior, class = "nu")
+    } 
     sigma <- ulapply(x$terms, stan_sigma_transform)
     if (any(grepl("\\[n\\]", sigma))) {
       str_add(out$modelD) <- "  vector[nresp] sigma[N];\n"
@@ -267,7 +280,7 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
         str_add(out$modelD) <- paste0(
           "  // residual covariance matrix \n",
           "  matrix[nresp, nresp] Sigma = ",
-          " = multiply_lower_tri_self_transpose(", 
+          "multiply_lower_tri_self_transpose(", 
           "diag_pre_multiply(sigma, Lrescor)); \n"
         )
       }
@@ -309,6 +322,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(bterms$resp)
   if (length(fixef)) {
     str_add(out$data) <- paste0( 
       "  int<lower=1> K", p, ";",
@@ -349,7 +363,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
       )
       hs_scale_global <- paste0("hs_scale_global", p)
       if (isTRUE(special[["hs_autoscale"]])) {
-        hs_scale_global <- paste0(hs_scale_global, " * sigma")
+        hs_scale_global <- paste0(hs_scale_global, " * sigma", resp)
       }
       hs_args <- sargs(
         paste0(c("zb", "hs_local", "hs_global"), p), 

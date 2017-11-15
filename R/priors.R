@@ -513,6 +513,9 @@ prior_effects.mvbrmsterms <- function(x, internal = FALSE, ...) {
     } else {
       prior <- prior + brmsprior(class = "rescor", prior = "lkj(1)")
     }
+    if (family_names(x)[1] %in% "student") {
+      prior <- prior + brmsprior(class = "nu", prior = "gamma(2, 0.1)")
+    }
   }
   prior
 }
