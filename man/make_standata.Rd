@@ -7,8 +7,8 @@
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
-  sample_prior = c("no", "yes", "only"), knots = NULL, control = list(),
-  ...)
+  sample_prior = c("no", "yes", "only"), knots = NULL,
+  check_response = TRUE, only_response = FALSE, control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -79,6 +79,10 @@ all parameters must have proper priors.}
 \item{knots}{Optional list containing user specified knot values to be 
 used for basis construction of smoothing terms. 
 See \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{check_response}{Logical; check validity of the response?}
+
+\item{only_response}{Logical; extract data related to the response only?}
 
 \item{control}{A named list currently for internal usage only}
 

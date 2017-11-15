@@ -1133,6 +1133,21 @@ has_cs <- function(bterms) {
     any(get_re(bterms)$type %in% "cs")
 }
 
+get_autocor_vars <- function(x, ...) {
+  # extract variable names used in autocor structures
+  UseMethod("get_autocor_vars")
+}
+
+#' @export
+get_autocor_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_autocor_vars, ...))
+}
+
+#' @export
+get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
+  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
+}
+
 rsv_vars <- function(bterms, incl_intercept = TRUE) {
   # returns names of reserved variables
   # Args:

@@ -15,12 +15,7 @@ get_groups <- function(x) {
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
     x <- parse_bf(x)
   }
-  if (is.brmsterms(x)) {
-    cor_group <- x$time$group
-  } else if (is.mvbrmsterms(x)) {
-    cor_group <- ulapply(x$terms, function(t) t$time$group)
-  }
-  out <- c(get_re(x)$group, cor_group)
+  out <- c(get_re(x)$group, get_autocor_vars(x, "group"))
   unique(out[nzchar(out)])
 }
 
@@ -298,14 +293,14 @@ get_re.btnl <- function(x, ...) {
 }
 
 tidy_ranef <- function(bterms, data = NULL, all = TRUE, 
-                       ncat = NULL, old_levels = NULL) {
+                       old_levels = NULL, old_standata = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   bterms: object of class brmsterms
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and distributional parameters?
-  #   ncat: optional number of response categories
-  #         only used for category specific group-level effects
+  #   old_standata: optional; see 'extract_old_standata'
+  #     only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
   #     id: ID of the group-level effect 
@@ -324,10 +319,15 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   id_groups <- list()
   j <- 1
   for (i in seq_len(nrow(re))) {
-    if (re$type[[i]] == "mo") {
+    if (re$type[i] == "mo") {
       coef <- rename(get_mo_labels(re$form[[i]], data))
-    } else if (re$type[[i]] == "cs") {
+    } else if (re$type[i] == "cs") {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
+      if (nzchar(re$resp[i])) {
+        ncat <- old_standata[[re$resp[i]]][["ncat"]]
+      } else {
+        ncat <- old_standata[["ncat"]]
+      }
       if (is.null(ncat)) {
         # try to infer ncat from the data
         Y <- as.numeric(model.response(data))
@@ -335,7 +335,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       }
       indices <- paste0("[", seq_len(ncat - 1), "]")
       coef <- as.vector(t(outer(coef, indices, paste0)))
-    } else if (re$type[[i]] == "me") {
+    } else if (re$type[i] == "me") {
       coef <- rename(get_me_labels(re$form[[i]], data))
     } else {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 

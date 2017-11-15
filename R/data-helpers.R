@@ -226,20 +226,12 @@ order_data <- function(data, bterms) {
   #   bterms: brmsterms of mvbrmsterms object
   # Returns:
   #   potentially ordered data
-  get_time_group <- function(x) {
-    # ordering does not matter for the CAR structure
-    if (!is.cor_car(x$autocor)) x$time$group
-  }
-  if (is.mvbrmsterms(bterms)) {
-    time <- unique(ulapply(bterms$terms, function(x) x$time$time))
-    group <- unique(ulapply(bterms$terms, get_time_group))
-    if (length(time) > 1L || length(group) > 1L) {
-      stop2("All autocorrelation structures must have the same ",
-            "time and group variables.")
-    }
-  } else {
-    time <- bterms$time$time 
-    group <- get_time_group(bterms)
+  time <- get_autocor_vars(bterms, "time")
+  # ordering does not matter for the CAR structure
+  group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
+  if (length(time) > 1L || length(group) > 1L) {
+    stop2("All autocorrelation structures must have the same ",
+          "time and group variables.")
   }
   time_var <- if (length(time)) data[[time]]
   group_var <- if (length(group)) data[[group]]
@@ -322,12 +314,18 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
+  mf <- model.frame(fit)
+  for (i in seq_along(mf)) {
+    if (is_like_factor(mf[[i]])) {
+      mf[[i]] <- as.factor(mf[[i]])
+    }
+  }
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
-  new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
+  new_ranef <- tidy_ranef(bterms, data = mf)
   group_vars <- get_all_group_vars(new_ranef)
-  group_vars <- union(group_vars, bterms$time$group)
-  if (allow_new_levels) {
+  group_vars <- union(group_vars, get_autocor_vars(bterms, "group"))
+  if (allow_new_levels && length(group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
     new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
@@ -336,12 +334,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
-  mf <- model.frame(fit)
-  for (i in seq_along(mf)) {
-    if (is_like_factor(mf[[i]])) {
-      mf[[i]] <- as.factor(mf[[i]])
-    }
-  }
   if (is.null(all_group_vars)) {
     all_group_vars <- get_all_group_vars(fit) 
   }
@@ -437,33 +429,18 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     fit <- add_new_objects(fit, newdata, new_objects)
     control <- list(
       is_newdata = TRUE, not4stan = TRUE, 
-      old_levels = old_levels, save_order = TRUE, 
-      omit_response = !check_response,
-      only_response = only_response,
-      old_cat = is_old_categorical(fit)
+      old_levels = old_levels, save_order = TRUE
     )
     # ensure correct handling of functions like poly or scale
-    old_terms <- attr(model.frame(fit), "terms")
+    old_terms <- attr(mf, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    if (has_trials(fit$family) || has_cat(fit$family)) {
-      # trials and cat should not be computed based on newdata
-      old_standata <- standata(fit, control = list(only_response = TRUE))
-      control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
-    }
-    if (is.cor_car(fit$autocor)) {
-      if (isTRUE(nzchar(bterms$time$group))) {
-        old_loc_data <- get(bterms$time$group, fit$data)
-        control$old_locations <- levels(factor(old_loc_data))
-      }
-    }
-    control$smooths <- make_smooth_list(bterms, model.frame(fit))
-    control$gps <- make_gp_list(bterms, model.frame(fit))
-    control$Jmo <- make_Jmo_list(bterms, model.frame(fit)) 
-    knots <- attr(model.frame(fit), "knots")
+    control$old_standata <- extract_old_standata(bterms, data = mf)
+    knots <- attr(mf, "knots")
     newdata <- make_standata(
-      new_formula, data = newdata, family = fit$family, 
-      autocor = fit$autocor, knots = knots, control = control
+      new_formula, data = newdata, 
+      knots = knots, check_response = check_response,
+      only_response = only_response, control = control
     )
   }
   newdata
@@ -565,99 +542,83 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-make_Jmo_list <- function(x, data, ...) {
-  # compute Jmo values based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_Jmo_list")
+extract_old_standata <- function(x, data, ...) {
+  # helper function for amend_newdata to extract
+  # old standata required for the computation of new standata
+  UseMethod("extract_old_standata")
 }
 
 #' @export
-make_Jmo_list.btl <- function(x, data, ...) {
-  if (!is.null(x$mo)) {
-    # do it like data_mo()
-    monef <- get_mo_labels(x, data)
-    calls_mo <- unlist(attr(monef, "calls_mo"))
-    Xmo <- lapply(calls_mo, 
-      function(x) attr(eval2(x, data), "var")
-    )
-    out <- as.array(ulapply(Xmo, max))
-  } else {
-    out <- NULL
-  }
-  out
-}
-
-#' @export
-make_Jmo_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
+extract_old_standata.mvbrmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$responses))
   for (i in seq_along(out)) {
-    out[[i]] <- make_Jmo_list(x$nlpars[[i]], data, ...)
+    out[[i]] <- extract_old_standata(x$terms[[i]], data, ...)
   }
   out
 }
 
 #' @export
-make_Jmo_list.brmsterms <- function(x, data, ...) {
+extract_old_standata.brmsterms <- function(x, data, ...) {
   out <- named_list(names(x$dpars))
   for (i in seq_along(out)) {
-    out[[i]] <- make_Jmo_list(x$dpars[[i]], data, ...)
+    out[[i]] <- extract_old_standata(x$dpars[[i]], data, ...)
+  }
+  if (has_trials(x$family) || has_cat(x$family)) {
+    # trials and ncat should not be computed based on new data
+    data_response <- data_response(x, data, check_response = FALSE)
+    out[c("trials", "ncat")] <- data_response[c("trials", "ncat")]
+  }
+  if (is.cor_car(x$autocor)) {
+    if (isTRUE(nzchar(x$time$group))) {
+      out$locations <- levels(factor(get(x$time$group, data)))
+    }
   }
   out
+}
+
+#' @export
+extract_old_standata.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- extract_old_standata(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+extract_old_standata.btl <- function(x, data, ...) {
+  out <- list(
+    smooths = make_smooth_list(x, data, ...),
+    gps = make_gp_list(x, data, ...),
+    Jmo = make_Jmo_list(x, data, ...)
+  )
 }
 
 make_smooth_list <- function(x, data, ...) {
-  # compute smooth objects based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_smooth_list")
-}
-
-#' @export
-make_smooth_list.btl <- function(x, data, ...) {
-  if (has_smooths(x)) {
+  # extract data related to smooth terms
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
+  sm_labels <- get_sm_labels(x)
+  out <- named_list(sm_labels)
+  if (length(sm_labels)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
     gam_args <- list(
       data = data, knots = knots, 
       absorb.cons = TRUE, modCon = 3
     )
-    sm_labels <- get_sm_labels(x)
-    out <- named_list(sm_labels)
     for (i in seq_along(sm_labels)) {
       sc_args <- c(list(eval2(sm_labels[i])), gam_args)
       out[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
-  } else {
-    out <- list()
-  }
-  out
-}
-
-#' @export
-make_smooth_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_smooth_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$dpars[[i]], data, ...)
   }
   out
 }
 
 make_gp_list <- function(x, data, ...) {
-  # compute objects for GP terms based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_gp_list")
-}
-
-#' @export
-make_gp_list.btl <- function(x, data, ...) {
+  # extract data related to gaussian processes
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
   gpef <- get_gp_labels(x)
   out <- named_list(gpef)
   for (i in seq_along(gpef)) {
@@ -668,20 +629,17 @@ make_gp_list.btl <- function(x, data, ...) {
   out
 }
 
-#' @export
-make_gp_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_gp_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$dpars[[i]], data, ...)
+make_Jmo_list <- function(x, data, ...) {
+  # extract data related to monotonic effects
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
+  out <- NULL
+  if (!is.null(x$mo)) {
+    # do it like data_mo()
+    monef <- get_mo_labels(x, data)
+    calls_mo <- unlist(attr(monef, "calls_mo"))
+    Xmo <- lapply(calls_mo, function(x) attr(eval2(x, data), "var"))
+    out <- as.array(ulapply(Xmo, max))
   }
   out
 }

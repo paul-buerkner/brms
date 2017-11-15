@@ -3,6 +3,8 @@
 #' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 #'
 #' @inheritParams brm
+#' @param check_response Logical; check validity of the response?
+#' @param only_response Logical; extract data related to the response only?
 #' @param control A named list currently for internal usage only
 #' @param ... Other potential arguments
 #' 
@@ -28,15 +30,18 @@ make_standata <- function(formula, data, family = gaussian(),
                           prior = NULL, autocor = NULL, 
                           nonlinear = NULL, cov_ranef = NULL, 
                           sample_prior = c("no", "yes", "only"), 
-                          knots = NULL, control = list(), ...) {
+                          knots = NULL, check_response = TRUE,
+                          only_response = FALSE, control = list(), 
+                          ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
-  #   omit_response: omit checking of the response?
-  #   only_response: only compute data related to the response?
-  #   ntrials, ncat, Jmo: standata based on the original data
+  #   old_standata: list of stan data computed from the orginal data
+  #   terms_attr: list of attributes of the original model.frame
   dots <- list(...)
+  check_response <- as_one_logical(check_response)
+  only_response <- as_one_logical(only_response)
   not4stan <- isTRUE(control$not4stan)
   is_newdata <- isTRUE(control$is_newdata)
   # use deprecated arguments if specified
@@ -61,21 +66,21 @@ make_standata <- function(formula, data, family = gaussian(),
     data <- order_data(data, bterms = bterms)
   }
   
-  out <- list(N = nrow(data))
-  check_response <- !isTRUE(control$omit_response)
-  # TODO: pass control$trials and control$ncat
-  out <- c(out, data_response(bterms, data, check_response))
-  only_response <- isTRUE(control$only_response)
+  out <- c(
+    list(N = nrow(data)), 
+    data_response(
+      bterms, data = data, check_response = check_response,
+      old_standata = control$old_standata
+    )
+  )
   if (!only_response) {
     ranef <- tidy_ranef(
-      bterms, data, ncat = control$ncat, 
-      old_levels = control$old_levels
+      bterms, data, old_levels = control$old_levels,
+      old_standata = control$old_standata  
     )
     args_eff <- nlist(
       x = bterms, data, prior, ranef, cov_ranef, knots, 
-      not4stan, smooths = control$smooths, 
-      gps = control$gps, Jmo = control$Jmo, 
-      old_locations = control$old_locations
+      not4stan, old_standata = control$old_standata
     )
     out <- c(out, do.call(data_effects, args_eff))
   }

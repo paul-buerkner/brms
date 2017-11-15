@@ -4,10 +4,11 @@ data_effects <- function(x, ...) {
 }
 
 #' @export
-data_effects.mvbrmsterms <- function(x, ...) {
+data_effects.mvbrmsterms <- function(x, old_standata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    out <- c(out, data_effects(x$terms[[i]], ...))
+    od <- old_standata[[x$responses[i]]]
+    out <- c(out, data_effects(x$terms[[i]], old_standata = od, ...))
   }
   out
 }
@@ -15,15 +16,12 @@ data_effects.mvbrmsterms <- function(x, ...) {
 #' @export
 data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
                                    knots = NULL, not4stan = FALSE, 
-                                   smooths = NULL, gps = NULL, Jmo = NULL,
-                                   old_locations = NULL) {
-  # TODO: find a better interface for smooths, gps etc.
+                                   old_standata = NULL) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(
-      x = x$dpars[[dp]], smooths = smooths[[dp]],
-      gps = gps[[dp]], Jmo = Jmo[[dp]]
+      x = x$dpars[[dp]], old_standata = old_standata[[dp]]
     )
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     out <- c(out, data_aux_eff)
@@ -35,15 +33,14 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
     data_gr(ranef, data, cov_ranef = cov_ranef),
     data_Xme(x, data),
     data_mixture(x, prior = prior),
-    data_autocor(x, data, old_locations = old_locations)
+    data_autocor(x, data, old_locations = old_standata$locations)
   )
 }
 
 #' @export
 data_effects.btl <- function(x, data, ranef = empty_ranef(), 
                              prior = brmsprior(), knots = NULL, 
-                             not4stan = FALSE, smooths = NULL, 
-                             gps = NULL, Jmo = NULL) {
+                             not4stan = FALSE, old_standata = NULL) {
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
@@ -54,18 +51,21 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
-  #   smooths: optional list of smooth objects based on the original data
-  #   gps: optional list of GP objects based on the original data
-  #   Jmo: optional precomputed values of Jmo for monotonic effects
+  #   old_standata: see 'extract_old_standata'
   # Returns:
   #   A named list of data to be passed to Stan
-  c(
-    data_fe(x, data, knots = knots, not4stan = not4stan, smooths = smooths),
-    data_mo(x, data, ranef = ranef, prior = prior, Jmo = Jmo),
+  c(data_fe(
+      x, data, knots = knots, not4stan = not4stan, 
+      smooths = old_standata$smooths
+    ),
+    data_mo(
+      x, data, ranef = ranef, prior = prior, 
+      Jmo = old_standata$Jmo
+    ),
     data_re(x, data, ranef = ranef, not4stan = not4stan),
     data_me(x, data),
     data_cs(x, data),
-    data_gp(x, data, gps = gps),
+    data_gp(x, data, gps = old_standata$gps),
     data_offset(x, data),
     data_prior(x, data, prior = prior)
   )
@@ -74,8 +74,9 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
 #' @export 
 data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
                               prior = brmsprior(), knots = NULL, 
-                              not4stan = FALSE, smooths = NULL, 
-                              gps = NULL, Jmo = NULL) {
+                              not4stan = FALSE, old_standata = NULL) {
+                              # smooths = NULL, 
+                              # gps = NULL, Jmo = NULL) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -101,9 +102,8 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
     out <- c(out,
       data_effects(
         x$nlpars[[nlp]], data, ranef = ranef,
-        prior = prior, knots = knots, not4stan = not4stan, 
-        smooths = smooths[[nlp]], gps = gps[[nlp]], 
-        Jmo = Jmo[[nlp]]
+        prior = prior, knots = knots, not4stan = not4stan,
+        old_standata = old_standata[[nlp]]
       )
     )
   }
@@ -125,7 +125,7 @@ data_fe <- function(bterms, data, knots = NULL,
   if (length(sm_labels)) {
     stopifnot(is.null(smooths) || length(smooths) == length(sm_labels))
     Xs <- Zs <- list()
-    new_smooths <- is.null(smooths)
+    new_smooths <- !length(smooths)
     if (new_smooths) {
       smooths <- named_list(sm_labels)
       for (i in seq_along(sm_labels)) {
@@ -190,7 +190,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
   out <- c(out, setNames(Xmo, Xmo_names))
   compute_Jmo <- is.null(Jmo)
-  if (is.null(Jmo)) {
+  if (!length(Jmo)) {
     Jmo <- as.array(ulapply(Xmo, max))
   }
   out[[paste0("Jmo", p)]] <- Jmo
@@ -423,7 +423,7 @@ data_gp <- function(bterms, data, gps = NULL) {
       Xgp <- do.call(cbind, Xgp)
       if (gp$scale) {
         # scale predictor for easier specification of priors
-        if (!is.null(gps)) {
+        if (length(gps)) {
           # scale Xgp based on the original data
           Xgp <- Xgp / gps[[i]]$dmax
         } else {
@@ -611,10 +611,11 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, ...) {
+data_response.mvbrmsterms <- function(x, old_standata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    out <- c(out, data_response(x$terms[[i]], ...))
+    od <- old_standata[[x$responses[i]]]
+    out <- c(out, data_response(x$terms[[i]], old_standata = od, ...))
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -625,9 +626,8 @@ data_response.mvbrmsterms <- function(x, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    trials = NULL, ncat = NULL) {
+                                    old_standata = NULL) {
   # prepare data for the response variable
-  # TODO: document special args
   N <- nrow(data)
   out <- list(Y = unname(model.response(model.frame(x$respform, data))))
   families <- family_names(x$family)
@@ -710,8 +710,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family)) {
     if (!length(x$adforms$trials)) {
-      if (!is.null(trials)) {
-        out$trials <- trials
+      if (!is.null(old_standata$trials)) {
+        out$trials <- old_standata$trials
       } else {
         message("Using the maximum of the response ",
                 "variable as the number of trials.")
@@ -737,8 +737,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
   if (has_cat(x$family)) {
     if (!length(x$adforms$cat)) {
-      if (!is.null(ncat)) {
-        out$ncat <- ncat
+      if (!is.null(old_standata$ncat)) {
+        out$ncat <- old_standata$ncat
       } else {
         out$ncat <- length(unique(out$Y))
       }
