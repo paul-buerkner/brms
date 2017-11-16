@@ -791,10 +791,7 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   #   dpar: name of the distributional parameter
   #   link: optional link function of the parameter
   dp_class <- dpar_class(dpar)
-  if (!is.null(dpar) && !isTRUE(dp_class %in% dpars())) {
-    stop2("Parameter '", dpar, "' is invalid.")
-  }
-  if (is.null(dpar)) {
+  if (!isTRUE(dp_class %in% dpars())) {
     link <- "identity"
   } else {
     links <- links_dpars(dp_class)
@@ -891,18 +888,18 @@ summarise_links <- function(x, ...) {
 #' @export
 summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
   str_wsp <- collapse(rep(" ", wsp))
-  paste0(ulapply(x$forms, summarise_links, ...), 
-         collapse = paste0("\n", str_wsp))
+  links <- ulapply(x$forms, summarise_links, mv = TRUE, ...)
+  paste0(links, collapse = paste0("\n", str_wsp))
 }
 
 #' @export
-summarise_links.brmsformula <- function(x, ...) {
+summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   dpars <- valid_dpars(x$family, x)
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
   links[names(links_pred)] <- links_pred
-  p <- usc(combine_prefix(x))
-  names(links) <- paste0(names(links), p)
+  resp <- if (mv) usc(combine_prefix(x))
+  names(links) <- paste0(names(links), resp)
   paste0(names(links), " = ", links, collapse = "; ")
 }
 

@@ -621,14 +621,19 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   }
   respform <- lhs(formula)
   if (!is.null(respform)) {
-    # TODO: amend if allowing cbind notation
     respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(respform)))
     out$resp <- parse_resp(respform)
   }
-  if (!is.null(out[["family"]])) {
+  if (!is.null(out$family)) {
     # check for the presence of non-linear parameters
-    dpars <- is_dpar_name(names(out$pforms), out$family)
-    dpars <- names(out$pforms)[dpars]
+    dpars <- names(out$pforms)
+    if (is_categorical(out$family)) {
+      if (any(get_nl(out), ulapply(dpars, get_nl, x = out))) {
+        stop2("Non-linear formulas are not supported in categorical models.")
+      }
+    } else {
+      dpars <- names(out$pforms)[is_dpar_name(dpars, out$family)]
+    }
     for (dp in names(out$pforms)) {
       if (!dp %in% dpars) {
         # indicate the correspondence to distributional parameter 
@@ -1021,6 +1026,10 @@ valid_dpars <- function(family, ...) {
 #' @export
 valid_dpars.default <- function(family, bterms = NULL, ...) {
   # convenience function to find relevant distributional parameters
+  if (is.family(family) && !is.null(family[["dpars"]])) {
+    # some families have dpar names that depend on the data
+    return(family$dpars)
+  }
   x <- c(
     mu = TRUE,
     sigma = has_sigma(family, bterms = bterms),
@@ -1145,18 +1154,19 @@ amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  if (is_categorical(out$family) && is.null(out[["response"]])) {
-    respform <- parse_bf(out)$respform
-    model_response <- model.response(model.frame(respform, data = data))
-    response <- levels(factor(model_response))
-    if (length(response) <= 2L) {
+  if (is_categorical(out$family) && is.null(out$family$cats)) {
+    respform <- formula2str(lhs(out$formula))
+    respform <- formula(gsub("\\|+[^~]*~", "~", respform))
+    model_response <- model.response(model.frame(respform, data))
+    cats <- levels(factor(model_response))
+    if (length(cats) <= 2L) {
       stop2("At least 3 response categories are required for family ", 
             "'categorical'.\nPlease use family 'bernoulli' instead.")
     }
     # the first level will serve as the reference category
-    out[["response"]] <- make.names(response[-1], unique = TRUE)
-    out[["response"]] <- rename(out[["response"]], ".", "x")
-    if (any(duplicated(out[["response"]]))) {
+    out$family$dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)
+    out$family$dpars <- gsub("\\.|_", "", out$family$dpars)
+    if (any(duplicated(out$family$dpars))) {
       stop2("Invalid response category names. Please avoid ",
             "using any special characters in the names.")
     }

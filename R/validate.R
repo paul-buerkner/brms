@@ -73,10 +73,6 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
   
   # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
-  terms <- try(terms(rhs(formula)), silent = TRUE)
-  has_terms <- is(terms, "try-error") || 
-    length(attr(terms, "term.labels")) ||
-    length(attr(terms, "offset"))
   rhs_needed <- FALSE
   if (is.mixfamily(family)) {
     for (i in seq_along(family$mix)) {
@@ -84,6 +80,14 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
       if (!is.formula(x$pforms[[mui]])) {
         x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
         attr(x$pforms[[mui]], "nl") <- attr(formula, "nl")
+        rhs_needed <- TRUE
+      }
+    }
+  } else if (is_categorical(x$family)) {
+    for (dp in x$family$dpars) {
+      if (!is.formula(x$pforms[[dp]])) {
+        x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
+        attr(x$pforms[[dp]], "nl") <- attr(formula, "nl")
         rhs_needed <- TRUE
       }
     }
@@ -95,6 +99,10 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
     }
     x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
   }
+  terms <- try(terms(rhs(formula)), silent = TRUE)
+  has_terms <- is(terms, "try-error") || 
+    length(attr(terms, "term.labels")) ||
+    length(attr(terms, "offset"))
   if (!rhs_needed && has_terms) {
     stop2("All 'mu' parameters are specified so that ",
           "the right-hand side of 'formula' is unused.")
@@ -533,7 +541,7 @@ parse_resp <- function(formula, check_names = TRUE) {
     out <- deparse_no_string(expr) 
   }
   if (check_names) {
-    out <- gsub("\\.|_", "", make.names(out))
+    out <- gsub("\\.|_", "", make.names(out, unique = TRUE))
   }
   out
 }

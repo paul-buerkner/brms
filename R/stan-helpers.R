@@ -431,10 +431,6 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       "  #include 'fun_kronecker.stan' \n"
     )
   }
-  if (any(families %in% "categorical")) {
-    str_add(out$tdataD) <- "  vector[1] zero; \n"
-    str_add(out$tdataC) <- "  zero[1] = 0; \n"
-  } 
   if (any(families %in% "zero_inflated_poisson")) {
     str_add(out$fun) <- "  #include 'fun_zero_inflated_poisson.stan' \n"
   } 

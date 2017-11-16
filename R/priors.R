@@ -560,6 +560,14 @@ prior_effects.brmsterms <- function(x, data, ...) {
     }
     prior <- prior + dp_prior
   }
+  # global population-level priors for categorical models
+  if (is_categorical(x$family)) {
+    for (cl in c("b", "Intercept")) {
+      if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
+        prior <- prior + brmsprior(class = cl, resp  = x$resp)
+      }
+    }
+  }
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(x$family) && is_equal(x$family$threshold, "equidistant")) {
     bound <- ifelse(x$family$family == "cumulative", "<lower=0>", "")
@@ -1128,6 +1136,23 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
     prior <- check_prior_special(
       x$dpars[[dp]], prior, allow_autoscale = allow_autoscale, ...
     )
+  }
+  # copy over the global population-level prior in categorical models
+  if (is_categorical(x$family)) {
+    for (cl in c("b", "Intercept")) {
+      g_index <- find_rows(
+        prior, class = cl, coef = "", dpar = "", resp = x$resp
+      )
+      for (dp in names(x$dpars)) {
+        dp_index <- find_rows(
+          prior, class = cl, coef = "", dpar = dp, resp = x$resp
+        )
+        if (isTRUE(!nzchar(prior$prior[dp_index]))) {
+          prior$prior[dp_index] <- prior$prior[g_index]
+        }
+      }
+      prior <- prior[!g_index, ]
+    }
   }
   # prepare priors for mixture probabilities
   if (is.mixfamily(x$family)) {

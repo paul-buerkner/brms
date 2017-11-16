@@ -45,7 +45,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   p <- named_list(dpars())
   p$sigma <- stan_llh_sigma(family, bterms, resp = resp, mix = mix)
   for (ap in setdiff(dpars(), "sigma")) {
-    is_ap_pred <- ap %in% dpar_class(dpars)
+    is_ap_pred <- ap %in% c("mu", dpar_class(dpars))
     p[[ap]] <- paste0(ap, mix, resp, if (reqn && is_ap_pred) "[n]")
   }
   if (family == "skew_normal") {
@@ -106,7 +106,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       categorical = c(
         "categorical_logit", 
-        paste0("append_row(", sargs("zero", "Mu[n]"), ")")
+        p$mu
       ),
       binomial = c(
         "binomial_logit", 
@@ -175,7 +175,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       student_mv = c(
         "multi_student_t", 
-        sargs(p$nu, paste0("Mu", n), paste0("LSigma", nSigma))
+        sargs(p$nu, paste0("Mu", n), paste0("Sigma", nSigma))
       ),
       student_fixed = c(
         "multi_student_t", 

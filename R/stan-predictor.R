@@ -1186,6 +1186,17 @@ stan_dpar_transform <- function(bterms) {
   out <- list()
   families <- family_names(bterms)
   p <- usc(combine_prefix(bterms))
+  if (any(families %in% "categorical")) {
+    str_add(out$modelD) <- paste0( 
+      "  // linear predictor matrix \n",
+      "  vector[ncat", p, "] mu", p, "[N]; \n"
+    )
+    dpars <- names(bterms$dpars)
+    mu_vector <- stan_vector(c("0", paste0(dpars, p, "[n]")))
+    str_add(out$modelC3) <- paste0(
+      "    mu", p, "[n] = ", mu_vector, ";\n"
+    )
+  }
   if (any(families %in% "skew_normal")) {
     # as suggested by Stephen Martin use sigma and mu of CP 
     # but the skewness parameter alpha of DP
