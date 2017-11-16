@@ -32,8 +32,7 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
     data_Xme(x, data),
-    data_mixture(x, prior = prior),
-    data_autocor(x, data, old_locations = old_standata$locations)
+    data_mixture(x, prior = prior)
   )
 }
 
@@ -465,19 +464,21 @@ data_offset <- function(bterms, data) {
   out
 }
 
-data_autocor <- function(bterms, data, old_locations = NULL) {
+data_autocor <- function(bterms, data, Y = NULL, old_locations = NULL) {
   # data for autocorrelation variables
   # Args:
+  #   Y: vector of response values; only required in cor_arr
   #   old_locations: optional locations for CAR models 
   #     used when fitting the model
   stopifnot(is.brmsterms(bterms))
   autocor <- bterms$autocor
+  N <- nrow(data)
   out <- list()
   if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
     if (length(bterms$time$group)) {
       tgroup <- as.numeric(factor(data[[bterms$time$group]]))
     } else {
-      tgroup <- rep(1, nrow(data)) 
+      tgroup <- rep(1, N) 
     }
   }
   if (has_arma(autocor)) {
@@ -515,7 +516,7 @@ data_autocor <- function(bterms, data, old_locations = NULL) {
     }
     if (Karr) {
       # ARR effects (autoregressive effects of the response)
-      out$Yarr <- arr_design_matrix(out$Y, Karr, tgroup)
+      out$Yarr <- arr_design_matrix(Y, Karr, tgroup)
       out$Karr <- Karr
     }
   } else if (is.cor_sar(autocor)) {
@@ -586,7 +587,7 @@ data_autocor <- function(bterms, data, old_locations = NULL) {
     if (!is.null(rmd_rows)) {
       V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
     }
-    if (nrow(V) != nrow(data)) {
+    if (nrow(V) != N) {
       stop2("'V' must have the same number of rows as 'data'.")
     }
     if (min(eigen(V)$values <= 0)) {
@@ -597,8 +598,8 @@ data_autocor <- function(bterms, data, old_locations = NULL) {
     out$N_tg <- 1
   }
   if (length(out)) {
-    p <- usc(combine_prefix(bterms))
-    out <- setNames(out, paste0(names(out), p))
+    resp <- usc(combine_prefix(bterms))
+    out <- setNames(out, paste0(names(out), resp))
   }
   out
 }
@@ -626,7 +627,7 @@ data_response.mvbrmsterms <- function(x, old_standata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    old_standata = NULL) {
+                                    not4stan = FALSE, old_standata = NULL) {
   # prepare data for the response variable
   N <- nrow(data)
   out <- list(Y = unname(model.response(model.frame(x$respform, data))))
@@ -796,8 +797,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
-  p <- usc(combine_prefix(x))
-  setNames(out, paste0(names(out), p))
+  resp <- usc(combine_prefix(x))
+  c(setNames(out, paste0(names(out), resp)),
+    # specify data for autocors here in order to pass Y
+    data_autocor(
+      x, data = data, Y = out$Y, 
+      old_locations = old_standata$locations
+    )
+  )
 }
 
 data_mixture <- function(bterms, prior = brmsprior()) {

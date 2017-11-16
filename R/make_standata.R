@@ -54,7 +54,10 @@ make_standata <- function(formula, data, family = gaussian(),
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   check_prior_content(prior, warn = FALSE)
-  prior <- check_prior_special(bterms, prior = prior)
+  prior <- check_prior_special(
+    bterms, prior = prior, data = data,
+    check_nlpar_prior = FALSE
+  )
   na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(
     data, bterms = bterms, na.action = na_action, 
@@ -70,7 +73,7 @@ make_standata <- function(formula, data, family = gaussian(),
     list(N = nrow(data)), 
     data_response(
       bterms, data = data, check_response = check_response,
-      old_standata = control$old_standata
+      not4stan = not4stan, old_standata = control$old_standata
     )
   )
   if (!only_response) {

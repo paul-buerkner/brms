@@ -1180,6 +1180,7 @@ check_prior_special.btnl <- function(x, prior, ...) {
 
 #' @export
 check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE, 
+                                    check_nlpar_prior = TRUE,
                                     allow_autoscale = TRUE, ...) {
   # prepare special priors that cannot be passed to Stan as is
   # Args:
@@ -1189,7 +1190,7 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
   # Returns:
   #   a possibly amended brmsprior object with additional attributes
   px <- check_prefix(x)
-  if (is_nlpar) {
+  if (is_nlpar && check_nlpar_prior) {
     nlp_prior <- subset2(prior, ls = px)
     if (!any(nzchar(nlp_prior$prior))) {
       stop2(
