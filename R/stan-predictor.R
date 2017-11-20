@@ -1268,7 +1268,7 @@ stan_sigma_transform <- function(bterms, id = "") {
   }
   p <- usc(combine_prefix(bterms))
   ns <- ifelse(paste0("sigma", id) %in% names(bterms$dpars), "[n]", "")
-  has_sigma <- has_sigma(family) && !no_sigma(bterms)
+  has_sigma <- has_sigma(family, bterms)
   sigma <- ifelse(has_sigma, paste0("sigma", id, p, ns), "")
   if (is.formula(bterms$adforms$se)) {
     sigma <- ifelse(

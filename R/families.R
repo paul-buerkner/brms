@@ -752,6 +752,11 @@ family_names.brmsformula <- function(family, ...) {
 }
 
 #' @export
+family_names.mvbrmsformula <- function(family, ...) {
+  ulapply(family$forms, family_names, ...)
+}
+
+#' @export
 family_names.brmsterms <- function(family, ...) {
   family_names(family$family, ...)
 }
@@ -759,6 +764,11 @@ family_names.brmsterms <- function(family, ...) {
 #' @export
 family_names.mvbrmsterms <- function(family, ...) {
   ulapply(family$terms, family_names, ...)
+}
+
+#' @export
+family_names.brmsfit <- function(family, ...) {
+  family_names(family$formula, ...)
 }
 
 dpar_family <- function(family, dpar, ...) {
@@ -1010,18 +1020,6 @@ is_forked <- function(family) {
   is_hurdle(family) || is_zero_inflated(family) || is_2PL(family)
 }
 
-# TODO: remove
-is_mv <- function(family, response = NULL) {
-  # indicate if the model uses multiple responses
-  nresp <- length(response)
-  is_mv <- nresp > 1L && is_linear(family) || is_categorical(family) || 
-           nresp == 2L && is_forked(family)
-  if (nresp > 1L && !is_mv) {
-    stop2("Invalid multivariate model")
-  }
-  is_mv
-}
-
 use_real <- function(family) {
   # indicate if family uses real responses
   families <- family_names(family)
@@ -1100,32 +1098,41 @@ has_xi <- function(family) {
   any(family_names(family) %in% c("gen_extreme_value"))
 }
 
-has_sigma <- function(family) {
+has_sigma <- function(family, bterms = NULL) {
   # indicate if the model needs a sigma parameter
-  any(
-    family_names(family) %in% 
+  out <- any(family_names(family) %in% 
     c("gaussian", "student", "skew_normal", "lognormal", 
       "hurdle_lognormal", "exgaussian", "asym_laplace", 
       "gen_extreme_value")
   )
+  if (!is.null(bterms)) {
+    out <- out && !no_sigma(bterms)
+  }
+  out
 }
 
 no_sigma <- function(bterms) {
   # check if sigma should be explicitely set to 0
   stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$se)) {
-    # call resp_se without evaluating the x argument 
+    # call resp_se without evaluating the x argument
     cl <- rhs(bterms$adforms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
-    se_only <- isFALSE(attr(eval(cl), "sigma")) 
+    se_only <- isFALSE(attr(eval(cl), "sigma"))
     if (se_only && use_cov(bterms$autocor)) {
-      stop2("Please set argument 'sigma' of function 'se' ",  
+      stop2("Please set argument 'sigma' of function 'se' ",
             "to TRUE when modeling ARMA covariance matrices.")
     }
   } else {
     se_only <- FALSE
   }
   se_only || is.cor_fixed(bterms$autocor)
+}
+
+simple_sigma <- function(bterms) {
+  # has the model a non-predicted but estimated sigma parameter?
+  stopifnot(is.brmsterms(bterms))
+  has_sigma(bterms$family, bterms) && is.null(bterms$dpars$sigma)
 }
 
 allows_cs <- function(family) {
@@ -1176,5 +1183,5 @@ is_old_mv <- function(x) {
     x$version <- list(brms = x$version)
   }
   (is.null(x$version) || x$version$brms <= "0.10.0.9000") &&
-    (is_mv(family(x), bterms$response) || is_forked(family(x)))
+    (is_mv(x) || is_forked(family(x)))
 }

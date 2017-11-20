@@ -1130,8 +1130,7 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
-  simple_sigma <- has_sigma(x$family) && 
-    !no_sigma(x) && is.null(x$dpars$sigma)
+  simple_sigma <- simple_sigma(x)
   for (dp in names(x$dpars)) {
     allow_autoscale <- simple_sigma && identical(dp, "mu") 
     prior <- check_prior_special(

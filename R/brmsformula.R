@@ -792,6 +792,7 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
   if (any(duplicated(responses))) {
     stop2("Cannot use the same response variable twice in the same model.")
   }
+  names(forms) <- responses
   structure(
     nlist(forms, responses, rescor),
     class = c("mvbrmsformula", "bform")
@@ -1186,17 +1187,12 @@ amend_formula.mvbrmsformula <- function(formula, ...) {
       "Setting 'rescor' to ", formula$rescor, 
       " by default for this combination of families"
     )
-  } 
+  }
+  formula$rescor <- as_one_logical(formula$rescor)
   if (formula$rescor) {
     if (!allow_rescor) {
       stop2("Currently, estimating 'rescor' is only possible ", 
             "in multivariate gaussian or student models.")
-    }
-    if (all(family_names(formula) == "student")) {
-      # the multi_student_t family only has a single nu parameter
-      for (i in seq_along(formula$forms)[-1]) {
-        formula$forms[[i]] <- bf(formula$forms[[i]], nu = 1)
-      }
     }
   }
   formula
