@@ -14,11 +14,11 @@
   robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{posterior_linpred}{brmsfit}(object, transform = FALSE,
-  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, dpar = NULL, resp = NULL, subset = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  newdata = NULL, re_formula = NULL, re.form = NULL,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -113,6 +113,8 @@ If \code{FALSE}, \code{scale} is set to \code{"linear"}.
 Only implemented for compatibility with the 
 \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
 generic.}
+
+\item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
 Fitted values extracted from \code{object}. 

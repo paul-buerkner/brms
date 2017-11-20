@@ -1683,6 +1683,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   to be considered in the prediction. 
 #'   If \code{NULL} (default), include all group-level effects; 
 #'   if \code{NA}, include no group-level effects.
+#' @param re.form Alias of \code{re_formula}.
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed.
@@ -1832,7 +1833,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export posterior_predict
 #' @importFrom rstantools posterior_predict
 posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                                      transform = NULL, allow_new_levels = FALSE,
+                                      re.form = NULL, transform = NULL, 
+                                      allow_new_levels = FALSE,
                                       sample_new_levels = "uncertainty", 
                                       new_objects = list(), incl_autocor = TRUE, 
                                       resp = NULL, negative_rt = FALSE, subset = NULL, 
@@ -1841,7 +1843,11 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
-  cl[["summary"]] <- FALSE
+  cl$summary <- FALSE
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
@@ -1935,15 +1941,19 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @importFrom rstantools posterior_linpred
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty", 
+  re.form = NULL, allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
   subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
   robust = FALSE, probs = c(0.025, 0.975), ...
 ) {
   cl <- match.call()
   cl[[1]] <- quote(fitted)
-  cl[["summary"]] <- FALSE
-  cl[["scale"]] <- if (transform) "response" else "linear"
+  cl$summary <- FALSE
+  cl$scale <- if (transform) "response" else "linear"
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
@@ -2067,7 +2077,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export predictive_error
 #' @importFrom rstantools predictive_error
 predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                                     allow_new_levels = FALSE, 
+                                     re.form = NULL, allow_new_levels = FALSE, 
                                      sample_new_levels = "uncertainty",
                                      new_objects = list(), incl_autocor = TRUE, 
                                      resp = NULL, subset = NULL, nsamples = NULL, 
@@ -2075,7 +2085,13 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                      probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(residuals)
-  cl[c("method", "type", "summary")] <- list("predict", "ordinary", FALSE)
+  cl$method <- "predict"
+  cl$type <- "ordinary"
+  cl$summary <- FALSE
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
