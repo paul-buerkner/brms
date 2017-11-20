@@ -61,7 +61,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
       x, data, ranef = ranef, prior = prior, 
       Jmo = old_standata$Jmo
     ),
-    data_re(x, data, ranef = ranef, not4stan = not4stan),
+    data_re(x, data, ranef = ranef),
     data_me(x, data),
     data_cs(x, data),
     data_gp(x, data, gps = old_standata$gps),
@@ -74,8 +74,6 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
 data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
                               prior = brmsprior(), knots = NULL, 
                               not4stan = FALSE, old_standata = NULL) {
-                              # smooths = NULL, 
-                              # gps = NULL, Jmo = NULL) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -223,7 +221,7 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
   out
 }
 
-data_re <- function(bterms, data, ranef, not4stan = FALSE) {
+data_re <- function(bterms, data, ranef) {
   # prepare data for group-level effects for use in Stan
   # Args: see data_effects
   out <- list()
@@ -238,26 +236,17 @@ data_re <- function(bterms, data, ranef, not4stan = FALSE) {
     for (i in seq_along(gn)) {
       r <- subset2(ranef, gn = gn[i])
       idp <- paste0(r$id[1], usc(combine_prefix(px)))
-      if (isTRUE(not4stan)) {
-        # for internal use in S3 methods
-        if (ncol(Z[[i]]) == 1L) {
-          Z[[i]] <- as.vector(Z[[i]])
+      if (r$type[1] == "cs") {
+        ncatM1 <- nrow(r) / ncol(Z[[i]])
+        Z_temp <- vector("list", ncol(Z[[i]]))
+        for (k in seq_along(Z_temp)) {
+          Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k])
         }
-        Zname <- paste0("Z_", gn[i])
-        out <- c(out, setNames(Z[i], Zname))
-      } else {
-        if (r$type[1] == "cs") {
-          ncatM1 <- nrow(r) / ncol(Z[[i]])
-          Z_temp <- vector("list", ncol(Z[[i]]))
-          for (k in seq_along(Z_temp)) {
-            Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k])
-          }
-          Z[[i]] <- do.call(cbind, Z_temp)
-        }
-        Zname <- paste0("Z_", idp, "_", r$cn)
-        for (j in seq_len(ncol(Z[[i]]))) {
-          out <- c(out, setNames(list(as.array(Z[[i]][, j])), Zname[j]))
-        }
+        Z[[i]] <- do.call(cbind, Z_temp)
+      }
+      Zname <- paste0("Z_", idp, "_", r$cn)
+      for (j in seq_len(ncol(Z[[i]]))) {
+        out <- c(out, setNames(list(as.array(Z[[i]][, j])), Zname[j]))
       }
     }
   }

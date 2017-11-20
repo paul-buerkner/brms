@@ -9,21 +9,15 @@ linear_predictor <- function(draws, i = NULL) {
   # Returns:
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
-  if (length(i) == 1L && is_categorical(draws$f) && 
-      isTRUE(draws$old_cat == 2L)) {
-    # for some time categorical models were using mv syntax
-    nobs <- draws$data$N_trait * (draws$data$ncat - 1)
-    i <- seq(i, nobs, draws$data$N_trait)
-  }
-  N <- ifelse(!is.null(i), length(i), draws$data$N) 
-  eta <- matrix(0, nrow = draws$nsamples, ncol = N) +
+  nobs <- ifelse(!is.null(i), length(i), draws$nobs) 
+  eta <- matrix(0, nrow = draws$nsamples, ncol = nobs) +
     predictor_fe(draws, i) +
     predictor_re(draws, i) +
     predictor_mo(draws, i) +
     predictor_me(draws, i) +
     predictor_sm(draws, i) +
     predictor_gp(draws, i) +
-    predictor_offset(draws, i, N)
+    predictor_offset(draws, i, nobs)
   # some autocorrelation structures depend on eta
   eta <- predictor_autocor(eta, draws, i)
   # intentionally last
@@ -397,17 +391,18 @@ predictor_cs <- function(eta, draws, i) {
   # returns 3-dimensional eta if cs terms are present
   cs <- draws[["cs"]]
   re <- draws[["re"]]
-  ncat <- draws$data[["ncat"]]
+  ncat <- cs[["ncat"]]
   if (is_ordinal(draws$f)) {
     if (!is.null(cs) || !is.null(re[["rcs"]])) {
       if (!is.null(re[["rcs"]])) {
-        rcs <- named_list(seq_len(ncat - 1))
-        for (k in names(rcs)) {
-          rcs[[k]] <- named_list(names(re[["rcs"]][[k]]))
-          for (g in names(rcs[[k]])) {
+        groups <- names(re[["rcs"]])
+        rcs <- vector("list", ncat - 1)
+        for (k in seq_along(rcs)) {
+          rcs[[k]] <- named_list(groups)
+          for (g in groups) {
             rcs[[k]][[g]] <- .predictor_re(
               Z = p(re[["Zcs"]][[g]], i),
-              r = re[["rcs"]][[k]][[g]]
+              r = re[["rcs"]][[g]][[k]]
             )
           }
           rcs[[k]] <- Reduce("+", rcs[[k]])
@@ -478,50 +473,53 @@ predictor_cs <- function(eta, draws, i) {
   eta
 }
 
-predictor_offset <- function(draws, i, N) {
-  if (is.null(draws$data$offset)) {
+predictor_offset <- function(draws, i, nobs) {
+  if (is.null(draws$offset)) {
     return(0) 
   }
-  eta <- rep(p(draws$data$offset, i), draws$nsamples)
-  matrix(eta, ncol = N, byrow = TRUE)
+  eta <- rep(p(draws$offset, i), draws$nsamples)
+  matrix(eta, ncol = nobs, byrow = TRUE)
 }
 
 predictor_autocor <- function(eta, draws, i) {
   # compute eta for autocorrelation structures
   # eta has to be passed to this function in order for
   # ARMA structures to work correctly
-  if (!is.null(draws[["arr"]])) {
-    eta <- eta + 
-      .predictor_fe(X = p(draws$data$Yarr, i), b = draws[["arr"]])
+  if (!is.null(draws$ac$arr)) {
+    eta <- eta + .predictor_fe(
+      X = p(draws$ac$Yarr, i), b = draws$ac$arr
+    )
   }
-  if (any(c("ar", "ma") %in% names(draws))) {
+  if (any(c("ar", "ma") %in% names(draws$ac))) {
     if (!is.null(i)) {
       stop2("Pointwise evaluation is not yet implemented for ARMA models.")
     }
     eta <- .predictor_arma(
-      eta, sdata = draws$data, ar = draws[["ar"]], 
-      ma = draws[["ma"]], link = draws$f$link
+      eta, ar = draws$ac$ar, ma = draws$ac$ma, 
+      Y = draws$ac$Y, J_lag = draws$ac$J_lag, 
+      link = draws$f$link
     )
   }
-  if (!is.null(draws[["car"]])) {
-    car <- draws[["car"]]
-    eta <- eta + .predictor_re(Z = p(car[["Zcar"]], i), r = car[["rcar"]])
+  if (!is.null(draws$ac$car)) {
+    eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
   }
-  if (!is.null(draws[["loclev"]])) {
-    eta <- eta + p(draws[["loclev"]], i, row = FALSE)
+  if (!is.null(draws$ac$loclev)) {
+    eta <- eta + p(draws$ac$loclev, i, row = FALSE)
   }
   eta
 }
 
-.predictor_arma <- function(eta, sdata, ar = NULL, ma = NULL, 
+.predictor_arma <- function(eta, ar = NULL, ma = NULL, 
+                            Y = NULL, J_lag = NULL, 
                             link = "identity") {
   # compute eta for ARMA effects
   # TODO: use C++ for this function
   # Args:
   #   eta: previous linear predictor samples
-  #   sdata: the data initially passed to Stan
   #   ar: autoregressive samples (can be NULL)
   #   ma: moving average samples (can be NULL)
+  #   Y: vector of response values
+  #   J_lag: autocorrelation lag for each observation
   #   link: the link function as character string
   # Returns:
   #   new linear predictor samples updated by ARMA effects
@@ -531,9 +529,9 @@ predictor_autocor <- function(eta, draws, i) {
   S <- nrow(eta)
   Kar <- ifelse(is.null(ar), 0, ncol(ar))
   Kma <- ifelse(is.null(ma), 0, ncol(ma))
-  K <- max(sdata$J_lag, 1)
+  K <- max(J_lag, 1)
   Ks <- 1:K
-  Y <- link(sdata$Y, link)
+  Y <- link(Y, link)
   N <- length(Y)
   E <- array(0, dim = c(S, K, K + 1))
   e <- matrix(0, nrow = S, ncol = K)
@@ -545,7 +543,7 @@ predictor_autocor <- function(eta, draws, i) {
       eta[, n] <- eta[, n] + rowSums(ma * E[, 1:Kma, K])
     }
     e[, K] <- Y[n] - eta[, n]
-    I <- seq_len(sdata$J_lag[n])
+    I <- seq_len(J_lag[n])
     if (length(I)) {
       E[, I, K + 1] <- e[, K + 1 - I]
     }
@@ -566,7 +564,7 @@ get_eta <- function(draws, i = NULL) {
   # extract the linear predictor of observation i from draws
   # Args:
   #   draws: a list generated by extract_draws
-  #   i: either NULL or a vector (typically of length 1) 
+  #   i: either NULL or a vector (typically of length 1)
   #      indicating the observations for which to extract eta
   # Returns:
   #   An S x N matrix, where N is the number of extracted observations
@@ -577,9 +575,9 @@ get_eta <- function(draws, i = NULL) {
     if (is.null(i)) {
       eta <- draws
     } else if (length(dim(draws)) == 3L) {
-      eta <- draws[, i, , drop = FALSE]  
+      eta <- draws[, i, , drop = FALSE]
     } else {
-      eta <- draws[, i, drop = FALSE]  
+      eta <- draws[, i, drop = FALSE]
     }
   } else if (!is.null(draws[["nlpars"]])) {
     eta <- nonlinear_predictor(draws, i = i)

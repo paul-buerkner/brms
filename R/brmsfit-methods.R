@@ -1620,6 +1620,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         # prepare draws for linear_predictor
         par <- names(bt_list)[k]
         more_args <- nlist(x = bt_list[[k]], newdata, nlpar = par)
+        # TODO: refactor all of this and use the standard 
+        # extract_draws.brmsfit interface
         draws <- do.call(extract_draws, c(args, more_args))
         J <- which(attr(sm_labels_by, "termnum") == i)
         scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
@@ -1817,59 +1819,11 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     sample_new_levels, new_objects, subset, nsamples, nug
   )
   draws <- do.call(extract_draws, draws_args)
-  if (is.list(draws$mu[["mv"]])) {
-    draws$mu <- get_eta(draws$mu)
-  }
-  dpars <- intersect(valid_dpars(family(object)), names(draws))
-  for (dp in dpars) {
-    if (is.list(draws[[dp]])) {
-      draws[[dp]] <- get_dpar(draws[[dp]])
-    }
-  }
-  # see predict.R
-  predict_fun <- paste0("predict_", draws$f$family)
-  predict_fun <- get(predict_fun, asNamespace("brms"))
-  N <- choose_N(draws)
-  out <- do.call(cbind, 
-    lapply(seq_len(N), predict_fun, draws = draws, 
-           ntrys = ntrys, negative_rt = negative_rt)
+  predict_args <- nlist(
+    draws, transform, ntrys, negative_rt, 
+    summary, robust, probs, sort
   )
-  # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models; see predict.R
-  pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
-  if (pct_invalid >= 0.01) {
-    warning2(round(pct_invalid * 100), "% of all predicted values ", 
-             "were invalid. Increasing argument 'ntrys' may help.")
-  }
-  if (is_wiener(draws$f$family) && summary && negative_rt) {
-    warning2("Summarizing positive and negative ", 
-             "response times may not be reasonable.")
-  }
-
-  # reorder predicted responses in case of multivariate models
-  # as they are sorted after units first not after traits
-  if (grepl("_mv$", draws$f$family)) {
-    nresp <- draws$data$nresp
-    reorder <- ulapply(seq_len(nresp), seq, to = N * nresp, by = nresp)
-    out <- out[, reorder, drop = FALSE]
-  }
-  old_order <- attr(draws$data, "old_order")
-  out <- reorder_obs(out, old_order, sort = sort)
-  # transform predicted response samples before summarizing them 
-  is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
-  if (!is.null(transform) && !is_catordinal) {
-    out <- do.call(transform, list(out))
-  }
-  if (summary) {
-    if (is_catordinal) {
-      # compute frequencies of categories 
-      out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
-    } else {
-      out <- get_summary(out, probs = probs, robust = robust)
-    }
-    rownames(out) <- seq_len(nrow(out))
-  }
-  out
+  do.call(predict_internal, predict_args)
 }
 
 #' @rdname predict.brmsfit
@@ -1913,6 +1867,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  Only implemented for compatibility with the 
 #'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
 #'  generic. 
+#' @param resp Optional names of response variables.
+#'  If specified, fitted values of these response variables are returned.
 #' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
 #'
@@ -1955,7 +1911,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           dpar = NULL, subset = NULL, 
+                           dpar = NULL, resp = NULL, subset = NULL, 
                            nsamples = NULL, sort = FALSE, nug = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
@@ -1969,61 +1925,11 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     sample_new_levels, new_objects, subset, nsamples, nug 
   )
   draws <- do.call(extract_draws, draws_args)
-  dpars <- intersect(valid_dpars(family(object)), names(draws))
-  if (!length(dpar)) {
-    if (is.list(draws[["mu"]][["mv"]])) {
-      draws$mu <- get_eta(draws$mu)
-    }
-    for (dp in dpars) {
-      if (is.list(draws[[dp]])) {
-        draws[[dp]] <- get_dpar(draws[[dp]])
-      }
-    }
-    if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
-      # collapse over responses in linear MV models
-      dim(draws$mu) <- c(dim(draws$mu)[1], prod(dim(draws$mu)[2:3]))
-    }
-    if (scale == "response") {
-      # original families are required for fitted helper functions 
-      draws$f <- family(object)
-      fitted_fun <- paste0("fitted_", draws$f$family)
-      fitted_fun <- get(fitted_fun, asNamespace("brms"))
-      draws$mu <- fitted_fun(draws)
-    }
-  } else {
-    if (length(dpar) != 1L || !dpar %in% dpars) {
-      stop2("Invalid argument 'dpar'. Valid distributional ",
-            "parameters are: ", collapse_comma(dpars))
-    }
-    if (!isTRUE(attr(draws[[dpar]], "predicted"))) {
-      stop2("Distributional parameter '", dpar, "' was not predicted.")
-    }
-    if (scale == "linear" && is.list(draws[[dpar]])) {
-      draws[[dpar]]$f$link <- "identity"
-    }
-    if (dpar_class(dpar) == "theta" && scale == "response") {
-      ap_id <- as.numeric(dpar_id(dpar))
-      draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
-      dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
-    } else {
-      draws$mu <- get_dpar(draws[[dpar]], apply_ilink = TRUE)
-    }
-  }
-  if (is.null(dim(draws$mu))) {
-    draws$mu <- as.matrix(draws$mu)
-  }
-  old_order <- attr(draws$data, "old_order")
-  draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)
-  if (summary) {
-    draws$mu <- get_summary(draws$mu, probs = probs, robust = robust)
-    rownames(draws$mu) <- seq_len(nrow(draws$mu))
-    is_catordinal <- is_categorical(draws$f) || is_ordinal(draws$f)
-    if (is_catordinal && scale == "linear") {
-      # fixes issue #274
-      dimnames(draws$mu)[[3]] <- paste0("eta", seq_len(dim(draws$mu)[[3]]))
-    }
-  }
-  draws$mu
+  fitted_args <- nlist(
+    draws, scale, resp, dpar,
+    summary, robust, probs, sort
+  )
+  do.call(fitted_internal, fitted_args)
 }
 
 #' @rdname fitted.brmsfit
@@ -2708,7 +2614,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             new_objects = list(),
                             incl_autocor = TRUE, subset = NULL,
                             nsamples = NULL, pointwise = FALSE,
-                            nug = NULL, ...) {
+                            nug = NULL, combine = TRUE, ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
@@ -2717,30 +2623,15 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
-  
-  loglik_fun <- paste0("loglik_", draws$f$family)
-  loglik_fun <- get(loglik_fun, asNamespace("brms"))
-  N <- choose_N(draws)
   if (pointwise) {
-    loglik <- loglik_fun
-    attr(loglik, "args") <- nlist(
-      draws, N, S = draws$nsamples, data = data.frame()
+    stopifnot(combine)
+    loglik <- loglik_pointwise
+    attr(loglik, "args") <- list(
+      draws = draws, N = choose_N(draws), 
+      S = draws$nsamples, data = data.frame()
     )
   } else {
-    if (is.list(draws$mu[["mv"]])) {
-      draws$mu <- get_eta(draws$mu)
-    }
-    dpars <- intersect(valid_dpars(family(object)), names(draws))
-    for (dp in dpars) {
-      if (is.list(draws[[dp]])) {
-        draws[[dp]] <- get_dpar(draws[[dp]])
-      }
-    }
-    loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
-    old_order <- attr(draws$data, "old_order")
-    # do not reorder loglik for ARMA covariance models
-    sort <- use_cov(object$autocor)
-    loglik <- reorder_obs(loglik, old_order, sort = sort)
+    loglik <- loglik_internal(draws, combine = combine)
   }
   loglik
 }
