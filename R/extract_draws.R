@@ -6,8 +6,8 @@ extract_draws <- function(x, ...) {
 #' @export
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
                                   sample_new_levels = "uncertainty",
-                                  incl_autocor = TRUE, subset = NULL, 
-                                  nsamples = NULL, nug = NULL, 
+                                  incl_autocor = TRUE, resp = NULL,
+                                  subset = NULL, nsamples = NULL, nug = NULL, 
                                   smooths_only = FALSE, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
@@ -28,7 +28,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   args <- nlist(
     x = bterms, samples, sdata, data = x$data,
     ranef, old_ranef = x$ranef, sample_new_levels,
-    nug, smooths_only, new = !is.null(newdata)
+    resp, nug, smooths_only, new = !is.null(newdata)
   )
   if (length(get_effect(bterms, "gp")) && !is.null(newdata)) {
     # GPs for new data require the original data as well
@@ -39,22 +39,32 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   do.call(extract_draws, args)
 }
 
-extract_draws.mvbrmsterms <- function(x, samples, ...) {
-  draws <- list(
-    resps = named_list(x$responses), 
-    nsamples = nrow(samples)
-  )
-  for (i in seq_along(x$responses)) {
-    draws$resps[[i]] <- extract_draws(x$terms[[i]], samples = samples, ...)
+extract_draws.mvbrmsterms <- function(x, samples, resp = NULL, ...) {
+  if (length(resp)) {
+    if (!all(resp %in% x$responses)) {
+      stop2("Invalid argument 'resp'. Valid response ",
+            "variables are: ", collapse_comma(x$responses))
+    }
+  } else {
+    resp <- x$responses
   }
-  # TODO: stuff for rescor
-  # if (x$rescor) {
-  #   # parameters for multivariate normal models
-  #   draws$sigma <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
-  #   draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
-  #   draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
-  # }
-  structure(draws, class = "mvbrmsdraws")
+  if (length(resp) > 1) {
+    draws <- list(resps = named_list(resp), nsamples = nrow(samples))
+    for (r in resp) {
+      draws$resps[[r]] <- extract_draws(x$terms[[r]], samples = samples, ...)
+    }
+    # TODO: stuff for rescor
+    # if (x$rescor) {
+    #   # parameters for multivariate normal models
+    #   draws$sigma <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
+    #   draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
+    #   draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
+    # }
+    draws <- structure(draws, class = "mvbrmsdraws")
+  } else {
+    draws <- extract_draws(x$terms[[resp]], samples = samples, ...)
+  }
+  draws
 }
 
 #' @export

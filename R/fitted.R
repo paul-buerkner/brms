@@ -3,15 +3,7 @@ fitted_internal <- function(draws, ...) {
 }
 
 #' @export
-fitted_internal.mvbrmsdraws <- function(draws, resp = NULL, ...) {
-  if (length(resp)) {
-    responses <- names(draws$resps)
-    if (!all(resp %in% responses)) {
-      stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(responses))
-    }
-    draws$resps <- draws$resps[resp]
-  }
+fitted_internal.mvbrmsdraws <- function(draws, ...) {
   out <- lapply(draws$resps, fitted_internal, ...)
   along <- ifelse(length(out) > 1L, 3, 2)
   do.call(abind, c(out, along = along))
@@ -64,12 +56,13 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
   out <- reorder_obs(out, draws$data$old_order, sort = sort)
   if (summary) {
     out <- get_summary(out, probs = probs, robust = robust)
-    rownames(out) <- seq_len(nrow(out))
-    is_catordinal <- is_categorical(draws$f) || is_ordinal(draws$f)
-    if (is_catordinal && scale == "linear") {  
-      # fixes issue #274
-      dimnames(out)[[3]] <- paste0("eta", seq_len(dim(out)[[3]]))
-    }
+    if (is_categorical(draws$f) || is_ordinal(draws$f)) {
+      if (scale == "linear") {  
+        dimnames(out)[[3]] <- paste0("eta", seq_len(dim(out)[3]))
+      } else {
+        dimnames(out)[[3]] <- paste0("P(Y = ", seq_len(dim(out)[3]), ")")
+      }
+    } 
   }
   out
 }

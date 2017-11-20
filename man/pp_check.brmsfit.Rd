@@ -6,10 +6,10 @@
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
-  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, subset = NULL, nug = NULL, ntrys = 5,
-  loo_args = list(), ...)
+  resp = NULL, newdata = NULL, re_formula = NULL,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, subset = NULL, nug = NULL,
+  ntrys = 5, loo_args = list(), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -33,6 +33,9 @@ ppc \code{*_grouped} types and ignored otherwise.}
 \item{x}{Optional name of a variable in the model. 
 Only used for ppc types having an \code{x} argument 
 and ignored otherwise.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}

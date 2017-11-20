@@ -33,18 +33,16 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   }
   out <- reorder_obs(out, draws$data$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
-  is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
-  if (!is.null(transform) && !is_catordinal) {
+  if (!is.null(transform)) {
     out <- do.call(transform, list(out))
   }
   if (summary) {
-    if (is_catordinal) {
+    if (is_ordinal(draws$f) || is_categorical(draws$f)) {
       # compute frequencies of categories 
       out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
     } else {
       out <- get_summary(out, probs = probs, robust = robust)
     }
-    rownames(out) <- seq_len(nrow(out))
   }
   out
 }

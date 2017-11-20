@@ -11,6 +11,19 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
+is_mv <- function(x) {
+  stopifnot(is.brmsfit(x))
+  is.mvbrmsformula(x$formula)
+}
+
+stopifnot_resp <- function(x, resp = NULL) {
+  if (is_mv(x) && is.null(resp)) {
+    stop2("Argument 'resp' is required when applying ", 
+          "this method to a multivariate model.")
+  }
+  invisible(NULL)
+}
+
 get_all_group_vars <- function(x) {
   # extract names of all grouping variables
   if (is.brmsfit(x)) {
@@ -161,8 +174,7 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   x 
 }
 
-get_summary <- function(samples, probs = c(0.025, 0.975),
-                        robust = FALSE, keep_names = FALSE) {
+get_summary <- function(samples, probs = c(0.025, 0.975), robust = FALSE) {
   # summarizes parameter samples based on mean, sd, and quantiles
   # Args: 
   #   samples: a matrix or data.frame containing the samples to be summarized. 
@@ -178,35 +190,20 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
   } else {
     coefs <- c("mean", "sd", "quantile")
   }
-  if (length(dim(samples)) == 2L) {
-    out <- lapply(
+  .get_summary <- function(samples) {
+    do.call(cbind, lapply(
       coefs, get_estimate, samples = samples, 
       probs = probs, na.rm = TRUE
-    )
-    out <- do.call(cbind, out)
-    if (keep_names) {
-      rownames(out) <- colnames(samples)
-    } else {
-      rownames(out) <- seq_len(nrow(out))
-    }
+    ))
+  }
+  stopifnot(length(dim(samples)) %in% 2:3)
+  if (length(dim(samples)) == 2L) {
+    out <- .get_summary(samples)
+    rownames(out) <- colnames(samples)
   } else if (length(dim(samples)) == 3L) {
-    fun3dim <- function(i) {
-      do.call(cbind, lapply(
-        coefs, get_estimate, 
-        samples = samples[, , i, drop = FALSE], 
-        probs = probs, ra.rm = TRUE
-      ))
-    }
-    out <- abind(lapply(seq_len(dim(samples)[3]), fun3dim), along = 3)
-    if (keep_names) {
-      dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
-    } else {
-      dimnames(out)[c(1, 3)] <- list(
-        seq_len(nrow(out)), paste0("P(Y = ", seq_len(dim(out)[3]), ")")
-      )  
-    }
-  } else { 
-    stop("Dimension of 'samples' must be either 2 or 3.") 
+    out <- lapply(array2list(samples), .get_summary)
+    out <- abind(out, along = 3)
+    dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
   }
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
@@ -221,10 +218,11 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   #    a N x levels matrix containing relative frequencies of each level
   stopifnot(is.matrix(samples))
   out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
-    function(n) table(factor(samples[, n], levels = levels))))
+    function(n) table(factor(samples[, n], levels = levels))
+  ))
   # compute relative frequencies
   out <- out / sum(out[1, ])
-  rownames(out) <- seq_len(nrow(out))
+  rownames(out) <- colnames(samples)
   colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
   out
 }
@@ -392,11 +390,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
       out <- linear_predictor(x, i = i)
     }
     if (is.null(ilink)) {
-      # TODO: fix for mixture models
-      no_link_family <- x$f$family %in% 
-        c("weibull", "categorical", "cumulative", 
-          "sratio", "cratio", "acat")
-      ilink <- !(no_link_family && dpar == "mu")
+      ilink <- apply_dpar_ilink(dpar, family = draws$f)
     }
     if (ilink) {
       out <- ilink(out, x$f$link)
@@ -467,6 +461,20 @@ get_se <- function(draws, i = NULL) {
     se <- 0
   }
   se
+}
+
+apply_dpar_ilink <- function(dpar, family) {
+  # helper function of get_dpar to decide if
+  # the link function should be applied by default
+  # Returns:
+  #   TRUE or FALSE
+  if (is.mixfamily(family)) {
+    dpar <- dpar_class(dpar) 
+  }
+  no_link_family <- family$family %in% 
+    c("weibull", "categorical", "cumulative", 
+      "sratio", "cratio", "acat")
+  !(no_link_family && dpar == "mu")
 }
 
 choose_N <- function(draws) {
