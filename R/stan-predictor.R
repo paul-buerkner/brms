@@ -147,7 +147,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   out <- list(stan_response(x, data = data))
-  valid_dpars <- valid_dpars(x$family, bterms = x)
+  valid_dpars <- valid_dpars(x)
   args <- nlist(data, ranef, prior)
   for (dp in valid_dpars) {
     ap_terms <- x$dpars[[dp]]
@@ -1268,7 +1268,7 @@ stan_sigma_transform <- function(bterms, id = "") {
   }
   p <- usc(combine_prefix(bterms))
   ns <- ifelse(paste0("sigma", id) %in% names(bterms$dpars), "[n]", "")
-  has_sigma <- has_sigma(family, bterms)
+  has_sigma <- has_sigma(family) && !no_sigma(bterms)
   sigma <- ifelse(has_sigma, paste0("sigma", id, p, ns), "")
   if (is.formula(bterms$adforms$se)) {
     sigma <- ifelse(

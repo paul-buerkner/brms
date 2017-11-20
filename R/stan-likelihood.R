@@ -25,7 +25,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   is_hurdle <- is_hurdle(family)
   is_zero_inflated <- is_zero_inflated(family)
   is_mv <- grepl("_mv$", family)
-  has_sigma <- has_sigma(family, bterms)
+  has_sigma <- has_sigma(family) && !no_sigma(bterms)
   has_se <- is.formula(bterms$adforms$se)
   has_weights <- is.formula(bterms$adforms$weights)
   has_cens <- has_cens(bterms$adforms$cens, data = data)
@@ -493,7 +493,7 @@ stan_llh_trunc <- function(llh_pre, bounds, short = FALSE) {
 
 stan_llh_sigma <- function(family, bterms, resp = "", mix = "") {
   # prepare the code for 'sigma' in the likelihood statement
-  has_sigma <- has_sigma(family, bterms)
+  has_sigma <- has_sigma(family) && !no_sigma(bterms)
   has_se <- is.formula(bterms$adforms$se)
   llh_adj <- stan_llh_adj(bterms$adforms)
   nsigma <- llh_adj || has_se || nzchar(mix) ||

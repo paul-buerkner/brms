@@ -1025,14 +1025,13 @@ valid_dpars <- function(family, ...) {
 
 #' @export
 valid_dpars.default <- function(family, bterms = NULL, ...) {
-  # convenience function to find relevant distributional parameters
   if (is.family(family) && !is.null(family[["dpars"]])) {
     # some families have dpar names that depend on the data
     return(family$dpars)
   }
   x <- c(
     mu = TRUE,
-    sigma = has_sigma(family, bterms = bterms),
+    sigma = has_sigma(family),
     shape = has_shape(family), 
     nu = has_nu(family, bterms = bterms), 
     phi = has_phi(family),
@@ -1060,6 +1059,11 @@ valid_dpars.mixfamily <- function(family, ...) {
     out[[i]] <- paste0(out[[i]], i)
   }
   c(unlist(out), paste0("theta", seq_along(out)))
+}
+
+#' @export
+valid_dpars.brmsterms <- function(family, ...) {
+  valid_dpars(family$family, bterms = family, ...)
 }
 
 is_dpar_name <- function(dpars, family = NULL, ...) {
@@ -1143,10 +1147,6 @@ amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
   if (is_ordinal(out$family)) {
     if (!is.null(threshold)) {
       out$family <- check_family(out$family, threshold = threshold)
-    }
-    # fix discrimination to 1 by default
-    if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
-      out <- bf(out, disc = 1)
     }
     try_terms <- try(stats::terms(out$formula), silent = TRUE)
     intercept <- attr(try_terms, "intercept", TRUE)

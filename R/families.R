@@ -1100,19 +1100,21 @@ has_xi <- function(family) {
   any(family_names(family) %in% c("gen_extreme_value"))
 }
 
-has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
+has_sigma <- function(family) {
   # indicate if the model needs a sigma parameter
-  # Args:
-  #  family: model family
-  #  bterms: object of class brmsterms
-  #  incmv: should MV (linear) models be treated as having sigma? 
-  families <- family_names(family)
-  is_ln_eg <- any(families %in% 
-    c("lognormal", "hurdle_lognormal", "exgaussian",
-      "asym_laplace", "gen_extreme_value", "skew_normal")
+  any(
+    family_names(family) %in% 
+    c("gaussian", "student", "skew_normal", "lognormal", 
+      "hurdle_lognormal", "exgaussian", "asym_laplace", 
+      "gen_extreme_value")
   )
+}
+
+no_sigma <- function(bterms) {
+  # check if sigma should be explicitely set to 0
+  stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$se)) {
-    # call .se without evaluating the x argument 
+    # call resp_se without evaluating the x argument 
     cl <- rhs(bterms$adforms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
     se_only <- isFALSE(attr(eval(cl), "sigma")) 
@@ -1123,13 +1125,7 @@ has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
   } else {
     se_only <- FALSE
   }
-  out <- (is_linear(family) || is_ln_eg) && 
-    !se_only && !is(bterms$autocor, "cov_fixed")
-  if (!incmv) {
-    is_multi <- is_linear(family) && length(bterms$response) > 1L
-    out <- out && !is_multi
-  }
-  out
+  se_only || is.cor_fixed(bterms$autocor)
 }
 
 allows_cs <- function(family) {

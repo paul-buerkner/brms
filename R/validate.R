@@ -57,13 +57,6 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
     } else {
       y$resp <- ""
     }
-    # resp and response may differ for categorical and old MV models
-    # TODO: check if this is still needed in the new MV syntax
-    # if (!is.null(x$response)) {
-    #   y$response <- x$response
-    # } else { 
-    #   y$response <- y$resp
-    # }
   }
   
   # extract addition arguments
@@ -139,9 +132,23 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
   }
   y <- store_uni_me(y)
   # fixed distributional parameters
-  inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars(family, y))
+  valid_dpars <- valid_dpars(y)
+  inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars)
   if (length(inv_fixed_dpars)) {
     stop2("Invalid fixed parameters: ", collapse_comma(inv_fixed_dpars))
+  }
+  if ("sigma" %in% valid_dpars && no_sigma(y)) {
+    # some models require setting sigma to 0
+    if ("sigma" %in% c(names(x$pforms), names(x$pfix))) {
+      stop2("Cannot predict or fix 'sigma' in this model.")
+    }
+    x$pfix[["sigma"]] <- 0
+  }
+  if ("disc" %in% valid_dpars) {
+    # 'disc' is set to 1 and not estimated by default
+    if (!"disc" %in% c(names(x$pforms), names(x$pfix))) {
+      x$pfix[["disc"]] <- 1
+    }
   }
   for (dp in names(x$pfix)) {
     y$fdpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
