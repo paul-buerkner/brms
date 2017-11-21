@@ -360,7 +360,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
         }
         cor <- cor_all
       }
-      out <- c(out, get_cov_matrix(sd = out$sd, cor = cor))
+      out$cor <- get_cor_matrix(cor = cor)
+      out$cov <- get_cov_matrix(sd = out$sd, cor = cor)
       dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
       dimnames(out$cov)[2:3] <- list(y$rnames, y$rnames)
       if (summary) {
@@ -386,6 +387,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     }
     group <- unique(x$ranef$group)
     tmp <- lapply(group, get_names)
+    names(tmp) <- group
   } else {
     tmp <- list()
   }
@@ -397,9 +399,10 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
       tmp <- c(tmp, residual__ = list(tmp_resid))
     }
   } else if (is.mvbrmsterms(bterms)) {
-    has_simple_sigma <- ulapply(bterms$terms, simple_sigma)
-    if (any(has_simple_sigma)) {
-      resps <- bterms$responses[has_simple_sigma]
+    simple_sigma <- ulapply(bterms$terms, simple_sigma)
+    pred_sigma <- ulapply(bterms$terms, pred_sigma)
+    if (any(simple_sigma) && !any(pred_sigma)) {
+      resps <- bterms$responses[simple_sigma]
       sd_pars <- paste0("sigma_", resps)
       if (bterms$rescor) {
         cor_pars <- get_cornames(resps, type = "rescor", brackets = FALSE)

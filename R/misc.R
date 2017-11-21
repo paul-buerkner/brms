@@ -78,13 +78,13 @@ array2list <- function(x) {
     stop("Argument 'x' has no dimension.")
   }
   ndim <- length(dim(x))
-  l <- list(length = dim(x)[ndim])
+  out <- list(length = dim(x)[ndim])
   ind <- collapse(rep(",", ndim - 1))
   for (i in seq_len(dim(x)[ndim])) {
-    l[[i]] <- eval(parse(text = paste0("x[", ind, i, "]"))) 
+    out[[i]] <- eval(parse(text = paste0("x[", ind, i, "]")))
   }
-  names(l) <- dimnames(x)[[ndim]]
-  l
+  names(out) <- dimnames(x)[[ndim]]
+  out
 }
 
 first_greater <- function(A, target, i = 1) {

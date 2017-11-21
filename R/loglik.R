@@ -5,27 +5,32 @@ loglik_internal <- function(draws, ...) {
 
 #' @export
 loglik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
-  out <- lapply(draws$resps, loglik_internal, ...)
-  # TODO: handle rescor
-  if (combine) {
-    out <- Reduce("+", out)
+  if (length(draws$mvpars$rescor)) {
+    draws$mvpars$Mu <- get_Mu(draws)
+    draws$mvpars$Sigma <- get_Sigma(draws)
+    out <- loglik_internal.brmsdraws(draws, ...)
   } else {
-    along <- ifelse(length(out) > 1L, 3, 2)
-    out <- do.call(abind, c(out, along = along))
+    out <- lapply(draws$resps, loglik_internal, ...)
+    if (combine) {
+      out <- Reduce("+", out)
+    } else {
+      along <- ifelse(length(out) > 1L, 3, 2)
+      out <- do.call(abind, c(out, along = along))
+    }
   }
   out
 }
 
 #' @export
 loglik_internal.brmsdraws <- function(draws, ...) {
-  loglik_fun <- paste0("loglik_", draws$f$family)
+  loglik_fun <- paste0("loglik_", draws$f$fun)
   loglik_fun <- get(loglik_fun, asNamespace("brms"))
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
   loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
-  old_order <- draws$data$old_order
+  old_order <- draws$old_order
   sort <- isTRUE(ncol(loglik) != length(old_order))
   reorder_obs(loglik, old_order, sort = sort)
 }
@@ -106,31 +111,29 @@ loglik_skew_normal <- function(i, draws, data = data.frame()) {
 }
 
 loglik_gaussian_mv <- function(i, draws, data = data.frame()) {
-  if (!is.null(draws$data$N_trait)) {
-    obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
-  } else {
-    mu <- get_dpar(draws, "mu", i)[, 1, ]
+  Mu <- get_Mu(draws, i = i)
+  Sigma <- get_Sigma(draws, i = i)
+  dmn <- function(s) {
+    dmulti_normal(
+      draws$data$Y[i, ], mu = Mu[s, ],
+      Sigma = Sigma[s, , ], log = TRUE
+    )
   }
-  out <- sapply(1:draws$nsamples, function(s)
-    dmulti_normal(draws$data$Y[i, ], Sigma = draws$dpars$sigma[s, , ],
-                  mu = mu[s, ], log = TRUE))
-  # no truncation allowed
+  out <- sapply(1:draws$nsamples, dmn)
   loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_student_mv <- function(i, draws, data = data.frame()) {
-  if (!is.null(draws$data$N_trait)) {
-    obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
-  } else {
-    mu <- get_dpar(draws, "mu", i)[, 1, ]
+  nu <- get_dpar(draws, "nu", i = i)
+  Mu <- get_Mu(draws, i = i)
+  Sigma <- get_Sigma(draws, i = i)
+  dmst <- function(s) {
+    dmulti_student_t(
+      draws$data$Y[i, ], df = nu[s], mu = Mu[s, ],
+      Sigma = Sigma[s, , ], log = TRUE
+    )
   }
-  nu <- get_dpar(draws, "nu", obs)
-  out <- sapply(1:draws$nsamples, function(s)
-    dmulti_student_t(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
-                   Sigma = draws$dpars$sigma[s, , ], log = TRUE))
-  # no truncation allowed
+  out <- sapply(1:draws$nsamples, dmst)
   loglik_weight(out, i = i, data = draws$data)
 }
 
@@ -192,7 +195,7 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
 loglik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   .loglik_gaussian_lagsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     dmulti_normal(draws$data$Y, mu = mu, Sigma = Sigma, log = TRUE)
@@ -206,7 +209,7 @@ loglik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
 loglik_student_lagsar <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   .loglik_student_lagsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     dmulti_student_t(
@@ -214,7 +217,6 @@ loglik_student_lagsar <- function(i, draws, data = data.frame()) {
       Sigma = Sigma, log = TRUE
     )
   }
-  N <- draws$data$N
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
@@ -225,7 +227,7 @@ loglik_student_lagsar <- function(i, draws, data = data.frame()) {
 loglik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   .loglik_gaussian_errorsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     dmulti_normal(draws$data$Y, mu = mu[s, ], Sigma = Sigma, log = TRUE)
   }
@@ -238,7 +240,7 @@ loglik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
 loglik_student_errorsar <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   .loglik_student_errorsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     dmulti_student_t(
       draws$data$Y, df = nu[s], mu = mu[s, ], 

@@ -53,7 +53,7 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
   if (is.null(dim(out))) {
     out <- as.matrix(out)
   }
-  out <- reorder_obs(out, draws$data$old_order, sort = sort)
+  out <- reorder_obs(out, draws$old_order, sort = sort)
   if (summary) {
     out <- get_summary(out, probs = probs, robust = robust)
     if (is_categorical(draws$f) || is_ordinal(draws$f)) {
@@ -276,7 +276,7 @@ fitted_lagsar <- function(draws) {
   stopifnot(!is.null(draws$ac$lagsar))
   stopifnot(is_linear(draws$f))
   .fitted_lagsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     as.numeric(solve(W_new) %*% draws$dpars$mu[s, ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fitted_lagsar))

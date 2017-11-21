@@ -4,10 +4,16 @@ predict_internal <- function(draws, ...) {
 
 #' @export
 predict_internal.mvbrmsdraws <- function(draws, ...) {
-  out <- lapply(draws$resps, predict_internal, ...)
-  # TODO: handle rescor
-  along <- ifelse(length(out) > 1L, 3, 2)
-  do.call(abind, c(out, along = along))
+  if (length(draws$mvpars$rescor)) {
+    draws$mvpars$Mu <- get_Mu(draws)
+    draws$mvpars$Sigma <- get_Sigma(draws)
+    out <- predict_internal.brmsdraws(draws, ...)
+  } else {
+    out <- lapply(draws$resps, predict_internal, ...)
+    along <- ifelse(length(out) > 1L, 3, 2)
+    out <- do.call(abind, c(out, along = along))
+  }
+  out
 }
 
 #' @export
@@ -21,9 +27,15 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   predict_fun <- get(predict_fun, asNamespace("brms"))
   N <- choose_N(draws)
   out <- lapply(seq_len(N), predict_fun, draws = draws, ...)
-  out <- do.call(cbind, out)
+  if (grepl("_mv$", draws$f$fun)) {
+    out <- do.call(abind, c(out, along = 3))
+    out <- aperm(out, perm = c(1, 3, 2))
+    dimnames(out)[[3]] <- names(draws$resps)
+  } else {
+    out <- do.call(cbind, out) 
+  }
   # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models; see predict.R
+  # should always be zero for all other models
   pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
   if (pct_invalid >= 0.01) {
     warning2(
@@ -31,7 +43,7 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
       "were invalid. Increasing argument 'ntrys' may help."
     )
   }
-  out <- reorder_obs(out, draws$data$old_order, sort = sort)
+  out <- reorder_obs(out, draws$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
   if (!is.null(transform)) {
     out <- do.call(transform, list(out))
@@ -103,34 +115,22 @@ predict_skew_normal <- function(i, draws, ...) {
 }
 
 predict_gaussian_mv <- function(i, draws, ...) {
-  # currently no truncation available
-  if (!is.null(draws$data$N_trait)) {
-    obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
-  } else {
-    mu <- get_dpar(draws, "mu", i = i)[, 1, ]
+  Mu <- get_Mu(draws, i = i)
+  Sigma <- get_Sigma(draws, i = i)
+  rmn <- function(s) {
+    rmulti_normal(1, mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  .fun <- function(s) {
-    rmulti_normal(1, mu = mu[s, ], Sigma = draws$Sigma[s, , ])
-  }
-  do.call(rbind, lapply(1:draws$nsamples, .fun))
+  do.call(rbind, lapply(1:draws$nsamples, rmn))
 }
 
 predict_student_mv <- function(i, draws, ...) {
-  # currently no truncation available
-  if (!is.null(draws$data$N_trait)) {
-    obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
-  } else {
-    mu <- get_dpar(draws, "mu", i = i)[, 1, ]
-  }
   nu <- get_dpar(draws, "nu", i = i)
-  .fun <- function(s) {
-    rmulti_student_t(
-      1, df = nu[s, ], mu = mu[s, ], Sigma = draws$Sigma[s, , ]
-    )
+  Mu <- get_Mu(draws, i = i)
+  Sigma <- get_Sigma(draws, i = i)
+  rmst <- function(s) {
+    rmulti_student_t(1, df = nu[s], mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  do.call(rbind, lapply(1:draws$nsamples, .fun))
+  do.call(rbind, lapply(1:draws$nsamples, rmst))
 }
 
 predict_gaussian_cov <- function(i, draws, ...) {
@@ -191,7 +191,7 @@ predict_student_cov <- function(i, draws, ...) {
 predict_gaussian_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_gaussian_lagsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu, Sigma = Sigma)
@@ -204,7 +204,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
 predict_student_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_student_lagsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu, Sigma = Sigma)
@@ -218,7 +218,7 @@ predict_student_lagsar <- function(i, draws, ...) {
 predict_gaussian_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_gaussian_errorsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma)
   }
@@ -230,7 +230,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
 predict_student_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_student_errorsar <- function(s) {
-    W_new <- with(draws, diag(data$N) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu[s, ], Sigma = Sigma)
   }

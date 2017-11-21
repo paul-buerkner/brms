@@ -1135,6 +1135,12 @@ simple_sigma <- function(bterms) {
   has_sigma(bterms$family, bterms) && is.null(bterms$dpars$sigma)
 }
 
+pred_sigma <- function(bterms) {
+  # has the model a predicted sigma parameter?
+  stopifnot(is.brmsterms(bterms))
+  "sigma" %in% dpar_class(names(bterms$dpars))
+}
+
 allows_cs <- function(family) {
   # checks if category specific effects are allowed
   all(family_names(family) %in% c("sratio", "cratio", "acat"))

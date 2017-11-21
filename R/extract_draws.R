@@ -39,7 +39,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   do.call(extract_draws, args)
 }
 
-extract_draws.mvbrmsterms <- function(x, samples, resp = NULL, ...) {
+extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
   if (length(resp)) {
     if (!all(resp %in% x$responses)) {
       stop2("Invalid argument 'resp'. Valid response ",
@@ -49,20 +49,33 @@ extract_draws.mvbrmsterms <- function(x, samples, resp = NULL, ...) {
     resp <- x$responses
   }
   if (length(resp) > 1) {
-    draws <- list(resps = named_list(resp), nsamples = nrow(samples))
+    draws <- list(nsamples = nrow(samples), nobs = sdata$N)
+    draws$resps <- named_list(resp)
+    draws$old_order <- attr(sdata, "old_order")
     for (r in resp) {
-      draws$resps[[r]] <- extract_draws(x$terms[[r]], samples = samples, ...)
+      draws$resps[[r]] <- extract_draws(
+        x$terms[[r]], samples = samples, sdata = sdata, ...
+      )
     }
-    # TODO: stuff for rescor
-    # if (x$rescor) {
-    #   # parameters for multivariate normal models
-    #   draws$sigma <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
-    #   draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
-    #   draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
-    # }
+    if (x$rescor) {
+      draws$f <- draws$resps[[1]]$f
+      draws$f$fun <- paste0(draws$f$family, "_mv")
+      rescor <- get_cornames(resp, type = "rescor", brackets = FALSE)
+      draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
+      if (draws$f$family == "student") {
+        # store in draws$dpars so that get_dpar can be called on nu
+        draws$dpars$nu <- get_samples(samples, "^nu$")
+      }
+      draws$data$N <- draws$resps[[1]]$data$N
+      draws$data$weights <- draws$resps[[1]]$data$weights
+      Y <- lapply(draws$resps, function(x) x$data$Y)
+      draws$data$Y <- do.call(cbind, Y)
+    }
     draws <- structure(draws, class = "mvbrmsdraws")
   } else {
-    draws <- extract_draws(x$terms[[resp]], samples = samples, ...)
+    draws <- extract_draws(
+      x$terms[[resp]], samples = samples, sdata = sdata, ...
+    )
   }
   draws
 }
@@ -71,11 +84,13 @@ extract_draws.mvbrmsterms <- function(x, samples, resp = NULL, ...) {
 extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata$N
+  resp <- usc(combine_prefix(x))
   draws <- nlist(f = prepare_family(x), nsamples, nobs)
+  draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)
   for (dp in valid_dpars) {
-    dp_regex <- paste0("^", dp, "($|_)")
+    dp_regex <- paste0("^", dp, resp, "$")
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       draws$dpars[[dp]] <- extract_draws(
         x$dpars[[dp]], samples = samples, sdata = sdata, ...
@@ -646,13 +661,12 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
 
 extract_draws_data <- function(bterms, sdata, ...) {
   # extract data mainly related to the response variable
-  draws <- list(N = sdata$N, old_order = attr(sdata, "old_order"))
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub", "N_tg"
   )
   resp <- usc(combine_prefix(bterms))
-  draws[vars] <- sdata[paste0(vars, resp)]
+  draws <- sdata[paste0(vars, resp)]
   rmNULL(draws, recursive = FALSE)
 }
 
