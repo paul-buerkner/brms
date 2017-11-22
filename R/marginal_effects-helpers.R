@@ -22,6 +22,12 @@ get_all_effects <- function(x, ...) {
 }
 
 #' @export
+get_all_effects.mvbrmsterms <- function(x, ...) {
+  out <- lapply(x$terms, get_all_effects, ...)
+  unique(unlist(out, recursive = TRUE))
+}
+
+#' @export
 get_all_effects.brmsterms <- function(x, rsv_vars = NULL, 
                                       comb_all = FALSE) {
   # get all effects for use in marginal_effects
@@ -75,19 +81,19 @@ get_all_effects.btnl <- function(x, ...) {
   unique(c(covars_comb, nl_effects))
 }
 
-prepare_conditions <- function(x, conditions = NULL, effects = NULL,
+prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   # prepare conditions for use in marginal_effects
   # Args:
-  #   x: an object of class 'brmsfit'
+  #   fit: an object of class 'brmsfit'
   #   conditions: optional data.frame containing user defined conditions
   #   effects: see marginal_effects
   #   re_formula: see marginal_effects
   #   rsv_vars: names of reserved variables
   # Returns:
   #   A data.frame with (possibly updated) conditions
-  mf <- model.frame(x)
-  new_formula <- update_re_terms(formula(x), re_formula = re_formula)
+  mf <- model.frame(fit)
+  new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula)
   if (any(grepl_expr("^(as\\.)?factor(.+)$", bterms$allvars))) {
     # conditions are chosen based the variables stored in the data
@@ -167,7 +173,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     )
   }
   amend_newdata(
-    conditions, fit = x, re_formula = re_formula,
+    conditions, fit = fit, re_formula = re_formula,
     allow_new_levels = TRUE, incl_autocor = FALSE, 
     return_standata = FALSE
   )
@@ -256,23 +262,101 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
-make_point_frame <- function(mf, effects, conditions, groups, 
-                             family, select_points = 0, 
-                             transform = NULL) {
+marginal_effects_internal <- function(x, ...) {
+  # compute fitted values for use in marginal_effects
+  UseMethod("marginal_effects_internal")
+}
+
+#' @export
+marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
+  # Returns: a list of summarized prediction matrices
+  resp <- validate_resp(resp, x$responses)
+  x$terms <- x$terms[resp]
+  out <- lapply(x$terms, marginal_effects_internal, ...)
+  unlist(out, recursive = FALSE)
+}
+
+#' @export
+marginal_effects_internal.brmsterms <- function(
+  x, fit, marg_data, method, surface, spaghetti, probs, robust, ...
+) {
+  # Returns: a list with the summarized prediction matrix as the only element
+  stopifnot(is.brmsfit(fit))
+  if (is_categorical(x$family)) {
+    stop2("'marginal_effects' is not yet implemented for categorical models.")
+  } else if (is_ordinal(x$family)) {
+    warning2(
+      "Predictions are treated as continuous variables ",
+      "in 'marginal_effects', which is likely an invalid ",
+      "assumption for family ", x$family$family, "."
+    )
+  }
+  pred_args <- list(
+    fit, newdata = marg_data, allow_new_levels = TRUE, 
+    incl_autocor = FALSE, summary = FALSE, 
+    resp = if (nzchar(x$resp)) x$resp, ...
+  )
+  out <- do.call(method, pred_args)
+  if (is_ordinal(x$family) && method == "fitted") {
+    for (k in seq_len(dim(out)[3])) {
+      out[, , k] <- out[, , k] * k
+    }
+    out <- lapply(seq_len(dim(out)[2]), function(s) rowSums(out[, s, ]))
+    out <- do.call(cbind, out)
+  }
+  rownames(marg_data) <- NULL
+  eff <- attr(marg_data, "effects")
+  types <- attr(marg_data, "types")
+  first_numeric <- types[1] %in% "numeric"
+  second_numeric <- types[2] %in% "numeric"
+  both_numeric <- first_numeric && second_numeric
+  if (second_numeric && !surface) {
+    # can only be converted to factor after having called method
+    mde2 <- round(marg_data[[eff[2]]], 2)
+    levels2 <- sort(unique(mde2), TRUE)
+    marg_data[[eff[2]]] <- factor(mde2, levels = levels2)
+    labels2 <- names(int_conditions[[eff[2]]])
+    if (length(labels2) == length(levels2)) {
+      levels(marg_data[[eff[2]]]) <- labels2
+    }
+  }
+  spaghetti_data <- NULL
+  if (first_numeric && spaghetti) {
+    if (surface) {
+      stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
+    }
+    sample <- rep(seq_len(nrow(out)), each = ncol(out))
+    if (length(types) == 2L) {
+      # samples should be unique across plotting groups
+      sample <- paste0(sample, "_", marg_data[[eff[2]]])
+    }
+    spaghetti_data <- data.frame(as.numeric(t(out)), factor(sample))
+    colnames(spaghetti_data) <- c("estimate__", "sample__")
+    spaghetti_data <- cbind(marg_data, spaghetti_data)
+  }
+  out <- get_summary(out, probs = probs, robust = robust)
+  colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
+  out <- cbind(marg_data, out)
+  attr(out, "effects") <- eff
+  attr(out, "response") <- as.character(x$formula[2])
+  attr(out, "surface") <- unname(both_numeric && surface)
+  attr(out, "spaghetti") <- spaghetti_data
+  attr(out, "points") <- make_point_frame(x, fit$data, eff, ...)
+  name <- paste0(usc(x$resp, "suffix"), paste0(eff, collapse = ":"))
+  setNames(list(out), name)
+}
+
+make_point_frame <- function(bterms, mf, effects, conditions, 
+                             select_points = 0, transform = NULL, ...) {
   # helper function for marginal_effects
-  # allowing add data points to the marginal plots
-  # Args:
-  #   mf: the original model.frame
-  #   effects: see marginal_effects
-  #   conditions: see marginal_effects
-  #   groups: names of the grouping factors
-  #   family: the model family
-  #   select_points: see marginal_effects
+  # allowing add data points to the marginal effects plots
   # Returns:
   #   a data.frame containing the data points to be plotted
+  stopifnot(is.brmsterms(bterms), is.data.frame(mf))
   points <- mf[, effects, drop = FALSE]
-  points$resp__ <- model.response(mf)
+  points$resp__ <- model.response(model.frame(bterms$respform, mf))
   req_vars <- names(mf)
+  groups <- get_re(bterms)$group
   if (length(groups)) {
     req_vars <- c(req_vars, unlist(strsplit(groups, ":")))
   }
@@ -330,7 +414,7 @@ make_point_frame <- function(mf, effects, conditions, groups,
   }
   if (!is.numeric(points$resp__)) {
     points$resp__ <- as.numeric(as.factor(points$resp__))
-    if (is_binary(family)) {
+    if (is_binary(bterms$family)) {
       points$resp__ <- points$resp__ - 1
     }
   }

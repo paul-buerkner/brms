@@ -900,7 +900,7 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) {
-  bf(x$formula, ...)
+  x$formula
 }
 
 #' @export
@@ -908,9 +908,7 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   if (!is.null(resp)) {
     stopifnot(is_mv(object))
     resp <- as_one_character(resp)
-    if (!resp %in% object$formula$responses) {
-      stop2("Argument 'resp' must be one of ", object$formula$responses, ".")
-    }
+    resp <- validate_resp(resp, object$formula$responses)
     family <- object$formula$forms[[resp]]$family
   } else {
     family <- object$family
@@ -1375,16 +1373,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula)
-  if (is_linear(x$family) && length(bterms$response) > 1L) {
-    stop2("Marginal plots are not yet implemented for multivariate models.")
-  } else if (is_categorical(x$family)) {
-    stop2("Marginal plots are not yet implemented for categorical models.")
-  } else if (is_ordinal(x$family)) {
-    warning2(
-      "Predictions are treated as continuous variables ", 
-      "in marginal_effects, which is likely an invalid ", 
-      "assumption for family ", x$family$family, "."
-    )
+  if (length(probs) != 2L) {
+    stop2("Arguments 'probs' must be of length 2.")
   }
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
@@ -1431,110 +1421,41 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       )
     }
   }
-  if (length(probs) != 2L) {
-    stop2("Arguments 'probs' must be of length 2.")
-  }
-  
+  mf <- model.frame(x)
   conditions <- prepare_conditions(
     x, conditions = conditions, effects = effects, 
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_effects <- c(
-    get_effect(bterms, "mo"), 
-    rmNULL(bterms[c("trials", "cat")])
-  )
-  int_vars <- unique(ulapply(int_effects, all.vars))
-  mf <- model.frame(x)
+  int_vars <- unique(ulapply(get_effect(bterms, "mo"), all.vars))
   int_conditions <- lapply(int_conditions, 
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
-  results <- list()
+  out <- list()
   for (i in seq_along(effects)) {
-    marg_data <- mf[, effects[[i]], drop = FALSE]
+    eff <- effects[[i]]
     marg_args <- nlist(
-      data = marg_data, conditions, int_conditions,
+      data = mf[, eff, drop = FALSE], conditions, int_conditions,
       int_vars, surface, resolution, reorder = use_def_effects
     )
     marg_data <- do.call(prepare_marg_data, marg_args)
-    if (surface && length(effects[[i]]) == 2L && too_far > 0) {
+    if (surface && length(eff) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = marg_data[[effects[[i]][1]]], 
-        g2 = marg_data[[effects[[i]][2]]], 
-        d1 = x$data[, effects[[i]][1]],
-        d2 = x$data[, effects[[i]][2]],
+        g1 = marg_data[[eff[1]]], 
+        g2 = marg_data[[eff[2]]], 
+        d1 = mf[, eff[1]],
+        d2 = mf[, eff[2]],
         dist = too_far)
       marg_data <- marg_data[!ex_too_far, ]  
     }
-    # make sure numeric variables come first
-    effects[[i]] <- attr(marg_data, "effects")
-    args <- list(
-      x, newdata = marg_data, re_formula = re_formula,
-      allow_new_levels = TRUE, incl_autocor = FALSE, 
-      transform = transform, summary = FALSE
+    me_args <- nlist(
+      x = bterms, fit = x, marg_data, method, surface, 
+      spaghetti, re_formula, transform, conditions,
+      select_points, probs, robust, ...
     )
-    args <- c(args, dots)
-    if (is_ordinal(x$family) || is_categorical(x$family)) {
-      marg_res <- do.call(method, args)
-      if (method == "fitted") {
-        for (k in seq_len(dim(marg_res)[3])) {
-          marg_res[, , k] <- marg_res[, , k] * k
-        }
-        marg_res <- lapply(
-          seq_len(dim(marg_res)[2]), 
-          function(s) rowSums(marg_res[, s, ])
-        )
-        marg_res <- do.call(cbind, marg_res)
-      }
-    } else {
-      marg_res <- do.call(method, args)
-    }
-    rownames(marg_data) <- NULL
-    types <- attr(marg_data, "types")
-    first_numeric <- types[1] %in% "numeric"
-    second_numeric <- types[2] %in% "numeric"
-    both_numeric <- first_numeric && second_numeric
-    if (second_numeric && !surface) {
-      # can only be converted to factor after having called method
-      mde2 <- round(marg_data[[effects[[i]][2]]], 2)
-      levels2 <- sort(unique(mde2), TRUE)
-      marg_data[[effects[[i]][2]]] <- factor(mde2, levels = levels2)
-      labels2 <- names(int_conditions[[effects[[i]][2]]])
-      if (length(labels2) == length(levels2)) {
-        levels(marg_data[[effects[[i]][2]]]) <- labels2
-      }
-    }
-    if (first_numeric && spaghetti) {
-      if (surface) {
-        stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
-      }
-      sample <- rep(seq_len(nrow(marg_res)), each = ncol(marg_res))
-      if (length(types) == 2L) {
-        # samples should be unique across plotting groups
-        sample <- paste0(sample, "_", marg_data[[effects[[i]][2]]])
-      }
-      spaghetti_data <- data.frame(as.numeric(t(marg_res)), factor(sample))
-      colnames(spaghetti_data) <- c("estimate__", "sample__")
-      spaghetti_data <- cbind(marg_data, spaghetti_data)
-    } else {
-      spaghetti_data <- NULL
-    }
-    marg_res <- get_summary(marg_res, probs = probs, robust = robust)
-    colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__")
-    marg_res = cbind(marg_data, marg_res)
-    attr(marg_res, "response") <- as.character(x$formula$formula[2])
-    attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "surface") <- unname(both_numeric && surface)
-    attr(marg_res, "spaghetti") <- spaghetti_data
-    point_args <- nlist(
-      mf, effects = effects[[i]], conditions, select_points,
-      transform, groups = get_re(bterms)$group, family = x$family
-    )
-    attr(marg_res, "points") <- do.call(make_point_frame, point_args)
-    results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
+    out <- c(out, do.call(marginal_effects_internal, me_args))
   }
-  class(results) <- "brmsMarginalEffects"
-  results
+  structure(out, class = "brmsMarginalEffects")
 }
 
 #' @rdname marginal_smooths
@@ -1548,124 +1469,27 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   spaghetti <- as_one_logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)
-  mf <- model.frame(x)
-  conditions <- prepare_conditions(x)
-  smooths <- rename(as.character(smooths), " ", "")
+  x <- remove_autocor(x)
+  smooths <- rm_wsp(as.character(smooths))
   bterms <- parse_bf(x$formula)
-  bt_list <- list()
-  if (length(bterms$response) > 1L) {
-    for (r in bterms$response) {
-      bt_list[[r]] <- bterms$dpars[["mu"]]
-    }
-    bterms$dpars[["mu"]] <- NULL
-  }
-  for (dp in names(bterms$dpars)) {
-    bt <- bterms$dpars[[dp]]
-    if (is.btnl(bt)) {
-      bt_list[names(bt$nlpars)] <- bt$nlpars
-    } else {
-      bt_list[[dp]] <- bt
-    }
-  }
+  conditions <- prepare_conditions(x)
   subset <- subset_samples(x, subset, nsamples)
-  nsamples <- nsamples(x, subset = subset)
-  args <- nlist(
-    fit = x, allow_new_levels = TRUE,
-    subset, nsamples, incl_autocor = FALSE, 
-    smooths_only = TRUE 
+  # call as.matrix only once to save time and memory
+  samples <- as.matrix(x, subset = subset)
+  ms_args <- nlist(
+    x = bterms, fit = x, samples, smooths, conditions, 
+    too_far, resolution, probs, spaghetti
   )
-  too_many_covars <- FALSE
-  results <- list()
-  for (k in seq_along(bt_list)) {
-    # loop over elements that may contain smooth terms
-    sm_labels <- get_sm_labels(bt_list[[k]])
-    sm_labels_by <- get_sm_labels(bt_list[[k]], data = mf)
-    covars <- get_sm_labels(bt_list[[k]], covars = TRUE, combine = FALSE)
-    for (i in seq_along(sm_labels)) {
-      # loop over smooth terms and compute their predictions
-      byvars <- attr(covars, "byvars")[[i]]
-      byfactors <- ulapply(mf[, byvars, drop = FALSE], is_like_factor)
-      byfactors <- byvars[byfactors]
-      covars_no_byfactor <- setdiff(covars[[i]], byfactors)
-      ncovars <- length(covars_no_byfactor)
-      if (ncovars > 2L) {
-        too_many_covars <- TRUE
-      }
-      include_smooth <- !length(smooths) || sm_labels[[i]] %in% smooths
-      if (include_smooth && ncovars <= 2L) {
-        values <- named_list(covars[[i]])
-        for (cv in names(values)) {
-          if (is.numeric(mf[[cv]])) {
-            values[[cv]] <- seq(
-              min(mf[[cv]]), max(mf[[cv]]), length.out = resolution
-            )
-          } else {
-            values[[cv]] <- levels(factor(mf[[cv]]))
-          }
-        }
-        newdata <- expand.grid(values)
-        if (ncovars == 2L && too_far > 0) {
-          # exclude prediction grid points too far from data
-          ex_too_far <- mgcv::exclude.too.far(
-            g1 = newdata[[covars_no_byfactor[1]]], 
-            g2 = newdata[[covars_no_byfactor[2]]], 
-            d1 = x$data[, covars_no_byfactor[1]],
-            d2 = x$data[, covars_no_byfactor[2]],
-            dist = too_far
-          )
-          newdata <- newdata[!ex_too_far, ]  
-        }
-        other_vars <- setdiff(names(conditions), covars[[i]])
-        newdata[, other_vars] <- conditions[1, other_vars]
-        # prepare draws for linear_predictor
-        par <- names(bt_list)[k]
-        more_args <- nlist(x = bt_list[[k]], newdata, nlpar = par)
-        # TODO: refactor all of this and use the standard 
-        # extract_draws.brmsfit interface
-        draws <- do.call(extract_draws, c(args, more_args))
-        J <- which(attr(sm_labels_by, "termnum") == i)
-        scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
-        draws[["fe"]][["X"]] <- draws[["fe"]][["X"]][, scs, drop = FALSE]
-        draws[["fe"]][["b"]] <- draws[["fe"]][["b"]][, scs, drop = FALSE]
-        draws[["sm"]][["Zs"]] <- draws[["sm"]][["Zs"]][J] 
-        draws[["sm"]][["s"]] <- draws[["sm"]][["s"]][J]
-        eta <- get_eta(draws = draws, i = NULL)
-        if (spaghetti && ncovars == 1L) {
-          sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
-          spaghetti_data <- data.frame(as.numeric(t(eta)), factor(sample))
-          colnames(spaghetti_data) <- c("estimate__", "sample__")
-          spaghetti_data <- cbind(
-            newdata[, covars[[i]], drop = FALSE], spaghetti_data
-          )
-        } else {
-          spaghetti_data <- NULL
-        }
-        eta <- get_summary(eta, robust = TRUE, probs = probs)
-        colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-        res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
-        if (length(byfactors)) {
-          res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
-        }
-        response <- paste0(par, ": ", sm_labels[[i]])
-        attr(res, "response") <- response
-        attr(res, "effects") <- covars_no_byfactor
-        attr(res, "surface") <- ncovars == 2L
-        attr(res, "spaghetti") <- spaghetti_data
-        attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
-        results[[response]] <- res
-      }
-    }
-  }
-  if (!length(results)) {
+  out <- do.call(marginal_smooths_internal, ms_args)
+  if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
+  too_many_covars <- any(ulapply(out, attr, "too_many_covars"))
   if (too_many_covars) {
-    warning2("Smooth terms with more than two covariates ",  
+    warning2("Smooth terms with more than two covariates ",
              "are not yet supported by 'marginal_smooths'.")
   }
-  attr(results, "smooths_only") <- TRUE
-  class(results) <- "brmsMarginalEffects"
-  results
+  structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
 }
 
 #' Model Predictions of \code{brmsfit} Objects

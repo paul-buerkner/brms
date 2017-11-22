@@ -399,7 +399,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   stopifnot(!is.null(x))
   if (is.list(x)) {
     # compute samples of a predicted parameter
-    if (!is.null(draws[["nlpars"]])) {
+    if (!is.null(x$nlpars)) {
       out <- nonlinear_predictor(x, i = i)
     } else {
       out <- linear_predictor(x, i = i)
@@ -588,6 +588,19 @@ prepare_family <- function(x) {
     family$fun <- family$family
   }
   family
+}
+
+validate_resp <- function(resp, valid_resps) {
+  # validate the 'resp' argument of 'predict' and related methods
+  if (length(resp)) {
+    if (!all(resp %in% valid_resps)) {
+      stop2("Invalid argument 'resp'. Valid response ",
+            "variables are: ", collapse_comma(valid_resps))
+    }
+  } else {
+    resp <- valid_resps
+  }
+  resp
 }
 
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {

@@ -1082,32 +1082,32 @@ amend_terms <- function(x) {
   #   x: any R object; if not a formula or terms, NULL is returned
   # Returns:
   #   a (possibly amended) terms object or NULL
-  if (is.formula(x) || is(x, "terms")) {
-    y <- terms(x)
-  } else {
+  if (is.formula(x)) {
+    x <- terms(x)
+  } else if (!inherits(x, "terms")) {
     return(NULL)
   }
-  if (isTRUE(attr(x, "forked")) && isTRUE(attr(x, "old_mv"))) {
-    # ensure that interactions with main and spec won't
-    # cause automatic cell mean coding of factors
-    term_labels <- attr(y, "term.labels")
-    if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
-      if (any(grepl("(^|:)trait($|:)", term_labels))) {
-        stop2("formula may not contain variable 'trait' when ",
-              "using variables 'main' or 'spec'")
-      }
-      if (attr(y, "intercept")) {
-        stop2("formula may not contain an intercept when ",
-              "using variables 'main' or 'spec'")
-      }
-      attr(x, "rsv_intercept") <- TRUE
-    }
-  }
+  # if (isTRUE(attr(x, "forked")) && isTRUE(attr(x, "old_mv"))) {
+  #   # ensure that interactions with main and spec won't
+  #   # cause automatic cell mean coding of factors
+  #   term_labels <- attr(y, "term.labels")
+  #   if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
+  #     if (any(grepl("(^|:)trait($|:)", term_labels))) {
+  #       stop2("formula may not contain variable 'trait' when ",
+  #             "using variables 'main' or 'spec'")
+  #     }
+  #     if (attr(y, "intercept")) {
+  #       stop2("formula may not contain an intercept when ",
+  #             "using variables 'main' or 'spec'")
+  #     }
+  #     attr(x, "rsv_intercept") <- TRUE
+  #   }
+  # }
   if (isTRUE(attr(x, "rsv_intercept"))) {
-    attr(y, "intercept") <- 1
-    attr(y, "rm_intercept") <- TRUE
+    attr(x, "intercept") <- 1
+    attr(x, "rm_intercept") <- TRUE
   }
-  y
+  x
 }
 
 has_intercept <- function(formula) {
@@ -1145,6 +1145,43 @@ has_rsv_intercept <- function(formula) {
   out
 }
 
+rsv_vars <- function(bterms) {
+  # returns names of reserved variables
+  # Args:
+  #   bterms: object of class brmsterms
+  # TODO: fix rsv_vars
+  stopifnot(is.brmsterms(bterms) || is.mvbrmsterms(bterms))
+  # nresp <- length(bterms$response)
+  # family <- bterms$family
+  # old_mv <- isTRUE(attr(bterms$formula, "old_mv"))
+  .rsv_vars <- function(x) {
+    rsv_int <- any(ulapply(x$dpars, has_rsv_intercept))
+    if (rsv_int) "intercept" else NULL
+  }
+  if (is.mvbrmsterms(bterms)) {
+    out <- unique(ulapply(bterms$terms, .rsv_vars))
+  } else {
+    out <- .rsv_vars(bterms)
+  }
+  out
+  # rsv_intercept <- any(ulapply(bterms$dpars, has_rsv_intercept))
+  # if (old_mv) {
+  #   if (is_linear(family) && nresp > 1L || is_categorical(family)) {
+  #     rsv <- c("trait", "response")
+  #   } else if (is_forked(family)) {
+  #     rsv <- c("trait", "response", "main", "spec")
+  #   } else {
+  #     rsv <- character(0)
+  #   }
+  # } else {
+  #   rsv <- character(0)
+  # }
+  # if (incl_intercept && rsv_intercept) {
+  #   rsv <- c(rsv, "intercept")
+  # }
+  # rsv
+}
+
 has_smooths <- function(bterms) {
   # check if smooths are present in the model
   length(get_effect(bterms, target = "sm")) > 0L
@@ -1169,33 +1206,6 @@ get_autocor_vars.mvbrmsterms <- function(x, ...) {
 #' @export
 get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
   if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
-}
-
-rsv_vars <- function(bterms, incl_intercept = TRUE) {
-  # returns names of reserved variables
-  # Args:
-  #   bterms: object of class brmsterms
-  #   incl_intercept: treat variable 'intercept' as reserved?
-  stopifnot(is.brmsterms(bterms))
-  nresp <- length(bterms$response)
-  family <- bterms$family
-  old_mv <- isTRUE(attr(bterms$formula, "old_mv"))
-  rsv_intercept <- any(ulapply(bterms$dpars, has_rsv_intercept))
-  if (old_mv) {
-    if (is_linear(family) && nresp > 1L || is_categorical(family)) {
-      rsv <- c("trait", "response")
-    } else if (is_forked(family)) {
-      rsv <- c("trait", "response", "main", "spec")
-    } else {
-      rsv <- character(0)
-    }
-  } else {
-    rsv <- character(0)
-  }
-  if (incl_intercept && rsv_intercept) {
-    rsv <- c(rsv, "intercept")
-  }
-  rsv
 }
 
 get_bounds <- function(formula, data = NULL) {

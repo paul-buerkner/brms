@@ -40,14 +40,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 }
 
 extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
-  if (length(resp)) {
-    if (!all(resp %in% x$responses)) {
-      stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(x$responses))
-    }
-  } else {
-    resp <- x$responses
-  }
+  resp <- validate_resp(resp, x$responses)
   if (length(resp) > 1) {
     draws <- list(nsamples = nrow(samples), nobs = sdata$N)
     draws$resps <- named_list(resp)
@@ -134,8 +127,8 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
   # Args:
   #   C: matrix containing covariates
   #   ...: passed to extract_draws.btl
+  draws <- list(f = x$family, nsamples = nrow(samples), nobs = sdata$N)
   nlpars <- names(x$nlpars)
-  draws <- list(f = x$family)
   for (nlp in nlpars) {
     draws$nlpars[[nlp]] <- extract_draws(
       x$nlpars[[nlp]], samples = samples, sdata = sdata, ...
