@@ -1082,28 +1082,14 @@ amend_terms <- function(x) {
   #   x: any R object; if not a formula or terms, NULL is returned
   # Returns:
   #   a (possibly amended) terms object or NULL
-  if (is.formula(x)) {
+  rsv_intercept <- isTRUE(attr(x, "rsv_intercept"))
+  if (is.formula(x) && !inherits(x, "terms")) {
     x <- terms(x)
-  } else if (!inherits(x, "terms")) {
+  }
+  if (!inherits(x, "terms")) {
     return(NULL)
   }
-  # if (isTRUE(attr(x, "forked")) && isTRUE(attr(x, "old_mv"))) {
-  #   # ensure that interactions with main and spec won't
-  #   # cause automatic cell mean coding of factors
-  #   term_labels <- attr(y, "term.labels")
-  #   if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
-  #     if (any(grepl("(^|:)trait($|:)", term_labels))) {
-  #       stop2("formula may not contain variable 'trait' when ",
-  #             "using variables 'main' or 'spec'")
-  #     }
-  #     if (attr(y, "intercept")) {
-  #       stop2("formula may not contain an intercept when ",
-  #             "using variables 'main' or 'spec'")
-  #     }
-  #     attr(x, "rsv_intercept") <- TRUE
-  #   }
-  # }
-  if (isTRUE(attr(x, "rsv_intercept"))) {
+  if (rsv_intercept) {
     attr(x, "intercept") <- 1
     attr(x, "rm_intercept") <- TRUE
   }
