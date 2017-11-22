@@ -2073,10 +2073,17 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
-    family <- get_arg("family", dots, object)
-    autocor <- get_arg("autocor", dots, object)
-    dots$formula <- bf(object$formula, family = family, autocor = autocor)
+    dots$formula <- object$formula
+    if (!is.null(dots[["family"]])) {
+      dots$formula <- dots$formula + check_family(dots$family)
+    } 
+    if (!is.null(dots[["autocor"]])) {
+      dots$formula <- dots$formula + check_autocor(dots$autocor)
+    }
   } else {
+    if (is.mvbrmsformula(formula.) || is.mvbrmsformula(object$formula)) {
+      stop2("Updating formulas of multivariate models is not yet possible.")
+    }
     family <- get_arg("family", formula., dots, object)
     autocor <- get_arg("autocor", formula., dots, object)
     if (is.brmsformula(formula.)) {

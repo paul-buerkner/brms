@@ -1244,6 +1244,15 @@ update.brmsformula <- function(object, formula.,
 }
 
 #' @export
+update.mvbrmsformula <- function(object, formula., ...) {
+  # temporary until proper updating is implemented
+  if (!missing(formula.)) {
+    stop2("Updating formulas of multivariate models is not yet possible.")
+  }
+  object
+}
+
+#' @export
 print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
   str_wsp <- collapse(rep(" ", wsp))
