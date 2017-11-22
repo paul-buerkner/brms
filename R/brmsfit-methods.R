@@ -1956,7 +1956,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              allow_new_levels = FALSE, 
                              sample_new_levels = "uncertainty",
                              new_objects = list(), incl_autocor = TRUE, 
-                             subset = NULL, nsamples = NULL, 
+                             subset = NULL, nsamples = NULL, resp = NULL,
                              nug = NULL, summary = TRUE, robust = FALSE, 
                              probs = c(0.025, 0.975), ...) {
   # do it like residuals.brmsfit
@@ -1976,31 +1976,42 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       newdata, fit = object, re_formula, allow_new_levels,
       new_objects, check_response = TRUE
     )
-    standata <- do.call(amend_newdata, newd_args)
+    sdata <- do.call(amend_newdata, newd_args)
     if (any(grepl("^cens_", names(sdata)))) {
       warning2("'bayes_R2' may not be meaningful for censored models.")
     }
-    if (is.null(subset) && !is.null(nsamples)) {
-      subset <- sample(nsamples(object), nsamples)
-    }
     pred_args <- nlist(
       object, newdata, re_formula, allow_new_levels,
-      sample_new_levels, new_objects, incl_autocor, 
-      subset, nug, summary = FALSE, sort = TRUE
+      sample_new_levels, new_objects, incl_autocor, resp,
+      subset, nsamples, nug, summary = FALSE, sort = TRUE
     )
-    # TODO: handle MV models
-    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     ypred <- do.call(fitted, pred_args)
-    y <- as.numeric(standata$Y)
-    e <- - 1 * sweep(ypred, 2, y)
-    var_ypred <- matrixStats::rowVars(ypred)
-    var_e <- matrixStats::rowVars(e)
-    R2 <- as.matrix(var_ypred / (var_ypred + var_e))
-    colnames(R2) <- "R2"
+    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+    .bayes_R2 <- function(y, ypred) {
+      y <- as.numeric(y)
+      e <- - 1 * sweep(ypred, 2, y)
+      var_ypred <- matrixStats::rowVars(ypred)
+      var_e <- matrixStats::rowVars(e)
+      return(as.matrix(var_ypred / (var_ypred + var_e)))
+    }
+    if (is.matrix(ypred)) {
+      if (!length(resp)) resp <- ""
+      resp <- usc(resp)
+      y <- sdata[[paste0("Y", resp)]]
+      R2 <- .bayes_R2(y, ypred)
+    } else {
+      resp <- usc(dimnames(ypred)[[3]])
+      R2 <- named_list(resp)
+      for (i in seq_along(R2)) {
+        y <- as.numeric(sdata[[paste0("Y", resp[i])]])
+        R2[[i]] <- .bayes_R2(y, ypred[, , i])
+      }
+      R2 <- do.call(cbind, R2)
+    }
+    colnames(R2) <- paste0("R2", resp)
   }
   if (summary) {
     R2 <- get_summary(R2, probs = probs, robust = robust)
-    rownames(R2) <- "R2"
   }
   R2
 }
