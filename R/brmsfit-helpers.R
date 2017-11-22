@@ -590,12 +590,15 @@ prepare_family <- function(x) {
   family
 }
 
-validate_resp <- function(resp, valid_resps) {
+validate_resp <- function(resp, valid_resps, multiple = TRUE) {
   # validate the 'resp' argument of 'predict' and related methods
   if (length(resp)) {
     if (!all(resp %in% valid_resps)) {
       stop2("Invalid argument 'resp'. Valid response ",
             "variables are: ", collapse_comma(valid_resps))
+    }
+    if (!multiple) {
+      resp <- as_one_character(resp)
     }
   } else {
     resp <- valid_resps
@@ -614,25 +617,16 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   #   eta with possibly reordered columns
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
   if (!is.null(old_order) && !sort) {
-    N <- length(old_order)
-    if (ncol(eta) %% N != 0) {
-      # for compatibility with MV models fitted before brms 1.0.0
-      stopifnot(N %% ncol(eta) == 0)
-      old_order <- old_order[seq_len(ncol(eta))]
-    }
-    if (N < ncol(eta)) {
-      # should occur for multivariate models only
-      nresp <- ncol(eta) / N
-      old_order <- rep(old_order, nresp)
-      old_order <- old_order + rep(0:(nresp - 1) * N, each = N)
-    }
-    if (length(dim(eta)) == 3L) {
-      eta <- eta[, old_order, , drop = FALSE]   
+    if (isTRUE(length(old_order) == ncol(eta))) {
+      if (length(dim(eta)) == 3L) {
+        eta <- eta[, old_order, , drop = FALSE]   
+      } else {
+        eta <- eta[, old_order, drop = FALSE]   
+      }
     } else {
-      eta <- eta[, old_order, drop = FALSE]   
+      warning2("Cannot recover the original observation order.")
     }
   }
-  colnames(eta) <- NULL
   eta
 }
 

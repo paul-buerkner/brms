@@ -2533,26 +2533,33 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                allow_new_levels = FALSE, 
                                sample_new_levels = "uncertainty", 
-                               new_objects = list(),
-                               incl_autocor = TRUE, subset = NULL,
-                               nsamples = NULL, nug = NULL, summary = TRUE, 
+                               new_objects = list(), incl_autocor = TRUE, 
+                               resp = NULL, subset = NULL, nsamples = NULL, 
+                               nug = NULL, summary = TRUE, 
                                robust = FALSE, probs = c(0.025, 0.975), 
                                log = FALSE, ...) {
-  # TODO: fix for multivariate models
-  if (!is.mixfamily(family(x))) {
-    stop2("Method 'pp_mixture' can only be applied on mixture models.")
-  }
+  stopifnot_resp(x, resp)
   contains_samples(x)
   x <- restructure(x)
+  if (is_mv(x)) {
+    resp <- validate_resp(resp, x$formula$responses, multiple = FALSE)
+    family <- x$family[[resp]]
+  } else {
+    family <- x$family
+  }
+  if (!is.mixfamily(family)) {
+    stop2("Method 'pp_mixture' can only be applied on mixture models.")
+  }
   draws_args <- nlist(
     x, newdata, re_formula, allow_new_levels, incl_autocor, 
     sample_new_levels, new_objects, subset, nsamples, nug,
-    check_response = TRUE
+    resp, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
+  stopifnot(is.brmsdraws(draws))
   draws$pp_mixture <- TRUE
   
-  dpars <- intersect(valid_dpars(family(x)), names(draws))
+  dpars <- intersect(valid_dpars(family), names(draws))
   for (dp in dpars) {
     if (is.list(draws[[dp]])) {
       draws[[dp]] <- get_dpar(draws[[dp]])
@@ -2562,9 +2569,8 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   loglik <- lapply(seq_len(N), loglik_mixture, draws = draws)
   loglik <- do.call(abind, c(loglik, along = 3))
   loglik <- aperm(loglik, c(1, 3, 2))
-  old_order <- attr(draws$data, "old_order")
-  # do not reorder loglik for ARMA covariance models
-  sort <- use_cov(x$autocor)
+  old_order <- draws$old_order
+  sort <- isTRUE(ncol(loglik) != length(old_order))
   loglik <- reorder_obs(loglik, old_order, sort = sort)
   if (!log) {
     loglik <- exp(loglik)
