@@ -324,16 +324,15 @@ fitted_trunc_gaussian <- function(draws, lb, ub) {
 }
 
 fitted_trunc_student <- function(draws, lb, ub) {
-  zlb <- (lb - draws$dpars$mu) / draws$dpars$sigma
-  zub <- (ub - draws$dpars$mu) / draws$dpars$sigma
+  zlb <- with(draws$dpars, (lb - mu) / sigma)
+  zub <- with(draws$dpars, (ub - mu) / sigma)
+  nu <- draws$dpars$nu
   # see Kim 2008: Moments of truncated Student-t distribution
-  G1 <- with(draws,
-    gamma((nu - 1) / 2) * nu^(nu / 2) / 
-     (2 * (pt(zub, df = nu) - pt(zlb, df = nu))
-      * gamma(nu / 2) * gamma(0.5))
-  )
-  A <- with(draws, (nu + zlb^2) ^ (-(nu - 1) / 2))
-  B <- with(draws, (nu + zub^2) ^ (-(nu - 1) / 2))
+  G1 <- gamma((nu - 1) / 2) * nu^(nu / 2) / 
+    (2 * (pt(zub, df = nu) - pt(zlb, df = nu))
+     * gamma(nu / 2) * gamma(0.5))
+  A <- (nu + zlb^2) ^ (-(nu - 1) / 2)
+  B <- (nu + zub^2) ^ (-(nu - 1) / 2)
   trunc_zmean <- G1 * (A - B)
   draws$dpars$mu + trunc_zmean * draws$dpars$sigma 
 }
@@ -409,9 +408,6 @@ fitted_trunc_negbinomial <- function(draws, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- 3 * max(draws$dpars$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  draws$dpars$shape <- get_shape(
-    draws$dpars$shape, data = draws$data, dim = dim_mu(draws)
-  )
   args <- list(mu = draws$dpars$mu, size = draws$dpars$shape)
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }

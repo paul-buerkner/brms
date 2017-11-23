@@ -136,18 +136,20 @@ predict_student_mv <- function(i, draws, ...) {
 predict_gaussian_cov <- function(i, draws, ...) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  mu <- get_dpar(draws, "mu", i = obs)
+  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   args <- list(
     sigma = get_dpar(draws, "sigma", i = obs),
     se = draws$data$se[obs], nrows = length(obs)
   )
-  if (!is.null(draws$ar) && is.null(draws$ma)) {
-    args$ar <- draws$ac$ar
+  ar <- draws$ac$ar
+  ma <- draws$ac$ma
+  if (!is.null(ar) && is.null(ma)) {
+    args$ar <- ar
     Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ar) && !is.null(draws$ma)) {
-    args$ma <- draws$ac$ma
+  } else if (is.null(ar) && !is.null(ma)) {
+    args$ma <- ma
     Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else if (!is.null(draws$ar) && !is.null(draws$ma)) {
+  } else if (!is.null(ar) && !is.null(ma)) {
     args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   } else {
@@ -161,29 +163,29 @@ predict_gaussian_cov <- function(i, draws, ...) {
 
 predict_student_cov <- function(i, draws, ...) {
   # currently, only ARMA1 processes are implemented
-  obs <- with(draws$data, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  mu <- get_dpar(draws, "mu", i = obs)
+  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(
     sigma = get_dpar(draws, "sigma", i = obs), 
     se = draws$data$se[obs], nrows = length(obs)
   )
-  if (!is.null(draws$ar) && is.null(draws$ma)) {
-    args$ar <- draws$ar
+  ar <- draws$ac$ar
+  ma <- draws$ac$ma
+  if (!is.null(ar) && is.null(ma)) {
+    args$ar <- ar
     Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ar) && !is.null(draws$ma)) {
-    args$ma <- draws$ma
+  } else if (is.null(ar) && !is.null(ma)) {
+    args$ma <- ma
     Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else if (!is.null(draws$ar) && !is.null(draws$ma)) {
-    args[c("ar", "ma")] <- draws[c("ar", "ma")]
+  } else if (!is.null(ar) && !is.null(ma)) {
+    args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   } else {
     Sigma <- do.call(get_cov_matrix_ident, args)
   }
-  nu <- get_dpar(draws, "nu", i = i)
+  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
+  nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   .fun <- function(s) {
-    rmulti_student_t(
-      1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ]
-    )
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
@@ -191,7 +193,7 @@ predict_student_cov <- function(i, draws, ...) {
 predict_gaussian_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_gaussian_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu, Sigma = Sigma)
@@ -204,7 +206,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
 predict_student_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_student_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
     mu <- as.numeric(solve(W_new) %*% mu[s, ])
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu, Sigma = Sigma)
@@ -218,7 +220,7 @@ predict_student_lagsar <- function(i, draws, ...) {
 predict_gaussian_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_gaussian_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma)
   }
@@ -230,7 +232,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
 predict_student_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict_student_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
+    W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
     Sigma <- solve(crossprod(W_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu[s, ], Sigma = Sigma)
   }
@@ -242,19 +244,19 @@ predict_student_errorsar <- function(i, draws, ...) {
 
 predict_gaussian_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
+  mu <- as.matrix(get_dpar(draws, "mu"))
   .fun <- function(s) {
-    rmulti_normal(1, mu = mu[s, ], Sigma = draws$data$V)
+    rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
 
 predict_student_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
-  nu <- get_dpar(draws, "nu")
+  mu <- as.matrix(get_dpar(draws, "mu"))
+  nu <- as.matrix(get_dpar(draws, "nu"))
   .fun <- function(s) {
-    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$data$V)
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
@@ -274,7 +276,7 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
 predict_bernoulli <- function(i, draws, ...) {
   # truncation not useful
   mu <- get_dpar(draws, "mu", i = i)
-  rbinom(length(mu), size = 1, prob = "mu")
+  rbinom(length(mu), size = 1, prob = mu)
 }
 
 predict_poisson <- function(i, draws, ntrys = 5, ...) {
@@ -426,7 +428,7 @@ predict_asym_laplace <- function(i, draws, ...) {
   args <- list(
     mu = get_dpar(draws, "mu", i = i), 
     sigma = get_dpar(draws, "sigma", i = i),
-    quantile = get_dpar(draws$dpars$quantile, i = i)
+    quantile = get_dpar(draws, "quantile", i = i)
   )
   rng_continuous(
     nrng = draws$nsamples, dist = "asym_laplace", args = args, 

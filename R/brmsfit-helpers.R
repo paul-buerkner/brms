@@ -418,8 +418,9 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   if (is.matrix(out) && ncol(out) == 1L) {
     out <- as.vector(out)
   }
-  if (dpar == "sigma" && !grepl("_cov$", draws$f$fun)) {
-    if (!isTRUE(attr(x, "se_added"))) {
+  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
+    # 'se' will be incorporated directly into 'sigma'
+    if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
       out <- sqrt(get_se(draws, i = i)^2 + out^2)
       # make sure not to add 'se' twice
       attr(out, "se_added") <- TRUE
@@ -568,7 +569,7 @@ apply_dpar_ilink <- function(dpar, family) {
 choose_N <- function(draws) {
   # choose N to be used in predict and log_lik
   stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
-  if (!is.null(draws$data$N_tg)) draws$data$N_tg else draws$nobs
+  if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
 }
 
 prepare_family <- function(x) {

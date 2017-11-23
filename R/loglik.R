@@ -141,7 +141,7 @@ loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(
-    sigma = get_dpar(draws, "sigma", i = obs),
+    sigma = get_dpar(draws, "sigma", obs),
     se = draws$data$se[obs], nrows = length(obs)
   )
   if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
@@ -154,7 +154,8 @@ loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
     args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   }
-  mu <- get_dpar(draws, "mu", obs)
+  # make sure par[s, ] is valid even if obs if of length 1
+  mu <- as.matrix(get_dpar(draws, "mu", obs))
   # weights, truncation and censoring not yet allowed
   sapply(1:draws$nsamples, function(s)
     dmulti_normal(
@@ -168,7 +169,7 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(
-    sigma = get_dpar(draws, "sigma", i = obs),
+    sigma = get_dpar(draws, "sigma", obs),
     se = draws$data$se[obs], nrows = length(obs)
   )
   if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
@@ -181,8 +182,9 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
     args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   }
-  mu <- get_dpar(draws, "mu", obs)
-  nu <- get_dpar(draws, "nu", obs)
+  # make sure par[s, ] is valid even if obs if of length 1
+  mu <- as.matrix(get_dpar(draws, "mu", obs))
+  nu <- as.matrix(get_dpar(draws, "nu", obs))
   # weights, truncation and censoring not yet allowed
   sapply(1:draws$nsamples, function(s)
     dmulti_student_t(
@@ -256,23 +258,23 @@ loglik_student_errorsar <- function(i, draws, data = data.frame()) {
 
 loglik_gaussian_fixed <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
+  mu <- as.matrix(get_dpar(draws, "mu"))
   ulapply(1:draws$nsamples, function(s) 
     dmulti_normal(
       draws$data$Y, mu = mu[s, ], 
-      Sigma = draws$data$V, log = TRUE
+      Sigma = draws$ac$V, log = TRUE
     )
   )
 }
 
 loglik_student_fixed <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
-  nu <- get_dpar(draws, "nu")
+  mu <- as.matrix(get_dpar(draws, "mu"))
+  nu <- as.matrix(get_dpar(draws, "nu"))
   sapply(1:draws$nsamples, function(s) 
     dmulti_student_t(
       draws$data$Y, df = nu[s, ], mu = mu[s, ],
-      Sigma = draws$data$V, log = TRUE
+      Sigma = draws$ac$V, log = TRUE
     )
   )
 }
@@ -557,7 +559,7 @@ loglik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
 
 loglik_categorical <- function(i, draws, data = data.frame()) {
   if (draws$f$link == "logit") {
-    p <- cbind(rep(0, draws$nsamples), get_dpar(draws, "mu", i)[, 1, ])
+    p <- cbind(rep(0, draws$nsamples), get_dpar(draws, "mu", i))
     out <- p[, draws$data$Y[i]] - log(rowSums(exp(p)))
   } else {
     stop(paste("Link", draws$f$link, "not supported"))

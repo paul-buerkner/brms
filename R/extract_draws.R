@@ -602,6 +602,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
   draws <- list()
   autocor <- bterms$autocor
   p <- usc(combine_prefix(bterms))
+  draws$N_tg <- sdata[[paste0("N_tg", p)]]
   if (get_ar(autocor) || get_ma(autocor)) {
     draws$Y <- sdata[[paste0("Y", p)]]
     draws$J_lag <- sdata[[paste0("J_lag", p)]]
@@ -656,7 +657,7 @@ extract_draws_data <- function(bterms, sdata, ...) {
   # extract data mainly related to the response variable
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
-    "dec", "cens", "rcens", "lb", "ub", "N_tg"
+    "dec", "cens", "rcens", "lb", "ub"
   )
   resp <- usc(combine_prefix(bterms))
   draws <- sdata[paste0(vars, resp)]
