@@ -22,12 +22,7 @@ update_data <- function(data, bterms, na.action = na.omit,
   if (is.null(knots)) {
     knots <- attr(data, "knots", TRUE)
   }
-  if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
-    # to avoid error described in #30
-    # brms.frame class is deprecated as of brms > 0.7.0
-    data <- as.data.frame(data)
-  }
-  if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
+  if (!isTRUE(attr(data, "brmsframe"))) {
     data <- try(as.data.frame(data, silent = TRUE))
     if (is(data, "try-error")) {
       stop2("Argument 'data' must be coercible to a data.frame.")
@@ -37,11 +32,6 @@ update_data <- function(data, bterms, na.action = na.omit,
     }
     bterms$allvars <- terms(bterms$allvars)
     attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
-    # if (isTRUE(attr(bterms$formula, "old_mv"))) {
-    #   data <- melt_data(data, bterms = bterms)
-    # } else {
-    #   check_data_old_mv(data, bterms = bterms)
-    # }
     data <- data_rsv_intercept(data, bterms = bterms)
     missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
     if (length(missing_vars)) {
@@ -68,86 +58,6 @@ update_data <- function(data, bterms, na.action = na.omit,
     attr(data, "brmsframe") <- TRUE
   }
   data
-}
-
-melt_data <- function(data, bterms) {
-  # add reserved variables to the data
-  # and transform it into long format for mv models
-  # DEPRECATED as of brms 1.0.0
-  # Args:
-  #   data: a data.frame
-  #   bterms: object of class brmsterms
-  family <- bterms$family
-  response <- bterms$response
-  nresp <- length(response)
-  if (is_mv(family, response = response)) {
-    if (!is(data, "data.frame")) {
-      stop2("Argument 'data' must be a data.frame for this model.")
-    }
-    # only keep variables that are relevant for the model
-    rel_vars <- c(all.vars(attr(terms(bterms$allvars), "variables")), 
-                  all.vars(bterms$respform))
-    data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
-    rsv_vars <- intersect(c("trait", "response"), names(data))
-    if (length(rsv_vars)) {
-      rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-      stop2(paste(rsv_vars, "is a reserved variable name."))
-    }
-    if (is_categorical(family)) {
-      # no parameters are modeled for the reference category
-      response <- response[-1]
-    }
-    # prepare the response variable
-    # use na.pass as otherwise cbind will complain
-    # when data contains NAs in the response
-    nobs <- nrow(data)
-    trait <- factor(rep(response, each = nobs), levels = response)
-    new_cols <- data.frame(trait = trait)
-    model_response <- model.response(model.frame(
-      bterms$respform, data = data, na.action = na.pass))
-    # allow to remove NA responses later on
-    rows2remove <- which(!complete.cases(model_response))
-    if (is_linear(family)) {
-      model_response[rows2remove, ] <- NA
-      model_response <- as.vector(model_response)
-    } else if (is_categorical(family)) {
-      model_response[rows2remove] <- NA
-    } else if (is_forked(family)) {
-      model_response[rows2remove] <- NA
-      rsv_vars <- intersect(c(response[2], "main", "spec"), names(data))
-      if (length(rsv_vars)) {
-        rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-        stop2(paste(rsv_vars, "is a reserved variable name."))
-      }
-      one <- rep(1, nobs)
-      zero <- rep(0, nobs)
-      new_cols$main <- c(one, zero)
-      new_cols$spec <- c(zero, one)
-      # dummy responses not actually used in Stan
-      model_response <- rep(model_response, 2)
-    }
-    new_cols$response <- model_response
-    old_data <- data
-    data <- replicate(length(response), old_data, simplify = FALSE)
-    data <- cbind(do.call(rbind, data), new_cols)
-    data <- fix_factor_contrasts(data, optdata = old_data)
-  }
-  data
-}
-
-check_data_old_mv <- function(data, bterms) {
-  # check if the deprecated MV syntax was used in a new model
-  # Args:
-  #   see update_data
-  rsv_vars <- rsv_vars(bterms, incl_intercept = FALSE)
-  rsv_vars <- setdiff(rsv_vars, names(data))
-  used_rsv_vars <- intersect(rsv_vars, all.vars(bterms$allvars))
-  if (length(used_rsv_vars)) {
-    stop2("It is no longer possible (and necessary) to specify models ", 
-          "using the multivariate 'trait' syntax. See help(brmsformula) ",
-          "for details on the new syntax.")
-  }
-  invisible(NULL)
 }
 
 data_rsv_intercept <- function(data, bterms) {
