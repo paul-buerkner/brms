@@ -2056,7 +2056,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   
   arg_names <- c(
-    "prior", "nonlinear", "threshold", "cov_ranef", 
+    "prior", "threshold", "cov_ranef", 
     "sparse", "sample_prior", "stan_funs"
   )
   new_args <- intersect(arg_names, names(dots))

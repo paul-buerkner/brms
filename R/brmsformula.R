@@ -663,10 +663,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, 
-               autocor = NULL, nl = NULL, nonlinear = NULL) {
+               autocor = NULL, nl = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., flist = flist, family = family,
-              autocor = autocor, nl = nl, nonlinear = nonlinear)
+              autocor = autocor, nl = nl)
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
@@ -1113,17 +1113,17 @@ amend_formula.default <- function(formula, ...) {
 
 #' @export
 amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
-                                      autocor = NULL, threshold = NULL,
-                                      nonlinear = NULL, ...) {
+                                      autocor = NULL, threshold = NULL, ...) {
   # incorporate additional arguments into the model formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
   #   data: optional data.frame
   #   family: optional object of class 'family'
-  #   nonlinear, threshold: deprecated arguments of brm
+  #   autocor: optional object of class 'cor_brms'
+  #   threshold: (deprecated); threshold type for ordinal models
   # Returns:
   #   a brmsformula object compatible with the current version of brms
-  out <- bf(formula, nonlinear = nonlinear)
+  out <- bf(formula)
   if (is.null(out$family)) {
     out <- bf(out, family = family)
   }
