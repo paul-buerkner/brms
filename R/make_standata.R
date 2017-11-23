@@ -27,8 +27,7 @@
 #'          
 #' @export
 make_standata <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, 
-                          nonlinear = NULL, cov_ranef = NULL, 
+                          prior = NULL, autocor = NULL, cov_ranef = NULL,
                           sample_prior = c("no", "yes", "only"), 
                           knots = NULL, check_response = TRUE,
                           only_response = FALSE, control = list(), 
@@ -48,8 +47,7 @@ make_standata <- function(formula, data, family = gaussian(),
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   
   formula <- amend_formula(
-    formula, data = data, family = family, 
-    autocor = autocor, nonlinear = nonlinear
+    formula, data = data, family = family, autocor = autocor
   )
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)

@@ -5,13 +5,12 @@
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
-  nonlinear = NULL, threshold = c("flexible", "equidistant"),
-  cov_ranef = NULL, sample_prior = c("no", "yes", "only"), sparse = FALSE,
-  knots = NULL, stan_funs = NULL, fit = NA, save_ranef = TRUE,
-  save_mevars = FALSE, save_all_pars = FALSE, inits = "random",
-  chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
-  cores = getOption("mc.cores", 1L), control = NULL,
-  algorithm = c("sampling", "meanfield", "fullrank"),
+  threshold = c("flexible", "equidistant"), cov_ranef = NULL,
+  sample_prior = c("no", "yes", "only"), sparse = FALSE, knots = NULL,
+  stan_funs = NULL, fit = NA, save_ranef = TRUE, save_mevars = FALSE,
+  save_all_pars = FALSE, inits = "random", chains = 4, iter = 2000,
+  warmup = floor(iter/2), thin = 1, cores = getOption("mc.cores", 1L),
+  control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
   future = getOption("future", FALSE), silent = TRUE, seed = 12345,
   save_model = NULL, save_dso = TRUE, ...)
 }
@@ -50,19 +49,6 @@ the correlation structure within the response variable
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
 corresponding to no correlations.}
-
-\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
-linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary formula. 
-If not \code{NULL}, \code{formula} is treated as a non-linear model
-and \code{nonlinear} should contain a formula for each non-linear 
-parameter, which has the parameter on the left hand side and its
-linear predictor on the right hand side.
-Alternatively, it can be a single formula with all non-linear
-parameters on the left hand side (separated by a \code{+}) and a
-common linear predictor on the right hand side.
-As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-parameters directly within \code{formula}.}
 
 \item{threshold}{(Deprecated) A character string indicating the type 
 of thresholds (i.e. intercepts) used in an ordinal model. 

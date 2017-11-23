@@ -20,7 +20,7 @@
 #'
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, nonlinear = NULL,
+                          prior = NULL, autocor = NULL,
                           threshold = c("flexible", "equidistant"),
                           sparse = FALSE,  cov_ranef = NULL, 
                           sample_prior = c("no", "yes", "only"), 
@@ -35,8 +35,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   # some input checks
   formula <- amend_formula(
     formula, data = data, family = family, 
-    autocor = autocor, threshold = threshold, 
-    nonlinear = nonlinear
+    autocor = autocor, threshold = threshold
   )
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)

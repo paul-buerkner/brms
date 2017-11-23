@@ -6,9 +6,9 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
-  sample_prior = c("no", "yes", "only"), knots = NULL,
-  check_response = TRUE, only_response = FALSE, control = list(), ...)
+  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
+  knots = NULL, check_response = TRUE, only_response = FALSE,
+  control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -45,19 +45,6 @@ the correlation structure within the response variable
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
 corresponding to no correlations.}
-
-\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
-linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary formula. 
-If not \code{NULL}, \code{formula} is treated as a non-linear model
-and \code{nonlinear} should contain a formula for each non-linear 
-parameter, which has the parameter on the left hand side and its
-linear predictor on the right hand side.
-Alternatively, it can be a single formula with all non-linear
-parameters on the left hand side (separated by a \code{+}) and a
-common linear predictor on the right hand side.
-As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-parameters directly within \code{formula}.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 

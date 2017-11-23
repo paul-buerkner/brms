@@ -47,9 +47,11 @@
 #'   treated as specifying a non-linear model. By default, \code{formula} 
 #'   is treated as an ordinary linear model formula.
 #' @param family Same argument as in \code{\link[brms:brm]{brm}}.
-#'   If \code{family} is specified \code{brmsformula}, it will overwrite
-#'   the value specified in \code{\link[brms:brm]{brm}}.
-#' @inheritParams brm
+#'   If \code{family} is specified in \code{brmsformula}, it will 
+#'   overwrite the value specified in \code{\link[brms:brm]{brm}}.
+#' @param autocor Same argument as in \code{\link[brms:brm]{brm}}.
+#'   If \code{autocor} is specified in \code{brmsformula}, it will 
+#'   overwrite the value specified in \code{\link[brms:brm]{brm}}.
 #' 
 #' @return An object of class \code{brmsformula}, which
 #'   is essentially a \code{list} containing all model
@@ -523,26 +525,14 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        autocor = NULL, nl = NULL, nonlinear = NULL) {
+                        autocor = NULL, nl = NULL) {
   # ensure backwards compatibility
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
   }
-  if (!is.null(nonlinear)) {
-    warning2(
-      "Argument 'nonlinear' is deprecated. ", 
-      "See help(brmsformula) for the new way ", 
-      "of specifying non-linear models."
-    )
-  }
   old_nonlinear <- attr(formula, "nonlinear")
-  if (is.list(old_nonlinear)) {
-    nonlinear <- c(old_nonlinear, nonlinear)
-  }
-  if (length(nonlinear)) {
-    nl <- TRUE
-  }
+  if (length(old_nonlinear)) nl <- TRUE
   old_forms <- rmNULL(attributes(formula)[dpars()])
   attributes(formula)[c(dpars(), "nonlinear")] <- NULL
   
@@ -555,7 +545,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   out$pforms[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments
-  dots <- c(out$pforms, out$pfix, list(...), flist, nonlinear)
+  dots <- c(out$pforms, out$pfix, list(...), flist, old_nonlinear)
   dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
   dots <- unlist(dots, recursive = FALSE)
   forms <- list()

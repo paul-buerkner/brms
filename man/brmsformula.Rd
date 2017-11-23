@@ -6,7 +6,7 @@
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
 brmsformula(formula, ..., flist = NULL, family = NULL, autocor = NULL,
-  nl = NULL, nonlinear = NULL)
+  nl = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -50,32 +50,16 @@ See 'Details' for more explanation.}
 same way as formulas passed via the \code{...} argument.}
 
 \item{family}{Same argument as in \code{\link[brms:brm]{brm}}.
-If \code{family} is specified \code{brmsformula}, it will overwrite
-the value specified in \code{\link[brms:brm]{brm}}.}
+If \code{family} is specified in \code{brmsformula}, it will 
+overwrite the value specified in \code{\link[brms:brm]{brm}}.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure within the response variable 
-(i.e., the 'autocorrelation'). 
-See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
+\item{autocor}{Same argument as in \code{\link[brms:brm]{brm}}.
+If \code{autocor} is specified in \code{brmsformula}, it will 
+overwrite the value specified in \code{\link[brms:brm]{brm}}.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
 is treated as an ordinary linear model formula.}
-
-\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
-linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary formula. 
-If not \code{NULL}, \code{formula} is treated as a non-linear model
-and \code{nonlinear} should contain a formula for each non-linear 
-parameter, which has the parameter on the left hand side and its
-linear predictor on the right hand side.
-Alternatively, it can be a single formula with all non-linear
-parameters on the left hand side (separated by a \code{+}) and a
-common linear predictor on the right hand side.
-As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-parameters directly within \code{formula}.}
 }
 \value{
 An object of class \code{brmsformula}, which

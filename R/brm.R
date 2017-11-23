@@ -44,18 +44,6 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to \code{NULL}, 
 #'   corresponding to no correlations.
-#' @param nonlinear (Deprecated) An optional list of formulas, specifying 
-#'   linear models for non-linear parameters. If \code{NULL} (the default)
-#'   \code{formula} is treated as an ordinary formula. 
-#'   If not \code{NULL}, \code{formula} is treated as a non-linear model
-#'   and \code{nonlinear} should contain a formula for each non-linear 
-#'   parameter, which has the parameter on the left hand side and its
-#'   linear predictor on the right hand side.
-#'   Alternatively, it can be a single formula with all non-linear
-#'   parameters on the left hand side (separated by a \code{+}) and a
-#'   common linear predictor on the right hand side.
-#'   As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-#'   parameters directly within \code{formula}.
 #' @param threshold (Deprecated) A character string indicating the type 
 #'   of thresholds (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
@@ -350,8 +338,7 @@
 #' @import stats   
 #' @export 
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, nonlinear = NULL, 
-                threshold = c("flexible", "equidistant"), 
+                autocor = NULL, threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, sample_prior = c("no", "yes", "only"), 
                 sparse = FALSE, knots = NULL, stan_funs = NULL, 
                 fit = NA, save_ranef = TRUE, save_mevars = FALSE, 
@@ -395,8 +382,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # build new model
     formula <- amend_formula(
       formula, data = data, family = family, 
-      autocor = autocor, threshold = threshold, 
-      nonlinear = nonlinear
+      autocor = autocor, threshold = threshold
     )
     if (is.mvbrmsformula(formula)) {
       family <- lapply(formula$forms, "[[", "family")

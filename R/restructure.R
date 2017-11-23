@@ -17,9 +17,6 @@
 #' @export
 restructure <- function(x, rstr_summary = FALSE) {
   stopifnot(is.brmsfit(x))
-  if (isTRUE(attr(x, "restructured"))) {
-    return(x)  # already restructured
-  }
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
     x$version <- list(brms = package_version("0.9.1"))
@@ -28,94 +25,92 @@ restructure <- function(x, rstr_summary = FALSE) {
     x$version <- list(brms = x$version)
   }
   version <- x$version$brms
-  if (version < utils::packageVersion("brms")) {
+  if (version >= "2.0.0" || isTRUE(attr(x, "restructured"))) {
+    return(x) 
+  }
+  if (version < "1.0.0") {
+    warning2(
+      "Models fitted with brms < 1.0 are no longer offically ",
+      "supported and post-processing them may fail. I recommend ", 
+      "refitting the model with the latest version of brms."
+    )
+  }
+  if (is_ordinal(x$family) && is.null(x$family$threshold)) {
     # slot 'threshold' deprecated as of brms > 1.7.0
-    if (is_ordinal(x$family) && is.null(x$family$threshold)) {
-      x$family$threshold <- x$threshold
-    }
-    x$threshold <- NULL
-    # slot 'nonlinear' deprecated as of brms > 0.9.1
+    x$family$threshold <- x$threshold
+  }
+  x$nonlinear <- x$partial <- x$threshold <- NULL
+  slot_missing <- !all(c("family", "autocor") %in% names(x$formula))
+  if (is.formula(x$formula) || slot_missing) {
     x$formula <- SW(amend_formula(
       formula(x), data = model.frame(x), 
-      family = family(x), autocor = x$autocor,
-      nonlinear = x$nonlinear
-    ))
-    x$nonlinear <- x$partial <- NULL
-    x$formula[["old_mv"]] <- is_old_mv(x)
-    bterms <- parse_bf(formula(x))
-    if (!isTRUE(x$formula[["old_mv"]])) {
-      x$data <- rm_attr(x$data, "brmsframe")
-      x$data <- update_data(x$data, bterms) 
-    }
-    x$ranef <- tidy_ranef(bterms, model.frame(x))
-    if ("prior_frame" %in% class(x$prior)) {
-      class(x$prior) <- c("brmsprior", "data.frame") 
-    }
-    if (is(x$autocor, "cov_fixed")) {
-      # deprecated as of brms 1.4.0
-      class(x$autocor) <- "cor_fixed"
-    }
-    if (version <= "0.9.1") {
-      # update gaussian("log") to lognormal() family
-      nresp <- length(bterms$response)
-      if (is_old_lognormal(x$family, nresp = nresp, version = version)) {
-        x$family <- x$formula$family <- lognormal()
-      }
-    }
-    if (version <= "0.10.0.9000") {
-      if (length(bterms$dpars$mu$nlpars)) {
-        # nlpar and group have changed positions
-        change <- change_old_re(x$ranef, pars = parnames(x),
-                                dims = x$fit@sim$dims_oi)
-        x <- do_renaming_old(x, change)
-      }
-    }
-    if (version < "1.0.0") {
-      # double underscores were added to group-level parameters
-      change <- change_old_re2(x$ranef, pars = parnames(x),
-                               dims = x$fit@sim$dims_oi)
-      x <- do_renaming_old(x, change)
-    }
-    if (version <= "1.0.1") {
-      # names of spline parameters had to be changed after
-      # allowing for multiple covariates in one spline term
-      change <- change_old_sm(bterms, pars = parnames(x),
+      family = family(x), autocor = x$autocor
+    )) 
+  }
+  bterms <- parse_bf(formula(x))
+  x$data <- rm_attr(x$data, "brmsframe")
+  x$data <- update_data(x$data, bterms) 
+  x$ranef <- tidy_ranef(bterms, model.frame(x))
+  if ("prior_frame" %in% class(x$prior)) {
+    class(x$prior) <- c("brmsprior", "data.frame") 
+  }
+  if (is(x$autocor, "cov_fixed")) {
+    # deprecated as of brms 1.4.0
+    class(x$autocor) <- "cor_fixed"
+  }
+  if (version <= "0.10.0.9000") {
+    if (length(bterms$dpars$mu$nlpars)) {
+      # nlpar and group have changed positions
+      change <- change_old_re(x$ranef, pars = parnames(x),
                               dims = x$fit@sim$dims_oi)
       x <- do_renaming_old(x, change)
     }
-    if (version <= "1.2.0") {
-      x$ranef$type[x$ranef$type == "mono"] <- "mo"
-      x$ranef$type[x$ranef$type == "cse"] <- "cs"
+  }
+  if (version < "1.0.0") {
+    # double underscores were added to group-level parameters
+    change <- change_old_re2(x$ranef, pars = parnames(x),
+                             dims = x$fit@sim$dims_oi)
+    x <- do_renaming_old(x, change)
+  }
+  if (version <= "1.0.1") {
+    # names of spline parameters had to be changed after
+    # allowing for multiple covariates in one spline term
+    change <- change_old_sm(bterms, pars = parnames(x),
+                            dims = x$fit@sim$dims_oi)
+    x <- do_renaming_old(x, change)
+  }
+  if (version <= "1.2.0") {
+    x$ranef$type[x$ranef$type == "mono"] <- "mo"
+    x$ranef$type[x$ranef$type == "cse"] <- "cs"
+  }
+  if (version <= "1.8.0") {
+    att <- attributes(x$exclude)
+    if (is.null(att$save_ranef)) {
+      attr(x$exclude, "save_ranef") <- 
+        any(grepl("^r_", parnames(x))) || !nrow(x$ranef)
     }
-    if (version <= "1.8.0") {
-      att <- attributes(x$exclude)
-      if (is.null(att$save_ranef)) {
-        attr(x$exclude, "save_ranef") <- 
-          any(grepl("^r_", parnames(x))) || !nrow(x$ranef)
-      }
-      if (is.null(att$save_mevars)) {
-        attr(x$exclude, "save_mevars") <- 
-          any(grepl("^Xme_", parnames(x)))
-      }
+    if (is.null(att$save_mevars)) {
+      attr(x$exclude, "save_mevars") <- 
+        any(grepl("^Xme_", parnames(x)))
     }
-    if (version <= "1.8.0.1") {
-      x$prior[, c("resp", "dpar")] <- ""
-    }
-    if (version <= "1.9.0.3") {
-      # names of monotonic parameters had to be changed after
-      # allowing for interactions in monotonic terms
-      change <- change_old_mo(bterms, x$data, pars = parnames(x))
-      x <- do_renaming_old(x, change)
-    }
-    stan_env <- attributes(x$fit)$.MISC
-    if (rstr_summary && exists("summary", stan_env)) {
-      stan_summary <- get("summary", stan_env)
-      old_parnames <- rownames(stan_summary$msd)
-      if (!identical(old_parnames, parnames(x))) {
-        # do not rename parameters in the cached summary
-        # just let rstan compute the summary again
-        remove("summary", pos = stan_env)
-      }
+  }
+  if (version <= "1.8.0.1") {
+    x$prior[, c("resp", "dpar")] <- ""
+  }
+  if (version <= "1.9.0.3") {
+    # names of monotonic parameters had to be changed after
+    # allowing for interactions in monotonic terms
+    change <- change_old_mo(bterms, x$data, pars = parnames(x))
+    x <- do_renaming_old(x, change)
+  }
+  stan_env <- attributes(x$fit)$.MISC
+  if (rstr_summary && exists("summary", stan_env)) {
+    stan_summary <- get("summary", stan_env)
+    old_parnames <- rownames(stan_summary$msd)
+    if (!identical(old_parnames, parnames(x))) {
+      # do not rename parameters in the cached summary
+      # just let rstan compute the summary again
+      remove("summary", pos = stan_env)
     }
   }
   structure(x, restructured = TRUE)
@@ -382,13 +377,7 @@ do_renaming_old <- function(x, change) {
       # which is used in the bridgesampling package. The code below is
       # only retained for backwards compatibility with older models.
       onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-      if (is.null(onp) || is.na(onp)) {
-        warning2(
-          "Parameter ", change$oldname, " could not be renamed. ",
-          "This should not happen. \nPlease inform me so that ",
-          "I can fix this problem."
-        )
-      } else {
+      if (!(is.null(onp) || is.na(onp))) {
         if (is.null(change$pnames)) {
           # only needed to collapse multiple r_<i> of the same grouping factor
           x$fit@sim$dims_oi[[onp]] <- NULL
