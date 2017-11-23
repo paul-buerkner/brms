@@ -5,8 +5,7 @@
 \title{Extract Model Coefficients}
 \usage{
 \method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), old = FALSE, estimate = c("mean", "median"),
-  ...)
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -24,15 +23,7 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{old}{Logical; indicates if the old implementation
-of this method (prior to version 1.7.0) should be used.
-Defaults to \code{FALSE}.}
-
-\item{estimate}{(Deprecated) The point estimate to be calculated 
-for the group-level effects, either \code{"mean"} or \code{"median"}.}
-
-\item{...}{Further arguments to be passed to the function 
-specified in \code{estimate}.}
+\item{...}{Currently ignored.}
 }
 \value{
 If \code{old} is \code{FALSE}: A list of arrays 
@@ -42,9 +33,6 @@ If \code{old} is \code{FALSE}: A list of arrays
  If \code{summary} is \code{FALSE}, names of the second dimension
  are the factor levels and names of the third dimension are the 
  group-level effects.
- 
- If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
- with factor levels as row names and group-level effects as column names.
 }
 \description{
 Extract model coefficients, which are the sum of population-level 

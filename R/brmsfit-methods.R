@@ -15,16 +15,7 @@ parnames.brmsfit <- function(x, ...) {
 #' @aliases fixef
 #' 
 #' @param object An object of class \code{brmsfit}.
-#' @param old Logical; indicates if the old implementation
-#'  of this method (prior to version 1.7.0) should be used.
-#'  Defaults to \code{FALSE}.
-#' @param estimate (Deprecated) A character vector specifying 
-#'  which coefficients (e.g., \code{"mean"}, \code{"median"}, 
-#'  \code{"sd"}, or \code{"quantile"}) should be calculated 
-#'  for the population-level effects. Only used if \code{old}
-#'  is \code{TRUE}.
-#' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}.
+#' @param ... Currently ignored.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return If \code{summary} is \code{TRUE}, a matrix with one row per 
@@ -46,25 +37,17 @@ parnames.brmsfit <- function(x, ...) {
 #' @export fixef
 #' @importFrom nlme fixef
 fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), old = FALSE, 
-                           estimate = "mean", ...) {
+                           probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   pars <- parnames(object)
   fpars <- pars[grepl(fixef_pars(), pars)]
   if (!length(fpars)) {
     stop2("The model does not contain population-level effects.")
   }
-  if (old) {
-    out <- old_fixef_brmsfit(object, estimate, probs = probs, ...)
-  } else {
-    if (!is_equal(estimate, "mean")) {
-      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
-    }
-    out <- as.matrix(object, pars = fpars, exact_match = TRUE)
-    colnames(out) <- gsub(fixef_pars(), "", fpars)
-    if (summary) {
-      out <- get_summary(out, probs, robust)
-    }
+  out <- as.matrix(object, pars = fpars, exact_match = TRUE)
+  colnames(out) <- gsub(fixef_pars(), "", fpars)
+  if (summary) {
+    out <- get_summary(out, probs, robust)
   }
   out
 }
@@ -119,12 +102,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @inheritParams fixef.brmsfit
-#' @param estimate (Deprecated) The point estimate to be calculated 
-#'  for the group-level effects, either \code{"mean"} or \code{"median"}.
-#' @param var (Deprecated) Logical; indicates if the covariance matrix 
-#'  for each group-level effects should be computed.
-#' @param ... Further arguments to be passed to the function 
-#'  specified in \code{estimate}.
+#' @param ... Currently ignored.
 #'
 #' @return If \code{old} is \code{FALSE}: A list of arrays 
 #'  (one per grouping factor). If \code{summary} is \code{TRUE},
@@ -133,9 +111,6 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #'  If \code{summary} is \code{FALSE}, names of the second dimension
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
-#'  
-#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
-#'  with factor levels as row names and group-level effects as column names.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}   
 #'   
@@ -151,23 +126,11 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @export ranef
 #' @importFrom nlme ranef
 ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                          probs = c(0.025, 0.975), old = FALSE, 
-                          estimate = c("mean", "median"), var = FALSE,
-                          ...) {
+                          probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
-  }
-  if (old) {
-    return(old_ranef_brmsfit(object, estimate, var = var, ...))
-  }
-  estimate <- match.arg(estimate)
-  if (!is_equal(estimate, "mean")) {
-    warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
-  }
-  if (!is_equal(var, FALSE)) {
-    warning2("Argument 'var' is unused unless 'old' is set to TRUE.")
   }
   pars <- parnames(object)
   ranef <- object$ranef
@@ -204,9 +167,6 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
 #'  
-#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
-#'  with factor levels as row names and group-level effects as column names.
-#'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #'  
 #' @examples
@@ -222,16 +182,12 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' 
 #' @export
 coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                         probs = c(0.025, 0.975), old = FALSE, 
-                         estimate = c("mean", "median"), ...) {
+                         probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("No group-level effects detected. Call method ", 
           "'fixef' to access population-level effects.")
-  }
-  if (old) {
-    return(old_coef_brmsfit(object, estimate, ...))
   }
   fixef <- fixef(object, summary = FALSE, ...)
   coef <- ranef(object, summary = FALSE, ...)
@@ -300,17 +256,12 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @inheritParams fixef.brmsfit
 #' @param sigma Ignored (included for compatibility with 
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
-#' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}
+#' @param ... Currently ignored.
 #' 
 #' @return A list of lists (one per grouping factor), each with
 #' three elements: a matrix containing the standard deviations, 
 #' an array containing the correlation matrix, and an array 
 #' containing the covariance matrix with variances on the diagonial.
-#' 
-#' If \code{old} is \code{TRUE}, the returned object is of class 
-#' \code{brmsVarCorr}, which can be coerced to a \code{data.frame} 
-#' by using the \code{as.data.frame} method.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
@@ -327,18 +278,11 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @export VarCorr
 #' @export
 VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
-                            probs = c(0.025, 0.975), old = FALSE,
-                            estimate = "mean", ...) {
+                            probs = c(0.025, 0.975), ...) {
   contains_samples(x)
   x <- restructure(x)
   if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop2("The model does not contain covariance matrices.")
-  }
-  if (old) {
-    return(old_VarCorr_brmsfit(x, estimate, probs = probs, ...))
-  }
-  if (!is_equal(estimate, "mean")) {
-    warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
   }
   .VarCorr <- function(y) {
     # extract samples for sd, cor and cov
