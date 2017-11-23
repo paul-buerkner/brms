@@ -493,6 +493,10 @@ grepl_expr <- function(pattern, expr, ...) {
     length(get_matches_expr(pattern, e, ...)) > 0L))
 }
 
+escape_dot <- function(x) {
+  gsub(".", "\\.", x, fixed = TRUE)
+}
+
 usc <- function(x, pos = c("prefix", "suffix")) {
   # add an underscore to non-empty character strings
   # Args:

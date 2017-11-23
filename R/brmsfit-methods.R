@@ -738,7 +738,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     }
   }
   
-  # fixed effects summary
+  # summary of population-level effects
   fe_pars <- pars[grepl(fixef_pars(), pars)]
   out$fixed <- fit_summary[fe_pars, , drop = FALSE]
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
@@ -749,11 +749,11 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   spec_pars <- pars[grepl(spec_pars, pars)]
   spec_pars <- setdiff(spec_pars, "sigmaLL")
   out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-  if (is_linear(family(object)) && length(bterms$response) > 1L) {
-    sigma_names <- paste0("sigma(", bterms$response, ")")
-    rescor_names <- get_cornames(bterms$response, type = "rescor")   
-    spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
-    spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
+  is_rescor <- grepl("^rescor_", spec_pars)
+  if (any(is_rescor)) {
+    rescor_pars <- spec_pars[is_rescor]
+    rescor_names <- sub("__", ",", sub("__", "(", rescor_pars), ")")
+    spec_pars[is_rescor] <- rescor_names 
   }    
   rownames(out$spec_pars) <- spec_pars
   
@@ -764,19 +764,19 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   
   # summary of group-level effects
   for (g in out$group) {
-    r <- object$ranef[object$ranef$group == g, ]
-    rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-    sd_pars <- paste0("sd_", g, "__", rnames)
-    sd_names <- paste0("sd", "(", rnames ,")")
-    # construct correlation names
-    type <- paste0("cor_", g)
-    all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = type)
-    take <- all_cor_pars %in% parnames(object)
-    cor_pars <- all_cor_pars[take]
-    cor_names <- get_cornames(rnames)[take]
-    # extract sd and cor parameters from the summary
+    gregex <- escape_dot(g)
+    sd_prefix <- paste0("^sd_", gregex)
+    sd_pars <- pars[grepl(sd_prefix, pars)]
+    cor_prefix <- paste0("^cor_", gregex)
+    cor_pars <- pars[grepl(cor_prefix, pars)]
     out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    rownames(out$random[[g]]) <- c(sd_names, cor_names)
+    if (nrow(out$random[[g]])) {
+      sd_names <- sub(sd_prefix, "sd", sd_pars)
+      sd_names <- sub("__", "(", sd_names)
+      cor_names <- sub(cor_prefix, "cor", cor_pars)
+      cor_names <- sub("__", ",", sub("__", "(", cor_names))
+      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")") 
+    }
   }
   # summary of smooths
   sm_pars <- pars[grepl("^sds_", pars)]
