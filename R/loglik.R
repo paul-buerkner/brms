@@ -570,13 +570,12 @@ loglik_cumulative <- function(i, draws, data = data.frame()) {
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
   if (y == 1) { 
-    out <- log(ilink(eta[, 1, 1], draws$f$link))
+    out <- log(ilink(eta[, 1], draws$f$link))
   } else if (y == ncat) {
-    out <- log(1 - ilink(eta[, 1, y - 1], draws$f$link)) 
+    out <- log(1 - ilink(eta[, y - 1], draws$f$link)) 
   } else {
     out <- log(
-      ilink(eta[, 1, y], draws$f$link) - 
-        ilink(eta[, 1, y - 1], draws$f$link)
+      ilink(eta[, y], draws$f$link) - ilink(eta[, y - 1], draws$f$link)
     )
   }
   loglik_weight(out, i = i, data = draws$data)
@@ -586,8 +585,9 @@ loglik_sratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat - 1), function(k) 
-    1 - ilink(eta[, 1, k], draws$f$link))
+  q <- sapply(1:min(y, ncat - 1), 
+    function(k) 1 - ilink(eta[, k], draws$f$link)
+  )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
   } else if (y == 2) {
@@ -604,8 +604,7 @@ loglik_cratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat-1), function(k) 
-    ilink(eta[, 1, k], draws$f$link))
+  q <- sapply(1:min(y, ncat-1), function(k) ilink(eta[, k], draws$f$link))
   if (y == 1) {
     out <- log(1 - q[, 1])
   }  else if (y == 2) {
@@ -623,7 +622,7 @@ loglik_acat <- function(i, draws, data = data.frame()) {
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
   if (draws$f$link == "logit") { # more efficient calculation 
-    q <- sapply(1:(ncat - 1), function(k) eta[, 1, k])
+    q <- sapply(1:(ncat - 1), function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
                matrix(0, nrow = nrow(eta), ncol = ncat - 2))
     if (ncat > 2) {
@@ -632,7 +631,7 @@ loglik_acat <- function(i, draws, data = data.frame()) {
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
     q <- sapply(1:(ncat - 1), function(k) 
-      ilink(eta[, 1, k], draws$f$link))
+      ilink(eta[, k], draws$f$link))
     p <- cbind(apply(1 - q[, 1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2) {
@@ -653,16 +652,7 @@ loglik_mixture <- function(i, draws, data = data.frame()) {
   for (j in seq_along(families)) {
     loglik_fun <- paste0("loglik_", families[j])
     loglik_fun <- get(loglik_fun, asNamespace("brms"))
-    dpars <- valid_dpars(families[j])
-    tmp_draws <- list(
-      f = draws$f$mix[[j]],
-      nsamples = draws$nsamples,
-      nobs = draws$nobs,
-      data = draws$data
-    )
-    for (dp in dpars) {
-      tmp_draws$dpars[[dp]] <- draws$dpars[[paste0(dp, j)]]
-    }
+    tmp_draws <- pseudo_draws_for_mixture(draws, j)
     out[, j] <- exp(log(theta[, j]) + loglik_fun(i, tmp_draws))
   }
   if (isTRUE(draws[["pp_mixture"]])) {

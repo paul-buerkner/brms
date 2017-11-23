@@ -240,9 +240,9 @@ data_re <- function(bterms, data, ranef) {
         ncatM1 <- nrow(r) / ncol(Z[[i]])
         Z_temp <- vector("list", ncol(Z[[i]]))
         for (k in seq_along(Z_temp)) {
-          Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k])
+          Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k], simplify = FALSE)
         }
-        Z[[i]] <- do.call(cbind, Z_temp)
+        Z[[i]] <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
       }
       Zname <- paste0("Z_", idp, "_", r$cn)
       for (j in seq_len(ncol(Z[[i]]))) {

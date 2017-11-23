@@ -424,7 +424,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
       # make sure not to add 'se' twice
       attr(out, "se_added") <- TRUE
     }
-  } else if (dpar == "disc" && is.matrix(out)) {
+  } else if (dpar == "disc" && is.null(i) && is.matrix(out)) {
     # 'disc' will be multiplied by a 3D array
     out <- array(out, dim = c(dim(out), draws$data$ncat - 1))
   }
@@ -435,7 +435,8 @@ get_theta <- function(draws, i = NULL) {
   # get the mixing proportions of mixture models
   stopifnot(is.brmsdraws(draws))
   if ("theta" %in% names(draws$dpars)) {
-    theta <- get_dpar(draws, "theta", i = i)
+    # theta was not predicted; no need to call get_dpar
+    theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
     mix_family <- draws$f

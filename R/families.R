@@ -904,7 +904,8 @@ summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
 
 #' @export
 summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
-  dpars <- valid_dpars(x$family, x)
+  x <- parse_bf(x)
+  dpars <- valid_dpars(x)
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
   links[names(links_pred)] <- links_pred

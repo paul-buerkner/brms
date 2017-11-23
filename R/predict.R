@@ -319,10 +319,8 @@ predict_exponential <- function(i, draws, ...) {
 }
 
 predict_gamma <- function(i, draws, ...) {
-  args <- list(
-    shape = get_dpar(draws, "shape", i = i),
-    scale = get_dpar(draws, "mu", i = i) / shape
-  )
+  shape <- get_dpar(draws, "shape", i = i)
+  args <- nlist(shape, scale = get_dpar(draws, "mu", i = i) / shape)
   rng_continuous(
     nrng = draws$nsamples, dist = "gamma", args = args, 
     lb = draws$data$lb[i], ub = draws$data$ub[i]
@@ -546,7 +544,7 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 predict_categorical <- function(i, draws, ...) {
   ncat <- draws$data$ncat
   p <- pcategorical(
-    seq_len(ncat), eta = get_dpar(draws, "mu", i = i)[, 1, ], 
+    seq_len(ncat), eta = get_dpar(draws, "mu", i = i), 
     ncat = ncat, link = draws$f$link
   )
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
@@ -571,7 +569,7 @@ predict_acat <- function(i, draws, ...) {
 predict_ordinal <- function(i, draws, family, ...) {
   ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
-  eta <- (disc * get_dpar(draws, "mu", i = i))[, 1, ]
+  eta <- (disc * get_dpar(draws, "mu", i = i))
   p <- pordinal(
     seq_len(ncat), eta = eta, ncat = ncat, 
     family = family, link = draws$f$link
@@ -589,18 +587,7 @@ predict_mixture <- function(i, draws, ...) {
     if (length(sample_ids)) {
       predict_fun <- paste0("predict_", families[j])
       predict_fun <- get(predict_fun, asNamespace("brms"))
-      dpars <- valid_dpars(families[j])
-      tmp_draws <- list(
-        f = draws$f$mix[[j]],
-        nsamples = length(sample_ids),
-        nobs = draws$nobs,
-        data = draws$data
-      )
-      for (dp in dpars) {
-        tmp_draws[[dp]] <- p(
-          draws$dpars[[paste0(ap, j)]], sample_ids, row = TRUE
-        )
-      }
+      tmp_draws <- pseudo_draws_for_mixture(draws, j, sample_ids)
       out[sample_ids] <- predict_fun(i, tmp_draws, ...)
     }
   }
@@ -666,7 +653,6 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
 
 rng_mix <- function(theta) {
   # sample the ID of the mixture component
-  #stopifnot(all(dim(theta), c(nrng, length(families))))
   stopifnot(is.matrix(theta))
   mix_comp <- seq_len(ncol(theta))
   ulapply(seq_len(nrow(theta)), function(s)

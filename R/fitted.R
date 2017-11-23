@@ -35,7 +35,7 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
       stop2("Invalid argument 'dpar'. Valid distributional ",
             "parameters are: ", collapse_comma(dpars))
     }
-    if (!isTRUE(attr(draws[[dpar]], "predicted"))) {
+    if (!isTRUE(attr(draws$dpars[[dpar]], "predicted"))) {
       stop2("Distributional parameter '", dpar, "' was not predicted.")
     }
     if (scale == "linear" && is.list(draws$dpars[[dpar]])) {
@@ -237,16 +237,7 @@ fitted_mixture <- function(draws) {
   for (j in seq_along(families)) {
     fitted_fun <- paste0("fitted_", families[j])
     fitted_fun <- get(fitted_fun, asNamespace("brms"))
-    dpars <- valid_dpars(families[j])
-    tmp_draws <- list(
-      f = draws$f$mix[[j]],
-      nsamples = draws$nsamples,
-      nobs = draws$nobs,
-      data = draws$data
-    )
-    for (dp in dpars) {
-      tmp_draws$dpars[[dp]] <- draws$dpars[[paste0(dp, j)]]
-    }
+    tmp_draws <- pseudo_draws_for_mixture(draws, j)
     if (length(dim(draws$dpars$theta)) == 3L) {
       theta <- draws$dpars$theta[, , j]
     } else {

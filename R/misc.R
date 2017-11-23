@@ -82,6 +82,10 @@ array2list <- function(x) {
   ind <- collapse(rep(",", ndim - 1))
   for (i in seq_len(dim(x)[ndim])) {
     out[[i]] <- eval(parse(text = paste0("x[", ind, i, "]")))
+    if (length(dim(x)) > 2) {
+      # avoid accidental dropping of other dimensions
+      dim(out[[i]]) <- dim(x)[-ndim] 
+    }
   }
   names(out) <- dimnames(x)[[ndim]]
   out

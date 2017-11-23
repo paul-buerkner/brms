@@ -97,15 +97,15 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   if (is.mixfamily(x$family)) {
     families <- family_names(x$family)
     thetas <- paste0("theta", seq_along(families))
-    if (any(ulapply(draws[thetas], is.list))) {
+    if (any(ulapply(draws$dpars[thetas], is.list))) {
       # theta was predicted
-      missing_id <- which(ulapply(draws[thetas], is.null))
+      missing_id <- which(ulapply(draws$dpars[thetas], is.null))
       draws$dpars[[paste0("theta", missing_id)]] <- structure(
         as_draws_matrix(0, c(nsamples, nobs)), predicted = TRUE
       )
     } else {
       # theta was not predicted
-      draws$dpars$theta <- do.call(cbind, draws[thetas])
+      draws$dpars$theta <- do.call(cbind, draws$dpars[thetas])
       draws$dpars[thetas] <- NULL
       if (nrow(draws$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(draws$dpars$theta))
@@ -504,7 +504,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
               }
             }
             # compute the covariance matrix
-            cov_matrix <- get_cov_matrix(sd_samples, cor_samples)$cov
+            cov_matrix <- get_cov_matrix(sd_samples, cor_samples)
             for (j in seq_along(new_levels)) {
               # sample new levels from the normal distribution
               # implied by the covariance matrix
@@ -661,6 +661,31 @@ extract_draws_data <- function(bterms, sdata, ...) {
   resp <- usc(combine_prefix(bterms))
   draws <- sdata[paste0(vars, resp)]
   rmNULL(draws, recursive = FALSE)
+}
+
+pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
+  # create pseudo brmsdraws objects for components of mixture models
+  # Args:
+  #   comp: the mixture component number
+  #   sample_ids: see predict_mixture
+  stopifnot(is.brmsdraws(draws), is.mixfamily(draws$f))
+  if (!is.null(sample_ids)) {
+    nsamples <- length(sample_ids)
+  } else {
+    nsamples <- draws$nsamples
+  }
+  out <- list(
+    f = draws$f$mix[[comp]], nsamples = nsamples,
+    nobs = draws$nobs, data = draws$data
+  )
+  out$f$fun <- out$f$family
+  for (dp in valid_dpars(out$f)) {
+    out$dpars[[dp]] <- draws$dpars[[paste0(dp, comp)]]
+    if (!is.null(sample_ids)) {
+      out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
+    }
+  }
+  structure(out, class = "brmsdraws")
 }
 
 subset_levels <- function(x, levels, nranef) {
