@@ -27,34 +27,34 @@ test_that("ARMA covariance matrices are computed correctly", {
   ar <- 0.5
   ma <- 0.3
   sigma <- 2
-  se2 <- 1:4
+  se <- sqrt(1:4)
   
   # test for AR1 cov matrix
   ar_mat <- get_cov_matrix_ar1(ar = matrix(ar), sigma = matrix(sigma), 
-                               se2 = se2, nrows = length(se2))
+                               se = se, nrows = length(se))
   expected_ar_mat <- sigma^2 / (1 - ar^2) * 
                      cbind(c(1, ar, ar^2, ar^3),
                            c(ar, 1, ar, ar^2),
                            c(ar^2, ar, 1, ar),
                            c(ar^3, ar^2, ar, 1))
-  expected_ar_mat <- expected_ar_mat + diag(se2)
+  expected_ar_mat <- expected_ar_mat + diag(se^2)
   expect_equal(ar_mat[1, , ], expected_ar_mat)
   
   # test for MA1 cov matrix
   ma_mat <- get_cov_matrix_ma1(ma = matrix(ma), sigma = matrix(sigma), 
-                               se2 = se2, nrows = length(se2))
+                               se = se, nrows = length(se))
   expected_ma_mat <- sigma^2 * 
                      cbind(c(1+ma^2, ma, 0, 0),
                            c(ma, 1+ma^2, ma, 0),
                            c(0, ma, 1+ma^2, ma),
                            c(0, 0, ma, 1+ma^2))
-  expected_ma_mat <- expected_ma_mat + diag(se2)
+  expected_ma_mat <- expected_ma_mat + diag(se^2)
   expect_equal(ma_mat[1, , ], expected_ma_mat)
   
   # test for ARMA1 cov matrix
   arma_mat <- get_cov_matrix_arma1(ar = matrix(ar), ma = matrix(ma), 
                                  sigma = matrix(sigma), 
-                                 se2 = se2, nrows = length(se2))
+                                 se = se, nrows = length(se))
   g0 <- 1 + ma^2 + 2 * ar * ma
   g1 <- (1 + ar * ma) * (ar + ma)
   expected_arma_mat <- sigma^2 / (1 - ar^2) * 
@@ -62,13 +62,13 @@ test_that("ARMA covariance matrices are computed correctly", {
                              c(g1, g0, g1, g1 * ar),
                              c(g1 * ar, g1, g0, g1),
                              c(g1 * ar^2, g1 * ar, g1, g0))
-  expected_arma_mat <- expected_arma_mat + diag(se2)
+  expected_arma_mat <- expected_arma_mat + diag(se^2)
   expect_equal(arma_mat[1, , ], expected_arma_mat)
   
   # test for identity matrix
   ident_mat <- get_cov_matrix_ident(sigma = matrix(sigma), 
-                                    se2 = se2, nrows = length(se2))
-  expected_ident_mat <- diag(sigma^2 + se2)
+                                    se = se, nrows = length(se))
+  expected_ident_mat <- diag(sigma^2 + se^2)
   expect_equal(ident_mat[1, , ], expected_ident_mat)
 })
 
@@ -89,15 +89,13 @@ test_that("find_names finds all valid variable names in a string", {
 test_that(".predictor_arma runs without errors", {
   ns <- 20
   nobs <- 30
-  sdata <- list(
-    Y = rnorm(nobs), 
-    J_lag = c(1:3, 3, 3, rep(c(0:3, 3), 4), 0:3, 0)
-  )
+  Y = rnorm(nobs)
+  J_lag = c(1:3, 3, 3, rep(c(0:3, 3), 4), 0:3, 0)
   ar <- matrix(rnorm(ns * 3), nrow = ns, ncol = 3)
   ma <- matrix(rnorm(ns * 1), nrow = ns, ncol = 1)
   eta <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
-  expect_equal(.predictor_arma(eta, sdata = sdata), eta)
-  expect_silent(.predictor_arma(eta, sdata = sdata, ar = ar))
-  expect_silent(.predictor_arma(eta, sdata = sdata, ma = ma))
-  expect_silent(.predictor_arma(eta, sdata = sdata, ar = ar, ma = ma))
+  expect_equal(.predictor_arma(eta, Y = Y, J_lag = J_lag), eta)
+  expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ar = ar))
+  expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ma = ma))
+  expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ar = ar, ma = ma))
 })

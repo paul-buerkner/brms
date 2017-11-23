@@ -9,7 +9,9 @@ test_that("fitted helper functions run without errors", {
   fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
   fit <- add_samples(fit, "xi", dist = "unif", min = -1, max = 0.5)
   draws <- brms:::extract_draws(fit)
-  draws$mu <- brms:::linear_predictor(draws)
+  draws$dpars$mu <- brms:::get_dpar(draws, "mu")
+  draws$dpars$sigma <- brms:::get_dpar(draws, "sigma")
+  draws$dpars$nu <- brms:::get_dpar(draws, "nu")
   nsamples <- nsamples(fit)
   nobs <- nobs(fit)
   
@@ -20,99 +22,98 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # pseudo log-normal model
-  fit$family <- lognormal()
+  fit$family <- fit$formula$family <- lognormal()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo skew-normal model
-  fit$family <- skew_normal()
+  fit$family <- fit$formula$family <- skew_normal()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo asym_laplace model
-  fit$family <- asym_laplace()
+  fit$family <- fit$formula$family <- asym_laplace()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo gen_extreme_value model
-  fit$family <- gen_extreme_value()
+  fit$family <- fit$formula$family <- gen_extreme_value()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo weibull model
   fit$formula$pforms <- NULL
-  fit$family <- weibull()
-  expect_equal(dim(SW(fitted(fit, summary = FALSE))), 
-               c(nsamples, nobs))
+  fit$family <- fit$formula$family <- weibull()
+  expect_equal(dim(SW(fitted(fit, summary = FALSE))), c(nsamples, nobs))
   
   # pseudo binomial model
-  fit$autocor <- cor_arma()
+  fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
-  expect_equal(dim(fitted(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+  expect_equal(dim(SW(fitted(fit, summary = FALSE))), c(nsamples, nobs))
   
   # pseudo hurdle poisson model
-  fit$family <- hurdle_poisson()
+  fit$family <- fit$formula$family <- hurdle_poisson()
   fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
                     family = family(fit))
-  expect_equal(dim(fitted(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   
   # pseudo zero-inflated poisson model
   fit$family <- fit$formula$family <- zero_inflated_poisson()
-  expect_equal(dim(fitted(fit, summary = FALSE)), 
-               c(nsamples, nobs))
+  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   
   # truncated continuous models
-  draws$nu <- c(posterior_samples(fit, pars = "^nu$", as.matrix = TRUE))
-  draws$shape <- c(posterior_samples(fit, pars = "^shape$", as.matrix = TRUE))
-  mu <- fitted_trunc_gaussian(draws, lb = 0, ub = 10)
+  draws$dpars$shape <- c(as.matrix(fit, pars = "^shape$"))
+  mu <- brms:::fitted_trunc_gaussian(draws, lb = 0, ub = 10)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_student(draws, lb = -Inf, ub = 15)
+  mu <- brms:::fitted_trunc_student(draws, lb = -Inf, ub = 15)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_lognormal(draws, lb = 2, ub = 15)
+  mu <- brms:::fitted_trunc_lognormal(draws, lb = 2, ub = 15)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  draws$mu <- exp(draws$mu)
-  mu <- fitted_trunc_gamma(draws, lb = 1, ub = 7)
+  draws$dpars$mu <- exp(draws$dpars$mu)
+  mu <- brms:::fitted_trunc_gamma(draws, lb = 1, ub = 7)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_exponential(draws, lb = 0, ub = Inf)
+  mu <- brms:::fitted_trunc_exponential(draws, lb = 0, ub = Inf)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- SW(fitted_trunc_weibull(draws, lb = -Inf, ub = Inf))
+  mu <- SW(brms:::fitted_trunc_weibull(draws, lb = -Inf, ub = Inf))
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # truncated discrete models
   data <- list(Y = sample(100, 10), trials = 1:10, N = 10)
   lb <- matrix(0, nrow = nsamples, ncol = nobs)
   ub <- matrix(100, nrow = nsamples, ncol = nobs)
-  mu <- fitted_trunc_poisson(draws, lb = lb, ub = ub)
+  mu <- brms:::fitted_trunc_poisson(draws, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_negbinomial(draws, lb = lb, ub = ub)
+  mu <- brms:::fitted_trunc_negbinomial(draws, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_geometric(draws, lb = lb, ub = ub)
+  mu <- brms:::fitted_trunc_geometric(draws, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   draws$data$trials <- 120
   lb <- matrix(-Inf, nrow = nsamples, ncol = nobs)
-  draws$mu <- ilink(draws$mu, "logit")
-  mu <- fitted_trunc_binomial(draws, lb = lb, ub = ub)
+  draws$dpars$mu <- brms:::ilink(draws$dpars$mu, "logit")
+  mu <- brms:::fitted_trunc_binomial(draws, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
 })
 
 test_that("fitted_lagsar runs without errors", {
   draws <- list(
-    mu = matrix(rnorm(30), nrow = 3),
-    lagsar = matrix(c(0.3, 0.5, 0.7)),
-    data = list(W = matrix(1:100, 10, 10), N = 10),
-    nsamples = 3
+    dpars = list(mu = matrix(rnorm(30), nrow = 3)),
+    ac = list(
+      lagsar = matrix(c(0.3, 0.5, 0.7)), 
+      W = matrix(1:100, 10, 10)
+    ),
+    nsamples = 3,
+    nobs = 10,
+    f = gaussian()
   )
   mu_new <- brms:::fitted_lagsar(draws)
-  expect_equal(dim(mu_new), dim(draws$mu))
-  expect_true(!identical(mu_new, draws$mu))
+  expect_equal(dim(mu_new), dim(draws$dpars$mu))
+  expect_true(!identical(mu_new, draws$dpars$mu))
 })

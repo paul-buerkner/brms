@@ -68,8 +68,8 @@ test_that("mixture returns expected results and errors", {
                "x is not a supported family")
   expect_error(mixture(gaussian, categorical()), 
                "Families 'categorical' are currently not allowed in mixture models")
-  expect_error(mixture(poisson, "cumulative"), 
-               "Cannot mix ordinal and non-ordinal families")
+  # expect_error(mixture(poisson, "cumulative"), 
+  #              "Cannot mix ordinal and non-ordinal families")
   expect_error(mixture(lognormal, exgaussian, poisson()), 
                "Cannot mix families with real and integer support")
   expect_error(mixture(lognormal), 

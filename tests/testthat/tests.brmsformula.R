@@ -25,20 +25,20 @@ test_that("brmsformula is backwards compatible", {
   expect_warning(form <- bf(y ~ a * exp(-b * x), 
                             nonlinear = a + b ~ 1),
                  "Argument 'nonlinear' is deprecated")
-  expect_equivalent(pforms(form), list(a ~ 1, b ~ 1))
+  expect_equivalent(form$pforms, list(a ~ 1, b ~ 1))
   expect_true(attr(form$formula, "nl"))
   
   expect_warning(form <- bf(y ~ a * exp(-b * x), 
                             nonlinear = list(a ~ x, b ~ 1)),
                  "Argument 'nonlinear' is deprecated")
-  expect_equivalent(pforms(form), list(a ~ x, b ~ 1))
+  expect_equivalent(form$pforms, list(a ~ x, b ~ 1))
   expect_true(attr(form$formula, "nl"))
   
   form <- structure(y ~ x + z, sigma = sigma ~ x)
   class(form) <- c("brmsformula", "formula")
   form <- bf(form)
   expect_equal(form$formula, y ~ x + z)
-  expect_equal(pforms(form), list(sigma = sigma ~ x))
+  expect_equal(form$pforms, list(sigma = sigma ~ x))
   expect_true(!attr(form$formula, "nl"))
   
   form <- structure(y ~ a * exp(-b * x),
@@ -46,7 +46,7 @@ test_that("brmsformula is backwards compatible", {
   class(form) <- c("brmsformula", "formula")
   form <- bf(form)
   expect_equal(form$formula, y ~ a * exp(-b * x))
-  expect_equal(pforms(form), list(a = a ~ x, b = b ~ 1))
+  expect_equal(form$pforms, list(a = a ~ x, b = b ~ 1))
   expect_true(attr(form$formula, "nl"))
 })
 

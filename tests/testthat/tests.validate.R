@@ -64,19 +64,6 @@ test_that("update_re_terms works correctly", {
                bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
 })
 
-test_that("(deprecated) amend_terms performs expected changes", {
-  expect_equal(amend_terms("a"), NULL)
-  expect_equal(amend_terms(y~x), terms(y~x))
-  form <- structure(y ~ x, rsv_intercept = TRUE)
-  expect_true(attr(amend_terms(form), "rm_intercept"))
-  form <- structure(y ~ 0 + main, forked = TRUE, old_mv = TRUE)
-  expect_true(attr(amend_terms(form), "rm_intercept"))
-  form <- structure(y ~ main, forked = TRUE, old_mv = TRUE)
-  expect_error(amend_terms(form), "formula may not contain an intercept")
-  form <- structure(y ~ main + trait, forked = TRUE, old_mv = TRUE)
-  expect_error(amend_terms(form), "formula may not contain variable 'trait'")
-})
-
 test_that("exclude_pars returns expected parameter names", {
   ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
                        gn = c(1, 1, 2), coef = c("x", "z", "x"), 
