@@ -544,11 +544,8 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 }
 
 predict_categorical <- function(i, draws, ...) {
-  ncat <- draws$data$ncat
-  p <- pcategorical(
-    seq_len(ncat), eta = get_dpar(draws, "mu", i = i), 
-    ncat = ncat, link = draws$f$link
-  )
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 

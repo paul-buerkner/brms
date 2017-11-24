@@ -207,27 +207,29 @@ fitted_zero_one_inflated_beta <- function(draws) {
 }
 
 fitted_categorical <- function(draws) {
-  fitted_catordinal(draws)
+  get_probs <- function(i) {
+    dcategorical(cats, eta = eta[, i, ])
+  }
+  eta <- abind(draws$dpars, along = 3)
+  cats <- seq_len(draws$data$ncat)
+  out <- abind(lapply(seq_len(ncol(eta)), get_probs), along = 3)
+  aperm(out, perm = c(1, 3, 2))
 }
 
 fitted_cumulative <- function(draws) {
-  draws$dpars$mu <- draws$dpars$disc * draws$dpars$mu
-  fitted_catordinal(draws)
+  fitted_ordinal(draws)
 }
 
 fitted_sratio <- function(draws) {
-  draws$dpars$mu <- draws$dpars$disc * draws$dpars$mu
-  fitted_catordinal(draws)
+  fitted_ordinal(draws)
 }
 
 fitted_cratio <- function(draws) {
-  draws$dpars$mu <- draws$dpars$disc * draws$dpars$mu
-  fitted_catordinal(draws)
+  fitted_ordinal(draws)
 }
 
 fitted_acat <- function(draws) {
-  draws$dpars$mu <- draws$dpars$disc * draws$dpars$mu
-  fitted_catordinal(draws)
+  fitted_ordinal(draws)
 }
 
 fitted_mixture <- function(draws) {
@@ -250,13 +252,12 @@ fitted_mixture <- function(draws) {
 
 # ------ fitted helper functions ------
 
-fitted_catordinal <- function(draws) {
-  # fitted values for categorical and ordinal models
-  get_probs <- function(s) {
-    do.call(dens, c(args, list(eta = eta[, s, ])))
+fitted_ordinal <- function(draws) {
+  get_probs <- function(i) {
+    do.call(dens, c(args, list(eta = eta[, i, ])))
   }
+  eta <- draws$dpars$disc * draws$dpars$mu
   ncat <- draws$data$ncat
-  eta <- draws$dpars$mu
   args <- list(seq_len(ncat), ncat = ncat, link = draws$f$link)
   dens <- get(paste0("d", draws$f$family), mode = "function")
   out <- abind(lapply(seq_len(ncol(eta)), get_probs), along = 3)

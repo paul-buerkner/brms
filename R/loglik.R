@@ -558,12 +558,9 @@ loglik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
 }
 
 loglik_categorical <- function(i, draws, data = data.frame()) {
-  if (draws$f$link == "logit") {
-    p <- cbind(rep(0, draws$nsamples), get_dpar(draws, "mu", i))
-    out <- p[, draws$data$Y[i]] - log(rowSums(exp(p)))
-  } else {
-    stop(paste("Link", draws$f$link, "not supported"))
-  }
+  stopifnot(draws$f$link == "logit")
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  out <- dcategorical(draws$data$Y[i], eta = eta, log = TRUE)
   loglik_weight(out, i = i, data = draws$data)
 }
 

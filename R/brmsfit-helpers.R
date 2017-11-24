@@ -561,9 +561,8 @@ apply_dpar_ilink <- function(dpar, family) {
     dpar <- dpar_class(dpar) 
   }
   no_link_family <- family$family %in% 
-    c("weibull", "categorical", "cumulative", 
-      "sratio", "cratio", "acat")
-  !(no_link_family && dpar == "mu")
+    c("weibull", "cumulative", "sratio", "cratio", "acat")
+  !(no_link_family && dpar == "mu" || family$family %in% "categorical")
 }
 
 choose_N <- function(draws) {

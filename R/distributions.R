@@ -1072,7 +1072,7 @@ rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   out
 }
 
-dcategorical <- function(x, eta, ncat, link = "logit") {
+dcategorical <- function(x, eta, link = "logit", log = FALSE) {
   # density of the categorical distribution
   # Args:
   #   x: positive integers not greater than ncat
@@ -1087,15 +1087,17 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
   if (link == "logit") {
-    p <- exp(cbind(rep(0, nrow(eta)), eta[, 1:(ncat - 1)]))
+    p <- cbind(rep(0, nrow(eta)), eta)
   } else {
     stop2("Link '", link, "' not supported.")
   }
-  p <- p / rowSums(p)
+  if (log) {
+    p <- p - log(rowSums(exp(p)))
+  } else {
+    p <- exp(p)
+    p <- p / rowSums(p)
+  }
   p[, x]
 }
 
@@ -1108,7 +1110,7 @@ pcategorical <- function(q, eta, ncat, link = "logit") {
   #   link: a character string naming the link
   # Retruns: 
   #   probabilities P(x <= q)
-  p <- dcategorical(1:max(q), eta = eta, ncat = ncat, link = link)
+  p <- dcategorical(1:max(q), eta = eta, link = link)
   do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
 }
 
