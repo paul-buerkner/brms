@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 # brms
 
-The **brms** package provides an interface to fit Bayesian generalized (non-)linear multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see http://mc-stan.org/). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation.
+The **brms** package provides an interface to fit Bayesian generalized (non-)linear multivariate multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see http://mc-stan.org/). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Multivariate models (i.e. models with multiple response variables) can be fitted, as well. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation.
     
 <!--
 ```{r set-options, echo=FALSE}
@@ -33,10 +33,10 @@ options(width=90)
 library(brms)
 ```
 
-As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable Trt_c) can reduce the seizure counts. Two group-level intercepts are incorporated to account for the variance between patients as well as for the residual variance. 
+As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable `Trt`) can reduce the seizure counts. Two group-level intercepts are incorporated to account for the variance between patients as well as for the residual variance. 
 ```{r fit, results='hide'}
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|obs), 
-           data = epilepsy, family = "poisson")
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs), 
+           data = epilepsy, family = poisson())
 ```
 
 The results (i.e. posterior samples) can be investigated using
@@ -57,9 +57,9 @@ An even more detailed investigation can be achieved by applying the shinystan pa
 launch_shiny(fit) 
 ``` 
 
-There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures. Than we can use
+There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt = 1`) and in the control group (`Trt = 0`) with average age and average number of previous seizures. Than we can use
 ```{r predict}
-newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, log_Base4_c = 0)
+newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 ```
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line. 
@@ -83,9 +83,10 @@ Details on formula syntax, families and link functions, as well as prior distrib
 help("brm") 
 ``` 
 
-More instructions on how to use **brms** are given in the package's main vignette.
+More instructions on how to use **brms** are given in the package's main vignettes.
 ```{r vignette, eval=FALSE}
-vignette("brms_overview") 
+vignette("brms_overview")
+vignette("brms_multilevel")
 ``` 
 
 # FAQ
