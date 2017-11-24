@@ -653,7 +653,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
-    autocor = NULL, resp = NULL, old_mv = FALSE
+    autocor = NULL, resp = NULL
   )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
@@ -1136,7 +1136,8 @@ amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]])
   }
   if (is_ordinal(out$family)) {
-    if (!is.null(threshold)) {
+    if (is.null(out$family$threshold) && !is.null(threshold)) {
+      # slot 'threshold' deprecated as of brms > 1.7.0
       out$family <- check_family(out$family, threshold = threshold)
     }
     try_terms <- try(stats::terms(out$formula), silent = TRUE)

@@ -35,18 +35,11 @@ restructure <- function(x, rstr_summary = FALSE) {
       "refitting the model with the latest version of brms."
     )
   }
-  if (is_ordinal(x$family) && is.null(x$family$threshold)) {
-    # slot 'threshold' deprecated as of brms > 1.7.0
-    x$family$threshold <- x$threshold
-  }
+  x$formula <- SW(amend_formula(
+    formula(x), data = model.frame(x), family = family(x), 
+    autocor = x$autocor, threshold = x$threshold
+  ))
   x$nonlinear <- x$partial <- x$threshold <- NULL
-  slot_missing <- !all(c("family", "autocor") %in% names(x$formula))
-  if (is.formula(x$formula) || slot_missing) {
-    x$formula <- SW(amend_formula(
-      formula(x), data = model.frame(x), 
-      family = family(x), autocor = x$autocor
-    )) 
-  }
   bterms <- parse_bf(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
   x$data <- update_data(x$data, bterms) 
@@ -101,6 +94,10 @@ restructure <- function(x, rstr_summary = FALSE) {
     # names of monotonic parameters had to be changed after
     # allowing for interactions in monotonic terms
     change <- change_old_mo(bterms, x$data, pars = parnames(x))
+    x <- do_renaming_old(x, change)
+  }
+  if (version >= "1.0.0" && version < "2.0.0") {
+    change <- change_old_categorical(bterms, x$data, pars = parnames(x))
     x <- do_renaming_old(x, change)
   }
   stan_env <- attributes(x$fit)$.MISC
@@ -337,14 +334,39 @@ change_old_mo <- function(bterms, data, pars) {
   change
 }
 
+change_old_categorical <- function(bterms, data, pars) {
+  # between version 1.0 and 2.0 categorical models used
+  # the internal multivariate interface
+  stopifnot(is.brmsterms(bterms))
+  if (!is_categorical(bterms$family)) {
+    return(list())
+  }
+  # compute the old category names
+  respform <- bterms$respform
+  old_dpars <- model.response(model.frame(respform, data = data))
+  old_dpars <- levels(factor(old_dpars))
+  old_dpars <- make.names(old_dpars[-1], unique = TRUE)
+  old_dpars <- rename(old_dpars, ".", "x")
+  new_dpars <- bterms$family$dpars
+  stopifnot(length(old_dpars) == length(new_dpars))
+  pos <- rep(FALSE, length(pars))
+  new_pars <- pars
+  for (i in seq_along(old_dpars)) {
+    # not perfectly save but hopefully mostly correct
+    regex <- paste0("(?<=_)", old_dpars[i], "(?=_|\\[)")
+    pos <- pos | grepl(regex, pars, perl = TRUE)
+    new_pars <- gsub(regex, new_dpars[i], new_pars, perl = TRUE)
+  }
+  list(nlist(pos, fnames = new_pars[pos]))
+}
+
 change_simple <- function(oldname, fnames, pars, dims,
                           pnames = fnames) {
   # helper function for very simple renaming
   # only used in renaming of old models
   pos <- grepl(paste0("^", oldname), pars)
   if (any(pos)) {
-    out <- nlist(pos, oldname, pnames, fnames,
-                 dims = dims[[oldname]])
+    out <- nlist(pos, oldname, pnames, fnames, dims = dims[[oldname]])
   } else {
     out <- NULL
   }

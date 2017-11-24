@@ -177,33 +177,6 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
     y$allvars <- update(y$respform, y$allvars) 
   }
   environment(y$allvars) <- environment(formula)
-  
-  # if (length(y$response) > 1L) {
-  #   if (any(!names(y$adforms) %in% "weights")) {
-  #     stop2("Multivariate models currently allow only ",
-  #           "addition argument 'weights'.")
-  #   }
-  #   if (length(y$dpars) > 1L) {
-  #     stop2("Distributional parameters cannot yet be ", 
-  #           "predicted in multivariate models.")
-  #   }
-  #   if (length(y$dpars$mu$nlpars)) {
-  #     stop2("Multivariate non-linear models are not ",
-  #           "yet implemented.")
-  #   }
-  # }
-  # if (check_response && old_mv) {
-  #   # multivariate ('trait') syntax is deprecated as of brms 1.0.0
-  #   if (is_hurdle(family)) {
-  #     y$response <- c(y$response, paste0("hu_", y$response))
-  #   } else if (is_zero_inflated(family)) {
-  #     y$response <- c(y$response, paste0("zi_", y$response))
-  #   }
-  #   if (length(y$response) > 1L) {
-  #     y$allvars[[2]] <- quote(response)
-  #   }
-  #   attr(y$formula, "old_mv") <- TRUE
-  # }
   y
 }
 
