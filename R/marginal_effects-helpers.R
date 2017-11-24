@@ -278,7 +278,8 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 
 #' @export
 marginal_effects_internal.brmsterms <- function(
-  x, fit, marg_data, method, surface, spaghetti, probs, robust, ...
+  x, fit, marg_data, int_conditions, method, 
+  surface, spaghetti, probs, robust, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))

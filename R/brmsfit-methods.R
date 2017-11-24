@@ -1395,7 +1395,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     me_args <- nlist(
       x = bterms, fit = x, marg_data, method, surface, 
       spaghetti, re_formula, transform, conditions,
-      select_points, probs, robust, ...
+      int_conditions, select_points, probs, robust, ...
     )
     out <- c(out, do.call(marginal_effects_internal, me_args))
   }
