@@ -752,8 +752,8 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   is_rescor <- grepl("^rescor_", spec_pars)
   if (any(is_rescor)) {
     rescor_pars <- spec_pars[is_rescor]
-    rescor_names <- sub("__", ",", sub("__", "(", rescor_pars), ")")
-    spec_pars[is_rescor] <- rescor_names 
+    rescor_names <- sub("__", ",", sub("__", "(", rescor_pars))
+    spec_pars[is_rescor] <- paste0(rescor_names, ")")
   }    
   rownames(out$spec_pars) <- spec_pars
   
@@ -2007,7 +2007,6 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 update.brmsfit <- function(object, formula., newdata = NULL, 
                            recompile = FALSE, ...) {
   dots <- list(...)
-  # TODO: handle MV models
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop2("Please use argument 'newdata' to update the data.")
@@ -2028,13 +2027,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     if (is.mvbrmsformula(formula.) || is.mvbrmsformula(object$formula)) {
       stop2("Updating formulas of multivariate models is not yet possible.")
     }
-    family <- get_arg("family", formula., dots, object)
-    autocor <- get_arg("autocor", formula., dots, object)
     if (is.brmsformula(formula.)) {
       nl <- get_nl(formula.)
     } else {
+      formula. <- as.formula(formula.) 
       nl <- get_nl(formula(object))
     }
+    family <- get_arg("family", formula., dots, object)
+    autocor <- get_arg("autocor", formula., dots, object)
     dots$formula <- bf(formula., family = family, autocor = autocor, nl = nl)
     if (is_nonlinear(object)) {
       if (length(setdiff(all.vars(dots$formula$formula), ".")) == 0L) {
