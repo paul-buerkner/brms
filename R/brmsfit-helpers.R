@@ -445,9 +445,9 @@ get_theta <- function(draws, i = NULL) {
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
       draws$f <- mix_family$mix[[j]]
-      theta[[j]] <- get_dpar(draws, paste0("theta", j), i = i)
+      theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
-    theta <- do.call(abind, c(theta, along = 3))
+    theta <- abind(theta, along = 3)
     for (n in seq_len(dim(theta)[2])) {
       theta[, n, ] <- softmax(theta[, n, ])
     }
@@ -466,6 +466,8 @@ get_Mu <- function(draws, i = NULL) {
     if (length(i) == 1L) {
       Mu <- do.call(cbind, Mu)
     } else {
+      # keep correct dimension even if data has only 1 row
+      Mu <- lapply(Mu, as.matrix)
       Mu <- do.call(abind, c(Mu, along = 3))
     }
   } else {
