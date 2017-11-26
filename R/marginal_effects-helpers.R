@@ -117,7 +117,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     re$form, lapply(re$gcall, "[[", "weightvars"),
     lapply(bterms$dpars, "[[", "covars"),
     bterms$adforms[c("se", "disp", "trials", "cat")],
-    str2formula(bterms$time$time)
+    str2formula(get_autocor_vars(bterms, "time"))
   )
   req_vars <- unique(ulapply(req_vars, all.vars))
   req_vars <- setdiff(req_vars, rsv_vars)

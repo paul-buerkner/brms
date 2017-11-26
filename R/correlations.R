@@ -581,13 +581,23 @@ check_autocor <- function(autocor) {
   autocor
 }
 
-remove_autocor <- function(x, keep = FALSE) {
+remove_autocor <- function(x) {
   # convenience function to ignore autocorrelation terms
   # currently excludes ARMA, SAR, and CAR structures
-  excl_cor <- is.cor_arma(x$autocor) || 
-    is.cor_sar(x$autocor) || is.cor_car(x$autocor)
-  if (!keep && excl_cor) {
-    x$autocor <- x$formula$autocor <- cor_empty()
+  if (is_mv(x)) {
+    for (r in names(x$formula$forms)) {
+      ac <- x$formula$forms[[r]]$autocor
+      excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
+      if (excl_cor) {
+        x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
+      }
+    }
+  } else {
+    ac <- x$formula$autocor
+    excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
+    if (excl_cor) {
+      x$autocor <- x$formula$autocor <- cor_empty()
+    }
   }
   x
 }

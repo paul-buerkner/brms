@@ -18,7 +18,9 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   x <- restructure(x)
-  x <- remove_autocor(x, incl_autocor)
+  if (!incl_autocor) {
+    x <- remove_autocor(x) 
+  }
   sdata <- amend_newdata(newdata, fit = x, re_formula = re_formula, ...)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
@@ -78,7 +80,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata$N
   resp <- usc(combine_prefix(x))
-  draws <- nlist(f = prepare_family(x), nsamples, nobs)
+  draws <- nlist(f = prepare_family(x), nsamples, nobs, resp = x$resp)
   draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)

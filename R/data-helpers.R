@@ -181,7 +181,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   new_objects: see function 'add_new_objects'
   # Returns:
   #   updated data.frame being compatible with formula(fit)
-  fit <- remove_autocor(fit, incl_autocor)
+  if (!incl_autocor) {
+    fit <- remove_autocor(fit) 
+  }
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
