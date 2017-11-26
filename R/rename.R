@@ -522,15 +522,17 @@ compute_quantities <- function(x) {
   x
 }
 
-compute_xi <- function(x) {
+compute_xi <- function(x, ...) {
   # helper function to compute parameter xi, which is currently
   # defined in the Stan model block and thus not being stored
-  # Args:
-  #   x: a brmsfit object
   # Returns:
-  #   a brmsfit object, with parameter xi added 
-  stopifnot(is.brmsfit(x))
-  if (!"temp_xi" %in% parnames(x)) {
+  #   All methods return a brmsfit object
+  UseMethod("compute_xi")
+}
+
+#' @export
+compute_xi.brmsfit <- function(x, ...) {
+  if (!any(grepl("^temp_xi(_|$)", parnames(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -539,24 +541,45 @@ compute_xi <- function(x) {
              "Some S3 methods may not work as expected.")
     return(x)
   }
-  mu <- ilink(get_eta(draws$mu, i = NULL), draws$f$link)
-  sigma <- get_sigma(draws$sigma, data = draws$data, i = NULL)
-  y <- matrix(draws$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
+  compute_xi(draws, fit = x, ...)
+}
+
+#' @export
+compute_xi.mvbrmsdraws <- function(x, fit, ...) {
+  stopifnot(is.brmsfit(fit))
+  for (resp in names(x$resps)) {
+    fit <- compute_xi(x$resps[[resp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+compute_xi.brmsdraws <- function(x, fit, ...) {
+  stopifnot(is.brmsfit(fit))
+  resp <- usc(x$resp)
+  temp_xi_name <- paste0("temp_xi", resp)
+  if (!temp_xi_name %in% parnames(fit)) {
+    return(fit)
+  }
+  mu <- get_dpar(x, "mu")
+  sigma <- get_dpar(x, "sigma")
+  y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
   bs <- - 1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
-  temp_xi <- as.vector(as.matrix(x, pars = "temp_xi"))
+  temp_xi <- as.vector(as.matrix(fit, pars = temp_xi_name))
   xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
   # write xi into stanfit object
-  samp_chain <- length(xi) / x$fit@sim$chains
-  for (i in seq_len(x$fit@sim$chains)) {
+  xi_name <- paste0("xi", resp)
+  samp_chain <- length(xi) / fit$fit@sim$chains
+  for (i in seq_len(fit$fit@sim$chains)) {
     xi_part <- xi[((i - 1) * samp_chain + 1):(i * samp_chain)]
     # add warmup samples not used anyway
-    xi_part <- c(rep(0, x$fit@sim$warmup2[1]), xi_part)
-    x$fit@sim$samples[[i]][["xi"]] <- xi_part
+    xi_part <- c(rep(0, fit$fit@sim$warmup2[1]), xi_part)
+    fit$fit@sim$samples[[i]][[xi_name]] <- xi_part
   }
-  x$fit@sim$pars_oi <- c(x$fit@sim$pars_oi, "xi")
-  x$fit@sim$dims_oi[["xi"]] <- numeric(0)
-  x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, "xi")
-  x$fit@sim$n_flatnames <- x$fit@sim$n_flatnames + 1
-  x
+  fit$fit@sim$pars_oi <- c(fit$fit@sim$pars_oi, xi_name)
+  fit$fit@sim$dims_oi[[xi_name]] <- numeric(0)
+  fit$fit@sim$fnames_oi <- c(fit$fit@sim$fnames_oi, xi_name)
+  fit$fit@sim$n_flatnames <- fit$fit@sim$n_flatnames + 1
+  fit
 }
