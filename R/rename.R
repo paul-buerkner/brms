@@ -444,14 +444,6 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   index_names
 }
 
-make_dims <- function(x) {
-  # helper function to make correct dims for .@sims$dims_oi
-  if (is.null(x$dim)) {
-    x$dim <- numeric(0)
-  }
-  setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
-}
-
 do_renaming <- function(x, change) {
   # perform actual renaming of Stan parameters
   # Args:

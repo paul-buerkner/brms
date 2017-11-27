@@ -146,3 +146,26 @@ test_that("change_old_mo returns expected lists", {
   )
   expect_equal(brms:::change_old_mo(bterms, data, pars), target)
 })
+
+test_that("change_old_categorical works correctly", {
+  dat <- data.frame(
+    y = rep(c("cat1", "cat2", "cat3"), 3), 
+    x = rnorm(9)
+  )
+  fam <- categorical()
+  fam$dpars <- c("mucat2", "mucat3")
+  bterms <- parse_bf(bf(y ~ x) + fam)
+  pars <- c("b_cat2_Intercept", "b_cat3_Intercept", 
+            "b_cat2_x", "b_cat3_x")
+  res <- brms:::change_old_categorical(bterms, dat, pars)
+  target <- list(
+    list(
+      pos = rep(TRUE, 4),
+      fnames = c(
+        "b_mucat2_Intercept", "b_mucat3_Intercept", 
+        "b_mucat2_x", "b_mucat3_x"
+      )
+    )
+  )
+  expect_equal(res, target)
+})

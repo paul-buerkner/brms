@@ -56,21 +56,21 @@ restructure <- function(x, rstr_summary = FALSE) {
       # nlpar and group have changed positions
       change <- change_old_re(x$ranef, pars = parnames(x),
                               dims = x$fit@sim$dims_oi)
-      x <- do_renaming_old(x, change)
+      x <- do_renaming(x, change)
     }
   }
   if (version < "1.0.0") {
     # double underscores were added to group-level parameters
     change <- change_old_re2(x$ranef, pars = parnames(x),
                              dims = x$fit@sim$dims_oi)
-    x <- do_renaming_old(x, change)
+    x <- do_renaming(x, change)
   }
   if (version <= "1.0.1") {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
     change <- change_old_sm(bterms, pars = parnames(x),
                             dims = x$fit@sim$dims_oi)
-    x <- do_renaming_old(x, change)
+    x <- do_renaming(x, change)
   }
   if (version <= "1.2.0") {
     x$ranef$type[x$ranef$type == "mono"] <- "mo"
@@ -94,11 +94,11 @@ restructure <- function(x, rstr_summary = FALSE) {
     # names of monotonic parameters had to be changed after
     # allowing for interactions in monotonic terms
     change <- change_old_mo(bterms, x$data, pars = parnames(x))
-    x <- do_renaming_old(x, change)
+    x <- do_renaming(x, change)
   }
   if (version >= "1.0.0" && version < "2.0.0") {
     change <- change_old_categorical(bterms, x$data, pars = parnames(x))
-    x <- do_renaming_old(x, change)
+    x <- do_renaming(x, change)
   }
   stan_env <- attributes(x$fit)$.MISC
   if (rstr_summary && exists("summary", stan_env)) {
@@ -121,7 +121,7 @@ change_old_re <- function(ranef, pars, dims) {
   #   pars: names of all parameters in the model
   #   dims: dimension of parameters
   # Returns:
-  #   a list whose elements can be interpreted by do_renaming_old
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -175,7 +175,7 @@ change_old_re2 <- function(ranef, pars, dims) {
   #   pars: names of all parameters in the model
   #   dims: dimension of parameters
   # Returns:
-  #   a list whose elements can be interpreted by do_renaming_old
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -371,54 +371,4 @@ change_simple <- function(oldname, fnames, pars, dims,
     out <- NULL
   }
   out
-}
-
-do_renaming_old <- function(x, change) {
-  # perform actual renaming of Stan parameters
-  # This is an old version of do_renaming allowing
-  # for more complex changes in the stanfit object,
-  # which are no longer needed for the renaming of new models
-  # Args:
-  #   change: a list of lists each element allowing
-  #           to rename certain parameters
-  #   x: An object of class brmsfit
-  # Returns:
-  #   A brmsfit object with updated parameter names
-  .do_renaming_old <- function(x, change) {
-    chains <- length(x$fit@sim$samples) 
-    x$fit@sim$fnames_oi[change$pos] <- change$fnames
-    for (i in seq_len(chains)) {
-      names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
-      if (!is.null(change$sort)) {
-        x$fit@sim$samples[[i]][change$pos] <- 
-          x$fit@sim$samples[[i]][change$pos][change$sort]
-      }
-    }
-    if (!is.null(change$oldname)) {
-      # Changing dims_oi interferes with rstan::unconstrain_pars(), 
-      # which is used in the bridgesampling package. The code below is
-      # only retained for backwards compatibility with older models.
-      onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-      if (!(is.null(onp) || is.na(onp))) {
-        if (is.null(change$pnames)) {
-          # only needed to collapse multiple r_<i> of the same grouping factor
-          x$fit@sim$dims_oi[[onp]] <- NULL
-        } else {
-          # rename dims_oi to match names in fnames_oi
-          dims <- x$fit@sim$dims_oi
-          x$fit@sim$dims_oi <- c(
-            if (onp > 1) dims[1:(onp - 1)],
-            make_dims(change),
-            dims[(onp + 1):length(dims)]
-          )
-        }
-      }
-      x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
-    }
-    return(x)
-  }
-  for (i in seq_along(change)) {
-    x <- .do_renaming_old(x, change[[i]])
-  }
-  x
 }
