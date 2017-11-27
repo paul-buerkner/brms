@@ -6,7 +6,7 @@
   *   car: Dependence (usually spatial) parameter for the CAR prior
   *   sdcar: Standard deviation parameter for the CAR prior
   *   Nloc: Number of locations
-  *   Nedges: Number of edges (adjaceny pairs)
+  *   Nedges: Number of edges (adjacency pairs)
   *   Nneigh: Number of neighbors for each location
   *   eigenW: Eigenvalues of D^(-1/2) * W * D^(-1/2)
   *   edges1, edges2: Sparse representation of adjacency matrix

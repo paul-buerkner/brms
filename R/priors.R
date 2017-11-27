@@ -471,7 +471,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
     bterms, data = data, internal = internal
   )
   # priors of group-level parameters
-  def_scale_prior <- choose_def_scale_prior(bterms, data)
+  def_scale_prior <- def_scale_prior(bterms, data)
   prior <- prior + prior_re(
     ranef, def_scale_prior = def_scale_prior,
     # TODO: remove global_sd entirely?
@@ -519,42 +519,24 @@ prior_effects.mvbrmsterms <- function(x, internal = FALSE, ...) {
 }
 
 prior_effects.brmsterms <- function(x, data, ...) {
-  def_scale_prior <- choose_def_scale_prior(x, data)
-  def_auxprior <- c(
-    sigma = def_scale_prior, 
-    shape = "gamma(0.01, 0.01)",
-    nu = "gamma(2, 0.1)", 
-    phi = "gamma(0.01, 0.01)",
-    kappa = "gamma(2, 0.01)", 
-    beta = "gamma(1, 0.1)", 
-    zi = "beta(1, 1)", 
-    hu = "beta(1, 1)", 
-    zoi = "beta(1, 1)",
-    coi = "beta(1, 1)",
-    bs = "gamma(1, 1)", 
-    ndt = "uniform(0, min_Y)", 
-    bias = "beta(1, 1)", 
-    quantile = "beta(1, 1)",
-    xi = "normal(0, 2.5)",
-    alpha = "normal(0, 4)",
-    disc = NA,
-    mu = NA
-  )
+  def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
   prior <- empty_brmsprior()
   for (dp in valid_dpars) {
-    dp_class <- dpar_class(dp)
+    def_dprior <- def_dprior(x, dp, data = data)
     if (!is.null(x$dpars[[dp]])) {
+      # parameter is predicted
       dp_prior <- prior_effects(
         x$dpars[[dp]], data = data,
-        def_scale_prior = def_scale_prior
+        def_scale_prior = def_scale_prior,
+        def_dprior = def_dprior
       )
-    } else if (!is.na(def_auxprior[dp_class])) {
-      dp_prior <- brmsprior(
-        class = dp, prior = def_auxprior[dp_class], resp = x$resp
-      )
-    } else {
+    } else if (!is.null(x$fdpars[[dp]])){
+      # parameter is fixed
       dp_prior <- empty_brmsprior()
+    } else {
+      # parameter is estimated
+      dp_prior <- brmsprior(def_dprior, class = dp, resp = x$resp)
     }
     prior <- prior + dp_prior
   }
@@ -583,23 +565,24 @@ prior_effects.brmsterms <- function(x, data, ...) {
 
 #' @export
 prior_effects.btl <- function(x, data, spec_intercept = TRUE,
-                              def_scale_prior = "", ...) {
+                              def_scale_prior = "", def_dprior = "", 
+                              ...) {
   # collect default priors for various kinds of effects
   # Args:
   #   spec_intercept: special parameter class for the Intercept?
   #   def_scale_prior: default prior for SD parameters
   # Return:
-  #   An object of class brmsprior 
-  prior_fe(x, data, spec_intercept = spec_intercept) +
-    prior_cs(x, data) +
-    prior_mo(x, data) +
-    prior_sm(x, data, def_scale_prior = def_scale_prior) + 
-    prior_me(x, data) + 
-    prior_gp(x, data, def_scale_prior = def_scale_prior)
+  #   An object of class brmsprior
+  prior_fe(x, data, def_dprior = def_dprior, spec_intercept = spec_intercept) +
+  prior_cs(x, data) +
+  prior_mo(x, data) +
+  prior_sm(x, data, def_scale_prior = def_scale_prior) + 
+  prior_me(x, data) + 
+  prior_gp(x, data, def_scale_prior = def_scale_prior)
 }
 
 #' @export
-prior_effects.btnl <- function(x, data, def_scale_prior = "", ...) {
+prior_effects.btnl <- function(x, data, ...) {
   # collect default priors for non-linear parameters
   # Args:
   #   see prior_effects.btl
@@ -608,15 +591,14 @@ prior_effects.btnl <- function(x, data, def_scale_prior = "", ...) {
   for (i in seq_along(nlpars)) {
     prior_eff <- prior_effects(
       x$nlpars[[i]], data = data, 
-      def_scale_prior = def_scale_prior,
-      spec_intercept = FALSE
+      spec_intercept = FALSE, ...
     )
     prior <- prior + prior_eff
   }
   prior
 }
 
-prior_fe <- function(bterms, data, spec_intercept = TRUE) {
+prior_fe <- function(bterms, data, spec_intercept = TRUE, def_dprior = "") {
   # priors for population-level parameters
   # Args:
   #   spec_intercept: special parameter class for the Intercept? 
@@ -626,8 +608,8 @@ prior_fe <- function(bterms, data, spec_intercept = TRUE) {
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   if (has_intercept(bterms$fe) && spec_intercept) {
-    prior <- prior +
-      brmsprior(class = "Intercept", coef = "", ls = px)
+    prior <- prior + 
+      brmsprior(def_dprior, class = "Intercept", coef = "", ls = px)
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
@@ -841,21 +823,84 @@ prior_autocor <- function(bterms, def_scale_prior) {
   prior
 }
 
-choose_def_scale_prior <- function(x, data) {
-  UseMethod("choose_def_scale_prior")
+def_dprior <- function(x, dpar, data = NULL) {
+  # default priors for distributional parameters
+  stopifnot(is.brmsterms(x))
+  dpar <- as_one_character(dpar)
+  dpar_class <- dpar_class(dpar)
+  link <- x$dpars[[dpar]]$family$link
+  if (is.null(link)) {
+    link <- "identity"
+  }
+  # ensures reasonable scaling in def_scale_prior
+  x$family$link <- link
+  if (link == "identity") {
+    # dpar is estimated or predicted on the linear scale
+    out <- switch(dpar_class, "",
+      mu = def_scale_prior(x, data, center = FALSE),
+      sigma = def_scale_prior(x, data), 
+      shape = "gamma(0.01, 0.01)",
+      nu = "gamma(2, 0.1)", 
+      phi = "gamma(0.01, 0.01)",
+      kappa = "gamma(2, 0.01)", 
+      beta = "gamma(1, 0.1)", 
+      zi = "beta(1, 1)", 
+      hu = "beta(1, 1)", 
+      zoi = "beta(1, 1)",
+      coi = "beta(1, 1)",
+      bs = "gamma(1, 1)", 
+      ndt = "uniform(0, min_Y)", 
+      bias = "beta(1, 1)", 
+      quantile = "beta(1, 1)",
+      xi = "normal(0, 2.5)",
+      alpha = "normal(0, 4)",
+      disc = "lognormal(0, 1)",
+      theta = "logistic(0, 1)"
+    )
+  } else {
+    # except for 'mu' all parameters only support one link other than identity
+    out <- switch(dpar_class, "",
+      mu = def_scale_prior(x, data, center = FALSE),
+      sigma = def_scale_prior(x, data),
+      shape = "student_t(3, 0, 10)",
+      nu = "normal(2.7, 0.8)", 
+      phi = "student_t(3, 0, 10)",
+      kappa = "normal(5.0, 0.8)", 
+      beta = "normal(1.7, 1.3)", 
+      zi = "logistic(0, 1)", 
+      hu = "logistic(0, 1)", 
+      zoi = "logistic(0, 1)",
+      coi = "logistic(0, 1)",
+      bs = "normal(-0.6, 1.3)", 
+      bias = "logistic(0, 1)", 
+      quantile = "logistic(0, 1)",
+      xi = "normal(0, 4)",
+      alpha = "normal(0, 4)",
+      disc = "normal(0, 1)"
+    )
+  }
+  out
+}
+
+def_scale_prior <- function(x, data, ...) {
+  # ensure that SD parameters have a weakly informative prior by default
+  UseMethod("def_scale_prior")
 }
 
 #' @export
-choose_def_scale_prior.mvbrmsterms <- function(x, data) {
-  out <- ulapply(x$terms, choose_def_scale_prior, data = data)
+def_scale_prior.mvbrmsterms <- function(x, data, ...) {
+  out <- ulapply(x$terms, def_scale_prior, data = data, ...)
   names(out) <- x$responses
   out
 }
 
 #' @export
-choose_def_scale_prior.brmsterms <- function(x, data) {
-  # ensure that SD parameters have a weakly informative prior by default
+def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
+  # Args:
+  #   center: Should the prior be centererd around zero?
+  #     If FALSE, the prior location is computed based on Y.
   Y <- unname(model.response(model.frame(x$respform, data)))
+  prior_location <- 0
   prior_scale <- 10
   link <- x$family$link
   if (is_lognormal(x$family)) {
@@ -863,14 +908,21 @@ choose_def_scale_prior.brmsterms <- function(x, data) {
   }
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
-      Y <- ifelse(Y == 0, Y + 0.1, Y)  # avoid Inf in link(Y)
+      # avoid Inf in link(Y)
+      Y <- ifelse(Y == 0, Y + 0.1, Y) 
     }
-    suggested_scale <- SW(round(link(sd(Y), link = link)))
-    if (!is.nan(suggested_scale)) {
-      prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
+    sgst_scale <- SW(round(link(sd(Y), link = link)))
+    if (is.finite(sgst_scale)) {
+      prior_scale <- max(prior_scale, sgst_scale)
     } 
+    if (!center) {
+      sgst_location <- SW(round(link(median(Y), link = link), 2))
+      if (is.finite(sgst_location)) {
+        prior_location <- sgst_location
+      }
+    }
   }
-  paste0("student_t(3, 0, ", prior_scale, ")")
+  paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
 }
 
 check_prior <- function(prior, formula, data = NULL, 
@@ -906,35 +958,14 @@ check_prior <- function(prior, formula, data = NULL,
     prior$class, symbols = c("^cor$", "^rescor$"), 
     subs = c("L", "Lrescor"), fixed = FALSE
   )
-  duplicated_input <- duplicated(prior[, 2:7])
+  rcols <- c("class", "coef", "group", "resp", "dpar", "nlpar")
+  duplicated_input <- duplicated(prior[, rcols])
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
   }
-  # TODO: remove in brms 2.0?
-  # valid_dpars <- valid_dpars(family, bterms)
-  # nlpars_in_dpars <- prior$nlpar %in% valid_dpars
-  # if (any(nlpars_in_dpars)) {
-  #   warning2(
-  #     "Specifying priors of distributional parameters via ",
-  #     "'nlpar' is deprecated. Please use 'dpar' instead."
-  #   )
-  #   prior$dpar[nlpars_in_dpars] <- prior$nlpar[nlpars_in_dpars]
-  #   prior$nlpar[nlpars_in_dpars] <- ""
-  # }
-  # if (length(bterms$response) > 1L) {
-  #   nlpars_in_resp <- prior$nlpar %in% bterms$response
-  #   if (any(nlpars_in_resp)) {
-  #     warning2(
-  #       "Specifying priors in multivariate models via ",
-  #       "'nlpar' is deprecated. Please use 'resp' instead."
-  #     )
-  #     prior$resp[nlpars_in_resp] <- prior$nlpar[nlpars_in_resp]
-  #     prior$nlpar[nlpars_in_resp] <- ""
-  #   }
-  # }
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors[, 2:7], prior[, 2:7])))
+    valid <- which(duplicated(rbind(all_priors[, rcols], prior[, rcols])))
     invalid <- which(!seq_len(nrow(prior)) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
@@ -949,40 +980,12 @@ check_prior <- function(prior, formula, data = NULL,
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
   check_prior_content(prior, warn = warn)
   # merge user-specified priors with default priors
+  prior$new <- TRUE
+  all_priors$new <- FALSE
   prior <- prior + all_priors
-  prior <- prior[!duplicated(prior[, 2:7]), ]
-  # TODO: remove in brms 2.0?
-  # rows2remove <- NULL
-  # special treatment of population-level intercepts
-  # int_index <- which(prior$class == "Intercept")
-  # if (length(int_index)) {
-  #   int_prior <- prior[int_index, ]
-  #   bint_index <- with(prior, class == "b" & coef %in% "Intercept")
-  #   bint_prior <- prior[bint_index, ]
-  #   for (t in int_index) {
-  #     tb <- match(prior$nlpar[t], bint_prior$nlpar) 
-  #     if (!is.na(tb) && nzchar(bint_prior$prior[tb])) {
-  #       # fall back to 'b' priors deprecated as of brms 1.5.0
-  #       if (nzchar(prior$prior[t])) {
-  #         stop2("Duplicated prior definitions detected ", 
-  #               "for the population-level intercept.")
-  #       } else {
-  #         warning2(
-  #           "Setting a prior on the population-level intercept",
-  #           "\nvia (class = 'b', coef = 'Intercept') is deprecated.",
-  #           "\nPlease use (class = 'Intercept', coef = '') instead."
-  #         )
-  #         prior$prior[t] <- bint_prior$prior[tb]
-  #       }
-  #     }
-  #   }
-  #   rows2remove <- c(rows2remove, which(bint_index))
-  # }
-  # if (length(rows2remove)) {   
-  #   prior <- prior[-rows2remove, ]
-  # }
-  prior <- check_prior_special(bterms, prior = prior, data = data)
-  prior <- prior[with(prior, order(resp, dpar, nlpar, class, group, coef)), ]
+  prior <- prior[!duplicated(prior[, rcols]), ]
+  prior <- check_prior_special(prior, bterms = bterms, data = data)
+  prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
@@ -998,8 +1001,6 @@ check_prior_content <- function(prior, warn = TRUE) {
   if (!is.brmsprior(prior)) {
     return(invisible(TRUE))
   }
-  # stopifnot(is.family(family))
-  # family <- family$family
   if (nrow(prior)) {
     lb_priors <- c(
       "lognormal", "chi_square", "inv_chi_square",
@@ -1011,7 +1012,8 @@ check_prior_content <- function(prior, warn = TRUE) {
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
     # TODO: reflect again that delta is lb for family cumulative?
-    nb_pars <- c("b", "Intercept", "alpha", "xi")
+    # TODO: list 'Intercept' under nb_pars and allow boundaries on it
+    nb_pars <- c("b", "alpha", "xi")
     lb_pars <- c(
       "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
       "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale" 
@@ -1099,20 +1101,36 @@ check_prior_special <- function(x, ...) {
 }
 
 #' @export
-check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
-  if (isTRUE(attr(prior, "checked"))) {
-    return(prior) 
+check_prior_special.default <- function(x, ...) {
+  # invalid class will result in an empty brmsprior object
+  check_prior_special(empty_brmsprior(), ...)
+}
+
+#' @export
+check_prior_special.brmsprior <- function(x, bterms, ...) {
+  if (!nrow(x) || isTRUE(attr(x, "checked"))) {
+    return(x) 
   }
+  if (is.null(x$new)) x$new <- TRUE
+  x$remove <- FALSE
+  x <- check_prior_special(bterms, prior = x, ...)
+  x <- x[!x$remove, ]
+  x$new <- x$remove <- NULL
+  x
+}
+
+#' @export
+check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level prior in MV models
-    g_index <- find_rows(prior, class = cl, coef = "", resp = "")
+    gi <- find_rows(prior, class = cl, coef = "", resp = "")
+    prior$remove[gi] <- TRUE
     for (r in x$responses) {
-      r_index <- find_rows(prior, class = cl, coef = "", resp = r)
-      if (isTRUE(!nzchar(prior$prior[r_index]))) {
-        prior$prior[r_index] <- prior$prior[g_index]
+      ri <- find_rows(prior, class = cl, coef = "", resp = r)
+      if (isTRUE(!prior$new[ri] || !nzchar(prior$prior[ri]))) {
+        prior$prior[ri] <- prior$prior[gi]
       }
     }
-    prior <- prior[!g_index, ]
   }
   for (i in seq_along(x$terms)) {
     prior <- check_prior_special(x$terms[[i]], prior = prior, ...)
@@ -1122,9 +1140,6 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
 
 #' @export
 check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
-  if (isTRUE(attr(prior, "checked"))) {
-    return(prior) 
-  }
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
@@ -1138,18 +1153,18 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   # copy over the global population-level prior in categorical models
   if (is_categorical(x$family)) {
     for (cl in c("b", "Intercept")) {
-      g_index <- find_rows(
+      gi <- find_rows(
         prior, class = cl, coef = "", dpar = "", resp = x$resp
       )
+      prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
-        dp_index <- find_rows(
+        dpi <- find_rows(
           prior, class = cl, coef = "", dpar = dp, resp = x$resp
         )
-        if (isTRUE(!nzchar(prior$prior[dp_index]))) {
-          prior$prior[dp_index] <- prior$prior[g_index]
+        if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+          prior$prior[dpi] <- prior$prior[gi]
         }
       }
-      prior <- prior[!g_index, ]
     }
   }
   # prepare priors for mixture probabilities

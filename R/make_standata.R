@@ -53,7 +53,7 @@ make_standata <- function(formula, data, family = gaussian(),
   sample_prior <- check_sample_prior(sample_prior)
   check_prior_content(prior, warn = FALSE)
   prior <- check_prior_special(
-    bterms, prior = prior, data = data,
+    prior, bterms = bterms, data = data, 
     check_nlpar_prior = FALSE
   )
   na_action <- if (is_newdata) na.pass else na.omit
