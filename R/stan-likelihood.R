@@ -412,21 +412,21 @@ stan_llh_cens <- function(llh_pre, family, interval, resp = "",
   tp <- tp()
   if (interval) {
     int_cens <- paste0(
-      s, "} else if (cens[n] == 2) { \n",
+      s, "} else if (cens", resp, "[n] == 2) { \n",
       s, tp, w, "log_diff_exp(", 
-      llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), ",
-      llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2], "))", tr, "; \n"
+      llh_pre[1], "_lcdf(rcens", resp, "[n] | ", llh_pre[2], "), ",
+      llh_pre[1], "_lcdf(Y", resp, "[n] | ", llh_pre[2], "))", tr, "; \n"
     )
   } else {
     int_cens <- ""
   }
   paste0(
     "  // special treatment of censored data \n",
-    s, "if (cens[n] == 0) {\n", 
+    s, "if (cens", resp, "[n] == 0) {\n", 
     s, tp, w, llh_pre[1], lpdf, "(Y", resp, "[n] | ", llh_pre[2], ")", tr, ";\n",
-    s, "} else if (cens[n] == 1) {\n",         
+    s, "} else if (cens", resp, "[n] == 1) {\n",         
     s, tp, w, llh_pre[1], "_lccdf(Y", resp, "[n] | ", llh_pre[2], ")", tr, ";\n",
-    s, "} else if (cens[n] == -1) {\n",
+    s, "} else if (cens", resp, "[n] == -1) {\n",
     s, tp, w, llh_pre[1], "_lcdf(Y", resp, "[n] | ", llh_pre[2], ")", tr, ";\n",
     int_cens, s, "} \n"
   )

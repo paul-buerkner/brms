@@ -401,7 +401,12 @@ test_that("invalid combinations of modeling options are detected", {
 })
 
 test_that("Stan code for multivariate models is correct", {
-  dat <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  dat <- data.frame(
+    y1 = rnorm(10), y2 = rnorm(10), 
+    x = 1:10, g = rep(1:2, each = 5),
+    censi = sample(0:1, 10, TRUE)
+  )
+  # models with residual correlations
   scode <- make_stancode(cbind(y1, y2) ~ x, dat, prior = prior(horseshoe(2)))
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
@@ -421,10 +426,25 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, 
     "target += chi_square_lpdf(lasso_inv_lambda_y2 | lasso_df_y2)"
   )
-
   expect_match2(make_stancode(cbind(y1, y2) | weights(x) ~ 1, dat),
     "target += weights[n] * multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);"
   )
+  
+  # models without residual correlations
+  bform <- bf(y1 | cens(censi) ~ x + y2 + (x|2|g)) + 
+    gaussian() + cor_ar() +
+    (bf(x ~ 1) + mixture(poisson, nmix = 2)) +
+    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  bprior <- prior(normal(0, 5), resp = y1) +
+    prior(normal(0, 10), resp = y2)
+  scode <- make_stancode(bform, dat, prior = bprior)
+  expect_match2(scode, "vector[N_1] r_1_y2_3 = r_1[, 3]")
+  expect_match2(scode, "e_y1[n] = Y_y1[n] - mu_y1[n]")
+  expect_match2(scode, "target += normal_lccdf(Y_y1[n] | mu_y1[n], sigma_y1)")
+  expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
+  expect_match2(scode, "ps[1] = log(theta1_x) + poisson_log_lpmf(Y_x[n] | mu1_x[n])")
+  expect_match2(scode, "target += normal_lpdf(b_y1 | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(b_y2 | 0, 10)")
 })
 
 test_that("Stan code for categorical models is correct", {
