@@ -306,10 +306,6 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
         stop2("The following addition terms are invalid:\n",
               collapse_comma(ad_terms))
       }
-      if (is.formula(x$se) && is.formula(x$disp)) {
-        stop2("Addition arguments 'se' and 'disp' cannot ", 
-              "be used at the same time.")
-      }
     }
     if (is_wiener(family) && check_response && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
@@ -743,7 +739,6 @@ ad_families <- function(x) {
       "exgaussian", "frechet", "asym_laplace", "skew_normal",
       "gen_extreme_value"
     ),
-    disp = stop2("Addition argument 'disp' has been removed in brms 2.0."),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
   )

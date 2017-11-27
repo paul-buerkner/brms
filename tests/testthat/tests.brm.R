@@ -22,7 +22,7 @@ test_that("brm produces expected errors", {
                "The following addition terms are invalid:\n'abc(sei)'",
                fixed = TRUE)
   expect_error(brm(y | disp(sei) ~ x, dat, family = gaussian()),
-               "Addition argument 'disp' has been removed in brms 2")
+               "The following addition terms are invalid:")
   expect_error(brm(bf(y ~ x, shape ~ x), family = gaussian()),
                "The parameter 'shape' is not a valid distributional")
   expect_error(brm(y ~ x + (1|abc|g/x), dat), 

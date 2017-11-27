@@ -1044,10 +1044,7 @@ stan_eta_ilink <- function(family, dpars = NULL,
     link <- family$link
     family <- family$family
     shape <- paste0("shape", mix)
-    shape <- ifelse(
-      is.formula(adforms$disp), paste0("disp_", shape, "[n]"), 
-      ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
-    )
+    shape <- ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
     nu <- paste0("nu", mix)
     nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
     fl <- ifelse(

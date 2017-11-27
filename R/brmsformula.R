@@ -165,16 +165,15 @@
 #'   \bold{Additional response information}
 #'   
 #'   Another speciality of the \pkg{brms} formula syntax is the optional 
-#'   \code{aterms} part, which may contain 
-#'   multiple terms of the form \code{fun(<variable>)} seperated by \code{+} each 
-#'   providing special information on the response variable. \code{fun} can be 
-#'   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
-#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}.
-#'   Their meanings are explained below 
+#'   \code{aterms} part, which may contain multiple terms of the form 
+#'   \code{fun(<variable>)} seperated by \code{+} each providing special 
+#'   information on the response variable. \code{fun} can be replaced with 
+#'   either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
+#'   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
 #'   (see also \code{\link[brms:addition-terms]{addition-terms}}). 
 #'   
-#'   For families \code{gaussian} and \code{student}, it is 
-#'   possible to specify standard errors of the observation, thus allowing 
+#'   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is 
+#'   possible to specify standard errors of the observations, thus allowing 
 #'   to perform meta-analysis. Suppose that the variable \code{yi} contains 
 #'   the effect sizes from the studies and \code{sei} the corresponding 
 #'   standard errors. Then, fixed and random effects meta-analyses can 
@@ -199,24 +198,28 @@
 #'   Then, formula \code{yi | weights(wei) ~ predictors} 
 #'   implements a weighted regression. 
 #'   
-#'   (DEPRECATED) The addition argument \code{disp} (short for dispersion) 
-#'   serves a similar purpose than \code{weight}. However, it has a different 
-#'   implementation and is less general as it is only usable for the
-#'   families \code{gaussian}, \code{student}, \code{lognormal},
-#'   \code{exgaussian}, \code{asym_laplace}, \code{Gamma}, 
-#'   \code{weibull}, and \code{negbinomial}.
-#'   For the former three families, the residual standard deviation 
-#'   \code{sigma} is multiplied by the values given in 
-#'   \code{disp}, so that higher values lead to lower weights.
-#'   Contrariwise, for the latter three families, the parameter \code{shape}
-#'   is multiplied by the values given in \code{disp}. As \code{shape}
-#'   can be understood as a precision parameter (inverse of the variance),
-#'   higher values will lead to higher weights in this case.
-#'   Instead of using addition argument \code{disp}, you may 
-#'   equivalently use the distributional regression approach
-#'   by specifying \code{sigma ~ 1 + offset(log(xdisp))} or
-#'   \code{shape ~ 1 + offset(log(xdisp))}, where \code{xdisp} is
-#'   the variable being passed to \code{disp}.
+#'   With the exception of categorical, ordinal, and mixture families, 
+#'   left, right, and interval censoring can be modeled through 
+#'   \code{y | cens(censored) ~ predictors}. The censoring variable 
+#'   (named \code{censored} in this example) should contain the values 
+#'   \code{'left'}, \code{'none'}, \code{'right'}, and \code{'interval'} 
+#'   (or equivalenty \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate that 
+#'   the corresponding observation is left censored, not censored, right censored,
+#'   or interval censored. For interval censored data, a second variable
+#'   (let's call it \code{y2}) has to be passed to \code{cens}. In this case, 
+#'   the formula has the structure \code{y | cens(censored, y2) ~ predictors}. 
+#'   While the lower bounds are given in \code{y}, the upper bounds are given 
+#'   in \code{y2} for interval censored data. Intervals are assumed to be open 
+#'   on the left and closed on the right: \code{(y, y2]}.
+#'   
+#'   With the exception of categorical, ordinal, and mixture families, 
+#'   the response distribution can be truncated using the \code{trunc} 
+#'   function in the addition part. If the response variable is truncated 
+#'   between, say, 0 and 100, we can specify this via
+#'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. 
+#'   Instead of numbers, variables in the data set can also be passed allowing 
+#'   for varying truncation points across observations. Defining only one of 
+#'   the two arguments in \code{trunc} leads to one-sided truncation.
 #'   
 #'   For families \code{binomial} and \code{zero_inflated_binomial}, 
 #'   addition should contain a variable indicating the number of trials 
@@ -230,30 +233,6 @@
 #'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
 #'   If not given, the number of categories is calculated from the data.
 #'   
-#'   With the exception of \code{categorical} and ordinal families, 
-#'   left, right, and interval censoring can be modeled through 
-#'   \code{y | cens(censored) ~ predictors}. The censoring variable 
-#'   (named \code{censored} in this example) should contain the values 
-#'   \code{'left'}, \code{'none'}, \code{'right'}, and \code{'interval'} 
-#'   (or equivalenty \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate that 
-#'   the corresponding observation is left censored, not censored, right censored,
-#'   or interval censored. For interval censored data, a second variable
-#'   (let's call it \code{y2}) has to be passed to \code{cens}. In this case, 
-#'   the formula has the structure \code{y | cens(censored, y2) ~ predictors}. 
-#'   While the lower bounds are given in \code{y}, 
-#'   the upper bounds are given in \code{y2} for interval
-#'   censored data. Intervals are assumed to be open on the left and closed 
-#'   on the right: \code{(y, y2]}.
-#'   
-#'   With the exception of \code{categorical} and ordinal families, the response 
-#'   distribution can be truncated using the \code{trunc} function in the addition part.
-#'   If the response variable is truncated between, say, 0 and 100, we can specify this via
-#'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. 
-#'   Instead of numbers, variables in the data set can also be passed allowing 
-#'   for varying truncation points across observations. 
-#'   Defining only one of the two arguments in \code{trunc} 
-#'   leads to one-sided truncation.
-#'   
 #'   In Wiener diffusion models (family \code{wiener}) the addition term
 #'   \code{dec} is mandatory to specify the (vector of) binary decisions 
 #'   corresponding to the reaction times. Non-zero values will be treated
@@ -266,6 +245,13 @@
 #'   the \code{+} operator, for instance \cr
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
 #'   for a censored meta-analytic model. 
+#'   
+#'   (REMOVED) The addition argument \code{disp} (short for dispersion) 
+#'   has been removed in version 2.0. You may instead use the 
+#'   distributional regression approach by specifying
+#'   \code{sigma ~ 1 + offset(log(xdisp))} or
+#'   \code{shape ~ 1 + offset(log(xdisp))}, where \code{xdisp} is
+#'   the variable being previously passed to \code{disp}.
 #'   
 #'   \bold{Formula syntax for multivariate and categorical models}
 #'   

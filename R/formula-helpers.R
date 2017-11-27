@@ -8,9 +8,8 @@
 #' 
 #' @param x A vector; usually a variable defined in the
 #'  data. Allowed values depend on the function:
-#'  \code{resp_se}, \code{resp_weights}, and \code{resp_disp} 
-#'  require positive numeric values;
-#'  \code{resp_trials} and \code{resp_cat} require positive integers;
+#'  \code{resp_se} and \code{resp_weights} require positive numeric values.
+#'  \code{resp_trials} and \code{resp_cat} require positive integers.
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 #'  \code{'lower'} and \code{'upper'}; 
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
@@ -105,19 +104,6 @@ resp_weights <- function(x) {
     stop2("Weights must be non-negative.")
   }
   x
-}
-
-#' @rdname addition-terms
-#' @export
-resp_disp <- function(x) {
-  # dispersion factors
-  if (!is.numeric(x)) {
-    stop2("Dispersion factors must be numeric.")
-  }
-  if (min(x) < 0) {
-    stop2("Dispersion factors must be non-negative.")
-  }
-  x  
 }
 
 #' @rdname addition-terms

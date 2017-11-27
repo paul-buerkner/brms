@@ -425,8 +425,8 @@ prior_string <- function(prior, ...) {
 #' may be specified including default priors.
 #' 
 #' @inheritParams brm
-#' @param internal A flag indicating if the names of additional internal parameters should be displayed. 
-#'   Setting priors on these parameters is not recommended
+#' @param internal A flag indicating if the names of additional internal parameters 
+#'   should be displayed. Setting priors on these parameters is not recommended
 #' 
 #' @return A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
 #'   and several rows, each providing information on a parameter (or parameter class) on which

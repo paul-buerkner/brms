@@ -4,7 +4,6 @@
 \alias{addition-terms}
 \alias{resp_se}
 \alias{resp_weights}
-\alias{resp_disp}
 \alias{resp_trials}
 \alias{resp_cat}
 \alias{resp_dec}
@@ -15,8 +14,6 @@
 resp_se(x, sigma = FALSE)
 
 resp_weights(x)
-
-resp_disp(x)
 
 resp_trials(x)
 
@@ -31,9 +28,8 @@ resp_trunc(lb = -Inf, ub = Inf)
 \arguments{
 \item{x}{A vector; usually a variable defined in the
 data. Allowed values depend on the function:
-\code{resp_se}, \code{resp_weights}, and \code{resp_disp} 
-require positive numeric values;
-\code{resp_trials} and \code{resp_cat} require positive integers;
+\code{resp_se} and \code{resp_weights} require positive numeric values.
+\code{resp_trials} and \code{resp_cat} require positive integers.
 \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 \code{'lower'} and \code{'upper'}; 
 \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},

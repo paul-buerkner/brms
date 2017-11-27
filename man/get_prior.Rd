@@ -45,8 +45,8 @@ consecutive thresholds to the same value.
 As of \pkg{brms} 1.8.0, we recommend specifying threshold
 directly within the ordinal family functions.}
 
-\item{internal}{A flag indicating if the names of additional internal parameters should be displayed. 
-Setting priors on these parameters is not recommended}
+\item{internal}{A flag indicating if the names of additional internal parameters 
+should be displayed. Setting priors on these parameters is not recommended}
 }
 \value{
 A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
