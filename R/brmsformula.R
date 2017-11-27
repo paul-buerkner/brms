@@ -1108,16 +1108,6 @@ dpar_id <- function(dpar) {
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-pforms <- function(x, ...) {
-  # extract formulas of additional parameters
-  bf(x, ...)[["pforms"]]
-}
-
-pfix <- function(x, ...) {
-  # extract fixed values of additional parameters
-  bf(x, ...)[["pfix"]]
-}
-
 amend_formula <- function(formula, ...) {
   # incorporate additional arguments into the model formula
   UseMethod("amend_formula")
