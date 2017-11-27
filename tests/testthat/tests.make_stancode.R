@@ -497,13 +497,6 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
-  expect_warning(
-    scode_old <- make_stancode(
-      y ~ x1, dat, cumulative("probit"), threshold = "equidistant"
-    ),
-    "Specifying 'threshold' outside of family functions is deprecated"
-  )
-  expect_equal(scode, scode_old)
   
   scode <- make_stancode(y ~ x1, dat, family = cratio("probit_approx"))
   expect_match2(scode, "real cratio_probit_approx_lpmf(int y")
@@ -1040,11 +1033,11 @@ test_that("offsets appear in the Stan code", {
 
 test_that("prior only models are correctly checked", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
-  prior <- prior(normal(0, 5), b)
+  prior <- prior(normal(0, 5), b) + prior("", Intercept)
   expect_error(make_stancode(y ~ x, data, prior = prior,
                              sample_prior = "only"),
                "Sampling from priors is not possible")
-  prior <- c(prior, prior(normal(0, 10), Intercept))
+  prior <- prior(normal(0, 5), b) + prior(normal(0, 10), Intercept)
   scode <- make_stancode(y ~ x, data, prior = prior,
                          sample_prior = "only")
   expect_match2(scode, "target += normal_lpdf(temp_Intercept | 0, 10)")

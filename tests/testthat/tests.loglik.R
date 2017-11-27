@@ -346,7 +346,7 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   expect_equal(length(ll), ns)
 })
 
-test_that("loglik for categorical and ordinal models runs without erros", {
+test_that("loglik for ordinal models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 4
@@ -357,8 +357,6 @@ test_that("loglik for categorical and ordinal models runs without erros", {
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$f$link <- "logit"
-  ll <- sapply(1:nobs, brms:::loglik_categorical, draws = draws)
-  expect_equal(dim(ll), c(ns, nobs))
   
   ll <- sapply(1:nobs, brms:::loglik_cumulative, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
@@ -374,6 +372,21 @@ test_that("loglik for categorical and ordinal models runs without erros", {
   
   draws$f$link <- "probit"
   ll <- sapply(1:nobs, brms:::loglik_acat, data = data, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
+})
+
+test_that("loglik for categorical models runs without erros", {
+  ns <- 50
+  nobs <- 8
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+  )
+  draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
+  draws$f$link <- "logit"
+  ll <- sapply(1:nobs, brms:::loglik_categorical, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
 

@@ -243,7 +243,7 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   expect_equal(length(pred), ns)
 })
 
-test_that("predict for categorical and ordinal models runs without erros", {
+test_that("predict for ordinal models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 4
@@ -253,10 +253,7 @@ test_that("predict for categorical and ordinal models runs without erros", {
     disc = rexp(ns)
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  
   draws$f$link <- "logit"
-  pred <- sapply(1:nobs, brms:::predict_categorical, draws = draws)
-  expect_equal(dim(pred), c(ns, nobs))
   
   pred <- sapply(1:nobs, brms:::predict_cumulative, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
@@ -272,6 +269,21 @@ test_that("predict for categorical and ordinal models runs without erros", {
   
   draws$f$link <- "probit"
   pred <- sapply(1:nobs, brms:::predict_acat, draws = draws)
+  expect_equal(dim(pred), c(ns, nobs))
+})
+
+test_that("loglik for categorical models runs without erros", {
+  ns <- 50
+  nobs <- 8
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+  )
+  draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
+  draws$f$link <- "logit"
+  pred <- sapply(1:nobs, brms:::predict_categorical, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })
 
