@@ -377,8 +377,8 @@
 #'   Furthermore, the \code{bias} parameter in drift-diffusion models, 
 #'   is assumed to be \code{0.5} (i.e. no bias) in many applications. 
 #'   To achieve this, simply write \code{bias = 0.5}. 
-#'   Other possible applications are the Cauchy 
-#'   distribution as a special case of the Student-t distribution with 
+#'   Other possible applications are the Cauchy distribution as a 
+#'   special case of the Student-t distribution with 
 #'   \code{nu = 1}, or the geometric distribution as a special case of
 #'   the negative binomial distribution with \code{shape = 1}.
 #'   Furthermore, the parameter \code{disc} ('discrimination') in ordinal 

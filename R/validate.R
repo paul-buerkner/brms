@@ -722,22 +722,21 @@ ad_families <- function(x) {
   # names of valid families for addition arguments
   switch(x, 
     weights = "all",
-    se = c("gaussian", "student", "cauchy", "skew_normal"),
+    se = c("gaussian", "student", "skew_normal"),
     trials = c("binomial", "zero_inflated_binomial"),
     cat = c("cumulative", "cratio", "sratio", "acat"), 
     cens = c(
-      "gaussian", "student", "cauchy", "lognormal",
+      "gaussian", "student", "lognormal", "skew_normal",
       "inverse.gaussian", "binomial", "poisson", 
       "geometric", "negbinomial", "exponential", 
       "weibull", "gamma", "exgaussian", "frechet",
-      "asym_laplace", "gen_extreme_value", "skew_normal"
+      "asym_laplace", "gen_extreme_value"
     ),
     trunc = c(
-      "gaussian", "student", "cauchy", "lognormal", 
+      "gaussian", "student", "lognormal", "skew_normal",
       "binomial", "poisson", "geometric", "negbinomial",
       "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace", "skew_normal",
-      "gen_extreme_value"
+      "exgaussian", "frechet", "asym_laplace", "gen_extreme_value"
     ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")

@@ -924,7 +924,7 @@ is.mixfamily <- function(x) {
 
 is_linear <- function(family) {
   # indicate if family is for a linear model
-  any(family_names(family) %in% c("gaussian", "student", "cauchy"))
+  any(family_names(family) %in% c("gaussian", "student"))
 }
 
 is_binary <- function(family) {

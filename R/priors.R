@@ -240,18 +240,18 @@
 #'   7. Parameters for specific families 
 #'   
 #'   Some families need additional parameters to be estimated. 
-#'   Families \code{gaussian}, \code{student}, and \code{cauchy} 
-#'   need the parameter \code{sigma} 
-#'   to account for the residual standard deviation.
+#'   Families \code{gaussian}, \code{student}, \code{skew_normal},
+#'   \code{lognormal}, and \code{gen_extreme_value} need the parameter 
+#'   \code{sigma} to account for the residual standard deviation.
 #'   By default, \code{sigma} has a half student-t prior that scales 
 #'   in the same way as the group-level standard deviations.
-#'   Furthermore, family \code{student} needs the parameter 
+#'   Further, family \code{student} needs the parameter 
 #'   \code{nu} representing the degrees of freedom of students-t distribution. 
-#'   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
-#'   and a fixed lower bound of \code{0}.
+#'   By default, \code{nu} has prior \code{"gamma(2, 0.1)"}
+#'   and a fixed lower bound of \code{1}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
 #'   \code{negbinomial} need a \code{shape} parameter that has a 
-#'   \code{"gamma(0.01,0.01)"} prior by default. 
+#'   \code{"gamma(0.01, 0.01)"} prior by default. 
 #'   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
 #'   the parameter \code{delta} is used to model the distance between 
