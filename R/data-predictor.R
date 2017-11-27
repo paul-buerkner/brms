@@ -453,10 +453,12 @@ data_offset <- function(bterms, data) {
   out
 }
 
-data_autocor <- function(bterms, data, Y = NULL, old_locations = NULL) {
+data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
+                         old_locations = NULL) {
   # data for autocorrelation variables
   # Args:
   #   Y: vector of response values; only required in cor_arr
+  #   new: does 'data' contain new data?
   #   old_locations: optional locations for CAR models 
   #     used when fitting the model
   stopifnot(is.brmsterms(bterms))
@@ -520,7 +522,6 @@ data_autocor <- function(bterms, data, Y = NULL, old_locations = NULL) {
       loc_data <- get(bterms$time$group, data)
       locations <- levels(factor(loc_data))
       if (!is.null(old_locations)) {
-        # old_locations <- control$old_locations
         new_locations <- setdiff(locations, old_locations)
         if (length(new_locations)) {
           stop2("Cannot handle new locations in CAR models.")
@@ -545,7 +546,7 @@ data_autocor <- function(bterms, data, Y = NULL, old_locations = NULL) {
       Nloc <- N
       Jloc <- as.array(seq_len(Nloc))
       if (!identical(dim(autocor$W), rep(Nloc, 2))) {
-        if (is_newdata) {
+        if (new) {
           stop2("Cannot handle new data in CAR models ",
                 "without a grouping factor.")
         } else {
@@ -616,7 +617,8 @@ data_response.mvbrmsterms <- function(x, old_standata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    not4stan = FALSE, old_standata = NULL) {
+                                    not4stan = FALSE, new = FALSE,
+                                    old_standata = NULL) {
   # prepare data for the response variable
   N <- nrow(data)
   out <- list(Y = unname(model.response(model.frame(x$respform, data))))
@@ -790,7 +792,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   c(setNames(out, paste0(names(out), resp)),
     # specify data for autocors here in order to pass Y
     data_autocor(
-      x, data = data, Y = out$Y, 
+      x, data = data, Y = out$Y, new = new,
       old_locations = old_standata$locations
     )
   )

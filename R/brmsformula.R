@@ -17,12 +17,12 @@
 #'   The following are distributional parameters of specific families
 #'   (all other parameters are treated as non-linear parameters):
 #'   \code{sigma} (residual standard deviation or scale of
-#'   the \code{gaussian}, \code{student}, \code{lognormal} 
-#'   \code{exgaussian}, and \code{asym_laplace} families);
+#'   the \code{gaussian}, \code{student}, \code{skew_normal}, 
+#'   \code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
 #'   \code{shape} (shape parameter of the \code{Gamma},
 #'   \code{weibull}, \code{negbinomial}, and related
-#'   zero-inflated / hurdle families); \code{nu}
-#'   (degrees of freedom parameter of the \code{student} family);
+#'   zero-inflated / hurdle families); \code{nu} (degrees of freedom 
+#'   parameter of the \code{student} and \code{frechet} families);
 #'   \code{phi} (precision parameter of the \code{beta} 
 #'   and \code{zero_inflated_beta} families);
 #'   \code{kappa} (precision parameter of the \code{von_mises} family);
@@ -37,33 +37,33 @@
 #'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 #'   non-decision time, and initial bias of the \code{wiener}
 #'   diffusion model).
-#'   All distributional parameters are modeled 
-#'   on the log or logit scale to ensure correct definition
-#'   intervals after transformation.
+#'   By default, distributional parameters are modeled 
+#'   on the log scale if they can be positive only or on the 
+#'   logit scale if the can only be within the unit interval.
 #'   See 'Details' for more explanation.
 #' @param flist Optional list of formulas, which are treated in the 
 #'   same way as formulas passed via the \code{...} argument.
 #' @param nl Logical; Indicates whether \code{formula} should be
 #'   treated as specifying a non-linear model. By default, \code{formula} 
 #'   is treated as an ordinary linear model formula.
-#' @param family Same argument as in \code{\link[brms:brm]{brm}}.
+#' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
-#'   overwrite the value specified in \code{\link[brms:brm]{brm}}.
-#' @param autocor Same argument as in \code{\link[brms:brm]{brm}}.
+#'   overwrite the value specified in \code{\link{brm}}.
+#' @param autocor Same argument as in \code{\link{brm}}.
 #'   If \code{autocor} is specified in \code{brmsformula}, it will 
-#'   overwrite the value specified in \code{\link[brms:brm]{brm}}.
+#'   overwrite the value specified in \code{\link{brm}}.
 #' 
 #' @return An object of class \code{brmsformula}, which
 #'   is essentially a \code{list} containing all model
 #'   formulas as well as some additional information.
 #'   
-#' @seealso \code{\link[brms:brmsformula-helpers]{brmsformula-helpers}}
+#' @seealso \code{\link{mvbrmsformula}}, \code{\link{brmsformula-helpers}}
 #'   
 #' @details 
 #' 
 #'   \bold{General formula structure}
 #'   
-#'   The \code{formula} argument accepts formulae of the following syntax:
+#'   The \code{formula} argument accepts formulas of the following syntax:
 #'   
 #'   \code{response | aterms ~ pterms + (gterms | group)} 
 #'   
@@ -81,8 +81,8 @@
 #'   \bold{Group-level terms}
 #'   
 #'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible (of course can also run models without any
-#'   group-level effects). 
+#'   are possible. (Of course we can also run models without any
+#'   group-level effects.) 
 #'   Instead of \code{|} you may use \code{||} in grouping terms
 #'   to prevent correlations from being modeled. 
 #'   Alternatively, it is possible to model different group-level terms of 
@@ -246,56 +246,12 @@
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
 #'   for a censored meta-analytic model. 
 #'   
-#'   (REMOVED) The addition argument \code{disp} (short for dispersion) 
+#'   The addition argument \code{disp} (short for dispersion) 
 #'   has been removed in version 2.0. You may instead use the 
 #'   distributional regression approach by specifying
 #'   \code{sigma ~ 1 + offset(log(xdisp))} or
 #'   \code{shape ~ 1 + offset(log(xdisp))}, where \code{xdisp} is
 #'   the variable being previously passed to \code{disp}.
-#'   
-#'   \bold{Formula syntax for multivariate and categorical models}
-#'   
-#'   For families \code{gaussian} and \code{student},
-#'   multivariate models may be specified using \code{cbind} notation. 
-#'   In \pkg{brms} 1.0.0, the multvariate 'trait' syntax was removed 
-#'   from the package as it repeatedly confused users, required much 
-#'   special case coding, and was hard to maintain. Below the new 
-#'   syntax is described. 
-#'   Suppose that \code{y1} and \code{y2} are response variables 
-#'   and \code{x} is a predictor. 
-#'   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model,
-#'   The effects of all terms specified at the RHS of the formula 
-#'   are assumed to vary across response variables (this was not the
-#'   case by default in \pkg{brms} < 1.0.0). For instance, two parameters will
-#'   be estimated for \code{x}, one for the effect
-#'   on \code{y1} and another for the effect on \code{y2}.
-#'   This is also true for group-level effects. When writing, for instance,
-#'   \code{cbind(y1,y2) ~ x + (1+x|g)}, group-level effects will be
-#'   estimated separately for each response. To model these effects
-#'   as correlated across responses, use the ID syntax (see above).
-#'   For the present example, this would look as follows:
-#'   \code{cbind(y1,y2) ~ x + (1+x|2|g)}. Of course, you could also use
-#'   any value other than \code{2} as ID. It is not yet possible
-#'   to model terms as only affecting certain responses (and not others),
-#'   but this will be implemented in the future.
-#'    
-#'   Categorical models use the same syntax as multivariate
-#'   models. As in most other implementations of categorical models,
-#'   values of one category (the first in \pkg{brms}) are fixed 
-#'   to identify the model. Thus, all terms on the RHS of 
-#'   the formula correspond to \code{K - 1} effects 
-#'   (\code{K} = number of categories), one for each non-fixed category.
-#'   Group-level effects may be specified as correlated across
-#'   categories using the ID syntax.
-#'   
-#'   As of \pkg{brms} 1.0.0, zero-inflated and hurdle models are specfied 
-#'   in the same way as as their non-inflated counterparts. 
-#'   However, they have additional distributional parameters 
-#'   (named \code{zi} and \code{hu} respectively)
-#'   modeling the zero-inflation / hurdle probability depending on which 
-#'   model you choose. These parameters can also be affected by predictors
-#'   in the same way the response variable itself. See the end of the
-#'   Details section for information on how to accomplish that.
 #'   
 #'   \bold{Parameterization of the population-level intercept}
 #'   
@@ -387,20 +343,27 @@
 #'   (see examples). For reasons of identification, \code{'disc'}
 #'   can only be positive, which is achieved by applying the log-link.
 #'   
-#'   All distributional parameters currently supported by \code{brmsformula}
-#'   have to positive (a negative standard deviation or precision parameter 
+#'   In categorical models, distributional parameters do not have
+#'   fixed names. Instead, they are named after the response categories 
+#'   (excluding the first one, which serves as the reference category),
+#'   with the prefix \code{'mu'}. If, for instance, catgories are named 
+#'   \code{cat1}, \code{cat2}, and \code{cat3}, the distributional parameters
+#'   will be named \code{mucat2} and \code{mucat3}.
+#'   
+#'   Some distributional parameters currently supported by \code{brmsformula}
+#'   have to be positive (a negative standard deviation or precision parameter 
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
 #'   hurdle proabilities, quantiles, or the intial bias parameter of 
 #'   drift-diffusion models). 
 #'   However, linear predictors can be positive or negative, and thus the log link 
 #'   (for positive parameters) or logit link (for probability parameters) are used 
 #'   by default to ensure that distributional parameters are within their valid intervals.
-#'   This implies that, by default, effects for distributional parameters are estimated 
-#'   on the log / logit scale and one has to apply the inverse link function to get 
-#'   to the effects on the original scale.
+#'   This implies that, by default, effects for such distributional parameters are 
+#'   estimated on the log / logit scale and one has to apply the inverse link 
+#'   function to get to the effects on the original scale.
 #'   Alternatively, it is possible to use the identity link to predict parameters
 #'   on their original scale, directly. However, this is much more likely to lead 
-#'   to problems in the model fitting.
+#'   to problems in the model fitting, if the parameter actually has a restrcited range.
 #'   
 #'   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
 #'   valid link functions.
@@ -441,6 +404,31 @@
 #'   
 #'   For more information on mixture models, see
 #'   the documentation of \code{\link[brms:mixture]{mixture}}.
+#'   
+#'   \bold{Formula syntax for multivariate models}
+#'   
+#'   Multivariate models may be specified using \code{cbind} notation
+#'   or with help of the \code{\link{mvbf}} function.
+#'   Suppose that \code{y1} and \code{y2} are response variables 
+#'   and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
+#'   specifies a multivariate model,
+#'   The effects of all terms specified at the RHS of the formula 
+#'   are assumed to vary across response variables. 
+#'   For instance, two parameters will be estimated for \code{x}, 
+#'   one for the effect on \code{y1} and another for the effect on \code{y2}.
+#'   This is also true for group-level effects. When writing, for instance,
+#'   \code{cbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
+#'   estimated separately for each response. To model these effects
+#'   as correlated across responses, use the ID syntax (see above).
+#'   For the present example, this would look as follows:
+#'   \code{cbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
+#'   any value other than \code{2} as ID.
+#'   
+#'   It is also possible to specify different formulas for different responses.
+#'   If, for instance, \code{y1} should be predicted by \code{x} and \code{y2}
+#'   should be predicted by \code{z}, we could write \code{mvbf(y1 ~ x, y2 ~ z)}.
+#'   Alternatively, multiple \code{brmsformula} objects can be added to
+#'   specify a joint multivariate model (see 'Examples').
 #'
 #' @examples 
 #' # multilevel model with smoothing terms
@@ -508,6 +496,11 @@
 #'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
 #'   lf(b ~ z + (1|g), dpar = "sigma") +
 #'   gaussian()
+#'   
+#' # specify a multivariate model using the '+' operator
+#' bf(y1 ~ x + (1|g)) + 
+#'   gaussian() + cor_ar(~1|g) +
+#'   bf(y2 ~ z) + poisson()
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
@@ -672,15 +665,19 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' @param resp Optional character string specifying the response 
 #'   variable to which the formulas passed via \code{...} and
 #'   \code{flist} belong. Only relevant in multivariate models.
+#' @param rescor Logical; Indicates if residual correlation between
+#'   the response variables should be modeled. Currently this is only
+#'   possible in multivariate \code{gaussian} and \code{student} models.
+#'   Only relevant in multivariate models.
 #' @inheritParams brmsformula
 #' 
 #' @return For \code{lf} and \code{nlf} a \code{list} that can be 
 #'   passed to \code{\link[brms:brmsformula]{brmsformula}} or added 
-#'   to an existing \code{brmsformula} object. For \code{set_nl} 
-#'   a \code{list} that can be added to an existing
-#'   \code{brmsformula} object.
+#'   to an existing \code{brmsformula} or \code{mvbrmsformula} object. 
+#'   For \code{set_nl} and \code{set_rescor} a logical value that can be 
+#'   added to an existing \code{brmsformula} or \code{mvbrmsformula} object.
 #'
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}, \code{\link{mvbrmsformula}}
 #' 
 #' @examples
 #' # add more formulas to the model
@@ -693,6 +690,11 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' bf(y ~ a * inv_logit(x * b)) +
 #'   lf(a + b ~ z) +
 #'   set_nl(TRUE)
+#'   
+#' # specify a multivariate model
+#' bf(y1 ~ x + (1|g)) + 
+#'   bf(y2 ~ z) +
+#'   set_rescor(TRUE)
 #' 
 #' @export
 nlf <- function(formula, ..., flist = NULL, dpar = NULL, resp = NULL) {
@@ -744,8 +746,33 @@ set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
   structure(nl, dpar = dpar, resp = resp, class = "setnl")
 }
 
+#' Set up a multivariate model formula for use in \pkg{brms}
+#' 
+#' Set up a multivariate model formula for use in the \pkg{brms} package
+#' allowing to define (potentially non-linear) additive multilevel 
+#' models for all parameters of the assumed response distributions.
+#' 
+#' @aliases mvbf
+#' 
+#' @param ... Objects of class \code{formula} or \code{brmsformula}, 
+#'   each specifying a univariate model. See \code{\link{brmsformula}}
+#'   for details on how to specify univariate models.
+#' @param flist Optional list of formulas, which are treated in the 
+#'   same way as formulas passed via the \code{...} argument.
+#' @param rescor Logical; Indicates if residual correlation between
+#'   the response variables should be modeled. Currently, this is only
+#'   possible in multivariate \code{gaussian} and \code{student} models.
+#'   If \code{NULL} (the default), \code{rescor} is internally set to 
+#'   \code{TRUE} when possible.
+#'   
+#' @return An object of class \code{mvbrmsformula}, which
+#'   is essentially a \code{list} containing all model formulas 
+#'   as well as some additional information for multivariate models.
+#'   
+#' @seealso \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
+#' 
 #' @export
-mvbf <- function(..., flist = NULL, rescor = NULL) {
+mvbrmsformula <- function(..., flist = NULL, rescor = NULL) {
   dots <- c(list(...), flist)
   if (!length(dots)) {
     stop2("No objects passed to 'mvbf'.")
@@ -773,6 +800,11 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
     nlist(forms, responses, rescor),
     class = c("mvbrmsformula", "bform")
   )
+}
+
+#' @export
+mvbf <- function(..., flist = NULL, rescor = NULL) {
+  mvbrmsformula(..., flist = flist, rescor = rescor)
 }
 
 split_bf <- function(x) {
@@ -857,7 +889,6 @@ plus_brmsformula <- function(e1, e2) {
   e1
 }
 
-#' @export
 plus_mvbrmsformula <- function(e1, e2) {
   if (is.function(e2)) {
     e2 <- try(e2(), silent = TRUE)

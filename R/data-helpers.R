@@ -340,7 +340,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (return_standata) {
     fit <- add_new_objects(fit, newdata, new_objects)
     control <- list(
-      is_newdata = TRUE, not4stan = TRUE, 
+      new = TRUE, not4stan = TRUE, 
       old_levels = old_levels, save_order = TRUE
     )
     # ensure correct handling of functions like poly or scale

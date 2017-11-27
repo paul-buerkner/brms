@@ -1531,6 +1531,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, 
 #'   where S is the number of samples.
+#'   In multivariate models, the output is an array of 3 dimensions, 
+#'   where the third dimension indicates the response variables.
 #' 
 #' @details \code{NA} values within factors in \code{newdata}, 
 #'   are interpreted as if all dummy variables of this factor are 
@@ -1655,6 +1657,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  for categorical and ordinal models and a S x N matrix else.
 #'  N is the number of observations, S is the number of samples, 
 #'  C is the number of categories, and E is equal to \code{length(probs) + 2}.
+#'  In multivariate models, the output is an array of 3 dimensions, 
+#'  where the third dimension indicates the response variables.
 #'   
 #' @details \code{NA} values within factors in \code{newdata}, 
 #'   are interpreted as if all dummy variables of this factor are 
@@ -2410,6 +2414,10 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' 
 #' @param object A fitted model object of class \code{brmsfit}. 
 #' @inheritParams predict.brmsfit
+#' @param combine Only relevant in multivariate models.
+#'   Indicates if the log-likelihoods of the submodels should
+#'   be combined per observation (i.e. added together; the default) 
+#'   or if the log-likelihoods should be returned separetely.
 #' @param pointwise A flag indicating whether to compute the full
 #'   log-likelihood matrix at once (the default), or just return
 #'   the likelihood function along with all data and samples
@@ -2419,10 +2427,11 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
 #' @param ... Currently ignored
 #' 
-#' @return Usually, an S x N matrix containing 
-#'  the pointwise log-likelihood samples, 
-#'  where S is the number of samples and N is the number 
-#'  of observations in the data. 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood
+#'  samples, where S is the number of samples and N is the number 
+#'  of observations in the data. For multivariate models and if 
+#'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+#'  where R is the number of response variables.
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior samples.

@@ -33,7 +33,7 @@ make_standata <- function(formula, data, family = gaussian(),
                           only_response = FALSE, control = list(), 
                           ...) {
   # internal control arguments:
-  #   is_newdata: is make_standata is called with new data?
+  #   new: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   old_standata: list of stan data computed from the orginal data
@@ -42,7 +42,7 @@ make_standata <- function(formula, data, family = gaussian(),
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   not4stan <- isTRUE(control$not4stan)
-  is_newdata <- isTRUE(control$is_newdata)
+  new <- isTRUE(control$new)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   
@@ -56,10 +56,10 @@ make_standata <- function(formula, data, family = gaussian(),
     prior, bterms = bterms, data = data, 
     check_nlpar_prior = FALSE
   )
-  na_action <- if (is_newdata) na.pass else na.omit
+  na_action <- if (new) na.pass else na.omit
   data <- update_data(
     data, bterms = bterms, na.action = na_action, 
-    drop.unused.levels = !is_newdata, knots = knots,
+    drop.unused.levels = !new, knots = knots,
     terms_attr = control$terms_attr
   )
   if (has_arma(autocor) || is.cor_bsts(autocor)) {
@@ -70,8 +70,9 @@ make_standata <- function(formula, data, family = gaussian(),
   out <- c(
     list(N = nrow(data)), 
     data_response(
-      bterms, data = data, check_response = check_response,
-      not4stan = not4stan, old_standata = control$old_standata
+      bterms, data, check_response = check_response,
+      not4stan = not4stan, new = new, 
+      old_standata = control$old_standata
     )
   )
   if (!only_response) {

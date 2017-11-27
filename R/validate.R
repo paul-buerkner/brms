@@ -9,7 +9,10 @@
 #'   should be parsed. If \code{FALSE}, \code{formula} may also be one-sided.
 #' @param resp_rhs_all Logical; Indicates whether to also include response 
 #'   variables on the right-hand side of formula \code{.$allvars}, 
-#'   where \code{.} represents the output of \code{parse_bf}. 
+#'   where \code{.} represents the output of \code{parse_bf}.
+#' @param mv Indicates if the univariate model is part of a multivariate model.
+#' @param rescor Indicates if residual correlations should be estimated.
+#'   Only relevant in multivariate models.
 #'  
 #' @return An object of class \code{brmsterms}, which is a \code{list}
 #'   containing all required information initially stored in \code{formula} 
@@ -32,6 +35,7 @@ parse_bf <- function(formula, ...) {
   UseMethod("parse_bf")
 }
 
+#' @rdname parse_bf
 #' @export
 parse_bf.default <- function(formula, family = NULL, autocor = NULL, 
                              check_response = TRUE, resp_rhs_all = TRUE,
@@ -180,6 +184,7 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
   y
 }
 
+#' @rdname parse_bf
 #' @export
 parse_bf.mvbrmsformula <- function(formula, ...) {
   out <- list()

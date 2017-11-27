@@ -125,6 +125,8 @@ Predicted values of the response variable.
   to \code{length(probs) + 2}.
   If \code{summary = FALSE}, the output is as a S x N matrix, 
   where S is the number of samples.
+  In multivariate models, the output is an array of 3 dimensions, 
+  where the third dimension indicates the response variables.
 }
 \description{
 Predict responses based on the fitted model.

@@ -48,17 +48,17 @@
 #'   A complete overview on possible prior distributions is given 
 #'   in the Stan Reference Manual available at \url{http://mc-stan.org/}.
 #'   
-#'   To combine multiple priors, use \code{c(...)}, 
-#'   e.g., \code{c(set_prior(...), set_prior(...))}.
-#'   \pkg{brms} does not check if the priors are written in correct \pkg{Stan} language. 
-#'   Instead, \pkg{Stan} will check their syntactical correctness when the model 
-#'   is parsed to \code{C++} and returns an error if they are not. 
+#'   To combine multiple priors, use \code{c(...)} or the \code{+} operator 
+#'   (see 'Examples'). \pkg{brms} does not check if the priors are written 
+#'   in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their 
+#'   syntactical correctness when the model is parsed to \code{C++} and 
+#'   returns an error if they are not. 
 #'   This, however, does not imply that priors are always meaningful if they are 
 #'   accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
 #'   (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
 #'   that the defined priors are reasonable for the model.
-#'   Currently, there are seven types of parameters in \pkg{brms} models, 
-#'   for which the user can specify prior distributions. \cr
+#'   Below, we list the types of parameters in \pkg{brms} models, 
+#'   for which the user can specify prior distributions.
 #'   
 #'   1. Population-level ('fixed') effects
 #'   
@@ -980,8 +980,8 @@ check_prior <- function(prior, formula, data = NULL,
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
   check_prior_content(prior, warn = warn)
   # merge user-specified priors with default priors
-  prior$new <- TRUE
-  all_priors$new <- FALSE
+  prior$new <- rep(TRUE, nrow(prior))
+  all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- prior + all_priors
   prior <- prior[!duplicated(prior[, rcols]), ]
   prior <- check_prior_special(prior, bterms = bterms, data = data)

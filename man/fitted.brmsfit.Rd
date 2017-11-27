@@ -125,6 +125,8 @@ Fitted values extracted from \code{object}.
  for categorical and ordinal models and a S x N matrix else.
  N is the number of observations, S is the number of samples, 
  C is the number of categories, and E is equal to \code{length(probs) + 2}.
+ In multivariate models, the output is an array of 3 dimensions, 
+ where the third dimension indicates the response variables.
 }
 \description{
 Predict fitted values (i.e., the 'regression line') of a fitted model.
