@@ -34,7 +34,6 @@ NULL
 #' This functions is a constructor for the \code{cor_arma} class, representing 
 #' an autoregression-moving average correlation structure of order (p, q).
 #' 
-#' @aliases cor.arma
 #' @aliases cor_arma-class
 #' 
 #' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
@@ -96,18 +95,11 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   x
 }
 
-#' @export
-cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
-  warn_deprecated("cor_arma")
-  cor_arma(formula = formula, p = p, q = q, r = r, cov = cov)
-}
-
 #' AR(p) correlation structure
 #' 
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for autoregression terms only.
-#' 
-#' @aliases cor.ar
+
 #' 
 #' @inheritParams cor_arma
 #' 
@@ -129,19 +121,11 @@ cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
   cor_arma(formula = formula, p = p, q = 0, r = 0, cov = cov)
 }
-
-#' @export
-cor.ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
-  warn_deprecated("cor_ar")
-  cor_ar(formula = formula, p = p, cov = cov)
-}
   
 #' MA(q) correlation structure
 #' 
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for moving average terms only.
-#' 
-#' @aliases cor.ma
 #' 
 #' @inheritParams cor_arma
 #' 
@@ -157,12 +141,6 @@ cor.ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' @export
 cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
   cor_arma(formula = formula, p = 0, q = q, r = 0, cov = cov)
-}
-
-#' @export
-cor.ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
-  warn_deprecated("cor_ma")
-  cor_ma(formula = formula, q = q, cov = cov)
 }
 
 #' ARR(r) correlation structure
@@ -561,7 +539,7 @@ use_cov <- function(x) {
 }
 
 stop_not_cor_brms <- function(x) {
-  if (!(is.null(x) || is.cor_brms(x) || is(x, "cor.brms"))) {
+  if (!(is.null(x) || is.cor_brms(x))) {
     stop2("Argument 'autocor' must be of class 'cor_brms'.")
   }
   TRUE
