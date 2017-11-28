@@ -474,8 +474,6 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   def_scale_prior <- def_scale_prior(bterms, data)
   prior <- prior + prior_re(
     ranef, def_scale_prior = def_scale_prior,
-    # TODO: remove global_sd entirely?
-    # global_sd = length(bterms$response) > 1L,
     internal = internal
   )
   # priors for noise-free variables
@@ -696,15 +694,12 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   prior
 }
 
-prior_re <- function(ranef, def_scale_prior, global_sd = FALSE,
-                     internal = FALSE) {
+prior_re <- function(ranef, def_scale_prior, internal = FALSE) {
   # priors for random effects parameters
   # Args:
   #   ranef: a list returned by tidy_ranef
   #   def_scale_prior: a character string defining the default
   #                    prior for random effects SDs
-  #   global_sd: allow to set a global SD prior
-  #              affecting all non-linear parameters?
   #   internal: see get_prior
   # Returns:
   #   an object of class brmsprior
@@ -715,22 +710,12 @@ prior_re <- function(ranef, def_scale_prior, global_sd = FALSE,
   # global sd class
   px <- check_prefix(ranef)
   upx <- unique(px)
-  if (global_sd) {
-    # TODO: remove global_sd?
-    global_sd_prior <- rep("", nrow(upx))
-    global_sd_prior <- c(def_scale_prior, global_sd_prior)
-    upx <- lapply(upx, function(x) union("", x))
-    global_sd_prior <- brmsprior(
-      class = "sd", prior = global_sd_prior, ls = upx
-    )
-  } else {
-    if (length(def_scale_prior) > 1L) {
-      def_scale_prior <- def_scale_prior[px$resp] 
-    }
-    global_sd_prior <- brmsprior(
-      class = "sd", prior = def_scale_prior, ls = px
-    )
+  if (length(def_scale_prior) > 1L) {
+    def_scale_prior <- def_scale_prior[px$resp] 
   }
+  global_sd_prior <- brmsprior(
+    class = "sd", prior = def_scale_prior, ls = px
+  )
   prior <- prior + global_sd_prior
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
