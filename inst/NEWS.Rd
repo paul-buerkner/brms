@@ -2,12 +2,55 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.10.2++}{
+\section{CHANGES IN VERSION 2.0.0}{
+  This is the second major release of \code{brms}. The main
+  new feature are generalized multivariate models, which now
+  support everything already possible in univariate models, 
+  but with multiple response variables. Further, the internal
+  structure of the package has been improved considerably to be 
+  easier to maintain and extend in the future.
+  In addition, most deprecated functionality and arguments have 
+  been removed to provide a clean new start for the package.
+  Models fitted with \pkg{brms} 1.0 or higher should remain
+  fully compatible with \pkg{brms} 2.0.
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Add support for generalized multivariate models,
+      where each of the univariate models may have a different 
+      family and autocorrelation structure. 
+      Residual correlations can be estimated for multivariate
+      \code{gaussian} and \code{student} models. All features
+      supported in univariate models are now also available in
+      multivariate models. (#3)
+      \item Specify different formulas for different
+      categories in \code{categorical} models.
+      \item Add argument \code{re.form} as an alias of 
+      \code{re_formula} to the methods \code{posterior_predict},
+      \code{posterior_linpred}, and \code{predictive_error}
+      for consistency with other packages making use of
+      these methods.
+    }
+  }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Refactor many parts of the package to make
+      it more consistent and easier to extend.
       \item Show the link functions of all
       distributional parameters in the \code{summary}
       output. (#277)
+      \item Remove deprecated aliases of functions
+      and arguments from the package.
+      \item No longer support certain prior specifications,
+      which were previously labeled as deprecated.
+      \item Remove the depreacted addition term 
+      \code{disp} from the package.
+      \item Remove old versions of methods \code{fixef},
+      \code{ranef}, \code{coef}, and \code{VarCorr}.
+      \item No longer support models fitted with \pkg{brms} < 1.0, 
+      which used the multivariate \code{'trait'} syntax
+      orginally deprecated in \pkg{brms} 1.0.
+      \item Make posterior sample extraction in the 
+      \code{summary} method cleaner and less error prone.
     }
   }
   \subsection{BUG FIXES}{
