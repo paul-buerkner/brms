@@ -23,6 +23,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(ps, "matrix"))
   expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
   
+  # as.array
+  ps <- as.array(fit1)
+  expect_true(is.array(ps))
+  chains <- fit1$fit@sim$chains
+  ps_dim <- c(nsamples(fit1) / chains, chains, length(parnames(fit1)))
+  expect_equal(dim(ps), ps_dim)
+  
   # as.mcmc
   chains <- fit1$fit@sim$chains
   mc <- as.mcmc(fit1)
@@ -64,6 +71,10 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # family
   expect_equal(family(fit1), brmsfamily("student", link = "identity"))
+  expect_equal(family(fit6, resp = "count"), 
+               brmsfamily("poisson", link = "log"))
+  expect_output(print(family(fit1), links = TRUE), "student.*log.*logm1")
+  expect_output(print(family(fit5)), "Mixture.*gaussian.*exponential")
   
   # fitted
   fi <- fitted(fit1)
@@ -514,6 +525,10 @@ test_that("all S3 methods have reasonable ouputs", {
   
   expect_error(residuals(fit4), "Residuals are not defined for ordinal")
   
+  res6 <- residuals(fit6)
+  expect_equal(dim(res6), c(nobs(fit6), 4, 2))
+  expect_equal(dimnames(res6)[[3]], c("volume", "count"))
+  
   # stancode
   expect_true(is.character(stancode(fit1)))
   expect_output(print(stancode(fit1)), "generated quantities")
@@ -532,6 +547,7 @@ test_that("all S3 methods have reasonable ouputs", {
   )
   
   # stanplot tested in tests.plots.R
+  
   # summary
   summary1 <- SW(summary(fit1, waic = TRUE, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
@@ -550,6 +566,9 @@ test_that("all S3 methods have reasonable ouputs", {
   summary5 <- SW(summary(fit5, waic = TRUE))
   expect_output(print(summary5), "sigma1")
   expect_output(print(summary5), "theta1")
+  
+  summary6 <- SW(summary(fit6))
+  expect_output(print(summary6), "sdgp")
   
   # update
   # do not actually refit the model as is causes CRAN checks to fail
@@ -607,6 +626,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(vc$patient$cor), c(2, 4, 2))
   vc <- SM(VarCorr(fit2, summary = FALSE))
   expect_equal(dim(vc$patient$cor), c(nsamples(fit2), 2, 2))
+  expect_equal(dim(VarCorr(fit6)$residual__$sd), c(1, 4))
   
   # vcov
   expect_equal(dim(vcov(fit1)), c(8, 8))

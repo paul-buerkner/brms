@@ -2000,7 +2000,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     stop2("Please use argument 'newdata' to update the data.")
   }
   object <- restructure(object)
-  if (isTRUE(object$version$brms < utils::packageVersion("brms"))) {
+  if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
@@ -2054,22 +2054,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     dots$data <- newdata
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
-  }
-  if (is_ordinal(dots$formula$family)) {
-    if (!is.null(dots$threshold)) {
-      dots$formula$family <- check_family(
-        dots$formula$family, threshold = dots$threshold
-      )
-      dots$threshold <- NULL
-    }
-    if (is.null(dots$formula$family$threshold)) {
-      # for backwards compatibility with brms <= 0.8.0
-      if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
-        dots$formula$family$threshold <- "equidistant"
-      } else {
-        dots$formula$family$threshold <- "flexible"
-      }
-    }
   }
   if ("prior" %in% new_args) {
     if (!is.brmsprior(dots$prior)) { 
@@ -2495,12 +2479,8 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   stopifnot(is.brmsdraws(draws))
   draws$pp_mixture <- TRUE
-  
-  dpars <- intersect(valid_dpars(family), names(draws))
-  for (dp in dpars) {
-    if (is.list(draws[[dp]])) {
-      draws[[dp]] <- get_dpar(draws[[dp]])
-    }
+  for (dp in names(draws$dpars)) {
+    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
   loglik <- lapply(seq_len(N), loglik_mixture, draws = draws)

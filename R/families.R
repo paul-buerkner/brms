@@ -570,9 +570,7 @@ check_family <- function(family, link = NULL, threshold = NULL) {
   if (is_ordinal(family) && !is.null(threshold)) {
     # slot 'threshold' deprecated as of brms > 1.7.0
     threshold <- match.arg(threshold, c("flexible", "equidistant"))
-    if (threshold != "flexible") {
-      family$threshold <- threshold
-    }
+    family$threshold <- threshold
   }
   family
 }
@@ -997,29 +995,6 @@ is_zero_one_inflated <- function(family, zi_beta = FALSE) {
   any(family_names(family) %in% "zero_one_inflated_beta")
 }
 
-# TODO: remove
-is_2PL <- function(family) {
-  # do not remove to provide an informative error message
-  # why the special 2PL implementation is not supported anymore
-  if (!is(family, "brmsfamily")) {
-    out <- FALSE
-  } else {
-    out <- any(family_names(family) %in% "bernoulli") && 
-      identical(family$type, "2PL")
-  }
-  if (out) {
-    stop2("The special implementation of 2PL models has been removed.\n",
-          "You can now use argument 'nonlinear' to fit such models.")
-  }
-  out
-}
-
-# TODO: remove
-is_forked <- function(family) {
-  # indicate if family has two separate model parts
-  is_hurdle(family) || is_zero_inflated(family) || is_2PL(family)
-}
-
 use_real <- function(family) {
   # indicate if family uses real responses
   families <- family_names(family)
@@ -1144,50 +1119,4 @@ pred_sigma <- function(bterms) {
 allows_cs <- function(family) {
   # checks if category specific effects are allowed
   all(family_names(family) %in% c("sratio", "cratio", "acat"))
-}
-
-is_old_lognormal <- function(family, link = "identity", nresp = 1L,
-                             version = utils::packageVersion("brms")) {
-  # indicate transformation to lognormal models
-  # Args:
-  #   link: A character string; ignored if family is of class family
-  #   nresp: number of response variables
-  #   version: brms version with which the model was fitted
-  if (is.family(family)) {
-    link <- family$link
-    family <- family$family
-  }
-  isTRUE(family %in% "gaussian") && link == "log" && nresp == 1L &&
-    (is.null(version) || version <= "0.9.1")
-}
-
-is_old_categorical <- function(x) {
-  # indicate if the model is and old categorical model
-  stopifnot(is.brmsfit(x))
-  if (is(x$fit, "stanfit") && is_categorical(x$family)) {
-    if ("bp" %in% x$fit@model_pars) {
-      # fitted with brms <= 0.8.0
-      out <- 1L
-    } else if (is_old_mv(x)) {
-      # fitted with brms <= 1.0.0
-      out <- 2L
-    } else {
-      out <- 0L
-    }
-  } else {
-    out <- 0L
-  }
-  out
-}
-
-is_old_mv <- function(x) {
-  # indicate if the model uses the old multivariate syntax 
-  # from brms < 1.0.0
-  stopifnot(is.brmsfit(x))
-  bterms <- parse_bf(formula(x), family = family(x))
-  if (is.package_version(x$version)) {
-    x$version <- list(brms = x$version)
-  }
-  (is.null(x$version) || x$version$brms <= "0.10.0.9000") &&
-    (is_mv(x) || is_forked(family(x)))
 }

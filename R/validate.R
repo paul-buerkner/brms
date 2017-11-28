@@ -228,10 +228,6 @@ parse_lf <- function(formula, family = NULL) {
   }
   pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
   y$fe <- parse_fe(formula, pos_special)
-  if (is_forked(family)) {
-    # retained for backwards compatibility with brms < 1.0.0
-    attr(y$fe, "forked") <- TRUE
-  }
   lformula <- c(
     y[c("fe", "cs", "mo", "me")], 
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
@@ -1117,11 +1113,7 @@ rsv_vars <- function(bterms) {
   # returns names of reserved variables
   # Args:
   #   bterms: object of class brmsterms
-  # TODO: fix rsv_vars
   stopifnot(is.brmsterms(bterms) || is.mvbrmsterms(bterms))
-  # nresp <- length(bterms$response)
-  # family <- bterms$family
-  # old_mv <- isTRUE(attr(bterms$formula, "old_mv"))
   .rsv_vars <- function(x) {
     rsv_int <- any(ulapply(x$dpars, has_rsv_intercept))
     if (rsv_int) "intercept" else NULL
@@ -1132,22 +1124,6 @@ rsv_vars <- function(bterms) {
     out <- .rsv_vars(bterms)
   }
   out
-  # rsv_intercept <- any(ulapply(bterms$dpars, has_rsv_intercept))
-  # if (old_mv) {
-  #   if (is_linear(family) && nresp > 1L || is_categorical(family)) {
-  #     rsv <- c("trait", "response")
-  #   } else if (is_forked(family)) {
-  #     rsv <- c("trait", "response", "main", "spec")
-  #   } else {
-  #     rsv <- character(0)
-  #   }
-  # } else {
-  #   rsv <- character(0)
-  # }
-  # if (incl_intercept && rsv_intercept) {
-  #   rsv <- c(rsv, "intercept")
-  # }
-  # rsv
 }
 
 has_smooths <- function(bterms) {
