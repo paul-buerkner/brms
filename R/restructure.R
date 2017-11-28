@@ -240,14 +240,16 @@ change_old_sm <- function(bterms, pars, dims) {
         change <- lc(change,
           change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims)
         )
-        indices <- seq_len(dims[[old_s_pars[i]]])
-        new_s_par_indices <- paste0(new_s_pars[i], "[", indices, "]")
-        change <- lc(change,
-          change_simple(
-            old_s_pars[i], new_s_par_indices, pars, dims,
-            pnames = new_s_pars[i]
+        dim_s <- dims[[old_s_pars[i]]]
+        if (!is.null(dim_s)) {
+          new_s_par_indices <- paste0(new_s_pars[i], "[", seq_len(dim_s), "]")
+          change <- lc(change,
+            change_simple(
+              old_s_pars[i], new_s_par_indices, pars, dims,
+              pnames = new_s_pars[i]
+            )
           )
-        )
+        }
       }
     }
     return(change)
