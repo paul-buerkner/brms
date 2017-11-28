@@ -11,9 +11,9 @@
 \alias{posterior.samples.brmsfit}
 \title{Extract posterior samples}
 \usage{
-\method{posterior_samples}{brmsfit}(x, pars = NA, parameters = NA,
-  exact_match = FALSE, add_chain = FALSE, add_chains = FALSE,
-  subset = NULL, as.matrix = FALSE, as.array = FALSE, ...)
+\method{posterior_samples}{brmsfit}(x, pars = NA, exact_match = FALSE,
+  add_chain = FALSE, subset = NULL, as.matrix = FALSE, as.array = FALSE,
+  ...)
 
 \method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = FALSE, ...)
 
@@ -30,8 +30,6 @@ posterior_samples(x, pars = NA, ...)
 should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted.}
 
-\item{parameters}{A deprecated alias of \code{pars}.}
-
 \item{exact_match}{Indicates whether parameter names 
 should be matched exactly or treated as regular expression. 
 Default is \code{FALSE}.}
@@ -40,8 +38,6 @@ Default is \code{FALSE}.}
 should contain two additional columns. The \code{chain} column 
 indicates the chain in which each sample was generated, the \code{iter} 
 column indicates the iteration number within each chain.}
-
-\item{add_chains}{A deprecated alias of \code{add_chain}.}
 
 \item{subset}{A numeric vector indicating the rows 
 (i.e., posterior samples) to be returned. 

@@ -17,11 +17,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
   if (!isTRUE(nzchar(x$sampler))) {
     cat("\nThe model does not contain posterior samples.\n")
   } else {
-    if (!is.null(x$n.iter)) {
-      # deprecated names are used
-      args <- c("iter", "warmup", "thin", "chains")
-      x[args] <- x[paste0("n.", args)]
-    }
     final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
     valid_ics <- c("loo", "waic", "R2")
     for (ic in valid_ics) {

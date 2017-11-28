@@ -21,21 +21,14 @@
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL,
-                          threshold = c("flexible", "equidistant"),
-                          sparse = FALSE,  cov_ranef = NULL, 
+                          cov_ranef = NULL, sparse = FALSE, 
                           sample_prior = c("no", "yes", "only"), 
                           stan_funs = NULL, save_model = NULL, 
                           silent = FALSE, ...) {
   dots <- list(...)
-  # use deprecated arguments if specified
-  cov_ranef <- use_alias(cov_ranef, dots[["cov.ranef"]])
-  sample_prior <- use_alias(sample_prior, dots[["sample.prior"]])
-  save_model <- use_alias(save_model, dots[["save.model"]])
-  dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks
   formula <- validate_formula(
-    formula, data = data, family = family, 
-    autocor = autocor, threshold = threshold
+    formula, data = data, family = family, autocor = autocor
   )
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)

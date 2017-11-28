@@ -47,7 +47,7 @@ implemented in the \pkg{bayesplot} package.
 }
 \details{
 Also consider using the \pkg{shinystan} package available via 
-  method \code{\link[brms:launch_shiny]{launch_shiny}} 
+  method \code{\link{launch_shinystan}}. 
   in \pkg{brms} for flexible and interactive visual analysis.
 }
 \examples{

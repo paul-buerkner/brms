@@ -24,7 +24,7 @@ To get an overview on the estimated parameters,
 are perfectly suited. 
 Detailed visual analyses can be performed by applying the \pkg{shinystan} package, 
 which can be called directly within \pkg{brms} using 
-\code{\link[brms:launch_shiny]{launch_shiny}}. 
+\code{\link[brms:launch_shinystan]{launch_shinystan}}. 
 Information Criteria are also readily available via \code{\link[brms:WAIC]{WAIC}}
 and \code{\link[brms:LOO]{LOO}} both relying on the \pkg{loo} package.
 For a full list of methods to apply, type \code{methods(class = "brmsfit")}.

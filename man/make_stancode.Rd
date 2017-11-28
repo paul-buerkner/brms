@@ -5,9 +5,9 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, threshold = c("flexible", "equidistant"),
-  sparse = FALSE, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
+  autocor = NULL, cov_ranef = NULL, sparse = FALSE,
+  sample_prior = c("no", "yes", "only"), stan_funs = NULL,
+  save_model = NULL, silent = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -16,7 +16,7 @@ make_stancode(formula, data, family = gaussian(), prior = NULL,
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{data}{An object of class \code{data.frame} 
 (or one that can be coerced to that class) 
@@ -29,15 +29,15 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
+\code{\link{brmsfamily}}.
 By default, a linear \code{gaussian} model is applied.
 In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
-\code{\link[brms:set_prior]{set_prior}} or related functions 
+\code{\link{set_prior}} or related functions 
 and combined using the \code{c} method. A single \code{brmsprior} 
 object may be passed without \code{c()} surrounding it. 
-See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
+See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 
@@ -48,20 +48,6 @@ corresponding to no correlations.
 In multivariate models, \code{autocor} might also be a list 
 of autocorrelation structures.}
 
-\item{threshold}{(Deprecated) A character string indicating the type 
-of thresholds (i.e. intercepts) used in an ordinal model. 
-\code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between 
-consecutive thresholds to the same value.
-As of \pkg{brms} 1.8.0, we recommend specifying threshold
-directly within the ordinal family functions.}
-
-\item{sparse}{Logical; indicates whether the population-level 
-design matrix should be treated as sparse (defaults to \code{FALSE}). 
-For design matrices with many zeros, this can considerably 
-reduce required memory. Sampling speed is currently not 
-improved or even slightly decreased.}
-
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 
 The names of the matrices should correspond to columns 
@@ -70,6 +56,12 @@ All levels of the grouping factor should appear as rownames
 of the corresponding matrix. This argument can be used,
 among others to model pedigrees and phylogenetic effects.
 See \code{vignette("brms_phylogenetics")} for more details.}
+
+\item{sparse}{Logical; indicates whether the population-level 
+design matrix should be treated as sparse (defaults to \code{FALSE}). 
+For design matrices with many zeros, this can considerably 
+reduce required memory. Sampling speed is currently not 
+improved or even slightly decreased.}
 
 \item{sample_prior}{Indicate if samples from all specified 
 proper priors should be drawn additionally to the posterior samples

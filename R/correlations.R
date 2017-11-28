@@ -376,12 +376,6 @@ cor_fixed <- function(V) {
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
 
-#' @export
-cov_fixed <- function(V) {
-  warn_deprecated("cor_fixed")
-  cor_fixed(V)
-}
-
 #' Basic Bayesian Structural Time Series
 #' 
 #' Add a basic Bayesian structural time series component to a brms model

@@ -226,7 +226,6 @@ NULL
 #' @param pars Names of parameters for which posterior samples 
 #'   should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted.
-#' @param parameters A deprecated alias of \code{pars}.  
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
@@ -234,7 +233,6 @@ NULL
 #'   should contain two additional columns. The \code{chain} column 
 #'   indicates the chain in which each sample was generated, the \code{iter} 
 #'   column indicates the iteration number within each chain.
-#' @param add_chains A deprecated alias of \code{add_chain}.
 #' @param subset A numeric vector indicating the rows 
 #'   (i.e., posterior samples) to be returned. 
 #'   If \code{NULL} (the default), all  posterior samples are returned.
@@ -277,16 +275,6 @@ posterior_samples <- function(x, pars = NA, ...) {
   UseMethod("posterior_samples")
 }
 
-#' @export 
-posterior.samples <- function(x, pars = NA, ...) {
-  # deprecated alias of posterior_samples
-  warning2(
-    "Method 'posterior.samples' is deprecated. ", 
-    "Please use method 'posterior_samples' instead." 
-  )
-  UseMethod("posterior_samples")
-}
-
 #' Extract prior samples
 #' 
 #' Extract prior samples of specified parameters 
@@ -297,7 +285,6 @@ posterior.samples <- function(x, pars = NA, ...) {
 #' @param pars Names of parameters for which prior samples should be returned, 
 #'   as given by a character vector or regular expressions.
 #'   By default, all prior samples are extracted
-#' @param parameters A deprecated alias of \code{pars}       
 #' @param ... Currently ignored
 #'   
 #' @details To make use of this function, 
@@ -691,16 +678,6 @@ kfold <- function(x, ...) {
   UseMethod("kfold")
 }
 
-#' @export
-launch_shiny <- function(object, rstudio = getOption("shinystan.rstudio"), ...) {
-  # deprecated alias of launch_shinystan
-  warning2(
-    "Method 'launch_shiny' is deprecated. ", 
-    "Please use method 'launch_shinystan' instead."
-  )
-  UseMethod("launch_shinystan")
-}
-
 #' Extract Stan Model Code
 #' 
 #' Extract the model code in Stan language
@@ -763,7 +740,7 @@ standata <- function(object, ...) {
 #' 
 #' @details 
 #'   Also consider using the \pkg{shinystan} package available via 
-#'   method \code{\link[brms:launch_shiny]{launch_shiny}} 
+#'   method \code{\link{launch_shinystan}}. 
 #'   in \pkg{brms} for flexible and interactive visual analysis. 
 #' 
 #' @examples

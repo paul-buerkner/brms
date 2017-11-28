@@ -20,7 +20,7 @@
 #'   (or one that can be coerced to that classes): 
 #'   A symbolic description of the model to be fitted. 
 #'   The details of model specification are explained in 
-#'   \code{\link[brms:brmsformula]{brmsformula}}.
+#'   \code{\link{brmsformula}}.
 #' @param data An object of class \code{data.frame} 
 #'   (or one that can be coerced to that class) 
 #'   containing data of all variables used in the model.
@@ -31,14 +31,14 @@
 #'   the link function to be applied on the response variable.
 #'   If not specified, default links are used.
 #'   For details of supported families see 
-#'   \code{\link[brms:brmsfamily]{brmsfamily}}.
+#'   \code{\link{brmsfamily}}.
 #'   By default, a linear \code{gaussian} model is applied.
 #'   In multivariate models, \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
-#'   \code{\link[brms:set_prior]{set_prior}} or related functions 
+#'   \code{\link{set_prior}} or related functions 
 #'   and combined using the \code{c} method. A single \code{brmsprior} 
 #'   object may be passed without \code{c()} surrounding it. 
-#'   See also  \code{\link[brms:get_prior]{get_prior}} for more help.
+#'   See also  \code{\link{get_prior}} for more help.
 #' @param autocor An optional \code{\link{cor_brms}} object describing 
 #'   the correlation structure within the response variable 
 #'   (i.e., the 'autocorrelation'). 
@@ -47,13 +47,6 @@
 #'   corresponding to no correlations.
 #'   In multivariate models, \code{autocor} might also be a list 
 #'   of autocorrelation structures.
-#' @param threshold (Deprecated) A character string indicating the type 
-#'   of thresholds (i.e. intercepts) used in an ordinal model. 
-#'   \code{"flexible"} provides the standard unstructured thresholds and 
-#'   \code{"equidistant"} restricts the distance between 
-#'   consecutive thresholds to the same value.
-#'   As of \pkg{brms} 1.8.0, we recommend specifying threshold
-#'   directly within the ordinal family functions.
 #' @param sparse Logical; indicates whether the population-level 
 #'   design matrix should be treated as sparse (defaults to \code{FALSE}). 
 #'   For design matrices with many zeros, this can considerably 
@@ -72,7 +65,6 @@
 #'   should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
-#'   A deprecated alias is \code{ranef}.
 #' @param save_mevars A flag to indicate if samples
 #'   of noise-free variables obtained by using \code{me} terms
 #'   should be saved (default is \code{FALSE}).
@@ -131,7 +123,7 @@
 #'   which defaults to 1 but we recommend setting the \code{mc.cores} option 
 #'   to be as many processors as the hardware and RAM allow (up to the number of chains).
 #'   For non-Windows OS in non-interactive \R sessions, forking is used
-#'   instead of PSOCK clusters. A deprecated alias is \code{cluster}.
+#'   instead of PSOCK clusters.
 #' @param algorithm Character string indicating the estimation approach to use. 
 #'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
@@ -175,7 +167,7 @@
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @details Fit a generalized (non-)linear multilevel model
+#' @details Fit a generalized (non-)linear multivariate multilevel model
 #'   via full Bayesian inference using Stan. A general overview is provided 
 #'   in the vignettes \code{vignette("brms_overview")} and 
 #'   \code{vignette("brms_multilevel")}. For a full list of available 
@@ -201,7 +193,7 @@
 #'   use \code{\link[brms:get_prior]{get_prior}}.
 #'   Default priors are chosen to be non or very weakly informative 
 #'   so that their influence on the results will be negligable and
-#'   you don't have to worry about them.
+#'   you usually don't have to worry about them.
 #'   However, after getting more familiar with Bayesian statistics, 
 #'   I recommend you to start thinking about reasonable informative
 #'   priors for your model parameters: Nearly always, there is at least some
@@ -241,10 +233,10 @@
 #'   doi:10.18637/jss.v080.i01
 #'   
 #' @seealso
-#'   \code{\link[brms:brms]{brms}}, 
-#'   \code{\link[brms:brmsformula]{brmsformula}}, 
-#'   \code{\link[brms:brmsfamily]{brmsfamily}},
-#'   \code{\link[brms:brmsfit-class]{brmsfit}}
+#'   \code{\link{brms}}, 
+#'   \code{\link{brmsformula}}, 
+#'   \code{\link{brmsfamily}},
+#'   \code{\link{brmsfit}}
 #'   
 #' @examples
 #' \dontrun{ 
@@ -341,8 +333,8 @@
 #' @import stats   
 #' @export 
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, threshold = c("flexible", "equidistant"), 
-                cov_ranef = NULL, sample_prior = c("no", "yes", "only"), 
+                autocor = NULL, cov_ranef = NULL, 
+                sample_prior = c("no", "yes", "only"), 
                 sparse = FALSE, knots = NULL, stan_funs = NULL, 
                 fit = NA, save_ranef = TRUE, save_mevars = FALSE, 
                 save_all_pars = FALSE, inits = "random", chains = 4, 
@@ -352,22 +344,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = 12345, save_model = NULL, save_dso = TRUE, ...) {
   
-  dots <- list(...) 
-  # use deprecated arguments if specified
-  iter <- use_alias(iter, dots[["n.iter"]])
-  warmup <- use_alias(warmup, dots[["n.warmup"]])
-  thin <- use_alias(thin, dots[["n.thin"]])
-  chains <- use_alias(chains, dots[["n.chains"]])
-  cores <- use_alias(cores, dots[["cluster"]])
-  cov_ranef <- use_alias(cov_ranef, dots[["cov.ranef"]])
-  save_ranef <- use_alias(save_ranef, dots[["ranef"]])
-  sample_prior <- use_alias(sample_prior, dots[["sample.prior"]])
-  save_model <- use_alias(save_model, dots[["save.model"]])
-  if (!is.null(dots[["cluster_type"]])) {
-    warning2("Argument 'cluster_type' is deprecated and unused.\n",
-             "Forking is now automatically applied when appropriate.")
-  }
-  dots[deprecated_brm_args()] <- NULL
+  dots <- list(...)
   autocor <- check_autocor(autocor)
   algorithm <- match.arg(algorithm)
   
@@ -376,16 +353,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is(fit, "brmsfit")) {
     # re-use existing model
     x <- fit
-    # compute data to be passed to Stan
-    sdata <- standata(x, is_newdata = dots$is_newdata)
-    dots$is_newdata <- NULL
+    sdata <- standata(x, new = dots$new)
+    dots$new <- NULL
     # extract the compiled model
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
     formula <- validate_formula(
-      formula, data = data, family = family, 
-      autocor = autocor, threshold = threshold
+      formula, data = data, family = family, autocor = autocor
     )
     if (is.mvbrmsformula(formula)) {
       family <- lapply(formula$forms, "[[", "family")
@@ -486,10 +461,4 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- rename_pars(x)
   }
   x
-}
-
-deprecated_brm_args <- function() {
-  # list all deprecated arguments of the brm function
-  c("n.iter", "n.warmup", "n.thin", "n.chains", "cluster", "cov.ranef",
-    "ranef", "sample.prior", "save.model", "cluster_type")
 }

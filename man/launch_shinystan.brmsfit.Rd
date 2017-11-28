@@ -3,7 +3,6 @@
 \name{launch_shinystan.brmsfit}
 \alias{launch_shinystan.brmsfit}
 \alias{launch_shinystan}
-\alias{launch_shiny}
 \title{Interface to \pkg{shinystan}}
 \usage{
 \method{launch_shinystan}{brmsfit}(object,

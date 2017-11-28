@@ -16,7 +16,7 @@ make_standata(formula, data, family = gaussian(), prior = NULL,
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{data}{An object of class \code{data.frame} 
 (or one that can be coerced to that class) 
@@ -29,15 +29,15 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
+\code{\link{brmsfamily}}.
 By default, a linear \code{gaussian} model is applied.
 In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
-\code{\link[brms:set_prior]{set_prior}} or related functions 
+\code{\link{set_prior}} or related functions 
 and combined using the \code{c} method. A single \code{brmsprior} 
 object may be passed without \code{c()} surrounding it. 
-See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
+See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 

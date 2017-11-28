@@ -453,13 +453,11 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
-                      threshold = c("flexible", "equidistant"), 
-                      internal = FALSE) {
+get_prior <- function(formula, data, family = gaussian(), 
+                      autocor = NULL, internal = FALSE) {
   # note that default priors are stored in this function
   formula <- validate_formula(
-    formula, data = data, family = family, 
-    autocor = autocor, threshold = threshold
+    formula, data = data, family = family, autocor = autocor
   )
   bterms <- parse_bf(formula)
   data <- update_data(data, bterms = bterms)

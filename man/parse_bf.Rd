@@ -25,7 +25,7 @@ parse_bf(formula, ...)
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{...}{Further arguments passed to or from other methods.}
 
@@ -36,7 +36,7 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
+\code{\link{brmsfamily}}.
 By default, a linear \code{gaussian} model is applied.
 In multivariate models, \code{family} might also be a list of families.}
 

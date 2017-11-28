@@ -568,11 +568,10 @@ check_family <- function(family, link = NULL, threshold = NULL) {
     }
   }
   if (is_ordinal(family) && !is.null(threshold)) {
+    # slot 'threshold' deprecated as of brms > 1.7.0
     threshold <- match.arg(threshold, c("flexible", "equidistant"))
     if (threshold != "flexible") {
       family$threshold <- threshold
-      warning2("Specifying 'threshold' outside of ", 
-               "family functions is deprecated.")
     }
   }
   family

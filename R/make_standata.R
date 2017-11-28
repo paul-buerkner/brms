@@ -41,9 +41,6 @@ make_standata <- function(formula, data, family = gaussian(),
   only_response <- as_one_logical(only_response)
   not4stan <- isTRUE(control$not4stan)
   new <- isTRUE(control$new)
-  # use deprecated arguments if specified
-  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
-  
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )

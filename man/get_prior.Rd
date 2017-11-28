@@ -5,7 +5,7 @@
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
 get_prior(formula, data, family = gaussian(), autocor = NULL,
-  threshold = c("flexible", "equidistant"), internal = FALSE)
+  internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -14,7 +14,7 @@ get_prior(formula, data, family = gaussian(), autocor = NULL,
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{data}{An object of class \code{data.frame} 
 (or one that can be coerced to that class) 
@@ -27,7 +27,7 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
+\code{\link{brmsfamily}}.
 By default, a linear \code{gaussian} model is applied.
 In multivariate models, \code{family} might also be a list of families.}
 
@@ -39,14 +39,6 @@ of the available correlation structures. Defaults to \code{NULL},
 corresponding to no correlations.
 In multivariate models, \code{autocor} might also be a list 
 of autocorrelation structures.}
-
-\item{threshold}{(Deprecated) A character string indicating the type 
-of thresholds (i.e. intercepts) used in an ordinal model. 
-\code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between 
-consecutive thresholds to the same value.
-As of \pkg{brms} 1.8.0, we recommend specifying threshold
-directly within the ordinal family functions.}
 
 \item{internal}{A flag indicating if the names of additional internal parameters 
 should be displayed. Setting priors on these parameters is not recommended}

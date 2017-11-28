@@ -4,9 +4,9 @@
 \alias{plot.brmsfit}
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
-\method{plot}{brmsfit}(x, pars = NA, parameters = NA, combo = c("dens",
-  "trace"), N = 5, exact_match = FALSE, theme = NULL, plot = TRUE,
-  ask = TRUE, newpage = TRUE, ...)
+\method{plot}{brmsfit}(x, pars = NA, combo = c("dens", "trace"), N = 5,
+  exact_match = FALSE, theme = NULL, plot = TRUE, ask = TRUE,
+  newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -14,8 +14,6 @@
 \item{pars}{Names of the parameters to plot, as given by a character vector 
 or a regular expression. By default, all parameters except 
 for group-level and smooth effects are plotted.}
-
-\item{parameters}{A deprecated alias of \code{pars}}
 
 \item{combo}{A character vector with at least two elements. 
 Each element of \code{combo} corresponds to a column in the resulting 

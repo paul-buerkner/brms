@@ -367,13 +367,10 @@ model.frame.brmsfit <- function(formula, ...) {
 
 #' @rdname posterior_samples
 #' @export
-posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
-                                      exact_match = FALSE, add_chain = FALSE, 
-                                      add_chains = FALSE, subset = NULL, 
+posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE, 
+                                      add_chain = FALSE, subset = NULL, 
                                       as.matrix = FALSE, as.array = FALSE,
                                       ...) {
-  pars <- use_alias(pars, parameters, default = NA)
-  add_chain <- use_alias(add_chain, add_chains, default = FALSE)
   if (as.matrix && as.array) {
     stop2("Cannot use 'as.matrix' and 'as.array' at the same time.")
   }
@@ -381,9 +378,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
   contains_samples(x)
-  pars <- extract_pars(
-    pars, all_pars = parnames(x), exact_match = exact_match, ...
-  )
+  pars <- extract_pars(pars, parnames(x), exact_match = exact_match, ...)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -566,8 +561,7 @@ prior_summary.brmsfit <- function(object, all = TRUE, ...) {
 
 #' @rdname prior_samples
 #' @export
-prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
-  pars <- use_alias(pars, parameters, default = NA)
+prior_samples.brmsfit <- function(x, pars = NA, ...) {
   if (!anyNA(pars) && !is.character(pars)) {
     stop2("Argument 'pars' must be a character vector.")
   }
@@ -885,7 +879,7 @@ standata.brmsfit <- function(object, ...) {
 #' 
 #' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
 #' 
-#' @aliases launch_shinystan launch_shiny
+#' @aliases launch_shinystan
 #' 
 #' @param object A fitted model object typically of class \code{brmsfit}. 
 #' @param rstudio Only relevant for RStudio users. 
@@ -923,7 +917,6 @@ launch_shinystan.brmsfit <- function(
 #' @param pars Names of the parameters to plot, as given by a character vector 
 #'   or a regular expression. By default, all parameters except 
 #'   for group-level and smooth effects are plotted. 
-#' @param parameters A deprecated alias of \code{pars}
 #' @param combo A character vector with at least two elements. 
 #'   Each element of \code{combo} corresponds to a column in the resulting 
 #'   graphic and should be the name of one of the available 
@@ -968,14 +961,10 @@ launch_shinystan.brmsfit <- function(
 #' @import ggplot2
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, pars = NA, parameters = NA, 
-                         combo = c("dens", "trace"), N = 5, 
-                         exact_match = FALSE, theme = NULL, 
+plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"), 
+                         N = 5, exact_match = FALSE, theme = NULL, 
                          plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
-  dots <- list(...)
-  pars <- use_alias(pars, parameters, default = NA)
-  plot <- use_alias(plot, dots$do_plot)
   contains_samples(x)
   if (!is_wholenumber(N) || N < 1) {
     stop2("Argument 'N' must be a positive integer.")
@@ -1307,12 +1296,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      spaghetti = FALSE, surface = FALSE,
                                      transform = NULL, resolution = 100, 
                                      select_points = 0, too_far = 0, ...) {
-  dots <- list(...)
   method <- match.arg(method)
-  conditions <- use_alias(conditions, dots[["data"]])
   spaghetti <- as_one_logical(spaghetti)
-  surface <- as_one_logical(use_alias(surface, dots[["contour"]]))
-  dots[["data"]] <- dots[["contour"]] <- NULL
+  surface <- as_one_logical(surface)
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
@@ -1694,8 +1680,6 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            nsamples = NULL, sort = FALSE, nug = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
-  dots <- list(...)
-  dpar <- use_alias(dpar, dots[["auxpar"]])
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
@@ -2151,7 +2135,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
       object$ranef <- tidy_ranef(bterms, data = object$data)
-      dots$is_newdata <- TRUE
+      dots$new <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
