@@ -35,7 +35,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       "refitting the model with the latest version of brms."
     )
   }
-  x$formula <- SW(amend_formula(
+  x$formula <- SW(validate_formula(
     formula(x), data = model.frame(x), family = family(x), 
     autocor = x$autocor, threshold = x$threshold
   ))

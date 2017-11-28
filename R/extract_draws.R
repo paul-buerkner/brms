@@ -12,7 +12,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   see doc of logLik.brmsfit
-  #   ...: passed to amend_newdata
+  #   ...: passed to validate_newdata
   # Returns:
   #   A named list to be interpreted by linear_predictor
   snl_options <- c("uncertainty", "gaussian", "old_levels")
@@ -21,7 +21,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     x <- remove_autocor(x) 
   }
-  sdata <- amend_newdata(newdata, fit = x, re_formula = re_formula, ...)
+  sdata <- validate_newdata(newdata, fit = x, re_formula = re_formula, ...)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
   new_formula <- update_re_terms(x$formula, re_formula)
@@ -34,7 +34,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   )
   if (length(get_effect(bterms, "gp")) && !is.null(newdata)) {
     # GPs for new data require the original data as well
-    args$old_sdata <- amend_newdata(
+    args$old_sdata <- validate_newdata(
       newdata = NULL, fit = x, re_formula = re_formula, ...
     )
   }

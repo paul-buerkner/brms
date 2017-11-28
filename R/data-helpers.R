@@ -155,14 +155,12 @@ order_data <- function(data, bterms) {
   data
 }
 
-amend_newdata <- function(newdata, fit, re_formula = NULL, 
-                          allow_new_levels = FALSE,
-                          check_response = FALSE,
-                          only_response = FALSE,
-                          incl_autocor = TRUE,
-                          return_standata = TRUE,
-                          all_group_vars = NULL,
-                          new_objects = list()) {
+validate_newdata <- function(
+  newdata, fit, re_formula = NULL, allow_new_levels = FALSE,
+  check_response = FALSE, only_response = FALSE,
+  incl_autocor = TRUE, return_standata = TRUE,
+  all_group_vars = NULL, new_objects = list()
+) {
   # amend newdata passed to predict and fitted methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
@@ -405,7 +403,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
   stopifnot(is.atomic(cols2remove))
-  terms <- amend_terms(formula)
+  terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)
   }
@@ -455,7 +453,7 @@ arr_design_matrix <- function(Y, r, group)  {
 }
 
 extract_old_standata <- function(x, data, ...) {
-  # helper function for amend_newdata to extract
+  # helper function for validate_newdata to extract
   # old standata required for the computation of new standata
   UseMethod("extract_old_standata")
 }

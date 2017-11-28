@@ -1108,18 +1108,18 @@ dpar_id <- function(dpar) {
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-amend_formula <- function(formula, ...) {
+validate_formula <- function(formula, ...) {
   # incorporate additional arguments into the model formula
-  UseMethod("amend_formula")
+  UseMethod("validate_formula")
 }
 
 #' @export
-amend_formula.default <- function(formula, ...) {
-  amend_formula(bf(formula), ...)
+validate_formula.default <- function(formula, ...) {
+  validate_formula(bf(formula), ...)
 }
 
 #' @export
-amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
+validate_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
                                       autocor = NULL, threshold = NULL, ...) {
   # incorporate additional arguments into the model formula
   # Args:
@@ -1173,8 +1173,8 @@ amend_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
   out
 }
 
-amend_formula.mvbrmsformula <- function(formula, ...) {
-  formula$forms <- lapply(formula$forms, amend_formula, ...)
+validate_formula.mvbrmsformula <- function(formula, ...) {
+  formula$forms <- lapply(formula$forms, validate_formula, ...)
   if (length(formula$forms) < 2L) {
     stop2("Multivariate models require at least two responses.")
   }

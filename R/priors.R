@@ -457,7 +457,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  formula <- amend_formula(
+  formula <- validate_formula(
     formula, data = data, family = family, 
     autocor = autocor, threshold = threshold
   )

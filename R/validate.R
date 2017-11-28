@@ -1047,8 +1047,8 @@ all_terms <- function(x) {
   rm_wsp(attr(x, "term.labels"))
 }
 
-amend_terms <- function(x) {
-  # amend a terms object (or one that can be coerced to it)
+validate_terms <- function(x) {
+  # validate a terms object (or one that can be coerced to it)
   # to be used in get_model_matrix
   # Args:
   #   x: any R object; if not a formula or terms, NULL is returned

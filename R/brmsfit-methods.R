@@ -1224,7 +1224,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     newdata, fit = object, re_formula = NA, 
     incl_autocor, new_objects, check_response = TRUE
   )
-  sdata <- do.call(amend_newdata, 
+  sdata <- do.call(validate_newdata, 
     args = c(newd_args, list(only_response = TRUE))
   )
   if (any(grepl("^cens_", names(sdata)))) {
@@ -1249,7 +1249,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
   }
   # allow using arguments 'group' and 'x' for new data
-  mf <- do.call(amend_newdata, c(newd_args, return_standata = FALSE))
+  mf <- do.call(validate_newdata, c(newd_args, return_standata = FALSE))
   if (!is.null(group)) {
     ppc_args$group <- mf[[group]]
   }
@@ -1800,7 +1800,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     newdata, fit = object, re_formula, allow_new_levels,
     new_objects, check_response = TRUE
   )
-  sdata <- do.call(amend_newdata, newd_args)
+  sdata <- do.call(validate_newdata, newd_args)
   if (any(grepl("^cens_", names(sdata)))) {
     warning2("'residuals' may not be meaningful for censored models.")
   }
@@ -1924,7 +1924,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       newdata, fit = object, re_formula, allow_new_levels,
       new_objects, check_response = TRUE
     )
-    sdata <- do.call(amend_newdata, newd_args)
+    sdata <- do.call(validate_newdata, newd_args)
     if (any(grepl("^cens_", names(sdata)))) {
       warning2("'bayes_R2' may not be meaningful for censored models.")
     }

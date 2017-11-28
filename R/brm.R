@@ -380,7 +380,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
-    formula <- amend_formula(
+    formula <- validate_formula(
       formula, data = data, family = family, 
       autocor = autocor, threshold = threshold
     )

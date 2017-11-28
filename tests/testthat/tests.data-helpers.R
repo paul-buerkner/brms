@@ -6,16 +6,16 @@ test_that("arr_design_matrix works correctly", {
                cbind(c(0, 1:4.5, 0, 6:9), c(0, 0, 1:3, 0 ,0, 6:8)))
 })
 
-test_that("amend_newdata handles factors correctly", {
+test_that("validate_newdata handles factors correctly", {
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
   fit$data$fac <- factor(sample(1:3, nrow(fit$data), TRUE))
   newdata <- fit$data[1:5, ]
-  expect_silent(brms:::amend_newdata(newdata, fit))
+  expect_silent(brms:::validate_newdata(newdata, fit))
   newdata$visit <- 1:5
-  expect_error(brms:::amend_newdata(newdata, fit),
+  expect_error(brms:::validate_newdata(newdata, fit),
                "Levels '5' of grouping factor 'visit' cannot")
   newdata$fac <- 1:5
-  expect_error(brms:::amend_newdata(newdata, fit),
+  expect_error(brms:::validate_newdata(newdata, fit),
                "New factor levels are not allowed")
 })
 

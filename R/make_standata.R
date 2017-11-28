@@ -44,7 +44,7 @@ make_standata <- function(formula, data, family = gaussian(),
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   
-  formula <- amend_formula(
+  formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
   bterms <- parse_bf(formula)

@@ -172,7 +172,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "part of the model:\n", collapse_comma(unused_vars)
     )
   }
-  amend_newdata(
+  validate_newdata(
     conditions, fit = fit, re_formula = re_formula,
     allow_new_levels = TRUE, incl_autocor = FALSE, 
     return_standata = FALSE
