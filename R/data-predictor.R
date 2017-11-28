@@ -804,12 +804,10 @@ data_mixture <- function(bterms, prior = brmsprior()) {
   out <- list()
   if (is.mixfamily(bterms$family)) {
     families <- family_names(bterms$family)
-    dp_classes <- dpar_class(
-      names(c(bterms$dpars, bterms$fdpars))
-    )
+    dp_classes <- dpar_class(names(c(bterms$dpars, bterms$fdpars)))
     if (!any(dp_classes %in% "theta")) {
       # estimate mixture probabilities directly
-      take <- prior$class == "theta"
+      take <- find_rows(prior, class = "theta", resp = bterms$resp)
       theta_prior <- prior$prior[take]
       if (isTRUE(nzchar(theta_prior))) {
         theta_prior <- eval2(theta_prior)
@@ -821,9 +819,9 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       } else {
         out$con_theta <- rep(1, length(families)) 
       }
+      p <- usc(combine_prefix(bterms))
+      names(out) <- paste0(names(out), p)
     }
-    p <- usc(combine_prefix(bterms))
-    names(out) <- paste0(names(out), p)
   }
   out
 }

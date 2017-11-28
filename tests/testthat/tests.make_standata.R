@@ -213,13 +213,15 @@ test_that("make_standata handles multivariate models", {
     (bf(x ~ 1) + mixture(poisson, nmix = 2)) +
     (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
   bprior <- prior(normal(0, 5), resp = y1) +
-    prior(normal(0, 10), resp = y2)
+    prior(normal(0, 10), resp = y2) +
+    prior(dirichlet(2, 1), theta, resp = x)
   sdata <- make_standata(bform, dat, prior = bprior)
   sdata_names <- c(
     "N", "J_1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
     "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
   )
   expect_true(all(sdata_names %in% names(sdata)))
+  expect_equal(sdata$con_theta_x, c(2, 1))
 })
 
 test_that("make_standata returns correct data for autocor structures", {
