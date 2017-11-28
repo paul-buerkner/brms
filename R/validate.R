@@ -1,7 +1,6 @@
 #' Parse Formulas of \pkg{brms} Models
 #' 
-#' Parse \code{formula} or \code{brmsformula} objects for use 
-#' in \pkg{brms}.
+#' Parse formulas objects for use in \pkg{brms}.
 #' 
 #' @inheritParams brm
 #' @param check_response Logical; Indicates whether the left-hand side 
@@ -13,9 +12,11 @@
 #' @param mv Indicates if the univariate model is part of a multivariate model.
 #' @param rescor Indicates if residual correlations should be estimated.
 #'   Only relevant in multivariate models.
+#' @param ... Further arguments passed to or from other methods.
 #'  
-#' @return An object of class \code{brmsterms}, which is a \code{list}
-#'   containing all required information initially stored in \code{formula} 
+#' @return An object of class \code{brmsterms} or \code{mvbrmsterms} 
+#'   (for multivariate models), which is a \code{list} containing all 
+#'   required information initially stored in \code{formula} 
 #'   in an easier to use format, basically a list of formulas 
 #'   (not an abstract syntax tree).
 #' 
@@ -27,8 +28,9 @@
 #'   this necessary.
 #'   
 #' @seealso 
-#'   \code{\link[brms:brm]{brm}}, 
-#'   \code{\link[brms:brmsformula]{brmsformula}}
+#'   \code{\link{brm}}, 
+#'   \code{\link{brmsformula}},
+#'   \code{\link{mvbrmsformula}}
 #' 
 #' @export
 parse_bf <- function(formula, ...) {
@@ -37,10 +39,17 @@ parse_bf <- function(formula, ...) {
 
 #' @rdname parse_bf
 #' @export
-parse_bf.default <- function(formula, family = NULL, autocor = NULL, 
-                             check_response = TRUE, resp_rhs_all = TRUE,
-                             mv = FALSE, rescor = FALSE, ...) {
-  x <- bf(formula, family = family, autocor = autocor)
+parse_bf.default <- function(formula, family = NULL, autocor = NULL, ...) {
+  x <- validate_formula(formula, family = family, autocor = autocor)
+  parse_bf(x, ...)
+}
+
+#' @rdname parse_bf
+#' @export
+parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL, 
+                                 check_response = TRUE, resp_rhs_all = TRUE,
+                                 mv = FALSE, rescor = FALSE, ...) {
+  x <- validate_formula(formula, family = family, autocor = autocor)
   mv <- as_one_logical(mv)
   rescor <- as_one_logical(rescor)
   formula <- x$formula
@@ -186,12 +195,13 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL,
 
 #' @rdname parse_bf
 #' @export
-parse_bf.mvbrmsformula <- function(formula, ...) {
+parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) {
+  x <- validate_formula(formula, family = family, autocor = autocor)
   out <- list()
-  out$terms <- lapply(formula$forms, parse_bf, mv = TRUE, ...)
+  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, ...)
   out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
   out$responses <- ulapply(out$terms, "[[", "resp")
-  out$rescor <- isTRUE(formula$rescor)
+  out$rescor <- isTRUE(x$rescor)
   for (i in seq_along(out$terms)) {
     # for autocor checks all univariate models must be aware of rescor
     out$terms[[i]]$rescor <- out$rescor

@@ -1119,8 +1119,10 @@ validate_formula.default <- function(formula, ...) {
 }
 
 #' @export
-validate_formula.brmsformula <- function(formula, data = NULL, family = gaussian(),
-                                      autocor = NULL, threshold = NULL, ...) {
+validate_formula.brmsformula <- function(
+  formula, family = gaussian(), autocor = cor_empty(), 
+  data = NULL, threshold = NULL, ...
+) {
   # incorporate additional arguments into the model formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
@@ -1138,9 +1140,9 @@ validate_formula.brmsformula <- function(formula, data = NULL, family = gaussian
     out <- bf(out, autocor = autocor)
   }
   # allow the '.' symbol in the formulas
-  out$formula <- expand_dot_formula(out$formula)
+  out$formula <- expand_dot_formula(out$formula, data)
   for (i in seq_along(out$pforms)) {
-    out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]])
+    out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
   }
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
@@ -1153,7 +1155,8 @@ validate_formula.brmsformula <- function(formula, data = NULL, family = gaussian
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  if (is_categorical(out$family) && is.null(out$family$cats)) {
+  needs_cat <- is_categorical(out$family) && is.null(out$family$cats)
+  if (needs_cat && !is.null(data)) {
     respform <- formula2str(lhs(out$formula))
     respform <- formula(gsub("\\|+[^~]*~", "~", respform))
     model_response <- model.response(model.frame(respform, data))
@@ -1173,8 +1176,31 @@ validate_formula.brmsformula <- function(formula, data = NULL, family = gaussian
   out
 }
 
-validate_formula.mvbrmsformula <- function(formula, ...) {
-  formula$forms <- lapply(formula$forms, validate_formula, ...)
+#' @export
+validate_formula.mvbrmsformula <- function(
+  formula, family = NULL, autocor = NULL, ...
+) {
+  # incorporate additional arguments into the MV model formula
+  # allow passing lists of families or autocors
+  nresp <- length(formula$forms)
+  if (!is(family, "list")) {
+    family <- replicate(nresp, family, simplify = FALSE)
+  } else if (length(family) != nresp) {
+    stop2("If 'family' is a list, it has to be of the same ", 
+          "length as the number of response variables.")
+  }
+  if (!is(autocor, "list")) {
+    autocor <- replicate(nresp, autocor, simplify = FALSE)
+  } else if (length(autocor) != nresp) {
+    stop2("If 'autocor' is a list, it has to be of the same ", 
+          "length as the number of response variables.")
+  }
+  for (i in seq_len(nresp)) {
+    formula$forms[[i]] <- validate_formula(
+      formula$forms[[i]], family = family[[i]], 
+      autocor = autocor[[i]], ...
+    )
+  }
   if (length(formula$forms) < 2L) {
     stop2("Multivariate models require at least two responses.")
   }

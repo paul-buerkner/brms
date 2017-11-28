@@ -11,8 +11,8 @@ make_standata(formula, data, family = gaussian(), prior = NULL,
 }
 \arguments{
 \item{formula}{An object of class 
-\code{\link[stats:formula]{formula}} or
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
@@ -30,7 +30,8 @@ the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
 \code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
+By default, a linear \code{gaussian} model is applied.
+In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link[brms:set_prior]{set_prior}} or related functions 
@@ -43,7 +44,9 @@ the correlation structure within the response variable
 (i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
+corresponding to no correlations.
+In multivariate models, \code{autocor} might also be a list 
+of autocorrelation structures.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 

@@ -15,8 +15,8 @@
 #' posterior predictive checks and leave-one-out cross-validation.
 #' 
 #' @param formula An object of class 
-#'   \code{\link[stats:formula]{formula}} or
-#'   \code{\link[brms:brmsformula]{brmsformula}}
+#'   \code{\link[stats:formula]{formula}},
+#'   \code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
 #'   (or one that can be coerced to that classes): 
 #'   A symbolic description of the model to be fitted. 
 #'   The details of model specification are explained in 
@@ -33,6 +33,7 @@
 #'   For details of supported families see 
 #'   \code{\link[brms:brmsfamily]{brmsfamily}}.
 #'   By default, a linear \code{gaussian} model is applied.
+#'   In multivariate models, \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link[brms:set_prior]{set_prior}} or related functions 
 #'   and combined using the \code{c} method. A single \code{brmsprior} 
@@ -44,6 +45,8 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to \code{NULL}, 
 #'   corresponding to no correlations.
+#'   In multivariate models, \code{autocor} might also be a list 
+#'   of autocorrelation structures.
 #' @param threshold (Deprecated) A character string indicating the type 
 #'   of thresholds (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
