@@ -59,6 +59,8 @@ test_that("all S3 methods have reasonable ouputs", {
   R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ])
   expect_equal(dim(R2), c(1, 4))
   expect_error(bayes_R2(fit4), "Residuals are not defined for ordinal")
+  R2 <- bayes_R2(fit6)
+  expect_equal(dim(R2), c(2, 4))
   
   # family
   expect_equal(family(fit1), brmsfamily("student", link = "identity"))
@@ -122,7 +124,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(fi), c(nobs(fit5), 4))
   
   fi <- fitted(fit6)
-  expect_equal(dim(fi), c(nobs(fit6), 4))
+  expect_equal(dim(fi), c(nobs(fit6), 4, 2))
+  expect_equal(dimnames(fi)[[3]], c("volume", "count"))
   
   # fixef
   fixef1 <- SM(fixef(fit1))
@@ -207,7 +210,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   loo6_1 <- SW(LOO(fit6, cores = 1))
   expect_true(is.numeric(loo6_1[["looic"]]))
-  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data[1:30, ]))
+  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2[["looic"]]))
   loo_compare <- compare_ic(loo6_1, loo6_2)
   expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
@@ -339,7 +342,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(fit1, incl_warmup = TRUE), 400)
   
   # parnames 
-  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46, 47)],
+  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 42, 50, 51)],
                c("b_Intercept", "bmo_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
                  "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
@@ -348,7 +351,10 @@ test_that("all S3 methods have reasonable ouputs", {
                  "cor_patient__a_Intercept__b_Intercept", 
                  "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
-  expect_true(all(c("sdgp_gpAge", "lscale_gpAge") %in% parnames(fit6)))
+  expect_true(all(
+    c("lscale_volume_gpAgeTrt_0", "lscale_volume_gpAgeTrt_1") %in% 
+      parnames(fit6)
+  ))
   
   # plot tested in tests.plots.R
   
@@ -368,7 +374,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "b_Age", "b_Trt1:Age", "b_sAge_1", "b_sigma_Trt1"))
   
   # test default method
-  ps <- posterior_samples(fit1$fit, "b_Intercept")
+  ps <- posterior_samples(fit1$fit, "^b_Intercept$")
   expect_equal(dim(ps), c(nsamples(fit1), 1))
   
   # posterior_interval
@@ -468,10 +474,11 @@ test_that("all S3 methods have reasonable ouputs", {
   # prior_samples
   prs1 <- prior_samples(fit1)
   prior_names <- c(
-    "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
+    "temp_Intercept", "temp_sigma_Intercept", "b_Intercept", 
+    "b_sigma_Intercept", "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
     paste0("simo_moExp1[", 1:4, "]"), "b_sigma", "cor_visit"
   )
-  expect_equal(dimnames(prs1), list(as.character(1:nsamples(fit1)), prior_names))
+  expect_equal(colnames(prs1), prior_names)
   
   prs2 <- prior_samples(fit1, pars = "b_Trt1")
   expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt1"))

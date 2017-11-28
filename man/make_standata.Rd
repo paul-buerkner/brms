@@ -2,7 +2,6 @@
 % Please edit documentation in R/make_standata.R
 \name{make_standata}
 \alias{make_standata}
-\alias{brmdata}
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,

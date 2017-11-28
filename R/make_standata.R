@@ -8,8 +8,6 @@
 #' @param control A named list currently for internal usage only
 #' @param ... Other potential arguments
 #' 
-#' @aliases brmdata
-#' 
 #' @return A named list of objects containing the required data 
 #'   to fit a \pkg{brms} model with \pkg{Stan}. 
 #' 

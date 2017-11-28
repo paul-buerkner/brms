@@ -183,8 +183,10 @@ test_that("make_standata rejects incorrect addition terms", {
 
 test_that("make_standata handles multivariate models", {
   dat <- data.frame(
-    y1 = 1:10, y2 = 11:20, w = 1:10,
-    x = rep(0,10), tim = 10:1, g = rep(1:2,5)
+    y1 = 1:10, y2 = 11:20, 
+    x = rep(0, 10), g = rep(1:2, 5),
+    censi = sample(0:1, 10, TRUE),
+    tim = 10:1, w = 1:10
   )
   
   sdata <- make_standata(cbind(y1, y2) | weights(w) ~ x, data = dat)
@@ -204,6 +206,20 @@ test_that("make_standata handles multivariate models", {
   expect_equal(sdata$Y_y1, as.array(target1))                 
   target2 <- c(seq(19, 11, -2), seq(20, 12, -2))
   expect_equal(sdata$Y_y2, as.array(target2))   
+  
+  # models without residual correlations
+  bform <- bf(y1 | cens(censi) ~ x + y2 + (x|2|g)) + 
+    gaussian() + cor_ar() +
+    (bf(x ~ 1) + mixture(poisson, nmix = 2)) +
+    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  bprior <- prior(normal(0, 5), resp = y1) +
+    prior(normal(0, 10), resp = y2)
+  sdata <- make_standata(bform, dat, prior = bprior)
+  sdata_names <- c(
+    "N", "J_1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
+    "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
+  )
+  expect_true(all(sdata_names %in% names(sdata)))
 })
 
 test_that("make_standata returns correct data for autocor structures", {

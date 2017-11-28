@@ -817,11 +817,13 @@ data_mixture <- function(bterms, prior = brmsprior()) {
           stop2("Invalid dirichlet prior for the ", 
                 "mixture probabilities 'theta'.")
         }
-        out[["con_theta"]] <- theta_prior
+        out$con_theta <- theta_prior
       } else {
-        out[["con_theta"]] <- rep(1, length(families)) 
+        out$con_theta <- rep(1, length(families)) 
       }
     }
+    p <- usc(combine_prefix(bterms))
+    names(out) <- paste0(names(out), p)
   }
   out
 }
