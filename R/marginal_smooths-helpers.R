@@ -90,7 +90,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       scs <- unlist(attr(draws$fe$X, "smooth_cols")[J])
       draws$fe$X <- draws$fe$X[, scs, drop = FALSE]
       draws$fe$b <- draws$fe$b[, scs, drop = FALSE]
-      draws$sm <- draws$sm[i]
+      draws$sm <- draws$sm[J]
       eta <- linear_predictor(draws, i = NULL)
       spaghetti_data <- NULL
       if (spaghetti && ncovars == 1L) {
