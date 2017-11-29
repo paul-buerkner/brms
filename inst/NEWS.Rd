@@ -24,6 +24,9 @@
       multivariate models. (#3)
       \item Specify different formulas for different
       categories in \code{categorical} models.
+      \item Add weakly informative default priors for the 
+      parameter class \code{Intercept} to improve convergence 
+      of more complex distributional models.
       \item Add argument \code{re.form} as an alias of 
       \code{re_formula} to the methods \code{posterior_predict},
       \code{posterior_linpred}, and \code{predictive_error}
