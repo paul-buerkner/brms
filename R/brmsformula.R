@@ -505,26 +505,14 @@
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         autocor = NULL, nl = NULL) {
-  # ensure backwards compatibility
-  if (is.brmsformula(formula) && is.formula(formula)) {
-    # convert deprecated brmsformula objects back to formula
-    class(formula) <- "formula"
-  }
-  old_nonlinear <- attr(formula, "nonlinear")
-  if (length(old_nonlinear)) nl <- TRUE
-  old_forms <- rmNULL(attributes(formula)[dpars()])
-  attributes(formula)[c(dpars(), "nonlinear")] <- NULL
-  
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
     out <- list(formula = as.formula(formula))
     class(out) <- "brmsformula"
   }
-  out$pforms[names(old_forms)] <- old_forms
-  
   # parse and validate dots arguments
-  dots <- c(out$pforms, out$pfix, list(...), flist, old_nonlinear)
+  dots <- c(out$pforms, out$pfix, list(...), flist)
   dots <- lapply(dots, function(x) if (is.list(x)) x else list(x))
   dots <- unlist(dots, recursive = FALSE)
   forms <- list()

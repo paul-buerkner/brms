@@ -10,6 +10,27 @@ test_that("restructure can be run without error", {
   expect_is(fit1_up, "brmsfit")
 })
 
+test_that("restructure_formula works correctly", {
+  form <- structure(
+    y ~ x + z, sigma = sigma ~ x,
+    class = c("brmsformula", "formula")
+  )
+  form <- brms:::restructure_formula(form)
+  expect_equal(form$formula, y ~ x + z)
+  expect_equal(form$pforms, list(sigma = sigma ~ x))
+  expect_true(!attr(form$formula, "nl"))
+  
+  form <- structure(
+    y ~ a * exp(-b * x), 
+    nonlinear = list(a = a ~ x, b = b ~ 1),
+    class = c("brmsformula", "formula")
+  )
+  form <- brms:::restructure_formula(form)
+  expect_equal(form$formula, y ~ a * exp(-b * x))
+  expect_equal(form$pforms, list(a = a ~ x, b = b ~ 1))
+  expect_true(attr(form$formula, "nl"))
+})
+
 test_that("change_prior returns expected lists", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")

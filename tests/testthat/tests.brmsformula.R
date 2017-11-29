@@ -21,27 +21,6 @@ test_that("brmsformula does not change a 'brmsformula' object", {
   expect_identical(form, bf(form))
 })
 
-test_that("brmsformula is backwards compatible", {
-  form <- structure(
-    y ~ x + z, sigma = sigma ~ x,
-    class = c("brmsformula", "formula")
-  )
-  form <- bf(form)
-  expect_equal(form$formula, y ~ x + z)
-  expect_equal(form$pforms, list(sigma = sigma ~ x))
-  expect_true(!attr(form$formula, "nl"))
-  
-  form <- structure(
-    y ~ a * exp(-b * x), 
-    nonlinear = list(a = a ~ x, b = b ~ 1),
-    class = c("brmsformula", "formula")
-  )
-  form <- bf(form)
-  expect_equal(form$formula, y ~ a * exp(-b * x))
-  expect_equal(form$pforms, list(a = a ~ x, b = b ~ 1))
-  expect_true(attr(form$formula, "nl"))
-})
-
 test_that("brmsformula detects auxiliary parameter equations", {
   expect_error(bf(y~x, sigma1 = "sigmaa2"),
                "Can only equate parameters of the same class")

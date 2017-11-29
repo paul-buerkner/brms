@@ -35,8 +35,9 @@ restructure <- function(x, rstr_summary = FALSE) {
       "refitting the model with the latest version of brms."
     )
   }
+  x$formula <- restructure_formula(formula(x), x$nonlinear)
   x$formula <- SW(validate_formula(
-    formula(x), data = model.frame(x), family = family(x), 
+    formula(x), data = model.frame(x), family = family(x),
     autocor = x$autocor, threshold = x$threshold
   ))
   x$nonlinear <- x$partial <- x$threshold <- NULL
@@ -111,6 +112,31 @@ restructure <- function(x, rstr_summary = FALSE) {
     }
   }
   structure(x, restructured = TRUE)
+}
+
+restructure_formula <- function(formula, nonlinear = NULL) {
+  # convert old model formulas to brmsformula objects
+  if (is.brmsformula(formula) && is.formula(formula)) {
+    # convert deprecated brmsformula objects back to formula
+    class(formula) <- "formula"
+  }
+  if (is.brmsformula(formula)) {
+    # already up to date
+    return(formula)
+  }
+  old_nonlinear <- attr(formula, "nonlinear")
+  nl <- length(nonlinear) > 0
+  if (is.logical(old_nonlinear)) {
+    nl <- nl || old_nonlinear
+  } else if (length(old_nonlinear)) {
+    nonlinear <- c(nonlinear, old_nonlinear)
+    nl <- TRUE
+  }
+  out <- structure(nlist(formula), class = "brmsformula")
+  old_forms <- rmNULL(attributes(formula)[dpars()])
+  old_forms <- c(old_forms, nonlinear)
+  out$pforms[names(old_forms)] <- old_forms
+  bf(out, nl = nl)
 }
 
 change_old_re <- function(ranef, pars, dims) {
