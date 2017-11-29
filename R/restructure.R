@@ -250,7 +250,6 @@ change_old_re2 <- function(ranef, pars, dims) {
 change_old_sm <- function(bterms, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing smooths with multiple covariates
-  stopifnot(is.brmsterms(bterms))
   .change_old_sm <- function(bt) {
     change <- list()
     sm_labels <- get_sm_labels(bt)
@@ -282,21 +281,20 @@ change_old_sm <- function(bterms, pars, dims) {
   }
   
   change <- list()
-  if (length(bterms$response) > 1L) {
-    for (r in bterms$response) {
-      bterms$dpars$mu$resp <- r
-      change <- c(change, .change_old_sm(bterms$dpars$mu))
+  if (is.mvbrmsterms(bterms)) {
+    for (r in bterms$responses) {
+      change <- c(change, .change_old_sm(bterms$terms[[r]]$dpars$mu))
     }
-    bterms$dpars$mu <- NULL
-  }
-  for (dp in names(bterms$dpars)) {
-    bt <- bterms$dpars[[dp]]
-    if (length(bt$nlpars)) {
-      for (nlp in names(bt$nlpars)) {
-        change <- c(change, .change_old_sm(bt$nlpars[[nlp]]))
+  } else if (is.brmsterms(bterms)) {
+    for (dp in names(bterms$dpars)) {
+      bt <- bterms$dpars[[dp]]
+      if (length(bt$nlpars)) {
+        for (nlp in names(bt$nlpars)) {
+          change <- c(change, .change_old_sm(bt$nlpars[[nlp]]))
+        }
+      } else {
+        change <- c(change, .change_old_sm(bt))
       }
-    } else {
-      change <- c(change, .change_old_sm(bt))
     }
   }
   change
@@ -305,7 +303,6 @@ change_old_sm <- function(bterms, pars, dims) {
 change_old_mo <- function(bterms, data, pars) {
   # change names of monotonic effects fitted with brms <= 1.9.0
   # this became necessary after implementing monotonic interactions
-  stopifnot(is.brmsterms(bterms))
   .change_old_mo <- function(bt) {
     change <- list()
     monef <- get_mo_labels(bt, data)
@@ -342,21 +339,20 @@ change_old_mo <- function(bterms, data, pars) {
   }
   
   change <- list()
-  if (length(bterms$response) > 1L) {
-    for (r in bterms$response) {
-      bterms$dpars$mu$resp <- r
-      change <- c(change, .change_old_mo(bterms$dpars$mu))
+  if (is.mvbrmsterms(bterms)) {
+    for (r in bterms$responses) {
+      change <- c(change, .change_old_mo(bterms$terms[[r]]$dpars$mu))
     }
-    bterms$dpars$mu <- NULL
-  }
-  for (dp in names(bterms$dpars)) {
-    bt <- bterms$dpars[[dp]]
-    if (length(bt$nlpars)) {
-      for (nlp in names(bt$nlpars)) {
-        change <- c(change, .change_old_mo(bt$nlpars[[nlp]]))
+  } else if (is.brmsterms(bterms)) {
+    for (dp in names(bterms$dpars)) {
+      bt <- bterms$dpars[[dp]]
+      if (length(bt$nlpars)) {
+        for (nlp in names(bt$nlpars)) {
+          change <- c(change, .change_old_mo(bt$nlpars[[nlp]]))
+        }
+      } else {
+        change <- c(change, .change_old_mo(bt))
       }
-    } else {
-      change <- c(change, .change_old_mo(bt))
     }
   }
   change
