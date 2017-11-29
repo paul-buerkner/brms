@@ -24,7 +24,7 @@ get_all_effects <- function(x, ...) {
 #' @export
 get_all_effects.mvbrmsterms <- function(x, ...) {
   out <- lapply(x$terms, get_all_effects, ...)
-  unique(unlist(out, recursive = TRUE))
+  unique(unlist(out, recursive = FALSE))
 }
 
 #' @export
