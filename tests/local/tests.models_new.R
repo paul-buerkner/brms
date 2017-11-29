@@ -260,6 +260,20 @@ test_that("multivariate normal models work correctly", {
   expect_true(waic_mv$ic_diffs__[1, "WAIC"] > 0)
 })
 
+test_that("generalized multivariate models work correctly", {
+  data("BTdata", package = "MCMCglmm")
+  bform <- (bf(tarsus ~ sex + (1|p|fosternest)) + skew_normal()) +
+    (bf(back ~ s(tarsus, by = sex) + (1|p|fosternest)) + gaussian())
+  fit_mv <- brm(bform, BTdata, chains = 2, cores = 2, iter = 1000)
+  
+  print(fit_mv)
+  expect_ggplot(pp_check(fit_mv, resp = "back"))
+  expect_range(waic(fit_mv)$waic, 4300, 4400)
+  expect_ggplot(plot(marginal_effects(fit_mv), ask = FALSE)[[1]])
+  expect_ggplot(plot(marginal_smooths(fit_mv))[[1]])
+  expect_equal(dim(coef(fit_mv)$fosternest), c(104, 4, 7))
+})
+
 test_that("ZI and HU models work correctly", {
   fit_hu <- brm(bf(count ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient),
                    hu ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient)),

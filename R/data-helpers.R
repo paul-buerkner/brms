@@ -497,7 +497,7 @@ extract_old_standata.btnl <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.btl <- function(x, data, ...) {
-  out <- list(
+  list(
     smooths = make_smooth_list(x, data, ...),
     gps = make_gp_list(x, data, ...),
     Jmo = make_Jmo_list(x, data, ...)
