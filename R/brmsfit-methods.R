@@ -1995,6 +1995,8 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 update.brmsfit <- function(object, formula., newdata = NULL, 
                            recompile = FALSE, ...) {
   dots <- list(...)
+  testmode <- isTRUE(dots[["testmode"]])
+  dots$testmode <- NULL
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop2("Please use argument 'newdata' to update the data.")
@@ -2043,30 +2045,27 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   
-  arg_names <- c(
-    "prior", "threshold", "cov_ranef", 
-    "sparse", "sample_prior", "stan_funs"
-  )
-  new_args <- intersect(arg_names, names(dots))
-  old_args <- setdiff(arg_names, new_args)
+  arg_names <- c("prior", "cov_ranef", "stan_funs")
+  old_args <- setdiff(arg_names, names(dots))
   dots[old_args] <- object[old_args]
   if (!is.null(newdata)) {
     dots$data <- newdata
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
   }
-  if ("prior" %in% new_args) {
+  if (!is.null(dots$prior)) {
     if (!is.brmsprior(dots$prior)) { 
       stop2("Invalid 'prior' argument.")
     }
     dots$prior <- rbind(dots$prior, object$prior)
-    dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]
+    dupl_priors <- duplicated(dots$prior[, rcols_prior()])
+    dots$prior <- dots$prior[!dupl_priors, ]
   }
-  pnames <- parnames(object)
   if (is.null(dots$sample_prior)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
-      dots$sample_prior <- ifelse(any(grepl("^prior_", pnames)), "yes", "no") 
+      has_prior_pars <- any(grepl("^prior_", parnames(object)))
+      dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
   if (is.null(dots$save_ranef)) {
@@ -2086,9 +2085,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
   
-  new_stancode <- suppressMessages(
-    do.call(make_stancode, dots[!names(dots) %in% "testmode"])
-  )
+  new_stancode <- suppressMessages(do.call(make_stancode, dots))
   # stan code may differ just because of the version number (#288)
   new_stancode <- sub("^[^\n]+\n", "", new_stancode)
   old_stancode <- sub("^[^\n]+\n", "", stancode(object))
@@ -2103,7 +2100,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     } else {
       dots$data.name <- object$data.name
     }
-    if (!isTRUE(dots$testmode)) {
+    if (!testmode) {
       object <- do.call(brm, dots)
     }
   } else {
@@ -2116,9 +2113,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$data <- update_data(dots$data, bterms = bterms)
     object$family <- object$formula$family
     object$autocor <- object$formula$autocor
+    object$ranef <- tidy_ranef(bterms, data = object$data)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- tidy_ranef(bterms, data = object$data)
       dots$new <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
@@ -2137,7 +2134,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     } else if (!is.null(object$algorithm)) {
       dots$algorithm <- object$algorithm
     }
-    if (!isTRUE(dots$testmode)) {
+    if (!testmode) {
       object <- do.call(brm, c(list(fit = object), dots))
     }
   }

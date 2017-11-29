@@ -941,7 +941,7 @@ check_prior <- function(prior, formula, data = NULL,
     prior$class, symbols = c("^cor$", "^rescor$"), 
     subs = c("L", "Lrescor"), fixed = FALSE
   )
-  rcols <- c("class", "coef", "group", "resp", "dpar", "nlpar")
+  rcols <- rcols_prior()
   duplicated_input <- duplicated(prior[, rcols])
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
@@ -1355,6 +1355,11 @@ prior_bounds <- function(prior) {
     von_mises = list(lb = -pi, ub = pi),
     list(lb = -Inf, ub = Inf)
   )
+}
+
+rcols_prior <- function() {
+  # relevant columns for duplication checks in brmsprior objects
+  c("class", "coef", "group", "resp", "dpar", "nlpar")
 }
 
 par_bounds <- function(par, bound = "") {

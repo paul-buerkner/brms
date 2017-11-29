@@ -68,7 +68,7 @@ test_that("Binomial model from brm doc works correctly", {
   x <- rnorm(100)
   data4 <- data.frame(n, success, x)
   fit4 <- brm(
-    success | trials(n) ~ x, data = data4, 
+    success | trials(n) ~ x, data = data4,
     family = binomial("probit"),
     cores = 2
   )
@@ -114,7 +114,7 @@ test_that("Models from hypothesis doc work correctly", {
 
   ## perform one-sided hypothesis testing
   hyp2 <- hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
-  expect_range(hyp2$hypothesis$Evid.Ratio, 400)
+  expect_range(hyp2$hypothesis$Evid.Ratio, 350)
 
   ## test more than one hypothesis at once
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
