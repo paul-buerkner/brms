@@ -472,7 +472,7 @@ predictor_autocor <- function(eta, draws, i) {
       link = draws$f$link
     )
   }
-  if (!is.null(draws$ac$car)) {
+  if (!is.null(draws$ac$rcar)) {
     eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
   }
   if (!is.null(draws$ac$loclev)) {
