@@ -27,11 +27,13 @@
       \item Add weakly informative default priors for the 
       parameter class \code{Intercept} to improve convergence 
       of more complex distributional models.
+      \item Optionally display the MC standard error in the
+      \code{summary} output. (#280)
       \item Add argument \code{re.form} as an alias of 
       \code{re_formula} to the methods \code{posterior_predict},
       \code{posterior_linpred}, and \code{predictive_error}
       for consistency with other packages making use of
-      these methods.
+      these methods. (#283)
     }
   }
   \subsection{OTHER CHANGES}{
@@ -41,8 +43,11 @@
       \item Show the link functions of all
       distributional parameters in the \code{summary}
       output. (#277)
+      \item Reduce working memory requirements when
+      extracting posterior samples for use in \code{predict}
+      and related methods thanks to Fanyi Zhang. (#224)
       \item Remove deprecated aliases of functions
-      and arguments from the package.
+      and arguments from the package. (#278)
       \item No longer support certain prior specifications,
       which were previously labeled as deprecated.
       \item Remove the depreacted addition term 
