@@ -1,5 +1,6 @@
 library(testthat)
 library(brms)
+theme_set(theme_default())
 set.seed(1234)
 
 expect_ggplot <- function(object, ...) {

@@ -2,7 +2,6 @@
 % Please edit documentation in R/correlations.R
 \name{cor_ma}
 \alias{cor_ma}
-\alias{cor.ma}
 \title{MA(q) correlation structure}
 \usage{
 cor_ma(formula = ~1, q = 1, cov = FALSE)

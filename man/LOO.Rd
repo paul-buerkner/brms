@@ -10,9 +10,10 @@
 \usage{
 \method{LOO}{brmsfit}(x, ..., compare = TRUE, reloo = FALSE,
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", new_objects = list(), subset = NULL,
-  nsamples = NULL, pointwise = NULL, nug = NULL, k_threshold = 0.7,
-  update_args = list(), cores = 1, wcp = 0.2, wtrunc = 3/4)
+  sample_new_levels = "uncertainty", resp = NULL, new_objects = list(),
+  subset = NULL, nsamples = NULL, pointwise = NULL, nug = NULL,
+  k_threshold = 0.7, update_args = list(), cores = 1, wcp = 0.2,
+  wtrunc = 3/4)
 
 LOO(x, ...)
 }
@@ -54,6 +55,9 @@ and correlations. This options may be useful for conducting
 Bayesian power analysis. 
 If \code{"old_levels"}, directly sample new levels from the
 existing levels.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{new_objects}{A named \code{list} of objects containing 
 new data, which cannot be passed via argument \code{newdata}.

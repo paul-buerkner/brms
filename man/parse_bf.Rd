@@ -2,19 +2,32 @@
 % Please edit documentation in R/validate.R
 \name{parse_bf}
 \alias{parse_bf}
+\alias{parse_bf.default}
+\alias{parse_bf.brmsformula}
+\alias{parse_bf.mvbrmsformula}
 \title{Parse Formulas of \pkg{brms} Models}
 \usage{
-parse_bf(formula, family = NULL, autocor = NULL, check_response = TRUE,
-  resp_rhs_all = TRUE)
+parse_bf(formula, ...)
+
+\method{parse_bf}{default}(formula, family = NULL, autocor = NULL, ...)
+
+\method{parse_bf}{brmsformula}(formula, family = NULL, autocor = NULL,
+  check_response = TRUE, resp_rhs_all = TRUE, mv = FALSE,
+  rescor = FALSE, ...)
+
+\method{parse_bf}{mvbrmsformula}(formula, family = NULL, autocor = NULL,
+  ...)
 }
 \arguments{
 \item{formula}{An object of class 
-\code{\link[stats:formula]{formula}} or
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
+
+\item{...}{Further arguments passed to or from other methods.}
 
 \item{family}{A description of the response distribution and link function 
 to be used in the model. This can be a family function, 
@@ -23,15 +36,18 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
+\code{\link{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.
+In multivariate models, \code{family} might also be a list of families.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 
 (i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
+corresponding to no correlations.
+In multivariate models, \code{autocor} might also be a list 
+of autocorrelation structures.}
 
 \item{check_response}{Logical; Indicates whether the left-hand side 
 of \code{formula} (i.e. response variables and addition arguments) 
@@ -40,16 +56,21 @@ should be parsed. If \code{FALSE}, \code{formula} may also be one-sided.}
 \item{resp_rhs_all}{Logical; Indicates whether to also include response 
 variables on the right-hand side of formula \code{.$allvars}, 
 where \code{.} represents the output of \code{parse_bf}.}
+
+\item{mv}{Indicates if the univariate model is part of a multivariate model.}
+
+\item{rescor}{Indicates if residual correlations should be estimated.
+Only relevant in multivariate models.}
 }
 \value{
-An object of class \code{brmsterms}, which is a \code{list}
-  containing all required information initially stored in \code{formula} 
+An object of class \code{brmsterms} or \code{mvbrmsterms} 
+  (for multivariate models), which is a \code{list} containing all 
+  required information initially stored in \code{formula} 
   in an easier to use format, basically a list of formulas 
   (not an abstract syntax tree).
 }
 \description{
-Parse \code{formula} or \code{brmsformula} objects for use 
-in \pkg{brms}.
+Parse formulas objects for use in \pkg{brms}.
 }
 \details{
 This is the main formula parsing function of \pkg{brms}.
@@ -60,6 +81,7 @@ This is the main formula parsing function of \pkg{brms}.
   this necessary.
 }
 \seealso{
-\code{\link[brms:brm]{brm}}, 
-  \code{\link[brms:brmsformula]{brmsformula}}
+\code{\link{brm}}, 
+  \code{\link{brmsformula}},
+  \code{\link{mvbrmsformula}}
 }

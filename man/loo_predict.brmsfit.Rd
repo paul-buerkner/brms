@@ -10,11 +10,12 @@
 \title{Compute Weighted Expectations Using LOO}
 \usage{
 \method{loo_predict}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  probs = 0.5, lw = NULL, cores = 1, wcp = 0.2, wtrunc = 3/4, ...)
+  resp = NULL, probs = 0.5, lw = NULL, cores = 1, wcp = 0.2,
+  wtrunc = 3/4, ...)
 
 \method{loo_linpred}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  probs = 0.5, scale = "linear", lw = NULL, cores = 1, wcp = 0.2,
-  wtrunc = 3/4, ...)
+  resp = NULL, probs = 0.5, scale = "linear", lw = NULL, cores = 1,
+  wcp = 0.2, wtrunc = 3/4, ...)
 
 \method{loo_predictive_interval}{brmsfit}(object, prob = 0.9, lw = NULL,
   ...)
@@ -25,6 +26,9 @@
 \item{type}{The statistic to be computed on the results. 
 Can by either \code{"mean"} (default), \code{"var"}, or
 \code{"quantile"}.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{probs}{A vector of quantiles to compute. 
 Only used if \code{type = quantile}.}

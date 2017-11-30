@@ -9,16 +9,16 @@
 \method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   type = c("ordinary", "pearson"), method = c("fitted", "predict"),
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, subset = NULL,
+  new_objects = list(), incl_autocor = TRUE, resp = NULL, subset = NULL,
   nsamples = NULL, sort = FALSE, nug = NULL, summary = TRUE,
   robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{predictive_error}{brmsfit}(object, newdata = NULL,
-  re_formula = NULL, type = c("ordinary", "pearson"),
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, subset = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  re_formula = NULL, re.form = NULL, allow_new_levels = FALSE,
+  sample_new_levels = "uncertainty", new_objects = list(),
+  incl_autocor = TRUE, resp = NULL, subset = NULL, nsamples = NULL,
+  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975),
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -73,6 +73,9 @@ parameters should be included in the predictions. Defaults to
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
 
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
+
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
@@ -107,6 +110,8 @@ Only used if \code{summary} is \code{TRUE}.}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored.}
+
+\item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
 Model residuals. If \code{summary = TRUE} 

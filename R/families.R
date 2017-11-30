@@ -568,12 +568,9 @@ check_family <- function(family, link = NULL, threshold = NULL) {
     }
   }
   if (is_ordinal(family) && !is.null(threshold)) {
+    # slot 'threshold' deprecated as of brms > 1.7.0
     threshold <- match.arg(threshold, c("flexible", "equidistant"))
-    if (threshold != "flexible") {
-      family$threshold <- threshold
-      warning2("Specifying 'threshold' outside of ", 
-               "family functions is deprecated.")
-    }
+    family$threshold <- threshold
   }
   family
 }
@@ -685,13 +682,14 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (length(families) < 2L) {
     stop2("Expecting at least 2 mixture components.")
   }
-  non_mix_families <- c("categorical")
+  # do not allow ordinal families until compatibility with disc is ensured
+  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
+  non_mix_families <- c("categorical", ordinal_families)
   non_mix_families <- intersect(families, non_mix_families)
   if (length(non_mix_families)) {
     stop2("Families ", collapse_comma(non_mix_families), 
           " are currently not allowed in mixture models.")
   }
-  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
   if (is_ordinal(family) && any(!families %in% ordinal_families)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
   }
@@ -735,23 +733,39 @@ family_names.default <- function(family, ...) {
 }
 
 #' @export
-family_names.family <- function(family, ...) {
-  family$family
+family_names.family <- function(family, link = FALSE, ...) {
+  link <- as_one_logical(link)
+  ifelse(link, family$link, family$family)
 }
 
 #' @export
 family_names.mixfamily <- function(family, ...) {
-  ulapply(family$mix, "[[", "family")
+  ulapply(family$mix, family_names, ...)
 }
 
 #' @export
 family_names.brmsformula <- function(family, ...) {
-  family_names(family$family)
+  family_names(family$family, ...)
+}
+
+#' @export
+family_names.mvbrmsformula <- function(family, ...) {
+  ulapply(family$forms, family_names, ...)
 }
 
 #' @export
 family_names.brmsterms <- function(family, ...) {
-  family_names(family$family)
+  family_names(family$family, ...)
+}
+
+#' @export
+family_names.mvbrmsterms <- function(family, ...) {
+  ulapply(family$terms, family_names, ...)
+}
+
+#' @export
+family_names.brmsfit <- function(family, ...) {
+  family_names(family$formula, ...)
 }
 
 dpar_family <- function(family, dpar, ...) {
@@ -784,10 +798,7 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   #   dpar: name of the distributional parameter
   #   link: optional link function of the parameter
   dp_class <- dpar_class(dpar)
-  if (!is.null(dpar) && !isTRUE(dp_class %in% dpars())) {
-    stop2("Parameter '", dpar, "' is invalid.")
-  }
-  if (is.null(dpar)) {
+  if (!isTRUE(dp_class %in% dpars())) {
     link <- "identity"
   } else {
     links <- links_dpars(dp_class)
@@ -860,6 +871,46 @@ summary.mixfamily <- function(object, link = FALSE, ...) {
   paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
+summarise_families <- function(x) {
+  # summary of families used in summary.brmsfit
+  UseMethod("summarise_families")
+}
+
+#' @export
+summarise_families.mvbrmsformula <- function(x, ...) {
+  out <- ulapply(x$forms, summarise_families, ...)
+  paste0("MV(", paste0(out, collapse = ", "), ")")
+}
+
+#' @export
+summarise_families.brmsformula <- function(x, ...) {
+  summary(x$family, link = FALSE, ...)
+}
+
+summarise_links <- function(x, ...) {
+  # summary of link functions used in summary.brmsfit
+  UseMethod("summarise_links")
+}
+
+#' @export
+summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
+  str_wsp <- collapse(rep(" ", wsp))
+  links <- ulapply(x$forms, summarise_links, mv = TRUE, ...)
+  paste0(links, collapse = paste0("\n", str_wsp))
+}
+
+#' @export
+summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
+  x <- parse_bf(x)
+  dpars <- valid_dpars(x)
+  links <- setNames(rep("identity", length(dpars)), dpars)
+  links_pred <- ulapply(x$dpars, function(x) x$family$link)
+  links[names(links_pred)] <- links_pred
+  resp <- if (mv) usc(combine_prefix(x))
+  names(links) <- paste0(names(links), resp)
+  paste0(names(links), " = ", links, collapse = "; ")
+}
+
 is.family <- function(x) {
   inherits(x, "family")
 }
@@ -870,7 +921,7 @@ is.mixfamily <- function(x) {
 
 is_linear <- function(family) {
   # indicate if family is for a linear model
-  any(family_names(family) %in% c("gaussian", "student", "cauchy"))
+  any(family_names(family) %in% c("gaussian", "student"))
 }
 
 is_binary <- function(family) {
@@ -944,38 +995,6 @@ is_zero_one_inflated <- function(family, zi_beta = FALSE) {
   any(family_names(family) %in% "zero_one_inflated_beta")
 }
 
-is_2PL <- function(family) {
-  # do not remove to provide an informative error message
-  # why the special 2PL implementation is not supported anymore
-  if (!is(family, "brmsfamily")) {
-    out <- FALSE
-  } else {
-    out <- any(family_names(family) %in% "bernoulli") && 
-      identical(family$type, "2PL")
-  }
-  if (out) {
-    stop2("The special implementation of 2PL models has been removed.\n",
-          "You can now use argument 'nonlinear' to fit such models.")
-  }
-  out
-}
-
-is_forked <- function(family) {
-  # indicate if family has two separate model parts
-  is_hurdle(family) || is_zero_inflated(family) || is_2PL(family)
-}
-
-is_mv <- function(family, response = NULL) {
-  # indicate if the model uses multiple responses
-  nresp <- length(response)
-  is_mv <- nresp > 1L && is_linear(family) || is_categorical(family) || 
-           nresp == 2L && is_forked(family)
-  if (nresp > 1L && !is_mv) {
-    stop2("Invalid multivariate model")
-  }
-  is_mv
-}
-
 use_real <- function(family) {
   # indicate if family uses real responses
   families <- family_names(family)
@@ -1015,9 +1034,17 @@ has_shape <- function(family) {
           "hurdle_gamma", "zero_inflated_negbinomial"))
 }
 
-has_nu <- function(family) {
+has_nu <- function(family, bterms = NULL) {
   # indicate if family needs a nu parameter
-  any(family_names(family) %in% c("student", "frechet"))
+  out <- any(family_names(family) %in% c("student", "frechet"))
+  if (isTRUE(bterms$rescor) && family_names(family) %in% "student") {
+    # the multi_student_t family only has a single nu parameter
+    if ("nu" %in% c(names(bterms$dpars), names(bterms$fdpars))) {
+      stop2("Cannot predict or fix 'nu' when 'rescor' is estimated.")
+    }
+    out <- FALSE
+  }
+  out
 }
 
 has_phi <- function(family) {
@@ -1046,85 +1073,50 @@ has_xi <- function(family) {
   any(family_names(family) %in% c("gen_extreme_value"))
 }
 
-has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
+has_sigma <- function(family, bterms = NULL) {
   # indicate if the model needs a sigma parameter
-  # Args:
-  #  family: model family
-  #  bterms: object of class brmsterms
-  #  incmv: should MV (linear) models be treated as having sigma? 
-  families <- family_names(family)
-  is_ln_eg <- any(families %in% 
-    c("lognormal", "hurdle_lognormal", "exgaussian",
-      "asym_laplace", "gen_extreme_value", "skew_normal")
+  out <- any(family_names(family) %in% 
+    c("gaussian", "student", "skew_normal", "lognormal", 
+      "hurdle_lognormal", "exgaussian", "asym_laplace", 
+      "gen_extreme_value")
   )
+  if (!is.null(bterms)) {
+    out <- out && !no_sigma(bterms)
+  }
+  out
+}
+
+no_sigma <- function(bterms) {
+  # check if sigma should be explicitely set to 0
+  stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$se)) {
-    # call .se without evaluating the x argument 
+    # call resp_se without evaluating the x argument
     cl <- rhs(bterms$adforms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
-    se_only <- isFALSE(attr(eval(cl), "sigma")) 
+    se_only <- isFALSE(attr(eval(cl), "sigma"))
     if (se_only && use_cov(bterms$autocor)) {
-      stop2("Please set argument 'sigma' of function 'se' ",  
+      stop2("Please set argument 'sigma' of function 'se' ",
             "to TRUE when modeling ARMA covariance matrices.")
     }
   } else {
     se_only <- FALSE
   }
-  out <- (is_linear(family) || is_ln_eg) && 
-          !se_only && !is(bterms$autocor, "cov_fixed")
-  if (!incmv) {
-    is_multi <- is_linear(family) && length(bterms$response) > 1L
-    out <- out && !is_multi
-  }
-  out
+  se_only || is.cor_fixed(bterms$autocor)
+}
+
+simple_sigma <- function(bterms) {
+  # has the model a non-predicted but estimated sigma parameter?
+  stopifnot(is.brmsterms(bterms))
+  has_sigma(bterms$family, bterms) && is.null(bterms$dpars$sigma)
+}
+
+pred_sigma <- function(bterms) {
+  # has the model a predicted sigma parameter?
+  stopifnot(is.brmsterms(bterms))
+  "sigma" %in% dpar_class(names(bterms$dpars))
 }
 
 allows_cs <- function(family) {
   # checks if category specific effects are allowed
   all(family_names(family) %in% c("sratio", "cratio", "acat"))
-}
-
-is_old_lognormal <- function(family, link = "identity", nresp = 1L,
-                             version = utils::packageVersion("brms")) {
-  # indicate transformation to lognormal models
-  # Args:
-  #   link: A character string; ignored if family is of class family
-  #   nresp: number of response variables
-  #   version: brms version with which the model was fitted
-  if (is.family(family)) {
-    link <- family$link
-    family <- family$family
-  }
-  isTRUE(family %in% "gaussian") && link == "log" && nresp == 1L &&
-    (is.null(version) || version <= "0.9.1")
-}
-
-is_old_categorical <- function(x) {
-  # indicate if the model is and old categorical model
-  stopifnot(is.brmsfit(x))
-  if (is(x$fit, "stanfit") && is_categorical(x$family)) {
-    if ("bp" %in% x$fit@model_pars) {
-      # fitted with brms <= 0.8.0
-      out <- 1L
-    } else if (is_old_mv(x)) {
-      # fitted with brms <= 1.0.0
-      out <- 2L
-    } else {
-      out <- 0L
-    }
-  } else {
-    out <- 0L
-  }
-  out
-}
-
-is_old_mv <- function(x) {
-  # indicate if the model uses the old multivariate syntax 
-  # from brms < 1.0.0
-  stopifnot(is.brmsfit(x))
-  bterms <- parse_bf(formula(x), family = family(x))
-  if (is.package_version(x$version)) {
-    x$version <- list(brms = x$version)
-  }
-  (is.null(x$version) || x$version$brms <= "0.10.0.9000") &&
-    (is_mv(family(x), bterms$response) || is_forked(family(x)))
 }

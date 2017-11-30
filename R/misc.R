@@ -78,13 +78,17 @@ array2list <- function(x) {
     stop("Argument 'x' has no dimension.")
   }
   ndim <- length(dim(x))
-  l <- list(length = dim(x)[ndim])
+  out <- list(length = dim(x)[ndim])
   ind <- collapse(rep(",", ndim - 1))
   for (i in seq_len(dim(x)[ndim])) {
-    l[[i]] <- eval(parse(text = paste0("x[", ind, i, "]"))) 
+    out[[i]] <- eval(parse(text = paste0("x[", ind, i, "]")))
+    if (length(dim(x)) > 2) {
+      # avoid accidental dropping of other dimensions
+      dim(out[[i]]) <- dim(x)[-ndim] 
+    }
   }
-  names(l) <- dimnames(x)[[ndim]]
-  l
+  names(out) <- dimnames(x)[[ndim]]
+  out
 }
 
 first_greater <- function(A, target, i = 1) {
@@ -151,6 +155,17 @@ as_one_logical <- function(x) {
   if (anyNA(x) || length(x) != 1L) {
     s <- substr(deparse_combine(s), 1L, 100L)
     stop2("Cannot coerce ", s, " to a single logical value.")
+  }
+  x
+}
+
+as_one_character <- function(x) {
+  # coerce 'x' to a single character string
+  s <- substitute(x)
+  x <- as.character(x)
+  if (anyNA(x) || length(x) != 1L) {
+    s <- substr(deparse_combine(s), 1L, 100L)
+    stop2("Cannot coerce ", s, " to a single character value.")
   }
   x
 }
@@ -476,6 +491,10 @@ grepl_expr <- function(pattern, expr, ...) {
   # like base::grepl but handles (parse trees of) expressions 
   as.logical(ulapply(expr, function(e) 
     length(get_matches_expr(pattern, e, ...)) > 0L))
+}
+
+escape_dot <- function(x) {
+  gsub(".", "\\.", x, fixed = TRUE)
 }
 
 usc <- function(x, pos = c("prefix", "suffix")) {

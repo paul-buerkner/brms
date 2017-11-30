@@ -9,16 +9,16 @@
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   transform = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, negative_rt = FALSE, subset = NULL,
+  incl_autocor = TRUE, resp = NULL, negative_rt = FALSE, subset = NULL,
   nsamples = NULL, sort = FALSE, nug = NULL, ntrys = 5,
   summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{posterior_predict}{brmsfit}(object, newdata = NULL,
-  re_formula = NULL, transform = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, negative_rt = FALSE, subset = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, ntrys = 5,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  re_formula = NULL, re.form = NULL, transform = NULL,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, resp = NULL,
+  negative_rt = FALSE, subset = NULL, nsamples = NULL, sort = FALSE,
+  nug = NULL, ntrys = 5, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -65,6 +65,9 @@ parameters should be included in the predictions. Defaults to
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
 
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
+
 \item{negative_rt}{Only relevant for Wiener diffusion models. 
 A flag indicating whether response times of responses
 on the lower boundary should be returned as negative values.
@@ -109,6 +112,8 @@ Only used if \code{summary} is \code{TRUE}.}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored.}
+
+\item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
 Predicted values of the response variable. 
@@ -120,6 +125,8 @@ Predicted values of the response variable.
   to \code{length(probs) + 2}.
   If \code{summary = FALSE}, the output is as a S x N matrix, 
   where S is the number of samples.
+  In multivariate models, the output is an array of 3 dimensions, 
+  where the third dimension indicates the response variables.
 }
 \description{
 Predict responses based on the fitted model.

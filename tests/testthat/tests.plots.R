@@ -1,4 +1,5 @@
 test_that("plotting functions don't throw unexpected errors", {
+  theme_set(theme_black())
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
   
   # plot.brmsfit
@@ -23,6 +24,8 @@ test_that("plotting functions don't throw unexpected errors", {
   expect_silent(p <- stanplot(fit, type = "acf"))
   expect_silent(p <- stanplot(fit, type = "nuts_divergence"))
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
+  expect_error(stanplot(fit, type = "hex"), 
+               "Exactly 2 parameters must be selected")
   
   # pairs.brmsfit
   expect_s3_class(pairs(fit, pars = parnames(fit)[1:3]), "bayesplot_grid")

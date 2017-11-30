@@ -8,65 +8,16 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- with(x, parse_bf(formula, family = family, autocor = autocor))
-  family <- family(x)
+  bterms <- parse_bf(x$formula) 
   data <- model.frame(x)
   pars <- parnames(x)
-  
   # find positions of parameters and define new names
-  change <- list()
-  resp <- bterms$response
-  if (length(resp) > 1L) {
-    # rename effects in multivariate models
-    for (r in resp) {
-      bterms$dpars[["mu"]]$resp <- r
-      change_eff <- change_effects(
-        bterms$dpars[["mu"]], data = data, 
-        pars = pars, stancode = stancode(x)
-      )
-      change <- c(change, change_eff)
-    }
-    bterms$dpars[["mu"]] <- NULL
-  }
-  # rename effects of distributional parameters
-  for (ap in names(bterms$dpars)) {
-    change_eff <- change_effects(
-      bterms$dpars[[ap]], data = data, 
-      pars = pars, stancode = stancode(x)
-    )
-    change <- c(change, change_eff)
-  }
-  change <- c(change,
+  change <- c(
+    change_effects(bterms, data = data, pars = pars, stancode = stancode(x)),
     change_re(x$ranef, pars = pars),
     change_Xme(bterms, pars = pars),
     change_autocor(bterms, data = data, pars = pars)
   )
-  # rename residual parameters of multivariate linear models
-  if (is_linear(family) && length(bterms$response) > 1L) {
-    corfnames <- paste0("sigma_", bterms$response)
-    change <- lc(change, 
-      list(
-        pos = grepl("^sigma\\[", pars), oldname = "sigma",
-        pnames = corfnames, fnames = corfnames
-      )
-    )
-    change <- c(change, 
-      change_prior(
-        class = "sigma", pars = pars, 
-        names = bterms$response
-      )
-    )
-    rescor_names <- get_cornames(
-      bterms$response, type = "rescor", brackets = FALSE
-    )
-    change <- lc(change, 
-      list(
-        pos = grepl("^rescor\\[", pars), 
-        oldname = "rescor", pnames = rescor_names,
-        fnames = rescor_names
-      )
-    )
-  }
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
   x <- compute_quantities(x)
@@ -77,6 +28,32 @@ rename_pars <- function(x) {
 change_effects <- function(x, ...) {
   # helps in renaming parameters after model fitting
   UseMethod("change_effects")
+}
+
+#' @export
+change_effects.mvbrmsterms <- function(x, pars, ...) {
+  change <- list()
+  for (i in seq_along(x$terms)) {
+    change <- c(change, change_effects(x$terms[[i]], pars = pars, ...))
+  }
+  if (x$rescor) {
+    rescor_names <- get_cornames(
+      x$responses, type = "rescor", brackets = FALSE
+    )
+    change <- lc(change,
+      list(pos = grepl("^rescor\\[", pars), fnames = rescor_names)
+    )
+  }
+  change
+}
+
+#' @export
+change_effects.brmsterms <- function(x, ...) {
+  change <- list()
+  for (dp in names(x$dpars)) {
+    change <- c(change, change_effects(x$dpars[[dp]], ...))
+  }
+  change
 }
 
 #' @export
@@ -209,7 +186,6 @@ change_Xme <- function(bterms, pars) {
   # helps in renaming global noise free variables
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
-  stopifnot(is.brmsterms(bterms))
   change <- list()
   if (any(grepl("^Xme_", pars))) {
     uni_me <- get_uni_me(bterms)
@@ -468,14 +444,6 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   index_names
 }
 
-make_dims <- function(x) {
-  # helper function to make correct dims for .@sims$dims_oi
-  if (is.null(x$dim)) {
-    x$dim <- numeric(0)
-  }
-  setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
-}
-
 do_renaming <- function(x, change) {
   # perform actual renaming of Stan parameters
   # Args:
@@ -546,15 +514,17 @@ compute_quantities <- function(x) {
   x
 }
 
-compute_xi <- function(x) {
+compute_xi <- function(x, ...) {
   # helper function to compute parameter xi, which is currently
   # defined in the Stan model block and thus not being stored
-  # Args:
-  #   x: a brmsfit object
   # Returns:
-  #   a brmsfit object, with parameter xi added 
-  stopifnot(is.brmsfit(x))
-  if (!"temp_xi" %in% parnames(x)) {
+  #   All methods return a brmsfit object
+  UseMethod("compute_xi")
+}
+
+#' @export
+compute_xi.brmsfit <- function(x, ...) {
+  if (!any(grepl("^temp_xi(_|$)", parnames(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -563,24 +533,45 @@ compute_xi <- function(x) {
              "Some S3 methods may not work as expected.")
     return(x)
   }
-  mu <- ilink(get_eta(draws$mu, i = NULL), draws$f$link)
-  sigma <- get_sigma(draws$sigma, data = draws$data, i = NULL)
-  y <- matrix(draws$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
+  compute_xi(draws, fit = x, ...)
+}
+
+#' @export
+compute_xi.mvbrmsdraws <- function(x, fit, ...) {
+  stopifnot(is.brmsfit(fit))
+  for (resp in names(x$resps)) {
+    fit <- compute_xi(x$resps[[resp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+compute_xi.brmsdraws <- function(x, fit, ...) {
+  stopifnot(is.brmsfit(fit))
+  resp <- usc(x$resp)
+  temp_xi_name <- paste0("temp_xi", resp)
+  if (!temp_xi_name %in% parnames(fit)) {
+    return(fit)
+  }
+  mu <- get_dpar(x, "mu")
+  sigma <- get_dpar(x, "sigma")
+  y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
   bs <- - 1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
-  temp_xi <- as.vector(as.matrix(x, pars = "temp_xi"))
+  temp_xi <- as.vector(as.matrix(fit, pars = temp_xi_name))
   xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
   # write xi into stanfit object
-  samp_chain <- length(xi) / x$fit@sim$chains
-  for (i in seq_len(x$fit@sim$chains)) {
+  xi_name <- paste0("xi", resp)
+  samp_chain <- length(xi) / fit$fit@sim$chains
+  for (i in seq_len(fit$fit@sim$chains)) {
     xi_part <- xi[((i - 1) * samp_chain + 1):(i * samp_chain)]
     # add warmup samples not used anyway
-    xi_part <- c(rep(0, x$fit@sim$warmup2[1]), xi_part)
-    x$fit@sim$samples[[i]][["xi"]] <- xi_part
+    xi_part <- c(rep(0, fit$fit@sim$warmup2[1]), xi_part)
+    fit$fit@sim$samples[[i]][[xi_name]] <- xi_part
   }
-  x$fit@sim$pars_oi <- c(x$fit@sim$pars_oi, "xi")
-  x$fit@sim$dims_oi[["xi"]] <- numeric(0)
-  x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, "xi")
-  x$fit@sim$n_flatnames <- x$fit@sim$n_flatnames + 1
-  x
+  fit$fit@sim$pars_oi <- c(fit$fit@sim$pars_oi, xi_name)
+  fit$fit@sim$dims_oi[[xi_name]] <- numeric(0)
+  fit$fit@sim$fnames_oi <- c(fit$fit@sim$fnames_oi, xi_name)
+  fit$fit@sim$n_flatnames <- fit$fit@sim$n_flatnames + 1
+  fit
 }

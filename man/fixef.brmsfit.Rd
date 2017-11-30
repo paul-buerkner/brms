@@ -6,7 +6,7 @@
 \title{Extract Population-Level Estimates}
 \usage{
 \method{fixef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), old = FALSE, estimate = "mean", ...)
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -24,18 +24,7 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{old}{Logical; indicates if the old implementation
-of this method (prior to version 1.7.0) should be used.
-Defaults to \code{FALSE}.}
-
-\item{estimate}{(Deprecated) A character vector specifying 
-which coefficients (e.g., \code{"mean"}, \code{"median"}, 
-\code{"sd"}, or \code{"quantile"}) should be calculated 
-for the population-level effects. Only used if \code{old}
-is \code{TRUE}.}
-
-\item{...}{Further arguments to be passed to the functions 
-specified in \code{estimate}.}
+\item{...}{Currently ignored.}
 }
 \value{
 If \code{summary} is \code{TRUE}, a matrix with one row per 

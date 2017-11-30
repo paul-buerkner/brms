@@ -2,22 +2,21 @@
 % Please edit documentation in R/make_standata.R
 \name{make_standata}
 \alias{make_standata}
-\alias{brmdata}
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
-  sample_prior = c("no", "yes", "only"), knots = NULL, control = list(),
-  ...)
+  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
+  knots = NULL, check_response = TRUE, only_response = FALSE,
+  control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
-\code{\link[stats:formula]{formula}} or
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{data}{An object of class \code{data.frame} 
 (or one that can be coerced to that class) 
@@ -30,34 +29,24 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
+\code{\link{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.
+In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
-\code{\link[brms:set_prior]{set_prior}} or related functions 
+\code{\link{set_prior}} or related functions 
 and combined using the \code{c} method. A single \code{brmsprior} 
 object may be passed without \code{c()} surrounding it. 
-See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
+See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 
 (i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
-
-\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
-linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary formula. 
-If not \code{NULL}, \code{formula} is treated as a non-linear model
-and \code{nonlinear} should contain a formula for each non-linear 
-parameter, which has the parameter on the left hand side and its
-linear predictor on the right hand side.
-Alternatively, it can be a single formula with all non-linear
-parameters on the left hand side (separated by a \code{+}) and a
-common linear predictor on the right hand side.
-As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-parameters directly within \code{formula}.}
+corresponding to no correlations.
+In multivariate models, \code{autocor} might also be a list 
+of autocorrelation structures.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 
@@ -79,6 +68,10 @@ all parameters must have proper priors.}
 \item{knots}{Optional list containing user specified knot values to be 
 used for basis construction of smoothing terms. 
 See \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{check_response}{Logical; check validity of the response?}
+
+\item{only_response}{Logical; extract data related to the response only?}
 
 \item{control}{A named list currently for internal usage only}
 

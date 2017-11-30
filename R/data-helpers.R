@@ -22,12 +22,7 @@ update_data <- function(data, bterms, na.action = na.omit,
   if (is.null(knots)) {
     knots <- attr(data, "knots", TRUE)
   }
-  if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
-    # to avoid error described in #30
-    # brms.frame class is deprecated as of brms > 0.7.0
-    data <- as.data.frame(data)
-  }
-  if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
+  if (!isTRUE(attr(data, "brmsframe"))) {
     data <- try(as.data.frame(data, silent = TRUE))
     if (is(data, "try-error")) {
       stop2("Argument 'data' must be coercible to a data.frame.")
@@ -37,11 +32,6 @@ update_data <- function(data, bterms, na.action = na.omit,
     }
     bterms$allvars <- terms(bterms$allvars)
     attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
-    if (isTRUE(attr(bterms$formula, "old_mv"))) {
-      data <- melt_data(data, bterms = bterms)
-    } else {
-      check_data_old_mv(data, bterms = bterms)
-    }
     data <- data_rsv_intercept(data, bterms = bterms)
     missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
     if (length(missing_vars)) {
@@ -61,93 +51,13 @@ update_data <- function(data, bterms, na.action = na.omit,
       stop2("Variable names may not contain double underscores ",
             "or underscores at the end.")
     }
-    groups <- c(get_re(bterms)$group, bterms$time$group)
+    groups <- get_groups(bterms)
     data <- combine_groups(data, groups)
     data <- fix_factor_contrasts(data, ignore = groups)
     attr(data, "knots") <- knots
     attr(data, "brmsframe") <- TRUE
   }
   data
-}
-
-melt_data <- function(data, bterms) {
-  # add reserved variables to the data
-  # and transform it into long format for mv models
-  # DEPRECATED as of brms 1.0.0
-  # Args:
-  #   data: a data.frame
-  #   bterms: object of class brmsterms
-  family <- bterms$family
-  response <- bterms$response
-  nresp <- length(response)
-  if (is_mv(family, response = response)) {
-    if (!is(data, "data.frame")) {
-      stop2("Argument 'data' must be a data.frame for this model.")
-    }
-    # only keep variables that are relevant for the model
-    rel_vars <- c(all.vars(attr(terms(bterms$allvars), "variables")), 
-                  all.vars(bterms$respform))
-    data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
-    rsv_vars <- intersect(c("trait", "response"), names(data))
-    if (length(rsv_vars)) {
-      rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-      stop2(paste(rsv_vars, "is a reserved variable name."))
-    }
-    if (is_categorical(family)) {
-      # no parameters are modeled for the reference category
-      response <- response[-1]
-    }
-    # prepare the response variable
-    # use na.pass as otherwise cbind will complain
-    # when data contains NAs in the response
-    nobs <- nrow(data)
-    trait <- factor(rep(response, each = nobs), levels = response)
-    new_cols <- data.frame(trait = trait)
-    model_response <- model.response(model.frame(
-      bterms$respform, data = data, na.action = na.pass))
-    # allow to remove NA responses later on
-    rows2remove <- which(!complete.cases(model_response))
-    if (is_linear(family)) {
-      model_response[rows2remove, ] <- NA
-      model_response <- as.vector(model_response)
-    } else if (is_categorical(family)) {
-      model_response[rows2remove] <- NA
-    } else if (is_forked(family)) {
-      model_response[rows2remove] <- NA
-      rsv_vars <- intersect(c(response[2], "main", "spec"), names(data))
-      if (length(rsv_vars)) {
-        rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-        stop2(paste(rsv_vars, "is a reserved variable name."))
-      }
-      one <- rep(1, nobs)
-      zero <- rep(0, nobs)
-      new_cols$main <- c(one, zero)
-      new_cols$spec <- c(zero, one)
-      # dummy responses not actually used in Stan
-      model_response <- rep(model_response, 2)
-    }
-    new_cols$response <- model_response
-    old_data <- data
-    data <- replicate(length(response), old_data, simplify = FALSE)
-    data <- cbind(do.call(rbind, data), new_cols)
-    data <- fix_factor_contrasts(data, optdata = old_data)
-  }
-  data
-}
-
-check_data_old_mv <- function(data, bterms) {
-  # check if the deprecated MV syntax was used in a new model
-  # Args:
-  #   see update_data
-  rsv_vars <- rsv_vars(bterms, incl_intercept = FALSE)
-  rsv_vars <- setdiff(rsv_vars, names(data))
-  used_rsv_vars <- intersect(rsv_vars, all.vars(bterms$allvars))
-  if (length(used_rsv_vars)) {
-    stop2("It is no longer possible (and necessary) to specify models ", 
-          "using the multivariate 'trait' syntax. See help(brmsformula) ",
-          "for details on the new syntax.")
-  }
-  invisible(NULL)
 }
 
 data_rsv_intercept <- function(data, bterms) {
@@ -219,26 +129,23 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   data
 }
 
-order_data <- function(data, bterms, old_mv = FALSE) {
+order_data <- function(data, bterms) {
   # order data for use in time-series models
   # Args:
   #   data: data.frame to be ordered
-  #   bterms: brmsterm object
-  #   old_mv: indicator if the model is an old multivariate one
+  #   bterms: brmsterms of mvbrmsterms object
   # Returns:
   #   potentially ordered data
-  if (old_mv) {
-    to_order <- rmNULL(list(
-      data[["trait"]], 
-      data[[bterms$time$group]], 
-      data[[bterms$time$time]]
-    ))
-  } else {
-    to_order <- rmNULL(list(
-      data[[bterms$time$group]], 
-      data[[bterms$time$time]]
-    ))
+  time <- get_autocor_vars(bterms, "time")
+  # ordering does not matter for the CAR structure
+  group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
+  if (length(time) > 1L || length(group) > 1L) {
+    stop2("All autocorrelation structures must have the same ",
+          "time and group variables.")
   }
+  time_var <- if (length(time)) data[[time]]
+  group_var <- if (length(group)) data[[group]]
+  to_order <- rmNULL(list(group_var, time_var))
   if (length(to_order)) {
     new_order <- do.call(order, to_order)
     data <- data[new_order, , drop = FALSE]
@@ -248,14 +155,12 @@ order_data <- function(data, bterms, old_mv = FALSE) {
   data
 }
 
-amend_newdata <- function(newdata, fit, re_formula = NULL, 
-                          allow_new_levels = FALSE,
-                          check_response = FALSE,
-                          only_response = FALSE,
-                          incl_autocor = TRUE,
-                          return_standata = TRUE,
-                          all_group_vars = NULL,
-                          new_objects = list()) {
+validate_newdata <- function(
+  newdata, fit, re_formula = NULL, allow_new_levels = FALSE,
+  check_response = FALSE, only_response = FALSE,
+  incl_autocor = TRUE, return_standata = TRUE,
+  all_group_vars = NULL, new_objects = list()
+) {
   # amend newdata passed to predict and fitted methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
@@ -274,7 +179,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   new_objects: see function 'add_new_objects'
   # Returns:
   #   updated data.frame being compatible with formula(fit)
-  fit <- remove_autocor(fit, incl_autocor)
+  if (!incl_autocor) {
+    fit <- remove_autocor(fit) 
+  }
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
@@ -317,12 +224,18 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
+  mf <- model.frame(fit)
+  for (i in seq_along(mf)) {
+    if (is_like_factor(mf[[i]])) {
+      mf[[i]] <- as.factor(mf[[i]])
+    }
+  }
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
-  new_ranef <- tidy_ranef(bterms, data = model.frame(fit))
+  new_ranef <- tidy_ranef(bterms, data = mf)
   group_vars <- get_all_group_vars(new_ranef)
-  group_vars <- union(group_vars, bterms$time$group)
-  if (allow_new_levels) {
+  group_vars <- union(group_vars, get_autocor_vars(bterms, "group"))
+  if (allow_new_levels && length(group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
     new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
@@ -331,12 +244,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
-  mf <- model.frame(fit)
-  for (i in seq_along(mf)) {
-    if (is_like_factor(mf[[i]])) {
-      mf[[i]] <- as.factor(mf[[i]])
-    }
-  }
   if (is.null(all_group_vars)) {
     all_group_vars <- get_all_group_vars(fit) 
   }
@@ -431,34 +338,19 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (return_standata) {
     fit <- add_new_objects(fit, newdata, new_objects)
     control <- list(
-      is_newdata = TRUE, not4stan = TRUE, 
-      old_levels = old_levels, save_order = TRUE, 
-      omit_response = !check_response,
-      only_response = only_response,
-      old_cat = is_old_categorical(fit)
+      new = TRUE, not4stan = TRUE, 
+      old_levels = old_levels, save_order = TRUE
     )
     # ensure correct handling of functions like poly or scale
-    old_terms <- attr(model.frame(fit), "terms")
+    old_terms <- attr(mf, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    if (has_trials(fit$family) || has_cat(fit$family)) {
-      # trials and cat should not be computed based on newdata
-      old_standata <- standata(fit, control = list(only_response = TRUE))
-      control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
-    }
-    if (is.cor_car(fit$autocor)) {
-      if (isTRUE(nzchar(bterms$time$group))) {
-        old_loc_data <- get(bterms$time$group, fit$data)
-        control$old_locations <- levels(factor(old_loc_data))
-      }
-    }
-    control$smooths <- make_smooth_list(bterms, model.frame(fit))
-    control$gps <- make_gp_list(bterms, model.frame(fit))
-    control$Jmo <- make_Jmo_list(bterms, model.frame(fit)) 
-    knots <- attr(model.frame(fit), "knots")
+    control$old_standata <- extract_old_standata(bterms, data = mf)
+    knots <- attr(mf, "knots")
     newdata <- make_standata(
-      new_formula, data = newdata, family = fit$family, 
-      autocor = fit$autocor, knots = knots, control = control
+      new_formula, data = newdata, 
+      knots = knots, check_response = check_response,
+      only_response = only_response, control = control
     )
   }
   newdata
@@ -511,7 +403,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
   stopifnot(is.atomic(cols2remove))
-  terms <- amend_terms(formula)
+  terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)
   }
@@ -560,99 +452,83 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-make_Jmo_list <- function(x, data, ...) {
-  # compute Jmo values based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_Jmo_list")
+extract_old_standata <- function(x, data, ...) {
+  # helper function for validate_newdata to extract
+  # old standata required for the computation of new standata
+  UseMethod("extract_old_standata")
 }
 
 #' @export
-make_Jmo_list.btl <- function(x, data, ...) {
-  if (!is.null(x$mo)) {
-    # do it like data_mo()
-    monef <- get_mo_labels(x, data)
-    calls_mo <- unlist(attr(monef, "calls_mo"))
-    Xmo <- lapply(calls_mo, 
-      function(x) attr(eval2(x, data), "var")
-    )
-    out <- as.array(ulapply(Xmo, max))
-  } else {
-    out <- NULL
-  }
-  out
-}
-
-#' @export
-make_Jmo_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
+extract_old_standata.mvbrmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$responses))
   for (i in seq_along(out)) {
-    out[[i]] <- make_Jmo_list(x$nlpars[[i]], data, ...)
+    out[[i]] <- extract_old_standata(x$terms[[i]], data, ...)
   }
   out
 }
 
 #' @export
-make_Jmo_list.brmsterms <- function(x, data, ...) {
+extract_old_standata.brmsterms <- function(x, data, ...) {
   out <- named_list(names(x$dpars))
   for (i in seq_along(out)) {
-    out[[i]] <- make_Jmo_list(x$dpars[[i]], data, ...)
+    out[[i]] <- extract_old_standata(x$dpars[[i]], data, ...)
+  }
+  if (has_trials(x$family) || has_cat(x$family)) {
+    # trials and ncat should not be computed based on new data
+    data_response <- data_response(x, data, check_response = FALSE)
+    out[c("trials", "ncat")] <- data_response[c("trials", "ncat")]
+  }
+  if (is.cor_car(x$autocor)) {
+    if (isTRUE(nzchar(x$time$group))) {
+      out$locations <- levels(factor(get(x$time$group, data)))
+    }
   }
   out
+}
+
+#' @export
+extract_old_standata.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- extract_old_standata(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+extract_old_standata.btl <- function(x, data, ...) {
+  list(
+    smooths = make_smooth_list(x, data, ...),
+    gps = make_gp_list(x, data, ...),
+    Jmo = make_Jmo_list(x, data, ...)
+  )
 }
 
 make_smooth_list <- function(x, data, ...) {
-  # compute smooth objects based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_smooth_list")
-}
-
-#' @export
-make_smooth_list.btl <- function(x, data, ...) {
-  if (has_smooths(x)) {
+  # extract data related to smooth terms
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
+  sm_labels <- get_sm_labels(x)
+  out <- named_list(sm_labels)
+  if (length(sm_labels)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
     gam_args <- list(
       data = data, knots = knots, 
       absorb.cons = TRUE, modCon = 3
     )
-    sm_labels <- get_sm_labels(x)
-    out <- named_list(sm_labels)
     for (i in seq_along(sm_labels)) {
       sc_args <- c(list(eval2(sm_labels[i])), gam_args)
       out[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
-  } else {
-    out <- list()
-  }
-  out
-}
-
-#' @export
-make_smooth_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_smooth_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_smooth_list(x$dpars[[i]], data, ...)
   }
   out
 }
 
 make_gp_list <- function(x, data, ...) {
-  # compute objects for GP terms based on the original data
-  # as the basis for doing predictions with new data
-  UseMethod("make_gp_list")
-}
-
-#' @export
-make_gp_list.btl <- function(x, data, ...) {
+  # extract data related to gaussian processes
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
   gpef <- get_gp_labels(x)
   out <- named_list(gpef)
   for (i in seq_along(gpef)) {
@@ -663,20 +539,17 @@ make_gp_list.btl <- function(x, data, ...) {
   out
 }
 
-#' @export
-make_gp_list.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$nlpars[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-make_gp_list.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- make_gp_list(x$dpars[[i]], data, ...)
+make_Jmo_list <- function(x, data, ...) {
+  # extract data related to monotonic effects
+  # for use in extract_old_standata
+  stopifnot(is.btl(x))
+  out <- NULL
+  if (!is.null(x$mo)) {
+    # do it like data_mo()
+    monef <- get_mo_labels(x, data)
+    calls_mo <- unlist(attr(monef, "calls_mo"))
+    Xmo <- lapply(calls_mo, function(x) attr(eval2(x, data), "var"))
+    out <- as.array(ulapply(Xmo, max))
   }
   out
 }

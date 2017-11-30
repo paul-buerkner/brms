@@ -9,16 +9,16 @@
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL,
-  sort = FALSE, nug = NULL, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  incl_autocor = TRUE, dpar = NULL, resp = NULL, subset = NULL,
+  nsamples = NULL, sort = FALSE, nug = NULL, summary = TRUE,
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{posterior_linpred}{brmsfit}(object, transform = FALSE,
-  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, dpar = NULL, subset = NULL, nsamples = NULL,
-  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975),
-  ...)
+  newdata = NULL, re_formula = NULL, re.form = NULL,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -69,6 +69,9 @@ or \code{\link[brms:cor_fixed]{cor_fixed}}.}
 \item{dpar}{Optional name of a predicted distributional parameter.
 If specified, fitted values of this parameters are returned.}
 
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
+
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
@@ -110,6 +113,8 @@ If \code{FALSE}, \code{scale} is set to \code{"linear"}.
 Only implemented for compatibility with the 
 \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
 generic.}
+
+\item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
 Fitted values extracted from \code{object}. 
@@ -120,6 +125,8 @@ Fitted values extracted from \code{object}.
  for categorical and ordinal models and a S x N matrix else.
  N is the number of observations, S is the number of samples, 
  C is the number of categories, and E is equal to \code{length(probs) + 2}.
+ In multivariate models, the output is an array of 3 dimensions, 
+ where the third dimension indicates the response variables.
 }
 \description{
 Predict fitted values (i.e., the 'regression line') of a fitted model.

@@ -5,7 +5,6 @@
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
-  nonlinear = NULL, threshold = c("flexible", "equidistant"),
   cov_ranef = NULL, sample_prior = c("no", "yes", "only"), sparse = FALSE,
   knots = NULL, stan_funs = NULL, fit = NA, save_ranef = TRUE,
   save_mevars = FALSE, save_all_pars = FALSE, inits = "random",
@@ -17,12 +16,12 @@ brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
 }
 \arguments{
 \item{formula}{An object of class 
-\code{\link[stats:formula]{formula}} or
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
 (or one that can be coerced to that classes): 
 A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
-\code{\link[brms:brmsformula]{brmsformula}}.}
+\code{\link{brmsformula}}.}
 
 \item{data}{An object of class \code{data.frame} 
 (or one that can be coerced to that class) 
@@ -35,42 +34,24 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
+\code{\link{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.
+In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
-\code{\link[brms:set_prior]{set_prior}} or related functions 
+\code{\link{set_prior}} or related functions 
 and combined using the \code{c} method. A single \code{brmsprior} 
 object may be passed without \code{c()} surrounding it. 
-See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
+See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 
 (i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.}
-
-\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
-linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary formula. 
-If not \code{NULL}, \code{formula} is treated as a non-linear model
-and \code{nonlinear} should contain a formula for each non-linear 
-parameter, which has the parameter on the left hand side and its
-linear predictor on the right hand side.
-Alternatively, it can be a single formula with all non-linear
-parameters on the left hand side (separated by a \code{+}) and a
-common linear predictor on the right hand side.
-As of \pkg{brms} 1.4.0, we recommend specifying non-linear
-parameters directly within \code{formula}.}
-
-\item{threshold}{(Deprecated) A character string indicating the type 
-of thresholds (i.e. intercepts) used in an ordinal model. 
-\code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between 
-consecutive thresholds to the same value.
-As of \pkg{brms} 1.8.0, we recommend specifying threshold
-directly within the ordinal family functions.}
+corresponding to no correlations.
+In multivariate models, \code{autocor} might also be a list 
+of autocorrelation structures.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 
@@ -118,8 +99,7 @@ the \code{\link[brms:update.brmsfit]{update}} method, instead.}
 for each level of the grouping factor(s) 
 should be saved (default is \code{TRUE}). 
 Set to \code{FALSE} to save memory. 
-The argument has no impact on the model fitting itself.
-A deprecated alias is \code{ranef}.}
+The argument has no impact on the model fitting itself.}
 
 \item{save_mevars}{A flag to indicate if samples
 of noise-free variables obtained by using \code{me} terms
@@ -163,7 +143,7 @@ Set \code{thin > 1} to save memory and computation time if \code{iter} is large.
 which defaults to 1 but we recommend setting the \code{mc.cores} option 
 to be as many processors as the hardware and RAM allow (up to the number of chains).
 For non-Windows OS in non-interactive \R sessions, forking is used
-instead of PSOCK clusters. A deprecated alias is \code{cluster}.}
+instead of PSOCK clusters.}
 
 \item{control}{A named \code{list} of parameters to control the sampler's behavior. 
 It defaults to \code{NULL} so all the default values are used. 
@@ -230,7 +210,7 @@ In addition, model fit can easily be assessed and compared with
 posterior predictive checks and leave-one-out cross-validation.
 }
 \details{
-Fit a generalized (non-)linear multilevel model
+Fit a generalized (non-)linear multivariate multilevel model
   via full Bayesian inference using Stan. A general overview is provided 
   in the vignettes \code{vignette("brms_overview")} and 
   \code{vignette("brms_multilevel")}. For a full list of available 
@@ -256,7 +236,7 @@ Fit a generalized (non-)linear multilevel model
   use \code{\link[brms:get_prior]{get_prior}}.
   Default priors are chosen to be non or very weakly informative 
   so that their influence on the results will be negligable and
-  you don't have to worry about them.
+  you usually don't have to worry about them.
   However, after getting more familiar with Bayesian statistics, 
   I recommend you to start thinking about reasonable informative
   priors for your model parameters: Nearly always, there is at least some
@@ -385,10 +365,10 @@ Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel
   doi:10.18637/jss.v080.i01
 }
 \seealso{
-\code{\link[brms:brms]{brms}}, 
-  \code{\link[brms:brmsformula]{brmsformula}}, 
-  \code{\link[brms:brmsfamily]{brmsfamily}},
-  \code{\link[brms:brmsfit-class]{brmsfit}}
+\code{\link{brms}}, 
+  \code{\link{brmsformula}}, 
+  \code{\link{brmsfamily}},
+  \code{\link{brmsfit}}
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

@@ -10,6 +10,7 @@ test_that("all S3 methods have reasonable ouputs", {
     testthat::expect_true(all(object >= lower & object <= upper), ...)
   }
   SM <- suppressMessages
+  SW <- suppressWarnings
   
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -21,6 +22,13 @@ test_that("all S3 methods have reasonable ouputs", {
   ps <- as.matrix(fit1)
   expect_true(is(ps, "matrix"))
   expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))
+  
+  # as.array
+  ps <- as.array(fit1)
+  expect_true(is.array(ps))
+  chains <- fit1$fit@sim$chains
+  ps_dim <- c(nsamples(fit1) / chains, chains, length(parnames(fit1)))
+  expect_equal(dim(ps), ps_dim)
   
   # as.mcmc
   chains <- fit1$fit@sim$chains
@@ -50,14 +58,6 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(coef2$patient), c(59, 4, 4))
   coef4 <- SM(coef(fit4))
   expect_equal(dim(coef4$subject), c(10, 4, 8))
-  # deprecated as of brms 1.7.0
-  coef1 <- coef(fit1, old = TRUE)
-  expect_equal(dim(coef1$visit), c(4, 8))
-  coef2 <- coef(fit2, old = TRUE)
-  expect_equal(dim(coef2[[2]]), c(59, 2))
-  expect_equal(attr(coef2[[1]], "prefix")$nlpar, "a")
-  coef4 <- coef(fit4, old = TRUE)
-  expect_equal(dim(coef4$subject), c(10, 8))
   
   # bayes_R2
   fit1 <- add_ic(fit1, "R2")
@@ -65,16 +65,21 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(R2), c(nsamples(fit1), 1))
   R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ])
   expect_equal(dim(R2), c(1, 4))
-  expect_error(bayes_R2(fit4), "Residuals not defined for family 'sratio'")
+  expect_error(bayes_R2(fit4), "Residuals are not defined for ordinal")
+  R2 <- bayes_R2(fit6)
+  expect_equal(dim(R2), c(2, 4))
   
   # family
   expect_equal(family(fit1), brmsfamily("student", link = "identity"))
+  expect_equal(family(fit6, resp = "count"), 
+               brmsfamily("poisson", link = "log"))
+  expect_output(print(family(fit1), links = TRUE), "student.*log.*logm1")
+  expect_output(print(family(fit5)), "Mixture.*gaussian.*exponential")
   
   # fitted
   fi <- fitted(fit1)
   expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_equal(colnames(fi), 
-               c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(fi), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   
   newdata <- data.frame(
     Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
@@ -130,7 +135,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(fi), c(nobs(fit5), 4))
   
   fi <- fitted(fit6)
-  expect_equal(dim(fi), c(nobs(fit6), 4))
+  expect_equal(dim(fi), c(nobs(fit6), 4, 2))
+  expect_equal(dimnames(fi)[[3]], c("volume", "count"))
   
   # fixef
   fixef1 <- SM(fixef(fit1))
@@ -138,19 +144,6 @@ test_that("all S3 methods have reasonable ouputs", {
     c("Intercept", "sigma_Intercept", "Trt1", "Age", 
       "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
   )
-  # deprecated as of brms 1.7.0
-  fixef1 <- fixef(fit1, old = TRUE, estimate = c("mean", "sd"))  
-  expect_equal(rownames(fixef1), 
-   c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-     "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
-  )
-  expect_equal(colnames(fixef1), c("mean", "sd"))
-  fixef2 <- fixef(fit2, estimate = c("median", "quantile"), 
-                  probs = c(0.05, 0.95), old = TRUE)
-  expect_equal(rownames(fixef2), 
-    c("a_Intercept", "a_Age", "b_Intercept", "b_Age")
-  )
-  expect_equal(colnames(fixef2), c("median", "5%", "95%"))
   
   # formula
   expect_equal(formula(fit1)$formula, 
@@ -228,7 +221,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   loo6_1 <- SW(LOO(fit6, cores = 1))
   expect_true(is.numeric(loo6_1[["looic"]]))
-  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data[1:30, ]))
+  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2[["looic"]]))
   loo_compare <- compare_ic(loo6_1, loo6_2)
   expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
@@ -360,7 +353,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(fit1, incl_warmup = TRUE), 400)
   
   # parnames 
-  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46, 47)],
+  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 42, 50, 51)],
                c("b_Intercept", "bmo_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
                  "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
@@ -369,7 +362,10 @@ test_that("all S3 methods have reasonable ouputs", {
                  "cor_patient__a_Intercept__b_Intercept", 
                  "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
-  expect_true(all(c("sdgp_gpAge", "lscale_gpAge") %in% parnames(fit6)))
+  expect_true(all(
+    c("lscale_volume_gpAgeTrt_0", "lscale_volume_gpAgeTrt_1") %in% 
+      parnames(fit6)
+  ))
   
   # plot tested in tests.plots.R
   
@@ -389,7 +385,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "b_Age", "b_Trt1:Age", "b_sAge_1", "b_sigma_Trt1"))
   
   # test default method
-  ps <- posterior_samples(fit1$fit, "b_Intercept")
+  ps <- posterior_samples(fit1$fit, "^b_Intercept$")
   expect_equal(dim(ps), c(nsamples(fit1), 1))
   
   # posterior_interval
@@ -489,11 +485,11 @@ test_that("all S3 methods have reasonable ouputs", {
   # prior_samples
   prs1 <- prior_samples(fit1)
   prior_names <- c(
-    "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
+    "temp_Intercept", "temp_sigma_Intercept", "b_Intercept", 
+    "b_sigma_Intercept", "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
     paste0("simo_moExp1[", 1:4, "]"), "b_sigma", "cor_visit"
   )
-  expect_equal(dimnames(prs1),
-               list(as.character(1:nsamples(fit1)), prior_names))
+  expect_equal(colnames(prs1), prior_names)
   
   prs2 <- prior_samples(fit1, pars = "b_Trt1")
   expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt1"))
@@ -513,15 +509,6 @@ test_that("all S3 methods have reasonable ouputs", {
   ranef2 <- SM(ranef(fit2, summary = FALSE))
   expect_equal(dim(ranef2$patient), c(nsamples(fit2), 59, 2))
   
-  # deprecated as of brms 1.7.0
-  ranef1 <- ranef(fit1, estimate = "median", var = TRUE, old = TRUE)
-  expect_equal(dim(ranef1$visit), c(4, 2))
-  expect_equal(dim(attr(ranef1$visit, "var")), c(2, 2, 4))
-  
-  ranef2 <- ranef(fit2, estimate = "mean", var = TRUE, old = TRUE)
-  expect_equal(dim(ranef2[[1]]), c(59, 1))
-  expect_equal(dim(attr(ranef2[[1]], "var")), c(1, 1, 59))
-  
   # residuals
   res1 <- residuals(fit1, type = "pearson", probs = c(0.65))
   expect_equal(dim(res1), c(nobs(fit1), 3))
@@ -530,15 +517,17 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(res2), c(10, 4))
   newdata$visit <- rep(1:5, 2)
   
-  res3 <- residuals(fit1, newdata = newdata,
-                    allow_new_levels = TRUE)
+  res3 <- residuals(fit1, newdata = newdata, allow_new_levels = TRUE)
   expect_equal(dim(res3), c(10, 4))
   
   res4 <- residuals(fit2)
   expect_equal(dim(res4), c(nobs(fit2), 4))
   
-  expect_error(residuals(fit4), 
-               "Residuals not defined for family 'sratio'")
+  expect_error(residuals(fit4), "Residuals are not defined for ordinal")
+  
+  res6 <- residuals(fit6)
+  expect_equal(dim(res6), c(nobs(fit6), 4, 2))
+  expect_equal(dimnames(res6)[[3]], c("volume", "count"))
   
   # stancode
   expect_true(is.character(stancode(fit1)))
@@ -546,18 +535,19 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # standata
   expect_equal(names(standata(fit1)),
-    c("N", "Y", "nb_1", "knots_1", "Zs_1_1", "K", "X", 
-      "Kmo", "Imo", "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", 
-      "offset", "K_sigma", "X_sigma", "J_1", "N_1", "M_1", 
-      "NC_1", "Kar", "Kma", "J_lag", "prior_only")
+    c("N", "Y",  "Kar", "Kma", "J_lag", "nb_1", "knots_1", 
+      "Zs_1_1", "K", "X", "Kmo", "Imo", "Xmo_1", "Jmo", 
+      "con_simo_1", "Z_1_1", "Z_1_2", "offset", "K_sigma", 
+      "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only")
   )
   expect_equal(names(standata(fit2)),
-    c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1",
+    c("N", "Y", "weights", "C_1", "K_a", "X_a", "Z_1_a_1",
       "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
-      "NC_1", "weights", "prior_only")
+      "NC_1", "prior_only")
   )
   
   # stanplot tested in tests.plots.R
+  
   # summary
   summary1 <- SW(summary(fit1, waic = TRUE, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
@@ -577,6 +567,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(summary5), "sigma1")
   expect_output(print(summary5), "theta1")
   
+  summary6 <- SW(summary(fit6))
+  expect_output(print(summary6), "sdgp")
+  
   # update
   # do not actually refit the model as is causes CRAN checks to fail
   up <- update(fit1, testmode = TRUE)
@@ -587,11 +580,11 @@ test_that("all S3 methods have reasonable ouputs", {
     Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
     patient = 1, Exp = 4
   )
-  up <- update(fit1, newdata = new_data, ranef = FALSE, testmode = TRUE)
+  up <- update(fit1, newdata = new_data, save_ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(up$data.name, "new_data")
   expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
-  expect_true("r_1" %in% up$exclude)
+  expect_true("r_1_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")
   
   up <- update(fit1, formula = ~ . + I(exp(Age)), testmode = TRUE,
@@ -633,22 +626,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(vc$patient$cor), c(2, 4, 2))
   vc <- SM(VarCorr(fit2, summary = FALSE))
   expect_equal(dim(vc$patient$cor), c(nsamples(fit2), 2, 2))
-  
-  # deprecated as of brms 1.7.0
-  vc <- VarCorr(fit1, old = TRUE)
-  expect_equal(names(vc), c("visit"))
-  Names <- c("Intercept", "Trt1")
-  expect_equivalent(dimnames(vc$visit$cov$mean), list(Names, Names))
-  expect_output(print(vc), "visit")
-  data_vc <- as.data.frame(vc)
-  expect_equal(dim(data_vc), c(2, 7))
-  expect_equal(names(data_vc), 
-    c("Estimate", "Group", "Name", "Std.Dev", "Cor", "Cov", "Cov")
-  )
-  vc <- VarCorr(fit2, old = TRUE)
-  expect_equal(names(vc), c("patient"))
-  data_vc <- as.data.frame(vc)
-  expect_equal(dim(data_vc), c(2, 7))
+  expect_equal(dim(VarCorr(fit6)$residual__$sd), c(1, 4))
   
   # vcov
   expect_equal(dim(vcov(fit1)), c(8, 8))

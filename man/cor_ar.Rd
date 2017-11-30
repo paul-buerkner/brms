@@ -2,7 +2,6 @@
 % Please edit documentation in R/correlations.R
 \name{cor_ar}
 \alias{cor_ar}
-\alias{cor.ar}
 \title{AR(p) correlation structure}
 \usage{
 cor_ar(formula = ~1, p = 1, cov = FALSE)

@@ -11,6 +11,14 @@ illegal_group_expr <- function(group) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
+get_groups <- function(x) {
+  if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
+    x <- parse_bf(x)
+  }
+  out <- c(get_re(x)$group, get_autocor_vars(x, "group"))
+  unique(out[nzchar(out)])
+}
+
 re_lhs <- function(re_terms) {
   get_matches("^[^\\|]*", re_terms) 
 }
@@ -179,49 +187,48 @@ check_re_formula <- function(re_formula, formula) {
   re_formula
 }
 
-update_re_terms <- function(x, re_formula = NULL) {
-  # update group-level terms
-  # Args:
-  #   x: Either 'formula' or 'brmsformula' object
-  #   re_formula: formula containing new RE terms
-  .update_re_terms <- function(formula, re_formula = NULL) {
-    # remove existing group-level terms in formula and
-    # add valid group-level terms of re_formula
-    # Args:
-    #   formula: object of class 'formula'
-    if (get_nl(formula)) {
-      # non-linear formulas contain no group-level effects
-      return(formula)
-    }
-    re_formula <- check_re_formula(re_formula, formula)
-    new_formula <- formula2str(formula)
-    old_re_terms <- get_re_terms(formula)
-    if (length(old_re_terms)) {
-      # make sure that + before group-level terms are also removed
-      rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
-      new_formula <- rename(new_formula, rm_terms, "")
-      if (grepl("~$", new_formula)) {
-        # lhs only formulas are not allowed
-        new_formula <- paste(new_formula, "1")
-      }
-    }
-    new_re_terms <- get_re_terms(re_formula)
-    new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
-    new_formula <- formula(new_formula)
-    attributes(new_formula) <- attributes(formula)
-    return(new_formula)
+update_re_terms <- function(formula, re_formula) {
+  # remove existing group-level terms in formula and
+  # add valid group-level terms of re_formula
+  UseMethod("update_re_terms")
+}
+
+#' @export
+update_re_terms.mvbrmsformula <- function(formula, re_formula) {
+  formula$forms <- lapply(formula$forms, update_re_terms, re_formula)
+  formula
+}
+
+#' @export
+update_re_terms.brmsformula <- function(formula, re_formula) {
+  formula$formula <- update_re_terms(formula$formula, re_formula)
+  formula$pforms <- lapply(formula$pforms, update_re_terms, re_formula)
+  formula
+}
+
+#' @export
+update_re_terms.formula <- function(formula, re_formula = NULL) {
+  if (get_nl(formula)) {
+    # non-linear formulas contain no group-level effects
+    return(formula)
   }
-  
-  if (is.formula(x)) {
-    x <- .update_re_terms(x, re_formula) 
-  } else if (is.brmsformula(x)) {
-    x$formula <- .update_re_terms(x$formula, re_formula)
-    x$pforms <- lapply(pforms(x), .update_re_terms, re_formula)
-  } else {
-    stop("Don't know how to handle objects of class ",
-         collapse_comma(class(x)))
+  re_formula <- check_re_formula(re_formula, formula)
+  new_formula <- formula2str(formula)
+  old_re_terms <- get_re_terms(formula)
+  if (length(old_re_terms)) {
+    # make sure that + before group-level terms are also removed
+    rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
+    new_formula <- rename(new_formula, rm_terms, "")
+    if (grepl("~$", new_formula)) {
+      # lhs only formulas are not allowed
+      new_formula <- paste(new_formula, "1")
+    }
   }
-  x
+  new_re_terms <- get_re_terms(re_formula)
+  new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
+  new_formula <- formula(new_formula)
+  attributes(new_formula) <- attributes(formula)
+  new_formula
 }
 
 get_re <- function(x, ...) {
@@ -249,6 +256,11 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
     re <- get_re(x$dpars[["mu"]])
   }
   re
+}
+
+#' @export
+get_re.mvbrmsterms <- function(x, ...) {
+  do.call(rbind, lapply(x$terms, get_re, ...))
 }
 
 #' @export
@@ -281,14 +293,14 @@ get_re.btnl <- function(x, ...) {
 }
 
 tidy_ranef <- function(bterms, data = NULL, all = TRUE, 
-                       ncat = NULL, old_levels = NULL) {
+                       old_levels = NULL, old_standata = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   bterms: object of class brmsterms
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and distributional parameters?
-  #   ncat: optional number of response categories
-  #         only used for category specific group-level effects
+  #   old_standata: optional; see 'extract_old_standata'
+  #     only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
   #     id: ID of the group-level effect 
@@ -307,10 +319,15 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   id_groups <- list()
   j <- 1
   for (i in seq_len(nrow(re))) {
-    if (re$type[[i]] == "mo") {
+    if (re$type[i] == "mo") {
       coef <- rename(get_mo_labels(re$form[[i]], data))
-    } else if (re$type[[i]] == "cs") {
+    } else if (re$type[i] == "cs") {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
+      if (nzchar(re$resp[i])) {
+        ncat <- old_standata[[re$resp[i]]][["ncat"]]
+      } else {
+        ncat <- old_standata[["ncat"]]
+      }
       if (is.null(ncat)) {
         # try to infer ncat from the data
         Y <- as.numeric(model.response(data))
@@ -318,7 +335,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       }
       indices <- paste0("[", seq_len(ncat - 1), "]")
       coef <- as.vector(t(outer(coef, indices, paste0)))
-    } else if (re$type[[i]] == "me") {
+    } else if (re$type[i] == "me") {
       coef <- rename(get_me_labels(re$form[[i]], data))
     } else {
       coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 

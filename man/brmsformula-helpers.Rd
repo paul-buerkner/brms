@@ -6,15 +6,19 @@
 \alias{bf-helpers}
 \alias{lf}
 \alias{set_nl}
+\alias{set_rescor}
 \alias{lf}
 \alias{set_nl}
+\alias{set_rescor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
-nlf(formula, ..., flist = NULL, dpar = NULL)
+nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL)
 
-lf(..., flist = NULL, dpar = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL)
 
-set_nl(nl = TRUE, dpar = NULL)
+set_nl(nl = TRUE, dpar = NULL, resp = NULL)
+
+set_rescor(rescor = TRUE)
 }
 \arguments{
 \item{formula}{Non-linear formula for a distributional parameter.
@@ -28,12 +32,12 @@ names on their left-hand side.
 The following are distributional parameters of specific families
 (all other parameters are treated as non-linear parameters):
 \code{sigma} (residual standard deviation or scale of
-the \code{gaussian}, \code{student}, \code{lognormal} 
-\code{exgaussian}, and \code{asym_laplace} families);
+the \code{gaussian}, \code{student}, \code{skew_normal}, 
+\code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
 \code{shape} (shape parameter of the \code{Gamma},
 \code{weibull}, \code{negbinomial}, and related
-zero-inflated / hurdle families); \code{nu}
-(degrees of freedom parameter of the \code{student} family);
+zero-inflated / hurdle families); \code{nu} (degrees of freedom 
+parameter of the \code{student} and \code{frechet} families);
 \code{phi} (precision parameter of the \code{beta} 
 and \code{zero_inflated_beta} families);
 \code{kappa} (precision parameter of the \code{von_mises} family);
@@ -48,9 +52,9 @@ of the \code{exgaussian} family);
 \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 non-decision time, and initial bias of the \code{wiener}
 diffusion model).
-All distributional parameters are modeled 
-on the log or logit scale to ensure correct definition
-intervals after transformation.
+By default, distributional parameters are modeled 
+on the log scale if they can be positive only or on the 
+logit scale if the can only be within the unit interval.
 See 'Details' for more explanation.}
 
 \item{flist}{Optional list of formulas, which are treated in the 
@@ -60,16 +64,25 @@ same way as formulas passed via the \code{...} argument.}
 parameter to which the formulas passed via \code{...} and
 \code{flist} belong.}
 
+\item{resp}{Optional character string specifying the response 
+variable to which the formulas passed via \code{...} and
+\code{flist} belong. Only relevant in multivariate models.}
+
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
 is treated as an ordinary linear model formula.}
+
+\item{rescor}{Logical; Indicates if residual correlation between
+the response variables should be modeled. Currently this is only
+possible in multivariate \code{gaussian} and \code{student} models.
+Only relevant in multivariate models.}
 }
 \value{
 For \code{lf} and \code{nlf} a \code{list} that can be 
   passed to \code{\link[brms:brmsformula]{brmsformula}} or added 
-  to an existing \code{brmsformula} object. For \code{set_nl} 
-  a \code{list} that can be added to an existing
-  \code{brmsformula} object.
+  to an existing \code{brmsformula} or \code{mvbrmsformula} object. 
+  For \code{set_nl} and \code{set_rescor} a logical value that can be 
+  added to an existing \code{brmsformula} or \code{mvbrmsformula} object.
 }
 \description{
 Helper functions to specify linear and non-linear
@@ -86,8 +99,13 @@ bf(y ~ 1) +
 bf(y ~ a * inv_logit(x * b)) +
   lf(a + b ~ z) +
   set_nl(TRUE)
+  
+# specify a multivariate model
+bf(y1 ~ x + (1|g)) + 
+  bf(y2 ~ z) +
+  set_rescor(TRUE)
 
 }
 \seealso{
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link{brmsformula}}, \code{\link{mvbrmsformula}}
 }

@@ -6,7 +6,8 @@ dat <- data.frame(
   Age = rnorm(236), 
   Trt = factor(sample(0:1, 236, TRUE)),
   AgeSD = abs(rnorm(236, 1)),
-  Exp = sample(1:5, 236, TRUE)
+  Exp = sample(1:5, 236, TRUE),
+  volume = rnorm(236) 
 )
 
 dat2 <- data.frame(
@@ -65,9 +66,11 @@ brmsfit_example5 <- brm(
 )
 
 brmsfit_example6 <- brm(
-  count ~ Trt + gp(Age), data = dat[1:30, ],
-  prior = c(prior(normal(0, 0.25), lscale),
-            prior(normal(0, 10), sdgp)),
+  bf(volume ~ Trt + gp(Age, by = Trt), family = gaussian()) +
+    bf(count ~ Trt + Age, family = poisson()), 
+  data = dat[1:40, ],
+  prior = prior(normal(0, 0.25), lscale, resp = volume) +
+    prior(normal(0, 10), sdgp, resp = volume),
   warmup = 150, iter = 200, chains = 2,
   save_dso = FALSE, testmode = TRUE
 )

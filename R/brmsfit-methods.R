@@ -15,16 +15,7 @@ parnames.brmsfit <- function(x, ...) {
 #' @aliases fixef
 #' 
 #' @param object An object of class \code{brmsfit}.
-#' @param old Logical; indicates if the old implementation
-#'  of this method (prior to version 1.7.0) should be used.
-#'  Defaults to \code{FALSE}.
-#' @param estimate (Deprecated) A character vector specifying 
-#'  which coefficients (e.g., \code{"mean"}, \code{"median"}, 
-#'  \code{"sd"}, or \code{"quantile"}) should be calculated 
-#'  for the population-level effects. Only used if \code{old}
-#'  is \code{TRUE}.
-#' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}.
+#' @param ... Currently ignored.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return If \code{summary} is \code{TRUE}, a matrix with one row per 
@@ -46,25 +37,17 @@ parnames.brmsfit <- function(x, ...) {
 #' @export fixef
 #' @importFrom nlme fixef
 fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), old = FALSE, 
-                           estimate = "mean", ...) {
+                           probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   pars <- parnames(object)
   fpars <- pars[grepl(fixef_pars(), pars)]
   if (!length(fpars)) {
     stop2("The model does not contain population-level effects.")
   }
-  if (old) {
-    out <- old_fixef_brmsfit(object, estimate, probs = probs, ...)
-  } else {
-    if (!is_equal(estimate, "mean")) {
-      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
-    }
-    out <- as.matrix(object, pars = fpars, exact_match = TRUE)
-    colnames(out) <- gsub(fixef_pars(), "", fpars)
-    if (summary) {
-      out <- get_summary(out, probs, robust, keep_names = TRUE)
-    }
+  out <- as.matrix(object, pars = fpars, exact_match = TRUE)
+  colnames(out) <- gsub(fixef_pars(), "", fpars)
+  if (summary) {
+    out <- get_summary(out, probs, robust)
   }
   out
 }
@@ -119,12 +102,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @inheritParams fixef.brmsfit
-#' @param estimate (Deprecated) The point estimate to be calculated 
-#'  for the group-level effects, either \code{"mean"} or \code{"median"}.
-#' @param var (Deprecated) Logical; indicates if the covariance matrix 
-#'  for each group-level effects should be computed.
-#' @param ... Further arguments to be passed to the function 
-#'  specified in \code{estimate}.
+#' @param ... Currently ignored.
 #'
 #' @return If \code{old} is \code{FALSE}: A list of arrays 
 #'  (one per grouping factor). If \code{summary} is \code{TRUE},
@@ -133,9 +111,6 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #'  If \code{summary} is \code{FALSE}, names of the second dimension
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
-#'  
-#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
-#'  with factor levels as row names and group-level effects as column names.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}   
 #'   
@@ -151,39 +126,26 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @export ranef
 #' @importFrom nlme ranef
 ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                          probs = c(0.025, 0.975), old = FALSE, 
-                          estimate = c("mean", "median"), var = FALSE,
-                          ...) {
+                          probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
-  if (old) {
-    out <- old_ranef_brmsfit(object, estimate, var = var, ...)
-  } else {
-    estimate <- match.arg(estimate)
-    if (!is_equal(estimate, "mean")) {
-      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
-    }
-    if (!is_equal(var, FALSE)) {
-      warning2("Argument 'var' is unused unless 'old' is set to TRUE.")
-    }
-    pars <- parnames(object)
-    ranef <- object$ranef
-    groups <- unique(ranef$group)
-    out <- named_list(groups)
-    for (g in groups) {
-      r <- subset2(ranef, group = g)
-      coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-      levels <- attr(ranef, "levels")[[g]]
-      rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
-      out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
-      dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
-      dimnames(out[[g]])[2:3] <- list(levels, coefs)
-      if (summary) {
-        out[[g]] <- get_summary(out[[g]], probs, robust, keep_names = TRUE)
-      }
+  pars <- parnames(object)
+  ranef <- object$ranef
+  groups <- unique(ranef$group)
+  out <- named_list(groups)
+  for (g in groups) {
+    r <- subset2(ranef, group = g)
+    coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
+    levels <- attr(ranef, "levels")[[g]]
+    rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
+    out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
+    dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+    dimnames(out[[g]])[2:3] <- list(levels, coefs)
+    if (summary) {
+      out[[g]] <- get_summary(out[[g]], probs, robust)
     }
   }
   out
@@ -205,9 +167,6 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
 #'  
-#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
-#'  with factor levels as row names and group-level effects as column names.
-#'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #'  
 #' @examples
@@ -223,66 +182,61 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' 
 #' @export
 coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                         probs = c(0.025, 0.975), old = FALSE, 
-                         estimate = c("mean", "median"), ...) {
+                         probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("No group-level effects detected. Call method ", 
           "'fixef' to access population-level effects.")
   }
-  if (old) {
-    coef <- old_coef_brmsfit(object, estimate, ...)
-  } else {
-    fixef <- fixef(object, summary = FALSE, ...)
-    coef <- ranef(object, summary = FALSE, ...)
-    # add missing coefficients to fixef
-    all_ranef_names <- unique(ulapply(coef, function(x) dimnames(x)[[3]]))
-    fixef_names <- colnames(fixef)
-    fixef_no_digits <- get_matches("^[^\\[]+", fixef_names)
-    miss_fixef <- setdiff(all_ranef_names, fixef_names)
-    miss_fixef_no_digits <- get_matches("^[^\\[]+", miss_fixef)
-    new_fixef <- named_list(miss_fixef)
-    for (k in seq_along(miss_fixef)) {
+  fixef <- fixef(object, summary = FALSE, ...)
+  coef <- ranef(object, summary = FALSE, ...)
+  # add missing coefficients to fixef
+  all_ranef_names <- unique(ulapply(coef, function(x) dimnames(x)[[3]]))
+  fixef_names <- colnames(fixef)
+  fixef_no_digits <- get_matches("^[^\\[]+", fixef_names)
+  miss_fixef <- setdiff(all_ranef_names, fixef_names)
+  miss_fixef_no_digits <- get_matches("^[^\\[]+", miss_fixef)
+  new_fixef <- named_list(miss_fixef)
+  for (k in seq_along(miss_fixef)) {
+    # digits occur in ordinal models with category specific effects
+    match_fixef <- match(miss_fixef_no_digits[k], fixef_names)
+    if (!is.na(match_fixef)) {
+      new_fixef[[k]] <- fixef[, match_fixef]
+    } else if (!miss_fixef[k] %in% fixef_no_digits) {
+      new_fixef[[k]] <- 0
+    }
+  }
+  rm_fixef <- fixef_names %in% miss_fixef_no_digits
+  fixef <- fixef[, !rm_fixef, drop = FALSE]
+  fixef <- do.call(cbind, c(list(fixef), rmNULL(new_fixef)))
+  
+  for (g in names(coef)) {
+    # add missing coefficients to ranef
+    ranef_names <- dimnames(coef[[g]])[[3]]
+    ranef_no_digits <- get_matches("^[^\\[]+", ranef_names)
+    miss_ranef <- setdiff(fixef_names, ranef_names)
+    miss_ranef_no_digits <- get_matches("^[^\\[]+", miss_ranef)
+    new_ranef <- named_list(miss_ranef)
+    for (k in seq_along(miss_ranef)) {
       # digits occur in ordinal models with category specific effects
-      match_fixef <- match(miss_fixef_no_digits[k], fixef_names)
-      if (!is.na(match_fixef)) {
-        new_fixef[[k]] <- fixef[, match_fixef]
-      } else if (!miss_fixef[k] %in% fixef_no_digits) {
-        new_fixef[[k]] <- 0
+      match_ranef <- match(miss_ranef_no_digits[k], ranef_names)
+      if (!is.na(match_ranef)) {
+        new_ranef[[k]] <- coef[[g]][, , match_ranef]
+      } else if (!miss_ranef[k] %in% ranef_no_digits) {
+        new_ranef[[k]] <- array(0, dim = dim(coef[[g]])[1:2])
       }
     }
-    rm_fixef <- fixef_names %in% miss_fixef_no_digits
-    fixef <- fixef[, !rm_fixef, drop = FALSE]
-    fixef <- do.call(cbind, c(list(fixef), rmNULL(new_fixef)))
-    
-    for (g in names(coef)) {
-      # add missing coefficients to ranef
-      ranef_names <- dimnames(coef[[g]])[[3]]
-      ranef_no_digits <- get_matches("^[^\\[]+", ranef_names)
-      miss_ranef <- setdiff(fixef_names, ranef_names)
-      miss_ranef_no_digits <- get_matches("^[^\\[]+", miss_ranef)
-      new_ranef <- named_list(miss_ranef)
-      for (k in seq_along(miss_ranef)) {
-        # digits occur in ordinal models with category specific effects
-        match_ranef <- match(miss_ranef_no_digits[k], ranef_names)
-        if (!is.na(match_ranef)) {
-          new_ranef[[k]] <- coef[[g]][, , match_ranef]
-        } else if (!miss_ranef[k] %in% ranef_no_digits) {
-          new_ranef[[k]] <- array(0, dim = dim(coef[[g]])[1:2])
-        }
-      }
-      rm_ranef <- ranef_names %in% miss_ranef_no_digits
-      coef[[g]] <- coef[[g]][, , !rm_ranef, drop = FALSE]
-      coef[[g]] <- do.call(abind, c(list(coef[[g]]), rmNULL(new_ranef)))
-      for (nm in dimnames(coef[[g]])[[3]]) {
-        # correct the sign of thresholds in ordinal models
-        sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
-        coef[[g]][, , nm] <- coef[[g]][, , nm] + sign * fixef[, nm]
-      }
-      if (summary) {
-        coef[[g]] <- get_summary(coef[[g]], probs, robust, keep_names = TRUE)
-      }
+    rm_ranef <- ranef_names %in% miss_ranef_no_digits
+    coef[[g]] <- coef[[g]][, , !rm_ranef, drop = FALSE]
+    coef[[g]] <- do.call(abind, c(list(coef[[g]]), rmNULL(new_ranef)))
+    for (nm in dimnames(coef[[g]])[[3]]) {
+      # correct the sign of thresholds in ordinal models
+      sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
+      coef[[g]][, , nm] <- coef[[g]][, , nm] + sign * fixef[, nm]
+    }
+    if (summary) {
+      coef[[g]] <- get_summary(coef[[g]], probs, robust)
     }
   }
   coef
@@ -302,17 +256,12 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @inheritParams fixef.brmsfit
 #' @param sigma Ignored (included for compatibility with 
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
-#' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}
+#' @param ... Currently ignored.
 #' 
 #' @return A list of lists (one per grouping factor), each with
 #' three elements: a matrix containing the standard deviations, 
 #' an array containing the correlation matrix, and an array 
 #' containing the covariance matrix with variances on the diagonial.
-#' 
-#' If \code{old} is \code{TRUE}, the returned object is of class 
-#' \code{brmsVarCorr}, which can be coerced to a \code{data.frame} 
-#' by using the \code{as.data.frame} method.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
@@ -329,102 +278,99 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @export VarCorr
 #' @export
 VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
-                            probs = c(0.025, 0.975), old = FALSE,
-                            estimate = "mean", ...) {
+                            probs = c(0.025, 0.975), ...) {
   contains_samples(x)
   x <- restructure(x)
   if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop2("The model does not contain covariance matrices.")
   }
-  if (old) {
-    out <- old_VarCorr_brmsfit(x, estimate, probs = probs, ...)
-  } else {
-    if (!is_equal(estimate, "mean")) {
-      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
-    }
-    .VarCorr <- function(y) {
-      # extract samples for sd, cor and cov
-      out <- list(sd = as.matrix(x, pars = y$sd_pars, exact_match = TRUE))
-      colnames(out$sd) <- y$rnames
-      # compute correlation and covariance matrices
-      found_cor_pars <- intersect(y$cor_pars, parnames(x))
-      if (length(found_cor_pars)) {
-        cor <- as.matrix(x, pars = found_cor_pars, exact_match = TRUE)
-        if (length(found_cor_pars) < length(y$cor_pars)) { 
-          # some correlations are missing and will be replaced by 0
-          cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
-          names(cor_all) <- y$cor_pars
-          for (i in seq_len(ncol(cor_all))) {
-            found <- match(names(cor_all)[i], names(cor))
-            if (!is.na(found)) {
-              cor_all[, i] <- cor[, found]
-            }
+  .VarCorr <- function(y) {
+    # extract samples for sd, cor and cov
+    out <- list(sd = as.matrix(x, pars = y$sd_pars, exact_match = TRUE))
+    colnames(out$sd) <- y$rnames
+    # compute correlation and covariance matrices
+    found_cor_pars <- intersect(y$cor_pars, parnames(x))
+    if (length(found_cor_pars)) {
+      cor <- as.matrix(x, pars = found_cor_pars, exact_match = TRUE)
+      if (length(found_cor_pars) < length(y$cor_pars)) { 
+        # some correlations are missing and will be replaced by 0
+        cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
+        names(cor_all) <- y$cor_pars
+        for (i in seq_len(ncol(cor_all))) {
+          found <- match(names(cor_all)[i], names(cor))
+          if (!is.na(found)) {
+            cor_all[, i] <- cor[, found]
           }
-          cor <- cor_all
         }
-        out <- c(out, get_cov_matrix(sd = out$sd, cor = cor))
-        dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
-        dimnames(out$cov)[2:3] <- list(y$rnames, y$rnames)
-        if (summary) {
-          out$cor <- get_summary(out$cor, probs, robust, keep_names = TRUE)
-          out$cov <- get_summary(out$cov, probs, robust, keep_names = TRUE)
-        }
+        cor <- cor_all
       }
+      out$cor <- get_cor_matrix(cor = cor)
+      out$cov <- get_cov_matrix(sd = out$sd, cor = cor)
+      dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
+      dimnames(out$cov)[2:3] <- list(y$rnames, y$rnames)
       if (summary) {
-        out$sd <- get_summary(out$sd, probs, robust, keep_names = TRUE)
+        out$cor <- get_summary(out$cor, probs, robust)
+        out$cov <- get_summary(out$cov, probs, robust)
       }
-      out
     }
-    
-    stopifnot(is.brmsfit(x))
-    if (nrow(x$ranef)) {
-      get_names <- function(group) {
-        # get names of group-level parameters
-        r <- subset2(x$ranef, group = group)
-        rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-        cor_type <- paste0("cor_", group)
-        sd_pars <- paste0("sd_", group, "__", rnames)
-        cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
-        nlist(rnames, sd_pars, cor_pars)
-      }
-      group <- unique(x$ranef$group)
-      tmp <- lapply(group, get_names)
-    } else {
-      tmp <- group <- NULL
+    if (summary) {
+      out$sd <- get_summary(out$sd, probs, robust)
     }
-    # special treatment of residuals variances in linear models
-    bterms <- parse_bf(x$formula)
-    has_sigma <- has_sigma(family(x), bterms, incmv = TRUE)
-    if (has_sigma && any(grepl("^sigma($|_)", parnames(x)))) {
-      response <- bterms$response
-      cor_pars <- get_cornames(response, type = "rescor", brackets = FALSE)
-      sd_pars <- c("sigma", paste0("sigma_", response))
-      tmp <- lc(tmp, nlist(rnames = response, sd_pars, cor_pars))
-      group <- c(group, "residual__")
-    } 
-    out <- lapply(tmp, .VarCorr)
-    names(out) <- group
+    return(out)
   }
-  out
+  
+  if (nrow(x$ranef)) {
+    get_names <- function(group) {
+      # get names of group-level parameters
+      r <- subset2(x$ranef, group = group)
+      rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
+      cor_type <- paste0("cor_", group)
+      sd_pars <- paste0("sd_", group, "__", rnames)
+      cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
+      nlist(rnames, sd_pars, cor_pars)
+    }
+    group <- unique(x$ranef$group)
+    tmp <- lapply(group, get_names)
+    names(tmp) <- group
+  } else {
+    tmp <- list()
+  }
+  # include residual variances in the output as well
+  bterms <- parse_bf(x$formula)
+  if (is.brmsterms(bterms)) {
+    if (simple_sigma(bterms)) {
+      tmp_resid <- list(rnames = bterms$resp, sd_pars = "sigma")
+      tmp <- c(tmp, residual__ = list(tmp_resid))
+    }
+  } else if (is.mvbrmsterms(bterms)) {
+    simple_sigma <- ulapply(bterms$terms, simple_sigma)
+    pred_sigma <- ulapply(bterms$terms, pred_sigma)
+    if (any(simple_sigma) && !any(pred_sigma)) {
+      resps <- bterms$responses[simple_sigma]
+      sd_pars <- paste0("sigma_", resps)
+      if (bterms$rescor) {
+        cor_pars <- get_cornames(resps, type = "rescor", brackets = FALSE)
+      } else {
+        cor_pars <- character(0)
+      }
+      tmp_resid <- nlist(rnames = resps, sd_pars, cor_pars)
+      tmp <- c(tmp, residual__ = list(tmp_resid))
+    }
+  }
+  lapply(tmp, .VarCorr)
 }
 
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
-  if (!is.data.frame(formula$data)) {
-    stop2("Cannot extract the model.frame for this model.")
-  }
   formula$data 
 }
 
 #' @rdname posterior_samples
 #' @export
-posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
-                                      exact_match = FALSE, add_chain = FALSE, 
-                                      add_chains = FALSE, subset = NULL, 
+posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE, 
+                                      add_chain = FALSE, subset = NULL, 
                                       as.matrix = FALSE, as.array = FALSE,
                                       ...) {
-  pars <- use_alias(pars, parameters, default = NA)
-  add_chain <- use_alias(add_chain, add_chains, default = FALSE)
   if (as.matrix && as.array) {
     stop2("Cannot use 'as.matrix' and 'as.array' at the same time.")
   }
@@ -432,9 +378,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
   contains_samples(x)
-  pars <- extract_pars(
-    pars, all_pars = parnames(x), exact_match = exact_match, ...
-  )
+  pars <- extract_pars(pars, parnames(x), exact_match = exact_match, ...)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -617,8 +561,7 @@ prior_summary.brmsfit <- function(object, all = TRUE, ...) {
 
 #' @rdname prior_samples
 #' @export
-prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
-  pars <- use_alias(pars, parameters, default = NA)
+prior_samples.brmsfit <- function(x, pars = NA, ...) {
   if (!anyNA(pars) && !is.character(pars)) {
     stop2("Argument 'pars' must be a character vector.")
   }
@@ -707,14 +650,8 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
                             mc_se = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
-  dpars <- valid_dpars(object$family, bterms)
-  links <- setNames(rep("identity", length(dpars)), dpars)
-  links_pred <- ulapply(bterms$dpars, function(x) x$family$link)
-  links[names(links_pred)] <- links_pred
   out <- list(
-    formula = object$formula, 
-    family = object$family, 
-    links = links,
+    formula = object$formula,
     data.name = object$data.name, 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
@@ -795,7 +732,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     }
   }
   
-  # fixed effects summary
+  # summary of population-level effects
   fe_pars <- pars[grepl(fixef_pars(), pars)]
   out$fixed <- fit_summary[fe_pars, , drop = FALSE]
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
@@ -806,11 +743,11 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   spec_pars <- pars[grepl(spec_pars, pars)]
   spec_pars <- setdiff(spec_pars, "sigmaLL")
   out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-  if (is_linear(family(object)) && length(bterms$response) > 1L) {
-    sigma_names <- paste0("sigma(", bterms$response, ")")
-    rescor_names <- get_cornames(bterms$response, type = "rescor")   
-    spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
-    spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
+  is_rescor <- grepl("^rescor_", spec_pars)
+  if (any(is_rescor)) {
+    rescor_pars <- spec_pars[is_rescor]
+    rescor_names <- sub("__", ",", sub("__", "(", rescor_pars))
+    spec_pars[is_rescor] <- paste0(rescor_names, ")")
   }    
   rownames(out$spec_pars) <- spec_pars
   
@@ -821,19 +758,19 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   
   # summary of group-level effects
   for (g in out$group) {
-    r <- object$ranef[object$ranef$group == g, ]
-    rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-    sd_pars <- paste0("sd_", g, "__", rnames)
-    sd_names <- paste0("sd", "(", rnames ,")")
-    # construct correlation names
-    type <- paste0("cor_", g)
-    all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = type)
-    take <- all_cor_pars %in% parnames(object)
-    cor_pars <- all_cor_pars[take]
-    cor_names <- get_cornames(rnames)[take]
-    # extract sd and cor parameters from the summary
+    gregex <- escape_dot(g)
+    sd_prefix <- paste0("^sd_", gregex)
+    sd_pars <- pars[grepl(sd_prefix, pars)]
+    cor_prefix <- paste0("^cor_", gregex)
+    cor_pars <- pars[grepl(cor_prefix, pars)]
     out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    rownames(out$random[[g]]) <- c(sd_names, cor_names)
+    if (nrow(out$random[[g]])) {
+      sd_names <- sub(sd_prefix, "sd", sd_pars)
+      sd_names <- sub("__", "(", sd_names)
+      cor_names <- sub(cor_prefix, "cor", cor_pars)
+      cor_names <- sub("__", ",", sub("__", "(", cor_names))
+      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")") 
+    }
   }
   # summary of smooths
   sm_pars <- pars[grepl("^sds_", pars)]
@@ -901,14 +838,16 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) {
-  bf(x$formula, ...)
+  x$formula
 }
 
 #' @export
-family.brmsfit <- function(object, ...) {
-  if (is.character(object$family)) {
-    # brms <= 0.6.0
-    family <- brmsfamily(object$family, link = object$link) 
+family.brmsfit <- function(object, resp = NULL, ...) {
+  if (!is.null(resp)) {
+    stopifnot(is_mv(object))
+    resp <- as_one_character(resp)
+    resp <- validate_resp(resp, object$formula$responses)
+    family <- object$formula$forms[[resp]]$family
   } else {
     family <- object$family
   }
@@ -923,34 +862,24 @@ stancode.brmsfit <- function(object, ...) {
 #' @export
 standata.brmsfit <- function(object, ...) {
   dots <- list(...)
-  if (is.data.frame(object$data)) {
-    # brms > 0.5.0 stores the original model.frame
-    object <- restructure(object)
-    new_formula <- update_re_terms(object$formula, dots$re_formula)
-    dots$control$old_cat <- is_old_categorical(object)
-    sample_prior <- attr(object$prior, "sample_prior")
-    sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
-    args <- list(
-      formula = new_formula, data = model.frame(object), 
-      prior = object$prior, cov_ranef = object$cov_ranef, 
-      knots = attr(model.frame(object), "knots"),
-      sample_prior = sample_prior
-    )
-    standata <- do.call(make_standata, c(args, dots))
-  } else {
-    # brms <= 0.5.0 only stores the data passed to Stan 
-    standata <- object$data
-    # for a short period in 0.4.1.9000, "lev" was used instead of "J"
-    names(standata) <- sub("^lev_", "J_", names(standata))
-  }
-  standata
+  object <- restructure(object)
+  new_formula <- update_re_terms(object$formula, dots$re_formula)
+  sample_prior <- attr(object$prior, "sample_prior")
+  sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
+  args <- list(
+    formula = new_formula, data = model.frame(object), 
+    prior = object$prior, cov_ranef = object$cov_ranef, 
+    knots = attr(model.frame(object), "knots"),
+    sample_prior = sample_prior
+  )
+  do.call(make_standata, c(args, dots))
 }
 
 #' Interface to \pkg{shinystan}
 #' 
 #' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
 #' 
-#' @aliases launch_shinystan launch_shiny
+#' @aliases launch_shinystan
 #' 
 #' @param object A fitted model object typically of class \code{brmsfit}. 
 #' @param rstudio Only relevant for RStudio users. 
@@ -988,7 +917,6 @@ launch_shinystan.brmsfit <- function(
 #' @param pars Names of the parameters to plot, as given by a character vector 
 #'   or a regular expression. By default, all parameters except 
 #'   for group-level and smooth effects are plotted. 
-#' @param parameters A deprecated alias of \code{pars}
 #' @param combo A character vector with at least two elements. 
 #'   Each element of \code{combo} corresponds to a column in the resulting 
 #'   graphic and should be the name of one of the available 
@@ -1033,14 +961,10 @@ launch_shinystan.brmsfit <- function(
 #' @import ggplot2
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, pars = NA, parameters = NA, 
-                         combo = c("dens", "trace"), N = 5, 
-                         exact_match = FALSE, theme = NULL, 
+plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"), 
+                         N = 5, exact_match = FALSE, theme = NULL, 
                          plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
-  dots <- list(...)
-  pars <- use_alias(pars, parameters, default = NA)
-  plot <- use_alias(plot, dots$do_plot)
   contains_samples(x)
   if (!is_wholenumber(N) || N < 1) {
     stop2("Argument 'N' must be a positive integer.")
@@ -1209,7 +1133,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @export pp_check
 #' @export
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             x = NULL, newdata = NULL, 
+                             x = NULL, resp = NULL, newdata = NULL,
                              re_formula = NULL, allow_new_levels = FALSE,
                              sample_new_levels = "uncertainty", 
                              new_objects = list(), incl_autocor = TRUE, 
@@ -1218,14 +1142,15 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (missing(type)) {
     type <- "dens_overlay"
   }
-  if (length(type) != 1L) {
-    stop2("Argument 'type' must be of length 1.")
+  type <- as_one_character(type)
+  if (!is.null(group)) {
+    group <- as_one_character(group)
   }
-  if (!is.null(group) && length(group) != 1L) {
-    stop2("Argument 'group' must be of length 1.")
+  if (!is.null(x)) {
+    x <- as_one_character(x)
   }
-  if (!is.null(x) && length(x) != 1L) {
-    stop2("Argument 'x' must be of length 1.")
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
   }
   ppc_funs <- as.character(bayesplot::available_ppc(""))
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
@@ -1234,8 +1159,9 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
           collapse_comma(valid_ppc_types))
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
-  # validate argument 'group'
+  # validate arguments 'resp',  'group', and 'x'
   object <- restructure(object)
+  stopifnot_resp(object, resp)
   valid_groups <- get_valid_groups(object)
   if (!is.null(group) && !group %in% valid_groups) {
     stop2("Group '", group, "' is not a valid grouping factor. ",
@@ -1287,24 +1213,23 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     newdata, fit = object, re_formula = NA, 
     incl_autocor, new_objects, check_response = TRUE
   )
-  standata <- do.call(amend_newdata, 
+  sdata <- do.call(validate_newdata, 
     args = c(newd_args, list(only_response = TRUE))
   )
-  y <- as.vector(standata$Y)
-  if (!is.null(standata$cens)) {
-    warning2("Posterior predictive checks may not be ", 
-             "meaningful for censored models.")
+  if (any(grepl("^cens_", names(sdata)))) {
+    warning2("'pp_check' may not be meaningful for censored models.")
   }
+  y <- as.vector(sdata[[paste0("Y", usc(resp))]])
   pred_args <- nlist(
-    object, newdata, re_formula, allow_new_levels, 
+    object, newdata, re_formula, allow_new_levels, resp,
     sample_new_levels, new_objects, incl_autocor, nsamples, 
     subset, nug, ntrys, sort = FALSE, summary = FALSE
   )
-  yrep <- as.matrix(do.call(method, pred_args))
-  if (family(object)$family %in% "binomial") {
+  yrep <- do.call(method, pred_args)
+  if (has_trials(family(object, resp = resp))) {
     # use success proportions following Gelman and Hill (2006)
-    y <- y / standata$trials
-    yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
+    y <- y / sdata$trials
+    yrep <- yrep / as_draws_matrix(sdata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
@@ -1313,7 +1238,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
   }
   # allow using arguments 'group' and 'x' for new data
-  mf <- do.call(amend_newdata, c(newd_args, return_standata = FALSE))
+  mf <- do.call(validate_newdata, c(newd_args, return_standata = FALSE))
   if (!is.null(group)) {
     ppc_args$group <- mf[[group]]
   }
@@ -1371,26 +1296,15 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      spaghetti = FALSE, surface = FALSE,
                                      transform = NULL, resolution = 100, 
                                      select_points = 0, too_far = 0, ...) {
-  dots <- list(...)
   method <- match.arg(method)
-  conditions <- use_alias(conditions, dots[["data"]])
   spaghetti <- as_one_logical(spaghetti)
-  surface <- as_one_logical(use_alias(surface, dots[["contour"]]))
-  dots[["data"]] <- dots[["contour"]] <- NULL
+  surface <- as_one_logical(surface)
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula)
-  if (is_linear(x$family) && length(bterms$response) > 1L) {
-    stop2("Marginal plots are not yet implemented for multivariate models.")
-  } else if (is_categorical(x$family)) {
-    stop2("Marginal plots are not yet implemented for categorical models.")
-  } else if (is_ordinal(x$family)) {
-    warning2(
-      "Predictions are treated as continuous variables ", 
-      "in marginal_effects, which is likely an invalid ", 
-      "assumption for family ", x$family$family, "."
-    )
+  if (length(probs) != 2L) {
+    stop2("Arguments 'probs' must be of length 2.")
   }
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
@@ -1437,110 +1351,41 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       )
     }
   }
-  if (length(probs) != 2L) {
-    stop2("Arguments 'probs' must be of length 2.")
-  }
-  
+  mf <- model.frame(x)
   conditions <- prepare_conditions(
     x, conditions = conditions, effects = effects, 
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_effects <- c(
-    get_effect(bterms, "mo"), 
-    rmNULL(bterms[c("trials", "cat")])
-  )
-  int_vars <- unique(ulapply(int_effects, all.vars))
-  mf <- model.frame(x)
+  int_vars <- unique(ulapply(get_effect(bterms, "mo"), all.vars))
   int_conditions <- lapply(int_conditions, 
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
-  results <- list()
+  out <- list()
   for (i in seq_along(effects)) {
-    marg_data <- mf[, effects[[i]], drop = FALSE]
+    eff <- effects[[i]]
     marg_args <- nlist(
-      data = marg_data, conditions, int_conditions,
+      data = mf[, eff, drop = FALSE], conditions, int_conditions,
       int_vars, surface, resolution, reorder = use_def_effects
     )
     marg_data <- do.call(prepare_marg_data, marg_args)
-    if (surface && length(effects[[i]]) == 2L && too_far > 0) {
+    if (surface && length(eff) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = marg_data[[effects[[i]][1]]], 
-        g2 = marg_data[[effects[[i]][2]]], 
-        d1 = x$data[, effects[[i]][1]],
-        d2 = x$data[, effects[[i]][2]],
+        g1 = marg_data[[eff[1]]], 
+        g2 = marg_data[[eff[2]]], 
+        d1 = mf[, eff[1]],
+        d2 = mf[, eff[2]],
         dist = too_far)
       marg_data <- marg_data[!ex_too_far, ]  
     }
-    # make sure numeric variables come first
-    effects[[i]] <- attr(marg_data, "effects")
-    args <- list(
-      x, newdata = marg_data, re_formula = re_formula,
-      allow_new_levels = TRUE, incl_autocor = FALSE, 
-      transform = transform, summary = FALSE
+    me_args <- nlist(
+      x = bterms, fit = x, marg_data, method, surface, 
+      spaghetti, re_formula, transform, conditions,
+      int_conditions, select_points, probs, robust, ...
     )
-    args <- c(args, dots)
-    if (is_ordinal(x$family) || is_categorical(x$family)) {
-      marg_res <- do.call(method, args)
-      if (method == "fitted") {
-        for (k in seq_len(dim(marg_res)[3])) {
-          marg_res[, , k] <- marg_res[, , k] * k
-        }
-        marg_res <- lapply(
-          seq_len(dim(marg_res)[2]), 
-          function(s) rowSums(marg_res[, s, ])
-        )
-        marg_res <- do.call(cbind, marg_res)
-      }
-    } else {
-      marg_res <- do.call(method, args)
-    }
-    rownames(marg_data) <- NULL
-    types <- attr(marg_data, "types")
-    first_numeric <- types[1] %in% "numeric"
-    second_numeric <- types[2] %in% "numeric"
-    both_numeric <- first_numeric && second_numeric
-    if (second_numeric && !surface) {
-      # can only be converted to factor after having called method
-      mde2 <- round(marg_data[[effects[[i]][2]]], 2)
-      levels2 <- sort(unique(mde2), TRUE)
-      marg_data[[effects[[i]][2]]] <- factor(mde2, levels = levels2)
-      labels2 <- names(int_conditions[[effects[[i]][2]]])
-      if (length(labels2) == length(levels2)) {
-        levels(marg_data[[effects[[i]][2]]]) <- labels2
-      }
-    }
-    if (first_numeric && spaghetti) {
-      if (surface) {
-        stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
-      }
-      sample <- rep(seq_len(nrow(marg_res)), each = ncol(marg_res))
-      if (length(types) == 2L) {
-        # samples should be unique across plotting groups
-        sample <- paste0(sample, "_", marg_data[[effects[[i]][2]]])
-      }
-      spaghetti_data <- data.frame(as.numeric(t(marg_res)), factor(sample))
-      colnames(spaghetti_data) <- c("estimate__", "sample__")
-      spaghetti_data <- cbind(marg_data, spaghetti_data)
-    } else {
-      spaghetti_data <- NULL
-    }
-    marg_res <- get_summary(marg_res, probs = probs, robust = robust)
-    colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__")
-    marg_res = cbind(marg_data, marg_res)
-    attr(marg_res, "response") <- as.character(x$formula$formula[2])
-    attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "surface") <- unname(both_numeric && surface)
-    attr(marg_res, "spaghetti") <- spaghetti_data
-    point_args <- nlist(
-      mf, effects = effects[[i]], conditions, select_points,
-      transform, groups = get_re(bterms)$group, family = x$family
-    )
-    attr(marg_res, "points") <- do.call(make_point_frame, point_args)
-    results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
+    out <- c(out, do.call(marginal_effects_internal, me_args))
   }
-  class(results) <- "brmsMarginalEffects"
-  results
+  structure(out, class = "brmsMarginalEffects")
 }
 
 #' @rdname marginal_smooths
@@ -1554,122 +1399,27 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   spaghetti <- as_one_logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)
-  mf <- model.frame(x)
-  conditions <- prepare_conditions(x)
-  smooths <- rename(as.character(smooths), " ", "")
+  x <- remove_autocor(x)
+  smooths <- rm_wsp(as.character(smooths))
   bterms <- parse_bf(x$formula)
-  bt_list <- list()
-  if (length(bterms$response) > 1L) {
-    for (r in bterms$response) {
-      bt_list[[r]] <- bterms$dpars[["mu"]]
-    }
-    bterms$dpars[["mu"]] <- NULL
-  }
-  for (dp in names(bterms$dpars)) {
-    bt <- bterms$dpars[[dp]]
-    if (is.btnl(bt)) {
-      bt_list[names(bt$nlpars)] <- bt$nlpars
-    } else {
-      bt_list[[dp]] <- bt
-    }
-  }
+  conditions <- prepare_conditions(x)
   subset <- subset_samples(x, subset, nsamples)
-  nsamples <- nsamples(x, subset = subset)
-  args <- nlist(
-    fit = x, allow_new_levels = TRUE,
-    subset, nsamples, incl_autocor = FALSE, 
-    smooths_only = TRUE 
+  # call as.matrix only once to save time and memory
+  samples <- as.matrix(x, subset = subset)
+  ms_args <- nlist(
+    x = bterms, fit = x, samples, smooths, conditions, 
+    too_far, resolution, probs, spaghetti
   )
-  too_many_covars <- FALSE
-  results <- list()
-  for (k in seq_along(bt_list)) {
-    # loop over elements that may contain smooth terms
-    sm_labels <- get_sm_labels(bt_list[[k]])
-    sm_labels_by <- get_sm_labels(bt_list[[k]], data = mf)
-    covars <- get_sm_labels(bt_list[[k]], covars = TRUE, combine = FALSE)
-    for (i in seq_along(sm_labels)) {
-      # loop over smooth terms and compute their predictions
-      byvars <- attr(covars, "byvars")[[i]]
-      byfactors <- ulapply(mf[, byvars, drop = FALSE], is_like_factor)
-      byfactors <- byvars[byfactors]
-      covars_no_byfactor <- setdiff(covars[[i]], byfactors)
-      ncovars <- length(covars_no_byfactor)
-      if (ncovars > 2L) {
-        too_many_covars <- TRUE
-      }
-      include_smooth <- !length(smooths) || sm_labels[[i]] %in% smooths
-      if (include_smooth && ncovars <= 2L) {
-        values <- named_list(covars[[i]])
-        for (cv in names(values)) {
-          if (is.numeric(mf[[cv]])) {
-            values[[cv]] <- seq(
-              min(mf[[cv]]), max(mf[[cv]]), length.out = resolution
-            )
-          } else {
-            values[[cv]] <- levels(factor(mf[[cv]]))
-          }
-        }
-        newdata <- expand.grid(values)
-        if (ncovars == 2L && too_far > 0) {
-          # exclude prediction grid points too far from data
-          ex_too_far <- mgcv::exclude.too.far(
-            g1 = newdata[[covars_no_byfactor[1]]], 
-            g2 = newdata[[covars_no_byfactor[2]]], 
-            d1 = x$data[, covars_no_byfactor[1]],
-            d2 = x$data[, covars_no_byfactor[2]],
-            dist = too_far
-          )
-          newdata <- newdata[!ex_too_far, ]  
-        }
-        other_vars <- setdiff(names(conditions), covars[[i]])
-        newdata[, other_vars] <- conditions[1, other_vars]
-        # prepare draws for linear_predictor
-        par <- names(bt_list)[k]
-        more_args <- nlist(x = bt_list[[k]], newdata, nlpar = par)
-        draws <- do.call(extract_draws, c(args, more_args))
-        J <- which(attr(sm_labels_by, "termnum") == i)
-        scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
-        draws[["fe"]][["X"]] <- draws[["fe"]][["X"]][, scs, drop = FALSE]
-        draws[["fe"]][["b"]] <- draws[["fe"]][["b"]][, scs, drop = FALSE]
-        draws[["sm"]][["Zs"]] <- draws[["sm"]][["Zs"]][J] 
-        draws[["sm"]][["s"]] <- draws[["sm"]][["s"]][J]
-        eta <- get_eta(draws = draws, i = NULL)
-        if (spaghetti && ncovars == 1L) {
-          sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
-          spaghetti_data <- data.frame(as.numeric(t(eta)), factor(sample))
-          colnames(spaghetti_data) <- c("estimate__", "sample__")
-          spaghetti_data <- cbind(
-            newdata[, covars[[i]], drop = FALSE], spaghetti_data
-          )
-        } else {
-          spaghetti_data <- NULL
-        }
-        eta <- get_summary(eta, robust = TRUE, probs = probs)
-        colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-        res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
-        if (length(byfactors)) {
-          res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
-        }
-        response <- paste0(par, ": ", sm_labels[[i]])
-        attr(res, "response") <- response
-        attr(res, "effects") <- covars_no_byfactor
-        attr(res, "surface") <- ncovars == 2L
-        attr(res, "spaghetti") <- spaghetti_data
-        attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
-        results[[response]] <- res
-      }
-    }
-  }
-  if (!length(results)) {
+  out <- do.call(marginal_smooths_internal, ms_args)
+  if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
+  too_many_covars <- any(ulapply(out, attr, "too_many_covars"))
   if (too_many_covars) {
-    warning2("Smooth terms with more than two covariates ",  
+    warning2("Smooth terms with more than two covariates ",
              "are not yet supported by 'marginal_smooths'.")
   }
-  attr(results, "smooths_only") <- TRUE
-  class(results) <- "brmsMarginalEffects"
-  results
+  structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
 }
 
 #' Model Predictions of \code{brmsfit} Objects
@@ -1690,6 +1440,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   to be considered in the prediction. 
 #'   If \code{NULL} (default), include all group-level effects; 
 #'   if \code{NA}, include no group-level effects.
+#' @param re.form Alias of \code{re_formula}.
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed.
@@ -1724,6 +1475,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   on the lower boundary should be returned as negative values.
 #'   This allows to distinquish responses on the upper and
 #'   lower boundary. Defaults to \code{FALSE}.
+#' @param resp Optional names of response variables.
+#'  If specified, fitted values of these response variables are returned.
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
@@ -1764,6 +1517,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, 
 #'   where S is the number of samples.
+#'   In multivariate models, the output is an array of 3 dimensions, 
+#'   where the third dimension indicates the response variables.
 #' 
 #' @details \code{NA} values within factors in \code{newdata}, 
 #'   are interpreted as if all dummy variables of this factor are 
@@ -1812,7 +1567,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
                             sample_new_levels = "uncertainty", 
                             new_objects = list(), incl_autocor = TRUE, 
-                            negative_rt = FALSE, subset = NULL, 
+                            resp = NULL, negative_rt = FALSE, subset = NULL, 
                             nsamples = NULL, sort = FALSE, nug = NULL, 
                             ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
@@ -1820,62 +1575,14 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels,
-    sample_new_levels, new_objects, subset, nsamples, nug
+    sample_new_levels, new_objects, resp, subset, nsamples, nug
   )
   draws <- do.call(extract_draws, draws_args)
-  if (is.list(draws$mu[["mv"]])) {
-    draws$mu <- get_eta(draws$mu)
-  }
-  dpars <- intersect(valid_dpars(family(object)), names(draws))
-  for (dp in dpars) {
-    if (is.list(draws[[dp]])) {
-      draws[[dp]] <- get_dpar(draws[[dp]])
-    }
-  }
-  # see predict.R
-  predict_fun <- paste0("predict_", draws$f$family)
-  predict_fun <- get(predict_fun, asNamespace("brms"))
-  N <- choose_N(draws)
-  out <- do.call(cbind, 
-    lapply(seq_len(N), predict_fun, draws = draws, 
-           ntrys = ntrys, negative_rt = negative_rt)
+  predict_args <- nlist(
+    draws, transform, ntrys, negative_rt, 
+    summary, robust, probs, sort
   )
-  # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models; see predict.R
-  pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
-  if (pct_invalid >= 0.01) {
-    warning2(round(pct_invalid * 100), "% of all predicted values ", 
-             "were invalid. Increasing argument 'ntrys' may help.")
-  }
-  if (is_wiener(draws$f$family) && summary && negative_rt) {
-    warning2("Summarizing positive and negative ", 
-             "response times may not be reasonable.")
-  }
-
-  # reorder predicted responses in case of multivariate models
-  # as they are sorted after units first not after traits
-  if (grepl("_mv$", draws$f$family)) {
-    nresp <- draws$data$nresp
-    reorder <- ulapply(seq_len(nresp), seq, to = N * nresp, by = nresp)
-    out <- out[, reorder, drop = FALSE]
-  }
-  old_order <- attr(draws$data, "old_order")
-  out <- reorder_obs(out, old_order, sort = sort)
-  # transform predicted response samples before summarizing them 
-  is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
-  if (!is.null(transform) && !is_catordinal) {
-    out <- do.call(transform, list(out))
-  }
-  if (summary) {
-    if (is_catordinal) {
-      # compute frequencies of categories 
-      out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
-    } else {
-      out <- get_summary(out, probs = probs, robust = robust)
-    }
-    rownames(out) <- seq_len(nrow(out))
-  }
-  out
+  do.call(predict_internal, predict_args)
 }
 
 #' @rdname predict.brmsfit
@@ -1885,15 +1592,21 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export posterior_predict
 #' @importFrom rstantools posterior_predict
 posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                                      transform = NULL, allow_new_levels = FALSE,
+                                      re.form = NULL, transform = NULL, 
+                                      allow_new_levels = FALSE,
                                       sample_new_levels = "uncertainty", 
                                       new_objects = list(), incl_autocor = TRUE, 
-                                      negative_rt = FALSE, subset = NULL, nsamples = NULL, 
-                                      sort = FALSE, nug = NULL, ntrys = 5, robust = FALSE,
+                                      resp = NULL, negative_rt = FALSE, subset = NULL, 
+                                      nsamples = NULL, sort = FALSE, nug = NULL, 
+                                      ntrys = 5, robust = FALSE,
                                       probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
-  cl[["summary"]] <- FALSE
+  cl$summary <- FALSE
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
@@ -1930,6 +1643,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  for categorical and ordinal models and a S x N matrix else.
 #'  N is the number of observations, S is the number of samples, 
 #'  C is the number of categories, and E is equal to \code{length(probs) + 2}.
+#'  In multivariate models, the output is an array of 3 dimensions, 
+#'  where the third dimension indicates the response variables.
 #'   
 #' @details \code{NA} values within factors in \code{newdata}, 
 #'   are interpreted as if all dummy variables of this factor are 
@@ -1961,75 +1676,20 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           dpar = NULL, subset = NULL, 
+                           dpar = NULL, resp = NULL, subset = NULL, 
                            nsamples = NULL, sort = FALSE, nug = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
-  dots <- list(...)
-  dpar <- use_alias(dpar, dots[["auxpar"]])
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels, 
-    sample_new_levels, new_objects, subset, nsamples, nug 
+    sample_new_levels, new_objects, resp, subset, nsamples, nug 
   )
   draws <- do.call(extract_draws, draws_args)
-  dpars <- intersect(valid_dpars(family(object)), names(draws))
-  if (!length(dpar)) {
-    if (is.list(draws[["mu"]][["mv"]])) {
-      draws$mu <- get_eta(draws$mu)
-    }
-    for (dp in dpars) {
-      if (is.list(draws[[dp]])) {
-        draws[[dp]] <- get_dpar(draws[[dp]])
-      }
-    }
-    if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
-      # collapse over responses in linear MV models
-      dim(draws$mu) <- c(dim(draws$mu)[1], prod(dim(draws$mu)[2:3]))
-    }
-    if (scale == "response") {
-      # original families are required for fitted helper functions 
-      draws$f <- family(object)
-      fitted_fun <- paste0("fitted_", draws$f$family)
-      fitted_fun <- get(fitted_fun, asNamespace("brms"))
-      draws$mu <- fitted_fun(draws)
-    }
-  } else {
-    if (length(dpar) != 1L || !dpar %in% dpars) {
-      stop2("Invalid argument 'dpar'. Valid distributional ",
-            "parameters are: ", collapse_comma(dpars))
-    }
-    if (!isTRUE(attr(draws[[dpar]], "predicted"))) {
-      stop2("Distributional parameter '", dpar, "' was not predicted.")
-    }
-    if (scale == "linear" && is.list(draws[[dpar]])) {
-      draws[[dpar]]$f$link <- "identity"
-    }
-    if (dpar_class(dpar) == "theta" && scale == "response") {
-      ap_id <- as.numeric(dpar_id(dpar))
-      draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
-      dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
-    } else {
-      draws$mu <- get_dpar(draws[[dpar]], apply_ilink = TRUE)
-    }
-  }
-  if (is.null(dim(draws$mu))) {
-    draws$mu <- as.matrix(draws$mu)
-  }
-  old_order <- attr(draws$data, "old_order")
-  draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)
-  if (summary) {
-    draws$mu <- get_summary(draws$mu, probs = probs, robust = robust)
-    rownames(draws$mu) <- seq_len(nrow(draws$mu))
-    is_catordinal <- is_categorical(draws$f) || is_ordinal(draws$f)
-    if (is_catordinal && scale == "linear") {
-      # fixes issue #274
-      dimnames(draws$mu)[[3]] <- paste0("eta", seq_len(dim(draws$mu)[[3]]))
-    }
-  }
-  draws$mu
+  fitted_args <- nlist(draws, scale, dpar, summary, robust, probs, sort)
+  do.call(fitted_internal, fitted_args)
 }
 
 #' @rdname fitted.brmsfit
@@ -2040,15 +1700,19 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @importFrom rstantools posterior_linpred
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty", 
-  new_objects = list(), incl_autocor = TRUE, dpar = NULL, 
+  re.form = NULL, allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
   subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
   robust = FALSE, probs = c(0.025, 0.975), ...
 ) {
   cl <- match.call()
   cl[[1]] <- quote(fitted)
-  cl[["summary"]] <- FALSE
-  cl[["scale"]] <- if (transform) "response" else "linear"
+  cl$summary <- FALSE
+  cl$scale <- if (transform) "response" else "linear"
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
@@ -2105,24 +1769,24 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               allow_new_levels = FALSE, 
                               sample_new_levels = "uncertainty",
                               new_objects = list(), incl_autocor = TRUE, 
-                              subset = NULL, nsamples = NULL, sort = FALSE, 
-                              nug = NULL, summary = TRUE, robust = FALSE, 
-                              probs = c(0.025, 0.975), ...) {
+                              resp = NULL, subset = NULL, nsamples = NULL, 
+                              sort = FALSE, nug = NULL, summary = TRUE, 
+                              robust = FALSE, probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   method <- match.arg(method)
   contains_samples(object)
   object <- restructure(object)
-  family <- family(object)
-  if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Residuals not defined for family '", family$family, "'.")
+  family_names <- family_names(object)
+  if (is_ordinal(family_names) || is_categorical(family_names)) {
+    stop2("Residuals are not defined for ordinal or categorical models.")
   }
   newd_args <- nlist(
     newdata, fit = object, re_formula, allow_new_levels,
     new_objects, check_response = TRUE
   )
-  standata <- do.call(amend_newdata, newd_args)
-  if (!is.null(standata$cens)) {
-    warning2("Residuals may not be meaningful for censored models.")
+  sdata <- do.call(validate_newdata, newd_args)
+  if (any(grepl("^cens_", names(sdata)))) {
+    warning2("'residuals' may not be meaningful for censored models.")
   }
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(object), nsamples)
@@ -2130,19 +1794,35 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels,
     sample_new_levels, new_objects, incl_autocor, 
-    subset, nug, summary = FALSE, sort = TRUE
+    resp, subset, nug, summary = FALSE, sort = TRUE
   )
   mu <- do.call(method, pred_args)
-  Y <- as_draws_matrix(as.numeric(standata$Y), dim = dim(mu))
+  if (length(dim(mu)) == 3L) {
+    # multivariate model
+    Y <- sdata[paste0("Y_", dimnames(mu)[[3]])]
+    names(Y) <- dimnames(mu)[[3]]
+    Y <- lapply(Y, as_draws_matrix, dim = dim(mu)[1:2])
+    Y <- do.call(abind, c(Y, along = 3))
+  } else {
+    Y <- sdata[[paste0("Y", usc(resp))]]
+    Y <- as_draws_matrix(Y, dim = dim(mu))
+  }
   res <- Y - mu
   remove(Y, mu)
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     pred_args$summary <- TRUE
-    sd_pred <- do.call(predict, pred_args)[, 2]
-    res <- res / as_draws_matrix(sd_pred, dim = dim(res))
+    pred <- do.call(predict, pred_args)
+    if (length(dim(pred)) == 3L) {
+      sd_pred <- array2list(pred[, 2, ])
+      sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(res)[1:2])
+      sd_pred <- do.call(abind, c(sd_pred, along = 3))
+    } else {
+      sd_pred <- as_draws_matrix(pred[, 2], dim = dim(res))
+    }
+    res <- res / sd_pred
   }
-  res <- reorder_obs(res, attr(standata, "old_order"), sort = sort)
+  res <- reorder_obs(res, attr(sdata, "old_order"), sort = sort)
   if (summary) {
     res <- get_summary(res, probs = probs, robust = robust)
   }
@@ -2155,18 +1835,22 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 #' @export predictive_error
 #' @importFrom rstantools predictive_error
-predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                                     type = c("ordinary", "pearson"),
-                                     allow_new_levels = FALSE, 
+predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                                     re.form = NULL, allow_new_levels = FALSE, 
                                      sample_new_levels = "uncertainty",
-                                     new_objects = list(),
-                                     incl_autocor = TRUE, subset = NULL, 
-                                     nsamples = NULL, sort = FALSE, nug = NULL,
-                                     robust = FALSE, probs = c(0.025, 0.975),
-                                     ...) {
+                                     new_objects = list(), incl_autocor = TRUE, 
+                                     resp = NULL, subset = NULL, nsamples = NULL, 
+                                     sort = FALSE, nug = NULL, robust = FALSE, 
+                                     probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(residuals)
-  cl[c("method", "summary")] <- list("predict", FALSE)
+  cl$method <- "predict"
+  cl$type <- "ordinary"
+  cl$summary <- FALSE
+  if ("re.form" %in% names(cl)) {
+    cl$re_formula <- cl$re.form
+    cl$re.form <- NULL
+  }
   eval(cl, parent.frame())
 }
 
@@ -2204,15 +1888,15 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              allow_new_levels = FALSE, 
                              sample_new_levels = "uncertainty",
                              new_objects = list(), incl_autocor = TRUE, 
-                             subset = NULL, nsamples = NULL, 
+                             subset = NULL, nsamples = NULL, resp = NULL,
                              nug = NULL, summary = TRUE, robust = FALSE, 
                              probs = c(0.025, 0.975), ...) {
   # do it like residuals.brmsfit
   contains_samples(object)
   object <- restructure(object)
-  family <- family(object)
-  if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Residuals not defined for family '", family$family, "'.")
+  family_names <- family_names(object)
+  if (is_ordinal(family_names) || is_categorical(family_names)) {
+    stop2("Residuals are not defined for ordinal or categorical models.")
   }
   use_stored_ic <- !length(
     intersect(names(match.call()), args_not_for_reloo())
@@ -2224,30 +1908,42 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       newdata, fit = object, re_formula, allow_new_levels,
       new_objects, check_response = TRUE
     )
-    standata <- do.call(amend_newdata, newd_args)
-    if (!is.null(standata$cens)) {
-      warning2("Residuals may not be meaningful for censored models.")
-    }
-    if (is.null(subset) && !is.null(nsamples)) {
-      subset <- sample(nsamples(object), nsamples)
+    sdata <- do.call(validate_newdata, newd_args)
+    if (any(grepl("^cens_", names(sdata)))) {
+      warning2("'bayes_R2' may not be meaningful for censored models.")
     }
     pred_args <- nlist(
       object, newdata, re_formula, allow_new_levels,
-      sample_new_levels, new_objects, incl_autocor, 
-      subset, nug, summary = FALSE, sort = TRUE
+      sample_new_levels, new_objects, incl_autocor, resp,
+      subset, nsamples, nug, summary = FALSE, sort = TRUE
     )
-    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     ypred <- do.call(fitted, pred_args)
-    y <- as.numeric(standata$Y)
-    e <- - 1 * sweep(ypred, 2, y)
-    var_ypred <- matrixStats::rowVars(ypred)
-    var_e <- matrixStats::rowVars(e)
-    R2 <- as.matrix(var_ypred / (var_ypred + var_e))
-    colnames(R2) <- "R2"
+    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+    .bayes_R2 <- function(y, ypred) {
+      y <- as.numeric(y)
+      e <- - 1 * sweep(ypred, 2, y)
+      var_ypred <- matrixStats::rowVars(ypred)
+      var_e <- matrixStats::rowVars(e)
+      return(as.matrix(var_ypred / (var_ypred + var_e)))
+    }
+    if (is.matrix(ypred)) {
+      if (!length(resp)) resp <- ""
+      resp <- usc(resp)
+      y <- sdata[[paste0("Y", resp)]]
+      R2 <- .bayes_R2(y, ypred)
+    } else {
+      resp <- usc(dimnames(ypred)[[3]])
+      R2 <- named_list(resp)
+      for (i in seq_along(R2)) {
+        y <- as.numeric(sdata[[paste0("Y", resp[i])]])
+        R2[[i]] <- .bayes_R2(y, ypred[, , i])
+      }
+      R2 <- do.call(cbind, R2)
+    }
+    colnames(R2) <- paste0("R2", resp)
   }
   if (summary) {
     R2 <- get_summary(R2, probs = probs, robust = robust)
-    rownames(R2) <- "R2"
   }
   R2
 }
@@ -2299,26 +1995,36 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 update.brmsfit <- function(object, formula., newdata = NULL, 
                            recompile = FALSE, ...) {
   dots <- list(...)
+  testmode <- isTRUE(dots[["testmode"]])
+  dots$testmode <- NULL
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop2("Please use argument 'newdata' to update the data.")
   }
   object <- restructure(object)
-  if (isTRUE(object$version$brms < utils::packageVersion("brms"))) {
+  if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
-    family <- get_arg("family", dots, object)
-    autocor <- get_arg("autocor", dots, object)
-    dots$formula <- bf(object$formula, family = family, autocor = autocor)
+    dots$formula <- object$formula
+    if (!is.null(dots[["family"]])) {
+      dots$formula <- dots$formula + check_family(dots$family)
+    } 
+    if (!is.null(dots[["autocor"]])) {
+      dots$formula <- dots$formula + check_autocor(dots$autocor)
+    }
   } else {
-    family <- get_arg("family", formula., dots, object)
-    autocor <- get_arg("autocor", formula., dots, object)
+    if (is.mvbrmsformula(formula.) || is.mvbrmsformula(object$formula)) {
+      stop2("Updating formulas of multivariate models is not yet possible.")
+    }
     if (is.brmsformula(formula.)) {
       nl <- get_nl(formula.)
     } else {
+      formula. <- as.formula(formula.) 
       nl <- get_nl(formula(object))
     }
+    family <- get_arg("family", formula., dots, object)
+    autocor <- get_arg("autocor", formula., dots, object)
     dots$formula <- bf(formula., family = family, autocor = autocor, nl = nl)
     if (is_nonlinear(object)) {
       if (length(setdiff(all.vars(dots$formula$formula), ".")) == 0L) {
@@ -2339,46 +2045,27 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   
-  arg_names <- c(
-    "prior", "nonlinear", "threshold", "cov_ranef", 
-    "sparse", "sample_prior", "stan_funs"
-  )
-  new_args <- intersect(arg_names, names(dots))
-  old_args <- setdiff(arg_names, new_args)
+  arg_names <- c("prior", "cov_ranef", "stan_funs")
+  old_args <- setdiff(arg_names, names(dots))
   dots[old_args] <- object[old_args]
   if (!is.null(newdata)) {
     dots$data <- newdata
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
   }
-  if (is_ordinal(dots$formula$family)) {
-    if (!is.null(dots$threshold)) {
-      dots$formula$family <- check_family(
-        dots$formula$family, threshold = dots$threshold
-      )
-      dots$threshold <- NULL
-    }
-    if (is.null(dots$formula$family$threshold)) {
-      # for backwards compatibility with brms <= 0.8.0
-      if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
-        dots$formula$family$threshold <- "equidistant"
-      } else {
-        dots$formula$family$threshold <- "flexible"
-      }
-    }
-  }
-  if ("prior" %in% new_args) {
+  if (!is.null(dots$prior)) {
     if (!is.brmsprior(dots$prior)) { 
       stop2("Invalid 'prior' argument.")
     }
     dots$prior <- rbind(dots$prior, object$prior)
-    dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]
+    dupl_priors <- duplicated(dots$prior[, rcols_prior()])
+    dots$prior <- dots$prior[!dupl_priors, ]
   }
-  pnames <- parnames(object)
   if (is.null(dots$sample_prior)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
-      dots$sample_prior <- ifelse(any(grepl("^prior_", pnames)), "yes", "no") 
+      has_prior_pars <- any(grepl("^prior_", parnames(object)))
+      dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
   if (is.null(dots$save_ranef)) {
@@ -2398,9 +2085,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
   
-  new_stancode <- suppressMessages(
-    do.call(make_stancode, dots[!names(dots) %in% "testmode"])
-  )
+  new_stancode <- suppressMessages(do.call(make_stancode, dots))
   # stan code may differ just because of the version number (#288)
   new_stancode <- sub("^[^\n]+\n", "", new_stancode)
   old_stancode <- sub("^[^\n]+\n", "", stancode(object))
@@ -2415,7 +2100,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     } else {
       dots$data.name <- object$data.name
     }
-    if (!isTRUE(dots$testmode)) {
+    if (!testmode) {
       object <- do.call(brm, dots)
     }
   } else {
@@ -2428,10 +2113,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$data <- update_data(dots$data, bterms = bterms)
     object$family <- object$formula$family
     object$autocor <- object$formula$autocor
+    object$ranef <- tidy_ranef(bterms, data = object$data)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- tidy_ranef(bterms, data = object$data)
-      dots$is_newdata <- TRUE
+      dots$new <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
@@ -2449,7 +2134,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     } else if (!is.null(object$algorithm)) {
       dots$algorithm <- object$algorithm
     }
-    if (!isTRUE(dots$testmode)) {
+    if (!testmode) {
       object <- do.call(brm, c(list(fit = object), dots))
     }
   }
@@ -2460,7 +2145,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
 WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                          re_formula = NULL, allow_new_levels = FALSE,
-                         sample_new_levels = "uncertainty", 
+                         sample_new_levels = "uncertainty", resp = NULL,
                          new_objects = list(), subset = NULL,
                          nsamples = NULL, pointwise = NULL, nug = NULL) {
   models <- list(x, ...)
@@ -2475,7 +2160,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   use_stored_ic <- !any(names(match.call()) %in% args_not_for_reloo())
   args <- nlist(
     models, model_names, ic = "waic", use_stored_ic,
-    newdata, re_formula, subset, nug, allow_new_levels, 
+    newdata, re_formula, resp, subset, nug, allow_new_levels, 
     sample_new_levels, new_objects, pointwise, compare
   )
   do.call(compute_ics, args)
@@ -2487,7 +2172,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE,
                          sample_new_levels = "uncertainty",
-                         new_objects = list(), subset = NULL, 
+                         resp = NULL, new_objects = list(), subset = NULL, 
                          nsamples = NULL, pointwise = NULL, nug = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(WAIC)
@@ -2500,8 +2185,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
                         newdata = NULL, re_formula = NULL, 
                         allow_new_levels = FALSE, 
                         sample_new_levels = "uncertainty", 
-                        new_objects = list(), subset = NULL, 
-                        nsamples = NULL, pointwise = NULL, 
+                        resp = NULL, new_objects = list(), 
+                        subset = NULL, nsamples = NULL, pointwise = NULL,
                         nug = NULL, k_threshold = 0.7, 
                         update_args = list(), cores = 1, 
                         wcp = 0.2, wtrunc = 3/4) {
@@ -2517,13 +2202,13 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
   loo_args <- nlist(wcp, wtrunc, cores)
   not_for_reloo <- intersect(names(match.call()), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
-    stop2("Cannot use 'reloo' with arguments ", 
-          collapse_comma(not_for_reloo), ".")
+    not_for_reloo <- collapse_comma(not_for_reloo)
+    stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
   use_stored_ic <- !length(not_for_reloo)
   args <- nlist(
     models, model_names, ic = "loo", use_stored_ic, loo_args,
-    newdata, re_formula, subset, nug, allow_new_levels, 
+    newdata, re_formula, resp, subset, nug, allow_new_levels, 
     sample_new_levels, new_objects, pointwise, compare,
     reloo, k_threshold, update_args
   )
@@ -2537,8 +2222,8 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
                          newdata = NULL, re_formula = NULL, 
                          allow_new_levels = FALSE, 
                          sample_new_levels = "uncertainty", 
-                         new_objects = list(), subset = NULL, 
-                         nsamples = NULL, pointwise = NULL, 
+                         new_objects = list(), resp = NULL, 
+                         subset = NULL, nsamples = NULL, pointwise = NULL, 
                          nug = NULL, k_threshold = 0.7, 
                          update_args = list(), cores = 1, 
                          wcp = 0.2, wtrunc = 3/4) {
@@ -2632,12 +2317,16 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #' @export loo_predict
 #' @export 
 loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                probs = 0.5, lw = NULL, cores = 1, wcp = 0.2, 
-                                wtrunc = 3/4, ...) {
+                                resp = NULL, probs = 0.5, lw = NULL, cores = 1, 
+                                wcp = 0.2, wtrunc = 3/4, ...) {
   type <- match.arg(type)
+  stopifnot_resp(object, resp)
   loo_args <- nlist(cores, wcp, wtrunc)
-  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
-  preds <- predict(object, summary = FALSE, ...)
+  lw <- loo_weights(
+    object, lw = lw, log = TRUE, 
+    loo_args = loo_args, resp = resp, ...
+  )
+  preds <- predict(object, summary = FALSE, resp = resp, ...)
   loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
 }
 
@@ -2647,16 +2336,20 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
 #' @export loo_linpred
 #' @export 
 loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                probs = 0.5, scale = "linear", lw = NULL, 
+                                resp = NULL, probs = 0.5, scale = "linear", lw = NULL, 
                                 cores = 1, wcp = 0.2, wtrunc = 3/4, ...) {
   type <- match.arg(type)
+  stopifnot_resp(object, resp)
   if (is_ordinal(object$family) || is_categorical(object$family)) {
     stop2("Method 'loo_linpred' is not yet working ", 
           "for categorical or ordinal models")
   }
   loo_args <- nlist(cores, wcp, wtrunc)
-  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
-  preds <- fitted(object, scale = scale, summary = FALSE, ...)
+  lw <- loo_weights(
+    object, lw = lw, log = TRUE, 
+    loo_args = loo_args, resp = resp, ...
+  )
+  preds <- fitted(object, scale = scale, summary = FALSE, resp = resp, ...)
   loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
 }
 
@@ -2686,6 +2379,10 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' 
 #' @param object A fitted model object of class \code{brmsfit}. 
 #' @inheritParams predict.brmsfit
+#' @param combine Only relevant in multivariate models.
+#'   Indicates if the log-likelihoods of the submodels should
+#'   be combined per observation (i.e. added together; the default) 
+#'   or if the log-likelihoods should be returned separetely.
 #' @param pointwise A flag indicating whether to compute the full
 #'   log-likelihood matrix at once (the default), or just return
 #'   the likelihood function along with all data and samples
@@ -2695,10 +2392,11 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
 #' @param ... Currently ignored
 #' 
-#' @return Usually, an S x N matrix containing 
-#'  the pointwise log-likelihood samples, 
-#'  where S is the number of samples and N is the number 
-#'  of observations in the data. 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood
+#'  samples, where S is the number of samples and N is the number 
+#'  of observations in the data. For multivariate models and if 
+#'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+#'  where R is the number of response variables.
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior samples.
@@ -2711,42 +2409,27 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, 
                             sample_new_levels = "uncertainty", 
-                            new_objects = list(),
-                            incl_autocor = TRUE, subset = NULL,
-                            nsamples = NULL, pointwise = FALSE,
-                            nug = NULL, ...) {
+                            new_objects = list(), incl_autocor = TRUE, 
+                            resp = NULL, subset = NULL, nsamples = NULL, 
+                            pointwise = FALSE, nug = NULL, combine = TRUE, 
+                            ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, allow_new_levels, incl_autocor,
-    sample_new_levels, new_objects, subset, nsamples, nug, 
+    sample_new_levels, new_objects, resp, subset, nsamples, nug, 
     check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
-  
-  loglik_fun <- paste0("loglik_", draws$f$family)
-  loglik_fun <- get(loglik_fun, asNamespace("brms"))
-  N <- choose_N(draws)
   if (pointwise) {
-    loglik <- loglik_fun
-    attr(loglik, "args") <- nlist(
-      draws, N, S = draws$nsamples, data = data.frame()
+    stopifnot(combine)
+    loglik <- loglik_pointwise
+    attr(loglik, "args") <- list(
+      draws = draws, N = choose_N(draws), 
+      S = draws$nsamples, data = data.frame()
     )
   } else {
-    if (is.list(draws$mu[["mv"]])) {
-      draws$mu <- get_eta(draws$mu)
-    }
-    dpars <- intersect(valid_dpars(family(object)), names(draws))
-    for (dp in dpars) {
-      if (is.list(draws[[dp]])) {
-        draws[[dp]] <- get_dpar(draws[[dp]])
-      }
-    }
-    loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
-    old_order <- attr(draws$data, "old_order")
-    # do not reorder loglik for ARMA covariance models
-    sort <- use_cov(object$autocor)
-    loglik <- reorder_obs(loglik, old_order, sort = sort)
+    loglik <- loglik_internal(draws, combine = combine)
   }
   loglik
 }
@@ -2755,10 +2438,9 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE,
                            sample_new_levels = "uncertainty",
-                           new_objects = list(),
-                           incl_autocor = TRUE, subset = NULL,
-                           nsamples = NULL, pointwise = FALSE,
-                           nug = NULL, ...) {
+                           new_objects = list(), incl_autocor = TRUE, 
+                           resp = NULL, subset = NULL, nsamples = NULL, 
+                           pointwise = FALSE, nug = NULL, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -2769,37 +2451,40 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                allow_new_levels = FALSE, 
                                sample_new_levels = "uncertainty", 
-                               new_objects = list(),
-                               incl_autocor = TRUE, subset = NULL,
-                               nsamples = NULL, nug = NULL, summary = TRUE, 
+                               new_objects = list(), incl_autocor = TRUE, 
+                               resp = NULL, subset = NULL, nsamples = NULL, 
+                               nug = NULL, summary = TRUE, 
                                robust = FALSE, probs = c(0.025, 0.975), 
                                log = FALSE, ...) {
-  if (!is.mixfamily(family(x))) {
-    stop2("Method 'pp_mixture' can only be applied on mixture models.")
-  }
+  stopifnot_resp(x, resp)
   contains_samples(x)
   x <- restructure(x)
+  if (is_mv(x)) {
+    resp <- validate_resp(resp, x$formula$responses, multiple = FALSE)
+    family <- x$family[[resp]]
+  } else {
+    family <- x$family
+  }
+  if (!is.mixfamily(family)) {
+    stop2("Method 'pp_mixture' can only be applied on mixture models.")
+  }
   draws_args <- nlist(
     x, newdata, re_formula, allow_new_levels, incl_autocor, 
     sample_new_levels, new_objects, subset, nsamples, nug,
-    check_response = TRUE
+    resp, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
+  stopifnot(is.brmsdraws(draws))
   draws$pp_mixture <- TRUE
-  
-  dpars <- intersect(valid_dpars(family(x)), names(draws))
-  for (dp in dpars) {
-    if (is.list(draws[[dp]])) {
-      draws[[dp]] <- get_dpar(draws[[dp]])
-    }
+  for (dp in names(draws$dpars)) {
+    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
   loglik <- lapply(seq_len(N), loglik_mixture, draws = draws)
   loglik <- do.call(abind, c(loglik, along = 3))
   loglik <- aperm(loglik, c(1, 3, 2))
-  old_order <- attr(draws$data, "old_order")
-  # do not reorder loglik for ARMA covariance models
-  sort <- use_cov(x$autocor)
+  old_order <- draws$old_order
+  sort <- isTRUE(ncol(loglik) != length(old_order))
   loglik <- reorder_obs(loglik, old_order, sort = sort)
   if (!log) {
     loglik <- exp(loglik)

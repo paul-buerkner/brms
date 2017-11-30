@@ -11,6 +11,19 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
+is_mv <- function(x) {
+  stopifnot(is.brmsfit(x))
+  is.mvbrmsformula(x$formula)
+}
+
+stopifnot_resp <- function(x, resp = NULL) {
+  if (is_mv(x) && is.null(resp)) {
+    stop2("Argument 'resp' is required when applying ", 
+          "this method to a multivariate model.")
+  }
+  invisible(NULL)
+}
+
 get_all_group_vars <- function(x) {
   # extract names of all grouping variables
   if (is.brmsfit(x)) {
@@ -131,7 +144,7 @@ get_valid_groups <- function(x) {
   unique(valid_groups[nzchar(valid_groups)])
 }
 
-get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
+get_estimate <- function(coef, samples, margin = 2, ...) {
   # calculate estimates over posterior samples 
   # Args:
   #   coef: coefficient to be applied on the samples (e.g., "mean")
@@ -154,15 +167,10 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   } else if (coef == "quantile") {
     x <- aperm(x, length(dim(x)):1)
   }
-  if (to.array && length(dim(x)) == 2) {
-    x <- array(x, dim = c(dim(x), 1), 
-               dimnames = list(NULL, NULL, coef))
-  }
   x 
 }
 
-get_summary <- function(samples, probs = c(0.025, 0.975),
-                        robust = FALSE, keep_names = FALSE) {
+get_summary <- function(samples, probs = c(0.025, 0.975), robust = FALSE) {
   # summarizes parameter samples based on mean, sd, and quantiles
   # Args: 
   #   samples: a matrix or data.frame containing the samples to be summarized. 
@@ -178,35 +186,20 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
   } else {
     coefs <- c("mean", "sd", "quantile")
   }
-  if (length(dim(samples)) == 2L) {
-    out <- lapply(
+  .get_summary <- function(samples) {
+    do.call(cbind, lapply(
       coefs, get_estimate, samples = samples, 
       probs = probs, na.rm = TRUE
-    )
-    out <- do.call(cbind, out)
-    if (keep_names) {
-      rownames(out) <- colnames(samples)
-    } else {
-      rownames(out) <- seq_len(nrow(out))
-    }
+    ))
+  }
+  stopifnot(length(dim(samples)) %in% 2:3)
+  if (length(dim(samples)) == 2L) {
+    out <- .get_summary(samples)
+    rownames(out) <- colnames(samples)
   } else if (length(dim(samples)) == 3L) {
-    fun3dim <- function(i) {
-      do.call(cbind, lapply(
-        coefs, get_estimate, 
-        samples = samples[, , i, drop = FALSE], 
-        probs = probs, ra.rm = TRUE
-      ))
-    }
-    out <- abind(lapply(seq_len(dim(samples)[3]), fun3dim), along = 3)
-    if (keep_names) {
-      dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
-    } else {
-      dimnames(out)[c(1, 3)] <- list(
-        seq_len(nrow(out)), paste0("P(Y = ", seq_len(dim(out)[3]), ")")
-      )  
-    }
-  } else { 
-    stop("Dimension of 'samples' must be either 2 or 3.") 
+    out <- lapply(array2list(samples), .get_summary)
+    out <- abind(out, along = 3)
+    dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
   }
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
@@ -221,62 +214,82 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   #    a N x levels matrix containing relative frequencies of each level
   stopifnot(is.matrix(samples))
   out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
-    function(n) table(factor(samples[, n], levels = levels))))
+    function(n) table(factor(samples[, n], levels = levels))
+  ))
   # compute relative frequencies
   out <- out / sum(out[1, ])
-  rownames(out) <- seq_len(nrow(out))
+  rownames(out) <- colnames(samples)
   colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
   out
 }
 
 get_cov_matrix <- function(sd, cor = NULL) {
-  # compute covariance and correlation matrices based 
-  # on correlation and sd samples
+  # compute covariance matrices based on correlation and sd samples
   # Args:
   #   sd: samples of standard deviations
   #   cor: samples of correlations
-  # Returns: 
-  #   samples of covariance and correlation matrices
   sd <- as.matrix(sd)
   stopifnot(all(sd >= 0))
   nsamples <- nrow(sd)
-  nranef <- ncol(sd)
-  cor_matrix <- array(diag(1, nranef), dim = c(nranef, nranef, nsamples))
-  cor_matrix <- aperm(cor_matrix, perm = c(3, 1, 2))
-  cov_matrix <- cor_matrix
-  for (i in seq_len(nranef)) { 
-    cov_matrix[, i, i] <- sd[, i]^2
+  size <- ncol(sd)
+  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  out <- aperm(out, perm = c(3, 1, 2))
+  for (i in seq_len(size)) { 
+    out[, i, i] <- sd[, i]^2
   }
   if (length(cor)) {
     cor <- as.matrix(cor)
-    stopifnot(
-      ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
-      nrow(sd) == nrow(cor), min(cor) >= -1, max(cor) <= 1
-    )
+    stopifnot(nrow(sd) == nrow(cor))
+    stopifnot(min(cor) >= -1, max(cor) <= 1)
+    stopifnot(ncol(cor) == size * (size - 1) / 2)
     k <- 0 
-    for (i in 2:nranef) {
+    for (i in 2:size) {
       for (j in 1:(i-1)) {
         k = k + 1
-        cor_matrix[, j, i] <- cor_matrix[, i, j] <- cor[, k]
-        cov_matrix[, j, i] <- 
-          cov_matrix[, i, j] <- cor[, k] * sd[, i] * sd[, j]
+        out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
     }
   }
-  list(cor = cor_matrix, cov = cov_matrix)
+  out
 }
 
-get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = NULL) {
+get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
+  # compute correlation matrices based on correlation samples
+  # Args:
+  #   cor: samples of correlations
+  #   size: optional size of the desired correlation matrix
+  #     ignored is cor is specified
+  if (length(cor)) {
+    cor <- as.matrix(cor)
+    size <- - 1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
+    nsamples <- nrow(cor)
+  } 
+  stopifnot(is_wholenumber(size) && size > 1, nsamples > 0)
+  out <- array(diag(1, size), dim = c(size, size, nsamples))
+  out <- aperm(out, perm = c(3, 1, 2))
+  if (length(cor)) {
+    k <- 0 
+    for (i in 2:size) {
+      for (j in 1:(i-1)) {
+        k = k + 1
+        out[, j, i] <- out[, i, j] <- cor[, k]
+      }
+    }
+  }
+  out
+}
+
+get_cov_matrix_ar1 <- function(ar, sigma, nrows, se = NULL) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation samples
   #   sigma: standard deviation samples of the AR1 process
-  #   se2: optional square of user defined standard errors
+  #   se: optional user defined standard errors
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows AR1 covariance array (!)
   sigma <- as.matrix(sigma)
-  if (!length(se2)) se2 <- 0
+  se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
@@ -292,17 +305,17 @@ get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = NULL) {
   mat
 }
 
-get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = NULL) {
+get_cov_matrix_ma1 <- function(ma, sigma, nrows, se = NULL) {
   # compute the covariance matrix for an MA1 process
   # Args: 
   #   ma: MA1 autocorrelation samples
   #   sigma: standard deviation samples of the AR1 process
-  #   se2: optional square of user defined standard errors
+  #   se: optional user defined standard errors
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows MA1 covariance array (!)
   sigma <- as.matrix(sigma)
-  if (!length(se2)) se2 <- 0
+  se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
@@ -320,18 +333,18 @@ get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = NULL) {
   mat 
 }
 
-get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = NULL) {
+get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se = NULL) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation sample
   #   ma: MA1 autocorrelation sample
   #   sigma: standard deviation samples of the AR1 process
-  #   se2: optional square of user defined standard errors
+  #   se: optional user defined standard errors
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows ARMA1 covariance array (!)
   sigma <- as.matrix(sigma)
-  if (!length(se2)) se2 <- 0
+  se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
@@ -349,16 +362,17 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = NULL) {
   mat 
 }
 
-get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
+get_cov_matrix_ident <- function(sigma, nrows, se = 0) {
   # compute a variance matrix without including ARMA parameters
   # only used for ARMA covariance models when incl_autocor = FALSE
   # Args:
   #   sigma: standard deviation samples
-  #   se2: square of user defined standard errors (may be 0)
+  #   se: user defined standard errors (may be 0)
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows sigma array
   sigma <- as.matrix(sigma)
+  se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
@@ -368,88 +382,72 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_dpar <- function(x, i = NULL, apply_ilink = NULL) {
+get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   # get samples of an distributional parameter
   # Args:
   #   x: object to extract postarior samples from
   #   i: the current observation number
-  #      (used in predict and log_lik)
-  #   apply_ilink: should the inverse link function be applied?
+  #   ilink: should the inverse link function be applied?
   #     if NULL the value is chosen internally
+  # Returns:
+  #   If the parameter is predicted and i is NULL or 
+  #   length(i) > 1, an S x N matrix.
+  #   If the parameter it not predicted or length(i) == 1,
+  #   a vector of length S.
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  x <- draws$dpars[[dpar]]
+  stopifnot(!is.null(x))
   if (is.list(x)) {
     # compute samples of a predicted parameter
-    family <- x[["f"]]
-    x <- get_eta(x, i = i)
-    if (is.null(apply_ilink)) {
-      # apply links for distributional parameters only
-      # the main family link is applied later on by default
-      apply_ilink <- !nzchar(family$family)
+    if (!is.null(x$nlpars)) {
+      out <- nonlinear_predictor(x, i = i)
+    } else {
+      out <- linear_predictor(x, i = i)
     }
-    if (apply_ilink) {
-      x <- ilink(x, family$link)
+    if (is.null(ilink)) {
+      ilink <- apply_dpar_ilink(dpar, family = draws$f)
     }
+    if (ilink) {
+      out <- ilink(out, x$f$link)
+    }
+  } else if (!is.null(i) && isTRUE(ncol(x) > 1L)) {
+    out <- index_col(x, i)
   } else {
-    if (!is.null(i) && is.matrix(x) && ncol(x) > 1L) {
-      x <- x[, i, drop = FALSE]
+    out <- x
+  }
+  if (is.matrix(out) && ncol(out) == 1L) {
+    out <- as.vector(out)
+  }
+  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
+    # 'se' will be incorporated directly into 'sigma'
+    if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
+      out <- sqrt(get_se(draws, i = i)^2 + out^2)
+      # make sure not to add 'se' twice
+      attr(out, "se_added") <- TRUE
     }
-  }
-  if (is.null(i) && is.matrix(x) && ncol(x) == 1L) {
-    # for compatibility with fitted helper functions
-    x <- as.vector(x)
-  }
-  x
-}
-
-get_sigma <- function(x, data, i = NULL, dim = NULL) {
-  # get the residual standard devation of linear models
-  # Args: 
-  #    see get_dpar
-  #    dim: target dimension of output matrices (used in fitted)
-  stopifnot(is.atomic(x) || is.list(x))
-  out <- get_se(data = data, i = i, dim = dim)
-  if (!is.null(x)) {
-    out <- sqrt(out^2 + get_dpar(x, i = i)^2)
-  }
-  mult_disp(out, data = data, i = i, dim = dim)
-}
-
-get_shape <- function(x, data, i = NULL, dim = NULL) {
-  # get the shape parameter of gamma, weibull and negbinomial models
-  # Args: see get_dpar
-  stopifnot(is.atomic(x) || is.list(x))
-  x <- get_dpar(x, i = i)
-  mult_disp(x, data = data, i = i, dim = dim)
-}
-
-get_zi_hu <- function(draws, i = NULL, par = c("zi", "hu")) {
-  # convenience function to extract zi / hu parameters
-  # also works with deprecated models fitted with brms < 1.0.0 
-  # which were using multivariate syntax
-  # Args:
-  #   see get_dpar
-  #   par: parameter to extract; either 'zi' or 'hu'
-  par <- match.arg(par)
-  if (!is.null(draws$data$N_trait)) {
-    j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
-    out <- ilink(get_eta(draws$mu, j + draws$data$N_trait), "logit")
-  } else {
-    out <- get_dpar(draws[[par]], i = i)
+  } else if (dpar == "disc" && is.null(i) && is.matrix(out)) {
+    # 'disc' will be multiplied by a 3D array
+    out <- array(out, dim = c(dim(out), draws$data$ncat - 1))
   }
   out
 }
 
 get_theta <- function(draws, i = NULL) {
   # get the mixing proportions of mixture models
-  if (!is.null(draws[["theta"]])) {
-    theta <- draws[["theta"]]
+  stopifnot(is.brmsdraws(draws))
+  if ("theta" %in% names(draws$dpars)) {
+    # theta was not predicted; no need to call get_dpar
+    theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    families <- family_names(draws$f)
+    mix_family <- draws$f
+    families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      theta[[j]] <- get_dpar(draws[[paste0("theta", j)]], i = i)
+      draws$f <- mix_family$mix[[j]]
+      theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
-    theta <- do.call(abind, c(theta, along = 3))
+    theta <- abind(theta, along = 3)
     for (n in seq_len(dim(theta)[2])) {
       theta[, n, ] <- softmax(theta[, n, ])
     }
@@ -460,33 +458,72 @@ get_theta <- function(draws, i = NULL) {
   theta
 }
 
-get_disc <- function(draws, i = NULL, ncat = NULL) {
-  # convenience function to extract discrimination parameters
-  # Args:
-  #   see get_dpar 
-  #   ncat: number of response categories
-  if (!is.null(draws[["disc"]])) {
-    disc <- get_dpar(draws[["disc"]], i)
-    if (!is.null(dim(disc))) {
-      stopifnot(is.numeric(ncat))
-      disc <- array(disc, dim = c(dim(disc), ncat - 1))
+get_Mu <- function(draws, i = NULL) {
+  stopifnot(is.mvbrmsdraws(draws))
+  Mu <- draws$mvpars$Mu
+  if (is.null(Mu)) {
+    Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
+    if (length(i) == 1L) {
+      Mu <- do.call(cbind, Mu)
+    } else {
+      # keep correct dimension even if data has only 1 row
+      Mu <- lapply(Mu, as.matrix)
+      Mu <- do.call(abind, c(Mu, along = 3))
     }
   } else {
-    disc <- 1
+    # at this point we now that i is not NULL
+    Mu <- index_col(Mu, i)
   }
-  disc
+  Mu
 }
 
-get_se <- function(data, i = NULL, dim = NULL) {
+get_Sigma <- function(draws, i = NULL) {
+  stopifnot(is.mvbrmsdraws(draws))
+  Sigma <- draws$mvpars$Sigma
+  if (is.null(Sigma)) {
+    stopifnot(!is.null(draws$mvpars$rescor))
+    sigma <- lapply(draws$resps, get_dpar, "sigma", i = i)
+    is_matrix <- ulapply(sigma, is.matrix)
+    if (!any(is_matrix)) {
+      # happens if length(i) == 1 or if no sigma was predicted
+      sigma <- do.call(cbind, sigma)
+      Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
+    } else {
+      for (j in seq_along(sigma)) {
+        # bring all sigmas to the same dimension
+        if (!is_matrix[j]) {
+          sigma[[j]] <- array(sigma[[j]], dim = dim_mu(draws))
+        }
+      }
+      nsigma <- length(sigma)
+      sigma <- do.call(abind, c(sigma, along = 3))
+      Sigma <- array(dim = c(dim_mu(draws), nsigma, nsigma))
+      for (n in seq_len(ncol(Sigma))) {
+        Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], draws$mvpars$rescor)
+      }
+    }
+  } else {
+    # at this point we know that i is not NULL
+    ldim <- length(dim(Sigma))
+    stopifnot(ldim %in% 3:4)
+    if (ldim == 4L) {
+      Sigma <- index_col(Sigma, i)
+    }
+  }
+  Sigma
+}
+
+get_se <- function(draws, i = NULL) {
   # extract user-defined standard errors
   # Args: see get_dpar
-  se <- data[["se"]]
+  stopifnot(is.brmsdraws(draws))
+  se <- draws$data[["se"]]
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]
     } else {
-      stopifnot(!is.null(dim))
-      se <- matrix(se, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+      dim <- c(draws$nsamples, draws$nobs)
+      se <- as_draws_matrix(se, dim = dim)
     }
   } else {
     se <- 0
@@ -494,64 +531,82 @@ get_se <- function(data, i = NULL, dim = NULL) {
   se
 }
 
-mult_disp <- function(x, data, i = NULL, dim = NULL) {
-  # multiply existing samples by 'disp' data
-  # Args: see get_dpar
-  if (!is.null(data$disp)) {
-    if (!is.null(i)) {
-      x <- x * data$disp[i]
+index_col <- function(x, i) {
+  # savely index columns without dropping other dimensions
+  # Args:
+  #   x: an array
+  #   i: colum index
+  ldim <- length(dim(x))
+  stopifnot(ldim %in% 2:4)
+  if (ldim == 2L) {
+    out <- x[, i]
+  } else {
+    if (ldim == 3L) {
+      out <- x[, i, ]
     } else {
-      # results in a nsamples x Nobs matrix
-      if (is.matrix(x)) {
-        stopifnot(!is.null(dim))
-        disp <- matrix(disp, nrow = dim[1], ncol = dim[2], byrow = TRUE)
-        x <- x * disp
-      } else {
-        disp <- matrix(data$disp, nrow = 1) 
-        if (length(x) == 1L) {
-          x <- x * disp
-        } else {
-          x <- x %*% disp 
-        }
-      }
+      out <- x[, i, , ]
+    }
+    if (length(i) == 1L && dim(out) != dim(x)[-2]) {
+      # some non-column dims were unintentionally dropped
+      dim(out) <- dim(x)[-2]
     }
   }
-  x
+  out
+}
+
+apply_dpar_ilink <- function(dpar, family) {
+  # helper function of get_dpar to decide if
+  # the link function should be applied by default
+  # Returns:
+  #   TRUE or FALSE
+  if (is.mixfamily(family)) {
+    dpar <- dpar_class(dpar) 
+  }
+  no_link_family <- family$family %in% 
+    c("weibull", "cumulative", "sratio", "cratio", "acat")
+  !(no_link_family && dpar == "mu" || family$family %in% "categorical")
 }
 
 choose_N <- function(draws) {
   # choose N to be used in predict and log_lik
-  stopifnot(is.list(draws))
-  if (!is.null(draws$data$N_trait)) {
-    N <- draws$data$N_trait
-  } else if (!is.null(draws$data$N_tg)) {
-    N <- draws$data$N_tg
-  } else {
-    N <- draws$data$N
-  }
-  N
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
 }
 
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
-  family <- family(x)
-  nresp <- length(parse_bf(x$formula)$response)
-  if (is_old_lognormal(family, nresp = nresp, version = x$version$brms)) {
-    family <- lognormal()
-  } else if (is_linear(family) && nresp > 1L) {
-    family$family <- paste0(family$family, "_mv")
-  } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
-    family$family <- paste0(family$family, "_cov")
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  family <- x$family
+  if (use_cov(x$autocor)) {
+    family$fun <- paste0(family$family, "_cov")
   } else if (is.cor_sar(x$autocor)) {
     if (identical(x$autocor$type, "lag")) {
-      family$family <- paste0(family$family, "_lagsar")
+      family$fun <- paste0(family$family, "_lagsar")
     } else if (identical(x$autocor$type, "error")) {
-      family$family <- paste0(family$family, "_errorsar")
+      family$fun <- paste0(family$family, "_errorsar")
     }
   } else if (is.cor_fixed(x$autocor)) {
-    family$family <- paste0(family$family, "_fixed")
+    family$fun <- paste0(family$family, "_fixed")
+  } else {
+    family$fun <- family$family
   }
   family
+}
+
+validate_resp <- function(resp, valid_resps, multiple = TRUE) {
+  # validate the 'resp' argument of 'predict' and related methods
+  if (length(resp)) {
+    if (!all(resp %in% valid_resps)) {
+      stop2("Invalid argument 'resp'. Valid response ",
+            "variables are: ", collapse_comma(valid_resps))
+    }
+    if (!multiple) {
+      resp <- as_one_character(resp)
+    }
+  } else {
+    resp <- valid_resps
+  }
+  resp
 }
 
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
@@ -565,25 +620,16 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   #   eta with possibly reordered columns
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
   if (!is.null(old_order) && !sort) {
-    N <- length(old_order)
-    if (ncol(eta) %% N != 0) {
-      # for compatibility with MV models fitted before brms 1.0.0
-      stopifnot(N %% ncol(eta) == 0)
-      old_order <- old_order[seq_len(ncol(eta))]
-    }
-    if (N < ncol(eta)) {
-      # should occur for multivariate models only
-      nresp <- ncol(eta) / N
-      old_order <- rep(old_order, nresp)
-      old_order <- old_order + rep(0:(nresp - 1) * N, each = N)
-    }
-    if (length(dim(eta)) == 3L) {
-      eta <- eta[, old_order, , drop = FALSE]   
+    if (isTRUE(length(old_order) == ncol(eta))) {
+      if (length(dim(eta)) == 3L) {
+        eta <- eta[, old_order, , drop = FALSE]   
+      } else {
+        eta <- eta[, old_order, drop = FALSE]   
+      }
     } else {
-      eta <- eta[, old_order, drop = FALSE]   
+      warning2("Cannot recover the original observation order.")
     }
   }
-  colnames(eta) <- NULL
   eta
 }
 

@@ -8,8 +8,8 @@
 \usage{
 \method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, subset = NULL,
-  nsamples = NULL, pointwise = FALSE, nug = NULL, ...)
+  new_objects = list(), incl_autocor = TRUE, resp = NULL, subset = NULL,
+  nsamples = NULL, pointwise = FALSE, nug = NULL, combine = TRUE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
@@ -52,6 +52,9 @@ parameters should be included in the predictions. Defaults to
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
 
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
+
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
@@ -75,13 +78,19 @@ process might not be positive definite. Adding a very small
 number to the matrix's diagonal often solves this problem. 
 If \code{NULL} (the default), \code{nug} is chosen internally.}
 
+\item{combine}{Only relevant in multivariate models.
+Indicates if the log-likelihoods of the submodels should
+be combined per observation (i.e. added together; the default) 
+or if the log-likelihoods should be returned separetely.}
+
 \item{...}{Currently ignored}
 }
 \value{
-Usually, an S x N matrix containing 
- the pointwise log-likelihood samples, 
- where S is the number of samples and N is the number 
- of observations in the data. 
+Usually, an S x N matrix containing the pointwise log-likelihood
+ samples, where S is the number of samples and N is the number 
+ of observations in the data. For multivariate models and if 
+ \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+ where R is the number of response variables.
  If \code{pointwise = TRUE}, the output is a function
  with a \code{draws} attribute containing all relevant
  data and posterior samples.
