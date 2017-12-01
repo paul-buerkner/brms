@@ -468,8 +468,7 @@ predictor_autocor <- function(eta, draws, i) {
     }
     eta <- .predictor_arma(
       eta, ar = draws$ac$ar, ma = draws$ac$ma, 
-      Y = draws$ac$Y, J_lag = draws$ac$J_lag, 
-      link = draws$f$link
+      Y = draws$ac$Y, J_lag = draws$ac$J_lag
     )
   }
   if (!is.null(draws$ac$rcar)) {
@@ -482,8 +481,7 @@ predictor_autocor <- function(eta, draws, i) {
 }
 
 .predictor_arma <- function(eta, ar = NULL, ma = NULL, 
-                            Y = NULL, J_lag = NULL, 
-                            link = "identity") {
+                            Y = NULL, J_lag = NULL) {
   # compute eta for ARMA effects
   # TODO: use C++ for this function
   # Args:
@@ -503,7 +501,6 @@ predictor_autocor <- function(eta, draws, i) {
   Kma <- ifelse(is.null(ma), 0, ncol(ma))
   K <- max(J_lag, 1)
   Ks <- 1:K
-  Y <- link(Y, link)
   N <- length(Y)
   E <- array(0, dim = c(S, K, K + 1))
   e <- matrix(0, nrow = S, ncol = K)
