@@ -81,6 +81,22 @@ get_all_effects.btnl <- function(x, ...) {
   unique(c(covars_comb, nl_effects))
 }
 
+get_int_vars <- function(x, ...) {
+  # extract names of variables treated as integers
+  UseMethod("get_int_vars")
+}
+
+#' @export
+get_int_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_int_vars))
+}
+
+#' @export
+get_int_vars.brmsterms <- function(x, ...) {
+  out <- c(rmNULL(x$adforms[c("trials", "cat")]), get_effect(x, "mo"))
+  unique(ulapply(out, all.vars))
+}
+
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   # prepare conditions for use in marginal_effects
@@ -105,21 +121,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "Please convert your variables to factors beforehand."
     )
   }
-  re <- get_re(bterms)
-  req_vars <- c(
-    lapply(get_effect(bterms, "fe"), rhs), 
-    lapply(get_effect(bterms, "mo"), rhs),
-    lapply(get_effect(bterms, "me"), rhs),
-    lapply(get_effect(bterms, "sm"), rhs),
-    lapply(get_effect(bterms, "cs"), rhs),
-    lapply(get_effect(bterms, "gp"), rhs),
-    lapply(get_effect(bterms, "offset"), rhs),
-    re$form, lapply(re$gcall, "[[", "weightvars"),
-    lapply(bterms$dpars, "[[", "covars"),
-    bterms$adforms[c("se", "disp", "trials", "cat")],
-    str2formula(get_autocor_vars(bterms, "time"))
-  )
-  req_vars <- unique(ulapply(req_vars, all.vars))
+  req_vars <- all.vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
@@ -146,9 +148,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
   }
   # use default values for unspecified variables
-  int_vars <- rmNULL(bterms$adforms[c("trials", "cat")])
-  int_vars <- c(int_vars, get_effect(bterms, "mo"))
-  int_vars <- unique(ulapply(int_vars, all.vars))
+  int_vars <- get_int_vars(bterms)
   for (v in req_vars) {
     if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
