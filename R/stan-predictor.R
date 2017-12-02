@@ -216,7 +216,7 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
       "  // multivariate linear predictor matrix \n",
       "  vector[nresp] Mu[N]; \n"
     )
-    str_add(out$modelC3) <- paste0(
+    str_add(out$modelC4) <- paste0(
       "    Mu[n] = ", stan_vector(paste0("mu_", resp, "[n]")), ";\n"
     )
     str_add(out$data) <- paste0(
