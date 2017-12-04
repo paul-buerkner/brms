@@ -135,7 +135,7 @@ For this distribution, we have $P(Y < g(\eta)) = p$. Thus, quantile regression c
 
 The density of the **Beta** family for $y_i \in (0,1)$ is given by
 $$
-f(y_i) = \frac{y_i^{\mu_i \phi - 1} (1-y_i)^{(1-\mu_i) \phi)-1}}{B(\mu_i \phi, (1-\mu_i) \phi)}
+f(y_i) = \frac{y_i^{\mu_i \phi - 1} (1-y_i)^{(1-\mu_i) \phi-1}}{B(\mu_i \phi, (1-\mu_i) \phi)}
 $$
 where $B$ is the beta function and $\phi$ is a positive precision parameter.
 
