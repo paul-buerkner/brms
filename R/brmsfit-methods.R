@@ -1159,10 +1159,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
           collapse_comma(valid_ppc_types))
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
-  # validate arguments 'resp',  'group', and 'x'
+  # validate arguments 'resp', 'group', and 'x'
   object <- restructure(object)
   stopifnot_resp(object, resp)
-  valid_groups <- get_valid_groups(object)
+  valid_groups <- get_cat_vars(object)
   if (!is.null(group) && !group %in% valid_groups) {
     stop2("Group '", group, "' is not a valid grouping factor. ",
           "Valid groups are: \n", collapse_comma(valid_groups))

@@ -112,12 +112,12 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
 #' Compare Information Criteria of Different Models
 #'
 #' Compare information criteria of different models fitted
-#' with \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#' with \code{\link{WAIC}} or \code{\link{LOO}}.
 #' 
 #' @param ... At least two objects returned by 
-#'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#'   \code{\link{WAIC}} or \code{\link{LOO}}.
 #'   Alternatively, \code{brmsfit} objects with information 
-#'   criteria precomputed via \code{\link[brms:add_ic]{add_ic}}
+#'   criteria precomputed via \code{\link{add_ic}}
 #'   may be passed, as well.
 #' @param x A \code{list} containing the same types of objects as
 #'   can be passed via \code{...}.
@@ -130,9 +130,9 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
 #' @details For more details see \code{\link[loo:compare]{compare}}.
 #' 
 #' @seealso 
-#'   \code{\link[brms:WAIC]{WAIC}}, 
-#'   \code{\link[brms:LOO]{LOO}},
-#'   \code{\link[brms:add_ic]{add_ic}},
+#'   \code{\link{WAIC}}, 
+#'   \code{\link{LOO}},
+#'   \code{\link{add_ic}},
 #'   \code{\link[loo:compare]{compare}}
 #'   
 #' @examples 
@@ -291,10 +291,7 @@ set_pointwise <- function(x, pointwise = NULL, newdata = NULL,
   # Returns:
   #   TRUE or FALSE
   if (!is.null(pointwise)) {
-    pointwise <- as.logical(pointwise)
-    if (length(pointwise) != 1L || anyNA(pointwise)) {
-      stop2("Argument 'pointwise' must be either TRUE or FALSE.")
-    }
+    pointwise <- as_one_logical(pointwise)
   } else {
     nsamples <- nsamples(x, subset = subset)
     if (is.data.frame(newdata)) {
@@ -306,8 +303,9 @@ set_pointwise <- function(x, pointwise = NULL, newdata = NULL,
     if (pointwise) {
       message(
         "Switching to pointwise evaluation to reduce ",  
-        "RAM requirements.\nThis will likely increase ",
-        "computation time."
+        "RAM requirements. This will likely increase ",
+        "computation time. You may overwrite the default ",
+        "behavior with the 'pointwise' argument."
       )
     }
   }
@@ -350,8 +348,10 @@ match_response <- function(models) {
       out <- TRUE
     } else {
       out <- FALSE
-      warning2("Model comparisons are likely invalid as the response ", 
-               "parts of at least two models do not match.")
+      warning2(
+        "Model comparisons are likely invalid as the response ", 
+        "parts of at least two models do not match."
+      )
     }
   }
   invisible(out)

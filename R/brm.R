@@ -1,6 +1,6 @@
-#' Fit Bayesian Generalized (Non-)Linear Multilevel Models
+#' Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models
 #' 
-#' Fit Bayesian generalized (non-)linear multilevel models 
+#' Fit Bayesian generalized (non-)linear multivariate multilevel models 
 #' using Stan for full Bayesian inference. A wide range of distributions 
 #' and link functions are supported, allowing users to fit -- among others -- 
 #' linear, robust linear, count data, survival, response times, ordinal, 
@@ -8,7 +8,7 @@
 #' multilevel context. Further modeling options include non-linear and 
 #' smooth terms, auto-correlation structures, censored data, meta-analytic 
 #' standard errors, and quite a few more. In addition, all parameters of the 
-#' response distribution can be predicted in order to perform distributional 
+#' response distributions can be predicted in order to perform distributional 
 #' regression. Prior specifications are flexible and explicitly encourage 
 #' users to apply prior distributions that actually reflect their beliefs.
 #' In addition, model fit can easily be assessed and compared with
@@ -36,8 +36,7 @@
 #'   In multivariate models, \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link{set_prior}} or related functions 
-#'   and combined using the \code{c} method. A single \code{brmsprior} 
-#'   object may be passed without \code{c()} surrounding it. 
+#'   and combined using the \code{c} method or the \code{+} operator.
 #'   See also  \code{\link{get_prior}} for more help.
 #' @param autocor An optional \code{\link{cor_brms}} object describing 
 #'   the correlation structure within the response variable 
@@ -48,7 +47,7 @@
 #'   In multivariate models, \code{autocor} might also be a list 
 #'   of autocorrelation structures.
 #' @param sparse Logical; indicates whether the population-level 
-#'   design matrix should be treated as sparse (defaults to \code{FALSE}). 
+#'   design matrices should be treated as sparse (defaults to \code{FALSE}). 
 #'   For design matrices with many zeros, this can considerably 
 #'   reduce required memory. Sampling speed is currently not 
 #'   improved or even slightly decreased.
@@ -61,9 +60,8 @@
 #'   among others to model pedigrees and phylogenetic effects.
 #'   See \code{vignette("brms_phylogenetics")} for more details.
 #' @param save_ranef A flag to indicate if group-level effects 
-#'   for each level of the grouping factor(s) 
-#'   should be saved (default is \code{TRUE}). 
-#'   Set to \code{FALSE} to save memory. 
+#'   for each level of the grouping factor(s) should be saved 
+#'   (default is \code{TRUE}). Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
 #' @param save_mevars A flag to indicate if samples
 #'   of noise-free variables obtained by using \code{me} terms
@@ -104,7 +102,7 @@
 #'   If inits is \code{"random"} (the default), 
 #'   Stan will randomly generate initial values for parameters. 
 #'   If it is \code{"0"}, all parameters are initiliazed to zero. 
-#'   This option is recommended for \code{exponential} and \code{weibull} models, 
+#'   This option is sometimes usefull for certain families, 
 #'   as it happens that default (\code{"random"}) inits cause samples 
 #'   to be essentially constant. 
 #'   Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
@@ -119,7 +117,7 @@
 #'   be larger than \code{iter} and the default is \code{iter/2}.
 #' @param thin Thinning rate. Must be a positive integer. 
 #'   Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
-#' @param cores	Number of cores to use when executing the chains in parallel, 
+#' @param cores Number of cores to use when executing the chains in parallel, 
 #'   which defaults to 1 but we recommend setting the \code{mc.cores} option 
 #'   to be as many processors as the hardware and RAM allow (up to the number of chains).
 #'   For non-Windows OS in non-interactive \R sessions, forking is used

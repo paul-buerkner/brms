@@ -35,8 +35,7 @@ In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions 
-and combined using the \code{c} method. A single \code{brmsprior} 
-object may be passed without \code{c()} surrounding it. 
+and combined using the \code{c} method or the \code{+} operator.
 See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 

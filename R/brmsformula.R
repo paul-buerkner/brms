@@ -74,9 +74,8 @@
 #'   accross grouping variables specified in \code{group}. We
 #'   call them 'group-level' effects or (adopting frequentist 
 #'   vocabulary) 'random' effects, although the latter name is misleading
-#'   in a Bayesian context.
-#'   For more details type \code{vignette("brms_overview")} and
-#'   \code{vignette("brms_multilevel")}. 
+#'   in a Bayesian context. For more details type 
+#'   \code{vignette("brms_overview")} and \code{vignette("brms_multilevel")}. 
 #'   
 #'   \bold{Group-level terms}
 #'   
@@ -102,8 +101,8 @@
 #'   
 #'   \bold{Special predictor terms}
 #'   
-#'   Smoothing terms can modeled using the \code{\link[brms:s]{s}}
-#'   and \code{\link[brms:t2]{t2}} functions in the \code{pterms} part 
+#'   Smoothing terms can modeled using the \code{\link{s}}
+#'   and \code{\link{t2}} functions in the \code{pterms} part 
 #'   of the model formula. This allows to fit generalized additive mixed
 #'   models (GAMMs) with \pkg{brms}. The implementation is similar to that 
 #'   used in the \pkg{gamm4} package. For more details on this model class 
@@ -170,7 +169,7 @@
 #'   information on the response variable. \code{fun} can be replaced with 
 #'   either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
 #'   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
-#'   (see also \code{\link[brms:addition-terms]{addition-terms}}). 
+#'   (see also \code{\link{addition-terms}}). 
 #'   
 #'   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is 
 #'   possible to specify standard errors of the observations, thus allowing 
@@ -267,7 +266,7 @@
 #'   that you are effectively defining a prior on the intercept 
 #'   of the centered design matrix not on the real intercept.
 #'   For more details on setting priors on population-level intercepts,
-#'   see \code{\link[brms:set_prior]{set_prior}}.
+#'   see \code{\link{set_prior}}.
 #'   
 #'   This behavior can be avoided by using the reserved 
 #'   (and internally generated) variable \code{intercept}. 
@@ -310,7 +309,7 @@
 #'   
 #'   Non-linear models may not be uniquely identified and / or show bad convergence.
 #'   For this reason it is mandatory to specify priors on the non-linear parameters.
-#'   For instructions on how to do that, see \code{\link[brms:set_prior]{set_prior}}.
+#'   For instructions on how to do that, see \code{\link{set_prior}}.
 #'   For some examples of non-linear models, see \code{vignette("brms_nonlinear")}.
 #'   
 #'   \bold{Formula syntax for predicting distributional parameters}
@@ -365,8 +364,7 @@
 #'   on their original scale, directly. However, this is much more likely to lead 
 #'   to problems in the model fitting, if the parameter actually has a restrcited range.
 #'   
-#'   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
-#'   valid link functions.
+#'   See also \code{\link{brmsfamily}} for an overview of valid link functions.
 #'   
 #'   \bold{Formula syntax for mixture models}
 #'   
@@ -403,7 +401,7 @@
 #'   probability vector.
 #'   
 #'   For more information on mixture models, see
-#'   the documentation of \code{\link[brms:mixture]{mixture}}.
+#'   the documentation of \code{\link{mixture}}.
 #'   
 #'   \bold{Formula syntax for multivariate models}
 #'   
@@ -683,7 +681,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' bf(y1 ~ x + (1|g)) + 
 #'   bf(y2 ~ z) +
 #'   set_rescor(TRUE)
-#' 
+NULL
+
+#' @rdname brmsformula-helpers
 #' @export
 nlf <- function(formula, ..., flist = NULL, dpar = NULL, resp = NULL) {
   formula <- as.formula(formula)

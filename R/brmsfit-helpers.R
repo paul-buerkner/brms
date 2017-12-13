@@ -24,14 +24,6 @@ stopifnot_resp <- function(x, resp = NULL) {
   invisible(NULL)
 }
 
-get_all_group_vars <- function(x) {
-  # extract names of all grouping variables
-  if (is.brmsfit(x)) {
-    x <- x$ranef
-  }
-  unique(ulapply(x$gcall, "[[", "groups"))
-}
-
 name_model <- function(family) {
   # create the name of the fitted stan model
   # Args:
@@ -49,8 +41,6 @@ link <- function(x, link) {
   # Args:
   #   x: An arrary of arbitrary dimension
   #   link: a character string defining the link
-  # Returns:
-  #   an array of dimension dim(x) on which the link function was applied
   switch(link, 
     "identity" = x, 
     "log" = log(x), 
@@ -74,8 +64,6 @@ ilink <- function(x, link) {
   # Args:
   #   x: An arrary of arbitrary dimension
   #   link: a character string defining the link
-  # Returns:
-  #   an array of dimension dim(x) on which the inverse link function was applied
   switch(link, 
     "identity" = x, 
     "log" = exp(x),
@@ -121,10 +109,12 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
       for (j in 1:(i-1)) {
         if (brackets) {
           cornames <- c(cornames, 
-            paste0(type, "(", names[j], "," , names[i], ")"))
+            paste0(type, "(", names[j], "," , names[i], ")")
+          )
         } else {
           cornames <- c(cornames, 
-            paste0(type, sep, names[j], sep, names[i]))
+            paste0(type, sep, names[j], sep, names[i])
+          )
         }
       }
     }
@@ -132,14 +122,23 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_valid_groups <- function(x) {
-  # extract names of valid grouping variables or factors
+get_group_vars <- function(x) {
+  # extract names of grouping variables in the model
+  if (is.brmsfit(x)) {
+    x <- x$ranef
+  }
+  stopifnot(is.data.frame(x))
+  unique(ulapply(x$gcall, "[[", "groups"))
+}
+
+get_cat_vars <- function(x) {
+  # extract names of categorical variables in the model
   stopifnot(is.brmsfit(x))
   like_factor <- sapply(model.frame(x), is_like_factor)
   valid_groups <- c(
     names(model.frame(x))[like_factor],
-    parse_time(x$autocor$formula)$group,
-    x$ranef$group
+    get_autocor_vars(x, var = "group"),
+    get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])
 }

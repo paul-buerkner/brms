@@ -2,7 +2,7 @@
 % Please edit documentation in R/brm.R
 \name{brm}
 \alias{brm}
-\title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
+\title{Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models}
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   cov_ranef = NULL, sample_prior = c("no", "yes", "only"), sparse = FALSE,
@@ -11,7 +11,7 @@ brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
   cores = getOption("mc.cores", 1L), control = NULL,
   algorithm = c("sampling", "meanfield", "fullrank"),
-  future = getOption("future", FALSE), silent = TRUE, seed = 12345,
+  future = getOption("future", FALSE), silent = TRUE, seed = NA,
   save_model = NULL, save_dso = TRUE, ...)
 }
 \arguments{
@@ -40,8 +40,7 @@ In multivariate models, \code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions 
-and combined using the \code{c} method. A single \code{brmsprior} 
-object may be passed without \code{c()} surrounding it. 
+and combined using the \code{c} method or the \code{+} operator.
 See also  \code{\link{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
@@ -71,7 +70,7 @@ the priors ignoring the likelihood. In this case,
 all parameters must have proper priors.}
 
 \item{sparse}{Logical; indicates whether the population-level 
-design matrix should be treated as sparse (defaults to \code{FALSE}). 
+design matrices should be treated as sparse (defaults to \code{FALSE}). 
 For design matrices with many zeros, this can considerably 
 reduce required memory. Sampling speed is currently not 
 improved or even slightly decreased.}
@@ -96,9 +95,8 @@ It is not recommended to use this argument directly, but to call
 the \code{\link[brms:update.brmsfit]{update}} method, instead.}
 
 \item{save_ranef}{A flag to indicate if group-level effects 
-for each level of the grouping factor(s) 
-should be saved (default is \code{TRUE}). 
-Set to \code{FALSE} to save memory. 
+for each level of the grouping factor(s) should be saved 
+(default is \code{TRUE}). Set to \code{FALSE} to save memory. 
 The argument has no impact on the model fitting itself.}
 
 \item{save_mevars}{A flag to indicate if samples
@@ -119,7 +117,7 @@ is required in order to apply the methods \code{bridge_sampler},
 If inits is \code{"random"} (the default), 
 Stan will randomly generate initial values for parameters. 
 If it is \code{"0"}, all parameters are initiliazed to zero. 
-This option is recommended for \code{exponential} and \code{weibull} models, 
+This option is sometimes usefull for certain families, 
 as it happens that default (\code{"random"}) inits cause samples 
 to be essentially constant. 
 Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
@@ -167,13 +165,9 @@ informational messages of compiler and sampler are suppressed.
 The actual sampling progress is still printed. 
 Set \code{refresh = 0} to turn this off as well.}
 
-\item{seed}{Used by \code{set.seed} to make results reproducable.
-Be aware that \code{brm} resets the seed to the value specified
-in \code{seed} (default: \code{12345}) every time it is run.
-If you want to use different seeds per run, use, for instance,
-\code{seed = sample(1e+7, size = 1)}. Be aware that generally, 
-the seed also affects subsequently called functions (such as 
-\code{predict}), which make use of the random number generator of \R.}
+\item{seed}{The seed for random number generation to make results
+reproducible. If \code{NA} (the default), \pkg{Stan} will set
+the seed randomly.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is
@@ -195,7 +189,7 @@ An object of class \code{brmsfit}, which contains the posterior samples along
   Use \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
-Fit Bayesian generalized (non-)linear multilevel models 
+Fit Bayesian generalized (non-)linear multivariate multilevel models 
 using Stan for full Bayesian inference. A wide range of distributions 
 and link functions are supported, allowing users to fit -- among others -- 
 linear, robust linear, count data, survival, response times, ordinal, 
@@ -203,7 +197,7 @@ zero-inflated, hurdle, and even self-defined mixture models all in a
 multilevel context. Further modeling options include non-linear and 
 smooth terms, auto-correlation structures, censored data, meta-analytic 
 standard errors, and quite a few more. In addition, all parameters of the 
-response distribution can be predicted in order to perform distributional 
+response distributions can be predicted in order to perform distributional 
 regression. Prior specifications are flexible and explicitly encourage 
 users to apply prior distributions that actually reflect their beliefs.
 In addition, model fit can easily be assessed and compared with

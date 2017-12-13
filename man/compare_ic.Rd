@@ -8,9 +8,9 @@ compare_ic(..., x = NULL, ic = c("loo", "waic"))
 }
 \arguments{
 \item{...}{At least two objects returned by 
-\code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+\code{\link{WAIC}} or \code{\link{LOO}}.
 Alternatively, \code{brmsfit} objects with information 
-criteria precomputed via \code{\link[brms:add_ic]{add_ic}}
+criteria precomputed via \code{\link{add_ic}}
 may be passed, as well.}
 
 \item{x}{A \code{list} containing the same types of objects as
@@ -25,7 +25,7 @@ An object of class \code{iclist}.
 }
 \description{
 Compare information criteria of different models fitted
-with \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+with \code{\link{WAIC}} or \code{\link{LOO}}.
 }
 \details{
 For more details see \code{\link[loo:compare]{compare}}.
@@ -48,8 +48,8 @@ compare_ic(w1, w2)
 
 }
 \seealso{
-\code{\link[brms:WAIC]{WAIC}}, 
-  \code{\link[brms:LOO]{LOO}},
-  \code{\link[brms:add_ic]{add_ic}},
+\code{\link{WAIC}}, 
+  \code{\link{LOO}},
+  \code{\link{add_ic}},
   \code{\link[loo:compare]{compare}}
 }

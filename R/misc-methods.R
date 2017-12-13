@@ -49,8 +49,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
     if (nrow(x$cor_pars)) {
       cat("Correlation Structures:\n")
       # TODO: better printing for correlation structures?
-      # print(x$autocor) 
-      # cat("\n")
       print_format(x$cor_pars, digits)
       cat("\n")
     }

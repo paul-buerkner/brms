@@ -1143,13 +1143,33 @@ get_autocor_vars <- function(x, ...) {
 }
 
 #' @export
-get_autocor_vars.mvbrmsterms <- function(x, ...) {
-  unique(ulapply(x$terms, get_autocor_vars, ...))
+get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
+  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
 }
 
 #' @export
 get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
   if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
+}
+
+#' @export
+get_autocor_vars.brmsformula <- function(x, ...) {
+  get_autocor_vars(x$autocor, ...)
+}
+
+#' @export
+get_autocor_vars.mvbrmsformula <- function(x, ...) {
+  unique(ulapply(x$forms, get_autocor_vars, ...))
+}
+
+#' @export
+get_autocor_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_autocor_vars, ...))
+}
+
+#' @export
+get_autocor_vars.brmsfit <- function(x, ...) {
+  get_autocor_vars(x$formula, ...)
 }
 
 get_bounds <- function(formula, data = NULL) {

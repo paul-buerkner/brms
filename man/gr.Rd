@@ -29,5 +29,5 @@ WAIC(fit1, fit2)
 
 }
 \seealso{
-\code{\link[brms:brmsformula]{brmsformula}}
+\code{\link{brmsformula}}
 }

@@ -233,7 +233,7 @@ validate_newdata <- function(
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
   new_ranef <- tidy_ranef(bterms, data = mf)
-  group_vars <- get_all_group_vars(new_ranef)
+  group_vars <- get_group_vars(new_ranef)
   group_vars <- union(group_vars, get_autocor_vars(bterms, "group"))
   if (allow_new_levels && length(group_vars)) {
     # grouping factors do not need to be specified 
@@ -245,7 +245,7 @@ validate_newdata <- function(
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
   if (is.null(all_group_vars)) {
-    all_group_vars <- get_all_group_vars(fit) 
+    all_group_vars <- get_group_vars(fit) 
   }
   dont_check <- c(all_group_vars, cens_vars)
   dont_check <- names(mf) %in% dont_check

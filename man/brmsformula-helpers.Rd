@@ -2,11 +2,12 @@
 % Please edit documentation in R/brmsformula.R
 \name{brmsformula-helpers}
 \alias{brmsformula-helpers}
-\alias{nlf}
 \alias{bf-helpers}
+\alias{nlf}
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
+\alias{nlf}
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
@@ -104,7 +105,6 @@ bf(y ~ a * inv_logit(x * b)) +
 bf(y1 ~ x + (1|g)) + 
   bf(y2 ~ z) +
   set_rescor(TRUE)
-
 }
 \seealso{
 \code{\link{brmsformula}}, \code{\link{mvbrmsformula}}

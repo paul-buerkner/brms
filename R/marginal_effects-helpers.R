@@ -284,7 +284,7 @@ marginal_effects_internal.brmsterms <- function(
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))
   if (is_categorical(x$family)) {
-    stop2("'marginal_effects' is not yet implemented for categorical models.")
+    stop2("'marginal_effects' is not implemented for categorical models.")
   } else if (is_ordinal(x$family)) {
     warning2(
       "Predictions are treated as continuous variables ",

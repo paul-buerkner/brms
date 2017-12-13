@@ -33,11 +33,11 @@
 #'   called in formulas passed to the \pkg{brms} package.
 #'   Within formulas, the \code{resp_} prefix may be omitted.
 #'   More information is given in the 'Details' section
-#'   of \code{\link[brms:brmsformula]{brmsformula}}.
+#'   of \code{\link{brmsformula}}.
 #'   
 #' @seealso 
-#'   \code{\link[brms:brm]{brm}}, 
-#'   \code{\link[brms:brmsformula]{brmsformula}}   
+#'   \code{\link{brm}}, 
+#'   \code{\link{brmsformula}}   
 #'  
 #' @examples 
 #' \dontrun{
@@ -211,7 +211,7 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 #' @details The function defined here are just simple wrappers
 #'  of the respective functions of the \pkg{mgcv} package.
 #'  
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}},
+#' @seealso \code{\link{brmsformula}},
 #'   \code{\link[mgcv:s]{mgcv::s}}, \code{\link[mgcv:t2]{mgcv::t2}}
 #'  
 #' @examples
@@ -254,7 +254,7 @@ t2 <- function(...) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #'   
 #' @examples 
 #' \dontrun{
@@ -302,7 +302,7 @@ me <- function(x, sdx = NULL) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #'   
 #' @examples   
 #' \dontrun{
@@ -337,7 +337,7 @@ cse <- function(expr) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #'   
 #' @examples   
 #' \dontrun{
@@ -492,7 +492,7 @@ monotonic <- function(x) {
 #' plot(marginal_effects(fit4), points = TRUE)
 #' }
 #' 
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
   cov <- match.arg(cov, choices = c("exp_quad"))
@@ -514,7 +514,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' 
 #' @param ... One or more terms containing grouping factors.
 #' 
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #' 
 #' @examples 
 #' \dontrun{
@@ -557,7 +557,7 @@ gr <- function(...) {
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
 #'  
-#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @seealso \code{\link{brmsformula}}
 #'  
 #' @examples 
 #' \dontrun{

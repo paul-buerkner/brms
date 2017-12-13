@@ -63,7 +63,7 @@ These functions are almost solely useful when
   called in formulas passed to the \pkg{brms} package.
   Within formulas, the \code{resp_} prefix may be omitted.
   More information is given in the 'Details' section
-  of \code{\link[brms:brmsformula]{brmsformula}}.
+  of \code{\link{brmsformula}}.
 }
 \examples{
 \dontrun{
@@ -100,6 +100,6 @@ summary(fit4)
   
 }
 \seealso{
-\code{\link[brms:brm]{brm}}, 
-  \code{\link[brms:brmsformula]{brmsformula}}
+\code{\link{brm}}, 
+  \code{\link{brmsformula}}
 }

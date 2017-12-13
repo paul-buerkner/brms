@@ -42,6 +42,6 @@ plot(marginal_smooths(fit2), ask = FALSE)
 
 }
 \seealso{
-\code{\link[brms:brmsformula]{brmsformula}},
+\code{\link{brmsformula}},
   \code{\link[mgcv:s]{mgcv::s}}, \code{\link[mgcv:t2]{mgcv::t2}}
 }
