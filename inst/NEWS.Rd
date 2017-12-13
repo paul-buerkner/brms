@@ -59,6 +59,8 @@
       orginally deprecated in \pkg{brms} 1.0.
       \item Make posterior sample extraction in the 
       \code{summary} method cleaner and less error prone.
+      \item No longer fix the seed for random number generation 
+      in \code{brm} to avoid unexpected behavior in simulation studies.
     }
   }
   \subsection{BUG FIXES}{

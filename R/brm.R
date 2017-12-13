@@ -142,13 +142,9 @@
 #'   informational messages of compiler and sampler are suppressed.
 #'   The actual sampling progress is still printed. 
 #'   Set \code{refresh = 0} to turn this off as well.
-#' @param seed Used by \code{set.seed} to make results reproducable.
-#'   Be aware that \code{brm} resets the seed to the value specified
-#'   in \code{seed} (default: \code{12345}) every time it is run.
-#'   If you want to use different seeds per run, use, for instance,
-#'   \code{seed = sample(1e+7, size = 1)}. Be aware that generally, 
-#'   the seed also affects subsequently called functions (such as 
-#'   \code{predict}), which make use of the random number generator of \R.
+#' @param seed The seed for random number generation to make results
+#'   reproducible. If \code{NA} (the default), \pkg{Stan} will set
+#'   the seed randomly.
 #' @param save_model Either \code{NULL} or a character string. 
 #'   In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save_model}, 
@@ -342,7 +338,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 future = getOption("future", FALSE), silent = TRUE, 
-                seed = 12345, save_model = NULL, save_dso = TRUE, ...) {
+                seed = NA, save_model = NULL, save_dso = TRUE, ...) {
   
   dots <- list(...)
   autocor <- check_autocor(autocor)
@@ -417,11 +413,10 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   }
   args <- nlist(
     object = x$fit, data = sdata, pars = x$exclude, 
-    include = FALSE, algorithm, iter
+    include = FALSE, algorithm, iter, seed
   )
   args[names(dots)] <- dots
   
-  set.seed(seed)
   message("Start sampling")
   if (args$algorithm == "sampling") {
     args$algorithm <- NULL
