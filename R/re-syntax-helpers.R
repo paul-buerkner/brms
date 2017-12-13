@@ -322,18 +322,26 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
     if (re$type[i] == "mo") {
       coef <- rename(get_mo_labels(re$form[[i]], data))
     } else if (re$type[i] == "cs") {
-      coef <- colnames(get_model_matrix(re$form[[i]], data = data))
-      if (nzchar(re$resp[i])) {
-        ncat <- old_standata[[re$resp[i]]][["ncat"]]
+      resp <- re$resp[i]
+      if (!is.null(old_standata)) {
+        # extract ncat from the original data
+        if (nzchar(resp)) {
+          ncat <- old_standata[[resp]][["ncat"]]
+        } else {
+          ncat <- old_standata[["ncat"]]
+        }
       } else {
-        ncat <- old_standata[["ncat"]]
-      }
-      if (is.null(ncat)) {
-        # try to infer ncat from the data
-        Y <- as.numeric(model.response(data))
+        # infer ncat from the current data
+        if (nzchar(resp)) {
+          respform <- bterms$terms[[resp]]$respform
+        } else {
+          respform <- bterms$respform
+        }
+        Y <- as.numeric(model.response(model.frame(respform, data)))
         ncat <- max(Y) - min(Y) + 1
       }
       indices <- paste0("[", seq_len(ncat - 1), "]")
+      coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       coef <- as.vector(t(outer(coef, indices, paste0)))
     } else if (re$type[i] == "me") {
       coef <- rename(get_me_labels(re$form[[i]], data))
@@ -402,10 +410,10 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       levels <- named_list(un_re$group)
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
-        levels[[i]] <- ulapply(un_re$gcall[[i]]$groups, 
-                               function(g) levels(factor(get(g, data)))
-        )
-        levels[[i]] <- unique(levels[[i]])
+        levels[[i]] <- unique(ulapply(
+          un_re$gcall[[i]]$groups, 
+          function(g) levels(factor(get(g, data)))
+        ))
       }
       attr(ranef, "levels") <- levels 
     } else {

@@ -20,14 +20,13 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
-    args_eff_spec <- list(
-      x = x$dpars[[dp]], old_standata = old_standata[[dp]]
-    )
+    args_eff_spec <- list(x = x$dpars[[dp]], old_standata = old_standata[[dp]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     out <- c(out, data_aux_eff)
   }
   for (dp in names(x$fdpars)) {
-    out[[dp]] <- x$fdpars[[dp]]$value
+    resp <- usc(combine_prefix(x))
+    out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
@@ -338,11 +337,12 @@ data_cs <- function(bterms, data) {
   # prepare data for category specific effects
   # Args: see data_effects
   out <- list()
-  px <- check_prefix(bterms)
   if (length(all_terms(bterms[["cs"]]))) {
+    p <- usc(combine_prefix(bterms))
     Xcs <- get_model_matrix(bterms$cs, data)
     avoid_dpars(colnames(Xcs), bterms = bterms)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
+    out <- setNames(out, paste0(names(out), p))
   }
   out
 }

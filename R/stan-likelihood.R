@@ -54,8 +54,8 @@ stan_llh.default <- function(family, bterms, data, mix = "",
     p$omega <- paste0("omega", mix, resp, nomega)
   }
   ord_args <- sargs(
-    p$mu, if (has_cs) paste0("mucs[n]", resp), 
-    paste0("temp_Intercept", resp), p$disc
+    p$mu, if (has_cs) paste0("mucs", resp, "[n]"), 
+    paste0("temp", resp, "_Intercept"), p$disc
   )
   ord_family <- paste0(family, "_", link, if (has_cs) "_cs")
   usc_logit <- stan_llh_dpar_usc_logit(c("zi", "hu"), bterms)

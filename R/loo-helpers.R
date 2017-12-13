@@ -449,7 +449,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
   } else {
     # validate argument 'group'
-    valid_groups <- get_valid_groups(x)
+    valid_groups <- get_cat_vars(x)
     if (length(group) != 1L || !group %in% valid_groups) {
       stop2("Group '", group, "' is not a valid grouping factor. ",
             "Valid groups are: \n", collapse_comma(valid_groups))
