@@ -473,8 +473,6 @@ parse_offset <- function(formula) {
 
 parse_re <- function(formula) {
   # generate a data.frame with all information about the group-level terms
-  # Args:
-  #   re_terms: A vector of group-level terms in extended lme4 syntax
   re_terms <- get_re_terms(formula, brackets = FALSE)
   re_pos <- attr(re_terms, "pos")
   re_terms <- split_re_terms(re_terms)
@@ -621,7 +619,8 @@ as.brmsterms <- function(x) {
   if (length(weight_forms)) {
     str_wf <- unique(ulapply(weight_forms, formula2str))
     if (length(str_wf) > 1L) {
-      stop2("All responses should use the same weights if 'rescor' is estimated.")
+      stop2("All responses should use the same", 
+            "weights if 'rescor' is estimated.")
     }
     out$adforms$weights <- weight_forms[[1]]
   }
@@ -633,7 +632,6 @@ avoid_dpars <- function(names, bterms) {
   # Args:
   #   names: names to check for ambiguity
   #   bterms: object of class brmsterms
-  #stopifnot(is.brmsterms(bterms))
   dpars <- c(names(bterms$dpars), "mo", "cs", "me")
   if (length(dpars)) {
     dpars_prefix <- paste0("^", dpars, "_")
