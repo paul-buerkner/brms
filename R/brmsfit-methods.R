@@ -1435,7 +1435,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame for which to evaluate predictions.
-#'   If \code{NULL} (default), the orginal data of the model is used.
+#'   If \code{NULL} (default), the original data of the model is used.
 #' @param re_formula formula containing group-level effects 
 #'   to be considered in the prediction. 
 #'   If \code{NULL} (default), include all group-level effects; 
@@ -1966,7 +1966,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @details Sometimes, when updating the model formula, 
 #'  it may happen that \R complains about a mismatch
 #'  between \code{model frame} and \code{formula}.
-#'  This error can be avoided by supplying your orginal data
+#'  This error can be avoided by supplying your original data
 #'  again via argument \code{newdata}.
 #'  
 #' @examples 

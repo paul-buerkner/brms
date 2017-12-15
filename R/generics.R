@@ -106,13 +106,13 @@ is.brmsfit <- function(x) {
 #'  the evidence ratio is the ratio of the posterior probability 
 #'  of \code{a > b} and the posterior probability of \code{a < b}.
 #'  In this example, values greater than one indicate that the evidence in
-#'  favor of \code{a > b} is larger than evidence in favour of \code{a < b}.
+#'  favor of \code{a > b} is larger than evidence in favor of \code{a < b}.
 #'  For an undirected (point) hypothesis, the evidence ratio 
 #'  is a Bayes factor between the hypothesis and its alternative
 #'  computed via the Savage-Dickey density ratio method.
 #'  That is the posterior density at the point of interest divided
 #'  by the prior density at that point.
-#'  Values greater than one indicate that evidence in favour of the point
+#'  Values greater than one indicate that evidence in favor of the point
 #'  hypothesis has increased after seeing the data.
 #'  In order to calculate this Bayes factor, all parameters related 
 #'  to the hypothesis must have proper priors
@@ -919,7 +919,7 @@ stanplot <- function(object, ...) {
 #'   This also has an implication for the \code{points} argument: 
 #'   In the created plots, only those points will be shown that correspond 
 #'   to the factor levels actually used in the conditioning, in order not 
-#'   to create the false impressicion of bad model fit, where it is just 
+#'   to create the false impression of bad model fit, where it is just 
 #'   due to conditioning on certain factor levels.
 #'   Since we condition on rather than actually marginalizing variables, 
 #'   the name  \code{marginal_effects} is possibly not ideally chosen in 
@@ -1060,7 +1060,7 @@ marginal_smooths <- function(x, ...) {
 #' @details 
 #' The returned probabilities can be written as
 #' \eqn{P(Kn = k | Yn)}, that is the posterior probability 
-#' that observation n originiates from component k. 
+#' that observation n originates from component k. 
 #' They are computed using Bayes' Theorem
 #' \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
 #' where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood

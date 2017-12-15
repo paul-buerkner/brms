@@ -30,7 +30,7 @@ This method allows to update an existing \code{brmsfit} object
 Sometimes, when updating the model formula, 
  it may happen that \R complains about a mismatch
  between \code{model frame} and \code{formula}.
- This error can be avoided by supplying your orginal data
+ This error can be avoided by supplying your original data
  again via argument \code{newdata}.
 }
 \examples{

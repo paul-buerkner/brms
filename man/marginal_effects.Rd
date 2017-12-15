@@ -209,7 +209,7 @@ When creating \code{marginal_effects} for a particular predictor
   This also has an implication for the \code{points} argument: 
   In the created plots, only those points will be shown that correspond 
   to the factor levels actually used in the conditioning, in order not 
-  to create the false impressicion of bad model fit, where it is just 
+  to create the false impression of bad model fit, where it is just 
   due to conditioning on certain factor levels.
   Since we condition on rather than actually marginalizing variables, 
   the name  \code{marginal_effects} is possibly not ideally chosen in 

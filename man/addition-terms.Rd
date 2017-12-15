@@ -33,7 +33,7 @@ data. Allowed values depend on the function:
 \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 \code{'lower'} and \code{'upper'}; 
 \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
-and \code{'interval'} (or equivalenty \code{-1}, \code{0}, \code{1},
+and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 and \code{2}) to indicate left, no, right, or interval censoring.}
 
 \item{sigma}{Logical; Indicates whether the residual standard deviation

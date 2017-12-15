@@ -55,13 +55,13 @@ Among others, \code{hypothesis} computes an
  the evidence ratio is the ratio of the posterior probability 
  of \code{a > b} and the posterior probability of \code{a < b}.
  In this example, values greater than one indicate that the evidence in
- favor of \code{a > b} is larger than evidence in favour of \code{a < b}.
+ favor of \code{a > b} is larger than evidence in favor of \code{a < b}.
  For an undirected (point) hypothesis, the evidence ratio 
  is a Bayes factor between the hypothesis and its alternative
  computed via the Savage-Dickey density ratio method.
  That is the posterior density at the point of interest divided
  by the prior density at that point.
- Values greater than one indicate that evidence in favour of the point
+ Values greater than one indicate that evidence in favor of the point
  hypothesis has increased after seeing the data.
  In order to calculate this Bayes factor, all parameters related 
  to the hypothesis must have proper priors

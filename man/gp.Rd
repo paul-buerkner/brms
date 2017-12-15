@@ -34,7 +34,7 @@ The function does not evaluate its arguments --
 it exists purely to help set up a model with Gaussian process terms.
 }
 \details{
-A Gaussian process is a stochastic process, whichs
+A Gaussian process is a stochastic process, which
  describes the relation between one or more predictors 
  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
  \eqn{d} is the number of predictors. A Gaussian process is the

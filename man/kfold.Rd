@@ -51,7 +51,7 @@ Thus, in this case, the predicted values are only a subset of the
 omitted ones.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the orginal data of the model is used.}
+If \code{NULL} (default), the original data of the model is used.}
 
 \item{save_fits}{If \code{TRUE}, a component \code{fits} is added to 
 the returned object to store the cross-validated \code{brmsfit} 

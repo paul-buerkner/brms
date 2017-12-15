@@ -13,7 +13,7 @@
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 #'  \code{'lower'} and \code{'upper'}; 
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
-#'  and \code{'interval'} (or equivalenty \code{-1}, \code{0}, \code{1},
+#'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 #'  and \code{2}) to indicate left, no, right, or interval censoring.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
@@ -199,9 +199,9 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
   nlist(lb, ub)
 }
 
-#' Defining smooths in \pkg{brms} formulae
+#' Defining smooths in \pkg{brms} formulas
 #' 
-#' Functions used in definition of smooth terms within a model formulae. 
+#' Functions used in definition of smooth terms within a model formulas. 
 #' The function does not evaluate a (spline) smooth - it exists purely 
 #' to help set up a model using spline based smooths.
 #' 
@@ -422,7 +422,7 @@ monotonic <- function(x) {
 #'   predictors, it is recommended to manually specify priors
 #'   on \code{lscale}, if \code{scale} is set to \code{FALSE}.
 #'   
-#' @details A Gaussian process is a stochastic process, whichs
+#' @details A Gaussian process is a stochastic process, which
 #'  describes the relation between one or more predictors 
 #'  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
 #'  \eqn{d} is the number of predictors. A Gaussian process is the

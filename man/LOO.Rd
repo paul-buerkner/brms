@@ -31,7 +31,7 @@ via \code{\link[brms:compare_ic]{compare_ic}}.}
 on problematic observations. Defaults to \code{FALSE}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the orginal data of the model is used.}
+If \code{NULL} (default), the original data of the model is used.}
 
 \item{re_formula}{formula containing group-level effects 
 to be considered in the prediction. 

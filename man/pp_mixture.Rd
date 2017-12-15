@@ -17,7 +17,7 @@ pp_mixture(x, ...)
 \item{x}{An \R object usually of class \code{brmsfit}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the orginal data of the model is used.}
+If \code{NULL} (default), the original data of the model is used.}
 
 \item{re_formula}{formula containing group-level effects 
 to be considered in the prediction. 
@@ -105,7 +105,7 @@ estimates.
 \details{
 The returned probabilities can be written as
 \eqn{P(Kn = k | Yn)}, that is the posterior probability 
-that observation n originiates from component k. 
+that observation n originates from component k. 
 They are computed using Bayes' Theorem
 \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
 where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
