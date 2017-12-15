@@ -1,5 +1,3 @@
-rm(list = ls())
-
 rerun <- FALSE
 if (rerun) {
   packageurl <- "http://cran.r-project.org/src/contrib/Archive/brms/brms_1.2.0.tar.gz"
@@ -7,7 +5,6 @@ if (rerun) {
 }
 
 source("tests/local/setup.R")
-
 
 if (rerun) {
   # non-linear model

@@ -1,5 +1,3 @@
-rm(list = ls())
-
 rerun <- FALSE
 if (rerun) {
   packageurl <- "http://cran.r-project.org/src/contrib/Archive/brms/brms_0.8.0.tar.gz"
@@ -8,8 +6,8 @@ if (rerun) {
 
 source("tests/local/setup.R")
 
-# old categorical models
 if (rerun) {
+  # old categorical models
   fit_old_cat <- brm(rating ~ period + carry + treat + (1|subject),
                      data = inhaler, family = categorical(),
                      prior = set_prior("normal(0,5)"),

@@ -265,7 +265,7 @@ test_that("generalized multivariate models work correctly", {
   bform <- (bf(tarsus ~ sex + (1|p|fosternest)) + skew_normal()) +
     (bf(back ~ s(tarsus, by = sex) + (1|p|fosternest)) + gaussian())
   fit_mv <- brm(bform, BTdata, chains = 2, cores = 2, iter = 1000)
-  
+
   print(fit_mv)
   expect_ggplot(pp_check(fit_mv, resp = "back"))
   expect_range(waic(fit_mv)$waic, 4300, 4400)
@@ -333,12 +333,12 @@ test_that("Non-linear models of auxiliary parameters work correctly", {
   y <- rnorm(100, 1, exp(x))
   dat <- data.frame(y, x, g = rep(1:10, each = 10))
   bform <- bf(y ~ x + (1|V|g)) +
-    nlf(sigma ~ a, a ~ x + (1|V|g)) + 
+    nlf(sigma ~ a, a ~ x + (1|V|g)) +
     gaussian()
   bprior <- prior(normal(0, 3), dpar = sigma, nlpar = a)
   fit <- brm(bform, dat, prior = bprior, chains = 2, cores = 2)
   print(fit)
-  expect_ggplot(plot(marginal_effects(fit, method = "predict"))[[1]])
+  expect_ggplot(plot(marginal_effects(fit, method = "predict"), ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
   expect_range(LOO(fit)$looic, 240, 350)
 })
@@ -409,7 +409,7 @@ test_that("generalized extreme value models work correctly", {
        sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
     data = fremantle, family = gen_extreme_value(),
     knots = knots, init_r = 0.5, chains = 4, cores = 2,
-    control = list(adapt_delta = 0.95),
+    control = list(adapt_delta = 0.95)
   )
   print(fit_gev)
 

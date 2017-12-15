@@ -1,5 +1,3 @@
-rm(list = ls())
-
 rerun <- FALSE
 if (rerun) {
   packageurl <- "http://cran.r-project.org/src/contrib/Archive/brms/brms_0.10.0.tar.gz"
