@@ -208,22 +208,23 @@ update_re_terms.brmsformula <- function(formula, re_formula) {
 
 #' @export
 update_re_terms.formula <- function(formula, re_formula = NULL) {
-  if (get_nl(formula)) {
-    # non-linear formulas contain no group-level effects
+  if (is.null(re_formula) || get_nl(formula)) {
     return(formula)
   }
   re_formula <- check_re_formula(re_formula, formula)
   new_formula <- formula2str(formula)
   old_re_terms <- get_re_terms(formula)
   if (length(old_re_terms)) {
-    # make sure that + before group-level terms are also removed
-    rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
-    new_formula <- rename(new_formula, rm_terms, "")
-    if (grepl("~$", new_formula)) {
-      # lhs only formulas are not allowed
-      new_formula <- paste(new_formula, "1")
-    }
+    # remove old group-level terms
+    rhs_terms <- terms(rhs(formula))
+    intercept <- attr(rhs_terms, "intercept")
+    rhs <- as.list(attr(rhs_terms, "variables")[-1])
+    rhs <- ulapply(rhs, deparse_combine)
+    rhs <- rhs[!grepl("\\|", rhs)]
+    rhs <- paste0(c(intercept, rhs), collapse = "+")
+    new_formula <- sub("~.*", paste0("~", rhs), new_formula)
   }
+  # add new group-level terms
   new_re_terms <- get_re_terms(re_formula)
   new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
   new_formula <- formula(new_formula)
