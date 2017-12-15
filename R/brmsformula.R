@@ -840,7 +840,7 @@ allow_rescor <- function(x) {
   } else if (is.mvbrmsformula(e1)) {
     out <- plus_mvbrmsformula(e1, e2)
   } else {
-    stop2("Method '+.bf' not implemented for ", class(e1), " objects.")
+    stop2("Method '+.bform' not implemented for ", class(e1), " objects.")
   }
   out
 }
@@ -907,26 +907,28 @@ plus_mvbrmsformula <- function(e1, e2) {
   e1
 }
 
-get_nl <- function(x, dpar = NULL, aol = TRUE) {
+get_nl <- function(x, dpar = NULL, resp = NULL, aol = TRUE) {
   # extract the 'nl' attribute from a (brms)formula object
   # Args:
   #   x: object to extract 'nl' from
   #   dpar: optional name of a distributional parameter
   #     for which 'nl' should be extracted
+  #   resp: optional name of a response variable
+  #     for which 'nl' should be extracted
   #   aol: (as one logical) apply isTRUE to the result?
-  .get_nl <- function(x) {
-    attr(x, "nl", TRUE)
+  if (is.mvbrmsformula(x)) {
+    resp <- as_one_character(resp)
+    x <- x$forms[[resp]]
   }
   if (is.brmsformula(x)) {
     if (is.null(dpar)) {
-      nl <- .get_nl(x$formula)
+      x <- x$formula
     } else {
-      stopifnot(length(dpar) == 1L)
-      nl <- .get_nl(x$pforms[[dpar]])
+      dpar <- as_one_character(dpar)
+      x <- x$pforms[[dpar]]
     }
-  } else {
-    nl <- .get_nl(x)
   }
+  nl <- attr(x, "nl", TRUE)
   if (aol) {
     nl <- isTRUE(nl)
   }
@@ -970,7 +972,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
     }
   }
   pars <- names(out)
-  if (any(ulapply(c(".", "_"), grepl, x = pars, fixed = TRUE))) {
+  if (any(grepl("\\.|_", pars))) {
     stop2("Parameter names should not contain dots or underscores.")
   }
   inv_pars <- intersect(pars, rsv_pars)
@@ -1085,13 +1087,13 @@ is_dpar_name <- function(dpars, family = NULL, ...) {
 }
 
 dpar_class <- function(dpar) {
-  # class of an distributional parameter
+  # class of a distributional parameter
   out <- get_matches("^[^[:digit:]]+", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
 dpar_id <- function(dpar) {
-  # id of an distributional parameter
+  # id of a distributional parameter
   out <- get_matches("[[:digit:]]+$", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
@@ -1134,7 +1136,7 @@ validate_formula.brmsformula <- function(
   }
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
-      # slot 'threshold' deprecated as of brms > 1.7.0
+      # slot 'threshold' is deprecated as of brms > 1.7.0
       out$family <- check_family(out$family, threshold = threshold)
     }
     try_terms <- try(stats::terms(out$formula), silent = TRUE)
