@@ -34,7 +34,7 @@ The \code{lagsar} structure implements SAR of the response values:
 The \code{errorsar} structure implements SAR of the residuals:
 \deqn{y = \eta + u, u = \rho W u + e}
 In the above equations, \eqn{\eta} is the predictor term and
-\eqn{e} are independent normally or t-distribued residuals.
+\eqn{e} are independent normally or t-distributed residuals.
 }
 \details{
 Currently, only families \code{gaussian} and \code{student} 

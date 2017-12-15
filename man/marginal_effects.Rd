@@ -30,7 +30,7 @@ Interactions are specified by a \code{:} between variable names.
 If \code{NULL} (the default), plots are generated for all main effects
 and two-way interactions estimated in the model. When specifying
 \code{effects} manually, \emph{all} two-way interactions may be plotted
-even if not orginally modeled.}
+even if not originally modeled.}
 
 \item{conditions}{An optional \code{data.frame} containing variable values
 to condition on. Each effect defined in \code{effects} will
@@ -66,7 +66,7 @@ If \code{"fitted"}, plot marginal predictions of the regression curve.
 If \code{"predict"}, plot marginal predictions of the responses.}
 
 \item{spaghetti}{Logical; Indicates whether predictions should
-be visualized via spagetti plots. Only applied for numeric
+be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 
 (e.g. \code{100}) in order to reduce computation time.}
@@ -209,7 +209,7 @@ When creating \code{marginal_effects} for a particular predictor
   This also has an implication for the \code{points} argument: 
   In the created plots, only those points will be shown that correspond 
   to the factor levels actually used in the conditioning, in order not 
-  to create the false impressivion of bad model fit, where it is just 
+  to create the false impressicion of bad model fit, where it is just 
   due to conditioning on certain factor levels.
   Since we condition on rather than actually marginalizing variables, 
   the name  \code{marginal_effects} is possibly not ideally chosen in 
@@ -220,7 +220,7 @@ When creating \code{marginal_effects} for a particular predictor
   zero. This allows, for instance, to make predictions of the grand mean 
   when using sum coding. 
   
-  To fully change colours of the created plots, 
+  To fully change colors of the created plots, 
   one has to amend both \code{scale_colour} and \code{scale_fill}.
   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}

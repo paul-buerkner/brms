@@ -79,7 +79,7 @@ instead of the raw values? Default is \code{TRUE}.}
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
-median absolute deivation (MAD) are applied instead.
+median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 
@@ -94,7 +94,7 @@ probabilities on the log-scale.}
 If \code{summary = TRUE}, an N x E x K array,
 where N is the number of observations, K is the number
 of mixture components, and E is equal to \code{length(probs) + 2}.
-If \code{summary = FALSE}, an S x N x K arrary, where
+If \code{summary = FALSE}, an S x N x K array, where
 S is the number of posterior samples.
 }
 \description{
@@ -105,7 +105,7 @@ estimates.
 \details{
 The returned probabilities can be written as
 \eqn{P(Kn = k | Yn)}, that is the posterior probability 
-that observation n orginiates from component k. 
+that observation n originiates from component k. 
 They are computed using Bayes' Theorem
 \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
 where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood

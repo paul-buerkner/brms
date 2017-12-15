@@ -71,7 +71,7 @@ If specified, fitted values of these response variables are returned.}
 \item{negative_rt}{Only relevant for Wiener diffusion models. 
 A flag indicating whether response times of responses
 on the lower boundary should be returned as negative values.
-This allows to distinquish responses on the upper and
+This allows to distinguish responses on the upper and
 lower boundary. Defaults to \code{FALSE}.}
 
 \item{subset}{A numeric vector specifying
@@ -105,7 +105,7 @@ instead of the raw values? Default is \code{TRUE}.}
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
-median absolute deivation (MAD) are applied instead.
+median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 
@@ -118,7 +118,7 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \value{
 Predicted values of the response variable. 
   If \code{summary = TRUE} the output depends on the family:
-  For catagorical and ordinal families, it is a N x C matrix, 
+  For categorical and ordinal families, it is a N x C matrix, 
   where N is the number of observations and
   C is the number of categories. 
   For all other families, it is a N x E matrix where E is equal 
@@ -158,7 +158,7 @@ The estimated means of both methods should, however, be very similar.
   by sampling each value \code{ntrys} times and then select a valid value. 
   If all values are invalid, the closest boundary is used, instead. 
   If there are more than a few of these pathological cases, 
-  a warning will occure suggesting to increase argument \code{ntrys}.
+  a warning will occur suggesting to increase argument \code{ntrys}.
 }
 \examples{
 \dontrun{

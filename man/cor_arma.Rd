@@ -44,7 +44,7 @@ an autoregression-moving average correlation structure of order (p, q).
 }
 \details{
 AR refers to autoregressive effects of residuals, which
-  is what is typcially understood as autoregressive effects.
+  is what is typically understood as autoregressive effects.
   However, one may also model autoregressive effects of the response
   variable, which is called ARR in \pkg{brms}.
 }

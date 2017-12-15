@@ -106,7 +106,7 @@ is.brmsfit <- function(x) {
 #'  the evidence ratio is the ratio of the posterior probability 
 #'  of \code{a > b} and the posterior probability of \code{a < b}.
 #'  In this example, values greater than one indicate that the evidence in
-#'  favour of \code{a > b} is larger than evidence in favour of \code{a < b}.
+#'  favor of \code{a > b} is larger than evidence in favour of \code{a < b}.
 #'  For an undirected (point) hypothesis, the evidence ratio 
 #'  is a Bayes factor between the hypothesis and its alternative
 #'  computed via the Savage-Dickey density ratio method.
@@ -184,7 +184,7 @@ hypothesis <- function(x, ...) {
   UseMethod("hypothesis")
 }
 
-#' Decriptions of \code{brmshypothesis} Objects
+#' Descriptions of \code{brmshypothesis} Objects
 #' 
 #' A \code{brmshypothesis} object contains posterior samples
 #' as well as summary statistics of non-linear hypotheses as 
@@ -637,7 +637,7 @@ reloo <- function(x, ...) {
 #'   How this variable is handled depends on argument \code{exact_loo}.
 #'   If \code{exact_loo} is \code{FALSE}, the data is split 
 #'   up into subsets, each time omitting all observations of one of the 
-#'   factor levels, while ignoriing argument \code{K}. 
+#'   factor levels, while ignoring argument \code{K}. 
 #'   If \code{exact_loo} is \code{TRUE}, all observations corresponding 
 #'   to the factor level of the currently predicted single value are omitted. 
 #'   Thus, in this case, the predicted values are only a subset of the 
@@ -712,7 +712,7 @@ standata <- function(object, ...) {
 
 #' MCMC Plots Implemented in \pkg{bayesplot} 
 #' 
-#' Conveniant way to call MCMC plotting functions 
+#' Convenient way to call MCMC plotting functions 
 #' implemented in the \pkg{bayesplot} package. 
 #' 
 #' @inheritParams posterior_samples
@@ -784,7 +784,7 @@ stanplot <- function(object, ...) {
 #'   If \code{NULL} (the default), plots are generated for all main effects
 #'   and two-way interactions estimated in the model. When specifying
 #'   \code{effects} manually, \emph{all} two-way interactions may be plotted
-#'   even if not orginally modeled.
+#'   even if not originally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to condition on. Each effect defined in \code{effects} will
 #'   be plotted separately for each row of \code{data}. 
@@ -813,7 +813,7 @@ stanplot <- function(object, ...) {
 #'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
 #'   If \code{"predict"}, plot marginal predictions of the responses.
 #' @param spaghetti Logical; Indicates whether predictions should
-#'   be visualized via spagetti plots. Only applied for numeric
+#'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
 #'   to set argument \code{nsamples} to a relatively small value 
 #'   (e.g. \code{100}) in order to reduce computation time.
@@ -919,7 +919,7 @@ stanplot <- function(object, ...) {
 #'   This also has an implication for the \code{points} argument: 
 #'   In the created plots, only those points will be shown that correspond 
 #'   to the factor levels actually used in the conditioning, in order not 
-#'   to create the false impressivion of bad model fit, where it is just 
+#'   to create the false impressicion of bad model fit, where it is just 
 #'   due to conditioning on certain factor levels.
 #'   Since we condition on rather than actually marginalizing variables, 
 #'   the name  \code{marginal_effects} is possibly not ideally chosen in 
@@ -930,7 +930,7 @@ stanplot <- function(object, ...) {
 #'   zero. This allows, for instance, to make predictions of the grand mean 
 #'   when using sum coding. 
 #'   
-#'   To fully change colours of the created plots, 
+#'   To fully change colors of the created plots, 
 #'   one has to amend both \code{scale_colour} and \code{scale_fill}.
 #'   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
 #'   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
@@ -1054,13 +1054,13 @@ marginal_smooths <- function(x, ...) {
 #' If \code{summary = TRUE}, an N x E x K array,
 #' where N is the number of observations, K is the number
 #' of mixture components, and E is equal to \code{length(probs) + 2}.
-#' If \code{summary = FALSE}, an S x N x K arrary, where
+#' If \code{summary = FALSE}, an S x N x K array, where
 #' S is the number of posterior samples.
 #' 
 #' @details 
 #' The returned probabilities can be written as
 #' \eqn{P(Kn = k | Yn)}, that is the posterior probability 
-#' that observation n orginiates from component k. 
+#' that observation n originiates from component k. 
 #' They are computed using Bayes' Theorem
 #' \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
 #' where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood

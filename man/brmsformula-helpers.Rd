@@ -42,7 +42,7 @@ parameter of the \code{student} and \code{frechet} families);
 \code{phi} (precision parameter of the \code{beta} 
 and \code{zero_inflated_beta} families);
 \code{kappa} (precision parameter of the \code{von_mises} family);
-\code{beta} (mean parameter of the exponential componenent
+\code{beta} (mean parameter of the exponential component
 of the \code{exgaussian} family);
 \code{quantile} (quantile parameter of the \code{asym_laplace} family);
 \code{zi} (zero-inflation probability); 

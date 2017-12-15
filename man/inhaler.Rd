@@ -24,7 +24,7 @@ Ezzet, F., & Whitehead, J. (1991).
 inhaler
 }
 \description{
-Ezzet and Whitehead (1991) analyse data from a two-treatment, 
+Ezzet and Whitehead (1991) analyze data from a two-treatment, 
   two-period crossover trial to compare 2 inhalation devices for 
   delivering the drug salbutamol in 286 asthma patients. 
   Patients were asked to rate the clarity of leaflet instructions 

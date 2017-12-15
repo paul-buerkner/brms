@@ -64,7 +64,7 @@ Define priors for specific parameters or classes of parameters
 \code{set_prior} is used to define prior distributions for parameters 
   in \pkg{brms} models. The functions \code{prior}, \code{prior_}, and
   \code{prior_string} are aliases of \code{set_prior} each allowing
-  for a differnt kind of argument specification. 
+  for a different kind of argument specification. 
   \code{prior} allows specifying arguments as expression without
   quotation marks using non-standard evaluation. 
   \code{prior_} allows specifying arguments as one-sided formulas
@@ -126,7 +126,7 @@ Define priors for specific parameters or classes of parameters
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
   of the other population-level effects.
-  Note that technially, this prior is set on an intercept that
+  Note that technically, this prior is set on an intercept that
   results when internally centering all population-level predictors 
   around zero to improve sampling efficiency. On this centered 
   intercept, specifying a prior is actually much easier and 
@@ -157,7 +157,7 @@ Define priors for specific parameters or classes of parameters
   that are not defined everywhere on the real line, such as uniform
   or gamma priors. When defining a \code{uniform(2,4)} prior, 
   you should write \code{set_prior("uniform(2,4)", lb = 2, ub = 4)}. 
-  When using a prior that is defined on the postive reals only 
+  When using a prior that is defined on the positive reals only 
   (such as a gamma prior) set \code{lb = 0}. 
   In most situations, it is not useful to restrict population-level
   parameters through bounded priors 
@@ -173,7 +173,7 @@ Define priors for specific parameters or classes of parameters
   nested in the grouping factor \code{g}. 
   The corresponding standard deviation parameters are named as 
   \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
-  These parameters are restriced to be non-negative and, by default, 
+  These parameters are restricted to be non-negative and, by default, 
   have a half student-t prior with 3 degrees of freedom and a 
   scale parameter that depends on the standard deviation of the response 
   after applying the link function. Minimally, the scale parameter is 10. 

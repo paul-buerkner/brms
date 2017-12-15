@@ -30,7 +30,7 @@ parameter of the \code{student} and \code{frechet} families);
 \code{phi} (precision parameter of the \code{beta} 
 and \code{zero_inflated_beta} families);
 \code{kappa} (precision parameter of the \code{von_mises} family);
-\code{beta} (mean parameter of the exponential componenent
+\code{beta} (mean parameter of the exponential component
 of the \code{exgaussian} family);
 \code{quantile} (quantile parameter of the \code{asym_laplace} family);
 \code{zi} (zero-inflation probability); 
@@ -79,10 +79,10 @@ models for all parameters of the assumed response distribution.
   \code{response | aterms ~ pterms + (gterms | group)} 
   
   The \code{pterms} part contains effects that are assumed to be the 
-  same across obervations. We call them 'population-level' effects
+  same across observations. We call them 'population-level' effects
   or (adopting frequentist vocabulary) 'fixed' effects. The optional
   \code{gterms} part may contain effects that are assumed to vary
-  accross grouping variables specified in \code{group}. We
+  across grouping variables specified in \code{group}. We
   call them 'group-level' effects or (adopting frequentist 
   vocabulary) 'random' effects, although the latter name is misleading
   in a Bayesian context. For more details type 
@@ -96,11 +96,11 @@ models for all parameters of the assumed response distribution.
   Instead of \code{|} you may use \code{||} in grouping terms
   to prevent correlations from being modeled. 
   Alternatively, it is possible to model different group-level terms of 
-  the same grouping factor as correlated (even across different formulae,
+  the same grouping factor as correlated (even across different formulas,
   e.g., in non-linear models) by using \code{|<ID>|} instead of \code{|}.
   All group-level terms sharing the same ID will be modeled as correlated.
   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
-  \code{(1+z|2|g)} somewhere in the formulae passed to \code{brmsformula},
+  \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
   correlations between the corresponding group-level effects 
   will be estimated. 
   
@@ -122,7 +122,7 @@ models for all parameters of the assumed response distribution.
   Gaussian process terms can be fitted using the \code{\link[brms:gp]{gp}}
   function in the \code{pterms} part of the model formula. Similar to
   smooth terms, Gaussian processes can be used to model complex non-linear
-  relationsships, for instance temporal or spatial autocorrelation. 
+  relationships, for instance temporal or spatial autocorrelation. 
   However, they are computationally demanding and are thus not recommended 
   for very large datasets.
   
@@ -137,7 +137,7 @@ models for all parameters of the assumed response distribution.
   
   A monotonic predictor must either be integer valued or an ordered factor, 
   which is the first difference to an ordinary continuous predictor. 
-  More importantly, predictor categories (or integers) are not assumend to be 
+  More importantly, predictor categories (or integers) are not assumed to be 
   equidistant with respect to their effect on the response variable. 
   Instead, the distance between adjacent predictor categories (or integers) 
   is estimated from the data and may vary across categories. 
@@ -151,10 +151,10 @@ models for all parameters of the assumed response distribution.
   see \code{vignette("brms_monotonic")}.
   
   Quite often, predictors are measured and as such naturally contain 
-  measurement error. Although most reseachers are well aware of this problem,
+  measurement error. Although most researchers are well aware of this problem,
   measurement error in predictors is ignored in most
   regression analyses, possibly because only few packages allow
-  for modelling it. Notably, measurement error can be handled in 
+  for modeling it. Notably, measurement error can be handled in 
   structural equation models, but many more general regression models
   (such as those featured by \pkg{brms}) cannot be transferred 
   to the SEM framework. In \pkg{brms}, effects of noise-free predictors 
@@ -163,7 +163,7 @@ models for all parameters of the assumed response distribution.
   \code{x} is a measured predictor with known measurement error
   \code{sdx}, we can simply include it on the right-hand side of the
   model formula via \code{y ~ me(x, sdx)}. 
-  This can easily be extended to more general formulae. 
+  This can easily be extended to more general formulas. 
   If \code{x2} is another measured predictor with corresponding error
   \code{sdx2} and \code{z} is a predictor without error
   (e.g., an experimental setting), we can model all main effects 
@@ -174,9 +174,9 @@ models for all parameters of the assumed response distribution.
   
   \bold{Additional response information}
   
-  Another speciality of the \pkg{brms} formula syntax is the optional 
+  Another special of the \pkg{brms} formula syntax is the optional 
   \code{aterms} part, which may contain multiple terms of the form 
-  \code{fun(<variable>)} seperated by \code{+} each providing special 
+  \code{fun(<variable>)} separated by \code{+} each providing special 
   information on the response variable. \code{fun} can be replaced with 
   either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
@@ -187,14 +187,14 @@ models for all parameters of the assumed response distribution.
   to perform meta-analysis. Suppose that the variable \code{yi} contains 
   the effect sizes from the studies and \code{sei} the corresponding 
   standard errors. Then, fixed and random effects meta-analyses can 
-  be conducted using the formulae \code{yi | se(sei) ~ 1} and 
+  be conducted using the formulas \code{yi | se(sei) ~ 1} and 
   \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 
   \code{study} is a variable uniquely identifying every study.
   If desired, meta-regression can be performed via 
   \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)} 
   or \cr \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, 
   where \code{mod1} and \code{mod2} represent moderator variables. 
-  By default, the standard errors replace the paramter \code{sigma}.
+  By default, the standard errors replace the parameter \code{sigma}.
   To model \code{sigma} in addition to the known standard errors,
   set argument \code{sigma} in function \code{se} to \code{TRUE}, 
   for instance, \code{yi | se(sei, sigma = TRUE) ~ 1}.
@@ -213,7 +213,7 @@ models for all parameters of the assumed response distribution.
   \code{y | cens(censored) ~ predictors}. The censoring variable 
   (named \code{censored} in this example) should contain the values 
   \code{'left'}, \code{'none'}, \code{'right'}, and \code{'interval'} 
-  (or equivalenty \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate that 
+  (or equivalently \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate that 
   the corresponding observation is left censored, not censored, right censored,
   or interval censored. For interval censored data, a second variable
   (let's call it \code{y2}) has to be passed to \code{cens}. In this case, 
@@ -251,7 +251,7 @@ models for all parameters of the assumed response distribution.
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
 
-  Mutiple addition terms may be specified at the same time using 
+  Multiple addition terms may be specified at the same time using 
   the \code{+} operator, for instance \cr
   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
   for a censored meta-analytic model. 
@@ -303,7 +303,7 @@ models for all parameters of the assumed response distribution.
   can be added in the same way as for ordinary formulas).
   To tell \code{brms} that this is a non-linear model, 
   we set argument \code{nl} to \code{TRUE}.
-  Now we have to specfiy a model for each of the non-linear parameters. 
+  Now we have to specify a model for each of the non-linear parameters. 
   Let's say we just want to estimate those three parameters
   with no further covariates or random effects. Then we can pass
   \code{alpha + beta + lambda ~ 1} or equivalently
@@ -356,14 +356,14 @@ models for all parameters of the assumed response distribution.
   In categorical models, distributional parameters do not have
   fixed names. Instead, they are named after the response categories 
   (excluding the first one, which serves as the reference category),
-  with the prefix \code{'mu'}. If, for instance, catgories are named 
+  with the prefix \code{'mu'}. If, for instance, categories are named 
   \code{cat1}, \code{cat2}, and \code{cat3}, the distributional parameters
   will be named \code{mucat2} and \code{mucat3}.
   
   Some distributional parameters currently supported by \code{brmsformula}
   have to be positive (a negative standard deviation or precision parameter 
-  doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
-  hurdle proabilities, quantiles, or the intial bias parameter of 
+  does not make any sense) or are bounded between 0 and 1 (for zero-inflated / 
+  hurdle probabilities, quantiles, or the initial bias parameter of 
   drift-diffusion models). 
   However, linear predictors can be positive or negative, and thus the log link 
   (for positive parameters) or logit link (for probability parameters) are used 
@@ -373,7 +373,7 @@ models for all parameters of the assumed response distribution.
   function to get to the effects on the original scale.
   Alternatively, it is possible to use the identity link to predict parameters
   on their original scale, directly. However, this is much more likely to lead 
-  to problems in the model fitting, if the parameter actually has a restrcited range.
+  to problems in the model fitting, if the parameter actually has a restricted range.
   
   See also \code{\link{brmsfamily}} for an overview of valid link functions.
   

@@ -116,8 +116,8 @@ is required in order to apply the methods \code{bridge_sampler},
 \item{inits}{Either \code{"random"} or \code{"0"}. 
 If inits is \code{"random"} (the default), 
 Stan will randomly generate initial values for parameters. 
-If it is \code{"0"}, all parameters are initiliazed to zero. 
-This option is sometimes usefull for certain families, 
+If it is \code{"0"}, all parameters are initialized to zero. 
+This option is sometimes useful for certain families, 
 as it happens that default (\code{"random"}) inits cause samples 
 to be essentially constant. 
 Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
@@ -229,7 +229,7 @@ Fit a generalized (non-)linear multivariate multilevel model
   which parameters or parameter classes priors can be defined, 
   use \code{\link[brms:get_prior]{get_prior}}.
   Default priors are chosen to be non or very weakly informative 
-  so that their influence on the results will be negligable and
+  so that their influence on the results will be negligible and
   you usually don't have to worry about them.
   However, after getting more familiar with Bayesian statistics, 
   I recommend you to start thinking about reasonable informative

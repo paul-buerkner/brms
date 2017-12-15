@@ -22,7 +22,7 @@ are shown.}
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
 \item{spaghetti}{Logical; Indicates whether predictions should
-be visualized via spagetti plots. Only applied for numeric
+be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 
 (e.g. \code{100}) in order to reduce computation time.}

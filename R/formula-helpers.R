@@ -328,7 +328,7 @@ cse <- function(expr) {
 #' 
 #' @aliases mono monotonic
 #' 
-#' @param x An integer variable or an orderd factor
+#' @param x An integer variable or an ordered factor
 #'   to be modeled as monotonic.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
@@ -509,7 +509,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' Function used to set up a basic grouping term in \pkg{brms}.
 #' The function does not evaluate its arguments --
 #' it exists purely to help set up a model with grouping terms.
-#' \code{gr} is called implicitely inside the package
+#' \code{gr} is called implicitly inside the package
 #' and there is usually no need to call it directly.
 #' 
 #' @param ... One or more terms containing grouping factors.

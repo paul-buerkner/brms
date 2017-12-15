@@ -44,7 +44,7 @@ Defaults to \code{FALSE}.}
 How this variable is handled depends on argument \code{exact_loo}.
 If \code{exact_loo} is \code{FALSE}, the data is split 
 up into subsets, each time omitting all observations of one of the 
-factor levels, while ignoriing argument \code{K}. 
+factor levels, while ignoring argument \code{K}. 
 If \code{exact_loo} is \code{TRUE}, all observations corresponding 
 to the factor level of the currently predicted single value are omitted. 
 Thus, in this case, the predicted values are only a subset of the 

@@ -1,10 +1,10 @@
-#' Retructure Old \code{brmsfit} Objects
+#' Restructure Old \code{brmsfit} Objects
 #'
 #' Restructure old \code{brmsfit} objects to work with 
 #' the latest \pkg{brms} version. This function is called
 #' internally when applying post-processing methods.
-#' However, in order to avoid uncessary run time caused
-#' by the restructuring, I recommend explicitely calling
+#' However, in order to avoid unnecessary run time caused
+#' by the restructuring, I recommend explicitly calling
 #' \code{restructure} once per model after updating \pkg{brms}.
 #' 
 #' @param x An object of class \code{brmsfit}.

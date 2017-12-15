@@ -4,7 +4,7 @@
 \alias{brmshypothesis}
 \alias{print.brmshypothesis}
 \alias{plot.brmshypothesis}
-\title{Decriptions of \code{brmshypothesis} Objects}
+\title{Descriptions of \code{brmshypothesis} Objects}
 \usage{
 \method{print}{brmshypothesis}(x, digits = 2, chars = 20, ...)
 

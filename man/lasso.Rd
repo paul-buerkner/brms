@@ -7,7 +7,7 @@
 lasso(df = 1, scale = 1)
 }
 \arguments{
-\item{df}{Degrees of freedom of the chi-sqaure prior of the inverse tuning
+\item{df}{Degrees of freedom of the chi-square prior of the inverse tuning
 parameter. Defaults to \code{1}.}
 
 \item{scale}{Scale of the lasso prior. Defaults to \code{1}.}
@@ -35,7 +35,7 @@ The lasso prior is the Bayesian equivalent to the LASSO method for performing
   one can specify a lasso prior using \code{set_prior("lasso(1)")}.
   To make sure that shrinkage can equally affect all coefficients, 
   predictors should be one the same scale.
-  If you do not want to standarized all variables,
+  If you do not want to standardized all variables,
   you can adjust the general scale of the lasso prior via argument
   \code{scale}, for instance, \code{lasso(1, scale = 10)}.
 }

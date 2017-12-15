@@ -62,7 +62,7 @@ NULL
 #'   autoregression-moving-average correlation structure.
 #' 
 #' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typcially understood as autoregressive effects.
+#'   is what is typically understood as autoregressive effects.
 #'   However, one may also model autoregressive effects of the response
 #'   variable, which is called ARR in \pkg{brms}.
 #' 
@@ -106,7 +106,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' @return An object of class \code{cor_arma} containing solely autoregression terms.
 #' 
 #' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typcially understood as autoregressive effects.
+#'   is what is typically understood as autoregressive effects.
 #'   However, one may also model autoregressive effects of the response
 #'   variable, which is called ARR in \pkg{brms}.
 #' 
@@ -154,7 +154,7 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #'   autoregressive response terms.
 #'   
 #' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typcially understood as autoregressive effects.
+#'   is what is typically understood as autoregressive effects.
 #'   However, one may also model autoregressive effects of the response
 #'   variable, which is called ARR in \pkg{brms}.
 #' 
@@ -179,7 +179,7 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 #' The \code{errorsar} structure implements SAR of the residuals:
 #' \deqn{y = \eta + u, u = \rho W u + e}
 #' In the above equations, \eqn{\eta} is the predictor term and
-#' \eqn{e} are independent normally or t-distribued residuals.
+#' \eqn{e} are independent normally or t-distributed residuals.
 #' 
 #' @param W An object specifying the spatial weighting matrix.
 #'   Can be either the spatial weight matrix itself or an 
@@ -259,7 +259,7 @@ sar_weights <- function(W) {
 #' @param W Adjacency matrix of locations. 
 #'   All non-zero entries are treated as if the two locations 
 #'   are adjacent. If \code{formula} contains a grouping factor,
-#'   the row names of \code{W} have to matche the levels
+#'   the row names of \code{W} have to match the levels
 #'   of the grouping factor.
 #' @param formula An optional one-sided formula of the form 
 #'   \code{~ 1 | g}, where \code{g} is a grouping factor mapping
@@ -267,7 +267,7 @@ sar_weights <- function(W) {
 #'   each observation is treated as a separate location.
 #'   It is recommended to always specify a grouping factor
 #'   to allow for handling of new data in post-processing methods.
-#' @param type Type of the CAR structure. Currenlty implemented
+#' @param type Type of the CAR structure. Currently implemented
 #'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
 #'   (exact sparse intrinsic CAR). More information is
 #'   provided in the 'Details' section.

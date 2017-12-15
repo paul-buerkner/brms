@@ -13,7 +13,7 @@ cor_icar(W, formula = ~1)
 \item{W}{Adjacency matrix of locations. 
 All non-zero entries are treated as if the two locations 
 are adjacent. If \code{formula} contains a grouping factor,
-the row names of \code{W} have to matche the levels
+the row names of \code{W} have to match the levels
 of the grouping factor.}
 
 \item{formula}{An optional one-sided formula of the form 
@@ -23,7 +23,7 @@ each observation is treated as a separate location.
 It is recommended to always specify a grouping factor
 to allow for handling of new data in post-processing methods.}
 
-\item{type}{Type of the CAR structure. Currenlty implemented
+\item{type}{Type of the CAR structure. Currently implemented
 are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
 (exact sparse intrinsic CAR). More information is
 provided in the 'Details' section.}

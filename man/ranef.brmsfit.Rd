@@ -18,7 +18,7 @@ instead of the raw values? Default is \code{TRUE}.}
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
-median absolute deivation (MAD) are applied instead.
+median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 

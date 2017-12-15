@@ -42,7 +42,7 @@ A \code{\link[ggplot2:ggplot]{ggplot}} object
   that can be further customized using the \pkg{ggplot2} package.
 }
 \description{
-Conveniant way to call MCMC plotting functions 
+Convenient way to call MCMC plotting functions 
 implemented in the \pkg{bayesplot} package.
 }
 \details{

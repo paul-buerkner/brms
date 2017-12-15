@@ -261,7 +261,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @return A list of lists (one per grouping factor), each with
 #' three elements: a matrix containing the standard deviations, 
 #' an array containing the correlation matrix, and an array 
-#' containing the covariance matrix with variances on the diagonial.
+#' containing the covariance matrix with variances on the diagonal.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
@@ -1473,7 +1473,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @param negative_rt Only relevant for Wiener diffusion models. 
 #'   A flag indicating whether response times of responses
 #'   on the lower boundary should be returned as negative values.
-#'   This allows to distinquish responses on the upper and
+#'   This allows to distinguish responses on the upper and
 #'   lower boundary. Defaults to \code{FALSE}.
 #' @param resp Optional names of response variables.
 #'  If specified, fitted values of these response variables are returned.
@@ -1483,7 +1483,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @param robust If \code{FALSE} (the default) the mean is used as 
 #'  the measure of central tendency and the standard deviation as 
 #'  the measure of variability. If \code{TRUE}, the median and the 
-#'  median absolute deivation (MAD) are applied instead.
+#'  median absolute deviation (MAD) are applied instead.
 #'  Only used if \code{summary} is \code{TRUE}.
 #' @param probs  The percentiles to be computed by the \code{quantile} 
 #'  function. Only used if \code{summary} is \code{TRUE}. 
@@ -1510,7 +1510,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' 
 #' @return Predicted values of the response variable. 
 #'   If \code{summary = TRUE} the output depends on the family:
-#'   For catagorical and ordinal families, it is a N x C matrix, 
+#'   For categorical and ordinal families, it is a N x C matrix, 
 #'   where N is the number of observations and
 #'   C is the number of categories. 
 #'   For all other families, it is a N x E matrix where E is equal 
@@ -1539,7 +1539,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   by sampling each value \code{ntrys} times and then select a valid value. 
 #'   If all values are invalid, the closest boundary is used, instead. 
 #'   If there are more than a few of these pathological cases, 
-#'   a warning will occure suggesting to increase argument \code{ntrys}.
+#'   a warning will occur suggesting to increase argument \code{ntrys}.
 #' 
 #' @examples 
 #' \dontrun{
@@ -2383,7 +2383,7 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @param combine Only relevant in multivariate models.
 #'   Indicates if the log-likelihoods of the submodels should
 #'   be combined per observation (i.e. added together; the default) 
-#'   or if the log-likelihoods should be returned separetely.
+#'   or if the log-likelihoods should be returned separately.
 #' @param pointwise A flag indicating whether to compute the full
 #'   log-likelihood matrix at once (the default), or just return
 #'   the likelihood function along with all data and samples

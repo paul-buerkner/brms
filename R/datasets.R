@@ -3,7 +3,7 @@
 #' @description This dataset, originally discussed in 
 #'   McGilchrist and Aisbett (1991), describes the first and second 
 #'   (possibly right censored) recurrence time of 
-#'   infection in kideny patients using portable dialysis equipment. 
+#'   infection in kidney patients using portable dialysis equipment. 
 #'   In addition, information on the risk variables age, sex and disease 
 #'   type is provided.
 #' 
@@ -21,7 +21,7 @@
 #'  \item{age}{The age of the patient}
 #'  \item{sex}{The sex of the patient}
 #'  \item{disease}{A factor of levels \code{other, GN, AN}, 
-#'    and \code{PKD} specifiying the type of disease}
+#'    and \code{PKD} specifying the type of disease}
 #' }
 #' 
 #' @examples 
@@ -48,7 +48,7 @@
 
 #' Clarity of inhaler instructions
 #' 
-#' @description Ezzet and Whitehead (1991) analyse data from a two-treatment, 
+#' @description Ezzet and Whitehead (1991) analyze data from a two-treatment, 
 #'   two-period crossover trial to compare 2 inhalation devices for 
 #'   delivering the drug salbutamol in 286 asthma patients. 
 #'   Patients were asked to rate the clarity of leaflet instructions 
@@ -92,9 +92,9 @@
 
 #' Epileptic seizure counts
 #' 
-#' @description Breslow and Clayton (1993) analyse data initially 
+#' @description Breslow and Clayton (1993) analyze data initially 
 #'   provided by Thall and Vail (1990) concerning 
-#'   seizure counts in a randomised trial of anti-convulsant 
+#'   seizure counts in a randomized trial of anti-convulsant 
 #'   therapy in epilepsy. Covariates are treatment, 
 #'   8-week baseline seizure counts, and age of the patients in years. 
 #'   
@@ -104,8 +104,8 @@
 #'  \item{Age}{The age of the patients in years}
 #'  \item{Base}{The seizure count at 8-weeks baseline}
 #'  \item{Trt}{Either \code{0} or \code{1} indicating 
-#'    if the patient recieved anti-convulsant therapy} 
-#'  \item{log_Age_c}{The logarithm of Age centered arounds its mean}
+#'    if the patient received anti-convulsant therapy} 
+#'  \item{log_Age_c}{The logarithm of Age centered around its mean}
 #'  \item{log_Base4_c}{The logarithm of Base divided by 4 
 #'    (i.e. log(Base/4)) centered around its mean}
 #'  \item{Trt_c}{Trt centered around its mean}

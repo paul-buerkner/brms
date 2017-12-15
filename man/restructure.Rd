@@ -2,7 +2,7 @@
 % Please edit documentation in R/restructure.R
 \name{restructure}
 \alias{restructure}
-\title{Retructure Old \code{brmsfit} Objects}
+\title{Restructure Old \code{brmsfit} Objects}
 \usage{
 restructure(x, rstr_summary = FALSE)
 }
@@ -20,7 +20,7 @@ A \code{brmsfit} object compatible with the latest version
 Restructure old \code{brmsfit} objects to work with 
 the latest \pkg{brms} version. This function is called
 internally when applying post-processing methods.
-However, in order to avoid uncessary run time caused
-by the restructuring, I recommend explicitely calling
+However, in order to avoid unnecessary run time caused
+by the restructuring, I recommend explicitly calling
 \code{restructure} once per model after updating \pkg{brms}.
 }

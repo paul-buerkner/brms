@@ -10,8 +10,8 @@
  \item{Age}{The age of the patients in years}
  \item{Base}{The seizure count at 8-weeks baseline}
  \item{Trt}{Either \code{0} or \code{1} indicating 
-   if the patient recieved anti-convulsant therapy} 
- \item{log_Age_c}{The logarithm of Age centered arounds its mean}
+   if the patient received anti-convulsant therapy} 
+ \item{log_Age_c}{The logarithm of Age centered around its mean}
  \item{log_Base4_c}{The logarithm of Base divided by 4 
    (i.e. log(Base/4)) centered around its mean}
  \item{Trt_c}{Trt centered around its mean}
@@ -35,9 +35,9 @@ Breslow, N. E., & Clayton, D. G. (1993).
 epilepsy
 }
 \description{
-Breslow and Clayton (1993) analyse data initially 
+Breslow and Clayton (1993) analyze data initially 
   provided by Thall and Vail (1990) concerning 
-  seizure counts in a randomised trial of anti-convulsant 
+  seizure counts in a randomized trial of anti-convulsant 
   therapy in epilepsy. Covariates are treatment, 
   8-week baseline seizure counts, and age of the patients in years.
 }

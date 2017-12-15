@@ -21,7 +21,7 @@ instead of the raw values? Default is \code{TRUE}.}
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
 the measure of variability. If \code{TRUE}, the median and the 
-median absolute deivation (MAD) are applied instead.
+median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 
@@ -33,7 +33,7 @@ function. Only used if \code{summary} is \code{TRUE}.}
 A list of lists (one per grouping factor), each with
 three elements: a matrix containing the standard deviations, 
 an array containing the correlation matrix, and an array 
-containing the covariance matrix with variances on the diagonial.
+containing the covariance matrix with variances on the diagonal.
 }
 \description{
 This function calculates the estimated standard deviations, 

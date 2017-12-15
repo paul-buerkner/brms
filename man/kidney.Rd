@@ -18,7 +18,7 @@
  \item{age}{The age of the patient}
  \item{sex}{The sex of the patient}
  \item{disease}{A factor of levels \code{other, GN, AN}, 
-   and \code{PKD} specifiying the type of disease}
+   and \code{PKD} specifying the type of disease}
 }}
 \source{
 McGilchrist, C. A., & Aisbett, C. W. (1991). 
@@ -32,7 +32,7 @@ kidney
 This dataset, originally discussed in 
   McGilchrist and Aisbett (1991), describes the first and second 
   (possibly right censored) recurrence time of 
-  infection in kideny patients using portable dialysis equipment. 
+  infection in kidney patients using portable dialysis equipment. 
   In addition, information on the risk variables age, sex and disease 
   type is provided.
 }

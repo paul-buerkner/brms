@@ -81,7 +81,7 @@ If \code{NULL} (the default), \code{nug} is chosen internally.}
 \item{combine}{Only relevant in multivariate models.
 Indicates if the log-likelihoods of the submodels should
 be combined per observation (i.e. added together; the default) 
-or if the log-likelihoods should be returned separetely.}
+or if the log-likelihoods should be returned separately.}
 
 \item{...}{Currently ignored}
 }
