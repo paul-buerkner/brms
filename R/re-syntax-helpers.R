@@ -243,13 +243,10 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
   # Args:
   #   bterms: object of class brmsterms
   #   all: logical; include ranefs of nl and aux parameters?
-  old_mv <- isTRUE(attr(x$formula, "old_mv"))
   if (all) {
     re <- named_list(names(x$dpars))
     for (dp in names(re)) {
-      re[[dp]] <- get_re(
-        x$dpars[[dp]], response = x$response, old_mv = old_mv
-      )
+      re[[dp]] <- get_re(x$dpars[[dp]])
     }
     re <- do.call(rbind, re)
   } else {
@@ -265,20 +262,11 @@ get_re.mvbrmsterms <- function(x, ...) {
 }
 
 #' @export
-get_re.btl <- function(x, response = "", old_mv = FALSE, ...) {
+get_re.btl <- function(x, ...) {
   stopifnot(is.data.frame(x$re))
   px <- check_prefix(x)
   re <- x$re
-  nresp <- length(response)
-  if (!old_mv && nresp > 1L && nrow(re)) {
-    re <- replicate(nresp, re, simplify = FALSE)
-    for (i in seq_len(nresp)) {
-      re[[i]]$resp <- rep(response[i], nrow(re[[i]]))
-    }
-    re <- do.call(rbind, re)
-  } else {
-    re$resp <- rep(px$resp, nrow(re)) 
-  }
+  re$resp <- rep(px$resp, nrow(re)) 
   re$dpar <- rep(px$dpar, nrow(re))
   re$nlpar <- rep(px$nlpar, nrow(re)) 
   re
