@@ -416,10 +416,9 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
 rm_int_fe <- function(fixef, stancode, px = list()) {
   # identifies if the intercept has to be removed from fixef
   # and returns adjusted fixef names
-  p <- usc(combine_prefix(px), "suffix")
-  int <- paste0("b_", p, "Intercept = temp_", p, "Intercept")
-  loclev <- "vector[N] loclev;"
-  if (any(ulapply(c(int, loclev), grepl, stancode, fixed = TRUE))) {
+  p <- usc(combine_prefix(px))
+  regex <- paste0("(temp", p, "_Intercept)|(vector\\[N\\] loclev", p, ";)")
+  if (grepl(regex, stancode)) {
     fixef <- setdiff(fixef, "Intercept")
   } 
   fixef

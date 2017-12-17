@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 2.0.0++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix incorrect computation of intercepts
+      in \code{acat} and \code{cratio} models
+      thanks to Peter Phalen. (#302)
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 2.0.0}{
   This is the second major release of \code{brms}. The main
   new feature are generalized multivariate models, which now

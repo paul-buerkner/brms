@@ -39,7 +39,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(to_vector(bcs) | 0, 1)")
   expect_match2(scode, "prior_bcs = normal_rng(0,1)")
   expect_match2(scode, 
-    "prior_b_Intercept = prior_temp_Intercept - dot_product(means_X, b)"
+    "prior_b_Intercept = prior_temp_Intercept + dot_product(means_X, b)"
   )
   
   prior <- c(prior(normal(0,5), nlpar = a),
@@ -535,7 +535,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "real acat_logit_lpmf(int y")
   expect_match2(scode, "q[k] = disc * (mu + mucs[k] - thres[k]);")
   expect_match2(scode, "mucs[n, 1] = mucs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];")
-  expect_match2(scode, "b_Intercept = temp_Intercept - dot_product(means_X, b);")
+  expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
   
   scode <- make_stancode(y ~ x1 + (cse(x2)||g), dat, family = acat("probit"))
   expect_match2(scode, "q[k] = Phi(disc * (mu + mucs[k] - thres[k]));")
