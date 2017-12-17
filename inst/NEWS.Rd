@@ -3,6 +3,13 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 2.0.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Export the helper functions \code{posterior_summary} 
+      and \code{posterior_table} both being used to
+      summarize posterior samples and predictions.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix incorrect computation of intercepts

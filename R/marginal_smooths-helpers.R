@@ -101,7 +101,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
           newdata[, covars[[i]], drop = FALSE], spaghetti_data
         )
       }
-      eta <- get_summary(eta, robust = TRUE, probs = probs)
+      eta <- posterior_summary(eta, robust = TRUE, probs = probs)
       colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
       eta <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
       if (length(byfactors)) {

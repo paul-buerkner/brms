@@ -183,3 +183,34 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
 hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
   hypothesis_internal(as.data.frame(x), hypothesis, alpha = alpha, ...)
 }
+
+#' @rdname posterior_summary
+#' @export
+posterior_summary.default <- function(x, probs = c(0.025, 0.975), 
+                                      robust = FALSE, ...) {
+  if (robust) {
+    coefs <- c("median", "mad", "quantile")
+  } else {
+    coefs <- c("mean", "sd", "quantile")
+  }
+  .posterior_summary <- function(x) {
+    do.call(cbind, lapply(
+      coefs, get_estimate, samples = x, 
+      probs = probs, na.rm = TRUE
+    ))
+  }
+  x <- as.array(x)
+  if (!length(dim(x)) %in% 2:3) {
+    stop("'x' must be of dimension 2 or 3.")
+  }
+  if (length(dim(x)) == 2L) {
+    out <- .posterior_summary(x)
+    rownames(out) <- colnames(x)
+  } else if (length(dim(x)) == 3L) {
+    out <- lapply(array2list(x), .posterior_summary)
+    out <- abind(out, along = 3)
+    dimnames(out)[c(1, 3)] <- dimnames(x)[c(2, 3)]
+  }
+  colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
+  out  
+}

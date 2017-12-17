@@ -1139,6 +1139,35 @@ control_params <- function(x, ...) {
   UseMethod("control_params")
 }
 
+#' Summarize Posterior Samples
+#' 
+#' Summarizes posterior samples based on point estimates (mean or median),
+#' estimation errors (SD or MAD) and quantiles.
+#' 
+#' @param x An \R object.
+#' @param probs The percentiles to be computed by the 
+#'   \code{quantile} function.
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#' @param ... More arguments passed to or from other methods.
+#' @inheritParams posterior_samples
+#' 
+#' @return A matrix where rows indicate parameters 
+#'  and columns indicate the summary estimates.
+#'  
+#' @examples 
+#' \dontrun{
+#' fit <- brm(time ~ age * sex, data = kidney)
+#' posterior_summary(fit)
+#' }
+#' 
+#' @export
+posterior_summary <- function(x, ...) {
+  UseMethod("posterior_summary")
+}
+
 #' @rdname bayes_factor.brmsfit
 #' @export
 bayes_factor <- function(x1, x2, ...) {

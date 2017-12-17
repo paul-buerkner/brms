@@ -47,7 +47,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   out <- as.matrix(object, pars = fpars, exact_match = TRUE)
   colnames(out) <- gsub(fixef_pars(), "", fpars)
   if (summary) {
-    out <- get_summary(out, probs, robust)
+    out <- posterior_summary(out, probs, robust)
   }
   out
 }
@@ -145,7 +145,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
     if (summary) {
-      out[[g]] <- get_summary(out[[g]], probs, robust)
+      out[[g]] <- posterior_summary(out[[g]], probs, robust)
     }
   }
   out
@@ -236,7 +236,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       coef[[g]][, , nm] <- coef[[g]][, , nm] + sign * fixef[, nm]
     }
     if (summary) {
-      coef[[g]] <- get_summary(coef[[g]], probs, robust)
+      coef[[g]] <- posterior_summary(coef[[g]], probs, robust)
     }
   }
   coef
@@ -309,12 +309,12 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
       dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
       dimnames(out$cov)[2:3] <- list(y$rnames, y$rnames)
       if (summary) {
-        out$cor <- get_summary(out$cor, probs, robust)
-        out$cov <- get_summary(out$cov, probs, robust)
+        out$cor <- posterior_summary(out$cor, probs, robust)
+        out$cov <- posterior_summary(out$cov, probs, robust)
       }
     }
     if (summary) {
-      out$sd <- get_summary(out$sd, probs, robust)
+      out$sd <- posterior_summary(out$sd, probs, robust)
     }
     return(out)
   }
@@ -466,6 +466,15 @@ posterior_interval.brmsfit <- function(
 ) {
   ps <- as.matrix(object, pars = pars, ...)
   rstantools::posterior_interval(ps, prob = prob)
+}
+
+#' @rdname posterior_summary
+#' @export
+posterior_summary.brmsfit <- function(x, pars = NA, 
+                                      probs = c(0.025, 0.975), 
+                                      robust = FALSE, ...) {
+  out <- as.matrix(x, pars = pars, ...)
+  posterior_summary(out, probs = probs, robust = robust, ...)
 }
 
 #' Extract posterior samples for use with the \pkg{coda} package
@@ -1824,7 +1833,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   res <- reorder_obs(res, attr(sdata, "old_order"), sort = sort)
   if (summary) {
-    res <- get_summary(res, probs = probs, robust = robust)
+    res <- posterior_summary(res, probs = probs, robust = robust)
   }
   res
 }
@@ -1943,7 +1952,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(R2) <- paste0("R2", resp)
   }
   if (summary) {
-    R2 <- get_summary(R2, probs = probs, robust = robust)
+    R2 <- posterior_summary(R2, probs = probs, robust = robust)
   }
   R2
 }
@@ -2491,7 +2500,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     loglik <- exp(loglik)
   }
   if (summary) {
-    loglik <- get_summary(loglik, probs = probs, robust = robust)
+    loglik <- posterior_summary(loglik, probs = probs, robust = robust)
     dimnames(loglik) <- list(
       seq_len(nrow(loglik)), colnames(loglik),
       paste0("P(K = ", seq_len(dim(loglik)[3]), " | Y)")

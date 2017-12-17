@@ -51,9 +51,9 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   if (summary) {
     if (is_ordinal(draws$f) || is_categorical(draws$f)) {
       # compute frequencies of categories 
-      out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
+      out <- posterior_table(out, levels = seq_len(max(draws$data$ncat)))
     } else {
-      out <- get_summary(out, probs = probs, robust = robust)
+      out <- posterior_summary(out, probs = probs, robust = robust)
     }
   }
   out

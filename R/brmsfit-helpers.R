@@ -169,55 +169,42 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   x 
 }
 
-get_summary <- function(samples, probs = c(0.025, 0.975), robust = FALSE) {
-  # summarizes parameter samples based on mean, sd, and quantiles
-  # Args: 
-  #   samples: a matrix or data.frame containing the samples to be summarized. 
-  #            rows are samples, columns are parameters
-  #   probs: quantiles to be computed
-  #   robust: return median and mas instead of mean and sd?
-  #   keep_names: keep dimnames of the samples?
-  # Returns:
-  #   a N x C matrix where N is the number of observations and C 
-  #   is equal to \code{length(probs) + 2}.
-  if (robust) {
-    coefs <- c("median", "mad", "quantile")
-  } else {
-    coefs <- c("mean", "sd", "quantile")
+#' Table Creation for Posterior Samples
+#' 
+#' Create a table for unique values of posterior samples. 
+#' This is usually only useful when summarizing predictions 
+#' of ordinal models.
+#' 
+#' @param x A matrix of posterior samples where rows 
+#'   indicate samples and columns indicate parameters. 
+#' @param levels Optional values of possible posterior values.
+#'   Defaults to all unique values in \code{x}.
+#' 
+#' @return A matrix where rows indicate parameters 
+#'  and columns indicate the unique values of 
+#'  posterior samples.
+#'  
+#' @examples 
+#' \dontrun{
+#' fit <- brm(rating ~ period + carry + treat, 
+#'            data = inhaler, family = cumulative())
+#' pr <- predict(fit, summary = FALSE)
+#' posterior_table(pr)
+#' }
+#'  
+#' @export
+posterior_table <- function(x, levels = NULL) {
+  x <- as.matrix(x)
+  if (is.null(levels)) {
+    levels <- sort(unique(as.vector(x)))
   }
-  .get_summary <- function(samples) {
-    do.call(cbind, lapply(
-      coefs, get_estimate, samples = samples, 
-      probs = probs, na.rm = TRUE
-    ))
-  }
-  stopifnot(length(dim(samples)) %in% 2:3)
-  if (length(dim(samples)) == 2L) {
-    out <- .get_summary(samples)
-    rownames(out) <- colnames(samples)
-  } else if (length(dim(samples)) == 3L) {
-    out <- lapply(array2list(samples), .get_summary)
-    out <- abind(out, along = 3)
-    dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
-  }
-  colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
-  out  
-}
-
-get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
-  # compute absolute frequencies for each column
-  # Args:
-  #   samples: a S x N matrix
-  #   levels: all possible values in samples
-  # Returns:
-  #    a N x levels matrix containing relative frequencies of each level
-  stopifnot(is.matrix(samples))
-  out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
-    function(n) table(factor(samples[, n], levels = levels))
-  ))
+  out <- lapply(seq_len(ncol(x)), 
+    function(n) table(factor(x[, n], levels = levels))
+  )
+  out <- do.call(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
-  rownames(out) <- colnames(samples)
+  rownames(out) <- colnames(x)
   colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
   out
 }

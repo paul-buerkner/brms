@@ -335,7 +335,7 @@ marginal_effects_internal.brmsterms <- function(
     colnames(spaghetti_data) <- c("estimate__", "sample__")
     spaghetti_data <- cbind(marg_data, spaghetti_data)
   }
-  out <- get_summary(out, probs = probs, robust = robust)
+  out <- posterior_summary(out, probs = probs, robust = robust)
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(marg_data, out)
   attr(out, "effects") <- eff
