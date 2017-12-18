@@ -37,11 +37,12 @@ loglik_internal.brmsdraws <- function(draws, ...) {
 
 loglik_pointwise <- function(i, draws, data = data.frame()) {
   # for use in pointwise evaluation only
-  if (is.mvbrmsdraws(draws)) {
-    # TODO: handle rescor
-    out <- Reduce("+", lapply(draws$resps, loglik_pointwise, i = i))
+  # cannot be made an S3 methods since i must be the first argument
+  if (is.mvbrmsdraws(draws) && !length(draws$mvpars$rescor)) {
+    out <- lapply(draws$resps, loglik_pointwise, i = i)
+    out <- Reduce("+", out)
   } else {
-    loglik_fun <- paste0("loglik_", draws$f$family)
+    loglik_fun <- paste0("loglik_", draws$f$fun)
     loglik_fun <- get(loglik_fun, asNamespace("brms"))
     out <- loglik_fun(i, draws)
   }
@@ -74,7 +75,7 @@ loglik_gaussian <- function(i, draws, data = data.frame()) {
 loglik_student <- function(i, draws, data = data.frame()) {
   args <- list(
     df = get_dpar(draws, "nu", i = i), 
-    mu = get_dpar(draws, "mu", i), 
+    mu = get_dpar(draws, "mu", i = i), 
     sigma = get_dpar(draws, "sigma", i = i)
   )
   out <- loglik_censor(
@@ -154,7 +155,7 @@ loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
     args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   }
-  # make sure par[s, ] is valid even if obs if of length 1
+  # make sure par[s, ] is valid even if obs is of length 1
   mu <- as.matrix(get_dpar(draws, "mu", obs))
   # weights, truncation and censoring not yet allowed
   sapply(1:draws$nsamples, function(s)
@@ -182,7 +183,7 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
     args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
   }
-  # make sure par[s, ] is valid even if obs if of length 1
+  # make sure par[s, ] is valid even if obs is of length 1
   mu <- as.matrix(get_dpar(draws, "mu", obs))
   nu <- as.matrix(get_dpar(draws, "nu", obs))
   # weights, truncation and censoring not yet allowed
