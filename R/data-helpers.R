@@ -19,44 +19,45 @@ update_data <- function(data, bterms, na.action = na.omit,
   if (missing(data)) {
     stop2("Argument 'data' is missing.")
   }
+  if (isTRUE(attr(data, "brmsframe"))) {
+    return(data)
+  }
   if (is.null(knots)) {
     knots <- attr(data, "knots", TRUE)
   }
-  if (!isTRUE(attr(data, "brmsframe"))) {
-    data <- try(as.data.frame(data, silent = TRUE))
-    if (is(data, "try-error")) {
-      stop2("Argument 'data' must be coercible to a data.frame.")
-    }
-    if (!isTRUE(nrow(data) > 0L)) {
-      stop2("Argument 'data' does not contain observations.")
-    }
-    bterms$allvars <- terms(bterms$allvars)
-    attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
-    data <- data_rsv_intercept(data, bterms = bterms)
-    missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
-    if (length(missing_vars)) {
-      stop2("The following variables are missing in 'data':\n",
-            collapse_comma(missing_vars))
-    }
-    data <- model.frame(
-      bterms$allvars, data, na.action = na.pass,
-      drop.unused.levels = drop.unused.levels
-    )
-    nrow_with_NA <- nrow(data)
-    data <- na.action(data)
-    if (nrow(data) != nrow_with_NA) {
-      warning2("Rows containing NAs were excluded from the model")
-    }
-    if (any(grepl("__|_$", colnames(data)))) {
-      stop2("Variable names may not contain double underscores ",
-            "or underscores at the end.")
-    }
-    groups <- get_groups(bterms)
-    data <- combine_groups(data, groups)
-    data <- fix_factor_contrasts(data, ignore = groups)
-    attr(data, "knots") <- knots
-    attr(data, "brmsframe") <- TRUE
+  data <- try(as.data.frame(data), silent = TRUE)
+  if (is(data, "try-error")) {
+    stop2("Argument 'data' must be coercible to a data.frame.")
   }
+  if (!isTRUE(nrow(data) > 0L)) {
+    stop2("Argument 'data' does not contain observations.")
+  }
+  bterms$allvars <- terms(bterms$allvars)
+  attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
+  data <- data_rsv_intercept(data, bterms = bterms)
+  missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
+  if (length(missing_vars)) {
+    stop2("The following variables are missing in 'data':\n",
+          collapse_comma(missing_vars))
+  }
+  data <- model.frame(
+    bterms$allvars, data, na.action = na.pass,
+    drop.unused.levels = drop.unused.levels
+  )
+  nrow_with_NA <- nrow(data)
+  data <- na.action(data)
+  if (nrow(data) != nrow_with_NA) {
+    warning2("Rows containing NAs were excluded from the model")
+  }
+  if (any(grepl("__|_$", colnames(data)))) {
+    stop2("Variable names may not contain double underscores ",
+          "or underscores at the end.")
+  }
+  groups <- get_groups(bterms)
+  data <- combine_groups(data, groups)
+  data <- fix_factor_contrasts(data, ignore = groups)
+  attr(data, "knots") <- knots
+  attr(data, "brmsframe") <- TRUE
   data
 }
 
@@ -196,7 +197,7 @@ validate_newdata <- function(
     }
     return(newdata)
   }
-  newdata <- try(as.data.frame(newdata, silent = TRUE))
+  newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
