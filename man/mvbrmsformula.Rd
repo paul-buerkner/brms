@@ -31,6 +31,15 @@ Set up a multivariate model formula for use in the \pkg{brms} package
 allowing to define (potentially non-linear) additive multilevel 
 models for all parameters of the assumed response distributions.
 }
+\details{
+See \code{vignette("brms_multivariate")} for a case study.
+}
+\examples{
+bf1 <- bf(y1 ~ x + (1|g))
+bf2 <- bf(y2 ~ s(z))
+mvbf(bf1, bf2)
+
+}
 \seealso{
 \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
 }

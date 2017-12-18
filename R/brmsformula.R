@@ -756,8 +756,15 @@ set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
 #' @return An object of class \code{mvbrmsformula}, which
 #'   is essentially a \code{list} containing all model formulas 
 #'   as well as some additional information for multivariate models.
+#'  
+#' @details See \code{vignette("brms_multivariate")} for a case study.
 #'   
 #' @seealso \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
+#' 
+#' @examples 
+#' bf1 <- bf(y1 ~ x + (1|g))
+#' bf2 <- bf(y2 ~ s(z))
+#' mvbf(bf1, bf2)
 #' 
 #' @export
 mvbrmsformula <- function(..., flist = NULL, rescor = NULL) {
