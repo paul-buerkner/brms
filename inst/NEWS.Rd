@@ -15,6 +15,9 @@
       \item Fix incorrect computation of intercepts
       in \code{acat} and \code{cratio} models
       thanks to Peter Phalen. (#302)
+      \item Fix \code{pointwise} computation of \code{LOO}
+      and \code{WAIC} in multivariate models with estimated 
+      residual correlation structure.
     }
   }
 }
