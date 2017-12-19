@@ -1168,13 +1168,6 @@ posterior_summary <- function(x, ...) {
   UseMethod("posterior_summary")
 }
 
-#' @rdname bayes_factor.brmsfit
-#' @export
-bayes_factor <- function(x1, x2, ...) {
-  # replace as soon as bridgesampling has this generic
-  UseMethod("bayes_factor")
-}
-
 #' Extract Diagnostic Quantities of \pkg{brms} Models
 #' 
 #' Extract quantities that can be used to diagnose sampling behavior
