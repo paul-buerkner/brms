@@ -1189,7 +1189,7 @@ stan_dpar_transform <- function(bterms) {
     )
     dpars <- names(bterms$dpars)
     mu_vector <- stan_vector(c("0", paste0(dpars, p, "[n]")))
-    str_add(out$modelC3) <- paste0(
+    str_add(out$modelC4) <- paste0(
       "    mu", p, "[n] = ", mu_vector, ";\n"
     )
   }

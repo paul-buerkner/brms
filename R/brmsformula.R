@@ -582,13 +582,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(out$family)) {
     # check for the presence of non-linear parameters
     dpars <- names(out$pforms)
-    if (is_categorical(out$family)) {
-      if (any(get_nl(out), ulapply(dpars, get_nl, x = out))) {
-        stop2("Non-linear formulas are not supported in categorical models.")
-      }
-    } else {
-      dpars <- names(out$pforms)[is_dpar_name(dpars, out$family)]
-    }
+    dpars <- dpars[is_dpar_name(dpars, out$family)]
     for (dp in names(out$pforms)) {
       if (!dp %in% dpars) {
         # indicate the correspondence to distributional parameter 
@@ -1131,10 +1125,10 @@ validate_formula.brmsformula <- function(
   #   a brmsformula object compatible with the current version of brms
   out <- bf(formula)
   if (is.null(out$family)) {
-    out <- bf(out, family = family)
+    out$family <- check_family(family)
   }
   if (is.null(out$autocor)) {
-    out <- bf(out, autocor = autocor)
+    out$autocor <- check_autocor(autocor)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)
@@ -1170,7 +1164,7 @@ validate_formula.brmsformula <- function(
             "using any special characters in the names.")
     }
   }
-  out
+  bf(out)
 }
 
 #' @export

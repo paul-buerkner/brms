@@ -131,7 +131,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   }
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
-      if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
+      if (is.mixfamily(family) || is_ordinal(family)) {
         stop2("Non-linear formulas are not yet allowed for this family.")
       }
       dpar_nlpar_forms <- nlpar_forms[dpar_of_nlpars %in% dp]
