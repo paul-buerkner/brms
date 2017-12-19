@@ -1124,10 +1124,10 @@ validate_formula.brmsformula <- function(
   # Returns:
   #   a brmsformula object compatible with the current version of brms
   out <- bf(formula)
-  if (is.null(out$family)) {
+  if (is.null(out$family) && !is.null(family)) {
     out$family <- check_family(family)
   }
-  if (is.null(out$autocor)) {
+  if (is.null(out$autocor) && !is.null(autocor)) {
     out$autocor <- check_autocor(autocor)
   }
   # allow the '.' symbol in the formulas
