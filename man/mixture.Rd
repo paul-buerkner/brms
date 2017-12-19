@@ -43,12 +43,12 @@ has to be specified by the user. It is not yet possible to estimate
 the number of mixture components from the data.
 
 For most mixture models, you may want to specify priors on the population-level
-intercepts via \code{\link[brms:set_prior]{set_prior}} to improve convergence. 
+intercepts via \code{\link{set_prior}} to improve convergence. 
 In addition, it is sometimes necessary to set \code{inits = 0} in the call to 
-\code{\link[brms:brms]{brm}} to allow chains to initialize properly.
+\code{\link{brm}} to allow chains to initialize properly.
 
 For more details on the specification of mixture
-models, see \code{\link[brms:brmsformula]{brmsformula}}.
+models, see \code{\link{brmsformula}}.
 }
 \examples{
 \dontrun{

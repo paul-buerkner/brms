@@ -22,7 +22,7 @@ WAIC(x, ...)
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link[brms:compare_ic]{compare_ic}}.}
+via \code{\link{compare_ic}}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the original data of the model is used.}

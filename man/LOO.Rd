@@ -24,10 +24,10 @@ LOO(x, ...)
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link[brms:compare_ic]{compare_ic}}.}
+via \code{\link{compare_ic}}.}
 
 \item{reloo}{Logical; Indicate whether 
-\code{\link[brms:reloo]{reloo}} should be applied
+\code{\link{reloo}} should be applied
 on problematic observations. Defaults to \code{FALSE}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
@@ -95,7 +95,7 @@ See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
 
 \item{update_args}{A \code{list} of further arguments passed to 
-\code{\link[brms:update.brmsfit]{update.brmsfit}} such
+\code{\link{update.brmsfit}} such
 as \code{iter}, \code{chains}, or \code{cores}.}
 
 \item{cores}{The number of cores to use for parallelization. 
@@ -117,7 +117,7 @@ on the posterior likelihood using the \pkg{loo} package.
 When comparing models fitted to the same data, 
  the smaller the LOO, the better the fit.
  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
- Use method \code{\link[brms:add_ic]{add_ic}} to store
+ Use method \code{\link{add_ic}} to store
  information criteria in the fitted model object for later usage.
 }
 \section{Methods (by class)}{

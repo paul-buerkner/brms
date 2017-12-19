@@ -18,7 +18,7 @@ kfold(x, ...)
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link[brms:compare_ic]{compare_ic}}.}
+via \code{\link{compare_ic}}.}
 
 \item{K}{The number of subsets of equal (if possible) size
 into which the data will be randomly partitioned for performing
@@ -59,7 +59,7 @@ objects and the indices of the omitted observations for each fold.
 Defaults to \code{FALSE}.}
 
 \item{update_args}{A \code{list} of further arguments passed to 
-\code{\link[brms:update.brmsfit]{update.brmsfit}} such
+\code{\link{update.brmsfit}} such
 as \code{iter}, \code{chains}, or \code{cores}.}
 }
 \value{
