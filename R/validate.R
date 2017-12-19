@@ -200,6 +200,10 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out <- list()
   out$terms <- lapply(x$forms, parse_bf, mv = TRUE, ...)
   out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
+  # required to find variables used solely in the response part
+  lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
+  out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
+  out$respform <- formula(paste0("cbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- isTRUE(x$rescor)
   for (i in seq_along(out$terms)) {
@@ -814,6 +818,22 @@ get_effect.btnl <- function(x, target = "fe", ...) {
     out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
   }
   rmNULL(out)
+}
+
+get_advars <- function(x, ...) {
+  # extract variable names used in addition terms
+  UseMethod("get_advars")
+}
+
+#' @export
+get_advars.brmsterms <- function(x, ad, ...) {
+  ad <- as_one_character(ad)
+  all.vars(x$adforms[[ad]])
+}
+
+#' @export
+get_advars.mvbrmsterms <- function(x, ad, ...) {
+  unique(ulapply(x$terms, get_advars, ad = ad, ...))
 }
 
 get_uni_me <- function(x) {

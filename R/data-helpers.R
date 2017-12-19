@@ -66,10 +66,9 @@ data_rsv_intercept <- function(data, bterms) {
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
-  rsv_int <- ulapply(bterms$dpars, 
-    function(x) attr(x$fe, "rsv_intercept")
-  )
-  if (any(rsv_int)) {
+  fe_forms <- get_effect(bterms, "fe")
+  rsv_int <- any(ulapply(fe_forms, attr, "rsv_intercept"))
+  if (rsv_int) {
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
@@ -205,9 +204,9 @@ validate_newdata <- function(
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
-  # always include 'dec' variables in 'only_resp'
-  only_resp <- c(only_resp, all.vars(bterms$adforms$dec))
-  missing_resp <- setdiff(only_resp, names(newdata))
+  # always require 'dec' variables to be specified
+  dec_vars <- get_advars(bterms, "dec")
+  missing_resp <- setdiff(c(only_resp, dec_vars), names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
       stop2("Response variables must be specified in 'newdata'.\n",
@@ -217,11 +216,11 @@ validate_newdata <- function(
     }
   }
   # censoring and weighting vars are unused in post-processing methods
-  cens_vars <- all.vars(bterms$adforms$cens)
+  cens_vars <- get_advars(bterms, "cens")
   for (v in setdiff(cens_vars, names(newdata))) {
     newdata[[v]] <- 0
   }
-  weights_vars <- all.vars(bterms$adforms$weights)
+  weights_vars <- get_advars(bterms, "weights")
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
