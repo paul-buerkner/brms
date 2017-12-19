@@ -18,6 +18,9 @@
       \item Fix \code{pointwise} computation of \code{LOO}
       and \code{WAIC} in multivariate models with estimated 
       residual correlation structure.
+      \item Fix problems in various S3 methods sometimes
+      requiring unused variables to be specified in 
+      \code{newdata}.
     }
   }
 }
