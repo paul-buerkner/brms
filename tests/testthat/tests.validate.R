@@ -45,23 +45,23 @@ test_that("check_re_formula returns correct REs", {
 
 test_that("update_re_terms works correctly", {
   expect_equivalent(update_re_terms(y ~ x, ~ (1|visit)), y ~ x)
-  expect_equivalent(update_re_terms(y ~ x + (1+Trt_c|patient), ~ (1|patient)), 
-                    y ~ 1 + x + (1|gr(patient)))
-  expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), 
-                    y ~ 1 + x)
+  expect_equivalent(update_re_terms(y ~ x*z + (1+Trt_c|patient), ~ (1|patient)),
+                    y ~ x*z + (1|gr(patient)))
+  expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), y ~ x)
+  expect_equivalent(update_re_terms(y ~ 1|patient, ~ 1), y ~ 1)
   expect_equivalent(update_re_terms(y ~ -1 + x + (1+visit|patient), NA), 
-                    y ~ 0 + x)
+                    y ~ -1 + x)
   expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NULL), 
                     y ~ x + (1+visit|patient))
   expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
   expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
-                    y ~ 1 + x + (1|gr(visit)))
+                    y ~ x + (1|gr(visit)))
   expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit)),
-                    y ~ 1 + x + (1|gr(visit)))
+                    y ~ x + (1|gr(visit)))
   expect_equal(update_re_terms(bf(y ~ x, sigma = ~ x + (x|g)), ~ (1|g)),
-               bf(y ~ x, sigma = ~ 1 + x + (1|gr(g))))
+               bf(y ~ x, sigma = ~ x + (1|gr(g))))
   expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
-               bf(y ~ x, x ~ 1 + z + (1|gr(g)), nl = TRUE))
+               bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
 })
 
 test_that("exclude_pars returns expected parameter names", {
