@@ -212,7 +212,9 @@ validate_newdata <- function(
     not_reqvars <- setdiff(all.vars(bterms$allvars), all.vars(reqvars))
     not_reqvars <- setdiff(not_reqvars, names(newdata))
     if (length(not_reqvars)) {
-      newdata[, not_reqvars] <- NA
+      # use NaN rather then NA as the latter will cause model.matrix 
+      # to return <x>TRUE instead of <x> as column names
+      newdata[, not_reqvars] <- NaN
     }
   }
   only_resp <- all.vars(bterms$respform)
@@ -225,7 +227,7 @@ validate_newdata <- function(
       stop2("Response variables must be specified in 'newdata'.\n",
             "Missing variables: ", collapse_comma(missing_resp))
     } else {
-      newdata[, missing_resp] <- NA
+      newdata[, missing_resp] <- NaN
     }
   }
   # censoring and weighting vars are unused in post-processing methods

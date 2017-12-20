@@ -76,7 +76,8 @@ predictor_fe <- function(draws, i) {
       "Something went wrong. Did you transform numeric variables ", 
       "to factors or vice versa within the model formula? ",
       "If yes, please convert your variables beforehand. ",
-      "If no, this might be a bug. Please tell me about it."
+      "Or did you set a predictor variable to NA? If no to both, ", 
+      "this might be a bug. Please tell me about it."
     )
   }
   eta
