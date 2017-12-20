@@ -1,4 +1,3 @@
-rm(list = ls())
 source("tests/local/setup.R")
 
 test_that("Poisson model from brm doc works correctly", {
