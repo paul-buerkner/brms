@@ -21,7 +21,9 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     x <- remove_autocor(x) 
   }
-  sdata <- validate_newdata(newdata, fit = x, re_formula = re_formula, ...)
+  sdata <- validate_newdata(
+    newdata, x, re_formula = re_formula, resp = resp, ...
+  )
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
   new_formula <- update_re_terms(x$formula, re_formula)

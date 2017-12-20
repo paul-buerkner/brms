@@ -157,7 +157,7 @@ order_data <- function(data, bterms) {
 
 validate_newdata <- function(
   newdata, fit, re_formula = NULL, allow_new_levels = FALSE,
-  check_response = FALSE, only_response = FALSE,
+  resp = NULL, check_response = FALSE, only_response = FALSE,
   incl_autocor = TRUE, return_standata = TRUE,
   all_group_vars = NULL, new_objects = list()
 ) {
@@ -167,6 +167,8 @@ validate_newdata <- function(
   #   fit: an object of class brmsfit
   #   re_formula: a group-level formula
   #   allow_new_levels: Are new group-levels allowed?
+  #   resp: optional name of response variables whose 
+  #     variables should be checked
   #   check_response: Should response variables be checked
   #     for existence and validity?
   #   only_response: compute only response related stuff
@@ -202,6 +204,17 @@ validate_newdata <- function(
   }
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
+  if (is.mvbrmsterms(bterms) && !is.null(resp)) {
+    # variables not used in the included model parts
+    # do not need to be specified in newdata
+    resp <- validate_resp(resp, bterms$responses)
+    reqvars <- allvars_formula(lapply(bterms$terms[resp], "[[", "allvars"))
+    not_reqvars <- setdiff(all.vars(bterms$allvars), all.vars(reqvars))
+    not_reqvars <- setdiff(not_reqvars, names(newdata))
+    if (length(not_reqvars)) {
+      newdata[, not_reqvars] <- NA
+    }
+  }
   only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
   # always require 'dec' variables to be specified
