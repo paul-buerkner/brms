@@ -99,8 +99,8 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     }
   } else {
     if (!is.formula(x$pforms[["mu"]])) { 
-      x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
-      attr(x$pforms[["mu"]], "nl") <- attr(formula, "nl")
+      x$pforms$mu <- eval2(paste0("mu", str_rhs_form))
+      attr(x$pforms$mu, "nl") <- attr(formula, "nl")
       rhs_needed <- TRUE
     }
     x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
@@ -155,12 +155,12 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     if ("sigma" %in% c(names(x$pforms), names(x$pfix))) {
       stop2("Cannot predict or fix 'sigma' in this model.")
     }
-    x$pfix[["sigma"]] <- 0
+    x$pfix$sigma <- 0
   }
   if ("disc" %in% valid_dpars) {
     # 'disc' is set to 1 and not estimated by default
     if (!"disc" %in% c(names(x$pforms), names(x$pfix))) {
-      x$pfix[["disc"]] <- 1
+      x$pfix$disc <- 1
     }
   }
   for (dp in names(x$pfix)) {
@@ -174,7 +174,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   }
   # parse autocor formula
   if (!is.null(y$dpars[["mu"]])) {
-    y$dpars[["mu"]][["autocor"]] <- autocor
+    y$dpars$mu$autocor <- autocor
   }
   y$time <- parse_time(autocor)
   
@@ -607,9 +607,9 @@ is.btnl <- function(x) {
 }
 
 as.brmsterms <- function(x) {
-  # transoform an mvbrmsterms object for use in stan_llh.brmsterms
+  # transform mvbrmsterms objects for use in stan_llh.brmsterms
   stopifnot(is.mvbrmsterms(x), x$rescor)
-  families <- ulapply(x$terms, function(f) f$family$family)
+  families <- ulapply(x$terms, function(y) y$family$family)
   stopifnot(all(families == families[1]))
   out <- structure(list(), class = "brmsterms")
   out$family <- structure(
@@ -800,7 +800,7 @@ get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
       out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
     }
   } else {
-    x$dpars[["mu"]]$nlpars <- NULL
+    x$dpars$mu$nlpars <- NULL
     out <- get_effect(x$dpars[["mu"]], target = target)
   }
   unlist(out, recursive = FALSE)
@@ -1094,9 +1094,7 @@ validate_terms <- function(x) {
 
 has_intercept <- function(formula) {
   # checks if the formula contains an intercept
-  # can handle non-linear formulae
-  # Args:
-  #   formula: a formula object
+  # can handle non-linear formulas
   formula <- as.formula(formula)
   try_terms <- try(terms(formula), silent = TRUE)
   if (is(try_terms, "try-error")) {
@@ -1110,8 +1108,6 @@ has_intercept <- function(formula) {
 has_rsv_intercept <- function(formula) {
   # check if model makes use of the reserved variable 'intercept'
   # can handle non-linear formulae
-  # Args:
-  #   formula: a formula object
   formula <- try(as.formula(formula), silent = TRUE)
   if (is(formula, "try-error")) {
     out <- FALSE
