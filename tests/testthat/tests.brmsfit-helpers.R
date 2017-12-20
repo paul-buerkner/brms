@@ -12,11 +12,6 @@ test_that("array2list performs correct conversion", {
   expect_equal(brms:::array2list(A), B)
 })
 
-test_that("name_model works correctly", {
-  expect_equal(name_model(NA), "brms-model")
-  expect_equal(name_model(gaussian()), "gaussian(identity) brms-model")
-})
-
 test_that("probit and probit_approx produce similar results", {
   expect_equal(brms:::ilink(-10:10, "probit"), 
                brms:::ilink(-10:10, "probit_approx"), 

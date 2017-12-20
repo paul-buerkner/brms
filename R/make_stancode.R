@@ -176,7 +176,8 @@ make_stancode <- function(formula, data, family = gaussian(),
       ),
       type = "message", silent = silent
     )
-    complete_model$model_name <- name_model(family)
+    model_name <- paste(summarise_families(formula), "brms-model")
+    complete_model$model_name <- model_name
     class(complete_model$model_code) <- c("character", "brmsmodel")
     if (is.character(save_model)) {
       cat(complete_model$model_code, file = save_model)

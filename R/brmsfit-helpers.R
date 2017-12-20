@@ -24,18 +24,6 @@ stopifnot_resp <- function(x, resp = NULL) {
   invisible(NULL)
 }
 
-name_model <- function(family) {
-  # create the name of the fitted stan model
-  # Args:
-  #   family: A family object
-  if (!is.family(family)) {
-    out <- "brms-model"
-  } else {
-    out <- paste(summary(family), "brms-model")
-  }
-  out
-}
-
 link <- function(x, link) {
   # apply a link function on x
   # Args:
