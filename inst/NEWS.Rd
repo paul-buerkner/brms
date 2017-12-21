@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 2.0.0++}{
+\section{CHANGES IN VERSION 2.0.1}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Export the helper functions \code{posterior_summary} 
