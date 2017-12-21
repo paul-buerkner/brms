@@ -108,12 +108,12 @@ test_that("Models from hypothesis doc work correctly", {
   ## perform two-sided hypothesis testing
   hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD")
   expect_range(hyp1$hypothesis$Estimate, 0.6, 0.74)
-  expect_range(hyp1$hypothesis$Evid.Ratio, 2, 3.5)
+  expect_range(hyp1$hypothesis$Evid.Ratio, 1, 5)
   expect_true(is(plot(hyp1)[[1]], "ggplot"))
 
   ## perform one-sided hypothesis testing
   hyp2 <- hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
-  expect_range(hyp2$hypothesis$Evid.Ratio, 350)
+  expect_range(hyp2$hypothesis$Evid.Ratio, 300)
 
   ## test more than one hypothesis at once
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
@@ -580,7 +580,7 @@ test_that("SAR models work correctly", {
   expect_ggplot(pp_check(fit_lagsar))
   me = marginal_effects(fit_lagsar, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(LOO(fit_lagsar)$loic, 350, 380)
+  expect_range(LOO(fit_lagsar)$looic, 350, 380)
   
   fit_errorsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
                       autocor = cor_errorsar(COL.nb), 
