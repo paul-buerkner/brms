@@ -197,20 +197,17 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
 #' @export
 parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) {
   x <- validate_formula(formula, family = family, autocor = autocor)
-  out <- list()
-  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, ...)
+  x$rescor <- isTRUE(x$rescor)
+  out <- structure(list(), class = "mvbrmsterms")
+  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, rescor = x$rescor, ...)
   out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
   out$respform <- formula(paste0("cbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
-  out$rescor <- isTRUE(x$rescor)
-  for (i in seq_along(out$terms)) {
-    # for autocor checks all univariate models must be aware of rescor
-    out$terms[[i]]$rescor <- out$rescor
-  }
-  structure(out, class = "mvbrmsterms")
+  out$rescor <- x$rescor
+  out
 }
 
 parse_lf <- function(formula, family = NULL) {
@@ -841,34 +838,59 @@ get_uni_me <- function(x) {
   unique(ulapply(get_effect(x, "me"), attr, "uni_me"))
 }
 
-store_uni_me <- function(x) {
+store_uni_me <- function(x, ...) {
   # store unique names of noise-free terms in all 'me' elements
-  stopifnot(is.brmsterms(x))
-  uni_me <- get_uni_me(x)
-  if (!length(uni_me)) {
-    return(x)
+  UseMethod("store_uni_me")
+}
+
+#' @export
+store_uni_me.mvbrmsterms <- function(x, uni_me = NULL, ...) {
+  if (is.null(uni_me)) {
+    uni_me <- get_uni_me(x)
   }
-  'uni_me<-' <- function(bt, value) {
-    stopifnot(is.btl(bt))
-    if (is.formula(bt[["me"]])) {
-      attr(bt[["me"]], "uni_me") <- value
-    }
-    return(bt)
-  }
-  for (i in seq_along(x$dpars)) {
-    if (is.btnl(x$dpars[[i]])) {
-      for (j in seq_along(x$dpars[[i]]$nlpars)) {
-        uni_me(x$dpars[[i]]$nlpars[[j]]) <- uni_me
-      }
-    } else {
-      uni_me(x$dpars[[i]]) <- uni_me
-    }
+  for (i in seq_along(x$terms)) {
+    x$terms[[i]] <- store_uni_me(x$terms[[i]], uni_me = uni_me, ...)
   }
   x
 }
 
-get_sm_labels <- function(x, data = NULL, covars = FALSE,
-                          combine = TRUE) {
+#' @export
+store_uni_me.brmsterms <- function(x, uni_me = NULL, ...) {
+  if (is.null(uni_me)) {
+    uni_me <- get_uni_me(x)
+  }
+  if (!length(uni_me)) {
+    return(x)
+  }
+  for (i in seq_along(x$dpars)) {
+    x$dpars[[i]] <- store_uni_me(x$dpars[[i]], uni_me = uni_me, ...)
+  }
+  x
+}
+
+#' @export
+store_uni_me.btnl <- function(x, uni_me = NULL, ...) {
+  if (is.null(uni_me)) {
+    uni_me <- get_uni_me(x)
+  }
+  for (i in seq_along(x$nlpars)) {
+    x$nlpars[[i]] <- store_uni_me(x$nlpars[[i]], uni_me = uni_me, ...)
+  }
+  x
+}
+
+#' @export
+store_uni_me.btl <- function(x, uni_me = NULL, ...) {
+  if (is.null(uni_me)) {
+    uni_me <- get_uni_me(x)
+  }
+  if (length(uni_me)) {
+    attr(x[["me"]], "uni_me") <- uni_me
+  }
+  x
+}
+
+get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
   # extract labels of smooth terms
   # Args:
   #   x: either a formula or a list containing an element "sm"
