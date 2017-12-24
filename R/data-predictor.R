@@ -113,7 +113,7 @@ data_fe <- function(bterms, data, knots = NULL,
   out <- list()
   p <- usc(combine_prefix(bterms))
   is_ordinal <- is_ordinal(bterms$family)
-  is_bsts <- inherits(bterms$autocor, "cor_bsts")
+  is_bsts <- is.cor_bsts(bterms$autocor)
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
