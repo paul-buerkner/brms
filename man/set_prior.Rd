@@ -237,8 +237,11 @@ Define priors for specific parameters or classes of parameters
   group-level effects. The default prior of \code{lscale}
   is an informative inverse-gamma prior specifically tuned 
   to the covariates of the Gaussian process (for more details see
-  \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html#8_acknowledgements}).
-  If the tuning fails, a half-normal prior is used instead.
+  \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html}).
+  This tuned prior may be overly informative in some cases, so please 
+  consider other priors as well to make sure inference is
+  robust to the prior specification. If tuning fails, a half-normal prior 
+  is used instead.
   
   6. Autocorrelation parameters
   
