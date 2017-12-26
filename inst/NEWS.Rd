@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 2.0.1++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Use informative inverse-gamma priors
+      for length-scale parameters of Gaussian
+      processes. (#275)
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 2.0.1}{
   \subsection{NEW FEATURES}{
     \itemize{

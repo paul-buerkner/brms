@@ -29,7 +29,7 @@
 #' @param ... Arguments passed to \code{set_prior}.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
-#'   argument of \code{\link[brms:brm]{brm}}.
+#'   argument of \code{\link{brm}}.
 #' 
 #' @details 
 #'   \code{set_prior} is used to define prior distributions for parameters 
@@ -187,11 +187,11 @@
 #'   The corresponding parameter class of the Cholesky factors is \code{L},
 #'   but it is not recommended to specify priors for this parameter class directly.
 #'   
-#'   4. Standard deviations of smoothing terms
+#'   4. Smooth terms (splines)
 #'   
 #'   GAMMs are implemented in \pkg{brms} using the 'random effects' 
-#'   formulation of smoothing terms (for details see 
-#'   \code{\link[mgcv:gamm]{gamm}}). Thus, each smoothing term
+#'   formulation of smooth terms (for details see 
+#'   \code{\link[mgcv:gamm]{gamm}}). Thus, each smooth term
 #'   has its corresponding standard deviation modeling
 #'   the variability within this term. In \pkg{brms}, this 
 #'   parameter class is called \code{sds} and priors can
@@ -199,7 +199,20 @@
 #'   coef = "<term label>")}. The default prior is the same as
 #'   for standard deviations of group-level effects.
 #'   
-#'   5. Autocorrelation parameters
+#'   5. Gaussian processes
+#'   
+#'   Gaussian processes as currently implemented in \pkg{brms} have
+#'   two parameters, the standard deviation parameter \code{sdgp}, 
+#'   and characteristic length-scale parameter \code{lscale} 
+#'   (see \code{\link{gp}} for more details). The default prior 
+#'   of \code{sdgp} is the same as for standard deviations of 
+#'   group-level effects. The default prior of \code{lscale}
+#'   is an informative inverse-gamma prior specifically tuned 
+#'   to the covariates of the Gaussian process (for more details see
+#'   \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html#8_acknowledgements}).
+#'   If the tuning fails, a half-normal prior is used instead.
+#'   
+#'   6. Autocorrelation parameters
 #'   
 #'   The autocorrelation parameters currently implemented are named 
 #'   \code{ar} (autoregression), \code{ma} (moving average),
@@ -212,9 +225,9 @@
 #'   by using the arguments \code{lb} and \code{ub}). The default
 #'   prior is flat over the definition area.
 #'   
-#'   6. Distance parameters of monotonic effects
+#'   7. Distance parameters of monotonic effects
 #'   
-#'   As explained in the details section of \code{\link[brms:brm]{brm}},
+#'   As explained in the details section of \code{\link{brm}},
 #'   monotonic effects make use of a special parameter vector to
 #'   estimate the 'normalized distances' between consecutive predictor 
 #'   categories. This is realized in \pkg{Stan} using the \code{simplex}
@@ -237,7 +250,7 @@
 #'   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
 #'   of the respective dimension.   
 #'   
-#'   7. Parameters for specific families 
+#'   8. Parameters for specific families 
 #'   
 #'   Some families need additional parameters to be estimated. 
 #'   Families \code{gaussian}, \code{student}, \code{skew_normal},
@@ -270,9 +283,9 @@
 #'   which parameters are present in the model.
 #'   To get a full list of parameters and parameter classes for which 
 #'   priors can be specified (depending on the model) 
-#'   use function \code{\link[brms:get_prior]{get_prior}}.
+#'   use function \code{\link{get_prior}}.
 #'
-#' @seealso \code{\link[brms:get_prior]{get_prior}}
+#' @seealso \code{\link{get_prior}}
 #' 
 #' @references
 #' Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
@@ -319,20 +332,18 @@
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", 
                       lb = NULL, ub = NULL, check = TRUE) {
-  prior <- as.character(prior)
-  class <- as.character(class)
-  group <- as.character(group)
-  coef <- as.character(coef)
-  resp <- as.character(resp)
-  dpar <- as.character(dpar)
-  nlpar <- as.character(nlpar)
+  prior <- as_one_character(prior)
+  class <- as_one_character(class)
+  group <- as_one_character(group)
+  coef <- as_one_character(coef)
+  resp <- as_one_character(resp)
+  dpar <- as_one_character(dpar)
+  nlpar <- as_one_character(nlpar)
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   check <- as_one_logical(check)
-  if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
-      length(group) != 1 || length(resp) != 1 || length(dpar) != 1 ||
-      length(nlpar) != 1 || length(lb) > 1 || length(ub) > 1) {
-    stop2("All arguments of set_prior must be of length 1.")
+  if (length(lb) > 1 || length(ub) > 1) {
+    stop2("If specified, 'lb' and 'ub' must be of length 1.")
   }
   # validate boundaries
   is_arma <- class %in% c("ar", "ma")
@@ -683,13 +694,47 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   gpef <- get_gp_labels(bterms)
   if (length(gpef)) {
     px <- check_prefix(bterms)
+    lscale_prior <- def_lscale_prior(bterms, data)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
       brmsprior(class = "sdgp", coef = gpef, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", coef = gpef, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, coef = gpef, ls = px)
   }
   prior
+}
+
+def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
+  # default priors for length-scale parameters of GPs
+  # see https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html
+  # Args:
+  #   plb: prior probability of being lower than minimum length-scale
+  #   pub: prior probability of being higher than maximum length-scale
+  .opt_fun <- function(x, lb, ub) {
+    # optimize parameters on the log-scale to make them positive only
+    x <- exp(x)
+    y1 <- pinvgamma(lb, x[1], x[2], log.p = TRUE)
+    y2 <- pinvgamma(ub, x[1], x[2], lower.tail = FALSE, log.p = TRUE)
+    c(y1 - log(plb), y2 - log(pub))
+  }
+  gp_dat <- data_gp(bterms, data)
+  Xgp_names <- names(gp_dat)[grepl("Xgp_", names(gp_dat))]
+  out <- rep("", length(Xgp_names))
+  for (i in seq_along(out)) {
+    dq <- diff_quad(gp_dat[[Xgp_names[i]]])
+    lb <- sqrt(min(dq[dq > 0]))
+    ub <- sqrt(max(dq))
+    opt_res <- nleqslv::nleqslv(
+      c(0, 0), .opt_fun, lb = lb, ub = ub,
+      control = list(allowSingular = TRUE)
+    )
+    if (opt_res$termcd %in% 1:2) {
+      # use the inverse-gamma prior only in case of convergence
+      pars <- exp(opt_res$x)
+      out[i] <- paste0("inv_gamma(", sargs(round(pars, 6)), ")") 
+    }
+  }
+  out
 }
 
 prior_re <- function(ranef, def_scale_prior, internal = FALSE) {

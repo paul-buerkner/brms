@@ -21,6 +21,7 @@ Imports:
     shinystan (>= 2.4.0),
     bridgesampling (>= 0.3-0),
     matrixStats,
+    nleqslv,
     nlme,
     coda,
     abind,

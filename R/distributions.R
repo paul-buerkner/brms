@@ -444,6 +444,11 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
   out
 }
 
+pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
+  # CDF of the inverse gamma function
+  pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
+}
+
 #' @rdname VonMises
 #' @export
 pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 

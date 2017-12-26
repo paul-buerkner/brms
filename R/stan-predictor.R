@@ -885,11 +885,10 @@ stan_gp <- function(bterms, data, prior) {
       "  vector<lower=0>[Kgp", pi, "] lscale", pi, "; \n",
       "  vector[N] zgp", pi, "; \n"
     ) 
-    rgpef <- rename(gpef[i])
     str_add(out$prior) <- paste0(
-      stan_prior(prior, class = "sdgp", coef = rgpef, 
+      stan_prior(prior, class = "sdgp", coef = gpef[i], 
                  px = px, suffix = pi),
-      stan_prior(prior, class = "lscale", coef = rgpef, 
+      stan_prior(prior, class = "lscale", coef = gpef[i], 
                  px = px, suffix = pi),
       collapse(tp(), "normal_lpdf(zgp", pi, " | 0, 1); \n")
     )

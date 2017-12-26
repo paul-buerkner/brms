@@ -55,7 +55,7 @@ to the Stan code as is, and all other arguments are ignored.}
 }
 \value{
 An object of class \code{brmsprior} to be used in the \code{prior}
-  argument of \code{\link[brms:brm]{brm}}.
+  argument of \code{\link{brm}}.
 }
 \description{
 Define priors for specific parameters or classes of parameters
@@ -215,11 +215,11 @@ Define priors for specific parameters or classes of parameters
   The corresponding parameter class of the Cholesky factors is \code{L},
   but it is not recommended to specify priors for this parameter class directly.
   
-  4. Standard deviations of smoothing terms
+  4. Smooth terms (splines)
   
   GAMMs are implemented in \pkg{brms} using the 'random effects' 
-  formulation of smoothing terms (for details see 
-  \code{\link[mgcv:gamm]{gamm}}). Thus, each smoothing term
+  formulation of smooth terms (for details see 
+  \code{\link[mgcv:gamm]{gamm}}). Thus, each smooth term
   has its corresponding standard deviation modeling
   the variability within this term. In \pkg{brms}, this 
   parameter class is called \code{sds} and priors can
@@ -227,7 +227,20 @@ Define priors for specific parameters or classes of parameters
   coef = "<term label>")}. The default prior is the same as
   for standard deviations of group-level effects.
   
-  5. Autocorrelation parameters
+  5. Gaussian processes
+  
+  Gaussian processes as currently implemented in \pkg{brms} have
+  two parameters, the standard deviation parameter \code{sdgp}, 
+  and characteristic length-scale parameter \code{lscale} 
+  (see \code{\link{gp}} for more details). The default prior 
+  of \code{sdgp} is the same as for standard deviations of 
+  group-level effects. The default prior of \code{lscale}
+  is an informative inverse-gamma prior specifically tuned 
+  to the covariates of the Gaussian process (for more details see
+  \url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html#8_acknowledgements}).
+  If the tuning fails, a half-normal prior is used instead.
+  
+  6. Autocorrelation parameters
   
   The autocorrelation parameters currently implemented are named 
   \code{ar} (autoregression), \code{ma} (moving average),
@@ -240,9 +253,9 @@ Define priors for specific parameters or classes of parameters
   by using the arguments \code{lb} and \code{ub}). The default
   prior is flat over the definition area.
   
-  6. Distance parameters of monotonic effects
+  7. Distance parameters of monotonic effects
   
-  As explained in the details section of \code{\link[brms:brm]{brm}},
+  As explained in the details section of \code{\link{brm}},
   monotonic effects make use of a special parameter vector to
   estimate the 'normalized distances' between consecutive predictor 
   categories. This is realized in \pkg{Stan} using the \code{simplex}
@@ -265,7 +278,7 @@ Define priors for specific parameters or classes of parameters
   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
   of the respective dimension.   
   
-  7. Parameters for specific families 
+  8. Parameters for specific families 
   
   Some families need additional parameters to be estimated. 
   Families \code{gaussian}, \code{student}, \code{skew_normal},
@@ -298,7 +311,7 @@ Define priors for specific parameters or classes of parameters
   which parameters are present in the model.
   To get a full list of parameters and parameter classes for which 
   priors can be specified (depending on the model) 
-  use function \code{\link[brms:get_prior]{get_prior}}.
+  use function \code{\link{get_prior}}.
 }
 \section{Functions}{
 \itemize{
@@ -355,5 +368,5 @@ Gelman A. (2006). Prior distributions for variance parameters in hierarchical mo
    Bayesian analysis, 1(3), 515 -- 534.
 }
 \seealso{
-\code{\link[brms:get_prior]{get_prior}}
+\code{\link{get_prior}}
 }
