@@ -227,7 +227,7 @@ validate_newdata <- function(
       stop2("Response variables must be specified in 'newdata'.\n",
             "Missing variables: ", collapse_comma(missing_resp))
     } else {
-      newdata[, missing_resp] <- NaN
+      newdata[, missing_resp] <- NA
     }
   }
   # censoring and weighting vars are unused in post-processing methods
