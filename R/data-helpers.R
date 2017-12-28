@@ -212,9 +212,7 @@ validate_newdata <- function(
     not_reqvars <- setdiff(all.vars(bterms$allvars), all.vars(reqvars))
     not_reqvars <- setdiff(not_reqvars, names(newdata))
     if (length(not_reqvars)) {
-      # use NaN rather then NA as the latter will cause model.matrix 
-      # to return <x>TRUE instead of <x> as column names
-      newdata[, not_reqvars] <- NaN
+      newdata[, not_reqvars] <- NA
     }
   }
   only_resp <- all.vars(bterms$respform)
