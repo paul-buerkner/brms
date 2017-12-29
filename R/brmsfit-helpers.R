@@ -384,13 +384,13 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     if (ilink) {
       out <- ilink(out, x$f$link)
     }
-  } else if (!is.null(i) && isTRUE(ncol(x) > 1L)) {
+    if (length(i) == 1L) {
+      out <- index_col(out, 1)
+    }
+  } else if (!is.null(i) && !is.null(dim(x))) {
     out <- index_col(x, i)
   } else {
     out <- x
-  }
-  if (is.matrix(out) && ncol(out) == 1L) {
-    out <- as.vector(out)
   }
   if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
     # 'se' will be incorporated directly into 'sigma'
@@ -445,7 +445,7 @@ get_Mu <- function(draws, i = NULL) {
       Mu <- do.call(abind, c(Mu, along = 3))
     }
   } else {
-    # at this point we now that i is not NULL
+    stopifnot(!is.null(i))
     Mu <- index_col(Mu, i)
   }
   Mu
@@ -477,7 +477,7 @@ get_Sigma <- function(draws, i = NULL) {
       }
     }
   } else {
-    # at this point we know that i is not NULL
+    stopifnot(!is.null(i))
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
@@ -495,8 +495,9 @@ get_se <- function(draws, i = NULL) {
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]
-    } else {
-      dim <- c(draws$nsamples, draws$nobs)
+    }
+    if (length(se) > 1L) {
+      dim <- c(draws$nsamples, length(se))
       se <- as_draws_matrix(se, dim = dim)
     }
   } else {

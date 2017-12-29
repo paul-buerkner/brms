@@ -54,7 +54,7 @@ test_that("predict for multivariate linear models runs without errors", {
     Mu = array(rnorm(ns*nobs*nvars), dim = c(ns, nobs, nvars)),
     Sigma = aperm(Sigma, c(3, 1, 2))
   )
-  draws$dpars <- list(nu = matrix(rgamma(ns, 5)))
+  draws$dpars <- list(nu = rgamma(ns, 5))
   draws$data <- list(N = nobs, N_trait = ncols)
   
   pred <- brms:::predict_gaussian_mv(1, draws = draws)

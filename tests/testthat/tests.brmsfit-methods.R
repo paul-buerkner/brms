@@ -466,6 +466,8 @@ test_that("all S3 methods have reasonable ouputs", {
   pred <- predict(fit4)
   expect_equal(dim(pred), c(nobs(fit4), 4))
   expect_equal(colnames(pred), paste0("P(Y = ", 1:4, ")"))
+  pred <- predict(fit4, newdata = fit4$data[1, ])
+  expect_equal(dim(pred), c(1, 4))
   
   pred <- predict(fit5)
   expect_equal(dim(pred), c(nobs(fit5), 4))

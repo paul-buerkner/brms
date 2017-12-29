@@ -61,7 +61,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
       if (draws$f$family == "student") {
         # store in draws$dpars so that get_dpar can be called on nu
-        draws$dpars$nu <- get_samples(samples, "^nu$")
+        draws$dpars$nu <- as.vector(get_samples(samples, "^nu$"))
       }
       draws$data$N <- draws$resps[[1]]$data$N
       draws$data$weights <- draws$resps[[1]]$data$weights
@@ -95,7 +95,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
     } else if (any(grepl(dp_regex, colnames(samples)))) {
-      draws$dpars[[dp]] <- get_samples(samples, dp_regex)
+      draws$dpars[[dp]] <- as.vector(get_samples(samples, dp_regex))
     }
   }
   if (is.mixfamily(x$family)) {

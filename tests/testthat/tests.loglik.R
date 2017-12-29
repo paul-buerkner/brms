@@ -85,7 +85,7 @@ test_that("loglik for multivariate linear models runs without errors", {
     Mu = array(rnorm(ns*nobs*nvars), dim = c(ns, nobs, nvars)),
     Sigma = aperm(Sigma, c(3, 1, 2))
   ) 
-  draws$dpars <- list(nu = matrix(rgamma(ns, 5)))
+  draws$dpars <- list(nu = rgamma(ns, 5))
   draws$nsamples <- ns
   draws$data <- list(Y = matrix(rnorm(nobs), ncol = nvars))
   
@@ -102,8 +102,8 @@ test_that("loglik for ARMA covariance models runs without errors", {
   draws <- structure(list(nsamples = ns), class = "mvbrmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(ns*nobs), ncol = nobs),
-    sigma = matrix(rchisq(ns, 3)),
-    nu = matrix(rgamma(ns, 5))
+    sigma = rchisq(ns, 3),
+    nu = rgamma(ns, 5)
   )
   draws$ac <- list(
     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
@@ -125,8 +125,8 @@ test_that("loglik for SAR models runs without errors", {
   draws <- structure(list(nsamples = 3, nobs = 10), class = "brmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(30), nrow = 3),
-    nu = matrix(rep(2, 3)),
-    sigma = matrix(rep(10, 3))
+    nu = rep(2, 3),
+    sigma = rep(10, 3)
   )
   draws$ac <-  list(
     lagsar = matrix(c(0.3, 0.5, 0.7)),
@@ -151,7 +151,7 @@ test_that("loglik for 'cor_fixed' models runs without errors", {
   draws <- structure(list(nsamples = 3), class = "brmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(30), nrow = 3),
-    nu = matrix(rep(2, 3))
+    nu = rep(2, 3)
   )
   draws$ac$V <- diag(10)
   draws$data$Y <- rnorm(10)
@@ -289,7 +289,7 @@ test_that("loglik for circular models runs without errors", {
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
     mu = 2 * atan(matrix(rnorm(ns * nobs * 2), ncol = nobs * 2)),
-    kappa = matrix(rgamma(ns, 4))
+    kappa = rgamma(ns, 4)
   )
   draws$data <- list(Y = runif(nobs, -pi, pi))
   i <- sample(seq_len(nobs), 1)
@@ -308,9 +308,10 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
     eta = matrix(rnorm(ns*nobs), ncol = nobs),
-    shape = matrix(rgamma(ns, 4)), 
-    phi = matrix(rgamma(ns, 1)),
-    zi = rbeta(ns, 1, 1), coi = rbeta(ns, 5, 7)
+    shape = rgamma(ns, 4), 
+    phi = rgamma(ns, 1),
+    zi = rbeta(ns, 1, 1), 
+  coi = rbeta(ns, 5, 7)
   )
   draws$dpars$hu <- draws$dpars$zoi <- draws$dpars$zi
   draws$data <- list(Y = c(resp, rep(0, 4)), trials = trials)
@@ -396,7 +397,7 @@ test_that("censored and truncated loglik run without errors", {
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    sigma = matrix(rchisq(ns, 3))
+    sigma = rchisq(ns, 3)
   )
   draws$data <- list(Y = rnorm(ns), cens = c(-1,0,1))
   ll <- sapply(1:nobs, brms:::loglik_gaussian, draws = draws)
