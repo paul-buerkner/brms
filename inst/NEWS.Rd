@@ -10,6 +10,12 @@
       processes. (#275)
     }
   }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix some unexpected errors when predicting
+      from ordinal models thanks to David Hervas. (#306, #307)
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 2.0.1}{
