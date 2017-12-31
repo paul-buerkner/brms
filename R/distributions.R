@@ -377,7 +377,7 @@ cp2dp <- function(mu = 0, sigma = 1, alpha = 0,
 skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   # helper function for qskew_normal 
   # code basis taken from sn::sn.cumulants
-  # this function used xi and omega rather than mu and sigma!
+  # this function uses xi and omega rather than mu and sigma!
   cumulants_half_norm <- function(n) {
     n <- max(n, 2)
     n <- as.integer(2 * ceiling(n/2))
@@ -414,6 +414,11 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   })
 }
 
+pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
+  # CDF of the inverse gamma function
+  pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
+}
+
 #' The von Mises Distribution
 #' 
 #' Density, distribution function, and random generation for the 
@@ -442,11 +447,6 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
     out <- exp(out)
   }
   out
-}
-
-pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
-  # CDF of the inverse gamma function
-  pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
 }
 
 #' @rdname VonMises
