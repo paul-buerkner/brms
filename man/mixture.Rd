@@ -63,8 +63,8 @@ dat <- data.frame(
 ## fit a simple normal mixture model
 mix <- mixture(gaussian, gaussian)
 prior <- c(
-  prior(normal(0, 7), Intercept, nlpar = mu1),
-  prior(normal(5, 7), Intercept, nlpar = mu2)
+  prior(normal(0, 7), Intercept, dpar = mu1),
+  prior(normal(5, 7), Intercept, dpar = mu2)
 )
 fit1 <- brm(bf(y ~ x + z), dat, family = mix,
             prior = prior, chains = 2) 
