@@ -621,7 +621,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     old_standata = NULL) {
   # prepare data for the response variable
   N <- nrow(data)
-  out <- list(Y = unname(model.response(model.frame(x$respform, data))))
+  Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+  out <- list(Y = unname(Y))
   families <- family_names(x$family)
   if (is.mixfamily(x$family)) {
     family4error <- paste0(families, collapse = ", ")
