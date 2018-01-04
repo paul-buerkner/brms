@@ -8,6 +8,8 @@
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)
+      \item Allow predicting new data in models
+      with ARMA autocorrelation structures.
     }
   }
   \subsection{BUG FIXES}{

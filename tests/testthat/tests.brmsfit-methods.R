@@ -440,27 +440,31 @@ test_that("all S3 methods have reasonable ouputs", {
   # predict
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))
-  expect_equal(colnames(pred), 
-               c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(pred), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   pred <- predict(fit1, nsamples = 10, probs = c(0.2, 0.5, 0.8))
   expect_equal(dim(pred), c(nobs(fit1), 5))
   
-  newdata <- data.frame(Age = c(0, -0.2), visit = c(1, 4),
-                        Trt = c(1, 0), count = c(2, 10),
-                        patient = c(1, 42), Exp = c(1, 2))
+  newdata <- data.frame(
+    Age = c(0, -0.2), visit = c(1, 4), Trt = c(1, 0), 
+    count = c(2, 10), patient = c(1, 42), Exp = c(1, 2)
+  )
   pred <- predict(fit1, newdata = newdata)
   expect_equal(dim(pred), c(2, 4))
   
   newdata$visit <- c(1, 6)
-  pred <- predict(fit1, newdata = newdata, 
-                  allow_new_levels = TRUE)
+  pred <- predict(fit1, newdata = newdata, allow_new_levels = TRUE)
   expect_equal(dim(pred), c(2, 4))
+  
+  # predict NA responses in ARMA models
+  df <- fit1$data[1:10, ]
+  df$count[8:10] <- NA
+  pred <- predict(fit1, newdata = df, nsamples = 1)
+  expect_true(!anyNA(pred[, "Estimate"]))
   
   pred <- predict(fit2)
   expect_equal(dim(pred), c(nobs(fit2), 4))
   
-  pred <- predict(fit2, newdata = newdata, 
-                  allow_new_levels = TRUE)
+  pred <- predict(fit2, newdata = newdata, allow_new_levels = TRUE)
   expect_equal(dim(pred), c(2, 4))
   
   pred <- predict(fit4)
