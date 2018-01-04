@@ -647,6 +647,55 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   pars
 }
 
+#' Combine Models fitted with \pkg{brms}
+#' 
+#' Combine multiple \code{brmsfit} objects, which fitted the same model.
+#' This is usefuly for instance when having manually run models in parallel.
+#' 
+#' @param ... One or more \code{brmsfit} objects.
+#' @param mlist Optional list of one or more \code{brmsfit} objects.
+#' @param check_data Logical; indicates if the data should be checked
+#'   for being the same across models (defaults to \code{TRUE}).
+#'   Setting it to \code{FALSE} may be useful for instance
+#'   when combining models fitted on multiple imputed data sets.
+#'   
+#' @details This function just takes the first model and replaces 
+#'   its \code{stanfit} object (slot \code{fit}) by the combined 
+#'   \code{stanfit} objects of all models.
+#'   
+#' @return A \code{brmsfit} object.
+#' 
+#' @export
+combine_models <- function(..., mlist = NULL, check_data = TRUE) {
+  models <- c(list(...), mlist)
+  if (!length(models)) {
+    stop2("No models supplied to 'combine_models'.")
+  }
+  ref_formula <- formula(models[[1]])
+  ref_stancode <- stancode(models[[1]])
+  ref_df <- model.frame(models[[1]]) 
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Can only handle 'brmsfit' objects.")
+    }
+    if (!is_equal(formula(models[[i]]), ref_formula)) {
+      stop2("Models 1 and ", i, " have different formulas.")
+    }
+    if (!is_equal(stancode(models[[i]]), ref_stancode)) {
+      stop2("Models 1 and ", i, " have different Stan code.")
+    }
+    if (check_data && !is_equal(model.frame(models[[i]]), ref_df)) {
+      stop2(
+        "Models 1 and ", i, " have different data. ", 
+        "Set 'check_data' to FALSE to turn off checking of the data."
+      )
+    }
+  }
+  sflist <- lapply(models, "[[", "fit")
+  models[[1]]$fit <- rstan::sflist2stanfit(sflist)
+  models[[1]]
+}
+
 find_names <- function(x) {
   # find all valid object names in a string 
   # Args:

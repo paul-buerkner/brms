@@ -59,6 +59,9 @@ test_that("all S3 methods have reasonable ouputs", {
   coef4 <- SM(coef(fit4))
   expect_equal(dim(coef4$subject), c(10, 4, 8))
   
+  # combine_models
+  expect_equal(nsamples(combine_models(fit1, fit1)), nsamples(fit1) * 2)
+  
   # bayes_R2
   fit1 <- add_ic(fit1, "R2")
   R2 <- bayes_R2(fit1, summary = FALSE)
