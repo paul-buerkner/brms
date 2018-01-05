@@ -20,7 +20,7 @@
 #' if each of the original models did converge.
 #' To find out whether each of the original models converged,
 #' investigate \code{attributes(fit)$rhats}, where \code{fit} 
-#' denotes the output of \code{brm_repeat}.
+#' denotes the output of \code{brm_multiple}.
 #' 
 #' @return If \code{combine = TRUE} a single \code{brmsfit} object. 
 #' If \code{combine = FALSE} a list of \code{brmsfit} objects. 
@@ -35,7 +35,7 @@
 #' summary(pool(fit1))
 #' 
 #' # fit the model using brms
-#' fit_imp2 <- brm_repeat(bmi~age+hyp+chl, data = imp, chains = 1)
+#' fit_imp2 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 #' summary(fit_imp2)
 #' plot(fit_imp2, pars = "^b_")
 #' # investigate convergence of the original models
@@ -43,7 +43,7 @@
 #' }
 #' 
 #' @export
-brm_repeat <- function(formula, data, combine = TRUE, ...) {
+brm_multiple <- function(formula, data, combine = TRUE, ...) {
   combine <- as_one_logical(combine)
   data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
   if (inherits(data, "mids")) {
