@@ -6,7 +6,7 @@
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit models on multiple imputed 
-      datasets via \code{brm_repeat} thanks 
+      datasets via \code{brm_multiple} thanks 
       to Ruben Arslan. (#27)
       \item Combine multiple \code{brmsfit} objects 
       via function \code{combine_models}.
@@ -19,6 +19,8 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
+      \item Correctly recover noise-free coefficients
+      through \code{me} terms thanks to Ruben Arslan.
       \item Fix some unexpected errors when predicting
       from ordinal models thanks to David Hervas. (#306, #307)
     }

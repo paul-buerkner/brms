@@ -16,8 +16,11 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   out <- exclude_pars_internal(
     bterms, data = data, save_all_pars = save_all_pars
   )
-  if (!save_all_pars && !save_mevars) {
-    uni_me <- get_uni_me(bterms)
+  uni_me <- get_uni_me(bterms)
+  if (!save_all_pars) {
+    out <- c(out, paste0("zme_", seq_along(uni_me)))
+  }
+  if (!save_mevars) {
     out <- c(out, paste0("Xme_", seq_along(uni_me)))
   }
   if (nrow(ranef)) {

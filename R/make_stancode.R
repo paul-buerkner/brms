@@ -111,6 +111,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "transformed parameters { \n",
       text_effects$tparD,
       text_ranef$tparD,
+      text_Xme$tparD,
       text_effects$tparC1,
       text_ranef$tparC1,
     "} \n"

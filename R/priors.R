@@ -488,8 +488,6 @@ get_prior <- function(formula, data, family = gaussian(),
     ranef, def_scale_prior = def_scale_prior,
     internal = internal
   )
-  # priors for noise-free variables
-  prior <- prior + prior_Xme(bterms)
   # do not remove unique(.)
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
   prior <- unique(prior[to_order, , drop = FALSE])
@@ -670,19 +668,6 @@ prior_me <- function(bterms, data) {
     px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", rename(meef)), ls = px)
-  }
-  prior
-}
-
-prior_Xme <- function(bterms) {
-  # default priors of noise-free variables
-  # Returns:
-  #   an object of class brmsprior
-  prior <- empty_brmsprior()
-  uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    prior <- prior + 
-      brmsprior(class = "Xme", coef = c("", rename(uni_me)))
   }
   prior
 }

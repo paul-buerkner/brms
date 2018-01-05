@@ -698,23 +698,26 @@ stan_Xme <- function(bterms, prior) {
   if (length(uni_me)) {
     K <- paste0("_", seq_along(uni_me))
     str_add(out$data) <- paste0(
-      "  // noisy variables \n",
-      collapse("  vector[N] Xn", K, "; \n"),
-      "  // measurement noise \n",
-      collapse("  vector<lower=0>[N] noise", K, "; \n")
+      "  // noisy variables\n",
+      collapse("  vector[N] Xn", K, ";\n"),
+      "  // measurement noise\n",
+      collapse("  vector<lower=0>[N] noise", K, ";\n")
     )
     str_add(out$par) <- paste0(
-      "  // noise free variables \n",
-      collapse("  vector[N] Xme", K, "; \n")  
-    )
-    for (k in seq_along(uni_me)) {
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Xme", coef = uni_me[k],
-        suffix = paste0("_", k)
+      "  // parameters for noise free variables\n",
+      collapse(
+        "  vector[N] zme", K, ";\n",
+        "  real meanme", K, ";\n",
+        "  real<lower=0> sdme", K, ";\n"
       )
-    }
+    )
+    str_add(out$tparD) <- collapse(
+      "  vector[N] Xme", K, " = meanme", K, " + sdme", K, " * zme", K, ";\n"
+    )
     str_add(out$prior) <- collapse(
-      "  target += normal_lpdf(Xn", K, " | Xme", K, ", noise", K, ");\n"
+      "  target += normal_lpdf(Xn", K, " | Xme", K, ", noise", K, ");\n",
+      "  target += normal_lpdf(zme", K, " | 0, 1);\n"
+      #"  target += normal_lpdf(Xme", K, " | meanme", K, ", sdme", K, ");\n"
     )
   }
   out
