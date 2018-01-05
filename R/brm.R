@@ -365,7 +365,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     bterms <- parse_bf(formula)
     if (is.null(dots$data.name)) {
-      data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
+      data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
     } else {
       data.name <- dots$data.name
       dots$data.name <- NULL

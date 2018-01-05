@@ -5,11 +5,13 @@
 \section{CHANGES IN VERSION 2.0.1++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Fit models on multiple imputed 
+      datasets via \code{brm_repeat}. (#27)
+      \item Combine multiple \code{brmsfit} objects 
+      via function \code{combine_models}.
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)
-      \item Combine multiple \code{brmsfit} objects 
-      via function \code{combine_models}.
       \item Allow predicting new data in models
       with ARMA autocorrelation structures.
     }

@@ -33,6 +33,7 @@ Suggests:
     testthat (>= 0.9.1),
     RWiener,
     future,
+    mice,
     arm,
     spdep,
     mnormt,
