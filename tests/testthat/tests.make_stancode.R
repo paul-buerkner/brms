@@ -901,7 +901,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(Xn_2 | Xme_2, noise_2)")
   expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(zme_1 | 0, 1)")
-  expect_match2(scode, "target += normal_lpdf(Xme_2 | meanme_2, sdme_2)")
+  expect_match2(scode, "Xme_2 = meanme_2 + sdme_2 * zme_2")
   
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
