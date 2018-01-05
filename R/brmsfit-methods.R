@@ -863,9 +863,14 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   family
 }
 
+#' @rdname stancode
 #' @export
-stancode.brmsfit <- function(object, ...) {
-  object$model
+stancode.brmsfit <- function(object, version = TRUE, ...) {
+  out <- object$model
+  if (!version) {
+    out <- sub("^[^\n]+[[:digit:]]\\.[^\n]+\n", "", out) 
+  }
+  out
 }
 
 #' @export
@@ -2098,7 +2103,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   new_stancode <- suppressMessages(do.call(make_stancode, dots))
   # stan code may differ just because of the version number (#288)
   new_stancode <- sub("^[^\n]+\n", "", new_stancode)
-  old_stancode <- sub("^[^\n]+\n", "", stancode(object))
+  old_stancode <- stancode(object, version = FALSE)
   # only recompile if new and old stan code do not match
   if (recompile || !is_equal(new_stancode, old_stancode)) {
     # recompliation is necessary

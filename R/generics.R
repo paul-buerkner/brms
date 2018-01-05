@@ -678,16 +678,17 @@ kfold <- function(x, ...) {
   UseMethod("kfold")
 }
 
-#' Extract Stan Model Code
-#' 
-#' Extract the model code in Stan language
+#' Extract Stan model code
 #' 
 #' @aliases stancode.brmsfit
 #' 
 #' @param object An object of class \code{brmsfit}
+#' @param version Logical; indicates if the first line containing
+#'   the \pkg{brms} version number should be included.
+#'   Defaults to \code{TRUE}.
 #' @param ... Currently ignored
 #' 
-#' @return model code in stan language for further processing.
+#' @return Stan model code for further processing.
 #' 
 #' @export
 stancode <- function(object, ...) {

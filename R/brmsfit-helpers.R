@@ -671,20 +671,23 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
   if (!length(models)) {
     stop2("No models supplied to 'combine_models'.")
   }
-  ref_formula <- formula(models[[1]])
-  ref_stancode <- stancode(models[[1]])
-  ref_df <- model.frame(models[[1]]) 
   for (i in seq_along(models)) {
     if (!is.brmsfit(models[[i]])) {
-      stop2("Can only handle 'brmsfit' objects.")
+      stop2("Model ", i, " is no 'brmsfit' object.")
     }
-    if (!is_equal(formula(models[[i]]), ref_formula)) {
-      stop2("Models 1 and ", i, " have different formulas.")
+    models[[i]] <- restructure(models[[i]])
+  }
+  ref_scode <- stancode(models[[1]], version = FALSE)
+  ref_pars <- parnames(models[[1]])
+  ref_mf <- model.frame(models[[1]]) 
+  for (i in seq_along(models)[-1]) {
+    if (!is_equal(parnames(models[[i]]), ref_pars)) {
+      stop2("Models 1 and ", i, " have different parameters.")
     }
-    if (!is_equal(stancode(models[[i]]), ref_stancode)) {
+    if (!is_equal(stancode(models[[i]], version = FALSE), ref_scode)) {
       stop2("Models 1 and ", i, " have different Stan code.")
     }
-    if (check_data && !is_equal(model.frame(models[[i]]), ref_df)) {
+    if (check_data && !is_equal(model.frame(models[[i]]), ref_mf)) {
       stop2(
         "Models 1 and ", i, " have different data. ", 
         "Set 'check_data' to FALSE to turn off checking of the data."
