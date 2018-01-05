@@ -677,15 +677,15 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
     }
     models[[i]] <- restructure(models[[i]])
   }
-  ref_scode <- stancode(models[[1]], version = FALSE)
+  ref_formula <- formula(models[[1]])
   ref_pars <- parnames(models[[1]])
   ref_mf <- model.frame(models[[1]]) 
   for (i in seq_along(models)[-1]) {
+    if (!is_equal(formula(models[[i]]), ref_formula)) {
+      stop2("Models 1 and ", i, " have different formulas.")
+    }
     if (!is_equal(parnames(models[[i]]), ref_pars)) {
       stop2("Models 1 and ", i, " have different parameters.")
-    }
-    if (!is_equal(stancode(models[[i]], version = FALSE), ref_scode)) {
-      stop2("Models 1 and ", i, " have different Stan code.")
     }
     if (check_data && !is_equal(model.frame(models[[i]]), ref_mf)) {
       stop2(
