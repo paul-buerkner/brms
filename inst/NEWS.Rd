@@ -6,7 +6,8 @@
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit models on multiple imputed 
-      datasets via \code{brm_repeat}. (#27)
+      datasets via \code{brm_repeat} thanks 
+      to Ruben Arslan. (#27)
       \item Combine multiple \code{brmsfit} objects 
       via function \code{combine_models}.
       \item Use informative inverse-gamma priors

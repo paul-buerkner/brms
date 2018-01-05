@@ -40,12 +40,9 @@ The combined model may issue false positive
 convergence warnings, as the MCMC chains corresponding
 to different datasets may not necessarily overlap, even 
 if each of the original models did converge.
-If you want to make sure that the convergence
-warnings are not caused by real problems in some of the 
-original models, run \code{brm_repeat} with \code{combine = FALSE},
-check for convergence manually, and then combine the models
-via \code{combine_models{mlist = fits, check_data = FALSE}},
-where \code{fits} denotes the output of \code{brms_repeat}.
+To find out whether each of the original models converged,
+investigate \code{attributes(fit)$rhats}, where \code{fit} 
+denotes the output of \code{brm_repeat}.
 }
 \examples{
 \dontrun{
@@ -60,6 +57,8 @@ summary(pool(fit1))
 fit_imp2 <- brm_repeat(bmi~age+hyp+chl, data = imp, chains = 1)
 summary(fit_imp2)
 plot(fit_imp2, pars = "^b_")
+# investigate convergence of the original models
+attributes(fit_imp2)$rhats
 }
 
 }
