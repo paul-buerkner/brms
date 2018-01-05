@@ -21,6 +21,9 @@
     \itemize{
       \item Correctly recover noise-free coefficients
       through \code{me} terms thanks to Ruben Arslan.
+      As a side effect, it is no longer possible to define
+      priors on noise-free \code{Xme} variables directly, but 
+      only on their hyper-parameters \code{meanme} and \code{sdme}.
       \item Fix some unexpected errors when predicting
       from ordinal models thanks to David Hervas. (#306, #307)
     }
