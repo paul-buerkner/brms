@@ -19,11 +19,12 @@
 #' to different datasets may not necessarily overlap, even 
 #' if each of the original models did converge.
 #' To find out whether each of the original models converged,
-#' investigate \code{attributes(fit)$rhats}, where \code{fit} 
+#' investigate \code{fit$rhats}, where \code{fit} 
 #' denotes the output of \code{brm_multiple}.
 #' 
-#' @return If \code{combine = TRUE} a single \code{brmsfit} object. 
-#' If \code{combine = FALSE} a list of \code{brmsfit} objects. 
+#' @return If \code{combine = TRUE} a \code{brmsfit_multiple} object,
+#' which inherits from class \code{brmsfit} and behaves essentially 
+#' the same. If \code{combine = FALSE} a list of \code{brmsfit} objects. 
 #' 
 #' @examples
 #' \dontrun{
@@ -32,14 +33,14 @@
 #' 
 #' # fit the model using mice and lm
 #' fit_imp1 <- with(lm(bmi~age+hyp+chl), data = imp)
-#' summary(pool(fit1))
+#' summary(pool(fit_imp1))
 #' 
 #' # fit the model using brms
 #' fit_imp2 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 #' summary(fit_imp2)
 #' plot(fit_imp2, pars = "^b_")
 #' # investigate convergence of the original models
-#' attributes(fit_imp2)$rhats
+#' fit_imp2$rhats
 #' }
 #' 
 #' @export
@@ -71,8 +72,10 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
   }
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
+    fits$rhats <- rhats
+    class(fits) <- c("brmsfit_multiple", class(fits))
   }
-  structure(fits, rhats = rhats)
+  fits
 }
 
 #' Combine Models fitted with \pkg{brms}

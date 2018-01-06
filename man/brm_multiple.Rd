@@ -26,8 +26,9 @@ via \code{\link{combine_models}}. Defaults to \code{TRUE}.}
 \item{...}{Further arguments passed to \code{\link{brm}}.}
 }
 \value{
-If \code{combine = TRUE} a single \code{brmsfit} object. 
-If \code{combine = FALSE} a list of \code{brmsfit} objects.
+If \code{combine = TRUE} a \code{brmsfit_multiple} object,
+which inherits from class \code{brmsfit} and behaves essentially 
+the same. If \code{combine = FALSE} a list of \code{brmsfit} objects.
 }
 \description{
 Run the same \pkg{brms} model on multiple datasets and
@@ -41,7 +42,7 @@ convergence warnings, as the MCMC chains corresponding
 to different datasets may not necessarily overlap, even 
 if each of the original models did converge.
 To find out whether each of the original models converged,
-investigate \code{attributes(fit)$rhats}, where \code{fit} 
+investigate \code{fit$rhats}, where \code{fit} 
 denotes the output of \code{brm_multiple}.
 }
 \examples{
@@ -51,14 +52,14 @@ imp <- mice(nhanes2)
 
 # fit the model using mice and lm
 fit_imp1 <- with(lm(bmi~age+hyp+chl), data = imp)
-summary(pool(fit1))
+summary(pool(fit_imp1))
 
 # fit the model using brms
 fit_imp2 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
 summary(fit_imp2)
 plot(fit_imp2, pars = "^b_")
 # investigate convergence of the original models
-attributes(fit_imp2)$rhats
+fit_imp2$rhats
 }
 
 }
