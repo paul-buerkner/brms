@@ -56,10 +56,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
       x, data, knots = knots, not4stan = not4stan, 
       smooths = old_standata$smooths
     ),
-    data_mo(
-      x, data, ranef = ranef, prior = prior, 
-      Jmo = old_standata$Jmo
-    ),
+    data_mo(x, data, prior = prior, Jmo = old_standata$Jmo),
     data_re(x, data, ranef = ranef),
     data_me(x, data),
     data_cs(x, data),
@@ -165,8 +162,7 @@ data_fe <- function(bterms, data, knots = NULL,
   c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
 }
 
-data_mo <- function(bterms, data, ranef = empty_ranef(),
-                    prior = brmsprior(), Jmo = NULL) {
+data_mo <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects
   out <- list()
