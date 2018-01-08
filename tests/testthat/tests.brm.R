@@ -31,6 +31,8 @@ test_that("brm produces expected errors", {
                "Duplicated group-level effects are not allowed")
   expect_error(brm(y~mo(g)*me(x, g), dat),
                "Cannot use multiple special terms within one term")
+  expect_error(brm(y~me(x, 2 * g)*me(x, g), dat),
+               "Variable 'x' is used in different calls to 'me'")
   
   # autocorrelation
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~x+y|g)), 

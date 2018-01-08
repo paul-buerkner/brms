@@ -835,7 +835,21 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
 
 get_uni_me <- function(x) {
   # extract unique names of noise-free terms 
-  unique(ulapply(get_effect(x, "me"), attr, "uni_me"))
+  uni_me <- ulapply(get_effect(x, "me"), attr, "uni_me")
+  all_vars <- all.vars(parse(text = uni_me))
+  elist <- named_list(all_vars, values = NA_real_)
+  xname <- ulapply(uni_me, function(x) attr(eval2(x, elist), "xname"))
+  df <- data.frame(xname, uni_me)
+  df <- df[!duplicated(df), ]
+  xdupl <- df$xname[duplicated(df$xname)]
+  if (length(xdupl)) {
+    calls <- df$uni_me[df$xname == xdupl[1]]
+    stop2(
+      "Variable '", xdupl[1], "' is used in different calls to 'me'.\n",
+      "Associated calls are: ", collapse_comma(calls)
+    )
+  }
+  unique(uni_me)
 }
 
 store_uni_me <- function(x, ...) {

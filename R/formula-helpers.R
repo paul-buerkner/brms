@@ -268,6 +268,7 @@ t2 <- function(...) {
 #' 
 #' @export
 me <- function(x, sdx = NULL) {
+  xname <- deparse(substitute(x))
   x <- as.vector(x)
   sdx <- as.vector(sdx)
   if (length(sdx) == 0L) {
@@ -281,11 +282,11 @@ me <- function(x, sdx = NULL) {
   if (!is.numeric(sdx)) {
     stop2("Measurement error should be numeric.")
   }
-  if (any(sdx <= 0)) {
+  if (isTRUE(any(sdx <= 0))) {
     stop2("Measurement error should be positive.")
   }
   out <- rep(1, length(x))
-  structure(out, var = x, noise = sdx) 
+  structure(out, var = x, noise = sdx, xname = xname)
 }
 
 #' Category Specific Predictors in \pkg{brms} Models
