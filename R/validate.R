@@ -837,7 +837,7 @@ get_uni_me <- function(x) {
   # extract unique names of noise-free terms 
   uni_me <- ulapply(get_effect(x, "me"), attr, "uni_me")
   if (!length(uni_me)) {
-    return(character(0))
+    return(NULL)
   }
   all_vars <- all.vars(parse(text = uni_me))
   elist <- named_list(all_vars, values = NA_real_)

@@ -24,6 +24,8 @@
       As a side effect, it is no longer possible to define
       priors on noise-free \code{Xme} variables directly, but 
       only on their hyper-parameters \code{meanme} and \code{sdme}.
+      \item Fix problems in renaming parameters of the
+      \code{cor_bsts} structure thanks to Joshua Edward Morten. (#312)
       \item Fix some unexpected errors when predicting
       from ordinal models thanks to David Hervas. (#306, #307)
     }
