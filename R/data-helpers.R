@@ -489,7 +489,9 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   if (has_trials(x$family) || has_cat(x$family)) {
     # trials and ncat should not be computed based on new data
     data_response <- data_response(x, data, check_response = FALSE)
-    out[c("trials", "ncat")] <- data_response[c("trials", "ncat")]
+    # partially match via $ to be independent of the response suffix
+    out$trials <- data_response$trials
+    out$ncat <- data_response$ncat
   }
   if (is.cor_car(x$autocor)) {
     if (isTRUE(nzchar(x$time$group))) {

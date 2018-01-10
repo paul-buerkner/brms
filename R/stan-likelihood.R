@@ -53,9 +53,10 @@ stan_llh.default <- function(family, bterms, data, mix = "",
     nomega <- if (reqn && any(c("sigma", "alpha") %in% dpars)) "[n]"
     p$omega <- paste0("omega", mix, resp, nomega)
   }
+  ord_intercept <- paste0("temp", resp, "_Intercept")
   ord_args <- sargs(
-    p$mu, if (has_cs) paste0("mucs", resp, "[n]"), 
-    paste0("temp", resp, "_Intercept"), p$disc
+    p$mu, if (has_cs) paste0("mucs", resp, "[n]"),
+    ord_intercept, p$disc
   )
   ord_family <- paste0(family, "_", link, if (has_cs) "_cs")
   usc_logit <- stan_llh_dpar_usc_logit(c("zi", "hu"), bterms)
@@ -102,7 +103,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       cumulative = c(
         "ordered_logistic", 
-        sargs(p$mu, "temp_Intercept")
+        sargs(p$mu, ord_intercept)
       ),
       categorical = c(
         "categorical_logit", 

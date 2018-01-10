@@ -31,6 +31,8 @@
       \code{cor_bsts} structure thanks to Joshua Edward Morten. (#312)
       \item Fix some unexpected errors when predicting
       from ordinal models thanks to David Hervas. (#306, #307)
+      \item Fix problems when estimating and predicting
+      multivariate ordinal models thanks to David West. (#314)
     }
   }
 }
