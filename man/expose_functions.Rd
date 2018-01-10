@@ -5,18 +5,26 @@
 \alias{expose_functions}
 \title{Expose user-defined \pkg{Stan} functions}
 \usage{
-\method{expose_functions}{brmsfit}(x, ...)
+\method{expose_functions}{brmsfit}(x, vectorize = FALSE, env = globalenv(),
+  ...)
 
 expose_functions(x, ...)
 }
 \arguments{
 \item{x}{An \R object}
 
-\item{...}{Further arguments}
+\item{vectorize}{Logical; Indicates if the exposed functions
+should be vectorized via \code{\link{Vectorize}}. 
+Defaults to \code{FALSE}.}
+
+\item{env}{Environment where the functions should be made
+available. Defaults to the global environment.}
+
+\item{...}{Further arguments passed to 
+\code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.}
 }
 \description{
-Export user-defined \pkg{Stan} function to the 
-\code{\link[base:environment]{.GlobalEnv}}.
-For more details see 
+Export user-defined \pkg{Stan} function and
+optionally vectorize them. For more details see 
 \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 }

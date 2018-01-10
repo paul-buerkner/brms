@@ -13,6 +13,9 @@
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)
+      \item Vectorize user-defined \pkg{Stan} functions
+      exported via \code{export_functions} using
+      argument \code{vectorize}.
       \item Allow predicting new data in models
       with ARMA autocorrelation structures.
     }

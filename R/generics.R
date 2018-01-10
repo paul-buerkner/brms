@@ -1109,13 +1109,18 @@ pp_mixture <- function(x, ...) {
 
 #' Expose user-defined \pkg{Stan} functions
 #' 
-#' Export user-defined \pkg{Stan} function to the 
-#' \code{\link[base:environment]{.GlobalEnv}}.
-#' For more details see 
+#' Export user-defined \pkg{Stan} function and
+#' optionally vectorize them. For more details see 
 #' \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 #' 
 #' @param x An \R object
-#' @param ... Further arguments
+#' @param vectorize Logical; Indicates if the exposed functions
+#'   should be vectorized via \code{\link{Vectorize}}. 
+#'   Defaults to \code{FALSE}.
+#' @param env Environment where the functions should be made
+#'   available. Defaults to the global environment.
+#' @param ... Further arguments passed to 
+#'   \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 #' 
 #' @export
 expose_functions <- function(x, ...) {

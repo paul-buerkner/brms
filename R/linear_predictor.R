@@ -54,12 +54,12 @@ nonlinear_predictor <- function(draws, i = NULL, ...) {
   if (is(out, "try-error")) {
     if (grepl("could not find function", out)) {
       out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
-      stop2(
+      message(
         out, " Most likely this is because you used a Stan ",
         "function in the non-linear model formula that ",
-        "is not defined in R. Currently, you have to write ",
-        "this function yourself making sure that it is ",
-        "vectorized. I apologize for the inconvenience."
+        "is not defined in R. If this is a user-defined function, ",
+        "please run 'expose_functions(., vectorize = TRUE)' on ",
+        "your fitted model and try again."
       )
     } else {
       out <- rename(out, "^Error :", "", fixed = FALSE)

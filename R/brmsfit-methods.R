@@ -2538,8 +2538,19 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
 
 #' @rdname expose_functions
 #' @export
-expose_functions.brmsfit <- function(x, ...) {
-  expose_stan_functions(x$fit)
+expose_functions.brmsfit <- function(x, vectorize = FALSE, 
+                                     env = globalenv(), ...) {
+  vectorize <- as_one_logical(vectorize)
+  if (vectorize) {
+    funs <- expose_stan_functions(x$fit, env = environment(), ...)
+    for (i in seq_along(funs)) {
+      FUN <- Vectorize(get(funs[i], mode = "function"))
+      assign(funs[i], FUN, pos = env) 
+    }
+  } else {
+    funs <- expose_stan_functions(x$fit, env = env, ...)
+  }
+  invisible(funs)
 }
 
 #' @rdname diagnostic-quantities
