@@ -19,6 +19,8 @@ Several people have blogged about **brms** and this vignette is intended to prov
 
 ## List of blog posts
 
+- [Hierarchical compartmental reserving models ](https://magesblog.com/post/hierarchical-compartmental-reserving-models/) by Markus Gesmann
+- [Diffusion/Wiener Model Analysis with brms – Part II: Model Diagnostics and Model Fit](http://singmann.org/wiener-model-analysis-with-brms-part-ii/) by Henrik Singmann
 - [Bayesian SEM with brms](http://rpubs.com/jebyrnes/brms_bayes_sem/) by Jarrett Byrnes
 - [Diffusion/Wiener Model Analysis with brms – Part I: Introduction and Estimation](http://singmann.org/wiener-model-analysis-with-brms-part-i/) by Henrik Singmann
 - [Bayesian Decision Theory Made Ridiculously Simple ](http://www.statsathome.com/2017/10/12/bayesian-decision-theory-made-ridiculously-simple/) by Justin Silverman
