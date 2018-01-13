@@ -279,26 +279,28 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 #' @export
 marginal_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, 
-  surface, spaghetti, probs, robust, ...
+  surface, spaghetti, ordinal, probs, robust, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))
   if (is_categorical(x$family)) {
     stop2("'marginal_effects' is not implemented for categorical models.")
-  } else if (is_ordinal(x$family)) {
+  } else if (is_ordinal(x$family) && !ordinal) {
     warning2(
       "Predictions are treated as continuous variables ",
-      "in 'marginal_effects', which is likely an invalid ",
-      "assumption for family ", x$family$family, "."
+      "in 'marginal_effects' by default, which is likely ",
+      "invalid for family '", x$family$family, "'. ",
+      "Consider setting 'ordinal' to TRUE."
     )
   }
+  ordinal <- ordinal && is_ordinal(x$family)
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
     incl_autocor = FALSE, summary = FALSE, 
     resp = if (nzchar(x$resp)) x$resp, ...
   )
   out <- do.call(method, pred_args)
-  if (is_ordinal(x$family) && method == "fitted") {
+  if (is_ordinal(x$family) && !ordinal && method == "fitted") {
     for (k in seq_len(dim(out)[3])) {
       out[, , k] <- out[, , k] * k
     }
@@ -335,12 +337,23 @@ marginal_effects_internal.brmsterms <- function(
     colnames(spaghetti_data) <- c("estimate__", "sample__")
     spaghetti_data <- cbind(marg_data, spaghetti_data)
   }
-  out <- posterior_summary(out, probs = probs, robust = robust)
-  colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
+  if (ordinal) {
+    if (method == "fitted") {
+      out <- posterior_summary(out, probs = probs, robust = robust)[, 1, ]
+    } else if (method == "predict") {
+      out <- posterior_table(out)
+    }
+    cats <- rep(seq_len(ncol(out)), each = nrow(out))
+    out <- cbind(estimate__ = as.vector(out), cats__ = cats)
+  } else {
+    out <- posterior_summary(out, probs = probs, robust = robust)
+    colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
+  }
   out <- cbind(marg_data, out)
-  attr(out, "effects") <- eff
+  attr(out, "effects") <- c(eff, if (ordinal) "cats__")
   attr(out, "response") <- as.character(x$formula[2])
   attr(out, "surface") <- unname(both_numeric && surface)
+  attr(out, "ordinal") <- ordinal
   attr(out, "spaghetti") <- spaghetti_data
   attr(out, "points") <- make_point_frame(x, fit$data, eff, ...)
   name <- paste0(usc(x$resp, "suffix"), paste0(eff, collapse = ":"))

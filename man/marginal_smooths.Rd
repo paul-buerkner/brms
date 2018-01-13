@@ -21,7 +21,7 @@ are shown.}
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
-\item{spaghetti}{Logical; Indicates whether predictions should
+\item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 

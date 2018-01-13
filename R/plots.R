@@ -43,11 +43,21 @@ plot.brmsMarginalEffects <- function(
     surface <- isTRUE(attr(x[[i]], "surface"))
     # for backwards compatibility with brms < 1.4.0
     surface <- surface || isTRUE(attr(x[[i]], "contour"))
-    if (surface) {
-      # surface plots for two dimensional smooths
-      plots[[i]] <- ggplot(x[[i]]) +
-        aes_string(effects[1], effects[2])
-      if (stype == "contour") {
+    ordinal <- isTRUE(attr(x[[i]], "ordinal"))
+    if (surface || ordinal) {
+      # surface plots for two dimensional interactions or ordinal plots
+      plots[[i]] <- ggplot(x[[i]]) + aes_string(effects[1], effects[2])
+      if (ordinal) {
+        .surface_args <- nlist(
+          mapping = aes_(fill = ~ estimate__), 
+          height = 0.9
+        )
+        replace_args(.surface_args, dont_replace) <- surface_args
+        plots[[i]] <- plots[[i]] + 
+          do.call(geom_tile, .surface_args) + 
+          scale_fill_gradientn(colors = viridis6(), name = "Probability") + 
+          ylab(response)
+      } else if (stype == "contour") {
         .surface_args <- nlist(
           mapping = aes_(z = ~ estimate__, colour = ~ ..level..),
           bins = 30, size = 1.3

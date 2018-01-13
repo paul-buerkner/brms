@@ -317,8 +317,14 @@ test_that("all S3 methods have reasonable ouputs", {
   me <- marginal_effects(fit2, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me$Age), exp_nrow)
   
-  expect_warning(me4 <- marginal_effects(fit4),
-                 "Predictions are treated as continuous variables")
+  expect_warning(
+    me4 <- marginal_effects(fit4),
+    "Predictions are treated as continuous variables"
+  )
+  expect_true(is(me4, "brmsMarginalEffects"))
+  me4 <- marginal_effects(fit4, "x2", ordinal = TRUE)
+  expect_true(is(me4, "brmsMarginalEffects"))
+  me4 <- marginal_effects(fit4, "x2", method = "predict", ordinal = TRUE)
   expect_true(is(me4, "brmsMarginalEffects"))
   
   me5 <- marginal_effects(fit5)

@@ -1308,11 +1308,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
                                      spaghetti = FALSE, surface = FALSE,
-                                     transform = NULL, resolution = 100, 
-                                     select_points = 0, too_far = 0, ...) {
+                                     ordinal = FALSE, transform = NULL, 
+                                     resolution = 100, select_points = 0, 
+                                     too_far = 0, ...) {
   method <- match.arg(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
+  ordinal <- as_one_logical(ordinal)
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
@@ -1327,9 +1329,6 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   use_def_effects <- is.null(effects)
   if (use_def_effects) {
     effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
-    if (!length(effects)) {
-      stop2("No valid effects detected.")
-    }
   } else {
     # allow to define interactions in any order
     effects <- strsplit(as.character(effects), split = ":")
@@ -1365,6 +1364,16 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       )
     }
   }
+  if (ordinal) {
+    int_effs <- lengths(effects) == 2L
+    if (any(int_effs)) {
+      effects <- effects[!int_effs]
+      warning2("Interactions cannot be plotted if 'ordinal' is TRUE.")
+    }
+  }
+  if (!length(effects)) {
+    stop2("No valid effects detected.")
+  }
   mf <- model.frame(x)
   conditions <- prepare_conditions(
     x, conditions = conditions, effects = effects, 
@@ -1394,7 +1403,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     me_args <- nlist(
       x = bterms, fit = x, marg_data, method, surface, 
-      spaghetti, re_formula, transform, conditions,
+      spaghetti, ordinal, re_formula, transform, conditions,
       int_conditions, select_points, probs, robust, ...
     )
     out <- c(out, do.call(marginal_effects_internal, me_args))

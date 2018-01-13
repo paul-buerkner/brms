@@ -37,7 +37,8 @@ test_that("plotting functions don't throw unexpected errors", {
     P2 = factor(rep(1:3, each = N / 3)),
     estimate__ = rnorm(N, sd = 5), 
     se__ = rt(N, df = 10), 
-    cond__ = rep(1:2, each = N / 2)
+    cond__ = rep(1:2, each = N / 2),
+    cats__ = factor(rep(1:3, each = N / 3))
   )
   marg_results[["lower__"]] <- marg_results$estimate__ - 2
   marg_results[["upper__"]] <- marg_results$estimate__ + 2
@@ -54,6 +55,11 @@ test_that("plotting functions don't throw unexpected errors", {
   expect_true(is(marg_plot[[1]], "ggplot"))
   # test with 1 numeric and 1 categorical predictor
   attr(marg_results[[1]], "effects") <- c("P1", "P2")
+  marg_plot <- plot(marg_results, plot = FALSE)
+  expect_true(is(marg_plot[[1]], "ggplot"))
+  # test ordinal raster plot
+  attr(marg_results[[1]], "effects") <- c("P1", "cats__")
+  attr(marg_results[[1]], "ordinal") <- TRUE
   marg_plot <- plot(marg_results, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
 })

@@ -10,6 +10,10 @@
       to Ruben Arslan. (#27)
       \item Combine multiple \code{brmsfit} objects 
       via function \code{combine_models}.
+      \item Add new argument \code{ordinal} to
+      \code{marginal_effects} to generate special
+      plots for ordinal models thanks to the idea 
+      of the GitHub user silberzwiebel.
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)

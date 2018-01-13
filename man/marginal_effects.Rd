@@ -9,7 +9,7 @@
 \method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
   int_conditions = NULL, re_formula = NA, robust = TRUE,
   probs = c(0.025, 0.975), method = c("fitted", "predict"),
-  spaghetti = FALSE, surface = FALSE, transform = NULL,
+  spaghetti = FALSE, surface = FALSE, ordinal = FALSE, transform = NULL,
   resolution = 100, select_points = 0, too_far = 0, ...)
 
 marginal_effects(x, ...)
@@ -65,16 +65,21 @@ intervals (defaults to 2.5 and 97.5 percent quantiles)}
 If \code{"fitted"}, plot marginal predictions of the regression curve. 
 If \code{"predict"}, plot marginal predictions of the responses.}
 
-\item{spaghetti}{Logical; Indicates whether predictions should
+\item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 
 (e.g. \code{100}) in order to reduce computation time.}
 
-\item{surface}{Logical; Indicates whether interactions or 
+\item{surface}{Logical. Indicates if interactions or 
 two-dimensional smooths should be visualized as a surface. 
 Defaults to \code{FALSE}. The surface type can be controlled 
 via argument \code{stype} of the related plotting method.}
+
+\item{ordinal}{Logical. Indicates if effects in ordinal models
+should be visualized as a raster with the response categories
+on the y-axis. Defaults to \code{FALSE} and ignored in
+non-ordinal models.}
 
 \item{transform}{A function or a character string naming 
 a function to be applied on the predicted responses
