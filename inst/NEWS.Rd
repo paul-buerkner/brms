@@ -13,7 +13,7 @@
       \item Add new argument \code{ordinal} to
       \code{marginal_effects} to generate special
       plots for ordinal models thanks to the idea 
-      of the GitHub user silberzwiebel.
+      of the GitHub user silberzwiebel. (#190)
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)
