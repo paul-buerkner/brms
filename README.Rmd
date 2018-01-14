@@ -54,7 +54,7 @@ plot(fit)
 ``` 
 An even more detailed investigation can be achieved by applying the shinystan package:
 ```{r shiny, eval=FALSE}
-launch_shiny(fit) 
+launch_shinystan(fit) 
 ``` 
 
 There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt = 1`) and in the control group (`Trt = 0`) with average age and average number of previous seizures. Than we can use
