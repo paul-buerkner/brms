@@ -35,24 +35,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = 1144.62; R2 = NA
+#>     ICs: LOO = NA; WAIC = 1146.29; R2 = NA
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1755 1.00
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1744 1.00
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1854 1.00
+#> sd(Intercept)     0.51      0.07     0.38     0.67       1828 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.74      0.11     1.51     1.95       3120 1.00
-#> log_Age_c            0.47      0.37    -0.24     1.19       3017 1.00
-#> log_Base4_c          0.88      0.14     0.62     1.15       2676 1.00
-#> Trt1                -0.33      0.16    -0.65    -0.02       3218 1.00
-#> log_Base4_c:Trt1     0.35      0.21    -0.07     0.78       2957 1.00
+#> Intercept            1.74      0.11     1.53     1.96       2680 1.00
+#> log_Age_c            0.48      0.37    -0.26     1.21       2445 1.00
+#> log_Base4_c          0.88      0.14     0.59     1.15       2355 1.00
+#> Trt1                -0.34      0.16    -0.64    -0.04       2740 1.00
+#> log_Base4_c:Trt1     0.35      0.21    -0.08     0.77       2602 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -72,7 +72,7 @@ plot(fit)
 An even more detailed investigation can be achieved by applying the shinystan package:
 
 ``` r
-launch_shiny(fit) 
+launch_shinystan(fit) 
 ```
 
 There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt = 1`) and in the control group (`Trt = 0`) with average age and average number of previous seizures. Than we can use
@@ -81,8 +81,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error 5%ile 95%ile
-#> [1,]   6.9455  5.494049     1     17
-#> [2,]   4.9410  4.144251     0     13
+#> [1,]  6.87775  5.412128     1     17
+#> [2,]  4.93950  4.020806     0     13
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -90,8 +90,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error    5%ile   95%ile
-#> [1,] 7.029776  4.881767 1.946947 16.25704
-#> [2,] 5.021587  3.406761 1.425797 11.63548
+#> [1,] 6.823163  4.518070 2.032872 15.42288
+#> [2,] 4.883973  3.255885 1.433088 10.86055
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -120,13 +120,14 @@ methods(class = "brmsfit")
 #> [34] nobs                    nsamples                nuts_params            
 #> [37] pairs                   parnames                plot                   
 #> [40] post_prob               posterior_interval      posterior_linpred      
-#> [43] posterior_predict       posterior_samples       pp_check               
-#> [46] pp_mixture              predict                 predictive_error       
-#> [49] print                   prior_samples           prior_summary          
-#> [52] ranef                   residuals               rhat                   
-#> [55] stancode                standata                stanplot               
-#> [58] summary                 update                  VarCorr                
-#> [61] vcov                    waic                    WAIC                   
+#> [43] posterior_predict       posterior_samples       posterior_summary      
+#> [46] pp_check                pp_mixture              predict                
+#> [49] predictive_error        print                   prior_samples          
+#> [52] prior_summary           ranef                   residuals              
+#> [55] rhat                    stancode                standata               
+#> [58] stanplot                summary                 update                 
+#> [61] VarCorr                 vcov                    waic                   
+#> [64] WAIC                   
 #> see '?methods' for accessing help and source code
 ```
 
