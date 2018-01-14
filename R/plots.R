@@ -48,9 +48,10 @@ plot.brmsMarginalEffects <- function(
       # surface plots for two dimensional interactions or ordinal plots
       plots[[i]] <- ggplot(x[[i]]) + aes_string(effects[1], effects[2])
       if (ordinal) {
+        width <- ifelse(is_like_factor(x[[i]][[effects[1]]]), 0.9, 1)
         .surface_args <- nlist(
           mapping = aes_(fill = ~ estimate__), 
-          height = 0.9
+          height = 0.9, width = width
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
