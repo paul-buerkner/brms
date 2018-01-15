@@ -42,7 +42,7 @@ test_that("brm produces expected errors", {
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~1|g1/g2)), 
                paste("Illegal grouping term: g1/g2"))
   expect_error(brm(y ~ 1, dat, poisson(), autocor = cor_ma(~x)),
-               "not yet implemented for family 'poisson'")
+               "not implemented for family 'poisson'")
   
   # ordinal models
   expect_error(brm(rating ~ treat + (cs(period)|subject),
