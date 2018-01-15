@@ -1891,7 +1891,9 @@ pp_average.brmsfit <- function(
   more_args = NULL, control = NULL
 ) {
   models <- list(x, ...)
-  match_response(models)
+  if (!match_response(models)) {
+    stop2("Can only average models predicting the same response.")
+  }
   method <- match.arg(method)
   if (is.null(nsamples)) {
     nsamples <- nsamples(x)

@@ -38,7 +38,12 @@ compute_ics <- function(models, model_names,
       }
     }
     if (compare) {
-      match_response(models)
+      if (!match_response(models)) {
+        warning2(
+          "Model comparisons are likely invalid as the response ", 
+          "parts of at least two models do not match."
+        )
+      }
       out <- compare_ic(x = out)
     }
     class(out) <- "iclist"
@@ -348,13 +353,9 @@ match_response <- function(models) {
       out <- TRUE
     } else {
       out <- FALSE
-      warning2(
-        "Model comparisons are likely invalid as the response ", 
-        "parts of at least two models do not match."
-      )
     }
   }
-  invisible(out)
+  out
 }
 
 #' @rdname reloo
