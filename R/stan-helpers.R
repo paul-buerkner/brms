@@ -105,7 +105,7 @@ stan_autocor <- function(bterms, prior) {
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   if (Kar || Kma) {
-    err_msg <- "ARMA models are not yet implemented"
+    err_msg <- "ARMA models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
@@ -145,7 +145,7 @@ stan_autocor <- function(bterms, prior) {
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      err_msg <- "ARMA covariance matrices are yet implemented"
+      err_msg <- "ARMA covariance matrices are implemented"
       if (isTRUE(bterms$rescor)) {
         stop2(err_msg, " when 'rescor' is estimated.")
       }
@@ -214,7 +214,7 @@ stan_autocor <- function(bterms, prior) {
   Karr <- get_arr(autocor)
   if (Karr) {
     # autoregressive effects of the response
-    err_msg <- "ARR models are not yet implemented"
+    err_msg <- "ARR models are not implemented"
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " for non-linear models.")
     }
@@ -236,7 +236,7 @@ stan_autocor <- function(bterms, prior) {
     )
   }
   if (is.cor_sar(autocor)) {
-    err_msg <- "SAR models are not yet implemented"
+    err_msg <- "SAR models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
@@ -269,7 +269,7 @@ stan_autocor <- function(bterms, prior) {
     }
   }
   if (is.cor_car(autocor)) {
-    err_msg <- "CAR models are not yet implemented"
+    err_msg <- "CAR models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
@@ -337,7 +337,7 @@ stan_autocor <- function(bterms, prior) {
     } 
   }
   if (is.cor_bsts(autocor)) {
-    err_msg <- "BSTS models are not yet implemented"
+    err_msg <- "BSTS models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
@@ -346,9 +346,6 @@ stan_autocor <- function(bterms, prior) {
     }
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
-    }
-    if (isTRUE(bterms$rescor)) {
-      stop2(err_msg, " when 'rescor' is estimated.")
     }
     str_add(out$data) <- paste0(
       "  vector[N] tg", p, ";  // indicates independent groups \n"
@@ -381,7 +378,7 @@ stan_autocor <- function(bterms, prior) {
     )
   }
   if (is.cor_fixed(autocor)) {
-    err_msg <- "Fixed residual covariance matrices are not yet implemted"
+    err_msg <- "Fixed residual covariance matrices are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }

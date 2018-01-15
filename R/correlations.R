@@ -86,6 +86,9 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   if (!(r >= 0 && (r == round(r)))) {
     stop2("Response autoregressive order must be a non-negative integer.")
   }
+  if (!sum(p, q, r)) {
+    stop2("At least one of 'p', 'q', and 'r' should be greater zero.")
+  }
   if (cov && (p > 1 || q > 1)) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
@@ -577,5 +580,5 @@ remove_autocor <- function(x) {
 regex_cor_pars <- function() {
   # regex to extract all pars of cor structures
   # used in summary.brmsfit
-  "^(ar|ma|lagsar$|errorsar$|car$|sdcar$|sigmaLL$)"
+  "^(ar|ma|lagsar|errorsar|car|sdcar|sigmaLL)(\\[|_|$)"
 }

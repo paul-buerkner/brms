@@ -46,7 +46,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
     if (is.formula(x$offset))
       paste0(" + offset", p),
     if (get_arr(x$autocor))
-      " + Yarr * arr",
+      paste0(" + Yarr", p, " * arr", p),
     "; \n"
   )
   

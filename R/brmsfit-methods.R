@@ -750,7 +750,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   spec_pars <- c(dpars(), "delta", "theta", "rescor")
   spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
   spec_pars <- pars[grepl(spec_pars, pars)]
-  spec_pars <- setdiff(spec_pars, "sigmaLL")
+  spec_pars <- spec_pars[!grepl("^sigmaLL", spec_pars)]
   out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
   is_rescor <- grepl("^rescor_", spec_pars)
   if (any(is_rescor)) {

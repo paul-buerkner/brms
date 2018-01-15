@@ -39,6 +39,8 @@
       from ordinal models thanks to David Hervas. (#306, #307)
       \item Fix problems when estimating and predicting
       multivariate ordinal models thanks to David West. (#314)
+      \item Fix various minor problems in autocorrelation 
+      structures thanks to David West. (#320)
     }
   }
 }
