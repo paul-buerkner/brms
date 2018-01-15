@@ -1877,6 +1877,74 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eval(cl, parent.frame())
 }
 
+#' @rdname pp_average
+#' @export
+pp_average.brmsfit <- function(
+  x, ..., weights = "loo",
+  method = c("predict", "fitted", "residuals"),
+  newdata = NULL, re_formula = NULL,
+  allow_new_levels = FALSE,
+  sample_new_levels = "uncertainty", 
+  new_objects = list(), incl_autocor = TRUE, 
+  resp = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
+  more_args = NULL, control = NULL
+) {
+  models <- list(x, ...)
+  match_response(models)
+  method <- match.arg(method)
+  if (is.null(nsamples)) {
+    nsamples <- nsamples(x)
+  }
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
+  if (!is.numeric(weights)) {
+    fun <- tolower(weights)
+    fun <- match.arg(fun, c("loo", "waic", "kfold", "bridge"))
+    args <- c(models, control)
+    if (fun %in% c("loo", "waic", "kfold")) {
+      args$compare <- FALSE
+      ename <- switch(fun, loo = "looic", waic = "waic", kfold = "kfoldic")
+      ics <- ulapply(SW(do.call(fun, args)), "[[", ename)
+      ic_diffs <- ics - min(ics)
+      weights <- exp(- ic_diffs / 2)
+    } else if (weights %in% "bridge") {
+      weights <- do.call("post_prob", args)
+    }
+  } else {
+    if (length(weights) != length(models)) {
+      stop2("If numeric, 'weights' must have the same length ",
+            "as the number of models.")
+    }
+    if (any(weights < 0)) {
+      stop2("If numeric, 'weights' must be positive.")
+    }
+  }
+  weights <- weights / sum(weights)
+  nsamples <- round(weights * nsamples)
+  names(weights) <- names(nsamples) <- model_names
+  method_args <- nlist(
+    newdata, re_formula, allow_new_levels, sample_new_levels,
+    new_objects, incl_autocor, resp, sort, nug, summary = FALSE
+  )
+  method_args <- c(method_args, more_args)
+  out <- named_list(model_names)
+  for (i in seq_along(out)) {
+    if (nsamples[i] > 0) {
+      method_args$object <- models[[i]]
+      method_args$nsamples <- nsamples[i]
+      out[[i]] <- do.call(method, method_args)
+    }
+  }
+  out <- do.call(rbind, out)
+  if (summary) {
+    out <- posterior_summary(out, probs = probs, robust = robust) 
+  }
+  attr(out, "weights") <- weights
+  attr(out, "nsamples") <- nsamples
+  out
+}
+
 #' Compute a Bayesian version of R-squared for regression models
 #' 
 #' @aliases bayes_R2
@@ -2173,10 +2241,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          new_objects = list(), subset = NULL,
                          nsamples = NULL, pointwise = NULL, nug = NULL) {
   models <- list(x, ...)
-  model_names <- c(
-    deparse_combine(substitute(x)),
-    ulapply(substitute(list(...))[-1], deparse_combine)
-  )
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2215,10 +2281,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
                         update_args = list(), cores = 1, 
                         wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
-  model_names <- c(
-    deparse_combine(substitute(x)),
-    ulapply(substitute(list(...))[-1], deparse_combine)
-  )
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2263,10 +2327,8 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
                           group = NULL, newdata = NULL, save_fits = FALSE,
                           update_args = list()) {
   models <- list(x, ...)
-  model_names <- c(
-    deparse_combine(substitute(x)),
-    ulapply(substitute(list(...))[-1], deparse_combine)
-  )
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
   use_stored_ic <- ulapply(models, 
     function(x) is.brmsfit(x) && is_equal(x$kfold$K, K)
   )
@@ -2837,10 +2899,8 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL,
                               bs_args = list()) {
   models <- list(x, ...)
   if (is.null(model_names)) {
-    model_names <- c(
-      deparse_combine(substitute(x)),
-      ulapply(substitute(list(...))[-1], deparse_combine)
-    )
+    model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+    model_names <- c(deparse_combine(substitute(x)), model_names)
   } else if (length(model_names) != length(models)) {
     stop2("Number of model names is not equal to the number of models.") 
   }

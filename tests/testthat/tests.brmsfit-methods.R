@@ -409,6 +409,14 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(posterior_linpred(fit1)), 
                c(nsamples(fit1), nobs(fit1)))
   
+  # pp_average
+  ppa <- pp_average(fit1, fit1, weights = "waic")
+  expect_equal(dim(ppa), c(nobs(fit1), 4))
+  ppa <- pp_average(fit1, fit1, weights = c(1, 3))
+  expect_equal(attr(ppa, "weights"), c(fit1 = 0.25, fit1 = 0.75))
+  ns <- c(fit1 = nsamples(fit1) / 4, fit1 = 3 * nsamples(fit1) / 4)
+  expect_equal(attr(ppa, "nsamples"), ns)
+
   # pp_check
   expect_true(is(pp_check(fit1), "ggplot"))
   expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))

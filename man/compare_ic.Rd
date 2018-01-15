@@ -35,15 +35,15 @@ For more details see \code{\link[loo:compare]{compare}}.
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
             data = inhaler, family = "gaussian")
-w1 <- WAIC(fit1)
+waic1 <- WAIC(fit1)
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler, family = "gaussian")
-w2 <- WAIC(fit2)
+waic2 <- WAIC(fit2)
 
 # compare both models
-compare_ic(w1, w2)
+compare_ic(waic1, waic2)
 }
 
 }

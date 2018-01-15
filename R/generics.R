@@ -1044,6 +1044,56 @@ marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
 }
 
+#' Posterior predictive samples averaged across models
+#' 
+#' Compute posterior predictive samples averaged across models.
+#' Weighting can be done in various ways, for instance using
+#' Akaike weights based on information criteria or 
+#' marginal likelihoods.
+#' 
+#' @aliases pp_average
+#' 
+#' @param x A \code{brmsfit} object.
+#' @param ... More \code{brmsfit} objects.
+#' @param weights Name of the criterion to compute weights from. 
+#'   Should be one of \code{"loo"} (default), 
+#'   \code{"waic"}, \code{"kfold"}, or \code{"bridge"} 
+#'   (log marginal likelihood). Alternatively, a numeric
+#'   vector with pre-specified weights.
+#' @param method Type of predictions to average. Should be one of 
+#'   \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}. 
+#' @param more_args Optional \code{list} of further arguments 
+#'   passed to the function specified in \code{method}.
+#' @param control Optional \code{list} of further arguments 
+#'   passed to the function specified in \code{weights}.
+#' @inheritParams predict.brmsfit
+#' 
+#' @return Same as the output of the method specified 
+#'   in argument \code{method}.
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
+#' 
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # compute model-averaged predicted values
+#' (df <- unique(inhaler[, c("treat", "period", "carry")]))
+#' pp_average(fit1, fit2, newdata = df)
+#' 
+#' # compute model-averaged fitted values
+#' pp_average(fit1, fit2, method = "fitted", newdata = df)
+#' }
+#' 
+#' @export
+pp_average <- function(x, ...) {
+  UseMethod("pp_average")
+}
+
 #' Posterior Probabilities of Mixture Component Memberships
 #' 
 #' Compute the posterior probabilities of mixture component 

@@ -10,6 +10,8 @@
       to Ruben Arslan. (#27)
       \item Combine multiple \code{brmsfit} objects 
       via function \code{combine_models}.
+      \item Compute model averaged posterior 
+      predictions with method \code{pp_average}. (#319)
       \item Add new argument \code{ordinal} to
       \code{marginal_effects} to generate special
       plots for ordinal models thanks to the idea 
