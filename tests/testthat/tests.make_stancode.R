@@ -392,7 +392,7 @@ test_that("invalid combinations of modeling options are detected", {
   )
   expect_error(
     make_stancode(cbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
-    "ARMA covariance matrices are yet implemented when 'rescor' is estimated."
+    "ARMA covariance matrices are not implemented when 'rescor' is estimated."
   )
   expect_error(
     make_stancode(y1 | resp_se(wi) ~ y2, data = data, autocor = cor_ma()),
@@ -1202,7 +1202,7 @@ test_that("Stan code for SAR models is correct", {
   expect_error(
     make_stancode(bf(CRIME ~ INC + HOVAL, sigma ~ INC),
                   data = COL.OLD, autocor = cor_lagsar(COL.nb)),
-    "SAR models are not yet implemented when predicting 'sigma'" 
+    "SAR models are not implemented when predicting 'sigma'" 
   )
 })
 

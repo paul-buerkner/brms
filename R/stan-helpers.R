@@ -145,7 +145,7 @@ stan_autocor <- function(bterms, prior) {
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      err_msg <- "ARMA covariance matrices are implemented"
+      err_msg <- "ARMA covariance matrices are not implemented"
       if (isTRUE(bterms$rescor)) {
         stop2(err_msg, " when 'rescor' is estimated.")
       }
