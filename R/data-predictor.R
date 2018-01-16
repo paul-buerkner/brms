@@ -443,8 +443,13 @@ data_offset <- function(bterms, data) {
   px <- check_prefix(bterms)
   if (is.formula(bterms$offset)) {
     p <- usc(combine_prefix(px))
-    mf <- model.frame(bterms$offset, rm_attr(data, "terms"))
-    out[[paste0("offset", p)]] <- model.offset(mf)
+    mf <- rm_attr(data, "terms")
+    mf <- model.frame(bterms$offset, mf, na.action = na.pass)
+    offset <- model.offset(mf)
+    if (length(offset) == 1L) {
+      offset <- rep(offset, nrow(data))
+    }
+    out[[paste0("offset", p)]] <- offset
   }
   out
 }
