@@ -14,17 +14,17 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   #   autocor: object of classe cor_brms
   #   mix: optional mixture component ID
   #   ptheta: are mixing proportions predicted?
-  stopifnot(is.family(family), is.brmsterms(bterms), length(mix) == 1L)
+  # TODO: refactor at some point to make it easier to maintain?
+  stopifnot(is.family(family))
+  stopifnot(is.brmsterms(bterms))
+  stopifnot(length(mix) == 1L)
   link <- family$link
   family <- family$family
   autocor <- bterms$autocor
   mix <- as.character(mix)
   is_mix <- nzchar(mix)
-  is_categorical <- is_categorical(family)
-  is_ordinal <- is_ordinal(family)
-  is_hurdle <- is_hurdle(family)
-  is_zero_inflated <- is_zero_inflated(family)
   is_mv <- grepl("_mv$", family)
+  is_sigma_pred <- is_mv && isTRUE(bterms$sigma_pred)
   has_sigma <- has_sigma(family, bterms)
   has_se <- is.formula(bterms$adforms$se)
   has_weights <- is.formula(bterms$adforms$weights)
@@ -33,16 +33,16 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   bounds <- get_bounds(bterms$adforms$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
   llh_adj <- stan_llh_adj(bterms$adforms)
-  
+  resp <- usc(combine_prefix(bterms))
   dpars <- names(bterms$dpars)
-  reqn <- llh_adj || !stan_is_vectorized(family) || 
-    is_mix || is_mv && isTRUE(bterms$sigma_pred) ||
+  reqn <- !stan_is_vectorized(family) || 
+    llh_adj || is_mix || is_sigma_pred ||
     has_sigma && has_se && !use_cov(autocor) ||
     any(c("phi", "kappa") %in% dpars)
   n <- ifelse(reqn, "[n]", "")
-  # prepare distributional parameters
-  resp <- usc(combine_prefix(bterms))
-  p <- named_list(dpars())
+  
+  # prepare parameters
+  p <- list()
   p$sigma <- stan_llh_sigma(family, bterms, resp = resp, mix = mix)
   for (ap in setdiff(dpars(), "sigma")) {
     is_ap_pred <- ap %in% c("mu", dpar_class(dpars))
@@ -53,16 +53,28 @@ stan_llh.default <- function(family, bterms, data, mix = "",
     nomega <- if (reqn && any(c("sigma", "alpha") %in% dpars)) "[n]"
     p$omega <- paste0("omega", mix, resp, nomega)
   }
-  ord_intercept <- paste0("temp", resp, "_Intercept")
-  ord_args <- sargs(
-    p$mu, if (has_cs) paste0("mucs", resp, "[n]"),
-    ord_intercept, p$disc
+  p$Mu <- paste0("Mu", n)
+  p$Sigma <- paste0("Sigma", if (is_sigma_pred) "[n]")
+  p$LSigma <- paste0("LSigma", if (is_sigma_pred) "[n]")
+  p$errorsar <- paste0("errorsar", resp)
+  p$lagsar <- paste0("lagsar", resp)
+  p$ord_intercept <- paste0("temp", resp, "_Intercept")
+  p$mucs <- if (has_cs) paste0("mucs", resp, "[n]")
+  
+  # prepare data variables
+  d <- c(
+    "trials", "dec", "log_Y", "sqrt_Y", "sum_log_Y", "LV", "V", "W", 
+    "se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix"
   )
+  d <- named_list(d, paste0(d, resp))
+  for (v in c("trials", "dec", "log_Y", "sqrt_Y")) {
+    d[[v]] <- paste0(d[[v]], n)
+  }
+  
+  # prepare family specific stuff
+  ord_args <- sargs(p$mu, p$mucs, p$ord_intercept, p$disc)
   ord_family <- paste0(family, "_", link, if (has_cs) "_cs")
   usc_logit <- stan_llh_dpar_usc_logit(c("zi", "hu"), bterms)
-  trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
-  nSigma <- ifelse(is_mv && isTRUE(bterms$sigma_pred), "[n]", "")
-  
   if (use_cov(autocor)) {
     # ARMA effects in covariance matrix formulation
     if (llh_adj) {
@@ -85,6 +97,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
     str_add(family) <- "_fixed"
   }
   
+  # select the likelihood
   simplify <- stan_has_built_in_fun(nlist(family, link)) &&
     !has_trunc && !has_cens && !"disc" %in% dpars
   if (simplify) { 
@@ -103,7 +116,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       cumulative = c(
         "ordered_logistic", 
-        sargs(p$mu, ord_intercept)
+        sargs(p$mu, p$ord_intercept)
       ),
       categorical = c(
         "categorical_logit", 
@@ -111,7 +124,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       binomial = c(
         "binomial_logit", 
-        sargs(trials, p$mu)
+        sargs(d$trials, p$mu)
       ), 
       bernoulli = c(
         "bernoulli_logit", 
@@ -135,7 +148,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       zero_inflated_binomial = c(
         paste0("zero_inflated_binomial_blogit", usc_logit), 
-        sargs(trials, p$mu, p$zi)
+        sargs(d$trials, p$mu, p$zi)
       )
     )
   } else {
@@ -146,24 +159,26 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       gaussian_cov = c(
         "normal_cov", 
-        sargs(p$mu, "se2, N_tg, begin_tg, end_tg", 
-              "nobs_tg, res_cov_matrix")
+        sargs(
+          p$mu, d$se2, d$N_tg, d$begin_tg,
+          d$end_tg, d$nobs_tg, d$res_cov_matrix
+        )
       ),
       gaussian_mv = c(
         "multi_normal_cholesky", 
-        sargs(paste0("Mu", n), paste0("LSigma", nSigma))
+        sargs(p$Mu, p$LSigma)
       ),
       gaussian_fixed = c(
         "multi_normal_cholesky", 
-        sargs(p$mu, "LV")
+        sargs(p$mu, d$LV)
       ),
       gaussian_lagsar = c(
         "normal_lagsar",
-        sargs(p$mu, p$sigma, "lagsar", "W")
+        sargs(p$mu, p$sigma, p$lagsar, d$W)
       ),
       gaussian_errorsar = c(
         "normal_errorsar",
-        sargs(p$mu, p$sigma, "errorsar", "W")
+        sargs(p$mu, p$sigma, p$errorsar, d$W)
       ),
       student = c(
         "student_t", 
@@ -171,24 +186,26 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       student_cov = c(
         "student_t_cov", 
-        sargs(p$nu, p$mu, "se2, N_tg, begin_tg", 
-              "end_tg, nobs_tg, res_cov_matrix")
+        sargs(
+          p$nu, p$mu, d$se2, d$N_tg, d$begin_tg,
+          d$end_tg, d$nobs_tg, d$res_cov_matrix
+        )
       ),
       student_mv = c(
         "multi_student_t", 
-        sargs(p$nu, paste0("Mu", n), paste0("Sigma", nSigma))
+        sargs(p$nu, p$Mu, p$Sigma)
       ),
       student_fixed = c(
         "multi_student_t", 
-        sargs(p$nu, p$mu, "V")
+        sargs(p$nu, p$mu, d$V)
       ),
       student_lagsar = c(
         "student_t_lagsar",
-        sargs(p$nu, p$mu, p$sigma, "lagsar", "W")
+        sargs(p$nu, p$mu, p$sigma, p$lagsar, d$W)
       ),
       student_errorsar = c(
         "student_t_errorsar",
-        sargs(p$nu, p$mu, p$sigma, "errorsar", "W")
+        sargs(p$nu, p$mu, p$sigma, p$errorsar, d$W)
       ),
       asym_laplace = c(
         "asym_laplace",
@@ -216,7 +233,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       binomial = c(
         "binomial", 
-        sargs(trials, p$mu)
+        sargs(d$trials, p$mu)
       ),
       bernoulli = c(
         "bernoulli", 
@@ -248,19 +265,21 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       inverse.gaussian = c(
         paste0("inv_gaussian", if (!reqn) "_vector"),
-        sargs(p$mu, p$shape, 
-          paste0(if (!reqn) "sum_", "log_Y", resp, n),
-          paste0("sqrt_Y", resp, n)
+        sargs(
+          p$mu, p$shape, 
+          if (!reqn) d$sum_log_Y else d$log_Y, d$sqrt_Y
         )
       ),
       wiener = c(
         "wiener_diffusion", 
-        sargs("dec[n]", p$bs, p$ndt, p$bias, p$mu)
+        sargs(d$dec, p$bs, p$ndt, p$bias, p$mu)
       ),
       beta = c(
         "beta", 
-        sargs(paste0(p$mu, " * ", p$phi), 
-              paste0("(1 - ", p$mu, ") * ", p$phi))
+        sargs(
+          paste0(p$mu, " * ", p$phi), 
+          paste0("(1 - ", p$mu, ") * ", p$phi)
+        )
       ),
       von_mises = c(
         paste0("von_mises_", ifelse(reqn, "real", "vector")), 
@@ -308,7 +327,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
       ),
       zero_inflated_binomial = c(
         paste0("zero_inflated_binomial", usc_logit), 
-        sargs(trials, p$mu, p$zi)
+        sargs(d$trials, p$mu, p$zi)
       ),
       zero_inflated_beta = c(
         paste0("zero_inflated_beta", usc_logit), 
@@ -321,7 +340,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
     )
   }
   
-  # write likelihood code
+  # write likelihood Stan code
   interval <- isTRUE(attr(has_cens, "interval"))
   type <- match(TRUE, c(is_mix, has_cens, has_weights))
   type <- c("mix", "cens", "weights")[type]

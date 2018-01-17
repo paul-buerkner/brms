@@ -445,6 +445,12 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, "ps[1] = log(theta1_x) + poisson_log_lpmf(Y_x[n] | mu1_x[n])")
   expect_match2(scode, "target += normal_lpdf(b_y1 | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(b_y2 | 0, 10)")
+  
+  # multivariate binomial models
+  bform <- bf(x ~ 1) + bf(g ~ 1) + binomial()
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "binomial_logit_lpmf(Y_x | trials_x, mu_x)")
+  expect_match2(scode, "binomial_logit_lpmf(Y_g | trials_g, mu_g)")
 })
 
 test_that("Stan code for categorical models is correct", {
