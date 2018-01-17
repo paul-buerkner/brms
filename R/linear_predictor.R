@@ -40,13 +40,14 @@ nonlinear_predictor <- function(draws, i = NULL, ...) {
   # Returns:
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
-  nlmodel_list <- list()
   nlpars <- names(draws$nlpars)
+  covars <- names(draws$C)
+  nlmodel_list <- named_list(c(nlpars, covars))
   for (nlp in nlpars) {
     nlmodel_list[[nlp]] <- 
       linear_predictor(draws$nlpars[[nlp]], i = i, ...)
   }
-  for (cov in names(draws$C)) {
+  for (cov in covars) {
     nlmodel_list[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
   }
   # evaluate non-linear predictor
@@ -66,6 +67,7 @@ nonlinear_predictor <- function(draws, i = NULL, ...) {
       stop2(out)
     }
   }
+  dim(out) <- dim(nlmodel_list[[1]])
   unname(out)
 }
 
