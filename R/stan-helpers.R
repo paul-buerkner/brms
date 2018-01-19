@@ -1131,7 +1131,7 @@ stan_vector <- function(...) {
 }
 
 stan_has_built_in_fun <- function(family) {
-  # indicates if a family-link combination has a build in 
+  # indicates if a family-link combination has a built in 
   # function in Stan (such as binomial_logit)
   # Args:
   #   family: a list with elements 'family' and 'link'
@@ -1153,15 +1153,6 @@ stan_has_built_in_fun <- function(family) {
     family %in% logit_families && link == "logit" ||
     isTRUE(dpar %in% c("zi", "hu")) && link == "logit"
   )
-}
-
-stan_is_vectorized <- function(family) {
-  # indicate if family has a vectorized implementation in Stan
-  !(is_categorical(family) || is_ordinal(family) || 
-    is_hurdle(family) || is_zero_inflated(family) ||
-    is_zero_one_inflated(family) ||
-    is_wiener(family) || is_exgaussian(family) || 
-    is_asym_laplace(family) || is_gev(family))
 }
 
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
