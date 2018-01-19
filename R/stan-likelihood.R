@@ -187,7 +187,7 @@ stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
   # prepare names of distributional parameters
   # Args:
   #   reqn: will the likelihood be wrapped in a loop over n?
-  #   dpars: optinal names of distributional parameters to be prepared
+  #   dpars: optional names of distributional parameters to be prepared
   if (is.null(dpars)) {
     dpars <- valid_dpars(bterms) 
   }
@@ -207,14 +207,13 @@ stan_llh_simple_lpdf <- function(lpdf, link, bterms) {
   lpdf
 }
 
-stan_llh_dpar_usc_logit <- function(dpars, bterms) {
+stan_llh_dpar_usc_logit <- function(dpar, bterms) {
   # prepare _logit suffix for distributional parameters
   # currently only used in zero-inflated and hurdle models
+  stopifnot(dpar %in% c("zi", "hu"))
   stopifnot(is.brmsterms(bterms))
-  use_logit <- any(ulapply(dpars, function(dp) 
-    isTRUE(bterms$dpars[[dp]]$family$link == "logit")
-  ))
-  ifelse(use_logit, "_logit", "")
+  usc_logit <- bterms$dpars[[dpar]]$family$link == "logit"
+  ifelse(usc_logit, "_logit", "")
 }
 
 stan_llh_add_se <- function(sigma, bterms, reqn, resp = "") {
@@ -250,8 +249,7 @@ stan_llh_gaussian <- function(bterms, resp = "", mix = "") {
 
 stan_llh_gaussian_mv <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix) || bterms$sigma_pred
-  p <- list()
-  p$Mu <- paste0("Mu", if (reqn) "[n]")
+  p <- list(Mu = paste0("Mu", if (reqn) "[n]"))
   p$LSigma <- paste0("LSigma", if (bterms$sigma_pred) "[n]")
   c("multi_normal_cholesky", sargs(p$Mu, p$LSigma))
 }
@@ -261,8 +259,8 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  l <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  p[v] <- as.list(paste0(v, resp))
   c("normal_cov", sargs(
     p$mu, p$se2, p$N_tg, p$begin_tg,
     p$end_tg, p$nobs_tg, p$res_cov_matrix
@@ -282,16 +280,16 @@ stan_llh_gaussian_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  l <- c("lagsar", "W")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("lagsar", "W")
+  p[v] <- as.list(paste0(v, resp))
   c("normal_lagsar", sargs(p$mu, p$sigma, p$lagsar, p$W))
 }
 
 stan_llh_gaussian_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  l <- c("errorsar", "W")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("errorsar", "W")
+  p[v] <- as.list(paste0(v, resp))
   c("normal_errorsar", sargs(p$mu, p$sigma, p$errorsar, p$W))
 }
 
@@ -315,8 +313,8 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  l <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  p[v] <- as.list(paste0(v, resp))
   c("student_t_cov", sargs(
     p$nu, p$mu, p$se2, p$N_tg, p$begin_tg,
     p$end_tg, p$nobs_tg, p$res_cov_matrix
@@ -336,16 +334,16 @@ stan_llh_student_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  l <- c("lagsar", "W")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("lagsar", "W")
+  p[v] <- as.list(paste0(v, resp))
   c("student_t_lagsar", sargs(p$nu, p$mu, p$sigma, p$lagsar, p$W))
 }
 
 stan_llh_student_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  l <- c("errorsar", "W")
-  p[l] <- as.list(paste0(l, resp))
+  v <- c("errorsar", "W")
+  p[v] <- as.list(paste0(v, resp))
   c("student_t_errorsar", sargs(p$nu, p$mu, p$sigma, p$errorsar, p$W))
 }
 
