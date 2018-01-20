@@ -179,11 +179,11 @@ make_stancode <- function(formula, data, family = gaussian(),
     )
     model_name <- paste(summarise_families(formula), "brms-model")
     complete_model$model_name <- model_name
-    class(complete_model$model_code) <- c("character", "brmsmodel")
     if (is.character(save_model)) {
       str_add(complete_model$model_code) <- "\n"
       cat(complete_model$model_code, file = save_model)
     }
+    class(complete_model$model_code) <- c("character", "brmsmodel")
     if (!isTRUE(dots$brm_call)) {
       complete_model <- complete_model$model_code
     }
