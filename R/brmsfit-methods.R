@@ -2173,6 +2173,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   # brm computes warmup automatically based on iter 
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
+  control <- attr(object$fit@sim$samples[[1]], "args")$control
+  control <- control[setdiff(names(control), names(dots$control))]
+  dots$control[names(control)] <- control
   
   new_stancode <- suppressMessages(do.call(make_stancode, dots))
   # stan code may differ just because of the version number (#288)
