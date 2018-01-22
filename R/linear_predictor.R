@@ -74,7 +74,7 @@ nonlinear_predictor <- function(draws, i = NULL, ...) {
 predictor_fe <- function(draws, i) {
   # compute eta for fixed effects
   fe <- draws[["fe"]]
-  if (!length(fe)) {
+  if (!isTRUE(ncol(fe[["X"]]) > 0)) {
     return(0) 
   }
   eta <- try(.predictor_fe(X = p(fe[["X"]], i), b = fe[["b"]]))

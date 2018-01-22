@@ -19,6 +19,9 @@
       \item Use informative inverse-gamma priors
       for length-scale parameters of Gaussian
       processes. (#275)
+      \item Compute hypotheses for all levels of a 
+      grouping factor at once using argument \code{scope} 
+      in method \code{hypothesis}. (#327)
       \item Vectorize user-defined \pkg{Stan} functions
       exported via \code{export_functions} using
       argument \code{vectorize}.
@@ -36,7 +39,8 @@
       \item Fix problems in renaming parameters of the
       \code{cor_bsts} structure thanks to Joshua Edward Morten. (#312)
       \item Fix some unexpected errors when predicting
-      from ordinal models thanks to David Hervas. (#306, #307)
+      from ordinal models thanks to David Hervas and 
+      Florian Bader. (#306, #307, #331)
       \item Fix problems when estimating and predicting
       multivariate ordinal models thanks to David West. (#314)
       \item Fix various minor problems in autocorrelation 
