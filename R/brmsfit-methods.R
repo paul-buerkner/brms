@@ -2036,6 +2036,11 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   R2
 }
 
+#' @export
+getCall.brmsfit <- function(object){
+  object$formula
+}
+
 #' Update \pkg{brms} models
 #' 
 #' This method allows to update an existing \code{brmsfit} object
@@ -2048,7 +2053,9 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'   to update the model with new data.
 #' @param recompile Logical, indicating whether the Stan model should 
 #'  be recompiled. If \code{FALSE} (the default), the model is only 
-#'  recompiled when necessary.
+#'  recompiled when necessary. If \code{"never"}, the model is not 
+#'  recompiled; use this when you want an externally build model to 
+#'  be used.
 #' @param ... Other arguments passed to \code{\link[brms:brm]{brm}}.
 #'  
 #' @details Sometimes, when updating the model formula, 
@@ -2182,9 +2189,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   new_stancode <- sub("^[^\n]+\n", "", new_stancode)
   old_stancode <- stancode(object, version = FALSE)
   # only recompile if new and old stan code do not match
-  if (recompile || !is_equal(new_stancode, old_stancode)) {
-    # recompliation is necessary
-    message("The desired updates require recompling the model")
+  if (recompile != "never" && (
+    recompile || !is_equal(new_stancode, old_stancode))) {
+    # recompilation is necessary
+    message("The desired updates requires recompling the model")
     dots$fit <- NA
     if (!is.null(newdata)) {
       dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
