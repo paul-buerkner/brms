@@ -2598,7 +2598,6 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   contains_samples(x)
   x <- restructure(x)
   group <- as_one_character(group)
-  ranef <- as_one_logical(ranef)
   if (!is.character(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
