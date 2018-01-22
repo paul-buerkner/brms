@@ -577,7 +577,7 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
   par_names <- parnames(x)
   prior_names <- unique(par_names[grepl("^prior_", par_names)])
   if (length(prior_names)) {
-    samples <- posterior_samples(x, pars = prior_names, exact_match = TRUE)
+    samples <- posterior_samples(x, pars = prior_names, ...)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
       .prior_samples <- function(par) {
@@ -2590,18 +2590,23 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 #' @rdname hypothesis
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
-                               alpha = 0.05, seed = 1234, ...) {
+                               alpha = 0.05, seed = NULL, ...) {
   # use a seed as prior_samples.brmsfit randomly permutes samples
-  set.seed(seed)
+  if (!is.null(seed)) {
+    set.seed(seed) 
+  }
   contains_samples(x)
   x <- restructure(x)
+  group <- as_one_character(group)
+  ranef <- as_one_logical(ranef)
+  if (!is.character(hypothesis)) {
+    stop2("Argument 'hypothesis' must be a character vector.")
+  }
   if (!length(class)) {
     class <- "" 
   }
-  if (length(class) != 1L || length(group) != 1L) {
-    stop2("Arguments 'class' and 'group' must be of length one.")
-  }
-  if (class %in% c("sd", "cor", "r") && nzchar(group)) {
+  class <- as_one_character(class)
+  if (class %in% c("sd", "cor") && nzchar(group)) {
     class <- paste0(class, "_", group, "__")
   } else if (nzchar(class)) {
     class <- paste0(class, "_")

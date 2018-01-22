@@ -8,7 +8,7 @@
 \title{Non-Linear Hypothesis Testing}
 \usage{
 \method{hypothesis}{brmsfit}(x, hypothesis, class = "b", group = "",
-  alpha = 0.05, seed = 1234, ...)
+  alpha = 0.05, seed = NULL, ...)
 
 hypothesis(x, ...)
 

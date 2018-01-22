@@ -668,7 +668,7 @@ find_names <- function(x) {
   pos_fun <- gregexpr(regex_fun, x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
   pos_var <- list(rmMatch(pos_all, pos_fun, pos_decnum))
-  unlist(regmatches(x, pos_var))
+  unique(unlist(regmatches(x, pos_var)))
 }
 
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
@@ -728,13 +728,11 @@ hypothesis_internal <- function(x, hypothesis, class = "", alpha = 0.05, ...) {
   if (!is.character(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
-  if (!is.character(class) || length(class) != 1L) {
-    stop2("Argument 'class' must be a single character string.")
-  }
   if (length(alpha) != 1L || alpha < 0 || alpha > 1) {
     stop2("Argument 'alpha' must be a single value in [0,1].")
   }
-  
+  class <- as_one_character(class)
+
   .eval_hypothesis <- function(h) {
     stopifnot(length(h) == 1L && is.character(h))
     # parse hypothesis string
@@ -746,7 +744,7 @@ hypothesis_internal <- function(x, hypothesis, class = "", alpha = 0.05, ...) {
     }
     h <- paste0("(", lr[1], ")")
     h <- paste0(h, ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
-    varsH <- unique(find_names(h))
+    varsH <- find_names(h)
     parsH <- paste0(class, varsH)
     miss_pars <- setdiff(parsH, pars)
     if (length(miss_pars)) {
@@ -761,7 +759,7 @@ hypothesis_internal <- function(x, hypothesis, class = "", alpha = 0.05, ...) {
     samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
     names(samples) <- rename(names(samples), symbols, subs, fixed = FALSE)
     samples <- as.matrix(eval2(h_renamed, samples))
-    prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
+    prior_samples <- prior_samples(x, pars = parsH, exact_match = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
       names(prior_samples) <- rename(
         names(prior_samples), symbols, subs, fixed = FALSE
@@ -803,12 +801,10 @@ hypothesis_internal <- function(x, hypothesis, class = "", alpha = 0.05, ...) {
   pars <- parnames(x)[grepl("^", class, parnames(x))]
   hlist <- lapply(hypothesis, .eval_hypothesis)
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
-  samples <- as.data.frame(
-    do.call(cbind, lapply(hlist, function(h) h$samples))
-  )
-  prior_samples <- as.data.frame(
-    do.call(cbind, lapply(hlist, function(h) h$prior_samples))
-  )
+  samples <- lapply(hlist, function(h) h$samples)
+  samples <- as.data.frame(do.call(cbind, samples))
+  prior_samples <- lapply(hlist, function(h) h$prior_samples)
+  prior_samples <- as.data.frame(do.call(cbind, prior_samples))
   names(samples) <- names(prior_samples) <- paste0("H", seq_along(hlist))
   class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, prior_samples, class, alpha)
