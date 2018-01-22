@@ -2585,7 +2585,6 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 #' @rdname hypothesis
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
-                               scope = c("standard", "ranef", "coef"),
                                alpha = 0.05, seed = NULL, ...) {
   # use a seed as prior_samples.brmsfit randomly permutes samples
   if (!is.null(seed)) {
@@ -2594,7 +2593,6 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   contains_samples(x)
   x <- restructure(x)
   group <- as_one_character(group)
-  scope <- match.arg(scope)
   if (!is.character(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
