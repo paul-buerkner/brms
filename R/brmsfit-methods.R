@@ -577,26 +577,21 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
   par_names <- parnames(x)
   prior_names <- unique(par_names[grepl("^prior_", par_names)])
   if (length(prior_names)) {
-    samples <- posterior_samples(x, pars = prior_names, ...)
+    samples <- posterior_samples(x, prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
       .prior_samples <- function(par) {
         # get prior samples for parameter par 
-        if (grepl("^b_.*Intercept$", par) && !par %in% names(samples)) {
-          # population-level intercepts do not inherit priors
-          out  <- NULL
+        matches <- lapply(paste0("^", names(samples)), regexpr, text = par)
+        matches <- ulapply(matches, attr, which = "match.length")
+        if (max(matches) == -1) {
+          out <- NULL
         } else {
-          matches <- lapply(paste0("^", names(samples)), regexpr, text = par)
-          matches <- ulapply(matches, attr, which = "match.length")
-          if (max(matches) == -1) {
-            out <- NULL
-          } else {
-            take <- match(max(matches), matches)
-            # order samples randomly to avoid artifical dependencies
-            # between parameters using the same prior samples
-            samples <- list(samples[sample(nsamples(x)), take])
-            out <- structure(samples, names = par)
-          }
+          take <- match(max(matches), matches)
+          # order samples randomly to avoid artifical dependencies
+          # between parameters using the same prior samples
+          samples <- list(samples[sample(nsamples(x)), take])
+          out <- structure(samples, names = par)
         }
         return(out)
       }
@@ -2590,6 +2585,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 #' @rdname hypothesis
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
+                               scope = c("standard", "ranef", "coef"),
                                alpha = 0.05, seed = NULL, ...) {
   # use a seed as prior_samples.brmsfit randomly permutes samples
   if (!is.null(seed)) {
@@ -2598,6 +2594,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   contains_samples(x)
   x <- restructure(x)
   group <- as_one_character(group)
+  scope <- match.arg(scope)
   if (!is.character(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
