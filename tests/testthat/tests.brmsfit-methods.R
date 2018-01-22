@@ -168,6 +168,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(hyp, chars = NULL), "r_visit[4,Intercept]", fixed = TRUE)
   expect_output(print(hyp), "l-99% CI", fixed = TRUE)
   
+  hyp <- hypothesis(
+    fit1, c("Intercept = 0", "Intercept + exp(Trt1) = 0"),
+    group = "visit", scope = "coef"
+  )
+  expect_equal(dim(hyp$hypothesis), c(8, 6))
+  expect_equal(rownames(hyp$hypothesis)[1], "(Intercept) = 0 [1]")
+  
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: \n'b_x'")
   expect_error(hypothesis(fit1, 1),

@@ -178,12 +178,6 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
   posterior_samples(x, pars = pars, exact_match = exact_match, ...)
 }
 
-#' @rdname hypothesis
-#' @export
-hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
-  hypothesis_internal(as.data.frame(x), hypothesis, alpha = alpha, ...)
-}
-
 #' @rdname posterior_summary
 #' @export
 posterior_summary.default <- function(x, probs = c(0.025, 0.975), 

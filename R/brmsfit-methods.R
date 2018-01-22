@@ -2585,6 +2585,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 #' @rdname hypothesis
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
+                               scope = c("standard", "ranef", "coef"),
                                alpha = 0.05, seed = NULL, ...) {
   # use a seed as prior_samples.brmsfit randomly permutes samples
   if (!is.null(seed)) {
@@ -2593,19 +2594,28 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   contains_samples(x)
   x <- restructure(x)
   group <- as_one_character(group)
-  if (!is.character(hypothesis)) {
-    stop2("Argument 'hypothesis' must be a character vector.")
+  scope <- match.arg(scope)
+  if (scope == "standard") {
+    if (!length(class)) {
+      class <- "" 
+    }
+    class <- as_one_character(class)
+    if (class %in% c("sd", "cor") && nzchar(group)) {
+      class <- paste0(class, "_", group, "__")
+    } else if (nzchar(class)) {
+      class <- paste0(class, "_")
+    }
+    out <- hypothesis_internal(
+      x, hypothesis, class = class, alpha = alpha, ...
+    )
+  } else {
+    co <- do.call(scope, list(x, summary = FALSE))
+    if (!group %in% names(co)) {
+      stop2("'group' should be one of ", collapse_comma(names(co)))
+    }
+    out <- hypothesis_coef(co[[group]], hypothesis, alpha = alpha, ...)
   }
-  if (!length(class)) {
-    class <- "" 
-  }
-  class <- as_one_character(class)
-  if (class %in% c("sd", "cor") && nzchar(group)) {
-    class <- paste0(class, "_", group, "__")
-  } else if (nzchar(class)) {
-    class <- paste0(class, "_")
-  }
-  hypothesis_internal(x, hypothesis, class = class, alpha = alpha)
+  out
 }
 
 #' @rdname expose_functions
