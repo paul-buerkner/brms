@@ -2042,14 +2042,15 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param formula. Changes to the formula; for details see 
-#'   \code{\link[stats:update.formula]{update.formula}} and
-#'   \code{\link[brms:brmsformula]{brmsformula}}.
+#'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
 #' @param newdata Optional \code{data.frame} 
 #'   to update the model with new data.
 #' @param recompile Logical, indicating whether the Stan model should 
-#'  be recompiled. If \code{FALSE} (the default), the model is only 
-#'  recompiled when necessary.
-#' @param ... Other arguments passed to \code{\link[brms:brm]{brm}}.
+#'   be recompiled. If \code{NULL} (the default), \code{update} tries
+#'   to figure out internally, if recompilation is necessary. 
+#'   Setting it to \code{FALSE} will cause all Stan code changing 
+#'   arguments to be ignored. 
+#' @param ... Other arguments passed to \code{\link{brm}}.
 #'  
 #' @details Sometimes, when updating the model formula, 
 #'  it may happen that \R complains about a mismatch
@@ -2081,7 +2082,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'
 #' @export
 update.brmsfit <- function(object, formula., newdata = NULL, 
-                           recompile = FALSE, ...) {
+                           recompile = NULL, ...) {
   dots <- list(...)
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
@@ -2177,14 +2178,18 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   control <- control[setdiff(names(control), names(dots$control))]
   dots$control[names(control)] <- control
   
-  new_stancode <- suppressMessages(do.call(make_stancode, dots))
-  # stan code may differ just because of the version number (#288)
-  new_stancode <- sub("^[^\n]+\n", "", new_stancode)
-  old_stancode <- stancode(object, version = FALSE)
-  # only recompile if new and old stan code do not match
-  if (recompile || !is_equal(new_stancode, old_stancode)) {
-    # recompliation is necessary
+  if (is.null(recompile)) {
+    # only recompile if new and old stan code do not match
+    new_stancode <- suppressMessages(do.call(make_stancode, dots))
+    # stan code may differ just because of the version number (#288)
+    new_stancode <- sub("^[^\n]+\n", "", new_stancode)
+    old_stancode <- stancode(object, version = FALSE)
+    recompile <- !is_equal(new_stancode, old_stancode)
     message("The desired updates require recompling the model")
+  }
+  recompile <- as_one_logical(recompile)
+  if (recompile) {
+    # recompliation is necessary
     dots$fit <- NA
     if (!is.null(newdata)) {
       dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
