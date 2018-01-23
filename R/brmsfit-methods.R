@@ -231,9 +231,21 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     coef[[g]] <- coef[[g]][, , !rm_ranef, drop = FALSE]
     coef[[g]] <- do.call(abind, c(list(coef[[g]]), rmNULL(new_ranef)))
     for (nm in dimnames(coef[[g]])[[3]]) {
-      # correct the sign of thresholds in ordinal models
-      sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
-      coef[[g]][, , nm] <- coef[[g]][, , nm] + sign * fixef[, nm]
+      is_ord_intercept <- grepl("(^|_)Intercept\\[[[:digit:]]+\\]$", nm)
+      if (is_ord_intercept) {
+        # correct the sign of thresholds in ordinal models
+        resp <- if (is_mv(object)) get_matches("^[^_]+", nm)
+        family <- family(object, resp = resp)$family
+        if (family %in% c("cumulative", "sratio")) {
+          # threshold - mu
+          coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm] 
+        } else {
+          # mu - threshold
+          coef[[g]][, , nm] <- coef[[g]][, , nm] - fixef[, nm]
+        }
+      } else {
+        coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
+      }
     }
     if (summary) {
       coef[[g]] <- posterior_summary(coef[[g]], probs, robust)
