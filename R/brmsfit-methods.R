@@ -858,6 +858,11 @@ formula.brmsfit <- function(x, ...) {
 }
 
 #' @export
+getCall.brmsfit <- function(x, ...) {
+  x$formula
+}
+
+#' @export
 family.brmsfit <- function(object, resp = NULL, ...) {
   if (!is.null(resp)) {
     stopifnot(is_mv(object))
