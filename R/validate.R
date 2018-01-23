@@ -517,14 +517,15 @@ parse_resp <- function(formula, check_names = TRUE) {
   str_formula <- gsub("\\|+[^~]*~", "~", formula2str(formula))
   expr <- formula(str_formula)[[2]]
   if (length(expr) <= 1L) {
-    return(deparse_no_string(expr))
-  }
-  str_fun <- deparse_no_string(expr[[1]]) 
-  use_cbind <- identical(str_fun, "cbind")
-  if (use_cbind) {
-    out <- ulapply(expr[-1], deparse_no_string)
+    out <- deparse_no_string(expr)
   } else {
-    out <- deparse_no_string(expr) 
+    str_fun <- deparse_no_string(expr[[1]]) 
+    use_cbind <- identical(str_fun, "cbind")
+    if (use_cbind) {
+      out <- ulapply(expr[-1], deparse_no_string)
+    } else {
+      out <- deparse_no_string(expr) 
+    }
   }
   if (check_names) {
     out <- gsub("\\.|_", "", make.names(out, unique = TRUE))
