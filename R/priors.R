@@ -470,6 +470,9 @@ prior_string <- function(prior, ...) {
 get_prior <- function(formula, data, family = gaussian(), 
                       autocor = NULL, internal = FALSE) {
   # note that default priors are stored in this function
+  if (is.brmsfit(formula)) {
+    stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
+  }
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
