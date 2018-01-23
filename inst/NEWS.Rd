@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 2.0.1++}{
+\section{CHANGES IN VERSION 2.1.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit models on multiple imputed 

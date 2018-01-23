@@ -952,7 +952,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
       prior_scale <- max(prior_scale, sgst_scale)
     } 
     if (!center) {
-      sgst_location <- SW(round(link(median(Y), link = link), 2))
+      sgst_location <- SW(round(link(median(Y), link = link)))
       if (is.finite(sgst_location)) {
         prior_location <- sgst_location
       }
