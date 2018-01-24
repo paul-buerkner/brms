@@ -94,7 +94,7 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt +
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
 # perform 10-fold cross validation
-(kfold1 <- kfold(fit1, chains = 2, cores = 2))
+(kfold1 <- kfold(fit1, update_args = list(chains = 2, cores = 2)))
 }   
  
 }
