@@ -1,7 +1,7 @@
 Package: brms
 Encoding: UTF-8
 Type: Package
-Title: Bayesian Regression Models using Stan
+Title: Bayesian Regression Models using 'Stan'
 Version: 2.1.0
 Date: 2018-01-22
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
@@ -43,7 +43,7 @@ Suggests:
     knitr,
     rmarkdown
 Description: Fit Bayesian generalized (non-)linear multivariate multilevel models
-    using Stan for full Bayesian inference. A wide range of distributions 
+    using 'Stan' for full Bayesian inference. A wide range of distributions 
     and link functions are supported, allowing users to fit -- among others -- 
     linear, robust linear, count data, survival, response times, ordinal, 
     zero-inflated, hurdle, and even self-defined mixture models all in a 
@@ -54,7 +54,8 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
     regression. Prior specifications are flexible and explicitly encourage 
     users to apply prior distributions that actually reflect their beliefs.
     Model fit can easily be assessed and compared with posterior predictive 
-    checks and leave-one-out cross-validation.
+    checks and leave-one-out cross-validation. References: Bürkner (2017)
+    <doi:10.18637/jss.v080.i01>; Carpenter et al. (2017) <doi:10.18637/jss.v076.i01>.
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 3)
