@@ -103,6 +103,18 @@ predict_lognormal <- function(i, draws, ...) {
   )
 }
 
+predict_shifted_lognormal <- function(i, draws, ...) {
+  args <- list(
+    meanlog = get_dpar(draws, "mu", i = i), 
+    sdlog = get_dpar(draws, "sigma", i = i),
+    shift = get_dpar(draws, "ndt", i = i)
+  )
+  rng_continuous(
+    nrng = draws$nsamples, dist = "shifted_lnorm", args = args, 
+    lb = draws$data$lb[i], ub = draws$data$ub[i]
+  )
+}
+
 predict_skew_normal <- function(i, draws, ...) {
   sigma <- get_dpar(draws, "sigma", i = i)
   alpha <- get_dpar(draws, "alpha", i = i)

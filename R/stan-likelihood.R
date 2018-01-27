@@ -89,7 +89,7 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
   lpdf <- ifelse(use_int(bterms$family), "_lpmf", "_lpdf")
   tr <- stan_llh_trunc(llh, bterms, data)
   paste0(
-    tp(), llh$dist, lpdf, "(Y", resp, n, 
+    tp(), llh$dist, lpdf, "(Y", resp, n, llh$shift,
     " | ", llh$args, ")", tr, "; \n"
   )
 }
@@ -109,8 +109,9 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
     int_cens <- paste0(
       s, "} else if (cens", resp, "[n] == 2) { \n",
       s, tp, w, "log_diff_exp(", 
-      llh$dist, "_lcdf(rcens", resp, "[n] | ", llh$args, "), ",
-      llh$dist, "_lcdf(Y", resp, "[n] | ", llh$args, "))", tr, "; \n"
+      llh$dist, "_lcdf(rcens", resp, "[n]", llh$shift, " | ", llh$args, "), ",
+      llh$dist, "_lcdf(Y", resp, "[n]", llh$shift, " | ", llh$args, "))", 
+      tr, "; \n"
     )
   } else {
     int_cens <- ""
@@ -118,11 +119,14 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   paste0(
     "  // special treatment of censored data \n",
     s, "if (cens", resp, "[n] == 0) {\n", 
-    s, tp, w, llh$dist, lpdf, "(Y", resp, "[n] | ", llh$args, ")", tr, ";\n",
+    s, tp, w, llh$dist, lpdf, "(Y", resp, "[n]", llh$shift, 
+    " | ", llh$args, ")", tr, ";\n",
     s, "} else if (cens", resp, "[n] == 1) {\n",         
-    s, tp, w, llh$dist, "_lccdf(Y", resp, "[n] | ", llh$args, ")", tr, ";\n",
+    s, tp, w, llh$dist, "_lccdf(Y", resp, "[n]", llh$shift, 
+    " | ", llh$args, ")", tr, ";\n",
     s, "} else if (cens", resp, "[n] == -1) {\n",
-    s, tp, w, llh$dist, "_lcdf(Y", resp, "[n] | ", llh$args, ")", tr, ";\n",
+    s, tp, w, llh$dist, "_lcdf(Y", resp, "[n]", llh$shift, 
+    " | ", llh$args, ")", tr, ";\n",
     int_cens, s, "} \n"
   )
 }
@@ -134,7 +138,7 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   lpdf <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
   paste0(
     tp(), "weights", resp, "[n] * ", llh$dist, "_", lpdf, 
-    "(Y", resp, "[n] | ", llh$args,")", tr, "; \n"
+    "(Y", resp, "[n]", llh$shift, " | ", llh$args,")", tr, "; \n"
   )
 }
 
@@ -352,6 +356,12 @@ stan_llh_lognormal <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   sdist("lognormal", p$mu, p$sigma)
+}
+
+stan_llh_shifted_lognormal <- function(bterms, resp = "", mix = "") {
+  reqn <- stan_llh_adj(bterms) || nzchar(mix)
+  p <- stan_llh_dpars(bterms, reqn, resp, mix)
+  sdist("lognormal", p$mu, p$sigma, shift = paste0(" - ", p$ndt))
 }
 
 stan_llh_asym_laplace <- function(bterms, resp = "", mix = "") {
@@ -582,10 +592,10 @@ stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
   sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
 }
 
-sdist <- function(dist, ...) {
+sdist <- function(dist, ..., shift = NULL) {
   # prepare distribution and arguments for use in Stan
   args <- sargs(...)
-  structure(nlist(dist, args), class = "sdist")
+  structure(nlist(dist, args, shift), class = "sdist")
 }
 
 sargs <- function(...) {

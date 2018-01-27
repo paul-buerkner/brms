@@ -7,6 +7,7 @@
 \alias{negbinomial}
 \alias{geometric}
 \alias{lognormal}
+\alias{shifted_lognormal}
 \alias{skew_normal}
 \alias{exponential}
 \alias{weibull}
@@ -50,6 +51,8 @@ negbinomial(link = "log", link_shape = "log")
 geometric(link = "log")
 
 lognormal(link = "identity", link_sigma = "log")
+
+shifted_lognormal(link = "identity", link_sigma = "log", link_ndt = "log")
 
 skew_normal(link = "identity", link_sigma = "log",
   link_alpha = "identity")
@@ -115,8 +118,8 @@ of the response variable be used in the model.
 Currently, the following families are supported:
 \code{gaussian}, \code{student}, \code{binomial}, 
 \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{lognormal}, 
-\code{exgaussian}, \code{skew_normal}, \code{wiener}, 
+\code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
+\code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
 \code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
 \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
 \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
@@ -198,12 +201,12 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   ('generalized extreme value') allow for modeling extremes.
   Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.
-  Family \code{exgaussian} ('exponentially modified Gaussian') is especially
-  suited to model reaction times and the \code{wiener} family provides
-  an implementation of the Wiener diffusion model. For this family,
-  the main formula predicts the drift parameter 'delta' and
-  all other parameters are modeled as auxiliary parameters 
-  (see \code{\link[brms:brmsformula]{brmsformula}} for details).
+  Family \code{exgaussian} ('exponentially modified Gaussian') and 
+  \code{shifted_lognormal} are especially suited to model reaction times.
+  The \code{wiener} family provides an implementation of the Wiener 
+  diffusion model. For this family, the main formula predicts the drift 
+  parameter 'delta' and all other parameters are modeled as auxiliary parameters 
+  (see \code{\link{brmsformula}} for details).
   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},

@@ -97,6 +97,15 @@ loglik_lognormal <- function(i, draws, data = data.frame()) {
   loglik_weight(out, i = i, data = draws$data)
 }
 
+loglik_shifted_lognormal <- function(i, draws, data = data.frame()) {
+  sigma <- get_dpar(draws, "sigma", i = i)
+  ndt <- get_dpar(draws, "ndt", i = i)
+  args <- list(meanlog = get_dpar(draws, "mu", i), sdlog = sigma, shift = ndt)
+  out <- loglik_censor("shifted_lnorm", args, i = i, data = draws$data)
+  out <- loglik_truncate(out, pshifted_lnorm, args, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
+}
+
 loglik_skew_normal <- function(i, draws, data = data.frame()) {
   sigma <- get_dpar(draws, "sigma", i = i)
   alpha <- get_dpar(draws, "alpha", i = i)

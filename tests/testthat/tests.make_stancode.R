@@ -736,7 +736,7 @@ test_that("Stan code for GAMMs is correct", {
   expect_match2(scode, "s_2_1 = sds_2_1 * zs_2_1")
 })
 
-test_that("Stan code of exgaussian models is correct", {
+test_that("Stan code of response times models is correct", {
   dat <- epilepsy
   dat$cens <- sample(-1:1, nrow(dat), TRUE)
   scode <- make_stancode(count ~ Trt_c + (1|patient),
@@ -759,6 +759,12 @@ test_that("Stan code of exgaussian models is correct", {
   scode <- make_stancode(count | cens(cens) ~ Trt_c + (1|patient),
                       data = dat, family = exgaussian("inverse"))
   expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n], sigma, inv(beta))")
+  
+  scode <- make_stancode(count ~ Trt_c, dat, family = shifted_lognormal())
+  expect_match2(scode, "target += lognormal_lpdf(Y - ndt | mu, sigma)")
+  
+  scode <- make_stancode(count | cens(cens) ~ Trt_c, dat, family = shifted_lognormal())
+  expect_match2(scode, "target += lognormal_lcdf(Y[n] - ndt | mu[n], sigma)")
 })
 
 test_that("Stan code of wiener diffusion models is correct", {

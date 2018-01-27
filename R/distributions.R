@@ -748,6 +748,52 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
   loc + scale * rexp(n)^(-1 / shape)
 }
 
+#' The Shifted Log Normal Distribution
+#' 
+#' Density, distribution function, quantile function and random generation 
+#' for the shifted log normal distribution with mean \code{meanlog}, 
+#' standard deviation \code{sdlog}, and shift parameter \code{shift}.
+#' 
+#' @name Shifted_Lognormal
+#' 
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param meanlog Vector of means.
+#' @param sdlog Vector of standard deviations.
+#' @param shift Vector of shifts.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
+dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
+  args <- nlist(dist = "lnorm", x, shift, meanlog, sdlog, log)
+  do.call(dshifted, args)
+}
+
+#' @rdname Shifted_Lognormal
+#' @export
+pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0, 
+                           lower.tail = TRUE, log.p = FALSE) {
+  args <- nlist(dist = "lnorm", q, shift, meanlog, sdlog, lower.tail, log.p)
+  do.call(pshifted, args)
+}
+
+#' @rdname Shifted_Lognormal
+#' @export
+qshifted_lnorm <- function(p, meanlog = 0, sdlog = 1, shift = 0, 
+                           lower.tail = TRUE, log.p = FALSE) {
+  args <- nlist(dist = "lnorm", p, shift, meanlog, sdlog, lower.tail, log.p)
+  do.call(qshifted, args)
+}
+
+#' @rdname Shifted_Lognormal
+#' @export
+rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
+  args <- nlist(dist = "lnorm", n, shift, meanlog, sdlog)
+  do.call(rshifted, args)
+}
+
 #' The Inverse Gaussian Distribution
 #' 
 #' Density, distribution function, and random generation 
@@ -1249,4 +1295,21 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
     rowSums(as.matrix(p[, 1:j]))
   }
   do.call(cbind, lapply(q, .fun))
+}
+
+# helper functions to shift arbitrary distributions
+dshifted <- function(dist, x, shift = 0, ...) {
+  do.call(paste0("d", dist), list(x - shift, ...))
+}
+
+pshifted <- function(dist, q, shift = 0, ...) {
+  do.call(paste0("p", dist), list(q - shift, ...))
+}
+
+qshifted <- function(dist, p, shift = 0, ...) {
+  do.call(paste0("q", dist), list(p, ...)) + shift
+}
+
+rshifted <- function(dist, n, shift = 0, ...) {
+  do.call(paste0("r", dist), list(n, ...)) + shift
 }

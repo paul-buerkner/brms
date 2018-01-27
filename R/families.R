@@ -12,8 +12,8 @@
 #'   Currently, the following families are supported:
 #'   \code{gaussian}, \code{student}, \code{binomial}, 
 #'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{lognormal}, 
-#'   \code{exgaussian}, \code{skew_normal}, \code{wiener}, 
+#'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
+#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
 #'   \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
 #'   \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
@@ -68,12 +68,12 @@
 #'   ('generalized extreme value') allow for modeling extremes.
 #'   Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.
-#'   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
-#'   suited to model reaction times and the \code{wiener} family provides
-#'   an implementation of the Wiener diffusion model. For this family,
-#'   the main formula predicts the drift parameter 'delta' and
-#'   all other parameters are modeled as auxiliary parameters 
-#'   (see \code{\link[brms:brmsformula]{brmsformula}} for details).
+#'   Family \code{exgaussian} ('exponentially modified Gaussian') and 
+#'   \code{shifted_lognormal} are especially suited to model reaction times.
+#'   The \code{wiener} family provides an implementation of the Wiener 
+#'   diffusion model. For this family, the main formula predicts the drift 
+#'   parameter 'delta' and all other parameters are modeled as auxiliary parameters 
+#'   (see \code{\link{brmsformula}} for details).
 #'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
 #'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
@@ -187,10 +187,11 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                    subs = c("gaussian", "zero_inflated_", "hurdle_"),
                    fixed = FALSE)
   ok_families <- c(
-    "gaussian", "student", "lognormal", "skew_normal",
+    "gaussian", "student", "skew_normal",
     "binomial", "bernoulli", "categorical", 
     "poisson", "negbinomial", "geometric", 
-    "gamma", "weibull", "exponential", "exgaussian", 
+    "gamma", "weibull", "exponential", 
+    "lognormal", "shifted_lognormal", "exgaussian", 
     "frechet", "gen_extreme_value", "inverse.gaussian", 
     "wiener", "beta", "von_mises", "asym_laplace",
     "cumulative", "cratio", "sratio", "acat",
@@ -223,7 +224,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   is_skewed <- family %in% c(
     "gamma", "weibull", "exponential", "frechet", "hurdle_gamma"
   )
-  is_lognormal <- family %in% c("lognormal", "hurdle_lognormal")
+  is_lognormal <- family %in% c(
+    "lognormal", "hurdle_lognormal", "shifted_lognormal"
+  )
   if (is_linear) {
     ok_links <- c("identity", "log", "inverse")
   } else if (is_count) {
@@ -333,6 +336,15 @@ lognormal <- function(link = "identity", link_sigma = "log") {
   slink <- substitute(link)
   .brmsfamily("lognormal", link = link, slink = slink,
               link_sigma = link_sigma)
+}
+
+#' @rdname brmsfamily
+#' @export
+shifted_lognormal <- function(link = "identity", link_sigma = "log",
+                              link_ndt = "log") {
+  slink <- substitute(link)
+  .brmsfamily("shifted_lognormal", link = link, slink = slink,
+              link_sigma = link_sigma, link_ndt = link_ndt)
 }
 
 #' @rdname brmsfamily
@@ -946,7 +958,7 @@ is_skewed <- function(family) {
 
 is_lognormal <- function(family) {
   # indicate if family is lognormal
-  any(family_names(family) %in% c("lognormal"))
+  any(family_names(family) %in% c("lognormal", "shifted_lognormal"))
 }
 
 is_exgaussian <- function(family) {
@@ -1073,12 +1085,17 @@ has_xi <- function(family) {
   any(family_names(family) %in% c("gen_extreme_value"))
 }
 
+has_ndt <- function(family) {
+  # indicate if family needs a ndt (non-decision time) parameter
+  any(family_names(family) %in% c("wiener", "shifted_lognormal"))
+}
+
 has_sigma <- function(family, bterms = NULL) {
   # indicate if the model needs a sigma parameter
   out <- any(family_names(family) %in% 
     c("gaussian", "student", "skew_normal", "lognormal", 
-      "hurdle_lognormal", "exgaussian", "asym_laplace", 
-      "gen_extreme_value")
+      "hurdle_lognormal", "shifted_lognormal", "exgaussian", 
+      "asym_laplace", "gen_extreme_value")
   )
   if (!is.null(bterms)) {
     out <- out && !no_sigma(bterms)

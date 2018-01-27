@@ -8,6 +8,7 @@ test_that("fitted helper functions run without errors", {
   fit <- add_samples(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
   fit <- add_samples(fit, "xi", dist = "unif", min = -1, max = 0.5)
+  fit <- add_samples(fit, "ndt", dist = "exp")
   draws <- brms:::extract_draws(fit)
   draws$dpars$mu <- brms:::get_dpar(draws, "mu")
   draws$dpars$sigma <- brms:::get_dpar(draws, "sigma")
@@ -23,6 +24,11 @@ test_that("fitted helper functions run without errors", {
   
   # pseudo log-normal model
   fit$family <- fit$formula$family <- lognormal()
+  expect_equal(dim(fitted(fit, summary = FALSE)), 
+               c(nsamples, nobs))
+  
+  # pseudo shifted log-normal model
+  fit$family <- fit$formula$family <- shifted_lognormal()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   

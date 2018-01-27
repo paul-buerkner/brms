@@ -96,6 +96,10 @@ fitted_lognormal <- function(draws) {
   with(draws$dpars, exp(mu + sigma^2 / 2))
 }
 
+fitted_shifted_lognormal <- function(draws) {
+  with(draws$dpars, exp(mu + sigma^2 / 2) + ndt)
+}
+
 fitted_binomial <- function(draws) {
   trials <- as_draws_matrix(draws$data$trials, dim_mu(draws))
   draws$dpars$mu * trials 

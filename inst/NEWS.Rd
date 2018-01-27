@@ -2,6 +2,15 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 2.1.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Fit shifted log-normal models via
+      family \code{shifted_lognormal}. (#218)
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 2.1.0}{
   \subsection{NEW FEATURES}{
     \itemize{

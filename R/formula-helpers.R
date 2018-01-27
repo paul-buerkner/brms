@@ -180,7 +180,7 @@ resp_cens <- function(x, y2 = NULL) {
     )
   }
   if (any(cens %in% 2)) {
-    if (length(y2) != length(cens)) {
+    if (!length(y2)) {
       stop2("Argument 'y2' is required for interval censored data.")
     }
     attr(cens, "y2") <- unname(y2)

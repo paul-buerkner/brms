@@ -15,7 +15,7 @@ stan_response <- function(bterms, data) {
       "  int Y", resp, "[N];  // response variable \n"
     )
   }
-  if (is_wiener(family)) {
+  if (has_ndt(family)) {
     str_add(out$tdataD) <- paste0(
       "  real min_Y", resp, " = min(Y", resp, "); \n"
     )

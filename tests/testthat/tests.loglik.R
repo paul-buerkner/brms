@@ -36,15 +36,23 @@ test_that("loglik for various skewed normal models works as expected", {
   draws$dpars <- list(
     sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
     mu = matrix(rnorm(ns*2), ncol = 2),
-    alpha = rnorm(ns)
+    alpha = rnorm(ns), ndt = 1
   )
   draws$data <- list(Y = rlnorm(ns))
+  
   ll_lognormal <- dlnorm(
     x = draws$data$Y[1], mean = draws$dpars$mu[, 1], 
     sd = draws$dpars$sigma, log = TRUE
   )
   ll <- brms:::loglik_lognormal(1, draws = draws)
   expect_equal(ll, ll_lognormal)
+  
+  ll_shifted_lognormal <- dshifted_lnorm(
+    x = draws$data$Y[1], mean = draws$dpars$mu[, 1], 
+    sd = draws$dpars$sigma, shift = draws$dpars$ndt, log = TRUE
+  )
+  ll <- brms:::loglik_shifted_lognormal(1, draws = draws)
+  expect_equal(ll, ll_shifted_lognormal)
   
   ll_exgaussian <- dexgaussian(
     x = draws$data$Y[1], mu = draws$dpars$mu[, 1],

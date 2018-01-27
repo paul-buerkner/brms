@@ -22,9 +22,11 @@ test_that("predict for various skewed models runs without errors", {
   draws$dpars <- list(
     sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
     mu = matrix(rnorm(ns * nobs), ncol = nobs),
-    alpha = rnorm(ns)
+    alpha = rnorm(ns), ndt = 1
   )
   pred <- brms:::predict_lognormal(1, draws = draws)
+  expect_equal(length(pred), ns)
+  pred <- brms:::predict_shifted_lognormal(1, draws = draws)
   expect_equal(length(pred), ns)
   pred <- brms:::predict_exgaussian(1, draws = draws)
   expect_equal(length(pred), ns)

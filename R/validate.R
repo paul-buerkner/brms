@@ -741,13 +741,14 @@ ad_families <- function(x) {
       "inverse.gaussian", "binomial", "poisson", 
       "geometric", "negbinomial", "exponential", 
       "weibull", "gamma", "exgaussian", "frechet",
-      "asym_laplace", "gen_extreme_value"
+      "asym_laplace", "gen_extreme_value", "shifted_lognormal"
     ),
     trunc = c(
       "gaussian", "student", "lognormal", "skew_normal",
       "binomial", "poisson", "geometric", "negbinomial",
       "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace", "gen_extreme_value"
+      "exgaussian", "frechet", "asym_laplace", "gen_extreme_value",
+      "shifted_lognormal"
     ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
