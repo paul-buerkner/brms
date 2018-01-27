@@ -2202,7 +2202,9 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
     recompile <- !is_equal(new_stancode, old_stancode)
-    message("The desired updates require recompling the model")
+    if (recompile) {
+      message("The desired updates require recompiling the model") 
+    }
   }
   recompile <- as_one_logical(recompile)
   if (recompile) {
