@@ -199,6 +199,12 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
   nlist(lb, ub)
 }
 
+#' @rdname addition-terms
+#' @export
+resp_mi <- function() {
+  NULL
+}
+
 #' Defining smooths in \pkg{brms} formulas
 #' 
 #' Functions used in definition of smooth terms within a model formulas. 

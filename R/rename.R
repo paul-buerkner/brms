@@ -53,6 +53,9 @@ change_effects.brmsterms <- function(x, ...) {
   for (dp in names(x$dpars)) {
     change <- c(change, change_effects(x$dpars[[dp]], ...))
   }
+  if (is.formula(x$adforms$mi)) {
+    change <- c(change, change_Ymi(x, ...))
+  }
   change
 }
 
@@ -194,6 +197,23 @@ change_Xme <- function(bterms, pars) {
       pos <- grepl(paste0("^", Xme, "\\["), pars)
       Xme_new <- paste0("Xme_", rename(uni_me[i]))
       fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+      change <- lc(change, nlist(pos, fnames))
+    }
+  }
+  change
+}
+
+change_Ymi <- function(bterms, data, pars, ...) {
+  # helps in renaming estimated missing values
+  stopifnot(is.brmsterms(bterms))
+  change <- list()
+  if (is.formula(bterms$adforms$mi)) {
+    resp <- usc(combine_prefix(bterms))
+    Ymi <- paste0("Ymi", resp)
+    pos <- grepl(paste0("^", Ymi, "\\["), pars)
+    if (any(pos)) {
+      Jmi <- data_response(bterms, data, check_response = FALSE)$Jmi
+      fnames <- paste0(Ymi, "[", Jmi, "]")
       change <- lc(change, nlist(pos, fnames))
     }
   }
@@ -478,7 +498,7 @@ reorder_pars <- function(x) {
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "meanme", "sdme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
@@ -490,6 +510,9 @@ reorder_pars <- function(x) {
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   # reorder single parameter names
   nsubpars <- ulapply(x$fit@sim$dims_oi, prod)
+  has_subpars <- nsubpars > 0
+  new_order <- new_order[has_subpars]
+  nsubpars <- nsubpars[has_subpars]
   num <- lapply(seq_along(new_order), function(x)
     as.numeric(paste0(x, ".", sprintf("%010d", seq_len(nsubpars[x]))))
   )

@@ -295,7 +295,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (length(ad)) {
       ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
       for (a in ad_funs) {
-        matches <- grep(paste0("^(resp_)?", a, "\\(.+\\)$"), ad_terms)
+        matches <- grep(paste0("^(resp_)?", a, "\\(.*\\)$"), ad_terms)
         if (length(matches) == 1L) {
           x[[a]] <- ad_terms[matches]
           if (!grepl("^resp_", x[[a]])) {
@@ -324,6 +324,9 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     }
     if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
       stop2("Censoring or truncation is not yet allowed in mixture models.")
+    }
+    if (is.formula(x$mi) && (is.formula(x$cens) || is.formula(x$trunc))) {
+      stop2("Censoring or truncation is not allowed when missings are imputed.")
     }
   }
   x
@@ -739,7 +742,7 @@ ad_families <- function(x) {
     cens = c(
       "gaussian", "student", "lognormal", "skew_normal",
       "inverse.gaussian", "binomial", "poisson", 
-      "geometric", "negbinomial", "exponential", 
+      "geometric", "negbinomial", "exponential", "beta",
       "weibull", "gamma", "exgaussian", "frechet",
       "asym_laplace", "gen_extreme_value", "shifted_lognormal"
     ),
@@ -747,8 +750,14 @@ ad_families <- function(x) {
       "gaussian", "student", "lognormal", "skew_normal",
       "binomial", "poisson", "geometric", "negbinomial",
       "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace", "gen_extreme_value",
-      "shifted_lognormal"
+      "exgaussian", "frechet", "asym_laplace", "beta",
+      "gen_extreme_value", "shifted_lognormal"
+    ),
+    mi = c(
+      "gaussian", "student", "lognormal", "skew_normal",
+      "inverse.gaussian", "exponential", "weibull", 
+      "gamma", "exgaussian", "frechet", "beta",
+      "asym_laplace", "gen_extreme_value"
     ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
@@ -907,6 +916,26 @@ store_uni_me.btl <- function(x, uni_me = NULL, ...) {
     attr(x[["me"]], "uni_me") <- uni_me
   }
   x
+}
+
+vars_keep_na <- function(x, ...) {
+  # find variable names for which to keep NAs
+  UseMethod("vars_keep_na")
+}
+
+#' @export
+vars_keep_na.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, vars_keep_na, ...))
+}
+
+#' @export
+vars_keep_na.brmsterms <- function(x, ...) {
+  if (is.formula(x$adforms$mi)) {
+    out <- parse_resp(x$respform, check_names = FALSE)
+  } else {
+    out <- NULL
+  }
+  unique(out)
 }
 
 get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {

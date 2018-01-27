@@ -790,6 +790,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
+  if (is.formula(x$adforms$mi)) {
+    which_na <- which(is.na(out$Y))
+    out$Nmi <- length(which_na)
+    out$Jmi <- which_na
+    if (!not4stan) {
+      out$Y[which_na] <- 0  # Stan does not allow NAs in data
+    }
+  } 
   resp <- usc(combine_prefix(x))
   c(setNames(out, paste0(names(out), resp)),
     # specify data for autocors here in order to pass Y

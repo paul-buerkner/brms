@@ -87,6 +87,22 @@ stan_response <- function(bterms, data) {
       "  ", rtype, " ub", resp, "[N];  // upper truncation bounds \n"
     )
   }
+  if (is.formula(bterms$adforms$mi)) {
+    str_add(out$data) <- paste0(
+      "  int<lower=0> Nmi", resp, ";  // number of missings \n",
+      "  int<lower=1> Jmi", resp, "[Nmi", resp, "];",  
+      "  // positions of missings \n"
+    )
+    str_add(out$par) <- paste0(
+      "  vector[Nmi", resp, "] Ymi", resp, ";  // estimated missings\n" 
+    )
+    str_add(out$modelD) <- paste0(
+      "  vector[N] Yf", resp, " = Y", resp, ";\n" 
+    )
+    str_add(out$modelC1) <- paste0(
+      "  Yf", resp, "[Jmi", resp, "] = Ymi", resp, ";\n"
+    )
+  }
   out
 }
 

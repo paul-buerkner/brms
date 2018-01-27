@@ -1,4 +1,4 @@
-update_data <- function(data, bterms, na.action = na.omit,
+update_data <- function(data, bterms, na.action = na.omit2,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
   # Update data for use in brms functions
@@ -44,9 +44,9 @@ update_data <- function(data, bterms, na.action = na.omit,
     bterms$allvars, data, na.action = na.pass,
     drop.unused.levels = drop.unused.levels
   )
-  nrow_with_NA <- nrow(data)
-  data <- na.action(data)
-  if (nrow(data) != nrow_with_NA) {
+  nrow_with_na <- nrow(data)
+  data <- na.action(data, ignore = vars_keep_na(bterms))
+  if (nrow(data) != nrow_with_na) {
     warning2("Rows containing NAs were excluded from the model")
   }
   if (any(grepl("__|_$", colnames(data)))) {
@@ -187,12 +187,11 @@ validate_newdata <- function(
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
-      control <- list(
-        not4stan = TRUE, save_order = TRUE,
-        omit_response = !check_response,
-        only_response = only_response
+      control <- list(not4stan = TRUE, save_order = TRUE)
+      newdata <- standata(
+        fit, re_formula = re_formula, check_response = check_response, 
+        only_response = only_response, control = control
       )
-      newdata <- standata(fit, re_formula = re_formula, control = control)
     } else {
       newdata <- model.frame(fit)
     }
