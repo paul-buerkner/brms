@@ -558,11 +558,11 @@ make_Jmo_list <- function(x, data, ...) {
   # for use in extract_old_standata
   stopifnot(is.btl(x))
   out <- NULL
-  if (!is.null(x$mo)) {
-    # do it like data_mo()
-    monef <- get_mo_labels(x, data)
-    calls_mo <- unlist(attr(monef, "calls_mo"))
-    Xmo <- lapply(calls_mo, function(x) attr(eval2(x, data), "var"))
+  if (length(attr(x$sp, "uni_mo"))) {
+    # do it like data_sp()
+    spef <- tidy_spef(x, data)
+    Xmo_fun <- function(x) attr(eval2(x, data), "var")
+    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
     out <- as.array(ulapply(Xmo, max))
   }
   out

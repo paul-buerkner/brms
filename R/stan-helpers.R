@@ -505,7 +505,8 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       }
     }
   }
-  if (length(get_effect(bterms, "mo"))) {
+  uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
+  if (length(uni_mo)) {
     str_add(out$fun) <- "  #include fun_monotonic.stan \n"
   } 
   if (length(get_effect(bterms, "gp"))) {

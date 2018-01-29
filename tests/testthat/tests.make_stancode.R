@@ -85,7 +85,7 @@ test_that("specified priors appear in the Stan code", {
     "- 1 * log_diff_exp(normal_lcdf(1 | 0, 0.5), normal_lcdf(-1 | 0, 0.5))"
   )
   expect_match2(scode, "target += double_exponential_lpdf(arr | 0, 1)")
-  expect_match2(scode, "target += normal_lpdf(bmo | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
   expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
   expect_match2(scode, "target += uniform_lpdf(prior_ar | -1,1)")
@@ -575,21 +575,21 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ y*mo(x1)*mo(x2), dat, prior = prior)
   expect_match2(scode, "int Xmo_3[N];")
   expect_match2(scode, "simplex[Jmo[1]] simo_1;")
-  expect_match2(scode, "(bmo[2]) * mo(simo_2, Xmo_2[n])")
+  expect_match2(scode, "(bsp[2]) * mo(simo_2, Xmo_2[n])")
   expect_match2(scode, 
-    "(bmo[6]) * mo(simo_7, Xmo_7[n]) * mo(simo_8, Xmo_8[n]) * Cmo_3[n]"
+    "(bsp[6]) * mo(simo_7, Xmo_7[n]) * mo(simo_8, Xmo_8[n]) * Csp_3[n]"
   )
-  expect_match2(scode, "target += normal_lpdf(bmo[1] | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(bsp[1] | 0, 1)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
   expect_match2(scode, "target += dirichlet_lpdf(simo_8 | con_simo_8);")
   
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
-  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
+  expect_match2(scode, "(bsp[1] + r_1_1[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
   expect_true(!grepl("Z_1_1", scode))
   
   expect_error(
     make_stancode(y ~ mono(x1) + (mono(x2)|x2), dat),
-    "Monotonic group-level terms require"
+    "Special group-level terms require"
   )
   
   prior <- prior(beta(1, 1), simo, coef = mox11)
@@ -908,12 +908,12 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(
     y ~ me(x, xsd)*me(z, zsd)*x, data = dat, prior = me_prior
   )
-  expect_match2(scode,
-    "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] * Xme_2[n]")
   expect_match2(scode, 
-    "(bme[6]) * Xme_1[n] * Xme_2[n] * Cme_3[n]")
+    "(bsp[1]) * Xme_1[n] + (bsp[2]) * Xme_2[n] + (bsp[3]) * Xme_1[n] * Xme_2[n]"
+  )
+  expect_match2(scode, "(bsp[6]) * Xme_1[n] * Xme_2[n] * Csp_3[n]")
   expect_match2(scode, "target += normal_lpdf(Xn_2 | Xme_2, noise_2)")
-  expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(zme_1 | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(meanme_1 | 0, 10)")
   expect_match2(scode, "target += cauchy_lpdf(sdme_2 | 0, 5)")
@@ -922,19 +922,19 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
   )
-  expect_match2(scode, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]")
-  expect_match2(scode, "(bme[2] + r_1_2[J_1[n]]) * Xme_1[n] * Cme_1[n]")
+  expect_match2(scode, "(bsp[1] + r_1_1[J_1[n]]) * Xme_1[n]")
+  expect_match2(scode, "(bsp[2] + r_1_2[J_1[n]]) * Xme_1[n] * Csp_1[n]")
   
   expect_match2(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
-               "(bme[1]) * (Xme_1[n]^2)")
+               "(bsp[1]) * (Xme_1[n]^2)")
   
   # test that noise-free variables are unique across model parts
   scode <- make_stancode(
     bf(y ~ me(x, xsd)*me(z, zsd)*x, sigma ~ me(x, xsd)), 
     data = dat, prior = prior(normal(0,5))
   )
-  expect_match2(scode, "mu[n] = mu[n] + (bme[1]) * Xme_1[n]")
-  expect_match2(scode, "sigma[n] = sigma[n] + (bme_sigma[1]) * Xme_1[n]")
+  expect_match2(scode, "mu[n] = mu[n] + (bsp[1]) * Xme_1[n]")
+  expect_match2(scode, "sigma[n] = sigma[n] + (bsp_sigma[1]) * Xme_1[n]")
   
   scode <- make_stancode(
     bf(y ~ a * b, a + b ~ me(x, xsd), nl = TRUE), 
@@ -942,12 +942,12 @@ test_that("noise-free terms appear in the Stan code", {
     prior = prior(normal(0,5), nlpar = a) + 
       prior(normal(0, 5), nlpar = b)
   )
-  expect_match2(scode, "mu_a[n] = mu_a[n] + (bme_a[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_b[n] = mu_b[n] + (bme_b[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_a[n] = mu_a[n] + (bsp_a[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_b[n] = mu_b[n] + (bsp_b[1]) * Xme_1[n]")
   
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
-  expect_match2(scode, "mu_y[n] = mu_y[n] + (bme_y[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_z[n] = mu_z[n] + (bme_z[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_y[n] = mu_y[n] + (bsp_y[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_z[n] = mu_z[n] + (bsp_z[1]) * Xme_1[n]")
 })
 
 test_that("Stan code of multi-membership models is correct", {

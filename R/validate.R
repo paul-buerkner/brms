@@ -220,7 +220,7 @@ parse_lf <- function(formula, family = NULL) {
   formula <- rhs(as.formula(formula))
   check_multiple_special_terms(formula)
   y <- nlist(formula)
-  types <- c("re", "mo", "cs", "me", "mi", "sm", "gp", "offset")
+  types <- c("re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
     tmp <- do.call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
@@ -230,7 +230,7 @@ parse_lf <- function(formula, family = NULL) {
   pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
   y$fe <- parse_fe(formula, pos_special)
   lformula <- c(
-    y[c("fe", "cs", "mo", "me", "mi")], 
+    y[c("fe", "sp", "cs")],
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
     y$re$form, lapply(y$re$gcall, "[[", "allvars"),
     str2formula(all.vars(y$offset))
@@ -353,22 +353,6 @@ parse_fe <- function(formula, pos_special = NULL) {
   fe_form
 }
 
-parse_mo <- function(formula) {
-  # extract monotonic terms
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_mo_terms <- grepl_expr(regex_mo(), all_terms)
-  mo_terms <- all_terms[pos_mo_terms]
-  if (length(mo_terms)) {
-    mo_terms <- str2formula(mo_terms)
-    attr(mo_terms, "rsv_intercept") <- TRUE
-  }
-  structure(mo_terms, pos = pos_mo_terms)
-}
-
 parse_cs <- function(formula) {
   # category specific terms for ordinal models
   all_terms <- all_terms(formula)
@@ -382,6 +366,28 @@ parse_cs <- function(formula) {
     attr(cs_terms, "rsv_intercept") <- TRUE
   }
   structure(cs_terms, pos = pos_cs_terms)
+}
+
+parse_sp <- function(formula) {
+  # extract special effects terms 
+  # Args:
+  #   formula: a formula object
+  all_terms <- all_terms(formula)
+  # do not include group-level terms
+  all_terms[grepl("\\|", all_terms)] <- ""
+  pos_terms <- grepl_expr(regex_sp(), all_terms)
+  out <- all_terms[pos_terms]
+  if (length(out)) {
+    uni_mo <- rm_wsp(get_matches_expr(regex_mo(), out))
+    uni_me <- rm_wsp(get_matches_expr("^me\\([^:]*\\)$", out))
+    uni_mi <- rm_wsp(get_matches_expr("^mi\\([^:]*\\)$", out))
+    out <- str2formula(out)
+    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "uni_mo") <- uni_mo
+    attr(out, "uni_me") <- uni_me
+    attr(out, "uni_mi") <- uni_mi
+  }
+  structure(out, pos = pos_terms)
 }
 
 parse_sm <- function(formula) {
@@ -412,42 +418,6 @@ parse_sm <- function(formula) {
     sm_terms, pos = pos_sm_terms, covars = covars, 
     byvars = byvars, allvars = allvars
   )
-}
-
-parse_me <- function(formula) {
-  # extract variables modeled with measurement error
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
-  me_terms <- all_terms[pos_me_terms]
-  if (length(me_terms)) {
-    uni_me <- rm_wsp(get_matches_expr("^me\\([^:]*\\)$", me_terms))
-    me_terms <- str2formula(me_terms)
-    attr(me_terms, "uni_me") <- uni_me
-    attr(me_terms, "rsv_intercept") <- TRUE
-  }
-  structure(me_terms, pos = pos_me_terms)
-}
-
-parse_mi <- function(formula) {
-  # extract variables modeled with measurement error
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_mi_terms <- grepl_expr("^mi\\([^:]*\\)$", all_terms)
-  mi_terms <- all_terms[pos_mi_terms]
-  if (length(mi_terms)) {
-    uni_mi <- rm_wsp(get_matches_expr("^mi\\([^:]*\\)$", mi_terms))
-    mi_terms <- str2formula(mi_terms)
-    attr(mi_terms, "uni_mi") <- uni_mi
-    attr(mi_terms, "rsv_intercept") <- TRUE
-  }
-  structure(mi_terms, pos = pos_mi_terms)
 }
 
 parse_gp <- function(formula) {
@@ -655,7 +625,7 @@ avoid_dpars <- function(names, bterms) {
   # Args:
   #   names: names to check for ambiguity
   #   bterms: object of class brmsterms
-  dpars <- c(names(bterms$dpars), "mo", "cs", "me")
+  dpars <- c(names(bterms$dpars), "sp", "cs")
   if (length(dpars)) {
     dpars_prefix <- paste0("^", dpars, "_")
     invalid <- any(ulapply(dpars_prefix, grepl, names))
@@ -736,7 +706,10 @@ check_multiple_special_terms <- function(x) {
     x <- all_terms(x)
   }
   x <- as.character(x)
-  sterms <- c("mo((no)?|(notonic)?)", "me", "cse?", "(s|t2|te|ti)", "gp")
+  sterms <- c(
+    "(mo((no)?|(notonic)?))|(me)|(mi)", 
+    "cse?", "(s|(t2)|(te)|(ti))", "gp"
+  )
   sterms <- paste0("^", sterms, "\\([^:]*\\)$") 
   smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
   for (i in seq_along(sterms)) {
@@ -864,7 +837,7 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
 
 get_uni_me <- function(x) {
   # extract unique names of noise-free terms 
-  uni_me <- ulapply(get_effect(x, "me"), attr, "uni_me")
+  uni_me <- ulapply(get_effect(x, "sp"), attr, "uni_me")
   if (!length(uni_me)) {
     return(NULL)
   }
@@ -931,7 +904,7 @@ store_uni_me.btl <- function(x, uni_me = NULL, ...) {
     uni_me <- get_uni_me(x)
   }
   if (length(uni_me)) {
-    attr(x[["me"]], "uni_me") <- uni_me
+    attr(x[["sp"]], "uni_me") <- uni_me
   }
   x
 }
@@ -1015,129 +988,86 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
   structure_not_null(sms, byvars = byvars)
 }
 
-get_mo_labels <- function(x, data) {
-  # get labels of monotonic terms
+tidy_spef <- function(x, data) {
+  # get labels of special effects terms
   # Args:
-  #   x: either a formula or a list containing an element "mo"
+  #   x: either a formula or a list containing an element "sp"
   #   data: data frame containing the monotonic variables
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
-    mo_form <- x$dpars$mu[["mo"]]
+    form <- x$dpars$mu[["sp"]]
   } else {
-    mo_form <- x[["mo"]]
+    form <- x[["sp"]]
   }
-  if (!is.formula(mo_form)) {
-    return(character(0))
+  if (!is.formula(form)) {
+    return(NULL)
   }
-  mm <- get_model_matrix(mo_form, data, rename = FALSE)
-  monef <- colnames(mm)
-  # prepare attributes of monef
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  Icmo <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  Imo <- calls_mo <- named_list(monef)
-  k <- 0
-  for (i in seq_along(monef)) {
-    calls_mo[[i]] <- get_matches_expr(regex_mo(), monef[i])
-    j <- length(calls_mo[[i]])
-    Imo[[i]] <- (k+1):(k+j)
-    k <- k + j
-    mo_split <- strsplit(rm_wsp(monef[i]), ":")[[1]]
-    # remove non monotonic parts from the terms
-    mo_split <- mo_split[grepl_expr(regex_mo(), mo_split)]
-    for (j in seq_along(mo_split)) {
-      mo_match <- get_matches_expr(regex_mo(), mo_split[j])
-      if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_split[j])) {
-        stop2("The monotonic term '",  mo_split[j], "' is invalid.")
+  mm <- get_model_matrix(form, data, rename = FALSE)
+  out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
+  out$coef <- rename(out$term)
+  call_cols <- paste0("call_", c("mo", "me", "mi"))
+  for (col in c(call_cols, "call_prod", "uni_me", "vars_mi", "Imo")) {
+    out[[col]] <- vector("list", nrow(out))
+  }
+  kmo <- 0
+  terms_split <- strsplit(rm_wsp(out$term), ":")
+  for (i in seq_len(nrow(out))) {
+    # prepare mo terms
+    take_mo <- grepl_expr(regex_mo(), terms_split[[i]])
+    if (sum(take_mo)) {
+      out$call_mo[[i]] <- terms_split[[i]][take_mo]
+      nmo <- length(out$call_mo[[i]])
+      out$Imo[[i]] <- (kmo + 1):(kmo + nmo)
+      kmo <- kmo + nmo
+      for (j in seq_along(out$call_mo[[i]])) {
+        mo_term <- out$call_mo[[i]][[j]]
+        mo_match <- get_matches_expr(regex_mo(), mo_term)
+        if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_term)) {
+          stop2("The monotonic term '",  mo_term, "' is invalid.")
+        }
       }
     }
+    # prepare me terms
+    take_me <- grepl_expr("^me\\([^:]*\\)$", terms_split[[i]])
+    if (sum(take_me)) {
+      out$call_me[[i]] <- terms_split[[i]][take_me]
+      # remove 'I' (identity) function calls that 
+      # were used solely to separate formula terms
+      out$call_me[[i]] <- gsub("^I\\(", "(", out$call_me[[i]])
+      out$uni_me[[i]] <- attr(form, "uni_me")
+    }
+    # prepare mi terms 
+    take_mi <- grepl_expr("^mi\\([^:]*\\)$", terms_split[[i]])
+    if (sum(take_mi)) {
+      out$call_mi[[i]] <- terms_split[[i]][take_mi]
+      # remove 'I' (identity) function calls that 
+      # were used solely to separate formula terms
+      out$call_mi[[i]] <- gsub("^I\\(", "(", out$call_mi[[i]])
+      out$vars_mi[[i]] <- get_matches_expr("^mi\\([^:]*\\)$", out$call_mi[[i]])
+      out$vars_mi[[i]] <- gsub("(^mi\\()|(\\)$)", "", out$vars_mi[[i]])
+      out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
+    }
+    out$call_prod[[i]] <- paste0(unlist(out[i, call_cols]), collapse = " * ")
   }
-  att <- nlist(not_one, Icmo, calls_mo, Imo)
-  do.call(structure, c(list(monef), att))
+  not_one <- apply(mm, 2, function(x) any(x != 1))
+  out$Ic <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  out
 }
 
-get_simo_labels <- function(monef) {
+get_simo_labels <- function(spef) {
   # extract names of monotonic simplex parameters 
   # Args:
-  #   monef: output of get_me_labels
-  stopifnot(is.character(monef))
-  Imo <- attr(monef, "Imo")
-  stopifnot(is.list(Imo))
-  monef <- rename(monef)
-  ulapply(seq_along(monef), 
-    function(i) paste0(monef[i], seq_along(Imo[[i]]))
-  )
+  #   spef: output of tidy_spef
+  fun <- function(i) paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+  ulapply(which(lengths(spef$Imo) > 0), fun)
 }
 
 regex_mo <- function() {
   "^mo((no)?|(notonic)?)\\([^:]*\\)$"
 }
 
-get_me_labels <- function(x, data) {
-  # get labels of measurement error terms
-  # Args:
-  #   x: either a formula or a list containing an element "me"
-  #   data: data frame containing the noisy variables
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    me_form <- x$dpars$mu[["me"]]
-  } else {
-    me_form <- x[["me"]]
-  }
-  if (!is.formula(me_form)) {
-    return(character(0))
-  }
-  mm <- get_model_matrix(me_form, data, rename = FALSE)
-  meef <- colnames(mm)
-  # prepare attributes of meef
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  Icme <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  uni_me <- attr(me_form, "uni_me")
-  calls_me <- strsplit(rm_wsp(meef), ":")
-  for (i in seq_along(meef)) {
-    # remove non-me parts from the terms
-    take <- grepl_expr("^me\\([^:]*\\)$", calls_me[[i]])
-    calls_me[[i]] <- calls_me[[i]][take]
-    # remove 'I' (identity) function calls that 
-    # were used solely to separate formula terms
-    calls_me[[i]] <- gsub("^I\\(", "(", calls_me[[i]])
-  }
-  att <- nlist(not_one, Icme, uni_me, calls_me)
-  do.call(structure, c(list(meef), att))
-}
-
-get_mi_labels <- function(x, data) {
-  # get labels of missing value terms
-  # Args:
-  #   x: either a formula or a list containing an element "mi"
-  #   data: data frame containing the noisy variables
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    mi_form <- x$dpars$mu[["mi"]]
-  } else {
-    mi_form <- x[["mi"]]
-  }
-  if (!is.formula(mi_form)) {
-    return(character(0))
-  }
-  mm <- get_model_matrix(mi_form, data, rename = FALSE)
-  mief <- colnames(mm)
-  # prepare attributes of meef
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  Icmi <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  uni_mi <- attr(mi_form, "uni_mi")
-  vars_mi <- gsub("(^mi\\()|(\\)$)", "", uni_mi)
-  vars_mi <- gsub("\\.|_", "", make.names(vars_mi))
-  calls_mi <- strsplit(rm_wsp(mief), ":")
-  for (i in seq_along(mief)) {
-    # remove non-mi parts from the terms
-    take <- grepl_expr("^mi\\([^:]*\\)$", calls_mi[[i]])
-    calls_mi[[i]] <- calls_mi[[i]][take]
-    # remove 'I' (identity) function calls that 
-    # were used solely to separate formula terms
-    calls_mi[[i]] <- gsub("^I\\(", "(", calls_mi[[i]])
-  }
-  att <- nlist(not_one, Icmi, uni_mi, vars_mi, calls_mi)
-  do.call(structure, c(list(mief), att))
+regex_sp <- function() {
+  "^(mo((no)?|(notonic)?))|(me)|(mi)\\([^:]*\\)$"
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {

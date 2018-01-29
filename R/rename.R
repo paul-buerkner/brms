@@ -68,9 +68,7 @@ change_effects.btl <- function(x, data, pars, stancode = "", ...) {
     change_fe(x, data, pars, stancode = stancode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
-    change_mo(x, data, pars),
-    change_me(x, data, pars),
-    change_mi(x, data, pars),
+    change_sp(x, data, pars),
     change_gp(x, data, pars)
   )
 }
@@ -108,25 +106,24 @@ change_fe <- function(bterms, data, pars, stancode = "") {
   change
 }
 
-change_mo <- function(bterms, data, pars) {
-  # helps in renaming monotonous effects parameters
+change_sp <- function(bterms, data, pars) {
+  # helps in renaming special effects parameters
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  monef <- get_mo_labels(bterms, data)
-  if (!length(monef)) {
+  spef <- tidy_spef(bterms, data)
+  if (is.null(spef)) {
     return(change) 
   }
   p <- usc(combine_prefix(bterms))
-  simo_coef <- get_simo_labels(monef)
-  monef <- rename(monef)
-  bmo <- paste0("bmo", p)
-  pos <- grepl(paste0("^", bmo, "\\["), pars)
-  newnames <- paste0("bmo", p, "_", monef)
+  bsp <- paste0("bsp", p)
+  pos <- grepl(paste0("^", bsp, "\\["), pars)
+  newnames <- paste0("bsp", p, "_", spef$coef)
   change <- lc(change, nlist(pos, fnames = newnames))
   change <- c(change, 
-    change_prior(class = bmo, pars = pars, names = monef)
+    change_prior(class = bsp, pars = pars, names = spef$coef)
   )
+  simo_coef <- get_simo_labels(spef)
   for (i in seq_along(simo_coef)) {
     simo_old <- paste0("simo", p, "_", i)
     simo_new <- paste0("simo", p, "_", simo_coef[i])
@@ -165,27 +162,6 @@ change_cs <- function(bterms, data, pars) {
   change
 }
 
-change_me <- function(bterms, data, pars) {
-  # helps in renaming parameters of noisy variables
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  change <- list()
-  meef <- get_me_labels(bterms, data)
-  if (length(meef)) {
-    p <- usc(combine_prefix(bterms), "prefix")
-    meef <- rename(meef)
-    # rename coefficients of noise free terms
-    bme <- paste0("bme", p)
-    pos <- grepl(paste0("^", bme, "\\["), pars)
-    bmenames <- paste0(bme, "_", meef)
-    change <- lc(change, nlist(pos, fnames = bmenames))
-    change <- c(change,
-      change_prior(class = bme, pars = pars, names = meef)
-    )
-  }
-  change
-}
-
 change_Xme <- function(bterms, pars) {
   # helps in renaming global noise free variables
   # Returns:
@@ -200,26 +176,6 @@ change_Xme <- function(bterms, pars) {
       fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
       change <- lc(change, nlist(pos, fnames))
     }
-  }
-  change
-}
-
-change_mi <- function(bterms, data, pars) {
-  # helps in renaming parameters of missing value variables
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  change <- list()
-  mief <- get_mi_labels(bterms, data)
-  if (length(mief)) {
-    p <- usc(combine_prefix(bterms), "prefix")
-    mief <- rename(mief)
-    bmi <- paste0("bmi", p)
-    pos <- grepl(paste0("^", bmi, "\\["), pars)
-    bminames <- paste0(bmi, "_", mief)
-    change <- lc(change, nlist(pos, fnames = bminames))
-    change <- c(change,
-      change_prior(class = bmi, pars = pars, names = mief)
-    )
   }
   change
 }
@@ -515,7 +471,7 @@ reorder_pars <- function(x) {
   # Args:
   #   x: brmsfit object
   all_classes <- c(
-    "b", "bmo", "bcs", "bme", "bmi", "ar", "ma", "arr", "lagsar",
+    "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 

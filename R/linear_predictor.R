@@ -16,8 +16,7 @@ linear_predictor <- function(draws, i = NULL, fdraws = NULL) {
   eta <- matrix(0, nrow = draws$nsamples, ncol = nobs) +
     predictor_fe(draws, i) +
     predictor_re(draws, i) +
-    predictor_mo(draws, i) +
-    predictor_me(draws, i) +
+    predictor_sp(draws, i) +
     predictor_sm(draws, i) +
     predictor_gp(draws, i) +
     predictor_offset(draws, i, nobs)
@@ -123,50 +122,52 @@ predictor_re <- function(draws, i) {
   Matrix::as.matrix(Matrix::tcrossprod(r, Z))
 }
 
-predictor_mo <- function(draws, i) {
-  # compute eta for monotonic effects
+predictor_sp <- function(draws, i) {
+  # compute eta for special effects terms
   eta <- 0
-  mo <- draws[["mo"]]
-  if (!length(mo)) {
+  sp <- draws[["sp"]]
+  if (!length(sp)) {
     return(eta) 
   }
   eval_list <- list()
-  for (j in seq_along(mo[["simo"]])) {
-    eval_list[[paste0("Xmo_", j)]] <- p(mo[["Xmo"]][[j]], i)
-    eval_list[[paste0("simo_", j)]] <- mo[["simo"]][[j]]
+  for (j in seq_along(sp[["simo"]])) {
+    eval_list[[paste0("Xmo_", j)]] <- p(sp[["Xmo"]][[j]], i)
+    eval_list[[paste0("simo_", j)]] <- sp[["simo"]][[j]]
   }
-  for (j in seq_along(mo[["Cmo"]])) {
-    eval_list[[paste0("Cmo_", j)]] <- 
-      p(mo[["Cmo"]][[j]], i, row = FALSE)
+  for (j in seq_along(sp[["Xme"]])) {
+    eval_list[[paste0("Xme_", j)]] <- p(sp[["Xme"]][[j]], i, row = FALSE)
+  }
+  # TODO: handle missing value effects
+  for (j in seq_along(sp[["Csp"]])) {
+    eval_list[[paste0("Csp_", j)]] <- p(sp[["Csp"]][[j]], i, row = FALSE)
   }
   re <- draws[["re"]]
-  monef <- names(mo[["bmo"]])
-  for (j in seq_along(monef)) {
-    # prepare monotonic group-level effects
-    rmo <- named_list(names(re[["rmo"]][[monef[j]]]))
-    for (g in names(rmo)) {
-      rmo[[g]] <- .predictor_re(
-        Z = p(re[["Zmo"]][[g]], i), 
-        r = re[["rmo"]][[monef[j]]][[g]]
+  spef <- colnames(sp[["bsp"]])
+  for (j in seq_along(spef)) {
+    # prepare special group-level effects
+    rsp <- named_list(names(re[["rsp"]][[spef[j]]]))
+    for (g in names(rsp)) {
+      rsp[[g]] <- .predictor_re(
+        Z = p(re[["Zsp"]][[g]], i), 
+        r = re[["rsp"]][[spef[j]]][[g]]
       )
     }
-    eta <- eta + 
-      .predictor_mo(
-        eval_list, call = mo[["calls"]][[j]],
-        b = mo[["bmo"]][[j]], 
-        r = Reduce("+", rmo)
-      )
+    eta <- eta + .predictor_sp(
+      eval_list, call = sp[["calls"]][[j]],
+      b = sp[["bsp"]][, j], 
+      r = Reduce("+", rsp)
+    )
   }
   eta
 }
 
-.predictor_mo <- function(eval_list, call, b, r = NULL) {
-  # compute eta for monotonic effects
+.predictor_sp <- function(eval_list, call, b, r = NULL) {
+  # compute eta for special effects terms
   # Args:
-  #   call: expression for evaluation of monotonic effects
+  #   call: expression for evaluation of special effects
   #   eval_list: list containing variables for 'call'
-  #   b: monotonic effects samples
-  #   r: matrix with monotonic group-level samples
+  #   b: special effects coefficients samples
+  #   r: matrix with special effects group-level samples
   b <- as.vector(b)
   if (is.null(r)) r <- 0 
   (b + r) * eval(call, eval_list)
@@ -184,54 +185,6 @@ predictor_mo <- function(draws, i) {
     simplex[, i] <- simplex[, i] + simplex[, i - 1]
   }
   simplex[, X + 1]
-}
-
-predictor_me <- function(draws, i) {
-  # compute eta for noise-free effects
-  eta <- 0
-  me <- draws[["me"]]
-  if (!length(me)) {
-    return(eta) 
-  }
-  eval_list <- list()
-  for (j in seq_along(me[["Xme"]])) {
-    eval_list[[paste0("Xme_", j)]] <- 
-      p(me[["Xme"]][[j]], i, row = FALSE)
-  }
-  for (j in seq_along(me[["Cme"]])) {
-    eval_list[[paste0("Cme_", j)]] <- 
-      p(me[["Cme"]][[j]], i, row = FALSE)
-  }
-  re <- draws[["re"]]
-  meef <- names(me[["bme"]])
-  for (j in seq_along(meef)) {
-    # prepare noise-free group-level effects
-    rme_temp <- re[["rme"]][[meef[j]]]
-    rme <- named_list(names(rme_temp))
-    for (g in names(rme)) {
-      rme[[g]] <- .predictor_re(
-        Z = p(re[["Zme"]][[g]], i), r = rme_temp[[g]]
-      )
-    }
-    eta <- eta + 
-      .predictor_me(
-        eval_list, call = me[["calls"]][[j]],
-        b = me[["bme"]][[j]],
-        r = Reduce("+", rme)
-      )
-  }
-  eta
-}
-
-.predictor_me <- function(eval_list, call, b, r = NULL) {
-  # Args:
-  #   call: expression for evaluation of noise-free effects
-  #   eval_list: list containing variables for 'call'
-  #   b: samples of the noise-free coefficient
-  #   r: matrix with noise-free group-level samples
-  b <- as.vector(b)
-  if (is.null(r)) r <- 0 
-  (b + r) * eval(call, eval_list)
 }
 
 predictor_sm <- function(draws, i) {

@@ -170,9 +170,8 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
     # make sure only smooth terms will be included in draws
     return(structure(draws, predicted = TRUE))
   }
-  draws$mo <- do.call(extract_draws_mo, args)
+  draws$sp <- do.call(extract_draws_sp, args)
   draws$cs <- do.call(extract_draws_cs, args)
-  draws$me <- do.call(extract_draws_me, args)
   draws$gp <- do.call(extract_draws_gp, args)
   draws$re <- do.call(extract_draws_re, args)
   draws$offset <- do.call(extract_draws_offset, args)
@@ -203,52 +202,74 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   draws
 }
 
-extract_draws_mo <- function(bterms, samples, sdata, data, ...) {
-  # extract draws of monotonic effects
-  # Args:
-  #   monef: names of the monotonic effects
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   sdata: list returned by make_standata
+extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
+  # extract draws of special effects terms
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   draws <- list()
-  monef <- get_mo_labels(bterms, data)
-  if (!length(monef)) {
+  spef <- tidy_spef(bterms, data)
+  if (is.null(spef)) {
     return(draws) 
   }
   p <- usc(combine_prefix(bterms))
-  att <- attributes(monef)
-  # prepare calls evaluated in 'mo_predictor()'
-  calls <- rep(NA, length(monef))
-  for (i in seq_along(calls)) {
-    tmp <- paste0(".mo(simo_", att$Imo[[i]], ", Xmo_", att$Imo[[i]], ")")
-    calls[i] <- paste0(tmp, collapse = " * ")
-    if (att$not_one[i]) {
-      str_add(calls[i]) <- paste0(" * Cmo_", att$Icmo[i])
+  # prepare calls evaluated in sp_predictor
+  draws$calls <- vector("list", nrow(spef))
+  for (i in seq_along(draws$calls)) {
+    call <- spef$call_prod[[i]]
+    if (!is.null(spef$call_mo[[i]])) {
+      new_mo <- paste0(
+        ".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")"
+      )
+      call <- rename(call, spef$call_mo[[i]], new_mo)
     }
+    if (!is.null(spef$call_me[[i]])) {
+      new_me <- paste0("Xme_", seq_along(spef$uni_me[[i]]))
+      call <- rename(call, spef$uni_me[[i]], new_me)
+    }
+    if (!is.null(spef$call_mi[[i]])) {
+      new_mi <- paste0("Yf_", spef$vars_mi[[i]])
+      call <- rename(call, spef$call_mi[[i]], new_mi)
+    }
+    if (spef$Ic[i] > 0) {
+      str_add(call) <- paste0(" * Csp_", spef$Ic[i])
+    }
+    draws$calls[[i]] <- parse(text = paste0(call))
   }
-  draws$calls <- parse(text = paste0(calls))
-  # extract data and parameters for monotonic effects
-  monef <- rename(monef)
-  draws$bmo <- named_list(monef)
-  for (i in seq_along(monef)) {
-    bmo_par <- paste0("bmo", p, "_", monef[i])
-    draws$bmo[[i]] <- get_samples(samples, bmo_par, exact = TRUE)
-  }
-  simo_coef <- get_simo_labels(monef)
+  # extract general data and parameters for special effects
+  bsp_pars <- paste0("bsp", p, "_", spef$coef)
+  draws$bsp <- get_samples(samples, bsp_pars, exact = TRUE)
+  # prepare draws specific to monotonic effects
+  simo_coef <- get_simo_labels(spef)
   draws$simo <- draws$Xmo <- named_list(simo_coef)
   for (i in seq_along(simo_coef)) {
-    simo_par <- paste0(
-      "simo", p, "_", simo_coef[i], "[", seq_len(sdata$Jmo[i]), "]"
-    )
+    J <- seq_len(sdata$Jmo[i])
+    simo_par <- paste0("simo", p, "_", simo_coef[i], "[", J, "]")
     draws$simo[[i]] <- get_samples(samples, simo_par, exact = TRUE)
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
   }
-  ncovars <- sum(att$not_one)
-  dim <- c(nrow(draws$bmo[[1]]), sdata$N)
+  # prepare draws specific to noise-free effects
+  uni_me <- rename(unique(unlist(spef$uni_me)))
+  if (length(uni_me)) {
+    if (new) {
+      stop2("Predictions with noise-free variables are not yet ",
+            "possible when passing new data.")
+    }
+    if (!any(grepl("^Xme_", colnames(samples)))) {
+      stop2("Noise-free variables were not saved. Please set ",
+            "argument 'save_mevars' to TRUE when fitting your model.")
+    }
+    draws$Xme <- named_list(uni_me)
+    for (i in seq_along(draws$Xme)) {
+      Xme_pars <- paste0("Xme", p, "_", uni_me[i], "\\[")
+      draws$Xme[[i]] <- get_samples(samples, Xme_pars)
+    }
+  }
+  # TODO: prepare draws specific to missing value effects
+  ncovars <- max(spef$Ic)
+  dim <- c(nrow(draws$bsp), sdata$N)
   for (i in seq_len(ncovars)) {
-    draws$Cmo[[i]] <- as_draws_matrix(
-      sdata[[paste0("Cmo", p, "_", i)]], dim = dim
+    draws$Csp[[i]] <- as_draws_matrix(
+      sdata[[paste0("Csp", p, "_", i)]], dim = dim
     )
   }
   draws
@@ -279,65 +300,6 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
     }
-  }
-  draws
-}
-
-extract_draws_me <- function(bterms, samples, sdata, data, 
-                             new = FALSE, ...) {
-  # extract draws of noise-free effects
-  # Args:
-  #   meef: names of the noise free effects
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   sdata: list returned by make_standata
-  #   nlpar: name of a non-linear parameter
-  #   new: logical; are new data specified?
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
-  draws <- list()
-  meef <- get_me_labels(bterms, data)
-  if (!length(meef)) {
-    return(draws) 
-  }
-  p <- usc(combine_prefix(bterms))
-  if (new) {
-    stop2("Predictions with noise-free variables are not yet ",
-          "possible when passing new data.")
-  }
-  if (!any(grepl("^Xme_", colnames(samples)))) {
-    stop2("Noise-free variables were not saved. Please set ",
-          "argument 'save_mevars' to TRUE when fitting your model.")
-  }
-  att <- attributes(meef)
-  uni_me <- att$uni_me
-  # prepare calls to evaluate noise-free data
-  meef_terms <- ulapply(att$calls_me, paste0, collapse = " * ")
-  new_me <- paste0("Xme_", seq_along(uni_me))
-  meef_terms <- rename(meef_terms, uni_me, new_me)
-  covars <- ifelse(att$not_one, paste0(" * Cme_", att$Icme), "")
-  meef_terms <- paste0(meef_terms, covars)
-  draws$calls <- parse(text = meef_terms)
-  # extract coefficient samples
-  meef <- rename(meef)
-  draws$bme <- named_list(meef)
-  for (j in seq_along(draws[["bme"]])) {
-    bme_par <- paste0("bme", p, "_", meef[j])
-    draws$bme[[j]] <- get_samples(samples, bme_par, exact = TRUE)
-  }
-  # extract noise-free variable samples
-  uni_me <- rename(uni_me)
-  draws$Xme <- named_list(uni_me)
-  for (j in seq_along(draws[["Xme"]])) {
-    Xme_pars <- paste0("Xme", p, "_", uni_me[j], "\\[")
-    draws$Xme[[j]] <- get_samples(samples, Xme_pars)
-  }
-  # prepare covariates
-  ncovars <- sum(att$not_one)
-  for (j in seq_len(ncovars)) {
-    cme <- paste0("Cme", p, "_", j)
-    draws$Cme[[j]] <- as_draws_matrix(
-      sdata[[cme]], dim = dim(draws[["Xme"]][[1]])
-    )
   }
   draws
 }
@@ -441,7 +403,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
   groups <- unique(ranef$group)
   old_ranef <- subset2(old_ranef, ls = px)
   # assigning S4 objects requires initialisation of list elements
-  draws[c("Z", "Zmo", "Zcs", "Zme")] <- list(named_list(groups))
+  draws[c("Z", "Zsp", "Zcs")] <- list(named_list(groups))
   for (g in groups) {
     new_r <- subset2(ranef, group = g)
     r_pars <- paste0("^r_", g, usc(usc(p)), "\\[")
@@ -544,26 +506,15 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     r <- cbind(r[, sort_levels, drop = FALSE], new_r_levels)
     levels <- unique(unlist(gf))
     r <- subset_levels(r, levels, nranef)
-    # monotonic group-level terms
-    new_r_mo <- subset2(new_r, type = "mo")
-    if (nrow(new_r_mo)) {
+    # special group-level terms (mo, me, mi)
+    new_r_sp <- subset2(new_r, type = "sp")
+    if (nrow(new_r_sp)) {
       Z <- matrix(1, length(gf[[1]])) 
-      draws[["Zmo"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (co in new_r_mo$coef) {
-        take <- which(new_r$coef == co & new_r$type == "mo")
+      draws[["Zsp"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
+      for (co in new_r_sp$coef) {
+        take <- which(new_r$coef == co & new_r$type == "sp")
         take <- take + nranef * (seq_along(levels) - 1)
-        draws[["rmo"]][[co]][[g]] <- r[, take, drop = FALSE]
-      }
-    }
-    # noise-free group-level terms
-    new_r_me <- subset2(new_r, type = "me")
-    if (nrow(new_r_me)) {
-      Z <- matrix(1, length(gf[[1]]))
-      draws[["Zme"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (co in new_r_me$coef) {
-        take <- which(new_r$coef == co & new_r$type == "me")
-        take <- take + nranef * (seq_along(levels) - 1)
-        draws[["rme"]][[co]][[g]] <- r[, take, drop = FALSE]
+        draws[["rsp"]][[co]][[g]] <- r[, take, drop = FALSE]
       }
     }
     # category specific group-level terms

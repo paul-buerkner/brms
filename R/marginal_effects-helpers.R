@@ -52,7 +52,7 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
     int <- unique(unname(lapply(int, sort)))
     out <- c(as.list(out), int)
   }
-  out[lengths(out) <= 2L] 
+  unique(out[lengths(out) <= 2L])
 }
 
 #' @export
@@ -60,11 +60,11 @@ get_all_effects.btl <- function(x, ...) {
   int_formula <- function(x) {
     formula(paste("~", paste(x, collapse = "*")))
   }
-  covars <- attr(x$sm, "covars")
-  byvars <- attr(x$sm, "byvars")
+  covars <- attr(x[["sm"]], "covars")
+  byvars <- attr(x[["sm"]], "byvars")
   svars <- mapply(c, covars, byvars, SIMPLIFY = FALSE)
   alist <- lapply(svars, int_formula)
-  get_var_combs(x$fe, x$mo, x$cs, x$me, x$gp, alist = alist)
+  get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]], x[["gp"]], alist = alist)
 }
 
 #' @export
@@ -93,8 +93,10 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
-  out <- c(rmNULL(x$adforms[c("trials", "cat")]), get_effect(x, "mo"))
-  unique(ulapply(out, all.vars))
+  adforms <- rmNULL(x$adforms[c("trials", "cat")])
+  moform <- ulapply(get_effect(x, "sp"), formula2str)
+  moform <- str2formula(get_matches_expr(regex_mo(), moform))
+  unique(ulapply(c(adforms, moform), all.vars))
 }
 
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,

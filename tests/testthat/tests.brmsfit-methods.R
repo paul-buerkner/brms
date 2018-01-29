@@ -74,8 +74,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # family
   expect_equal(family(fit1), brmsfamily("student", link = "identity"))
-  expect_equal(family(fit6, resp = "count"), 
-               brmsfamily("poisson", link = "log"))
+  expect_equal(family(fit6, resp = "count"), brmsfamily("poisson", link = "log"))
   expect_output(print(family(fit1), links = TRUE), "student.*log.*logm1")
   expect_output(print(family(fit5)), "Mixture.*gaussian.*exponential")
   
@@ -187,9 +186,9 @@ test_that("all S3 methods have reasonable ouputs", {
                fixed = TRUE)
   
   # test hypothesis.default method
-  hyp <- hypothesis(as.data.frame(fit3), "bme_meAgeAgeSD > sigma")
+  hyp <- hypothesis(as.data.frame(fit3), "bsp_meAgeAgeSD > sigma")
   expect_equal(dim(hyp$hypothesis), c(1, 6))
-  hyp <- hypothesis(fit3$fit, "bme_meAgeAgeSD > sigma")
+  hyp <- hypothesis(fit3$fit, "bsp_meAgeAgeSD > sigma")
   expect_equal(dim(hyp$hypothesis), c(1, 6))
   
   # omit launch_shiny
@@ -370,7 +369,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # parnames 
   expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 42, 50, 51)],
-               c("b_Intercept", "bmo_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
+               c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
                  "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
   expect_equal(parnames(fit2)[c(1, 4, 6, 7, 9, 71, 129)],
@@ -516,7 +515,7 @@ test_that("all S3 methods have reasonable ouputs", {
   prs1 <- prior_samples(fit1)
   prior_names <- c(
     "temp_Intercept", "temp_sigma_Intercept", "b_Intercept", 
-    "b_sigma_Intercept", "sds_sAge_1", "nu", "sd_visit", "b", "bmo", 
+    "b_sigma_Intercept", "sds_sAge_1", "nu", "sd_visit", "b", "bsp", 
     paste0("simo_moExp1[", 1:4, "]"), "b_sigma", "cor_visit"
   )
   expect_equal(colnames(prs1), prior_names)
@@ -566,7 +565,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # standata
   expect_equal(names(standata(fit1)),
     c("N", "Y",  "Kar", "Kma", "J_lag", "nb_1", "knots_1", 
-      "Zs_1_1", "K", "X", "Kmo", "Imo", "Xmo_1", "Jmo", 
+      "Zs_1_1", "K", "X", "Ksp", "Imo", "Xmo_1", "Jmo", 
       "con_simo_1", "Z_1_1", "Z_1_2", "offset", "K_sigma", 
       "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only")
   )

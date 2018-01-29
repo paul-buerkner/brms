@@ -293,7 +293,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
   sdata <- make_standata(bform, data = dat)
   expect_equal(names(sdata), 
     c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1", 
-      "K_b", "X_b", "Kmo_b", "Imo_b", "Xmo_b_1", "Jmo_b", 
+      "K_b", "X_b", "Ksp_b", "Imo_b", "Xmo_b_1", "Jmo_b", 
       "con_simo_b_1", "Z_1_b_2", "J_1", "N_1", 
       "M_1", "NC_1", "prior_only")
   )
@@ -467,8 +467,8 @@ test_that("make_standata handles noise-free terms", {
   )
   expect_equal(sdata$Xn_1, as.array(dat$x))
   expect_equal(sdata$noise_2, as.array(dat$zsd))
-  expect_equal(unname(sdata$Cme_3), dat$x)
-  expect_equal(sdata$Kme, 6)
+  expect_equal(unname(sdata$Csp_3), as.array(dat$x))
+  expect_equal(sdata$Ksp, 6)
 })
 
 test_that("make_standata handles multi-membership models", {

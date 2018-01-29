@@ -79,7 +79,7 @@ split_re_terms <- function(re_terms) {
     lhs_all_terms <- all_terms(lhs_form)
     basic_pos <- rep(TRUE, length(lhs_all_terms))
     new_lhs <- NULL
-    for (t in c("cs", "mo", "me")) {
+    for (t in c("cs", "sp")) {
       lhs_tform <- do.call(paste0("parse_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
         tpos <- attr(lhs_tform, "pos")
@@ -302,7 +302,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   #     cn: number of the effect within the ID
   #     nlpar: name of the corresponding non-linear parameter
   #     cor: are correlations modeled for this effect?
-  #     type: special effects type; can be "mo", "cs", or "me"
+  #     type: special effects type; can be "sp" or "cs"
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
   re <- get_re(bterms, all = all)
@@ -311,8 +311,10 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   id_groups <- list()
   j <- 1
   for (i in seq_len(nrow(re))) {
-    if (re$type[i] == "mo") {
-      coef <- rename(get_mo_labels(re$form[[i]], data))
+    if (!nzchar(re$type[i])) {
+      coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
+    } else if (re$type[i] == "sp") {
+      coef <- tidy_spef(re$form[[i]], data)$coef
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
       if (!is.null(old_standata)) {
@@ -335,10 +337,6 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       indices <- paste0("[", seq_len(ncat - 1), "]")
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       coef <- as.vector(t(outer(coef, indices, paste0)))
-    } else if (re$type[i] == "me") {
-      coef <- rename(get_me_labels(re$form[[i]], data))
-    } else {
-      coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
     }
     avoid_dpars(coef, bterms = bterms)
     rdat <- data.frame(
