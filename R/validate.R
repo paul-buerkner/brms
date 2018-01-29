@@ -220,7 +220,7 @@ parse_lf <- function(formula, family = NULL) {
   formula <- rhs(as.formula(formula))
   check_multiple_special_terms(formula)
   y <- nlist(formula)
-  types <- c("re", "mo", "cs", "me", "sm", "gp", "offset")
+  types <- c("re", "mo", "cs", "me", "mi", "sm", "gp", "offset")
   for (t in types) {
     tmp <- do.call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
@@ -230,7 +230,7 @@ parse_lf <- function(formula, family = NULL) {
   pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
   y$fe <- parse_fe(formula, pos_special)
   lformula <- c(
-    y[c("fe", "cs", "mo", "me")], 
+    y[c("fe", "cs", "mo", "me", "mi")], 
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
     y$re$form, lapply(y$re$gcall, "[[", "allvars"),
     str2formula(all.vars(y$offset))
@@ -430,6 +430,24 @@ parse_me <- function(formula) {
     attr(me_terms, "rsv_intercept") <- TRUE
   }
   structure(me_terms, pos = pos_me_terms)
+}
+
+parse_mi <- function(formula) {
+  # extract variables modeled with measurement error
+  # Args:
+  #   formula: a formula object
+  all_terms <- all_terms(formula)
+  # do not include group-level terms
+  all_terms[grepl("\\|", all_terms)] <- ""
+  pos_mi_terms <- grepl_expr("^mi\\([^:]*\\)$", all_terms)
+  mi_terms <- all_terms[pos_mi_terms]
+  if (length(mi_terms)) {
+    uni_mi <- rm_wsp(get_matches_expr("^mi\\([^:]*\\)$", mi_terms))
+    mi_terms <- str2formula(mi_terms)
+    attr(mi_terms, "uni_mi") <- uni_mi
+    attr(mi_terms, "rsv_intercept") <- TRUE
+  }
+  structure(mi_terms, pos = pos_mi_terms)
 }
 
 parse_gp <- function(formula) {
@@ -1085,6 +1103,41 @@ get_me_labels <- function(x, data) {
   }
   att <- nlist(not_one, Icme, uni_me, calls_me)
   do.call(structure, c(list(meef), att))
+}
+
+get_mi_labels <- function(x, data) {
+  # get labels of missing value terms
+  # Args:
+  #   x: either a formula or a list containing an element "mi"
+  #   data: data frame containing the noisy variables
+  if (is.formula(x)) {
+    x <- parse_bf(x, check_response = FALSE)
+    mi_form <- x$dpars$mu[["mi"]]
+  } else {
+    mi_form <- x[["mi"]]
+  }
+  if (!is.formula(mi_form)) {
+    return(character(0))
+  }
+  mm <- get_model_matrix(mi_form, data, rename = FALSE)
+  mief <- colnames(mm)
+  # prepare attributes of meef
+  not_one <- apply(mm, 2, function(x) any(x != 1))
+  Icmi <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  uni_mi <- attr(mi_form, "uni_mi")
+  vars_mi <- gsub("(^mi\\()|(\\)$)", "", uni_mi)
+  vars_mi <- gsub("\\.|_", "", make.names(vars_mi))
+  calls_mi <- strsplit(rm_wsp(mief), ":")
+  for (i in seq_along(mief)) {
+    # remove non-mi parts from the terms
+    take <- grepl_expr("^mi\\([^:]*\\)$", calls_mi[[i]])
+    calls_mi[[i]] <- calls_mi[[i]][take]
+    # remove 'I' (identity) function calls that 
+    # were used solely to separate formula terms
+    calls_mi[[i]] <- gsub("^I\\(", "(", calls_mi[[i]])
+  }
+  att <- nlist(not_one, Icmi, uni_mi, vars_mi, calls_mi)
+  do.call(structure, c(list(mief), att))
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {

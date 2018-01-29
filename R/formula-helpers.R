@@ -295,6 +295,17 @@ me <- function(x, sdx = NULL) {
   structure(out, var = x, noise = sdx, xname = xname)
 }
 
+#' @export
+mi <- function(x) {
+  xname <- deparse(substitute(x))
+  x <- as.vector(x)
+  if (!is.numeric(x)) {
+    stop2("Noisy variables should be numeric.")
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x, xname = xname)
+}
+
 #' Category Specific Predictors in \pkg{brms} Models
 #' 
 #' @aliases cse

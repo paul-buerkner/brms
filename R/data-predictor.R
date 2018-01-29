@@ -59,6 +59,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
     data_mo(x, data, prior = prior, Jmo = old_standata$Jmo),
     data_re(x, data, ranef = ranef),
     data_me(x, data),
+    data_mi(x, data),
     data_cs(x, data),
     data_gp(x, data, gps = old_standata$gps),
     data_offset(x, data),
@@ -381,6 +382,28 @@ data_Xme <- function(bterms, data) {
     names(Xn) <- paste0("Xn_", K)
     names(noise) <- paste0("noise_", K)
     out <- c(out, Xn, noise)
+  }
+  out
+}
+
+data_mi <- function(bterms, data) {
+  # prepare formula specific data of missing value variables
+  # Args: see data_effects
+  out <- list()
+  px <- check_prefix(bterms)
+  mief <- get_mi_labels(bterms, data)
+  if (length(mief)) {
+    att <- attributes(mief)
+    p <- usc(combine_prefix(px))
+    C <- get_model_matrix(bterms$mi, data)
+    avoid_dpars(colnames(C), bterms = bterms)
+    C <- C[, att$not_one, drop = FALSE]
+    C <- lapply(seq_len(ncol(C)), function(i) C[, i])
+    if (length(C)) {
+      C <- setNames(C, paste0("Cmi", p, "_", seq_along(C)))
+    }
+    K <- setNames(list(length(mief)), paste0("Kmi", p))
+    out <- c(out, C, K)
   }
   out
 }

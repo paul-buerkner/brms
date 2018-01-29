@@ -591,6 +591,7 @@ prior_effects.btl <- function(x, data, spec_intercept = TRUE,
   prior_mo(x, data) +
   prior_sm(x, data, def_scale_prior = def_scale_prior) + 
   prior_me(x, data) + 
+  prior_mi(x, data) + 
   prior_gp(x, data, def_scale_prior = def_scale_prior)
 }
 
@@ -688,6 +689,20 @@ prior_Xme <- function(bterms) {
     prior <- prior + 
       brmsprior(class = "meanme", coef = c("", uni_me)) +
       brmsprior(class = "sdme", coef = c("", uni_me))
+  }
+  prior
+}
+
+prior_mi <- function(bterms, data) {
+  # default priors of coefficients of missing value terms
+  # Returns:
+  #   an object of class brmsprior
+  prior <- empty_brmsprior()
+  mief <- get_mi_labels(bterms, data)
+  if (length(mief)) {
+    px <- check_prefix(bterms)
+    prior <- prior + 
+      brmsprior(class = "b", coef = c("", rename(mief)), ls = px)
   }
   prior
 }

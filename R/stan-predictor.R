@@ -28,6 +28,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
     text_cs <- stan_cs(x, data, ranef = ranef, prior = prior),
     text_mo <- stan_mo(x, data, ranef = ranef, prior = prior),
     text_me <- stan_me(x, data, ranef = ranef, prior = prior),
+    text_mi <- stan_mi(x, data, ranef = ranef, prior = prior),
     text_sm <- stan_sm(x, data, prior = prior),
     text_gp <- stan_gp(x, data, prior = prior)
   )
@@ -53,7 +54,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # repare loop over eta
   eta_loop <- paste0(
     stan_eta_re(ranef, px = px),
-    text_mo$eta, text_me$eta,
+    text_mo$eta, text_me$eta, text_mi$eta,
     stan_eta_autocor(x$autocor, px = px)
   )
   if (nzchar(eta_loop)) {
@@ -205,8 +206,8 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
   if (x$rescor) {
     # we already know at this point that all families are identical
     adnames <- unique(ulapply(x$terms, function(x) names(x$adforms)))
-    if (!all(adnames %in% c("se", "weights"))) {
-      stop2("Only 'se' and 'weights' are supported addition ",
+    if (!all(adnames %in% c("se", "weights", "mi"))) {
+      stop2("Only 'se', 'weights', and 'mi' are supported addition ",
             "arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
@@ -807,7 +808,6 @@ stan_me <- function(bterms, data, ranef, prior) {
     str_add(meef_terms) <- ifelse(att$not_one,
       paste0(" * Cme", p, "_", att$Icme, "[n]"), ""
     )
-    
     # prepare linear predictor component
     meef <- rename(meef)
     ranef <- subset2(ranef, type = "me", ls = px)
@@ -827,7 +827,6 @@ stan_me <- function(bterms, data, ranef, prior) {
         " + (bme", p, "[", i, "]", rpars, ") * ", meef_terms[i]
       )
     }
-    
     # prepare rest of the Stan code
     ncovars <- sum(att$not_one)
     str_add(out$data) <- paste0(
@@ -845,6 +844,61 @@ stan_me <- function(bterms, data, ranef, prior) {
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = meef, 
       px = px, suffix = paste0("me", p)
+    )
+  }
+  out
+}
+
+stan_mi <- function(bterms, data, ranef, prior) {
+  # Stan code for measurement error effects
+  out <- list()
+  mief <- get_mi_labels(bterms, data = data)
+  if (length(mief)) {
+    att <- attributes(mief)
+    px <- check_prefix(bterms)
+    p <- usc(combine_prefix(px))
+    mief_terms <- ulapply(att$calls_mi, paste0, collapse = " * ")
+    new_mi <- paste0("Yf_", att$vars_mi, "[n]")
+    mief_terms <- rename(mief_terms, att$uni_mi, new_mi)
+    str_add(mief_terms) <- ifelse(att$not_one,
+      paste0(" * Cmi", p, "_", att$Icmi, "[n]"), ""
+    )
+    # prepare linear predictor component
+    mief <- rename(mief)
+    ranef <- subset2(ranef, type = "mi", ls = px)
+    invalid_coef <- setdiff(ranef$coef, mief)
+    if (length(invalid_coef)) {
+      stop2("Missing value group-level terms require ", 
+            "corresponding population-level terms.")
+    }
+    for (i in seq_along(mief)) {
+      r <- subset2(ranef, coef = mief[i])
+      if (nrow(r)) {
+        rpars <- paste0(" + ", stan_eta_r(r))
+      } else {
+        rpars <- ""
+      }
+      str_add(out$eta) <- paste0(
+        " + (bmi", p, "[", i, "]", rpars, ") * ", mief_terms[i]
+      )
+    }
+    # prepare rest of the Stan code
+    ncovars <- sum(att$not_one)
+    str_add(out$data) <- paste0(
+      "  int<lower=0> Kmi", p, ";",
+      "  // number of terms of missing value variables \n",
+      if (ncovars > 0L) paste0(
+        "  // covariates of missing value variables \n",
+        collapse("  vector[N] Cmi", p, "_", seq_len(ncovars), "; \n")
+      )
+    )
+    str_add(out$par) <- paste0(
+      "  vector[Kmi", p, "] bmi", p, ";",
+      "  // coefficients of missing value terms \n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "b", coef = mief, 
+      px = px, suffix = paste0("mi", p)
     )
   }
   out

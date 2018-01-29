@@ -70,6 +70,7 @@ change_effects.btl <- function(x, data, pars, stancode = "", ...) {
     change_cs(x, data, pars),
     change_mo(x, data, pars),
     change_me(x, data, pars),
+    change_mi(x, data, pars),
     change_gp(x, data, pars)
   )
 }
@@ -199,6 +200,26 @@ change_Xme <- function(bterms, pars) {
       fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
       change <- lc(change, nlist(pos, fnames))
     }
+  }
+  change
+}
+
+change_mi <- function(bterms, data, pars) {
+  # helps in renaming parameters of missing value variables
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
+  change <- list()
+  mief <- get_mi_labels(bterms, data)
+  if (length(mief)) {
+    p <- usc(combine_prefix(bterms), "prefix")
+    mief <- rename(mief)
+    bmi <- paste0("bmi", p)
+    pos <- grepl(paste0("^", bmi, "\\["), pars)
+    bminames <- paste0(bmi, "_", mief)
+    change <- lc(change, nlist(pos, fnames = bminames))
+    change <- c(change,
+      change_prior(class = bmi, pars = pars, names = mief)
+    )
   }
   change
 }
@@ -494,7 +515,7 @@ reorder_pars <- function(x) {
   # Args:
   #   x: brmsfit object
   all_classes <- c(
-    "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "lagsar",
+    "b", "bmo", "bcs", "bme", "bmi", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
