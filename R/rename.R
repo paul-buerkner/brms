@@ -167,14 +167,23 @@ change_Xme <- function(bterms, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  if (any(grepl("^Xme_", pars))) {
-    uni_me <- get_uni_me(bterms)
+  uni_me <- get_uni_me(bterms)
+  if (length(uni_me)) {
+    uni_me <- rename(uni_me)
     for (i in seq_along(uni_me)) {
-      Xme <- paste0("Xme_", i)
-      pos <- grepl(paste0("^", Xme, "\\["), pars)
-      Xme_new <- paste0("Xme_", rename(uni_me[i]))
-      fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
-      change <- lc(change, nlist(pos, fnames))
+      for (par in c("meanme", "sdme")) {
+        hpar <- paste0(par, "_", i)
+        pos <- pars %in% hpar
+        hpar_new <- paste0(par, "_", uni_me[i])
+        change <- lc(change, nlist(pos, fnames = hpar_new))
+      }
+      if (any(grepl("^Xme_", pars))) {
+        Xme <- paste0("Xme_", i)
+        pos <- grepl(paste0("^", Xme, "\\["), pars)
+        Xme_new <- paste0("Xme_", uni_me[i])
+        fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+        change <- lc(change, nlist(pos, fnames))
+      }
     }
   }
   change
