@@ -295,6 +295,29 @@ me <- function(x, sdx = NULL) {
   structure(out, var = x, noise = sdx, xname = xname)
 }
 
+#' Predictors with Missing Values in \pkg{brms} Models
+#' 
+#' @param x The variable containing missings.
+#' 
+#' @details For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' This function is almost solely useful when
+#' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso \code{\link{brmsformula}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # sample some data
+#' N <- 100
+#' dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N))
+#' dat$x[sample(1:N, 10)] <- NA
+#' # impute missing values in x and use it as a predictor
+#' bform <- bf(y ~ mi(x)*z) + bf(x | mi() ~ z) + set_rescor(FALSE)
+#' fit <- brm(bform, data = dat)
+#' summary(fit)
+#' } 
+#' 
 #' @export
 mi <- function(x) {
   xname <- deparse(substitute(x))
