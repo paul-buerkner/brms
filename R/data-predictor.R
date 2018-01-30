@@ -771,7 +771,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$Nmi <- length(which_na)
     out$Jmi <- which_na
     if (!not4stan) {
-      out$Y[which_na] <- 0  # Stan does not allow NAs in data
+      # Stan does not allow NAs in data
+      # use Inf to that min(Y) is not affected
+      out$Y[which_na] <- Inf  
     }
   } 
   resp <- usc(combine_prefix(x))
