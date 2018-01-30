@@ -248,24 +248,34 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
   }
   # prepare draws specific to noise-free effects
+  dim <- c(nrow(draws$bsp), sdata$N)
   uni_me <- rename(unique(unlist(spef$uni_me)))
   if (length(uni_me)) {
-    if (new) {
-      stop2("Predictions with noise-free variables are not yet ",
-            "possible when passing new data.")
-    }
-    if (!any(grepl("^Xme_", colnames(samples)))) {
-      stop2("Noise-free variables were not saved. Please set ",
-            "argument 'save_mevars' to TRUE when fitting your model.")
-    }
     draws$Xme <- named_list(uni_me)
-    for (i in seq_along(draws$Xme)) {
-      Xme_pars <- paste0("Xme", p, "_", uni_me[i], "\\[")
-      draws$Xme[[i]] <- get_samples(samples, Xme_pars)
+    save_mevars <- any(grepl("^Xme_", colnames(samples)))
+    if (save_mevars && !new) {
+      for (i in seq_along(draws$Xme)) {
+        Xme_pars <- paste0("Xme_", uni_me[i], "\\[")
+        draws$Xme[[i]] <- get_samples(samples, Xme_pars)
+      }
+    } else {
+      if (!new) {
+        warning2(
+          "Noise-free variables were not saved. Please set ",
+          "argument 'save_mevars' to TRUE when fitting your model.\n",
+          "Treating original data as if it was new data as a workaround."
+        )
+      }
+      for (i in seq_along(draws$Xme)) {
+        Xn <- sdata[[paste0("Xn_", i)]]
+        Xn <- as_draws_matrix(Xn, dim = dim)
+        noise <- sdata[[paste0("noise_", i)]]
+        noise <- as_draws_matrix(noise, dim = dim)
+        draws$Xme[[i]] <- array(rnorm(prod(dim), Xn, noise), dim = dim)
+      }
     }
   }
   # prepare draws specific to missing value variables
-  dim <- c(nrow(draws$bsp), sdata$N)
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
     if (new) {
