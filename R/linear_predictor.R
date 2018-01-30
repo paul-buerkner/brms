@@ -137,7 +137,9 @@ predictor_sp <- function(draws, i) {
   for (j in seq_along(sp[["Xme"]])) {
     eval_list[[paste0("Xme_", j)]] <- p(sp[["Xme"]][[j]], i, row = FALSE)
   }
-  # TODO: handle missing value effects
+  for (j in seq_along(sp[["Yf"]])) {
+    eval_list[[names(sp[["Yf"]])[j]]] <- p(sp[["Yf"]][[j]], i, row = FALSE)
+  }
   for (j in seq_along(sp[["Csp"]])) {
     eval_list[[paste0("Csp_", j)]] <- p(sp[["Csp"]][[j]], i, row = FALSE)
   }

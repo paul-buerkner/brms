@@ -264,13 +264,31 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
       draws$Xme[[i]] <- get_samples(samples, Xme_pars)
     }
   }
-  # TODO: prepare draws specific to missing value effects
-  ncovars <- max(spef$Ic)
+  # prepare draws specific to missing value variables
   dim <- c(nrow(draws$bsp), sdata$N)
+  vars_mi <- unique(unlist(spef$vars_mi))
+  if (length(vars_mi)) {
+    if (new) {
+      stop2("Predictions with missing value variables are not yet ",
+            "possible when passing new data.")
+    }
+    resps <- usc(vars_mi)
+    Yf_names <- paste0("Yf", resps)
+    draws$Yf <- named_list(Yf_names)
+    for (i in seq_along(draws$Yf)) {
+      draws$Yf[[i]] <- sdata[[paste0("Y", resps[i])]]
+      draws$Yf[[i]] <- as_draws_matrix(draws$Yf[[i]], dim = dim)
+      Ymi_pars <- paste0("Ymi", resps[i], "\\[")
+      Ymi <- get_samples(samples, Ymi_pars)
+      Jmi <- sdata[[paste0("Jmi", resps[i])]]
+      draws$Yf[[i]][, Jmi] <- Ymi
+    }
+  }
+  # prepare covariates
+  ncovars <- max(spef$Ic)
   for (i in seq_len(ncovars)) {
-    draws$Csp[[i]] <- as_draws_matrix(
-      sdata[[paste0("Csp", p, "_", i)]], dim = dim
-    )
+    draws$Csp[[i]] <- sdata[[paste0("Csp", p, "_", i)]]
+    draws$Csp[[i]] <- as_draws_matrix(draws$Csp[[i]], dim = dim)
   }
   draws
 }
