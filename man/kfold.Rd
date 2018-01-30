@@ -102,5 +102,5 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt +
  
 }
 \seealso{
-\code{\link[brms:loo]{loo}}, \code{\link[brms:reloo]{reloo}}
+\code{\link{loo}}, \code{\link{reloo}}
 }

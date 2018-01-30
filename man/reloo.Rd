@@ -14,7 +14,7 @@ reloo(x, ...)
 \item{x}{An \R object typically of class \code{loo}.}
 
 \item{...}{Further arguments passed to 
-\code{\link[brms:update.brmsfit]{update.brmsfit}} such
+\code{\link{update.brmsfit}} such
 as \code{iter}, \code{chains}, or \code{cores}.}
 
 \item{fit}{An \R object typically of class \code{brmsfit}.}
@@ -23,6 +23,9 @@ as \code{iter}, \code{chains}, or \code{cores}.}
 estimates are treated as problematic. Defaults to \code{0.7}. 
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{check}{Logical; If \code{TRUE} (the default), a crude 
 check is performed if the \code{loo} object was generated
@@ -60,5 +63,5 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
 
 }
 \seealso{
-\code{\link[brms:loo]{loo}}, \code{\link[brms:kfold]{kfold}}
+\code{\link{loo}}, \code{\link{kfold}}
 }
