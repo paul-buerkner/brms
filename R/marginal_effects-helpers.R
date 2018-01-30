@@ -157,7 +157,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       if (v %in% int_vars) {
         conditions[[v]] <- round(median(mf[[v]]))
       } else {
-        conditions[[v]] <- mean(mf[[v]])
+        conditions[[v]] <- mean(mf[[v]], na.rm = TRUE)
       }
     } else {
       # use reference category for factors
@@ -205,8 +205,8 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   }
   mono <- effects %in% int_vars
   if (pred_types[1] == "numeric") {
-    min1 <- min(data[, effects[1]])
-    max1 <- max(data[, effects[1]])
+    min1 <- min(data[, effects[1]], na.rm = TRUE)
+    max1 <- max(data[, effects[1]], na.rm = TRUE)
     if (mono[1]) {
       values <- seq(min1, max1, by = 1)
     } else {
@@ -219,8 +219,8 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     values <- setNames(list(values, NA), effects)
     if (pred_types[2] == "numeric") {
       if (surface) {
-        min2 <- min(data[, effects[2]])
-        max2 <- max(data[, effects[2]])
+        min2 <- min(data[, effects[2]], na.rm = TRUE)
+        max2 <- max(data[, effects[2]], na.rm = TRUE)
         if (mono[2]) {
           values[[2]] <- seq(min2, max2, by = 1)
         } else {
@@ -238,8 +238,8 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
           mad2 <- mad(data[, effects[2]])
           values[[2]] <- round((-1:1) * mad2 + median2)
         } else {
-          mean2 <- mean(data[, effects[2]])
-          sd2 <- sd(data[, effects[2]])
+          mean2 <- mean(data[, effects[2]], na.rm = TRUE)
+          sd2 <- sd(data[, effects[2]], na.rm = TRUE)
           values[[2]] <- (-1:1) * sd2 + mean2
         }
       }
@@ -370,7 +370,9 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   #   a data.frame containing the data points to be plotted
   stopifnot(is.brmsterms(bterms), is.data.frame(mf))
   points <- mf[, effects, drop = FALSE]
-  points$resp__ <- model.response(model.frame(bterms$respform, mf))
+  points$resp__ <- model.response(
+    model.frame(bterms$respform, mf, na.action = na.pass)
+  )
   req_vars <- names(mf)
   groups <- get_re(bterms)$group
   if (length(groups)) {
@@ -397,8 +399,8 @@ make_point_frame <- function(bterms, mf, effects, conditions,
           stopifnot(select_points >= 0)
           if (select_points > 0) {
             for (v in names(mf_tmp)[is_num]) {
-              min <- min(mf_tmp[, v])
-              max <- max(mf_tmp[, v])
+              min <- min(mf_tmp[, v], na.rm = TRUE)
+              max <- max(mf_tmp[, v], na.rm = TRUE)
               unit <- scale_unit(mf_tmp[, v], min, max)
               unit_cond <- scale_unit(cond[, v], min, max)
               unit_diff <- abs(unit - unit_cond)
