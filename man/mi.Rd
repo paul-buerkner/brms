@@ -20,14 +20,13 @@ called in formulas passed to the \pkg{brms} package.
 }
 \examples{
 \dontrun{
-# sample some data
-N <- 100
-dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N))
-dat$x[sample(1:N, 10)] <- NA
-# impute missing values in x and use it as a predictor
-bform <- bf(y ~ mi(x)*z) + bf(x | mi() ~ z) + set_rescor(FALSE)
-fit <- brm(bform, data = dat)
+data("nhanes", package = "mice")
+bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi() ~ age) + set_rescor(FALSE)
+fit <- brm(bform, data = nhanes)
 summary(fit)
+plot(marginal_effects(fit, resp = "bmi"), ask = FALSE)
+LOO(fit, newdata = na.omit(fit$data))
 } 
 
 }
