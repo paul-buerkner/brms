@@ -203,8 +203,8 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
   if (x$rescor) {
     # we already know at this point that all families are identical
     adnames <- unique(ulapply(x$terms, function(x) names(x$adforms)))
-    if (!all(adnames %in% c("se", "weights", "mi"))) {
-      stop2("Only 'se', 'weights', and 'mi' are supported addition ",
+    if (!all(adnames %in% c("se", "weights"))) {
+      stop2("Only 'se', 'weights' are supported addition ",
             "arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]

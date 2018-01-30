@@ -459,10 +459,7 @@ stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- if (reqn) "[n]"
-  p$log_Y <- paste0("log_Y", resp, n)
-  p$log_Y <- ifelse(reqn, p$log_Y, paste0("sum_", p$log_Y))
-  p$sqrt_Y <- paste0("sqrt_Y", resp, n)
-  sdist(lpdf, p$mu, p$shape, p$log_Y, p$sqrt_Y)
+  sdist(lpdf, p$mu, p$shape)
 }
 
 stan_llh_wiener <- function(bterms, resp = "", mix = "") {

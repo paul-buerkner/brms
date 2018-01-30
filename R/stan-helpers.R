@@ -30,21 +30,6 @@ stan_response <- function(bterms, data) {
       "  int<lower=2> ncat", resp, ";  // number of categories \n"
     )
   }
-  families <- family_names(family)
-  if (any(families %in% "inverse.gaussian")) {
-    str_add(out$tdataD) <- paste0(
-      "  vector[N] sqrt_Y", resp, ";\n",
-      "  vector[N] log_Y", resp, ";\n",
-      "  real sum_log_Y", resp, ";\n"
-    )
-    str_add(out$tdataC) <- paste0(
-      "  for (n in 1:N) {\n",
-      "    sqrt_Y", resp, "[n] = sqrt(Y", resp, "[n]);\n",
-      "    log_Y", resp, "[n] = log(Y", resp, "[n]);\n",
-      "  }\n",
-      "  sum_log_Y", resp, " = sum(log_Y", resp, ");\n"
-    )
-  }  
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- paste0(
       "  vector<lower=0>[N] weights", resp, ";  // model weights \n" 
