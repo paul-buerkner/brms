@@ -2348,8 +2348,8 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
 #' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
 kfold.brmsfit <- function(x, ..., compare = TRUE,
                           K = 10, Ksub = NULL, exact_loo = FALSE, 
-                          group = NULL, newdata = NULL, save_fits = FALSE,
-                          update_args = list()) {
+                          group = NULL, newdata = NULL, resp = NULL,
+                          save_fits = FALSE, update_args = list()) {
   models <- list(x, ...)
   model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
   model_names <- c(deparse_combine(substitute(x)), model_names)
@@ -2359,7 +2359,7 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
   args <- nlist(
     models, model_names, ic = "kfold", K, save_fits, 
     use_stored_ic, compare, update_args, newdata, 
-    Ksub, exact_loo, group
+    resp, Ksub, exact_loo, group
   )
   do.call(compute_ics, args)
 }
@@ -2540,6 +2540,13 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     )
   } else {
     loglik <- loglik_internal(draws, combine = combine)
+    if (anyNA(loglik)) {
+      warning2(
+        "NAs were found in the log-likelihood. Possibly this is because ",
+        "some of your predictors contain NAs. If you use 'mi' terms, try ", 
+        "setting 'resp' to those response variables without missing values."
+      )
+    }
   }
   loglik
 }

@@ -7,7 +7,8 @@
 \usage{
 reloo(x, ...)
 
-\method{reloo}{loo}(x, fit, k_threshold = 0.7, check = TRUE, ...)
+\method{reloo}{loo}(x, fit, k_threshold = 0.7, resp = NULL, check = TRUE,
+  ...)
 }
 \arguments{
 \item{x}{An \R object typically of class \code{loo}.}
