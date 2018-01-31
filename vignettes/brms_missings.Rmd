@@ -1,0 +1,73 @@
+---
+title: "Handle Missing Values with brms"
+author: "Paul Bürkner"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{Handle missing values with brms}
+%\VignetteEncoding{UTF-8}
+-->
+
+```{r, child = "children/SETTINGS-knitr.txt"}
+```
+
+## Introduction
+
+This vignette is about how to handle missing value with **brms**. Many real world data sets contain missing values for various reasons. Generally, we have quite a few options to handle those missing values. The easiest solution is to remove all rows of the data set, where one or more variables are missing. If values are not missing completely at random, this will likely lead to bias in our analysis. Accordingly, we usually want to impute missing values in one way or the other. Here, we will consider two approaches: (a) Impute missing values *before* the model fitting ideally using multiple imputation. (b) Impute missing values on the fly *during* model fitting. Both approaches are reasonable and we want to explain how to apply them in **brms** in this vignette.
+
+## Imputation before model fitting
+
+There are many approaches allowing us to impute missing data before the actual model fitting takes place. From a statistical perspective, multiple imputation is possibly (one of) the best solution. Here, each missing value is not imputed once but \code{m} times leading to a total of \code{m} fully imputed data sets. The model can then be fitted to each of those data sets separetely and results are pooled across models, afterwards. One widely applied **R** package for multiple imputation is **mice** (Buuren & Groothuis-Oudshoorn, 2010) and we will use it in the following in combination with **brms**. We conside a simple sample data set called `nhanes`, which contains information on participants' `age`, `bmi` (body mass index), `hyp` (hypertensive), and `chl` (total serum cholesterol).
+
+```{r}
+library(mice)
+head(nhanes)
+```
+
+For the purpose of the present vignette, we are primarily interested in predicting `bmi` by `age` and `chl`. However, before we engage in that, we need to impute the data multiple times. Here, we apply the default settings of **mice**, which means that all variables will be used to imputed missing values in all other variables and imputation functions automatically chosen based on the variables' characteristics.
+
+```{r}
+imp <- mice(nhanes, m = 5, print = FALSE)
+```
+
+Now, we have `m = 5` imputed data sets stored within the `imp` object. We could either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** using the multiple imputed data sets is straightforward.
+
+```{r, results = 'hide', message = FALSE}
+library(brms)
+fit_imp <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+```
+
+The returned fitted model is an ordinary `brmsfit` object containing the posterior samples of all `m` submodels. In a Bayesian framework, pooling results of multiple imputed data sets is trivially achieved by combining the posterior samples of the submodels. Accordingly, all post-processing methods can be used out of the box without having to worry about pooling at all.
+
+```{r}
+summary(fit_imp)
+```
+
+In the summary output, we notice that some `Rhat` values are higher than $1.1$ indicating possible convergence problems. For models based on multiple imputed data sets, this is often a **false positive**: Chains of different submodels may not overlay each other exactly, since there were fitted to different data, which we can see immediately via
+
+```{r}
+plot(fit_imp, pars = "^b")
+```
+
+Such non-overlaying chains imply high `Rhat` values without there actually being any convergence issue. Accordingly, we have to investigate the convergence of the submodels separately, which we can do by looking at
+
+```{r}
+round(fit_imp$rhats, 2)
+```
+
+The convergence of each of the submodels looks fine and accordingly we can proceed with further post-processing and interpreation of the results.
+
+## Imputation during model fitting
+
+TODO
+
+## References
+
+Buuren, S. V., & Groothuis-Oudshoorn, K. (2010). mice: Multivariate imputation by chained equations in R. *Journal of Statistical Software*, 1-68.
