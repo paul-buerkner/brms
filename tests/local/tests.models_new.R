@@ -209,14 +209,14 @@ test_that("ARMA models work correctly", {
   expect_gt(LOO(fit_ma)$looic, LOO(fit_ar)$looic)
 
   fit_arma <- brm(y ~ x + (1|g), data = dat,
-                  autocor=cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
+                  autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
                   prior = c(prior(normal(0, 5), class = "ar"),
                             prior(normal(0, 6), class = "ma")),
                   chains = 2, cores = 2)
   print(fit_arma)
   expect_range(waic(fit_arma)$waic, 280, 400)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
-  expect_ggplot(plot(marginal_effects(fit_arma))[[1]])
+  expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
 
   fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
                  prior = prior(normal(0, 5), class = "arr"),
