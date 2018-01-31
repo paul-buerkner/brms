@@ -5,6 +5,12 @@
 \section{CHANGES IN VERSION 2.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Handle predictors with missing values  
+      using \code{mi} terms. (#27)
+      \item Model interactions between the special predictor
+      terms \code{mo}, \code{me}, and \code{mi}. (#313)
+      \item Allow predictions of measurement-error models
+      with new data. (#335)
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
     }
