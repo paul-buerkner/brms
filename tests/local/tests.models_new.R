@@ -636,3 +636,17 @@ test_that("CAR models work correctly", {
   expect_error(predict(fit_car, newdata = newdata),
                "Cannot handle new locations in CAR models")
 })
+
+test_that("Missing value imputation works correctly", {
+  data("nhanes", package = "mice")
+  bform <- bf(bmi | mi() ~ age * mi(chl)) +
+    bf(chl | mi() ~ age) + set_rescor(FALSE)
+  fit <- brm(bform, data = nhanes)
+  print(fit)
+  pred <- predict(fit)
+  expect_true(!anyNA(pred))
+  me <- marginal_effects(fit, resp = "bmi")
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  loo <- LOO(fit, newdata = na.omit(fit$data))
+  expect_range(loo$looic, 200, 220)
+})
