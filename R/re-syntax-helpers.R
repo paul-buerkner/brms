@@ -1,4 +1,4 @@
-# This file contains function dealing with the extended 
+# This file contains functions dealing with the extended 
 # lme4-like formula syntax to specify group-level terms
 
 illegal_group_expr <- function(group) {

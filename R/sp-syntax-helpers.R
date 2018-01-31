@@ -1,4 +1,4 @@
-# This file contains function dealing with the extended 
+# This file contains functions dealing with the extended 
 # formula syntax to specify special effects terms
 
 vars_keep_na <- function(x, ...) {
