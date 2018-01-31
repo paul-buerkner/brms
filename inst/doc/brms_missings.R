@@ -18,22 +18,35 @@ opts_chunk$set(
   )
 
 ## ---------------------------------------------------------------------------------------
-library(mice)
+data("nhanes", package = "mice")
 head(nhanes)
 
 ## ---------------------------------------------------------------------------------------
+library(mice)
 imp <- mice(nhanes, m = 5, print = FALSE)
 
 ## ---- results = 'hide', message = FALSE-------------------------------------------------
 library(brms)
-fit_imp <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 
 ## ---------------------------------------------------------------------------------------
-summary(fit_imp)
+summary(fit_imp1)
 
 ## ---------------------------------------------------------------------------------------
-plot(fit_imp, pars = "^b")
+plot(fit_imp1, pars = "^b")
 
 ## ---------------------------------------------------------------------------------------
-round(fit_imp$rhats, 2)
+round(fit_imp1$rhats, 2)
+
+## ---------------------------------------------------------------------------------------
+marginal_effects(fit_imp1, "age:chl")
+
+## ---- results = 'hide', message = FALSE-------------------------------------------------
+bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi() ~ age) + set_rescor(FALSE)
+fit_imp2 <- brm(bform, data = nhanes)
+
+## ---------------------------------------------------------------------------------------
+summary(fit_imp2)
+marginal_effects(fit_imp2, "age:chl", resp = "bmi")
 

@@ -20,53 +20,78 @@ params:
 
 ## Introduction
 
-This vignette is about how to handle missing value with **brms**. Many real world data sets contain missing values for various reasons. Generally, we have quite a few options to handle those missing values. The easiest solution is to remove all rows of the data set, where one or more variables are missing. If values are not missing completely at random, this will likely lead to bias in our analysis. Accordingly, we usually want to impute missing values in one way or the other. Here, we will consider two approaches: (a) Impute missing values *before* the model fitting ideally using multiple imputation. (b) Impute missing values on the fly *during* model fitting. Both approaches are reasonable and we want to explain how to apply them in **brms** in this vignette.
-
-## Imputation before model fitting
-
-There are many approaches allowing us to impute missing data before the actual model fitting takes place. From a statistical perspective, multiple imputation is possibly (one of) the best solution. Here, each missing value is not imputed once but \code{m} times leading to a total of \code{m} fully imputed data sets. The model can then be fitted to each of those data sets separetely and results are pooled across models, afterwards. One widely applied **R** package for multiple imputation is **mice** (Buuren & Groothuis-Oudshoorn, 2010) and we will use it in the following in combination with **brms**. We conside a simple sample data set called `nhanes`, which contains information on participants' `age`, `bmi` (body mass index), `hyp` (hypertensive), and `chl` (total serum cholesterol).
+Many real world data sets contain missing values for various reasons. Generally, we have quite a few options to handle those missing values. The easiest solution is to remove all rows from the data set, where one or more variables are missing. However, if values are not missing completely at random, this will likely lead to bias in our analysis. Accordingly, we usually want to impute missing values in one way or the other. Here, we will consider two very general approaches using **brms**: (1) Impute missing values *before* the model fitting with multiple imputation, and (2) impute missing values on the fly *during* model fitting[^1]. 
+As a simple example, we will use the `nhanes` data set, which contains information on participants' `age`, `bmi` (body mass index), `hyp` (hypertensive), and `chl` (total serum cholesterol). For the purpose of the present vignette, we are primarily interested in predicting `bmi` by `age` and `chl`.
 
 ```{r}
-library(mice)
+data("nhanes", package = "mice")
 head(nhanes)
 ```
 
-For the purpose of the present vignette, we are primarily interested in predicting `bmi` by `age` and `chl`. However, before we engage in that, we need to impute the data multiple times. Here, we apply the default settings of **mice**, which means that all variables will be used to imputed missing values in all other variables and imputation functions automatically chosen based on the variables' characteristics.
+## Imputation before model fitting
+
+There are many approaches allowing us to impute missing data before the actual model fitting takes place. From a statistical perspective, multiple imputation is one of the best solutions. Each missing value is not imputed once but \code{m} times leading to a total of \code{m} fully imputed data sets. The model can then be fitted to each of those data sets separetely and results are pooled across models, afterwards. One widely applied package for multiple imputation is **mice** (Buuren & Groothuis-Oudshoorn, 2010) and we will use it in the following in combination with **brms**. Here, we apply the default settings of **mice**, which means that all variables will be used to impute missing values in all other variables and imputation functions automatically chosen based on the variables' characteristics.
 
 ```{r}
+library(mice)
 imp <- mice(nhanes, m = 5, print = FALSE)
 ```
 
-Now, we have `m = 5` imputed data sets stored within the `imp` object. We could either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** using the multiple imputed data sets is straightforward.
+Now, we have `m = 5` imputed data sets stored within the `imp` object. We could either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** to the multiple imputed data sets is straightforward.
 
 ```{r, results = 'hide', message = FALSE}
 library(brms)
-fit_imp <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
+fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 ```
 
-The returned fitted model is an ordinary `brmsfit` object containing the posterior samples of all `m` submodels. In a Bayesian framework, pooling results of multiple imputed data sets is trivially achieved by combining the posterior samples of the submodels. Accordingly, all post-processing methods can be used out of the box without having to worry about pooling at all.
+The returned fitted model is an ordinary `brmsfit` object containing the posterior samples of all `m` submodels. While pooling across models is not necessarily straightforward in classical statistics, it is trivial in a Bayesian framework. Here, pooling results of multiple imputed data sets is simply achieved by combining the posterior samples of the submodels. Accordingly, all post-processing methods can be used out of the box without having to worry about pooling at all.
 
 ```{r}
-summary(fit_imp)
+summary(fit_imp1)
 ```
 
-In the summary output, we notice that some `Rhat` values are higher than $1.1$ indicating possible convergence problems. For models based on multiple imputed data sets, this is often a **false positive**: Chains of different submodels may not overlay each other exactly, since there were fitted to different data, which we can see immediately via
+In the summary output, we notice that some `Rhat` values are higher than $1.1$ indicating possible convergence problems. For models based on multiple imputed data sets, this is often a **false positive**: Chains of different submodels may not overlay each other exactly, since there were fitted to different data. We can see the chains on the right-hand side of
 
 ```{r}
-plot(fit_imp, pars = "^b")
+plot(fit_imp1, pars = "^b")
 ```
 
 Such non-overlaying chains imply high `Rhat` values without there actually being any convergence issue. Accordingly, we have to investigate the convergence of the submodels separately, which we can do by looking at
 
 ```{r}
-round(fit_imp$rhats, 2)
+round(fit_imp1$rhats, 2)
 ```
 
-The convergence of each of the submodels looks fine and accordingly we can proceed with further post-processing and interpreation of the results.
+The convergence of each of the submodels looks good. Accordingly, we can proceed with further post-processing and interpreation of the results. For instance, we could investigate the combined effect of `age` and `chl`.
+
+```{r}
+marginal_effects(fit_imp1, "age:chl")
+```
+
+To summarize, the advantages of multiple imputation are obvious: One can apply it to all kinds of models, since model fitting functions do not need to know that the data sets were imputed, beforehand. Also, we do not need to worry about pooling across submodels when using fully Bayesian methods. The only drawback is the amount of time required for model fitting. Estimating Bayesian models is already quite slow with just a single data set and it only gets worse when working with multiple imputation.  
 
 ## Imputation during model fitting
 
-TODO
+Imputation during model fitting is generally thought to be more complex than imputation before model fitting, because one has to take care of everything within one step. This remains true when imputing missing values with **brms**, but possibly to a somewhat smaller degree. Consider again the `nhanes` data with the goal to predict `bmi` by `age`, and `chl`. Since `age` contains no missing values, we only have to take special care of `bmi` and `chl`. We need to tell the model two things. (1) Which variables contain missing values and how they should be predicted, as well as (2) which of these imputed variables should be used as predictors. In **brms** we can do this as follows:
+
+```{r, results = 'hide', message = FALSE}
+bform <- bf(bmi | mi() ~ age * mi(chl)) +
+  bf(chl | mi() ~ age) + set_rescor(FALSE)
+fit_imp2 <- brm(bform, data = nhanes)
+```
+
+The model has become multivariate, as we no longer only predict `bmi` but also `chl` (see `vignette("brms_multivariate")` for details about the multivariate syntax of **brms**). We ensure that missings in both variables will be modeled rather than excluded by adding `| mi()` on the left-hand side of the formulas[^2]. We write `mi(chl)` on the right-hand side of the formula for `bmi` to ensure that the estimated missing values of `chl` will be used in the prediction of `bmi`. The summary is a bit more cluttered as we get coefficients for both response variables, but apart from that we can interprete coefficients in the usual way.
+
+```{r}
+summary(fit_imp2)
+marginal_effects(fit_imp2, "age:chl", resp = "bmi")
+```
+
+The results look pretty similar to those obtained from multiple imputation, but be aware that this may not be generally the case. In multiple imputation, the default is to impute all variables based on all other variables, while in the 'one-step' approach, we have to explictly specify the variables used in the imputation. Thus, arguably, multiple imputation is easier to apply. An obvious advantage of the 'one-step' approach is that the model needs to be fitted only once instead of `m` times. Also, within the **brms** framework, we can use multilevel structure and complex non-linear relationships for the imputation of missing values, which is not achieved as easily in standard multiple imputation software. On the downside, it is currently not possible to impute discrete variables, because **Stan** (the engine behind **brms**) does not allow estimating discrete parameters.
+
+[^1]: Actually, there is a third approach that only applies to missings in response variables. If we want to impute missing responses, we just fit the model using the observed responses and than impute the missings *after* fitting the model by means of posterior prediction. That is, we supply the predictor values corresponding to missing responses to the `predict` method.
+
+[^2]: We don't really need this for `bmi`, since `bmi` is not used as a predictor for another variable. Accordingly, we could also -- and equivalently -- impute missing values of `bmi` *after* model fitting by means of posterior prediction.
 
 ## References
 
