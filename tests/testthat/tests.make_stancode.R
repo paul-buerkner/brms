@@ -1270,3 +1270,28 @@ test_that("Stan code for skew_normal models is correct", {
   expect_match2(scode, "omega1 = sigma1 / sqrt(1 - sqrt_2_div_pi^2 * delta1^2);")
   expect_match2(scode, "mu2[n] = mu2[n] - omega2 * delta2 * sqrt_2_div_pi;")
 })
+
+test_that("Stan code for missing value terms works correctly", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
+  dat$x[c(1, 3, 9)] <- NA
+  
+  bform <- bf(y ~ mi(x)*g) + bf(x | mi() ~ g) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "Yf_x[Jmi_x] = Ymi_x;")
+  expect_match2(scode, "(bsp_y[1]) * Yf_x[n] + (bsp_y[2]) * Yf_x[n] * Csp_y_1[n];")
+  expect_match2(scode, "target += normal_lpdf(Yf_x | mu_x, sigma_x);")
+
+  bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(r_1_y_2[J_1[n]]) * Z_1_y_2[n] + (bsp_y[1] + r_1_y_1[J_1[n]]) * Yf_x[n];")
+  
+  bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  bprior <- prior(normal(0, 1), nlpar = "a", resp = "y")
+  scode <- make_stancode(bform, dat, prior = bprior)
+  expect_match2(scode, "mu_y_a[n] = mu_y_a[n] + (bsp_y_a[1]) * Yf_x[n];")
+  expect_match2(scode, "target += normal_lpdf(bsp_y_a | 0, 1);")
+  
+  bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(bsp_y[3]) * mo(simo_y_2, Xmo_y_2[n]) * Yf_x[n];")
+})
