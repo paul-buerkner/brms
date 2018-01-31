@@ -105,7 +105,7 @@ models for all parameters of the assumed response distribution.
   will be estimated. 
   
   You can specify multi-membership terms
-  using the \code{\link[brms:mm]{mm}} function. For instance, 
+  using the \code{\link{mm}} function. For instance, 
   a multi-membership term with two members could be
   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
   the first and second member, respectively.
@@ -119,21 +119,22 @@ models for all parameters of the assumed response distribution.
   used in the \pkg{gamm4} package. For more details on this model class 
   see \code{\link[mgcv:gam]{gam}} and \code{\link[mgcv:gamm]{gamm}}.
   
-  Gaussian process terms can be fitted using the \code{\link[brms:gp]{gp}}
+  Gaussian process terms can be fitted using the \code{\link{gp}}
   function in the \code{pterms} part of the model formula. Similar to
   smooth terms, Gaussian processes can be used to model complex non-linear
   relationships, for instance temporal or spatial autocorrelation. 
   However, they are computationally demanding and are thus not recommended 
   for very large datasets.
   
-  The \code{pterms} and \code{gterms} parts may contain three non-standard
-  effect types namely monotonic, measurement error, and category specific effects,
-  which can be specified using terms of the form \code{mo(predictor)},
-  \code{me(predictor, sd_predictor)}, and \code{cs(<predictors>)}, 
-  respectively. Category specific effects can only be estimated in
+  The \code{pterms} and \code{gterms} parts may contain four non-standard
+  effect types namely monotonic, measurement error, missing value, and 
+  category specific effects, which can be specified using terms of the 
+  form \code{mo(predictor)}, \code{me(predictor, sd_predictor)}, 
+  \code{mi(predictor)}, and \code{cs(<predictors>)}, respectively. 
+  Category specific effects can only be estimated in
   ordinal models and are explained in more detail in the package's 
   main vignette (type \code{vignette("brms_overview")}). 
-  The other two effect types are explained in the following.
+  The other thee effect types are explained in the following.
   
   A monotonic predictor must either be integer valued or an ordered factor, 
   which is the first difference to an ordinary continuous predictor. 
@@ -171,6 +172,23 @@ models for all parameters of the assumed response distribution.
   \code{y ~ me(x, sdx) * me(x2, sdx2) * z}. In future version of \pkg{brms},
   a vignette will be added to explain more details about these
   so called 'error-in-variables' models and provide real world examples.
+  
+  When a variable contains missing values, the corresponding rows will
+  be excluded from the data by default (row-wise exclusion). However,
+  quite often we want to keep these rows and instead estimate the missing values.
+  There are two approaches for this: (a) Impute missing values before
+  the model fitting for instance via multiple imputation (see
+  \code{\link{brm_multiple}} for a way to handle multiple imputed datasets).
+  (b) Impute missing values on the fly during model fitting. The latter
+  approach is explained in the following. Using a variable with missing 
+  values as predictors requires two things, First, we need to specify that 
+  the predictor contains missings that should to be imputed. 
+  If, say, \code{y} is the primary response, \code{x} is a 
+  predictor with missings and \code{z} is a predictor without missings, 
+  we go for \code{y ~ mi(x) + z}. Second, we need to model \code{x} 
+  as an additional response with corresponding predictors and the 
+  addition term \code{mi()}. In our example, we could write
+  \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
   
   \bold{Additional response information}
   
@@ -230,6 +248,11 @@ models for all parameters of the assumed response distribution.
   Instead of numbers, variables in the data set can also be passed allowing 
   for varying truncation points across observations. Defining only one of 
   the two arguments in \code{trunc} leads to one-sided truncation.
+  
+  For all continuous families, missing values in the responses can be imputed 
+  within Stan by using the addition term \code{mi}. This is mostly 
+  useful in combination with \code{mi} predictor terms as explained 
+  above under 'Special predictor terms'.
   
   For families \code{binomial} and \code{zero_inflated_binomial}, 
   addition should contain a variable indicating the number of trials 
@@ -510,6 +533,11 @@ bf(y ~ 1) +
 bf(y1 ~ x + (1|g)) + 
   gaussian() + cor_ar(~1|g) +
   bf(y2 ~ z) + poisson()
+  
+# model missing values in predictors
+bf(bmi ~ age * mi(chl)) +
+  bf(chl | mi() ~ age) + 
+  set_rescor(FALSE)
 
 }
 \seealso{
