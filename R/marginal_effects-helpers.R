@@ -94,8 +94,8 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
   adforms <- rmNULL(x$adforms[c("trials", "cat")])
-  moform <- ulapply(get_effect(x, "sp"), formula2str)
-  moform <- str2formula(get_matches_expr(regex_mo(), moform))
+  moform <- ulapply(get_effect(x, "sp"), all_terms)
+  moform <- str2formula(get_matches_expr(regex_sp("mo"), moform))
   unique(ulapply(c(adforms, moform), all.vars))
 }
 
