@@ -1,3 +1,6 @@
+# calling context() avoids a strange bug in testthat 2.0.0
+context("Tests for brms")
+
 test_that("brm produces expected errors", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
   
