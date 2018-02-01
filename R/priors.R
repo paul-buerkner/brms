@@ -1260,10 +1260,10 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
     if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
       # horseshoe prior for population-level parameters
       if (any(nzchar(prior[b_index, "bound"]))) {
-        stop2("Boundaries for population-level effects are not", 
+        stop2("Boundaries for population-level effects are not ", 
               "allowed when using the horseshoe or lasso priors.")
       }
-      if (any(ulapply(x[c("me", "mo", "cs")], is.formula))) {
+      if (any(ulapply(x[c("sp", "cs")], is.formula))) {
         stop2("Horseshoe or lasso priors are not yet allowed ",
               "in models with special population-level effects.")
       }
@@ -1273,8 +1273,8 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop2(
-          "Defining priors for single population-level parameters",
-          "is not allowed when using horseshoe or lasso priors",
+          "Defining priors for single population-level parameters ",
+          "is not allowed when using horseshoe or lasso priors ",
           "(except for the Intercept)."
         )
       }

@@ -128,6 +128,9 @@ test_that("all S3 methods have reasonable ouputs", {
                allow_new_levels = TRUE)
   expect_equal(dim(fi), c(2, 4))
   
+  fi <- fitted(fit3, newdata = fit3$data[1:10, ]) 
+  expect_equal(dim(fi), c(10, 4))
+  
   fi <- fitted(fit4)
   expect_equal(dim(fi), c(nobs(fit4), 4, 4))
   fi <- fitted(fit4, newdata = fit4$data[1, ])
@@ -402,6 +405,10 @@ test_that("all S3 methods have reasonable ouputs", {
   # test default method
   ps <- posterior_samples(fit1$fit, "^b_Intercept$")
   expect_equal(dim(ps), c(nsamples(fit1), 1))
+  
+  # posterior_summary
+  ps <- posterior_summary(fit1, "^b_")
+  expect_equal(dim(ps), c(7, 4))
   
   # posterior_interval
   expect_equal(dim(posterior_interval(fit1)), 

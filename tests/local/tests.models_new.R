@@ -638,15 +638,25 @@ test_that("CAR models work correctly", {
 })
 
 test_that("Missing value imputation works correctly", {
+  library(mice)
   data("nhanes", package = "mice")
+  
+  # missing value imputation via multiple imputation
+  imp <- mice(nhanes)
+  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1)
+  print(fit_imp1)
+  expect_equal(nsamples(fit_imp1), 5000)
+  expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
+  
+  # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
-  fit <- brm(bform, data = nhanes)
-  print(fit)
-  pred <- predict(fit)
+  fit_imp2 <- brm(bform, data = nhanes)
+  print(fit_imp2)
+  pred <- predict(fit_imp2)
   expect_true(!anyNA(pred))
-  me <- marginal_effects(fit, resp = "bmi")
+  me <- marginal_effects(fit_imp2, resp = "bmi")
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  loo <- LOO(fit, newdata = na.omit(fit$data))
+  loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
   expect_range(loo$looic, 200, 220)
 })

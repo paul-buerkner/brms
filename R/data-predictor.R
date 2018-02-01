@@ -228,8 +228,9 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
-        temp <- list(as.array(match(get(gs[i], data), levels)), weights[, i])
-        out <- c(out, setNames(temp, paste0(c("J_", "W_"), id, "_", i)))
+        J <- as.array(match(get(gs[i], data), levels))
+        out[[paste0("J_", id, "_", i)]] <- J
+        out[[paste0("W_", id, "_", i)]] <- as.array(weights[, i])
       }
     } else {
       g <- id_ranef$gcall[[1]]$groups

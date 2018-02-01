@@ -120,6 +120,12 @@ store_uni_me.btl <- function(x, uni_me = NULL, ...) {
   x
 }
 
+get_mo_vars <- function(x) {
+  # find names of all variables used in monotonic effects
+  mo_terms <- ulapply(get_effect(x, "sp"), all_terms)
+  all.vars(str2formula(get_matches_expr(regex_sp("mo"), mo_terms)))
+}
+
 tidy_spef <- function(x, data) {
   # get labels of special effects terms
   # Args:

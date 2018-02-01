@@ -714,7 +714,7 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   stopifnot(length(x) == nrow(A))
   stopifnot(all(is_wholenumber(x) & x > 0))
   stopifnot(length(weights) %in% c(1, nrow(A), prod(dim(A))))
-  A <- A * weights
+  A <- A * as.vector(weights)
   K <- ncol(A)
   i <- rep(seq_along(x), each = K)
   make_j <- function(n, K, x) K * (x[n] - 1) + 1:K

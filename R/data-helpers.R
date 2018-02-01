@@ -306,9 +306,8 @@ validate_newdata <- function(
     }
   }
   # validate monotonic variables
-  mo_forms <- get_effect(bterms, "mo")
-  if (length(mo_forms)) {
-    mo_vars <- unique(ulapply(mo_forms, all.vars))
+  mo_vars <- get_mo_vars(bterms)
+  if (length(mo_vars)) {
     # factors have already been checked
     num_mo_vars <- names(mf)[!is_factor & names(mf) %in% mo_vars]
     for (v in num_mo_vars) {
@@ -318,7 +317,7 @@ validate_newdata <- function(
       invalid <- invalid | !is_wholenumber(new_values)
       if (sum(invalid)) {
         stop2("Invalid values in variable '", v, "': ",
-              paste0(new_values[invalid], collapse = ", "))
+              collapse_comma(new_values[invalid]))
       }
       attr(newdata[[v]], "min") <- min_value
     }

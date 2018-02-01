@@ -114,6 +114,9 @@ test_that("specified priors appear in the Stan code", {
   prior <- prior(uniform(0,5), class = sd)
   expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
                   "no natural upper bound")
+  prior <- prior(uniform(-1, 1), class = cor)
+  expect_error(make_stancode(y ~ x1 + (x1|g), dat, prior = prior),
+               "Currently 'lkj' is the only valid prior")
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
@@ -207,9 +210,15 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_error(make_stancode(y ~ x1*x2, data = dat, 
                              prior = prior(horseshoe(1, -1))),
                "Scale of the global prior")
-  expect_error(make_stancode(y ~ x1*x2, data = dat, 
-                             prior = prior(lasso(-1))),
+  expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
+  expect_error(make_stancode(x1 ~ mo(y), dat, prior = prior(lasso())),
+               "Horseshoe or lasso priors are not yet allowed")
+  bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
+  expect_error(make_stancode(x1 ~ y, dat, prior = bprior),
+               "Defining priors for single population-level parameters is not")
+  expect_error(make_stancode(x1 ~ y, dat, prior = prior(lasso(), lb = 0)),
+               "Boundaries for population-level effects are not allowed")
 })
 
 test_that("link functions appear in the Stan code", {
@@ -639,6 +648,9 @@ test_that("Stan code for non-linear models is correct", {
     "sigma[n] = exp(sigma_a1[n] * exp( - C_sigma_1[n] / (sigma_a2[n] + C_sigma_2[n])))"
   )
   expect_match2(scode, "target += normal_lpdf(b_sigma_a2 | 0, 5)")
+  
+  expect_error(make_stancode(bform, data, family = skew_normal()),
+               "Priors on population-level effects are required")
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {

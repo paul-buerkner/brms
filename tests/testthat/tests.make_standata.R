@@ -315,8 +315,10 @@ test_that("make_standata correctly prepares data for non-linear models", {
 })
 
 test_that("make_standata correctly prepares data for monotonic effects", {
-  data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
-                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
+  data <- data.frame(
+    y = rpois(120, 10), x1 = rep(1:4, 30), z = rnorm(10),
+    x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE)
+  )
   sdata <- make_standata(y ~ mo(x1)*mo(x2)*y, data = data)
   sdata_names <- c("Xmo_1", "Imo", "Jmo",  "con_simo_8", "con_simo_5")
   expect_true(all(sdata_names %in% names(sdata)))
@@ -342,6 +344,11 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   sdata <- make_standata(y ~ mo(x1)*mo(x2), data = data, prior = prior)
   expect_equal(sdata$con_simo_1, c(1, 0.5, 2))
   expect_equal(sdata$con_simo_3, c(1, 0.5, 2))
+  
+  expect_error(
+    make_standata(y ~ mo(z), data = data),
+    "Monotonic predictors must be integers or ordered factors"
+  )
   
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simo", coef = "mox21"))
   expect_error(
@@ -471,16 +478,29 @@ test_that("make_standata handles noise-free terms", {
   expect_equal(sdata$Ksp, 6)
 })
 
+test_that("make_standata handles missing value terms", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
+  miss <- c(1, 3, 9)
+  dat$x[miss] <- NA
+  bform <- bf(y ~ mi(x)*g) + bf(x | mi() ~ g) + set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jmi_x, miss)
+  expect_true(all(is.infinite(sdata$Y_x[miss])))
+})
+
 test_that("make_standata handles multi-membership models", {
   dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
                     g2 = 1:10, w1 = rep(1, 10),
                     w2 = rep(abs(rnorm(10))))
   sdata <- make_standata(y ~ (1|mm(g1,g2,g1,g2)), data = dat)
   expect_true(all(paste0(c("W_1_", "J_1_"), 1:4) %in% names(sdata)))
-  expect_equal(sdata$W_1_4, rep(0.25, 10))
+  expect_equal(sdata$W_1_4, as.array(rep(0.25, 10)))
   # this checks whether combintation of factor levels works as intended
   expect_equal(sdata$J_1_1, as.array(c(6, 5, 4, 3, 2, 1, 7, 7, 7, 7)))
   expect_equal(sdata$J_1_2, as.array(c(8, 1, 2, 3, 4, 5, 6, 9, 10, 7)))
+  
+  sdata <- make_standata(y ~ (1|mm(g1,g2, weights = cbind(w1, w2))), dat)
+  expect_equal(sdata$W_1_1, as.array(dat$w1 / (dat$w1 + dat$w2)))
 })
 
 test_that("make_standata handles calls to the 'poly' function", {
@@ -616,4 +636,10 @@ test_that("make_standata incldudes data of special priors", {
   )
   expect_equal(sdata$hs_df_a1, 7)
   expect_equal(sdata$lasso_df_a2, 2)
+})
+
+test_that("Dots in formula are correctly expanded", {
+  dat <- data.frame(y = 1:10, x1 = 1:10, x2 = 1:10)
+  sdata <- make_standata(y ~ ., dat)
+  expect_equal(colnames(sdata$X), c("Intercept", "x1", "x2"))
 })
