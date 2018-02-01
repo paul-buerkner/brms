@@ -32,6 +32,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   uni_mi <- ulapply(get_effect(x, "sp"), attr, "uni_mi")
   if (length(uni_mi)) {
     vars_mi <- gsub("(^mi\\()|(\\)$)", "", uni_mi)
+    # do it like parse_resp to ensure correct matching
     vars_mi <- gsub("\\.|_", "", make.names(vars_mi))
     miss_mi <- setdiff(vars_mi, responses)
     if (length(miss_mi)) {
@@ -120,10 +121,10 @@ store_uni_me.btl <- function(x, uni_me = NULL, ...) {
   x
 }
 
-get_mo_vars <- function(x) {
-  # find names of all variables used in monotonic effects
-  mo_terms <- ulapply(get_effect(x, "sp"), all_terms)
-  all.vars(str2formula(get_matches_expr(regex_sp("mo"), mo_terms)))
+get_sp_vars <- function(x, type) {
+  # find names of all variables used in a special effects type
+  sp_terms <- ulapply(get_effect(x, "sp"), all_terms)
+  all.vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
 }
 
 tidy_spef <- function(x, data) {
@@ -178,11 +179,10 @@ tidy_spef <- function(x, data) {
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])
     if (sum(take_mi)) {
       out$call_mi[[i]] <- terms_split[[i]][take_mi]
-      # remove 'I' (identity) function calls that 
-      # were used solely to separate formula terms
       out$call_mi[[i]] <- gsub("^I\\(", "(", out$call_mi[[i]])
       out$vars_mi[[i]] <- get_matches_expr(regex_sp("mi"), out$call_mi[[i]])
       out$vars_mi[[i]] <- gsub("(^mi\\()|(\\)$)", "", out$vars_mi[[i]])
+      # do it like parse_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
     out$call_prod[[i]] <- paste0(unlist(out[i, call_cols]), collapse = " * ")

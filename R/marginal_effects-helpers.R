@@ -94,7 +94,7 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
   advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all.vars)
-  unique(c(advars, get_mo_vars(x)))
+  unique(c(advars, get_sp_vars(x, "mo")))
 }
 
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,

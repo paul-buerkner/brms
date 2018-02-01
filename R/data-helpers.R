@@ -306,7 +306,7 @@ validate_newdata <- function(
     }
   }
   # validate monotonic variables
-  mo_vars <- get_mo_vars(bterms)
+  mo_vars <- get_sp_vars(bterms, "mo")
   if (length(mo_vars)) {
     # factors have already been checked
     num_mo_vars <- names(mf)[!is_factor & names(mf) %in% mo_vars]
