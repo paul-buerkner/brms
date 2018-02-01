@@ -25,9 +25,8 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
       x, data, prior = prior, center_X = center_X,
       sparse = sparse, order_mixture = order_mixture
     ),
+    text_sp <- stan_sp(x, data, ranef = ranef, prior = prior),
     text_cs <- stan_cs(x, data, ranef = ranef, prior = prior),
-    text_mo <- stan_mo(x, data, ranef = ranef, prior = prior),
-    text_me <- stan_me(x, data, ranef = ranef, prior = prior),
     text_sm <- stan_sm(x, data, prior = prior),
     text_gp <- stan_gp(x, data, prior = prior)
   )
@@ -52,8 +51,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   
   # repare loop over eta
   eta_loop <- paste0(
-    stan_eta_re(ranef, px = px),
-    text_mo$eta, text_me$eta,
+    stan_eta_re(ranef, px = px), text_sp$eta,
     stan_eta_autocor(x$autocor, px = px)
   )
   if (nzchar(eta_loop)) {
@@ -206,7 +204,7 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
     # we already know at this point that all families are identical
     adnames <- unique(ulapply(x$terms, function(x) names(x$adforms)))
     if (!all(adnames %in% c("se", "weights"))) {
-      stop2("Only 'se' and 'weights' are supported addition ",
+      stop2("Only 'se', 'weights' are supported addition ",
             "arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
@@ -527,7 +525,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     px = px, suffix = paste0("_", id)
   )
   J <- seq_len(nrow(r))
-  has_def_type <- !r$type %in% c("mo", "me")
+  has_def_type <- !r$type %in% "sp"
   if (any(has_def_type)) {
     str_add(out$data) <- collapse(
         "  vector[N] Z_", idp[has_def_type], 
@@ -656,84 +654,6 @@ stan_sm <- function(bterms, data, prior) {
   out
 }
 
-stan_mo <- function(bterms, data, ranef, prior) {
-  # Stan code for monotonic effects
-  out <- list()
-  monef <- get_mo_labels(bterms, data = data)
-  if (!length(monef)) {
-    return(out)
-  }
-  px <- check_prefix(bterms)
-  p <- usc(combine_prefix(px))
-  att <- attributes(monef)
-  # prepare linear predictor component
-  monef <- rename(monef)
-  monef_terms <- rep(NA, length(monef))
-  for (i in seq_along(monef)) {
-    monef_terms[i] <- paste0(
-      "mo(simo", p, "_", att$Imo[[i]], 
-      ", Xmo", p, "_", att$Imo[[i]], "[n])",
-      collapse = " * "
-    )
-    if (att$not_one[i]) {
-      str_add(monef_terms[i]) <- paste0(
-        " * Cmo", p, "_", att$Icmo[i], "[n]"
-      )
-    }
-  }
-  ranef <- subset2(ranef, type = "mo", ls = px)
-  invalid_coef <- setdiff(ranef$coef, monef)
-  if (length(invalid_coef)) {
-    stop2("Monotonic group-level terms require ", 
-          "corresponding population-level terms.")
-  }
-  for (i in seq_along(monef)) {
-    r <- subset2(ranef, coef = monef[i])
-    if (nrow(r)) {
-      rpars <- paste0(" + ", stan_eta_r(r))
-    } else {
-      rpars <- ""
-    }
-    str_add(out$eta) <- paste0(
-      " + (bmo", p, "[", i, "]", rpars, ") * ", monef_terms[i]
-    )
-  }
-  # prepare rest of the Stan code
-  I <- seq_len(max(unlist(att$Imo)))
-  ncovars <- sum(att$not_one)
-  str_add(out$data) <- paste0(
-    "  int<lower=1> Kmo", p, ";  // number of monotonic effects\n",
-    "  int<lower=1> Imo", p, ";  // number of monotonig variables\n",
-    "  int<lower=2> Jmo", p, "[Imo", p, "];  // length of simplexes\n",
-    "  // monotonic variables \n",
-    collapse("  int Xmo", p, "_", I, "[N];\n"),
-    "  // prior concentration of monotonic simplexes\n",
-    collapse("  vector[Jmo", p, "[", I, "]] con_simo", p, "_", I, ";\n"),
-    if (ncovars > 0L) paste0(
-      "  // covariates of noise free variables\n",
-      collapse("  vector[N] Cmo", p, "_", seq_len(ncovars), ";\n")
-    )
-  )
-  bound <- get_bound(prior, class = "b", px = px)
-  str_add(out$par) <- paste0(
-    "  // scale of monotonic effects \n", 
-    "  vector", bound, "[Kmo", p, "] bmo", p, "; \n",
-    "  // simplexes of monotonic effects \n",
-    collapse("  simplex[Jmo", p, "[", I, "]] simo", p, "_", I, "; \n")
-  ) 
-  str_add(out$prior) <- paste0(
-    stan_prior(
-      prior, class = "b", coef = monef, 
-      px = px, suffix = paste0("mo", p)
-    ),
-    collapse(
-      "  target += dirichlet_lpdf(",
-      "simo", p, "_", I, " | con_simo", p, "_", I, "); \n"
-    )
-  )
-  out
-}
-
 stan_cs <- function(bterms, data, ranef, prior) {
   # Stan code for category specific effects
   # (!) Not implemented for non-linear models
@@ -791,60 +711,89 @@ stan_cs <- function(bterms, data, ranef, prior) {
     }
   }
   out
-} 
+}
 
-stan_me <- function(bterms, data, ranef, prior) {
-  # Stan code for measurement error effects
+stan_sp <- function(bterms, data, ranef, prior) {
+  # Stan code for special effects
   out <- list()
-  meef <- get_me_labels(bterms, data = data)
-  if (length(meef)) {
-    att <- attributes(meef)
-    px <- check_prefix(bterms)
-    p <- usc(combine_prefix(px))
-    meef_terms <- ulapply(att$calls_me, paste0, collapse = " * ")
-    new_me <- paste0("Xme_", seq_along(att$uni_me), "[n]")
-    meef_terms <- rename(meef_terms, att$uni_me, new_me)
-    str_add(meef_terms) <- ifelse(att$not_one,
-      paste0(" * Cme", p, "_", att$Icme, "[n]"), ""
+  spef <- tidy_spef(bterms, data)
+  if (is.null(spef)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  ranef <- subset2(ranef, type = "sp", ls = px)
+  spef_coef <- rename(spef$term)
+  invalid_coef <- setdiff(ranef$coef, spef_coef)
+  if (length(invalid_coef)) {
+    stop2(
+      "Special group-level terms require corresponding ", 
+      "population-level terms:\nOccured for ", 
+      collapse_comma(invalid_coef)
     )
-    
-    # prepare linear predictor component
-    meef <- rename(meef)
-    ranef <- subset2(ranef, type = "me", ls = px)
-    invalid_coef <- setdiff(ranef$coef, meef)
-    if (length(invalid_coef)) {
-      stop2("Noisy group-level terms require ", 
-            "corresponding population-level terms.")
-    }
-    for (i in seq_along(meef)) {
-      r <- subset2(ranef, coef = meef[i])
-      if (nrow(r)) {
-        rpars <- paste0(" + ", stan_eta_r(r))
-      } else {
-        rpars <- ""
-      }
-      str_add(out$eta) <- paste0(
-        " + (bme", p, "[", i, "]", rpars, ") * ", meef_terms[i]
+  }
+  # prepare Stan code of the linear predictor component
+  for (i in seq_len(nrow(spef))) {
+    eta <- spef$call_prod[[i]]
+    if (!is.null(spef$call_mo[[i]])) {
+      new_mo <- paste0(
+        "mo(simo", p, "_", spef$Imo[[i]], 
+        ", Xmo", p, "_", spef$Imo[[i]], "[n])"
       )
+      eta <- rename(eta, spef$call_mo[[i]], new_mo)
     }
-    
-    # prepare rest of the Stan code
-    ncovars <- sum(att$not_one)
+    if (!is.null(spef$call_me[[i]])) {
+      new_me <- paste0("Xme_", seq_along(spef$uni_me[[i]]), "[n]")
+      eta <- rename(eta, spef$uni_me[[i]], new_me)
+    }
+    if (!is.null(spef$call_mi[[i]])) {
+      new_mi <- paste0("Yf_", spef$vars_mi[[i]], "[n]")
+      eta <- rename(eta, spef$call_mi[[i]], new_mi)
+    }
+    if (spef$Ic[i] > 0) {
+      str_add(eta) <- paste0(" * Csp", p, "_", spef$Ic[i], "[n]")
+    }
+    r <- subset2(ranef, coef = spef_coef[i])
+    rpars <- if (nrow(r)) paste0(" + ", stan_eta_r(r))
+    str_add(out$eta) <- paste0(" + (bsp", p, "[", i, "]", rpars, ") * ", eta)
+  }
+  # prepare general Stan code
+  ncovars <- max(spef$Ic)
+  str_add(out$data) <- paste0(
+    "  int<lower=1> Ksp", p, ";  // number of special effects terms\n",
+    if (ncovars > 0L) paste0(
+      "  // covariates of special effects terms\n",
+      collapse("  vector[N] Csp", p, "_", seq_len(ncovars), ";\n")
+    )
+  )
+  bound <- get_bound(prior, class = "b", px = px)
+  str_add(out$par) <- paste0(
+    "  // special effects coefficients \n", 
+    "  vector", bound, "[Ksp", p, "] bsp", p, "; \n"
+  )
+  str_add(out$prior) <- stan_prior(
+    prior, class = "b", coef = spef$coef, 
+    px = px, suffix = paste0("sp", p)
+  )
+  # include special Stan code for monotonic effects
+  I <- unlist(spef$Imo)
+  if (length(I)) {
+    I <- seq_len(max(I))
     str_add(out$data) <- paste0(
-      "  int<lower=0> Kme", p, ";",
-      "  // number of terms of noise free variables \n",
-      if (ncovars > 0L) paste0(
-        "  // covariates of noise free variables \n",
-        collapse("  vector[N] Cme", p, "_", seq_len(ncovars), "; \n")
-      )
+      "  int<lower=1> Imo", p, ";  // number of monotonic variables\n",
+      "  int<lower=2> Jmo", p, "[Imo", p, "];  // length of simplexes\n",
+      "  // monotonic variables \n",
+      collapse("  int Xmo", p, "_", I, "[N];\n"),
+      "  // prior concentration of monotonic simplexes\n",
+      collapse("  vector[Jmo", p, "[", I, "]] con_simo", p, "_", I, ";\n")
     )
     str_add(out$par) <- paste0(
-      "  vector[Kme", p, "] bme", p, ";",
-      "  // coefficients of noise-free terms \n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = meef, 
-      px = px, suffix = paste0("me", p)
+      "  // simplexes of monotonic effects \n",
+      collapse("  simplex[Jmo", p, "[", I, "]] simo", p, "_", I, "; \n")
+    ) 
+    str_add(out$prior) <- collapse(
+      "  target += dirichlet_lpdf(",
+      "simo", p, "_", I, " | con_simo", p, "_", I, "); \n"
     )
   }
   out

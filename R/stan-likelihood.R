@@ -87,9 +87,10 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
   stopifnot(is.sdist(llh))
   n <- if (grepl("\\[n\\]", llh$args)) "[n]"
   lpdf <- ifelse(use_int(bterms$family), "_lpmf", "_lpdf")
+  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
   tr <- stan_llh_trunc(llh, bterms, data)
   paste0(
-    tp(), llh$dist, lpdf, "(Y", resp, n, llh$shift,
+    tp(), llh$dist, lpdf, "(", Y, resp, n, llh$shift,
     " | ", llh$args, ")", tr, "; \n"
   )
 }
@@ -136,9 +137,10 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   stopifnot(is.sdist(llh))
   tr <- stan_llh_trunc(llh, bterms, data)
   lpdf <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
+  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
   paste0(
     tp(), "weights", resp, "[n] * ", llh$dist, "_", lpdf, 
-    "(Y", resp, "[n]", llh$shift, " | ", llh$args,")", tr, "; \n"
+    "(", Y, resp, "[n]", llh$shift, " | ", llh$args,")", tr, "; \n"
   )
 }
 
@@ -152,9 +154,10 @@ stan_llh_mix <- function(llh, bterms, data, mix,
   )
   tr <- stan_llh_trunc(llh, bterms, data)
   lpdf <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
+  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
   paste0(
-    "  ps[", mix, "] = ", theta, " + ",
-    llh$dist, "_", lpdf, "(Y", resp, "[n] | ", llh$args, ")", tr, "; \n"
+    "  ps[", mix, "] = ", theta, " + ", llh$dist, "_", 
+    lpdf, "(", Y, resp, "[n] | ", llh$args, ")", tr, "; \n"
   )
 }
 
@@ -456,10 +459,7 @@ stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- if (reqn) "[n]"
-  p$log_Y <- paste0("log_Y", resp, n)
-  p$log_Y <- ifelse(reqn, p$log_Y, paste0("sum_", p$log_Y))
-  p$sqrt_Y <- paste0("sqrt_Y", resp, n)
-  sdist(lpdf, p$mu, p$shape, p$log_Y, p$sqrt_Y)
+  sdist(lpdf, p$mu, p$shape)
 }
 
 stan_llh_wiener <- function(bterms, resp = "", mix = "") {

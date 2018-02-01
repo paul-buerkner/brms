@@ -220,7 +220,7 @@ parse_lf <- function(formula, family = NULL) {
   formula <- rhs(as.formula(formula))
   check_multiple_special_terms(formula)
   y <- nlist(formula)
-  types <- c("re", "mo", "cs", "me", "sm", "gp", "offset")
+  types <- c("re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
     tmp <- do.call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
@@ -230,7 +230,7 @@ parse_lf <- function(formula, family = NULL) {
   pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
   y$fe <- parse_fe(formula, pos_special)
   lformula <- c(
-    y[c("fe", "cs", "mo", "me")], 
+    y[c("fe", "sp", "cs")],
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
     y$re$form, lapply(y$re$gcall, "[[", "allvars"),
     str2formula(all.vars(y$offset))
@@ -295,7 +295,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (length(ad)) {
       ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
       for (a in ad_funs) {
-        matches <- grep(paste0("^(resp_)?", a, "\\(.+\\)$"), ad_terms)
+        matches <- grep(paste0("^(resp_)?", a, "\\(.*\\)$"), ad_terms)
         if (length(matches) == 1L) {
           x[[a]] <- ad_terms[matches]
           if (!grepl("^resp_", x[[a]])) {
@@ -325,6 +325,9 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
       stop2("Censoring or truncation is not yet allowed in mixture models.")
     }
+    if (is.formula(x$mi) && (is.formula(x$cens) || is.formula(x$trunc))) {
+      stop2("Censoring or truncation is not allowed when missings are imputed.")
+    }
   }
   x
 }
@@ -350,22 +353,6 @@ parse_fe <- function(formula, pos_special = NULL) {
   fe_form
 }
 
-parse_mo <- function(formula) {
-  # extract monotonic terms
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_mo_terms <- grepl_expr(regex_mo(), all_terms)
-  mo_terms <- all_terms[pos_mo_terms]
-  if (length(mo_terms)) {
-    mo_terms <- str2formula(mo_terms)
-    attr(mo_terms, "rsv_intercept") <- TRUE
-  }
-  structure(mo_terms, pos = pos_mo_terms)
-}
-
 parse_cs <- function(formula) {
   # category specific terms for ordinal models
   all_terms <- all_terms(formula)
@@ -379,6 +366,28 @@ parse_cs <- function(formula) {
     attr(cs_terms, "rsv_intercept") <- TRUE
   }
   structure(cs_terms, pos = pos_cs_terms)
+}
+
+parse_sp <- function(formula) {
+  # extract special effects terms 
+  # Args:
+  #   formula: a formula object
+  all_terms <- all_terms(formula)
+  # do not include group-level terms
+  all_terms[grepl("\\|", all_terms)] <- ""
+  pos_terms <- grepl_expr(regex_sp(), all_terms)
+  out <- all_terms[pos_terms]
+  if (length(out)) {
+    uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
+    uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
+    uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
+    out <- str2formula(out)
+    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "uni_mo") <- uni_mo
+    attr(out, "uni_me") <- uni_me
+    attr(out, "uni_mi") <- uni_mi
+  }
+  structure(out, pos = pos_terms)
 }
 
 parse_sm <- function(formula) {
@@ -409,24 +418,6 @@ parse_sm <- function(formula) {
     sm_terms, pos = pos_sm_terms, covars = covars, 
     byvars = byvars, allvars = allvars
   )
-}
-
-parse_me <- function(formula) {
-  # extract variables modeled with measurement error
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
-  me_terms <- all_terms[pos_me_terms]
-  if (length(me_terms)) {
-    uni_me <- rm_wsp(get_matches_expr("^me\\([^:]*\\)$", me_terms))
-    me_terms <- str2formula(me_terms)
-    attr(me_terms, "uni_me") <- uni_me
-    attr(me_terms, "rsv_intercept") <- TRUE
-  }
-  structure(me_terms, pos = pos_me_terms)
 }
 
 parse_gp <- function(formula) {
@@ -634,7 +625,7 @@ avoid_dpars <- function(names, bterms) {
   # Args:
   #   names: names to check for ambiguity
   #   bterms: object of class brmsterms
-  dpars <- c(names(bterms$dpars), "mo", "cs", "me")
+  dpars <- c(names(bterms$dpars), "sp", "cs")
   if (length(dpars)) {
     dpars_prefix <- paste0("^", dpars, "_")
     invalid <- any(ulapply(dpars_prefix, grepl, names))
@@ -715,7 +706,10 @@ check_multiple_special_terms <- function(x) {
     x <- all_terms(x)
   }
   x <- as.character(x)
-  sterms <- c("mo((no)?|(notonic)?)", "me", "cse?", "(s|t2|te|ti)", "gp")
+  sterms <- c(
+    "(mo((no)?|(notonic)?))|(me)|(mi)", 
+    "cse?", "(s|(t2)|(te)|(ti))", "gp"
+  )
   sterms <- paste0("^", sterms, "\\([^:]*\\)$") 
   smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
   for (i in seq_along(sterms)) {
@@ -739,7 +733,7 @@ ad_families <- function(x) {
     cens = c(
       "gaussian", "student", "lognormal", "skew_normal",
       "inverse.gaussian", "binomial", "poisson", 
-      "geometric", "negbinomial", "exponential", 
+      "geometric", "negbinomial", "exponential", "beta",
       "weibull", "gamma", "exgaussian", "frechet",
       "asym_laplace", "gen_extreme_value", "shifted_lognormal"
     ),
@@ -747,8 +741,14 @@ ad_families <- function(x) {
       "gaussian", "student", "lognormal", "skew_normal",
       "binomial", "poisson", "geometric", "negbinomial",
       "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace", "gen_extreme_value",
-      "shifted_lognormal"
+      "exgaussian", "frechet", "asym_laplace", "beta",
+      "gen_extreme_value", "shifted_lognormal"
+    ),
+    mi = c(
+      "gaussian", "student", "lognormal", "skew_normal",
+      "inverse.gaussian", "exponential", "weibull", 
+      "gamma", "exgaussian", "frechet", "beta",
+      "asym_laplace", "gen_extreme_value"
     ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
@@ -835,80 +835,6 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
   unique(ulapply(x$terms, get_advars, ad = ad, ...))
 }
 
-get_uni_me <- function(x) {
-  # extract unique names of noise-free terms 
-  uni_me <- ulapply(get_effect(x, "me"), attr, "uni_me")
-  if (!length(uni_me)) {
-    return(NULL)
-  }
-  all_vars <- all.vars(parse(text = uni_me))
-  elist <- named_list(all_vars, values = NA_real_)
-  xname <- ulapply(uni_me, function(x) attr(eval2(x, elist), "xname"))
-  df <- data.frame(xname, uni_me)
-  df <- df[!duplicated(df), ]
-  xdupl <- df$xname[duplicated(df$xname)]
-  if (length(xdupl)) {
-    calls <- df$uni_me[df$xname == xdupl[1]]
-    stop2(
-      "Variable '", xdupl[1], "' is used in different calls to 'me'.\n",
-      "Associated calls are: ", collapse_comma(calls)
-    )
-  }
-  unique(uni_me)
-}
-
-store_uni_me <- function(x, ...) {
-  # store unique names of noise-free terms in all 'me' elements
-  UseMethod("store_uni_me")
-}
-
-#' @export
-store_uni_me.mvbrmsterms <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  for (i in seq_along(x$terms)) {
-    x$terms[[i]] <- store_uni_me(x$terms[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.brmsterms <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  if (!length(uni_me)) {
-    return(x)
-  }
-  for (i in seq_along(x$dpars)) {
-    x$dpars[[i]] <- store_uni_me(x$dpars[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.btnl <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  for (i in seq_along(x$nlpars)) {
-    x$nlpars[[i]] <- store_uni_me(x$nlpars[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.btl <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  if (length(uni_me)) {
-    attr(x[["me"]], "uni_me") <- uni_me
-  }
-  x
-}
-
 get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
   # extract labels of smooth terms
   # Args:
@@ -966,96 +892,6 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
     attributes(sms)[names(alist)] <- alist
   }
   structure_not_null(sms, byvars = byvars)
-}
-
-get_mo_labels <- function(x, data) {
-  # get labels of monotonic terms
-  # Args:
-  #   x: either a formula or a list containing an element "mo"
-  #   data: data frame containing the monotonic variables
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    mo_form <- x$dpars$mu[["mo"]]
-  } else {
-    mo_form <- x[["mo"]]
-  }
-  if (!is.formula(mo_form)) {
-    return(character(0))
-  }
-  mm <- get_model_matrix(mo_form, data, rename = FALSE)
-  monef <- colnames(mm)
-  # prepare attributes of monef
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  Icmo <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  Imo <- calls_mo <- named_list(monef)
-  k <- 0
-  for (i in seq_along(monef)) {
-    calls_mo[[i]] <- get_matches_expr(regex_mo(), monef[i])
-    j <- length(calls_mo[[i]])
-    Imo[[i]] <- (k+1):(k+j)
-    k <- k + j
-    mo_split <- strsplit(rm_wsp(monef[i]), ":")[[1]]
-    # remove non monotonic parts from the terms
-    mo_split <- mo_split[grepl_expr(regex_mo(), mo_split)]
-    for (j in seq_along(mo_split)) {
-      mo_match <- get_matches_expr(regex_mo(), mo_split[j])
-      if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_split[j])) {
-        stop2("The monotonic term '",  mo_split[j], "' is invalid.")
-      }
-    }
-  }
-  att <- nlist(not_one, Icmo, calls_mo, Imo)
-  do.call(structure, c(list(monef), att))
-}
-
-get_simo_labels <- function(monef) {
-  # extract names of monotonic simplex parameters 
-  # Args:
-  #   monef: output of get_me_labels
-  stopifnot(is.character(monef))
-  Imo <- attr(monef, "Imo")
-  stopifnot(is.list(Imo))
-  monef <- rename(monef)
-  ulapply(seq_along(monef), 
-    function(i) paste0(monef[i], seq_along(Imo[[i]]))
-  )
-}
-
-regex_mo <- function() {
-  "^mo((no)?|(notonic)?)\\([^:]*\\)$"
-}
-
-get_me_labels <- function(x, data) {
-  # get labels of measurement error terms
-  # Args:
-  #   x: either a formula or a list containing an element "me"
-  #   data: data frame containing the noisy variables
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    me_form <- x$dpars$mu[["me"]]
-  } else {
-    me_form <- x[["me"]]
-  }
-  if (!is.formula(me_form)) {
-    return(character(0))
-  }
-  mm <- get_model_matrix(me_form, data, rename = FALSE)
-  meef <- colnames(mm)
-  # prepare attributes of meef
-  not_one <- apply(mm, 2, function(x) any(x != 1))
-  Icme <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-  uni_me <- attr(me_form, "uni_me")
-  calls_me <- strsplit(rm_wsp(meef), ":")
-  for (i in seq_along(meef)) {
-    # remove non-me parts from the terms
-    take <- grepl_expr("^me\\([^:]*\\)$", calls_me[[i]])
-    calls_me[[i]] <- calls_me[[i]][take]
-    # remove 'I' (identity) function calls that 
-    # were used solely to separate formula terms
-    calls_me[[i]] <- gsub("^I\\(", "(", calls_me[[i]])
-  }
-  att <- nlist(not_one, Icme, uni_me, calls_me)
-  do.call(structure, c(list(meef), att))
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {

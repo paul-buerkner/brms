@@ -587,11 +587,10 @@ prior_effects.btl <- function(x, data, spec_intercept = TRUE,
   # Return:
   #   An object of class brmsprior
   prior_fe(x, data, def_dprior = def_dprior, spec_intercept = spec_intercept) +
-  prior_cs(x, data) +
-  prior_mo(x, data) +
-  prior_sm(x, data, def_scale_prior = def_scale_prior) + 
-  prior_me(x, data) + 
-  prior_gp(x, data, def_scale_prior = def_scale_prior)
+    prior_sp(x, data) +
+    prior_cs(x, data) +
+    prior_sm(x, data, def_scale_prior = def_scale_prior) + 
+    prior_gp(x, data, def_scale_prior = def_scale_prior)
 }
 
 #' @export
@@ -632,19 +631,23 @@ prior_fe <- function(bterms, data, spec_intercept = TRUE, def_dprior = "") {
   prior
 }
 
-prior_mo <- function(bterms, data) {
-  # priors for monotonic effects parameters
+prior_sp <- function(bterms, data) {
+  # priors for special effects parameters
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
-  monef <- get_mo_labels(bterms, data)
-  if (length(monef)) {
+  spef <- tidy_spef(bterms, data)
+  if (!is.null(spef)) {
     px <- check_prefix(bterms)
-    simo_coef <- get_simo_labels(monef)
-    monef <- rename(monef)
-    prior <- prior + 
-      brmsprior(class = "b", coef = c("", monef), ls = px) + 
-      brmsprior(class = "simo", coef = simo_coef, ls = px)
+    prior <- prior + brmsprior(
+      class = "b", coef = c("", spef$coef), ls = px
+    )
+    simo_coef <- get_simo_labels(spef)
+    if (length(simo_coef)) {
+      prior <- prior + brmsprior(
+        class = "simo", coef = simo_coef, ls = px
+      ) 
+    }
   }
   prior
 }
@@ -659,20 +662,6 @@ prior_cs <- function(bterms, data) {
     px <- check_prefix(bterms)
     prior <- prior + 
       brmsprior(class = "b", coef = c("", csef), ls = px)
-  }
-  prior
-}
-
-prior_me <- function(bterms, data) {
-  # default priors of coefficients of noisy terms
-  # Returns:
-  #   an object of class brmsprior
-  prior <- empty_brmsprior()
-  meef <- get_me_labels(bterms, data)
-  if (length(meef)) {
-    px <- check_prefix(bterms)
-    prior <- prior + 
-      brmsprior(class = "b", coef = c("", rename(meef)), ls = px)
   }
   prior
 }
@@ -1250,7 +1239,8 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
     }
   }
   # prepare priors of monotonic effects
-  monef <- get_mo_labels(x, data)
+  spef <- tidy_spef(x, data)
+  monef <- spef[lengths(spef$call_mo) > 0, "coef"]
   for (mo in monef) {
     take <- find_rows(prior, class = "simo", coef = mo, ls = px)
     simo_prior <- prior$prior[take]
@@ -1270,10 +1260,10 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
     if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
       # horseshoe prior for population-level parameters
       if (any(nzchar(prior[b_index, "bound"]))) {
-        stop2("Boundaries for population-level effects are not", 
+        stop2("Boundaries for population-level effects are not ", 
               "allowed when using the horseshoe or lasso priors.")
       }
-      if (any(ulapply(x[c("me", "mo", "cs")], is.formula))) {
+      if (any(ulapply(x[c("sp", "cs")], is.formula))) {
         stop2("Horseshoe or lasso priors are not yet allowed ",
               "in models with special population-level effects.")
       }
@@ -1283,8 +1273,8 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop2(
-          "Defining priors for single population-level parameters",
-          "is not allowed when using horseshoe or lasso priors",
+          "Defining priors for single population-level parameters ",
+          "is not allowed when using horseshoe or lasso priors ",
           "(except for the Intercept)."
         )
       }

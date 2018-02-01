@@ -51,7 +51,7 @@ make_standata <- function(formula, data, family = gaussian(),
     prior, bterms = bterms, data = data, 
     check_nlpar_prior = FALSE
   )
-  na_action <- if (new) na.pass else na.omit
+  na_action <- if (new) na.pass else na.omit2
   data <- update_data(
     data, bterms = bterms, na.action = na_action, 
     drop.unused.levels = !new, knots = knots,

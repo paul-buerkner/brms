@@ -1,4 +1,4 @@
 params <-
-structure(list(EVAL = FALSE), .Names = "EVAL")
+structure(list(EVAL = TRUE), .Names = "EVAL")
 
 

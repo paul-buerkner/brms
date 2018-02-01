@@ -53,6 +53,9 @@ change_effects.brmsterms <- function(x, ...) {
   for (dp in names(x$dpars)) {
     change <- c(change, change_effects(x$dpars[[dp]], ...))
   }
+  if (is.formula(x$adforms$mi)) {
+    change <- c(change, change_Ymi(x, ...))
+  }
   change
 }
 
@@ -65,8 +68,7 @@ change_effects.btl <- function(x, data, pars, stancode = "", ...) {
     change_fe(x, data, pars, stancode = stancode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
-    change_mo(x, data, pars),
-    change_me(x, data, pars),
+    change_sp(x, data, pars),
     change_gp(x, data, pars)
   )
 }
@@ -104,25 +106,24 @@ change_fe <- function(bterms, data, pars, stancode = "") {
   change
 }
 
-change_mo <- function(bterms, data, pars) {
-  # helps in renaming monotonous effects parameters
+change_sp <- function(bterms, data, pars) {
+  # helps in renaming special effects parameters
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  monef <- get_mo_labels(bterms, data)
-  if (!length(monef)) {
+  spef <- tidy_spef(bterms, data)
+  if (is.null(spef)) {
     return(change) 
   }
   p <- usc(combine_prefix(bterms))
-  simo_coef <- get_simo_labels(monef)
-  monef <- rename(monef)
-  bmo <- paste0("bmo", p)
-  pos <- grepl(paste0("^", bmo, "\\["), pars)
-  newnames <- paste0("bmo", p, "_", monef)
+  bsp <- paste0("bsp", p)
+  pos <- grepl(paste0("^", bsp, "\\["), pars)
+  newnames <- paste0("bsp", p, "_", spef$coef)
   change <- lc(change, nlist(pos, fnames = newnames))
   change <- c(change, 
-    change_prior(class = bmo, pars = pars, names = monef)
+    change_prior(class = bsp, pars = pars, names = spef$coef)
   )
+  simo_coef <- get_simo_labels(spef)
   for (i in seq_along(simo_coef)) {
     simo_old <- paste0("simo", p, "_", i)
     simo_new <- paste0("simo", p, "_", simo_coef[i])
@@ -161,39 +162,44 @@ change_cs <- function(bterms, data, pars) {
   change
 }
 
-change_me <- function(bterms, data, pars) {
-  # helps in renaming parameters of noisy variables
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  change <- list()
-  meef <- get_me_labels(bterms, data)
-  if (length(meef)) {
-    p <- usc(combine_prefix(bterms), "prefix")
-    meef <- rename(meef)
-    # rename coefficients of noise free terms
-    bme <- paste0("bme", p)
-    pos <- grepl(paste0("^", bme, "\\["), pars)
-    bmenames <- paste0(bme, "_", meef)
-    change <- lc(change, nlist(pos, fnames = bmenames))
-    change <- c(change,
-      change_prior(class = bme, pars = pars, names = meef)
-    )
-  }
-  change
-}
-
 change_Xme <- function(bterms, pars) {
   # helps in renaming global noise free variables
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  if (any(grepl("^Xme_", pars))) {
-    uni_me <- get_uni_me(bterms)
+  uni_me <- get_uni_me(bterms)
+  if (length(uni_me)) {
+    uni_me <- rename(uni_me)
     for (i in seq_along(uni_me)) {
-      Xme <- paste0("Xme_", i)
-      pos <- grepl(paste0("^", Xme, "\\["), pars)
-      Xme_new <- paste0("Xme_", rename(uni_me[i]))
-      fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+      for (par in c("meanme", "sdme")) {
+        hpar <- paste0(par, "_", i)
+        pos <- pars %in% hpar
+        hpar_new <- paste0(par, "_", uni_me[i])
+        change <- lc(change, nlist(pos, fnames = hpar_new))
+      }
+      if (any(grepl("^Xme_", pars))) {
+        Xme <- paste0("Xme_", i)
+        pos <- grepl(paste0("^", Xme, "\\["), pars)
+        Xme_new <- paste0("Xme_", uni_me[i])
+        fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+        change <- lc(change, nlist(pos, fnames))
+      }
+    }
+  }
+  change
+}
+
+change_Ymi <- function(bterms, data, pars, ...) {
+  # helps in renaming estimated missing values
+  stopifnot(is.brmsterms(bterms))
+  change <- list()
+  if (is.formula(bterms$adforms$mi)) {
+    resp <- usc(combine_prefix(bterms))
+    Ymi <- paste0("Ymi", resp)
+    pos <- grepl(paste0("^", Ymi, "\\["), pars)
+    if (any(pos)) {
+      Jmi <- data_response(bterms, data, check_response = FALSE)$Jmi
+      fnames <- paste0(Ymi, "[", Jmi, "]")
       change <- lc(change, nlist(pos, fnames))
     }
   }
@@ -474,11 +480,11 @@ reorder_pars <- function(x) {
   # Args:
   #   x: brmsfit object
   all_classes <- c(
-    "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "lagsar",
+    "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "meanme", "sdme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
@@ -490,6 +496,9 @@ reorder_pars <- function(x) {
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   # reorder single parameter names
   nsubpars <- ulapply(x$fit@sim$dims_oi, prod)
+  has_subpars <- nsubpars > 0
+  new_order <- new_order[has_subpars]
+  nsubpars <- nsubpars[has_subpars]
   num <- lapply(seq_along(new_order), function(x)
     as.numeric(paste0(x, ".", sprintf("%010d", seq_len(nsubpars[x]))))
   )

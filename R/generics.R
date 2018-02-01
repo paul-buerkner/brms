@@ -457,6 +457,7 @@ add_waic <- function(x, ...) {
 #' for which approximate leave-one-out cross-validation may
 #' return incorrect results.
 #' 
+#' @inheritParams LOO
 #' @param x An \R object typically of class \code{loo}.
 #' @param fit An \R object typically of class \code{brmsfit}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
@@ -467,7 +468,7 @@ add_waic <- function(x, ...) {
 #'   check is performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
 #' @param ... Further arguments passed to 
-#'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
+#'   \code{\link{update.brmsfit}} such
 #'   as \code{iter}, \code{chains}, or \code{cores}.
 #'   
 #' @return An object of the class as \code{x}.
@@ -485,7 +486,7 @@ add_waic <- function(x, ...) {
 #' previous estimates from these \eqn{J} observations that are stored in the
 #' original \code{loo} object.
 #' 
-#' @seealso \code{\link[brms:loo]{loo}}, \code{\link[brms:kfold]{kfold}}
+#' @seealso \code{\link{loo}}, \code{\link{kfold}}
 #' 
 #' @examples 
 #' \dontrun{
@@ -562,7 +563,7 @@ reloo <- function(x, ...) {
 #' (kfold1 <- kfold(fit1, update_args = list(chains = 2, cores = 2)))
 #' }   
 #'  
-#' @seealso \code{\link[brms:loo]{loo}}, \code{\link[brms:reloo]{reloo}}
+#' @seealso \code{\link{loo}}, \code{\link{reloo}}
 #'  
 #' @export
 kfold <- function(x, ...) {

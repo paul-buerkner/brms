@@ -267,6 +267,32 @@ collapse_comma <- function(...) {
   paste0(x, value)
 }
 
+na.omit2 <- function (object, ignore = NULL, ...) {
+  # like stats:::na.omit.data.frame but allows to ignore variables
+  # Args:
+  #  ignore: names of variables for which NAs should be kept
+  stopifnot(is.data.frame(object))
+  omit <- logical(nrow(object))
+  vars <- setdiff(names(object), ignore)
+  for (j in vars) {
+    x <- object[[j]]
+    if (!is.atomic(x)) 
+      next
+    x <- is.na(x)
+    d <- dim(x)
+    if (is.null(d) || length(d) != 2L) 
+      omit <- omit | x
+    else for (ii in 1L:d[2L]) omit <- omit | x[, ii]
+  }
+  xx <- object[!omit, , drop = FALSE]
+  if (any(omit > 0L)) {
+    temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
+    attr(temp, "class") <- "omit"
+    attr(xx, "na.action") <- temp
+  }
+  xx
+}
+
 require_package <- function(package) {
   if (!requireNamespace(package, quietly = TRUE)) {
     stop2("Please install the '", package, "' package.")

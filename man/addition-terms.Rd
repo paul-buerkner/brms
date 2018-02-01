@@ -9,6 +9,7 @@
 \alias{resp_dec}
 \alias{resp_cens}
 \alias{resp_trunc}
+\alias{resp_mi}
 \title{Additional Response Information}
 \usage{
 resp_se(x, sigma = FALSE)
@@ -24,6 +25,8 @@ resp_dec(x)
 resp_cens(x, y2 = NULL)
 
 resp_trunc(lb = -Inf, ub = Inf)
+
+resp_mi()
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the

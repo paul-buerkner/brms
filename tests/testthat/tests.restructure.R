@@ -1,13 +1,13 @@
 test_that("restructure can be run without error", {
   # This test does not check if old models can really be restructured
   # since restructure is called with an already up-to-date model.
-  fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
-  fit1$version <- NULL
+  fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
+  fit2$version <- NULL
   expect_warning(
-    fit1_up <- restructure(fit1), 
+    fit2_up <- restructure(fit2), 
     "Models fitted with brms < 1.0 are no longer offically supported"
   )
-  expect_is(fit1_up, "brmsfit")
+  expect_is(fit2_up, "brmsfit")
 })
 
 test_that("restructure_formula works correctly", {
@@ -35,13 +35,17 @@ test_that("change_prior returns expected lists", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")
   expect_equal(
-    change_prior(class = "b", pars = pars, names = c("x1", "x3", "x2")),
+    brms:::change_prior(
+      class = "b", pars = pars, names = c("x1", "x3", "x2")
+    ),
     list(list(pos = 6, fnames = "prior_b_x1"),
          list(pos = 7, fnames = "prior_b_x2"))
   )
   expect_equal(
-    change_prior(class = "bp", pars = pars, 
-                 names = c("x1", "x2"), new_class = "b"),
+    brms:::change_prior(
+      class = "bp", pars = pars, 
+      names = c("x1", "x2"), new_class = "b"
+    ),
     list(list(pos = 9, fnames = "prior_b_x1")))
 })
 

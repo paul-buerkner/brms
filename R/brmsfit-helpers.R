@@ -610,7 +610,7 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 
 fixef_pars <- function() {
   # regex to extract population-level coefficients
-  "^b(|cs|mo|me|m)_"
+  "^b(|cs|sp|mo|me|mi|m)_"
 }
 
 default_plot_pars <- function() {

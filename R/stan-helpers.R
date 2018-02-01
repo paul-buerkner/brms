@@ -30,21 +30,6 @@ stan_response <- function(bterms, data) {
       "  int<lower=2> ncat", resp, ";  // number of categories \n"
     )
   }
-  families <- family_names(family)
-  if (any(families %in% "inverse.gaussian")) {
-    str_add(out$tdataD) <- paste0(
-      "  vector[N] sqrt_Y", resp, ";\n",
-      "  vector[N] log_Y", resp, ";\n",
-      "  real sum_log_Y", resp, ";\n"
-    )
-    str_add(out$tdataC) <- paste0(
-      "  for (n in 1:N) {\n",
-      "    sqrt_Y", resp, "[n] = sqrt(Y", resp, "[n]);\n",
-      "    log_Y", resp, "[n] = log(Y", resp, "[n]);\n",
-      "  }\n",
-      "  sum_log_Y", resp, " = sum(log_Y", resp, ");\n"
-    )
-  }  
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- paste0(
       "  vector<lower=0>[N] weights", resp, ";  // model weights \n" 
@@ -85,6 +70,22 @@ stan_response <- function(bterms, data) {
   if (any(bounds$ub < Inf)) {
     str_add(out$data) <- paste0(
       "  ", rtype, " ub", resp, "[N];  // upper truncation bounds \n"
+    )
+  }
+  if (is.formula(bterms$adforms$mi)) {
+    str_add(out$data) <- paste0(
+      "  int<lower=0> Nmi", resp, ";  // number of missings \n",
+      "  int<lower=1> Jmi", resp, "[Nmi", resp, "];",  
+      "  // positions of missings \n"
+    )
+    str_add(out$par) <- paste0(
+      "  vector[Nmi", resp, "] Ymi", resp, ";  // estimated missings\n" 
+    )
+    str_add(out$modelD) <- paste0(
+      "  vector[N] Yf", resp, " = Y", resp, ";\n" 
+    )
+    str_add(out$modelC1) <- paste0(
+      "  Yf", resp, "[Jmi", resp, "] = Ymi", resp, ";\n"
     )
   }
   out
@@ -489,7 +490,8 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       }
     }
   }
-  if (length(get_effect(bterms, "mo"))) {
+  uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
+  if (length(uni_mo)) {
     str_add(out$fun) <- "  #include fun_monotonic.stan \n"
   } 
   if (length(get_effect(bterms, "gp"))) {

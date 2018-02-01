@@ -1,4 +1,4 @@
-update_data <- function(data, bterms, na.action = na.omit,
+update_data <- function(data, bterms, na.action = na.omit2,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
   # Update data for use in brms functions
@@ -44,9 +44,9 @@ update_data <- function(data, bterms, na.action = na.omit,
     bterms$allvars, data, na.action = na.pass,
     drop.unused.levels = drop.unused.levels
   )
-  nrow_with_NA <- nrow(data)
-  data <- na.action(data)
-  if (nrow(data) != nrow_with_NA) {
+  nrow_with_na <- nrow(data)
+  data <- na.action(data, ignore = vars_keep_na(bterms))
+  if (nrow(data) != nrow_with_na) {
     warning2("Rows containing NAs were excluded from the model")
   }
   if (any(grepl("__|_$", colnames(data)))) {
@@ -187,12 +187,11 @@ validate_newdata <- function(
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
-      control <- list(
-        not4stan = TRUE, save_order = TRUE,
-        omit_response = !check_response,
-        only_response = only_response
+      control <- list(not4stan = TRUE, save_order = TRUE)
+      newdata <- standata(
+        fit, re_formula = re_formula, check_response = check_response, 
+        only_response = only_response, control = control
       )
-      newdata <- standata(fit, re_formula = re_formula, control = control)
     } else {
       newdata <- model.frame(fit)
     }
@@ -307,9 +306,8 @@ validate_newdata <- function(
     }
   }
   # validate monotonic variables
-  mo_forms <- get_effect(bterms, "mo")
-  if (length(mo_forms)) {
-    mo_vars <- unique(ulapply(mo_forms, all.vars))
+  mo_vars <- get_mo_vars(bterms)
+  if (length(mo_vars)) {
     # factors have already been checked
     num_mo_vars <- names(mf)[!is_factor & names(mf) %in% mo_vars]
     for (v in num_mo_vars) {
@@ -319,7 +317,7 @@ validate_newdata <- function(
       invalid <- invalid | !is_wholenumber(new_values)
       if (sum(invalid)) {
         stop2("Invalid values in variable '", v, "': ",
-              paste0(new_values[invalid], collapse = ", "))
+              collapse_comma(new_values[invalid]))
       }
       attr(newdata[[v]], "min") <- min_value
     }
@@ -559,11 +557,11 @@ make_Jmo_list <- function(x, data, ...) {
   # for use in extract_old_standata
   stopifnot(is.btl(x))
   out <- NULL
-  if (!is.null(x$mo)) {
-    # do it like data_mo()
-    monef <- get_mo_labels(x, data)
-    calls_mo <- unlist(attr(monef, "calls_mo"))
-    Xmo <- lapply(calls_mo, function(x) attr(eval2(x, data), "var"))
+  if (length(attr(x$sp, "uni_mo"))) {
+    # do it like data_sp()
+    spef <- tidy_spef(x, data)
+    Xmo_fun <- function(x) attr(eval2(x, data), "var")
+    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
     out <- as.array(ulapply(Xmo, max))
   }
   out

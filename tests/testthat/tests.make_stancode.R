@@ -85,7 +85,7 @@ test_that("specified priors appear in the Stan code", {
     "- 1 * log_diff_exp(normal_lcdf(1 | 0, 0.5), normal_lcdf(-1 | 0, 0.5))"
   )
   expect_match2(scode, "target += double_exponential_lpdf(arr | 0, 1)")
-  expect_match2(scode, "target += normal_lpdf(bmo | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
   expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
   expect_match2(scode, "target += uniform_lpdf(prior_ar | -1,1)")
@@ -114,6 +114,9 @@ test_that("specified priors appear in the Stan code", {
   prior <- prior(uniform(0,5), class = sd)
   expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
                   "no natural upper bound")
+  prior <- prior(uniform(-1, 1), class = cor)
+  expect_error(make_stancode(y ~ x1 + (x1|g), dat, prior = prior),
+               "Currently 'lkj' is the only valid prior")
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
@@ -207,9 +210,15 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_error(make_stancode(y ~ x1*x2, data = dat, 
                              prior = prior(horseshoe(1, -1))),
                "Scale of the global prior")
-  expect_error(make_stancode(y ~ x1*x2, data = dat, 
-                             prior = prior(lasso(-1))),
+  expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
+  expect_error(make_stancode(x1 ~ mo(y), dat, prior = prior(lasso())),
+               "Horseshoe or lasso priors are not yet allowed")
+  bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
+  expect_error(make_stancode(x1 ~ y, dat, prior = bprior),
+               "Defining priors for single population-level parameters is not")
+  expect_error(make_stancode(x1 ~ y, dat, prior = prior(lasso(), lb = 0)),
+               "Boundaries for population-level effects are not allowed")
 })
 
 test_that("link functions appear in the Stan code", {
@@ -575,21 +584,21 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ y*mo(x1)*mo(x2), dat, prior = prior)
   expect_match2(scode, "int Xmo_3[N];")
   expect_match2(scode, "simplex[Jmo[1]] simo_1;")
-  expect_match2(scode, "(bmo[2]) * mo(simo_2, Xmo_2[n])")
+  expect_match2(scode, "(bsp[2]) * mo(simo_2, Xmo_2[n])")
   expect_match2(scode, 
-    "(bmo[6]) * mo(simo_7, Xmo_7[n]) * mo(simo_8, Xmo_8[n]) * Cmo_3[n]"
+    "(bsp[6]) * mo(simo_7, Xmo_7[n]) * mo(simo_8, Xmo_8[n]) * Csp_3[n]"
   )
-  expect_match2(scode, "target += normal_lpdf(bmo[1] | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(bsp[1] | 0, 1)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
   expect_match2(scode, "target += dirichlet_lpdf(simo_8 | con_simo_8);")
   
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
-  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
+  expect_match2(scode, "(bsp[1] + r_1_1[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
   expect_true(!grepl("Z_1_1", scode))
   
   expect_error(
     make_stancode(y ~ mono(x1) + (mono(x2)|x2), dat),
-    "Monotonic group-level terms require"
+    "Special group-level terms require"
   )
   
   prior <- prior(beta(1, 1), simo, coef = mox11)
@@ -639,6 +648,9 @@ test_that("Stan code for non-linear models is correct", {
     "sigma[n] = exp(sigma_a1[n] * exp( - C_sigma_1[n] / (sigma_a2[n] + C_sigma_2[n])))"
   )
   expect_match2(scode, "target += normal_lpdf(b_sigma_a2 | 0, 5)")
+  
+  expect_error(make_stancode(bform, data, family = skew_normal()),
+               "Priors on population-level effects are required")
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {
@@ -908,12 +920,12 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(
     y ~ me(x, xsd)*me(z, zsd)*x, data = dat, prior = me_prior
   )
-  expect_match2(scode,
-    "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] * Xme_2[n]")
   expect_match2(scode, 
-    "(bme[6]) * Xme_1[n] * Xme_2[n] * Cme_3[n]")
+    "(bsp[1]) * Xme_1[n] + (bsp[2]) * Xme_2[n] + (bsp[3]) * Xme_1[n] * Xme_2[n]"
+  )
+  expect_match2(scode, "(bsp[6]) * Xme_1[n] * Xme_2[n] * Csp_3[n]")
   expect_match2(scode, "target += normal_lpdf(Xn_2 | Xme_2, noise_2)")
-  expect_match2(scode, "target += normal_lpdf(bme | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += normal_lpdf(zme_1 | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(meanme_1 | 0, 10)")
   expect_match2(scode, "target += cauchy_lpdf(sdme_2 | 0, 5)")
@@ -922,19 +934,19 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
   )
-  expect_match2(scode, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]")
-  expect_match2(scode, "(bme[2] + r_1_2[J_1[n]]) * Xme_1[n] * Cme_1[n]")
+  expect_match2(scode, "(bsp[1] + r_1_1[J_1[n]]) * Xme_1[n]")
+  expect_match2(scode, "(bsp[2] + r_1_2[J_1[n]]) * Xme_1[n] * Csp_1[n]")
   
   expect_match2(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
-               "(bme[1]) * (Xme_1[n]^2)")
+               "(bsp[1]) * (Xme_1[n]^2)")
   
   # test that noise-free variables are unique across model parts
   scode <- make_stancode(
     bf(y ~ me(x, xsd)*me(z, zsd)*x, sigma ~ me(x, xsd)), 
     data = dat, prior = prior(normal(0,5))
   )
-  expect_match2(scode, "mu[n] = mu[n] + (bme[1]) * Xme_1[n]")
-  expect_match2(scode, "sigma[n] = sigma[n] + (bme_sigma[1]) * Xme_1[n]")
+  expect_match2(scode, "mu[n] = mu[n] + (bsp[1]) * Xme_1[n]")
+  expect_match2(scode, "sigma[n] = sigma[n] + (bsp_sigma[1]) * Xme_1[n]")
   
   scode <- make_stancode(
     bf(y ~ a * b, a + b ~ me(x, xsd), nl = TRUE), 
@@ -942,12 +954,12 @@ test_that("noise-free terms appear in the Stan code", {
     prior = prior(normal(0,5), nlpar = a) + 
       prior(normal(0, 5), nlpar = b)
   )
-  expect_match2(scode, "mu_a[n] = mu_a[n] + (bme_a[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_b[n] = mu_b[n] + (bme_b[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_a[n] = mu_a[n] + (bsp_a[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_b[n] = mu_b[n] + (bsp_b[1]) * Xme_1[n]")
   
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
-  expect_match2(scode, "mu_y[n] = mu_y[n] + (bme_y[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_z[n] = mu_z[n] + (bme_z[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_y[n] = mu_y[n] + (bsp_y[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_z[n] = mu_z[n] + (bsp_z[1]) * Xme_1[n]")
 })
 
 test_that("Stan code of multi-membership models is correct", {
@@ -1269,4 +1281,29 @@ test_that("Stan code for skew_normal models is correct", {
   scode <- make_stancode(y ~ x, dat, mixture(skew_normal, nmix = 2))
   expect_match2(scode, "omega1 = sigma1 / sqrt(1 - sqrt_2_div_pi^2 * delta1^2);")
   expect_match2(scode, "mu2[n] = mu2[n] - omega2 * delta2 * sqrt_2_div_pi;")
+})
+
+test_that("Stan code for missing value terms works correctly", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
+  dat$x[c(1, 3, 9)] <- NA
+  
+  bform <- bf(y ~ mi(x)*g) + bf(x | mi() ~ g) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "Yf_x[Jmi_x] = Ymi_x;")
+  expect_match2(scode, "(bsp_y[1]) * Yf_x[n] + (bsp_y[2]) * Yf_x[n] * Csp_y_1[n];")
+  expect_match2(scode, "target += normal_lpdf(Yf_x | mu_x, sigma_x);")
+
+  bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(r_1_y_2[J_1[n]]) * Z_1_y_2[n] + (bsp_y[1] + r_1_y_1[J_1[n]]) * Yf_x[n];")
+  
+  bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  bprior <- prior(normal(0, 1), nlpar = "a", resp = "y")
+  scode <- make_stancode(bform, dat, prior = bprior)
+  expect_match2(scode, "mu_y_a[n] = mu_y_a[n] + (bsp_y_a[1]) * Yf_x[n];")
+  expect_match2(scode, "target += normal_lpdf(bsp_y_a | 0, 1);")
+  
+  bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "(bsp_y[3]) * mo(simo_y_2, Xmo_y_2[n]) * Yf_x[n];")
 })

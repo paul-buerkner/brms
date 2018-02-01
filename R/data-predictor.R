@@ -56,9 +56,8 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
       x, data, knots = knots, not4stan = not4stan, 
       smooths = old_standata$smooths
     ),
-    data_mo(x, data, prior = prior, Jmo = old_standata$Jmo),
+    data_sp(x, data, prior = prior, Jmo = old_standata$Jmo),
     data_re(x, data, ranef = ranef),
-    data_me(x, data),
     data_cs(x, data),
     data_gp(x, data, gps = old_standata$gps),
     data_offset(x, data),
@@ -162,67 +161,12 @@ data_fe <- function(bterms, data, knots = NULL,
   c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
 }
 
-data_mo <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
-  # prepare data for monotonic effects for use in Stan
-  # Args: see data_effects
-  out <- list()
-  monef <- get_mo_labels(bterms, data)
-  if (!length(monef)) {
-    return(out) 
-  }
-  px <- check_prefix(bterms)
-  p <- usc(combine_prefix(px))
-  att <- attributes(monef)
-  # store monotonic variables
-  out[[paste0("Kmo", p)]] <- length(monef)
-  out[[paste0("Imo", p)]] <- max(unlist(att$Imo))
-  Xmo <- lapply(unlist(att$calls_mo), 
-    function(x) as.array(attr(eval2(x, data), "var"))
-  )
-  Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
-  out <- c(out, setNames(Xmo, Xmo_names))
-  compute_Jmo <- is.null(Jmo)
-  if (!length(Jmo)) {
-    Jmo <- as.array(ulapply(Xmo, max))
-  }
-  out[[paste0("Jmo", p)]] <- Jmo
-  # store covariates of monotonic variables
-  Cmo <- get_model_matrix(bterms$mo, data)
-  avoid_dpars(colnames(Cmo), bterms = bterms)
-  Cmo <- Cmo[, att$not_one, drop = FALSE]
-  Cmo <- lapply(seq_len(ncol(Cmo)), function(i) as.array(Cmo[, i]))
-  if (length(Cmo)) {
-    Cmo_names <- paste0("Cmo", p, "_", seq_along(Cmo))
-    out <- c(out, setNames(Cmo, Cmo_names))
-  }
-  # store prior concentration of simplex parameters
-  simo_coef <- get_simo_labels(monef)
-  for (i in seq_along(simo_coef)) {
-    simo_prior <- subset2(prior, 
-      class = "simo", coef = simo_coef[i], ls = px
-    )
-    simo_prior <- simo_prior$prior
-    if (isTRUE(nzchar(simo_prior))) {
-      simo_prior <- eval2(simo_prior)
-      if (length(simo_prior) != Jmo[i]) {
-        stop2("Invalid Dirichlet prior for the simplex of coefficient '",
-              simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
-      }
-    } else {
-      simo_prior <- rep(1, Jmo[i])
-    }
-    out[[paste0("con_simo", p, "_", i)]] <- simo_prior
-  }
-  out
-}
-
 data_re <- function(bterms, data, ranef) {
   # prepare data for group-level effects for use in Stan
   # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
-  take <- find_rows(ranef, ls = px) &
-    !find_rows(ranef, type = c("mo", "me"))
+  take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
   ranef <- ranef[take, ]
   if (nrow(ranef)) {
     unique_forms <- ranef[!duplicated(ranef$gn), "form"]
@@ -284,8 +228,9 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
       }
       for (i in seq_along(gs)) {
-        temp <- list(as.array(match(get(gs[i], data), levels)), weights[, i])
-        out <- c(out, setNames(temp, paste0(c("J_", "W_"), id, "_", i)))
+        J <- as.array(match(get(gs[i], data), levels))
+        out[[paste0("J_", id, "_", i)]] <- J
+        out[[paste0("W_", id, "_", i)]] <- as.array(weights[, i])
       }
     } else {
       g <- id_ranef$gcall[[1]]$groups
@@ -329,6 +274,60 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
   out
 }
 
+data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
+  # prepare data for special effects for use in Stan
+  # Args: see data_effects
+  out <- list()
+  spef <- tidy_spef(bterms, data)
+  if (is.null(spef)) {
+    return(out) 
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  # prepare general data
+  out[[paste0("Ksp", p)]] <- nrow(spef)
+  Csp <- get_model_matrix(bterms$sp, data)
+  avoid_dpars(colnames(Csp), bterms = bterms)
+  Csp <- Csp[, spef$Ic > 0, drop = FALSE]
+  Csp <- lapply(seq_len(ncol(Csp)), function(i) as.array(Csp[, i]))
+  if (length(Csp)) {
+    Csp_names <- paste0("Csp", p, "_", seq_along(Csp))
+    out <- c(out, setNames(Csp, Csp_names))
+  }
+  if (any(lengths(spef$Imo) > 0)) {
+    # prepare data specific to monotonic effects
+    out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
+    Xmo_fun <- function(x) as.array(attr(eval2(x, data), "var"))
+    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
+    Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
+    out <- c(out, setNames(Xmo, Xmo_names))
+    compute_Jmo <- is.null(Jmo)
+    if (!length(Jmo)) {
+      Jmo <- as.array(ulapply(Xmo, max))
+    }
+    out[[paste0("Jmo", p)]] <- Jmo
+    # prepare prior concentration of simplex parameters
+    simo_coef <- get_simo_labels(spef)
+    for (i in seq_along(simo_coef)) {
+      simo_prior <- subset2(prior, 
+        class = "simo", coef = simo_coef[i], ls = px
+      )
+      simo_prior <- simo_prior$prior
+      if (isTRUE(nzchar(simo_prior))) {
+        simo_prior <- eval2(simo_prior)
+        if (length(simo_prior) != Jmo[i]) {
+          stop2("Invalid Dirichlet prior for the simplex of coefficient '",
+                simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
+        }
+      } else {
+        simo_prior <- rep(1, Jmo[i])
+      }
+      out[[paste0("con_simo", p, "_", i)]] <- simo_prior
+    }
+  }
+  out
+}
+
 data_cs <- function(bterms, data) {
   # prepare data for category specific effects
   # Args: see data_effects
@@ -339,28 +338,6 @@ data_cs <- function(bterms, data) {
     avoid_dpars(colnames(Xcs), bterms = bterms)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
     out <- setNames(out, paste0(names(out), p))
-  }
-  out
-}
-
-data_me <- function(bterms, data) {
-  # prepare formula specific data of noise-free variables
-  # Args: see data_effects
-  out <- list()
-  px <- check_prefix(bterms)
-  meef <- get_me_labels(bterms, data)
-  if (length(meef)) {
-    att <- attributes(meef)
-    p <- usc(combine_prefix(px))
-    Cme <- get_model_matrix(bterms$me, data)
-    avoid_dpars(colnames(Cme), bterms = bterms)
-    Cme <- Cme[, att$not_one, drop = FALSE]
-    Cme <- lapply(seq_len(ncol(Cme)), function(i) Cme[, i])
-    if (length(Cme)) {
-      Cme <- setNames(Cme, paste0("Cme", p, "_", seq_along(Cme)))
-    }
-    Kme <- setNames(list(length(meef)), paste0("Kme", p))
-    out <- c(out, Cme, Kme)
   }
   out
 }
@@ -790,6 +767,16 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
+  if (is.formula(x$adforms$mi)) {
+    which_na <- which(is.na(out$Y))
+    out$Nmi <- length(which_na)
+    out$Jmi <- which_na
+    if (!not4stan) {
+      # Stan does not allow NAs in data
+      # use Inf to that min(Y) is not affected
+      out$Y[which_na] <- Inf  
+    }
+  } 
   resp <- usc(combine_prefix(x))
   c(setNames(out, paste0(names(out), resp)),
     # specify data for autocors here in order to pass Y

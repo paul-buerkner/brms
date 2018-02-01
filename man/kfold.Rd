@@ -6,8 +6,8 @@
 \title{K-Fold Cross-Validation}
 \usage{
 \method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, Ksub = NULL,
-  exact_loo = FALSE, group = NULL, newdata = NULL, save_fits = FALSE,
-  update_args = list())
+  exact_loo = FALSE, group = NULL, newdata = NULL, resp = NULL,
+  save_fits = FALSE, update_args = list())
 
 kfold(x, ...)
 }
@@ -52,6 +52,9 @@ omitted ones.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the original data of the model is used.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{save_fits}{If \code{TRUE}, a component \code{fits} is added to 
 the returned object to store the cross-validated \code{brmsfit} 
@@ -99,5 +102,5 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt +
  
 }
 \seealso{
-\code{\link[brms:loo]{loo}}, \code{\link[brms:reloo]{reloo}}
+\code{\link{loo}}, \code{\link{reloo}}
 }

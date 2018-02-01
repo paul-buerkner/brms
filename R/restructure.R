@@ -24,10 +24,38 @@ restructure <- function(x, rstr_summary = FALSE) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
-  version <- x$version$brms
-  if (version >= "2.0.0" || isTRUE(attr(x, "restructured"))) {
-    return(x) 
+  if (!isTRUE(attr(x, "restructured"))) {
+    if (x$version$brms < "2.0.0") {
+      x <- restructure_v1(x)
+    }
+    x <- restructure_v2(x)
   }
+  stan_env <- attributes(x$fit)$.MISC
+  if (rstr_summary && exists("summary", stan_env)) {
+    stan_summary <- get("summary", stan_env)
+    old_parnames <- rownames(stan_summary$msd)
+    if (!identical(old_parnames, parnames(x))) {
+      # do not rename parameters in the cached summary
+      # just let rstan compute the summary again
+      remove("summary", pos = stan_env)
+    }
+  }
+  structure(x, restructured = TRUE)
+}
+
+restructure_v2 <- function(x) {
+  # restructure models fitted with brms 2.x
+  version <- x$version$brms
+  pars <- parnames(x)
+  if (version <= "2.1.1") {
+    x <- do_renaming(x, change_old_bsp(pars))
+  }
+  x
+}
+
+restructure_v1 <- function(x) {
+  # restructure models fitted with brms 1.x
+  version <- x$version$brms
   if (version < "1.0.0") {
     warning2(
       "Models fitted with brms < 1.0 are no longer offically ",
@@ -101,17 +129,7 @@ restructure <- function(x, rstr_summary = FALSE) {
     change <- change_old_categorical(bterms, x$data, pars = parnames(x))
     x <- do_renaming(x, change)
   }
-  stan_env <- attributes(x$fit)$.MISC
-  if (rstr_summary && exists("summary", stan_env)) {
-    stan_summary <- get("summary", stan_env)
-    old_parnames <- rownames(stan_summary$msd)
-    if (!identical(old_parnames, parnames(x))) {
-      # do not rename parameters in the cached summary
-      # just let rstan compute the summary again
-      remove("summary", pos = stan_env)
-    }
-  }
-  structure(x, restructured = TRUE)
+  x
 }
 
 restructure_formula <- function(formula, nonlinear = NULL) {
@@ -305,15 +323,17 @@ change_old_mo <- function(bterms, data, pars) {
   # this became necessary after implementing monotonic interactions
   .change_old_mo <- function(bt) {
     change <- list()
-    monef <- get_mo_labels(bt, data)
-    if (!length(monef)) {
+    spef <- tidy_spef(bt, data)
+    has_mo <- lengths(spef$call_mo) > 0
+    if (!any(has_mo)) {
       return(change)
     }
+    spef <- spef[has_mo, ]
     p <- usc(combine_prefix(bt))
     bmo_prefix <- paste0("bmo", p, "_")
     bmo_regex <- paste0("^", bmo_prefix, "[^_]+$")
     bmo_old <- pars[grepl(bmo_regex, pars)]
-    bmo_new <- paste0(bmo_prefix, rename(monef))
+    bmo_new <- paste0(bmo_prefix, spef$coef)
     if (length(bmo_old) != length(bmo_new)) {
       stop2("Restructuring failed. Please refit your ", 
             "model with the latest version of brms.")
@@ -326,7 +346,7 @@ change_old_mo <- function(bterms, data, pars) {
     simo_old_all <- pars[grepl(simo_regex, pars)]
     simo_index <- get_matches("\\[[[:digit:]]+\\]$", simo_old_all)
     simo_old <- unique(sub("\\[[[:digit:]]+\\]$", "", simo_old_all))
-    simo_coef <- get_simo_labels(monef)
+    simo_coef <- get_simo_labels(spef)
     for (i in seq_along(simo_old)) {
       regex_pos <- paste0("^", simo_old[i])
       pos <- grepl(regex_pos, pars)
@@ -382,6 +402,14 @@ change_old_categorical <- function(bterms, data, pars) {
     new_pars <- gsub(regex, new_dpars[i], new_pars, perl = TRUE)
   }
   list(nlist(pos, fnames = new_pars[pos]))
+}
+
+change_old_bsp <- function(pars) {
+  # as of brms 2.2 'mo' and 'me' terms are handled together
+  pos <- grepl("^(bmo|bme)_", pars)
+  if (!any(pos)) return(list()) 
+  fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
+  list(nlist(pos, fnames))
 }
 
 change_simple <- function(oldname, fnames, pars, dims,

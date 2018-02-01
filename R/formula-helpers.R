@@ -199,6 +199,12 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
   nlist(lb, ub)
 }
 
+#' @rdname addition-terms
+#' @export
+resp_mi <- function() {
+  NULL
+}
+
 #' Defining smooths in \pkg{brms} formulas
 #' 
 #' Functions used in definition of smooth terms within a model formulas. 
@@ -287,6 +293,39 @@ me <- function(x, sdx = NULL) {
   }
   out <- rep(1, length(x))
   structure(out, var = x, noise = sdx, xname = xname)
+}
+
+#' Predictors with Missing Values in \pkg{brms} Models
+#' 
+#' @param x The variable containing missings.
+#' 
+#' @details For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' This function is almost solely useful when
+#' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso \code{\link{brmsformula}}
+#'   
+#' @examples 
+#' \dontrun{
+#' data("nhanes", package = "mice")
+#' bform <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) + set_rescor(FALSE)
+#' fit <- brm(bform, data = nhanes)
+#' summary(fit)
+#' plot(marginal_effects(fit, resp = "bmi"), ask = FALSE)
+#' LOO(fit, newdata = na.omit(fit$data))
+#' } 
+#' 
+#' @export
+mi <- function(x) {
+  xname <- deparse(substitute(x))
+  x <- as.vector(x)
+  if (!is.numeric(x)) {
+    stop2("Noisy variables should be numeric.")
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x, xname = xname)
 }
 
 #' Category Specific Predictors in \pkg{brms} Models

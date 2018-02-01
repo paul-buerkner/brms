@@ -98,13 +98,13 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
         loo_args[["x"]] <- NULL
       }
     }
-    IC <- SW(do.call(eval(parse(text = paste0("loo::", ic))), loo_args)) 
+    IC <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }
   IC$model_name <- model_name
   class(IC) <- c("ic", class(IC))
   if (ic == "loo") {
     if (reloo) {
-      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
+      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE, ...)
       IC <- do.call(reloo.loo, c(reloo_args, update_args))
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
@@ -360,7 +360,8 @@ match_response <- function(models) {
 
 #' @rdname reloo
 #' @export
-reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
+reloo.loo <- function(x, fit, k_threshold = 0.7, 
+                      resp = NULL, check = TRUE, ...) {
   # most of the code is taken from rstanarm:::reloo
   stopifnot(is.brmsfit(fit))
   model_name <- deparse(substitute(fit))
@@ -400,7 +401,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
     fit_j <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
     lls[[j]] <- log_lik(
       fit_j, newdata = mf[omitted, , drop = FALSE],
-      allow_new_levels = TRUE
+      allow_new_levels = TRUE, resp = resp
     )
   }
   # compute elpd_{loo,j} for each of the held out observations
@@ -423,7 +424,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
 }
 
 kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE, 
-                           group = NULL, newdata = NULL, 
+                           group = NULL, newdata = NULL, resp = NULL,
                            save_fits = FALSE, ...) {
   # most of the code is taken from rstanarm::kfold
   # Args:
@@ -496,7 +497,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     ks <- match(k, Ksub)
     lppds[[ks]] <- log_lik(
       fit_k, newdata = mf[predicted, , drop = FALSE], 
-      allow_new_levels = TRUE
+      allow_new_levels = TRUE, resp = resp
     )
     if (save_fits) {
       fits[ks, ] <- list(fit = fit_k, omitted = omitted) 
