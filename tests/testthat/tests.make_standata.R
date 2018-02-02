@@ -1,3 +1,5 @@
+context("Tests for make_standata")
+
 test_that(paste("make_standata returns correct data names ",
                 "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 

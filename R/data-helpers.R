@@ -116,9 +116,10 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   for (i in seq_along(data)) {
     needs_contrast <- is.factor(data[[i]]) && !names(data)[i] %in% ignore
     if (needs_contrast && is.null(attr(data[[i]], "contrasts"))) {
-      if (!is.null(attr(optdata[[names(data)[i]]], "contrasts"))) {
+      old_contrasts <- attr(optdata[[names(data)[i]]], "contrasts")
+      if (!is.null(old_contrasts)) {
         # take contrasts from optdata
-        contrasts(data[[i]]) <- attr(optdata[[names(data)[i]]], "contrasts")
+        contrasts(data[[i]]) <- old_contrasts
       } else if (length(unique(data[[i]])) > 1L) {
         # avoid error when supplying only a single level
         # hard code current global "contrasts" option

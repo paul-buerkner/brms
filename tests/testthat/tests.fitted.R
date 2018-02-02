@@ -1,3 +1,5 @@
+context("Tests for fitted helper functions")
+
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)

@@ -1,3 +1,5 @@
+context("Tests for brmsformula")
+
 test_that("brmsformula validates formulas of non-linear parameters", {
   expect_error(bf(y ~ a, ~ 1, a ~ 1),
                "Additional formulas must be named")

@@ -1,3 +1,5 @@
+context("Tests for restructuring of old brmsfit objects")
+
 test_that("restructure can be run without error", {
   # This test does not check if old models can really be restructured
   # since restructure is called with an already up-to-date model.

@@ -1,3 +1,5 @@
+context("Tests for brmsfit helper functions")
+
 test_that("first_greater returns expected results", {
   set.seed(12345)
   A <- cbind(1:10, 11:20, 21:30)

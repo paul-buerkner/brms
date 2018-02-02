@@ -1,3 +1,5 @@
+context("Tests for loglik helper functions")
+
 test_that("loglik for location shift models works as expected", {
   ns <- 25
   draws <- structure(list(), class = "brmsdraws")

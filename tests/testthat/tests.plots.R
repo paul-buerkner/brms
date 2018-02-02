@@ -1,3 +1,5 @@
+context("Tests for plotting functions")
+
 test_that("plotting functions don't throw unexpected errors", {
   theme_set(theme_black())
   fit <- brms:::rename_pars(brms:::brmsfit_example1)

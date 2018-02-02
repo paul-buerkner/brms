@@ -183,9 +183,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   if (length(family) != 1L) {
     stop2("Argument 'family' must be of length 1.")
   }
-  family <- rename(family, symbols = c("^normal$", "^zi_", "^hu_"),
-                   subs = c("gaussian", "zero_inflated_", "hurdle_"),
-                   fixed = FALSE)
+  pattern <- c("^normal$", "^zi_", "^hu_")
+  replacement <- c("gaussian", "zero_inflated_", "hurdle_")
+  family <- rename(family, pattern, replacement, fixed = FALSE)
   ok_families <- c(
     "gaussian", "student", "skew_normal",
     "binomial", "bernoulli", "categorical", 

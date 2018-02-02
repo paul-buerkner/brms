@@ -1,3 +1,5 @@
+context("Tests for formula parsing functions")
+
 test_that("parse_bf finds all variables in very long formulas", {
   expect_equal(parse_bf(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
                                  psi_api_ident + psi_api_intere + psi_api_groupint)$all, 

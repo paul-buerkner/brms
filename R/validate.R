@@ -963,6 +963,7 @@ validate_terms <- function(x) {
     return(NULL)
   }
   if (rsv_intercept) {
+    # allows to remove the intercept without causing cell mean coding
     attr(x, "intercept") <- 1
     attr(x, "rm_intercept") <- TRUE
   }

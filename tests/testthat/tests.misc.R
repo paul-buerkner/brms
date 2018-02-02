@@ -1,3 +1,5 @@
+context("Tests for miscellaneous functions")
+
 test_that("p performs correct indexing", {
   expect_equal(p(1:10), 1:10)
   x <- rnorm(10)
@@ -33,11 +35,14 @@ test_that("rename returns an error on duplicated names", {
 
 test_that("rename perform correct renaming", {
   names <- c("acd", "a[23]", "b__")
-  expect_equal(rename(names, symbols = c("[", "]", "__"), subs = c(".", ".", ":")),
-               c("acd", "a.23.", "b:"))
-  expect_equal(rename(names, symbols = c("^\\[", "\\]", "__$"), 
-                      subs = c(".", ".", ":"), fixed = FALSE),
-               c("acd", "a[23.", "b:"))
+  expect_equal(
+    rename(names, c("[", "]", "__"), c(".", ".", ":")), 
+    c("acd", "a.23.", "b:")
+  )
+  expect_equal(
+    rename(names, c("^\\[", "\\]", "__$"), c(".", ".", ":"), fixed = FALSE),
+    c("acd", "a[23.", "b:")
+  )
 })
 
 test_that("collapse_lists performs correct collapsing after names", {

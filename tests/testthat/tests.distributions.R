@@ -1,3 +1,5 @@
+context("Tests for distribution functions")
+
 test_that("student distribution works correctly", {
   expect_equal(integrate(dstudent_t, -100, 100, df = 15, mu = 10, sigma = 5)$value, 1)
   expect_equal(dstudent_t(1, df = 10, mu = 0, sigma = 5), dt(1/5, df = 10)/5)

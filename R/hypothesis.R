@@ -215,15 +215,15 @@ eval_hypothesis <- function(h, x, class, alpha) {
   # rename hypothesis for correct evaluation
   h_renamed <- rename(h, c(":", "[", "]", ","),  c("___", ".", ".", ".."))
   # get posterior and prior samples
-  symbols <- c(paste0("^", class), ":", "\\[", "\\]", ",")
-  subs <- c("", "___", ".", ".", "..")
+  pattern <- c(paste0("^", class), ":", "\\[", "\\]", ",")
+  repl <- c("", "___", ".", ".", "..")
   samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
-  names(samples) <- rename(names(samples), symbols, subs, fixed = FALSE)
+  names(samples) <- rename(names(samples), pattern, repl, fixed = FALSE)
   samples <- as.matrix(eval2(h_renamed, samples))
   prior_samples <- prior_samples(x, pars = parsH, exact_match = TRUE)
   if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
     names(prior_samples) <- rename(
-      names(prior_samples), symbols, subs, fixed = FALSE
+      names(prior_samples), pattern, repl, fixed = FALSE
     )
     prior_samples <- as.matrix(eval2(h_renamed, prior_samples))
   } else {

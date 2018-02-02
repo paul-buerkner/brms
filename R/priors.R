@@ -980,8 +980,8 @@ check_prior <- function(prior, formula, data = NULL,
   prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(
-    prior$class, symbols = c("^cor$", "^rescor$"), 
-    subs = c("L", "Lrescor"), fixed = FALSE
+    prior$class, c("^cor$", "^rescor$"), 
+    c("L", "Lrescor"), fixed = FALSE
   )
   rcols <- rcols_prior()
   duplicated_input <- duplicated(prior[, rcols])

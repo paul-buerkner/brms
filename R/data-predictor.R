@@ -84,10 +84,8 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   } else {
     # use vectors as indexing matrices in Stan is slow
     if (ncol(C)) {
-      out <- c(out, setNames(
-        as.list(as.data.frame(C)), 
-        paste0("C", p, "_", seq_len(ncol(C)))
-      ))
+      Cnames <- paste0("C", p, "_", seq_len(ncol(C)))
+      out <- c(out, setNames(as.list(as.data.frame(C)), Cnames))
     }
   }
   for (nlp in names(x$nlpars)) {
@@ -461,9 +459,7 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       if (use_cov(autocor)) {
         # data for the 'covariance' version of ARMA 
         out$N_tg <- length(unique(tgroup))
-        out$begin_tg <- as.array(
-          ulapply(unique(tgroup), match, tgroup)
-        )
+        out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
         out$nobs_tg <- as.array(with(out, 
           c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
         ))

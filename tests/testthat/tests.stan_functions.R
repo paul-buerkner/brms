@@ -1,3 +1,5 @@
+context("Tests for self-defined Stan functions")
+
 test_that("self-defined Stan functions work correctly", {
   # for some reason expose_stan_functions doesn't work within R CMD CHECK
   skip_if_not(exists("new_stan_functions", asNamespace("brms")))

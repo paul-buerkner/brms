@@ -1,3 +1,5 @@
+context("Tests for data helper functions")
+
 test_that("arr_design_matrix works correctly", {
   expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
   expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 

@@ -237,9 +237,9 @@ is_symmetric <- function(x, tol = sqrt(.Machine$double.eps)) {
   isSymmetric(x, tol = tol, check.attributes = FALSE)
 }
 
-ulapply <- function(X, FUN, ...) {
-  # short for unlist(lapply(.))
-  unlist(lapply(X = X, FUN = FUN, ...))
+ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
+  # short for unlist(lapply())
+  unlist(lapply(X, FUN, ...), recursive, use.names)
 }
 
 lc <- function(l, ...) {
@@ -300,37 +300,39 @@ require_package <- function(package) {
   invisible(TRUE)
 }
 
-rename <- function(x, symbols = NULL, subs = NULL, 
-                   fixed = TRUE, check_dup = FALSE) {
-  # rename certain symbols in a character vector
+rename <- function(x, pattern = NULL, replacement = NULL, 
+                   fixed = TRUE, check_dup = FALSE, ...) {
+  # rename certain patterns in a character vector
   # Args:
   #   x: a character vector to be renamed
-  #   symbols: the regular expressions in x to be replaced
-  #   subs: the replacements
+  #   pattern: the regular expressions in x to be replaced
+  #   replacement: the replacements
   #   fixed: same as for sub, grepl etc
   #   check_dup: logical; check for duplications in x after renaming
+  #   ...: passed to gsub
   # Returns: 
   #   renamed character vector of the same length as x
-  symbols <- as.character(symbols)
-  subs <- as.character(subs)
-  if (!length(symbols)) {
-    symbols <- c(" ", "(", ")", "[", "]", ",", "\"", "'", 
-                 "+", "-", "*", "/", "^", "=", "!=")
+  pattern <- as.character(pattern)
+  replacement <- as.character(replacement)
+  if (!length(pattern) && !length(replacement)) {
+    # default renaming to avoid special characters in coeffcient names 
+    pattern <- c(
+      " ", "(", ")", "[", "]", ",", "\"", "'", 
+      "+", "-", "*", "/", "^", "="
+    )
+    replacement <- c(rep("", 8), "P", "M", "MU", "D", "E", "EQ")
   }
-  if (!length(subs)) {
-    subs <- c(rep("", 8), "P", "M", "MU", "D", "E", "EQ", "NEQ")
+  if (length(replacement) == 1L) {
+    replacement <- rep(replacement, length(pattern))
   }
-  if (length(subs) == 1L) {
-    subs <- rep(subs, length(symbols))
-  }
-  stopifnot(length(symbols) == length(subs))
+  stopifnot(length(pattern) == length(replacement))
   # avoid zero-length pattern error
-  has_chars <- nzchar(symbols)
-  symbols <- symbols[has_chars]
-  subs <- subs[has_chars]
+  has_chars <- nzchar(pattern)
+  pattern <- pattern[has_chars]
+  replacement <- replacement[has_chars]
   out <- x
-  for (i in seq_along(symbols)) {
-    out <- gsub(symbols[i], subs[i], out, fixed = fixed)
+  for (i in seq_along(pattern)) {
+    out <- gsub(pattern[i], replacement[i], out, fixed = fixed, ...)
   }
   dup <- duplicated(out)
   if (check_dup && any(dup)) {
@@ -350,7 +352,8 @@ collapse_lists <- function(..., ls = list()) {
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
   out <- do.call(mapply, 
-    c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE))
+    c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
+  )
   names(out) <- elements
   out
 }
@@ -714,9 +717,7 @@ diff_quad <- function(x, x_new = NULL) {
   } else {
     x_new <- as.matrix(x_new)
   }
-  .diff_quad <- function(x1, x2) {
-    (x1 - x2)^2
-  }
+  .diff_quad <- function(x1, x2) (x1 - x2)^2
   out <- 0
   for (i in seq_len(ncol(x))) {
     out <- out + outer(x[, i], x_new[, i], .diff_quad)

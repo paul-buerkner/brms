@@ -1,3 +1,5 @@
+context("Tests for family functions")
+
 test_that("family functions returns expected results", {
   expect_equal(student(identity)$link, "identity")
   expect_equal(student()$link, "identity")

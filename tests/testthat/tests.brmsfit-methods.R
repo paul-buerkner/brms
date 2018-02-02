@@ -1,3 +1,5 @@
+context("Tests for brmsfit methods")
+
 test_that("all S3 methods have reasonable ouputs", {
   fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
   fit2 <- brms:::rename_pars(brms:::brmsfit_example2)

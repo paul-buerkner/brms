@@ -1,3 +1,5 @@
+context("Tests for make_stancode")
+
 # simplifies manual calling of tests
 expect_match2 <- brms:::expect_match2
 
