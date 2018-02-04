@@ -205,12 +205,10 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # LOO
   loo1 <- SW(LOO(fit1, cores = 1))
-  expect_true(is.numeric(loo1[["looic"]]))
-  expect_true(loo1[["se_looic"]] > 0)
-  expect_output(print(loo1), "LOOIC")
-  expect_equal(loo1, SW(loo(fit1, cores = 1)))
+  expect_true(is.numeric(loo1$estimates))
+  expect_output(print(loo1), "looic")
   
-  loo_compare1 <- SW(LOO(fit1, fit1, cores = 1))
+  loo_compare1 <- SW(loo(fit1, fit1, cores = 1))
   expect_equal(length(loo_compare1), 3)
   expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
   expect_output(print(loo_compare1), "fit1 - fit1")
@@ -220,33 +218,29 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
   
   loo2 <- SW(LOO(fit2, cores = 1))
-  expect_true(is.numeric(loo2[["looic"]]))
+  expect_true(is.numeric(loo2$estimates))
   
   loo3 <- SW(LOO(fit3, cores = 1))
-  expect_true(is.numeric(loo3[["looic"]]))
+  expect_true(is.numeric(loo3$estimates))
   loo3 <- SW(LOO(fit3, pointwise = TRUE, cores = 1))
-  expect_true(is.numeric(loo3[["looic"]]))
+  expect_true(is.numeric(loo3$estimates))
   
   loo4 <- SW(LOO(fit4, cores = 1))
-  expect_true(is.numeric(loo4[["looic"]]))
+  expect_true(is.numeric(loo4$estimates))
   
   loo5 <- SW(LOO(fit5, cores = 1))
-  expect_true(is.numeric(loo5[["looic"]]))
+  expect_true(is.numeric(loo5$estimates))
   
   loo6_1 <- SW(LOO(fit6, cores = 1))
-  expect_true(is.numeric(loo6_1[["looic"]]))
+  expect_true(is.numeric(loo6_1$estimates))
   loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data))
-  expect_true(is.numeric(loo6_2[["looic"]]))
+  expect_true(is.numeric(loo6_2$estimates))
   loo_compare <- compare_ic(loo6_1, loo6_2)
   expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
 
   # loo_linpred
   llp <- SW(loo_linpred(fit1))
   expect_equal(length(llp), nobs(fit1))
-  llp2 <- SW(loo::psislw(-log_lik(fit1), cores = 1))
-  llp2 <- loo_linpred(fit1, lw = llp2$lw_smooth)
-  expect_equal(llp, llp2)
-  
   expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
   llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
   expect_equal(length(llp), nobs(fit2))
@@ -264,7 +258,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(length(llp), nobs(fit4))
   
   # loo_predictive_interval
-  llp <- SW(loo_predictive_interval(fit3, pointwise = TRUE))
+  llp <- SW(loo_predictive_interval(fit3))
   expect_equal(dim(llp), c(nobs(fit3), 2))
   
   # marginal_effects
@@ -672,8 +666,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # WAIC
   waic1 <- SW(WAIC(fit1))
-  expect_true(is.numeric(waic1[["waic"]]))
-  expect_true(is.numeric(waic1[["se_waic"]]))
+  expect_true(is.numeric(waic1$estimates))
   expect_equal(waic1, SW(waic(fit1)))
   
   fit1 <- SW(add_ic(fit1, "waic"))
@@ -683,12 +676,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(length(waic_compare), 3)
   expect_equal(dim(waic_compare$ic_diffs__), c(1, 2))
   waic2 <- SW(WAIC(fit2))
-  expect_true(is.numeric(waic2[["waic"]]))
+  expect_true(is.numeric(waic2$estimates))
   waic_pointwise <- SW(WAIC(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
   expect_warning(WAIC(fit1, fit2), "Model comparisons are likely invalid")
   waic4 <- SW(WAIC(fit4))
-  expect_true(is.numeric(waic4[["waic"]]))
+  expect_true(is.numeric(waic4$estimates))
   
   # test diagnostic convenience functions
   expect_true(is(log_posterior(fit1), "data.frame"))

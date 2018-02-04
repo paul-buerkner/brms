@@ -4,7 +4,7 @@
 \alias{compare_ic}
 \title{Compare Information Criteria of Different Models}
 \usage{
-compare_ic(..., x = NULL, ic = c("loo", "waic"))
+compare_ic(..., x = NULL, ic = c("loo", "waic", "kfold"))
 }
 \arguments{
 \item{...}{At least two objects returned by 

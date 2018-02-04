@@ -12,8 +12,7 @@
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", resp = NULL, new_objects = list(),
   subset = NULL, nsamples = NULL, pointwise = NULL, nug = NULL,
-  k_threshold = 0.7, update_args = list(), cores = 1, wcp = 0.2,
-  wtrunc = 3/4)
+  k_threshold = 0.7, update_args = list(), cores = 1)
 
 LOO(x, ...)
 }
@@ -100,10 +99,6 @@ as \code{iter}, \code{chains}, or \code{cores}.}
 
 \item{cores}{The number of cores to use for parallelization. 
 Default is \code{1}.}
-
-\item{wcp, wtrunc}{Parameters used for 
-the Pareto smoothed importance sampling. 
-See \code{\link[loo:loo]{loo}} for details.}
 }
 \value{
 If just one object is provided, an object of class \code{ic}. 

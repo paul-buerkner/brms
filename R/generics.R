@@ -348,9 +348,6 @@ WAIC <- function(x, ...) {
 #'   as \code{iter}, \code{chains}, or \code{cores}.
 #' @param cores The number of cores to use for parallelization. 
 #'  Default is \code{1}.
-#' @param wcp,wtrunc Parameters used for 
-#'  the Pareto smoothed importance sampling. 
-#'  See \code{\link[loo:loo]{loo}} for details.
 #' @inheritParams predict.brmsfit
 #' 
 #' @details When comparing models fitted to the same data, 

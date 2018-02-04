@@ -91,7 +91,7 @@ for truncated discrete models only
 \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
 
 \item{loo_args}{An optional list of additional arguments 
-passed to \code{\link[loo:psislw]{psislw}}. 
+passed to \code{\link[loo:psis]{psis}}. 
 Ignored for non \code{loo_*} ppc types.}
 
 \item{...}{Further arguments passed to the ppc functions

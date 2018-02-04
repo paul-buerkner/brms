@@ -1,5 +1,5 @@
 compute_ics <- function(models, model_names, 
-                        ic = c("loo", "waic", "psislw", "kfold"),
+                        ic = c("loo", "waic", "psis", "psislw", "kfold"),
                         use_stored_ic = FALSE, 
                         compare = TRUE, ...) {
   # helper function used to create (lists of) 'ic' objects
@@ -62,7 +62,7 @@ compute_ics <- function(models, model_names,
   out
 }
 
-compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
+compute_ic <- function(x, ic = c("loo", "waic", "psis", "psislw", "kfold"),
                        model_name = "", reloo = FALSE, k_threshold = 0.7,
                        loo_args = list(), update_args = list(), ...) {
   # compute information criteria using the 'loo' package
@@ -85,10 +85,17 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
     loo_args$x <- log_lik(x, ...)
     pointwise <- is.function(loo_args$x)
     if (pointwise) {
-      loo_args$args <- attr(loo_args$x, "args")
-      attr(loo_args$x, "args") <- NULL
+      loo_args$draws <- attr(loo_args$x, "draws")
+      loo_args$data <- attr(loo_args$x, "data")
+    }
+    if (ic == "psis") {
+      if (pointwise) {
+        stop2("Cannot use pointwise evaluation for 'psis'.")
+      }
+      loo_args[["log_ratios"]] <- -loo_args[["x"]]
     }
     if (ic == "psislw") {
+      # deprecated as of loo 2.0
       if (pointwise) {
         loo_args[["llfun"]] <- loo_args[["x"]]
         loo_args[["llargs"]] <- loo_args[["args"]]
@@ -157,7 +164,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
 #' }
 #' 
 #' @export
-compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
+compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   ic <- match.arg(ic)
   if (!(is.null(x) || is.list(x))) {
     stop2("Argument 'x' should be a list.")
@@ -209,7 +216,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
   rownames(ic_diffs) <- rnames
   colnames(ic_diffs) <- c(toupper(ics[1]), "SE")
   x$ic_diffs__ <- ic_diffs
-  class(x) <- c("iclist", "list")
+  class(x) <- "iclist"
   x
 }
 
@@ -261,11 +268,10 @@ add_waic.brmsfit <- function(x, ...) {
   add_ic(x, ic = "waic", ...)
 }
 
-loo_weights <- function(object, lw = NULL, log = FALSE, 
-                        loo_args = list(), ...) {
+loo_weights <- function(x, lw = NULL, log = FALSE, loo_args = list(), ...) {
   # compute loo weights for use in loo_predict and related methods
   # Args:
-  #   object: a brmsfit object
+  #   x: a brmsfit object
   #   lw: precomputed log weights matrix
   #   log: return log weights?
   #   loo_args: further arguments passed to functions of loo
@@ -276,7 +282,7 @@ loo_weights <- function(object, lw = NULL, log = FALSE,
     stopifnot(is.matrix(lw))
   } else {
     message("Running PSIS to compute weights")
-    psis <- compute_ic(object, ic = "psislw", loo_args = loo_args, ...)
+    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
     lw <- psis[["lw_smooth"]]
   }
   if (!log) {
@@ -373,7 +379,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7,
       "If this is a false positive, please set 'check' to FALSE."
     )
   }
-  if (is.null(x$pareto_k)) {
+  if (is.null(x$diagnostics$pareto_k)) {
     stop2("No Pareto k estimates found in the 'loo' object.")
   }
   obs <- loo::pareto_k_ids(x, k_threshold)
@@ -446,9 +452,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       stop2("'K' must be greater than one and smaller or ", 
             "equal to the number of observations in the model.")
     }
-    perm <- sample.int(N)
-    idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
-    bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
+    bin <- loo::kfold_split_random(K, N)
   } else {
     # validate argument 'group'
     valid_groups <- get_cat_vars(x)
@@ -506,17 +510,19 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
   elpd_kfold <- sum(elpds)
   se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
+  rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
+  cnames <- c("Estimate", "SE")
+  estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
+  estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
+  estimates[3, ] <- c(- 2 * elpd_kfold, 2 * se_elpd_kfold)
   out <- nlist(
-    elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
-    se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
-    pointwise = cbind(elpd_kfold = elpds),
-    model_name = deparse(substitute(x)),
-    K, Ksub, exact_loo, group 
+    estimates, pointwise = cbind(elpd_kfold = elpds),
+    model_name = deparse(substitute(x)), K, Ksub, exact_loo, group 
   )
   if (save_fits) {
     out$fits <- fits 
   }
-  structure(out, class = "loo")
+  structure(out, class = c("kfold", "loo"))
 }
 
 recommend_loo_options <- function(n, model_name = "") {
@@ -547,33 +553,17 @@ recommend_loo_options <- function(n, model_name = "") {
 }
 
 #' @export
-print.ic <- function(x, digits = 2, ...) {
-  # print the output of LOO(x) and WAIC(x)
-  ic <- names(x)[3]
-  mat <- matrix(
-    c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
-      dimnames = list("", c(toupper(ic), "SE"))
-  )
-  print(round(mat, digits = digits))
-  if (is_equal(ic, "kfoldic")) {
-    sub <- length(x$Ksub)
-    sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
-    cat(paste0("\nBased on ", sub, x$K, "-fold cross-validation\n"))
-  }
-  invisible(x)
-}
-
-#' @export
 print.iclist <- function(x, digits = 2, ...) {
   # print the output of LOO and WAIC with multiple models
   m <- x
   m$ic_diffs__ <- NULL
   if (length(m)) {
-    ic <- names(m[[1]])[3]
+    # TODO: add call to print_dims as soon as exported by loo
+    ic <- rownames(m[[1]]$estimates)[3]
     mat <- matrix(0, nrow = length(m), ncol = 2)
     dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
     for (i in seq_along(m)) { 
-      mat[i, ] <- c(m[[i]][[ic]], m[[i]][[paste0("se_", ic)]])
+      mat[i, ] <- m[[i]]$estimates[3, ]
     }
   } else {
     mat <- ic <- NULL
@@ -588,19 +578,28 @@ print.iclist <- function(x, digits = 2, ...) {
     mat <- rbind(mat, ic_diffs)
   }
   print(round(mat, digits = digits), na.print = "")
-  if (is_equal(ic, "kfoldic")) {
-    sub <- length(x[[1]]$Ksub)
-    sub <- ifelse(sub > 0 & sub < x[[1]]$K, paste0(sub, " subsets of "), "")
-    cat(paste0("\nBased on ", sub, x[[1]]$K, "-fold cross-validation\n"))
-  }
   invisible(x)
 }
 
+# TODO: import print_dims from loo
+#' Temporary print_dim method for kfold objects
+#' 
+#' @param x a \code{kfold} object
+#' @param ... currently ignored
+#' 
+#' @export
+print_dims.kfold <- function(x, ...) {
+  sub <- length(x$Ksub)
+  sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
+  cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
+}
+
 is.loo <- function(x) {
+  # class from the loo package
   inherits(x, "loo")
 }
 
 is.ic <- function(x) {
-  # objects of class 'ic' are returned by LOO and WAIC
+  # class 'ic' inherits from class 'loo'
   inherits(x, "ic")
 }

@@ -35,9 +35,10 @@ loglik_internal.brmsdraws <- function(draws, ...) {
   reorder_obs(loglik, old_order, sort = sort)
 }
 
-loglik_pointwise <- function(i, draws, data = data.frame()) {
+loglik_pointwise <- function(data_i, draws) {
   # for use in pointwise evaluation only
   # cannot be made an S3 methods since i must be the first argument
+  i <- data_i$i
   if (is.mvbrmsdraws(draws) && !length(draws$mvpars$rescor)) {
     out <- lapply(draws$resps, loglik_pointwise, i = i)
     out <- Reduce("+", out)

@@ -695,10 +695,10 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     out$prior <- prior_summary(object, all = FALSE)
   }
   if (loo || is.ic(object[["loo"]])) {
-    out$loo <- SW(LOO(object)$looic)
+    out$loo <- SW(LOO(object)$estimates[3, 1])
   }
   if (waic || is.ic(object[["waic"]])) {
-    out$waic <- SW(WAIC(object)$waic)
+    out$waic <- SW(WAIC(object)$estimates[3, 1])
   }
   if (R2 || is.matrix(object[["R2"]])) {
     out$R2 <- mean(bayes_R2(object, summary = FALSE))
@@ -1124,7 +1124,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
 #' @param loo_args An optional list of additional arguments 
-#'  passed to \code{\link[loo:psislw]{psislw}}. 
+#'  passed to \code{\link[loo:psis]{psis}}. 
 #'  Ignored for non \code{loo_*} ppc types.
 #' @param ... Further arguments passed to the ppc functions
 #'   of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.
@@ -1246,11 +1246,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     warning2("'pp_check' may not be meaningful for censored models.")
   }
   y <- as.vector(sdata[[paste0("Y", usc(resp))]])
-  pred_args <- nlist(
-    object, newdata, re_formula, allow_new_levels, resp,
+  pred_args <- c(list(object), nlist(
+    newdata, re_formula, allow_new_levels, resp,
     sample_new_levels, new_objects, incl_autocor, nsamples, 
     subset, nug, ntrys, sort = FALSE, summary = FALSE
-  )
+  ))
   yrep <- do.call(method, pred_args)
   if (has_trials(family(object, resp = resp))) {
     # use success proportions following Gelman and Hill (2006)
@@ -1259,9 +1259,15 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   }
   ppc_args <- list(y, yrep, ...)
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
-    # required for 'loo' types only
+    # required for 'loo' types only (deprecated as of loo 2.0)
     pred_args$loo_args <- loo_args
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
+  }
+  if ("psis_object" %in% names(formals(ppc_fun)) && 
+      !"psis_object" %in% names(ppc_args)) {
+    # required for 'loo' types only (loo >= 2.0)
+    pred_args$loo_args <- loo_args
+    ppc_args$psis_object <- do.call(compute_ic, c(pred_args, ic = "psis"))
   }
   # allow using arguments 'group' and 'x' for new data
   mf <- do.call(validate_newdata, c(newd_args, return_standata = FALSE))
@@ -1918,8 +1924,7 @@ pp_average.brmsfit <- function(
     args <- c(models, control)
     if (fun %in% c("loo", "waic", "kfold")) {
       args$compare <- FALSE
-      ename <- switch(fun, loo = "looic", waic = "waic", kfold = "kfoldic")
-      ics <- ulapply(SW(do.call(fun, args)), "[[", ename)
+      ics <- ulapply(SW(do.call(fun, args)), function(x) x$estimates[3, 1])
       ic_diffs <- ics - min(ics)
       weights <- exp(- ic_diffs / 2)
     } else if (weights %in% "bridge") {
@@ -2302,8 +2307,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
                         resp = NULL, new_objects = list(), 
                         subset = NULL, nsamples = NULL, pointwise = NULL,
                         nug = NULL, k_threshold = 0.7, 
-                        update_args = list(), cores = 1, 
-                        wcp = 0.2, wtrunc = 3/4) {
+                        update_args = list(), cores = 1) {
   models <- list(x, ...)
   model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
   model_names <- c(deparse_combine(substitute(x)), model_names)
@@ -2311,7 +2315,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
     subset <- sample(nsamples(x), nsamples)
   }
   pointwise <- set_pointwise(x, pointwise, newdata, subset)
-  loo_args <- nlist(wcp, wtrunc, cores)
+  loo_args <- nlist(cores)
   not_for_reloo <- intersect(names(match.call()), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
     not_for_reloo <- collapse_comma(not_for_reloo)
@@ -2337,8 +2341,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
                          new_objects = list(), resp = NULL, 
                          subset = NULL, nsamples = NULL, pointwise = NULL, 
                          nug = NULL, k_threshold = 0.7, 
-                         update_args = list(), cores = 1, 
-                         wcp = 0.2, wtrunc = 3/4) {
+                         update_args = list(), cores = 1) {
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
@@ -2381,10 +2384,9 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
 #'   indicating the desired probability mass to include in the intervals. The
 #'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
-#' @param lw An optional matrix of (smoothed) log-weights. If \code{lw} is 
-#'   missing then \code{\link[loo]{psislw}} is executed internally, which may be
-#'   time consuming for models fit to very large datasets. 
-#'   If \code{lw} is specified, arguments passed via \code{...} may be ignored.
+#' @param psis_object An optional object returend by \code{\link[loo]{psis}}. 
+#'   If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
+#'   internally, which may be time consuming for models fit to very large datasets. 
 #' @param ... Optional arguments passed to the underlying methods that is 
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
 #'   \code{\link[brms:predict.brmsfit]{predict}} or
@@ -2417,9 +2419,9 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #' loo_predictive_interval(fit, prob = 0.8)
 #' 
 #' ## optionally log-weights can be pre-computed and reused
-#' psis <- loo::psislw(-log_lik(fit), cores = 2)
-#' loo_predictive_interval(fit, prob = 0.8, lw = psis$lw_smooth)
-#' loo_predict(fit, type = "var", lw = psis$lw_smooth)
+#' psis <- loo::psis(-log_lik(fit), cores = 2)
+#' loo_predictive_interval(fit, prob = 0.8, psis_object = psis)
+#' loo_predict(fit, type = "var", psis_object = psis)
 #' }
 #' 
 #' @method loo_predict brmsfit
@@ -2427,17 +2429,18 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #' @export loo_predict
 #' @export 
 loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                resp = NULL, probs = 0.5, lw = NULL, cores = 1, 
-                                wcp = 0.2, wtrunc = 3/4, ...) {
+                                resp = NULL, probs = 0.5, psis_object = NULL,
+                                cores = 1, ...) {
   type <- match.arg(type)
   stopifnot_resp(object, resp)
-  loo_args <- nlist(cores, wcp, wtrunc)
-  lw <- loo_weights(
-    object, lw = lw, log = TRUE, 
-    loo_args = loo_args, resp = resp, ...
-  )
+  if (is.null(psis_object)) {
+    message("Running PSIS to compute weights")
+    psis_object <- compute_ic(
+      object, ic = "psis", loo_args = nlist(cores), resp = resp, ...
+    )
+  }
   preds <- predict(object, summary = FALSE, resp = resp, ...)
-  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
+  loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
 #' @rdname loo_predict.brmsfit
@@ -2446,21 +2449,23 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
 #' @export loo_linpred
 #' @export 
 loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                resp = NULL, probs = 0.5, scale = "linear", lw = NULL, 
-                                cores = 1, wcp = 0.2, wtrunc = 3/4, ...) {
+                                resp = NULL, probs = 0.5, scale = "linear", 
+                                psis_object = NULL, cores = 1, ...) {
   type <- match.arg(type)
   stopifnot_resp(object, resp)
-  if (is_ordinal(object$family) || is_categorical(object$family)) {
+  family <- family(object, resp = resp)
+  if (is_ordinal(family) || is_categorical(family)) {
     stop2("Method 'loo_linpred' is not yet working ", 
           "for categorical or ordinal models")
   }
-  loo_args <- nlist(cores, wcp, wtrunc)
-  lw <- loo_weights(
-    object, lw = lw, log = TRUE, 
-    loo_args = loo_args, resp = resp, ...
-  )
+  if (is.null(psis_object)) {
+    message("Running PSIS to compute weights")
+    psis_object <- compute_ic(
+      object, ic = "psis", loo_args = nlist(cores), resp = resp, ...
+    )
+  }
   preds <- fitted(object, scale = scale, summary = FALSE, resp = resp, ...)
-  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
+  loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
 #' @rdname loo_predict.brmsfit
@@ -2469,7 +2474,7 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
 #' @export loo_predictive_interval
 #' @export
 loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
-                                            lw = NULL, ...) {
+                                            psis_object = NULL, ...) {
   if (length(prob) != 1L) {
     stop2("Argument 'prob' should be of length 1.")
   }
@@ -2477,7 +2482,7 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   probs <- c(alpha, 1 - alpha)
   labs <- paste0(100 * probs, "%")
   intervals <- loo_predict(
-    object, type = "quantile", probs = probs, lw = lw, ...
+    object, type = "quantile", probs = probs, psis_object = psis_object, ...
   )
   rownames(intervals) <- labs
   t(intervals)
@@ -2534,10 +2539,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     stopifnot(combine)
     loglik <- loglik_pointwise
-    attr(loglik, "args") <- list(
-      draws = draws, N = choose_N(draws), 
-      S = draws$nsamples, data = data.frame()
-    )
+    attr(loglik, "draws") <- draws
+    attr(loglik, "data") <- data.frame(i = seq_len(choose_N(draws)))
   } else {
     loglik <- loglik_internal(draws, combine = combine)
     if (anyNA(loglik)) {
