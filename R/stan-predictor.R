@@ -202,10 +202,12 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
   )
   if (x$rescor) {
     # we already know at this point that all families are identical
-    adnames <- unique(ulapply(x$terms, function(x) names(x$adforms)))
-    if (!all(adnames %in% c("se", "weights"))) {
-      stop2("Only 'se', 'weights' are supported addition ",
-            "arguments when 'rescor' is estimated.")
+    adforms <- lapply(x$terms, "[[", "adforms")
+    adnames <- unique(ulapply(adforms, names))
+    adallowed <- c("se", "weights", "mi")
+    if (!all(adnames %in% adallowed))  {
+      stop2("Only ", collapse_comma(adallowed), " are supported ", 
+            "addition arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
     resp <- x$responses
@@ -231,6 +233,18 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
       str_add(out$tdataD) <- paste0(
         "  vector<lower=0>[N] weights = weights_", resp[1], ";\n" 
       )
+    }
+    miforms <- rmNULL(lapply(adforms, "[[", "mi"))
+    if (length(miforms)) {
+      str_add(out$modelD) <- "  vector[nresp] Yf[N] = Y;\n"
+      for (i in seq_along(miforms)) {
+        j <- match(names(miforms)[i], resp)
+        str_add(out$modelC1) <- paste0(
+          "  for (n in 1:Nmi_", resp[j], ") {\n",
+          "    Yf[Jmi_", resp[j], "[n]][", j, "] = Ymi_", resp[j], "[n];\n",
+          "  }\n"
+        )
+      }
     }
     str_add(out$par) <- paste0(
       "  // parameters for multivariate linear models \n",

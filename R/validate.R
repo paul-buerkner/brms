@@ -617,6 +617,10 @@ as.brmsterms <- function(x) {
     }
     out$adforms$weights <- weight_forms[[1]]
   }
+  miforms <- rmNULL(lapply(x$terms, function(x) x$adforms$mi))
+  if (length(miforms)) {
+    out$adforms$mi <- miforms[[1]]
+  }
   out
 }
 
