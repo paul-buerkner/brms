@@ -239,10 +239,8 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
       str_add(out$modelD) <- "  vector[nresp] Yf[N] = Y;\n"
       for (i in seq_along(miforms)) {
         j <- match(names(miforms)[i], resp)
-        str_add(out$modelC1) <- paste0(
-          "  for (n in 1:Nmi_", resp[j], ") {\n",
-          "    Yf[Jmi_", resp[j], "[n]][", j, "] = Ymi_", resp[j], "[n];\n",
-          "  }\n"
+        str_add(out$modelC2) <- paste0(
+          "    Yf[n][", j, "] = Yf_", resp[j], "[n];\n"
         )
       }
     }
