@@ -26,7 +26,7 @@ resp_cens(x, y2 = NULL)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi()
+resp_mi(sdy = NULL)
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the

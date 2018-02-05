@@ -195,11 +195,20 @@ change_Ymi <- function(bterms, data, pars, ...) {
   change <- list()
   if (is.formula(bterms$adforms$mi)) {
     resp <- usc(combine_prefix(bterms))
+    resp_data <- data_response(bterms, data, check_response = FALSE)
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      Jmi <- data_response(bterms, data, check_response = FALSE)$Jmi
+      Jmi <- resp_data$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
+      change <- lc(change, nlist(pos, fnames))
+    }
+    # noise-free response variables
+    Yme <- paste0("Yme", resp)
+    pos <- grepl(paste0("^", Yme, "\\["), pars)
+    if (any(pos)) {
+      Jme <- resp_data$Jme
+      fnames <- paste0(Yme, "[", Jme, "]")
       change <- lc(change, nlist(pos, fnames))
     }
   }

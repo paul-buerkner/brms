@@ -14,7 +14,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)
   out <- exclude_pars_internal(
-    bterms, data = data, save_all_pars = save_all_pars
+    bterms, data = data, save_all_pars = save_all_pars,
+    save_mevars = save_mevars
   )
   uni_me <- get_uni_me(bterms)
   if (!save_all_pars) {
@@ -42,7 +43,7 @@ exclude_pars_internal <- function(x, ...) {
 }
 
 #' @export
-exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars = FALSE, ...) {
+exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars, ...) {
   out <- c("Rescor", "Sigma")
   if (!save_all_pars) {
     out <- c(out, "Lrescor", "LSigma")
@@ -54,7 +55,7 @@ exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars = FALSE, ...) {
 }
 
 #' @export
-exclude_pars_internal.brmsterms <- function(x, save_all_pars = FALSE, ...) {
+exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) {
   p <- usc(combine_prefix(x))
   out <- paste0(c("res_cov_matrix", names(x$dpars)), p)
   if (!save_all_pars) {
@@ -66,6 +67,9 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars = FALSE, ...) {
     for (dp in names(x$dpars)) {
       out <- c(out, exclude_pars_internal(x$dpars[[dp]], ...))
     }
+  }
+  if (!save_mevars && is.formula(x$adforms$mi)) {
+    out <- c(out, paste0("Yme", p)) 
   }
   out
 }

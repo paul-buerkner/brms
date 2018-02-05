@@ -767,10 +767,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     which_na <- which(is.na(out$Y))
     out$Nmi <- length(which_na)
     out$Jmi <- which_na
+    sdy <- get_sdy(x, data)
+    if (!is.null(sdy)) {
+      # measurement error in the response
+      if (length(sdy) != length(out$Y)) {
+        stop2("'sdy' must have the same length as the response.")
+      }
+      out$Jme <- setdiff(seq_along(out$Y), which_na)
+      out$noise <- as.array(sdy[out$Jme])
+    }
     if (!not4stan) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected
-      out$Y[which_na] <- Inf  
+      out$Y[which_na] <- Inf
     }
   } 
   resp <- usc(combine_prefix(x))

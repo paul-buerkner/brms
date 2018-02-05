@@ -201,8 +201,11 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 
 #' @rdname addition-terms
 #' @export
-resp_mi <- function() {
-  NULL
+resp_mi <- function(sdy = NULL) {
+  if (!is.null(sdy) && !is.numeric(sdy)) {
+    stop2("Measurement error should be numeric.")
+  }
+  sdy
 }
 
 #' Defining smooths in \pkg{brms} formulas

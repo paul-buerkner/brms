@@ -3,7 +3,8 @@ stan_response <- function(bterms, data) {
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   rtype <- ifelse(use_int(family), "int", "real")
-  resp <- usc(bterms$resp)
+  px <- check_prefix(bterms)
+  resp <- usc(combine_prefix(px))
   out <- list()
   if (rtype == "real") {
     # don't use real Y[n]
@@ -81,12 +82,42 @@ stan_response <- function(bterms, data) {
     str_add(out$par) <- paste0(
       "  vector[Nmi", resp, "] Ymi", resp, ";  // estimated missings\n" 
     )
-    str_add(out$modelD) <- paste0(
-      "  vector[N] Yf", resp, " = Y", resp, ";\n" 
-    )
     str_add(out$modelC1) <- paste0(
       "  Yf", resp, "[Jmi", resp, "] = Ymi", resp, ";\n"
     )
+    sdy <- get_sdy(bterms, data)
+    if (is.null(sdy)) {
+      # response is modeled without measurement error
+      str_add(out$modelD) <- paste0(
+        "  vector[N] Yf", resp, " = Y", resp, ";\n" 
+      )
+    } else {
+      str_add(out$data) <- paste0(
+        "  int<lower=1> Jme", resp, "[N - Nmi", resp, "];",  
+        "  // positions of non-missings \n",
+        "  vector<lower=0>[N - Nmi", resp, "] noise", resp, ";\n"
+      )
+      str_add(out$par) <- paste0(
+        "  vector[N - Nmi", resp, "] Yme", resp, ";\n",
+        "  real meanme", resp, ";\n",
+        "  real<lower=0> sdme", resp, ";\n"
+      )
+      str_add(out$modelD) <- paste0(
+        "  vector[N] Yf", resp, ";\n" 
+      )
+      str_add(out$modelC1) <- paste0(
+        "  Yf", resp, "[Jme", resp, "] = Yme", resp, ";\n"
+      )
+      str_add(out$prior) <- paste0(
+        "  target += normal_lpdf(Y", resp, "[Jme", resp, "]",
+        " | Yme", resp, ", noise", resp, ");\n",
+        # cannot use non-centered parameterization to include Ymi
+        "  target += normal_lpdf(Yf", resp, 
+        " | meanme", resp, ", sdme", resp, ");\n",
+        stan_prior(prior, class = "meanme", px = px, suffix = p),
+        stan_prior(prior, class = "sdme", px = px, suffix = p)
+      )
+    }
   }
   out
 }
