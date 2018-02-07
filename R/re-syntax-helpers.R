@@ -15,7 +15,7 @@ get_groups <- function(x) {
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
     x <- parse_bf(x)
   }
-  out <- unlist(get_re(x)$groups)
+  out <- ulapply(get_re(x)$gcall, "[[", "groups")
   out <- c(out, get_autocor_vars(x, "group"))
   unique(out[nzchar(out)])
 }
