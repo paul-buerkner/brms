@@ -325,9 +325,6 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
       stop2("Censoring or truncation is not yet allowed in mixture models.")
     }
-    if (is.formula(x$mi) && (is.formula(x$cens) || is.formula(x$trunc))) {
-      stop2("Censoring or truncation is not allowed when missings are imputed.")
-    }
   }
   x
 }
@@ -1068,29 +1065,86 @@ get_autocor_vars.brmsfit <- function(x, ...) {
   get_autocor_vars(x$formula, ...)
 }
 
-get_bounds <- function(formula, data = NULL) {
+get_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
+                       stan = FALSE) {
   # extract truncation boundaries
   # Returns:
-  #   a list containing two numbers named lb and ub
+  #   incl_family: include the family in the derivation of bounds?
+  #   stan: return bounds in form of Stan syntax?
+  stopifnot(is.brmsterms(bterms))
+  formula <- bterms$adforms$trunc
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
     stopifnot(length(term) == 1L && grepl("resp_trunc\\(", term))
-    trunc <- eval_rhs(formula, data = data)
+    out <- eval_rhs(formula, data = data)
   } else {
-    trunc <- resp_trunc()
+    out <- resp_trunc()
   }
-  trunc
+  if (incl_family) {
+    family_bounds <- get_family_bounds(bterms)
+    out$lb <- max(out$lb, family_bounds$lb)
+    out$ub <- min(out$ub, family_bounds$ub)
+  }
+  if (stan) {
+    if (any(out$lb > -Inf | out$ub < Inf)) {
+      tmp <- c(
+        if (out$lb > -Inf) paste0("lower=", out$lb),
+        if (out$ub < Inf) paste0("upper=", out$ub)
+      )
+      out <- paste0("<", paste0(tmp, collapse = ","), ">")
+    } else {
+      out <- ""
+    }
+  }
+  out
 }
 
-has_cens <- function(formula, data = NULL) {
+get_family_bounds <- function(bterms) {
+  # get boundaries of response distribution
+  stopifnot(is.brmsterms(bterms))
+  family <- bterms$family$family
+  if (is.null(family)) {
+    return(list(lb = -Inf, ub = Inf))
+  }
+  resp <- usc(bterms$resp)
+  pos_families <- c(
+    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
+    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+    "hurdle_lognormal", "zero_inflated_poisson", 
+    "zero_inflated_negbinomial"
+  )
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
+  ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
+  if (family %in% pos_families) {
+    out <- list(lb = 0, ub = Inf)
+  } else if (family %in% c("bernoulli", beta_families)) {
+    out <- list(lb = 0, ub = 1)
+  } else if (family %in% c("categorical", ordinal_families)) {
+    out <- list(lb = 1, ub = paste0("ncat", resp))
+  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
+    out <- list(lb = 0, ub = paste0("trials", resp))
+  } else if (family %in% "von_mises") {
+    out <- list(lb = -pi, ub = pi)
+  } else if (family %in% c("wiener", "shifted_lognormal")) {
+    out <- list(lb = paste("min_Y", resp), ub = Inf)
+  } else {
+    out <- list(lb = -Inf, ub = Inf)
+  }
+  out
+}
+
+has_cens <- function(bterms, data = NULL) {
   # indicate if the model is (possibly interval) censored
+  stopifnot(is.brmsterms(bterms))
+  formula <- bterms$adforms$cens
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
     stopifnot(length(term) == 1L && grepl("resp_cens\\(", term))
-    cens <- eval_rhs(formula, data = data)
-    cens <- structure(TRUE, interval = !is.null(attr(cens, "y2")))
+    out <- eval_rhs(formula, data = data)
+    out <- structure(TRUE, interval = !is.null(attr(out, "y2")))
   } else {
-    cens <- FALSE
+    out <- FALSE
   }
-  cens
+  out
 }

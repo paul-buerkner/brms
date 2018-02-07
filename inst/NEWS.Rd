@@ -20,6 +20,7 @@
       \item Allow the \code{:} operator to combine 
       groups in multi-membership terms thanks to
       Gang Chen.
+      \item Allow truncation in multivariate models.
     }
   }
 }
