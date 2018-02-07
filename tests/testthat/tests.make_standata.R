@@ -503,6 +503,10 @@ test_that("make_standata handles multi-membership models", {
   
   sdata <- make_standata(y ~ (1|mm(g1,g2, weights = cbind(w1, w2))), dat)
   expect_equal(sdata$W_1_1, as.array(dat$w1 / (dat$w1 + dat$w2)))
+  
+  # tests if ":" works in multi-membership models
+  sdata <- make_standata(y ~ (1|mm(w1:g1,w1:g2)), dat)
+  expect_true(all(c("J_1_1", "J_1_2") %in% names(sdata)))
 })
 
 test_that("make_standata handles calls to the 'poly' function", {

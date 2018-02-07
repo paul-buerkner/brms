@@ -15,6 +15,13 @@
       family \code{shifted_lognormal}. (#218)
     }
   }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Allow the \code{:} operator to combine 
+      groups in multi-membership terms thanks to
+      Gang Chen.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 2.1.0}{

@@ -477,11 +477,12 @@ parse_re <- function(formula) {
     gcall <- eval2(re_parts$rhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(
-      group = group, gtype = gcall$type,
+      group = group, gtype = gcall$type, 
       gn = i, id = id, type = type[i],
       cor = substr(re_parts$mid[i], 1, 2) != "||",
       stringsAsFactors = FALSE
     )
+    out[[i]]$groups <- list(gcall$groups)
     out[[i]]$gcall <- list(gcall)
     out[[i]]$form <- list(formula(paste("~", re_parts$lhs[i])))
   }
@@ -490,8 +491,8 @@ parse_re <- function(formula) {
     out <- out[order(out$group), ]
   } else {
     out <- data.frame(
-      group = character(0), gn = numeric(0),
-      id = numeric(0), cor = logical(0), 
+      group = character(0), gtype = character(0),
+      gn = numeric(0), id = numeric(0), cor = logical(0), 
       type = character(0), form = character(0)
     )
   }
