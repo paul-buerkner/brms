@@ -10,9 +10,8 @@ mixture(..., flist = NULL, nmix = 1, order = NULL)
 \item{...}{One or more objects providing a description of the 
 response distributions to be combined in the mixture model. 
 These can be family functions, calls to family functions or 
-character strings naming the families.
-For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.}
+character strings naming the families. For details of supported 
+families see \code{\link{brmsfamily}}.}
 
 \item{flist}{Optional list of objects, which are treated in the 
 same way as objects passed via the \code{...} argument.}

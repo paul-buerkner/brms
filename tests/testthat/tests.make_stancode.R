@@ -232,7 +232,7 @@ test_that("link functions appear in the Stan code", {
   expect_match2(make_stancode(y ~ x, dat, family = von_mises(tan_half)), 
                "mu[n] = inv_tan_half(mu[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = weibull()),
-                "mu[n] = exp((mu[n]) / shape);")
+                "mu[n] = exp(mu[n]) / tgamma(1 + 1 / shape);")
   expect_match2(make_stancode(y ~ x, dat, family = exponential("identity")),
                "mu[n] = inv(mu[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = poisson("sqrt")),

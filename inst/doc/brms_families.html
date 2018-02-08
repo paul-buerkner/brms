@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2017-12-04" />
+<meta name="date" content="2018-02-08" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2017-12-04</em></h4>
+<h4 class="date"><em>2018-02-08</em></h4>
 
 
 
@@ -81,9 +81,9 @@ f(y_i) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y_
 f(y_i) = \frac{(\alpha / \mu_i)^\alpha}{\Gamma(\alpha)} y_i^{\alpha-1} 
 \exp\left(-\frac{\alpha y_i}{\mu_i}\right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>weibull</strong> family is given by <span class="math display">\[
-f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)}\right)^{\alpha-1} 
-\exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)
-\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>inverse.gaussian</strong> family is given by <span class="math display">\[
+f(y_i) = \frac{\alpha}{s_i} \left(\frac{y_i}{s_i}\right)^{\alpha-1} 
+\exp\left(-\left(\frac{y_i}{s_i}\right)^\alpha\right)
+\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter and <span class="math inline">\(s_i = \mu_i / \Gamma(1 + 1 / \alpha)\)</span> is the scale parameter to that <span class="math inline">\(\mu_i\)</span> is the mean of the distribution. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>inverse.gaussian</strong> family is given by <span class="math display">\[
 f(y_i) = \left(\frac{\alpha}{2 \pi y_i^3}\right)^{1/2} \exp \left(\frac{-\alpha (y_i - \mu_i)^2}{2 \mu_i^2 y_i} \right)
 \]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter.</p>
 </div>

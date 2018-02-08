@@ -537,9 +537,7 @@ apply_dpar_ilink <- function(dpar, family) {
   if (is.mixfamily(family)) {
     dpar <- dpar_class(dpar) 
   }
-  no_link_family <- family$family %in% 
-    c("weibull", "cumulative", "sratio", "cratio", "acat")
-  !(no_link_family && dpar == "mu" || family$family %in% "categorical")
+  !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
 }
 
 choose_N <- function(draws) {

@@ -15,6 +15,14 @@
       family \code{shifted_lognormal}. (#218)
     }
   }
+  \subection{OTHER CHANGES}{
+    \itemize{
+      \item Change the parameterization of \code{weibull}
+      models to be consistent with other model classes.
+      Post-processing of \code{weibull} models fitted with 
+      earlier version of \pkg{brms} is no longer possible.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Allow the \code{:} operator to combine 
