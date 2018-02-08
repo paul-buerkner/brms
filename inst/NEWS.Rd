@@ -15,7 +15,7 @@
       family \code{shifted_lognormal}. (#218)
     }
   }
-  \subection{OTHER CHANGES}{
+  \subsection{OTHER CHANGES}{
     \itemize{
       \item Change the parameterization of \code{weibull}
       models to be consistent with other model classes.
