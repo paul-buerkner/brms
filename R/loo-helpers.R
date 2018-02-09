@@ -558,7 +558,6 @@ print.iclist <- function(x, digits = 2, ...) {
   m <- x
   m$ic_diffs__ <- NULL
   if (length(m)) {
-    # TODO: add call to print_dims as soon as exported by loo
     ic <- rownames(m[[1]]$estimates)[3]
     mat <- matrix(0, nrow = length(m), ncol = 2)
     dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
@@ -581,12 +580,7 @@ print.iclist <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
-# TODO: import print_dims from loo
-#' Temporary print_dim method for kfold objects
-#' 
-#' @param x a \code{kfold} object
-#' @param ... currently ignored
-#' 
+#' @importFrom loo print_dims
 #' @export
 print_dims.kfold <- function(x, ...) {
   sub <- length(x$Ksub)
