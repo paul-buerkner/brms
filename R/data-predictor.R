@@ -651,11 +651,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     } else if (is_ordinal(x$family)) {
       if (is.ordered(out$Y)) {
         out$Y <- as.numeric(out$Y)
-      } else if (all(is_wholenumber(out$Y))) {
-        out$Y <- out$Y - min(out$Y) + 1
-      } else {
-        stop2("Family '", family4error, "' requires either integers or ",
-              "ordered factors as responses.")
+      }
+      if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
+        stop2("Family '", family4error, "' requires either positive ", 
+              "integers or ordered factors as responses.")
       }
       if (length(unique(out$Y)) < 2L) {
         stop2("At least two response categories are required.")

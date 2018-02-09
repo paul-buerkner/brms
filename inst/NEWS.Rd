@@ -21,6 +21,9 @@
       models to be consistent with other model classes.
       Post-processing of \code{weibull} models fitted with 
       earlier version of \pkg{brms} is no longer possible.
+      \item Treat integer responses in \code{ordinal} models 
+      as directly indicating categories even if the lowest 
+      integer is not one.
     }
   }
   \subsection{BUG FIXES}{
