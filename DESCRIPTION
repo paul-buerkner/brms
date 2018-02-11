@@ -34,7 +34,6 @@ Suggests:
     RWiener,
     future,
     mice,
-    arm,
     spdep,
     mnormt,
     MCMCglmm,
