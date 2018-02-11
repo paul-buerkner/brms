@@ -186,6 +186,10 @@ test_that("categorical models work correctly", {
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
+  # tests with new data
+  newd <- inhaler[1:10, ]
+  newd$rating <- NULL
+  expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
 })
 
 test_that("ARMA models work correctly", {
