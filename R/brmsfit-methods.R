@@ -1426,6 +1426,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @rdname marginal_smooths
 #' @export
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
+                                     int_conditions = NULL,
                                      probs = c(0.025, 0.975),
                                      spaghetti = FALSE,
                                      resolution = 100, too_far = 0,
@@ -1443,7 +1444,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   samples <- as.matrix(x, subset = subset)
   ms_args <- nlist(
     x = bterms, fit = x, samples, smooths, conditions, 
-    too_far, resolution, probs, spaghetti
+    int_conditions, too_far, resolution, probs, spaghetti
   )
   out <- do.call(marginal_smooths_internal, ms_args)
   if (!length(out)) {

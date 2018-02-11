@@ -5,9 +5,9 @@
 \alias{marginal_smooths}
 \title{Display Smooth Terms}
 \usage{
-\method{marginal_smooths}{brmsfit}(x, smooths = NULL, probs = c(0.025,
-  0.975), spaghetti = FALSE, resolution = 100, too_far = 0,
-  subset = NULL, nsamples = NULL, ...)
+\method{marginal_smooths}{brmsfit}(x, smooths = NULL, int_conditions = NULL,
+  probs = c(0.025, 0.975), spaghetti = FALSE, resolution = 100,
+  too_far = 0, subset = NULL, nsamples = NULL, ...)
 
 marginal_smooths(x, ...)
 }
@@ -17,6 +17,17 @@ marginal_smooths(x, ...)
 \item{smooths}{Optional character vector of smooth terms
 to display. If \code{NULL} (the default) all smooth terms
 are shown.}
+
+\item{int_conditions}{An optional named \code{list} whose elements are numeric
+vectors of values of the second variables in two-way interactions. 
+At these values, predictions are evaluated. The names of 
+\code{int_conditions} have to match the variable names exactly.
+Additionally, the elements of the numeric vectors may be named themselves,
+in which case their names appear as labels for the conditions in the plots.
+Instead of vectors, functions returning vectors may be passed and are
+applied on the original values of the corresponding variable.
+If \code{NULL} (the default), predictions are evaluated at the 
+\eqn{mean} and at \eqn{mean +/- sd}.}
 
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
@@ -56,7 +67,7 @@ Ignored if \code{subset} is not \code{NULL}.}
 \value{
 For the \code{brmsfit} method, 
 an object of class \code{brmsMarginalEffects}. See
-\code{\link[brms:marginal_effects]{marginal_effects}} for 
+\code{\link{marginal_effects}} for 
 more details and documentation of the related plotting function.
 }
 \description{

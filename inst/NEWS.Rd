@@ -24,6 +24,8 @@
       \item Treat integer responses in \code{ordinal} models 
       as directly indicating categories even if the lowest 
       integer is not one.
+      \item Always plot \code{by} variables as facets
+      in \code{marginal_smooths}.
     }
   }
   \subsection{BUG FIXES}{
