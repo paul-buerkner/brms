@@ -105,6 +105,8 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 
 #' 
 #' @inheritParams cor_arma
+#' @param p A non-negative integer specifying the autoregressive (AR) 
+#'   order of the ARMA structure. Default is 1.  
 #' 
 #' @return An object of class \code{cor_arma} containing solely autoregression terms.
 #' 
@@ -133,6 +135,8 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' @inheritParams cor_arma
 #' 
 #' @return An object of class \code{cor_arma} containing solely moving average terms.
+#' @param q A non-negative integer specifying the moving average (MA) 
+#'   order of the ARMA structure. Default is 1.  
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
