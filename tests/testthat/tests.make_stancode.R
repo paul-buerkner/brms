@@ -1167,8 +1167,8 @@ test_that("sparse matrix multiplication is applied correctly", {
 })
 
 test_that("Stan code for Gaussian processes is correct", {
-  dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30),
-                    z = factor(rep(4:6, each = 10)))
+  dat <- data.frame(y = rnorm(40), x1 = rnorm(40), x2 = rnorm(40),
+                    z = factor(rep(3:6, each = 10)))
   
   prior <- prior(gamma(0.1, 0.1), sdgp)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
