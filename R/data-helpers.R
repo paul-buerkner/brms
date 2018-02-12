@@ -37,11 +37,8 @@ update_data <- function(data, bterms, na.action = na.omit2,
   data <- data_rsv_intercept(data, bterms = bterms)
   missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
   if (length(missing_vars)) {
-    message(
-      "The following variables are missing in 'data' and ",
-      "will be searched in the enclosing environments: ",
-      collapse_comma(missing_vars)
-    )
+    stop2("The following variables are missing in 'data':\n",
+          collapse_comma(missing_vars))
   }
   data <- model.frame(
     bterms$allvars, data, na.action = na.pass,
