@@ -775,17 +775,16 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   # summary of group-level effects
   for (g in out$group) {
     gregex <- escape_dot(g)
-    sd_prefix <- paste0("^sd_", gregex)
+    sd_prefix <- paste0("^sd_", gregex, "__")
     sd_pars <- pars[grepl(sd_prefix, pars)]
-    cor_prefix <- paste0("^cor_", gregex)
+    cor_prefix <- paste0("^cor_", gregex, "__")
     cor_pars <- pars[grepl(cor_prefix, pars)]
     out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
     if (nrow(out$random[[g]])) {
-      sd_names <- sub(sd_prefix, "sd", sd_pars)
-      sd_names <- sub("__", "(", sd_names)
-      cor_names <- sub(cor_prefix, "cor", cor_pars)
-      cor_names <- sub("__", ",", sub("__", "(", cor_names))
-      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")") 
+      sd_names <- sub(sd_prefix, "sd(", sd_pars)
+      cor_names <- sub(cor_prefix, "cor(", cor_pars)
+      cor_names <- sub("__", ",", cor_names)
+      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")")
     }
   }
   # summary of smooths
