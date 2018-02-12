@@ -26,8 +26,6 @@ but the class common to all correlation structures implemented in \pkg{brms}.
 }
 
 \seealso{
-\code{\link[brms:cor_arma]{cor_arma}, \link[brms:cor_ar]{cor_ar},
-      \link[brms:cor_ma]{cor_ma}, \link[brms:cor_arr]{cor_arr}, 
-      \link[brms:cor_car]{cor_car}, \link[brms:cor_sar]{cor_sar},
-      \link[brms:cor_bsts]{cor_bsts}, \link[brms:cor_fixed]{cor_fixed}}
+\code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, \link{cor_arr}, 
+      \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
 }

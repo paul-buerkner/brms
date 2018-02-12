@@ -22,10 +22,8 @@
 #' }
 #' 
 #' @seealso 
-#' \code{\link[brms:cor_arma]{cor_arma}, \link[brms:cor_ar]{cor_ar},
-#'       \link[brms:cor_ma]{cor_ma}, \link[brms:cor_arr]{cor_arr}, 
-#'       \link[brms:cor_car]{cor_car}, \link[brms:cor_sar]{cor_sar},
-#'       \link[brms:cor_bsts]{cor_bsts}, \link[brms:cor_fixed]{cor_fixed}}
+#' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, \link{cor_arr}, 
+#'       \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
 #' 
 NULL
 
@@ -68,8 +66,7 @@ NULL
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @seealso \code{\link[brms:cor_ar]{cor_ar}} \code{\link[brms:cor_ma]{cor_ma}}
-#'   \code{\link[brms:cor_arr]{cor_arr}}
+#' @seealso \code{\link{cor_ar}, \link{cor_ma}, \link{cor_arr}}
 #' 
 #' @examples
 #' cor_arma(~visit|patient, p = 2, q = 2)
@@ -133,10 +130,10 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' allowing for moving average terms only.
 #' 
 #' @inheritParams cor_arma
-#' 
-#' @return An object of class \code{cor_arma} containing solely moving average terms.
 #' @param q A non-negative integer specifying the moving average (MA) 
 #'   order of the ARMA structure. Default is 1.  
+#' 
+#' @return An object of class \code{cor_arma} containing solely moving average terms.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -156,6 +153,8 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #' allowing for autoregressive effects of the response only.
 #' 
 #' @inheritParams cor_arma
+#' @param r A non-negative integer specifying the autoregressive
+#'   response (ARR) order of the ARMA structure. Default is 1.  
 #' 
 #' @return An object of class \code{cor_arma} containing solely
 #'   autoregressive response terms.
@@ -200,7 +199,7 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 #'   support SAR structures.
 #' 
 #' @return An object of class \code{cor_sar} to be used in calls to
-#'   \code{\link[brms:brm]{brm}}.
+#'   \code{\link{brm}}.
 #'   
 #' @examples 
 #' \dontrun{
