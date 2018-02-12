@@ -138,12 +138,12 @@ data_fe <- function(bterms, data, knots = NULL,
         if (!new_smooths) {
           sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
         }
-        rasm <- mgcv::smooth2random(sm, names(data))
+        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
         Xs[[ns]] <- rasm$Xf
         if (ncol(Xs[[ns]])) {
           colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[ns]])))
         }
-        Zs <- lapply(rasm$rand, attr, "Xr")
+        Zs <- rasm$rand
         Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
         knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
         knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
