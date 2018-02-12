@@ -161,6 +161,9 @@ test_that("varying slopes without a fixed effect work", {
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
   expect_range(reloo1$looic, 1600, 1700)
+  up_args <- list(chains = 1, iter = 100)
+  reloo2 <- LOO(fit1, reloo = TRUE, update_args = up_args)
+  expect_range(reloo2$looic, 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
   me <- marginal_effects(fit1, conditions = conditions)

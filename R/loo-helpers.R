@@ -104,7 +104,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
   class(IC) <- c("ic", class(IC))
   if (ic == "loo") {
     if (reloo) {
-      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE, ...)
+      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
       IC <- do.call(reloo.loo, c(reloo_args, update_args))
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
