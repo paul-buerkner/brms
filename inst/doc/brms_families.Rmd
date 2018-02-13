@@ -75,10 +75,10 @@ f(y_i) = \frac{(\alpha / \mu_i)^\alpha}{\Gamma(\alpha)} y_i^{\alpha-1}
 $$
 where $\alpha$ is a positive shape parameter. The density of the **weibull** family is given by
 $$
-f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)}\right)^{\alpha-1} 
-\exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)
+f(y_i) = \frac{\alpha}{s_i} \left(\frac{y_i}{s_i}\right)^{\alpha-1} 
+\exp\left(-\left(\frac{y_i}{s_i}\right)^\alpha\right)
 $$
-where $\alpha$ is again a positive shape parameter. The **exponential** family arises if $\alpha$ is set to $1$ for either the gamma or Weibull distribution. The density of the **inverse.gaussian** family is given by
+where $\alpha$ is again a positive shape parameter and $s_i = \mu_i / \Gamma(1 + 1 / \alpha)$ is the scale parameter to that $\mu_i$ is the mean of the distribution. The **exponential** family arises if $\alpha$ is set to $1$ for either the gamma or Weibull distribution. The density of the **inverse.gaussian** family is given by
 $$
 f(y_i) = \left(\frac{\alpha}{2 \pi y_i^3}\right)^{1/2} \exp \left(\frac{-\alpha (y_i - \mu_i)^2}{2 \mu_i^2 y_i} \right)
 $$

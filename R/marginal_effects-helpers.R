@@ -285,13 +285,6 @@ marginal_effects_internal.brmsterms <- function(
   stopifnot(is.brmsfit(fit))
   if (is_categorical(x$family)) {
     stop2("'marginal_effects' is not implemented for categorical models.")
-  } else if (is_ordinal(x$family) && !ordinal) {
-    warning2(
-      "Predictions are treated as continuous variables ",
-      "in 'marginal_effects' by default, which is likely ",
-      "invalid for family '", x$family$family, "'. ",
-      "Consider setting 'ordinal' to TRUE."
-    )
   }
   ordinal <- ordinal && is_ordinal(x$family)
   pred_args <- list(

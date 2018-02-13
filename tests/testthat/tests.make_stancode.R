@@ -232,7 +232,7 @@ test_that("link functions appear in the Stan code", {
   expect_match2(make_stancode(y ~ x, dat, family = von_mises(tan_half)), 
                "mu[n] = inv_tan_half(mu[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = weibull()),
-                "mu[n] = exp((mu[n]) / shape);")
+                "mu[n] = exp(mu[n]) / tgamma(1 + 1 / shape);")
   expect_match2(make_stancode(y ~ x, dat, family = exponential("identity")),
                "mu[n] = inv(mu[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = poisson("sqrt")),
@@ -1167,8 +1167,8 @@ test_that("sparse matrix multiplication is applied correctly", {
 })
 
 test_that("Stan code for Gaussian processes is correct", {
-  dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30),
-                    z = factor(rep(4:6, each = 10)))
+  dat <- data.frame(y = rnorm(40), x1 = rnorm(40), x2 = rnorm(40),
+                    z = factor(rep(3:6, each = 10)))
   
   prior <- prior(gamma(0.1, 0.1), sdgp)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
@@ -1286,7 +1286,7 @@ test_that("Stan code for skew_normal models is correct", {
 })
 
 test_that("Stan code for missing value terms works correctly", {
-  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10, z = 1)
   dat$x[c(1, 3, 9)] <- NA
   
   bform <- bf(y ~ mi(x)*g) + bf(x | mi() ~ g) + set_rescor(FALSE)
@@ -1297,7 +1297,9 @@ test_that("Stan code for missing value terms works correctly", {
 
   bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "(r_1_y_2[J_1[n]]) * Z_1_y_2[n] + (bsp_y[1] + r_1_y_1[J_1[n]]) * Yf_x[n];")
+  expect_match2(scode, 
+    "(r_1_y_2[J_1[n]]) * Z_1_y_2[n] + (bsp_y[1] + r_1_y_1[J_1[n]]) * Yf_x[n];"
+  )
   
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   bprior <- prior(normal(0, 1), nlpar = "a", resp = "y")
@@ -1308,4 +1310,21 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "(bsp_y[3]) * mo(simo_y_2, Xmo_y_2[n]) * Yf_x[n];")
+  
+  bform <- bf(x | mi() ~ y, family = "lognormal")
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "vector<lower=0>[Nmi] Ymi;")
+  
+  bform <- bf(y ~ mi(x)*g) + 
+    bf(x | mi() + trunc(lb = 1) ~ y, family = "lognormal")
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "vector<lower=1>[Nmi_x] Ymi_x;")
+  
+  bform <- bf(y ~ mi(x)*g) + 
+    bf(x | mi() + cens(z) ~ y, family = "beta")
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "vector<lower=0,upper=1>[Nmi_x] Ymi_x;")
+  expect_match2(scode, 
+    "target += beta_lpdf(Yf_x[n] | mu_x[n] * phi_x, (1 - mu_x[n]) * phi_x);"
+  )
 })

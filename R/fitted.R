@@ -130,9 +130,7 @@ fitted_gamma <- function(draws) {
 }
 
 fitted_weibull <- function(draws) {
-  # mu becomes the scale parameter
-  draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, f$link))
-  with(draws$dpars, mu * gamma(1 + 1 / shape))
+  draws$dpars$mu
 }
 
 fitted_frechet <- function(draws) {

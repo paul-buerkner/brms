@@ -343,8 +343,7 @@ predict_gamma <- function(i, draws, ...) {
 
 predict_weibull <- function(i, draws, ...) {
   shape <- get_dpar(draws, "shape", i = i)
-  mu <- get_dpar(draws, "mu", i = i) 
-  scale <- ilink(mu / shape, draws$f$link)
+  scale <- get_dpar(draws, "mu", i = i) / gamma(1 + 1 / shape) 
   args <- list(shape = shape, scale = scale)
   rng_continuous(
     nrng = draws$nsamples, dist = "weibull", args = args, 

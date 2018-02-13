@@ -16,9 +16,8 @@ observations with different grouping levels are assumed to be uncorrelated.
 Defaults to \code{~ 1}, which corresponds to using the order of the observations 
 in the data as a covariate, and no groups.}
 
-\item{r}{A non-negative integer specifying the autoregressive 
-response (ARR) order. See 'Details' for differences of AR and ARR 
-effects. Default is 0.}
+\item{r}{A non-negative integer specifying the autoregressive
+response (ARR) order of the ARMA structure. Default is 1.}
 }
 \value{
 An object of class \code{cor_arma} containing solely

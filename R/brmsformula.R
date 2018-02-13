@@ -1174,7 +1174,7 @@ validate_formula.brmsformula <- function(
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  needs_cat <- is_categorical(out$family) && is.null(out$family$cats)
+  needs_cat <- is_categorical(out$family) && is.null(out$family$dpars)
   if (needs_cat && !is.null(data)) {
     respform <- formula2str(lhs(out$formula))
     respform <- formula(gsub("\\|+[^~]*~", "~", respform))

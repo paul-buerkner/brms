@@ -1022,14 +1022,8 @@ stan_eta_ilink <- function(family, dpars = NULL,
       exponential_log = c("exp(-(", "))"),
       exponential_inverse = c("(", ")"),
       exponential_identity = c("inv(", ")"),
-      weibull = c(
-        paste0(ilink, "(("), 
-        paste0(") / ", shape, ")")
-      ),
-      frechet = c(
-        paste0(ilink, "("),
-        paste0(") / tgamma(1 - 1 / ", nu, ")")
-      )
+      weibull = c(paste0(ilink, "("), paste0(") / tgamma(1 + 1 / ", shape, ")")),
+      frechet = c(paste0(ilink, "("), paste0(") / tgamma(1 - 1 / ", nu, ")"))
     )
   } else {
     out <- rep("", 2)

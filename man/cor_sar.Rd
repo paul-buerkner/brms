@@ -24,7 +24,7 @@ the spatial weighting matrix can be computed.}
 }
 \value{
 An object of class \code{cor_sar} to be used in calls to
-  \code{\link[brms:brm]{brm}}.
+  \code{\link{brm}}.
 }
 \description{
 These functions are constructors for the \code{cor_sar} class

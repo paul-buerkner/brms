@@ -775,17 +775,16 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   # summary of group-level effects
   for (g in out$group) {
     gregex <- escape_dot(g)
-    sd_prefix <- paste0("^sd_", gregex)
+    sd_prefix <- paste0("^sd_", gregex, "__")
     sd_pars <- pars[grepl(sd_prefix, pars)]
-    cor_prefix <- paste0("^cor_", gregex)
+    cor_prefix <- paste0("^cor_", gregex, "__")
     cor_pars <- pars[grepl(cor_prefix, pars)]
     out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
     if (nrow(out$random[[g]])) {
-      sd_names <- sub(sd_prefix, "sd", sd_pars)
-      sd_names <- sub("__", "(", sd_names)
-      cor_names <- sub(cor_prefix, "cor", cor_pars)
-      cor_names <- sub("__", ",", sub("__", "(", cor_names))
-      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")") 
+      sd_names <- sub(sd_prefix, "sd(", sd_pars)
+      cor_names <- sub(cor_prefix, "cor(", cor_pars)
+      cor_names <- sub("__", ",", cor_names)
+      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")")
     }
   }
   # summary of smooths
@@ -1337,6 +1336,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
   }
+  if (any(is_ordinal(family_names(x))) && !ordinal) {
+    warning2(
+      "Predictions are treated as continuous variables in ",
+      "'marginal_effects' by default, which is likely invalid ", 
+      "for ordinal families. Consider setting 'ordinal' to TRUE."
+    )
+  }
   rsv_vars <- rsv_vars(bterms)
   use_def_effects <- is.null(effects)
   if (use_def_effects) {
@@ -1426,6 +1432,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @rdname marginal_smooths
 #' @export
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
+                                     int_conditions = NULL,
                                      probs = c(0.025, 0.975),
                                      spaghetti = FALSE,
                                      resolution = 100, too_far = 0,
@@ -1443,7 +1450,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   samples <- as.matrix(x, subset = subset)
   ms_args <- nlist(
     x = bterms, fit = x, samples, smooths, conditions, 
-    too_far, resolution, probs, spaghetti
+    int_conditions, too_far, resolution, probs, spaghetti
   )
   out <- do.call(marginal_smooths_internal, ms_args)
   if (!length(out)) {

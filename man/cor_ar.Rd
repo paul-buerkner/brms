@@ -17,7 +17,7 @@ Defaults to \code{~ 1}, which corresponds to using the order of the observations
 in the data as a covariate, and no groups.}
 
 \item{p}{A non-negative integer specifying the autoregressive (AR) 
-order of the ARMA structure. Default is 0.}
+order of the ARMA structure. Default is 1.}
 
 \item{cov}{A flag indicating whether ARMA effects should be estimated 
 by means of residual covariance matrices
