@@ -1174,7 +1174,7 @@ validate_formula.brmsformula <- function(
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  needs_cat <- is_categorical(out$family) && is.null(out$family$cats)
+  needs_cat <- is_categorical(out$family) && is.null(out$family$dpars)
   if (needs_cat && !is.null(data)) {
     respform <- formula2str(lhs(out$formula))
     respform <- formula(gsub("\\|+[^~]*~", "~", respform))
@@ -1225,11 +1225,12 @@ validate_formula.mvbrmsformula <- function(
   }
   allow_rescor <- allow_rescor(formula)
   if (is.null(formula$rescor)) {
-    formula$rescor <- allow_rescor
-    message(
-      "Setting 'rescor' to ", formula$rescor, 
-      " by default for this combination of families"
+    # with 'mi' terms we usually don't want rescor to be estimated
+    miforms <- ulapply(formula$forms, function(f)
+      parse_ad(f$formula, f$family, FALSE)[["mi"]]
     )
+    formula$rescor <- allow_rescor && !length(miforms)
+    message("Setting 'rescor' to ", formula$rescor, " by default for this model")
   }
   formula$rescor <- as_one_logical(formula$rescor)
   if (formula$rescor) {

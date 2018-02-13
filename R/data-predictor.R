@@ -138,12 +138,12 @@ data_fe <- function(bterms, data, knots = NULL,
         if (!new_smooths) {
           sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
         }
-        rasm <- mgcv::smooth2random(sm, names(data))
+        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
         Xs[[ns]] <- rasm$Xf
         if (ncol(Xs[[ns]])) {
           colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[ns]])))
         }
-        Zs <- lapply(rasm$rand, attr, "Xr")
+        Zs <- rasm$rand
         Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
         knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
         knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
@@ -651,11 +651,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     } else if (is_ordinal(x$family)) {
       if (is.ordered(out$Y)) {
         out$Y <- as.numeric(out$Y)
-      } else if (all(is_wholenumber(out$Y))) {
-        out$Y <- out$Y - min(out$Y) + 1
-      } else {
-        stop2("Family '", family4error, "' requires either integers or ",
-              "ordered factors as responses.")
+      }
+      if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
+        stop2("Family '", family4error, "' requires either positive ", 
+              "integers or ordered factors as responses.")
       }
       if (length(unique(out$Y)) < 2L) {
         stop2("At least two response categories are required.")
@@ -707,7 +706,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (!is.null(old_standata$ncat)) {
         out$ncat <- old_standata$ncat
       } else {
-        out$ncat <- length(unique(out$Y))
+        out$ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
       out$ncat <- eval_rhs(x$adforms$cat, data = data)

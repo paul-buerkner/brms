@@ -594,9 +594,8 @@ check_family <- function(family, link = NULL, threshold = NULL) {
 #' @param ... One or more objects providing a description of the 
 #'   response distributions to be combined in the mixture model. 
 #'   These can be family functions, calls to family functions or 
-#'   character strings naming the families.
-#'   For details of supported families see 
-#'   \code{\link[brms:brmsfamily]{brmsfamily}}.
+#'   character strings naming the families. For details of supported 
+#'   families see \code{\link{brmsfamily}}.
 #' @param flist Optional list of objects, which are treated in the 
 #'   same way as objects passed via the \code{...} argument.
 #' @param nmix Optional numeric vector specifying the number of times
@@ -695,15 +694,11 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
     stop2("Expecting at least 2 mixture components.")
   }
   # do not allow ordinal families until compatibility with disc is ensured
-  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
-  non_mix_families <- c("categorical", ordinal_families)
-  non_mix_families <- intersect(families, non_mix_families)
-  if (length(non_mix_families)) {
-    stop2("Families ", collapse_comma(non_mix_families), 
+  no_mix_families <- c("categorical", "cumulative", "sratio", "cratio", "acat")
+  no_mix_families <- intersect(families, no_mix_families)
+  if (length(no_mix_families)) {
+    stop2("Families ", collapse_comma(no_mix_families), 
           " are currently not allowed in mixture models.")
-  }
-  if (is_ordinal(family) && any(!families %in% ordinal_families)) {
-    stop2("Cannot mix ordinal and non-ordinal families.")
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")

@@ -50,6 +50,15 @@ restructure_v2 <- function(x) {
   if (version <= "2.1.1") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
+  if (version <= "2.1.2") {
+    if ("weibull" %in% family_names(x)) {
+      stop2(
+        "The parameterization of weibull models has changed in brms 2.2 ",
+        "to be consistent with other model classes. Please refit your model ",
+        "with the current version of brms."
+      )
+    }
+  }
   x
 }
 

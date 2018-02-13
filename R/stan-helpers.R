@@ -48,7 +48,7 @@ stan_response <- function(bterms, data) {
       "  int<lower=0,upper=1> dec", resp, "[N];  // decisions \n"
     )
   }
-  has_cens <- has_cens(bterms$adforms$cens, data = data)
+  has_cens <- has_cens(bterms, data = data)
   if (has_cens) {
     str_add(out$data) <- paste0(
       "  int<lower=-1,upper=2> cens", resp, "[N];  // indicates censoring \n",
@@ -61,7 +61,7 @@ stan_response <- function(bterms, data) {
       }
     )
   }
-  bounds <- get_bounds(bterms$adforms$trunc, data = data)
+  bounds <- get_bounds(bterms, data = data)
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- paste0(
       "  ", rtype, " lb", resp, "[N];  // lower truncation bounds; \n"
@@ -78,8 +78,10 @@ stan_response <- function(bterms, data) {
       "  int<lower=1> Jmi", resp, "[Nmi", resp, "];",  
       "  // positions of missings \n"
     )
+    Ymi_bounds <- get_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
     str_add(out$par) <- paste0(
-      "  vector[Nmi", resp, "] Ymi", resp, ";  // estimated missings\n" 
+      "  vector", Ymi_bounds, "[Nmi", resp, "] Ymi", resp, ";",
+      "  // estimated missings\n"
     )
     str_add(out$modelD) <- paste0(
       "  vector[N] Yf", resp, " = Y", resp, ";\n" 

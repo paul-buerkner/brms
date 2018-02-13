@@ -905,7 +905,7 @@ marginal_effects <- function(x, ...) {
 #'   
 #' @return For the \code{brmsfit} method, 
 #' an object of class \code{brmsMarginalEffects}. See
-#' \code{\link[brms:marginal_effects]{marginal_effects}} for 
+#' \code{\link{marginal_effects}} for 
 #' more details and documentation of the related plotting function.
 #' 
 #' @details Two-dimensional smooth terms will be visualized using

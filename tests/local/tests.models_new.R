@@ -161,6 +161,9 @@ test_that("varying slopes without a fixed effect work", {
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
   expect_range(reloo1$estimates[3, 1], 1600, 1700)
+  up_args <- list(chains = 1, iter = 100)
+  reloo2 <- LOO(fit1, reloo = TRUE, update_args = up_args)
+  expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
   me <- marginal_effects(fit1, conditions = conditions)
@@ -186,6 +189,10 @@ test_that("categorical models work correctly", {
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
+  # tests with new data
+  newd <- inhaler[1:10, ]
+  newd$rating <- NULL
+  expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
 })
 
 test_that("ARMA models work correctly", {

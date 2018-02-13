@@ -53,8 +53,7 @@ cor_arma(~visit|patient, p = 2, q = 2)
 
 }
 \seealso{
-\code{\link[brms:cor_ar]{cor_ar}} \code{\link[brms:cor_ma]{cor_ma}}
-  \code{\link[brms:cor_arr]{cor_arr}}
+\code{\link{cor_ar}, \link{cor_ma}, \link{cor_arr}}
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

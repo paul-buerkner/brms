@@ -249,10 +249,9 @@ test_that("loglik for count and survival models works correctly", {
   
   ll_weibull <- dweibull(
     x = draws$data$Y[i], shape = draws$dpars$shape,
-    scale = exp(draws$dpars$eta[, i] / draws$dpars$shape), log = TRUE
+    scale = draws$dpars$mu[, i] / gamma(1 + 1 / draws$dpars$shape),
+    log = TRUE
   )
-  draws$f$link <- "log"
-  draws$dpars$mu <- draws$dpars$eta
   ll <- brms:::loglik_weibull(i, draws = draws)
   expect_equal(ll, c(ll_weibull))
   

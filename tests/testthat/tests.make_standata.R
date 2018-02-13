@@ -109,10 +109,10 @@ test_that(paste("make_standata rejects incorrect response variables",
                "contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
-               "Family 'cratio' requires either integers or ordered factors")
+               "Family 'cratio' requires either positive integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               "Family 'sratio' requires either integers or ordered factors")
+               "Family 'sratio' requires either positive integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
                "Family 'gamma' requires responses to be positive")
@@ -131,7 +131,7 @@ test_that("make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
                  paste("family 'bernoulli' might be a more efficient choice."))
-  expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
+  expect_message(make_standata(y ~ 1, data = data.frame(y = rep(1:2, 5)), 
                                family = "acat"),
                  paste("family 'bernoulli' might be a more efficient choice."))
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
@@ -503,6 +503,10 @@ test_that("make_standata handles multi-membership models", {
   
   sdata <- make_standata(y ~ (1|mm(g1,g2, weights = cbind(w1, w2))), dat)
   expect_equal(sdata$W_1_1, as.array(dat$w1 / (dat$w1 + dat$w2)))
+  
+  # tests if ":" works in multi-membership models
+  sdata <- make_standata(y ~ (1|mm(w1:g1,w1:g2)), dat)
+  expect_true(all(c("J_1_1", "J_1_2") %in% names(sdata)))
 })
 
 test_that("make_standata handles calls to the 'poly' function", {

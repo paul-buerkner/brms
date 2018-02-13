@@ -15,6 +15,27 @@
       family \code{shifted_lognormal}. (#218)
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Change the parameterization of \code{weibull}
+      models to be consistent with other model classes.
+      Post-processing of \code{weibull} models fitted with 
+      earlier version of \pkg{brms} is no longer possible.
+      \item Treat integer responses in \code{ordinal} models 
+      as directly indicating categories even if the lowest 
+      integer is not one.
+      \item Always plot \code{by} variables as facets
+      in \code{marginal_smooths}.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Allow the \code{:} operator to combine 
+      groups in multi-membership terms thanks to
+      Gang Chen.
+      \item Allow truncation in multivariate models.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 2.1.0}{
