@@ -102,7 +102,8 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
 
 data_fe <- function(bterms, data, knots = NULL,
                     not4stan = FALSE, smooths = NULL) {
-  # prepare data for fixed effects for use in Stan 
+  # prepare data of fixed effects and smooth terms for use in Stan
+  # handle smooth terms here as they also affect the FE design matrix 
   # Args: see data_effects
   out <- list()
   p <- usc(combine_prefix(bterms))

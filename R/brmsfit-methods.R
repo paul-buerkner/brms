@@ -1336,6 +1336,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
   }
+  if (any(is_ordinal(family_names(x))) && !ordinal) {
+    warning2(
+      "Predictions are treated as continuous variables in ",
+      "'marginal_effects' by default, which is likely invalid ", 
+      "for ordinal families. Consider setting 'ordinal' to TRUE."
+    )
+  }
   rsv_vars <- rsv_vars(bterms)
   use_def_effects <- is.null(effects)
   if (use_def_effects) {
