@@ -98,9 +98,7 @@ stan_response <- function(bterms, data) {
         "  vector<lower=0>[N - Nmi", resp, "] noise", resp, ";\n"
       )
       str_add(out$par) <- paste0(
-        "  vector[N - Nmi", resp, "] Yme", resp, ";\n",
-        "  real meanme", resp, ";\n",
-        "  real<lower=0> sdme", resp, ";\n"
+        "  vector[N - Nmi", resp, "] Yme", resp, ";\n"
       )
       str_add(out$modelD) <- paste0(
         "  vector[N] Yf", resp, ";\n" 
@@ -110,12 +108,7 @@ stan_response <- function(bterms, data) {
       )
       str_add(out$prior) <- paste0(
         "  target += normal_lpdf(Y", resp, "[Jme", resp, "]",
-        " | Yme", resp, ", noise", resp, ");\n",
-        # cannot use non-centered parameterization to include Ymi
-        "  target += normal_lpdf(Yf", resp, 
-        " | meanme", resp, ", sdme", resp, ");\n",
-        stan_prior(prior, class = "meanme", px = px, suffix = p),
-        stan_prior(prior, class = "sdme", px = px, suffix = p)
+        " | Yme", resp, ", noise", resp, ");\n"
       )
     }
   }
