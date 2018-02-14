@@ -1328,3 +1328,15 @@ test_that("Stan code for missing value terms works correctly", {
     "target += beta_lpdf(Yl_x[n] | mu_x[n] * phi_x, (1 - mu_x[n]) * phi_x);"
   )
 })
+
+test_that("Stan code for overimputation works correctly", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10, z = 1)
+  dat$x[c(1, 3, 9)] <- NA
+  bform <- bf(y ~ mi(x)*g) + bf(x | mi(g) ~ 1) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "target += normal_lpdf(Yl_x | mu_x, sigma_x)")
+  expect_match2(scode, 
+    "target += normal_lpdf(Y_x[Jme_x] | Yl_x[Jme_x], noise_x[Jme_x])"
+  )
+  expect_match2(scode, "vector[N] Yl_x;")
+})

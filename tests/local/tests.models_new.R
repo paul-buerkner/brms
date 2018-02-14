@@ -666,4 +666,18 @@ test_that("Missing value imputation works correctly", {
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
   expect_range(loo$looic, 200, 220)
+  
+  # overimputation within Stan
+  dat <- nhanes
+  dat$sdy <- 5
+  bform <- bf(bmi | mi() ~ age * mi(chl)) +
+    bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
+  fit_imp3 <- brm(bform, data = dat, save_mevars = TRUE)
+  print(fit_imp3)
+  pred <- predict(fit_imp3)
+  expect_true(!anyNA(pred))
+  me <- marginal_effects(fit_imp3, resp = "bmi")
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
+  expect_range(loo$looic, 200, 220)
 })
