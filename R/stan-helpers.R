@@ -74,43 +74,40 @@ stan_response <- function(bterms, data) {
     )
   }
   if (is.formula(bterms$adforms$mi)) {
-    str_add(out$data) <- paste0(
-      "  int<lower=0> Nmi", resp, ";  // number of missings \n",
-      "  int<lower=1> Jmi", resp, "[Nmi", resp, "];",  
-      "  // positions of missings \n"
-    )
-    Ymi_bounds <- get_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
-    str_add(out$par) <- paste0(
-      "  vector", Ymi_bounds, "[Nmi", resp, "] Ymi", resp, ";",
-      "  // estimated missings\n"
-    )
-    str_add(out$modelC1) <- paste0(
-      "  Yf", resp, "[Jmi", resp, "] = Ymi", resp, ";\n"
-    )
+    Ybounds <- get_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
     sdy <- get_sdy(bterms, data)
     if (is.null(sdy)) {
       # response is modeled without measurement error
+      str_add(out$par) <- paste0(
+        "  vector", Ybounds, "[Nmi", resp, "] Ymi", resp, ";",
+        "  // estimated missings\n"
+      )
+      str_add(out$data) <- paste0(
+        "  int<lower=0> Nmi", resp, ";  // number of missings \n",
+        "  int<lower=1> Jmi", resp, "[Nmi", resp, "];",  
+        "  // positions of missings \n"
+      )
       str_add(out$modelD) <- paste0(
-        "  vector[N] Yf", resp, " = Y", resp, ";\n" 
+        "  vector[N] Yl", resp, " = Y", resp, ";\n" 
+      )
+      str_add(out$modelC1) <- paste0(
+        "  Yl", resp, "[Jmi", resp, "] = Ymi", resp, ";\n"
       )
     } else {
       str_add(out$data) <- paste0(
-        "  int<lower=1> Jme", resp, "[N - Nmi", resp, "];",  
-        "  // positions of non-missings \n",
-        "  vector<lower=0>[N - Nmi", resp, "] noise", resp, ";\n"
+        "  // data for measurement-error in the response\n",
+        "  vector<lower=0>[N] noise", resp, ";\n",
+        "  // information about non-missings\n",
+        "  int<lower=0> Nme", resp, ";\n",
+        "  int<lower=1> Jme", resp, "[Nme", resp, "];\n"
       )
       str_add(out$par) <- paste0(
-        "  vector[N - Nmi", resp, "] Yme", resp, ";\n"
-      )
-      str_add(out$modelD) <- paste0(
-        "  vector[N] Yf", resp, ";\n" 
-      )
-      str_add(out$modelC1) <- paste0(
-        "  Yf", resp, "[Jme", resp, "] = Yme", resp, ";\n"
+        "  vector", Ybounds, "[N] Yl", resp, ";  // latent variable\n"
       )
       str_add(out$prior) <- paste0(
         "  target += normal_lpdf(Y", resp, "[Jme", resp, "]",
-        " | Yme", resp, ", noise", resp, ");\n"
+        " | Yl", resp, "[Jme", resp, "],", 
+        " noise", resp, "[Jme", resp, "]);\n"
       )
     }
   }

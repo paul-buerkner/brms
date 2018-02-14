@@ -764,22 +764,30 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   }
   if (is.formula(x$adforms$mi)) {
-    which_na <- which(is.na(out$Y))
-    out$Nmi <- length(which_na)
-    out$Jmi <- which_na
     sdy <- get_sdy(x, data)
-    if (!is.null(sdy)) {
+    if (is.null(sdy)) {
+      # missings only
+      which_mi <- which(is.na(out$Y))
+      out$Jmi <- which_mi
+      out$Nmi <- length(out$Jmi)
+    } else {
       # measurement error in the response
+      if (length(sdy) == 1L) {
+        sdy <- rep(sdy, length(out$Y))
+      }
       if (length(sdy) != length(out$Y)) {
         stop2("'sdy' must have the same length as the response.")
       }
-      out$Jme <- setdiff(seq_along(out$Y), which_na)
-      out$noise <- as.array(sdy[out$Jme])
+      # all observations will have a latent score
+      which_mi <- which(is.na(out$Y) | is.infinite(sdy))
+      out$Jme <- setdiff(seq_along(out$Y), which_mi)
+      out$Nme <- length(out$Jme)
+      out$noise <- as.array(sdy)
     }
     if (!not4stan) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected
-      out$Y[which_na] <- Inf
+      out$Y[which_mi] <- out$noise[which_mi] <- Inf
     }
   } 
   resp <- usc(combine_prefix(x))

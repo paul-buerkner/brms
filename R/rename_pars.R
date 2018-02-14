@@ -203,14 +203,6 @@ change_Ymi <- function(bterms, data, pars, ...) {
       fnames <- paste0(Ymi, "[", Jmi, "]")
       change <- lc(change, nlist(pos, fnames))
     }
-    # noise-free response variables
-    Yme <- paste0("Yme", resp)
-    pos <- grepl(paste0("^", Yme, "\\["), pars)
-    if (any(pos)) {
-      Jme <- resp_data$Jme
-      fnames <- paste0(Yme, "[", Jme, "]")
-      change <- lc(change, nlist(pos, fnames))
-    }
   }
   change
 }
@@ -493,7 +485,7 @@ reorder_pars <- function(x) {
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "Ymi", "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "Yl", "meanme", "sdme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)

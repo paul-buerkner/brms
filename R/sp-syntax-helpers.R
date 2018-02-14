@@ -25,7 +25,9 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
-    out <- unique(parse_resp(x$respform, check_names = FALSE))
+    mi_respvars <- parse_resp(x$respform, check_names = FALSE)
+    mi_advars <- all.vars(x$adforms$mi)
+    out <- unique(c(mi_respvars, mi_advars))
   } else {
     out <- character(0)
   }

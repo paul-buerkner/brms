@@ -69,7 +69,7 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
     }
   }
   if (!save_mevars && is.formula(x$adforms$mi)) {
-    out <- c(out, paste0("Yme", p)) 
+    out <- c(out, paste0("Yl", p)) 
   }
   out
 }

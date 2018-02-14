@@ -100,10 +100,10 @@ for each level of the grouping factor(s) should be saved
 The argument has no impact on the model fitting itself.}
 
 \item{save_mevars}{A flag to indicate if samples
-of noise-free variables obtained by using \code{me} terms
-should be saved (default is \code{FALSE}).
-Saving these samples allows to use methods such as
-\code{predict} with the noise-free variables but 
+of latent noise-free variables obtained by using \code{me} 
+and \code{mi} terms should be saved (default is \code{FALSE}).
+Saving these samples allows to better use methods such as
+\code{predict} with the latent variables but 
 leads to very large \R objects even for models
 of moderate size and complexity.}
 
