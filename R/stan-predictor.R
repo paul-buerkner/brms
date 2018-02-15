@@ -587,7 +587,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     # return correlations above the diagonal only
     cors_genC <- ulapply(2:nrow(r), function(k) 
       lapply(1:(k - 1), function(j) paste0(
-        "  cor_", id, "[", (k - 1) * (k - 2) / 2 + j, 
+        "  cor_", id, "[", as.integer((k - 1) * (k - 2) / 2 + j),
         "] = Cor_", id, "[", j, ",", k, "]; \n"
       ))
     )
