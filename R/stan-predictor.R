@@ -236,11 +236,11 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
     }
     miforms <- rmNULL(lapply(adforms, "[[", "mi"))
     if (length(miforms)) {
-      str_add(out$modelD) <- "  vector[nresp] Yf[N] = Y;\n"
+      str_add(out$modelD) <- "  vector[nresp] Yl[N] = Y;\n"
       for (i in seq_along(miforms)) {
         j <- match(names(miforms)[i], resp)
         str_add(out$modelC2) <- paste0(
-          "    Yf[n][", j, "] = Yf_", resp[j], "[n];\n"
+          "    Yl[n][", j, "] = Yl_", resp[j], "[n];\n"
         )
       }
     }
@@ -759,7 +759,7 @@ stan_sp <- function(bterms, data, ranef, prior) {
       eta <- rename(eta, spef$uni_me[[i]], new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {
-      new_mi <- paste0("Yf_", spef$vars_mi[[i]], "[n]")
+      new_mi <- paste0("Yl_", spef$vars_mi[[i]], "[n]")
       eta <- rename(eta, spef$call_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {

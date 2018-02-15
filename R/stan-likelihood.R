@@ -86,11 +86,11 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
   # default likelihood in Stan language
   stopifnot(is.sdist(llh))
   n <- if (grepl("\\[n\\]", llh$args)) "[n]"
-  lpdf <- ifelse(use_int(bterms$family), "_lpmf", "_lpdf")
-  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
+  lpdf <- stan_llh_lpdf_name(bterms)
+  Y <- stan_llh_Y_name(bterms)
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   paste0(
-    tp(), llh$dist, lpdf, "(", Y, resp, n, llh$shift,
+    tp(), llh$dist, "_", lpdf, "(", Y, resp, n, llh$shift,
     " | ", llh$args, ")", tr, "; \n"
   )
 }
@@ -101,9 +101,9 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   s <- collapse(rep(" ", 6))
   cens <- has_cens(bterms, data = data)
   interval <- isTRUE(attr(cens, "interval"))
-  lpdf <- ifelse(use_int(bterms$family), "_lpmf", "_lpdf")
+  lpdf <- stan_llh_lpdf_name(bterms)
   has_weights <- is.formula(bterms$adforms$weights)
-  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
+  Y <- stan_llh_Y_name(bterms)
   w <- if (has_weights) paste0("weights", resp, "[n] * ")
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   tp <- tp()
@@ -121,7 +121,7 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   paste0(
     "  // special treatment of censored data \n",
     s, "if (cens", resp, "[n] == 0) {\n", 
-    s, tp, w, llh$dist, lpdf, "(", Y, resp, "[n]", llh$shift, 
+    s, tp, w, llh$dist, "_", lpdf, "(", Y, resp, "[n]", llh$shift,
     " | ", llh$args, ")", tr, ";\n",
     s, "} else if (cens", resp, "[n] == 1) {\n",         
     s, tp, w, llh$dist, "_lccdf(", Y, resp, "[n]", llh$shift, 
@@ -137,8 +137,8 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   # weighted likelihood in Stan language
   stopifnot(is.sdist(llh))
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
-  lpdf <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
-  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
+  lpdf <- stan_llh_lpdf_name(bterms)
+  Y <- stan_llh_Y_name(bterms)
   paste0(
     tp(), "weights", resp, "[n] * ", llh$dist, "_", lpdf, 
     "(", Y, resp, "[n]", llh$shift, " | ", llh$args,")", tr, "; \n"
@@ -154,8 +154,8 @@ stan_llh_mix <- function(llh, bterms, data, mix,
     paste0("log(theta", mix, resp, ")")
   )
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
-  lpdf <- ifelse(use_int(bterms$family), "lpmf", "lpdf")
-  Y <- if (is.formula(bterms$adforms$mi)) "Yf" else "Y"
+  lpdf <- stan_llh_lpdf_name(bterms)
+  Y <- stan_llh_Y_name(bterms)
   paste0(
     "  ps[", mix, "] = ", theta, " + ", llh$dist, "_", 
     lpdf, "(", Y, resp, "[n] | ", llh$args, ")", tr, "; \n"
@@ -190,6 +190,14 @@ stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
     }
   }
   out
+}
+
+stan_llh_lpdf_name <- function(bterms) {
+  ifelse(use_int(bterms$family), "lpmf", "lpdf")
+}
+
+stan_llh_Y_name <- function(bterms) {
+  ifelse(is.formula(bterms$adforms$mi), "Yl", "Y")
 }
 
 stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {

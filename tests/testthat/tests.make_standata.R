@@ -490,6 +490,17 @@ test_that("make_standata handles missing value terms", {
   expect_true(all(is.infinite(sdata$Y_x[miss])))
 })
 
+test_that("make_standata handles overimputation", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10), g = 1:10, sdy = 1)
+  miss <- c(1, 3, 9)
+  dat$x[miss] <- dat$sdy[miss] <- NA
+  bform <- bf(y ~ mi(x)*g) + bf(x | mi(sdy) ~ g) + set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jme_x, setdiff(1:10, miss))
+  expect_true(all(is.infinite(sdata$Y_x[miss])))
+  expect_true(all(is.infinite(sdata$noise_x[miss])))
+})
+
 test_that("make_standata handles multi-membership models", {
   dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
                     g2 = 1:10, w1 = rep(1, 10),

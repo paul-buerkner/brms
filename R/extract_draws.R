@@ -227,7 +227,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
       call <- rename(call, spef$uni_me[[i]], new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {
-      new_mi <- paste0("Yf_", spef$vars_mi[[i]])
+      new_mi <- paste0("Yl_", spef$vars_mi[[i]])
       call <- rename(call, spef$call_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
@@ -248,6 +248,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
   }
   # prepare draws specific to noise-free effects
+  warn_me <- FALSE
   dim <- c(nrow(draws$bsp), sdata$N)
   uni_me <- rename(unique(unlist(spef$uni_me)))
   if (length(uni_me)) {
@@ -259,19 +260,13 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
         draws$Xme[[i]] <- get_samples(samples, Xme_pars)
       }
     } else {
-      if (!new) {
-        warning2(
-          "Noise-free variables were not saved. Please set ",
-          "argument 'save_mevars' to TRUE when fitting your model.\n",
-          "Treating original data as if it was new data as a workaround."
-        )
-      }
+      warn_me <- warn_me || !new
       for (i in seq_along(draws$Xme)) {
         Xn <- sdata[[paste0("Xn_", i)]]
         Xn <- as_draws_matrix(Xn, dim = dim)
         noise <- sdata[[paste0("noise_", i)]]
         noise <- as_draws_matrix(noise, dim = dim)
-        draws$Xme[[i]] <- array(rnorm(prod(dim), Xn, noise), dim = dim)
+        draws$Xme[[i]] <- array(rnorm(prod(dim), Xn, noise), dim)
       }
     }
   }
@@ -279,18 +274,40 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
     resps <- usc(vars_mi)
-    Yf_names <- paste0("Yf", resps)
-    draws$Yf <- named_list(Yf_names)
-    for (i in seq_along(draws$Yf)) {
-      draws$Yf[[i]] <- sdata[[paste0("Y", resps[i])]]
-      draws$Yf[[i]] <- as_draws_matrix(draws$Yf[[i]], dim = dim)
-      if (!new) {
-        Ymi_pars <- paste0("Ymi", resps[i], "\\[")
-        Ymi <- get_samples(samples, Ymi_pars)
-        Jmi <- sdata[[paste0("Jmi", resps[i])]]
-        draws$Yf[[i]][, Jmi] <- Ymi
+    Yl_names <- paste0("Yl", resps)
+    draws$Yl <- named_list(Yl_names)
+    for (i in seq_along(draws$Yl)) {
+      Y <- as_draws_matrix(sdata[[paste0("Y", resps[i])]], dim)
+      sdy <- sdata[[paste0("noise", resps[i])]]
+      if (is.null(sdy)) {
+        # missings only
+        draws$Yl[[i]] <- Y
+        if (!new) {
+          Ymi_pars <- paste0("Ymi", resps[i], "\\[")
+          Ymi <- get_samples(samples, Ymi_pars)
+          Jmi <- sdata[[paste0("Jmi", resps[i])]]
+          draws$Yl[[i]][, Jmi] <- Ymi
+        }
+      } else {
+        # measurement-error in the response
+        save_mevars <- any(grepl("^Yl_", colnames(samples)))
+        if (save_mevars && !new) {
+          Yl_pars <- paste0("Yl", resps[i], "\\[")
+          draws$Yl[[i]] <- get_samples(samples, Yl_pars)
+        } else {
+          warn_me <- warn_me || !new
+          sdy <- as_draws_matrix(sdy, dim)
+          draws$Yl[[i]] <- array(rnorm(prod(dim), Y, sdy), dim)
+        }
       }
     }
+  }
+  if (warn_me) {
+    warning2(
+      "Noise-free variables were not saved. Please set ",
+      "argument 'save_mevars' to TRUE when fitting your model. ",
+      "Treating original data as if it was new data as a workaround."
+    )
   }
   # prepare covariates
   ncovars <- max(spef$Ic)
