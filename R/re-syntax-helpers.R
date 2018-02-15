@@ -390,7 +390,11 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   # check for duplicated and thus not identified effects
   dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
-    stop2("Duplicated group-level effects are not allowed.")
+    dr <- ranef[which(dup)[1], ]
+    stop2(
+      "Duplicated group-level effects are not allowed.\n",
+      "Occured for effect '", dr$coef, "' of group '", dr$group, "'."
+    )
   }
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
