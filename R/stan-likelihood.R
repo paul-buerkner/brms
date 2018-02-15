@@ -593,7 +593,9 @@ stan_llh_zero_inflated_binomial <- function(bterms, resp = "", mix = "") {
 
 stan_llh_zero_inflated_beta <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  sdist("zero_inflated_beta", p$mu, p$phi, p$zi)
+  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
+  lpdf <- paste0("zero_inflated_beta", usc_logit)
+  sdist(lpdf, p$mu, p$phi, p$zi)
 }
 
 stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {

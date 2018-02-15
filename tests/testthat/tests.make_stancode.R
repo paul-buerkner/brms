@@ -1013,6 +1013,14 @@ test_that("predicting zi and hu works correctly", {
   )
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
   
+  scode <- make_stancode(
+    bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+    family = zero_inflated_beta()
+  )
+  expect_match2(scode,
+    "target += zero_inflated_beta_logit_lpdf(Y[n] | mu[n], phi, zi[n])"      
+  )
+  
   scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
                          family = "hurdle_negbinomial")
   expect_match2(scode, 
@@ -1029,8 +1037,10 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("inv_logit\\(", scode))
   expect_match2(scode, "mu[n] = shape * exp(-(mu[n]));")
   
-  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
-                         family = hurdle_gamma(link_hu = "identity"))
+  scode <- make_stancode(
+    bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+    family = hurdle_gamma(link_hu = "identity")
+  )
   expect_match2(scode, "target += hurdle_gamma_lpdf(Y[n] | shape, mu[n], hu[n])")
   expect_true(!grepl("inv_logit\\(", scode))
   expect_match2(scode, "mu[n] = shape * exp(-(mu[n]));")
