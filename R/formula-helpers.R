@@ -24,6 +24,10 @@
 #'   the lower truncation bound.
 #' @param ub A numeric vector or single numeric value specifying 
 #'   the upper truncation bound.
+#' @param sdy Optional known measurement error of the response
+#'   treated as standard deviation. If specified, handles
+#'   measurement error and (completely) missing values
+#'   at the same time using the plausible-values-technique.
 #'
 #' @return A vector containing additional information on the response
 #'   variable in an appropriate format.
@@ -201,8 +205,11 @@ resp_trunc <- function(lb = -Inf, ub = Inf) {
 
 #' @rdname addition-terms
 #' @export
-resp_mi <- function() {
-  NULL
+resp_mi <- function(sdy = NULL) {
+  if (!is.null(sdy) && !is.numeric(sdy)) {
+    stop2("Measurement error should be numeric.")
+  }
+  sdy
 }
 
 #' Defining smooths in \pkg{brms} formulas

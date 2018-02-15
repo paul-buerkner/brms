@@ -195,10 +195,11 @@ change_Ymi <- function(bterms, data, pars, ...) {
   change <- list()
   if (is.formula(bterms$adforms$mi)) {
     resp <- usc(combine_prefix(bterms))
+    resp_data <- data_response(bterms, data, check_response = FALSE)
     Ymi <- paste0("Ymi", resp)
     pos <- grepl(paste0("^", Ymi, "\\["), pars)
     if (any(pos)) {
-      Jmi <- data_response(bterms, data, check_response = FALSE)$Jmi
+      Jmi <- resp_data$Jmi
       fnames <- paste0(Ymi, "[", Jmi, "]")
       change <- lc(change, nlist(pos, fnames))
     }
@@ -484,7 +485,7 @@ reorder_pars <- function(x) {
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "Ymi", "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "Yl", "meanme", "sdme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)

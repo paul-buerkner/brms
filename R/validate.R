@@ -1148,3 +1148,14 @@ has_cens <- function(bterms, data = NULL) {
   }
   out
 }
+
+get_sdy <- function(x, data = NULL) {
+  stopifnot(is.brmsterms(x))
+  miform <- x$adforms[["mi"]]
+  if (is.formula(miform)) {
+    sdy <- eval_rhs(miform, data = data)
+  } else {
+    sdy <- NULL
+  }
+  sdy
+}

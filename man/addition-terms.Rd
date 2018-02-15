@@ -26,7 +26,7 @@ resp_cens(x, y2 = NULL)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi()
+resp_mi(sdy = NULL)
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the
@@ -51,6 +51,11 @@ the lower truncation bound.}
 
 \item{ub}{A numeric vector or single numeric value specifying 
 the upper truncation bound.}
+
+\item{sdy}{Optional known measurement error of the response
+treated as standard deviation. If specified, handles
+measurement error and (completely) missing values
+at the same time using the plausible-values-technique.}
 }
 \value{
 A vector containing additional information on the response

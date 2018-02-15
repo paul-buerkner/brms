@@ -571,6 +571,13 @@ prior_effects.brmsterms <- function(x, data, ...) {
   if (is.mixfamily(x$family) && !any(dp_classes == "theta")) {
     prior <- prior + brmsprior(class = "theta", resp = x$resp)
   }
+  # priors for noise-free response variables
+  sdy <- get_sdy(x, data)
+  if (!is.null(sdy)) {
+    prior <- prior + 
+      brmsprior(class = "meanme", resp = x$resp) +
+      brmsprior(class = "sdme", resp = x$resp)
+  }
   # priors for autocorrelation parameters
   prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
   prior
