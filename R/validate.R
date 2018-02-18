@@ -711,7 +711,7 @@ check_multiple_special_terms <- function(x) {
     "(mo((no)?|(notonic)?))|(me)|(mi)", 
     "cse?", "(s|(t2)|(te)|(ti))", "gp"
   )
-  sterms <- paste0("^", sterms, "\\([^:]*\\)$") 
+  sterms <- paste0("^(", sterms, ")\\([^:]*\\)$") 
   smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
   for (i in seq_along(sterms)) {
     smatches[, i] <- grepl_expr(sterms[i], x)
