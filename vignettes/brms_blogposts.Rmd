@@ -19,6 +19,7 @@ Several people have blogged about **brms** and this vignette is intended to prov
 
 ## List of blog posts
 
+- [Easily made fitted and predicted values made easy](http://thestudyofthehousehold.com/post/easily-made-fitted-and-predicted-values-made-easy/) by Andrew MacDonald
 - [How to compute Bayes factors using lm, lmer, BayesFactor, brms, and JAGS/stan/pymc3](https://rpubs.com/lindeloev/bayes_factors) by Jonas Kristoffer Lindelov
 - [Confounded dose-response effects of treatment adherence: fitting Bayesian instrumental variable models using brms](http://rpsychologist.com/adherence-analysis-IV-brms) by Kristoffer Magnusson
 - [PK/PD reserving models](https://magesblog.com/post/2018-01-30-pkpd-reserving-models/) by Markus Gesmann
