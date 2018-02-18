@@ -708,15 +708,19 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
 
 test_that("Stan code for bsts models is correct", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10))
-  scode <- make_stancode(y ~ x, data = dat, autocor = cor_bsts(),
-                         prior = prior(normal(0, 10), sigmaLL))
+  scode <- SW(make_stancode(
+    y ~ x, data = dat, autocor = cor_bsts(),
+    prior = prior(normal(0, 10), sigmaLL)
+  ))
   expect_match2(scode, "+ loclev[n]")
   expect_match2(scode, "target += normal_lpdf(loclev[n] | loclev[n - 1], sigmaLL)")
   expect_match2(scode, "target += normal_lpdf(sigmaLL | 0, 10)")
   
   dat <- data.frame(y = rexp(1), x = rnorm(10))
-  scode <- make_stancode(y~x, data = dat, family = student("log"),
-                         autocor = cor_bsts())
+  scode <- SW(make_stancode(
+    y~x, data = dat, family = student("log"),
+    autocor = cor_bsts()
+  ))
   expect_match2(scode, "target += normal_lpdf(loclev[n] | log(Y[n]), sigmaLL)")
 })
 
