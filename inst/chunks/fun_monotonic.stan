@@ -9,6 +9,6 @@
     if (i == 0) {
       return 0;
     } else {
-      return(sum(scale[1:i]));
+      return sum(scale[1:i]);
     }
   }
