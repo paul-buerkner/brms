@@ -495,6 +495,21 @@ parse_re <- function(formula) {
   structure(out, pos = re_pos)
 }
 
+parse_mmc <- function(formula) {
+  # parse multiple covariates in multi-membership terms
+  all_terms <- all_terms(formula)
+  pos_terms <- grepl("^mmc\\([^\\|]+$", all_terms)
+  terms <- all_terms[pos_terms]
+  if (length(terms)) {
+    if (any(grepl(":", terms))) {
+      stop2("'mmc' cannot be used for interactions.")
+    }
+    terms <- str2formula(terms)
+    attr(terms, "rsv_intercept") <- TRUE
+  }
+  structure(terms, pos = pos_terms)
+}
+
 parse_resp <- function(formula, check_names = TRUE) {
   # extract response variable names
   # assumes multiple response variables to be combined via cbind

@@ -576,12 +576,20 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       }
     }
     # basic group-level effects
-    new_r_basic <- subset2(new_r, type = "")
+    new_r_basic <- subset2(new_r, type = c("", "mmc"))
     if (nrow(new_r_basic)) {
       Znames <- paste0("Z_", id, usc(p), "_", new_r_basic$cn)
-      Z <- do.call(cbind, sdata[Znames])
+      if (new_r_basic$gtype[1] == "mm") {
+        ng <- length(new_r_basic$gcall[[1]]$groups)
+        Z <- vector("list", ng)
+        for (k in seq_len(ng)) {
+          Z[[k]] <- do.call(cbind, sdata[paste0(Znames, "_", k)])
+        }
+      } else {
+        Z <- do.call(cbind, sdata[Znames])
+      }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      take <- which(!nzchar(new_r$type))
+      take <- which(new_r$type %in% c("", "mmc"))
       take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
       r <- r[, take, drop = FALSE]
       draws[["r"]][[g]] <- r
@@ -700,19 +708,33 @@ subset_levels <- function(x, levels, nranef) {
   x[, take_levels, drop = FALSE]
 }
 
-prepare_Z <- function(Z, gf, max_level = max(unlist(gf)),
-                      weights = list(rep(1, length(gf[[1]])))) {
+prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
   # prepare group-level design matrices for use in linear_predictor
   # Args:
-  #   Z: matrix to be prepared
-  #   gf: list of vectors containing grouping factor values
+  #   Z: (list of) matrices to be prepared
+  #   gf: (list of) vectors containing grouping factor values
+  #   weights: optional (list of) weights of the same length as gf
   #   max_level: maximal level of gf
-  #   weights: optional list of weights of the same length as gf
-  nranef <- ncol(Z)
+  if (!is.list(Z)) {
+    Z <- list(Z)
+  }
+  if (!is.list(gf)) {
+    gf <- list(gf)
+  }
+  if (is.null(weights)) {
+    weights <- rep(1, length(gf[[1]]))
+  }
+  if (!is.list(weights)) {
+    weights <- list(weights)
+  }
+  if (is.null(max_level)) {
+    max_level <- max(unlist(gf))
+  }
   levels <- unique(unlist(gf))
+  nranef <- ncol(Z[[1]])
   Z <- mapply(
-    expand_matrix, x = gf, weights = weights,
-    MoreArgs = nlist(A = Z, max_level)
+    expand_matrix, A = Z, x = gf, weights = weights,
+    MoreArgs = nlist(max_level)
   )
   Z <- Reduce("+", Z)
   subset_levels(Z, levels, nranef)

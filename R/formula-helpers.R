@@ -604,29 +604,39 @@ gr <- function(...) {
 #'  If negative weights are specified, \code{scale} needs
 #'  to be set to \code{FALSE}.
 #'  
-#' @seealso \code{\link{brmsformula}}
+#' @seealso \code{\link{brmsformula}}, \code{\link{mmc}}
 #'  
 #' @examples 
 #' \dontrun{
 #' # simulate some data
-#' dat <- data.frame(y = rnorm(100), x = rnorm(100), 
-#'                   g1 = sample(1:10, 100, TRUE),
-#'                   g2 = sample(1:10, 100, TRUE))
+#' dat <- data.frame(
+#'  y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
+#'  g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
+#' )
+#' 
 #' # multi-membership model with two members per group and equal weights
-#' fit1 <- brm(y ~ x + (1|mm(g1, g2)), data = dat)
+#' fit1 <- brm(y ~ x1 + (1|mm(g1, g2)), data = dat)
 #' summary(fit1)
 #' 
 #' # weight the first member two times for than the second member
 #' dat$w1 <- rep(2, 100)
 #' dat$w2 <- rep(1, 100)
-#' fit2 <- brm(y ~ x + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
+#' fit2 <- brm(y ~ x1 + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
 #' summary(fit2)
+#' 
+#' # multi-membership model with level specific covariate values
+#' dat$xc <- (dat$x1 + dat$x2) / 2
+#' fit3 <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
+#' summary(fit3)
 #' }
 #'   
 #' @export
 mm <- function(..., weights = NULL, scale = TRUE) {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
+  if (length(groups) < 2) {
+    stop2("Multi-membership terms require at least two grouping variables.")
+  }
   for (i in seq_along(groups)) {
     if (illegal_group_expr(groups[i])) {
       stop2("Illegal grouping term: ", groups[i], "\nIt may contain ",
@@ -643,6 +653,47 @@ mm <- function(..., weights = NULL, scale = TRUE) {
     weightvars <- str2formula(weightvars)
   }
   nlist(groups, weights, weightvars, allvars, label, type = "mm")
+}
+
+#' Multi-Membership Covariates
+#' 
+#' Specify covarariates that vary over different levels 
+#' of multi-membership grouping factors thus requiring
+#' special treatment. This function is almost solely useful,
+#' when called in combination with \code{\link{mm}}. 
+#' Outside of multi-membership terms it will behave
+#' very much like \code{\link{cbind}}.
+#' 
+#' @param ... One or more terms containing covariates 
+#'   corresponding to the grouping levels specified in \code{\link{mm}}.
+#' 
+#' @return A matrix with covariates as columns.
+#' 
+#' @seealso \code{\link{mm}}
+#' 
+#' @examples 
+#' \dontrun{
+#' # simulate some data
+#' dat <- data.frame(
+#'   y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100),
+#'   g1 = sample(1:10, 100, TRUE), g2 = sample(1:10, 100, TRUE)
+#' )
+#' 
+#' # multi-membership model with level specific covariate values
+#' dat$xc <- (dat$x1 + dat$x2) / 2 
+#' fit <- brm(y ~ xc + (1 + mmc(x1, x2) | mm(g1, g2)), data = dat)
+#' summary(fit)
+#' }
+#' 
+#' @export
+mmc <- function(...) {
+  dots <- list(...)
+  if (any(ulapply(dots, is_like_factor))) {
+    stop2("'mmc' requires numeric variables.")
+  }
+  out <- cbind(...)
+  colnames(out) <- paste0("?", colnames(out))
+  out
 }
 
 rhs <- function(x) {

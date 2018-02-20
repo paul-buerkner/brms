@@ -318,9 +318,9 @@ rename <- function(x, pattern = NULL, replacement = NULL,
     # default renaming to avoid special characters in coeffcient names 
     pattern <- c(
       " ", "(", ")", "[", "]", ",", "\"", "'", 
-      "+", "-", "*", "/", "^", "="
+      "?", "+", "-", "*", "/", "^", "="
     )
-    replacement <- c(rep("", 8), "P", "M", "MU", "D", "E", "EQ")
+    replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ")
   }
   if (length(replacement) == 1L) {
     replacement <- rep(replacement, length(pattern))
@@ -523,6 +523,14 @@ grepl_expr <- function(pattern, expr, ...) {
 
 escape_dot <- function(x) {
   gsub(".", "\\.", x, fixed = TRUE)
+}
+
+escape_all <- function(x) {
+  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]")
+  for (s in special) {
+    x <- gsub(s, paste0("\\", s), x, fixed = TRUE)
+  }
+  x
 }
 
 usc <- function(x, pos = c("prefix", "suffix")) {

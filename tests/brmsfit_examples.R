@@ -42,7 +42,7 @@ brmsfit_example2 <- brm(
 )
 
 brmsfit_example3 <- brm(
-  count ~ Trt*me(Age, AgeSD) + (1|mm(patient, visit)),
+  count ~ Trt*me(Age, AgeSD) + (1 + mmc(Age, volume) | mm(patient, visit)),
   data = dat[1:30, ], prior = prior(normal(0, 10)),
   warmup = 150, iter = 200, chains = 2, 
   save_mevars = TRUE, save_dso = FALSE, testmode = TRUE

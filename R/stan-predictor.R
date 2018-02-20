@@ -537,12 +537,19 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     px = px, suffix = paste0("_", id)
   )
   J <- seq_len(nrow(r))
-  has_def_type <- !r$type %in% "sp"
-  if (any(has_def_type)) {
-    str_add(out$data) <- collapse(
-        "  vector[N] Z_", idp[has_def_type], 
-        "_", r$cn[has_def_type], "; \n"
-    ) 
+  needs_Z <- !r$type %in% "sp"
+  if (any(needs_Z)) {
+    if (r$gtype[1] == "mm") {
+      for (i in which(needs_Z)) {
+        str_add(out$data) <- collapse(
+          "  vector[N] Z_", idp[i], "_", r$cn[i], "_", ng, ";\n"
+        )
+      }
+    } else {
+      str_add(out$data) <- collapse(
+        "  vector[N] Z_", idp[needs_Z], "_", r$cn[needs_Z], ";\n"
+      ) 
+    }
   }
   str_add(out$par) <- paste0(
     "  vector<lower=0>[M_", id, "] sd_", id, ";",
@@ -766,7 +773,7 @@ stan_sp <- function(bterms, data, ranef, prior) {
       str_add(eta) <- paste0(" * Csp", p, "_", spef$Ic[i], "[n]")
     }
     r <- subset2(ranef, coef = spef_coef[i])
-    rpars <- if (nrow(r)) paste0(" + ", stan_eta_r(r))
+    rpars <- if (nrow(r)) paste0(" + ", stan_eta_rsp(r))
     str_add(out$eta) <- paste0(" + (bsp", p, "[", i, "]", rpars, ") * ", eta)
   }
   # prepare general Stan code
@@ -906,20 +913,32 @@ stan_eta_re <- function(ranef, px = list()) {
   #   ranef: a named list returned by tidy_ranef
   #   nlpar: optional name of a non-linear parameter
   eta_re <- ""
-  ranef <- subset2(ranef, type = "", ls = px)
+  ranef <- subset2(ranef, type = c("", "mmc"), ls = px)
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
-    str_add(eta_re) <- collapse(
-      " + (", stan_eta_r(r), ") * Z_", idp, "_", r$cn, "[n]"
-    )
+    if (r$gtype[1] == "mm") {
+      ng <- seq_along(r$gcall[[1]]$groups)
+      for (i in seq_len(nrow(r))) {
+        str_add(eta_re) <- collapse(
+          " + W_", r$id[i], "_", ng, "[n]", 
+          " * r_", idp[i], "_", r$cn[i], "[J_", r$id[i], "_", ng, "[n]]",
+          " * Z_", idp[i], "_", r$cn[i], "_", ng, "[n]"
+        ) 
+      }
+    } else {
+      str_add(eta_re) <- collapse(
+        " + r_", idp, "_", r$cn, "[J_", r$id, "[n]]",
+        " * Z_", idp, "_", r$cn, "[n]"
+      )
+    }
   }
   eta_re
 }
 
-stan_eta_r <- function(r) {
-  # Stan code for r parameters in linear predictor terms
+stan_eta_rsp <- function(r) {
+  # Stan code for r parameters in special predictor terms
   # Args:
   #   r: data.frame created by tidy_ranef
   # Returns:

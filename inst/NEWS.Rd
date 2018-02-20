@@ -13,6 +13,9 @@
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
       \item Allow predictions of measurement-error models
       with new data. (#335)
+      \item Model covariates in multi-membership structures
+      that vary over the levels of the grouping factor
+      via \code{mmc} terms. (#353)
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
     }
