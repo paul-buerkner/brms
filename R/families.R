@@ -275,9 +275,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
           "for family '", family, "'.\nSupported links are: ",
           collapse_comma(ok_links))
   }
-  out <- structure(
-    list(family = family, link = slink), 
-    class = c("brmsfamily", "family")
+  out <- list(
+    family = family, link = slink,
+    linkfun = function(mu) link(mu, link = slink),
+    linkinv = function(eta) ilink(eta, link = slink)
   )
   for (dp in valid_dpars(out$family)) {
     alink <- as.character(aux_links[[paste0("link_", dp)]])
@@ -297,7 +298,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   if (is_ordinal(out$family)) {
     out$threshold <- match.arg(threshold)
   }
-  out
+  structure(out, class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
