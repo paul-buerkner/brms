@@ -6,8 +6,8 @@
 \usage{
 make_stancode(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sparse = FALSE,
-  sample_prior = c("no", "yes", "only"), stan_funs = NULL,
-  save_model = NULL, silent = FALSE, ...)
+  sample_prior = c("no", "yes", "only"), stan_vars = NULL,
+  stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -70,12 +70,13 @@ If set to \code{"only"}, samples are drawn solely from
 the priors ignoring the likelihood. In this case, 
 all parameters must have proper priors.}
 
+\item{stan_vars}{An optional \code{stanvars} object generated
+by function \code{\link{stan_var}} to define additional variables
+in the data block of \pkg{Stan}.}
+
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 
-of the generated \pkg{Stan} code. 
-Note that these functions must additionally be defined 
-as \emph{vectorized} \R functions in the global environment for 
-various post-processing methods to work on the returned model object.}
+of the generated \pkg{Stan} code.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is

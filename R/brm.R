@@ -85,12 +85,12 @@
 #' @param knots Optional list containing user specified knot values to be 
 #'   used for basis construction of smoothing terms. 
 #'   See \code{\link[mgcv:gamm]{gamm}} for more details.
+#' @param stan_vars An optional \code{stanvars} object generated
+#'   by function \code{\link{stan_var}} to define additional variables
+#'   in the data block of \pkg{Stan}.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
-#'   of the generated \pkg{Stan} code. 
-#'   Note that these functions must additionally be defined 
-#'   as \emph{vectorized} \R functions in the global environment for 
-#'   various post-processing methods to work on the returned model object.
+#'   of the generated \pkg{Stan} code.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
 #'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
@@ -329,10 +329,11 @@
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
-                sparse = FALSE, knots = NULL, stan_funs = NULL, 
-                fit = NA, save_ranef = TRUE, save_mevars = FALSE, 
-                save_all_pars = FALSE, inits = "random", chains = 4, 
-                iter = 2000, warmup = floor(iter / 2), thin = 1,
+                sparse = FALSE, knots = NULL, stan_vars = NULL,
+                stan_funs = NULL, fit = NA, save_ranef = TRUE, 
+                save_mevars = FALSE, save_all_pars = FALSE, 
+                inits = "random", chains = 4, iter = 2000, 
+                warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 future = getOption("future", FALSE), silent = TRUE, 
@@ -380,7 +381,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, family = family, data = data, 
       data.name = data.name, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
-      stan_funs = stan_funs, algorithm = algorithm
+      stan_vars = stan_vars, stan_funs = stan_funs,
+      algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -392,8 +394,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, data = data, prior = prior, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
-      stan_funs = stan_funs, save_model = save_model, 
-      brm_call = TRUE
+      stan_vars = stan_vars, stan_funs = stan_funs, 
+      save_model = save_model, brm_call = TRUE
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data

@@ -13,6 +13,8 @@
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
       \item Allow predictions of measurement-error models
       with new data. (#335)
+      \item Pass user-defined variables to Stan via 
+      \code{stan_var}. (#219, #357)
       \item Model covariates in multi-membership structures
       that vary over the levels of the grouping factor
       via \code{mmc} terms. (#353)
