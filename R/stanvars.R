@@ -24,9 +24,8 @@
 #'               
 #' # define a multi-normal prior with known covariance matrix
 #' bprior <- prior(multi_normal(M, V), class = "b")
-#' stanvars <- stan_var(2L, "KV") + 
-#'   stan_var(rep(0, 2), "M", scode = "  vector[KV] M;") +
-#'   stan_var(diag(2), "V", scode = "  matrix[KV, KV] V;") 
+#' stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
+#'   stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
 #' make_stancode(count ~ Trt + log_Base4_c, epilepsy,
 #'               prior = bprior, stan_vars = stanvars)
 #' 
@@ -36,6 +35,10 @@ stan_var <- function(x, name = NULL, scode = NULL) {
     name <- deparse(substitute(x))
   }
   name <- as_one_character(name)
+  if (!is_equal(name, make.names(name)) || grepl("\\.", name)) {
+    stop2("'", limit_chars(name, 30), "' is not ", 
+          "a valid variable name in Stan.")
+  }
   if (is.null(scode)) {
     if (is.integer(x)) {
       if (length(x) == 1L) {

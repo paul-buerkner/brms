@@ -122,25 +122,6 @@ print.brmsmodel <- function(x, ...) {
   invisible(x) 
 }
 
-#' @rdname brmshypothesis
-#' @export
-print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
-  # make sure rownames are not too long
-  rnames <- limit_chars(rownames(x$hypothesis), chars = chars)
-  rownames(x$hypothesis) <- make.unique(rnames, sep = " #")
-  cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
-  print(x$hypothesis, quote = FALSE)
-  cat(paste0("---\n'*': The expected value under the hypothesis ", 
-             "lies outside the ", (1 - x$alpha) * 100, "% CI.\n"))
-  invisible(x)
-}
-
-#' @export
-print.brmsMarginalEffects <- function(x, ...) {
-  plot(x, ...)
-}
-
 #' @export
 parnames.default <- function(x, ...) {
   names(x)

@@ -1363,7 +1363,7 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N] Yl_xx;")
 })
 
-test_that("argument 'stan_vars' is handed correctly", {
+test_that("argument 'stan_vars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5
   stanvars <- stan_var(mean_intercept)
@@ -1373,12 +1373,10 @@ test_that("argument 'stan_vars' is handed correctly", {
   
   # define a multi_normal prior with known covariance matrix
   bprior <- prior(multi_normal(M, V), class = "b")
-  stanvars <- stan_var(2L, "KV") + 
-    stan_var(rep(0, 2), "M", scode = "  vector[KV] M;") +
-    stan_var(diag(2), "V", scode = "  matrix[KV, KV] V;") 
+  stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
+    stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
   scode <- make_stancode(count ~ Trt + log_Base4_c, epilepsy,
                          prior = bprior, stan_vars = stanvars)
-  expect_match2(scode, "int KV;")
-  expect_match2(scode, "vector[KV] M;")
-  expect_match2(scode, "matrix[KV, KV] V;")
+  expect_match2(scode, "vector[K] M;")
+  expect_match2(scode, "matrix[K, K] V;")
 })

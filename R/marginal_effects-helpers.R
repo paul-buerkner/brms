@@ -432,3 +432,9 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   }
   points
 }
+
+#' @export
+print.brmsMarginalEffects <- function(x, ...) {
+  plot(x, ...)
+}
+

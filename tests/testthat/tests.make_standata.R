@@ -677,7 +677,7 @@ test_that("dots in formula are correctly expanded", {
   expect_equal(colnames(sdata$X), c("Intercept", "x1", "x2"))
 })
 
-test_that("argument 'stan_vars' is handed correctly", {
+test_that("argument 'stan_vars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5
   stanvars <- stan_var(mean_intercept)
@@ -687,12 +687,10 @@ test_that("argument 'stan_vars' is handed correctly", {
   
   # define a multi_normal prior with known covariance matrix
   bprior <- prior(multi_normal(M, V), class = "b")
-  stanvars <- stan_var(2L, "KV") + 
-    stan_var(rep(0, 2), "M", scode = "  vector[KV] M;") +
-    stan_var(diag(2), "V", scode = "  matrix[KV, KV] V;") 
+  stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
+    stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
   sdata <- make_standata(count ~ Trt + log_Base4_c, epilepsy,
                          prior = bprior, stan_vars = stanvars)
-  expect_equal(sdata$KV, 2L)
   expect_equal(sdata$M, rep(0, 2))
   expect_equal(sdata$V, diag(2))
 })
