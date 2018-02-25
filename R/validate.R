@@ -771,11 +771,14 @@ ad_families <- function(x) {
   )
 }
 
-allvars_formula <- function(lformula) {
+allvars_formula <- function(x) {
   # combine all variables in one formuula
   # Args:
-  #   lformula: list of formulas or character strings
-  out <- collapse(ulapply(rmNULL(lformula), plus_rhs))
+  #   x: (list of) formulas or character strings
+  if (!is.list(x)) {
+    x <- list(x)
+  }
+  out <- collapse(ulapply(rmNULL(x), plus_rhs))
   out <- str2formula(c(out, all.vars(parse(text = out))))
   update(out, ~ .)
 }
