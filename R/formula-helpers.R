@@ -141,11 +141,11 @@ resp_cat <- function(x) {
 resp_dec <- function(x) {
   # decisions for the wiener diffusion model
   if (is.character(x) || is.factor(x)) {
-    x <- ifelse(x == "lower", 0, ifelse(x == "upper", 1, x))
-    if (!is.numeric(x)) {
+    if (!all(unique(x) %in% c("lower", "upper"))) {
       stop2("Decisions should be 'lower' or 'upper' ", 
             "when supplied as characters or factors.")
     }
+    x <- ifelse(x == "lower", 0, 1)
   } else {
     x <- as.numeric(as.logical(x))
   }
