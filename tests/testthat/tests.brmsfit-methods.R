@@ -261,6 +261,16 @@ test_that("all S3 methods have reasonable ouputs", {
   llp <- SW(loo_predictive_interval(fit3))
   expect_equal(dim(llp), c(nobs(fit3), 2))
   
+  # loo_select
+  lls <- SW(loo_select(fit1, fit1))
+  expect_is(lls, "numeric")
+  expect_equal(names(lls), c("fit1", "fit1"))
+  
+  # loo_weights
+  llw <- SW(loo_weights(fit2, fit2))
+  expect_is(llw, "numeric")
+  expect_equal(names(llw), c("fit2", "fit2"))
+  
   # marginal_effects
   me <- marginal_effects(fit1)
   expect_equal(nrow(me[[2]]), 100)

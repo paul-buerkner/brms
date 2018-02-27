@@ -1260,7 +1260,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
     # required for 'loo' types only (deprecated as of loo 2.0)
     pred_args$loo_args <- loo_args
-    ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
+    ppc_args$lw <- do.call(loo_weights_old, c(pred_args, log = TRUE))
   }
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
@@ -1934,6 +1934,8 @@ pp_average.brmsfit <- function(
       ics <- ulapply(SW(do.call(fun, args)), function(x) x$estimates[3, 1])
       ic_diffs <- ics - min(ics)
       weights <- exp(- ic_diffs / 2)
+    } else if (weights %in% "loo2") {
+      weights <- do.call("loo_weights", args)
     } else if (weights %in% "bridge") {
       weights <- do.call("post_prob", args)
     }
@@ -2494,6 +2496,52 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   )
   rownames(intervals) <- labs
   t(intervals)
+}
+
+#' @rdname loo_weights
+#' @export
+loo_weights.brmsfit <- function(x, ..., more_args = list(), 
+                                newdata = NULL, re_formula = NULL, 
+                                allow_new_levels = FALSE, 
+                                sample_new_levels = "uncertainty", 
+                                resp = NULL, new_objects = list(), 
+                                subset = NULL, nsamples = NULL,
+                                nug = NULL) {
+  models <- list(x, ...)
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
+  names(models) <- model_names
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(nsamples(x), nsamples)
+  }
+  args <- nlist(
+    newdata, re_formula, resp, subset, nug, 
+    allow_new_levels, sample_new_levels, new_objects 
+  )
+  loo_weights_internal(models, args, more_args, fun = "weights")
+}
+
+#' @rdname loo_select
+#' @export
+loo_select.brmsfit <- function(x, ..., more_args = list(), 
+                               newdata = NULL, re_formula = NULL, 
+                               allow_new_levels = FALSE, 
+                               sample_new_levels = "uncertainty", 
+                               resp = NULL, new_objects = list(), 
+                               subset = NULL, nsamples = NULL,
+                               nug = NULL) {
+  models <- list(x, ...)
+  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  model_names <- c(deparse_combine(substitute(x)), model_names)
+  names(models) <- model_names
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(nsamples(x), nsamples)
+  }
+  args <- nlist(
+    newdata, re_formula, resp, subset, nug, 
+    allow_new_levels, sample_new_levels, new_objects 
+  )
+  loo_weights_internal(models, args, more_args, fun = "select")
 }
  
 #' Compute the Pointwise Log-Likelihood

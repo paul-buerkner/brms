@@ -268,29 +268,6 @@ add_waic.brmsfit <- function(x, ...) {
   add_ic(x, ic = "waic", ...)
 }
 
-loo_weights <- function(x, lw = NULL, log = FALSE, loo_args = list(), ...) {
-  # compute loo weights for use in loo_predict and related methods
-  # Args:
-  #   x: a brmsfit object
-  #   lw: precomputed log weights matrix
-  #   log: return log weights?
-  #   loo_args: further arguments passed to functions of loo
-  #   ...: further arguments passed to compute_ic
-  # Returns:
-  #   an S x N matrix
-  if (!is.null(lw)) {
-    stopifnot(is.matrix(lw))
-  } else {
-    message("Running PSIS to compute weights")
-    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
-    lw <- psis[["lw_smooth"]]
-  }
-  if (!log) {
-    lw <- exp(lw) 
-  } 
-  lw
-}
-
 set_pointwise <- function(x, pointwise = NULL, newdata = NULL, 
                           subset = NULL, thres = 1e+08) {
   # set the pointwise argument based on the model size
@@ -550,6 +527,73 @@ recommend_loo_options <- function(n, model_name = "") {
     out <- "loo"
   }
   invisible(out)
+}
+
+loo_weights_internal <- function(models, args, more_args,
+                                 fun = c("weights", "select")) {
+  # wrapper around loo::model_weights and loo::model_select
+  # Args:
+  #   models: list of brmsfit objects
+  #   args: arguments passt to log_lik
+  #   more_args: argument passed to loo::model_fun
+  #   fun: suffix of the function to be called
+  stopifnot(is.list(models))
+  fun <- match.arg(fun)
+  if (length(models) < 2L) {
+    stop2("'loo_", fun, "' requires at least two models.")
+  }
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Object '", names(models)[i], "' is not of class 'brmsfit'.")
+    }
+  }
+  match_response(models)
+  log_lik_list <- lapply(models, 
+    function(x) do.call(log_lik, c(list(x), args))
+  )
+  more_args$log_lik_list <- log_lik_list
+  more_args$r_eff_list <- mapply(
+    r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
+  )
+  utils::capture.output(
+    # stops printing inside the loo functions
+    out <- do.call(eval2(paste0("loo::model_", fun)), more_args)
+  )
+  names(out) <- names(models)
+  out
+}
+
+r_eff_helper <- function(log_lik, fit) {
+  # helper function to compute relative efficiences
+  stopifnot(is.matrix(log_lik), is.brmsfit(fit))
+  chains <- fit$fit@sim$chains
+  chain_id <- rep(seq_len(chains), each = nrow(log_lik) / chains)
+  loo::relative_eff(log_lik, chain_id = chain_id)
+}
+
+loo_weights_old <- function(x, lw = NULL, log = FALSE, 
+                            loo_args = list(), ...) {
+  # compute loo weights for use in loo_predict and related methods
+  # required for 'loo' ppc types only (deprecated as of loo 2.0)
+  # Args:
+  #   x: a brmsfit object
+  #   lw: precomputed log weights matrix
+  #   log: return log weights?
+  #   loo_args: further arguments passed to functions of loo
+  #   ...: further arguments passed to compute_ic
+  # Returns:
+  #   an S x N matrix
+  if (!is.null(lw)) {
+    stopifnot(is.matrix(lw))
+  } else {
+    message("Running PSIS to compute weights")
+    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
+    lw <- psis[["lw_smooth"]]
+  }
+  if (!log) {
+    lw <- exp(lw) 
+  } 
+  lw
 }
 
 #' @export

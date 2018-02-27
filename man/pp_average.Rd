@@ -22,9 +22,15 @@ pp_average(x, ...)
 
 \item{weights}{Name of the criterion to compute weights from. 
 Should be one of \code{"loo"} (default), 
-\code{"waic"}, \code{"kfold"}, or \code{"bridge"} 
-(log marginal likelihood). Alternatively, a numeric
-vector with pre-specified weights.}
+\code{"waic"}, \code{"kfold"}, \code{loo2}, or \code{"bridge"}. 
+For the former three options, Akaike weights will be computed
+based on the information criterion values returned by
+the respective methods. For \code{"loo2"}, method
+\code{\link{loo_weights}} will be used to obtain weights. 
+For \code{"bridge"}, method \code{\link{post_prob}} 
+will be used to compute weights based on log marginal 
+likelihood values. Alternatively, \code{weights} can be 
+a numeric vector of pre-specified weights.}
 
 \item{method}{Type of predictions to average. Should be one of 
 \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}.}
