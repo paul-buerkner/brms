@@ -80,7 +80,7 @@ split_re_terms <- function(re_terms) {
     lhs_all_terms <- all_terms(lhs_form)
     basic_pos <- rep(TRUE, length(lhs_all_terms))
     new_lhs <- NULL
-    for (t in c("cs", "sp")) {
+    for (t in c("cs", "sp", "mmc")) {
       lhs_tform <- do.call(paste0("parse_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
         tpos <- attr(lhs_tform, "pos")
@@ -110,6 +110,8 @@ split_re_terms <- function(re_terms) {
       }
     }
     new_re_terms[[i]] <- paste0(new_lhs, re_parts$mid[i], re_parts$rhs[i])
+    new_re_terms[[i]] <- new_re_terms[[i]][order(type[[i]])]
+    type[[i]] <- sort(type[[i]])
   }
   re_terms <- unlist(new_re_terms)
   structure(re_terms, type = unlist(type))
@@ -316,6 +318,8 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
     } else if (re$type[i] == "sp") {
       coef <- tidy_spef(re$form[[i]], data)$coef
+    } else if (re$type[i] == "mmc") {
+      coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
       if (!is.null(old_standata)) {
@@ -353,8 +357,8 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       type = re$type[[i]],
       stringsAsFactors = FALSE
     )
-    rdat$gcall <- replicate(nrow(rdat), re$gcall[i]) 
     rdat$form <- replicate(nrow(rdat), re$form[[i]])
+    rdat$gcall <- replicate(nrow(rdat), re$gcall[i]) 
     id <- re$id[[i]]
     if (is.na(id)) {
       rdat$id <- j
@@ -390,7 +394,11 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   # check for duplicated and thus not identified effects
   dup <- duplicated(ranef[, c("group", "coef", vars_prefix())])
   if (any(dup)) {
-    stop2("Duplicated group-level effects are not allowed.")
+    dr <- ranef[which(dup)[1], ]
+    stop2(
+      "Duplicated group-level effects are not allowed.\n",
+      "Occured for effect '", dr$coef, "' of group '", dr$group, "'."
+    )
   }
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {

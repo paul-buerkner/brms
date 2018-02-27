@@ -23,10 +23,16 @@ make_stancode <- function(formula, data, family = gaussian(),
                           prior = NULL, autocor = NULL,
                           cov_ranef = NULL, sparse = FALSE, 
                           sample_prior = c("no", "yes", "only"), 
-                          stan_funs = NULL, save_model = NULL, 
-                          silent = FALSE, ...) {
+                          stan_vars = NULL, stan_funs = NULL, 
+                          save_model = NULL, silent = FALSE, ...) {
   dots <- list(...)
   # some input checks
+  if (is.brmsfit(formula)) {
+    stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
+  }
+  if (length(stan_funs) > 0) {
+    stan_funs <- as_one_character(stan_funs) 
+  }
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
@@ -38,131 +44,133 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
+  stan_vars <- validate_stanvars(stan_vars)
   
-  text_effects <- stan_effects(
+  scode_effects <- stan_effects(
     bterms, data = data, ranef = ranef, 
     prior = prior, sparse = sparse
   )
   # the ID syntax requires group-level effects to be evaluated separately
-  text_ranef <- collapse_lists(ls = lapply(
+  scode_ranef <- collapse_lists(ls = lapply(
     X = unique(ranef$id), FUN = stan_re,
     ranef = ranef, prior = prior, cov_ranef = cov_ranef
   ))
-  text_llh <- stan_llh(bterms, data = data)
-  text_global_defs <- stan_global_defs(
+  scode_llh <- stan_llh(bterms, data = data)
+  scode_global_defs <- stan_global_defs(
     bterms, prior = prior, ranef = ranef, cov_ranef = cov_ranef
   )
-  text_Xme <- stan_Xme(bterms, prior = prior)
+  scode_Xme <- stan_Xme(bterms, prior = prior)
     
   # get priors for all parameters in the model
-  text_prior <- paste0(
-    text_effects$prior,
-    text_ranef$prior,
-    text_Xme$prior,
+  scode_prior <- paste0(
+    scode_effects$prior,
+    scode_ranef$prior,
+    scode_Xme$prior,
     stan_prior(class = "", prior = prior)
   )
   # generate functions block
-  text_functions <- paste0(
+  scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions { \n",
-      text_global_defs$fun,
+      scode_global_defs$fun,
       stan_funs,
     "} \n"
   )
   # generate data block
-  text_data <- paste0(
+  scode_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
-    text_effects$data,
-    text_ranef$data,
-    text_Xme$data,
+    scode_effects$data,
+    scode_ranef$data,
+    scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored? \n",
+    collapse_stanvars(stan_vars),
     "} \n"
   )
   # generate transformed parameters block
-  text_transformed_data <- paste0(
+  scode_transformed_data <- paste0(
     "transformed data { \n",
-       text_global_defs$tdataD,
-       text_effects$tdataD,
-       text_effects$tdataC,
+       scode_global_defs$tdataD,
+       scode_effects$tdataD,
+       scode_effects$tdataC,
     "} \n"
   )
   # generate parameters block
-  text_parameters <- paste0(
-    text_effects$par,
-    text_ranef$par,
-    text_Xme$par
+  scode_parameters <- paste0(
+    scode_effects$par,
+    scode_ranef$par,
+    scode_Xme$par
   )
-  text_rngprior <- stan_rngprior(
+  scode_rngprior <- stan_rngprior(
     sample_prior = sample_prior, 
-    par_declars = text_parameters,
-    gen_quantities = text_effects$genD,
-    prior = text_prior,
+    par_declars = scode_parameters,
+    gen_quantities = scode_effects$genD,
+    prior = scode_prior,
     prior_special = attr(prior, "special")
   )
-  text_parameters <- paste0(
+  scode_parameters <- paste0(
     "parameters { \n",
-      text_parameters,
-      text_rngprior$par,
+      scode_parameters,
+      scode_rngprior$par,
     "} \n"
   )
   # generate transformed parameters block
-  text_transformed_parameters <- paste0(
+  scode_transformed_parameters <- paste0(
     "transformed parameters { \n",
-      text_effects$tparD,
-      text_ranef$tparD,
-      text_Xme$tparD,
-      text_effects$tparC1,
-      text_ranef$tparC1,
+      scode_effects$tparD,
+      scode_ranef$tparD,
+      scode_Xme$tparD,
+      scode_effects$tparC1,
+      scode_ranef$tparC1,
     "} \n"
   )
   # generate model block
-  text_model_loop <- paste0(
-    text_effects$modelC2, 
-    text_effects$modelC3,
-    text_effects$modelC4
+  scode_model_loop <- paste0(
+    scode_effects$modelC2, 
+    scode_effects$modelC3,
+    scode_effects$modelC4
   )
-  if (isTRUE(nzchar(text_model_loop))) {
-    text_model_loop <- paste0(
-      "  for (n in 1:N) { \n", text_model_loop, "  } \n"
+  if (isTRUE(nzchar(scode_model_loop))) {
+    scode_model_loop <- paste0(
+      "  for (n in 1:N) { \n", scode_model_loop, "  } \n"
     )
   }
-  text_model <- paste0(
+  scode_model <- paste0(
     "model { \n",
-      text_effects$modelD,
-      text_effects$modelC1,
-      text_effects$modelCgp1,
-      text_model_loop,
-      text_effects$modelC5,
+      scode_effects$modelD,
+      scode_effects$modelC1,
+      scode_effects$modelCgp1,
+      scode_model_loop,
+      scode_effects$modelC5,
       "  // priors including all constants \n", 
-      text_prior, 
+      scode_prior, 
       "  // likelihood including all constants \n",
       "  if (!prior_only) { \n",
-      text_llh, 
+      scode_llh, 
       "  } \n", 
-      text_rngprior$model,
+      scode_rngprior$model,
     "} \n"
   )
   # generate generated quantities block
-  text_generated_quantities <- paste0(
+  scode_generated_quantities <- paste0(
     "generated quantities { \n",
-      text_effects$genD,
-      text_ranef$genD,
-      text_rngprior$genD,
-      text_effects$genC,
-      text_ranef$genC,
-      text_rngprior$genC,
+      scode_effects$genD,
+      scode_ranef$genD,
+      scode_rngprior$genD,
+      scode_effects$genC,
+      scode_ranef$genC,
+      scode_rngprior$genC,
     "} \n"
   )
   # combine all elements into a complete Stan model
   complete_model <- paste0(
-    text_functions,
-    text_data, 
-    text_transformed_data, 
-    text_parameters,
-    text_transformed_parameters,
-    text_model,
-    text_generated_quantities
+    scode_functions,
+    scode_data, 
+    scode_transformed_data, 
+    scode_parameters,
+    scode_transformed_parameters,
+    scode_model,
+    scode_generated_quantities
   )
   
   # expand '#include' statements by calling rstan::stanc_builder

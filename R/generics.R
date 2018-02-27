@@ -11,25 +11,27 @@
 #' @details 
 #' See \code{methods(class = "brmsfit")} for an overview of available methods.
 #' 
-#' @slot formula A \code{\link[brms:brmsformula]{brmsformula}} object
-#' @slot family A \code{\link[brms:brmsfamily]{brmsfamily}} object
+#' @slot formula A \code{\link{brmsformula}} object
+#' @slot family A \code{\link{brmsfamily}} object
 #' @slot data A \code{data.frame} containing all variables used in the model
 #' @slot data.name The name of \code{data} as specified by the user 
 #' @slot model The model code in \pkg{Stan} language
-#' @slot prior A \code{\link[brms:brmsprior]{brmsprior}} object containing
+#' @slot prior A \code{\link{brmsprior}} object containing
 #'   information on the priors used in the model
-#' @slot autocor An \code{\link[brms:cor_brms]{cor_brms}} object containing 
+#' @slot autocor An \code{\link{cor_brms}} object containing 
 #'   the autocorrelation structure if specified
 #' @slot ranef A \code{data.frame} containing the group-level structure
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices
-#' @slot loo An empty slot for adding the \code{\link[brms:loo]{loo}} 
+#' @slot stan_vars A \code{\link{stanvars}} object or \code{NULL}
+#' @slot stan_funs A character string of length one or \code{NULL}
+#' @slot loo An empty slot for adding the \code{\link{loo}} 
 #'   information criterion after model fitting
-#' @slot waic An empty slot for adding the \code{\link[brms:waic]{waic}} 
+#' @slot waic An empty slot for adding the \code{\link{waic}} 
 #'   information criterion after model fitting
-#' @slot R2 An empty slot for adding the \code{\link[brms:bayes_R2]{bayes_R2}}
+#' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
 #' @slot bridge An empty slot for adding a \code{bridge} object 
-#'   (see \code{\link[brms:bridge_sampler]{bridge_sampler}})
+#'   (see \code{\link{bridge_sampler}})
 #'   after model fitting
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
@@ -39,10 +41,10 @@
 #'   which the model was fitted
 #' 
 #' @seealso 
-#'   \code{\link[brms:brms]{brms}}, 
-#'   \code{\link[brms:brm]{brm}}, 
-#'   \code{\link[brms:brmsformula]{brmsformula}}, 
-#'   \code{\link[brms:brmsfamily]{brmsfamily}}
+#'   \code{\link{brms}}, 
+#'   \code{\link{brm}}, 
+#'   \code{\link{brmsformula}}, 
+#'   \code{\link{brmsfamily}}
 #' 
 NULL
 
@@ -50,17 +52,17 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
-                    bridge = NULL, stan_funs = NULL, fit = NA, exclude = NULL, 
-                    algorithm = "sampling") {
+                    bridge = NULL, stan_vars = NULL, stan_funs = NULL, 
+                    fit = NA, exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
-    formula, family, data, data.name, model, prior, 
-    autocor, ranef, cov_ranef, loo, waic, R2, bridge, 
-    stan_funs, fit, exclude, algorithm, version
+    formula, family, data, data.name, model, prior,
+    autocor, ranef, cov_ranef, loo, waic, R2, bridge,
+    stan_vars, stan_funs, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
   x

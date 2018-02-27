@@ -16,9 +16,9 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 \section{Slots}{
 
 \describe{
-\item{\code{formula}}{A \code{\link[brms:brmsformula]{brmsformula}} object}
+\item{\code{formula}}{A \code{\link{brmsformula}} object}
 
-\item{\code{family}}{A \code{\link[brms:brmsfamily]{brmsfamily}} object}
+\item{\code{family}}{A \code{\link{brmsfamily}} object}
 
 \item{\code{data}}{A \code{data.frame} containing all variables used in the model}
 
@@ -26,27 +26,31 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 
 \item{\code{model}}{The model code in \pkg{Stan} language}
 
-\item{\code{prior}}{A \code{\link[brms:brmsprior]{brmsprior}} object containing
+\item{\code{prior}}{A \code{\link{brmsprior}} object containing
 information on the priors used in the model}
 
-\item{\code{autocor}}{An \code{\link[brms:cor_brms]{cor_brms}} object containing 
+\item{\code{autocor}}{An \code{\link{cor_brms}} object containing 
 the autocorrelation structure if specified}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure}
 
 \item{\code{cov_ranef}}{A \code{list} of customized group-level covariance matrices}
 
-\item{\code{loo}}{An empty slot for adding the \code{\link[brms:loo]{loo}} 
+\item{\code{stan_vars}}{A \code{\link{stanvars}} object or \code{NULL}}
+
+\item{\code{stan_funs}}{A character string of length one or \code{NULL}}
+
+\item{\code{loo}}{An empty slot for adding the \code{\link{loo}} 
 information criterion after model fitting}
 
-\item{\code{waic}}{An empty slot for adding the \code{\link[brms:waic]{waic}} 
+\item{\code{waic}}{An empty slot for adding the \code{\link{waic}} 
 information criterion after model fitting}
 
-\item{\code{R2}}{An empty slot for adding the \code{\link[brms:bayes_R2]{bayes_R2}}
+\item{\code{R2}}{An empty slot for adding the \code{\link{bayes_R2}}
 (Bayesian R-squared) value after model fitting}
 
 \item{\code{bridge}}{An empty slot for adding a \code{bridge} object 
-(see \code{\link[brms:bridge_sampler]{bridge_sampler}})
+(see \code{\link{bridge_sampler}})
 after model fitting}
 
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
@@ -61,8 +65,8 @@ which the model was fitted}
 }}
 
 \seealso{
-\code{\link[brms:brms]{brms}}, 
-  \code{\link[brms:brm]{brm}}, 
-  \code{\link[brms:brmsformula]{brmsformula}}, 
-  \code{\link[brms:brmsfamily]{brmsfamily}}
+\code{\link{brms}}, 
+  \code{\link{brm}}, 
+  \code{\link{brmsformula}}, 
+  \code{\link{brmsfamily}}
 }

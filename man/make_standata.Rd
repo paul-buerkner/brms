@@ -6,8 +6,8 @@
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  knots = NULL, check_response = TRUE, only_response = FALSE,
-  control = list(), ...)
+  stan_vars = NULL, knots = NULL, check_response = TRUE,
+  only_response = FALSE, control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -63,6 +63,10 @@ to calculate Bayes factors for point hypotheses.
 If set to \code{"only"}, samples are drawn solely from
 the priors ignoring the likelihood. In this case, 
 all parameters must have proper priors.}
+
+\item{stan_vars}{An optional \code{stanvars} object generated
+by function \code{\link{stan_var}} to define additional variables
+in the data block of \pkg{Stan}.}
 
 \item{knots}{Optional list containing user specified knot values to be 
 used for basis construction of smoothing terms. 

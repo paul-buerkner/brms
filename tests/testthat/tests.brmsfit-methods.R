@@ -75,8 +75,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(R2), c(2, 4))
   
   # family
-  expect_equal(family(fit1), brmsfamily("student", link = "identity"))
-  expect_equal(family(fit6, resp = "count"), brmsfamily("poisson", link = "log"))
+  expect_is(family(fit1), "brmsfamily")
+  expect_is(family(fit6, resp = "count"), "brmsfamily")
   expect_output(print(family(fit1), links = TRUE), "student.*log.*logm1")
   expect_output(print(family(fit5)), "Mixture.*gaussian.*exponential")
   

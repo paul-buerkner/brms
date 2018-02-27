@@ -27,9 +27,9 @@
 make_standata <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL, cov_ranef = NULL,
                           sample_prior = c("no", "yes", "only"), 
-                          knots = NULL, check_response = TRUE,
-                          only_response = FALSE, control = list(), 
-                          ...) {
+                          stan_vars = NULL, knots = NULL, 
+                          check_response = TRUE, only_response = FALSE, 
+                          control = list(), ...) {
   # internal control arguments:
   #   new: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
@@ -37,6 +37,10 @@ make_standata <- function(formula, data, family = gaussian(),
   #   old_standata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
   dots <- list(...)
+  # some input checks
+  if (is.brmsfit(formula)) {
+    stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
+  }
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   not4stan <- isTRUE(control$not4stan)
@@ -82,6 +86,15 @@ make_standata <- function(formula, data, family = gaussian(),
     out <- c(out, do.call(data_effects, args_eff))
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
+  stan_vars <- validate_stanvars(stan_vars)
+  if (is.stanvars(stan_vars)) {
+    inv_names <- intersect(names(stan_vars), names(out))
+    if (length(inv_names)) {
+      stop2("Cannot overwrite existing variables: ", 
+            collapse_comma(inv_names))
+    }
+    out[names(stan_vars)] <- lapply(stan_vars, "[[", "sdata")
+  }
   if (isTRUE(control$save_order)) {
     attr(out, "old_order") <- attr(data, "old_order")
   }

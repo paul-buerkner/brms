@@ -374,7 +374,7 @@ test_that("Multivariate GAMMs work correctly", {
   newd <- data.frame(x0=(0:30)/30, x1=(0:30)/30,
                      x2=(0:30)/30, x3=(0:30)/30)
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
-  expect_range(prfi[, 1], prfi[, 5] - 0.15, prfi[, 5] + 0.15)
+  expect_range(prfi[, 1], prfi[, 5] - 0.20, prfi[, 5] + 0.20)
 })
 
 test_that("GAMMs with factor variable in 'by' work correctly", {

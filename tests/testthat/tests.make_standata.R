@@ -508,12 +508,28 @@ test_that("make_standata handles multi-membership models", {
   sdata <- make_standata(y ~ (1|mm(g1,g2,g1,g2)), data = dat)
   expect_true(all(paste0(c("W_1_", "J_1_"), 1:4) %in% names(sdata)))
   expect_equal(sdata$W_1_4, as.array(rep(0.25, 10)))
+  expect_equal(unname(sdata$Z_1_1_1), as.array(rep(1, 10)))
+  expect_equal(unname(sdata$Z_1_1_2), as.array(rep(1, 10)))
   # this checks whether combintation of factor levels works as intended
   expect_equal(sdata$J_1_1, as.array(c(6, 5, 4, 3, 2, 1, 7, 7, 7, 7)))
   expect_equal(sdata$J_1_2, as.array(c(8, 1, 2, 3, 4, 5, 6, 9, 10, 7)))
   
   sdata <- make_standata(y ~ (1|mm(g1,g2, weights = cbind(w1, w2))), dat)
   expect_equal(sdata$W_1_1, as.array(dat$w1 / (dat$w1 + dat$w2)))
+  
+  # tests mmc terms
+  sdata <- make_standata(y ~ (1+mmc(w1, w2)|mm(g1,g2)), data = dat)
+  expect_equal(unname(sdata$Z_1_2_1), as.array(dat$w1))
+  expect_equal(unname(sdata$Z_1_2_2), as.array(dat$w2))
+  
+  expect_error(
+    make_standata(y ~ (mmc(w1, w2, y)|mm(g1,g2)), data = dat),
+    "Invalid term 'mmc(w1, w2, y)':", fixed = TRUE
+  )
+  expect_error(
+    make_standata(y ~ (mmc(w1, w2)*y|mm(g1,g2)), data = dat),
+    "'mmc' cannot be used for interactions"
+  )
   
   # tests if ":" works in multi-membership models
   sdata <- make_standata(y ~ (1|mm(w1:g1,w1:g2)), dat)
@@ -655,8 +671,26 @@ test_that("make_standata incldudes data of special priors", {
   expect_equal(sdata$lasso_df_a2, 2)
 })
 
-test_that("Dots in formula are correctly expanded", {
+test_that("dots in formula are correctly expanded", {
   dat <- data.frame(y = 1:10, x1 = 1:10, x2 = 1:10)
   sdata <- make_standata(y ~ ., dat)
   expect_equal(colnames(sdata$X), c("Intercept", "x1", "x2"))
+})
+
+test_that("argument 'stan_vars' is handled correctly", {
+  bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
+  mean_intercept <- 5
+  stanvars <- stan_var(mean_intercept)
+  sdata <- make_standata(count ~ Trt, data = epilepsy, 
+                         prior = bprior, stan_vars = stanvars)
+  expect_equal(sdata$mean_intercept, 5)
+  
+  # define a multi_normal prior with known covariance matrix
+  bprior <- prior(multi_normal(M, V), class = "b")
+  stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
+    stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
+  sdata <- make_standata(count ~ Trt + log_Base4_c, epilepsy,
+                         prior = bprior, stan_vars = stanvars)
+  expect_equal(sdata$M, rep(0, 2))
+  expect_equal(sdata$V, diag(2))
 })

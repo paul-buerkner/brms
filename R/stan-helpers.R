@@ -361,6 +361,11 @@ stan_autocor <- function(bterms, prior) {
     } 
   }
   if (is.cor_bsts(autocor)) {
+    warning2(
+      "The `bsts' correlation structure has been deprecated and ",
+      "will be removed from the package at some point. Consider ", 
+      "using splines or Gaussian processes instead."
+    )
     err_msg <- "BSTS models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 

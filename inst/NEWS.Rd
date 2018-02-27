@@ -5,12 +5,19 @@
 \section{CHANGES IN VERSION 2.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
-      \item Handle predictors with missing values  
-      using \code{mi} terms. (#27)
+      \item Model missing values and measurement error in 
+      responses using the \code{mi} addition term. (#27, #343)
+      \item Allow missing values in predictors using \code{mi} 
+      terms on the right-hand side of model formulas. (#27) 
       \item Model interactions between the special predictor
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
       \item Allow predictions of measurement-error models
       with new data. (#335)
+      \item Pass user-defined variables to Stan via 
+      \code{stan_var}. (#219, #357)
+      \item Model covariates in multi-membership structures
+      that vary over the levels of the grouping factor
+      via \code{mmc} terms. (#353)
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
     }
@@ -26,6 +33,7 @@
       integer is not one.
       \item Always plot \code{by} variables as facets
       in \code{marginal_smooths}.
+      \item Deprecate the \code{cor_bsts} correlation structure.
     }
   }
   \subsection{BUG FIXES}{

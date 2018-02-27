@@ -6,10 +6,10 @@
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   cov_ranef = NULL, sample_prior = c("no", "yes", "only"), sparse = FALSE,
-  knots = NULL, stan_funs = NULL, fit = NA, save_ranef = TRUE,
-  save_mevars = FALSE, save_all_pars = FALSE, inits = "random",
-  chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
-  cores = getOption("mc.cores", 1L), control = NULL,
+  knots = NULL, stan_vars = NULL, stan_funs = NULL, fit = NA,
+  save_ranef = TRUE, save_mevars = FALSE, save_all_pars = FALSE,
+  inits = "random", chains = 4, iter = 2000, warmup = floor(iter/2),
+  thin = 1, cores = getOption("mc.cores", 1L), control = NULL,
   algorithm = c("sampling", "meanfield", "fullrank"),
   future = getOption("future", FALSE), silent = TRUE, seed = NA,
   save_model = NULL, save_dso = TRUE, ...)
@@ -79,12 +79,13 @@ improved or even slightly decreased.}
 used for basis construction of smoothing terms. 
 See \code{\link[mgcv:gamm]{gamm}} for more details.}
 
+\item{stan_vars}{An optional \code{stanvars} object generated
+by function \code{\link{stan_var}} to define additional variables
+in the data block of \pkg{Stan}.}
+
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 
-of the generated \pkg{Stan} code. 
-Note that these functions must additionally be defined 
-as \emph{vectorized} \R functions in the global environment for 
-various post-processing methods to work on the returned model object.}
+of the generated \pkg{Stan} code.}
 
 \item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; 
 defaults to \code{NA}. 

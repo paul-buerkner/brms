@@ -8,7 +8,7 @@ get_var_combs <- function(..., alist = list()) {
   #   alist: a list of character vectors or formulas
   dots <- c(list(...), alist)
   for (i in seq_along(dots)) {
-    if (is(dots[[i]], "formula")) {
+    if (is.formula(dots[[i]])) {
       dots[[i]] <- attr(terms(dots[[i]]), "term.labels")
     }
     dots[[i]] <- lapply(dots[[i]], function(y) all.vars(parse(text = y)))
@@ -432,3 +432,9 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   }
   points
 }
+
+#' @export
+print.brmsMarginalEffects <- function(x, ...) {
+  plot(x, ...)
+}
+

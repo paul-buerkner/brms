@@ -167,24 +167,55 @@ data_re <- function(bterms, data, ranef) {
   px <- check_prefix(bterms)
   take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
   ranef <- ranef[take, ]
-  if (nrow(ranef)) {
-    unique_forms <- ranef[!duplicated(ranef$gn), "form"]
-    Z <- lapply(unique_forms, get_model_matrix, data = data)
-    gn <- unique(ranef$gn)
-    for (i in seq_along(gn)) {
-      r <- subset2(ranef, gn = gn[i])
-      idp <- paste0(r$id[1], usc(combine_prefix(px)))
+  if (!nrow(ranef)) {
+    return(out) 
+  }
+  gn <- unique(ranef$gn)
+  for (i in seq_along(gn)) {
+    r <- subset2(ranef, gn = gn[i])
+    Z <- get_model_matrix(r$form[[1]], data = data, rename = FALSE)
+    idp <- paste0(r$id[1], usc(combine_prefix(px)))
+    Znames <- paste0("Z_", idp, "_", r$cn)
+    if (r$gtype[1] == "mm") {
+      ng <- length(r$gcall[[1]]$groups)
       if (r$type[1] == "cs") {
-        ncatM1 <- nrow(r) / ncol(Z[[i]])
-        Z_temp <- vector("list", ncol(Z[[i]]))
-        for (k in seq_along(Z_temp)) {
-          Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k], simplify = FALSE)
-        }
-        Z[[i]] <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
+        stop2("'cs' is not supported in multi-membership terms.")
       }
-      Zname <- paste0("Z_", idp, "_", r$cn)
-      for (j in seq_len(ncol(Z[[i]]))) {
-        out <- c(out, setNames(list(as.array(Z[[i]][, j])), Zname[j]))
+      if (r$type[1] == "mmc") {
+        # see issue #353 for the general idea
+        mmc_expr <- "^mmc\\([^:]*\\)"
+        mmc_terms <- get_matches_expr(mmc_expr, colnames(Z))
+        for (t in mmc_terms) {
+          pos <- which(grepl_expr(escape_all(t), colnames(Z)))
+          if (length(pos) != ng) {
+            stop2("Invalid term '", t, "': Expected ", ng, 
+                  " coefficients but found ", length(pos), ".")
+          }
+          for (j in seq_along(Znames)) {
+            for (k in seq_len(ng)) {
+              out[[paste0(Znames[j], "_", k)]] <- as.array(Z[, pos[k]])
+            }
+          }
+        }
+      } else {
+        for (j in seq_along(Znames)) {
+          out[paste0(Znames[j], "_", seq_len(ng))] <- list(as.array(Z[, j]))
+        }
+      }
+    } else {
+      if (r$type[1] == "cs") {
+        ncatM1 <- nrow(r) / ncol(Z)
+        Z_temp <- vector("list", ncol(Z))
+        for (k in seq_along(Z_temp)) {
+          Z_temp[[k]] <- replicate(ncatM1, Z[, k], simplify = FALSE)
+        }
+        Z <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
+      }
+      if (r$type[1] == "mmc") {
+        stop2("'mmc' is only supported in multi-membership terms.")
+      }
+      for (j in seq_len(ncol(Z))) {
+        out[[Znames[j]]] <- as.array(Z[, j])
       }
     }
   }

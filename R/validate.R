@@ -495,6 +495,21 @@ parse_re <- function(formula) {
   structure(out, pos = re_pos)
 }
 
+parse_mmc <- function(formula) {
+  # parse multiple covariates in multi-membership terms
+  all_terms <- all_terms(formula)
+  pos_terms <- grepl("^mmc\\([^\\|]+$", all_terms)
+  terms <- all_terms[pos_terms]
+  if (length(terms)) {
+    if (any(grepl(":", terms))) {
+      stop2("'mmc' cannot be used for interactions.")
+    }
+    terms <- str2formula(terms)
+    attr(terms, "rsv_intercept") <- TRUE
+  }
+  structure(terms, pos = pos_terms)
+}
+
 parse_resp <- function(formula, check_names = TRUE) {
   # extract response variable names
   # assumes multiple response variables to be combined via cbind
@@ -711,7 +726,7 @@ check_multiple_special_terms <- function(x) {
     "(mo((no)?|(notonic)?))|(me)|(mi)", 
     "cse?", "(s|(t2)|(te)|(ti))", "gp"
   )
-  sterms <- paste0("^", sterms, "\\([^:]*\\)$") 
+  sterms <- paste0("^(", sterms, ")\\([^:]*\\)$") 
   smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
   for (i in seq_along(sterms)) {
     smatches[, i] <- grepl_expr(sterms[i], x)
@@ -756,11 +771,14 @@ ad_families <- function(x) {
   )
 }
 
-allvars_formula <- function(lformula) {
+allvars_formula <- function(x) {
   # combine all variables in one formuula
   # Args:
-  #   lformula: list of formulas or character strings
-  out <- collapse(ulapply(rmNULL(lformula), plus_rhs))
+  #   x: (list of) formulas or character strings
+  if (!is.list(x)) {
+    x <- list(x)
+  }
+  out <- collapse(ulapply(rmNULL(x), plus_rhs))
   out <- str2formula(c(out, all.vars(parse(text = out))))
   update(out, ~ .)
 }

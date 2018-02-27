@@ -28,10 +28,7 @@ test_that("family functions returns expected results", {
                "zero_inflated_negbinomial")
   expect_equal(zero_inflated_beta(logit)$family, 
                "zero_inflated_beta")
-  zi_binom <- list(family = "zero_inflated_binomial", link = "logit",
-                   link_zi = "logit")
-  class(zi_binom) <- "family"
-  expect_equivalent(zero_inflated_binomial(), zi_binom)
+  expect_equivalent(zero_inflated_binomial()$link_zi, "logit")
   expect_error(zero_inflated_binomial(y~x), "zero_inflated_binomial")
   expect_equal(categorical()$link, "logit")
   expect_error(categorical(probit), "probit")
@@ -39,14 +36,9 @@ test_that("family functions returns expected results", {
   expect_equal(sratio(probit_approx)$link, "probit_approx")
   expect_equal(cratio("cloglog")$family, "cratio")
   expect_equal(acat(cloglog)$link, "cloglog")
-  expect_equivalent(brmsfamily("gaussian", inverse),
-                    list(family = "gaussian", link = "inverse",
-                         link_sigma = "log"))
-  expect_equivalent(brmsfamily("geometric", "identity"),
-                    list(family = "geometric", link = "identity"))
-  expect_equivalent(brmsfamily("zi_poisson"),
-                    list(family = "zero_inflated_poisson", link = "log",
-                         link_zi = "logit"))
+  expect_equal(brmsfamily("gaussian", inverse)$link, "inverse")
+  expect_equal(brmsfamily("geometric", "identity")$family, "geometric")
+  expect_equal(brmsfamily("zi_poisson")$link_zi, "logit")
   
   expect_error(weibull(link_shape = "logit"), 
                "'logit' is not a supported link for parameter 'shape'")
