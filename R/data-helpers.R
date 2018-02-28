@@ -144,11 +144,21 @@ order_data <- function(data, bterms) {
     stop2("All autocorrelation structures must have the same ",
           "time and group variables.")
   }
-  time_var <- if (length(time)) data[[time]]
-  group_var <- if (length(group)) data[[group]]
-  to_order <- rmNULL(list(group_var, time_var))
-  if (length(to_order)) {
-    new_order <- do.call(order, to_order)
+  if (length(time) || length(group)) {
+    if (length(group)) {
+      gv <- data[[group]]
+    } else {
+      gv <- rep(1, nrow(data))
+    }
+    if (length(time)) {
+      tv <- data[[time]]
+    } else {
+      tv <- ulapply(unique(gv), function(g) seq_len(sum(gv == g)))
+    }
+    if (any(duplicated(data.frame(gv, tv)))) {
+      stop2("Time points within groups must be unique.")
+    }
+    new_order <- do.call(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)

@@ -42,6 +42,8 @@
       groups in multi-membership terms thanks to
       Gang Chen.
       \item Allow truncation in multivariate models.
+      \item Force time points to be unique within groups in 
+      autocorrelation structures thanks to Ruben Arslan. (#363)
     }
   }
 }
