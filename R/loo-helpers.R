@@ -562,10 +562,7 @@ loo_weights_internal <- function(models, args, more_args,
   more_args$r_eff_list <- mapply(
     r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
   )
-  utils::capture.output(
-    # stops printing inside the loo functions
-    out <- do.call(eval2(paste0("loo::model_", fun)), more_args)
-  )
+  out <- do.call(eval2(paste0("loo::model_", fun)), more_args)
   names(out) <- names(models)
   out
 }
