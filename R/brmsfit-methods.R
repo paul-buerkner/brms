@@ -1913,9 +1913,11 @@ pp_average.brmsfit <- function(
   new_objects = list(), incl_autocor = TRUE, 
   resp = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
   summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
-  more_args = NULL, control = NULL
+  model_names = NULL, more_args = NULL, control = NULL
 ) {
-  models <- list(x, ...)
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   if (!match_response(models)) {
     stop2("Can only average models predicting the same response.")
   }
@@ -1923,12 +1925,10 @@ pp_average.brmsfit <- function(
   if (is.null(nsamples)) {
     nsamples <- nsamples(x)
   }
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
   if (!is.numeric(weights)) {
     fun <- tolower(weights)
-    fun <- match.arg(fun, c("loo", "waic", "kfold", "bridge"))
-    args <- c(models, control)
+    fun <- match.arg(fun, c("loo", "waic", "kfold", "loo2", "bridge"))
+    args <- c(unname(models), control)
     if (fun %in% c("loo", "waic", "kfold")) {
       args$compare <- FALSE
       ics <- ulapply(SW(do.call(fun, args)), function(x) x$estimates[3, 1])
@@ -1950,13 +1950,13 @@ pp_average.brmsfit <- function(
   }
   weights <- weights / sum(weights)
   nsamples <- round(weights * nsamples)
-  names(weights) <- names(nsamples) <- model_names
+  names(weights) <- names(nsamples) <- names(models)
   method_args <- nlist(
     newdata, re_formula, allow_new_levels, sample_new_levels,
     new_objects, incl_autocor, resp, sort, nug, summary = FALSE
   )
   method_args <- c(method_args, more_args)
-  out <- named_list(model_names)
+  out <- named_list(names(models))
   for (i in seq_along(out)) {
     if (nsamples[i] > 0) {
       method_args$object <- models[[i]]
@@ -2278,18 +2278,19 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE,
                          sample_new_levels = "uncertainty", resp = NULL,
                          new_objects = list(), subset = NULL,
-                         nsamples = NULL, pointwise = NULL, nug = NULL) {
-  models <- list(x, ...)
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
+                         nsamples = NULL, pointwise = NULL, nug = NULL,
+                         model_names = NULL) {
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
   pointwise <- set_pointwise(x, pointwise, newdata, subset)
   use_stored_ic <- !any(names(match.call()) %in% args_not_for_reloo())
   args <- nlist(
-    models, model_names, ic = "waic", use_stored_ic,
-    newdata, re_formula, resp, subset, nug, allow_new_levels, 
+    models, ic = "waic", use_stored_ic, newdata, 
+    re_formula, resp, subset, nug, allow_new_levels, 
     sample_new_levels, new_objects, pointwise, compare
   )
   do.call(compute_ics, args)
@@ -2302,7 +2303,8 @@ waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE,
                          sample_new_levels = "uncertainty",
                          resp = NULL, new_objects = list(), subset = NULL, 
-                         nsamples = NULL, pointwise = NULL, nug = NULL) {
+                         nsamples = NULL, pointwise = NULL, nug = NULL,
+                         model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(WAIC)
   eval(cl, parent.frame())
@@ -2317,10 +2319,11 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
                         resp = NULL, new_objects = list(), 
                         subset = NULL, nsamples = NULL, pointwise = NULL,
                         nug = NULL, k_threshold = 0.7, 
-                        update_args = list(), cores = 1) {
-  models <- list(x, ...)
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
+                        model_names = NULL, update_args = list(),
+                        cores = 1) {
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2333,8 +2336,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE,
   }
   use_stored_ic <- !length(not_for_reloo)
   args <- nlist(
-    models, model_names, ic = "loo", use_stored_ic, loo_args,
-    newdata, re_formula, resp, subset, nug, allow_new_levels, 
+    models, ic = "loo", use_stored_ic, loo_args, newdata, 
+    re_formula, resp, subset, nug, allow_new_levels, 
     sample_new_levels, new_objects, pointwise, compare,
     reloo, k_threshold, update_args
   )
@@ -2350,8 +2353,9 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
                          sample_new_levels = "uncertainty", 
                          new_objects = list(), resp = NULL, 
                          subset = NULL, nsamples = NULL, pointwise = NULL, 
-                         nug = NULL, k_threshold = 0.7, 
-                         update_args = list(), cores = 1) {
+                         nug = NULL, k_threshold = 0.7,
+                         model_names = NULL, update_args = list(), 
+                         cores = 1) {
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
@@ -2362,17 +2366,17 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
 kfold.brmsfit <- function(x, ..., compare = TRUE,
                           K = 10, Ksub = NULL, exact_loo = FALSE, 
                           group = NULL, newdata = NULL, resp = NULL,
-                          save_fits = FALSE, update_args = list()) {
-  models <- list(x, ...)
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
+                          save_fits = FALSE, model_names = NULL,
+                          update_args = list()) {
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   use_stored_ic <- ulapply(models, 
     function(x) is.brmsfit(x) && is_equal(x$kfold$K, K)
   )
   args <- nlist(
-    models, model_names, ic = "kfold", K, save_fits, 
-    use_stored_ic, compare, update_args, newdata, 
-    resp, Ksub, exact_loo, group
+    models, ic = "kfold", K, save_fits, use_stored_ic, 
+    compare, update_args, newdata, resp, Ksub, exact_loo, group
   )
   do.call(compute_ics, args)
 }
@@ -2506,11 +2510,10 @@ loo_weights.brmsfit <- function(x, ..., more_args = list(),
                                 sample_new_levels = "uncertainty", 
                                 resp = NULL, new_objects = list(), 
                                 subset = NULL, nsamples = NULL,
-                                nug = NULL) {
-  models <- list(x, ...)
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
-  names(models) <- model_names
+                                nug = NULL, model_names = NULL) {
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2529,11 +2532,10 @@ loo_select.brmsfit <- function(x, ..., more_args = list(),
                                sample_new_levels = "uncertainty", 
                                resp = NULL, new_objects = list(), 
                                subset = NULL, nsamples = NULL,
-                               nug = NULL) {
-  models <- list(x, ...)
-  model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  model_names <- c(deparse_combine(substitute(x)), model_names)
-  names(models) <- model_names
+                               nug = NULL, model_names = NULL) {
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(list(x, ...), model_names, sub_names)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2947,11 +2949,9 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #'   If omitted, a uniform prior is used (i.e., all models are equally 
 #'   likely a priori). The default \code{NULL} corresponds to equal 
 #'   prior model weights.
-#' @param model_names If \code{NULL} (the default) will use model names 
-#'   derived from deparsing the call. Otherwise will use the passed 
-#'   values as model names.
 #' @param bs_args A list of additional arguments passed to 
 #'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#' @inheritParams LOO.brmsfit
 #'   
 #' @details Computing the marginal likelihood requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
@@ -3002,21 +3002,12 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL,
                               model_names = NULL,
                               bs_args = list()) {
   models <- list(x, ...)
-  if (is.null(model_names)) {
-    model_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-    model_names <- c(deparse_combine(substitute(x)), model_names)
-  } else if (length(model_names) != length(models)) {
-    stop2("Number of model names is not equal to the number of models.") 
-  }
-  for (i in seq_along(models)) {
-    if (!is.brmsfit(models[[i]])) {
-      stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
-    }
-  }
-  match_response(models)
+  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
+  sub_names <- c(deparse_combine(substitute(x)), sub_names)
+  models <- validate_models(models, model_names, sub_names)
   bs <- vector("list", length(models))
   for (i in seq_along(models)) {
     bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), bs_args))
   }
-  do.call(post_prob, c(bs, nlist(prior_prob, model_names)))
+  do.call(post_prob, c(bs, nlist(prior_prob)))
 }

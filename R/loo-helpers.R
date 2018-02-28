@@ -1,11 +1,8 @@
-compute_ics <- function(models, model_names, 
-                        ic = c("loo", "waic", "psis", "psislw", "kfold"),
-                        use_stored_ic = FALSE, 
-                        compare = TRUE, ...) {
+compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold"),
+                        use_stored_ic = FALSE, compare = TRUE, ...) {
   # helper function used to create (lists of) 'ic' objects
   # Args:
   #   models: list of brmsfit objects
-  #   model_names: character vector containing model names
   #   ic: name of the information criterion to compute
   #   use_stored_ic: use recomputed ic objects if possible?
   #   ...: more arguments passed to compute_ic
@@ -15,35 +12,22 @@ compute_ics <- function(models, model_names,
   ic <- match.arg(ic)
   args <- nlist(ic, ...)
   if (length(models) > 1L) {
-    stopifnot(length(models) == length(model_names))
     if (length(use_stored_ic) == 1L) {
       use_stored_ic <- rep(use_stored_ic, length(models))
     }
-    out <- named_list(model_names)
-    for (i in seq_along(models)) {
-      # verify all model objects before computing any ICs
-      if (!is.brmsfit(models[[i]])) {
-        stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
-      }
-    }
+    out <- named_list(names(models))
     for (i in seq_along(models)) {
       ic_obj <- models[[i]][[ic]]
       if (use_stored_ic[i] && is.ic(ic_obj)) {
         out[[i]] <- ic_obj
-        out[[i]]$model_name <- model_names[i]
+        out[[i]]$model_name <- names(models)[i]
       } else {
         args$x <- models[[i]]
-        args$model_name <- model_names[i]
+        args$model_name <- names(models)[i]
         out[[i]] <- do.call(compute_ic, args) 
       }
     }
     if (compare) {
-      if (!match_response(models)) {
-        warning2(
-          "Model comparisons are likely invalid as the response ", 
-          "parts of at least two models do not match."
-        )
-      }
       out <- compare_ic(x = out)
     }
     class(out) <- "iclist"
@@ -52,10 +36,10 @@ compute_ics <- function(models, model_names,
     stopifnot(length(use_stored_ic) == 1L)
     if (use_stored_ic && is.ic(ic_obj)) {
       out <- ic_obj
-      out$model_name <- model_names
+      out$model_name <- names(models)
     } else {
       args$x <- models[[1]]
-      args$model_name <- model_names
+      args$model_name <- names(models)
       out <- do.call(compute_ic, args) 
     }
   }
@@ -341,6 +325,35 @@ match_response <- function(models) {
   out
 }
 
+validate_models <- function(models, model_names, sub_names) {
+  # validate models passed to LOO and related methods
+  # Args:
+  #   models: list of fitted model objects
+  #   model_names: names specified by the user
+  #   sub_names: names inferred by substitute()
+  stopifnot(is.list(models))
+  model_names <- as.character(model_names)
+  if (!length(model_names)) {
+    model_names <- as.character(sub_names)
+  }
+  if (length(model_names) != length(models)) {
+    stop2("Number of model names is not equal to the number of models.") 
+  }
+  names(models) <- model_names
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Object '", names(models)[i], "' is not of class 'brmsfit'.")
+    }
+  }
+  if (!match_response(models)) {
+    warning2(
+      "Model comparisons are likely invalid as the response ", 
+      "parts of at least two models do not match."
+    )
+  }
+  models
+}
+
 #' @rdname reloo
 #' @export
 reloo.loo <- function(x, fit, k_threshold = 0.7, 
@@ -391,7 +404,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7,
   elpd_loo <- unlist(lapply(lls, log_mean_exp))
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
-  ll_x <- log_lik(fit, newdata = mf[obs,, drop=FALSE])
+  ll_x <- log_lik(fit, newdata = mf[obs, , drop = FALSE])
   hat_lpd <- apply(ll_x, 2, log_mean_exp)
   # compute effective number of parameters
   p_loo <- hat_lpd - elpd_loo
@@ -542,12 +555,6 @@ loo_weights_internal <- function(models, args, more_args,
   if (length(models) < 2L) {
     stop2("'loo_", fun, "' requires at least two models.")
   }
-  for (i in seq_along(models)) {
-    if (!is.brmsfit(models[[i]])) {
-      stop2("Object '", names(models)[i], "' is not of class 'brmsfit'.")
-    }
-  }
-  match_response(models)
   log_lik_list <- lapply(models, 
     function(x) do.call(log_lik, c(list(x), args))
   )

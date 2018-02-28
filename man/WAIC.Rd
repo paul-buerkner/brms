@@ -11,7 +11,8 @@
 \method{WAIC}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", resp = NULL, new_objects = list(),
-  subset = NULL, nsamples = NULL, pointwise = NULL, nug = NULL)
+  subset = NULL, nsamples = NULL, pointwise = NULL, nug = NULL,
+  model_names = NULL)
 
 WAIC(x, ...)
 }
@@ -81,6 +82,10 @@ For numerical reasons, the covariance matrix of a Gaussian
 process might not be positive definite. Adding a very small 
 number to the matrix's diagonal often solves this problem. 
 If \code{NULL} (the default), \code{nug} is chosen internally.}
+
+\item{model_names}{If \code{NULL} (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.}
 }
 \value{
 If just one object is provided, an object of class \code{ic}. 

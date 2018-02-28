@@ -7,7 +7,7 @@
 \usage{
 \method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, Ksub = NULL,
   exact_loo = FALSE, group = NULL, newdata = NULL, resp = NULL,
-  save_fits = FALSE, update_args = list())
+  save_fits = FALSE, model_names = NULL, update_args = list())
 
 kfold(x, ...)
 }
@@ -60,6 +60,10 @@ If specified, fitted values of these response variables are returned.}
 the returned object to store the cross-validated \code{brmsfit} 
 objects and the indices of the omitted observations for each fold. 
 Defaults to \code{FALSE}.}
+
+\item{model_names}{If \code{NULL} (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.}
 
 \item{update_args}{A \code{list} of further arguments passed to 
 \code{\link{update.brmsfit}} such

@@ -12,7 +12,8 @@
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", resp = NULL, new_objects = list(),
   subset = NULL, nsamples = NULL, pointwise = NULL, nug = NULL,
-  k_threshold = 0.7, update_args = list(), cores = 1)
+  k_threshold = 0.7, model_names = NULL, update_args = list(),
+  cores = 1)
 
 LOO(x, ...)
 }
@@ -92,6 +93,10 @@ estimates are treated as problematic. Defaults to \code{0.7}.
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
+
+\item{model_names}{If \code{NULL} (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.}
 
 \item{update_args}{A \code{list} of further arguments passed to 
 \code{\link{update.brmsfit}} such

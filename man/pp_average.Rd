@@ -10,8 +10,8 @@
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   new_objects = list(), incl_autocor = TRUE, resp = NULL,
   nsamples = NULL, sort = FALSE, nug = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), more_args = NULL,
-  control = NULL)
+  robust = FALSE, probs = c(0.025, 0.975), model_names = NULL,
+  more_args = NULL, control = NULL)
 
 pp_average(x, ...)
 }
@@ -22,7 +22,7 @@ pp_average(x, ...)
 
 \item{weights}{Name of the criterion to compute weights from. 
 Should be one of \code{"loo"} (default), 
-\code{"waic"}, \code{"kfold"}, \code{loo2}, or \code{"bridge"}. 
+\code{"waic"}, \code{"kfold"}, \code{"loo2"}, or \code{"bridge"}. 
 For the former three options, Akaike weights will be computed
 based on the information criterion values returned by
 the respective methods. For \code{"loo2"}, method
@@ -104,6 +104,10 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{model_names}{If \code{NULL} (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.}
 
 \item{more_args}{Optional \code{list} of further arguments 
 passed to the function specified in \code{method}.}

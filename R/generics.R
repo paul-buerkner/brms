@@ -350,6 +350,9 @@ WAIC <- function(x, ...) {
 #'   as \code{iter}, \code{chains}, or \code{cores}.
 #' @param cores The number of cores to use for parallelization. 
 #'  Default is \code{1}.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
 #' @inheritParams predict.brmsfit
 #' 
 #' @details When comparing models fitted to the same data, 
@@ -1008,7 +1011,7 @@ loo_select <- function(x, ...) {
 #' @param ... More \code{brmsfit} objects.
 #' @param weights Name of the criterion to compute weights from. 
 #'   Should be one of \code{"loo"} (default), 
-#'   \code{"waic"}, \code{"kfold"}, \code{loo2}, or \code{"bridge"}. 
+#'   \code{"waic"}, \code{"kfold"}, \code{"loo2"}, or \code{"bridge"}. 
 #'   For the former three options, Akaike weights will be computed
 #'   based on the information criterion values returned by
 #'   the respective methods. For \code{"loo2"}, method
@@ -1023,6 +1026,9 @@ loo_select <- function(x, ...) {
 #'   passed to the function specified in \code{method}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return Same as the output of the method specified 
