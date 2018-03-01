@@ -31,6 +31,8 @@
       \item Treat integer responses in \code{ordinal} models 
       as directly indicating categories even if the lowest 
       integer is not one.
+      \item Improve output of the \code{hypothesis} method 
+      thanks to the ideas of Matti Vuorre. (#362)
       \item Always plot \code{by} variables as facets
       in \code{marginal_smooths}.
       \item Deprecate the \code{cor_bsts} correlation structure.
@@ -41,6 +43,12 @@
       \item Allow the \code{:} operator to combine 
       groups in multi-membership terms thanks to
       Gang Chen.
+      \item Avoid an unexpected error when calling 
+      \code{LOO} with argument \code{reloo = TRUE}
+      thanks to Peter Konings. (#348)
+      \item Fix problems in \code{predict} when applied to
+      categorical models thanks to Lydia Andreyevna Krasilnikova
+      and Thomas Vladeck. (#336, #345)
       \item Allow truncation in multivariate models.
       \item Force time points to be unique within groups in 
       autocorrelation structures thanks to Ruben Arslan. (#363)
