@@ -352,9 +352,10 @@ round_numeric <- function(x, digits = 2) {
 #' @rdname brmshypothesis
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
-  # make sure rownames are not too long
-  rnames <- limit_chars(rownames(x$hypothesis), chars = chars)
-  rownames(x$hypothesis) <- make.unique(rnames, sep = " #")
+  # make sure hypothesis names are not too long
+  x$hypothesis$Hypothesis <- limit_chars(
+    x$hypothesis$Hypothesis, chars = chars
+  )
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
   print(x$hypothesis, quote = FALSE)
