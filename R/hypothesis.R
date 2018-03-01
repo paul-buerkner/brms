@@ -364,3 +364,62 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   ))
   invisible(x)
 }
+
+#' @rdname brmshypothesis
+#' @method plot brmshypothesis
+#' @export
+plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
+                                chars = 40, colors = NULL,
+                                theme = NULL, ask = TRUE, 
+                                plot = TRUE,  ...) {
+  dots <- list(...)
+  if (!is.data.frame(x$samples)) {
+    stop2("No posterior samples found")
+  }
+  plot <- use_alias(plot, dots$do_plot)
+  if (is.null(colors)) {
+    colors <- bayesplot::color_scheme_get()[c(6, 2)]
+    colors <- unname(unlist(colors))
+  }
+  if (length(colors) != 2L) {
+    stop2("Argument 'colors' must be of length 2.")
+  }
+  
+  .plot_fun <- function(samples) {
+    ggplot(samples, aes_string(x = "values")) + 
+      facet_wrap("ind", ncol = 1, scales = "free") +
+      geom_density(aes_string(fill = "Type"), 
+                   alpha = 0.7, na.rm = TRUE) + 
+      scale_fill_manual(values = colors) + 
+      xlab("") + ylab("") + theme
+  }
+  
+  samples <- cbind(x$samples, Type = "Posterior")
+  if (!ignore_prior) {
+    samples <- rbind(samples, cbind(x$prior_samples, Type = "Prior"))
+  }
+  if (plot) {
+    default_ask <- devAskNewPage()
+    on.exit(devAskNewPage(default_ask))
+    devAskNewPage(ask = FALSE)
+  }
+  hyps <- limit_chars(x$hypothesis$Hypothesis, chars = chars)
+  names(samples)[seq_along(hyps)] <- hyps
+  n_plots <- ceiling(length(hyps) / N)
+  plots <- vector(mode = "list", length = n_plots)
+  for (i in seq_len(n_plots)) {
+    rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
+    sub_samples <- cbind(
+      utils::stack(samples[, rel_hyps, drop = FALSE]),
+      samples[, "Type", drop = FALSE]
+    )
+    # make sure that parameters appear in the original order
+    sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
+    plots[[i]] <- .plot_fun(sub_samples)
+    if (plot) {
+      plot(plots[[i]])
+      if (i == 1) devAskNewPage(ask = ask)
+    }
+  }
+  invisible(plots) 
+}

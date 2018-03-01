@@ -820,6 +820,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   invisible(NULL)
 }
 
+viridis6 <- function() {
+  # colours taken from the viridis package
+  c("#440154", "#414487", "#2A788E", "#22A884", "#7AD151", "#FDE725")
+}
+
 expect_match2 <- function(object, regexp, ..., all = TRUE) {
   # just testthat::expect_match with fixed = TRUE
   testthat::expect_match(object, regexp, fixed = TRUE, ..., all = all)
