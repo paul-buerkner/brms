@@ -142,10 +142,13 @@ hypothesis_internal <- function(x, hypothesis, class, alpha,
     stop2("Argument 'alpha' must be a single value in [0,1].")
   }
   class <- as_one_character(class)
-  out <- lapply(
-    hypothesis, eval_hypothesis, 
-    x = x, class = class, alpha = alpha
-  )
+  out <- vector("list", length(hypothesis))
+  for (i in seq_along(out)) {
+    out[[i]] <- eval_hypothesis(
+      hypothesis[i], x = x, class = class, 
+      alpha = alpha, name = names(hypothesis)[i]
+    )
+  }
   if (combine) {
     out <- combine_hlist(out, class = class, alpha = alpha)
   }
@@ -168,14 +171,14 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
       alpha = alpha, combine = FALSE, ...
     )
     for (i in seq_along(out[[l]])) {
-      rownames(out[[l]][[i]]$summary) <- paste0(
-        rownames(out[[l]][[i]]$summary), " [", levels[l], "]"
-      )
+      out[[l]][[i]]$summary$Group <- levels[l]
     }
   }
   out <- unlist(out, recursive = FALSE)
   out <- as.list(matrix(out, ncol = length(hypothesis), byrow = TRUE))
-  combine_hlist(out, class = "", alpha = alpha)
+  out <- combine_hlist(out, class = "", alpha = alpha)
+  out$hypothesis <- move2start(out$hypothesis, "Group")
+  out
 }
 
 combine_hlist <- function(hlist, class, alpha) {
@@ -183,6 +186,7 @@ combine_hlist <- function(hlist, class, alpha) {
   # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
+  rownames(hs) <- NULL
   samples <- lapply(hlist, function(h) h$samples)
   samples <- as.data.frame(do.call(cbind, samples))
   prior_samples <- lapply(hlist, function(h) h$prior_samples)
@@ -193,7 +197,7 @@ combine_hlist <- function(hlist, class, alpha) {
   structure(out, class = "brmshypothesis")
 }
 
-eval_hypothesis <- function(h, x, class, alpha) {
+eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
   # parse hypothesis string
@@ -241,18 +245,20 @@ eval_hypothesis <- function(h, x, class, alpha) {
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
+  cl <- (1 - alpha) * 100
+  ci_names <- c(paste0("l-", cl, "% CI"), paste0("u-", cl, "% CI")) 
+  names(sm) <- c("Estimate", "Est.Error", ci_names, "Evid.Ratio")
   if (sign == "<") {
     sm[1, 3] <- -Inf
   } else if (sign == ">") {
     sm[1, 4] <- Inf
   }
-  sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
-  rownames(sm) <- paste(h, sign, "0")
-  cl <- (1 - alpha) * 100
-  colnames(sm) <- c(
-    "Estimate", "Est.Error", paste0("l-", cl, "% CI"),
-    paste0("u-", cl, "% CI"), "Evid.Ratio", "Star"
-  )
+  sm$star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
+  if (!length(name) || !nzchar(name)) {
+    name <- paste(h, sign, "0")
+  }
+  sm$Hypothesis <- as_one_character(name)
+  sm <- move2start(sm, "Hypothesis")
   if (is.null(prior_samples)) {
     prior_samples <- as.matrix(rep(NA, nrow(samples)))
   }
@@ -327,6 +333,22 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out
 }
 
+move2start <- function(x, first) {
+  # move elements to the start of a named object
+  x[c(first, setdiff(names(x), first))]
+}
+
+round_numeric <- function(x, digits = 2) {
+  # round all numeric elements of a list like object
+  stopifnot(is.list(x))
+  for (i in seq_along(x)) {
+    if (is.numeric(x[[i]])) {
+      x[[i]] <- round(x[[i]], digits = digits)
+    }
+  }
+  x
+}
+
 #' @rdname brmshypothesis
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
@@ -334,9 +356,11 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   rnames <- limit_chars(rownames(x$hypothesis), chars = chars)
   rownames(x$hypothesis) <- make.unique(rnames, sep = " #")
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
+  x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
   print(x$hypothesis, quote = FALSE)
-  cat(paste0("---\n'*': The expected value under the hypothesis ", 
-             "lies outside the ", (1 - x$alpha) * 100, "% CI.\n"))
+  cat(paste0(
+    "---\n'*': The expected value under the hypothesis ", 
+    "lies outside the ", (1 - x$alpha) * 100, "% CI.\n"
+  ))
   invisible(x)
 }

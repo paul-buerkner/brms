@@ -158,7 +158,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # hypothesis
   hyp <- hypothesis(fit1, c("Intercept > Trt1", "Trt1:Age = -1"))
-  expect_equal(dim(hyp$hypothesis), c(2, 6))
+  expect_equal(dim(hyp$hypothesis), c(2, 7))
   expect_output(print(hyp), "(Intercept)-(Trt1) > 0", fixed = TRUE)
   expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))
   
@@ -168,7 +168,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(plot(hyp, ignore_prior = TRUE, plot = FALSE)[[1]], "ggplot"))
   
   hyp <- hypothesis(fit1, "0 > r_visit[4,Intercept]", class = "", alpha = 0.01)
-  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  expect_equal(dim(hyp$hypothesis), c(1, 7))
   expect_output(print(hyp, chars = NULL), "r_visit[4,Intercept]", fixed = TRUE)
   expect_output(print(hyp), "l-99% CI", fixed = TRUE)
   
@@ -176,8 +176,8 @@ test_that("all S3 methods have reasonable ouputs", {
     fit1, c("Intercept = 0", "Intercept + exp(Trt1) = 0"),
     group = "visit", scope = "coef"
   )
-  expect_equal(dim(hyp$hypothesis), c(8, 6))
-  expect_equal(rownames(hyp$hypothesis)[1], "(Intercept) = 0 [1]")
+  expect_equal(dim(hyp$hypothesis), c(8, 8))
+  expect_equal(hyp$hypothesis$Group[1], "1")
   
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: \n'b_x'")
@@ -192,9 +192,9 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # test hypothesis.default method
   hyp <- hypothesis(as.data.frame(fit3), "bsp_meAgeAgeSD > sigma")
-  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  expect_equal(dim(hyp$hypothesis), c(1, 7))
   hyp <- hypothesis(fit3$fit, "bsp_meAgeAgeSD > sigma")
-  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  expect_equal(dim(hyp$hypothesis), c(1, 7))
   
   # omit launch_shiny
   
