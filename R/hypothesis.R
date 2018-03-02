@@ -245,15 +245,13 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
-  cl <- (1 - alpha) * 100
-  ci_names <- c(paste0("l-", cl, "% CI"), paste0("u-", cl, "% CI")) 
-  names(sm) <- c("Estimate", "Est.Error", ci_names, "Evid.Ratio")
+  names(sm) <- c("Estimate", "Est.Error", "CI.Lower", "CI.Upper", "Evid.Ratio")
   if (sign == "<") {
     sm[1, 3] <- -Inf
   } else if (sign == ">") {
     sm[1, 4] <- Inf
   }
-  sm$star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
+  sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
   if (!length(name) || !nzchar(name)) {
     name <- paste(h, sign, "0")
   }
@@ -361,7 +359,7 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   print(x$hypothesis, quote = FALSE)
   cat(paste0(
     "---\n'*': The expected value under the hypothesis ", 
-    "lies outside the ", (1 - x$alpha) * 100, "% CI.\n"
+    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n"
   ))
   invisible(x)
 }
