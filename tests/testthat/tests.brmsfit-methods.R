@@ -170,7 +170,7 @@ test_that("all S3 methods have reasonable ouputs", {
   hyp <- hypothesis(fit1, "0 > r_visit[4,Intercept]", class = "", alpha = 0.01)
   expect_equal(dim(hyp$hypothesis), c(1, 7))
   expect_output(print(hyp, chars = NULL), "r_visit[4,Intercept]", fixed = TRUE)
-  expect_output(print(hyp), "l-99% CI", fixed = TRUE)
+  expect_output(print(hyp), "99%-CI", fixed = TRUE)
   
   hyp <- hypothesis(
     fit1, c("Intercept = 0", "Intercept + exp(Trt1) = 0"),
