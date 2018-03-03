@@ -79,6 +79,33 @@ subset_samples <- function(x, subset = NULL, nsamples = NULL) {
   subset
 }
 
+get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
+  # extract names of group-level effects
+  # Args:
+  #  ranef: output of tidy_ranef()
+  #  group: optinal name of a grouping factor for
+  #    which to extract effect names
+  #  bylevels: optional names of 'by' levels for 
+  #    which to extract effect names
+  stopifnot(is.data.frame(ranef))
+  if (!is.null(group)) {
+    group <- as_one_character(group)
+    ranef <- subset2(ranef, group = group)
+  }
+  stopifnot(length(unique(ranef$group)) == 1L)
+  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
+  if (isTRUE(nzchar(ranef$by[1]))) {
+    if (!is.null(bylevels)) {
+      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
+    } else {
+      bylevels <- ranef$bylevels[[1]]
+    }
+    bylabels <- paste0(ranef$by[1], bylevels)
+    out <- outer(out, bylabels, paste, sep = ":")
+  }
+  out
+}
+
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   # get correlation names as combinations of variable names
   # Args:

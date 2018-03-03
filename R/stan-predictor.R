@@ -512,29 +512,32 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   out <- list()
   r <- subset2(ranef, id = id)
   ccov <- r$group[1] %in% names(cov_ranef)
+  has_by <- nzchar(r$by[[1]])
+  Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(px)))
+  # define data needed for group-level effects
   str_add(out$data) <- paste0(
-    "  // data for group-level effects of ID ", id, " \n",
+    "  // data for group-level effects of ID ", id, "\n",
     if (r$gtype[1] == "mm") {
       collapse(
-        "  int<lower=1> J_", id, "_", ng, "[N]; \n",
-        "  real W_", id, "_", ng, "[N]; \n"
+        "  int<lower=1> J_", id, "_", ng, "[N];\n",
+        "  real W_", id, "_", ng, "[N];\n"
       )
     } else {
-      paste0("  int<lower=1> J_", id, "[N]; \n")
+      paste0("  int<lower=1> J_", id, "[N];\n")
     },
-    "  int<lower=1> N_", id, "; \n",
-    "  int<lower=1> M_", id, "; \n",
+    "  int<lower=1> N_", id, ";\n",
+    "  int<lower=1> M_", id, ";\n",
+    if (has_by) paste0(
+      "  int<lower=1> Nby_", id, ";\n",
+      "  int<lower=1> Jby_", id, "[N_", id, "];\n"
+    ),
     if (ccov) paste0(
       "  // cholesky factor of known covariance matrix \n",
       "  matrix[N_", id, ", N_", id,"] Lcov_", id,"; \n"
     )
-  )
-  str_add(out$prior) <- stan_prior(
-    prior, class = "sd", group = r$group[1], coef = r$coef,
-    px = px, suffix = paste0("_", id)
   )
   J <- seq_len(nrow(r))
   needs_Z <- !r$type %in% "sp"
@@ -551,62 +554,105 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       ) 
     }
   }
-  str_add(out$par) <- paste0(
-    "  vector<lower=0>[M_", id, "] sd_", id, ";",
-    "  // group-level standard deviations \n"
-  )
+  # define standard deviation parameters
+  if (has_by) {
+    if (ccov) {
+      stop2("Cannot combine 'by' variables with customized covariances.")
+    }
+    str_add(out$par) <- paste0(
+      "  matrix<lower=0>[M_", id, ", Nby_", id, "] sd_", id, ";",
+      "  // group-level standard deviations\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "sd", group = r$group[1], coef = r$coef,
+      px = px, prefix = "to_vector(", suffix = paste0("_", id, ")")
+    )
+  } else {
+    str_add(out$par) <- paste0(
+      "  vector<lower=0>[M_", id, "] sd_", id, ";",
+      "  // group-level standard deviations\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "sd", group = r$group[1], coef = r$coef,
+      px = px, suffix = paste0("_", id)
+    )
+  }
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     str_add(out$data) <- paste0( 
-      "  int<lower=1> NC_", id, "; \n"
+      "  int<lower=1> NC_", id, ";\n"
     )
     str_add(out$par) <- paste0(
       "  matrix[M_", id, ", N_", id, "] z_", id, ";",
-      "  // unscaled group-level effects \n",    
-      "  // cholesky factor of correlation matrix \n",
-      "  cholesky_factor_corr[M_", id, "] L_", id, "; \n"
+      "  // unscaled group-level effects\n"
     )
     str_add(out$prior) <- paste0( 
-      stan_prior(prior, class = "L", group = r$group[1],
-                 suffix = paste0("_", id)),
-      "  target += normal_lpdf(to_vector(z_", id, ") | 0, 1); \n"
+      "  target += normal_lpdf(to_vector(z_", id, ") | 0, 1);\n"
     )
+    if (has_by) {
+      str_add(out$par) <- paste0(
+        "  // cholesky factor of correlation matrix\n",
+        "  cholesky_factor_corr[M_", id, "] L_", id, "[Nby_", id, "];\n"
+      )
+      str_add(out$tparD) <- paste0(
+        "  // group-level effects \n",
+        "  matrix[N_", id, ", M_", id, "] r_", id, 
+        " = scale_r_cor_by(z_", id, ", sd_", id, 
+        ", L_", id, ", Jby_", id, ");\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "L", group = r$group[1],
+        suffix = paste0("_", id, "[", Nby, "]")
+      )
+      str_add(out$genD) <- collapse(
+        "  corr_matrix[M_", id, "] Cor_", id, "_", Nby,
+        " = multiply_lower_tri_self_transpose(L_", id, "[", Nby, "]);\n",
+        "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "_", Nby, ";\n"
+      )
+      str_add(out$genC) <- paste0(
+        "  // take only relevant parts of correlation matrix \n",
+        stan_cor_genC(r, id, Nby)
+      )
+    } else {
+      str_add(out$par) <- paste0(
+        "  // cholesky factor of correlation matrix\n",
+        "  cholesky_factor_corr[M_", id, "] L_", id, ";\n"
+      )
+      str_add(out$tparD) <- paste0(
+        "  // group-level effects \n",
+        "  matrix[N_", id, ", M_", id, "] r_", id, 
+        if (ccov) {
+          paste0(
+            " = as_matrix(kronecker(Lcov_", id, ",", 
+            " diag_pre_multiply(sd_", id,", L_", id,")) *",
+            " to_vector(z_", id, "), N_", id, ", M_", id, ");\n"
+          )
+        } else {
+          paste0(
+            " = (diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")';\n"
+          )
+        }
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "L", group = r$group[1],
+        suffix = paste0("_", id)
+      )
+      str_add(out$genD) <- paste0(
+        "  corr_matrix[M_", id, "] Cor_", id,
+        " = multiply_lower_tri_self_transpose(L_", id, ");\n",
+        "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, ";\n"
+      )
+      str_add(out$genC) <- paste0(
+        "  // take only relevant parts of correlation matrix \n",
+        stan_cor_genC(r, id)
+      )
+    }
     str_add(out$tparD) <- paste0(
-      "  // group-level effects \n",
-      "  matrix[N_", id, ", M_", id, "] r_", id, 
-      if (ccov) {
-        # customized covariance matrix supplied
-        paste0(
-          " = as_matrix(kronecker(Lcov_", id, ",", 
-          " diag_pre_multiply(sd_", id,", L_", id,")) *",
-          " to_vector(z_", id, "), N_", id, ", M_", id, "); \n"
-        )
-      } else {
-        paste0(
-          " = (diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")'; \n"
-        )
-      },
       collapse(
         "  vector[N_", id, "] r_", idp, "_", r$cn, 
         " = r_", id, "[, ", J, "]; \n"
       )
     )
-    # return correlations above the diagonal only
-    cors_genC <- ulapply(2:nrow(r), function(k) 
-      lapply(1:(k - 1), function(j) paste0(
-        "  cor_", id, "[", as.integer((k - 1) * (k - 2) / 2 + j),
-        "] = Cor_", id, "[", j, ",", k, "]; \n"
-      ))
-    )
-    str_add(out$genD) <- paste0(
-      "  corr_matrix[M_", id, "] Cor_", id, 
-      " = multiply_lower_tri_self_transpose(L_", id, "); \n",
-      "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "; \n"
-    )
-    str_add(out$genC) <- paste0(
-      "  // take only relevant parts of correlation matrix \n",
-      collapse(cors_genC)
-    ) 
   } else {
     # single or uncorrelated group-level effects
     str_add(out$par) <- paste0(
@@ -616,15 +662,26 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     str_add(out$prior) <- collapse(
       "  target += normal_lpdf(z_", id, "[", 1:nrow(r), "] | 0, 1); \n"
     )
-    str_add(out$tparD) <- paste0(
-      "  // group-level effects \n", 
-      collapse(
-        "  vector[N_", id, "] r_", idp, "_", r$cn,
-        " = sd_", id, "[", J, "] * (", 
-        if (ccov) paste0("Lcov_", id, " * "), 
-        "z_", id, "[", J, "]); \n"
+    if (has_by) {
+      str_add(out$tparD) <- paste0(
+        "  // group-level effects \n", 
+        collapse(
+          "  vector[N_", id, "] r_", idp, "_", r$cn,
+          " = scale_r_by(z_", id, "[", J, "],", 
+          " sd_", id, "[", J, "], Jby_", id, ");\n"
+        )
       )
-    )
+    } else {
+      str_add(out$tparD) <- paste0(
+        "  // group-level effects \n", 
+        collapse(
+          "  vector[N_", id, "] r_", idp, "_", r$cn,
+          " = sd_", id, "[", J, "] * (", 
+          if (ccov) paste0("Lcov_", id, " * "), 
+          "z_", id, "[", J, "]); \n"
+        )
+      )
+    }
   }
   out
 }

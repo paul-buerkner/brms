@@ -436,6 +436,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
   #   sample_new_levels: see help("predict.brmsfit")
   # Returns: 
   #   A named list to be interpreted by linear_predictor
+  # TODO: break up function in manageable pieces
   draws <- list()
   px <- check_prefix(bterms)
   ranef <- subset2(ranef, ls = px)
@@ -452,13 +453,15 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     r_pars <- paste0("^r_", g, usc(usc(p)), "\\[")
     r <- get_samples(samples, r_pars)
     if (is.null(r)) {
+      # TODO: check if allow_new_levels is TRUE
       stop2(
         "Group-level effects for each level of group ", 
         "'", g, "' not found. Please set 'save_ranef' to ", 
         "TRUE when fitting your model."
       )
     }
-    nlevels <- length(attr(old_ranef, "levels")[[g]]) 
+    old_levels <- attr(old_ranef, "levels")[[g]]
+    nlevels <- length(old_levels) 
     old_r <- subset2(old_ranef, group = g)
     used_re <- match(new_r$coef, old_r$coef)
     used_re_pars <- outer(seq_len(nlevels), (used_re - 1) * nlevels, "+")
@@ -476,45 +479,61 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       weights <- list(rep(1, length(gf[[1]])))
     }
     # incorporate new gf levels
+    new_levels <- attr(ranef, "levels")[[g]]
+    new_by_per_level <- attr(new_levels, "by")
+    new_levels <- setdiff(new_levels, old_levels)
+    old_by_per_level <- attr(old_levels, "by")
     new_r_levels <- vector("list", length(gf))
     max_level <- nlevels
     for (i in seq_along(gf)) {
       has_new_levels <- any(gf[[i]] > nlevels)
       if (has_new_levels) {
         if (sample_new_levels %in% c("old_levels", "gaussian")) {
-          new_levels <- sort(setdiff(gf[[i]], seq_len(nlevels)))
+          new_indices <- sort(setdiff(gf[[i]], seq_len(nlevels)))
           new_r_levels[[i]] <- matrix(
-            nrow = nrow(r), ncol = nranef * length(new_levels)
+            nrow = nrow(r), ncol = nranef * length(new_indices)
           )
           if (sample_new_levels == "old_levels") {
-            for (j in seq_along(new_levels)) {
+            for (j in seq_along(new_indices)) {
               # choose a person to take the group-level effects from
-              take_level <- sample(seq_len(nlevels), 1)
+              if (length(old_by_per_level)) {
+                new_by <- new_by_per_level[new_levels == new_levels[j]]
+                pos_levels <- levels[old_by_per_level == new_by]
+                pos_levels <- which(levels %in% pos_levels)
+                take_level <- sample(pos_levels, 1)
+              } else {
+                take_level <- sample(seq_len(nlevels), 1)
+              }
               for (k in seq_len(nranef)) {
                 take <- (k - 1) * nlevels + take_level
                 new_r_levels[[i]][, (j - 1) * nranef + k] <- r[, take]
               }
             }
           } else if (sample_new_levels == "gaussian") {
-            # extract hyperparameters used to compute the covariance matrix
-            sd_pars <- paste0("sd_", g, usc(usc(p)), "__", new_r$coef)
-            sd_samples <- get_samples(samples, sd_pars, exact = TRUE)
-            cor_type <- paste0("cor_", g)
-            cor_pars <- paste0(usc(p, "suffix"), new_r$coef)
-            cor_pars <- get_cornames(cor_pars, type = cor_type, brackets = FALSE)
-            cor_samples <- matrix(
-              0, nrow = nrow(sd_samples), ncol = length(cor_pars)
-            )
-            for (j in seq_along(cor_pars)) {
-              if (cor_pars[j] %in% colnames(samples)) {
-                cor_samples[, j] <- get_samples(
-                  samples, cor_pars[j], exact = TRUE
-                )
+            for (j in seq_along(new_indices)) {
+              # extract hyperparameters used to compute the covariance matrix
+              if (length(old_by_per_level)) {
+                new_by <- new_by_per_level[new_levels == new_levels[j]]
+                rnames <- as.vector(get_rnames(new_r, bylevels = new_by))
+              } else {
+                rnames <- get_rnames(new_r)
               }
-            }
-            # compute the covariance matrix
-            cov_matrix <- get_cov_matrix(sd_samples, cor_samples)
-            for (j in seq_along(new_levels)) {
+              sd_pars <- paste0("sd_", g, usc(usc(p)), "__", rnames)
+              sd_samples <- get_samples(samples, sd_pars, exact = TRUE)
+              cor_type <- paste0("cor_", g)
+              cor_pars <- paste0(usc(p, "suffix"), rnames)
+              cor_pars <- get_cornames(cor_pars, cor_type, brackets = FALSE)
+              cor_samples <- matrix(
+                0, nrow = nrow(sd_samples), ncol = length(cor_pars)
+              )
+              for (j in seq_along(cor_pars)) {
+                if (cor_pars[j] %in% colnames(samples)) {
+                  cor_samples[, j] <- get_samples(
+                    samples, cor_pars[j], exact = TRUE
+                  )
+                }
+              }
+              cov_matrix <- get_cov_matrix(sd_samples, cor_samples)
               # sample new levels from the normal distribution
               # implied by the covariance matrix
               indices <- ((j - 1) * nranef + 1):(j * nranef)
@@ -524,7 +543,8 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
               ))
             }
           }
-          max_level <- max_level + length(new_levels)
+          # TODO: fix for multi-membership models
+          max_level <- max_level + length(new_indices)
         } else if (sample_new_levels == "uncertainty") {
           new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = nranef)
           for (k in seq_len(nranef)) {

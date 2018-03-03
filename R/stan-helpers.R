@@ -451,6 +451,9 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   if (any(nzchar(hs_dfs))) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan' \n"
   }
+  if (any(nzchar(ranef$by))) {
+    str_add(out$fun) <- "  #include 'fun_scale_r_by.stan' \n"
+  }
   if (stan_needs_kronecker(ranef, names(cov_ranef))) {
     str_add(out$fun) <- paste0(
       "  #include 'fun_as_matrix.stan' \n",
@@ -1158,6 +1161,20 @@ stan_ilink <- function(link) {
 stan_vector <- function(...) {
   # define a vector in Stan language
   paste0("[", paste0(c(...), collapse = ", "), "]'")
+}
+
+stan_cor_genC <- function(r, id, by = "") {
+  # prepare Stan code for correlations in the generated quantities block
+  # Args: see stan_re
+  stopifnot(is.data.frame(r))
+  id <- as_one_character(id)
+  by <- usc(by)
+  ulapply(2:nrow(r), function(k) 
+    lapply(1:(k - 1), function(j) collapse(
+      "  cor_", id, by, "[", as.integer((k - 1) * (k - 2) / 2 + j),
+      "] = Cor_", id, by, "[", j, ",", k, "]; \n"
+    ))
+  )
 }
 
 stan_has_built_in_fun <- function(family) {

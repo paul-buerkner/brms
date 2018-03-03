@@ -309,7 +309,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
         cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
         names(cor_all) <- y$cor_pars
         for (i in seq_len(ncol(cor_all))) {
-          found <- match(names(cor_all)[i], names(cor))
+          found <- match(names(cor_all)[i], colnames(cor))
           if (!is.na(found)) {
             cor_all[, i] <- cor[, found]
           }
@@ -335,10 +335,10 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     get_names <- function(group) {
       # get names of group-level parameters
       r <- subset2(x$ranef, group = group)
-      rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
+      rnames <- as.vector(get_rnames(r))
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
-      cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
+      cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
       nlist(rnames, sd_pars, cor_pars)
     }
     group <- unique(x$ranef$group)

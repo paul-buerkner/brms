@@ -285,7 +285,7 @@ test_that("make_stancode combines strings of multiple grouping factors", {
                       "  // data for group-level effects of ID 2"))
   expect_match2(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = skew_normal()), 
-               paste0("  int<lower=1> NC_1; \n",
+               paste0("  int<lower=1> NC_1;\n",
                       "  // data for group-level effects of ID 2"))
 })
 

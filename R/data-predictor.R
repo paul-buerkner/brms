@@ -300,6 +300,14 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
     }
+    by <- id_ranef$by[1]
+    if (nzchar(by)) {
+      stopifnot(!nzchar(id_ranef$type[1]))
+      bylevels <- id_ranef$bylevels[[1]]
+      Jby <- match(attr(levels, "by"), bylevels)
+      out[[paste0("Nby_", id)]] <- length(bylevels)
+      out[[paste0("Jby_", id)]] <- Jby
+    }
   }
   out
 }

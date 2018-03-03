@@ -355,10 +355,17 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       nlpar = re$nlpar[[i]],
       cor = re$cor[[i]],
       type = re$type[[i]],
+      by = re$gcall[[i]]$by,
       stringsAsFactors = FALSE
     )
-    rdat$form <- replicate(nrow(rdat), re$form[[i]])
-    rdat$gcall <- replicate(nrow(rdat), re$gcall[i]) 
+    bylevels <- NULL
+    if (nzchar(rdat$by[1])) {
+      bylevels <- levels(factor(get(rdat$by[1], data)))
+    }
+    rdat$bylevels <- repl(bylevels, nrow(rdat))
+    rdat$form <- repl(re$form[[i]], nrow(rdat))
+    rdat$gcall <- repl(re$gcall[[i]], nrow(rdat)) 
+    # prepare group-level IDs
     id <- re$id[[i]]
     if (is.na(id)) {
       rdat$id <- j
@@ -405,14 +412,32 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
     }
     if (is.null(old_levels)) {
-      un_re <- re[!duplicated(re$group), ]
-      levels <- named_list(un_re$group)
+      rsub <- ranef[!duplicated(ranef$group), ]
+      levels <- named_list(rsub$group)
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
         levels[[i]] <- unique(ulapply(
-          un_re$gcall[[i]]$groups, 
+          rsub$gcall[[i]]$groups, 
           function(g) levels(factor(get(g, data)))
         ))
+        by <- rsub$by[i]
+        if (nzchar(by)) {
+          # store information of corresponding by levels
+          stopifnot(!nzchar(rsub$type[i]))
+          bylevels <- rsub$bylevels[[i]]
+          byvar <- get(by, data)
+          g <- rsub$gcall[[i]]$groups
+          gvar <- get(g, data)
+          not_dupl <- !duplicated(data.frame(gvar, byvar))
+          if (sum(not_dupl) > length(levels[[i]])) {
+            stop2(
+              "Some levels of '", g, "' correspond to multiple ",
+              "levels of '", by, "' at the same time."
+            )
+          }
+          by_per_level <- bylevels[match(byvar[not_dupl], bylevels)]
+          attr(levels[[i]], "by") <- by_per_level
+        }
       }
       attr(ranef, "levels") <- levels 
     } else {
