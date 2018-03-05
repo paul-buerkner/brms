@@ -1169,11 +1169,15 @@ stan_cor_genC <- function(r, id, by = "") {
   stopifnot(is.data.frame(r))
   id <- as_one_character(id)
   by <- usc(by)
-  ulapply(2:nrow(r), function(k) 
+  out <- ulapply(2:nrow(r), function(k) 
     lapply(1:(k - 1), function(j) collapse(
       "  cor_", id, by, "[", as.integer((k - 1) * (k - 2) / 2 + j),
       "] = Cor_", id, by, "[", j, ",", k, "]; \n"
     ))
+  )
+  paste0(
+    "  // take only relevant parts of correlation matrix\n", 
+    collapse(out)
   )
 }
 

@@ -612,10 +612,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         " = multiply_lower_tri_self_transpose(L_", id, "[", Nby, "]);\n",
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "_", Nby, ";\n"
       )
-      str_add(out$genC) <- paste0(
-        "  // take only relevant parts of correlation matrix\n",
-        stan_cor_genC(r, id, Nby)
-      )
+      str_add(out$genC) <- stan_cor_genC(r, id, Nby)
     } else {
       str_add(out$par) <- paste0(
         "  // cholesky factor of correlation matrix\n",
@@ -645,10 +642,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         " = multiply_lower_tri_self_transpose(L_", id, ");\n",
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, ";\n"
       )
-      str_add(out$genC) <- paste0(
-        "  // take only relevant parts of correlation matrix\n",
-        stan_cor_genC(r, id)
-      )
+      str_add(out$genC) <- stan_cor_genC(r, id)
     }
     str_add(out$tparD) <- paste0(
       collapse(
