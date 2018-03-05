@@ -595,10 +595,14 @@ stancode <- function(object, ...) {
 #' 
 #' @aliases standata.brmsfit
 #' 
-#' @param object An object of class \code{brmsfit}
-#' @param ... Currently ignored
+#' @param object An object of class \code{brmsfit}.
+#' @param internal Logical, indicates if the data should be prepared 
+#'   for internal use in other post-processing methods.
+#' @param control A named list currently for internal usage only.
+#' @param ... More arguments passed to \code{\link{make_standata}}.
+#' @inheritParams predict.brmsfit
 #' 
-#' @return A named list containing the data passed to Stan
+#' @return A named list containing the data originally passed to Stan.
 #' 
 #' @export
 standata <- function(object, ...) {

@@ -287,14 +287,15 @@ get_re.btnl <- function(x, ...) {
   do.call(rbind, re)
 }
 
-tidy_ranef <- function(bterms, data = NULL, all = TRUE, 
-                       old_levels = NULL, old_standata = NULL) {
+tidy_ranef <- function(bterms, data, all = TRUE, 
+                       old_levels = NULL, old_sdata = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   bterms: object of class brmsterms
-  #   data: data passed to brm after updating
-  #   all: include REs of non-linear and distributional parameters?
-  #   old_standata: optional; see 'extract_old_standata'
+  #   data: data.frame containing all model variables
+  #   all: include REs of all parameters?
+  #   old_levels: optional original levels of the grouping factors
+  #   old_sdata: optional; see 'extract_old_standata'
   #     only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
@@ -308,6 +309,10 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   #     type: special effects type; can be "sp" or "cs"
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
+  data <- update_data(
+    data, bterms, na.action = na.pass, 
+    drop.unused.levels = FALSE
+  )
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
@@ -315,19 +320,19 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (!nzchar(re$type[i])) {
-      coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
+      coef <- colnames(get_model_matrix(re$form[[i]], data)) 
     } else if (re$type[i] == "sp") {
       coef <- tidy_spef(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
-      if (!is.null(old_standata)) {
+      if (!is.null(old_sdata)) {
         # extract ncat from the original data
         if (nzchar(resp)) {
-          ncat <- old_standata[[resp]][["ncat"]]
+          ncat <- old_sdata[[resp]][["ncat"]]
         } else {
-          ncat <- old_standata[["ncat"]]
+          ncat <- old_sdata[["ncat"]]
         }
       } else {
         # infer ncat from the current data
@@ -431,8 +436,8 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
           not_dupl <- !duplicated(data.frame(gvar, byvar))
           if (sum(not_dupl) > length(levels[[i]])) {
             stop2(
-              "Some levels of '", g, "' correspond to multiple ",
-              "levels of '", by, "' at the same time."
+              "Some levels of '", g, "' correspond ", 
+              "to multiple levels of '", by, "'. "
             )
           }
           by_per_level <- bylevels[match(byvar[not_dupl], bylevels)]

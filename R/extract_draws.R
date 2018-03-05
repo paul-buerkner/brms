@@ -21,24 +21,31 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     x <- remove_autocor(x) 
   }
-  sdata <- validate_newdata(
-    newdata, x, re_formula = re_formula, resp = resp, ...
-  )
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
+  # prepare (new) data and stan data 
+  new <- !is.null(newdata)
+  newd_args <- nlist(newdata, object = x, re_formula, resp, ...)
+  newdata <- do.call(validate_newdata, newd_args)
+  newd_args$newdata <- newdata
+  newd_args$internal <- TRUE
+  sdata <- do.call(standata, newd_args)
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- parse_bf(new_formula)
-  ranef <- tidy_ranef(bterms, data = x$data)
+  ranef <- tidy_ranef(bterms, x$data)
+  if (new) {
+    # extract_draws_re() also requires the new level names
+    # original level names are already passed via old_ranef
+    attr(ranef, "levels") <- attr(tidy_ranef(bterms, newdata), "levels")
+  }
   args <- nlist(
     x = bterms, samples, sdata, data = x$data,
     ranef, old_ranef = x$ranef, sample_new_levels,
-    resp, nug, smooths_only, new = !is.null(newdata)
+    resp, nug, smooths_only, new
   )
-  if (length(get_effect(bterms, "gp")) && !is.null(newdata)) {
+  if (length(get_effect(bterms, "gp")) && new) {
     # GPs for new data require the original data as well
-    args$old_sdata <- validate_newdata(
-      newdata = NULL, fit = x, re_formula = re_formula, ...
-    )
+    args$old_sdata <- standata(x, internal = TRUE, ...)
   }
   do.call(extract_draws, args)
 }
@@ -462,7 +469,6 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     rpars <- paste0("^r_", g, usc(usc(p)), "\\[")
     rsamples <- get_samples(samples, rpars)
     if (is.null(rsamples)) {
-      # TODO: check if allow_new_levels is TRUE
       stop2(
         "Group-level effects for each level of group ", 
         "'", g, "' not found. Please set 'save_ranef' to ", 
@@ -500,7 +506,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
               # choose a person to take the group-level effects from
               if (length(old_by_per_level)) {
                 new_by <- new_by_per_level[new_levels == really_new_levels[j]]
-                possible_levels <- levels[old_by_per_level == new_by]
+                possible_levels <- old_levels[old_by_per_level == new_by]
                 possible_levels <- which(old_levels %in% possible_levels)
                 take_level <- sample(possible_levels, 1)
               } else {

@@ -173,9 +173,9 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     )
   }
   validate_newdata(
-    conditions, fit = fit, re_formula = re_formula,
-    allow_new_levels = TRUE, incl_autocor = FALSE, 
-    return_standata = FALSE
+    conditions, fit, re_formula = re_formula,
+    allow_new_levels = TRUE, check_response = FALSE,
+    incl_autocor = FALSE
   )
 }
 

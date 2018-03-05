@@ -167,52 +167,43 @@ order_data <- function(data, bterms) {
 }
 
 validate_newdata <- function(
-  newdata, fit, re_formula = NULL, allow_new_levels = FALSE,
-  resp = NULL, check_response = FALSE, only_response = FALSE,
-  incl_autocor = TRUE, return_standata = TRUE,
-  all_group_vars = NULL, new_objects = list()
+  newdata, object, re_formula = NULL, allow_new_levels = FALSE,
+  resp = NULL, check_response = TRUE, incl_autocor = TRUE,
+  all_group_vars = NULL, ...
 ) {
-  # amend newdata passed to predict and fitted methods
+  # validate newdata passed to post-processing methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
-  #   fit: an object of class brmsfit
+  #   object: an object of class brmsfit
   #   re_formula: a group-level formula
   #   allow_new_levels: Are new group-levels allowed?
   #   resp: optional name of response variables whose 
   #     variables should be checked
   #   check_response: Should response variables be checked
   #     for existence and validity?
-  #   only_response: compute only response related stuff
-  #     in make_standata?
   #   incl_autocor: Check data of autocorrelation terms?
-  #   return_standata: Compute the data to be passed to Stan
-  #     or just return the updated newdata?
   #   all_group_vars: optional names of all grouping 
   #     variables in the model
-  #   new_objects: see function 'add_new_objects'
+  #   ...: currently ignored
   # Returns:
-  #   updated data.frame being compatible with formula(fit)
-  if (!incl_autocor) {
-    fit <- remove_autocor(fit) 
-  }
+  #   validated data.frame being compatible with formula(object)
+  #   if newdata is NULL, the original data.frame is returned
   if (is.null(newdata)) {
-    # to shorten expressions in S3 methods such as predict.brmsfit
-    if (return_standata) {
-      control <- list(not4stan = TRUE, save_order = TRUE)
-      newdata <- standata(
-        fit, re_formula = re_formula, check_response = check_response, 
-        only_response = only_response, control = control
-      )
-    } else {
-      newdata <- model.frame(fit)
-    }
+    newdata <- structure(object$data, valid = TRUE, original = TRUE)
+  }
+  if (isTRUE(attr(newdata, "valid"))) {
     return(newdata)
   }
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
-  new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
+  newdata <- rm_attr(newdata, c("terms", "brmsframe"))
+  stopifnot(is.brmsfit(object))
+  if (!incl_autocor) {
+    object <- remove_autocor(object) 
+  }
+  new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
     # variables not used in the included model parts
@@ -247,7 +238,7 @@ validate_newdata <- function(
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
-  mf <- model.frame(fit)
+  mf <- model.frame(object)
   for (i in seq_along(mf)) {
     if (is_like_factor(mf[[i]])) {
       mf[[i]] <- as.factor(mf[[i]])
@@ -268,7 +259,7 @@ validate_newdata <- function(
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
   if (is.null(all_group_vars)) {
-    all_group_vars <- get_group_vars(fit) 
+    all_group_vars <- get_group_vars(object) 
   }
   dont_check <- c(all_group_vars, cens_vars)
   dont_check <- names(mf) %in% dont_check
@@ -357,25 +348,7 @@ validate_newdata <- function(
       }
     } 
   }
-  if (return_standata) {
-    fit <- add_new_objects(fit, newdata, new_objects)
-    control <- list(
-      new = TRUE, not4stan = TRUE, 
-      old_levels = old_levels, save_order = TRUE
-    )
-    # ensure correct handling of functions like poly or scale
-    old_terms <- attr(mf, "terms")
-    terms_attr <- c("variables", "predvars")
-    control$terms_attr <- attributes(old_terms)[terms_attr]
-    control$old_standata <- extract_old_standata(bterms, data = mf)
-    knots <- attr(mf, "knots")
-    newdata <- make_standata(
-      new_formula, data = newdata, 
-      knots = knots, check_response = check_response,
-      only_response = only_response, control = control
-    )
-  }
-  newdata
+  structure(newdata, valid = TRUE)
 }
 
 add_new_objects <- function(x, newdata, new_objects = list()) {

@@ -347,7 +347,7 @@ match_response <- function(models) {
         is_equal(a, b)
       }))
     }
-    sdatas <- lapply(models, standata, control = list(save_order = TRUE))
+    sdatas <- lapply(models, standata, internal = TRUE)
     matches <- ulapply(sdatas[-1], .match_fun, y = sdatas[[1]]) 
     if (all(matches)) {
       out <- TRUE
