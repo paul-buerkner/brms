@@ -59,6 +59,11 @@ restructure_v2 <- function(x) {
       )
     }
   }
+  if (version <= "2.1.6") {
+    # added 'by' variables to grouping terms
+    bterms <- parse_bf(formula(x))
+    x$ranef <- tidy_ranef(bterms, model.frame(x))
+  }
   x
 }
 
