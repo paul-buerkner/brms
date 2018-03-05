@@ -38,6 +38,7 @@ Suggests:
     mnormt,
     MCMCglmm,
     ape,
+    arm,
     R.rsp,
     knitr,
     rmarkdown

@@ -511,7 +511,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   #   A list of strings containing Stan code
   out <- list()
   r <- subset2(ranef, id = id)
-  ccov <- r$group[1] %in% names(cov_ranef)
+  has_ccov <- r$group[1] %in% names(cov_ranef)
   has_by <- nzchar(r$by[[1]])
   Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
@@ -534,7 +534,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       "  int<lower=1> Nby_", id, ";\n",
       "  int<lower=1> Jby_", id, "[N_", id, "];\n"
     ),
-    if (ccov) paste0(
+    if (has_ccov) paste0(
       "  // cholesky factor of known covariance matrix \n",
       "  matrix[N_", id, ", N_", id,"] Lcov_", id,"; \n"
     )
@@ -556,9 +556,6 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
   }
   # define standard deviation parameters
   if (has_by) {
-    if (ccov) {
-      stop2("Cannot combine 'by' variables with customized covariances.")
-    }
     str_add(out$par) <- paste0(
       "  matrix<lower=0>[M_", id, ", Nby_", id, "] sd_", id, ";",
       "  // group-level standard deviations\n"
@@ -590,6 +587,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       "  target += normal_lpdf(to_vector(z_", id, ") | 0, 1);\n"
     )
     if (has_by) {
+      if (has_ccov) {
+        stop2(
+          "Cannot combine 'by' variables with customized covariance ",
+          "matrices when fitting multiple group-level effects."
+        )
+      }
       str_add(out$par) <- paste0(
         "  // cholesky factor of correlation matrix\n",
         "  cholesky_factor_corr[M_", id, "] L_", id, "[Nby_", id, "];\n"
@@ -610,7 +613,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "_", Nby, ";\n"
       )
       str_add(out$genC) <- paste0(
-        "  // take only relevant parts of correlation matrix \n",
+        "  // take only relevant parts of correlation matrix\n",
         stan_cor_genC(r, id, Nby)
       )
     } else {
@@ -621,7 +624,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       str_add(out$tparD) <- paste0(
         "  // group-level effects \n",
         "  matrix[N_", id, ", M_", id, "] r_", id, 
-        if (ccov) {
+        if (has_ccov) {
           paste0(
             " = as_matrix(kronecker(Lcov_", id, ",", 
             " diag_pre_multiply(sd_", id,", L_", id,")) *",
@@ -643,32 +646,33 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, ";\n"
       )
       str_add(out$genC) <- paste0(
-        "  // take only relevant parts of correlation matrix \n",
+        "  // take only relevant parts of correlation matrix\n",
         stan_cor_genC(r, id)
       )
     }
     str_add(out$tparD) <- paste0(
       collapse(
         "  vector[N_", id, "] r_", idp, "_", r$cn, 
-        " = r_", id, "[, ", J, "]; \n"
+        " = r_", id, "[, ", J, "];\n"
       )
     )
   } else {
     # single or uncorrelated group-level effects
     str_add(out$par) <- paste0(
       "  vector[N_", id, "] z_", id, "[M_", id, "];",
-      "  // unscaled group-level effects \n"
+      "  // unscaled group-level effects\n"
     )
     str_add(out$prior) <- collapse(
-      "  target += normal_lpdf(z_", id, "[", 1:nrow(r), "] | 0, 1); \n"
+      "  target += normal_lpdf(z_", id, "[", 1:nrow(r), "] | 0, 1);\n"
     )
     if (has_by) {
       str_add(out$tparD) <- paste0(
         "  // group-level effects \n", 
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
-          " = scale_r_by(z_", id, "[", J, "],", 
-          " sd_", id, "[", J, "], Jby_", id, ");\n"
+          " = sd_", id, "[", J, ", Jby_", id, "]' .* (", 
+          if (has_ccov) paste0("Lcov_", id, " * "), 
+          "z_", id, "[", J, "]);\n"
         )
       )
     } else {
@@ -677,8 +681,8 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
           " = sd_", id, "[", J, "] * (", 
-          if (ccov) paste0("Lcov_", id, " * "), 
-          "z_", id, "[", J, "]); \n"
+          if (has_ccov) paste0("Lcov_", id, " * "), 
+          "z_", id, "[", J, "]);\n"
         )
       )
     }

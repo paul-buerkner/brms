@@ -7,7 +7,8 @@ dat <- data.frame(
   Trt = factor(sample(0:1, 236, TRUE)),
   AgeSD = abs(rnorm(236, 1)),
   Exp = sample(1:5, 236, TRUE),
-  volume = rnorm(236) 
+  volume = rnorm(236),
+  gender = factor(c(rep("m", 30), rep("f", 29)))
 )
 
 dat2 <- data.frame(
@@ -56,8 +57,8 @@ brmsfit_example4 <- brm(
 )
 
 brmsfit_example5 <- brm(
-  bf(count ~ Age + (1|visit), mu2 ~ Age), dat,
-  family = mixture(gaussian, exponential),
+  bf(count ~ Age + (1|gr(patient, by = gender)), mu2 ~ Age), 
+  data = dat, family = mixture(gaussian, exponential),
   prior = c(prior(normal(0, 10), Intercept, dpar = mu1),
             prior(normal(0, 1), Intercept, dpar = mu2),
             prior(normal(0, 1), dpar = mu2)),

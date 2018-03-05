@@ -526,11 +526,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
               } else {
                 rnames <- get_rnames(sub_ranef)
               }
-              sd_pars <- paste0("sd_", g, usc(usc(p)), "__", rnames)
+              sd_pars <- paste0("sd_", g, "__", rnames)
               sd_samples <- get_samples(samples, sd_pars, exact = TRUE)
               cor_type <- paste0("cor_", g)
-              cor_pars <- paste0(usc(p, "suffix"), rnames)
-              cor_pars <- get_cornames(cor_pars, cor_type, brackets = FALSE)
+              cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
               cor_samples <- matrix(
                 0, nrow = nrow(sd_samples), ncol = length(cor_pars)
               )

@@ -452,7 +452,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan' \n"
   }
   if (any(nzchar(ranef$by))) {
-    str_add(out$fun) <- "  #include 'fun_scale_r_by.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan' \n"
   }
   if (stan_needs_kronecker(ranef, names(cov_ranef))) {
     str_add(out$fun) <- paste0(

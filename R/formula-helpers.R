@@ -561,10 +561,10 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' 
 #' @param ... One or more terms containing grouping factors.
 #' @param by An optional factor variable, specifying sub-populations
-#'   in the groups. For each level of the \code{by} variable, 
-#'   a separate group-level variance-covariance matrix
-#'   will be fitted. Levels of the grouping factor must be
-#'   nested in levels of the \code{by} variable.
+#'   of the groups. For each level of the \code{by} variable, 
+#'   a separate variance-covariance matrix will be fitted. 
+#'   Levels of the grouping factor must be nested in levels 
+#'   of the \code{by} variable.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 

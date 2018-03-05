@@ -986,6 +986,20 @@ test_that("Stan code of multi-membership models is correct", {
   )
 })
 
+test_that("by variables in grouping terms are handled correctly", {
+  dat <- data.frame(
+    y = rnorm(100), x = rnorm(100),
+    g = rep(1:10, each = 10),
+    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20))
+  )
+  scode <- make_stancode(y ~ x + (1 | gr(g, by = z)), dat)
+  expect_match2(scode, "r_1_1 = sd_1[1, Jby_1]' .* (z_1[1]);")
+  scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
+  expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
+  expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 10);")
+  expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1[5] | 1);")
+})
+
 test_that("Group syntax | and || is handled correctly,", {
   data <- data.frame(y = rnorm(10), x = rnorm(10),
                      g1 = rep(1:5, each = 2), g2 = rep(1:2, 5))
