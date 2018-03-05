@@ -52,17 +52,18 @@ restructure_v2 <- function(x) {
   }
   if (version <= "2.1.2") {
     if ("weibull" %in% family_names(x)) {
-      stop2(
-        "The parameterization of weibull models has changed in brms 2.2 ",
-        "to be consistent with other model classes. Please refit your model ",
-        "with the current version of brms."
-      )
+      stop_parameterization_changed("weibull", "2.1.3")
     }
   }
   if (version <= "2.1.6") {
     # added 'by' variables to grouping terms
     bterms <- parse_bf(formula(x))
     x$ranef <- tidy_ranef(bterms, model.frame(x))
+  }
+  if (version <= "2.1.7") {
+    if ("exgaussian" %in% family_names(x)) {
+      stop_parameterization_changed("exgaussian", "2.1.8")
+    }
   }
   x
 }
@@ -437,4 +438,12 @@ change_simple <- function(oldname, fnames, pars, dims,
     out <- NULL
   }
   out
+}
+
+stop_parameterization_changed <- function(family, version) {
+  stop2(
+    "The parameterization of '", family, "' models has changed in brms ",
+    version, " to be consistent with other model classes. ", 
+    "Please refit your model with the current version of brms."
+  )
 }

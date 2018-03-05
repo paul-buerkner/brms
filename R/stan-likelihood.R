@@ -460,7 +460,10 @@ stan_llh_gen_extreme_value <- function(bterms, resp = "", mix = "") {
 stan_llh_exgaussian <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  sdist("exp_mod_normal", p$mu, p$sigma, paste0("inv(", p$beta, ")"))
+  sdist(
+    "exp_mod_normal", paste0(p$mu, " - ", p$beta), 
+    p$sigma, paste0("inv(", p$beta, ")")
+  )
 }
 
 stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {

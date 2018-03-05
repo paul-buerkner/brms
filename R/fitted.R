@@ -146,7 +146,7 @@ fitted_inverse.gaussian <- function(draws) {
 }
 
 fitted_exgaussian <- function(draws) {
-  with(draws$dpars, mu + beta)
+  draws$dpars$mu
 }
 
 fitted_wiener <- function(draws) {

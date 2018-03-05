@@ -24,9 +24,9 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
-      \item Change the parameterization of \code{weibull}
-      models to be consistent with other model classes.
-      Post-processing of \code{weibull} models fitted with 
+      \item Change the parameterization of \code{weibull} and 
+      \code{exgaussian} models to be consistent with other model 
+      classes. Post-processing of related models fitted with 
       earlier version of \pkg{brms} is no longer possible.
       \item Treat integer responses in \code{ordinal} models 
       as directly indicating categories even if the lowest 

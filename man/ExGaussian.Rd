@@ -16,7 +16,7 @@ rexgaussian(n, mu, sigma, beta)
 \arguments{
 \item{x, q}{Vector of quantiles.}
 
-\item{mu}{Vector of means of the gaussian component.}
+\item{mu}{Vector of means of the combined distribution.}
 
 \item{sigma}{Vector of standard deviations of the gaussian component.}
 

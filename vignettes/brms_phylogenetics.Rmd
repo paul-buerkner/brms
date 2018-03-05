@@ -239,8 +239,7 @@ Since smaller values of LOO indicate better fit, it is again evident that the Po
 
 ## Phylogenetic models with multiple group-level effects
 
-In the above examples, we have only used a single group-level effect (i.e., a varying intercept) for the phylogenetic grouping factors. In **brms**, it is also possible to estimate multiple group-level effects (e.g., a varying intercept and a varying slope) for these grouping factors. However, it requires repeatedly computing Kronecker products and Cholesky factors of covariance matrices while fitting the model. This will be very slow especially when the grouping factors have many levels and matrices are thus large. I hope to increase efficiency for such models in the future.
-
+In the above examples, we have only used a single group-level effect (i.e., a varying intercept) for the phylogenetic grouping factors. In **brms**, it is also possible to estimate multiple group-level effects (e.g., a varying intercept and a varying slope) for these grouping factors. However, it requires repeatedly computing Kronecker products of covariance matrices while fitting the model. This will be very slow especially when the grouping factors have many levels and matrices are thus large.
 
 ## References
 

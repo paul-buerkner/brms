@@ -587,7 +587,7 @@ rvon_mises <- function(n, mu, kappa) {
 #' 
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
-#' @param mu Vector of means of the gaussian component.
+#' @param mu Vector of means of the combined distribution.
 #' @param sigma Vector of standard deviations of the gaussian component.
 #' @param beta Vector of scales of the exponential component.
 #'   
@@ -604,6 +604,7 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   }
   args <- nlist(x, mu, sigma, beta)
   args <- do.call(expand, args)
+  args$mu <- with(args, mu - beta)
   args$z <- with(args, x - mu - sigma^2 / beta)
   
   out <- with(args, 
@@ -628,6 +629,7 @@ pexgaussian <- function(q, mu, sigma, beta,
   }
   args <- nlist(q, mu, sigma, beta)
   args <- do.call(expand, args)
+  args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
   
   out <- with(args, 
@@ -653,6 +655,7 @@ rexgaussian <- function(n, mu, sigma, beta) {
   if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
   }
+  mu <- mu - beta
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 

@@ -762,7 +762,7 @@ test_that("Stan code of response times models is correct", {
                       data = dat, family = exgaussian("log"),
                       prior = prior(gamma(1,1), class = beta))
   expect_match2(scode,
-    "target += exp_mod_normal_lpdf(Y | mu, sigma, inv(beta))"
+    "target += exp_mod_normal_lpdf(Y | mu - beta, sigma, inv(beta))"
   )
   expect_match2(scode, "mu[n] = exp(mu[n])")
   expect_match2(scode, "target += gamma_lpdf(beta | 1, 1)")
@@ -771,13 +771,13 @@ test_that("Stan code of response times models is correct", {
                          sigma ~ Trt_c, beta ~ Trt_c),
                       data = dat, family = exgaussian())
   expect_match2(scode, 
-    "target += exp_mod_normal_lpdf(Y | mu, sigma, inv(beta))"
+    "target += exp_mod_normal_lpdf(Y | mu - beta, sigma, inv(beta))"
   )
   expect_match2(scode, "beta[n] = exp(beta[n])")
   
   scode <- make_stancode(count | cens(cens) ~ Trt_c + (1|patient),
                       data = dat, family = exgaussian("inverse"))
-  expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n], sigma, inv(beta))")
+  expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n] - beta, sigma, inv(beta))")
   
   scode <- make_stancode(count ~ Trt_c, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lpdf(Y - ndt | mu, sigma)")
@@ -1160,8 +1160,12 @@ test_that("Stan code of mixture model is correct", {
   fam <- mixture(gaussian, student, exgaussian)
   scode <- make_stancode(bf(y ~ x), data = data, family = fam)
   expect_match(scode, "parameters \\{[^\\}]*real temp_mu3_Intercept;")
-  expect_match2(scode, "ps[2] = log(theta2) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
-  expect_match2(scode, "ps[3] = log(theta3) + exp_mod_normal_lpdf(Y[n] | mu3[n], sigma3, inv(beta3));")
+  expect_match2(scode, 
+    "ps[2] = log(theta2) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);"
+  )
+  expect_match2(scode, 
+    "ps[3] = log(theta3) + exp_mod_normal_lpdf(Y[n] | mu3[n] - beta3, sigma3, inv(beta3));"
+  )
   
   scode <- make_stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x), 
                          data = data, family = fam)
