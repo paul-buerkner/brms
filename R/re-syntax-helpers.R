@@ -309,10 +309,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
   #     type: special effects type; can be "sp" or "cs"
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
-  data <- update_data(
-    data, bterms, na.action = na.pass, 
-    drop.unused.levels = FALSE
-  )
+  data <- combine_groups(data, get_groups(bterms))
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL

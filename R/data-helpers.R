@@ -89,7 +89,7 @@ combine_groups <- function(data, ...) {
   group <- c(...)
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
-    if (length(sgroup) > 1L) {
+    if (length(sgroup) > 1L && !group[[i]] %in% names(data)) {
       new.var <- get(sgroup[1], data)
       for (j in 2:length(sgroup)) {
         new.var <- paste0(new.var, "_", get(sgroup[j], data))

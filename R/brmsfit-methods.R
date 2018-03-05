@@ -2272,7 +2272,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$stan_vars <- validate_stanvars(dots$stan_vars)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      dots$new <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
