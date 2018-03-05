@@ -287,14 +287,15 @@ get_re.btnl <- function(x, ...) {
   do.call(rbind, re)
 }
 
-tidy_ranef <- function(bterms, data = NULL, all = TRUE, 
-                       old_levels = NULL, old_standata = NULL) {
+tidy_ranef <- function(bterms, data, all = TRUE, 
+                       old_levels = NULL, old_sdata = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   bterms: object of class brmsterms
-  #   data: data passed to brm after updating
-  #   all: include REs of non-linear and distributional parameters?
-  #   old_standata: optional; see 'extract_old_standata'
+  #   data: data.frame containing all model variables
+  #   all: include REs of all parameters?
+  #   old_levels: optional original levels of the grouping factors
+  #   old_sdata: optional; see 'extract_old_standata'
   #     only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
@@ -308,6 +309,7 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   #     type: special effects type; can be "sp" or "cs"
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
+  data <- combine_groups(data, get_groups(bterms))
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
@@ -315,19 +317,19 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (!nzchar(re$type[i])) {
-      coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
+      coef <- colnames(get_model_matrix(re$form[[i]], data)) 
     } else if (re$type[i] == "sp") {
       coef <- tidy_spef(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
-      if (!is.null(old_standata)) {
+      if (!is.null(old_sdata)) {
         # extract ncat from the original data
         if (nzchar(resp)) {
-          ncat <- old_standata[[resp]][["ncat"]]
+          ncat <- old_sdata[[resp]][["ncat"]]
         } else {
-          ncat <- old_standata[["ncat"]]
+          ncat <- old_sdata[["ncat"]]
         }
       } else {
         # infer ncat from the current data
@@ -355,10 +357,17 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       nlpar = re$nlpar[[i]],
       cor = re$cor[[i]],
       type = re$type[[i]],
+      by = re$gcall[[i]]$by,
       stringsAsFactors = FALSE
     )
-    rdat$form <- replicate(nrow(rdat), re$form[[i]])
-    rdat$gcall <- replicate(nrow(rdat), re$gcall[i]) 
+    bylevels <- NULL
+    if (nzchar(rdat$by[1])) {
+      bylevels <- levels(factor(get(rdat$by[1], data)))
+    }
+    rdat$bylevels <- repl(bylevels, nrow(rdat))
+    rdat$form <- repl(re$form[[i]], nrow(rdat))
+    rdat$gcall <- repl(re$gcall[[i]], nrow(rdat)) 
+    # prepare group-level IDs
     id <- re$id[[i]]
     if (is.na(id)) {
       rdat$id <- j
@@ -405,14 +414,32 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
     }
     if (is.null(old_levels)) {
-      un_re <- re[!duplicated(re$group), ]
-      levels <- named_list(un_re$group)
+      rsub <- ranef[!duplicated(ranef$group), ]
+      levels <- named_list(rsub$group)
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
         levels[[i]] <- unique(ulapply(
-          un_re$gcall[[i]]$groups, 
+          rsub$gcall[[i]]$groups, 
           function(g) levels(factor(get(g, data)))
         ))
+        by <- rsub$by[i]
+        if (nzchar(by)) {
+          # store information of corresponding by levels
+          stopifnot(!nzchar(rsub$type[i]))
+          bylevels <- rsub$bylevels[[i]]
+          byvar <- get(by, data)
+          g <- rsub$gcall[[i]]$groups
+          gvar <- get(g, data)
+          not_dupl <- !duplicated(data.frame(gvar, byvar))
+          if (sum(not_dupl) > length(levels[[i]])) {
+            stop2(
+              "Some levels of '", g, "' correspond ", 
+              "to multiple levels of '", by, "'. "
+            )
+          }
+          by_per_level <- bylevels[match(byvar[not_dupl], bylevels)]
+          attr(levels[[i]], "by") <- by_per_level
+        }
       }
       attr(ranef, "levels") <- levels 
     } else {

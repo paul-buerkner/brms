@@ -285,7 +285,7 @@ test_that("make_stancode combines strings of multiple grouping factors", {
                       "  // data for group-level effects of ID 2"))
   expect_match2(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = skew_normal()), 
-               paste0("  int<lower=1> NC_1; \n",
+               paste0("  int<lower=1> NC_1;\n",
                       "  // data for group-level effects of ID 2"))
 })
 
@@ -984,6 +984,20 @@ test_that("Stan code of multi-membership models is correct", {
   expect_match2(make_stancode(y ~ (1+mmc(w1, w2)|mm(g1,g2)), data = dat), 
     " + W_1_2[n] * r_1_2[J_1_2[n]] * Z_1_2_2[n];"
   )
+})
+
+test_that("by variables in grouping terms are handled correctly", {
+  dat <- data.frame(
+    y = rnorm(100), x = rnorm(100),
+    g = rep(1:10, each = 10),
+    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20))
+  )
+  scode <- make_stancode(y ~ x + (1 | gr(g, by = z)), dat)
+  expect_match2(scode, "r_1_1 = sd_1[1, Jby_1]' .* (z_1[1]);")
+  scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
+  expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
+  expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 10);")
+  expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1[5] | 1);")
 })
 
 test_that("Group syntax | and || is handled correctly,", {

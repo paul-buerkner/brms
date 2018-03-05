@@ -91,6 +91,11 @@ array2list <- function(x) {
   out
 }
 
+repl <- function(expr, n) {
+  # wrapper around replicate but without simplifying
+  replicate(n, expr, simplify = FALSE)
+}
+
 first_greater <- function(A, target, i = 1) {
   # find the first element in A that is greater than target
   # Args: 

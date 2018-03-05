@@ -34,7 +34,7 @@ make_standata <- function(formula, data, family = gaussian(),
   #   new: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
-  #   old_standata: list of stan data computed from the orginal data
+  #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
   dots <- list(...)
   # some input checks
@@ -71,17 +71,17 @@ make_standata <- function(formula, data, family = gaussian(),
     data_response(
       bterms, data, check_response = check_response,
       not4stan = not4stan, new = new, 
-      old_standata = control$old_standata
+      old_sdata = control$old_sdata
     )
   )
   if (!only_response) {
     ranef <- tidy_ranef(
       bterms, data, old_levels = control$old_levels,
-      old_standata = control$old_standata  
+      old_sdata = control$old_sdata  
     )
     args_eff <- nlist(
       x = bterms, data, prior, ranef, cov_ranef, knots, 
-      not4stan, old_standata = control$old_standata
+      not4stan, old_sdata = control$old_sdata
     )
     out <- c(out, do.call(data_effects, args_eff))
   }

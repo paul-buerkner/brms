@@ -348,9 +348,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is(fit, "brmsfit")) {
     # re-use existing model
     x <- fit
-    sdata <- standata(x, new = dots$new)
-    dots$new <- NULL
-    # extract the compiled model
+    sdata <- standata(x)
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
@@ -391,7 +389,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_all_pars = save_all_pars
     )
     x$model <- make_stancode(
-      formula = formula, data = data, prior = prior, 
+      formula, data = data, prior = prior, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stan_vars = stan_vars, stan_funs = stan_funs, 
@@ -399,7 +397,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
-    sdata <- standata(x, newdata = dots$is_newdata)
+    sdata <- make_standata(
+      formula, data = data, prior = prior, 
+      cov_ranef = cov_ranef, sample_prior = sample_prior,
+      knots = knots, stan_vars = stan_vars
+    )
     message("Compiling the C++ model")
     x$fit <- eval_silent(
       rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)

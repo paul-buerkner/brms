@@ -94,7 +94,10 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       }
       other_vars <- setdiff(names(conditions), all_vars[[i]])
       newdata[, other_vars] <- conditions[1, other_vars]
-      sdata <- validate_newdata(newdata, fit = fit, re_formula = NA)
+      sdata <- standata(
+        fit, newdata, re_formula = NA, 
+        internal = TRUE, check_response = FALSE
+      )
       draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
       draws <- do.call(extract_draws, draws_args)
       J <- which(attr(sm_labels_by, "termnum") == i)

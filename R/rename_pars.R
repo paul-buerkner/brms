@@ -299,24 +299,33 @@ change_re <- function(ranef, pars) {
     for (id in unique(ranef$id)) {
       r <- subset2(ranef, id = id)
       g <- r$group[1]
-      suffix <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-      rfnames <- paste0("sd_", g, "__", suffix)
-      rpos <- grepl(paste0("^sd_", id, "(\\[|$)"), pars)
-      change <- lc(change, list(pos = rpos, fnames = rfnames))
+      rnames <- get_rnames(r)
+      sd_names <- paste0("sd_", g, "__", as.vector(rnames))
+      sd_pos <- grepl(paste0("^sd_", id, "(\\[|$)"), pars)
+      change <- lc(change, list(pos = sd_pos, fnames = sd_names))
       change <- c(change,
         change_prior(
           class = paste0("sd_", id), pars = pars,
           new_class = paste0("sd_", g), 
-          names = paste0("_", suffix)
+          names = paste0("_", as.vector(rnames))
         )
       )
       # rename group-level correlations
       if (nrow(r) > 1L && isTRUE(r$cor[1])) {
         type <- paste0("cor_", g)
-        cor_names <- get_cornames(
-          suffix, type = paste0("cor_", g), brackets = FALSE
-        )
-        cor_pos <- grepl(paste0("^cor_", id, "(\\[|$)"), pars)
+        if (isTRUE(nzchar(r$by[1]))) {
+          cor_names <- named_list(r$bylevels[[1]])
+          for (j in seq_len(nrow(rnames))) {
+            cor_names[[j]] <- get_cornames(
+              rnames[, j], type, brackets = FALSE
+            )
+          }
+          cor_names <- unlist(cor_names)
+        } else {
+          cor_names <- get_cornames(rnames, type, brackets = FALSE)
+        }
+        cor_regex <- paste0("^cor_", id, "(_[[:digit:]]+)?(\\[|$)")
+        cor_pos <- grepl(cor_regex, pars)
         change <- lc(change, list(pos = cor_pos, fnames = cor_names))
         change <- c(change,
           change_prior(

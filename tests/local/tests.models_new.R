@@ -92,6 +92,42 @@ test_that("Non-linear model from brm doc works correctly", {
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 })
 
+test_that("ARMA models work correctly", {
+  N <- 100
+  y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
+  dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
+
+  fit_ar <- brm(y ~ x, data = dat, autocor = cor_ar(p = 5),
+                prior = prior(normal(0, 5), class = "ar"),
+                chains = 2, cores = 2)
+  print(fit_ar)
+  ar <- colMeans(as.matrix(fit_ar, "^ar"))
+  expect_range(ar[1], 0.5, 0.9)
+  expect_range(ar[3], -0.2, 0.25)
+  expect_range(ar[5], -0.6, -0.1)
+  expect_ggplot(plot(marginal_effects(fit_ar))[[1]])
+
+  fit_ma <- brm(y ~ x, data = dat, autocor = cor_ma(q = 1),
+                chains = 2, cores = 2)
+  print(fit_ma)
+  expect_gt(LOO(fit_ma)$looic, LOO(fit_ar)$looic)
+
+  fit_arma <- brm(y ~ x + (1|g), data = dat,
+                  autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
+                  prior = c(prior(normal(0, 5), class = "ar"),
+                            prior(normal(0, 6), class = "ma")),
+                  chains = 2, cores = 2)
+  print(fit_arma)
+  expect_range(waic(fit_arma)$waic, 280, 400)
+  expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
+  expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
+
+  fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
+                 prior = prior(normal(0, 5), class = "arr"),
+                 chains = 2, cores = 2)
+  print(fit_arr)
+})
+
 test_that("Models from hypothesis doc work correctly", {
   prior <- c(set_prior("normal(0,2)", class = "b"),
              set_prior("student_t(10,0,1)", class = "sigma"),
@@ -118,7 +154,7 @@ test_that("Models from hypothesis doc work correctly", {
   ## test more than one hypothesis at once
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
   hyp3 <- hypothesis(fit, hyp3)
-  expect_equal(dim(hyp3$hypothesis), c(2, 6))
+  expect_equal(dim(hyp3$hypothesis), c(2, 7))
 })
 
 test_that("bridgesampling methods work correctly", {
@@ -193,42 +229,6 @@ test_that("categorical models work correctly", {
   newd <- inhaler[1:10, ]
   newd$rating <- NULL
   expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
-})
-
-test_that("ARMA models work correctly", {
-  N <- 100
-  y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
-  dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
-
-  fit_ar <- brm(y ~ x, data = dat, autocor = cor_ar(p = 5),
-                prior = prior(normal(0, 5), class = "ar"),
-                chains = 2, cores = 2)
-  print(fit_ar)
-  ar <- colMeans(as.matrix(fit_ar, "^ar"))
-  expect_range(ar[1], 0.5, 0.9)
-  expect_range(ar[3], -0.2, 0.25)
-  expect_range(ar[5], -0.6, -0.1)
-  expect_ggplot(plot(marginal_effects(fit_ar))[[1]])
-
-  fit_ma <- brm(y ~ x, data = dat, autocor = cor_ma(q = 1),
-                chains = 2, cores = 2)
-  print(fit_ma)
-  expect_gt(LOO(fit_ma)$looic, LOO(fit_ar)$looic)
-
-  fit_arma <- brm(y ~ x + (1|g), data = dat,
-                  autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
-                  prior = c(prior(normal(0, 5), class = "ar"),
-                            prior(normal(0, 6), class = "ma")),
-                  chains = 2, cores = 2)
-  print(fit_arma)
-  expect_range(waic(fit_arma)$waic, 280, 400)
-  expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
-  expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
-
-  fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
-                 prior = prior(normal(0, 5), class = "arr"),
-                 chains = 2, cores = 2)
-  print(fit_arr)
 })
 
 test_that("multivariate normal models work correctly", {
@@ -374,7 +374,7 @@ test_that("Multivariate GAMMs work correctly", {
   newd <- data.frame(x0=(0:30)/30, x1=(0:30)/30,
                      x2=(0:30)/30, x3=(0:30)/30)
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
-  expect_range(prfi[, 1], prfi[, 5] - 0.20, prfi[, 5] + 0.20)
+  expect_range(prfi[, 1], prfi[, 5] - 0.25, prfi[, 5] + 0.25)
 })
 
 test_that("GAMMs with factor variable in 'by' work correctly", {

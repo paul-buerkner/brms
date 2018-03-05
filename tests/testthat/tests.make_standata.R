@@ -545,6 +545,21 @@ test_that("make_standata handles multi-membership models", {
   expect_true(all(c("J_1_1", "J_1_2") %in% names(sdata)))
 })
 
+test_that("by variables in grouping terms are handled correctly", {
+  dat <- data.frame(
+    y = rnorm(100), x = rnorm(100),
+    g = rep(1:10, each = 10),
+    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20)),
+    z2 = factor(1:2)
+  )
+  sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
+  expect_equal(sdata$Nby_1, 5)
+  expect_equal(sdata$Jby_1, as.array(rep(c(1, 4, 3, 2, 5), each = 2)))
+  
+  expect_error(make_standata(y ~ x + (1|gr(g, by = z2)), dat),
+               "Some levels of 'g' correspond to multiple levels of 'z2'")
+})
+
 test_that("make_standata handles calls to the 'poly' function", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10))
   expect_equal(colnames(make_standata(y ~ 1 + poly(x, 3), dat)$X),

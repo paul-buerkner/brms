@@ -4,11 +4,11 @@ data_effects <- function(x, ...) {
 }
 
 #' @export
-data_effects.mvbrmsterms <- function(x, old_standata = NULL, ...) {
+data_effects.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    od <- old_standata[[x$responses[i]]]
-    out <- c(out, data_effects(x$terms[[i]], old_standata = od, ...))
+    od <- old_sdata[[x$responses[i]]]
+    out <- c(out, data_effects(x$terms[[i]], old_sdata = od, ...))
   }
   out
 }
@@ -16,11 +16,11 @@ data_effects.mvbrmsterms <- function(x, old_standata = NULL, ...) {
 #' @export
 data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
                                    knots = NULL, not4stan = FALSE, 
-                                   old_standata = NULL) {
+                                   old_sdata = NULL) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
-    args_eff_spec <- list(x = x$dpars[[dp]], old_standata = old_standata[[dp]])
+    args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     out <- c(out, data_aux_eff)
   }
@@ -38,7 +38,7 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
 #' @export
 data_effects.btl <- function(x, data, ranef = empty_ranef(), 
                              prior = brmsprior(), knots = NULL, 
-                             not4stan = FALSE, old_standata = NULL) {
+                             not4stan = FALSE, old_sdata = NULL) {
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
@@ -49,17 +49,17 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
-  #   old_standata: see 'extract_old_standata'
+  #   old_sdata: see 'extract_old_standata'
   # Returns:
   #   A named list of data to be passed to Stan
   c(data_fe(
       x, data, knots = knots, not4stan = not4stan, 
-      smooths = old_standata$smooths
+      smooths = old_sdata$smooths
     ),
-    data_sp(x, data, prior = prior, Jmo = old_standata$Jmo),
+    data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
-    data_gp(x, data, gps = old_standata$gps),
+    data_gp(x, data, gps = old_sdata$gps),
     data_offset(x, data),
     data_prior(x, data, prior = prior)
   )
@@ -68,7 +68,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
 #' @export 
 data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
                               prior = brmsprior(), knots = NULL, 
-                              not4stan = FALSE, old_standata = NULL) {
+                              not4stan = FALSE, old_sdata = NULL) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -93,7 +93,7 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
       data_effects(
         x$nlpars[[nlp]], data, ranef = ranef,
         prior = prior, knots = knots, not4stan = not4stan,
-        old_standata = old_standata[[nlp]]
+        old_sdata = old_sdata[[nlp]]
       )
     )
   }
@@ -299,6 +299,14 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
               group, "' is not positive definite.")
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
+    }
+    by <- id_ranef$by[1]
+    if (nzchar(by)) {
+      stopifnot(!nzchar(id_ranef$type[1]))
+      bylevels <- id_ranef$bylevels[[1]]
+      Jby <- match(attr(levels, "by"), bylevels)
+      out[[paste0("Nby_", id)]] <- length(bylevels)
+      out[[paste0("Jby_", id)]] <- as.array(Jby)
     }
   }
   out
@@ -608,11 +616,11 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, old_standata = NULL, ...) {
+data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    od <- old_standata[[x$responses[i]]]
-    out <- c(out, data_response(x$terms[[i]], old_standata = od, ...))
+    od <- old_sdata[[x$responses[i]]]
+    out <- c(out, data_response(x$terms[[i]], old_sdata = od, ...))
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -624,7 +632,7 @@ data_response.mvbrmsterms <- function(x, old_standata = NULL, ...) {
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     not4stan = FALSE, new = FALSE,
-                                    old_standata = NULL) {
+                                    old_sdata = NULL) {
   # prepare data for the response variable
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
@@ -708,8 +716,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family)) {
     if (!length(x$adforms$trials)) {
-      if (!is.null(old_standata$trials)) {
-        out$trials <- old_standata$trials
+      if (!is.null(old_sdata$trials)) {
+        out$trials <- old_sdata$trials
       } else {
         message("Using the maximum of the response ",
                 "variable as the number of trials.")
@@ -735,8 +743,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
   if (has_cat(x$family)) {
     if (!length(x$adforms$cat)) {
-      if (!is.null(old_standata$ncat)) {
-        out$ncat <- old_standata$ncat
+      if (!is.null(old_sdata$ncat)) {
+        out$ncat <- old_sdata$ncat
       } else {
         out$ncat <- max(out$Y)
       }
@@ -826,7 +834,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     # specify data for autocors here in order to pass Y
     data_autocor(
       x, data = data, Y = out$Y, new = new,
-      old_locations = old_standata$locations
+      old_locations = old_sdata$locations
     )
   )
 }

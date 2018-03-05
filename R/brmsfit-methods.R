@@ -309,7 +309,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
         cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
         names(cor_all) <- y$cor_pars
         for (i in seq_len(ncol(cor_all))) {
-          found <- match(names(cor_all)[i], names(cor))
+          found <- match(names(cor_all)[i], colnames(cor))
           if (!is.na(found)) {
             cor_all[, i] <- cor[, found]
           }
@@ -335,10 +335,10 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     get_names <- function(group) {
       # get names of group-level parameters
       r <- subset2(x$ranef, group = group)
-      rnames <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
+      rnames <- as.vector(get_rnames(r))
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
-      cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
+      cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
       nlist(rnames, sd_pars, cor_pars)
     }
     group <- unique(x$ranef$group)
@@ -350,14 +350,15 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
   # include residual variances in the output as well
   bterms <- parse_bf(x$formula)
   if (is.brmsterms(bterms)) {
-    if (simple_sigma(bterms)) {
+    if (simple_sigma(bterms) && !is.mixfamily(x$family)) {
       tmp_resid <- list(rnames = bterms$resp, sd_pars = "sigma")
       tmp <- c(tmp, residual__ = list(tmp_resid))
     }
   } else if (is.mvbrmsterms(bterms)) {
     simple_sigma <- ulapply(bterms$terms, simple_sigma)
     pred_sigma <- ulapply(bterms$terms, pred_sigma)
-    if (any(simple_sigma) && !any(pred_sigma)) {
+    is_mix <- ulapply(x$family, is.mixfamily)
+    if (any(simple_sigma) && !any(pred_sigma) && !any(is_mix)) {
       resps <- bterms$responses[simple_sigma]
       sd_pars <- paste0("sigma_", resps)
       if (bterms$rescor) {
@@ -884,18 +885,46 @@ stancode.brmsfit <- function(object, version = TRUE, ...) {
   out
 }
 
+#' @rdname standata
 #' @export
-standata.brmsfit <- function(object, ...) {
+standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                             incl_autocor = TRUE, new_objects = list(),
+                             internal = FALSE, control = list(), ...) {
   dots <- list(...)
   object <- restructure(object)
-  new_formula <- update_re_terms(object$formula, dots$re_formula)
+  if (!incl_autocor) {
+    object <- remove_autocor(object)
+  }
+  if (internal) {
+    control[c("not4stan", "save_order")] <- TRUE
+  }
+  new_formula <- update_re_terms(object$formula, re_formula)
+  is_original_data <- isTRUE(attr(newdata, "original"))
+  if (is.null(newdata)) {
+    newdata <- object$data
+  } else if (!is_original_data) {
+    if (!isTRUE(attr(newdata, "valid"))) {
+      newdata <- validate_newdata(
+        newdata, object, re_formula = re_formula, ...
+      )
+    }
+    object <- add_new_objects(object, newdata, new_objects)
+    control$new <- TRUE
+    control$old_levels <- attr(object$ranef, "levels")
+    # ensure correct handling of functions like poly or scale
+    bterms <- parse_bf(new_formula)
+    old_terms <- attr(object$data, "terms")
+    terms_attr <- c("variables", "predvars")
+    control$terms_attr <- attributes(old_terms)[terms_attr]
+    control$old_sdata <- extract_old_standata(bterms, object$data)
+  }
   sample_prior <- attr(object$prior, "sample_prior")
   sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
   args <- list(
-    formula = new_formula, data = model.frame(object), 
+    formula = new_formula, data = newdata, 
     prior = object$prior, cov_ranef = object$cov_ranef, 
     sample_prior = sample_prior, stan_vars = object$stan_vars, 
-    knots = attr(model.frame(object), "knots")
+    knots = attr(object$data, "knots"), control = control
   )
   do.call(make_standata, c(args, dots))
 }
@@ -1196,8 +1225,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (is.null(group) && is_group_type) {
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
+  bterms <- parse_bf(object$formula)
   if ("x" %in% names(formals(ppc_fun)) && !is.null(x)) {
-    bterms <- parse_bf(object$formula)
     ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
     if (!x %in% ae_coll) {
       stop2("Variable '", x, "' is not a valid variable for this model.",
@@ -1235,12 +1264,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
   }
   newd_args <- nlist(
-    newdata, fit = object, re_formula = NA, 
-    incl_autocor, new_objects, check_response = TRUE
+    object, newdata, re_formula = NA, incl_autocor, 
+    new_objects, check_response = TRUE
   )
-  sdata <- do.call(validate_newdata, 
-    args = c(newd_args, list(only_response = TRUE))
-  )
+  newdata <- do.call(validate_newdata, newd_args)
+  newd_args$newdata <- newdata
+  newd_args[c("internal", "only_response")] <- TRUE
+  sdata <- do.call(standata, newd_args)
   if (any(grepl("^cens_", names(sdata)))) {
     warning2("'pp_check' may not be meaningful for censored models.")
   }
@@ -1263,7 +1293,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
   }
   # allow using arguments 'group' and 'x' for new data
-  mf <- do.call(validate_newdata, c(newd_args, return_standata = FALSE))
+  mf <- update_data(newdata, bterms, na.action = na.pass)
   if (!is.null(group)) {
     ppc_args$group <- mf[[group]]
   }
@@ -1617,7 +1647,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels,
-    sample_new_levels, new_objects, resp, subset, nsamples, nug
+    sample_new_levels, new_objects, resp, subset, nsamples, nug,
+    check_response = FALSE
   )
   draws <- do.call(extract_draws, draws_args)
   predict_args <- nlist(
@@ -1727,7 +1758,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels, 
-    sample_new_levels, new_objects, resp, subset, nsamples, nug 
+    sample_new_levels, new_objects, resp, subset, nsamples, nug,
+    check_response = FALSE
   )
   draws <- do.call(extract_draws, draws_args)
   fitted_args <- nlist(draws, scale, dpar, summary, robust, probs, sort)
@@ -1823,10 +1855,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
   newd_args <- nlist(
-    newdata, fit = object, re_formula, allow_new_levels,
-    new_objects, check_response = TRUE
+    object, newdata, re_formula, allow_new_levels,
+    new_objects, check_response = TRUE, internal = TRUE
   )
-  sdata <- do.call(validate_newdata, newd_args)
+  sdata <- do.call(standata, newd_args)
   if (any(grepl("^cens_", names(sdata)))) {
     warning2("'residuals' may not be meaningful for censored models.")
   }
@@ -2017,10 +2049,10 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     R2 <- object[["R2"]]
   } else {
     newd_args <- nlist(
-      newdata, fit = object, re_formula, allow_new_levels,
-      new_objects, check_response = TRUE
+      object, newdata, re_formula, allow_new_levels,
+      new_objects, check_response = TRUE, internal = TRUE
     )
-    sdata <- do.call(validate_newdata, newd_args)
+    sdata <- do.call(standata, newd_args)
     if (any(grepl("^cens_", names(sdata)))) {
       warning2("'bayes_R2' may not be meaningful for censored models.")
     }
@@ -2240,7 +2272,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$stan_vars <- validate_stanvars(dots$stan_vars)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      dots$new <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)

@@ -560,22 +560,31 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' and there is usually no need to call it directly.
 #' 
 #' @param ... One or more terms containing grouping factors.
+#' @param by An optional factor variable, specifying sub-populations
+#'   of the groups. For each level of the \code{by} variable, 
+#'   a separate variance-covariance matrix will be fitted. 
+#'   Levels of the grouping factor must be nested in levels 
+#'   of the \code{by} variable.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
 #' @examples 
 #' \dontrun{
 #' # model using basic lme4-style formula
-#' fit1 <- brm(count ~ Trt_c + (1|patient), data = epilepsy)
+#' fit1 <- brm(count ~ Trt + (1|patient), data = epilepsy)
 #' summary(fit1)
+#' 
 #' # equivalent model using 'gr' which is called anyway internally
-#' fit2 <- brm(count ~ Trt_c + (1|gr(patient)), data = epilepsy)
+#' fit2 <- brm(count ~ Trt + (1|gr(patient)), data = epilepsy)
 #' summary(fit2)
-#' WAIC(fit1, fit2)
+#' 
+#' # include Trt as a by variable
+#' fit3 <- brm(count ~ Trt + (1|gr(patient, by = Trt)), data = epilepsy)
+#' summary(fit3)
 #' }
 #' 
 #' @export
-gr <- function(...) {
+gr <- function(..., by = NULL) {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -585,8 +594,17 @@ gr <- function(...) {
     stop2("Illegal grouping term: ", groups[1], "\nIt may contain ",
           "only variable names combined by the symbol ':'")
   }
-  allvars <- str2formula(groups)
-  nlist(groups, allvars, label, type = "")
+  by <- substitute(by)
+  if (!is.null(by)) {
+    by <- all.vars(by)
+    if (length(by) != 1L) {
+      stop2("Argument 'by' must contain exactly one variable.")
+    }
+  } else {
+    by <- ""
+  }
+  allvars <- str2formula(c(groups, by))
+  nlist(groups, allvars, label, by, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -652,7 +670,7 @@ mm <- function(..., weights = NULL, scale = TRUE) {
     attr(weights, "scale") <- scale
     weightvars <- str2formula(weightvars)
   }
-  nlist(groups, weights, weightvars, allvars, label, type = "mm")
+  nlist(groups, weights, weightvars, allvars, label, by = "", type = "mm")
 }
 
 #' Multi-Membership Covariates
@@ -723,12 +741,13 @@ str2formula <- function(x, ...) {
   #   ...: passed to formula(.)
   # Returns:
   #   a formula
-  if (length(x) && any(nzchar(x))) {
-    x <- paste(x, collapse = "+") 
+  has_chars <- nzchar(x)
+  if (length(x) && any(has_chars)) {
+    out <- paste(x[has_chars], collapse = "+") 
   } else {
-    x <- "1"
+    out <- "1"
   }
-  formula(paste("~", x), ...)
+  formula(paste("~", out), ...)
 }
 
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
