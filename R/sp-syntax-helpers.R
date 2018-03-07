@@ -202,13 +202,13 @@ get_simo_labels <- function(spef) {
   ulapply(which(lengths(spef$Imo) > 0), fun)
 }
 
-regex_sp <- function(type = c("sp", "mo", "me", "mi")) {
-  type <- match.arg(type)
-  out <- c(mo = "mo((no)?|(notonic)?)", me = "me", mi = "mi")
-  if (type == "sp") {
-    out <- paste0(out, collapse = "|")
+get_sdy <- function(x, data = NULL) {
+  stopifnot(is.brmsterms(x))
+  miform <- x$adforms[["mi"]]
+  if (is.formula(miform)) {
+    sdy <- eval_rhs(miform, data = data)
   } else {
-    out <- out[type]
+    sdy <- NULL
   }
-  paste0("^(", out, ")\\([^:]*\\)$")
+  sdy
 }

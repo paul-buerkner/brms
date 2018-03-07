@@ -33,8 +33,10 @@ test_that("brm produces expected errors", {
                "Can only combine group-level terms")
   expect_error(brm(y ~ x + (1|g) + (x|g), dat), 
                "Duplicated group-level effects are not allowed")
-  expect_error(brm(y~mo(g)*t2(x), dat),
-               "Cannot use multiple special terms within one term")
+  expect_error(brm(y~mo(g)*t2(x), dat), fixed = TRUE,
+               "The term 'mo(g):t2(x)' is invalid")
+  expect_error(brm(y~x*cs(g), dat), fixed = TRUE,
+               "The term 'x:cs(g)' is invalid")
   expect_error(brm(y~me(x, 2 * g)*me(x, g), dat),
                "Variable 'x' is used in different calls to 'me'")
   

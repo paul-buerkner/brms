@@ -78,26 +78,32 @@ split_re_terms <- function(re_terms) {
   for (i in seq_along(re_terms)) {
     lhs_form <- formula(paste("~", re_parts$lhs[i]))
     lhs_all_terms <- all_terms(lhs_form)
-    basic_pos <- rep(TRUE, length(lhs_all_terms))
+    # otherwise varying intercepts cannot be handled reliably
+    is_cs_term <- grepl_expr(regex_sp("cs"), lhs_all_terms)
+    if (any(is_cs_term) && !all(is_cs_term)) {
+      stop2("Please specify category specific effects ",
+            "in separate group-level terms.")
+    }
     new_lhs <- NULL
-    for (t in c("cs", "sp", "mmc")) {
+    # prepare effects of special terms
+    valid_types <- c("sp", "cs", "mmc")
+    invalid_types <- c("sm", "gp")
+    for (t in c(valid_types, invalid_types)) {
       lhs_tform <- do.call(paste0("parse_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
-        tpos <- attr(lhs_tform, "pos")
-        if (t == "cs" && !all(tpos)) {
-          stop2("Please specify category specific effects ",
-                "in separate group-level terms.")
+        if (t %in% invalid_types) {
+          stop2("Cannot handle splines or GPs in group-level terms.")
         }
-        basic_pos <- basic_pos & !tpos
         new_lhs <- c(new_lhs, formula2str(lhs_tform, rm = 1))
         type[[i]] <- c(type[[i]], t)
       }
     }
-    int_term <- attr(terms(lhs_form), "intercept")
-    basic_terms <- lhs_all_terms[basic_pos]
-    if (length(basic_terms) || int_term && !"cs" %in% type[[i]]) {
-      basic_terms <- paste(c(int_term, basic_terms), collapse = "+")
-      new_lhs <- c(new_lhs, basic_terms)
+    # prepare effects of basic terms
+    fe_form <- parse_fe(lhs_form)
+    fe_terms <- all_terms(fe_form)
+    has_intercept <- attr(terms(fe_form), "intercept")
+    if (length(fe_terms) || has_intercept && !"cs" %in% type[[i]]) {
+      new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
     }
     if (length(new_lhs) > 1 && re_parts$mid[i] != "||") {
@@ -127,18 +133,18 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
     x <- all_terms(x)
   }
   re_pos <- grepl("\\|", x)
-  re_terms <- x[re_pos]
-  if (brackets && length(re_terms)) {
-    re_terms <- paste0("(", re_terms, ")")
+  out <- x[re_pos]
+  if (brackets && length(out)) {
+    out <- paste0("(", out, ")")
   } 
   if (formula) {
-    if (length(re_terms)) {
-      re_terms <- formula(paste("~ 1", collapse("+", re_terms)))
+    if (length(out)) {
+      out <- formula(paste("~ 1", collapse("+", out)))
     } else {
-      re_terms <- ~ 1
+      out <- ~ 1
     }
   }
-  structure(re_terms, pos = re_pos)
+  out
 }
 
 check_re_formula <- function(re_formula, formula) {

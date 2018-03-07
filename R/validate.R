@@ -218,17 +218,14 @@ parse_lf <- function(formula, family = NULL) {
   # Returns:
   #   object of class 'btl'
   formula <- rhs(as.formula(formula))
-  check_multiple_special_terms(formula)
   y <- nlist(formula)
-  types <- c("re", "sp", "cs", "sm", "gp", "offset")
+  types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
     tmp <- do.call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
       y[[t]] <- tmp 
     }
   }
-  pos_special <- Reduce("|", rmNULL(lapply(y[types], attr, "pos")))
-  y$fe <- parse_fe(formula, pos_special)
   lformula <- c(
     y[c("fe", "sp", "cs")],
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
@@ -329,19 +326,15 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   x
 }
 
-parse_fe <- function(formula, pos_special = NULL) {
+parse_fe <- function(formula) {
   # extract fixed effects terms
   # Args:
   #   pos_special: logical position vector of non-FE terms
-  terms <- terms(formula)
-  all_terms <- all_terms(terms)
-  if (length(pos_special)) {
-    stopifnot(length(pos_special) == length(all_terms))
-    fe_terms <- all_terms[!pos_special]
-  } else {
-    fe_terms <- all_terms
-  }
-  int_term <- attr(terms, "intercept")
+  all_terms <- all_terms(formula)
+  sp_terms <- find_terms(all_terms, "all", complete = FALSE)
+  re_terms <- all_terms[grepl("\\|", all_terms)]
+  fe_terms <- setdiff(all_terms, c(sp_terms, re_terms))
+  int_term <- attr(terms(formula), "intercept")
   fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
   fe_form <- str2formula(fe_terms)
   if (has_rsv_intercept(fe_form)) {
@@ -350,120 +343,9 @@ parse_fe <- function(formula, pos_special = NULL) {
   fe_form
 }
 
-parse_cs <- function(formula) {
-  # category specific terms for ordinal models
-  all_terms <- all_terms(formula)
-  pos_cs_terms <- grepl("^cse?\\([^\\|]+$", all_terms)
-  cs_terms <- all_terms[pos_cs_terms]
-  if (length(cs_terms)) {
-    cs_terms <- ulapply(cs_terms, eval2)
-    cs_terms <- str2formula(cs_terms)
-    # do not test whether variables were supplied to 'cs'
-    # to allow category specific group-level intercepts
-    attr(cs_terms, "rsv_intercept") <- TRUE
-  }
-  structure(cs_terms, pos = pos_cs_terms)
-}
-
-parse_sp <- function(formula) {
-  # extract special effects terms 
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  # do not include group-level terms
-  all_terms[grepl("\\|", all_terms)] <- ""
-  pos_terms <- grepl_expr(regex_sp(), all_terms)
-  out <- all_terms[pos_terms]
-  if (length(out)) {
-    uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
-    uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
-    uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
-    out <- str2formula(out)
-    attr(out, "rsv_intercept") <- TRUE
-    attr(out, "uni_mo") <- uni_mo
-    attr(out, "uni_me") <- uni_me
-    attr(out, "uni_mi") <- uni_mi
-  }
-  structure(out, pos = pos_terms)
-}
-
-parse_sm <- function(formula) {
-  # parse smooth functions
-  all_terms <- all_terms(formula)
-  pos_sm_terms <- grepl("^(s|t2|te|ti)\\(", all_terms)
-  sm_terms <- all_terms[pos_sm_terms]
-  if (length(sm_terms)) {
-    if (any(grepl("^(te|ti)\\(", sm_terms))) {
-      stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
-            "implemented in brms. Consider using 't2' instead.")
-    }
-    covars <- byvars <- named_list(sm_terms)
-    for (i in seq_along(sm_terms)) {
-      es <- eval2(sm_terms[i])
-      covars[[i]] <- es$term
-      if (es$by != "NA") {
-        byvars[[i]] <- es$by 
-      }
-    }
-    sm_terms <- str2formula(sm_terms)
-    allvars <- mgcv::interpret.gam(sm_terms)$fake.formula
-  } else {
-    covars <- byvars <- NULL
-    allvars <- ~ 1
-  }
-  structure_not_null(
-    sm_terms, pos = pos_sm_terms, covars = covars, 
-    byvars = byvars, allvars = allvars
-  )
-}
-
-parse_gp <- function(formula) {
-  # extract terms for gaussian processes
-  # Args:
-  #   formula: a formula object
-  all_terms <- all_terms(formula)
-  pos_gp_terms <- grepl_expr("^gp\\([^:]*\\)$", all_terms)
-  gp_terms <- all_terms[pos_gp_terms]
-  if (length(gp_terms)) {
-    eterms <- lapply(gp_terms, eval2)
-    covars <- lapply(eterms, "[[", "term")
-    byvars <- lapply(eterms, "[[", "by")
-    allvars <- str2formula(unlist(c(covars, byvars)))
-    allvars <- str2formula(all.vars(allvars))
-    if (!length(all.vars(allvars))) {
-      stop2("No variable supplied to function 'gp'.")
-    }
-    gp_terms <- str2formula(gp_terms)
-  } else {
-    byvars <- NULL
-    allvars <- ~ 1
-  }
-  structure_not_null(
-    gp_terms, pos = pos_gp_terms, 
-    byvars = byvars, allvars = allvars
-  )
-}
-
-parse_offset <- function(formula) {
-  # extract offset terms from a formula
-  terms <- terms(as.formula(formula))
-  pos_offset_terms <- attr(terms, "offset")
-  if (!is.null(pos_offset_terms)) {
-    vars <- attr(terms, "variables")
-    offset_terms <- ulapply(
-      pos_offset_terms, function(i) deparse(vars[[i+1]])
-    )
-    offset_terms <- str2formula(offset_terms)
-  } else {
-    offset_terms <- character(0)
-  }
-  offset_terms
-}
-
 parse_re <- function(formula) {
   # generate a data.frame with all information about the group-level terms
   re_terms <- get_re_terms(formula, brackets = FALSE)
-  re_pos <- attr(re_terms, "pos")
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
   out <- vector("list", length(re_terms))
@@ -492,22 +374,117 @@ parse_re <- function(formula) {
       cor = logical(0), form = character(0)
     )
   }
-  structure(out, pos = re_pos)
+  out
+}
+
+parse_cs <- function(formula) {
+  # category specific terms for ordinal models
+  out <- find_terms(formula, "cs")
+  if (length(out)) {
+    out <- ulapply(out, eval2)
+    out <- str2formula(out)
+    # do not test whether variables were supplied to 'cs'
+    # to allow category specific group-level intercepts
+    attr(out, "rsv_intercept") <- TRUE
+  }
+  out
+}
+
+parse_sp <- function(formula) {
+  # extract special effects terms 
+  # Args:
+  #   formula: a formula object
+  types <- c("mo", "me", "mi")
+  out <- find_terms(formula, types, complete = FALSE)
+  if (length(out)) {
+    uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
+    uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
+    uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
+    out <- str2formula(out)
+    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "uni_mo") <- uni_mo
+    attr(out, "uni_me") <- uni_me
+    attr(out, "uni_mi") <- uni_mi
+  }
+  out
+}
+
+parse_sm <- function(formula) {
+  # parse smooth functions
+  out <- find_terms(formula, "sm")
+  if (length(out)) {
+    if (any(grepl("^(te|ti)\\(", out))) {
+      stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
+            "implemented in brms. Consider using 't2' instead.")
+    }
+    covars <- byvars <- named_list(out)
+    for (i in seq_along(out)) {
+      es <- eval2(out[i])
+      covars[[i]] <- es$term
+      if (es$by != "NA") {
+        byvars[[i]] <- es$by 
+      }
+    }
+    out <- str2formula(out)
+    allvars <- mgcv::interpret.gam(out)$fake.formula
+  } else {
+    covars <- byvars <- NULL
+    allvars <- ~ 1
+  }
+  structure(
+    out, covars = covars, 
+    byvars = byvars, allvars = allvars
+  )
+}
+
+parse_gp <- function(formula) {
+  # extract terms for gaussian processes
+  # Args:
+  #   formula: a formula object
+  out <- find_terms(formula, "gp")
+  if (length(out)) {
+    eterms <- lapply(out, eval2)
+    covars <- lapply(eterms, "[[", "term")
+    byvars <- lapply(eterms, "[[", "by")
+    allvars <- str2formula(unlist(c(covars, byvars)))
+    allvars <- str2formula(all.vars(allvars))
+    if (!length(all.vars(allvars))) {
+      stop2("No variable supplied to function 'gp'.")
+    }
+    out <- str2formula(out)
+  } else {
+    byvars <- NULL
+    allvars <- ~ 1
+  }
+  structure(out, byvars = byvars, allvars = allvars)
+}
+
+parse_offset <- function(formula) {
+  # extract offset terms from a formula
+  terms <- terms(as.formula(formula))
+  pos <- attr(terms, "offset")
+  if (!is.null(pos)) {
+    vars <- attr(terms, "variables")
+    out <- ulapply(pos, function(i) deparse(vars[[i+1]]))
+    out <- str2formula(out)
+  } else {
+    out <- character(0)
+  }
+  out
 }
 
 parse_mmc <- function(formula) {
   # parse multiple covariates in multi-membership terms
   all_terms <- all_terms(formula)
-  pos_terms <- grepl("^mmc\\([^\\|]+$", all_terms)
-  terms <- all_terms[pos_terms]
-  if (length(terms)) {
-    if (any(grepl(":", terms))) {
+  out <- find_terms(all_terms, "mmc")
+  if (length(out)) {
+    if (any(grepl(":", out))) {
       stop2("'mmc' cannot be used for interactions.")
     }
-    terms <- str2formula(terms)
-    attr(terms, "rsv_intercept") <- TRUE
+    out <- str2formula(out)
+    attr(out, "rsv_intercept") <- TRUE
   }
-  structure(terms, pos = pos_terms)
+  out
 }
 
 parse_resp <- function(formula, check_names = TRUE) {
@@ -712,33 +689,6 @@ check_fdpars <- function(x) {
   invisible(TRUE)
 }
 
-check_multiple_special_terms <- function(x) {
-  # check if one formula term contains multiple special terms
-  # Args:
-  #   x: (coerced to) a character vector of formula terms
-  # Returns:
-  #   This function is called for its side effects (errors)
-  if (is.formula(x)) {
-    x <- all_terms(x)
-  }
-  x <- as.character(x)
-  sterms <- c(
-    "(mo((no)?|(notonic)?))|(me)|(mi)", 
-    "cse?", "(s|(t2)|(te)|(ti))", "gp"
-  )
-  sterms <- paste0("^(", sterms, ")\\([^:]*\\)$") 
-  smatches <- matrix(NA, nrow = length(x), ncol = length(sterms))
-  for (i in seq_along(sterms)) {
-    smatches[, i] <- grepl_expr(sterms[i], x)
-  }
-  invalid <- x[rowSums(smatches) > 1]
-  if (length(invalid)) {
-    stop2("Cannot use multiple special terms within one term.\n",
-          "Occured for: ", collapse_comma(invalid))
-  }
-  invisible(TRUE)
-}
-
 ad_families <- function(x) {
   # names of valid families for addition arguments
   switch(x, 
@@ -873,22 +823,21 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
     return(character(0))
   }
   return_covars <- covars
-  term_labels <- rename(attr(terms(sm_form), "term.labels"), " ", "")
-  sms <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)] 
   byvars <- attr(sm_form, "byvars")
+  out <- find_terms(sm_form, "sm") 
   if (return_covars) {
-    sfuns <- get_matches("^[^\\(]+", sms)
+    sfuns <- get_matches("^[^\\(]+", out)
     covars <- attr(sm_form, "covars")
     for (i in seq_along(covars)) {
       covars[[i]] <- c(covars[[i]], byvars[[i]])
     }
     if (combine) {
-      sms <- paste0(sfuns, rename(ulapply(covars, collapse)))
+      out <- paste0(sfuns, rename(ulapply(covars, collapse)))
     } else {
-      sms <- covars
+      out <- covars
     }
   }
-  if (length(sms) && !is.null(data)) {
+  if (length(out) && !is.null(data)) {
     # one smooth term may contain multiple design matrices
     if (return_covars && !combine) {
       stop("Invalid combination of arguments. Please report a bug.")
@@ -896,21 +845,21 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
     sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
     by_levels <- attr(sdata_fe$X, "by_levels")
     nby <- lengths(by_levels)
-    sms <- as.list(sms)
-    for (i in seq_along(sms)) {
+    out <- as.list(out)
+    for (i in seq_along(out)) {
       if (nby[i] > 0L) {
-        sms[[i]] <- paste0(sms[[i]], rename(by_levels[[i]]))
+        out[[i]] <- paste0(out[[i]], rename(by_levels[[i]]))
       }
     }
     nby[nby == 0L] <- 1L
-    termnum <- rep(seq_along(sms), nby)
-    sms <- unlist(sms)
+    termnum <- rep(seq_along(out), nby)
+    out <- unlist(out)
     knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
-    nbases <- setNames(ulapply(knots, length), sms)
+    nbases <- setNames(ulapply(knots, length), out)
     alist <- nlist(nbases, by_levels, termnum)
-    attributes(sms)[names(alist)] <- alist
+    attributes(out)[names(alist)] <- alist
   }
-  structure_not_null(sms, byvars = byvars)
+  structure(out, byvars = byvars)
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {
@@ -954,7 +903,7 @@ get_gp_labels <- function(x, data = NULL, covars = FALSE) {
   if (covars) {
     out <- rename(out)
   }
-  structure_not_null(out, byvars = byvars, by_levels = by_levels)
+  structure(out, byvars = byvars, by_levels = by_levels)
 }
 
 all_terms <- function(x) {
@@ -965,6 +914,56 @@ all_terms <- function(x) {
     x <- terms(as.formula(x))
   }
   rm_wsp(attr(x, "term.labels"))
+}
+
+regex_sp <- function(type = "all") {
+  # generate a regular expression to extract special terms
+  # Args:
+  #   type: one or more special terms types to be extracted 
+  choices <- c("all", "sm", "gp", "cs", "mo", "me", "mi", "mmc")
+  type <- match.arg(type, choices, several.ok = TRUE)
+  out <- c(
+    sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?",
+    mo = "mo((no)?|(notonic)?)", me = "me", mi = "mi",
+    mmc = "mmc"
+  )
+  if (!any(type %in% "all")) {
+    out <- out[type]
+  }
+  out <- paste0("(", out, ")", collapse = "|")
+  paste0("^(", out, ")\\([^:]*\\)$")
+}
+
+find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
+  # Args:
+  #   x: formula object of characeter vector from which to extract terms
+  #   type: special terms type to be extracted. see regex_sp()
+  if (is.formula(x)) {
+    x <- all_terms(x)
+  } else {
+    x <- as.character(x)
+  }
+  complete <- as_one_logical(complete)
+  ranef <- as_one_logical(ranef)
+  regex <- regex_sp(type)
+  is_match <- grepl_expr(regex, x)
+  if (!ranef) {
+    is_match <- is_match & !grepl("\\|", x)
+  }
+  out <- x[is_match]
+  if (complete) {
+    matches <- lapply(out, get_matches_expr, pattern = regex)
+    # each term may contain only one special function call
+    inv <- out[lengths(matches) > 1L]
+    if (!length(inv)) {
+      # each term must be equal to the special function call
+      inv <- out[rm_wsp(unlist(matches)) != out]
+    }
+    if (length(inv)) {
+      stop2("The term '", inv[1], "' is invalid in brms syntax.")
+    }
+  }
+  out
 }
 
 validate_terms <- function(x) {
@@ -1004,7 +1003,7 @@ has_intercept <- function(formula) {
 
 has_rsv_intercept <- function(formula) {
   # check if model makes use of the reserved variable 'intercept'
-  # can handle non-linear formulae
+  # can handle non-linear formulas
   formula <- try(as.formula(formula), silent = TRUE)
   if (is(formula, "try-error")) {
     out <- FALSE
@@ -1165,15 +1164,4 @@ has_cens <- function(bterms, data = NULL) {
     out <- FALSE
   }
   out
-}
-
-get_sdy <- function(x, data = NULL) {
-  stopifnot(is.brmsterms(x))
-  miform <- x$adforms[["mi"]]
-  if (is.formula(miform)) {
-    sdy <- eval_rhs(miform, data = data)
-  } else {
-    sdy <- NULL
-  }
-  sdy
 }
