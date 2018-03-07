@@ -328,23 +328,21 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
 
 parse_fe <- function(formula) {
   # extract fixed effects terms
-  # Args:
-  #   pos_special: logical position vector of non-FE terms
   all_terms <- all_terms(formula)
   sp_terms <- find_terms(all_terms, "all", complete = FALSE)
   re_terms <- all_terms[grepl("\\|", all_terms)]
-  fe_terms <- setdiff(all_terms, c(sp_terms, re_terms))
   int_term <- attr(terms(formula), "intercept")
-  fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
-  fe_form <- str2formula(fe_terms)
-  if (has_rsv_intercept(fe_form)) {
-    attr(fe_form, "rsv_intercept") <- TRUE
+  out <- setdiff(all_terms, c(sp_terms, re_terms))
+  out <- paste(c(int_term, out), collapse = "+")
+  out <- str2formula(out)
+  if (has_rsv_intercept(out)) {
+    attr(out, "rsv_intercept") <- TRUE
   }
-  fe_form
+  out
 }
 
 parse_re <- function(formula) {
-  # generate a data.frame with all information about the group-level terms
+  # generate a data.frame with information of group-level terms
   re_terms <- get_re_terms(formula, brackets = FALSE)
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
@@ -392,8 +390,6 @@ parse_cs <- function(formula) {
 
 parse_sp <- function(formula) {
   # extract special effects terms 
-  # Args:
-  #   formula: a formula object
   types <- c("mo", "me", "mi")
   out <- find_terms(formula, types, complete = FALSE)
   if (length(out)) {
@@ -410,7 +406,7 @@ parse_sp <- function(formula) {
 }
 
 parse_sm <- function(formula) {
-  # parse smooth functions
+  # extract spline terms
   out <- find_terms(formula, "sm")
   if (length(out)) {
     if (any(grepl("^(te|ti)\\(", out))) {
@@ -438,9 +434,7 @@ parse_sm <- function(formula) {
 }
 
 parse_gp <- function(formula) {
-  # extract terms for gaussian processes
-  # Args:
-  #   formula: a formula object
+  # extract gaussian process terms
   out <- find_terms(formula, "gp")
   if (length(out)) {
     eterms <- lapply(out, eval2)
@@ -460,7 +454,7 @@ parse_gp <- function(formula) {
 }
 
 parse_offset <- function(formula) {
-  # extract offset terms from a formula
+  # extract offset terms
   terms <- terms(as.formula(formula))
   pos <- attr(terms, "offset")
   if (!is.null(pos)) {
@@ -474,13 +468,9 @@ parse_offset <- function(formula) {
 }
 
 parse_mmc <- function(formula) {
-  # parse multiple covariates in multi-membership terms
-  all_terms <- all_terms(formula)
-  out <- find_terms(all_terms, "mmc")
+  # extract multiple covariates in multi-membership terms
+  out <- find_terms(formula, "mmc")
   if (length(out)) {
-    if (any(grepl(":", out))) {
-      stop2("'mmc' cannot be used for interactions.")
-    }
     out <- str2formula(out)
     attr(out, "rsv_intercept") <- TRUE
   }
@@ -824,7 +814,7 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
   }
   return_covars <- covars
   byvars <- attr(sm_form, "byvars")
-  out <- find_terms(sm_form, "sm") 
+  out <- all_terms(sm_form) 
   if (return_covars) {
     sfuns <- get_matches("^[^\\(]+", out)
     covars <- attr(sm_form, "covars")
@@ -935,9 +925,12 @@ regex_sp <- function(type = "all") {
 }
 
 find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
+  # find special terms of a certain type
   # Args:
-  #   x: formula object of characeter vector from which to extract terms
+  #   x: formula object of character vector from which to extract terms
   #   type: special terms type to be extracted. see regex_sp()
+  #   complete: check if terms consist completely of single special terms?
+  #   ranef: include group-level terms?
   if (is.formula(x)) {
     x <- all_terms(x)
   } else {
@@ -956,7 +949,7 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
     # each term may contain only one special function call
     inv <- out[lengths(matches) > 1L]
     if (!length(inv)) {
-      # each term must be equal to the special function call
+      # each term must be exactly equal to the special function call
       inv <- out[rm_wsp(unlist(matches)) != out]
     }
     if (length(inv)) {
