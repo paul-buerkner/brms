@@ -55,14 +55,16 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
     stan_eta_autocor(x$autocor, px = px)
   )
   if (nzchar(eta_loop)) {
+    # trim initial '+' for aesthetical reasons
+    eta_loop <- sub("^[ \t\r\n]+\\+", "", eta_loop, perl = TRUE)
     str_add(out$modelC2) <- paste0(
-      "    ", eta, "[n] = ", eta, "[n]", eta_loop, "; \n"
+      "    ", eta, "[n] +=", eta_loop, ";\n"
     )
   }
   # include autoregressive effects
   if (get_ar(x$autocor) && !use_cov(x$autocor)) {
-    eta_ar <- paste0(eta, "[n] + head(E", p, "[n], Kar", p, ") * ar", p)
-    str_add(out$modelC3) <- paste0("    ", eta, "[n] = ", eta_ar, "; \n")
+    eta_ar <- paste0("head(E", p, "[n], Kar", p, ") * ar", p)
+    str_add(out$modelC3) <- paste0("    ", eta, "[n] += ", eta_ar, ";\n")
   }
   # possibly transform eta before it is passed to the likelihood
   if (sum(nzchar(ilink))) {
@@ -922,6 +924,7 @@ stan_gp <- function(bterms, data, prior) {
         "Xgp", pi, "[", Jgp, "], sdgp", pi, "[", J, "], ", 
         "lscale", pi, "[", J, "], zgp", pi, "[", Jgp, "]"
       )
+      # compound '+=' statement currently causes a parser failure
       str_add(out$modelCgp1) <- paste0(
         collapse("  ", eta, " = ", eta, " + gp(", gp_args, "); \n")
       )

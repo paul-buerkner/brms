@@ -477,23 +477,23 @@ test_that("Stan code for categorical models is correct", {
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
   expect_match2(scode, "mu2 = Xc_mu2 * b_mu2 + temp_mu2_Intercept;")
-  expect_match2(scode, "mu4[n] = mu4[n] + r_1_mu4_3[J_1[n]] * Z_1_mu4_3[n];")
+  expect_match2(scode, "mu4[n] += r_1_mu4_3[J_1[n]] * Z_1_mu4_3[n];")
   expect_match2(scode, "target += normal_lpdf(b_mu2 | 0, 10);")
   expect_match2(scode, "target += normal_lpdf(b_mu4 | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(temp_mu2_Intercept | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(temp_mu3_Intercept | 0, 2);")
 })
 
-test_that("Stan code for autocorrelated models is correct", {
+test_that("Stan code for ARMA models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_ar(~time))
   expect_match2(scode, "e[n] = Y[n] - mu[n];")
-  expect_match2(scode, "mu[n] = mu[n] + head(E[n], Kar) * ar;")
+  expect_match2(scode, "mu[n] += head(E[n], Kar) * ar;")
   
   scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_ma(~time, q = 2))
-  expect_match2(scode, "mu[n] = mu[n] + head(E[n], Kma) * ma;")
+  expect_match2(scode, "mu[n] += head(E[n], Kma) * ma;")
   
   scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_arr(~time, r = 2))
@@ -707,13 +707,13 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
                "target += multi_student_t_lpdf(Y | nu, mu, V)")
 })
 
-test_that("Stan code for bsts models is correct", {
+test_that("Stan code for BSTS models is correct", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10))
   scode <- SW(make_stancode(
     y ~ x, data = dat, autocor = cor_bsts(),
     prior = prior(normal(0, 10), sigmaLL)
   ))
-  expect_match2(scode, "+ loclev[n]")
+  expect_match2(scode, "mu[n] += loclev[n]")
   expect_match2(scode, "target += normal_lpdf(loclev[n] | loclev[n - 1], sigmaLL)")
   expect_match2(scode, "target += normal_lpdf(sigmaLL | 0, 10)")
   
@@ -952,8 +952,8 @@ test_that("noise-free terms appear in the Stan code", {
     bf(y ~ me(x, xsd)*me(z, zsd)*x, sigma ~ me(x, xsd)), 
     data = dat, prior = prior(normal(0,5))
   )
-  expect_match2(scode, "mu[n] = mu[n] + (bsp[1]) * Xme_1[n]")
-  expect_match2(scode, "sigma[n] = sigma[n] + (bsp_sigma[1]) * Xme_1[n]")
+  expect_match2(scode, "mu[n] += (bsp[1]) * Xme_1[n]")
+  expect_match2(scode, "sigma[n] += (bsp_sigma[1]) * Xme_1[n]")
   
   scode <- make_stancode(
     bf(y ~ a * b, a + b ~ me(x, xsd), nl = TRUE), 
@@ -961,12 +961,12 @@ test_that("noise-free terms appear in the Stan code", {
     prior = prior(normal(0,5), nlpar = a) + 
       prior(normal(0, 5), nlpar = b)
   )
-  expect_match2(scode, "mu_a[n] = mu_a[n] + (bsp_a[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_b[n] = mu_b[n] + (bsp_b[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_a[n] += (bsp_a[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_b[n] += (bsp_b[1]) * Xme_1[n]")
   
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
-  expect_match2(scode, "mu_y[n] = mu_y[n] + (bsp_y[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_z[n] = mu_z[n] + (bsp_z[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
+  expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
 })
 
 test_that("Stan code of multi-membership models is correct", {
@@ -974,15 +974,15 @@ test_that("Stan code of multi-membership models is correct", {
                     g2 = sample(1:10, 10, TRUE), w1 = rep(1, 10),
                     w2 = rep(abs(rnorm(10))))
   expect_match2(make_stancode(y ~ (1|mm(g1, g2)), data = dat), 
-    paste0(" + W_1_1[n] * r_1_1[J_1_1[n]] * Z_1_1_1[n]",
+    paste0(" W_1_1[n] * r_1_1[J_1_1[n]] * Z_1_1_1[n]",
            " + W_1_2[n] * r_1_1[J_1_2[n]] * Z_1_1_2[n]")
   )
   expect_match2(make_stancode(y ~ (1+w1|mm(g1,g2)), data = dat), 
-    paste0(" + W_1_1[n] * r_1_2[J_1_1[n]] * Z_1_2_1[n]",
+    paste0(" W_1_1[n] * r_1_2[J_1_1[n]] * Z_1_2_1[n]",
            " + W_1_2[n] * r_1_2[J_1_2[n]] * Z_1_2_2[n]")
   )
   expect_match2(make_stancode(y ~ (1+mmc(w1, w2)|mm(g1,g2)), data = dat), 
-    " + W_1_2[n] * r_1_2[J_1_2[n]] * Z_1_2_2[n];"
+    " W_1_2[n] * r_1_2[J_1_2[n]] * Z_1_2_2[n];"
   )
 })
 
@@ -1294,13 +1294,13 @@ test_that("Stan code for CAR models is correct", {
   scode <- make_stancode(y ~ x, dat, autocor = cor_car(W))
   expect_match2(scode, "real sparse_car_lpdf(vector phi")
   expect_match2(scode, "target += sparse_car_lpdf(")
-  expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
+  expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 
   scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W),
                          silent = TRUE)
   expect_match2(scode, "real sparse_icar_lpdf(vector phi")
   expect_match2(scode, "target += sparse_icar_lpdf(")
-  expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
+  expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
 })
 
@@ -1344,7 +1344,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   bprior <- prior(normal(0, 1), nlpar = "a", resp = "y")
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "mu_y_a[n] = mu_y_a[n] + (bsp_y_a[1]) * Yl_x[n];")
+  expect_match2(scode, "mu_y_a[n] += (bsp_y_a[1]) * Yl_x[n];")
   expect_match2(scode, "target += normal_lpdf(bsp_y_a | 0, 1);")
   
   bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)

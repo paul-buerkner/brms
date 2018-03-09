@@ -258,11 +258,11 @@ test_that("loglik for count and survival models works correctly", {
   # keep test at the end
   draws$f$link <- "identity"
   draws$data$Y[i] <- 0
-  ll_gen_extreme_value <- dgen_extreme_value(
+  ll_gen_extreme_value <- SW(dgen_extreme_value(
     x = draws$data$Y[i], mu = draws$dpars$mu[, i],
     sigma = draws$dpars$nu, xi = draws$dpars$xi, log = TRUE
-  )
-  ll <- brms:::loglik_gen_extreme_value(i, draws = draws)
+  ))
+  ll <- SW(brms:::loglik_gen_extreme_value(i, draws = draws))
   expect_equal(ll, ll_gen_extreme_value)
 })
 
