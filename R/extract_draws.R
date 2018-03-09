@@ -593,8 +593,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     sub_ranef_cs <- subset2(sub_ranef, type = "cs")
     if (nrow(sub_ranef_cs)) {
       # all categories share the same Z matrix
-      cn1 <- sub_ranef_cs$cn[grepl("\\[1\\]$", sub_ranef_cs$coef)]
-      Znames <- paste0("Z_", id, usc(p), "_", cn1)
+      take <- grepl("\\[1\\]$", sub_ranef_cs$coef)
+      Znames <- paste0(
+        "Z_", sub_ranef_cs$id[take], usc(p), "_", sub_ranef_cs$cn[take]
+      )
       Z <- do.call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       for (i in seq_len(sdata$ncat - 1)) {
@@ -607,7 +609,9 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     # basic group-level effects
     sub_ranef_basic <- subset2(sub_ranef, type = c("", "mmc"))
     if (nrow(sub_ranef_basic)) {
-      Znames <- paste0("Z_", id, usc(p), "_", sub_ranef_basic$cn)
+      Znames <- paste0(
+        "Z_", sub_ranef_basic$id, usc(p), "_", sub_ranef_basic$cn
+      )
       if (sub_ranef_basic$gtype[1] == "mm") {
         ng <- length(sub_ranef_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)

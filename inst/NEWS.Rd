@@ -52,6 +52,9 @@
       \item Allow truncation in multivariate models.
       \item Force time points to be unique within groups in 
       autocorrelation structures thanks to Ruben Arslan. (#363)
+      \item Fix problems when post-processing multiple
+      uncorrelated group-level terms of the same grouping factor
+      thanks to Ivy Jansen. (#374)
     }
   }
 }
