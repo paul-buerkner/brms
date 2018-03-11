@@ -143,7 +143,6 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$dpar <- dp
     y$dpars[[dp]]$resp <- resp
   }
-  y <- store_uni_me(y)
   # fixed distributional parameters
   valid_dpars <- valid_dpars(y)
   inv_fixed_dpars <- setdiff(names(x$pfix), valid_dpars)

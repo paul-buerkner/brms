@@ -4,12 +4,14 @@ stan_effects <- function(x, ...) {
 }
 
 #' @export
-stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
-                             sparse = FALSE, ilink = rep("", 2), 
-                             order_mixture = 'none',  ...) {
+stan_effects.btl <- function(x, data, prior, ranef, meef, 
+                             center_X = TRUE, sparse = FALSE, 
+                             ilink = rep("", 2), order_mixture = 'none',
+                             ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
+  #   meef: output of tidy_meef() containing information about me terms
   #   sparse: should the population-level design matrix be treated as sparse?
   #   ilink: character vector of lenght 2 defining the link to be applied
   #   order_mixture: indicates how to identify mixture models via ordering
@@ -25,10 +27,10 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
       x, data, prior = prior, center_X = center_X,
       sparse = sparse, order_mixture = order_mixture
     ),
-    text_sp <- stan_sp(x, data, ranef = ranef, prior = prior),
-    text_cs <- stan_cs(x, data, ranef = ranef, prior = prior),
-    text_sm <- stan_sm(x, data, prior = prior),
-    text_gp <- stan_gp(x, data, prior = prior)
+    text_sp <- stan_sp(x, data, prior, meef = meef, ranef = ranef),
+    text_cs <- stan_cs(x, data, prior, ranef = ranef),
+    text_sm <- stan_sm(x, data, prior),
+    text_gp <- stan_gp(x, data, prior)
   )
   p <- usc(combine_prefix(px))
   if (is.formula(x$offset)) {
@@ -79,14 +81,10 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
 }
 
 #' @export
-stan_effects.btnl <- function(x, data, ranef, prior,
-                              ilink = rep("", 2), ...) {
+stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
-  #   ranef: data.frame returned by tidy_ranef
-  #   prior: a brmsprior object
-  #   nlpar: currently unused but should not be part of ...
   #   ilink: character vector of length 2 containing
   #     Stan code for the link function
   #   ...: passed to stan_effects.btl
@@ -98,8 +96,7 @@ stan_effects.btnl <- function(x, data, ranef, prior,
   nlpars <- names(x$nlpars)
   for (nlp in nlpars) {
     nl_text <- stan_effects(
-      x = x$nlpars[[nlp]], data = data, 
-      ranef = ranef, prior = prior, 
+      x = x$nlpars[[nlp]], data = data,
       center_X = FALSE, ...
     )
     out <- collapse_lists(out, nl_text)
@@ -138,9 +135,8 @@ stan_effects.btnl <- function(x, data, ranef, prior,
 }
 
 #' @export
-stan_effects.brmsterms <- function(x, data, ranef, prior, 
-                                   sparse = FALSE, rescor = FALSE, 
-                                   ...) {
+stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE, 
+                                   rescor = FALSE, ...) {
   # Stan code for distributional parameters
   # Args:
   #   rescor: indicate if this is part of an MV model estimating rescor
@@ -148,7 +144,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
   resp <- usc(combine_prefix(px))
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
-  args <- nlist(data, ranef, prior)
+  args <- nlist(data, prior, ...)
   for (dp in valid_dpars) {
     ap_terms <- x$dpars[[dp]]
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
@@ -730,7 +726,7 @@ stan_sm <- function(bterms, data, prior) {
   out
 }
 
-stan_cs <- function(bterms, data, ranef, prior) {
+stan_cs <- function(bterms, data, prior, ranef) {
   # Stan code for category specific effects
   # (!) Not implemented for non-linear models
   out <- list()
@@ -789,7 +785,7 @@ stan_cs <- function(bterms, data, ranef, prior) {
   out
 }
 
-stan_sp <- function(bterms, data, ranef, prior) {
+stan_sp <- function(bterms, data, prior, meef, ranef) {
   # Stan code for special effects
   out <- list()
   spef <- tidy_spef(bterms, data)
@@ -819,9 +815,10 @@ stan_sp <- function(bterms, data, ranef, prior) {
       eta <- rename(eta, spef$call_mo[[i]], new_mo)
     }
     if (!is.null(spef$call_me[[i]])) {
-      Ime <- seq_along(spef$uni_me[[i]])
-      new_me <- paste0("Xme_", Ime, "[n]")
-      eta <- rename(eta, spef$uni_me[[i]], new_me)
+      Ime <- seq_along(meef$term)
+      nme <- ifelse(is.na(meef$byname), "n", paste0("Jme_", Ime, "[n]"))
+      new_me <- paste0("Xme_", Ime, "[", nme,"]")
+      eta <- rename(eta, meef$term, new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]], "[n]")

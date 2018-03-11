@@ -137,13 +137,28 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_group_vars <- function(x) {
+get_group_vars <- function(x, ...) {
   # extract names of grouping variables in the model
-  if (is.brmsfit(x)) {
-    x <- x$ranef
-  }
-  stopifnot(is.data.frame(x))
+  UseMethod("get_group_vars") 
+}
+
+#' @export
+get_group_vars.brmsfit <- function(x, ...) {
+  unique(c(
+    get_group_vars(x$ranef),
+    get_group_vars(x$meef),
+    get_autocor_vars(x, var = "group")
+  ))
+}
+
+#' @export
+get_group_vars.ranef_frame <- function(x, ...) {
   unique(ulapply(x$gcall, "[[", "groups"))
+}
+
+#' @export
+get_group_vars.meef_frame <- function(x, ...) {
+  unique(x$by[[!is.na(x$by)]])
 }
 
 get_cat_vars <- function(x) {
@@ -152,7 +167,6 @@ get_cat_vars <- function(x) {
   like_factor <- sapply(model.frame(x), is_like_factor)
   valid_groups <- c(
     names(model.frame(x))[like_factor],
-    get_autocor_vars(x, var = "group"),
     get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])

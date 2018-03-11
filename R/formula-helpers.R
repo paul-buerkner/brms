@@ -310,8 +310,8 @@ me <- function(x, sdx = NULL, by = NULL) {
   }
   out <- rep(1, length(x))
   structure(out, 
-    var = x, noise = sdx, xname = xname, 
-    by = by, byname = byname
+    var = x, sdx = sdx, by = by, 
+    xname = xname, byname = byname
   )
 }
 

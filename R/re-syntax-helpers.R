@@ -453,7 +453,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
       attr(ranef, "levels") <- old_levels
     }
   }
-  ranef
+  structure(ranef, class = c("ranef_frame", "data.frame"))
 }
 
 empty_ranef <- function() {

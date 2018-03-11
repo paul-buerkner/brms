@@ -14,9 +14,9 @@ data_effects.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 }
 
 #' @export
-data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
-                                   knots = NULL, not4stan = FALSE, 
-                                   old_sdata = NULL) {
+data_effects.brmsterms <- function(x, data, prior, ranef, meef,
+                                   cov_ranef = NULL, knots = NULL, 
+                                   not4stan = FALSE, old_sdata = NULL) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
@@ -30,7 +30,7 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
-    data_Xme(x, data),
+    data_Xme(meef, data),
     data_mixture(x, prior = prior)
   )
 }
@@ -380,22 +380,26 @@ data_cs <- function(bterms, data) {
   out
 }
 
-data_Xme <- function(bterms, data) {
+data_Xme <- function(meef, data) {
   # prepare global data for noise free variables
-  stopifnot(is.brmsterms(bterms))
+  stopifnot(is.meframe(meef))
   out <- list()
-  uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    Xn <- noise <- named_list(uni_me)
-    for (i in seq_along(uni_me)) {
-      temp <- eval2(uni_me[i], data)
-      Xn[[i]] <- as.array(attr(temp, "var"))
-      noise[[i]] <- as.array(attr(temp, "noise"))
+  for (i in seq_along(meef$term)) {
+    att <- attributes(eval2(meef$term[i], data))
+    Xn <- as.array(att$var)
+    noise <- as.array(att$sdx)
+    if (isTRUE(nzchar(att$byname))) {
+      levels <- attr(meef, "levels")[[att$byname]]
+      Jme <- match(att$by, levels)
+      out[[paste0("Nme_", i)]] <- length(unique(Jme))
+      out[[paste0("Jme_", i)]] <- Jme
+      # TODO: validate values of the same level
+      not_dupl_Jme <- !duplicated(Jme)
+      Xn <- Xn[not_dupl_Jme]
+      noise <- noise[not_dupl_Jme]
     }
-    K <- seq_along(uni_me)
-    names(Xn) <- paste0("Xn_", K)
-    names(noise) <- paste0("noise_", K)
-    out <- c(out, Xn, noise)
+    out[[paste0("Xn_", i)]] <- Xn
+    out[[paste0("noise_", i)]] <- noise
   }
   out
 }
