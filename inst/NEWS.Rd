@@ -55,6 +55,9 @@
       \item Fix problems when post-processing multiple
       uncorrelated group-level terms of the same grouping factor
       thanks to Ivy Jansen. (#374)
+      \item Fix a problem in the Stan code of multivariate
+      \code{weibull} and \code{frechet} models thanks to 
+      the GitHub user philj1s. (#375)
     }
   }
 }

@@ -154,7 +154,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
       ilink <- stan_eta_ilink(
         ap_terms$family, dpars = names(x$dpars), 
-        adforms = x$adforms, mix = dpar_id(dp)
+        adforms = x$adforms, resp = resp, mix = dpar_id(dp)
       )
       eta <- ifelse(dp == "mu", "mu", "")
       ap_args <- list(
@@ -1067,8 +1067,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, dpars = NULL, 
-                           adforms = NULL, mix = "") {
+stan_eta_ilink <- function(family, dpars = NULL, adforms = NULL, 
+                           resp = "", mix = "") {
   # correctly apply inverse link to eta
   # Args:
   #   family: a list with elements 'family' and 'link
@@ -1076,19 +1076,18 @@ stan_eta_ilink <- function(family, dpars = NULL,
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
+  out <- rep("", 2)
   if (stan_eta_transform(family, llh_adj = llh_adj)) {
-    link <- family$link
-    family <- family$family
-    shape <- paste0("shape", mix)
+    shape <- paste0("shape", mix, resp)
     shape <- ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
-    nu <- paste0("nu", mix)
+    nu <- paste0("nu", mix, resp)
     nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
-    fl <- ifelse(
-      family %in% c("gamma", "hurdle_gamma", "exponential"), 
-      paste0(family, "_", link), family
+    family_link <- ifelse(
+      family$family %in% c("gamma", "hurdle_gamma", "exponential"),
+      paste0(family$family, "_", family$link), family$family
     )
-    ilink <- stan_ilink(link)
-    out <- switch(fl,
+    ilink <- stan_ilink(family$link)
+    out <- switch(family_link,
       c(paste0(ilink, "("), ")"),
       gamma_log = c(paste0(shape, " * exp(-("), "))"),
       gamma_inverse = c(paste0(shape, " * ("), ")"),
@@ -1102,8 +1101,6 @@ stan_eta_ilink <- function(family, dpars = NULL,
       weibull = c(paste0(ilink, "("), paste0(") / tgamma(1 + 1 / ", shape, ")")),
       frechet = c(paste0(ilink, "("), paste0(") / tgamma(1 - 1 / ", nu, ")"))
     )
-  } else {
-    out <- rep("", 2)
   }
   out
 }
