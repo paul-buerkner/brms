@@ -280,7 +280,7 @@ t2 <- function(...) {
 #' } 
 #' 
 #' @export
-me <- function(x, sdx = NULL) {
+me <- function(x, sdx = NULL, by = NULL) {
   xname <- deparse(substitute(x))
   x <- as.vector(x)
   sdx <- as.vector(sdx)
@@ -298,8 +298,21 @@ me <- function(x, sdx = NULL) {
   if (isTRUE(any(sdx <= 0))) {
     stop2("Measurement error should be positive.")
   }
+  byname <- substitute(by)
+  if (!is.null(byname)) {
+    byname <- all.vars(byname)
+    if (length(byname) != 1L) {
+      stop2("Argument 'by' must contain exactly one variable.")
+    }
+    by <- as.vector(by)
+  } else {
+    byname <- ""
+  }
   out <- rep(1, length(x))
-  structure(out, var = x, noise = sdx, xname = xname)
+  structure(out, 
+    var = x, noise = sdx, xname = xname, 
+    by = by, byname = byname
+  )
 }
 
 #' Predictors with Missing Values in \pkg{brms} Models

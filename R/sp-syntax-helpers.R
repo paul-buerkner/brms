@@ -175,7 +175,9 @@ tidy_spef <- function(x, data) {
       # remove 'I' (identity) function calls that 
       # were used solely to separate formula terms
       out$call_me[[i]] <- gsub("^I\\(", "(", out$call_me[[i]])
+      # TODO: store as attribute?
       out$uni_me[[i]] <- attr(form, "uni_me")
+      # TODO: store by vars
     }
     # prepare mi terms 
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])

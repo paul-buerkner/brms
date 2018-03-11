@@ -819,7 +819,8 @@ stan_sp <- function(bterms, data, ranef, prior) {
       eta <- rename(eta, spef$call_mo[[i]], new_mo)
     }
     if (!is.null(spef$call_me[[i]])) {
-      new_me <- paste0("Xme_", seq_along(spef$uni_me[[i]]), "[n]")
+      Ime <- seq_along(spef$uni_me[[i]])
+      new_me <- paste0("Xme_", Ime, "[n]")
       eta <- rename(eta, spef$uni_me[[i]], new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {

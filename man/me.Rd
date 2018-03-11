@@ -4,7 +4,7 @@
 \alias{me}
 \title{Predictors with Measurement Error in \pkg{brms} Models}
 \usage{
-me(x, sdx = NULL)
+me(x, sdx = NULL, by = NULL)
 }
 \arguments{
 \item{x}{The variable measured with error.}
