@@ -4,13 +4,18 @@
 \alias{me}
 \title{Predictors with Measurement Error in \pkg{brms} Models}
 \usage{
-me(x, sdx = NULL, by = NULL)
+me(x, sdx = NULL, gr = NULL)
 }
 \arguments{
 \item{x}{The variable measured with error.}
 
 \item{sdx}{Known measurement error of \code{x}
 treated as standard deviation.}
+
+\item{gr}{Optional grouping factor to specify which
+values of \code{x} correspond to the same value of the
+latent variable. If \code{NULL} (the default) each
+observation will have its own value of the latent variable.}
 }
 \description{
 Predictors with Measurement Error in \pkg{brms} Models

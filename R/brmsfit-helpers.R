@@ -137,30 +137,6 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_group_vars <- function(x, ...) {
-  # extract names of grouping variables in the model
-  UseMethod("get_group_vars") 
-}
-
-#' @export
-get_group_vars.brmsfit <- function(x, ...) {
-  unique(c(
-    get_group_vars(x$ranef),
-    get_group_vars(x$meef),
-    get_autocor_vars(x, var = "group")
-  ))
-}
-
-#' @export
-get_group_vars.ranef_frame <- function(x, ...) {
-  unique(ulapply(x$gcall, "[[", "groups"))
-}
-
-#' @export
-get_group_vars.meef_frame <- function(x, ...) {
-  unique(x$by[[!is.na(x$by)]])
-}
-
 get_cat_vars <- function(x) {
   # extract names of categorical variables in the model
   stopifnot(is.brmsfit(x))
@@ -170,6 +146,26 @@ get_cat_vars <- function(x) {
     get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])
+}
+
+get_levels <- function(...) {
+  # extract list of levels with one element per grouping factor
+  # Args:
+  #   ...: object with a level attribute
+  dots <- list(...)
+  out <- vector("list", length(dots))
+  for (i in seq_along(out)) {
+    levels <- attr(dots[[i]], "levels", exact = TRUE)
+    if (is.list(levels)) {
+      stopifnot(!is.null(names(levels)))
+      out[[i]] <- as.list(levels)
+    } else if (!is.null(levels)) {
+      stopifnot(isTRUE(nzchar(names(dots)[i])))
+      out[[i]] <- setNames(list(levels), names(dots)[[i]])
+    }
+  }
+  out <- unlist(out, recursive = FALSE)
+  out[!duplicated(names(out))]
 }
 
 get_estimate <- function(coef, samples, margin = 2, ...) {

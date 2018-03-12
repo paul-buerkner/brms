@@ -79,7 +79,7 @@ make_standata <- function(formula, data, family = gaussian(),
       bterms, data, old_levels = control$old_levels,
       old_sdata = control$old_sdata  
     )
-    meef <- tidy_meef(bterms, data)
+    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     args_eff <- nlist(
       x = bterms, data, prior, ranef, meef, cov_ranef, 
       knots, not4stan, old_sdata = control$old_sdata

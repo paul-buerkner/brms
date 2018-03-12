@@ -55,15 +55,15 @@ restructure_v2 <- function(x) {
       stop_parameterization_changed("weibull", "2.1.3")
     }
   }
-  if (version <= "2.1.6") {
-    # added 'by' variables to grouping terms
-    bterms <- parse_bf(formula(x))
-    x$ranef <- tidy_ranef(bterms, model.frame(x))
-  }
   if (version <= "2.1.7") {
     if ("exgaussian" %in% family_names(x)) {
       stop_parameterization_changed("exgaussian", "2.1.8")
     }
+  }
+  if (version <= "2.1.8") {
+    # added 'by' variables to grouping terms
+    bterms <- parse_bf(formula(x))
+    x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
   x
 }

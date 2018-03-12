@@ -337,10 +337,12 @@ validate_newdata <- function(
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
-  old_levels <- c(attr(new_ranef, "levels"), attr(new_meef, "levels"))
-  old_levels <- old_levels[!duplicated(names(old_levels))]
+  old_levels <- get_levels(new_ranef, new_meef)
   if (!allow_new_levels) {
-    new_levels <- attr(tidy_ranef(bterms, data = newdata), "levels")
+    new_levels <- get_levels(
+      tidy_ranef(bterms, data = newdata),
+      tidy_meef(bterms, data = newdata)
+    )
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
       if (length(unknown_levels)) {

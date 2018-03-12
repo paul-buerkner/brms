@@ -12,6 +12,7 @@ illegal_group_expr <- function(group) {
 }
 
 get_groups <- function(x) {
+  # TODO: merge with get_group_vars
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
     x <- parse_bf(x)
   }
@@ -457,11 +458,48 @@ tidy_ranef <- function(bterms, data, all = TRUE,
 }
 
 empty_ranef <- function() {
-  data.frame(
-    id = numeric(0), group = character(0), gn = numeric(0),
-    coef = character(0), cn = numeric(0), resp = character(0),
-    dpar = character(0), nlpar = character(0), cor = logical(0), 
-    type = character(0), form = character(0), 
-    stringsAsFactors = FALSE
+  structure(
+    data.frame(
+      id = numeric(0), group = character(0), gn = numeric(0),
+      coef = character(0), cn = numeric(0), resp = character(0),
+      dpar = character(0), nlpar = character(0), cor = logical(0), 
+      type = character(0), form = character(0), 
+      stringsAsFactors = FALSE
+    ),
+    class = c("ranef_frame", "data.frame")
   )
+}
+
+is.ranef_frame <- function(x) {
+  inherits(x, "ranef_frame")
+}
+
+get_group_vars <- function(x, ...) {
+  # extract names of grouping variables
+  UseMethod("get_group_vars") 
+}
+
+#' @export
+get_group_vars.brmsfit <- function(x, ...) {
+  bterms <- parse_bf(x$formula)
+  unique(c(
+    get_group_vars(x$ranef),
+    get_group_vars(tidy_meef(bterms, x$data)),
+    get_autocor_vars(x, var = "group")
+  ))
+}
+
+#' @export
+get_group_vars.ranef_frame <- function(x, ...) {
+  unique(ulapply(x$gcall, "[[", "groups"))
+}
+
+#' @export
+get_group_vars.meef_frame <- function(x, ...) {
+  if (nrow(x)) {
+    out <- unique(x$grname[!is.na(x$grname)])
+  } else {
+    out <- NULL
+  }
+  out
 }

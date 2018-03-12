@@ -261,6 +261,10 @@ t2 <- function(...) {
 #' @param x The variable measured with error.
 #' @param sdx Known measurement error of \code{x}
 #'   treated as standard deviation.
+#' @param gr Optional grouping factor to specify which
+#'   values of \code{x} correspond to the same value of the
+#'   latent variable. If \code{NULL} (the default) each
+#'   observation will have its own value of the latent variable.
 #' 
 #' @details For detailed documentation see \code{help(brmsformula)}. 
 #' 
@@ -280,7 +284,7 @@ t2 <- function(...) {
 #' } 
 #' 
 #' @export
-me <- function(x, sdx = NULL, by = NULL) {
+me <- function(x, sdx = NULL, gr = NULL) {
   xname <- deparse(substitute(x))
   x <- as.vector(x)
   sdx <- as.vector(sdx)
@@ -298,20 +302,20 @@ me <- function(x, sdx = NULL, by = NULL) {
   if (isTRUE(any(sdx <= 0))) {
     stop2("Measurement error should be positive.")
   }
-  byname <- substitute(by)
-  if (!is.null(byname)) {
-    byname <- all.vars(byname)
-    if (length(byname) != 1L) {
-      stop2("Argument 'by' must contain exactly one variable.")
+  grname <- substitute(gr)
+  if (!is.null(grname)) {
+    grname <- all.vars(grname)
+    if (length(grname) != 1L) {
+      stop2("Argument 'gr' must contain exactly one variable.")
     }
-    by <- as.vector(by)
+    gr <- as.vector(gr)
   } else {
-    byname <- ""
+    grname <- ""
   }
   out <- rep(1, length(x))
   structure(out, 
-    var = x, sdx = sdx, by = by, 
-    xname = xname, byname = byname
+    var = x, sdx = sdx, gr = gr, 
+    xname = xname, grname = grname
   )
 }
 

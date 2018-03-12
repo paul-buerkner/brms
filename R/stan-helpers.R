@@ -724,24 +724,24 @@ stan_Xme <- function(meef, prior) {
   # global Stan definitions for noise-free variables
   # Args:
   #   meef: tidy data.frame as returned by tidy_meef()
-  stopifnot(is.meframe(meef))
+  stopifnot(is.meef_frame(meef))
   if (!nrow(meef)) {
     return(list())
   }
   out <- list()
-  mecoefs <- rename(meef$term) 
+  uni_me <- rename(meef$term) 
   str_add(out$data) <- "  // data for noise-free variables\n"
   str_add(out$par) <- "  // parameters for noise free variables\n"
   for (k in seq_len(nrow(meef))) {
     uk <- usc(k)
-    has_by <- !is.na(meef$byname[k])
-    if (has_by) {
+    has_gr <- !is.na(meef$grname[k])
+    if (has_gr) {
       str_add(out$data) <- paste0(
         "  int<lower=0> Nme", uk, ";\n",
         "  int<lower=1> Jme", uk, "[N];\n"
       )
     }
-    Nme <- ifelse(has_by, paste0("Nme", uk), "N")
+    Nme <- ifelse(has_gr, paste0("Nme", uk), "N")
     str_add(out$data) <- paste0(
       "  vector[", Nme, "] Xn", uk, ";\n",
       "  vector<lower=0>[", Nme, "] noise", uk, ";\n"
@@ -756,10 +756,10 @@ stan_Xme <- function(meef, prior) {
       "meanme", uk, " + sdme", uk, " * zme", uk, ";\n"
     )
     str_add(out$prior) <- stan_prior(
-      prior, class = "meanme", coef = mecoefs[k], suffix = uk
+      prior, class = "meanme", coef = uni_me[k], suffix = uk
     )
     str_add(out$prior) <- stan_prior(
-      prior, class = "sdme", coef = mecoefs[k], suffix = uk
+      prior, class = "sdme", coef = uni_me[k], suffix = uk
     )
     str_add(out$prior) <- paste0(
       "  target += normal_lpdf(Xn", uk, " | Xme", uk, ", noise", uk, ");\n",

@@ -382,15 +382,15 @@ data_cs <- function(bterms, data) {
 
 data_Xme <- function(meef, data) {
   # prepare global data for noise free variables
-  stopifnot(is.meframe(meef))
+  stopifnot(is.meef_frame(meef))
   out <- list()
   for (i in seq_along(meef$term)) {
     att <- attributes(eval2(meef$term[i], data))
     Xn <- as.array(att$var)
     noise <- as.array(att$sdx)
-    if (isTRUE(nzchar(att$byname))) {
-      levels <- attr(meef, "levels")[[att$byname]]
-      Jme <- match(att$by, levels)
+    if (isTRUE(nzchar(att$grname))) {
+      levels <- attr(meef, "levels")[[att$grname]]
+      Jme <- match(att$gr, levels)
       out[[paste0("Nme_", i)]] <- length(unique(Jme))
       out[[paste0("Jme_", i)]] <- Jme
       # TODO: validate values of the same level

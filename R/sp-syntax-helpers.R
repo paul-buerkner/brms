@@ -71,25 +71,28 @@ get_uni_me <- function(x) {
   unique(uni_me)
 }
 
-tidy_meef <- function(bterms, data) {
+tidy_meef <- function(bterms, data, old_levels = NULL) {
   # save all me-terms within a tidy data.frame
-  # TODO: handle new and od levels
   uni_me <- get_uni_me(bterms)
   if (length(uni_me)) {
     out <- data.frame(
-      term = uni_me, xname = NA, byname = NA, 
+      term = uni_me, xname = NA, grname = NA, 
       stringsAsFactors = FALSE
     )
     levels <- list("vector", nrow(out))
     for (i in seq_len(nrow(out))) {
       att <- attributes(eval2(out$term[i], data))
       out$xname[i] <- att$xname
-      if (isTRUE(nzchar(att$byname))) {
-        out$byname[i] <- att$byname
+      if (isTRUE(nzchar(att$grname))) {
+        out$grname[i] <- att$grname
       }
-      levels[[i]] <- unique(att$by)
+      if (is.null(old_levels)) {
+        levels[[i]] <- as.character(unique(att$gr)) 
+      } else {
+        levels[[i]] <- old_levels[[att$grname]]
+      }
     }
-    names(levels) <- out$byname
+    names(levels) <- out$grname
     levels <- levels[!is.na(names(levels))]
     if (length(levels)) {
       levels <- levels[!duplicated(names(levels))]
@@ -98,7 +101,7 @@ tidy_meef <- function(bterms, data) {
   } else {
     out <- data.frame(
       terms = character(0), xname = character(0),
-      byname = character(0), stringsAsFactors = FALSE
+      grname = character(0), stringsAsFactors = FALSE
     )
   }
   structure(out, class = c("meef_frame", "data.frame"))
@@ -107,58 +110,6 @@ tidy_meef <- function(bterms, data) {
 is.meef_frame <- function(x) {
   inherits(x, "meef_frame")
 }
-
-#' store_uni_me <- function(x, ...) {
-#'   # store unique names of noise-free terms in all 'me' elements
-#'   UseMethod("store_uni_me")
-#' }
-#' 
-#' #' @export
-#' store_uni_me.mvbrmsterms <- function(x, uni_me = NULL, ...) {
-#'   if (is.null(uni_me)) {
-#'     uni_me <- get_uni_me(x)
-#'   }
-#'   for (i in seq_along(x$terms)) {
-#'     x$terms[[i]] <- store_uni_me(x$terms[[i]], uni_me = uni_me, ...)
-#'   }
-#'   x
-#' }
-#' 
-#' #' @export
-#' store_uni_me.brmsterms <- function(x, uni_me = NULL, ...) {
-#'   if (is.null(uni_me)) {
-#'     uni_me <- get_uni_me(x)
-#'   }
-#'   if (!length(uni_me)) {
-#'     return(x)
-#'   }
-#'   for (i in seq_along(x$dpars)) {
-#'     x$dpars[[i]] <- store_uni_me(x$dpars[[i]], uni_me = uni_me, ...)
-#'   }
-#'   x
-#' }
-#' 
-#' #' @export
-#' store_uni_me.btnl <- function(x, uni_me = NULL, ...) {
-#'   if (is.null(uni_me)) {
-#'     uni_me <- get_uni_me(x)
-#'   }
-#'   for (i in seq_along(x$nlpars)) {
-#'     x$nlpars[[i]] <- store_uni_me(x$nlpars[[i]], uni_me = uni_me, ...)
-#'   }
-#'   x
-#' }
-#' 
-#' #' @export
-#' store_uni_me.btl <- function(x, uni_me = NULL, ...) {
-#'   if (is.null(uni_me)) {
-#'     uni_me <- get_uni_me(x)
-#'   }
-#'   if (length(uni_me)) {
-#'     attr(x[["sp"]], "uni_me") <- uni_me
-#'   }
-#'   x
-#' }
 
 get_sp_vars <- function(x, type) {
   # find names of all variables used in a special effects type

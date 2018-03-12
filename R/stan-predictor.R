@@ -816,7 +816,7 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
     }
     if (!is.null(spef$call_me[[i]])) {
       Ime <- seq_along(meef$term)
-      nme <- ifelse(is.na(meef$byname), "n", paste0("Jme_", Ime, "[n]"))
+      nme <- ifelse(is.na(meef$grname), "n", paste0("Jme_", Ime, "[n]"))
       new_me <- paste0("Xme_", Ime, "[", nme,"]")
       eta <- rename(eta, meef$term, new_me)
     }

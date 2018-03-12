@@ -33,10 +33,11 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
+  meef <- tidy_meef(bterms, x$data)
   args <- nlist(
     x = bterms, samples, sdata, data = x$data,
-    ranef, old_ranef = x$ranef, sample_new_levels,
-    resp, nug, smooths_only, new
+    ranef, old_ranef = x$ranef, meef, resp,
+    sample_new_levels, nug, smooths_only, new
   )
   if (new) {
     # extract_draws_re() also requires the new level names
@@ -210,8 +211,11 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   draws
 }
 
-extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
+extract_draws_sp <- function(bterms, samples, sdata, data, 
+                             meef, new = FALSE, ...) {
   # extract draws of special effects terms
+  # Args:
+  #   meef: output of tidy_meef()
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   draws <- list()
@@ -231,8 +235,8 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
       call <- rename(call, spef$call_mo[[i]], new_mo)
     }
     if (!is.null(spef$call_me[[i]])) {
-      new_me <- paste0("Xme_", seq_along(spef$uni_me[[i]]))
-      call <- rename(call, spef$uni_me[[i]], new_me)
+      new_me <- paste0("Xme_", seq_along(meef$term))
+      call <- rename(call, meef$term, new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]])
@@ -258,8 +262,9 @@ extract_draws_sp <- function(bterms, samples, sdata, data, new = FALSE, ...) {
   # prepare draws specific to noise-free effects
   warn_me <- FALSE
   dim <- c(nrow(draws$bsp), sdata$N)
-  uni_me <- rename(unique(unlist(spef$uni_me)))
+  uni_me <- rename(meef$term)
   if (length(uni_me)) {
+    # TODO: handle 'gr' variables
     draws$Xme <- named_list(uni_me)
     save_mevars <- any(grepl("^Xme_", colnames(samples)))
     if (save_mevars && !new) {
