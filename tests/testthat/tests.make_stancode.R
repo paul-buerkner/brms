@@ -463,6 +463,10 @@ test_that("Stan code for multivariate models is correct", {
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "binomial_logit_lpmf(Y_x | trials_x, mu_x)")
   expect_match2(scode, "binomial_logit_lpmf(Y_g | trials_g, mu_g)")
+  
+  bform <- bform + weibull()
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "mu_g[n] = exp(mu_g[n]) / tgamma(1 + 1 / shape_g)")
 })
 
 test_that("Stan code for categorical models is correct", {

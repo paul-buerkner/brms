@@ -974,7 +974,7 @@ launch_shinystan.brmsfit <- function(
 #' @param combo A character vector with at least two elements. 
 #'   Each element of \code{combo} corresponds to a column in the resulting 
 #'   graphic and should be the name of one of the available 
-#'   \code{link[bayesplot:MCMC-overview]{MCMC}} functions 
+#'   \code{\link[bayesplot:MCMC-overview]{MCMC}} functions 
 #'   (omitting the \code{mcmc_} prefix).
 #' @param N The number of parameters plotted per page.
 #' @param theme A \code{\link[ggplot2:theme]{theme}} object 
