@@ -264,22 +264,62 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   dim <- c(nrow(draws$bsp), sdata$N)
   uni_me <- rename(meef$term)
   if (length(uni_me)) {
-    # TODO: handle 'gr' variables
-    draws$Xme <- named_list(uni_me)
     save_mevars <- any(grepl("^Xme_", colnames(samples)))
-    if (save_mevars && !new) {
-      for (i in seq_along(draws$Xme)) {
+    warn_me <- warn_me || !new && !save_mevars
+    draws$Xme <- named_list(uni_me)
+    for (i in seq_along(draws$Xme)) {
+      old_levels <- attr(meef, "levels")[[meef$grname[i]]]
+      n_old_levels <- length(old_levels)
+      Jme <- sdata[[paste0("Jme_", i)]]
+      Xn <- sdata[[paste0("Xn_", i)]]
+      noise <- sdata[[paste0("noise_", i)]]
+      if (save_mevars) {
         Xme_pars <- paste0("Xme_", uni_me[i], "\\[")
-        draws$Xme[[i]] <- get_samples(samples, Xme_pars)
+        Xme_old <- get_samples(samples, Xme_pars)
       }
-    } else {
-      warn_me <- warn_me || !new
-      for (i in seq_along(draws$Xme)) {
-        Xn <- sdata[[paste0("Xn_", i)]]
-        Xn <- as_draws_matrix(Xn, dim = dim)
-        noise <- sdata[[paste0("noise_", i)]]
-        noise <- as_draws_matrix(noise, dim = dim)
-        draws$Xme[[i]] <- array(rnorm(prod(dim), Xn, noise), dim)
+      if (is.null(Jme)) {
+        # the term has no grouping factor
+        me_dim <- c(nrow(draws$bsp), sdata$N)
+        if (!new && save_mevars) {
+          # take stored values of old levels
+          draws$Xme[[i]] <- Xme_old
+        } else {
+          # sample values for new observations
+          Xn <- as_draws_matrix(Xn, dim = me_dim)
+          noise <- as_draws_matrix(noise, dim = me_dim)
+          draws$Xme[[i]] <- array(rnorm(prod(me_dim), Xn, noise), me_dim) 
+        }
+      } else {
+        # the term has a grouping factor
+        me_dim <- c(nrow(draws$bsp), max(Jme))
+        draws$Xme[[i]] <- array(dim = me_dim)
+        if (any(Jme <= n_old_levels)) {
+          if (save_mevars) {
+            # take stored values of old levels
+            draws$Xme[[i]][, seq_len(n_old_levels)] <- Xme_old
+          } else {
+            # sample values for old levels
+            warn_me <- TRUE
+            uni_old_Jme <- unique(Jme[Jme <= n_old_levels])
+            take <- seq_along(uni_old_Jme)
+            Xn_dim <- c(nrow(draws$bsp), length(take))
+            Xn_new <- as_draws_matrix(Xn[take], dim = Xn_dim)
+            noise_new <- as_draws_matrix(noise[take], dim = Xn_dim)
+            draws$Xme[[i]][, uni_old_Jme] <-
+              array(rnorm(prod(Xn_dim), Xn_new, noise_new), Xn_dim) 
+          }
+        }
+        if (me_dim[2] > n_old_levels) {
+          # sample values for new levels
+          n_new_levels <- me_dim[2] - n_old_levels
+          take <- (length(Xn) - n_new_levels + 1):length(Xn)
+          Xn_dim <- c(nrow(draws$bsp), length(take))
+          Xn_new <- as_draws_matrix(Xn[take], dim = Xn_dim)
+          noise_new <- as_draws_matrix(noise[take], dim = Xn_dim)
+          draws$Xme[[i]][, (n_old_levels + 1):me_dim[2]] <-
+            array(rnorm(prod(Xn_dim), Xn_new, noise_new), Xn_dim) 
+        }
+        draws$Xme[[i]] <- draws$Xme[[i]][, Jme]
       }
     }
   }

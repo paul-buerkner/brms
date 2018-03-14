@@ -530,10 +530,7 @@ parse_time <- function(autocor) {
     out$time <- time_vars
   }
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
-  if (illegal_group_expr(group)) {
-    stop2("Illegal grouping term: ", group, "\nIt may contain only ", 
-          "variable names combined by the symbol ':'")
-  }
+  stopif_illegal_group(group)
   group <- formula(paste("~", ifelse(nchar(group), group, "1")))
   group_vars <- all.vars(group)
   if (length(group_vars)) {

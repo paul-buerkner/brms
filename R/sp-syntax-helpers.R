@@ -87,7 +87,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
         out$grname[i] <- att$grname
       }
       if (is.null(old_levels)) {
-        levels[[i]] <- as.character(unique(att$gr)) 
+        levels[[i]] <- levels(factor(att$gr))
       } else {
         levels[[i]] <- old_levels[[att$grname]]
       }

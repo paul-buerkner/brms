@@ -910,13 +910,16 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     }
     object <- add_new_objects(object, newdata, new_objects)
     control$new <- TRUE
-    control$old_levels <- attr(object$ranef, "levels")
     # ensure correct handling of functions like poly or scale
     bterms <- parse_bf(new_formula)
     old_terms <- attr(object$data, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
     control$old_sdata <- extract_old_standata(bterms, object$data)
+    control$old_levels <- get_levels(
+      tidy_ranef(bterms, object$data),
+      tidy_meef(bterms, object$data)
+    )
   }
   sample_prior <- attr(object$prior, "sample_prior")
   sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)

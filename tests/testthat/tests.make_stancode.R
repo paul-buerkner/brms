@@ -971,6 +971,11 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
+  
+  # noise-free terms with grouping factors
+  scode <- make_stancode(y ~ me(x, xsd, ID) + (me(x, xsd, ID) | ID), dat)
+  expect_match2(scode, "vector[Nme_1] Xme_1 = meanme_1 + sdme_1 * zme_1;")
+  expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * Xme_1[Jme_1[n]]")
 })
 
 test_that("Stan code of multi-membership models is correct", {

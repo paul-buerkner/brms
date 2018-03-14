@@ -304,10 +304,8 @@ me <- function(x, sdx = NULL, gr = NULL) {
   }
   grname <- substitute(gr)
   if (!is.null(grname)) {
-    grname <- all.vars(grname)
-    if (length(grname) != 1L) {
-      stop2("Argument 'gr' must contain exactly one variable.")
-    }
+    grname <- deparse_combine(grname, max_char = NULL)
+    stopif_illegal_group(grname)
     gr <- as.vector(gr)
   } else {
     grname <- ""
@@ -607,10 +605,7 @@ gr <- function(..., by = NULL) {
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
   }
-  if (illegal_group_expr(groups[1])) {
-    stop2("Illegal grouping term: ", groups[1], "\nIt may contain ",
-          "only variable names combined by the symbol ':'")
-  }
+  stopif_illegal_group(groups[1])
   by <- substitute(by)
   if (!is.null(by)) {
     by <- all.vars(by)
@@ -673,10 +668,7 @@ mm <- function(..., weights = NULL, scale = TRUE) {
     stop2("Multi-membership terms require at least two grouping variables.")
   }
   for (i in seq_along(groups)) {
-    if (illegal_group_expr(groups[i])) {
-      stop2("Illegal grouping term: ", groups[i], "\nIt may contain ",
-            "only variable names combined by the symbol ':'")
-    }
+    stopif_illegal_group(groups[i])
   }
   scale <- as_one_logical(scale)
   weights <- substitute(weights)

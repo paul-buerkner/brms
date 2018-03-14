@@ -11,6 +11,16 @@ illegal_group_expr <- function(group) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
+stopif_illegal_group <- function(group) {
+  if (illegal_group_expr(group)) {
+    stop2(
+      "Illegal grouping term '", group, "'. It may contain ",
+      "only variable names combined by the symbol ':'"
+    )
+  }
+  invisible(NULL)
+}
+
 get_groups <- function(x) {
   # TODO: merge with get_group_vars
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
@@ -311,9 +321,11 @@ tidy_ranef <- function(bterms, data, all = TRUE,
   #     gn: number of the grouping term within the respective formula
   #     coef: name of the group-level effect
   #     cn: number of the effect within the ID
-  #     nlpar: name of the corresponding non-linear parameter
+  #     resp: name of the response variable
+  #     dpar: name of the distributional parameter
+  #     nlpar: name of the non-linear parameter
   #     cor: are correlations modeled for this effect?
-  #     type: special effects type; can be "sp" or "cs"
+  #     type: special effects type; can be 'sp' or 'cs'
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
   data <- combine_groups(data, get_groups(bterms))

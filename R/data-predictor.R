@@ -391,15 +391,34 @@ data_Xme <- function(meef, data) {
     if (isTRUE(nzchar(att$grname))) {
       levels <- attr(meef, "levels")[[att$grname]]
       Jme <- match(att$gr, levels)
-      out[[paste0("Nme_", i)]] <- length(unique(Jme))
+      if (anyNA(Jme)) {
+        # occurs for new levels only
+        new_gr <- att$gr[!att$gr %in% levels]
+        new_levels <- unique(new_gr)
+        Jme[is.na(Jme)] <- match(new_gr, new_levels) + length(levels)
+      }
+      ilevels <- unique(Jme)
+      out[[paste0("Nme_", i)]] <- length(ilevels)
       out[[paste0("Jme_", i)]] <- Jme
-      # TODO: validate values of the same level
+      for (l in ilevels) {
+        # validate values of the same level
+        take <- Jme %in% l
+        if (length(unique(Xn[take])) > 1L ||
+            length(unique(noise[take])) > 1L ) {
+          stop2(
+            "Measured values and measurement error should be ", 
+            "unique for each group. Occured for level '", 
+            levels[l], "' of group '", att$grname, "'."
+          )
+        }
+      }
       not_dupl_Jme <- !duplicated(Jme)
-      Xn <- Xn[not_dupl_Jme]
-      noise <- noise[not_dupl_Jme]
+      to_order <- order(Jme[not_dupl_Jme])
+      Xn <- Xn[not_dupl_Jme][to_order]
+      noise <- noise[not_dupl_Jme][to_order]
     }
-    out[[paste0("Xn_", i)]] <- Xn
-    out[[paste0("noise_", i)]] <- noise
+    out[[paste0("Xn_", i)]] <- as.array(Xn)
+    out[[paste0("noise_", i)]] <- as.array(noise)
   }
   out
 }
