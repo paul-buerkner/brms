@@ -49,7 +49,8 @@
       \item Fix problems in \code{predict} when applied to
       categorical models thanks to Lydia Andreyevna Krasilnikova
       and Thomas Vladeck. (#336, #345)
-      \item Allow truncation in multivariate models.
+      \item Allow truncation in multivariate models with
+      missing values thanks to Malte Lau Petersen. (#380)
       \item Force time points to be unique within groups in 
       autocorrelation structures thanks to Ruben Arslan. (#363)
       \item Fix problems when post-processing multiple

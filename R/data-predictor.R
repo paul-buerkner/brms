@@ -798,7 +798,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       stop2("Invalid truncation bounds.")
     }
     inv_bounds <- out$Y < out$lb | out$Y > out$ub
-    if (check_response && any(inv_bounds)) {
+    if (check_response && isTRUE(any(inv_bounds))) {
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
