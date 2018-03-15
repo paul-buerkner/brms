@@ -691,17 +691,15 @@ prior_Xme <- function(meef, internal = FALSE) {
       K <- which(meef$grname %in% g)
       if (meef$cor[K[1]] && length(K) > 1L) {
         if (internal) {
-          prior <- prior +
-            brmsprior(
-              class = "Lme", group = c("", g),
-              prior = c("lkj_corr_cholesky(1)", "")
-            )
+          prior <- prior + brmsprior("lkj_corr_cholesky(1)", class = "Lme")
+          if (nzchar(g)) {
+            prior <- prior + brmsprior(class = "Lme", group = g)
+          }
         } else {
-          prior <- prior +
-            brmsprior(
-              class = "corme", group = c("", g),
-              prior = c("lkj(1)", "")
-            )
+          prior <- prior + brmsprior("lkj(1)", class = "corme")
+          if (nzchar(g)) {
+            prior <- prior + brmsprior(class = "corme", group = g)
+          }
         }
       }
     }

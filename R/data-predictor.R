@@ -390,6 +390,7 @@ data_Xme <- function(meef, data) {
     K <- which(meef$grname %in% g)
     Mme <- length(K)
     out[[paste0("Mme_", i)]] <- Mme
+    out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     if (nzchar(g)) {
       levels <- get_levels(meef)[[g]]
       gr <- attributes(eval2(meef$term[K[1]], data))[["gr"]]
@@ -405,7 +406,6 @@ data_Xme <- function(meef, data) {
       ilevels <- unique(Jme)
       out[[paste0("Nme_", i)]] <- length(ilevels)
       out[[paste0("Jme_", i)]] <- Jme
-      out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     }
     for (k in K) {
       att <- attributes(eval2(meef$term[k], data))

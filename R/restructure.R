@@ -47,6 +47,7 @@ restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   version <- x$version$brms
   pars <- parnames(x)
+  bterms <- parse_bf(formula(x))
   if (version <= "2.1.1") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
@@ -60,10 +61,12 @@ restructure_v2 <- function(x) {
       stop_parameterization_changed("exgaussian", "2.1.8")
     }
   }
-  if (version <= "2.1.8") {
+  if (version <= "2.1.7") {
     # added 'by' variables to grouping terms
-    bterms <- parse_bf(formula(x))
     x$ranef <- tidy_ranef(bterms, model.frame(x))
+  }
+  if (version <= "2.1.8") {
+    # reworked 'me' terms
     meef <- tidy_meef(bterms, model.frame(x))
     if (isTRUE(nrow(meef) > 0)) {
       warning2(

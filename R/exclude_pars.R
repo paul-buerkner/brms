@@ -19,15 +19,14 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   )
   meef <- tidy_meef(bterms, data)
   if (nrow(meef)) {
-    if (meef$cor[1]) {
-      I <- seq_along(unique(meef$grname))
-      out <- c(out, paste0(c("Xme", "Lme_", "Corme_"), I))
-    }
+    I <- seq_along(unique(meef$grname))
+    K <- seq_len(nrow(meef))
+    out <- c(out, paste0(c("Xme", "Corme_"), I))
     if (!save_all_pars) {
-      out <- c(out, paste0("zme_", seq_len(nrow(meef))))
+      out <- c(out, paste0("zme_", K), paste0("Lme_", I))
     }
     if (!save_mevars) {
-      out <- c(out, paste0("Xme_", seq_len(nrow(meef))))
+      out <- c(out, paste0("Xme_", K))
     }
   }
   if (nrow(ranef)) {

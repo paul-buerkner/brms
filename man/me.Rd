@@ -45,6 +45,7 @@ summary(fit1)
 # turn off modeling of correlations
 bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
 fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+summary(fit2)
 } 
 
 }
