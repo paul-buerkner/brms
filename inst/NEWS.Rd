@@ -59,6 +59,8 @@
       \item Fix a problem in the Stan code of multivariate
       \code{weibull} and \code{frechet} models thanks to 
       the GitHub user philj1s. (#375)
+      \item Fix a rare error when post-processing \code{binomial} 
+      models thanks to the GitHub user SeanH94. (#382)
     }
   }
 }

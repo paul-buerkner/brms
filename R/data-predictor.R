@@ -716,12 +716,13 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family)) {
     if (!length(x$adforms$trials)) {
-      if (!is.null(old_sdata$trials)) {
-        out$trials <- old_sdata$trials
+      out$trials <- max(out$Y, na.rm = TRUE)
+      if (is.finite(out$trials)) {
+        message("Using the maximum response value as the number of trials.")
+      } else if (!is.null(old_sdata$trials)) {
+        out$trials <- max(old_sdata$trials)
       } else {
-        message("Using the maximum of the response ",
-                "variable as the number of trials.")
-        out$trials <- max(out$Y)
+        stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
       out$trials <- eval_rhs(x$adforms$trials, data = data)
