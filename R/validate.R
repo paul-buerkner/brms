@@ -10,8 +10,6 @@
 #'   variables on the right-hand side of formula \code{.$allvars}, 
 #'   where \code{.} represents the output of \code{parse_bf}.
 #' @param mv Indicates if the univariate model is part of a multivariate model.
-#' @param rescor Indicates if residual correlations should be estimated.
-#'   Only relevant in multivariate models.
 #' @param ... Further arguments passed to or from other methods.
 #'  
 #' @return An object of class \code{brmsterms} or \code{mvbrmsterms} 
@@ -48,14 +46,14 @@ parse_bf.default <- function(formula, family = NULL, autocor = NULL, ...) {
 #' @export
 parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL, 
                                  check_response = TRUE, resp_rhs_all = TRUE,
-                                 mv = FALSE, rescor = FALSE, ...) {
+                                 mv = FALSE, ...) {
   x <- validate_formula(formula, family = family, autocor = autocor)
   mv <- as_one_logical(mv)
-  rescor <- as_one_logical(rescor)
+  mecor <- isTRUE(x$mecor)
   formula <- x$formula
   family <- x$family
   autocor <- x$autocor
-  y <- nlist(formula, family, autocor, mv, rescor) 
+  y <- nlist(formula, family, autocor, mv, mecor) 
   class(y) <- "brmsterms"
   
   if (check_response) {
@@ -197,8 +195,13 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
 parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) {
   x <- validate_formula(formula, family = family, autocor = autocor)
   x$rescor <- isTRUE(x$rescor)
+  x$mecor <- isTRUE(x$mecor)
   out <- structure(list(), class = "mvbrmsterms")
-  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, rescor = x$rescor, ...)
+  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, ...)
+  tmp <- list(rescor = x$rescor, mecor = x$mecor)
+  for (i in seq_along(out$terms)) {
+    out$terms[[i]][names(tmp)] <- tmp
+  } 
   out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
@@ -206,6 +209,7 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out$respform <- formula(paste0("cbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- x$rescor
+  out$mecor <- x$mecor
   out
 }
 

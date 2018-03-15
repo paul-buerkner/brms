@@ -729,42 +729,78 @@ stan_Xme <- function(meef, prior) {
     return(list())
   }
   out <- list()
-  uni_me <- rename(meef$term) 
+  coefs <- rename(paste0("me", meef$xname))
   str_add(out$data) <- "  // data for noise-free variables\n"
   str_add(out$par) <- "  // parameters for noise free variables\n"
-  for (k in seq_len(nrow(meef))) {
-    uk <- usc(k)
-    has_gr <- !is.na(meef$grname[k])
-    if (has_gr) {
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    if (nzchar(g)) {
+      Nme <- paste0("Nme_", i)
       str_add(out$data) <- paste0(
-        "  int<lower=0> Nme", uk, ";\n",
-        "  int<lower=1> Jme", uk, "[N];\n"
+        "  int<lower=0> Nme_", i, ";\n",
+        "  int<lower=1> Jme_", i, "[N];\n"
       )
+    } else {
+      Nme <- "N"
     }
-    Nme <- ifelse(has_gr, paste0("Nme", uk), "N")
     str_add(out$data) <- paste0(
-      "  vector[", Nme, "] Xn", uk, ";\n",
-      "  vector<lower=0>[", Nme, "] noise", uk, ";\n"
+      "  int<lower=1> Mme_", i, ";\n"
     )
-    str_add(out$par) <- paste0(
-      "  vector[", Nme, "] zme", uk, ";\n",
-      "  real meanme", uk, ";\n",
-      "  real<lower=0> sdme", uk, ";\n"
+    str_add(out$data) <- collapse(
+      "  vector[", Nme, "] Xn_", K, ";\n",
+      "  vector<lower=0>[", Nme, "] noise_", K, ";\n"
     )
-    str_add(out$tparD) <- collapse(
-      "  vector[", Nme, "] Xme", uk, " = ", 
-      "meanme", uk, " + sdme", uk, " * zme", uk, ";\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "meanme", coef = uni_me[k], suffix = uk
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "sdme", coef = uni_me[k], suffix = uk
+    str_add(out$par) <- collapse(
+      "  vector[Mme_", i, "] meanme_", i, ";\n",
+      "  vector<lower=0>[Mme_", i, "] sdme_", i, ";\n"
     )
     str_add(out$prior) <- paste0(
-      "  target += normal_lpdf(Xn", uk, " | Xme", uk, ", noise", uk, ");\n",
-      "  target += normal_lpdf(zme", uk, " | 0, 1);\n"
+      stan_prior(prior, "meanme", coef = coefs[K], suffix = usc(i)),
+      stan_prior(prior, "sdme", coef = coefs[K], suffix = usc(i))
     )
+    str_add(out$prior) <- collapse(
+      "  target += normal_lpdf(Xn_", K, " | Xme_", K, ", noise_", K, ");\n"
+    )
+    if (meef$cor[K[1]] && length(K) > 1L) {
+      str_add(out$data) <- paste0(
+        "  int<lower=1> NCme_", i, ";\n"
+      )
+      str_add(out$par) <- paste0(
+        "  matrix[Mme_", i, ", ", Nme, "] zme_", i, ";\n",
+        "  cholesky_factor_corr[Mme_", i, "] Lme_", i, ";\n"
+      )
+      str_add(out$tparD) <- paste0(
+        "  matrix[", Nme, ", Mme_", i, "] Xme", i, 
+        " = rep_matrix(meanme_", i, "', Nme_", i, ")\n   ", 
+        " + (diag_pre_multiply(sdme_", i, ", Lme_", i,") * zme_", i, ")';\n"
+      )
+      str_add(out$tparD) <- collapse(
+        "  vector[", Nme, "] Xme_", K, " = Xme", i, "[, ", K, "];\n"
+      )
+      str_add(out$prior) <- paste0(
+        "  target += normal_lpdf(to_vector(zme_", i, ") | 0, 1);\n",
+        stan_prior(prior, "Lme", group = g, suffix = usc(i))
+      )
+      str_add(out$genD) <- collapse(
+        "  corr_matrix[Mme_", i, "] Corme_", i, 
+        " = multiply_lower_tri_self_transpose(Lme_", i, ");\n",
+        "  vector<lower=-1,upper=1>[NCme_", i, "] corme_", i, ";\n"
+      )
+      str_add(out$genC) <- stan_cor_genC(length(K), i, cor = "corme")
+    } else {
+      str_add(out$par) <- collapse(
+        "  vector[", Nme, "] zme_", K, ";\n"
+      )
+      str_add(out$tparD) <- collapse(
+        "  vector[", Nme, "] Xme_", K, " = ",
+        "meanme_", i, "[", K, "] + sdme_", i, "[", K, "] * zme_", K, ";\n"
+      )
+      str_add(out$prior) <- collapse(
+        "  target += normal_lpdf(zme_", K, " | 0, 1);\n"
+      )
+    }
   }
   out
 }
@@ -1172,16 +1208,20 @@ stan_vector <- function(...) {
   paste0("[", paste0(c(...), collapse = ", "), "]'")
 }
 
-stan_cor_genC <- function(r, id, by = "") {
+stan_cor_genC <- function(ncoef, sfx, cor = "cor") {
   # prepare Stan code for correlations in the generated quantities block
-  # Args: see stan_re
-  stopifnot(is.data.frame(r))
-  id <- as_one_character(id)
-  by <- usc(by)
-  out <- ulapply(2:nrow(r), function(k) 
-    lapply(1:(k - 1), function(j) collapse(
-      "  cor_", id, by, "[", as.integer((k - 1) * (k - 2) / 2 + j),
-      "] = Cor_", id, by, "[", j, ",", k, "]; \n"
+  # Args:
+  #   ncoef: number of coefficients of which to store correlations
+  #   sfx: suffix of the correlation names
+  #   cor: prefix of the correlation names
+  if (ncoef < 2L) {
+    return("")
+  }
+  Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
+  out <- ulapply(seq_len(ncoef)[-1], function(k) 
+    lapply(seq_len(k - 1), function(j) collapse(
+      "  ", cor, "_", sfx, "[", as.integer((k - 1) * (k - 2) / 2 + j),
+      "] = ", Cor, "_", sfx, "[", j, ",", k, "]; \n"
     ))
   )
   paste0(

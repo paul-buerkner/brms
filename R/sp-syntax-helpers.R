@@ -76,7 +76,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
   uni_me <- get_uni_me(bterms)
   if (length(uni_me)) {
     out <- data.frame(
-      term = uni_me, xname = NA, grname = NA, 
+      term = uni_me, xname = "", grname = "", 
       stringsAsFactors = FALSE
     )
     levels <- list("vector", nrow(out))
@@ -92,6 +92,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
         levels[[i]] <- old_levels[[att$grname]]
       }
     }
+    out$cor <- isTRUE(bterms$mecor)
     names(levels) <- out$grname
     levels <- levels[!is.na(names(levels))]
     if (length(levels)) {
@@ -101,7 +102,8 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
   } else {
     out <- data.frame(
       terms = character(0), xname = character(0),
-      grname = character(0), stringsAsFactors = FALSE
+      grname = character(0), cor = logical(0),
+      stringsAsFactors = FALSE
     )
   }
   structure(out, class = c("meef_frame", "data.frame"))
@@ -109,6 +111,11 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
 
 is.meef_frame <- function(x) {
   inherits(x, "meef_frame")
+}
+
+default_mecor <- function(mecor = NULL) {
+  # handle default of correlations between 'me' terms
+  if (is.null(mecor)) TRUE else as_one_logical(mecor)
 }
 
 get_sp_vars <- function(x, type) {

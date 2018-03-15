@@ -610,7 +610,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         " = multiply_lower_tri_self_transpose(L_", id, "[", Nby, "]);\n",
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "_", Nby, ";\n"
       )
-      str_add(out$genC) <- stan_cor_genC(r, id, Nby)
+      str_add(out$genC) <- stan_cor_genC(nrow(r), paste0(id, "_", Nby))
     } else {
       str_add(out$par) <- paste0(
         "  // cholesky factor of correlation matrix\n",
@@ -640,7 +640,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         " = multiply_lower_tri_self_transpose(L_", id, ");\n",
         "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, ";\n"
       )
-      str_add(out$genC) <- stan_cor_genC(r, id)
+      str_add(out$genC) <- stan_cor_genC(nrow(r), id)
     }
     str_add(out$tparD) <- paste0(
       collapse(
@@ -815,9 +815,10 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
       eta <- rename(eta, spef$call_mo[[i]], new_mo)
     }
     if (!is.null(spef$call_me[[i]])) {
-      Ime <- seq_along(meef$term)
-      nme <- ifelse(is.na(meef$grname), "n", paste0("Jme_", Ime, "[n]"))
-      new_me <- paste0("Xme_", Ime, "[", nme,"]")
+      Kme <- seq_along(meef$term)
+      Ime <- match(meef$grname, unique(meef$grname))
+      nme <- ifelse(nzchar(meef$grname), paste0("Jme_", Ime, "[n]"), "n")
+      new_me <- paste0("Xme_", Kme, "[", nme,"]")
       eta <- rename(eta, meef$term, new_me)
     }
     if (!is.null(spef$call_mi[[i]])) {

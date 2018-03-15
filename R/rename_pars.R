@@ -169,26 +169,50 @@ change_Xme <- function(meef, pars) {
   #   a list whose elements can be interpreted by do_renaming
   stopifnot(is.meef_frame(meef))
   change <- list()
-  uni_me <- rename(meef$term)
-  for (i in seq_along(uni_me)) {
+  coefs <- rename(paste0("me", meef$xname))
+  levels <- attr(meef, "levels")
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    # rename mean and sd parameters
     for (par in c("meanme", "sdme")) {
       hpar <- paste0(par, "_", i)
-      pos <- pars %in% hpar
-      hpar_new <- paste0(par, "_", uni_me[i])
+      pos <- grepl(paste0("^", hpar, "\\["), pars)
+      hpar_new <- paste0(par, "_", coefs[K])
       change <- lc(change, nlist(pos, fnames = hpar_new))
+      change <- c(change,
+        change_prior(class = hpar, pars = pars, names = hpar_new)
+      )
     }
-    if (any(grepl("^Xme_", pars))) {
-      Xme <- paste0("Xme_", i)
-      pos <- grepl(paste0("^", Xme, "\\["), pars)
-      Xme_new <- paste0("Xme_", uni_me[i])
-      if (is.na(meef$grname)) {
-        levels <- seq_len(sum(pos))
-      } else {
-        levels <- attr(meef, "levels")[[meef$grname]]
-        levels <- gsub("[ \t\r\n]", ".", levels)
+    # rename latent variable parameters
+    for (k in K) {
+      if (any(grepl("^Xme_", pars))) {
+        Xme <- paste0("Xme_", k)
+        pos <- grepl(paste0("^", Xme, "\\["), pars)
+        Xme_new <- paste0("Xme_", coefs[k])
+        if (nzchar(g)) {
+          indices <- gsub("[ \t\r\n]", ".", levels[[g]])
+        } else {
+          indices <- seq_len(sum(pos))
+        }
+        fnames <- paste0(Xme_new, "[", indices, "]") 
+        change <- lc(change, nlist(pos, fnames))
       }
-      fnames <- paste0(Xme_new, "[", levels, "]") 
-      change <- lc(change, nlist(pos, fnames))
+    }
+    # rename correlation parameters
+    if (meef$cor[K[1]] && length(K) > 1L) {
+      cor_type <- paste0("corme", usc(g))
+      cor_names <- get_cornames(coefs[K], cor_type, brackets = FALSE)
+      cor_regex <- paste0("^corme_", i, "(\\[|$)")
+      cor_pos <- grepl(cor_regex, pars)
+      change <- lc(change, list(pos = cor_pos, fnames = cor_names))
+      change <- c(change,
+        change_prior(
+          class = paste0("corme_", i), pars = pars,
+          new_class = paste0("corme", usc(g))
+        )
+      )
     }
   }
   change
@@ -499,7 +523,7 @@ reorder_pars <- function(x) {
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "Ymi", "Yl", "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)

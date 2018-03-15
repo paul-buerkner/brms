@@ -157,10 +157,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     "generated quantities { \n",
       scode_effects$genD,
       scode_ranef$genD,
+      scode_Xme$genD,
       scode_rngprior$genD,
       scode_effects$genC,
       scode_ranef$genC,
       scode_rngprior$genC,
+      scode_Xme$genC,
     "} \n"
   )
   # combine all elements into a complete Stan model
