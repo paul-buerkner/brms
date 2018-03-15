@@ -1056,18 +1056,18 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #'   where \code{TRUE} indicates \code{"upper"} and 
 #'   \code{FALSE} indicates \code{"lower"}.
 #' @param types Which types of responses to return? By default,
-#'   return both the response times \code{"q"} and the dichotomous 
-#'   responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
-#'   return only one of the two types.
+#'   return both the response times \code{"rt"} and the dichotomous 
+#'   responses \code{"response"}. If either \code{"rt"} or 
+#'   \code{"response"}, return only one of the two types.
 #'   
-#' @details These are wrappers around functions of the \pkg{RWiener} package.  
+#' @details These are wrappers around functions of the \pkg{rtdists} package.  
 #' See \code{vignette("brms_families")} for details on the parameterization.
 #' 
-#' @seealso \code{\link[RWiener:wienerdist]{wienerdist}}
+#' @seealso \code{\link[rtdists:Diffusion]{Diffusion}}
 #' 
 #' @export
 dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
-  require_package("RWiener")
+  require_package("rtdists")
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -1075,20 +1075,24 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   if (!is.character(resp)) {
     resp <- ifelse(resp, "upper", "lower") 
   }
-  # vectorized version of RWiener::dwiener
-  .dwiener <- Vectorize(
-    RWiener::dwiener, 
-    c("alpha", "tau", "beta", "delta")
+  .dwiener <- Vectorize(rtdists::ddiffusion, c("a", "t0", "z", "v"))
+  args <- list(
+    rt = x, response = resp, a = alpha, 
+    t0 = tau, z = beta * alpha, v = delta
   )
-  args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
-  do.call(.dwiener, args)
+  out <- do.call(.dwiener, args)
+  if (log) {
+    out <- log(out)
+  }
+  out
 }
 
 #' @rdname Wiener
 #' @export
-rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
-  require_package("RWiener")
-  stopifnot(all(types %in% c("q", "resp")))
+rwiener <- function(n, alpha, tau, beta, delta, 
+                    types = c("rt", "response")) {
+  require_package("rtdists")
+  types <- match.arg(types, several.ok = TRUE)
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -1102,8 +1106,6 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
     n <- 1
   }
   .rwiener <- function(...) {
-    # vectorized version of RWiener::rwiener
-    # returns a numeric vector
     fun <- Vectorize(
       rwiener_num, 
       c("alpha", "tau", "beta", "delta"),
@@ -1117,9 +1119,11 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
 
 rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   # helper function to return a numeric vector instead
-  # of a data.frame with two columns as for RWiener::rwiener
-  out <- RWiener::rwiener(n, alpha, tau, beta, delta)
-  out[["resp"]] <- ifelse(out[["resp"]] == "upper", 1, 0)
+  # of a data.frame with two columns as for rtdists::rdiffusion
+  out <- rtdists::rdiffusion(
+    n, a = alpha, t0 = tau, z = beta * alpha, v = delta
+  )
+  out$response <- ifelse(out$response == "upper", 1, 0)
   if (length(types) == 1L) {
     out <- out[[types]]
   }

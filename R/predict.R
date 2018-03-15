@@ -401,7 +401,7 @@ predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
     alpha = get_dpar(draws, "bs", i = i),
     tau = get_dpar(draws, "ndt", i = i),
     beta = get_dpar(draws, "bias", i = i),
-    types = if (negative_rt) c("q", "resp") else "q"
+    types = if (negative_rt) c("rt", "response") else "rt"
   )
   out <- rng_continuous(
     nrng = 1, dist = "wiener", args = args, 
@@ -409,7 +409,7 @@ predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
   )
   if (negative_rt) {
     # code lower bound responses as negative RTs
-    out <- out[["q"]] * ifelse(out[["resp"]], 1, -1)
+    out <- out$rt * ifelse(out$response, 1, -1)
   }
   out
 }

@@ -31,7 +31,7 @@ Imports:
     grDevices,
 Suggests: 
     testthat (>= 0.9.1),
-    RWiener,
+    rtdists,
     future,
     mice,
     spdep,

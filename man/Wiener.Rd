@@ -8,7 +8,7 @@
 \usage{
 dwiener(x, alpha, tau, beta, delta, resp = 1, log = FALSE)
 
-rwiener(n, alpha, tau, beta, delta, types = c("q", "resp"))
+rwiener(n, alpha, tau, beta, delta, types = c("rt", "response"))
 }
 \arguments{
 \item{x}{Vector of quantiles.}
@@ -31,9 +31,9 @@ where \code{TRUE} indicates \code{"upper"} and
 \item{n}{Number of samples to draw from the distribution.}
 
 \item{types}{Which types of responses to return? By default,
-return both the response times \code{"q"} and the dichotomous 
-responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
-return only one of the two types.}
+return both the response times \code{"rt"} and the dichotomous 
+responses \code{"response"}. If either \code{"rt"} or 
+\code{"response"}, return only one of the two types.}
 }
 \description{
 Density function and random generation for the Wiener
@@ -42,9 +42,9 @@ non-decision time \code{tau}, bias  \code{beta} and
 drift rate \code{delta}.
 }
 \details{
-These are wrappers around functions of the \pkg{RWiener} package.  
+These are wrappers around functions of the \pkg{rtdists} package.  
 See \code{vignette("brms_families")} for details on the parameterization.
 }
 \seealso{
-\code{\link[RWiener:wienerdist]{wienerdist}}
+\code{\link[rtdists:Diffusion]{Diffusion}}
 }

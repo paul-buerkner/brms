@@ -33,6 +33,8 @@
       integer is not one.
       \item Improve output of the \code{hypothesis} method 
       thanks to the ideas of Matti Vuorre. (#362)
+      \item Use \pkg{rtdists} as the new backend for
+      post-processing of \code{wiener} diffusion models.
       \item Always plot \code{by} variables as facets
       in \code{marginal_smooths}.
       \item Deprecate the \code{cor_bsts} correlation structure.
