@@ -460,15 +460,15 @@ test_that("make_standata handles category specific effects", {
 })
 
 test_that("make_standata handles wiener diffusion models", {
-  dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
+  dat <- rtdists::rdiffusion(n = 100, a = 2, t0 = .3, z = .5, v = .5)
   dat$x <- rnorm(100)
-  dat$dec <- ifelse(dat$resp == "lower", 0, 1)
+  dat$dec <- ifelse(dat$response == "lower", 0, 1)
   dat$test <- "a"
-  sdata <- make_standata(q | dec(resp) ~ x, data = dat, family = wiener())
+  sdata <- make_standata(rt | dec(response) ~ x, data = dat, family = wiener())
   expect_equal(sdata$dec, as.array(dat$dec))
-  sdata <- make_standata(q | dec(dec) ~ x, data = dat, family = wiener())
+  sdata <- make_standata(rt | dec(response) ~ x, data = dat, family = wiener())
   expect_equal(sdata$dec, as.array(dat$dec))
-  expect_error(make_standata(q | dec(test) ~ x, data = dat, family = wiener()),
+  expect_error(make_standata(rt | dec(test) ~ x, data = dat, family = wiener()),
                "Decisions should be 'lower' or 'upper'")
 })
 

@@ -1,7 +1,7 @@
 language: r
 r: devel
 sudo: FALSE
-# cache: packages
+cache: packages
 
 warnings_are_errors: TRUE
 

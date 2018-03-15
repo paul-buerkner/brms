@@ -793,21 +793,21 @@ test_that("Stan code of response times models is correct", {
 })
 
 test_that("Stan code of wiener diffusion models is correct", {
-  dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
+  dat <- rtdists::rdiffusion(n = 100, a = 2, t0 = .3, z = .5, v = .5)
   dat$x <- rnorm(100)
-  scode <- make_stancode(q | dec(resp) ~ x, data = dat, family = wiener())
+  scode <- make_stancode(rt | dec(response) ~ x, data = dat, family = wiener())
   expect_match2(scode, 
     "target += wiener_diffusion_lpdf(Y[n] | dec[n], bs, ndt, bias, mu[n])"
   )
   
-  scode <- make_stancode(bf(q | dec(resp) ~ x, bs ~ x, ndt ~ x, bias ~ x), 
+  scode <- make_stancode(bf(rt | dec(response) ~ x, bs ~ x, ndt ~ x, bias ~ x), 
                          data = dat, family = wiener())
   expect_match2(scode,
     "target += wiener_diffusion_lpdf(Y[n] | dec[n], bs[n], ndt[n], bias[n], mu[n])"
   )
   expect_match2(scode, "bias[n] = inv_logit(bias[n]);")
   
-  expect_error(make_stancode(q ~ x, data = dat, family = wiener()),
+  expect_error(make_stancode(rt ~ x, data = dat, family = wiener()),
                "Addition argument 'dec' is required for family 'wiener'")
 })
 
