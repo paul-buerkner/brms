@@ -11,7 +11,18 @@ illegal_group_expr <- function(group) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
+stopif_illegal_group <- function(group) {
+  if (illegal_group_expr(group)) {
+    stop2(
+      "Illegal grouping term '", group, "'. It may contain ",
+      "only variable names combined by the symbol ':'"
+    )
+  }
+  invisible(NULL)
+}
+
 get_groups <- function(x) {
+  # TODO: merge with get_group_vars
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
     x <- parse_bf(x)
   }
@@ -310,9 +321,11 @@ tidy_ranef <- function(bterms, data, all = TRUE,
   #     gn: number of the grouping term within the respective formula
   #     coef: name of the group-level effect
   #     cn: number of the effect within the ID
-  #     nlpar: name of the corresponding non-linear parameter
+  #     resp: name of the response variable
+  #     dpar: name of the distributional parameter
+  #     nlpar: name of the non-linear parameter
   #     cor: are correlations modeled for this effect?
-  #     type: special effects type; can be "sp" or "cs"
+  #     type: special effects type; can be 'sp' or 'cs'
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
   data <- combine_groups(data, get_groups(bterms))
@@ -453,15 +466,52 @@ tidy_ranef <- function(bterms, data, all = TRUE,
       attr(ranef, "levels") <- old_levels
     }
   }
-  ranef
+  structure(ranef, class = c("ranef_frame", "data.frame"))
 }
 
 empty_ranef <- function() {
-  data.frame(
-    id = numeric(0), group = character(0), gn = numeric(0),
-    coef = character(0), cn = numeric(0), resp = character(0),
-    dpar = character(0), nlpar = character(0), cor = logical(0), 
-    type = character(0), form = character(0), 
-    stringsAsFactors = FALSE
+  structure(
+    data.frame(
+      id = numeric(0), group = character(0), gn = numeric(0),
+      coef = character(0), cn = numeric(0), resp = character(0),
+      dpar = character(0), nlpar = character(0), cor = logical(0), 
+      type = character(0), form = character(0), 
+      stringsAsFactors = FALSE
+    ),
+    class = c("ranef_frame", "data.frame")
   )
+}
+
+is.ranef_frame <- function(x) {
+  inherits(x, "ranef_frame")
+}
+
+get_group_vars <- function(x, ...) {
+  # extract names of grouping variables
+  UseMethod("get_group_vars") 
+}
+
+#' @export
+get_group_vars.brmsfit <- function(x, ...) {
+  bterms <- parse_bf(x$formula)
+  unique(c(
+    get_group_vars(x$ranef),
+    get_group_vars(tidy_meef(bterms, x$data)),
+    get_autocor_vars(x, var = "group")
+  ))
+}
+
+#' @export
+get_group_vars.ranef_frame <- function(x, ...) {
+  unique(ulapply(x$gcall, "[[", "groups"))
+}
+
+#' @export
+get_group_vars.meef_frame <- function(x, ...) {
+  if (nrow(x)) {
+    out <- unique(x$grname[!is.na(x$grname)])
+  } else {
+    out <- NULL
+  }
+  out
 }

@@ -487,6 +487,25 @@ test_that("make_standata handles noise-free terms", {
   expect_equal(sdata$noise_2, as.array(dat$zsd))
   expect_equal(unname(sdata$Csp_3), as.array(dat$x))
   expect_equal(sdata$Ksp, 6)
+  expect_equal(sdata$NCme_1, 1)
+})
+
+test_that("make_standata handles noise-free terms with grouping factors", {
+  dat <- data.frame(
+    y = rnorm(10), 
+    x1 = rep(1:5, each = 2), 
+    sdx = rep(1:5, each = 2),
+    g = rep(c("b", "c", "a", "d", 1), each = 2)
+  )
+  sdata <- make_standata(y ~ me(x1, sdx, gr = g), dat)
+  expect_equal(sdata$Xn_1, as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(sdata$noise_1, as.array(c(5, 3, 1, 2, 4)))
+  
+  dat$sdx[2] <- 10
+  expect_error(
+    make_standata(y ~ me(x1, sdx, gr = g), dat),
+    "Measured values and measurement error should be unique"
+  )
 })
 
 test_that("make_standata handles missing value terms", {

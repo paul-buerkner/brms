@@ -17,12 +17,17 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     bterms, data = data, save_all_pars = save_all_pars,
     save_mevars = save_mevars
   )
-  uni_me <- get_uni_me(bterms)
-  if (!save_all_pars) {
-    out <- c(out, paste0("zme_", seq_along(uni_me)))
-  }
-  if (!save_mevars) {
-    out <- c(out, paste0("Xme_", seq_along(uni_me)))
+  meef <- tidy_meef(bterms, data)
+  if (nrow(meef)) {
+    I <- seq_along(unique(meef$grname))
+    K <- seq_len(nrow(meef))
+    out <- c(out, paste0(c("Xme", "Corme_"), I))
+    if (!save_all_pars) {
+      out <- c(out, paste0("zme_", K), paste0("Lme_", I))
+    }
+    if (!save_mevars) {
+      out <- c(out, paste0("Xme_", K))
+    }
   }
   if (nrow(ranef)) {
     rm_re_pars <- c(if (!save_all_pars) c("z", "L"), "Cor", "r")

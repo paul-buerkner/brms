@@ -118,8 +118,10 @@ test_that("specified priors appear in the Stan code", {
   expect_warning(make_stancode(y ~ x1 + (1|g), dat, prior = prior),
                   "no natural upper bound")
   prior <- prior(uniform(-1, 1), class = cor)
-  expect_error(make_stancode(y ~ x1 + (x1|g), dat, prior = prior),
-               "Currently 'lkj' is the only valid prior")
+  expect_error(
+    make_stancode(y ~ x1 + (x1|g), dat, prior = prior),
+    "prior for correlation matrices is the 'lkj' prior"
+  )
 })
 
 test_that("special shrinkage priors appear in the Stan code", {
@@ -927,7 +929,8 @@ test_that("noise-free terms appear in the Stan code", {
   )
   me_prior <- prior(normal(0,5)) + 
     prior(normal(0, 10), "meanme") +
-    prior(cauchy(0, 5), "sdme", coef = "mezzsd")
+    prior(cauchy(0, 5), "sdme", coef = "mez") +
+    prior(lkj(2), "corme")
   scode <- make_stancode(
     y ~ me(x, xsd)*me(z, zsd)*x, data = dat, prior = me_prior
   )
@@ -937,10 +940,11 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "(bsp[6]) * Xme_1[n] * Xme_2[n] * Csp_3[n]")
   expect_match2(scode, "target += normal_lpdf(Xn_2 | Xme_2, noise_2)")
   expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
-  expect_match2(scode, "target += normal_lpdf(zme_1 | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(to_vector(zme_1) | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(meanme_1 | 0, 10)")
-  expect_match2(scode, "target += cauchy_lpdf(sdme_2 | 0, 5)")
-  expect_match2(scode, "Xme_2 = meanme_2 + sdme_2 * zme_2")
+  expect_match2(scode, "target += cauchy_lpdf(sdme_1[2] | 0, 5)")
+  expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lme_1 | 2)")
+  expect_match2(scode, "+ (diag_pre_multiply(sdme_1, Lme_1) * zme_1)'")
   
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
@@ -968,9 +972,21 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "mu_a[n] += (bsp_a[1]) * Xme_1[n]")
   expect_match2(scode, "mu_b[n] += (bsp_b[1]) * Xme_1[n]")
   
+  bform <- bf(cbind(y, z) ~ me(x, xsd)) + set_mecor(FALSE)
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
+  expect_match2(scode, "vector[N] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
+  
+  # noise-free terms with grouping factors
+  bform <- bf(y ~ me(x, xsd, ID) + (me(x, xsd, ID) | ID))
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "vector[Nme_1] Xn_1;")
+  expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * Xme_1[Jme_1[n]]")
+  
+  bform <- bform + set_mecor(FALSE)
+  scode <- make_stancode(bform, dat)
+  expect_match2(scode, "vector[Nme_1] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
 })
 
 test_that("Stan code of multi-membership models is correct", {

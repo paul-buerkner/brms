@@ -8,14 +8,15 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- parse_bf(x$formula) 
+  bterms <- parse_bf(x$formula)
   data <- model.frame(x)
+  meef <- tidy_meef(bterms, data)
   pars <- parnames(x)
   # find positions of parameters and define new names
   change <- c(
-    change_effects(bterms, data = data, pars = pars, stancode = stancode(x)),
+    change_effects(bterms, data = data, pars = pars, scode = stancode(x)),
     change_re(x$ranef, pars = pars),
-    change_Xme(bterms, pars = pars),
+    change_Xme(meef, pars = pars),
     change_autocor(bterms, data = data, pars = pars)
   )
   # perform the actual renaming in x$fit@sim
@@ -60,12 +61,12 @@ change_effects.brmsterms <- function(x, ...) {
 }
 
 #' @export
-change_effects.btl <- function(x, data, pars, stancode = "", ...) {
+change_effects.btl <- function(x, data, pars, scode = "", ...) {
   # helps in renaming various kinds of effects
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   c(
-    change_fe(x, data, pars, stancode = stancode),
+    change_fe(x, data, pars, scode = scode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
@@ -86,14 +87,14 @@ change_effects.btnl <- function(x, data, pars, ...) {
   change
 }
 
-change_fe <- function(bterms, data, pars, stancode = "") {
+change_fe <- function(bterms, data, pars, scode = "") {
   # helps in renaming fixed effects parameters
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   px <- check_prefix(bterms)
   fixef <- colnames(data_fe(bterms, data)$X)
-  fixef <- rm_int_fe(fixef, stancode, px = px)
+  fixef <- rm_int_fe(fixef, scode, px = px)
   if (length(fixef)) {
     b <- paste0("b", usc(combine_prefix(px), "prefix"))
     pos <- grepl(paste0("^", b, "\\["), pars)
@@ -162,28 +163,55 @@ change_cs <- function(bterms, data, pars) {
   change
 }
 
-change_Xme <- function(bterms, pars) {
+change_Xme <- function(meef, pars) {
   # helps in renaming global noise free variables
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
+  stopifnot(is.meef_frame(meef))
   change <- list()
-  uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    uni_me <- rename(uni_me)
-    for (i in seq_along(uni_me)) {
-      for (par in c("meanme", "sdme")) {
-        hpar <- paste0(par, "_", i)
-        pos <- pars %in% hpar
-        hpar_new <- paste0(par, "_", uni_me[i])
-        change <- lc(change, nlist(pos, fnames = hpar_new))
-      }
+  levels <- attr(meef, "levels")
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    # rename mean and sd parameters
+    for (par in c("meanme", "sdme")) {
+      hpar <- paste0(par, "_", i)
+      pos <- grepl(paste0("^", hpar, "\\["), pars)
+      hpar_new <- paste0(par, "_", meef$coef[K])
+      change <- lc(change, nlist(pos, fnames = hpar_new))
+      change <- c(change,
+        change_prior(class = hpar, pars = pars, names = hpar_new)
+      )
+    }
+    # rename latent variable parameters
+    for (k in K) {
       if (any(grepl("^Xme_", pars))) {
-        Xme <- paste0("Xme_", i)
+        Xme <- paste0("Xme_", k)
         pos <- grepl(paste0("^", Xme, "\\["), pars)
-        Xme_new <- paste0("Xme_", uni_me[i])
-        fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+        Xme_new <- paste0("Xme_", meef$coef[k])
+        if (nzchar(g)) {
+          indices <- gsub("[ \t\r\n]", ".", levels[[g]])
+        } else {
+          indices <- seq_len(sum(pos))
+        }
+        fnames <- paste0(Xme_new, "[", indices, "]") 
         change <- lc(change, nlist(pos, fnames))
       }
+    }
+    # rename correlation parameters
+    if (meef$cor[K[1]] && length(K) > 1L) {
+      cor_type <- paste0("corme", usc(g))
+      cor_names <- get_cornames(meef$coef[K], cor_type, brackets = FALSE)
+      cor_regex <- paste0("^corme_", i, "(\\[|$)")
+      cor_pos <- grepl(cor_regex, pars)
+      change <- lc(change, list(pos = cor_pos, fnames = cor_names))
+      change <- c(change,
+        change_prior(
+          class = paste0("corme_", i), pars = pars,
+          new_class = paste0("corme", usc(g))
+        )
+      )
     }
   }
   change
@@ -429,12 +457,12 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
   change
 }
 
-rm_int_fe <- function(fixef, stancode, px = list()) {
+rm_int_fe <- function(fixef, scode, px = list()) {
   # identifies if the intercept has to be removed from fixef
   # and returns adjusted fixef names
   p <- usc(combine_prefix(px))
   regex <- paste0("(temp", p, "_Intercept)|(vector\\[N\\] loclev", p, ";)")
-  if (grepl(regex, stancode)) {
+  if (grepl(regex, scode)) {
     fixef <- setdiff(fixef, "Intercept")
   } 
   fixef
@@ -494,7 +522,7 @@ reorder_pars <- function(x) {
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
     "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
-    "Ymi", "Yl", "meanme", "sdme", "Xme", "prior", "lp"
+    "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)

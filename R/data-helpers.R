@@ -247,8 +247,12 @@ validate_newdata <- function(
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
   new_ranef <- tidy_ranef(bterms, data = mf)
-  group_vars <- get_group_vars(new_ranef)
-  group_vars <- union(group_vars, get_autocor_vars(bterms, "group"))
+  new_meef <- tidy_meef(bterms, data = mf)
+  group_vars <- unique(c(
+    get_group_vars(new_ranef),
+    get_group_vars(new_meef),
+    get_autocor_vars(bterms, "group")
+  ))
   if (allow_new_levels && length(group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
@@ -333,9 +337,12 @@ validate_newdata <- function(
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
-  old_levels <- attr(new_ranef, "levels")
+  old_levels <- get_levels(new_ranef, new_meef)
   if (!allow_new_levels) {
-    new_levels <- attr(tidy_ranef(bterms, data = newdata), "levels")
+    new_levels <- get_levels(
+      tidy_ranef(bterms, data = newdata),
+      tidy_meef(bterms, data = newdata)
+    )
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
       if (length(unknown_levels)) {

@@ -4,34 +4,51 @@
 \alias{me}
 \title{Predictors with Measurement Error in \pkg{brms} Models}
 \usage{
-me(x, sdx = NULL)
+me(x, sdx = NULL, gr = NULL)
 }
 \arguments{
 \item{x}{The variable measured with error.}
 
 \item{sdx}{Known measurement error of \code{x}
 treated as standard deviation.}
+
+\item{gr}{Optional grouping factor to specify which
+values of \code{x} correspond to the same value of the
+latent variable. If \code{NULL} (the default) each
+observation will have its own value of the latent variable.}
 }
 \description{
-Predictors with Measurement Error in \pkg{brms} Models
+Specify predictors with measurement error.
+This function is almost solely useful when
+called in formulas passed to the \pkg{brms} package.
 }
 \details{
 For detailed documentation see \code{help(brmsformula)}. 
 
-This function is almost solely useful when
-called in formulas passed to the \pkg{brms} package.
+By default, latent noise-free variables are assumed
+to be correlated. To change that, add \code{set_mecor(FALSE)}
+to your model formula object (see examples).
 }
 \examples{
 \dontrun{
 # sample some data
 N <- 100
-dat <- data.frame(y = rnorm(N), x = rnorm(N), sdx = abs(rnorm(N, 1)))
+dat <- data.frame(
+  y = rnorm(N), x1 = rnorm(N), 
+  x2 = rnorm(N), sdx = abs(rnorm(N, 1))
+ )
 # fit a simple error-in-variables model 
-fit <- brm(y ~ me(x, sdx), data = dat, save_mevars = TRUE)
-summary(fit)
+fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
+           save_mevars = TRUE)
+summary(fit1)
+
+# turn off modeling of correlations
+bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
+fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+summary(fit2)
 } 
 
 }
 \seealso{
-\code{\link{brmsformula}}
+\code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
 }

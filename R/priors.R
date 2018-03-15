@@ -479,6 +479,7 @@ get_prior <- function(formula, data, family = gaussian(),
   bterms <- parse_bf(formula)
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
+  meef <- tidy_meef(bterms, data)
   # initialize output
   prior <- empty_brmsprior()
   # priors for distributional parameters
@@ -492,7 +493,7 @@ get_prior <- function(formula, data, family = gaussian(),
     internal = internal
   )
   # priors for noise-free variables
-  prior <- prior + prior_Xme(bterms)
+  prior <- prior + prior_Xme(meef, internal = internal)
   # do not remove unique(.)
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
   prior <- unique(prior[to_order, , drop = FALSE])
@@ -673,17 +674,35 @@ prior_cs <- function(bterms, data) {
   prior
 }
 
-prior_Xme <- function(bterms) {
+prior_Xme <- function(meef, internal = FALSE) {
   # default priors for hyper-parameters of noise-free variables
   # Returns:
   #   an object of class brmsprior
+  stopifnot(is.meef_frame(meef))
   prior <- empty_brmsprior()
-  uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    uni_me <- rename(uni_me)
+  if (nrow(meef)) {
     prior <- prior + 
-      brmsprior(class = "meanme", coef = c("", uni_me)) +
-      brmsprior(class = "sdme", coef = c("", uni_me))
+      brmsprior(class = "meanme", coef = c("", meef$coef)) +
+      brmsprior(class = "sdme", coef = c("", meef$coef))
+    # priors for correlation parameters
+    groups <- unique(meef$grname)
+    for (i in seq_along(groups)) {
+      g <- groups[i]
+      K <- which(meef$grname %in% g)
+      if (meef$cor[K[1]] && length(K) > 1L) {
+        if (internal) {
+          prior <- prior + brmsprior("lkj_corr_cholesky(1)", class = "Lme")
+          if (nzchar(g)) {
+            prior <- prior + brmsprior(class = "Lme", group = g)
+          }
+        } else {
+          prior <- prior + brmsprior("lkj(1)", class = "corme")
+          if (nzchar(g)) {
+            prior <- prior + brmsprior(class = "corme", group = g)
+          }
+        }
+      }
+    }
   }
   prior
 }
@@ -987,8 +1006,8 @@ check_prior <- function(prior, formula, data = NULL,
   prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(
-    prior$class, c("^cor$", "^rescor$"), 
-    c("L", "Lrescor"), fixed = FALSE
+    prior$class, c("^cor$", "^rescor$", "^corme$"), 
+    c("L", "Lrescor", "Lme"), fixed = FALSE
   )
   rcols <- rcols_prior()
   duplicated_input <- duplicated(prior[, rcols])
@@ -1050,7 +1069,7 @@ check_prior_content <- function(prior, warn = TRUE) {
       "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
       "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale" 
     )
-    cor_pars <- c("cor", "L", "rescor", "Lrescor")
+    cor_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
     autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
     autocor_warning <- FALSE
@@ -1078,11 +1097,10 @@ check_prior_content <- function(prior, warn = TRUE) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
       } else if (prior$class[i] %in% cor_pars) {
-        if (nchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
+        if (nzchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
           stop2(
-            "Currently 'lkj' is the only valid prior ",
-            "for group-level correlations. See help(set_prior) ",
-            "for more details."
+            "The only supported prior for correlation matrices is ", 
+            "the 'lkj' prior. See help(set_prior) for more details."
           )
         }
       } else if (prior$class[i] %in% autocor_pars) {

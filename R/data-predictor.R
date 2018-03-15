@@ -14,9 +14,9 @@ data_effects.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 }
 
 #' @export
-data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
-                                   knots = NULL, not4stan = FALSE, 
-                                   old_sdata = NULL) {
+data_effects.brmsterms <- function(x, data, prior, ranef, meef,
+                                   cov_ranef = NULL, knots = NULL, 
+                                   not4stan = FALSE, old_sdata = NULL) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
@@ -30,7 +30,7 @@ data_effects.brmsterms <- function(x, data, prior, ranef, cov_ranef = NULL,
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
-    data_Xme(x, data),
+    data_Xme(meef, data),
     data_mixture(x, prior = prior)
   )
 }
@@ -380,22 +380,58 @@ data_cs <- function(bterms, data) {
   out
 }
 
-data_Xme <- function(bterms, data) {
+data_Xme <- function(meef, data) {
   # prepare global data for noise free variables
-  stopifnot(is.brmsterms(bterms))
+  stopifnot(is.meef_frame(meef))
   out <- list()
-  uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    Xn <- noise <- named_list(uni_me)
-    for (i in seq_along(uni_me)) {
-      temp <- eval2(uni_me[i], data)
-      Xn[[i]] <- as.array(attr(temp, "var"))
-      noise[[i]] <- as.array(attr(temp, "noise"))
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    Mme <- length(K)
+    out[[paste0("Mme_", i)]] <- Mme
+    out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
+    if (nzchar(g)) {
+      levels <- get_levels(meef)[[g]]
+      gr <- attributes(eval2(meef$term[K[1]], data))[["gr"]]
+      Jme <- match(gr, levels)
+      if (anyNA(Jme)) {
+        # occurs for new levels only
+        new_gr <- gr[!gr %in% levels]
+        new_levels <- unique(new_gr)
+        Jme[is.na(Jme)] <- match(new_gr, new_levels) + length(levels)
+        # represent all indices between 1 and length(unique(Jme))
+        Jme <- as.numeric(factor(Jme))
+      }
+      ilevels <- unique(Jme)
+      out[[paste0("Nme_", i)]] <- length(ilevels)
+      out[[paste0("Jme_", i)]] <- Jme
     }
-    K <- seq_along(uni_me)
-    names(Xn) <- paste0("Xn_", K)
-    names(noise) <- paste0("noise_", K)
-    out <- c(out, Xn, noise)
+    for (k in K) {
+      att <- attributes(eval2(meef$term[k], data))
+      Xn <- as.array(att$var)
+      noise <- as.array(att$sdx)
+      if (nzchar(g)) {
+        for (l in ilevels) {
+          # validate values of the same level
+          take <- Jme %in% l
+          if (length(unique(Xn[take])) > 1L ||
+              length(unique(noise[take])) > 1L ) {
+            stop2(
+              "Measured values and measurement error should be ", 
+              "unique for each group. Occured for level '", 
+              levels[l], "' of group '", g, "'."
+            )
+          }
+        }
+        not_dupl_Jme <- !duplicated(Jme)
+        to_order <- order(Jme[not_dupl_Jme])
+        Xn <- Xn[not_dupl_Jme][to_order]
+        noise <- noise[not_dupl_Jme][to_order]
+      }
+      out[[paste0("Xn_", k)]] <- as.array(Xn)
+      out[[paste0("noise_", k)]] <- as.array(noise)
+    }
   }
   out
 }
