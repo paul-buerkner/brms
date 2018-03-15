@@ -773,7 +773,7 @@ stan_Xme <- function(meef, prior) {
       )
       str_add(out$tparD) <- paste0(
         "  matrix[", Nme, ", Mme_", i, "] Xme", i, 
-        " = rep_matrix(meanme_", i, "', Nme_", i, ")\n   ", 
+        " = rep_matrix(meanme_", i, "', ", Nme, ") ", 
         " + (diag_pre_multiply(sdme_", i, ", Lme_", i,") * zme_", i, ")';\n"
       )
       str_add(out$tparD) <- collapse(

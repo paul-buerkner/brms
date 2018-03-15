@@ -169,7 +169,6 @@ change_Xme <- function(meef, pars) {
   #   a list whose elements can be interpreted by do_renaming
   stopifnot(is.meef_frame(meef))
   change <- list()
-  coefs <- rename(paste0("me", meef$xname))
   levels <- attr(meef, "levels")
   groups <- unique(meef$grname)
   for (i in seq_along(groups)) {
@@ -179,7 +178,7 @@ change_Xme <- function(meef, pars) {
     for (par in c("meanme", "sdme")) {
       hpar <- paste0(par, "_", i)
       pos <- grepl(paste0("^", hpar, "\\["), pars)
-      hpar_new <- paste0(par, "_", coefs[K])
+      hpar_new <- paste0(par, "_", meef$coef[K])
       change <- lc(change, nlist(pos, fnames = hpar_new))
       change <- c(change,
         change_prior(class = hpar, pars = pars, names = hpar_new)
@@ -190,7 +189,7 @@ change_Xme <- function(meef, pars) {
       if (any(grepl("^Xme_", pars))) {
         Xme <- paste0("Xme_", k)
         pos <- grepl(paste0("^", Xme, "\\["), pars)
-        Xme_new <- paste0("Xme_", coefs[k])
+        Xme_new <- paste0("Xme_", meef$coef[k])
         if (nzchar(g)) {
           indices <- gsub("[ \t\r\n]", ".", levels[[g]])
         } else {
@@ -203,7 +202,7 @@ change_Xme <- function(meef, pars) {
     # rename correlation parameters
     if (meef$cor[K[1]] && length(K) > 1L) {
       cor_type <- paste0("corme", usc(g))
-      cor_names <- get_cornames(coefs[K], cor_type, brackets = FALSE)
+      cor_names <- get_cornames(meef$coef[K], cor_type, brackets = FALSE)
       cor_regex <- paste0("^corme_", i, "(\\[|$)")
       cor_pos <- grepl(cor_regex, pars)
       change <- lc(change, list(pos = cor_pos, fnames = cor_names))

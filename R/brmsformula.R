@@ -691,7 +691,7 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #'   possible in multivariate \code{gaussian} and \code{student} models.
 #'   Only relevant in multivariate models.
 #' @param mecor Logical; Indicates if correlations between latent variables
-#'   defined by \code{me()} terms should be modeled. Defaults to \code{TRUE}.
+#'   defined by \code{\link{me}} terms should be modeled. Defaults to \code{TRUE}.
 #' @inheritParams brmsformula
 #' 
 #' @return For \code{lf} and \code{nlf} a \code{list} that can be 

@@ -92,6 +92,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
         levels[[i]] <- old_levels[[att$grname]]
       }
     }
+    out$coef <- rename(paste0("me", out$xname))
     out$cor <- isTRUE(bterms$mecor)
     names(levels) <- out$grname
     levels <- levels[!is.na(names(levels))]

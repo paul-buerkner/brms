@@ -681,10 +681,9 @@ prior_Xme <- function(meef, internal = FALSE) {
   stopifnot(is.meef_frame(meef))
   prior <- empty_brmsprior()
   if (nrow(meef)) {
-    coefs <- rename(paste0("me", meef$xname))
     prior <- prior + 
-      brmsprior(class = "meanme", coef = c("", coefs)) +
-      brmsprior(class = "sdme", coef = c("", coefs))
+      brmsprior(class = "meanme", coef = c("", meef$coef)) +
+      brmsprior(class = "sdme", coef = c("", meef$coef))
     # priors for correlation parameters
     groups <- unique(meef$grname)
     for (i in seq_along(groups)) {

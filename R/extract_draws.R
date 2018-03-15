@@ -261,69 +261,46 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   }
   # prepare draws specific to noise-free effects
   warn_me <- FALSE
-  dim <- c(nrow(draws$bsp), sdata$N)
-  uni_me <- rename(meef$term)
-  if (length(uni_me)) {
+  if (nrow(meef)) {
     save_mevars <- any(grepl("^Xme_", colnames(samples)))
     warn_me <- warn_me || !new && !save_mevars
-    draws$Xme <- named_list(uni_me)
-    for (i in seq_along(draws$Xme)) {
-      old_levels <- attr(meef, "levels")[[meef$grname[i]]]
-      n_old_levels <- length(old_levels)
-      Jme <- sdata[[paste0("Jme_", i)]]
-      Xn <- sdata[[paste0("Xn_", i)]]
-      noise <- sdata[[paste0("noise_", i)]]
-      if (save_mevars) {
-        Xme_pars <- paste0("Xme_", uni_me[i], "\\[")
-        Xme_old <- get_samples(samples, Xme_pars)
-      }
-      if (is.null(Jme)) {
-        # the term has no grouping factor
+    draws$Xme <- named_list(meef$coef)
+    Xme_pars <- paste0("Xme_", escape_all(meef$coef), "\\[")
+    Xn <- sdata[paste0("Xn_", seq_len(nrow(meef)))]
+    noise <- sdata[paste0("noise_", seq_len(nrow(meef)))]
+    groups <- unique(meef$grname)
+    for (i in seq_along(groups)) {
+      g <- groups[i]
+      K <- which(meef$grname %in% g)
+      if (nzchar(g)) {
+        Jme <- sdata[[paste0("Jme_", i)]]
+        me_dim <- c(nrow(draws$bsp), length(unique(Jme)))
+      } else {
         me_dim <- c(nrow(draws$bsp), sdata$N)
-        if (!new && save_mevars) {
-          # take stored values of old levels
-          draws$Xme[[i]] <- Xme_old
-        } else {
-          # sample values for new observations
-          Xn <- as_draws_matrix(Xn, dim = me_dim)
-          noise <- as_draws_matrix(noise, dim = me_dim)
-          draws$Xme[[i]] <- array(rnorm(prod(me_dim), Xn, noise), me_dim) 
+      }
+      if (!new && save_mevars) {
+        # extract original samples of latent variables
+        for (k in K) {
+          draws$Xme[[k]] <- get_samples(samples, Xme_pars[k])
         }
       } else {
-        # the term has a grouping factor
-        me_dim <- c(nrow(draws$bsp), max(Jme))
-        draws$Xme[[i]] <- array(dim = me_dim)
-        if (any(Jme <= n_old_levels)) {
-          if (save_mevars) {
-            # take stored values of old levels
-            draws$Xme[[i]][, seq_len(n_old_levels)] <- Xme_old
-          } else {
-            # sample values for old levels
-            warn_me <- TRUE
-            uni_old_Jme <- unique(Jme[Jme <= n_old_levels])
-            take <- seq_along(uni_old_Jme)
-            Xn_dim <- c(nrow(draws$bsp), length(take))
-            Xn_new <- as_draws_matrix(Xn[take], dim = Xn_dim)
-            noise_new <- as_draws_matrix(noise[take], dim = Xn_dim)
-            draws$Xme[[i]][, uni_old_Jme] <-
-              array(rnorm(prod(Xn_dim), Xn_new, noise_new), Xn_dim) 
-          }
+        # sample new values of latent variables
+        for (k in K) {
+          dXn <- as_draws_matrix(Xn[[k]], me_dim)
+          dnoise <- as_draws_matrix(noise[[k]], me_dim)
+          draws$Xme[[k]] <- array(rnorm(prod(me_dim), dXn, dnoise), me_dim)
+          remove(dXn, dnoise)
         }
-        if (me_dim[2] > n_old_levels) {
-          # sample values for new levels
-          n_new_levels <- me_dim[2] - n_old_levels
-          take <- (length(Xn) - n_new_levels + 1):length(Xn)
-          Xn_dim <- c(nrow(draws$bsp), length(take))
-          Xn_new <- as_draws_matrix(Xn[take], dim = Xn_dim)
-          noise_new <- as_draws_matrix(noise[take], dim = Xn_dim)
-          draws$Xme[[i]][, (n_old_levels + 1):me_dim[2]] <-
-            array(rnorm(prod(Xn_dim), Xn_new, noise_new), Xn_dim) 
+      }
+      if (nzchar(g)) {
+        for (k in K) {
+          draws$Xme[[k]] <- draws$Xme[[k]][, Jme]
         }
-        draws$Xme[[i]] <- draws$Xme[[i]][, Jme]
       }
     }
   }
   # prepare draws specific to missing value variables
+  dim <- c(nrow(draws$bsp), sdata$N)
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
     resps <- usc(vars_mi)

@@ -388,8 +388,10 @@ data_Xme <- function(meef, data) {
   for (i in seq_along(groups)) {
     g <- groups[i]
     K <- which(meef$grname %in% g)
+    Mme <- length(K)
+    out[[paste0("Mme_", i)]] <- Mme
     if (nzchar(g)) {
-      levels <- attr(meef, "levels")[[g]]
+      levels <- get_levels(meef)[[g]]
       gr <- attributes(eval2(meef$term[K[1]], data))[["gr"]]
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
@@ -397,11 +399,11 @@ data_Xme <- function(meef, data) {
         new_gr <- gr[!gr %in% levels]
         new_levels <- unique(new_gr)
         Jme[is.na(Jme)] <- match(new_gr, new_levels) + length(levels)
+        # represent all indices between 1 and length(unique(Jme))
+        Jme <- as.numeric(factor(Jme))
       }
       ilevels <- unique(Jme)
-      Mme <- length(K)
       out[[paste0("Nme_", i)]] <- length(ilevels)
-      out[[paste0("Mme_", i)]] <- Mme
       out[[paste0("Jme_", i)]] <- Jme
       out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     }

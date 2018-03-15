@@ -64,6 +64,14 @@ restructure_v2 <- function(x) {
     # added 'by' variables to grouping terms
     bterms <- parse_bf(formula(x))
     x$ranef <- tidy_ranef(bterms, model.frame(x))
+    meef <- tidy_meef(bterms, model.frame(x))
+    if (isTRUE(nrow(meef) > 0)) {
+      warning2(
+        "Measurement error ('me') terms have been reworked ",
+        "in version 2.1.9. I strongly recommend refitting your ",
+        "model with the latest version of brms."
+      )
+    }
   }
   x
 }

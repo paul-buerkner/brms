@@ -82,7 +82,7 @@ possible in multivariate \code{gaussian} and \code{student} models.
 Only relevant in multivariate models.}
 
 \item{mecor}{Logical; Indicates if correlations between latent variables
-defined by \code{me()} terms should be modeled. Defaults to \code{TRUE}.}
+defined by \code{\link{me}} terms should be modeled. Defaults to \code{TRUE}.}
 }
 \value{
 For \code{lf} and \code{nlf} a \code{list} that can be 
