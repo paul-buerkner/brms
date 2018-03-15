@@ -249,8 +249,16 @@ ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
 
 lc <- function(l, ...) {
   # append ... to l
-  dots <- list(...)
+  dots <- rmNULL(list(...), recursive = FALSE)
   c(l, dots)
+}
+
+'c<-' <- function(x, value) {
+  c(x, value)
+}
+
+'lc<-' <- function(x, value) {
+  lc(x, value)
 }
 
 collapse <- function(..., sep = "") {
