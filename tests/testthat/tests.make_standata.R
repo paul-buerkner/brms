@@ -487,6 +487,7 @@ test_that("make_standata handles noise-free terms", {
   expect_equal(sdata$noise_2, as.array(dat$zsd))
   expect_equal(unname(sdata$Csp_3), as.array(dat$x))
   expect_equal(sdata$Ksp, 6)
+  expect_equal(sdata$NCme_1, 1)
 })
 
 test_that("make_standata handles noise-free terms with grouping factors", {
