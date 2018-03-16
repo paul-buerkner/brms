@@ -2269,8 +2269,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
     bterms <- parse_bf(object$formula)
     object$data <- update_data(dots$data, bterms = bterms)
-    object$family <- object$formula$family
-    object$autocor <- object$formula$autocor
+    object$family <- get_element(object$formula, "family")
+    object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stan_vars <- validate_stanvars(dots$stan_vars)
     if (!is.null(newdata)) {

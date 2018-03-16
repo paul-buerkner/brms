@@ -61,12 +61,10 @@ restructure_v2 <- function(x) {
       stop_parameterization_changed("exgaussian", "2.1.8")
     }
   }
-  if (version <= "2.1.7") {
+  if (version <= "2.1.8") {
     # added 'by' variables to grouping terms
     x$ranef <- tidy_ranef(bterms, model.frame(x))
-  }
-  if (version <= "2.1.8") {
-    # reworked 'me' terms
+    # reworked 'me' terms (#372)
     meef <- tidy_meef(bterms, model.frame(x))
     if (isTRUE(nrow(meef) > 0)) {
       warning2(
@@ -115,7 +113,7 @@ restructure_v1 <- function(x) {
   }
   if (version < "1.0.0") {
     # double underscores were added to group-level parameters
-    change <- change_old_re2(x$ranef, parnames(x), dims = x$fit@sim$dims_oi)
+    change <- change_old_re2(x$ranef, parnames(x), x$fit@sim$dims_oi)
     x <- do_renaming(x, change)
   }
   if (version <= "1.0.1") {
@@ -123,10 +121,6 @@ restructure_v1 <- function(x) {
     # allowing for multiple covariates in one spline term
     change <- change_old_sm(bterms, parnames(x), x$fit@sim$dims_oi)
     x <- do_renaming(x, change)
-  }
-  if (version <= "1.2.0") {
-    x$ranef$type[x$ranef$type == "mono"] <- "mo"
-    x$ranef$type[x$ranef$type == "cse"] <- "cs"
   }
   if (version <= "1.8.0") {
     att <- attributes(x$exclude)

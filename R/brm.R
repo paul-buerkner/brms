@@ -355,13 +355,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     formula <- validate_formula(
       formula, data = data, family = family, autocor = autocor
     )
-    if (is.mvbrmsformula(formula)) {
-      family <- lapply(formula$forms, "[[", "family")
-      autocor <- lapply(formula$forms, "[[", "autocor")
-    } else {
-      family <- formula$family
-      autocor <- formula$autocor
-    }
+    family <- get_element(formula, "family")
+    autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
     if (is.null(dots$data.name)) {
       data.name <- substr(collapse(deparse(substitute(data))), 1, 50)

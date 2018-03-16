@@ -1040,6 +1040,26 @@ has_cs <- function(bterms) {
     any(get_re(bterms)$type %in% "cs")
 }
 
+get_element <- function(x, name, ...) {
+  # helper function to extract elements from objects
+  UseMethod("get_element")
+}
+
+#' @export
+get_element.default <- function(x, name, ...) {
+  x[[name]]
+}
+
+#' @export
+get_element.mvbrmsformula <- function(x, name, ...) {
+  lapply(x$forms, get_element, name = name, ...)
+}
+
+#' @export
+get_element.mvbrmsterms <- function(x, name, ...) {
+  lapply(x$terms, get_element, name = name, ...)
+}
+
 get_autocor_vars <- function(x, ...) {
   # extract variable names used in autocor structures
   UseMethod("get_autocor_vars")
