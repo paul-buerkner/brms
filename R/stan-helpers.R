@@ -21,12 +21,12 @@ stan_response <- function(bterms, data) {
       "  real min_Y", resp, " = min(Y", resp, "); \n"
     )
   }
-  if (has_trials(family)) {
+  if (has_trials(family) || is.formula(bterms$adforms$trials)) {
     str_add(out$data) <- paste0(
       "  int trials", resp, "[N];  // number of trials \n"
     )
   }
-  if (is_ordinal(family) || is_categorical(family)) {
+  if (has_cat(family) || is.formula(bterms$adforms$cat)) {
     str_add(out$data) <- paste0(
       "  int<lower=2> ncat", resp, ";  // number of categories \n"
     )

@@ -730,6 +730,120 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   family
 }
 
+#' Custom Families in \pkg{brms} Models
+#' 
+#' Define custom families for use in \pkg{brms} models.
+#' It allows users to benefit from the modeling flexibility of 
+#' \pkg{brms}, while applying their own special likelihood
+#' functions. All of the post-processing methods of \code{brmsfit} 
+#' objects are compatible with custom families. 
+#' 
+#' @param name Name of the custom family.
+#' @param dpars Names of the distributional parameters of
+#'   the family. One parameter must be named \code{"mu"}.
+#' @param links Names of the link functions of the 
+#'   distributional parameters.
+#' @param type Indicates if the response distribution is
+#'   continuous (\code{"real"}) or discrete (\code{"int"}).
+#' @param lb Vector of lower bounds of the distributional 
+#'   parameters. Defaults to \code{NA} that is no lower bound.
+#' @param ub Vector of upper bounds of the distributional 
+#'   parameters. Defaults to \code{NA} that is no upper bound.
+#' @param vars Names of variables, which are part of the likelihood
+#'   function without being distributional parameters. That is,
+#'   \code{vars} can be used to pass data to the likelihood. 
+#' @param env An \code{environment} in which post-processing 
+#'   functions of the custom family for use in \code{\link{predict.brmsfit}}, 
+#'   \code{\link{fitted.brmsfit}} and \code{\link{log_lik}} can be found. 
+#'   Usually only relevant for package developers.
+#'   
+#' @details The corresponding probability density or4 mass \code{Stan} 
+#'   functions need to have the exact same name as the custom family.
+#'   That is if a family is called, say, \code{myfamily}, then the 
+#'   \pkg{Stan} functions should be called \code{myfamily_lpdf} or
+#'   \code{myfamily_lpmf} depending on whether it should define a 
+#'   continuous or discrete distribution.
+#'   
+#' @seealso See \code{\link{brmsfamily}} for a list of built in families.
+#' 
+#' @examples
+#' \dontrun{
+#' ## demonstrate how to fit a beta-binomial model
+#' ## generate some fake data
+#' phi <- 0.7
+#' n <- 1000
+#' z <- rnorm(n, sd<-0.2)
+#' ntrials <- sample(1:10, n, replace = TRUE)
+#' eta <- 1 + z
+#' p.eta <- exp(eta) / (1 + exp(eta))
+#' a <- p.eta * (1-phi) / phi
+#' b <- (p.eta * phi - p.eta - phi + 1) / phi
+#' p <- rbeta(n, a, b)
+#' y <- rbinom(n, ntrials, p)
+#' dat <- data.frame(y, z, ntrials)
+#' 
+#' # define a custom family
+#' beta_binomial2 <- custom_family(
+#'   "beta_binomial2", dpars = c("mu", "phi"),
+#'   links = c("logit", "log"), lb = c(NA, 0),
+#'   type = "int", vars = "trials[n]"
+#' )
+#' 
+#' # define the corresponding Stan function
+#' stan_funs <- "
+#'   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
+#'     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+#'   }
+#' "
+#' 
+#' # fit the model
+#' fit <- brm(y | trials(ntrials) ~ z, data = dat, 
+#'            family = beta_binomial2, stan_funs = stan_funs)
+#' summary(fit)
+#' }
+#' 
+#' @export
+custom_family <- function(name, dpars = "mu", links = "identity",
+                          type = c("real", "int"), lb = NA, ub = NA,
+                          vars = NULL, env = parent.frame()) {
+  name <- as_one_character(name)
+  dpars <- as.character(unique(dpars))
+  links <- as.character(links)
+  type <- match.arg(type)
+  lb <- as.character(lb)
+  ub <- as.character(ub)
+  vars <- as.character(vars)
+  env <- as.environment(env)
+  if (!"mu" %in% dpars) {
+    stop2("All families must have a 'mu' parameter.")
+  }
+  if (any(grepl("_|\\.", dpars))) {
+    stop2("Dots or underscores are not allowed in 'dpars'.")
+  }
+  for (arg in c("links", "lb", "ub")) {
+    obj <- get(arg)
+    if (length(obj) == 1L) {
+      obj <- rep(obj, length(dpars))
+      assign(arg, obj)
+    }
+    if (length(dpars) != length(obj)) {
+      stop2("'", arg, "' must be of the same length as 'dpars'.")
+    }
+  }
+  lb <- named_list(dpars, lb)
+  ub <- named_list(dpars, ub)
+  is_mu <- "mu" == dpars
+  link <- links[is_mu]
+  out <- nlist(
+    family = "custom", link, name, 
+    dpars, lb, ub, type, vars, env
+  )
+  if (length(dpars) > 1L) {
+    out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
+  }
+  structure(out, class = c("customfamily", "brmsfamily", "family"))
+}
+
 family_names <- function(family, ...) {
   # extract family names
   UseMethod("family_names")
@@ -879,6 +993,13 @@ summary.mixfamily <- function(object, link = FALSE, ...) {
   paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
+#' @method summary customfamily
+#' @export
+summary.customfamily <- function(object, link = TRUE, ...) {
+  object$family <- object$name
+  summary.family(object, link = link, ...)
+}
+
 summarise_families <- function(x) {
   # summary of families used in summary.brmsfit
   UseMethod("summarise_families")
@@ -925,6 +1046,10 @@ is.family <- function(x) {
 
 is.mixfamily <- function(x) {
   inherits(x, "mixfamily")
+}
+
+is.customfamily <- function(x) {
+  inherits(x, "customfamily")
 }
 
 is_linear <- function(family) {
@@ -1003,24 +1128,32 @@ is_zero_one_inflated <- function(family, zi_beta = FALSE) {
   any(family_names(family) %in% "zero_one_inflated_beta")
 }
 
+real_families <- function() {
+  c("gaussian", "student", "skew_normal", "lognormal", 
+    "gamma", "weibull", "exponential", "frechet",
+    "exgaussian", "inverse.gaussian", "beta", 
+    "von_mises", "zero_inflated_beta", "hurdle_gamma", 
+    "hurdle_lognormal", "shifted_lorgnomal", "wiener", 
+    "asym_laplace", "gen_extreme_value", "zero_one_inflated_beta")
+}
+
+int_families <- function() {
+  c("binomial", "bernoulli", "categorical", "cumulative",
+    "sratio", "cratio", "acat", "poisson", "negbinomial", 
+    "geometric", "zero_inflated_poisson", "zero_inflated_negbinomial",
+    "zero_inflated_binomial", "hurdle_poisson", "hurdle_negbinomial")
+}
+
 use_real <- function(family) {
   # indicate if family uses real responses
-  families <- family_names(family)
-  is_linear(families) || is_skewed(families) || 
-    any(families %in% 
-      c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
-        "von_mises", "zero_inflated_beta", "hurdle_gamma", 
-        "hurdle_lognormal", "wiener", "asym_laplace", "skew_normal",
-        "gen_extreme_value", "zero_one_inflated_beta")
-    )
+  any(family_names(family) %in% real_families()) ||
+    is.customfamily(family) && family$type %in% "real"
 }
 
 use_int <- function(family) {
   # indicate if family uses integer responses
-  families <- family_names(family)
-  is_binary(families) || has_cat(families) || 
-    is_count(families) || is_zero_inflated(families) || 
-    any(families %in% c("hurdle_poisson", "hurdle_negbinomial"))
+  any(family_names(family) %in% int_families()) ||
+    is.customfamily(family) && family$type %in% "int"
 }
 
 has_trials <- function(family) {

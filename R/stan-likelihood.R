@@ -206,11 +206,10 @@ stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
   #   reqn: will the likelihood be wrapped in a loop over n?
   #   dpars: optional names of distributional parameters to be prepared
   if (is.null(dpars)) {
-    dpars <- valid_dpars(bterms) 
+    dpars <- paste0(valid_dpars(bterms), mix)
   }
-  pred_dpars <- names(bterms$dpars)
-  is_pred <- dpars %in% c("mu", dpar_class(pred_dpars))
-  out <- paste0(dpars, mix, resp, ifelse(reqn & is_pred, "[n]", ""))
+  is_pred <- dpars %in% c("mu", names(bterms$dpars))
+  out <- paste0(dpars, resp, ifelse(reqn & is_pred, "[n]", ""))
   named_list(dpars, out)
 }
 
@@ -604,6 +603,12 @@ stan_llh_zero_inflated_beta <- function(bterms, resp = "", mix = "") {
 stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
+}
+
+stan_llh_custom <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  family <- bterms$family
+  sdist(family$name, p[family$dpars], family$vars)
 }
 
 sdist <- function(dist, ..., shift = NULL) {

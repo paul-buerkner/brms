@@ -587,6 +587,12 @@ predict_ordinal <- function(i, draws, family, ...) {
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
+predict_custom <- function(i, draws, ...) {
+  predict_fun <- paste0("predict_", draws$f$name)
+  predict_fun <- get(predict_fun, draws$f$env)
+  predict_fun(i = i, draws = draws, ...)
+}
+
 predict_mixture <- function(i, draws, ...) {
   families <- family_names(draws$f)
   theta <- get_theta(draws, i = i)

@@ -750,7 +750,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$Y <- as.array(out$Y)
   }
   # data for addition arguments of the response
-  if (has_trials(x$family)) {
+  if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
       out$trials <- max(out$Y, na.rm = TRUE)
       if (is.finite(out$trials)) {
@@ -778,7 +778,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$trials <- as.array(out$trials)
   }
-  if (has_cat(x$family)) {
+  if (has_cat(x$family) || is.formula(x$adforms$cat)) {
     if (!length(x$adforms$cat)) {
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
