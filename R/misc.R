@@ -153,22 +153,22 @@ is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
 
-as_one_logical <- function(x) {
+as_one_logical <- function(x, allow_na = FALSE) {
   # coerce 'x' to TRUE or FALSE if possible
   s <- substitute(x)
   x <- as.logical(x)
-  if (anyNA(x) || length(x) != 1L) {
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- substr(deparse_combine(s), 1L, 100L)
     stop2("Cannot coerce ", s, " to a single logical value.")
   }
   x
 }
 
-as_one_character <- function(x) {
+as_one_character <- function(x, allow_na = FALSE) {
   # coerce 'x' to a single character string
   s <- substitute(x)
   x <- as.character(x)
-  if (anyNA(x) || length(x) != 1L) {
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- substr(deparse_combine(s), 1L, 100L)
     stop2("Cannot coerce ", s, " to a single character value.")
   }

@@ -2575,14 +2575,14 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   if (pointwise) {
     stopifnot(combine)
-    loglik <- loglik_pointwise
-    attr(loglik, "args") <- list(
+    log_lik <- log_lik_pointwise
+    attr(log_lik, "args") <- list(
       draws = draws, N = choose_N(draws), 
       S = draws$nsamples, data = data.frame()
     )
   } else {
-    loglik <- loglik_internal(draws, combine = combine)
-    if (anyNA(loglik)) {
+    log_lik <- log_lik_internal(draws, combine = combine)
+    if (anyNA(log_lik)) {
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
         "some of your predictors contain NAs. If you use 'mi' terms, try ", 
@@ -2590,7 +2590,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       )
     }
   }
-  loglik
+  log_lik
 }
 
 #' @export
@@ -2639,23 +2639,23 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
-  loglik <- lapply(seq_len(N), loglik_mixture, draws = draws)
-  loglik <- do.call(abind, c(loglik, along = 3))
-  loglik <- aperm(loglik, c(1, 3, 2))
+  log_lik <- lapply(seq_len(N), log_lik_mixture, draws = draws)
+  log_lik <- do.call(abind, c(log_lik, along = 3))
+  log_lik <- aperm(log_lik, c(1, 3, 2))
   old_order <- draws$old_order
-  sort <- isTRUE(ncol(loglik) != length(old_order))
-  loglik <- reorder_obs(loglik, old_order, sort = sort)
+  sort <- isTRUE(ncol(log_lik) != length(old_order))
+  log_lik <- reorder_obs(log_lik, old_order, sort = sort)
   if (!log) {
-    loglik <- exp(loglik)
+    log_lik <- exp(log_lik)
   }
   if (summary) {
-    loglik <- posterior_summary(loglik, probs = probs, robust = robust)
-    dimnames(loglik) <- list(
-      seq_len(nrow(loglik)), colnames(loglik),
-      paste0("P(K = ", seq_len(dim(loglik)[3]), " | Y)")
+    log_lik <- posterior_summary(log_lik, probs = probs, robust = robust)
+    dimnames(log_lik) <- list(
+      seq_len(nrow(log_lik)), colnames(log_lik),
+      paste0("P(K = ", seq_len(dim(log_lik)[3]), " | Y)")
     )
   }
-  loglik
+  log_lik
 }
 
 #' @rdname hypothesis
