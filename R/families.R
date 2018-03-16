@@ -734,9 +734,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' 
 #' Define custom families for use in \pkg{brms} models.
 #' It allows users to benefit from the modeling flexibility of 
-#' \pkg{brms}, while applying their own special likelihood
-#' functions. All of the post-processing methods of \code{brmsfit} 
-#' objects are compatible with custom families. 
+#' \pkg{brms}, while applying their self-defined likelihood
+#' functions. All of the post-processing methods for \code{brmsfit} 
+#' objects can be made compatible with custom families. 
 #' 
 #' @param name Name of the custom family.
 #' @param dpars Names of the distributional parameters of
@@ -752,32 +752,32 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param vars Names of variables, which are part of the likelihood
 #'   function without being distributional parameters. That is,
 #'   \code{vars} can be used to pass data to the likelihood. 
-#' @param env An \code{environment} in which post-processing 
-#'   functions of the custom family for use in \code{\link{predict.brmsfit}}, 
-#'   \code{\link{fitted.brmsfit}} and \code{\link{log_lik}} can be found. 
-#'   Usually only relevant for package developers.
+#' @param env An \code{environment} in which certain post-processing 
+#'   functions of the custom family for use with \code{\link{predict.brmsfit}}, 
+#'   \code{\link{fitted.brmsfit}} and \code{\link{log_lik.brmsfit}} 
+#'   can be found. Usually only relevant for package developers.
 #'   
-#' @details The corresponding probability density or4 mass \code{Stan} 
-#'   functions need to have the exact same name as the custom family.
-#'   That is if a family is called, say, \code{myfamily}, then the 
+#' @details The corresponding probability density or mass \code{Stan} 
+#'   functions need to have the same name as the custom family.
+#'   That is if a family is called \code{myfamily}, then the 
 #'   \pkg{Stan} functions should be called \code{myfamily_lpdf} or
-#'   \code{myfamily_lpmf} depending on whether it should define a 
+#'   \code{myfamily_lpmf} depending on whether it defines a 
 #'   continuous or discrete distribution.
 #'   
-#' @seealso See \code{\link{brmsfamily}} for a list of built in families.
+#' @seealso See \code{\link{brmsfamily}} for a list of built-in families.
 #' 
 #' @examples
 #' \dontrun{
 #' ## demonstrate how to fit a beta-binomial model
 #' ## generate some fake data
 #' phi <- 0.7
-#' n <- 1000
-#' z <- rnorm(n, sd<-0.2)
+#' n <- 300
+#' z <- rnorm(n, sd = 0.2)
 #' ntrials <- sample(1:10, n, replace = TRUE)
 #' eta <- 1 + z
-#' p.eta <- exp(eta) / (1 + exp(eta))
-#' a <- p.eta * (1-phi) / phi
-#' b <- (p.eta * phi - p.eta - phi + 1) / phi
+#' mu <- exp(eta) / (1 + exp(eta))
+#' a <- mu * phi
+#' b <- (1 - mu) * phi
 #' p <- rbeta(n, a, b)
 #' y <- rbinom(n, ntrials, p)
 #' dat <- data.frame(y, z, ntrials)
@@ -789,7 +789,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   type = "int", vars = "trials[n]"
 #' )
 #' 
-#' # define the corresponding Stan function
+#' # define the corresponding Stan density function
 #' stan_funs <- "
 #'   real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
 #'     return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
