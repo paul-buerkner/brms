@@ -10,7 +10,7 @@
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "", resp = "",
-  dpar = "", nlpar = "", lb = NULL, ub = NULL, check = TRUE)
+  dpar = "", nlpar = "", lb = NA, ub = NA, check = TRUE)
 
 prior(prior, ...)
 

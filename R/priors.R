@@ -334,7 +334,7 @@
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", 
-                      lb = NULL, ub = NULL, check = TRUE) {
+                      lb = NA, ub = NA, check = TRUE) {
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -342,15 +342,13 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   resp <- as_one_character(resp)
   dpar <- as_one_character(dpar)
   nlpar <- as_one_character(nlpar)
-  lb <- as.numeric(lb)
-  ub <- as.numeric(ub)
+  lb <- as_one_character(lb, allow_na = TRUE)
+  ub <- as_one_character(ub, allow_na = TRUE)
   check <- as_one_logical(check)
-  if (length(lb) > 1 || length(ub) > 1) {
-    stop2("If specified, 'lb' and 'ub' must be of length 1.")
-  }
   # validate boundaries
+  bound <- ""
   is_arma <- class %in% c("ar", "ma")
-  if (length(lb) || length(ub) || is_arma) {
+  if (!is.na(lb) || !is.na(ub) || is_arma) {
     if (!(class %in% c("b", "ar", "ma", "arr"))) {
       stop2(
         "Currently boundaries are only allowed for ", 
@@ -361,25 +359,15 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       stop2("Argument 'coef' may not be specified when using boundaries.")
     }
     if (is_arma) {
-      lb <- ifelse(length(lb), lb, -1)
-      ub <- ifelse(length(ub), ub, 1) 
-      if (is.na(lb) || is.na(ub) || abs(lb) > 1 || abs(ub) > 1) {
-        warning2(
-          "Setting boundaries of autocorrelation parameters ", 
-          "outside of [-1,1] may not be appropriate."
-        )
-      }
+      lb <- ifelse(!is.na(lb), lb, -1)
+      ub <- ifelse(!is.na(ub), ub, 1)
     }
     # don't put spaces in boundary declarations
-    lb <- if (length(lb) && !is.na(lb)) paste0("lower=", lb)
-    ub <- if (length(ub) && !is.na(ub)) paste0("upper=", ub)
+    lb <- if (!is.na(lb)) paste0("lower=", lb)
+    ub <- if (!is.na(ub)) paste0("upper=", ub)
     if (!is.null(lb) || !is.null(ub)) {
       bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
-    } else {
-      bound <- ""
     }
-  } else {
-    bound <- ""
   }
   if (!check) {
     # prior will be added to the log-posterior as is
