@@ -85,8 +85,8 @@
 #' @param knots Optional list containing user specified knot values to be 
 #'   used for basis construction of smoothing terms. 
 #'   See \code{\link[mgcv:gamm]{gamm}} for more details.
-#' @param stan_vars An optional \code{stanvars} object generated
-#'   by function \code{\link{stan_var}} to define additional variables
+#' @param stanvars An optional \code{stanvars} object generated
+#'   by function \code{\link{stanvar}} to define additional variables
 #'   in the data block of \pkg{Stan}.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
@@ -329,7 +329,7 @@
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
-                sparse = FALSE, knots = NULL, stan_vars = NULL,
+                sparse = FALSE, knots = NULL, stanvars = NULL,
                 stan_funs = NULL, fit = NA, save_ranef = TRUE, 
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
@@ -374,7 +374,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, family = family, data = data, 
       data.name = data.name, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
-      stan_vars = stan_vars, stan_funs = stan_funs,
+      stanvars = stanvars, stan_funs = stan_funs,
       algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
@@ -387,7 +387,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula, data = data, prior = prior, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
-      stan_vars = stan_vars, stan_funs = stan_funs, 
+      stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model, brm_call = TRUE
     )
     # generate Stan data before compiling the model to avoid
@@ -395,7 +395,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     sdata <- make_standata(
       formula, data = data, prior = prior, 
       cov_ranef = cov_ranef, sample_prior = sample_prior,
-      knots = knots, stan_vars = stan_vars
+      knots = knots, stanvars = stanvars
     )
     message("Compiling the C++ model")
     x$fit <- eval_silent(

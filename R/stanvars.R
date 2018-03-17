@@ -1,7 +1,7 @@
 #' User-defined variables passed to Stan
 #' 
 #' Prepare user-defined variables to be passed to Stan's data block.
-#' This is primarily useful for defning more complex priors and 
+#' This is primarily useful for defining more complex priors and 
 #' for refitting models without recompilation despite changing priors.
 #' 
 #' @aliases stanvars
@@ -18,19 +18,19 @@
 #' 
 #' @examples 
 #' bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
-#' stanvars <- stan_var(5, name = "mean_intercept")
+#' stanvars <- stanvar(5, name = "mean_intercept")
 #' make_stancode(count ~ Trt, epilepsy, prior = bprior, 
-#'               stan_vars = stanvars)
+#'               stanvars = stanvars)
 #'               
 #' # define a multi-normal prior with known covariance matrix
 #' bprior <- prior(multi_normal(M, V), class = "b")
-#' stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
-#'   stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
+#' stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
+#'   stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
 #' make_stancode(count ~ Trt + log_Base4_c, epilepsy,
-#'               prior = bprior, stan_vars = stanvars)
+#'               prior = bprior, stanvars = stanvars)
 #' 
 #' @export
-stan_var <- function(x, name = NULL, scode = NULL) {
+stanvar <- function(x, name = NULL, scode = NULL) {
   if (is.null(name)) {
     name <- deparse(substitute(x))
   }
@@ -61,7 +61,7 @@ stan_var <- function(x, name = NULL, scode = NULL) {
     }
     if (is.null(scode)) {
       stop2(
-        "'stan_vars' could not infer the Stan code for an object ",
+        "'stanvar' could not infer the Stan code for an object ",
         "of class '", class(x), "'. Please specify the Stan code ",
         "manually via argument 'scode'."
       )
@@ -84,7 +84,7 @@ collapse_stanvars <- function(x) {
 
 validate_stanvars <- function(x) {
   if (!is.null(x) && !is.stanvars(x)) {
-    stop2("Argument 'stan_vars' is invalid. See ?stanvars for help.")
+    stop2("Argument 'stanvars' is invalid. See ?stanvar for help.")
   }
   x
 }
