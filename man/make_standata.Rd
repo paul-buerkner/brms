@@ -6,7 +6,7 @@
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  stan_vars = NULL, knots = NULL, check_response = TRUE,
+  stanvars = NULL, knots = NULL, check_response = TRUE,
   only_response = FALSE, control = list(), ...)
 }
 \arguments{
@@ -64,8 +64,8 @@ If set to \code{"only"}, samples are drawn solely from
 the priors ignoring the likelihood. In this case, 
 all parameters must have proper priors.}
 
-\item{stan_vars}{An optional \code{stanvars} object generated
-by function \code{\link{stan_var}} to define additional variables
+\item{stanvars}{An optional \code{stanvars} object generated
+by function \code{\link{stanvar}} to define additional variables
 in the data block of \pkg{Stan}.}
 
 \item{knots}{Optional list containing user specified knot values to be 

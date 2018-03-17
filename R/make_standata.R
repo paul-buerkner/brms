@@ -27,7 +27,7 @@
 make_standata <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL, cov_ranef = NULL,
                           sample_prior = c("no", "yes", "only"), 
-                          stan_vars = NULL, knots = NULL, 
+                          stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
                           control = list(), ...) {
   # internal control arguments:
@@ -87,14 +87,14 @@ make_standata <- function(formula, data, family = gaussian(),
     out <- c(out, do.call(data_effects, args_eff))
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
-  stan_vars <- validate_stanvars(stan_vars)
-  if (is.stanvars(stan_vars)) {
-    inv_names <- intersect(names(stan_vars), names(out))
+  stanvars <- validate_stanvars(stanvars)
+  if (is.stanvars(stanvars)) {
+    inv_names <- intersect(names(stanvars), names(out))
     if (length(inv_names)) {
       stop2("Cannot overwrite existing variables: ", 
             collapse_comma(inv_names))
     }
-    out[names(stan_vars)] <- lapply(stan_vars, "[[", "sdata")
+    out[names(stanvars)] <- lapply(stanvars, "[[", "sdata")
   }
   if (isTRUE(control$save_order)) {
     attr(out, "old_order") <- attr(data, "old_order")

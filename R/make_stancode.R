@@ -23,7 +23,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           prior = NULL, autocor = NULL,
                           cov_ranef = NULL, sparse = FALSE, 
                           sample_prior = c("no", "yes", "only"), 
-                          stan_vars = NULL, stan_funs = NULL, 
+                          stanvars = NULL, stan_funs = NULL, 
                           save_model = NULL, silent = FALSE, ...) {
   dots <- list(...)
   # some input checks
@@ -45,7 +45,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
-  stan_vars <- validate_stanvars(stan_vars)
+  stanvars <- validate_stanvars(stanvars)
   
   scode_effects <- stan_effects(
     bterms, data = data, prior = prior, 
@@ -85,7 +85,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored? \n",
-    collapse_stanvars(stan_vars),
+    collapse_stanvars(stanvars),
     "} \n"
   )
   # generate transformed parameters block
