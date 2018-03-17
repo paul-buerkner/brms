@@ -1,5 +1,7 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-brms <img src="man/figures/brms.png" align="right" />
+<img src="man/figures/brms.png" align="left" />
+
+brms
 =====================================================
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
