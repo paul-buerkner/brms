@@ -1,8 +1,8 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+brms <img src="man/figures/brms.png" align="right" />
+=====================================================
 
-brms
-====
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 
 The **brms** package provides an interface to fit Bayesian generalized (non-)linear multivariate multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see <http://mc-stan.org/>). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Multivariate models (i.e. models with multiple response variables) can be fitted, as well. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation. A list of blog posts about **brms** can be found at <https://paul-buerkner.github.io/blog/old-brms-blogposts/>.
 
@@ -35,24 +35,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = 1145.29; R2 = NA
+#>     ICs: LOO = NA; WAIC = 1146.66; R2 = NA
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1641 1.00
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1691 1.00
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       2021 1.00
+#> sd(Intercept)     0.51      0.07     0.38     0.66       2039 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.74      0.11     1.52     1.96       3010 1.00
-#> log_Age_c            0.48      0.37    -0.29     1.17       2474 1.00
-#> log_Base4_c          0.88      0.14     0.60     1.15       2353 1.00
-#> Trt1                -0.34      0.16    -0.65    -0.03       2801 1.00
-#> log_Base4_c:Trt1     0.35      0.22    -0.07     0.79       2646 1.00
+#> Intercept            1.74      0.11     1.52     1.97       2883 1.00
+#> log_Age_c            0.48      0.37    -0.24     1.21       2782 1.00
+#> log_Base4_c          0.88      0.14     0.61     1.16       2692 1.00
+#> Trt1                -0.33      0.16    -0.65    -0.03       3082 1.00
+#> log_Base4_c:Trt1     0.35      0.21    -0.07     0.75       2223 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -81,8 +81,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error 5%ile 95%ile
-#> [1,]  6.92075  5.530291     1     17
-#> [2,]  4.92100  4.059295     0     12
+#> [1,]  6.74050  5.116220     1     17
+#> [2,]  4.80525  3.883309     0     12
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -90,8 +90,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error    5%ile   95%ile
-#> [1,] 6.913456  4.718377 1.990409 15.98126
-#> [2,] 4.931857  3.343603 1.445182 11.38421
+#> [1,] 6.733163  4.536641 2.034702 15.37587
+#> [2,] 4.819429  3.215688 1.469540 10.86016
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
