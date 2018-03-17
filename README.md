@@ -1,10 +1,10 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<img src="man/figures/brms.png" align="left" />
+<img src="man/figures/brms.png" align="right" alt="brms Logo"/>
 
 brms
-=====================================================
+====
 
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 
 Overview
 --------
@@ -40,24 +40,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = 1145.6; R2 = NA
+#>     ICs: LOO = NA; WAIC = 1145.08; R2 = NA
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1802 1.00
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1539 1.00
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.67       1852 1.00
+#> sd(Intercept)     0.51      0.07     0.38     0.66       1884 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.74      0.11     1.52     1.96       2588 1.00
-#> log_Age_c            0.48      0.37    -0.28     1.22       2756 1.00
-#> log_Base4_c          0.88      0.14     0.60     1.17       2414 1.00
-#> Trt1                -0.33      0.16    -0.66    -0.02       2725 1.00
-#> log_Base4_c:Trt1     0.36      0.23    -0.10     0.80       2127 1.00
+#> Intercept            1.74      0.11     1.51     1.95       2695 1.00
+#> log_Age_c            0.48      0.38    -0.28     1.22       2407 1.00
+#> log_Base4_c          0.88      0.14     0.60     1.15       2141 1.00
+#> Trt1                -0.34      0.16    -0.64    -0.03       2673 1.00
+#> log_Base4_c:Trt1     0.35      0.22    -0.07     0.79       2106 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -86,8 +86,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error 5%ile 95%ile
-#> [1,]   7.0715  5.694207     1     18
-#> [2,]   4.9955  4.211937     0     13
+#> [1,]  7.01975  5.665808     1     18
+#> [2,]  4.95500  4.174606     0     13
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -95,8 +95,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>      Estimate Est.Error    5%ile   95%ile
-#> [1,] 6.950829  4.858087 2.035642 16.17793
-#> [2,] 4.971788  3.475930 1.443006 11.50412
+#> [1,] 6.848232  4.650445 1.999540 15.88520
+#> [2,] 4.884313  3.252223 1.421429 11.22407
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.

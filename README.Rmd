@@ -14,13 +14,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-<img src="man/figures/brms.png" align="left" />
+<img src="man/figures/brms.png" align="right" alt="brms Logo"/>
 
 # brms 
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
 [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
+
 
 ## Overview
 
