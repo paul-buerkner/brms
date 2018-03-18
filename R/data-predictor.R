@@ -783,7 +783,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
       } else {
-        out$ncat <- max(out$Y)
+        out$ncat <- as.numeric(max(out$Y))
       }
     } else if (is.formula(x$adforms$cat)) {
       out$ncat <- eval_rhs(x$adforms$cat, data = data)
