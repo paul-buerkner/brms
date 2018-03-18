@@ -367,6 +367,7 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   # Return:
   #   a possibly updated 'brmsfit' object
   stopifnot(is.brmsfit(x), is.data.frame(newdata))
+  # TODO: fix for multivariate models
   if (is.cor_sar(x$autocor)) {
     if ("W" %in% names(new_objects)) {
       x$autocor <- cor_sar(new_objects$W, type = x$autocor$type)
@@ -384,6 +385,11 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
       message("Using the median variance by default")
       median_V <- median(diag(x$autocor$V), na.rm = TRUE)
       x$autocor$V <- diag(median_V, nrow(newdata)) 
+    }
+  }
+  for (name in names(x$stanvars)) {
+    if (name %in% names(new_objects)) {
+      x$stanvars[[name]]$sdata <- new_objects[[name]]
     }
   }
   x

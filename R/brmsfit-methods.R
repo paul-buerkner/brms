@@ -926,7 +926,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   args <- list(
     formula = new_formula, data = newdata, 
     prior = object$prior, cov_ranef = object$cov_ranef, 
-    sample_prior = sample_prior, stan_vars = object$stan_vars, 
+    sample_prior = sample_prior, stanvars = object$stanvars, 
     knots = attr(object$data, "knots"), control = control
   )
   do.call(make_standata, c(args, dots))
@@ -2194,7 +2194,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   
-  arg_names <- c("prior", "cov_ranef", "stan_vars", "stan_funs")
+  arg_names <- c("prior", "cov_ranef", "stanvars", "stan_funs")
   old_args <- setdiff(arg_names, names(dots))
   dots[old_args] <- object[old_args]
   if (!is.null(newdata)) {
@@ -2272,7 +2272,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
-    object$stan_vars <- validate_stanvars(dots$stan_vars)
+    object$stanvars <- validate_stanvars(dots$stanvars)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
     }
