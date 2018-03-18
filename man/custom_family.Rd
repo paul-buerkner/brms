@@ -2,6 +2,7 @@
 % Please edit documentation in R/families.R
 \name{custom_family}
 \alias{custom_family}
+\alias{customfamily}
 \title{Custom Families in \pkg{brms} Models}
 \usage{
 custom_family(name, dpars = "mu", links = "identity", type = c("real",
@@ -11,7 +12,9 @@ custom_family(name, dpars = "mu", links = "identity", type = c("real",
 \item{name}{Name of the custom family.}
 
 \item{dpars}{Names of the distributional parameters of
-the family. One parameter must be named \code{"mu"}.}
+the family. One parameter must be named \code{"mu"} and
+the main formula of the model will correspond to that
+parameter.}
 
 \item{links}{Names of the link functions of the 
 distributional parameters.}
@@ -27,19 +30,28 @@ parameters. Defaults to \code{NA} that is no upper bound.}
 
 \item{vars}{Names of variables, which are part of the likelihood
 function without being distributional parameters. That is,
-\code{vars} can be used to pass data to the likelihood.}
+\code{vars} can be used to pass data to the likelihood. 
+See \code{\link{stanvar}} for details about adding self-defined
+data to the generated \pkg{Stan} model.}
 
-\item{env}{An \code{environment} in which certain post-processing 
-functions of the custom family for use with \code{\link{predict.brmsfit}}, 
-\code{\link{fitted.brmsfit}} and \code{\link{log_lik.brmsfit}} 
-can be found. Usually only relevant for package developers.}
+\item{env}{An \code{\link{environment}} in which certain post-processing 
+functions related to the custom family can be found. This is only
+relevant if one wants to ensure compatibility with the methods
+\code{\link[brms:predict.brmsfit]{predict}}, 
+\code{\link[brms:fitted.brmsfit]{fitted}}, or
+\code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+}
+\value{
+An object of class \code{customfamily} inheriting
+  for class \code{\link{brmsfamily}}.
 }
 \description{
 Define custom families for use in \pkg{brms} models.
 It allows users to benefit from the modeling flexibility of 
 \pkg{brms}, while applying their self-defined likelihood
 functions. All of the post-processing methods for \code{brmsfit} 
-objects can be made compatible with custom families.
+objects can be made compatible with custom families. 
+For a list of built-in families see \code{\link{brmsfamily}}.
 }
 \details{
 The corresponding probability density or mass \code{Stan} 
@@ -87,5 +99,5 @@ summary(fit)
 
 }
 \seealso{
-See \code{\link{brmsfamily}} for a list of built-in families.
+\code{\link{brmsfamily}}, \code{\link{stanvar}}
 }

@@ -2,10 +2,12 @@
 #' 
 #' Family objects provide a convenient way to specify the details of the models 
 #' used by many model fitting functions. The family functions presented here are 
-#' currently for use with \pkg{brms} only and will NOT work with other model 
+#' for use with \pkg{brms} only and will **not** work with other model 
 #' fitting functions such as \code{glm} or \code{glmer}. 
 #' However, the standard family functions as described in
 #' \code{\link[stats:family]{family}} will work with \pkg{brms}.
+#' You can also specify custom families for use in \pkg{brms} with
+#' the \code{\link{custom_family}} function.
 #' 
 #' @param family A character string naming the distribution
 #'   of the response variable be used in the model.
@@ -126,7 +128,8 @@
 #'   that your data requires exactly this type of model.
 #'
 #' @seealso \code{\link[brms:brm]{brm}}, 
-#'   \code{\link[stats:family]{family}}
+#'   \code{\link[stats:family]{family}},
+#'   \code{\link{customfamily}}
 #'   
 #' @examples 
 #'  # create a family object
@@ -737,10 +740,15 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' \pkg{brms}, while applying their self-defined likelihood
 #' functions. All of the post-processing methods for \code{brmsfit} 
 #' objects can be made compatible with custom families. 
+#' For a list of built-in families see \code{\link{brmsfamily}}.
+#' 
+#' @aliases customfamily
 #' 
 #' @param name Name of the custom family.
 #' @param dpars Names of the distributional parameters of
-#'   the family. One parameter must be named \code{"mu"}.
+#'   the family. One parameter must be named \code{"mu"} and
+#'   the main formula of the model will correspond to that
+#'   parameter.
 #' @param links Names of the link functions of the 
 #'   distributional parameters.
 #' @param type Indicates if the response distribution is
@@ -752,10 +760,14 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param vars Names of variables, which are part of the likelihood
 #'   function without being distributional parameters. That is,
 #'   \code{vars} can be used to pass data to the likelihood. 
-#' @param env An \code{environment} in which certain post-processing 
-#'   functions of the custom family for use with \code{\link{predict.brmsfit}}, 
-#'   \code{\link{fitted.brmsfit}} and \code{\link{log_lik.brmsfit}} 
-#'   can be found. Usually only relevant for package developers.
+#'   See \code{\link{stanvar}} for details about adding self-defined
+#'   data to the generated \pkg{Stan} model.
+#' @param env An \code{\link{environment}} in which certain post-processing 
+#'   functions related to the custom family can be found. This is only
+#'   relevant if one wants to ensure compatibility with the methods
+#'   \code{\link[brms:predict.brmsfit]{predict}}, 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
 #'   
 #' @details The corresponding probability density or mass \code{Stan} 
 #'   functions need to have the same name as the custom family.
@@ -764,7 +776,10 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{myfamily_lpmf} depending on whether it defines a 
 #'   continuous or discrete distribution.
 #'   
-#' @seealso See \code{\link{brmsfamily}} for a list of built-in families.
+#' @return An object of class \code{customfamily} inheriting
+#'   for class \code{\link{brmsfamily}}.
+#'   
+#' @seealso \code{\link{brmsfamily}}, \code{\link{stanvar}}
 #' 
 #' @examples
 #' \dontrun{

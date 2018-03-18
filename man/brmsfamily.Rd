@@ -177,10 +177,12 @@ consecutive thresholds to the same value.}
 \description{
 Family objects provide a convenient way to specify the details of the models 
 used by many model fitting functions. The family functions presented here are 
-currently for use with \pkg{brms} only and will NOT work with other model 
+for use with \pkg{brms} only and will **not** work with other model 
 fitting functions such as \code{glm} or \code{glmer}. 
 However, the standard family functions as described in
 \code{\link[stats:family]{family}} will work with \pkg{brms}.
+You can also specify custom families for use in \pkg{brms} with
+the \code{\link{custom_family}} function.
 }
 \details{
 Family \code{gaussian} with \code{identity} link leads to linear regression. 
@@ -269,5 +271,6 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
 }
 \seealso{
 \code{\link[brms:brm]{brm}}, 
-  \code{\link[stats:family]{family}}
+  \code{\link[stats:family]{family}},
+  \code{\link{customfamily}}
 }
