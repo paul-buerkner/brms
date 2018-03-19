@@ -15,7 +15,7 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "children/SETTINGS-knitr.txt"}
+```{r, child = "SETTINGS-knitr.txt"}
 ```
 
 
