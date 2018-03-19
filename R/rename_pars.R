@@ -469,7 +469,6 @@ do_renaming <- function(x, change) {
   #   A brmsfit object with updated parameter names
   .do_renaming <- function(x, change) {
     stopifnot(is.clist(change))
-    chains <- length(x$fit@sim$samples) 
     x$fit@sim$fnames_oi[change$pos] <- change$fnames
     for (i in seq_len(chains)) {
       names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
@@ -479,6 +478,11 @@ do_renaming <- function(x, change) {
       }
     }
     return(x)
+  }
+  chains <- length(x$fit@sim$samples) 
+  # temporary fix for issue #387 until fixed in rstan
+  for (i in seq_len(chains)) {
+    x$fit@sim$samples[[i]]$lp__.1 <- NULL
   }
   for (i in seq_along(change)) {
     x <- .do_renaming(x, change[[i]])
