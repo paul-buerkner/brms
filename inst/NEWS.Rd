@@ -5,6 +5,8 @@
 \section{CHANGES IN VERSION 2.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Specify custom response distributions with
+      function \code{custom_family}. (#381)
       \item Model missing values and measurement error in 
       responses using the \code{mi} addition term. (#27, #343)
       \item Allow missing values in predictors using \code{mi} 
