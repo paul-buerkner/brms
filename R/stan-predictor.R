@@ -150,14 +150,10 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
     dp_def <- stan_dpar_defs(dp, resp, family = x$family)
     dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
-      ilink <- stan_eta_ilink(
-        dp_terms$family, dpars = names(x$dpars), 
-        adforms = x$adforms, resp = resp, mix = dpar_id(dp)
-      )
-      eta <- ifelse(dp == "mu", "mu", "")
+      ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(
-        dp_terms, eta = eta, ilink = ilink,
-        sparse = sparse, order_mixture = x$family$order
+        dp_terms, ilink = ilink, sparse = sparse, 
+        order_mixture = x$family$order
       )
       out[[dp]] <- do.call(stan_effects, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
@@ -1054,28 +1050,28 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # manually using the link functions
   # Args:
   #   llh_adj: is the model censored or truncated?
-  stopifnot(all(c("family", "link") %in% names(family)))
-  link <- family$link
-  !(!is_skewed(family) && link == "identity" ||
+  !(!is_skewed(family) && family$link == "identity" ||
     is_ordinal(family) || is_categorical(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, dpars = NULL, adforms = NULL, 
-                           resp = "", mix = "") {
+stan_eta_ilink <- function(dpar, bterms, resp = "") {
   # correctly apply inverse link to eta
   # Args:
-  #   family: a list with elements 'family' and 'link
-  #   dpars: names of distributional parameters
-  #   adforms: list of formulas containing addition terms
-  stopifnot(all(c("family", "link") %in% names(family)))
-  llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
+  #   dpar: name of the parameter for which to define the link
+  #   bterms: object of class brmsterms
+  #   resp: name of the response variable
+  stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
+  family <- bterms$dpars[[dpar]]$family
+  llh_adj <- stan_llh_adj(bterms$adforms, c("cens", "trunc"))
   if (stan_eta_transform(family, llh_adj = llh_adj)) {
-    shape <- paste0("shape", mix, resp)
-    shape <- ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
-    nu <- paste0("nu", mix, resp)
-    nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
+    dpar_id <- dpar_id(dpar)
+    pred_dpars <- names(bterms$dpars)
+    shape <- paste0("shape", dpar_id, resp)
+    shape <- ifelse(shape %in% pred_dpars, paste0(shape, "[n]"), shape)
+    nu <- paste0("nu", dpar_id, resp)
+    nu <- ifelse(nu %in% pred_dpars, paste0(nu, "[n]"), nu)
     family_link <- ifelse(
       family$family %in% c("gamma", "hurdle_gamma", "exponential"),
       paste0(family$family, "_", family$link), family$family

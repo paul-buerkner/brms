@@ -937,15 +937,17 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   #   link: optional link function of the parameter
   dp_class <- dpar_class(dpar)
   if (!isTRUE(dp_class %in% dpars())) {
-    link <- "identity"
+    if (is.null(link)) {
+      link <- "identity"
+    }
+    link <- as_one_character(link)
   } else {
     links <- links_dpars(dp_class)
     if (is.null(link)) {
       link <- links[1]
-    } else {
-      if (!isTRUE(link %in% links)) {
-        stop2("Link '", link, "' is invalid for parameter '", dpar, "'.")
-      }
+    }
+    if (!isTRUE(link %in% links)) {
+      stop2("Link '", link, "' is invalid for parameter '", dpar, "'.")
     }
   }
   structure(
