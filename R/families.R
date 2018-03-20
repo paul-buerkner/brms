@@ -740,6 +740,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' \pkg{brms}, while applying their self-defined likelihood
 #' functions. All of the post-processing methods for \code{brmsfit} 
 #' objects can be made compatible with custom families. 
+#' See \code{vignette("brms_customfamilies")} for more details.
 #' For a list of built-in families see \code{\link{brmsfamily}}.
 #' 
 #' @aliases customfamily
