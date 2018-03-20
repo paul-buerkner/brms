@@ -367,23 +367,41 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   # Return:
   #   a possibly updated 'brmsfit' object
   stopifnot(is.brmsfit(x), is.data.frame(newdata))
-  if (is.cor_sar(x$autocor)) {
-    if ("W" %in% names(new_objects)) {
-      x$autocor <- cor_sar(new_objects$W, type = x$autocor$type)
-    } else {
-      message("Using the identity matrix as weighting matrix by default")
-      x$autocor$W <- diag(nrow(newdata))
+  .update_autocor <- function(autocor, resp = "") {
+    # update autocor variables with new objects
+    # do not include cor_car here as the adjacency matrix
+    # (or subsets of it) should be the same for newdata
+    resp <- usc(resp)
+    if (is.cor_sar(autocor)) {
+      if (paste0("W", resp) %in% names(new_objects)) {
+        autocor <- cor_sar(new_objects$W, type = autocor$type)
+      } else {
+        message("Using the identity matrix as weighting matrix by default")
+        autocor$W <- diag(nrow(newdata))
+      }
+    } else if (is.cor_fixed(autocor)) {
+      if (paste0("V", resp) %in% names(new_objects)) {
+        autocor <- cor_fixed(new_objects$V)
+      } else {
+        message("Using the median variance by default")
+        median_V <- median(diag(autocor$V), na.rm = TRUE)
+        autocor$V <- diag(median_V, nrow(newdata)) 
+      }
     }
+    return(autocor)
   }
-  # do not include cor_car here as the adjacency matrix
-  # (or subsets of it) should be the same for newdata 
-  if (is.cor_fixed(x$autocor)) {
-    if ("V" %in% names(new_objects)) {
-      x$autocor <- cor_fixed(new_objects$V)
-    } else {
-      message("Using the median variance by default")
-      median_V <- median(diag(x$autocor$V), na.rm = TRUE)
-      x$autocor$V <- diag(median_V, nrow(newdata)) 
+  if (is_mv(x)) {
+    resps <- names(x$formula$forms)
+    for (i in seq_along(resps)) {
+      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- 
+        .update_autocor(x$formula$forms[[i]]$autocor, resps[i])
+    }
+  } else {
+    x$formula$autocor <- x$autocor <- .update_autocor(x$formula$autocor)
+  }
+  for (name in names(x$stanvars)) {
+    if (name %in% names(new_objects)) {
+      x$stanvars[[name]]$sdata <- new_objects[[name]]
     }
   }
   x

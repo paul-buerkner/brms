@@ -5,12 +5,17 @@
 \section{CHANGES IN VERSION 2.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Specify custom response distributions with
+      function \code{custom_family}. (#381)
       \item Model missing values and measurement error in 
       responses using the \code{mi} addition term. (#27, #343)
       \item Allow missing values in predictors using \code{mi} 
       terms on the right-hand side of model formulas. (#27) 
       \item Model interactions between the special predictor
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
+      \item Allow hyperparameters of group-level effects
+      to vary over the levels of a categorical covariate 
+      using argument \code{by} in function \code{gr}. (#365)
       \item Allow predictions of measurement-error models
       with new data. (#335)
       \item Pass user-defined variables to Stan via 

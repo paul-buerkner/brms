@@ -234,6 +234,12 @@ fitted_acat <- function(draws) {
   fitted_ordinal(draws)
 }
 
+fitted_custom <- function(draws) {
+  fitted_fun <- paste0("fitted_", draws$f$name)
+  fitted_fun <- get(fitted_fun, draws$f$env)
+  fitted_fun(draws)
+}
+
 fitted_mixture <- function(draws) {
   families <- family_names(draws$f)
   draws$dpars$theta <- get_theta(draws)

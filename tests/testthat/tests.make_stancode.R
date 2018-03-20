@@ -1418,3 +1418,41 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "vector[K] M;")
   expect_match2(scode, "matrix[K, K] V;")
 })
+
+test_that("custom families are handled correctly", {
+  dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
+  
+  # define a custom beta-binomial family
+  beta_binomial2 <- custom_family(
+    "beta_binomial2", dpars = c("mu", "tau"),
+    links = c("logit", "log"), lb = c(NA, 0),
+    type = "int", vars = "trials[n]"
+  )
+  # define custom stan functions
+  stan_funs <- "
+    real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
+      return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
+    }
+    int beta_binomial2_rng(real mu, real phi, int N) {
+      return beta_binomial_rng(N, mu * phi, (1 - mu) * phi);
+    }
+  "
+  stanvars <- stanvar(as.integer(dat$size), "trials")
+  scode <- make_stancode(
+    y ~ x, data = dat, family = beta_binomial2, 
+    stan_funs = stan_funs, stanvars = stanvars,
+    prior = prior(gamma(0.1, 0.1), class = "tau")
+  )
+  expect_match2(scode, "int trials[20];")
+  expect_match2(scode, "real<lower=0> tau;")
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  expect_match2(scode, "target += gamma_lpdf(tau | 0.1, 0.1);")
+  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, trials[n]);")
+  
+  scode <- make_stancode(
+    bf(y ~ x, tau ~ x), data = dat, family = beta_binomial2, 
+    stan_funs = stan_funs, stanvars = stanvars
+  )
+  expect_match2(scode, "tau[n] = exp(tau[n]); ")
+  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
+})

@@ -429,3 +429,26 @@ test_that("log_lik for the wiener diffusion model runs without errors", {
   i <- sample(1:nobs, 1)
   expect_equal(length(brms:::log_lik_wiener(i, draws)), ns)
 })
+
+test_that("log_lik_custom runs without errors", {
+  ns <- 15
+  nobs <- 10
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = matrix(rbeta(ns * nobs * 2, 1, 1), ncol = nobs * 2)
+  )
+  draws$data <- list(
+    Y = sample(0:1, nobs, replace = TRUE),
+    trials = rep(1, nobs)
+  )
+  draws$f <- custom_family(
+    "beta_binomial2", dpars = c("mu", "tau"),
+    links = c("logit", "log"), lb = c(NA, 0),
+    type = "int", vars = "trials[n]"
+  )
+  log_lik_beta_binomial2 <- function(i, draws) {
+    mu <- draws$dpars$mu[, i]
+    dbinom(draws$data$Y[i], size = draws$data$trials[i], prob = mu)
+  }
+  expect_equal(length(brms:::log_lik_custom(sample(1:nobs, 1), draws)), ns)
+})

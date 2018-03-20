@@ -19,6 +19,10 @@ Several people have blogged about **brms** and this vignette is intended to prov
 
 ## List of blog posts
 
+- [Mixed effects models: Is it time to go Bayesian by default?](http://babieslearninglanguage.blogspot.de/2018/02/mixed-effects-models-is-it-time-to-go.html) by Michael Frank
+- [Statistical Rethinking with brms, ggplot2, and the tidyverse](https://osf.io/97t6w/) by Solomon Kurz
+- [Easily made fitted and predicted values made easy](http://thestudyofthehousehold.com/post/easily-made-fitted-and-predicted-values-made-easy/) by Andrew MacDonald
+- [How to compute Bayes factors using lm, lmer, BayesFactor, brms, and JAGS/stan/pymc3](https://rpubs.com/lindeloev/bayes_factors) by Jonas Kristoffer Lindelov
 - [Confounded dose-response effects of treatment adherence: fitting Bayesian instrumental variable models using brms](http://rpsychologist.com/adherence-analysis-IV-brms) by Kristoffer Magnusson
 - [PK/PD reserving models](https://magesblog.com/post/2018-01-30-pkpd-reserving-models/) by Markus Gesmann
 - [Hierarchical compartmental reserving models ](https://magesblog.com/post/hierarchical-compartmental-reserving-models/) by Markus Gesmann
@@ -30,6 +34,7 @@ Several people have blogged about **brms** and this vignette is intended to prov
 - [Bayesian Estimation of Signal Detection Models, Part 3](https://vuorre.netlify.com/post/2017/bayesian-estimation-of-signal-detection-theory-models-part-3/) by Matti Vuorre
 - [Bayesian Estimation of Signal Detection Models, Part 2](https://vuorre.netlify.com/post/2017/bayesian-estimation-of-signal-detection-theory-models-part-2/) by Matti Vuorre
 - [Bayesian Estimation of Signal Detection Models, Part 1](https://vuorre.netlify.com/post/2017/bayesian-estimation-of-signal-detection-theory-models-part-1/) by Matti Vuorre
+- [Three methods for computing the intra-class correlation in multilevel logistic regression](http://www.barelysignificant.com/post/icc/) by Ladislas Nalborczyk
 - [More support for Bayesian analysis in the sj!-packages #rstats #rstan #brms](https://strengejacke.wordpress.com/2017/10/11/more-support-for-bayesian-analysis-in-the-sj-packages-rstats-rstan-brms/) by Daniel Luedecke
 - [R packages interfacing with Stan: brms](http://andrewgelman.com/2017/01/10/r-packages-interfacing-stan-brms/) by Paul Buerkner
 - [Bayesian mixed effects (aka multi-level) ordinal regression models with brms](http://kevinstadler.github.io/blog/bayesian-ordinal-regression-with-random-effects-using-brms/) by Kevin Stadler

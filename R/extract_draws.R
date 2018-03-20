@@ -37,7 +37,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   args <- nlist(
     x = bterms, samples, sdata, data = x$data,
     ranef, old_ranef = x$ranef, meef, resp,
-    sample_new_levels, nug, smooths_only, new
+    sample_new_levels, nug, smooths_only, new,
+    stanvars = names(x$stanvars)
   )
   if (new) {
     # extract_draws_re() also requires the new level names
@@ -714,15 +715,21 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
   draws
 }
 
-extract_draws_data <- function(bterms, sdata, ...) {
+extract_draws_data <- function(bterms, sdata, stanvars = NULL, ...) {
   # extract data mainly related to the response variable
+  # Args
+  #   stanvars: *names* of variables stored in slot 'stanvars'
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
   resp <- usc(combine_prefix(bterms))
-  draws <- sdata[paste0(vars, resp)]
-  rmNULL(draws, recursive = FALSE)
+  draws <- rmNULL(sdata[paste0(vars, resp)], recursive = FALSE)
+  if (length(stanvars)) {
+    stopifnot(is.character(stanvars))
+    draws[stanvars] <- sdata[stanvars]
+  }
+  draws
 }
 
 pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {

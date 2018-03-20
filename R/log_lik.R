@@ -655,6 +655,12 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
   log_lik_weight(out, i = i, data = draws$data)
 }
 
+log_lik_custom <- function(i, draws, data = data.frame()) {
+  log_lik_fun <- paste0("log_lik_", draws$f$name)
+  log_lik_fun <- get(log_lik_fun, draws$f$env)
+  log_lik_fun(i = i, draws = draws)
+}
+
 log_lik_mixture <- function(i, draws, data = data.frame()) {
   families <- family_names(draws$f)
   theta <- get_theta(draws, i = i)
@@ -699,7 +705,7 @@ log_lik_censor <- function(dist, args, i, data) {
 }
 
 log_lik_truncate <- function(x, cdf, args, i, data) {
-  # adjust logLik in truncated models
+  # adjust log_lik in truncated models
   # Args:
   #   x: vector of log_lik values
   #   cdf: a cumulative distribution function 

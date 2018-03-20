@@ -146,42 +146,33 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
   valid_dpars <- valid_dpars(x)
   args <- nlist(data, prior, ...)
   for (dp in valid_dpars) {
-    ap_terms <- x$dpars[[dp]]
-    if (is.btl(ap_terms) || is.btnl(ap_terms)) {
-      ilink <- stan_eta_ilink(
-        ap_terms$family, dpars = names(x$dpars), 
-        adforms = x$adforms, resp = resp, mix = dpar_id(dp)
+    dp_terms <- x$dpars[[dp]]
+    dp_def <- stan_dpar_defs(dp, resp, family = x$family)
+    dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
+    if (is.btl(dp_terms) || is.btnl(dp_terms)) {
+      ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
+      dp_args <- list(
+        dp_terms, ilink = ilink, sparse = sparse, 
+        order_mixture = x$family$order
       )
-      eta <- ifelse(dp == "mu", "mu", "")
-      ap_args <- list(
-        ap_terms, eta = eta, ilink = ilink,
-        sparse = sparse, order_mixture = x$family$order
-      )
-      out[[dp]] <- do.call(stan_effects, c(ap_args, args))
+      out[[dp]] <- do.call(stan_effects, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
-      out[[dp]] <- list(data = stan_dpar_defs(dp, resp))
+      out[[dp]] <- list(data = dp_def)
     } else if (is.character(x$fdpars[[dp]]$value)) {
       if (!x$fdpars[[dp]]$value %in% valid_dpars) {
         stop2("Parameter '", x$fdpars[[dp]]$value, "' cannot be found.")
       }
-      out[[dp]] <- list(
-        tparD = stan_dpar_defs(dp, resp),
-        tparC1 = paste0(
-          "  ", dp, resp, " = ", x$fdpars[[dp]]$value, resp, "; \n"
-        )
-      )
+      dp_co <- paste0("  ", dp, resp, " = ", x$fdpars[[dp]]$value, resp, ";\n")
+      out[[dp]] <- list(tparD = dp_def, tparC1 = dp_co)
     } else {
-      def_temp <- stan_dpar_defs_temp(dp, resp)
-      def <- stan_dpar_defs(dp, resp)
-      if (nzchar(def_temp)) {
-        out[[dp]] <- list(par = def_temp,
-          prior = stan_prior(
-            prior, class = dp, prefix = "temp_", suffix = resp, px = px)
+      if (nzchar(dp_def_temp)) {
+        dp_prior <- stan_prior(
+          prior, dp, prefix = "temp_", suffix = resp, px = px
         )
-      } else if (nzchar(def)) {
-        out[[dp]] <- list(par = def,
-          prior = stan_prior(prior, class = dp, suffix = resp, px = px)
-        )
+        out[[dp]] <- list(par = dp_def_temp, prior = dp_prior)
+      } else if (nzchar(dp_def)) {
+        dp_prior <- stan_prior(prior, dp, suffix = resp, px = px)
+        out[[dp]] <- list(par = dp_def, prior = dp_prior)
       }
     }
   }
@@ -1059,28 +1050,28 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # manually using the link functions
   # Args:
   #   llh_adj: is the model censored or truncated?
-  stopifnot(all(c("family", "link") %in% names(family)))
-  link <- family$link
-  !(!is_skewed(family) && link == "identity" ||
+  !(!is_skewed(family) && family$link == "identity" ||
     is_ordinal(family) || is_categorical(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, dpars = NULL, adforms = NULL, 
-                           resp = "", mix = "") {
+stan_eta_ilink <- function(dpar, bterms, resp = "") {
   # correctly apply inverse link to eta
   # Args:
-  #   family: a list with elements 'family' and 'link
-  #   dpars: names of distributional parameters
-  #   adforms: list of formulas containing addition terms
-  stopifnot(all(c("family", "link") %in% names(family)))
-  llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
+  #   dpar: name of the parameter for which to define the link
+  #   bterms: object of class brmsterms
+  #   resp: name of the response variable
+  stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
+  family <- bterms$dpars[[dpar]]$family
+  llh_adj <- stan_llh_adj(bterms$adforms, c("cens", "trunc"))
   if (stan_eta_transform(family, llh_adj = llh_adj)) {
-    shape <- paste0("shape", mix, resp)
-    shape <- ifelse(shape %in% dpars, paste0(shape, "[n]"), shape)
-    nu <- paste0("nu", mix, resp)
-    nu <- ifelse(nu %in% dpars, paste0(nu, "[n]"), nu)
+    dpar_id <- dpar_id(dpar)
+    pred_dpars <- names(bterms$dpars)
+    shape <- paste0("shape", dpar_id, resp)
+    shape <- ifelse(shape %in% pred_dpars, paste0(shape, "[n]"), shape)
+    nu <- paste0("nu", dpar_id, resp)
+    nu <- ifelse(nu %in% pred_dpars, paste0(nu, "[n]"), nu)
     family_link <- ifelse(
       family$family %in% c("gamma", "hurdle_gamma", "exponential"),
       paste0(family$family, "_", family$link), family$family
@@ -1104,8 +1095,18 @@ stan_eta_ilink <- function(family, dpars = NULL, adforms = NULL,
   out
 }
 
-stan_dpar_defs <- function(dpar, suffix = "") {
+stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
   # default Stan definitions for distributional parameters
+  if (is.customfamily(family)) {
+    lb <- family$lb[[dpar]]
+    ub <- family$ub[[dpar]]
+    lb <- if (!is.na(lb)) paste0("lower=", lb)
+    ub <- if (!is.na(ub)) paste0("upper=", ub)
+    bounds <- paste0(c(lb, ub), collapse = ",")
+    if (nzchar(bounds)) bounds <- paste0("<", bounds, ">")
+    def <- paste0("  real", bounds, " ", dpar, suffix, ";\n")
+    return(def)
+  }
   default_defs <- list(
     sigma = c(
       "  real<lower=0> ", 
@@ -1186,8 +1187,11 @@ stan_dpar_defs <- function(dpar, suffix = "") {
   def
 }
 
-stan_dpar_defs_temp <- function(dpar, suffix = "") {
+stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
   # default Stan definitions for temporary distributional parameters
+  if (is.customfamily(family)) {
+    return("")
+  }
   default_defs <- list(
     xi = c(
       "  real temp_", 
