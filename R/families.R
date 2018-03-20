@@ -823,18 +823,24 @@ custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, env = parent.frame()) {
   name <- as_one_character(name)
-  dpars <- as.character(unique(dpars))
+  dpars <- as.character(dpars)
   links <- as.character(links)
   type <- match.arg(type)
   lb <- as.character(lb)
   ub <- as.character(ub)
   vars <- as.character(vars)
   env <- as.environment(env)
+  if (any(duplicated(dpars))) {
+    stop2("Duplicated 'dpars' are not allowed.")
+  }
   if (!"mu" %in% dpars) {
     stop2("All families must have a 'mu' parameter.")
   }
   if (any(grepl("_|\\.", dpars))) {
     stop2("Dots or underscores are not allowed in 'dpars'.")
+  }
+  if (any(grepl("[[:digit:]]+$", dpars))) {
+    stop2("'dpars' should not end with a number.")
   }
   for (arg in c("links", "lb", "ub")) {
     obj <- get(arg)

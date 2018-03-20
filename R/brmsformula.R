@@ -1142,8 +1142,7 @@ is_dpar_name <- function(dpars, family = NULL, ...) {
 
 dpar_class <- function(dpar) {
   # class of a distributional parameter
-  out <- get_matches("^[^[:digit:]]+", dpar, simplify = FALSE)
-  ulapply(out, function(x) ifelse(length(x), x, ""))
+  sub("[[:digit:]]*$", "", dpar)
 }
 
 dpar_id <- function(dpar) {
