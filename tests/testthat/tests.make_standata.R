@@ -565,15 +565,16 @@ test_that("make_standata handles multi-membership models", {
 })
 
 test_that("by variables in grouping terms are handled correctly", {
+  gvar <- c("1A", "1B", "2A", "2B", "3A", "3B", "10", "100", "2", "3")
   dat <- data.frame(
     y = rnorm(100), x = rnorm(100),
-    g = rep(1:10, each = 10),
+    g = rep(gvar, each = 10),
     z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20)),
     z2 = factor(1:2)
   )
   sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
   expect_equal(sdata$Nby_1, 5)
-  expect_equal(sdata$Jby_1, as.array(rep(c(1, 4, 3, 2, 5), each = 2)))
+  expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
   
   expect_error(make_standata(y ~ x + (1|gr(g, by = z2)), dat),
                "Some levels of 'g' correspond to multiple levels of 'z2'")

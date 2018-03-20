@@ -441,22 +441,20 @@ tidy_ranef <- function(bterms, data, all = TRUE,
           rsub$gcall[[i]]$groups, 
           function(g) levels(factor(get(g, data)))
         ))
-        by <- rsub$by[i]
-        if (nzchar(by)) {
-          # store information of corresponding by levels
+        # store information of corresponding by levels
+        if (nzchar(rsub$by[i])) {
           stopifnot(!nzchar(rsub$type[i]))
+          by <- rsub$by[i]
           bylevels <- rsub$bylevels[[i]]
-          byvar <- get(by, data)
           g <- rsub$gcall[[i]]$groups
-          gvar <- get(g, data)
-          not_dupl <- !duplicated(data.frame(gvar, byvar))
-          if (sum(not_dupl) > length(levels[[i]])) {
-            stop2(
-              "Some levels of '", g, "' correspond ", 
-              "to multiple levels of '", by, "'. "
-            )
+          J <- match(get(g, data), levels[[i]])
+          df <- unique(data.frame(J, by = get(by, data)))
+          if (nrow(df) > length(unique(J))) {
+            stop2("Some levels of '", g, "' correspond ", 
+                  "to multiple levels of '", by, "'.")
           }
-          by_per_level <- bylevels[match(byvar[not_dupl], bylevels)]
+          df <- df[order(df$J), ]
+          by_per_level <- bylevels[match(df$by, bylevels)]
           attr(levels[[i]], "by") <- by_per_level
         }
       }

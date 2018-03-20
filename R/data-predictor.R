@@ -235,6 +235,8 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
     group <- id_ranef$group[1]
     levels <- attr(ranef, "levels")[[group]]
     if (id_ranef$gtype[1] == "mm") {
+      # multi-membership grouping term
+      stopifnot(!nzchar(id_ranef$by[1]))
       gs <- id_ranef$gcall[[1]]$groups
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights
@@ -263,6 +265,7 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         out[[paste0("W_", id, "_", i)]] <- as.array(weights[, i])
       }
     } else {
+      # ordinary grouping term
       g <- id_ranef$gcall[[1]]$groups
       gdata <- get(g, data)
       J <- match(gdata, levels)
@@ -273,9 +276,17 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
       }
       out[[paste0("J_", id)]] <- as.array(J)
+      if (nzchar(id_ranef$by[1])) {
+        stopifnot(!nzchar(id_ranef$type[1]))
+        bylevels <- id_ranef$bylevels[[1]]
+        Jby <- match(attr(levels, "by"), bylevels)
+        out[[paste0("Nby_", id)]] <- length(bylevels)
+        out[[paste0("Jby_", id)]] <- as.array(Jby)
+      }
     }
     temp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
     out <- c(out, setNames(temp, paste0(c("N_", "M_", "NC_"), id)))
+    # prepare customized covariance matrices
     if (group %in% names(cov_ranef)) {
       cov_mat <- as.matrix(cov_ranef[[group]])
       if (!isSymmetric(unname(cov_mat))) {
@@ -299,14 +310,6 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
               group, "' is not positive definite.")
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
-    }
-    by <- id_ranef$by[1]
-    if (nzchar(by)) {
-      stopifnot(!nzchar(id_ranef$type[1]))
-      bylevels <- id_ranef$bylevels[[1]]
-      Jby <- match(attr(levels, "by"), bylevels)
-      out[[paste0("Nby_", id)]] <- length(bylevels)
-      out[[paste0("Jby_", id)]] <- as.array(Jby)
     }
   }
   out
