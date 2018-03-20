@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2018-02-08" />
+<meta name="date" content="2018-03-20" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2018-02-08</em></h4>
+<h4 class="date"><em>2018-03-20</em></h4>
 
 
 
@@ -101,8 +101,9 @@ t(y_i) = \left(1 + \xi \left(\frac{y_i - \mu_i}{\sigma} \right)\right)^{-1 / \xi
 <h2>Response time models</h2>
 <p>One family that is especially suited to model reaction times is the <strong>exgaussian</strong> (‘exponentially modified Gaussian’) family. Its density is given by</p>
 <p><span class="math display">\[
-f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\mu_i + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{\mu_i + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)
-\]</span> where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\mu_i = \mu\)</span> is the mean of the Gaussian componenent, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function.</p>
+f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{\xi + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)
+\]</span> where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\xi\)</span> is the mean of the Gaussian componenent, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function. We parameterize <span class="math inline">\(\mu_i = \xi + \beta\)</span> so that the main predictor term equals the mean of the distribution.</p>
+<p>Another family well suited for modelling response times is the <strong>shifted_lognormal</strong> distribution. It’s density equals that of the <strong>lognormal</strong> distribution except that the whole distribution is shifted to the right by a positive parameter called <em>ndt</em> (for consistency with the <strong>wiener</strong> diffusion model explained below).</p>
 <p>A family concerned with the combined modelling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpreation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the upper boundary is given by</p>
 <p><span class="math display">\[
 f(y_i) = \frac{\alpha}{(y_i-\tau)^3/2}

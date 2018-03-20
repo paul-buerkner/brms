@@ -36,6 +36,7 @@ Suggests:
     mice,
     spdep,
     mnormt,
+    lme4,
     MCMCglmm,
     ape,
     arm,

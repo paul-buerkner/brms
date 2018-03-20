@@ -15,7 +15,9 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 b <- c(2, 0.75)
@@ -24,9 +26,8 @@ y <- rnorm(100, mean = b[1] * exp(b[2] * x))
 dat1 <- data.frame(x, y)
 
 ## ---- results='hide'--------------------------------------------------------------------
-library(brms)
-prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
-            prior(normal(0, 2), nlpar = "b2"))
+prior1 <- prior(normal(1, 2), nlpar = "b1") +
+  prior(normal(0, 2), nlpar = "b2")
 fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
             data = dat1, prior = prior1)
 
@@ -54,14 +55,18 @@ loss <- read.csv(url)
 head(loss)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-                   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
-                   nl = TRUE),
-                data = loss, family = gaussian(),
-                prior = c(prior(normal(5000, 1000), nlpar = "ult"),
-                          prior(normal(1, 2), nlpar = "omega"),
-                          prior(normal(45, 10), nlpar = "theta")),
-                control = list(adapt_delta = 0.9))
+fit_loss <- brm(
+  bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     nl = TRUE),
+  data = loss, family = gaussian(),
+  prior = c(
+    prior(normal(5000, 1000), nlpar = "ult"),
+    prior(normal(1, 2), nlpar = "omega"),
+    prior(normal(45, 10), nlpar = "theta")
+  ),
+  control = list(adapt_delta = 0.9)
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_loss)
@@ -71,9 +76,11 @@ marginal_effects(fit_loss)
 ## ---------------------------------------------------------------------------------------
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-plot(marginal_effects(fit_loss, conditions = conditions, 
-                      re_formula = NULL, method = "predict"), 
-     ncol = 5, points = TRUE)
+me_loss <- marginal_effects(
+  fit_loss, conditions = conditions, 
+  re_formula = NULL, method = "predict"
+)
+plot(me_loss, ncol = 5, points = TRUE)
 
 ## ---------------------------------------------------------------------------------------
 inv_logit <- function(x) 1 / (1 + exp(-x))
@@ -90,10 +97,12 @@ summary(fit_ir1)
 plot(marginal_effects(fit_ir1), points = TRUE)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
-                  eta ~ ability, nl = TRUE),
-               data = dat_ir, family = bernoulli("identity"), 
-               prior = prior(normal(0, 5), nlpar = "eta"))
+fit_ir2 <- brm(
+  bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
+     eta ~ ability, nl = TRUE),
+  data = dat_ir, family = bernoulli("identity"), 
+  prior = prior(normal(0, 5), nlpar = "eta")
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_ir2)
@@ -103,11 +112,15 @@ plot(marginal_effects(fit_ir2), points = TRUE)
 LOO(fit_ir1, fit_ir2)
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
-                  eta ~ 0 + ability, guess ~ 1, nl = TRUE),
-               data = dat_ir, family = bernoulli("identity"), 
-               prior = c(prior(normal(0, 5), nlpar = "eta"),
-                         prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)))
+fit_ir3 <- brm(
+  bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
+    eta ~ 0 + ability, guess ~ 1, nl = TRUE),
+  data = dat_ir, family = bernoulli("identity"), 
+  prior = c(
+    prior(normal(0, 5), nlpar = "eta"),
+    prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)
+  )
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_ir3)

@@ -15,7 +15,23 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "SETTINGS-knitr.txt"}
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+options(width = 90)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(brms)
+theme_set(theme_default())
 ```
 
 ## Introduction
@@ -27,7 +43,7 @@ In the present vignette, we want to discuss how to specify phylogenetic multilev
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
 ```{r, include = FALSE}
-my_path <- "C:/Users/paulb/Dropbox/Psychologie/Paper/2015_Bayesian_Regression_Models/Models/MCMCglmm/"
+my_path <- "C:/Users/paulb/Dropbox/brms/Models/MCMCglmm/"
 ```
 
 
@@ -50,13 +66,16 @@ rownames(A) <- rownames(inv.phylo$Ainv)
 In contrast to **MCMCglmm**, **brms** requires the covariance matrix and not its inverse. Now, we are ready to fit our first phylogenetic multilevel model:
 
 ```{r, results='hide'}
-library(brms)
-model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple, 
-                    family = gaussian(), cov_ranef = list(phylo = A),
-                    prior = c(prior(normal(0, 10), "b"),
-                              prior(normal(0, 50), "Intercept"),
-                              prior(student_t(3, 0, 20), "sd"),
-                              prior(student_t(3, 0, 20), "sigma")))
+model_simple <- brm(
+  phen ~ cofactor + (1|phylo), data = data_simple, 
+  family = gaussian(), cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0, 10), "b"),
+    prior(normal(0, 50), "Intercept"),
+    prior(student_t(3, 0, 20), "sd"),
+    prior(student_t(3, 0, 20), "sigma")
+  )
+)
 ```
 
 With the exception of `cov_ranef = list(phylo = A)` this is a basic multilevel model with a varying intercept over species (`phylo` is an indicator of species in this data set). However, by using the `cov_ranef` argument, we make sure that species are correlated as specified by the covariance matrix `A`. Setting priors is not required for achieving good convergence for this model, but it improves sampling speed a bit. After fitting, the results can be investigated in detail.
@@ -92,15 +111,19 @@ head(data_repeat)
 The variable `spec_mean_cf` just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:
 
 ```{r, results='hide'}
-model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species), 
-                     data = data_repeat, family = gaussian(), 
-                     cov_ranef = list(phylo = A),
-                     prior = c(prior(normal(0,10), "b"),
-                               prior(normal(0,50), "Intercept"),
-                               prior(student_t(3,0,20), "sd"),
-                               prior(student_t(3,0,20), "sigma")),
-                     sample_prior = TRUE, chains = 2, cores = 2, 
-                     iter = 4000, warmup = 1000)
+model_repeat1 <- brm(
+  phen ~ spec_mean_cf + (1|phylo) + (1|species), 
+  data = data_repeat, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0,10), "b"),
+    prior(normal(0,50), "Intercept"),
+    prior(student_t(3,0,20), "sd"),
+    prior(student_t(3,0,20), "sigma")
+  ),
+  sample_prior = TRUE, chains = 2, cores = 2, 
+  iter = 4000, warmup = 1000
+)
 ```
 
 The variables `phylo` and `species` are identical as they are both identifiers of the species. However, we model the phylogenetic covariance only for `phylo` and thus the `species` variable accounts for any specific effect that would be independent of the phylogenetic relationship between species (e.g., environmental or niche effects). Again we can obtain model summaries as well as estimates of the phylogenetic signal.
@@ -127,9 +150,11 @@ data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 and then fit it again using `within_spec_cf` as an additional predictor.
 
 ```{r, results='hide'}
-model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
-                        newdata = data_repeat, chains = 2, cores = 2, 
-                        iter = 4000, warmup = 1000)
+model_repeat2 <- update(
+  model_repeat1, formula = ~ . + within_spec_cf,
+  newdata = data_repeat, chains = 2, cores = 2, 
+  iter = 4000, warmup = 1000
+)
 ```
 
 The results are almost unchanged, with apparently no relationship between the phenotype and the within species variance of `cofactor`.
@@ -162,13 +187,17 @@ head(data_fisher)
 We assume the sampling variance to be known and as $V(Zr) = \frac{1}{N - 3}$ for Fisher's values, where $N$ is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that **brms** requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of `obs` represents the residual variance, which we have to model explicitly in a meta-analytic model.
 
 ```{r, results='hide'}
-model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
-                    data = data_fisher, family = gaussian(), 
-                    cov_ranef = list(phylo = A),
-                    prior = c(prior(normal(0, 10), "Intercept"),
-                              prior(student_t(3, 0, 10), "sd")),
-                    control = list(adapt_delta = 0.95),
-                    chains = 2, cores = 2, iter = 4000, warmup = 1000)
+model_fisher <- brm(
+  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
+  data = data_fisher, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0, 10), "Intercept"),
+    prior(student_t(3, 0, 10), "sd")
+  ),
+  control = list(adapt_delta = 0.95),
+  chains = 2, cores = 2, iter = 4000, warmup = 1000
+)
 ```
 
 A summary of the fitted model is obtained via
@@ -194,11 +223,13 @@ head(data_pois)
 As the poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of `obs` (e.g., see Lawless, 1987).
 
 ```{r, results='hide'}
-model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs), 
-                  data = data_pois, family = poisson("log"), 
-                  cov_ranef = list(phylo = A),
-                  chains = 2, cores = 2, iter = 4000,
-                  control = list(adapt_delta = 0.95))
+model_pois <- brm(
+  phen_pois ~ cofactor + (1|phylo) + (1|obs), 
+  data = data_pois, family = poisson("log"), 
+  cov_ranef = list(phylo = A),
+  chains = 2, cores = 2, iter = 4000,
+  control = list(adapt_delta = 0.95)
+)
 ```
 
 Again, we obtain a summary of the fitted model via
@@ -211,11 +242,13 @@ plot(marginal_effects(model_pois), points = TRUE)
 Now, assume we ignore the fact that the phenotype is count data and fit a linear normal model instead.
 
 ```{r, results='hide'}
-model_normal <- brm(phen_pois ~ cofactor + (1|phylo), 
-                    data = data_pois, family = gaussian(), 
-                    cov_ranef = list(phylo = A),
-                    chains = 2, cores = 2, iter = 4000,
-                    control = list(adapt_delta = 0.95))
+model_normal <- brm(
+  phen_pois ~ cofactor + (1|phylo), 
+  data = data_pois, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  chains = 2, cores = 2, iter = 4000,
+  control = list(adapt_delta = 0.95)
+)
 ```
 
 ```{r}

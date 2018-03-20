@@ -15,14 +15,15 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ----cbpp-------------------------------------------------------------------------------
 data("cbpp", package = "lme4")
 head(cbpp)
 
 ## ----fit1, results='hide'---------------------------------------------------------------
-library(brms)
 fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 
             data = cbpp, family = binomial())
 
