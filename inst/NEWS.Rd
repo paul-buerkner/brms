@@ -20,6 +20,7 @@
       with new data. (#335)
       \item Pass user-defined variables to Stan via 
       \code{stanvar}. (#219, #357)
+      \item Allow ordinal families in mixture models. (#389)
       \item Model covariates in multi-membership structures
       that vary over the levels of the grouping factor
       via \code{mmc} terms. (#353)

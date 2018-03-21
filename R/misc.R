@@ -4,7 +4,10 @@ p <- function(x, i = NULL, row = TRUE) {
   #   x: an R object typically a vector or matrix
   #   i: optional index; if NULL, x is returned unchanged
   #   row: indicating if rows or cols should be indexed
-  #        only relevant if x has two dimensions
+  #        only relevant if x has two or three dimensions
+  if (isTRUE(length(dim(x)) > 3L)) {
+    stop2("'p' can only handle objects up to 3 dimensions.")
+  }
   if (!length(i)) {
     out <- x
   } else if (length(dim(x)) == 2L) {
@@ -12,6 +15,12 @@ p <- function(x, i = NULL, row = TRUE) {
       out <- x[i, , drop = FALSE]
     } else {
       out <- x[, i, drop = FALSE]
+    }
+  } else if (length(dim(x)) == 3L) {
+    if (row) {
+      out <- x[i, , , drop = FALSE]
+    } else {
+      out <- x[, i, , drop = FALSE]
     }
   } else {
     out <- x[i]

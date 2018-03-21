@@ -154,10 +154,11 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     }
     x$pfix$sigma <- 0
   }
-  if ("disc" %in% valid_dpars) {
+  disc_pars <- valid_dpars[dpar_class(valid_dpars) %in% "disc"]
+  for (dp in disc_pars) {
     # 'disc' is set to 1 and not estimated by default
-    if (!"disc" %in% c(names(x$pforms), names(x$pfix))) {
-      x$pfix$disc <- 1
+    if (!dp %in% c(names(x$pforms), names(x$pfix))) {
+      x$pfix[[dp]] <- 1
     }
   }
   for (dp in names(x$pfix)) {

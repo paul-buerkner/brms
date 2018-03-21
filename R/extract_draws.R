@@ -361,16 +361,15 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   #   A named list to be interpreted by linear_predictor
   draws <- list()
   p <- usc(combine_prefix(bterms))
+  resp <- usc(bterms$resp)
   int_regex <- paste0("^b", p, "_Intercept\\[")
   is_ordinal <- any(grepl(int_regex, colnames(samples))) 
   if (is_ordinal) {
-    draws$ncat <- sdata[[paste0("ncat", p)]]
+    draws$ncat <- sdata[[paste0("ncat", resp)]]
     draws$Intercept <- get_samples(samples, int_regex)
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
-      # as of brms > 1.0.1 the original prefix 'bcs' is used
-      bcs <- ifelse(any(grepl("^bcs_", colnames(samples))), "^bcs", "^b")
-      cs_pars <- paste0(bcs, p, "_", csef, "\\[")
+      cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
     }
@@ -750,7 +749,7 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   out$f$fun <- out$f$family
   for (dp in valid_dpars(out$f)) {
     out$dpars[[dp]] <- draws$dpars[[paste0(dp, comp)]]
-    if (!is.null(sample_ids)) {
+    if (length(sample_ids) && length(out$dpars[[dp]]) > 1L) {
       out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
     }
   }

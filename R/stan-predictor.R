@@ -422,7 +422,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
       # intercepts in ordinal models require special treatment
       type <- ifelse(family$family == "cumulative", "ordered", "vector")
       intercept <- paste0(
-        "  ", type, "[ncat", p, "-1] temp", p, "_Intercept;",
+        "  ", type, "[ncat", resp, "-1] temp", p, "_Intercept;",
         "  // temporary thresholds \n"
       )
       if (family$threshold == "flexible") {
@@ -436,7 +436,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
         str_add(out$tparD) <- intercept
         str_add(out$tparC1) <- paste0(
           "  // compute equidistant thresholds \n",
-          "  for (k in 1:(ncat", p, " - 1)) { \n",
+          "  for (k in 1:(ncat", resp, " - 1)) { \n",
           "    temp", p, "_Intercept[k] = temp", p, "_Intercept1", 
           " + (k - 1.0) * delta", p, "; \n",
           "  } \n"
@@ -445,14 +445,13 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
       }
       str_add(out$genD) <- paste0(
         "  // compute actual thresholds \n",
-        "  vector[ncat", p, " - 1] b", p, "_Intercept",  
+        "  vector[ncat", resp, " - 1] b", p, "_Intercept",  
         " = temp", p, "_Intercept", sub_X_means, "; \n" 
       )
     } else {
        if (identical(dpar_class(px$dpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
          ap_id <- dpar_id(px$dpar)
-         resp <- usc(px$resp)
          str_add(out$tparD) <- paste0(
            "  // identify mixtures via ordering of the intercepts \n",                   
            "  real temp", p, "_Intercept",
@@ -724,6 +723,7 @@ stan_cs <- function(bterms, data, prior, ranef) {
   csef <- colnames(get_model_matrix(bterms$cs, data))
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(bterms$resp)
   ranef <- subset2(ranef, type = "cs", ls = px)
   if (length(csef)) {
     str_add(out$data) <- paste0(
@@ -732,12 +732,12 @@ stan_cs <- function(bterms, data, prior, ranef) {
     )
     bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- paste0(
-      "  matrix", bound, "[Kcs", p, ", ncat", p, " - 1] bcs", p, ";",
+      "  matrix", bound, "[Kcs", p, ", ncat", resp, " - 1] bcs", p, ";",
       "  // category specific effects\n"
     )
     str_add(out$modelD) <- paste0(
       "  // linear predictor for category specific effects\n",
-      "  matrix[N, ncat", p, " - 1] mucs", p, " = Xcs", p, " * bcs", p, ";\n"
+      "  matrix[N, ncat", resp, " - 1] mucs", p, " = Xcs", p, " * bcs", p, ";\n"
     ) 
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = csef,
@@ -749,8 +749,8 @@ stan_cs <- function(bterms, data, prior, ranef) {
       # only group-level category specific effects present
       str_add(out$modelD) <- paste0(
         "  // linear predictor for category specific effects \n",               
-        "  matrix[N, ncat", p, " - 1] mucs", p, 
-        " = rep_matrix(0, N, ncat", p, " - 1);\n"
+        "  matrix[N, ncat", resp, " - 1] mucs", p, 
+        " = rep_matrix(0, N, ncat", resp, " - 1);\n"
       )
     }
     cats_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"

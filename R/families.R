@@ -697,8 +697,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (length(families) < 2L) {
     stop2("Expecting at least 2 mixture components.")
   }
-  # do not allow ordinal families until compatibility with disc is ensured
-  no_mix_families <- c("categorical", "cumulative", "sratio", "cratio", "acat")
+  no_mix_families <- c("categorical")
   no_mix_families <- intersect(families, no_mix_families)
   if (length(no_mix_families)) {
     stop2("Families ", collapse_comma(no_mix_families), 
@@ -707,8 +706,15 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
   }
+  is_ordinal <- ulapply(families, is_ordinal)
+  if (any(is_ordinal) && any(!is_ordinal)) {
+    stop2("Cannot mix ordinal and non-ordinal families.")
+  }
   if (is.null(order)) {
-    if (length(unique(families)) == 1L) {
+    if (any(is_ordinal)) {
+      family$order <- "none"
+      message("Setting order = 'none' for mixtures of ordinal families.")
+    } else if (length(unique(families)) == 1L) {
       family$order <- "mu"
       message("Setting order = 'mu' for mixtures of the same family.")
     } else {
@@ -728,6 +734,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
       family$order <- order
     } else {
       family$order <- ifelse(as.logical(order), "mu", "none")
+    }
+    if (any(is_ordinal) && family$order != "none") {
+      stop2("Ordinal mixture models only support order = 'none'.")
     }
   }
   family

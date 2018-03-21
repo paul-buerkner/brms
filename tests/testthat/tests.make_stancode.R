@@ -1153,7 +1153,7 @@ test_that("prior only models are correctly checked", {
 })
 
 test_that("Stan code of mixture model is correct", {
-  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  data <- data.frame(y = 1:10, x = rnorm(10), c = 1)
   scode <- make_stancode(bf(y ~ x,  sigma2 ~ x), data, 
                          mixture(gaussian, gaussian))
   expect_match2(scode, "ordered[2] ordered_Intercept;")
@@ -1193,6 +1193,11 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "theta2 = rep_vector(0, N);")
   expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
   expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  
+  fam <- mixture(cumulative, sratio)
+  scode <- make_stancode(y ~ x, data, family = fam)
+  expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], temp_mu1_Intercept);")
+  expect_match2(scode, "sratio_logit_lpmf(Y[n] | mu2[n], temp_mu2_Intercept, disc2);")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

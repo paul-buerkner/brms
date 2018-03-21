@@ -137,13 +137,17 @@ change_cs <- function(bterms, data, pars) {
   out <- list()
   csef <- colnames(data_cs(bterms, data)$Xcs)
   if (length(csef)) {
-    ncse <- length(csef)
-    thres <- sum(grepl("^b_Intercept\\[", pars))
+    p <- usc(combine_prefix(bterms))
+    bcsp <- paste0("bcs", p)
+    ncs <- length(csef)
+    thres <- sum(grepl(paste0("^b", p, "_Intercept\\["), pars))
     csenames <- t(outer(csef, paste0("[", 1:thres, "]"), FUN = paste0))
-    csenames <- paste0("bcs_", csenames)
-    sort_cse <- ulapply(seq_len(ncse), seq, to = thres * ncse, by = ncse)
-    lc(out) <- clist(grepl("^bcs\\[", pars), csenames, sort = sort_cse)
-    c(out) <- change_prior("bcs", pars, names = csef)
+    csenames <- paste0(bcsp, "_", csenames)
+    sort_cse <- ulapply(seq_len(ncs), seq, to = thres * ncs, by = ncs)
+    lc(out) <- clist(
+      grepl(paste0("^", bcsp, "\\["), pars), csenames, sort = sort_cse
+    )
+    c(out) <- change_prior(bcsp, pars, names = csef)
   }
   out
 }
