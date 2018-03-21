@@ -197,15 +197,15 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   #   fixef: names of the population-level effects
   #   args: list of arguments passed to as.matrix.brmsfit
   #   nlpar: name of a non-linear parameter
-  #   old_cat: see old_categorical
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   # stopifnot("x" %in% names(args))
   draws <- list()
   p <- usc(combine_prefix(bterms))
-  draws$X <- sdata[[paste0("X", p)]]
-  fixef <- colnames(draws$X)
+  X <- sdata[[paste0("X", p)]]
+  fixef <- colnames(X)
   if (length(fixef)) {
+    draws$X <- X
     b_pars <- paste0("b", p, "_", fixef)
     draws$b <- get_samples(samples, b_pars, exact = TRUE)
   }

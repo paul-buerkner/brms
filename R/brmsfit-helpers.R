@@ -672,14 +672,18 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   }
   if (!anyNA(pars)) {
     if (exact_match) {
-      pars <- all_pars[all_pars %in% pars]
+      out <- intersect(pars, all_pars)
     } else {
-      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
+      out <- vector("list", length(pars))
+      for (i in seq_along(pars)) {
+        out[[i]] <- all_pars[grepl(pars[i], all_pars, ...)]
+      }
+      out <- unique(unlist(out))
     }
   } else {
-    pars <- na_value
+    out <- na_value
   }
-  pars
+  out
 }
 
 add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
