@@ -209,7 +209,7 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   }
   h <- paste0("(", lr[1], ")")
   h <- paste0(h, ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
-  varsH <- find_names(h)
+  varsH <- find_vars(h)
   parsH <- paste0(class, varsH)
   miss_pars <- setdiff(parsH, pars)
   if (length(miss_pars)) {
@@ -263,8 +263,8 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   nlist(summary = sm, samples, prior_samples)
 }
 
-find_names <- function(x) {
-  # find all valid object names in a string 
+find_vars <- function(x) {
+  # find all valid variable names in a string 
   # Args:
   #   x: a character string
   # Notes:
@@ -273,10 +273,7 @@ find_names <- function(x) {
   #   currently only used in 'hypothesis_internal'
   # Returns:
   #   all valid variable names within the string
-  if (!is.character(x) || length(x) > 1) {
-    stop2("Argument 'x' must be a character string of length one.")
-  }
-  x <- gsub("[[:space:]]", "", x)
+  x <- gsub("[[:space:]]", "", as_one_character(x))
   regex_all <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.\\:]*"
   regex_all <- paste0(regex_all, "(\\[[^],]+(,[^],]+)*\\])?")
   pos_all <- gregexpr(regex_all, x)[[1]]
@@ -329,11 +326,6 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     out <- out / (length(x) - out)  
   }
   out
-}
-
-move2start <- function(x, first) {
-  # move elements to the start of a named object
-  x[c(first, setdiff(names(x), first))]
 }
 
 round_numeric <- function(x, digits = 2) {

@@ -101,7 +101,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       attr(x$pforms$mu, "nl") <- attr(formula, "nl")
       rhs_needed <- TRUE
     }
-    x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
+    x$pforms <- move2start(x$pforms, "mu")
   }
   terms <- try(terms(rhs(formula)), silent = TRUE)
   has_terms <- is(terms, "try-error") || 

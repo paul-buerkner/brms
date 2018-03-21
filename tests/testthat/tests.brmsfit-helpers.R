@@ -78,9 +78,9 @@ test_that("evidence_ratio returns expected results", {
   expect_equal(evidence_ratio(ps, cut = 0.5, wsign = "less"), 5/10)
 })
 
-test_that("find_names finds all valid variable names in a string", {
+test_that("find_vars finds all valid variable names in a string", {
   string <- "x + b.x - .5 + abc(a__3) : 1/2 - 0.2"
-  expect_equal(find_names(string), c("x", "b.x", "a__3"))
+  expect_equal(find_vars(string), c("x", "b.x", "a__3"))
 })
 
 test_that(".predictor_arma runs without errors", {

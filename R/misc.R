@@ -100,6 +100,11 @@ array2list <- function(x) {
   out
 }
 
+move2start <- function(x, first) {
+  # move elements to the start of a named object
+  x[c(first, setdiff(names(x), first))]
+}
+
 repl <- function(expr, n) {
   # wrapper around replicate but without simplifying
   replicate(n, expr, simplify = FALSE)
