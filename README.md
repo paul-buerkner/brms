@@ -1,18 +1,23 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
 brms <img src="man/figures/brms.png" align="right" width = 120 alt="brms Logo"/>
-====
+================================================================================
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 
 Overview
 --------
 
-The **brms** package provides an interface to fit Bayesian generalized (non-)linear multivariate multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see <http://mc-stan.org/>). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Multivariate models (i.e. models with multiple response variables) can be fitted, as well. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation. A list of blog posts about **brms** can be found at <https://paul-buerkner.github.io/blog/old-brms-blogposts/>.
+The **brms** package provides an interface to fit Bayesian generalized (non-)linear multivariate multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see <http://mc-stan.org/>). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, missing value imputation, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Multivariate models (i.e. models with multiple response variables) can be fitted, as well. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation and Bayes factors.
 
-<!--
+Resources
+---------
 
--->
+-   [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
+-   [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
+-   [brms blog posts](https://paul-buerkner.github.io/blog/old-brms-blogposts/) (List of blog posts about brms)
+-   [Ask a question](https://groups.google.com/forum/#!forum/brms-users) (brms-users google group)
+-   [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
+
 How to use brms
 ---------------
 
@@ -20,136 +25,111 @@ How to use brms
 library(brms)
 ```
 
-As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable `Trt`) can reduce the seizure counts. Two group-level intercepts are incorporated to account for the variance between patients as well as for the residual variance.
+As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable `Trt`) can reduce the seizure counts and whether the effect of the treatment varies with the baseline number of seizures a person had before treatment (variable `log_Base4_c`). As we have multiple observations per person, a group-level intercept is incorporated to account for the resulting dependency in the data.
 
 ``` r
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs), 
-           data = epilepsy, family = poisson())
-#> Compiling the C++ model
-#> Start sampling
+fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient), 
+            data = epilepsy, family = poisson())
 ```
 
 The results (i.e. posterior samples) can be investigated using
 
 ``` r
-summary(fit, waic = TRUE) 
+summary(fit1) 
 #>  Family: poisson 
 #>   Links: mu = log 
-#> Formula: count ~ log_Age_c + log_Base4_c * Trt + (1 | patient) + (1 | obs) 
+#> Formula: count ~ log_Age_c + log_Base4_c * Trt + (1 | patient) 
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = 1145.08; R2 = NA
+#>     ICs: LOO = NA; WAIC = NA; R2 = NA
 #>  
 #> Group-Level Effects: 
-#> ~obs (Number of levels: 236) 
-#>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1539 1.00
-#> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1884 1.00
+#> sd(Intercept)     0.55      0.07     0.43     0.70        753 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.74      0.11     1.51     1.95       2695 1.00
-#> log_Age_c            0.48      0.38    -0.28     1.22       2407 1.00
-#> log_Base4_c          0.88      0.14     0.60     1.15       2141 1.00
-#> Trt1                -0.34      0.16    -0.64    -0.03       2673 1.00
-#> log_Base4_c:Trt1     0.35      0.22    -0.07     0.79       2106 1.00
+#> Intercept            1.79      0.12     1.56     2.01       1058 1.00
+#> log_Age_c            0.46      0.39    -0.31     1.22       1082 1.00
+#> log_Base4_c          0.89      0.15     0.62     1.19        802 1.00
+#> Trt1                -0.34      0.16    -0.65    -0.02       1019 1.00
+#> log_Base4_c:Trt1     0.33      0.23    -0.11     0.77        797 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
-On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, group-level effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one group-level effect per grouping factor; not displayed here) correlations between group-level effects. On the bottom of the output, population-level effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
+On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains. Next, group-level effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one group-level effect per grouping factor; not displayed here) correlations between group-level effects. On the bottom of the output, population-level effects (i.e. regression coefficients) are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g. the residual standard deviation 'sigma' in normal models) are also given.
 
-In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
+In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. We see that the coefficient of `Trt` is negative with a completely negative 95%-CI indicating that, on average, the treatment reduces seizure counts by some amount. Further, we find little evidence that the treatment effect varies with the baseline number of seizures.
 
-To visually investigate the chains as well as the posterior distributions, you can use
+The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
 
-``` r
-plot(fit) 
-```
-
-An even more detailed investigation can be achieved by applying the shinystan package:
+To visually investigate the chains as well as the posterior distributions, we can use the `plot` method. If we just want to see results of the regression coefficients of `Trt` and `log_Base4_c`, we go for
 
 ``` r
-launch_shinystan(fit) 
+plot(fit1, pars = c("Trt", "log_Base4_c")) 
 ```
 
-There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt = 1`) and in the control group (`Trt = 0`) with average age and average number of previous seizures. Than we can use
+<img src="man/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;" />
+
+A more detailed investigation can be performed by running `launch_shinystan(fit1)`. To better understand the relationship of the predictors with the response, I recommend the `marginal_effects` method:
+
+``` r
+plot(marginal_effects(fit1, effects = "log_Base4_c:Trt"))
+```
+
+<img src="man/figures/README-marginal_effects-1.png" width="60%" style="display: block; margin: auto;" />
+
+This method uses some prediction functionality behind the scenes, which can also be called directly. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt = 1`) and in the control group (`Trt = 0`) with average age and average number of previous seizures. Than we can use
 
 ``` r
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
-predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
-#>      Estimate Est.Error 5%ile 95%ile
-#> [1,]  7.01975  5.665808     1     18
-#> [2,]  4.95500  4.174606     0     13
+predict(fit1, newdata = newdata, re_formula = NA)
+#>      Estimate Est.Error 2.5%ile 97.5%ile
+#> [1,]  6.05725  2.559416       2       12
+#> [2,]  4.28025  2.118686       1        9
 ```
 
-We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
+We need to set `re_formula = NA` in order not to condition of the group-level effects. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
 
 ``` r
-fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
-#>      Estimate Est.Error    5%ile   95%ile
-#> [1,] 6.848232  4.650445 1.999540 15.88520
-#> [2,] 4.884313  3.252223 1.421429 11.22407
+fitted(fit1, newdata = newdata, re_formula = NA)
+#>      Estimate Est.Error  2.5%ile 97.5%ile
+#> [1,] 6.034123 0.7020864 4.759135 7.475358
+#> [2,] 4.298426 0.4773137 3.425940 5.300204
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
 
-A related feature is the computation and visualization of marginal effects, which can help in better understanding the influence of the predictors on the response.
+Suppose, we want to investigate whether there is overdispersion in the model, that is residual variation not accounted for by the response distribution. For this purpose, we include a second group-level intercept that captures possible overdispersion.
 
 ``` r
-plot(marginal_effects(fit, probs = c(0.05, 0.95)))
+fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs), 
+            data = epilepsy, family = poisson())
 ```
 
-For a complete list of methods to apply on **brms** models see
+We can then go ahead and compare both models via approximate leave-one-out cross-validation.
 
 ``` r
-methods(class = "brmsfit") 
-#>  [1] add_ic                  add_loo                 add_waic               
-#>  [4] as.array                as.data.frame           as.matrix              
-#>  [7] as.mcmc                 bayes_factor            bayes_R2               
-#> [10] bridge_sampler          coef                    control_params         
-#> [13] expose_functions        family                  fitted                 
-#> [16] fixef                   formula                 getCall                
-#> [19] hypothesis              kfold                   launch_shinystan       
-#> [22] log_lik                 log_posterior           logLik                 
-#> [25] loo                     LOO                     loo_linpred            
-#> [28] loo_predict             loo_predictive_interval marginal_effects       
-#> [31] marginal_smooths        model.frame             neff_ratio             
-#> [34] ngrps                   nobs                    nsamples               
-#> [37] nuts_params             pairs                   parnames               
-#> [40] plot                    post_prob               posterior_interval     
-#> [43] posterior_linpred       posterior_predict       posterior_samples      
-#> [46] posterior_summary       pp_average              pp_check               
-#> [49] pp_mixture              predict                 predictive_error       
-#> [52] print                   prior_samples           prior_summary          
-#> [55] ranef                   residuals               rhat                   
-#> [58] stancode                standata                stanplot               
-#> [61] summary                 update                  VarCorr                
-#> [64] vcov                    waic                    WAIC                   
-#> see '?methods' for accessing help and source code
+LOO(fit1, fit2)
+#>               LOOIC    SE
+#> fit1        1347.64 75.25
+#> fit2        1193.43 28.03
+#> fit1 - fit2  154.21 56.89
 ```
 
-Details on formula syntax, families and link functions, as well as prior distributions can be found on the help page of the brm function:
-
-``` r
-help("brm") 
-```
-
-More instructions on how to use **brms** are given in the package's main vignettes.
-
-``` r
-vignette("brms_overview")
-vignette("brms_multilevel")
-```
+Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
 
 FAQ
 ---
+
+### I am new to brms. Where can I start?
+
+Detailed instructions and case studies are given in the package's extensive vignettes. See `vignette(package = "brms")` for an overview. For documentation on formula syntax, families, and prior distributions see `help("brm")`.
 
 ### How do I install brms?
 
@@ -168,11 +148,11 @@ if (!require("devtools")) {
 devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
-Because **brms** is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
 
-### What is the best way to ask a question or propose a new feature?
+### Where do I ask questions, propose a new feature, or report a bug?
 
-Questions can be asked in the google group [brms-users](https://groups.google.com/forum/#!forum/brms-users). To propose a new feature or report a bug, please open an issue on [github](https://github.com/paul-buerkner/brms). Of course, you can always write me an email (<paul.buerkner@gmail.com>).
+Questions can be asked on the [brms-users](https://groups.google.com/forum/#!forum/brms-users) google group. To propose a new feature or report a bug, please open an issue on [GitHub](https://github.com/paul-buerkner/brms).
 
 ### How can I extract the generated Stan code?
 
@@ -180,34 +160,8 @@ If you have already fitted a model, just apply the `stancode` method on the fitt
 
 ### Can I avoid compiling models?
 
-When you fit your model for the first time with **brms**, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method. For more details see
-
-``` r
-help("update.brmsfit")
-```
-
-### How can I specify non-linear or distributional models?
-
-Specification of non-linear or distributional models requires multiple formulae. In **brms**, the function `brmsformula` (or short `bf`) is used to combine all formulae into one object, which can then be passed to the `formula` argument of `brm`. More help is given in
-
-``` r
-help("brmsformula")
-```
-
-For a detailed discussion of some examples see
-
-``` r
-vignette("brms_nonlinear")
-```
-
-``` r
-vignette("brms_distreg")
-```
+When you fit your model for the first time with brms, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method. For more details see `help("update.brmsfit")`.
 
 ### What is the difference between brms and rstanarm?
 
-**rstanarm** is an R package similar to **brms** that also allows to fit regression models using **Stan** for the backend estimation. Contrary to **brms**, **rstanarm** comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as **brms** generates its **Stan** code on the fly, it offers much more flexibility in model specification than **rstanarm**. Also, multilevel models are currently fitted a bit more efficiently in **brms**. For a detailed comparison of **brms** with other common R packages implementing multilevel models, see
-
-``` r
-vignette("brms_overview")
-```
+The rstanarm R package is similar to brms in that also allows to fit regression models using Stan for the backend estimation. Contrary to brms, rstanarm comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as brms generates its Stan code on the fly, it offers much more flexibility in model specification than rstanarm. Also, multilevel models are currently fitted a bit more efficiently in brms. For a detailed comparison of brms with other common R packages implementing multilevel models, see `vignette("brms_multilevel")`.
