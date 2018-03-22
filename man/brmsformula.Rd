@@ -102,13 +102,26 @@ models for all parameters of the assumed response distribution.
   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
   \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
   correlations between the corresponding group-level effects 
-  will be estimated. 
+  will be estimated.
   
-  You can specify multi-membership terms
-  using the \code{\link{mm}} function. For instance, 
-  a multi-membership term with two members could be
-  \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
-  the first and second member, respectively.
+  If levels of the grouping factor belong to different sub-populations,
+  it may be reasonable to assume a different covariance matrix for each 
+  of the sub-populations. For instance, the variation within the
+  treatment group and within the control group in a randomized control
+  trial might differ. Suppose that \code{y} is the outcome, and
+  \code{x} is the factor indicating the treatment and control group. 
+  Then, we could estimate different hyper-parameters of the varying
+  effects (in this case a varying intercept) for treatment and control
+  group via \code{y ~ x + (1 | gr(subject, by = x))}.
+  
+  You can specify multi-membership terms using the \code{\link{mm}} 
+  function. For instance, a multi-membership term with two members 
+  could be \code{(1 | mm(g1, g2))}, where \code{g1} and \code{g2} 
+  specify the first and second member, respectively. Moreover,
+  if a covariate \code{x} varies across the levels of the grouping-factors
+  \code{g1} and \code{g2}, we can save the respective covariate values
+  in the variables \code{x1} and \code{x2} and then model the varying
+  effect as \code{(1 + mmc(x1, x2) | mm(g1, g2))}.
   
   \bold{Special predictor terms}
   

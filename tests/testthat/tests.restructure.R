@@ -36,14 +36,14 @@ test_that("restructure_formula works correctly", {
 test_that("change_prior returns expected lists", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")
-  expect_equal(
+  expect_equivalent(
     brms:::change_prior(
       class = "b", pars = pars, names = c("x1", "x3", "x2")
     ),
     list(list(pos = 6, fnames = "prior_b_x1"),
          list(pos = 7, fnames = "prior_b_x2"))
   )
-  expect_equal(
+  expect_equivalent(
     brms:::change_prior(
       class = "bp", pars = pars, 
       names = c("x1", "x2"), new_class = "b"
@@ -77,7 +77,7 @@ test_that("change_old_re and change_old_re2 return expected lists", {
             paste0("r_a_g[", 1:10, ",x]"))
   dims <- list("sd_a_g_Intercept" = numeric(0), "sd_a_g_x" = numeric(0),
                "cor_a_g_Intercept_x" = numeric(0), "r_a_g" = c(10, 2))
-  expect_equal(brms:::change_old_re(ranef, pars = pars, dims = dims), target)
+  expect_equivalent(brms:::change_old_re(ranef, pars = pars, dims = dims), target)
   
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
@@ -100,7 +100,7 @@ test_that("change_old_re and change_old_re2 return expected lists", {
             paste0("r_g_a[", 1:10, ",x]"))
   dims <- list("sd_g_a_Intercept" = numeric(0), "sd_g_a_x" = numeric(0),
                "cor_g_a_Intercept_a_x" = numeric(0), "r_g_a" = c(10, 2))
-  expect_equal(brms:::change_old_re2(ranef, pars = pars, dims = dims), target)
+  expect_equivalent(brms:::change_old_re2(ranef, pars = pars, dims = dims), target)
 })
 
 test_that("change_old_sm return expected lists", {
@@ -133,7 +133,7 @@ test_that("change_old_sm return expected lists", {
                s_sigma_t2x0 = 6, s_sx1kEQ9 = 9)
   bterms <- parse_bf(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)), 
                      family = gaussian())
-  expect_equal(brms:::change_old_sm(bterms, pars, dims), target)
+  expect_equivalent(brms:::change_old_sm(bterms, pars, dims), target)
 })
 
 test_that("change_old_mo returns expected lists", {
@@ -162,7 +162,7 @@ test_that("change_old_mo returns expected lists", {
       fnames = paste0("simo_sigma_mox1[", 1:5, "]")
     )
   )
-  expect_equal(brms:::change_old_mo(bterms, data, pars), target)
+  expect_equivalent(brms:::change_old_mo(bterms, data, pars), target)
 })
 
 test_that("change_old_categorical works correctly", {
@@ -185,6 +185,6 @@ test_that("change_old_categorical works correctly", {
       )
     )
   )
-  expect_equal(res, target)
+  expect_equivalent(res, target)
 })
 

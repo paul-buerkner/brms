@@ -5,16 +5,22 @@
 \section{CHANGES IN VERSION 2.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Specify custom response distributions with
+      function \code{custom_family}. (#381)
       \item Model missing values and measurement error in 
       responses using the \code{mi} addition term. (#27, #343)
       \item Allow missing values in predictors using \code{mi} 
       terms on the right-hand side of model formulas. (#27) 
       \item Model interactions between the special predictor
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
+      \item Allow hyperparameters of group-level effects
+      to vary over the levels of a categorical covariate 
+      using argument \code{by} in function \code{gr}. (#365)
       \item Allow predictions of measurement-error models
       with new data. (#335)
       \item Pass user-defined variables to Stan via 
-      \code{stan_var}. (#219, #357)
+      \code{stanvar}. (#219, #357)
+      \item Allow ordinal families in mixture models. (#389)
       \item Model covariates in multi-membership structures
       that vary over the levels of the grouping factor
       via \code{mmc} terms. (#353)
@@ -24,13 +30,15 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
-      \item Change the parameterization of \code{weibull}
-      models to be consistent with other model classes.
-      Post-processing of \code{weibull} models fitted with 
+      \item Change the parameterization of \code{weibull} and 
+      \code{exgaussian} models to be consistent with other model 
+      classes. Post-processing of related models fitted with 
       earlier version of \pkg{brms} is no longer possible.
       \item Treat integer responses in \code{ordinal} models 
       as directly indicating categories even if the lowest 
       integer is not one.
+      \item Improve output of the \code{hypothesis} method 
+      thanks to the ideas of Matti Vuorre. (#362)
       \item Always plot \code{by} variables as facets
       in \code{marginal_smooths}.
       \item Deprecate the \code{cor_bsts} correlation structure.
@@ -41,7 +49,24 @@
       \item Allow the \code{:} operator to combine 
       groups in multi-membership terms thanks to
       Gang Chen.
-      \item Allow truncation in multivariate models.
+      \item Avoid an unexpected error when calling 
+      \code{LOO} with argument \code{reloo = TRUE}
+      thanks to Peter Konings. (#348)
+      \item Fix problems in \code{predict} when applied to
+      categorical models thanks to Lydia Andreyevna Krasilnikova
+      and Thomas Vladeck. (#336, #345)
+      \item Allow truncation in multivariate models with
+      missing values thanks to Malte Lau Petersen. (#380)
+      \item Force time points to be unique within groups in 
+      autocorrelation structures thanks to Ruben Arslan. (#363)
+      \item Fix problems when post-processing multiple
+      uncorrelated group-level terms of the same grouping factor
+      thanks to Ivy Jansen. (#374)
+      \item Fix a problem in the Stan code of multivariate
+      \code{weibull} and \code{frechet} models thanks to 
+      the GitHub user philj1s. (#375)
+      \item Fix a rare error when post-processing \code{binomial} 
+      models thanks to the GitHub user SeanH94. (#382)
     }
   }
 }

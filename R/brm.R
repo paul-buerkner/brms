@@ -85,8 +85,8 @@
 #' @param knots Optional list containing user specified knot values to be 
 #'   used for basis construction of smoothing terms. 
 #'   See \code{\link[mgcv:gamm]{gamm}} for more details.
-#' @param stan_vars An optional \code{stanvars} object generated
-#'   by function \code{\link{stan_var}} to define additional variables
+#' @param stanvars An optional \code{stanvars} object generated
+#'   by function \code{\link{stanvar}} to define additional variables
 #'   in the data block of \pkg{Stan}.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
@@ -329,7 +329,7 @@
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
-                sparse = FALSE, knots = NULL, stan_vars = NULL,
+                sparse = FALSE, knots = NULL, stanvars = NULL,
                 stan_funs = NULL, fit = NA, save_ranef = TRUE, 
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
@@ -348,22 +348,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is(fit, "brmsfit")) {
     # re-use existing model
     x <- fit
-    sdata <- standata(x, new = dots$new)
-    dots$new <- NULL
-    # extract the compiled model
+    sdata <- standata(x)
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
     formula <- validate_formula(
       formula, data = data, family = family, autocor = autocor
     )
-    if (is.mvbrmsformula(formula)) {
-      family <- lapply(formula$forms, "[[", "family")
-      autocor <- lapply(formula$forms, "[[", "autocor")
-    } else {
-      family <- formula$family
-      autocor <- formula$autocor
-    }
+    family <- get_element(formula, "family")
+    autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
     if (is.null(dots$data.name)) {
       data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
@@ -381,7 +374,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       formula = formula, family = family, data = data, 
       data.name = data.name, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
-      stan_vars = stan_vars, stan_funs = stan_funs,
+      stanvars = stanvars, stan_funs = stan_funs,
       algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
@@ -391,15 +384,19 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_all_pars = save_all_pars
     )
     x$model <- make_stancode(
-      formula = formula, data = data, prior = prior, 
+      formula, data = data, prior = prior, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
-      stan_vars = stan_vars, stan_funs = stan_funs, 
+      stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model, brm_call = TRUE
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
-    sdata <- standata(x, newdata = dots$is_newdata)
+    sdata <- make_standata(
+      formula, data = data, prior = prior, 
+      cov_ranef = cov_ranef, sample_prior = sample_prior,
+      knots = knots, stanvars = stanvars
+    )
     message("Compiling the C++ model")
     x$fit <- eval_silent(
       rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)

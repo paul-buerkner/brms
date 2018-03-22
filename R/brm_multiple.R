@@ -63,7 +63,7 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
   }
   for (i in seq_along(data)[-1]) {
     message("Fitting imputed model ", i)
-    fits[[i]] <- update(fits[[1]], newdata = data[[i]], ...)
+    fits[[i]] <- update(fits[[1]], newdata = data[[i]], recompile = FALSE, ...)
     rhat_i <- data.frame(as.list(rhat(fits[[i]])))
     if (any(rhat_i > 1.1)) {
       warning2("Imputed model ", i, " did not converge.")

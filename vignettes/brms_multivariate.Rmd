@@ -15,7 +15,23 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "children/SETTINGS-knitr.txt"}
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+options(width = 90)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(brms)
+theme_set(theme_default())
 ```
 
 ## Introduction
@@ -32,7 +48,6 @@ head(BTdata)
 We begin with a relatively simple multivariate normal model.
 
 ```{r fit1, message=FALSE, warning=FALSE}
-library(brms)
 fit1 <- brm(
   cbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
   data = BTdata, chains = 2, cores = 2
@@ -49,7 +64,6 @@ summary(fit1)
 The summary output of multivariate models closely resembles those of univariate models, except that the parameters now have the corresponding response variable as prefix. Within dams, tarsus length and back color seem to be negatively correlated, while within fosternests the opposite is true. This indicates differential effects of genetic and environmental factors on these two characteristics. Further, the small residual correlation `rescor(tarsus, back)` on the bottom of the output indicates that there is little unmodeled dependency between tarsus length and back color. Although not necessary at this point, we have already computed and stored the LOO information criterion of `fit1`, which we will use for model comparions. Next, let's take a look at some posterior-predictive checks, which give us a first impression of the model fit.
 
 ```{r pp_check1, message=FALSE}
-theme_set(theme_default())
 pp_check(fit1, resp = "tarsus")
 pp_check(fit1, resp = "back")
 ```

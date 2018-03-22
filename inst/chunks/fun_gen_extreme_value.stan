@@ -8,15 +8,12 @@
    *   a scalar to be added to the log posterior 
    */ 
    real gen_extreme_value_lpdf(real y, real mu, real sigma, real xi) { 
-     real x;
-     real t;
-     real inv_xi;
-     x = (y - mu) / sigma;
+     real x = (y - mu) / sigma;
      if (xi == 0) {
        return - log(sigma) - x - exp(-x);
      } else {
-       t = 1 + xi * x;
-       inv_xi = 1 / xi;
+       real t = 1 + xi * x;
+       real inv_xi = 1 / xi;
        return - log(sigma) - (1 + inv_xi) * log(t) - pow(t, -inv_xi);
      }
    }
@@ -30,8 +27,7 @@
    *   log(P(Y <= y))
    */ 
    real gen_extreme_value_lcdf(real y, real mu, real sigma, real xi) { 
-     real x;
-     x = (y - mu) / sigma;
+     real x = (y - mu) / sigma;
      if (xi == 0) {
        return - exp(-x);
      } else {

@@ -146,7 +146,7 @@ fitted_inverse.gaussian <- function(draws) {
 }
 
 fitted_exgaussian <- function(draws) {
-  with(draws$dpars, mu + beta)
+  draws$dpars$mu
 }
 
 fitted_wiener <- function(draws) {
@@ -232,6 +232,12 @@ fitted_cratio <- function(draws) {
 
 fitted_acat <- function(draws) {
   fitted_ordinal(draws)
+}
+
+fitted_custom <- function(draws) {
+  fitted_fun <- paste0("fitted_", draws$f$name)
+  fitted_fun <- get(fitted_fun, draws$f$env)
+  fitted_fun(draws)
 }
 
 fitted_mixture <- function(draws) {

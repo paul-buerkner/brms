@@ -15,7 +15,9 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 data("nhanes", package = "mice")
@@ -26,7 +28,6 @@ library(mice)
 imp <- mice(nhanes, m = 5, print = FALSE)
 
 ## ---- results = 'hide', message = FALSE-------------------------------------------------
-library(brms)
 fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 
 ## ---------------------------------------------------------------------------------------

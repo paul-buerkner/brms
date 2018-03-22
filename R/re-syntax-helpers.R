@@ -11,7 +11,18 @@ illegal_group_expr <- function(group) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
+stopif_illegal_group <- function(group) {
+  if (illegal_group_expr(group)) {
+    stop2(
+      "Illegal grouping term '", group, "'. It may contain ",
+      "only variable names combined by the symbol ':'"
+    )
+  }
+  invisible(NULL)
+}
+
 get_groups <- function(x) {
+  # TODO: merge with get_group_vars
   if (!(is.brmsterms(x) || is.mvbrmsterms(x))) {
     x <- parse_bf(x)
   }
@@ -78,26 +89,32 @@ split_re_terms <- function(re_terms) {
   for (i in seq_along(re_terms)) {
     lhs_form <- formula(paste("~", re_parts$lhs[i]))
     lhs_all_terms <- all_terms(lhs_form)
-    basic_pos <- rep(TRUE, length(lhs_all_terms))
+    # otherwise varying intercepts cannot be handled reliably
+    is_cs_term <- grepl_expr(regex_sp("cs"), lhs_all_terms)
+    if (any(is_cs_term) && !all(is_cs_term)) {
+      stop2("Please specify category specific effects ",
+            "in separate group-level terms.")
+    }
     new_lhs <- NULL
-    for (t in c("cs", "sp", "mmc")) {
+    # prepare effects of special terms
+    valid_types <- c("sp", "cs", "mmc")
+    invalid_types <- c("sm", "gp")
+    for (t in c(valid_types, invalid_types)) {
       lhs_tform <- do.call(paste0("parse_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
-        tpos <- attr(lhs_tform, "pos")
-        if (t == "cs" && !all(tpos)) {
-          stop2("Please specify category specific effects ",
-                "in separate group-level terms.")
+        if (t %in% invalid_types) {
+          stop2("Cannot handle splines or GPs in group-level terms.")
         }
-        basic_pos <- basic_pos & !tpos
         new_lhs <- c(new_lhs, formula2str(lhs_tform, rm = 1))
         type[[i]] <- c(type[[i]], t)
       }
     }
-    int_term <- attr(terms(lhs_form), "intercept")
-    basic_terms <- lhs_all_terms[basic_pos]
-    if (length(basic_terms) || int_term && !"cs" %in% type[[i]]) {
-      basic_terms <- paste(c(int_term, basic_terms), collapse = "+")
-      new_lhs <- c(new_lhs, basic_terms)
+    # prepare effects of basic terms
+    fe_form <- parse_fe(lhs_form)
+    fe_terms <- all_terms(fe_form)
+    has_intercept <- attr(terms(fe_form), "intercept")
+    if (length(fe_terms) || has_intercept && !"cs" %in% type[[i]]) {
+      new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
     }
     if (length(new_lhs) > 1 && re_parts$mid[i] != "||") {
@@ -127,18 +144,18 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
     x <- all_terms(x)
   }
   re_pos <- grepl("\\|", x)
-  re_terms <- x[re_pos]
-  if (brackets && length(re_terms)) {
-    re_terms <- paste0("(", re_terms, ")")
+  out <- x[re_pos]
+  if (brackets && length(out)) {
+    out <- paste0("(", out, ")")
   } 
   if (formula) {
-    if (length(re_terms)) {
-      re_terms <- formula(paste("~ 1", collapse("+", re_terms)))
+    if (length(out)) {
+      out <- formula(paste("~ 1", collapse("+", out)))
     } else {
-      re_terms <- ~ 1
+      out <- ~ 1
     }
   }
-  structure(re_terms, pos = re_pos)
+  out
 }
 
 check_re_formula <- function(re_formula, formula) {
@@ -287,14 +304,15 @@ get_re.btnl <- function(x, ...) {
   do.call(rbind, re)
 }
 
-tidy_ranef <- function(bterms, data = NULL, all = TRUE, 
-                       old_levels = NULL, old_standata = NULL) {
+tidy_ranef <- function(bterms, data, all = TRUE, 
+                       old_levels = NULL, old_sdata = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   bterms: object of class brmsterms
-  #   data: data passed to brm after updating
-  #   all: include REs of non-linear and distributional parameters?
-  #   old_standata: optional; see 'extract_old_standata'
+  #   data: data.frame containing all model variables
+  #   all: include REs of all parameters?
+  #   old_levels: optional original levels of the grouping factors
+  #   old_sdata: optional; see 'extract_old_standata'
   #     only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
@@ -303,11 +321,14 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   #     gn: number of the grouping term within the respective formula
   #     coef: name of the group-level effect
   #     cn: number of the effect within the ID
-  #     nlpar: name of the corresponding non-linear parameter
+  #     resp: name of the response variable
+  #     dpar: name of the distributional parameter
+  #     nlpar: name of the non-linear parameter
   #     cor: are correlations modeled for this effect?
-  #     type: special effects type; can be "sp" or "cs"
+  #     type: special effects type; can be 'sp' or 'cs'
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
+  data <- combine_groups(data, get_groups(bterms))
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
@@ -315,19 +336,19 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
   j <- 1
   for (i in seq_len(nrow(re))) {
     if (!nzchar(re$type[i])) {
-      coef <- colnames(get_model_matrix(re$form[[i]], data = data)) 
+      coef <- colnames(get_model_matrix(re$form[[i]], data)) 
     } else if (re$type[i] == "sp") {
       coef <- tidy_spef(re$form[[i]], data)$coef
     } else if (re$type[i] == "mmc") {
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
-      if (!is.null(old_standata)) {
+      if (!is.null(old_sdata)) {
         # extract ncat from the original data
         if (nzchar(resp)) {
-          ncat <- old_standata[[resp]][["ncat"]]
+          ncat <- old_sdata[[resp]][["ncat"]]
         } else {
-          ncat <- old_standata[["ncat"]]
+          ncat <- old_sdata[["ncat"]]
         }
       } else {
         # infer ncat from the current data
@@ -355,10 +376,17 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       nlpar = re$nlpar[[i]],
       cor = re$cor[[i]],
       type = re$type[[i]],
+      by = re$gcall[[i]]$by,
       stringsAsFactors = FALSE
     )
-    rdat$form <- replicate(nrow(rdat), re$form[[i]])
-    rdat$gcall <- replicate(nrow(rdat), re$gcall[i]) 
+    bylevels <- NULL
+    if (nzchar(rdat$by[1])) {
+      bylevels <- levels(factor(get(rdat$by[1], data)))
+    }
+    rdat$bylevels <- repl(bylevels, nrow(rdat))
+    rdat$form <- repl(re$form[[i]], nrow(rdat))
+    rdat$gcall <- repl(re$gcall[[i]], nrow(rdat)) 
+    # prepare group-level IDs
     id <- re$id[[i]]
     if (is.na(id)) {
       rdat$id <- j
@@ -405,14 +433,30 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
     }
     if (is.null(old_levels)) {
-      un_re <- re[!duplicated(re$group), ]
-      levels <- named_list(un_re$group)
+      rsub <- ranef[!duplicated(ranef$group), ]
+      levels <- named_list(rsub$group)
       for (i in seq_along(levels)) {
         # combine levels of all grouping factors within one grouping term
         levels[[i]] <- unique(ulapply(
-          un_re$gcall[[i]]$groups, 
+          rsub$gcall[[i]]$groups, 
           function(g) levels(factor(get(g, data)))
         ))
+        # store information of corresponding by levels
+        if (nzchar(rsub$by[i])) {
+          stopifnot(!nzchar(rsub$type[i]))
+          by <- rsub$by[i]
+          bylevels <- rsub$bylevels[[i]]
+          g <- rsub$gcall[[i]]$groups
+          J <- match(get(g, data), levels[[i]])
+          df <- unique(data.frame(J, by = get(by, data)))
+          if (nrow(df) > length(unique(J))) {
+            stop2("Some levels of '", g, "' correspond ", 
+                  "to multiple levels of '", by, "'.")
+          }
+          df <- df[order(df$J), ]
+          by_per_level <- bylevels[match(df$by, bylevels)]
+          attr(levels[[i]], "by") <- by_per_level
+        }
       }
       attr(ranef, "levels") <- levels 
     } else {
@@ -420,15 +464,52 @@ tidy_ranef <- function(bterms, data = NULL, all = TRUE,
       attr(ranef, "levels") <- old_levels
     }
   }
-  ranef
+  structure(ranef, class = c("ranef_frame", "data.frame"))
 }
 
 empty_ranef <- function() {
-  data.frame(
-    id = numeric(0), group = character(0), gn = numeric(0),
-    coef = character(0), cn = numeric(0), resp = character(0),
-    dpar = character(0), nlpar = character(0), cor = logical(0), 
-    type = character(0), form = character(0), 
-    stringsAsFactors = FALSE
+  structure(
+    data.frame(
+      id = numeric(0), group = character(0), gn = numeric(0),
+      coef = character(0), cn = numeric(0), resp = character(0),
+      dpar = character(0), nlpar = character(0), cor = logical(0), 
+      type = character(0), form = character(0), 
+      stringsAsFactors = FALSE
+    ),
+    class = c("ranef_frame", "data.frame")
   )
+}
+
+is.ranef_frame <- function(x) {
+  inherits(x, "ranef_frame")
+}
+
+get_group_vars <- function(x, ...) {
+  # extract names of grouping variables
+  UseMethod("get_group_vars") 
+}
+
+#' @export
+get_group_vars.brmsfit <- function(x, ...) {
+  bterms <- parse_bf(x$formula)
+  unique(c(
+    get_group_vars(x$ranef),
+    get_group_vars(tidy_meef(bterms, x$data)),
+    get_autocor_vars(x, var = "group")
+  ))
+}
+
+#' @export
+get_group_vars.ranef_frame <- function(x, ...) {
+  unique(ulapply(x$gcall, "[[", "groups"))
+}
+
+#' @export
+get_group_vars.meef_frame <- function(x, ...) {
+  if (nrow(x)) {
+    out <- unique(x$grname[!is.na(x$grname)])
+  } else {
+    out <- NULL
+  }
+  out
 }

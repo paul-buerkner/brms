@@ -142,10 +142,13 @@ hypothesis_internal <- function(x, hypothesis, class, alpha,
     stop2("Argument 'alpha' must be a single value in [0,1].")
   }
   class <- as_one_character(class)
-  out <- lapply(
-    hypothesis, eval_hypothesis, 
-    x = x, class = class, alpha = alpha
-  )
+  out <- vector("list", length(hypothesis))
+  for (i in seq_along(out)) {
+    out[[i]] <- eval_hypothesis(
+      hypothesis[i], x = x, class = class, 
+      alpha = alpha, name = names(hypothesis)[i]
+    )
+  }
   if (combine) {
     out <- combine_hlist(out, class = class, alpha = alpha)
   }
@@ -168,14 +171,14 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
       alpha = alpha, combine = FALSE, ...
     )
     for (i in seq_along(out[[l]])) {
-      rownames(out[[l]][[i]]$summary) <- paste0(
-        rownames(out[[l]][[i]]$summary), " [", levels[l], "]"
-      )
+      out[[l]][[i]]$summary$Group <- levels[l]
     }
   }
   out <- unlist(out, recursive = FALSE)
   out <- as.list(matrix(out, ncol = length(hypothesis), byrow = TRUE))
-  combine_hlist(out, class = "", alpha = alpha)
+  out <- combine_hlist(out, class = "", alpha = alpha)
+  out$hypothesis <- move2start(out$hypothesis, "Group")
+  out
 }
 
 combine_hlist <- function(hlist, class, alpha) {
@@ -183,6 +186,7 @@ combine_hlist <- function(hlist, class, alpha) {
   # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
+  rownames(hs) <- NULL
   samples <- lapply(hlist, function(h) h$samples)
   samples <- as.data.frame(do.call(cbind, samples))
   prior_samples <- lapply(hlist, function(h) h$prior_samples)
@@ -193,7 +197,7 @@ combine_hlist <- function(hlist, class, alpha) {
   structure(out, class = "brmshypothesis")
 }
 
-eval_hypothesis <- function(h, x, class, alpha) {
+eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
   # parse hypothesis string
@@ -205,7 +209,7 @@ eval_hypothesis <- function(h, x, class, alpha) {
   }
   h <- paste0("(", lr[1], ")")
   h <- paste0(h, ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
-  varsH <- find_names(h)
+  varsH <- find_vars(h)
   parsH <- paste0(class, varsH)
   miss_pars <- setdiff(parsH, pars)
   if (length(miss_pars)) {
@@ -241,26 +245,26 @@ eval_hypothesis <- function(h, x, class, alpha) {
     wsign = wsign, prior_samples = prior_samples
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
+  names(sm) <- c("Estimate", "Est.Error", "CI.Lower", "CI.Upper", "Evid.Ratio")
   if (sign == "<") {
     sm[1, 3] <- -Inf
   } else if (sign == ">") {
     sm[1, 4] <- Inf
   }
-  sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
-  rownames(sm) <- paste(h, sign, "0")
-  cl <- (1 - alpha) * 100
-  colnames(sm) <- c(
-    "Estimate", "Est.Error", paste0("l-", cl, "% CI"),
-    paste0("u-", cl, "% CI"), "Evid.Ratio", "Star"
-  )
+  sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
+  if (!length(name) || !nzchar(name)) {
+    name <- paste(h, sign, "0")
+  }
+  sm$Hypothesis <- as_one_character(name)
+  sm <- move2start(sm, "Hypothesis")
   if (is.null(prior_samples)) {
     prior_samples <- as.matrix(rep(NA, nrow(samples)))
   }
   nlist(summary = sm, samples, prior_samples)
 }
 
-find_names <- function(x) {
-  # find all valid object names in a string 
+find_vars <- function(x) {
+  # find all valid variable names in a string 
   # Args:
   #   x: a character string
   # Notes:
@@ -269,10 +273,7 @@ find_names <- function(x) {
   #   currently only used in 'hypothesis_internal'
   # Returns:
   #   all valid variable names within the string
-  if (!is.character(x) || length(x) > 1) {
-    stop2("Argument 'x' must be a character string of length one.")
-  }
-  x <- gsub("[[:space:]]", "", x)
+  x <- gsub("[[:space:]]", "", as_one_character(x))
   regex_all <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.\\:]*"
   regex_all <- paste0(regex_all, "(\\[[^],]+(,[^],]+)*\\])?")
   pos_all <- gregexpr(regex_all, x)[[1]]
@@ -327,16 +328,89 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out
 }
 
+round_numeric <- function(x, digits = 2) {
+  # round all numeric elements of a list like object
+  stopifnot(is.list(x))
+  for (i in seq_along(x)) {
+    if (is.numeric(x[[i]])) {
+      x[[i]] <- round(x[[i]], digits = digits)
+    }
+  }
+  x
+}
+
 #' @rdname brmshypothesis
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
-  # make sure rownames are not too long
-  rnames <- limit_chars(rownames(x$hypothesis), chars = chars)
-  rownames(x$hypothesis) <- make.unique(rnames, sep = " #")
+  # make sure hypothesis names are not too long
+  x$hypothesis$Hypothesis <- limit_chars(
+    x$hypothesis$Hypothesis, chars = chars
+  )
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
+  x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
   print(x$hypothesis, quote = FALSE)
-  cat(paste0("---\n'*': The expected value under the hypothesis ", 
-             "lies outside the ", (1 - x$alpha) * 100, "% CI.\n"))
+  cat(paste0(
+    "---\n'*': The expected value under the hypothesis ", 
+    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n"
+  ))
   invisible(x)
+}
+
+#' @rdname brmshypothesis
+#' @method plot brmshypothesis
+#' @export
+plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
+                                chars = 40, colors = NULL,
+                                theme = NULL, ask = TRUE, 
+                                plot = TRUE,  ...) {
+  dots <- list(...)
+  if (!is.data.frame(x$samples)) {
+    stop2("No posterior samples found")
+  }
+  plot <- use_alias(plot, dots$do_plot)
+  if (is.null(colors)) {
+    colors <- bayesplot::color_scheme_get()[c(6, 2)]
+    colors <- unname(unlist(colors))
+  }
+  if (length(colors) != 2L) {
+    stop2("Argument 'colors' must be of length 2.")
+  }
+  
+  .plot_fun <- function(samples) {
+    ggplot(samples, aes_string(x = "values")) + 
+      facet_wrap("ind", ncol = 1, scales = "free") +
+      geom_density(aes_string(fill = "Type"), 
+                   alpha = 0.7, na.rm = TRUE) + 
+      scale_fill_manual(values = colors) + 
+      xlab("") + ylab("") + theme
+  }
+  
+  samples <- cbind(x$samples, Type = "Posterior")
+  if (!ignore_prior) {
+    samples <- rbind(samples, cbind(x$prior_samples, Type = "Prior"))
+  }
+  if (plot) {
+    default_ask <- devAskNewPage()
+    on.exit(devAskNewPage(default_ask))
+    devAskNewPage(ask = FALSE)
+  }
+  hyps <- limit_chars(x$hypothesis$Hypothesis, chars = chars)
+  names(samples)[seq_along(hyps)] <- hyps
+  n_plots <- ceiling(length(hyps) / N)
+  plots <- vector(mode = "list", length = n_plots)
+  for (i in seq_len(n_plots)) {
+    rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
+    sub_samples <- cbind(
+      utils::stack(samples[, rel_hyps, drop = FALSE]),
+      samples[, "Type", drop = FALSE]
+    )
+    # make sure that parameters appear in the original order
+    sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
+    plots[[i]] <- .plot_fun(sub_samples)
+    if (plot) {
+      plot(plots[[i]])
+      if (i == 1) devAskNewPage(ask = ask)
+    }
+  }
+  invisible(plots) 
 }

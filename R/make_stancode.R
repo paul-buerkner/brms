@@ -23,7 +23,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           prior = NULL, autocor = NULL,
                           cov_ranef = NULL, sparse = FALSE, 
                           sample_prior = c("no", "yes", "only"), 
-                          stan_vars = NULL, stan_funs = NULL, 
+                          stanvars = NULL, stan_funs = NULL, 
                           save_model = NULL, silent = FALSE, ...) {
   dots <- list(...)
   # some input checks
@@ -44,11 +44,12 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
-  stan_vars <- validate_stanvars(stan_vars)
+  meef <- tidy_meef(bterms, data = data)
+  stanvars <- validate_stanvars(stanvars)
   
   scode_effects <- stan_effects(
-    bterms, data = data, ranef = ranef, 
-    prior = prior, sparse = sparse
+    bterms, data = data, prior = prior, 
+    ranef = ranef, meef = meef, sparse = sparse
   )
   # the ID syntax requires group-level effects to be evaluated separately
   scode_ranef <- collapse_lists(ls = lapply(
@@ -59,7 +60,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_global_defs <- stan_global_defs(
     bterms, prior = prior, ranef = ranef, cov_ranef = cov_ranef
   )
-  scode_Xme <- stan_Xme(bterms, prior = prior)
+  scode_Xme <- stan_Xme(meef, prior = prior)
     
   # get priors for all parameters in the model
   scode_prior <- paste0(
@@ -84,7 +85,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored? \n",
-    collapse_stanvars(stan_vars),
+    collapse_stanvars(stanvars),
     "} \n"
   )
   # generate transformed parameters block
@@ -156,10 +157,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     "generated quantities { \n",
       scode_effects$genD,
       scode_ranef$genD,
+      scode_Xme$genD,
       scode_rngprior$genD,
       scode_effects$genC,
       scode_ranef$genC,
       scode_rngprior$genC,
+      scode_Xme$genC,
     "} \n"
   )
   # combine all elements into a complete Stan model

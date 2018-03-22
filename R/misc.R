@@ -4,7 +4,10 @@ p <- function(x, i = NULL, row = TRUE) {
   #   x: an R object typically a vector or matrix
   #   i: optional index; if NULL, x is returned unchanged
   #   row: indicating if rows or cols should be indexed
-  #        only relevant if x has two dimensions
+  #        only relevant if x has two or three dimensions
+  if (isTRUE(length(dim(x)) > 3L)) {
+    stop2("'p' can only handle objects up to 3 dimensions.")
+  }
   if (!length(i)) {
     out <- x
   } else if (length(dim(x)) == 2L) {
@@ -12,6 +15,12 @@ p <- function(x, i = NULL, row = TRUE) {
       out <- x[i, , drop = FALSE]
     } else {
       out <- x[, i, drop = FALSE]
+    }
+  } else if (length(dim(x)) == 3L) {
+    if (row) {
+      out <- x[i, , , drop = FALSE]
+    } else {
+      out <- x[, i, , drop = FALSE]
     }
   } else {
     out <- x[i]
@@ -91,6 +100,16 @@ array2list <- function(x) {
   out
 }
 
+move2start <- function(x, first) {
+  # move elements to the start of a named object
+  x[c(first, setdiff(names(x), first))]
+}
+
+repl <- function(expr, n) {
+  # wrapper around replicate but without simplifying
+  replicate(n, expr, simplify = FALSE)
+}
+
 first_greater <- function(A, target, i = 1) {
   # find the first element in A that is greater than target
   # Args: 
@@ -148,22 +167,22 @@ is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
 
-as_one_logical <- function(x) {
+as_one_logical <- function(x, allow_na = FALSE) {
   # coerce 'x' to TRUE or FALSE if possible
   s <- substitute(x)
   x <- as.logical(x)
-  if (anyNA(x) || length(x) != 1L) {
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- substr(deparse_combine(s), 1L, 100L)
     stop2("Cannot coerce ", s, " to a single logical value.")
   }
   x
 }
 
-as_one_character <- function(x) {
+as_one_character <- function(x, allow_na = FALSE) {
   # coerce 'x' to a single character string
   s <- substitute(x)
   x <- as.character(x)
-  if (anyNA(x) || length(x) != 1L) {
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- substr(deparse_combine(s), 1L, 100L)
     stop2("Cannot coerce ", s, " to a single character value.")
   }
@@ -244,8 +263,16 @@ ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
 
 lc <- function(l, ...) {
   # append ... to l
-  dots <- list(...)
+  dots <- rmNULL(list(...), recursive = FALSE)
   c(l, dots)
+}
+
+'c<-' <- function(x, value) {
+  c(x, value)
+}
+
+'lc<-' <- function(x, value) {
+  lc(x, value)
 }
 
 collapse <- function(..., sep = "") {
@@ -818,6 +845,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   }
   warning2(msg)
   invisible(NULL)
+}
+
+viridis6 <- function() {
+  # colours taken from the viridis package
+  c("#440154", "#414487", "#2A788E", "#22A884", "#7AD151", "#FDE725")
 }
 
 expect_match2 <- function(object, regexp, ..., all = TRUE) {

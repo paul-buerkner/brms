@@ -15,9 +15,24 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "children/SETTINGS-knitr.txt"}
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+options(width = 90)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(brms)
+theme_set(theme_default())
 ```
-
 
 ## Introduction
 
@@ -45,9 +60,8 @@ dat1 <- data.frame(x, y)
 As stated above, we cannot use a generalized linear model to estimate $b$ so we go ahead an specify a non-linear model.
 
 ```{r, results='hide'}
-library(brms)
-prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
-            prior(normal(0, 2), nlpar = "b2"))
+prior1 <- prior(normal(1, 2), nlpar = "b1") +
+  prior(normal(0, 2), nlpar = "b2")
 fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
             data = dat1, prior = prior1)
 ```
@@ -109,14 +123,18 @@ head(loss)
 and translate the proposed model into a non-linear **brms** model.
 
 ```{r, results='hide'}
-fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-                   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
-                   nl = TRUE),
-                data = loss, family = gaussian(),
-                prior = c(prior(normal(5000, 1000), nlpar = "ult"),
-                          prior(normal(1, 2), nlpar = "omega"),
-                          prior(normal(45, 10), nlpar = "theta")),
-                control = list(adapt_delta = 0.9))
+fit_loss <- brm(
+  bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+     nl = TRUE),
+  data = loss, family = gaussian(),
+  prior = c(
+    prior(normal(5000, 1000), nlpar = "ult"),
+    prior(normal(1, 2), nlpar = "omega"),
+    prior(normal(45, 10), nlpar = "theta")
+  ),
+  control = list(adapt_delta = 0.9)
+)
 ```
 
 We estimate a group-level effect of accident year (variable `AY`) for the ultimate loss `ult`. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of `ult`, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.
@@ -132,9 +150,11 @@ Next, we show marginal effects separately for each year.
 ```{r}
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-plot(marginal_effects(fit_loss, conditions = conditions, 
-                      re_formula = NULL, method = "predict"), 
-     ncol = 5, points = TRUE)
+me_loss <- marginal_effects(
+  fit_loss, conditions = conditions, 
+  re_formula = NULL, method = "predict"
+)
+plot(me_loss, ncol = 5, points = TRUE)
 ```
 
 It is evident that there is some variation in cumulative loss across accident years, for instance due to natural disasters happening only in certain years. Further, we see that the uncertainty in the predicted cumulative loss is larger for later years with fewer available data points. 
@@ -167,10 +187,12 @@ plot(marginal_effects(fit_ir1), points = TRUE)
 A more sophisticated approach incorporating the guessing probability looks as follows:
 
 ```{r, results='hide'}
-fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
-                  eta ~ ability, nl = TRUE),
-               data = dat_ir, family = bernoulli("identity"), 
-               prior = prior(normal(0, 5), nlpar = "eta"))
+fit_ir2 <- brm(
+  bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
+     eta ~ ability, nl = TRUE),
+  data = dat_ir, family = bernoulli("identity"), 
+  prior = prior(normal(0, 5), nlpar = "eta")
+)
 ```
 
 It is very important to set the link function of the `bernoulli` family to `identity` or else we will apply two link functions. This is because our non-linear predictor term already contains the desired link function (`0.33 + 0.67 * inv_logit`), but the `bernoulli` family applies the default `logit` link on top of it. This will of course lead to strange and uninterpretable results. Thus, please make sure that you set the link function to `identity`, whenever your non-linear predictor term already contains the desired link function.
@@ -189,11 +211,15 @@ LOO(fit_ir1, fit_ir2)
 shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don't know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.
 
 ```{r, results='hide'}
-fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
-                  eta ~ 0 + ability, guess ~ 1, nl = TRUE),
-               data = dat_ir, family = bernoulli("identity"), 
-               prior = c(prior(normal(0, 5), nlpar = "eta"),
-                         prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)))
+fit_ir3 <- brm(
+  bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
+    eta ~ 0 + ability, guess ~ 1, nl = TRUE),
+  data = dat_ir, family = bernoulli("identity"), 
+  prior = c(
+    prior(normal(0, 5), nlpar = "eta"),
+    prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)
+  )
+)
 ```
 
 Here, we model the guessing probability as a non-linear parameter making sure that it cannot exceed the interval $[0, 1]$. We did not estimate an intercept for `eta`, as this will lead to a bias in the estimated guessing parameter (try it out; this is an excellent example of how careful one has to be in non-linear models).

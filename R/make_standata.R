@@ -27,14 +27,14 @@
 make_standata <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL, cov_ranef = NULL,
                           sample_prior = c("no", "yes", "only"), 
-                          stan_vars = NULL, knots = NULL, 
+                          stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
                           control = list(), ...) {
   # internal control arguments:
   #   new: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
-  #   old_standata: list of stan data computed from the orginal data
+  #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
   dots <- list(...)
   # some input checks
@@ -71,29 +71,30 @@ make_standata <- function(formula, data, family = gaussian(),
     data_response(
       bterms, data, check_response = check_response,
       not4stan = not4stan, new = new, 
-      old_standata = control$old_standata
+      old_sdata = control$old_sdata
     )
   )
   if (!only_response) {
     ranef <- tidy_ranef(
       bterms, data, old_levels = control$old_levels,
-      old_standata = control$old_standata  
+      old_sdata = control$old_sdata  
     )
+    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     args_eff <- nlist(
-      x = bterms, data, prior, ranef, cov_ranef, knots, 
-      not4stan, old_standata = control$old_standata
+      x = bterms, data, prior, ranef, meef, cov_ranef, 
+      knots, not4stan, old_sdata = control$old_sdata
     )
     out <- c(out, do.call(data_effects, args_eff))
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
-  stan_vars <- validate_stanvars(stan_vars)
-  if (is.stanvars(stan_vars)) {
-    inv_names <- intersect(names(stan_vars), names(out))
+  stanvars <- validate_stanvars(stanvars)
+  if (is.stanvars(stanvars)) {
+    inv_names <- intersect(names(stanvars), names(out))
     if (length(inv_names)) {
       stop2("Cannot overwrite existing variables: ", 
             collapse_comma(inv_names))
     }
-    out[names(stan_vars)] <- lapply(stan_vars, "[[", "sdata")
+    out[names(stanvars)] <- lapply(stanvars, "[[", "sdata")
   }
   if (isTRUE(control$save_order)) {
     attr(out, "old_order") <- attr(data, "old_order")

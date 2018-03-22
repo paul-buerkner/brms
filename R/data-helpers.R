@@ -89,7 +89,7 @@ combine_groups <- function(data, ...) {
   group <- c(...)
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
-    if (length(sgroup) > 1L) {
+    if (length(sgroup) > 1L && !group[[i]] %in% names(data)) {
       new.var <- get(sgroup[1], data)
       for (j in 2:length(sgroup)) {
         new.var <- paste0(new.var, "_", get(sgroup[j], data))
@@ -144,11 +144,21 @@ order_data <- function(data, bterms) {
     stop2("All autocorrelation structures must have the same ",
           "time and group variables.")
   }
-  time_var <- if (length(time)) data[[time]]
-  group_var <- if (length(group)) data[[group]]
-  to_order <- rmNULL(list(group_var, time_var))
-  if (length(to_order)) {
-    new_order <- do.call(order, to_order)
+  if (length(time) || length(group)) {
+    if (length(group)) {
+      gv <- data[[group]]
+    } else {
+      gv <- rep(1, nrow(data))
+    }
+    if (length(time)) {
+      tv <- data[[time]]
+    } else {
+      tv <- ulapply(unique(gv), function(g) seq_len(sum(gv == g)))
+    }
+    if (any(duplicated(data.frame(gv, tv)))) {
+      stop2("Time points within groups must be unique.")
+    }
+    new_order <- do.call(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)
@@ -157,52 +167,43 @@ order_data <- function(data, bterms) {
 }
 
 validate_newdata <- function(
-  newdata, fit, re_formula = NULL, allow_new_levels = FALSE,
-  resp = NULL, check_response = FALSE, only_response = FALSE,
-  incl_autocor = TRUE, return_standata = TRUE,
-  all_group_vars = NULL, new_objects = list()
+  newdata, object, re_formula = NULL, allow_new_levels = FALSE,
+  resp = NULL, check_response = TRUE, incl_autocor = TRUE,
+  all_group_vars = NULL, ...
 ) {
-  # amend newdata passed to predict and fitted methods
+  # validate newdata passed to post-processing methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
-  #   fit: an object of class brmsfit
+  #   object: an object of class brmsfit
   #   re_formula: a group-level formula
   #   allow_new_levels: Are new group-levels allowed?
   #   resp: optional name of response variables whose 
   #     variables should be checked
   #   check_response: Should response variables be checked
   #     for existence and validity?
-  #   only_response: compute only response related stuff
-  #     in make_standata?
   #   incl_autocor: Check data of autocorrelation terms?
-  #   return_standata: Compute the data to be passed to Stan
-  #     or just return the updated newdata?
   #   all_group_vars: optional names of all grouping 
   #     variables in the model
-  #   new_objects: see function 'add_new_objects'
+  #   ...: currently ignored
   # Returns:
-  #   updated data.frame being compatible with formula(fit)
-  if (!incl_autocor) {
-    fit <- remove_autocor(fit) 
-  }
+  #   validated data.frame being compatible with formula(object)
+  #   if newdata is NULL, the original data.frame is returned
   if (is.null(newdata)) {
-    # to shorten expressions in S3 methods such as predict.brmsfit
-    if (return_standata) {
-      control <- list(not4stan = TRUE, save_order = TRUE)
-      newdata <- standata(
-        fit, re_formula = re_formula, check_response = check_response, 
-        only_response = only_response, control = control
-      )
-    } else {
-      newdata <- model.frame(fit)
-    }
+    newdata <- structure(object$data, valid = TRUE, original = TRUE)
+  }
+  if (isTRUE(attr(newdata, "valid"))) {
     return(newdata)
   }
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
-  new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
+  newdata <- rm_attr(newdata, c("terms", "brmsframe"))
+  stopifnot(is.brmsfit(object))
+  if (!incl_autocor) {
+    object <- remove_autocor(object) 
+  }
+  new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
     # variables not used in the included model parts
@@ -237,7 +238,7 @@ validate_newdata <- function(
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
-  mf <- model.frame(fit)
+  mf <- model.frame(object)
   for (i in seq_along(mf)) {
     if (is_like_factor(mf[[i]])) {
       mf[[i]] <- as.factor(mf[[i]])
@@ -246,8 +247,12 @@ validate_newdata <- function(
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
   new_ranef <- tidy_ranef(bterms, data = mf)
-  group_vars <- get_group_vars(new_ranef)
-  group_vars <- union(group_vars, get_autocor_vars(bterms, "group"))
+  new_meef <- tidy_meef(bterms, data = mf)
+  group_vars <- unique(c(
+    get_group_vars(new_ranef),
+    get_group_vars(new_meef),
+    get_autocor_vars(bterms, "group")
+  ))
   if (allow_new_levels && length(group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
@@ -258,7 +263,7 @@ validate_newdata <- function(
   newdata <- combine_groups(newdata, group_vars)
   # validate factor levels in newdata
   if (is.null(all_group_vars)) {
-    all_group_vars <- get_group_vars(fit) 
+    all_group_vars <- get_group_vars(object) 
   }
   dont_check <- c(all_group_vars, cens_vars)
   dont_check <- names(mf) %in% dont_check
@@ -332,9 +337,12 @@ validate_newdata <- function(
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
-  old_levels <- attr(new_ranef, "levels")
+  old_levels <- get_levels(new_ranef, new_meef)
   if (!allow_new_levels) {
-    new_levels <- attr(tidy_ranef(bterms, data = newdata), "levels")
+    new_levels <- get_levels(
+      tidy_ranef(bterms, data = newdata),
+      tidy_meef(bterms, data = newdata)
+    )
     for (g in names(old_levels)) {
       unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
       if (length(unknown_levels)) {
@@ -347,25 +355,7 @@ validate_newdata <- function(
       }
     } 
   }
-  if (return_standata) {
-    fit <- add_new_objects(fit, newdata, new_objects)
-    control <- list(
-      new = TRUE, not4stan = TRUE, 
-      old_levels = old_levels, save_order = TRUE
-    )
-    # ensure correct handling of functions like poly or scale
-    old_terms <- attr(mf, "terms")
-    terms_attr <- c("variables", "predvars")
-    control$terms_attr <- attributes(old_terms)[terms_attr]
-    control$old_standata <- extract_old_standata(bterms, data = mf)
-    knots <- attr(mf, "knots")
-    newdata <- make_standata(
-      new_formula, data = newdata, 
-      knots = knots, check_response = check_response,
-      only_response = only_response, control = control
-    )
-  }
-  newdata
+  structure(newdata, valid = TRUE)
 }
 
 add_new_objects <- function(x, newdata, new_objects = list()) {
@@ -377,23 +367,41 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   # Return:
   #   a possibly updated 'brmsfit' object
   stopifnot(is.brmsfit(x), is.data.frame(newdata))
-  if (is.cor_sar(x$autocor)) {
-    if ("W" %in% names(new_objects)) {
-      x$autocor <- cor_sar(new_objects$W, type = x$autocor$type)
-    } else {
-      message("Using the identity matrix as weighting matrix by default")
-      x$autocor$W <- diag(nrow(newdata))
+  .update_autocor <- function(autocor, resp = "") {
+    # update autocor variables with new objects
+    # do not include cor_car here as the adjacency matrix
+    # (or subsets of it) should be the same for newdata
+    resp <- usc(resp)
+    if (is.cor_sar(autocor)) {
+      if (paste0("W", resp) %in% names(new_objects)) {
+        autocor <- cor_sar(new_objects$W, type = autocor$type)
+      } else {
+        message("Using the identity matrix as weighting matrix by default")
+        autocor$W <- diag(nrow(newdata))
+      }
+    } else if (is.cor_fixed(autocor)) {
+      if (paste0("V", resp) %in% names(new_objects)) {
+        autocor <- cor_fixed(new_objects$V)
+      } else {
+        message("Using the median variance by default")
+        median_V <- median(diag(autocor$V), na.rm = TRUE)
+        autocor$V <- diag(median_V, nrow(newdata)) 
+      }
     }
+    return(autocor)
   }
-  # do not include cor_car here as the adjacency matrix
-  # (or subsets of it) should be the same for newdata 
-  if (is.cor_fixed(x$autocor)) {
-    if ("V" %in% names(new_objects)) {
-      x$autocor <- cor_fixed(new_objects$V)
-    } else {
-      message("Using the median variance by default")
-      median_V <- median(diag(x$autocor$V), na.rm = TRUE)
-      x$autocor$V <- diag(median_V, nrow(newdata)) 
+  if (is_mv(x)) {
+    resps <- names(x$formula$forms)
+    for (i in seq_along(resps)) {
+      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- 
+        .update_autocor(x$formula$forms[[i]]$autocor, resps[i])
+    }
+  } else {
+    x$formula$autocor <- x$autocor <- .update_autocor(x$formula$autocor)
+  }
+  for (name in names(x$stanvars)) {
+    if (name %in% names(new_objects)) {
+      x$stanvars[[name]]$sdata <- new_objects[[name]]
     }
   }
   x

@@ -15,7 +15,9 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 group <- rep(c("treat", "placebo"), each = 30)
@@ -24,7 +26,6 @@ dat1 <- data.frame(group, symptom_post)
 head(dat1)
 
 ## ---- results='hide'--------------------------------------------------------------------
-library(brms)
 fit1 <- brm(bf(symptom_post ~ group, sigma ~ group), 
             data = dat1, family = gaussian())
 
@@ -68,9 +69,11 @@ dat_smooth <- mgcv::gamSim(eg = 6, n = 200, scale = 2, verbose = FALSE)
 head(dat_smooth[, 1:6])
 
 ## ---- results='hide'--------------------------------------------------------------------
-fit_smooth1 <- brm(bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
-                   data = dat_smooth, family = gaussian(),
-                   chains = 2, control = list(adapt_delta = 0.95))
+fit_smooth1 <- brm(
+  bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
+  data = dat_smooth, family = gaussian(),
+  chains = 2, control = list(adapt_delta = 0.95)
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_smooth1)

@@ -6,7 +6,7 @@
 \usage{
 make_stancode(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sparse = FALSE,
-  sample_prior = c("no", "yes", "only"), stan_vars = NULL,
+  sample_prior = c("no", "yes", "only"), stanvars = NULL,
   stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
 }
 \arguments{
@@ -70,8 +70,8 @@ If set to \code{"only"}, samples are drawn solely from
 the priors ignoring the likelihood. In this case, 
 all parameters must have proper priors.}
 
-\item{stan_vars}{An optional \code{stanvars} object generated
-by function \code{\link{stan_var}} to define additional variables
+\item{stanvars}{An optional \code{stanvars} object generated
+by function \code{\link{stanvar}} to define additional variables
 in the data block of \pkg{Stan}.}
 
 \item{stan_funs}{An optional character string containing self-defined 

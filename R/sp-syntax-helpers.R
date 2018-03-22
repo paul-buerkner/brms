@@ -71,56 +71,52 @@ get_uni_me <- function(x) {
   unique(uni_me)
 }
 
-store_uni_me <- function(x, ...) {
-  # store unique names of noise-free terms in all 'me' elements
-  UseMethod("store_uni_me")
-}
-
-#' @export
-store_uni_me.mvbrmsterms <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  for (i in seq_along(x$terms)) {
-    x$terms[[i]] <- store_uni_me(x$terms[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.brmsterms <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  if (!length(uni_me)) {
-    return(x)
-  }
-  for (i in seq_along(x$dpars)) {
-    x$dpars[[i]] <- store_uni_me(x$dpars[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.btnl <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
-  for (i in seq_along(x$nlpars)) {
-    x$nlpars[[i]] <- store_uni_me(x$nlpars[[i]], uni_me = uni_me, ...)
-  }
-  x
-}
-
-#' @export
-store_uni_me.btl <- function(x, uni_me = NULL, ...) {
-  if (is.null(uni_me)) {
-    uni_me <- get_uni_me(x)
-  }
+tidy_meef <- function(bterms, data, old_levels = NULL) {
+  # save all me-terms within a tidy data.frame
+  uni_me <- get_uni_me(bterms)
   if (length(uni_me)) {
-    attr(x[["sp"]], "uni_me") <- uni_me
+    out <- data.frame(
+      term = uni_me, xname = "", grname = "", 
+      stringsAsFactors = FALSE
+    )
+    levels <- list("vector", nrow(out))
+    for (i in seq_len(nrow(out))) {
+      att <- attributes(eval2(out$term[i], data))
+      out$xname[i] <- att$xname
+      if (isTRUE(nzchar(att$grname))) {
+        out$grname[i] <- att$grname
+      }
+      if (is.null(old_levels)) {
+        levels[[i]] <- levels(factor(att$gr))
+      } else {
+        levels[[i]] <- old_levels[[att$grname]]
+      }
+    }
+    out$coef <- rename(paste0("me", out$xname))
+    out$cor <- isTRUE(bterms$mecor)
+    names(levels) <- out$grname
+    levels <- levels[!is.na(names(levels))]
+    if (length(levels)) {
+      levels <- levels[!duplicated(names(levels))]
+      attr(out, "levels") <- levels
+    }
+  } else {
+    out <- data.frame(
+      terms = character(0), xname = character(0),
+      grname = character(0), cor = logical(0),
+      stringsAsFactors = FALSE
+    )
   }
-  x
+  structure(out, class = c("meef_frame", "data.frame"))
+}
+
+is.meef_frame <- function(x) {
+  inherits(x, "meef_frame")
+}
+
+default_mecor <- function(mecor = NULL) {
+  # handle default of correlations between 'me' terms
+  if (is.null(mecor)) TRUE else as_one_logical(mecor)
 }
 
 get_sp_vars <- function(x, type) {
@@ -144,14 +140,14 @@ tidy_spef <- function(x, data) {
     return(NULL)
   }
   mm <- get_model_matrix(form, data, rename = FALSE)
-  out <- data.frame(term = colnames(mm), stringsAsFactors = FALSE)
+  out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
   call_cols <- paste0("call_", c("mo", "me", "mi"))
-  for (col in c(call_cols, "call_prod", "uni_me", "vars_mi", "Imo")) {
+  for (col in c(call_cols, "call_prod", "vars_mi", "Imo")) {
     out[[col]] <- vector("list", nrow(out))
   }
   kmo <- 0
-  terms_split <- strsplit(rm_wsp(out$term), ":")
+  terms_split <- strsplit(out$term, ":")
   for (i in seq_len(nrow(out))) {
     # prepare mo terms
     take_mo <- grepl_expr(regex_sp("mo"), terms_split[[i]])
@@ -175,7 +171,6 @@ tidy_spef <- function(x, data) {
       # remove 'I' (identity) function calls that 
       # were used solely to separate formula terms
       out$call_me[[i]] <- gsub("^I\\(", "(", out$call_me[[i]])
-      out$uni_me[[i]] <- attr(form, "uni_me")
     }
     # prepare mi terms 
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])
@@ -202,13 +197,13 @@ get_simo_labels <- function(spef) {
   ulapply(which(lengths(spef$Imo) > 0), fun)
 }
 
-regex_sp <- function(type = c("sp", "mo", "me", "mi")) {
-  type <- match.arg(type)
-  out <- c(mo = "mo((no)?|(notonic)?)", me = "me", mi = "mi")
-  if (type == "sp") {
-    out <- paste0(out, collapse = "|")
+get_sdy <- function(x, data = NULL) {
+  stopifnot(is.brmsterms(x))
+  miform <- x$adforms[["mi"]]
+  if (is.formula(miform)) {
+    sdy <- eval_rhs(miform, data = data)
   } else {
-    out <- out[type]
+    sdy <- NULL
   }
-  paste0("^(", out, ")\\([^:]*\\)$")
+  sdy
 }

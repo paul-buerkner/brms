@@ -22,7 +22,7 @@
 #'   the autocorrelation structure if specified
 #' @slot ranef A \code{data.frame} containing the group-level structure
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices
-#' @slot stan_vars A \code{\link{stanvars}} object or \code{NULL}
+#' @slot stanvars A \code{\link{stanvars}} object or \code{NULL}
 #' @slot stan_funs A character string of length one or \code{NULL}
 #' @slot loo An empty slot for adding the \code{\link{loo}} 
 #'   information criterion after model fitting
@@ -52,7 +52,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
-                    bridge = NULL, stan_vars = NULL, stan_funs = NULL, 
+                    bridge = NULL, stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
@@ -62,7 +62,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   x <- nlist(
     formula, family, data, data.name, model, prior,
     autocor, ranef, cov_ranef, loo, waic, R2, bridge,
-    stan_vars, stan_funs, fit, exclude, algorithm, version
+    stanvars, stan_funs, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
   x
@@ -595,10 +595,14 @@ stancode <- function(object, ...) {
 #' 
 #' @aliases standata.brmsfit
 #' 
-#' @param object An object of class \code{brmsfit}
-#' @param ... Currently ignored
+#' @param object An object of class \code{brmsfit}.
+#' @param internal Logical, indicates if the data should be prepared 
+#'   for internal use in other post-processing methods.
+#' @param control A named list currently for internal usage only.
+#' @param ... More arguments passed to \code{\link{make_standata}}.
+#' @inheritParams predict.brmsfit
 #' 
-#' @return A named list containing the data passed to Stan
+#' @return A named list containing the data originally passed to Stan.
 #' 
 #' @export
 standata <- function(object, ...) {

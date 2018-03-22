@@ -15,7 +15,23 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "children/SETTINGS-knitr.txt"}
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+options(width = 90)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(brms)
+theme_set(theme_default())
 ```
 
 ## Introduction
@@ -40,7 +56,6 @@ imp <- mice(nhanes, m = 5, print = FALSE)
 Now, we have `m = 5` imputed data sets stored within the `imp` object. We could either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** to the multiple imputed data sets is straightforward.
 
 ```{r, results = 'hide', message = FALSE}
-library(brms)
 fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
 ```
 

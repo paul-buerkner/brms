@@ -11,6 +11,7 @@
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
+\alias{set_mecor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
 nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL)
@@ -20,6 +21,8 @@ lf(..., flist = NULL, dpar = NULL, resp = NULL)
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
 set_rescor(rescor = TRUE)
+
+set_mecor(mecor = TRUE)
 }
 \arguments{
 \item{formula}{Non-linear formula for a distributional parameter.
@@ -77,6 +80,9 @@ is treated as an ordinary linear model formula.}
 the response variables should be modeled. Currently this is only
 possible in multivariate \code{gaussian} and \code{student} models.
 Only relevant in multivariate models.}
+
+\item{mecor}{Logical; Indicates if correlations between latent variables
+defined by \code{\link{me}} terms should be modeled. Defaults to \code{TRUE}.}
 }
 \value{
 For \code{lf} and \code{nlf} a \code{list} that can be 

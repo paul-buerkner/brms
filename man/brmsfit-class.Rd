@@ -36,7 +36,7 @@ the autocorrelation structure if specified}
 
 \item{\code{cov_ranef}}{A \code{list} of customized group-level covariance matrices}
 
-\item{\code{stan_vars}}{A \code{\link{stanvars}} object or \code{NULL}}
+\item{\code{stanvars}}{A \code{\link{stanvars}} object or \code{NULL}}
 
 \item{\code{stan_funs}}{A character string of length one or \code{NULL}}
 

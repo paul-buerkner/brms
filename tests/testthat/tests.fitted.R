@@ -69,6 +69,16 @@ test_that("fitted helper functions run without errors", {
   fit$family <- fit$formula$family <- zero_inflated_poisson()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   
+  # pseudo custom model
+  fitted_test <- function(draws) {
+    draws$dpars$mu
+  }
+  fit$family <- fit$formula$family <- custom_family(
+    "test", dpars = "mu", links = c("logit"),
+    type = "int", vars = "trials[n]"
+  )
+  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
+  
   # truncated continuous models
   draws$dpars$shape <- c(as.matrix(fit, pars = "^shape$"))
   mu <- brms:::fitted_trunc_gaussian(draws, lb = 0, ub = 10)

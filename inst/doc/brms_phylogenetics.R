@@ -15,10 +15,12 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ---- include = FALSE-------------------------------------------------------------------
-my_path <- "C:/Users/paulb/Dropbox/Psychologie/Paper/2015_Bayesian_Regression_Models/Models/MCMCglmm/"
+my_path <- "C:/Users/paulb/Dropbox/brms/Models/MCMCglmm/"
 
 ## ---------------------------------------------------------------------------------------
 # uncomment and set your path to the folder where you stored the data
@@ -33,13 +35,16 @@ A <- solve(inv.phylo$Ainv)
 rownames(A) <- rownames(inv.phylo$Ainv)
 
 ## ---- results='hide'--------------------------------------------------------------------
-library(brms)
-model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple, 
-                    family = gaussian(), cov_ranef = list(phylo = A),
-                    prior = c(prior(normal(0, 10), "b"),
-                              prior(normal(0, 50), "Intercept"),
-                              prior(student_t(3, 0, 20), "sd"),
-                              prior(student_t(3, 0, 20), "sigma")))
+model_simple <- brm(
+  phen ~ cofactor + (1|phylo), data = data_simple, 
+  family = gaussian(), cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0, 10), "b"),
+    prior(normal(0, 50), "Intercept"),
+    prior(student_t(3, 0, 20), "sd"),
+    prior(student_t(3, 0, 20), "sigma")
+  )
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_simple)
@@ -58,15 +63,19 @@ data_repeat$spec_mean_cf <-
 head(data_repeat)
 
 ## ---- results='hide'--------------------------------------------------------------------
-model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species), 
-                     data = data_repeat, family = gaussian(), 
-                     cov_ranef = list(phylo = A),
-                     prior = c(prior(normal(0,10), "b"),
-                               prior(normal(0,50), "Intercept"),
-                               prior(student_t(3,0,20), "sd"),
-                               prior(student_t(3,0,20), "sigma")),
-                     sample_prior = TRUE, chains = 2, cores = 2, 
-                     iter = 4000, warmup = 1000)
+model_repeat1 <- brm(
+  phen ~ spec_mean_cf + (1|phylo) + (1|species), 
+  data = data_repeat, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0,10), "b"),
+    prior(normal(0,50), "Intercept"),
+    prior(student_t(3,0,20), "sd"),
+    prior(student_t(3,0,20), "sigma")
+  ),
+  sample_prior = TRUE, chains = 2, cores = 2, 
+  iter = 4000, warmup = 1000
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_repeat1)
@@ -83,9 +92,11 @@ plot(hyp)
 data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
 ## ---- results='hide'--------------------------------------------------------------------
-model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
-                        newdata = data_repeat, chains = 2, cores = 2, 
-                        iter = 4000, warmup = 1000)
+model_repeat2 <- update(
+  model_repeat1, formula = ~ . + within_spec_cf,
+  newdata = data_repeat, chains = 2, cores = 2, 
+  iter = 4000, warmup = 1000
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_repeat2)
@@ -103,13 +114,17 @@ data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 
 ## ---- results='hide'--------------------------------------------------------------------
-model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
-                    data = data_fisher, family = gaussian(), 
-                    cov_ranef = list(phylo = A),
-                    prior = c(prior(normal(0, 10), "Intercept"),
-                              prior(student_t(3, 0, 10), "sd")),
-                    control = list(adapt_delta = 0.95),
-                    chains = 2, cores = 2, iter = 4000, warmup = 1000)
+model_fisher <- brm(
+  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
+  data = data_fisher, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  prior = c(
+    prior(normal(0, 10), "Intercept"),
+    prior(student_t(3, 0, 10), "sd")
+  ),
+  control = list(adapt_delta = 0.95),
+  chains = 2, cores = 2, iter = 4000, warmup = 1000
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_fisher)
@@ -121,22 +136,26 @@ data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 
 ## ---- results='hide'--------------------------------------------------------------------
-model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs), 
-                  data = data_pois, family = poisson("log"), 
-                  cov_ranef = list(phylo = A),
-                  chains = 2, cores = 2, iter = 4000,
-                  control = list(adapt_delta = 0.95))
+model_pois <- brm(
+  phen_pois ~ cofactor + (1|phylo) + (1|obs), 
+  data = data_pois, family = poisson("log"), 
+  cov_ranef = list(phylo = A),
+  chains = 2, cores = 2, iter = 4000,
+  control = list(adapt_delta = 0.95)
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_pois)
 plot(marginal_effects(model_pois), points = TRUE) 
 
 ## ---- results='hide'--------------------------------------------------------------------
-model_normal <- brm(phen_pois ~ cofactor + (1|phylo), 
-                    data = data_pois, family = gaussian(), 
-                    cov_ranef = list(phylo = A),
-                    chains = 2, cores = 2, iter = 4000,
-                    control = list(adapt_delta = 0.95))
+model_normal <- brm(
+  phen_pois ~ cofactor + (1|phylo), 
+  data = data_pois, family = gaussian(), 
+  cov_ranef = list(phylo = A),
+  chains = 2, cores = 2, iter = 4000,
+  control = list(adapt_delta = 0.95)
+)
 
 ## ---------------------------------------------------------------------------------------
 summary(model_normal)

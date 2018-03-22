@@ -9,13 +9,10 @@
    *   scaled shape parameter xi
    */
   real scale_xi(real xi, vector y, vector mu, real sigma) {
-    vector[2] bounds;
-    real lb;
-    real ub;
-    bounds[1] = - inv(min((y - mu) / sigma));
-    bounds[2] = - inv(max((y - mu) / sigma));
-    lb = min(bounds);
-    ub = max(bounds);
+    vector[rows(y)] x = (y - mu) / sigma;
+    vector[2] bounds = [-inv(min(x)), -inv(max(x))]';
+    real lb = min(bounds);
+    real ub = max(bounds);
     return inv_logit(xi) * (ub - lb) + lb;
   }
   /* scale auxiliary parameter xi to a suitable region
@@ -29,12 +26,9 @@
    *   scaled shape parameter xi
    */
   real scale_xi_vector(real xi, vector y, vector mu, vector sigma) {
-    vector[2] bounds;
-    real lb;
-    real ub;
-    bounds[1] = - inv(min((y - mu) ./ sigma));
-    bounds[2] = - inv(max((y - mu) ./ sigma));
-    lb = min(bounds);
-    ub = max(bounds);
+    vector[rows(y)] x = (y - mu) ./ sigma;
+    vector[2] bounds = [-inv(min(x)), -inv(max(x))]';
+    real lb = min(bounds);
+    real ub = max(bounds);
     return inv_logit(xi) * (ub - lb) + lb;
   }

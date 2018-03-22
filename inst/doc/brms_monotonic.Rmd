@@ -15,7 +15,23 @@ params:
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, child = "children/SETTINGS-knitr.txt"}
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+options(width = 90)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(brms)
+theme_set(theme_default())
 ```
 
 ## Introduction
@@ -42,7 +58,6 @@ dat <- data.frame(income, ls)
 We now proceed with analyzing the data modeling `income` as a monotonic effect.
 
 ```{r, results='hide'}
-library(brms)
 fit1 <- brm(ls ~ mo(income), data = dat)
 ```
 
@@ -94,7 +109,7 @@ In the previous monotonic model, we have implicitly assumed that all differences
 ```{r, results='hide'}
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simo", coef = "moincome1")
 fit4 <- brm(ls ~ mo(income), data = dat,
-           prior = prior4, sample_prior = TRUE)
+            prior = prior4, sample_prior = TRUE)
 ```
 
 The `1` at the end of `"moincome1"` may appear strange when first working with monotonic effects. However, it is necessary as one monotonic term may be associated with multiple simplex parameters, if interactions of multiple monotonic variables are included in the model.

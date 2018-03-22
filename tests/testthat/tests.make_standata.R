@@ -375,6 +375,15 @@ test_that("make_standata returns data for bsts models", {
   expect_equivalent(make_standata(bf(y~1, sigma ~ 1), data = dat, 
                                   autocor = cor_bsts(~t|g))$X_sigma[, 1],
                     rep(1, nrow(dat)))
+  
+  dat = data.frame(
+    y = rnorm(100), id = rep(1:10, each = 1),
+    day = rep(1:10, length.out = 100) 
+  )
+  expect_error(
+    make_standata(y~1, dat, autocor = cor_bsts(~day|id)),
+    "Time points within groups must be unique"
+  )
 })
 
 test_that("make_standata returns data for GAMMs", {
@@ -478,6 +487,25 @@ test_that("make_standata handles noise-free terms", {
   expect_equal(sdata$noise_2, as.array(dat$zsd))
   expect_equal(unname(sdata$Csp_3), as.array(dat$x))
   expect_equal(sdata$Ksp, 6)
+  expect_equal(sdata$NCme_1, 1)
+})
+
+test_that("make_standata handles noise-free terms with grouping factors", {
+  dat <- data.frame(
+    y = rnorm(10), 
+    x1 = rep(1:5, each = 2), 
+    sdx = rep(1:5, each = 2),
+    g = rep(c("b", "c", "a", "d", 1), each = 2)
+  )
+  sdata <- make_standata(y ~ me(x1, sdx, gr = g), dat)
+  expect_equal(sdata$Xn_1, as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(sdata$noise_1, as.array(c(5, 3, 1, 2, 4)))
+  
+  dat$sdx[2] <- 10
+  expect_error(
+    make_standata(y ~ me(x1, sdx, gr = g), dat),
+    "Measured values and measurement error should be unique"
+  )
 })
 
 test_that("make_standata handles missing value terms", {
@@ -528,12 +556,28 @@ test_that("make_standata handles multi-membership models", {
   )
   expect_error(
     make_standata(y ~ (mmc(w1, w2)*y|mm(g1,g2)), data = dat),
-    "'mmc' cannot be used for interactions"
+    "The term 'mmc(w1,w2):y' is invalid", fixed = TRUE
   )
   
   # tests if ":" works in multi-membership models
   sdata <- make_standata(y ~ (1|mm(w1:g1,w1:g2)), dat)
   expect_true(all(c("J_1_1", "J_1_2") %in% names(sdata)))
+})
+
+test_that("by variables in grouping terms are handled correctly", {
+  gvar <- c("1A", "1B", "2A", "2B", "3A", "3B", "10", "100", "2", "3")
+  dat <- data.frame(
+    y = rnorm(100), x = rnorm(100),
+    g = rep(gvar, each = 10),
+    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20)),
+    z2 = factor(1:2)
+  )
+  sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
+  expect_equal(sdata$Nby_1, 5)
+  expect_equal(sdata$Jby_1, as.array(c(2, 2, 1, 1, 5, 4, 4, 5, 3, 3)))
+  
+  expect_error(make_standata(y ~ x + (1|gr(g, by = z2)), dat),
+               "Some levels of 'g' correspond to multiple levels of 'z2'")
 })
 
 test_that("make_standata handles calls to the 'poly' function", {
@@ -677,20 +721,20 @@ test_that("dots in formula are correctly expanded", {
   expect_equal(colnames(sdata$X), c("Intercept", "x1", "x2"))
 })
 
-test_that("argument 'stan_vars' is handled correctly", {
+test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5
-  stanvars <- stan_var(mean_intercept)
+  stanvars <- stanvar(mean_intercept)
   sdata <- make_standata(count ~ Trt, data = epilepsy, 
-                         prior = bprior, stan_vars = stanvars)
+                         prior = bprior, stanvars = stanvars)
   expect_equal(sdata$mean_intercept, 5)
   
   # define a multi_normal prior with known covariance matrix
   bprior <- prior(multi_normal(M, V), class = "b")
-  stanvars <- stan_var(rep(0, 2), "M", scode = "  vector[K] M;") +
-    stan_var(diag(2), "V", scode = "  matrix[K, K] V;") 
+  stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
+    stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
   sdata <- make_standata(count ~ Trt + log_Base4_c, epilepsy,
-                         prior = bprior, stan_vars = stanvars)
+                         prior = bprior, stanvars = stanvars)
   expect_equal(sdata$M, rep(0, 2))
   expect_equal(sdata$V, diag(2))
 })

@@ -12,8 +12,7 @@ parse_bf(formula, ...)
 \method{parse_bf}{default}(formula, family = NULL, autocor = NULL, ...)
 
 \method{parse_bf}{brmsformula}(formula, family = NULL, autocor = NULL,
-  check_response = TRUE, resp_rhs_all = TRUE, mv = FALSE,
-  rescor = FALSE, ...)
+  check_response = TRUE, resp_rhs_all = TRUE, mv = FALSE, ...)
 
 \method{parse_bf}{mvbrmsformula}(formula, family = NULL, autocor = NULL,
   ...)
@@ -58,9 +57,6 @@ variables on the right-hand side of formula \code{.$allvars},
 where \code{.} represents the output of \code{parse_bf}.}
 
 \item{mv}{Indicates if the univariate model is part of a multivariate model.}
-
-\item{rescor}{Indicates if residual correlations should be estimated.
-Only relevant in multivariate models.}
 }
 \value{
 An object of class \code{brmsterms} or \code{mvbrmsterms} 

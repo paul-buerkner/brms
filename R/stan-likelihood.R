@@ -43,14 +43,14 @@ stan_llh.default <- function(family, bterms, data, mix = "",
 
 #' @export
 stan_llh.mixfamily <- function(family, bterms, ...) {
-  ap_ids <- dpar_id(names(bterms$dpars))
-  fap_ids <- dpar_id(names(bterms$fdpars))
+  dp_ids <- dpar_id(names(bterms$dpars))
+  fdp_ids <- dpar_id(names(bterms$fdpars))
   ptheta <- any(dpar_class(names(bterms$dpars)) %in% "theta")
   llh <- rep(NA, length(family$mix))
   for (i in seq_along(family$mix)) {
     sbterms <- bterms
-    sbterms$dpars <- sbterms$dpars[ap_ids == i]
-    sbterms$fdpars <- sbterms$fdpars[fap_ids == i]
+    sbterms$dpars <- sbterms$dpars[dp_ids == i]
+    sbterms$fdpars <- sbterms$fdpars[fdp_ids == i]
     llh[i] <- stan_llh(
       family$mix[[i]], sbterms, mix = i, ptheta = ptheta, ...
     )
@@ -206,11 +206,10 @@ stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
   #   reqn: will the likelihood be wrapped in a loop over n?
   #   dpars: optional names of distributional parameters to be prepared
   if (is.null(dpars)) {
-    dpars <- valid_dpars(bterms) 
+    dpars <- paste0(valid_dpars(bterms), mix)
   }
-  pred_dpars <- names(bterms$dpars)
-  is_pred <- dpars %in% c("mu", dpar_class(pred_dpars))
-  out <- paste0(dpars, mix, resp, ifelse(reqn & is_pred, "[n]", ""))
+  is_pred <- dpars %in% c("mu", names(bterms$dpars))
+  out <- paste0(dpars, resp, ifelse(reqn & is_pred, "[n]", ""))
   named_list(dpars, out)
 }
 
@@ -460,7 +459,10 @@ stan_llh_gen_extreme_value <- function(bterms, resp = "", mix = "") {
 stan_llh_exgaussian <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  sdist("exp_mod_normal", p$mu, p$sigma, paste0("inv(", p$beta, ")"))
+  sdist(
+    "exp_mod_normal", paste0(p$mu, " - ", p$beta), 
+    p$sigma, paste0("inv(", p$beta, ")")
+  )
 }
 
 stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {
@@ -498,8 +500,9 @@ stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
   simplify <- bterms$family$link == "logit" && 
     !"disc" %in% names(bterms$dpars) && !has_cs(bterms)
   if (simplify) {
+    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
     p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-    p$ord_intercept <- paste0("temp", resp, "_Intercept")
+    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
     out <- sdist("ordered_logistic", p$mu, p$ord_intercept)
   } else {
     out <- stan_llh_ordinal(bterms, resp, mix)
@@ -528,12 +531,13 @@ stan_llh_categorical <- function(bterms, resp = "", mix = "") {
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   # helper function for ordinal families
   has_cs <- has_cs(bterms)
+  prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$ord_intercept <- paste0("temp", resp, "_Intercept")
-  p$mucs <- if (has_cs) paste0("mucs", resp, "[n]")
+  p$ord_intercept <- paste0("temp", prefix, "_Intercept")
+  p$cs <- if (has_cs) paste0("mucs", prefix, "[n]")
   lpdf <- bterms$family$family
   lpdf <- paste0(lpdf, "_", bterms$family$link, if (has_cs) "_cs")
-  sdist(lpdf, p$mu, p$mucs, p$ord_intercept, p$disc)
+  sdist(lpdf, p$mu, p$cs, p$ord_intercept, p$disc)
 }
 
 stan_llh_hurdle_poisson <- function(bterms, resp = "", mix = "") {
@@ -601,6 +605,12 @@ stan_llh_zero_inflated_beta <- function(bterms, resp = "", mix = "") {
 stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
+}
+
+stan_llh_custom <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  family <- bterms$family
+  sdist(family$name, p[family$dpars], family$vars)
 }
 
 sdist <- function(dist, ..., shift = NULL) {

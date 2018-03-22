@@ -79,6 +79,33 @@ subset_samples <- function(x, subset = NULL, nsamples = NULL) {
   subset
 }
 
+get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
+  # extract names of group-level effects
+  # Args:
+  #  ranef: output of tidy_ranef()
+  #  group: optinal name of a grouping factor for
+  #    which to extract effect names
+  #  bylevels: optional names of 'by' levels for 
+  #    which to extract effect names
+  stopifnot(is.data.frame(ranef))
+  if (!is.null(group)) {
+    group <- as_one_character(group)
+    ranef <- subset2(ranef, group = group)
+  }
+  stopifnot(length(unique(ranef$group)) == 1L)
+  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
+  if (isTRUE(nzchar(ranef$by[1]))) {
+    if (!is.null(bylevels)) {
+      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
+    } else {
+      bylevels <- ranef$bylevels[[1]]
+    }
+    bylabels <- paste0(ranef$by[1], bylevels)
+    out <- outer(out, bylabels, paste, sep = ":")
+  }
+  out
+}
+
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   # get correlation names as combinations of variable names
   # Args:
@@ -110,25 +137,35 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_group_vars <- function(x) {
-  # extract names of grouping variables in the model
-  if (is.brmsfit(x)) {
-    x <- x$ranef
-  }
-  stopifnot(is.data.frame(x))
-  unique(ulapply(x$gcall, "[[", "groups"))
-}
-
 get_cat_vars <- function(x) {
   # extract names of categorical variables in the model
   stopifnot(is.brmsfit(x))
   like_factor <- sapply(model.frame(x), is_like_factor)
   valid_groups <- c(
     names(model.frame(x))[like_factor],
-    get_autocor_vars(x, var = "group"),
     get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])
+}
+
+get_levels <- function(...) {
+  # extract list of levels with one element per grouping factor
+  # Args:
+  #   ...: object with a level attribute
+  dots <- list(...)
+  out <- vector("list", length(dots))
+  for (i in seq_along(out)) {
+    levels <- attr(dots[[i]], "levels", exact = TRUE)
+    if (is.list(levels)) {
+      stopifnot(!is.null(names(levels)))
+      out[[i]] <- as.list(levels)
+    } else if (!is.null(levels)) {
+      stopifnot(isTRUE(nzchar(names(dots)[i])))
+      out[[i]] <- setNames(list(levels), names(dots)[[i]])
+    }
+  }
+  out <- unlist(out, recursive = FALSE)
+  out[!duplicated(names(out))]
 }
 
 get_estimate <- function(coef, samples, margin = 2, ...) {
@@ -635,14 +672,18 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   }
   if (!anyNA(pars)) {
     if (exact_match) {
-      pars <- all_pars[all_pars %in% pars]
+      out <- intersect(pars, all_pars)
     } else {
-      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
+      out <- vector("list", length(pars))
+      for (i in seq_along(pars)) {
+        out[[i]] <- all_pars[grepl(pars[i], all_pars, ...)]
+      }
+      out <- unique(unlist(out))
     }
   } else {
-    pars <- na_value
+    out <- na_value
   }
-  pars
+  out
 }
 
 add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {

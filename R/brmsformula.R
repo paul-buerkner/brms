@@ -91,13 +91,26 @@
 #'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
 #'   \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
 #'   correlations between the corresponding group-level effects 
-#'   will be estimated. 
+#'   will be estimated.
 #'   
-#'   You can specify multi-membership terms
-#'   using the \code{\link{mm}} function. For instance, 
-#'   a multi-membership term with two members could be
-#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
-#'   the first and second member, respectively.
+#'   If levels of the grouping factor belong to different sub-populations,
+#'   it may be reasonable to assume a different covariance matrix for each 
+#'   of the sub-populations. For instance, the variation within the
+#'   treatment group and within the control group in a randomized control
+#'   trial might differ. Suppose that \code{y} is the outcome, and
+#'   \code{x} is the factor indicating the treatment and control group. 
+#'   Then, we could estimate different hyper-parameters of the varying
+#'   effects (in this case a varying intercept) for treatment and control
+#'   group via \code{y ~ x + (1 | gr(subject, by = x))}.
+#'   
+#'   You can specify multi-membership terms using the \code{\link{mm}} 
+#'   function. For instance, a multi-membership term with two members 
+#'   could be \code{(1 | mm(g1, g2))}, where \code{g1} and \code{g2} 
+#'   specify the first and second member, respectively. Moreover,
+#'   if a covariate \code{x} varies across the levels of the grouping-factors
+#'   \code{g1} and \code{g2}, we can save the respective covariate values
+#'   in the variables \code{x1} and \code{x2} and then model the varying
+#'   effect as \code{(1 + mmc(x1, x2) | mm(g1, g2))}.
 #'   
 #'   \bold{Special predictor terms}
 #'   
@@ -677,6 +690,8 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #'   the response variables should be modeled. Currently this is only
 #'   possible in multivariate \code{gaussian} and \code{student} models.
 #'   Only relevant in multivariate models.
+#' @param mecor Logical; Indicates if correlations between latent variables
+#'   defined by \code{\link{me}} terms should be modeled. Defaults to \code{TRUE}.
 #' @inheritParams brmsformula
 #' 
 #' @return For \code{lf} and \code{nlf} a \code{list} that can be 
@@ -862,6 +877,12 @@ allow_rescor <- function(x) {
   all(families == "gaussian") || all(families == "student")
 }
 
+#' @rdname brmsformula-helpers
+#' @export
+set_mecor <- function(mecor = TRUE) {
+  structure(as_one_logical(mecor), class = "setmecor")
+}
+
 #' @export
 "+.bform" <- function(e1, e2) {
   if (is.brmsformula(e1)) {
@@ -896,6 +917,8 @@ plus_brmsformula <- function(e1, e2) {
       attr(e1$pforms[[dpar]], "nl") <- e2
       e1 <- bf(e1)
     }
+  } else if (inherits(e2, "setmecor")) {
+    e1$mecor <- e2[1]
   } else if (is.brmsformula(e2)) {
     e1 <- mvbf(e1, e2)
   } else if (inherits(e2, "setrescor")) {
@@ -916,7 +939,9 @@ plus_mvbrmsformula <- function(e1, e2) {
   if (is.family(e2) || is.cor_brms(e2)) {
     e1$forms <- lapply(e1$forms, "+", e2)
   } else if (inherits(e2, "setrescor")) {
-    e1$rescor <- e2
+    e1$rescor <- e2[1]
+  } else if (inherits(e2, "setmecor")) {
+    e1$mecor <- e2[1]
   } else if (is.brmsformula(e2)) {
     e1 <- mvbf(e1, e2)
   } else {
@@ -1117,8 +1142,7 @@ is_dpar_name <- function(dpars, family = NULL, ...) {
 
 dpar_class <- function(dpar) {
   # class of a distributional parameter
-  out <- get_matches("^[^[:digit:]]+", dpar, simplify = FALSE)
-  ulapply(out, function(x) ifelse(length(x), x, ""))
+  sub("[[:digit:]]*$", "", dpar)
 }
 
 dpar_id <- function(dpar) {
@@ -1174,6 +1198,7 @@ validate_formula.brmsformula <- function(
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
+  out$mecor <- default_mecor(out$mecor)
   needs_cat <- is_categorical(out$family) && is.null(out$family$dpars)
   if (needs_cat && !is.null(data)) {
     respform <- formula2str(lhs(out$formula))
@@ -1238,6 +1263,11 @@ validate_formula.mvbrmsformula <- function(
       stop2("Currently, estimating 'rescor' is only possible ", 
             "in multivariate gaussian or student models.")
     }
+  }
+  # handle default of correlations between 'me' terms
+  formula$mecor <- default_mecor(formula$mecor)
+  for (i in seq_along(formula$forms)) {
+    formula$forms[[i]]$mecor <- formula$mecor
   }
   formula
 }

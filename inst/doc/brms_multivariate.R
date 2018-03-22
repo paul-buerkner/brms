@@ -15,14 +15,15 @@ opts_chunk$set(
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
-  )
+)
+library(brms)
+theme_set(theme_default())
 
 ## ----data-------------------------------------------------------------------------------
 data("BTdata", package = "MCMCglmm")
 head(BTdata)
 
 ## ----fit1, message=FALSE, warning=FALSE-------------------------------------------------
-library(brms)
 fit1 <- brm(
   cbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
   data = BTdata, chains = 2, cores = 2
@@ -33,7 +34,6 @@ add_ic(fit1) <- "loo"
 summary(fit1)
 
 ## ----pp_check1, message=FALSE-----------------------------------------------------------
-theme_set(theme_default())
 pp_check(fit1, resp = "tarsus")
 pp_check(fit1, resp = "back")
 
