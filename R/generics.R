@@ -942,51 +942,22 @@ marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
 }
 
-#' Model averaging via stacking or pseudo-BMA weighting.
-#' 
-#' This is a wrapper method around 
-#' \code{\link[loo:model_weights]{loo::model_weights}}, 
-#' which allows to compute model weights via stacking or 
-#' pseudo-BMA weighting.
-#' 
-#' @inheritParams LOO.brmsfit
-#' @param more_args A \code{list} of additional arguments passed
-#' to \code{\link[loo:model_weights]{loo::model_weights}}.
-#' 
-#' @return A named vector of model weights.
-#' 
-#' @examples 
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' loo_weights(fit1, fit2)   
-#' }     
-#' 
-#' @export
-loo_weights <- function(x, ...) {
-  UseMethod("loo_weights")
-}
-
 #' Model selection via Leave-one-out log predictive density.
 #' 
-#' This is a wrapper method around 
-#' \code{\link[loo:model_select]{loo::model_select}}, 
-#' which to perform model selection via Leave-one-out 
-#' log predictive density estimation and Bayesian bootstrap 
+#' This is a wrapper method around
+#' \code{\link[loo:model_select]{loo::model_select}},
+#' which to perform model selection via Leave-one-out
+#' log predictive density estimation and Bayesian bootstrap
 #' adjustment.
 #' 
 #' @inheritParams LOO.brmsfit
 #' @param more_args A \code{list} of additional arguments passed
 #' to \code{\link[loo:model_select]{loo::model_select}}.
 #' 
-#' @return A named vector indicating the probability of each 
+#' @return A named vector indicating the probability of each
 #'   model being selected to be the best model.
 #' 
-#' @examples 
+#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
@@ -994,8 +965,8 @@ loo_weights <- function(x, ...) {
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
-#' loo_select(fit1, fit2)   
-#' }     
+#' loo_select(fit1, fit2)
+#' }
 #' 
 #' @export
 loo_select <- function(x, ...) {

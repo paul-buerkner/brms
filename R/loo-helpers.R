@@ -543,7 +543,7 @@ recommend_loo_options <- function(n, model_name = "") {
 }
 
 loo_weights_internal <- function(models, args, more_args,
-                                 fun = c("weights", "select")) {
+                                 type = c("weights", "select")) {
   # wrapper around loo::model_weights and loo::model_select
   # Args:
   #   models: list of brmsfit objects
@@ -551,18 +551,24 @@ loo_weights_internal <- function(models, args, more_args,
   #   more_args: argument passed to loo::model_fun
   #   fun: suffix of the function to be called
   stopifnot(is.list(models))
-  fun <- match.arg(fun)
+  type <- match.arg(type)
+  if (type == "weights") {
+    fun <- "loo_model_weights"
+  } else if (type == "select") {
+    # currently unused as no longer available in loo
+    fun <- "model_select"
+  }
   if (length(models) < 2L) {
-    stop2("'loo_", fun, "' requires at least two models.")
+    stop2("'loo::", fun, "' requires at least two models.")
   }
   log_lik_list <- lapply(models, 
     function(x) do.call(log_lik, c(list(x), args))
   )
-  more_args$log_lik_list <- log_lik_list
+  more_args$x <- log_lik_list
   more_args$r_eff_list <- mapply(
     r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
   )
-  out <- do.call(eval2(paste0("loo::model_", fun)), more_args)
+  out <- do.call(eval2(paste0("loo::", fun)), more_args)
   names(out) <- names(models)
   out
 }

@@ -2536,15 +2536,40 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   t(intervals)
 }
 
-#' @rdname loo_weights
+#' Model averaging via stacking or pseudo-BMA weighting.
+#' 
+#' Compute model weights for \code{brmsfit} objects via stacking 
+#' or pseudo-BMA weighting. For more details, see
+#' \code{\link[loo:loo_model_weights]{loo::loo_model_weights}}.
+#' 
+#' @inheritParams LOO.brmsfit
+#' @param ... More fitted model objects.
+#' @param more_args A \code{list} of additional arguments passed
+#' to \code{\link[loo:loo_model_weights]{loo_model_weights.default}}.
+#' 
+#' @return A named vector of model weights.
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' loo_model_weights(fit1, fit2)   
+#' }  
+#' 
+#' @method loo_model_weights brmsfit
+#' @importFrom loo loo_model_weights
+#' @export loo_model_weights
 #' @export
-loo_weights.brmsfit <- function(x, ..., more_args = list(), 
-                                newdata = NULL, re_formula = NULL, 
-                                allow_new_levels = FALSE, 
-                                sample_new_levels = "uncertainty", 
-                                resp = NULL, new_objects = list(), 
-                                subset = NULL, nsamples = NULL,
-                                nug = NULL, model_names = NULL) {
+loo_model_weights.brmsfit <- function(
+  x, ..., more_args = list(), newdata = NULL, re_formula = NULL, 
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty", 
+  resp = NULL, new_objects = list(), subset = NULL, nsamples = NULL,
+  nug = NULL, model_names = NULL
+) {
   sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
   sub_names <- c(deparse_combine(substitute(x)), sub_names)
   models <- validate_models(list(x, ...), model_names, sub_names)
@@ -2555,16 +2580,16 @@ loo_weights.brmsfit <- function(x, ..., more_args = list(),
     newdata, re_formula, resp, subset, nug, 
     allow_new_levels, sample_new_levels, new_objects 
   )
-  loo_weights_internal(models, args, more_args, fun = "weights")
+  loo_weights_internal(models, args, more_args, type = "weights")
 }
 
 #' @rdname loo_select
 #' @export
-loo_select.brmsfit <- function(x, ..., more_args = list(), 
-                               newdata = NULL, re_formula = NULL, 
-                               allow_new_levels = FALSE, 
-                               sample_new_levels = "uncertainty", 
-                               resp = NULL, new_objects = list(), 
+loo_select.brmsfit <- function(x, ..., more_args = list(),
+                               newdata = NULL, re_formula = NULL,
+                               allow_new_levels = FALSE,
+                               sample_new_levels = "uncertainty",
+                               resp = NULL, new_objects = list(),
                                subset = NULL, nsamples = NULL,
                                nug = NULL, model_names = NULL) {
   sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
@@ -2574,10 +2599,10 @@ loo_select.brmsfit <- function(x, ..., more_args = list(),
     subset <- sample(nsamples(x), nsamples)
   }
   args <- nlist(
-    newdata, re_formula, resp, subset, nug, 
-    allow_new_levels, sample_new_levels, new_objects 
+    newdata, re_formula, resp, subset, nug,
+    allow_new_levels, sample_new_levels, new_objects
   )
-  loo_weights_internal(models, args, more_args, fun = "select")
+  loo_weights_internal(models, args, more_args, type = "select")
 }
  
 #' Compute the Pointwise Log-Likelihood

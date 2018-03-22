@@ -75,14 +75,14 @@ derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{
-A named vector indicating the probability of each 
+A named vector indicating the probability of each
   model being selected to be the best model.
 }
 \description{
-This is a wrapper method around 
-\code{\link[loo:model_select]{loo::model_select}}, 
-which to perform model selection via Leave-one-out 
-log predictive density estimation and Bayesian bootstrap 
+This is a wrapper method around
+\code{\link[loo:model_select]{loo::model_select}},
+which to perform model selection via Leave-one-out
+log predictive density estimation and Bayesian bootstrap
 adjustment.
 }
 \examples{
@@ -93,7 +93,7 @@ fit1 <- brm(rating ~ treat + period + carry,
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler, family = "gaussian")
-loo_select(fit1, fit2)   
-}     
+loo_select(fit1, fit2)
+}
 
 }
