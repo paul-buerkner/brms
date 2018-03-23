@@ -19,12 +19,12 @@ passed to the underlying post-processing functions.}
 
 \item{weights}{Name of the criterion to compute weights from. 
 Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
-\code{"loo2"} (current default), or \code{"bridge"}. 
+\code{"loo2"} (current default), or \code{"marglik"}. 
 For the former three options, Akaike weights will be computed
 based on the information criterion values returned by
 the respective methods. For \code{"loo2"}, method
 \code{\link{loo_model_weights}} will be used to obtain weights. 
-For \code{"bridge"}, method \code{\link{post_prob}} 
+For \code{"marglik"}, method \code{\link{post_prob}} 
 will be used to compute weights based on log marginal 
 likelihood values. Alternatively, \code{weights} can be 
 a numeric vector of pre-specified weights.}

@@ -21,7 +21,7 @@ functions computing the information criteria.}
 \item{ic, value}{Names of the information criteria / fit indices 
 to compute. Currently supported are \code{"loo"}, 
 \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
-\code{"bridge"} (log marginal likelihood).}
+\code{"marglik"} (log marginal likelihood).}
 }
 \value{
 An object of the same class as \code{x}, but

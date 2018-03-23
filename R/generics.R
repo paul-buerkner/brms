@@ -30,9 +30,9 @@
 #'   information criterion after model fitting
 #' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
-#' @slot bridge An empty slot for adding a \code{bridge} object 
-#'   (see \code{\link{bridge_sampler}})
-#'   after model fitting
+#' @slot marglik An empty slot for adding a \code{bridge} object 
+#'   after model fitting containing the log marginal likelihood 
+#'   (see \code{\link{bridge_sampler}} for details)
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
 #' @slot exclude The names of the parameters for which samples are not saved
@@ -52,7 +52,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
-                    bridge = NULL, stanvars = NULL, stan_funs = NULL, 
+                    marglik = NULL, stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
@@ -61,7 +61,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   )
   x <- nlist(
     formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, loo, waic, R2, bridge,
+    autocor, ranef, cov_ranef, loo, waic, R2, marglik,
     stanvars, stan_funs, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
@@ -398,7 +398,7 @@ LOO <- function(x, ...) {
 #' @param ic,value Names of the information criteria / fit indices 
 #'   to compute. Currently supported are \code{"loo"}, 
 #'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
-#'   \code{"bridge"} (log marginal likelihood).
+#'   \code{"marglik"} (log marginal likelihood).
 #' @param ... Further arguments passed to the underlying 
 #'   functions computing the information criteria.
 #'   
@@ -945,12 +945,12 @@ marginal_smooths <- function(x, ...) {
 #' @inheritParams LOO
 #' @param weights Name of the criterion to compute weights from. 
 #'   Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
-#'   \code{"loo2"} (current default), or \code{"bridge"}. 
+#'   \code{"loo2"} (current default), or \code{"marglik"}. 
 #'   For the former three options, Akaike weights will be computed
 #'   based on the information criterion values returned by
 #'   the respective methods. For \code{"loo2"}, method
 #'   \code{\link{loo_model_weights}} will be used to obtain weights. 
-#'   For \code{"bridge"}, method \code{\link{post_prob}} 
+#'   For \code{"marglik"}, method \code{\link{post_prob}} 
 #'   will be used to compute weights based on log marginal 
 #'   likelihood values. Alternatively, \code{weights} can be 
 #'   a numeric vector of pre-specified weights.

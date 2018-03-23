@@ -1939,7 +1939,7 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
   args <- c(unname(args$models), args)
   args$models <- NULL
   weights <- tolower(weights)
-  weights <- match.arg(weights, c("loo", "waic", "kfold", "loo2", "bridge"))
+  weights <- match.arg(weights, c("loo", "waic", "kfold", "loo2", "marglik"))
   if (weights %in% c("loo", "waic", "kfold")) {
     # Akaike weights based on information criteria
     args$compare <- FALSE
@@ -1949,7 +1949,7 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
     out <- exp(- ic_diffs / 2)
   } else if (weights %in% "loo2") {
     out <- do.call("loo_model_weights", args)
-  } else if (weights %in% "bridge") {
+  } else if (weights %in% "marglik") {
     out <- do.call("post_prob", args)
   }
   out <- out / sum(out)
@@ -2821,9 +2821,9 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @export bridge_sampler 
 #' @export
 bridge_sampler.brmsfit <- function(samples, ...) {
-  if (inherits(samples[["bridge"]], "bridge")) {
-    if (!is.na(samples[["bridge"]]$logml)) {
-      return(samples[["bridge"]]) 
+  if (inherits(samples[["marglik"]], "bridge")) {
+    if (!is.na(samples[["marglik"]]$logml)) {
+      return(samples[["marglik"]]) 
     }
   }
   samples <- restructure(samples)
