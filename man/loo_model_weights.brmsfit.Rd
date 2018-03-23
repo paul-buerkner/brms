@@ -2,70 +2,16 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{loo_model_weights.brmsfit}
 \alias{loo_model_weights.brmsfit}
+\alias{loo_model_weights}
 \title{Model averaging via stacking or pseudo-BMA weighting.}
 \usage{
-\method{loo_model_weights}{brmsfit}(x, ..., more_args = list(),
-  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", resp = NULL, new_objects = list(),
-  subset = NULL, nsamples = NULL, nug = NULL, model_names = NULL)
+\method{loo_model_weights}{brmsfit}(x, ..., model_names = NULL)
 }
 \arguments{
-\item{x}{A fitted model object typically of class \code{brmsfit}.}
+\item{x}{A fitted model object.}
 
-\item{...}{More fitted model objects.}
-
-\item{more_args}{A \code{list} of additional arguments passed
-to \code{\link[loo:loo_model_weights]{loo_model_weights.default}}.}
-
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
-
-\item{re_formula}{formula containing group-level effects 
-to be considered in the prediction. 
-If \code{NULL} (default), include all group-level effects; 
-if \code{NA}, include no group-level effects.}
-
-\item{allow_new_levels}{A flag indicating if new
-levels of group-level effects are allowed 
-(defaults to \code{FALSE}). 
-Only relevant if \code{newdata} is provided.}
-
-\item{sample_new_levels}{Indicates how to sample new levels 
-for grouping factors specified in \code{re_formula}.
-This argument is only relevant if \code{newdata} is provided and 
-\code{allow_new_levels} is set to \code{TRUE}.
-If \code{"uncertainty"} (default), include group-level uncertainty
-in the predictions based on the variation of the existing levels. 
-If \code{"gaussian"}, sample new levels from the (multivariate) 
-normal distribution implied by the group-level standard deviations 
-and correlations. This options may be useful for conducting 
-Bayesian power analysis. 
-If \code{"old_levels"}, directly sample new levels from the
-existing levels.}
-
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
-\item{new_objects}{A named \code{list} of objects containing 
-new data, which cannot be passed via argument \code{newdata}.
-Currently, only required for objects passed to 
-\code{\link[brms:cor_sar]{cor_sar}} and 
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{subset}{A numeric vector specifying
-the posterior samples to be used. 
-If \code{NULL} (the default), all samples are used.}
-
-\item{nsamples}{Positive integer indicating how many 
-posterior samples should be used. 
-If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset} is not \code{NULL}.}
-
-\item{nug}{Small positive number for Gaussian process terms only. 
-For numerical reasons, the covariance matrix of a Gaussian 
-process might not be positive definite. Adding a very small 
-number to the matrix's diagonal often solves this problem. 
-If \code{NULL} (the default), \code{nug} is chosen internally.}
+\item{...}{More fitted model objects or further arguments
+passed to the underlying post-processing functions.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 

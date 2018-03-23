@@ -1290,14 +1290,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(sdata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
-  if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
-    # required for 'loo' types only (deprecated as of loo 2.0)
-    pred_args$loo_args <- loo_args
-    ppc_args$lw <- do.call(loo_weights_old, c(pred_args, log = TRUE))
-  }
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
-    # required for 'loo' types only (loo >= 2.0)
     pred_args$loo_args <- loo_args
     ppc_args$psis_object <- do.call(compute_ic, c(pred_args, ic = "psis"))
   }
@@ -1937,43 +1931,59 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eval(cl, parent.frame())
 }
 
+#' @rdname model_weights
+#' @export
+model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  model_names <- names(args$models)
+  args <- c(unname(args$models), args)
+  args$models <- NULL
+  weights <- tolower(weights)
+  weights <- match.arg(weights, c("loo", "waic", "kfold", "loo2", "bridge"))
+  if (weights %in% c("loo", "waic", "kfold")) {
+    # Akaike weights based on information criteria
+    args$compare <- FALSE
+    ics <- SW(do.call(weights, args))
+    ics <- ulapply(ics, function(x) x$estimates[3, 1])
+    ic_diffs <- ics - min(ics)
+    out <- exp(- ic_diffs / 2)
+  } else if (weights %in% "loo2") {
+    out <- do.call("loo_model_weights", args)
+  } else if (weights %in% "bridge") {
+    out <- do.call("post_prob", args)
+  }
+  out <- out / sum(out)
+  names(out) <- model_names
+  out
+}
+
 #' @rdname pp_average
 #' @export
 pp_average.brmsfit <- function(
-  x, ..., weights = "loo",
-  method = c("predict", "fitted", "residuals"),
-  newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", 
-  new_objects = list(), incl_autocor = TRUE, 
-  resp = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
-  model_names = NULL, more_args = NULL, control = NULL
+  x, ..., weights = "loo2", method = c("predict", "fitted", "residuals"),
+  summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
+  model_names = NULL, control = list()
 ) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
+  method <- match.arg(method)
+  if ("subset" %in% names(list(...))) {
+    stop2("Cannot use argument 'subset' in pp_average.")
+  }
+  args <- split_dots(x, ..., model_names = model_names)
+  args$summary <- FALSE
+  models <- args$models
+  args$models <- NULL
   if (!match_response(models)) {
     stop2("Can only average models predicting the same response.")
   }
-  method <- match.arg(method)
+  nsamples <- args$nsamples
   if (is.null(nsamples)) {
-    nsamples <- nsamples(x)
+    nsamples <- nsamples(models[[1]])
   }
   if (!is.numeric(weights)) {
-    fun <- tolower(weights)
-    fun <- match.arg(fun, c("loo", "waic", "kfold", "loo2", "bridge"))
-    args <- c(unname(models), control)
-    if (fun %in% c("loo", "waic", "kfold")) {
-      args$compare <- FALSE
-      ics <- ulapply(SW(do.call(fun, args)), function(x) x$estimates[3, 1])
-      ic_diffs <- ics - min(ics)
-      weights <- exp(- ic_diffs / 2)
-    } else if (weights %in% "loo2") {
-      weights <- do.call("loo_weights", args)
-    } else if (weights %in% "bridge") {
-      weights <- do.call("post_prob", args)
-    }
+    weight_args <- c(unname(models), control)
+    weight_args$weights <- weights
+    weights <- do.call(model_weights, weight_args)
+    remove(weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -1982,21 +1992,16 @@ pp_average.brmsfit <- function(
     if (any(weights < 0)) {
       stop2("If numeric, 'weights' must be positive.")
     }
+    weights <- weights / sum(weights)
   }
-  weights <- weights / sum(weights)
   nsamples <- round(weights * nsamples)
   names(weights) <- names(nsamples) <- names(models)
-  method_args <- nlist(
-    newdata, re_formula, allow_new_levels, sample_new_levels,
-    new_objects, incl_autocor, resp, sort, nug, summary = FALSE
-  )
-  method_args <- c(method_args, more_args)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
     if (nsamples[i] > 0) {
-      method_args$object <- models[[i]]
-      method_args$nsamples <- nsamples[i]
-      out[[i]] <- do.call(method, method_args)
+      args$object <- models[[i]]
+      args$nsamples <- nsamples[i]
+      out[[i]] <- do.call(method, args)
     }
   }
   out <- do.call(rbind, out)
@@ -2308,37 +2313,20 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 
 #' @export
 #' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
-WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
-                         re_formula = NULL, allow_new_levels = FALSE,
-                         sample_new_levels = "uncertainty", resp = NULL,
-                         new_objects = list(), subset = NULL,
-                         nsamples = NULL, pointwise = NULL, nug = NULL,
-                         model_names = NULL) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
-  }
-  pointwise <- set_pointwise(x, pointwise, newdata, subset)
-  use_stored_ic <- !any(names(match.call()) %in% args_not_for_reloo())
-  args <- nlist(
-    models, ic = "waic", use_stored_ic, newdata, 
-    re_formula, resp, subset, nug, allow_new_levels, 
-    sample_new_levels, new_objects, pointwise, compare
-  )
+WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = NULL, model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
+  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
+  c(args) <- nlist(ic = "waic", compare, resp)
   do.call(compute_ics, args)
 }
 
 #' @importFrom loo waic
 #' @export waic
 #' @export
-waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
-                         re_formula = NULL, allow_new_levels = FALSE,
-                         sample_new_levels = "uncertainty",
-                         resp = NULL, new_objects = list(), subset = NULL, 
-                         nsamples = NULL, pointwise = NULL, nug = NULL,
-                         model_names = NULL) {
+waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = NULL, model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(WAIC)
   eval(cl, parent.frame())
@@ -2346,50 +2334,27 @@ waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 
 #' @export
 #' @describeIn LOO \code{LOO} method for \code{brmsfit} objects
-LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE, 
-                        newdata = NULL, re_formula = NULL, 
-                        allow_new_levels = FALSE, 
-                        sample_new_levels = "uncertainty", 
-                        resp = NULL, new_objects = list(), 
-                        subset = NULL, nsamples = NULL, pointwise = NULL,
-                        nug = NULL, k_threshold = 0.7, 
-                        model_names = NULL, update_args = list(),
-                        cores = 1) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
-  }
-  pointwise <- set_pointwise(x, pointwise, newdata, subset)
-  loo_args <- nlist(cores)
-  not_for_reloo <- intersect(names(match.call()), args_not_for_reloo())
+LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                        pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                        model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
+  not_for_reloo <- intersect(names(args), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
     not_for_reloo <- collapse_comma(not_for_reloo)
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
-  use_stored_ic <- !length(not_for_reloo)
-  args <- nlist(
-    models, ic = "loo", use_stored_ic, loo_args, newdata, 
-    re_formula, resp, subset, nug, allow_new_levels, 
-    sample_new_levels, new_objects, pointwise, compare,
-    reloo, k_threshold, update_args
-  )
+  args$use_stored_ic <- !length(not_for_reloo)
+  c(args) <- nlist(ic = "loo", compare, resp, k_threshold, reloo)
   do.call(compute_ics, args)
 }
 
 #' @importFrom loo loo
 #' @export loo
 #' @export
-loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE, 
-                         newdata = NULL, re_formula = NULL, 
-                         allow_new_levels = FALSE, 
-                         sample_new_levels = "uncertainty", 
-                         new_objects = list(), resp = NULL, 
-                         subset = NULL, nsamples = NULL, pointwise = NULL, 
-                         nug = NULL, k_threshold = 0.7,
-                         model_names = NULL, update_args = list(), 
-                         cores = 1) {
+loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                         model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
@@ -2397,20 +2362,14 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE,
 
 #' @export
 #' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
-kfold.brmsfit <- function(x, ..., compare = TRUE,
-                          K = 10, Ksub = NULL, exact_loo = FALSE, 
-                          group = NULL, newdata = NULL, resp = NULL,
-                          save_fits = FALSE, model_names = NULL,
-                          update_args = list()) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
-  use_stored_ic <- ulapply(models, 
-    function(x) is.brmsfit(x) && is_equal(x$kfold$K, K)
-  )
-  args <- nlist(
-    models, ic = "kfold", K, save_fits, use_stored_ic, 
-    compare, update_args, newdata, resp, Ksub, exact_loo, group
+kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL, 
+                          exact_loo = FALSE, group = NULL, resp = NULL,
+                          model_names = NULL, save_fits = FALSE) {
+  args <- split_dots(x, ..., model_names = model_names)
+  use_stored_ic <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
+  c(args) <- nlist(
+    ic = "kfold", compare, K, Ksub, exact_loo, 
+    group, resp, save_fits, use_stored_ic
   )
   do.call(compute_ics, args)
 }
@@ -2439,7 +2398,7 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
 #'   \code{\link[brms:predict.brmsfit]{predict}} or
 #'   \code{\link[brms:fitted.brmsfit]{fitted}}. 
-#' @inheritParams LOO.brmsfit
+#' @inheritParams predict.brmsfit
 #'   
 #' @return \code{loo_predict} and \code{loo_linpred} return a vector with one 
 #'   element per observation. The only exception is if \code{type = "quantile"} 
@@ -2477,17 +2436,15 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
 #' @export loo_predict
 #' @export 
 loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                resp = NULL, probs = 0.5, psis_object = NULL,
-                                cores = 1, ...) {
+                                probs = 0.5, psis_object = NULL, resp = NULL,
+                                ...) {
   type <- match.arg(type)
   stopifnot_resp(object, resp)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_ic(
-      object, ic = "psis", loo_args = nlist(cores), resp = resp, ...
-    )
+    psis_object <- compute_ic(object, ic = "psis", resp = resp, ...)
   }
-  preds <- predict(object, summary = FALSE, resp = resp, ...)
+  preds <- predict(object, resp = resp, summary = FALSE, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
@@ -2497,8 +2454,8 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
 #' @export loo_linpred
 #' @export 
 loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
-                                resp = NULL, probs = 0.5, scale = "linear", 
-                                psis_object = NULL, cores = 1, ...) {
+                                probs = 0.5, psis_object = NULL, resp = NULL,
+                                scale = "linear", ...) {
   type <- match.arg(type)
   stopifnot_resp(object, resp)
   family <- family(object, resp = resp)
@@ -2508,11 +2465,9 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   }
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_ic(
-      object, ic = "psis", loo_args = nlist(cores), resp = resp, ...
-    )
+    psis_object <- compute_ic(object, ic = "psis", resp = resp, ...)
   }
-  preds <- fitted(object, scale = scale, summary = FALSE, resp = resp, ...)
+  preds <- fitted(object, scale = scale, resp = resp, summary = FALSE, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
@@ -2542,10 +2497,9 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' or pseudo-BMA weighting. For more details, see
 #' \code{\link[loo:loo_model_weights]{loo::loo_model_weights}}.
 #' 
+#' @aliases loo_model_weights
+#' 
 #' @inheritParams LOO.brmsfit
-#' @param ... More fitted model objects.
-#' @param more_args A \code{list} of additional arguments passed
-#' to \code{\link[loo:loo_model_weights]{loo_model_weights.default}}.
 #' 
 #' @return A named vector of model weights.
 #' 
@@ -2564,45 +2518,20 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @importFrom loo loo_model_weights
 #' @export loo_model_weights
 #' @export
-loo_model_weights.brmsfit <- function(
-  x, ..., more_args = list(), newdata = NULL, re_formula = NULL, 
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty", 
-  resp = NULL, new_objects = list(), subset = NULL, nsamples = NULL,
-  nug = NULL, model_names = NULL
-) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
-  }
-  args <- nlist(
-    newdata, re_formula, resp, subset, nug, 
-    allow_new_levels, sample_new_levels, new_objects 
+loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  models <- args$models
+  args$models <- NULL
+  log_lik_list <- lapply(models, 
+    function(x) do.call(log_lik, c(list(x), args))
   )
-  loo_weights_internal(models, args, more_args, type = "weights")
-}
-
-#' @rdname loo_select
-#' @export
-loo_select.brmsfit <- function(x, ..., more_args = list(),
-                               newdata = NULL, re_formula = NULL,
-                               allow_new_levels = FALSE,
-                               sample_new_levels = "uncertainty",
-                               resp = NULL, new_objects = list(),
-                               subset = NULL, nsamples = NULL,
-                               nug = NULL, model_names = NULL) {
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(list(x, ...), model_names, sub_names)
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
-  }
-  args <- nlist(
-    newdata, re_formula, resp, subset, nug,
-    allow_new_levels, sample_new_levels, new_objects
+  args$x <- log_lik_list
+  args$r_eff_list <- mapply(
+    r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
   )
-  loo_weights_internal(models, args, more_args, type = "select")
+  out <- do.call(loo::loo_model_weights, args)
+  names(out) <- names(models)
+  out
 }
  
 #' Compute the Pointwise Log-Likelihood
@@ -3002,15 +2931,11 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' 
 #' @aliases post_prob
 #' 
-#' @param x A \code{brmsfit} object.
-#' @param ... More \code{brmsfit} objects.
+#' @inheritParams LOO.brmsfit
 #' @param prior_prob Numeric vector with prior model probabilities. 
 #'   If omitted, a uniform prior is used (i.e., all models are equally 
 #'   likely a priori). The default \code{NULL} corresponds to equal 
 #'   prior model weights.
-#' @param bs_args A list of additional arguments passed to 
-#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
-#' @inheritParams LOO.brmsfit
 #'   
 #' @details Computing the marginal likelihood requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
@@ -3057,16 +2982,13 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' @importFrom bridgesampling post_prob
 #' @export post_prob 
 #' @export
-post_prob.brmsfit <- function(x, ..., prior_prob = NULL, 
-                              model_names = NULL,
-                              bs_args = list()) {
-  models <- list(x, ...)
-  sub_names <- ulapply(substitute(list(...))[-1], deparse_combine)
-  sub_names <- c(deparse_combine(substitute(x)), sub_names)
-  models <- validate_models(models, model_names, sub_names)
+post_prob.brmsfit <- function(x, ..., prior_prob = NULL, model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  models <- args$models
+  args$models <- NULL
   bs <- vector("list", length(models))
   for (i in seq_along(models)) {
-    bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), bs_args))
+    bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), args))
   }
   do.call(post_prob, c(bs, nlist(prior_prob)))
 }

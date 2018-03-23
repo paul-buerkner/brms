@@ -10,11 +10,10 @@
 \title{Compute Weighted Expectations Using LOO}
 \usage{
 \method{loo_predict}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  resp = NULL, probs = 0.5, psis_object = NULL, cores = 1, ...)
+  probs = 0.5, psis_object = NULL, resp = NULL, ...)
 
 \method{loo_linpred}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  resp = NULL, probs = 0.5, scale = "linear", psis_object = NULL,
-  cores = 1, ...)
+  probs = 0.5, psis_object = NULL, resp = NULL, scale = "linear", ...)
 
 \method{loo_predictive_interval}{brmsfit}(object, prob = 0.9,
   psis_object = NULL, ...)
@@ -26,9 +25,6 @@
 Can by either \code{"mean"} (default), \code{"var"}, or
 \code{"quantile"}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
 \item{probs}{A vector of quantiles to compute. 
 Only used if \code{type = quantile}.}
 
@@ -36,8 +32,8 @@ Only used if \code{type = quantile}.}
 If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
 internally, which may be time consuming for models fit to very large datasets.}
 
-\item{cores}{The number of cores to use for parallelization. 
-Default is \code{1}.}
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{...}{Optional arguments passed to the underlying methods that is 
 \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as

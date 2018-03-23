@@ -7,7 +7,7 @@
 \usage{
 reloo(x, ...)
 
-\method{reloo}{loo}(x, fit, k_threshold = 0.7, resp = NULL, check = TRUE,
+\method{reloo}{loo}(x, fit, k_threshold = 0.7, check = TRUE, resp = NULL,
   ...)
 }
 \arguments{
@@ -24,12 +24,12 @@ estimates are treated as problematic. Defaults to \code{0.7}.
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
 \item{check}{Logical; If \code{TRUE} (the default), a crude 
 check is performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
+
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 }
 \value{
 An object of the class as \code{x}.

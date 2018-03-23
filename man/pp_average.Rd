@@ -5,28 +5,25 @@
 \alias{pp_average}
 \title{Posterior predictive samples averaged across models}
 \usage{
-\method{pp_average}{brmsfit}(x, ..., weights = "loo", method = c("predict",
-  "fitted", "residuals"), newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), model_names = NULL,
-  more_args = NULL, control = NULL)
+\method{pp_average}{brmsfit}(x, ..., weights = "loo2", method = c("predict",
+  "fitted", "residuals"), summary = TRUE, probs = c(0.025, 0.975),
+  robust = FALSE, model_names = NULL, control = list())
 
 pp_average(x, ...)
 }
 \arguments{
-\item{x}{A \code{brmsfit} object.}
+\item{x}{A fitted model object.}
 
-\item{...}{More \code{brmsfit} objects.}
+\item{...}{More fitted model objects or further arguments
+passed to the underlying post-processing functions.}
 
 \item{weights}{Name of the criterion to compute weights from. 
-Should be one of \code{"loo"} (default), 
-\code{"waic"}, \code{"kfold"}, \code{"loo2"}, or \code{"bridge"}. 
+Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
+\code{"loo2"} (current default), or \code{"bridge"}. 
 For the former three options, Akaike weights will be computed
 based on the information criterion values returned by
 the respective methods. For \code{"loo2"}, method
-\code{\link{loo_weights}} will be used to obtain weights. 
+\code{\link{loo_model_weights}} will be used to obtain weights. 
 For \code{"bridge"}, method \code{\link{post_prob}} 
 will be used to compute weights based on log marginal 
 likelihood values. Alternatively, \code{weights} can be 
@@ -35,66 +32,12 @@ a numeric vector of pre-specified weights.}
 \item{method}{Type of predictions to average. Should be one of 
 \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}.}
 
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
-
-\item{re_formula}{formula containing group-level effects 
-to be considered in the prediction. 
-If \code{NULL} (default), include all group-level effects; 
-if \code{NA}, include no group-level effects.}
-
-\item{allow_new_levels}{A flag indicating if new
-levels of group-level effects are allowed 
-(defaults to \code{FALSE}). 
-Only relevant if \code{newdata} is provided.}
-
-\item{sample_new_levels}{Indicates how to sample new levels 
-for grouping factors specified in \code{re_formula}.
-This argument is only relevant if \code{newdata} is provided and 
-\code{allow_new_levels} is set to \code{TRUE}.
-If \code{"uncertainty"} (default), include group-level uncertainty
-in the predictions based on the variation of the existing levels. 
-If \code{"gaussian"}, sample new levels from the (multivariate) 
-normal distribution implied by the group-level standard deviations 
-and correlations. This options may be useful for conducting 
-Bayesian power analysis. 
-If \code{"old_levels"}, directly sample new levels from the
-existing levels.}
-
-\item{new_objects}{A named \code{list} of objects containing 
-new data, which cannot be passed via argument \code{newdata}.
-Currently, only required for objects passed to 
-\code{\link[brms:cor_sar]{cor_sar}} and 
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation
-parameters should be included in the predictions. Defaults to 
-\code{TRUE}. Setting it to \code{FALSE} will not affect other 
-correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
-or \code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
-\item{nsamples}{Positive integer indicating how many 
-posterior samples should be used. 
-If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset} is not \code{NULL}.}
-
-\item{sort}{Logical. Only relevant for time series models. 
-Indicating whether to return predicted values in the original 
-order (\code{FALSE}; default) or in the order of the 
-time series (\code{TRUE}).}
-
-\item{nug}{Small positive number for Gaussian process terms only. 
-For numerical reasons, the covariance matrix of a Gaussian 
-process might not be positive definite. Adding a very small 
-number to the matrix's diagonal often solves this problem. 
-If \code{NULL} (the default), \code{nug} is chosen internally.}
-
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values? Default is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
 the measure of central tendency and the standard deviation as 
@@ -102,15 +45,9 @@ the measure of variability. If \code{TRUE}, the median and the
 median absolute deviation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} 
-function. Only used if \code{summary} is \code{TRUE}.}
-
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
 values as model names.}
-
-\item{more_args}{Optional \code{list} of further arguments 
-passed to the function specified in \code{method}.}
 
 \item{control}{Optional \code{list} of further arguments 
 passed to the function specified in \code{weights}.}

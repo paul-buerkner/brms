@@ -261,14 +261,9 @@ test_that("all S3 methods have reasonable ouputs", {
   llp <- SW(loo_predictive_interval(fit3))
   expect_equal(dim(llp), c(nobs(fit3), 2))
   
-  # loo_select
-  lls <- SW(loo_select(fit1, fit1))
-  expect_is(lls, "numeric")
-  expect_equal(names(lls), c("fit1", "fit1"))
-  
-  # loo_weights
-  llw <- SW(loo_weights(fit2, fit2))
-  expect_is(llw, "numeric")
+  # loo_model_weights
+  llw <- SW(loo_model_weights(fit2, fit2))
+  expect_is(llw[1:2], "numeric")
   expect_equal(names(llw), c("fit2", "fit2"))
   
   # marginal_effects
@@ -364,6 +359,10 @@ test_that("all S3 methods have reasonable ouputs", {
   # model.frame
   expect_equal(model.frame(fit1), fit1$data)
   
+  # model_weights
+  mw <- model_weights(fit1, fit1, weights = "waic")
+  expect_equal(mw, setNames(c(0.5, 0.5), c("fit1", "fit1")))
+  
   # ngrps
   expect_equal(ngrps(fit1), list(visit = 4))
   expect_equal(ngrps(fit2), list(patient = 59))
@@ -397,8 +396,6 @@ test_that("all S3 methods have reasonable ouputs", {
   # only test error messages for now
   expect_error(post_prob(fit1, fit2, model_names = "test1"),
                "Number of model names is not equal to the number of models")
-  expect_error(post_prob(fit2, 3),
-               "Object '3' is not of class 'brmsfit'")
   
   # posterior_samples
   ps <- posterior_samples(fit1)
@@ -447,12 +444,9 @@ test_that("all S3 methods have reasonable ouputs", {
                  group = "visit", newdata = fit1$data[1:100, ])
   expect_true(is(pp, "ggplot"))
   
-  pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
-  expect_true(is(pp, "ggplot"))
-  lw <- SW(loo::psislw(-log_lik(fit1), cores = 1)$lw_smooth)
-  # not getting warnings implies that the precomputed lw is used
-  pp <- pp_check(fit1, type = "loo_intervals", lw = lw)
-  expect_true(is(pp, "ggplot"))
+  # comment out until bayesplot is compatible with loo 2.0
+  # pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
+  # expect_true(is(pp, "ggplot"))
   
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Age"), "ggplot"))

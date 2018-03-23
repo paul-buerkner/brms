@@ -46,28 +46,27 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
   out
 }
 
-compute_ic <- function(x, ic = c("loo", "waic", "psis", "psislw", "kfold"),
-                       model_name = "", reloo = FALSE, k_threshold = 0.7,
-                       loo_args = list(), update_args = list(), ...) {
+compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
+                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
+                       model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   model_name: original variable name of object 'x'
   #   reloo: call 'reloo' after computing 'loo'?
-  #   loo_args: passed to functions of the loo package
-  #   update_args: passed to update.brmsfit
-  #   ...: passed to log_lik.brmsfit
+  #   pointwise: compute log-likelihood point-by-point?
+  #   ...: passed to other post-processing methods
   # Returns:
   #   an object of class 'ic' which inherits from class 'loo'
-  stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    IC <- do.call(kfold_internal, c(list(x, ...), update_args))
+    IC <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
-    loo_args$x <- log_lik(x, ...)
-    pointwise <- is.function(loo_args$x)
+    pointwise <- as_one_logical(pointwise)
+    loo_args <- list(...)
+    loo_args$x <- log_lik(x, pointwise = pointwise, ...)
     if (pointwise) {
       loo_args$draws <- attr(loo_args$x, "draws")
       loo_args$data <- attr(loo_args$x, "data")
@@ -78,17 +77,6 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "psislw", "kfold"),
       }
       loo_args[["log_ratios"]] <- -loo_args[["x"]]
     }
-    if (ic == "psislw") {
-      # deprecated as of loo 2.0
-      if (pointwise) {
-        loo_args[["llfun"]] <- loo_args[["x"]]
-        loo_args[["llargs"]] <- loo_args[["args"]]
-        loo_args[["x"]] <- loo_args[["args"]] <- NULL
-      } else {
-        loo_args[["lw"]] <- -loo_args[["x"]]
-        loo_args[["x"]] <- NULL
-      }
-    }
     IC <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }
   IC$model_name <- model_name
@@ -96,10 +84,10 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "psislw", "kfold"),
   if (ic == "loo") {
     if (reloo) {
       reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
-      IC <- do.call(reloo.loo, c(reloo_args, update_args))
+      IC <- do.call(reloo.loo, c(reloo_args, ...))
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
-      recommend_loo_options(n_bad_obs, model_name) 
+      recommend_loo_options(n_bad_obs, k_threshold, model_name) 
     }
   }
   IC
@@ -356,8 +344,8 @@ validate_models <- function(models, model_names, sub_names) {
 
 #' @rdname reloo
 #' @export
-reloo.loo <- function(x, fit, k_threshold = 0.7, 
-                      resp = NULL, check = TRUE, ...) {
+reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
+                      resp = NULL, ...) {
   # most of the code is taken from rstanarm:::reloo
   stopifnot(is.brmsfit(fit))
   model_name <- deparse(substitute(fit))
@@ -397,7 +385,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7,
     fit_j <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
     lls[[j]] <- log_lik(
       fit_j, newdata = mf[omitted, , drop = FALSE],
-      allow_new_levels = TRUE, resp = resp
+      allow_new_levels = TRUE, resp = resp,
     )
   }
   # compute elpd_{loo,j} for each of the held out observations
@@ -515,23 +503,23 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
   structure(out, class = c("kfold", "loo"))
 }
 
-recommend_loo_options <- function(n, model_name = "") {
+recommend_loo_options <- function(n, k_threshold, model_name = "") {
   model_name <- if (isTRUE(nzchar(model_name))) {
     paste0(" in model '", model_name, "'")
   }
   if (n > 0 && n <= 10) {
     warning2(
-      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
-      "It is recommended to set 'reloo = TRUE' in order to calculate ",
-      "the ELPD without the assumption that these observations are ", 
-      "negligible. This will refit the model ", n, " times to compute ", 
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". It is recommended to set 'reloo = TRUE' in order to ", 
+      "calculate the ELPD without the assumption that these observations " ,
+      "are negligible. This will refit the model ", n, " times to compute ", 
       "the ELPDs for the problematic observations directly."
     )
     out <- "reloo"
   } else if (n > 10) {
     warning2(
-      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
-      "With this many problematic observations, it may be more ", 
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". With this many problematic observations, it may be more ", 
       "appropriate to use 'kfold' with argument 'K = 10' to perform ", 
       "10-fold cross-validation rather than LOO."
     )
@@ -542,68 +530,12 @@ recommend_loo_options <- function(n, model_name = "") {
   invisible(out)
 }
 
-loo_weights_internal <- function(models, args, more_args,
-                                 type = c("weights", "select")) {
-  # wrapper around loo::model_weights and loo::model_select
-  # Args:
-  #   models: list of brmsfit objects
-  #   args: arguments passt to log_lik
-  #   more_args: argument passed to loo::model_fun
-  #   fun: suffix of the function to be called
-  stopifnot(is.list(models))
-  type <- match.arg(type)
-  if (type == "weights") {
-    fun <- "loo_model_weights"
-  } else if (type == "select") {
-    # currently unused as no longer available in loo
-    fun <- "model_select"
-  }
-  if (length(models) < 2L) {
-    stop2("'loo::", fun, "' requires at least two models.")
-  }
-  log_lik_list <- lapply(models, 
-    function(x) do.call(log_lik, c(list(x), args))
-  )
-  more_args$x <- log_lik_list
-  more_args$r_eff_list <- mapply(
-    r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
-  )
-  out <- do.call(eval2(paste0("loo::", fun)), more_args)
-  names(out) <- names(models)
-  out
-}
-
 r_eff_helper <- function(log_lik, fit) {
   # helper function to compute relative efficiences
   stopifnot(is.matrix(log_lik), is.brmsfit(fit))
   chains <- fit$fit@sim$chains
   chain_id <- rep(seq_len(chains), each = nrow(log_lik) / chains)
   loo::relative_eff(log_lik, chain_id = chain_id)
-}
-
-loo_weights_old <- function(x, lw = NULL, log = FALSE, 
-                            loo_args = list(), ...) {
-  # compute loo weights for use in loo_predict and related methods
-  # required for 'loo' ppc types only (deprecated as of loo 2.0)
-  # Args:
-  #   x: a brmsfit object
-  #   lw: precomputed log weights matrix
-  #   log: return log weights?
-  #   loo_args: further arguments passed to functions of loo
-  #   ...: further arguments passed to compute_ic
-  # Returns:
-  #   an S x N matrix
-  if (!is.null(lw)) {
-    stopifnot(is.matrix(lw))
-  } else {
-    message("Running PSIS to compute weights")
-    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
-    lw <- psis[["lw_smooth"]]
-  }
-  if (!log) {
-    lw <- exp(lw) 
-  } 
-  lw
 }
 
 #' @export

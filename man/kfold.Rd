@@ -6,15 +6,16 @@
 \title{K-Fold Cross-Validation}
 \usage{
 \method{kfold}{brmsfit}(x, ..., compare = TRUE, K = 10, Ksub = NULL,
-  exact_loo = FALSE, group = NULL, newdata = NULL, resp = NULL,
-  save_fits = FALSE, model_names = NULL, update_args = list())
+  exact_loo = FALSE, group = NULL, resp = NULL, model_names = NULL,
+  save_fits = FALSE)
 
 kfold(x, ...)
 }
 \arguments{
-\item{x}{A fitted model object typically of class \code{brmsfit}.}
+\item{x}{A fitted model object.}
 
-\item{...}{Optionally more fitted model objects.}
+\item{...}{More fitted model objects or further arguments
+passed to the underlying post-processing functions.}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
@@ -50,24 +51,17 @@ to the factor level of the currently predicted single value are omitted.
 Thus, in this case, the predicted values are only a subset of the 
 omitted ones.}
 
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
-
 \item{resp}{Optional names of response variables.
 If specified, fitted values of these response variables are returned.}
-
-\item{save_fits}{If \code{TRUE}, a component \code{fits} is added to 
-the returned object to store the cross-validated \code{brmsfit} 
-objects and the indices of the omitted observations for each fold. 
-Defaults to \code{FALSE}.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
 values as model names.}
 
-\item{update_args}{A \code{list} of further arguments passed to 
-\code{\link{update.brmsfit}} such
-as \code{iter}, \code{chains}, or \code{cores}.}
+\item{save_fits}{If \code{TRUE}, a component \code{fits} is added to 
+the returned object to store the cross-validated \code{brmsfit} 
+objects and the indices of the omitted observations for each fold. 
+Defaults to \code{FALSE}.}
 }
 \value{
 \code{kfold} returns an object that has a similar structure as the 
@@ -101,7 +95,7 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt +
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
 # perform 10-fold cross validation
-(kfold1 <- kfold(fit1, update_args = list(chains = 2, cores = 2)))
+(kfold1 <- kfold(fit1, chains = 2, cores = 2)
 }   
  
 }

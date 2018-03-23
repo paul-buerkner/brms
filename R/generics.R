@@ -325,8 +325,9 @@ WAIC <- function(x, ...) {
 #' 
 #' @aliases LOO.brmsfit loo.brmsfit loo
 #' 
-#' @param x A fitted model object typically of class \code{brmsfit}. 
-#' @param ... Optionally more fitted model objects.
+#' @param x A fitted model object.
+#' @param ... More fitted model objects or further arguments
+#'   passed to the underlying post-processing functions.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
 #'  via \code{\link{compare_ic}}.
@@ -337,19 +338,12 @@ WAIC <- function(x, ...) {
 #'  into memory issues, \code{pointwise = TRUE} is the way to go.
 #'  By default, \code{pointwise} is automatically chosen based on 
 #'  the size of the model.
-#' @param reloo Logical; Indicate whether 
-#'  \code{\link{reloo}} should be applied
-#'  on problematic observations. Defaults to \code{FALSE}.
+#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
+#'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   Only used if argument \code{reloo} is \code{TRUE}.
-#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
-#'   for more details.
-#' @param update_args A \code{list} of further arguments passed to 
-#'   \code{\link{update.brmsfit}} such
-#'   as \code{iter}, \code{chains}, or \code{cores}.
-#' @param cores The number of cores to use for parallelization. 
-#'  Default is \code{1}.
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
 #' @param model_names If \code{NULL} (the default) will use model names 
 #'   derived from deparsing the call. Otherwise will use the passed 
 #'   values as model names.
@@ -562,7 +556,7 @@ reloo <- function(x, ...) {
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
-#' (kfold1 <- kfold(fit1, update_args = list(chains = 2, cores = 2)))
+#' (kfold1 <- kfold(fit1, chains = 2, cores = 2)
 #' }   
 #'  
 #' @seealso \code{\link{loo}}, \code{\link{reloo}}
@@ -942,35 +936,44 @@ marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
 }
 
-#' Model selection via Leave-one-out log predictive density.
+#' Model Weighting Methods
 #' 
-#' This is a wrapper method around
-#' \code{\link[loo:model_select]{loo::model_select}},
-#' which to perform model selection via Leave-one-out
-#' log predictive density estimation and Bayesian bootstrap
-#' adjustment.
+#' Compute model weights in various ways, for instance via
+#' stacking of predictive distributions, Akaike weights, or
+#' marginal likelihoods.
 #' 
-#' @inheritParams LOO.brmsfit
-#' @param more_args A \code{list} of additional arguments passed
-#' to \code{\link[loo:model_select]{loo::model_select}}.
-#' 
-#' @return A named vector indicating the probability of each
-#'   model being selected to be the best model.
-#' 
-#' @examples
+#' @inheritParams LOO
+#' @param weights Name of the criterion to compute weights from. 
+#'   Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
+#'   \code{"loo2"} (current default), or \code{"bridge"}. 
+#'   For the former three options, Akaike weights will be computed
+#'   based on the information criterion values returned by
+#'   the respective methods. For \code{"loo2"}, method
+#'   \code{\link{loo_model_weights}} will be used to obtain weights. 
+#'   For \code{"bridge"}, method \code{\link{post_prob}} 
+#'   will be used to compute weights based on log marginal 
+#'   likelihood values. Alternatively, \code{weights} can be 
+#'   a numeric vector of pre-specified weights.
+#'   
+#' @return A numeric vector of weights for the models.
+#'   
+#' @examples 
 #' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' loo_select(fit1, fit2)
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
+#' 
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # obtain Akaike weights based on the WAIC
+#' model_weights(fit1, fit2, weights = "waic")
 #' }
 #' 
 #' @export
-loo_select <- function(x, ...) {
-  UseMethod("loo_select")
+model_weights <- function(x, ...) {
+  UseMethod("model_weights")
 }
 
 #' Posterior predictive samples averaged across models
@@ -980,31 +983,21 @@ loo_select <- function(x, ...) {
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
 #' 
-#' @aliases pp_average
-#' 
-#' @param x A \code{brmsfit} object.
-#' @param ... More \code{brmsfit} objects.
-#' @param weights Name of the criterion to compute weights from. 
-#'   Should be one of \code{"loo"} (default), 
-#'   \code{"waic"}, \code{"kfold"}, \code{"loo2"}, or \code{"bridge"}. 
-#'   For the former three options, Akaike weights will be computed
-#'   based on the information criterion values returned by
-#'   the respective methods. For \code{"loo2"}, method
-#'   \code{\link{loo_weights}} will be used to obtain weights. 
-#'   For \code{"bridge"}, method \code{\link{post_prob}} 
-#'   will be used to compute weights based on log marginal 
-#'   likelihood values. Alternatively, \code{weights} can be 
-#'   a numeric vector of pre-specified weights.
+#' @inheritParams model_weights
 #' @param method Type of predictions to average. Should be one of 
 #'   \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}. 
-#' @param more_args Optional \code{list} of further arguments 
-#'   passed to the function specified in \code{method}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
-#' @param model_names If \code{NULL} (the default) will use model names 
-#'   derived from deparsing the call. Otherwise will use the passed 
-#'   values as model names.
-#' @inheritParams predict.brmsfit
+#' @param summary Should summary statistics 
+#'   (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values? Default is \code{TRUE}.
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs  The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
 #' 
 #' @return Same as the output of the method specified 
 #'   in argument \code{method}.
