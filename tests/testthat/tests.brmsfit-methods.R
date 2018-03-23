@@ -397,6 +397,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(post_prob(fit1, fit2, model_names = "test1"),
                "Number of model names is not equal to the number of models")
   
+  # posterior_average
+  pnames <- c("b_Age", "nu")
+  ps <- posterior_average(fit1, fit1, pars = pnames, weights = c(0.3, 0.7))
+  expect_equal(dim(ps), c(nsamples(fit1), 2))
+  expect_equal(colnames(ps), pnames)
+  
   # posterior_samples
   ps <- posterior_samples(fit1)
   expect_equal(dim(ps), c(nsamples(fit1), length(parnames(fit1))))

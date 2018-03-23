@@ -1956,8 +1956,51 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
   } else if (weights %in% "marglik") {
     out <- do.call("post_prob", args)
   }
+  out <- as.numeric(out)
   out <- out / sum(out)
   names(out) <- model_names
+  out
+}
+
+#' @rdname posterior_average
+#' @export
+posterior_average.brmsfit <- function(
+  x, ..., pars = NULL, weights = "loo2", nsamples = NULL,
+  model_names = NULL, control = list(), as.matrix = FALSE
+) {
+  models <- split_dots(x, ..., model_names = model_names, other = FALSE)
+  pars_list <- lapply(models, parnames)
+  all_pars <- unique(unlist(pars_list))
+  common_pars <- lapply(pars_list, function(x) all_pars %in% x)
+  common_pars <- all_pars[Reduce("&", common_pars)]
+  if (is.null(pars)) {
+    pars <- setdiff(common_pars, "lp__")
+  } else {
+    inv_pars <- setdiff(pars, common_pars)
+    if (length(inv_pars)) {
+      inv_pars <- collapse_comma(inv_pars)
+      stop2("Parameter ", inv_pars, " cannot be found in all models.")
+    }
+  }
+  if (is.null(nsamples)) {
+    nsamples <- nsamples(models[[1]])
+  }
+  weights <- validate_weights(weights, models, control)
+  nsamples <- round(weights * nsamples)
+  names(weights) <- names(nsamples) <- names(models)
+  out <- named_list(names(models))
+  for (i in seq_along(out)) {
+    if (nsamples[i] > 0) {
+      subset <- sample(seq_len(nsamples(models[[i]])), nsamples[i])
+      out[[i]] <- posterior_samples(
+        models[[i]], pars = pars, subset = subset, 
+        exact_match = TRUE, as.matrix = as.matrix
+      )
+    }
+  }
+  out <- do.call(rbind, out)
+  attr(out, "weights") <- weights
+  attr(out, "nsamples") <- nsamples
   out
 }
 
@@ -1965,7 +2008,7 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
 #' @export
 pp_average.brmsfit <- function(
   x, ..., weights = "loo2", method = c("predict", "fitted", "residuals"),
-  summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
+  nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
   model_names = NULL, control = list()
 ) {
   method <- match.arg(method)
@@ -1979,25 +2022,10 @@ pp_average.brmsfit <- function(
   if (!match_response(models)) {
     stop2("Can only average models predicting the same response.")
   }
-  nsamples <- args$nsamples
   if (is.null(nsamples)) {
     nsamples <- nsamples(models[[1]])
   }
-  if (!is.numeric(weights)) {
-    weight_args <- c(unname(models), control)
-    weight_args$weights <- weights
-    weights <- do.call(model_weights, weight_args)
-    remove(weight_args)
-  } else {
-    if (length(weights) != length(models)) {
-      stop2("If numeric, 'weights' must have the same length ",
-            "as the number of models.")
-    }
-    if (any(weights < 0)) {
-      stop2("If numeric, 'weights' must be positive.")
-    }
-    weights <- weights / sum(weights)
-  }
+  weights <- validate_weights(weights, models, control)
   nsamples <- round(weights * nsamples)
   names(weights) <- names(nsamples) <- names(models)
   out <- named_list(names(models))

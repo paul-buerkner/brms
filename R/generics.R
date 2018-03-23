@@ -417,6 +417,7 @@ model_weights <- function(x, ...) {
 #'   \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}. 
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
+#' @param nsamples Total number of posterior samples to use.
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
@@ -452,6 +453,41 @@ model_weights <- function(x, ...) {
 #' @export
 pp_average <- function(x, ...) {
   UseMethod("pp_average")
+}
+
+#' Posterior samples of parameters averaged across models
+#' 
+#' Compute posterior samples of parameters averaged across models.
+#' Weighting can be done in various ways, for instance using
+#' Akaike weights based on information criteria or 
+#' marginal likelihoods.
+#' 
+#' @inheritParams pp_average
+#' @param pars Names of parameters for which to average across models.
+#'   Only those parameters can be averaged that appear in every model.
+#'   Defaults to all overlapping parameters.
+#' @param as.matrix Should the output be a \code{matrix} instead of a 
+#'   \code{data.frame}? Defaults to \code{FALSE}.
+#' 
+#' @return As \code{data.frame} or \code{matrix} of posterior samples.
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
+#' 
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # compute model-averaged posteriors of overlapping parameters
+#' posterior_average(fit1, fit2, weights = "waic")
+#' }
+#' 
+#' @export
+posterior_average <- function(x, ...) {
+  UseMethod("posterior_average")
 }
 
 #' Posterior Probabilities of Mixture Component Memberships
