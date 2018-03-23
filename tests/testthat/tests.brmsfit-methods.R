@@ -450,7 +450,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  group = "visit", newdata = fit1$data[1:100, ])
   expect_true(is(pp, "ggplot"))
   
-  pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
+  pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
   expect_true(is(pp, "ggplot"))
   
   expect_true(is(pp_check(fit3), "ggplot"))

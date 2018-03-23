@@ -1157,8 +1157,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @param loo_args An optional list of additional arguments 
 #'  passed to \code{\link[loo:psis]{psis}}. 
 #'  Ignored for non \code{loo_*} ppc types.
-#' @param ... Further arguments passed to the ppc functions
-#'   of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.
+#' @param ... Further arguments passed to \code{\link{predict.brmsfit}}
+#'   as well as to the PPC function specified in \code{type}.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return A ggplot object that can be further
@@ -1190,12 +1190,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @export pp_check
 #' @export
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             x = NULL, resp = NULL, newdata = NULL,
-                             re_formula = NULL, allow_new_levels = FALSE,
-                             sample_new_levels = "uncertainty", 
-                             new_objects = list(), incl_autocor = TRUE, 
-                             subset = NULL, nug = NULL, ntrys = 5, 
-                             loo_args = list(), ...) {
+                             x = NULL, newdata = NULL, resp = NULL,
+                             subset = NULL, ...) {
+  dots <- list(...)
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1240,9 +1237,9 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     if (is_ordinal(object$family)) {
       stop2("Type '", type, "' is not available for ordinal models.")
     }
-    method <- "fitted"
+    method <- fitted.brmsfit
   } else {
-    method <- "predict"
+    method <- predict.brmsfit
   }
   if (missing(nsamples)) {
     aps_types <- c(
@@ -1266,37 +1263,40 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  newd_args <- nlist(
-    object, newdata, re_formula = NA, incl_autocor, 
-    new_objects, check_response = TRUE
-  )
+  # extract y
+  gen_args <- nlist(object, newdata, resp, nsamples, subset)
+  for_newd <- names(dots) %in% names(formals(validate_newdata))
+  newd_args <- dots[for_newd]
+  newd_args[names(gen_args)] <- gen_args
+  newd_args[c("re_formula", "check_response")] <- list(NA, TRUE)
   newdata <- do.call(validate_newdata, newd_args)
-  newd_args$newdata <- newdata
+  newd_args$newdata <- gen_args$newdata <- newdata
   newd_args[c("internal", "only_response")] <- TRUE
   sdata <- do.call(standata, newd_args)
   if (any(grepl("^cens_", names(sdata)))) {
     warning2("'pp_check' may not be meaningful for censored models.")
   }
   y <- as.vector(sdata[[paste0("Y", usc(resp))]])
-  pred_args <- c(list(object), nlist(
-    newdata, re_formula, allow_new_levels, resp,
-    sample_new_levels, new_objects, incl_autocor, nsamples, 
-    subset, nug, ntrys, sort = FALSE, summary = FALSE
-  ))
+  # compute yrep
+  for_pred <- names(dots) %in% names(formals(method))
+  pred_args <- dots[for_pred]
+  pred_args[names(gen_args)] <- gen_args
+  pred_args[c("sort", "summary")] <- FALSE
+  # to be independent of the first object's name of a method
+  pred_args <- move2start(pred_args, "object")
+  names(pred_args)[1] <- ""
   yrep <- do.call(method, pred_args)
   if (has_trials(family(object, resp = resp))) {
     # use success proportions following Gelman and Hill (2006)
     y <- y / sdata$trials
     yrep <- yrep / as_draws_matrix(sdata$trials, dim = dim(yrep))
   }
-  ppc_args <- list(y, yrep, ...)
+  ppc_args <- c(list(y, yrep), dots[!for_pred])
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
-    pred_args[names(loo_args)] <- loo_args
     ppc_args$psis_object <- do.call(compute_ic, c(pred_args, ic = "psis"))
   }
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
-    pred_args[names(loo_args)] <- loo_args
     ppc_args$lw <- weights(do.call(compute_ic, c(pred_args, ic = "psis")))
   }
   # allow using arguments 'group' and 'x' for new data
