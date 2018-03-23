@@ -1075,12 +1075,11 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   if (!is.character(resp)) {
     resp <- ifelse(resp, "upper", "lower") 
   }
-  .dwiener <- Vectorize(rtdists::ddiffusion, c("a", "t0", "z", "v"))
   args <- list(
     rt = x, response = resp, a = alpha, 
     t0 = tau, z = beta * alpha, v = delta
   )
-  out <- do.call(.dwiener, args)
+  out <- do.call(rtdists::ddiffusion, args)
   if (log) {
     out <- log(out)
   }
@@ -1097,29 +1096,6 @@ rwiener <- function(n, alpha, tau, beta, delta,
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
   delta <- as.numeric(delta)
-  max_len <- max(lengths(list(alpha, tau, beta, delta)))
-  n <- n[1]
-  if (max_len > 1L) {
-    if (!n %in% c(1, max_len)) {
-      stop2("Can only sample exactly once for each condition.")
-    }
-    n <- 1
-  }
-  .rwiener <- function(...) {
-    fun <- Vectorize(
-      rwiener_num, 
-      c("alpha", "tau", "beta", "delta"),
-      SIMPLIFY = FALSE
-    )
-    do.call(rbind, fun(...))
-  }
-  args <- nlist(n, alpha, tau, beta, delta, types)
-  do.call(.rwiener, args)
-}
-
-rwiener_num <- function(n, alpha, tau, beta, delta, types) {
-  # helper function to return a numeric vector instead
-  # of a data.frame with two columns as for rtdists::rdiffusion
   out <- rtdists::rdiffusion(
     n, a = alpha, t0 = tau, z = beta * alpha, v = delta
   )
