@@ -15,7 +15,9 @@
       terms \code{mo}, \code{me}, and \code{mi}. (#313)
       \item Introduce methods \code{model_weights} and
       \code{loo_model_weights} providing several options
-      to compute model weights.
+      to compute model weights. (#268)
+      \item Introduce method \code{posterior_average} to
+      extract posterior samples averaged across models. (#386)
       \item Allow hyperparameters of group-level effects
       to vary over the levels of a categorical covariate 
       using argument \code{by} in function \code{gr}. (#365)

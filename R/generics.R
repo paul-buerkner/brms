@@ -457,7 +457,7 @@ pp_average <- function(x, ...) {
 
 #' Posterior samples of parameters averaged across models
 #' 
-#' Compute posterior samples of parameters averaged across models.
+#' Extract posterior samples of parameters averaged across models.
 #' Weighting can be done in various ways, for instance using
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.

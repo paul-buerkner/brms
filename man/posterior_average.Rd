@@ -49,7 +49,7 @@ passed to the function specified in \code{weights}.}
 As \code{data.frame} or \code{matrix} of posterior samples.
 }
 \description{
-Compute posterior samples of parameters averaged across models.
+Extract posterior samples of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.
