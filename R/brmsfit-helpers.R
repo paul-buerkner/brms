@@ -620,13 +620,13 @@ validate_resp <- function(resp, valid_resps, multiple = TRUE) {
 }
 
 split_dots <- function(x, ..., other = TRUE, model_names = NULL) {
-  # split ... argument into a list of model objects and other arguments
-  # takes its substituted names from parent.frame()
+  # split '...' into a list of model objects and other arguments
+  # takes its argument names from parent.frame() 
   # Args:
-  #   ....: \R objects to splot into model and non-model objects
-  #   x: An \R object treated in the same way as '...'. Adding it is
-  #     necessary for substitute() to catch the name of the first 
-  #     argument passed to S3 methods.
+  #   ....: objects to split into model and non-model objects
+  #   x: object treated in the same way as '...'. Adding it is
+  #      necessary for substitute() to catch the name of the first 
+  #      argument passed to S3 methods.
   #   other: allow non-model arguments in '...'?
   #   model_names: optional names of the model objects
   # Returns
