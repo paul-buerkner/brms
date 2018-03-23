@@ -14,7 +14,7 @@
 \usage{
 resp_se(x, sigma = FALSE)
 
-resp_weights(x)
+resp_weights(x, scale = FALSE)
 
 resp_trials(x)
 
@@ -43,6 +43,9 @@ and \code{2}) to indicate left, no, right, or interval censoring.}
 parameter \code{sigma} should be included in addition to the known
 measurement error. Defaults to \code{FALSE} for backwards compatibility,
 but setting it to \code{TRUE} is usually the better choice.}
+
+\item{scale}{Logical; Indicates whether weights should be scaled
+so that the average weight equals one. Defaults to \code{FALSE}.}
 
 \item{y2}{A vector specifying the upper bounds in interval censoring.}
 
