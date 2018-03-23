@@ -75,7 +75,8 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
       if (pointwise) {
         stop2("Cannot use pointwise evaluation for 'psis'.")
       }
-      loo_args[["log_ratios"]] <- -loo_args[["x"]]
+      loo_args$log_ratios <- -loo_args$x
+      loo_args$x <- NULL
     }
     IC <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }

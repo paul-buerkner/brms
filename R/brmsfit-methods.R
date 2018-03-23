@@ -1292,8 +1292,12 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   ppc_args <- list(y, yrep, ...)
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
-    pred_args$loo_args <- loo_args
+    pred_args[names(loo_args)] <- loo_args
     ppc_args$psis_object <- do.call(compute_ic, c(pred_args, ic = "psis"))
+  }
+  if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
+    pred_args[names(loo_args)] <- loo_args
+    ppc_args$lw <- weights(do.call(compute_ic, c(pred_args, ic = "psis")))
   }
   # allow using arguments 'group' and 'x' for new data
   mf <- update_data(newdata, bterms, na.action = na.pass)
@@ -2460,7 +2464,7 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   stopifnot_resp(object, resp)
   family <- family(object, resp = resp)
   if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Method 'loo_linpred' is not yet working ", 
+    stop2("Method 'loo_linpred' is not implemented ", 
           "for categorical or ordinal models")
   }
   if (is.null(psis_object)) {
