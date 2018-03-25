@@ -1964,11 +1964,25 @@ posterior_average.brmsfit <- function(
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   pars_list <- lapply(models, parnames)
   all_pars <- unique(unlist(pars_list))
-  common_pars <- lapply(pars_list, function(x) all_pars %in% x)
-  common_pars <- all_pars[Reduce("&", common_pars)]
-  if (is.null(pars)) {
-    pars <- setdiff(common_pars, "lp__")
-  } else if (!is.null(missing)) {
+  if (is.null(missing)) {
+    common_pars <- lapply(pars_list, function(x) all_pars %in% x)
+    common_pars <- all_pars[Reduce("&", common_pars)]
+    if (is.null(pars)) {
+      pars <- setdiff(common_pars, "lp__")
+    }
+    pars <- as.character(pars)
+    inv_pars <- setdiff(pars, common_pars)
+    if (length(inv_pars)) {
+      inv_pars <- collapse_comma(inv_pars)
+      stop2(
+        "Parameters ", inv_pars, " cannot be found in all ", 
+        "of the models. Consider using argument 'missing'."
+      )
+    }
+  } else {
+    if (is.null(pars)) {
+      pars <- setdiff(all_pars, "lp__")
+    }
     pars <- as.character(pars)
     inv_pars <- setdiff(pars, all_pars)
     if (length(inv_pars)) {
@@ -1988,16 +2002,6 @@ posterior_average.brmsfit <- function(
     } else {
       missing <- as_one_numeric(missing)
       missing <- named_list(pars, missing)
-    }
-  } else {
-    pars <- as.character(pars)
-    inv_pars <- setdiff(pars, common_pars)
-    if (length(inv_pars)) {
-      inv_pars <- collapse_comma(inv_pars)
-      stop2(
-        "Parameters ", inv_pars, " cannot be found in all ", 
-        "of the models. Consider using argument 'missing'."
-      )
     }
   }
   if (is.null(nsamples)) {

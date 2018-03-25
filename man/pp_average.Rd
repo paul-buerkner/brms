@@ -27,8 +27,9 @@ the respective methods. For \code{"loo2"}, method
 \code{\link{loo_model_weights}} will be used to obtain weights. 
 For \code{"marglik"}, method \code{\link{post_prob}} 
 will be used to compute weights based on log marginal 
-likelihood values. Alternatively, \code{weights} can be 
-a numeric vector of pre-specified weights.}
+likelihood values (make sure to specify reasonable priors in 
+this case). Alternatively, \code{weights} can be a numeric vector 
+of pre-specified weights.}
 
 \item{method}{Type of predictions to average. Should be one of 
 \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}.}
