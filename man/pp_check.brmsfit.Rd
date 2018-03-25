@@ -43,15 +43,6 @@ If \code{NULL} (the default), all samples are used.}
 
 \item{...}{Further arguments passed to \code{\link{predict.brmsfit}}
 as well as to the PPC function specified in \code{type}.}
-
-\item{ntrys}{Parameter used in rejection sampling
-for truncated discrete models only
-(defaults to \code{5}). For more details see
-\code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
-
-\item{loo_args}{An optional list of additional arguments 
-passed to \code{\link[loo:psis]{psis}}. 
-Ignored for non \code{loo_*} ppc types.}
 }
 \value{
 A ggplot object that can be further

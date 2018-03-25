@@ -1144,19 +1144,12 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #'  If \code{NULL} all samples are used. If not specified,
 #'  the number of posterior samples is chosen automatically.
 #'  Ignored if \code{subset} is not \code{NULL}.
-#' @param ntrys Parameter used in rejection sampling
-#'  for truncated discrete models only
-#'  (defaults to \code{5}). For more details see
-#'  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
 #' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
 #' @param x Optional name of a variable in the model. 
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
-#' @param loo_args An optional list of additional arguments 
-#'  passed to \code{\link[loo:psis]{psis}}. 
-#'  Ignored for non \code{loo_*} ppc types.
 #' @param ... Further arguments passed to \code{\link{predict.brmsfit}}
 #'   as well as to the PPC function specified in \code{type}.
 #' @inheritParams predict.brmsfit
