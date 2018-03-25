@@ -794,10 +794,8 @@ round_largest_remainder <- function(x) {
   out <- floor(x)
   diff <- x - out
   J <- order(diff, decreasing = TRUE)
-  total_diff <- total - floor(sum(out))
-  for (i in seq_len(total_diff)) {
-    out[J[i]] <- out[J[i]] + 1
-  }
+  I <- seq_len(total - floor(sum(out)))
+  out[J[I]] <- out[J[I]] + 1
   out
 }
 
