@@ -178,6 +178,17 @@ as_one_logical <- function(x, allow_na = FALSE) {
   x
 }
 
+as_one_numeric <- function(x, allow_na = FALSE) {
+  # coerce 'x' to a signle number value
+  s <- substitute(x)
+  x <- SW(as.numeric(x))
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
+    s <- substr(deparse_combine(s), 1L, 100L)
+    stop2("Cannot coerce ", s, " to a single numeric value.")
+  }
+  x
+}
+
 as_one_character <- function(x, allow_na = FALSE) {
   # coerce 'x' to a single character string
   s <- substitute(x)
@@ -774,6 +785,20 @@ softmax <- function(x) {
   }
   x <- exp(x) 
   x / rowSums(x)
+}
+
+round_largest_remainder <- function(x) {
+  # round using the largest remainder method
+  x <- as.numeric(x)
+  total <- round(sum(x))
+  out <- floor(x)
+  diff <- x - out
+  J <- order(diff, decreasing = TRUE)
+  total_diff <- total - floor(sum(out))
+  for (i in seq_len(total_diff)) {
+    out[J[i]] <- out[J[i]] + 1
+  }
+  out
 }
 
 wsp <- function(x = "", nsp = 1) {

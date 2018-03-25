@@ -401,7 +401,15 @@ test_that("all S3 methods have reasonable ouputs", {
   pnames <- c("b_Age", "nu")
   ps <- posterior_average(fit1, fit1, pars = pnames, weights = c(0.3, 0.7))
   expect_equal(dim(ps), c(nsamples(fit1), 2))
-  expect_equal(colnames(ps), pnames)
+  expect_equal(names(ps), pnames)
+  
+  weights <- rexp(3)
+  ps <- brms:::SW(posterior_average(
+    fit1, fit2, fit3, pars = "nu", weights = rexp(3), 
+    missing = 1, nsamples = 10
+  ))
+  expect_equal(dim(ps), c(10, 1))
+  expect_equal(names(ps), "nu")
   
   # posterior_samples
   ps <- posterior_samples(fit1)

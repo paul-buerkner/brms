@@ -6,8 +6,7 @@
 \title{Posterior samples of parameters averaged across models}
 \usage{
 \method{posterior_average}{brmsfit}(x, ..., pars = NULL, weights = "loo2",
-  nsamples = NULL, model_names = NULL, control = list(),
-  as.matrix = FALSE)
+  nsamples = NULL, missing = NULL, model_names = NULL, control = list())
 
 posterior_average(x, ...)
 }
@@ -35,24 +34,30 @@ a numeric vector of pre-specified weights.}
 
 \item{nsamples}{Total number of posterior samples to use.}
 
+\item{missing}{An optional numeric value or a named list of numeric values 
+to use if a model does not contain a parameter for which posterior samples 
+should be averaged. Defaults to \code{NULL}, in which case only those
+parameters can be averaged that are present in all of the models.}
+
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
 values as model names.}
 
 \item{control}{Optional \code{list} of further arguments 
 passed to the function specified in \code{weights}.}
-
-\item{as.matrix}{Should the output be a \code{matrix} instead of a 
-\code{data.frame}? Defaults to \code{FALSE}.}
 }
 \value{
-As \code{data.frame} or \code{matrix} of posterior samples.
+A \code{data.frame} of posterior samples. Samples are rows
+  and parameters are columns.
 }
 \description{
 Extract posterior samples of parameters averaged across models.
 Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.
+}
+\details{
+Weights are computed with the \code{\link{model_weights}} method.
 }
 \examples{
 \dontrun{
@@ -68,4 +73,7 @@ summary(fit2)
 posterior_average(fit1, fit2, weights = "waic")
 }
 
+}
+\seealso{
+\code{\link{model_weights}}, \code{\link{pp_average}}
 }

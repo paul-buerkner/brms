@@ -1966,7 +1966,7 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
 #' @export
 posterior_average.brmsfit <- function(
   x, ..., pars = NULL, weights = "loo2", nsamples = NULL,
-  model_names = NULL, control = list(), as.matrix = FALSE
+  missing = NULL, model_names = NULL, control = list()
 ) {
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   pars_list <- lapply(models, parnames)
@@ -1975,30 +1975,70 @@ posterior_average.brmsfit <- function(
   common_pars <- all_pars[Reduce("&", common_pars)]
   if (is.null(pars)) {
     pars <- setdiff(common_pars, "lp__")
+  } else if (!is.null(missing)) {
+    pars <- as.character(pars)
+    inv_pars <- setdiff(pars, all_pars)
+    if (length(inv_pars)) {
+      inv_pars <- collapse_comma(inv_pars)
+      stop2("Parameters ", inv_pars, " cannot be found in any of the models.")
+    }
+    if (is.list(missing)) {
+      all_miss_pars <- unique(ulapply(
+        models, function(m) setdiff(pars, parnames(m))
+      ))
+      inv_pars <- setdiff(all_miss_pars, names(missing))
+      if (length(inv_pars)) {
+        stop2("Argument 'missing' has no value for parameters ",
+              collapse_comma(inv_pars), ".")
+      }
+      missing <- lapply(missing, as_one_numeric)
+    } else {
+      missing <- as_one_numeric(missing)
+      missing <- named_list(pars, missing)
+    }
   } else {
+    pars <- as.character(pars)
     inv_pars <- setdiff(pars, common_pars)
     if (length(inv_pars)) {
       inv_pars <- collapse_comma(inv_pars)
-      stop2("Parameter ", inv_pars, " cannot be found in all models.")
+      stop2(
+        "Parameters ", inv_pars, " cannot be found in all ", 
+        "of the models. Consider using argument 'missing'."
+      )
     }
   }
   if (is.null(nsamples)) {
     nsamples <- nsamples(models[[1]])
   }
   weights <- validate_weights(weights, models, control)
-  nsamples <- round(weights * nsamples)
+  nsamples <- round_largest_remainder(weights * nsamples)
   names(weights) <- names(nsamples) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {
     if (nsamples[i] > 0) {
       subset <- sample(seq_len(nsamples(models[[i]])), nsamples[i])
-      out[[i]] <- posterior_samples(
-        models[[i]], pars = pars, subset = subset, 
-        exact_match = TRUE, as.matrix = as.matrix
+      subset <- sort(subset)
+      ps <- posterior_samples(
+        models[[i]], pars = pars, 
+        subset = subset, exact_match = TRUE
       )
+      if (!is.null(ps)) {
+        out[[i]] <- ps
+      } else {
+        out[[i]] <- as.data.frame(matrix(
+          numeric(0), nrow = nsamples[i], ncol = 0
+        ))
+      }
+      if (!is.null(missing)) {
+        miss_pars <- setdiff(pars, names(out[[i]]))
+        if (length(miss_pars)) {
+          out[[i]][miss_pars] <- missing[miss_pars]
+        }
+      }
     }
   }
   out <- do.call(rbind, out)
+  rownames(out) <- NULL
   attr(out, "weights") <- weights
   attr(out, "nsamples") <- nsamples
   out
@@ -2026,7 +2066,7 @@ pp_average.brmsfit <- function(
     nsamples <- nsamples(models[[1]])
   }
   weights <- validate_weights(weights, models, control)
-  nsamples <- round(weights * nsamples)
+  nsamples <- round_largest_remainder(weights * nsamples)
   names(weights) <- names(nsamples) <- names(models)
   out <- named_list(names(models))
   for (i in seq_along(out)) {

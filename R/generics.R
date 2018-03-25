@@ -432,6 +432,10 @@ model_weights <- function(x, ...) {
 #' @return Same as the output of the method specified 
 #'   in argument \code{method}.
 #'   
+#' @details Weights are computed with the \code{\link{model_weights}} method.
+#'   
+#' @seealso \code{\link{model_weights}}, \code{\link{posterior_average}}
+#'   
 #' @examples 
 #' \dontrun{
 #' # model with 'treat' as predictor
@@ -466,10 +470,17 @@ pp_average <- function(x, ...) {
 #' @param pars Names of parameters for which to average across models.
 #'   Only those parameters can be averaged that appear in every model.
 #'   Defaults to all overlapping parameters.
-#' @param as.matrix Should the output be a \code{matrix} instead of a 
-#'   \code{data.frame}? Defaults to \code{FALSE}.
+#' @param missing An optional numeric value or a named list of numeric values 
+#'   to use if a model does not contain a parameter for which posterior samples 
+#'   should be averaged. Defaults to \code{NULL}, in which case only those
+#'   parameters can be averaged that are present in all of the models.
 #' 
-#' @return As \code{data.frame} or \code{matrix} of posterior samples.
+#' @return A \code{data.frame} of posterior samples. Samples are rows
+#'   and parameters are columns.
+#' 
+#' @details Weights are computed with the \code{\link{model_weights}} method.
+#' 
+#' @seealso \code{\link{model_weights}}, \code{\link{pp_average}}
 #'   
 #' @examples 
 #' \dontrun{

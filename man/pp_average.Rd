@@ -65,6 +65,9 @@ Weighting can be done in various ways, for instance using
 Akaike weights based on information criteria or 
 marginal likelihoods.
 }
+\details{
+Weights are computed with the \code{\link{model_weights}} method.
+}
 \examples{
 \dontrun{
 # model with 'treat' as predictor
@@ -83,4 +86,7 @@ pp_average(fit1, fit2, newdata = df)
 pp_average(fit1, fit2, method = "fitted", newdata = df)
 }
 
+}
+\seealso{
+\code{\link{model_weights}}, \code{\link{posterior_average}}
 }
