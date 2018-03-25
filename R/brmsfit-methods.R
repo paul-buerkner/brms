@@ -3059,5 +3059,6 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL, model_names = NULL) {
   for (i in seq_along(models)) {
     bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), args))
   }
-  do.call(post_prob, c(bs, nlist(prior_prob)))
+  model_names <- names(models)
+  do.call(post_prob, c(bs, nlist(prior_prob, model_names)))
 }
