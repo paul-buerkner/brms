@@ -24,7 +24,7 @@
 #'  the grouping factor given in \code{"group"}, based on the 
 #'  output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 #'  respectively.
-#' @param seed A single numeric value passed to \code{set.seed} 
+#' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'  to make results reproducible.
 #' @param ... Currently ignored.
 #' 

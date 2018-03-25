@@ -42,7 +42,7 @@ respectively.}
 \item{alpha}{The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).}
 
-\item{seed}{A single numeric value passed to \code{set.seed} 
+\item{seed}{A single numeric value passed to \code{\link{set.seed}}
 to make results reproducible.}
 
 \item{...}{Currently ignored.}

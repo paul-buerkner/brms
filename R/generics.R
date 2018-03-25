@@ -419,6 +419,8 @@ model_weights <- function(x, ...) {
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
 #' @param nsamples Total number of posterior samples to use.
+#' @param seed A single numeric value passed to \code{\link{set.seed}}
+#'   to make results reproducible.
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.

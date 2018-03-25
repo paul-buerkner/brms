@@ -1959,8 +1959,12 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
 #' @export
 posterior_average.brmsfit <- function(
   x, ..., pars = NULL, weights = "loo2", nsamples = NULL,
-  missing = NULL, model_names = NULL, control = list()
+  missing = NULL, model_names = NULL, control = list(),
+  seed = NULL
 ) {
+  if (!is.null(seed)) {
+    set.seed(seed) 
+  }
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   pars_list <- lapply(models, parnames)
   all_pars <- unique(unlist(pars_list))
@@ -2046,8 +2050,11 @@ posterior_average.brmsfit <- function(
 pp_average.brmsfit <- function(
   x, ..., weights = "loo2", method = c("predict", "fitted", "residuals"),
   nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
-  model_names = NULL, control = list()
+  model_names = NULL, control = list(), seed = NULL
 ) {
+  if (!is.null(seed)) {
+    set.seed(seed) 
+  }
   method <- match.arg(method)
   if ("subset" %in% names(list(...))) {
     stop2("Cannot use argument 'subset' in pp_average.")

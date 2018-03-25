@@ -8,7 +8,7 @@
 \method{pp_average}{brmsfit}(x, ..., weights = "loo2", method = c("predict",
   "fitted", "residuals"), nsamples = NULL, summary = TRUE,
   probs = c(0.025, 0.975), robust = FALSE, model_names = NULL,
-  control = list())
+  control = list(), seed = NULL)
 
 pp_average(x, ...)
 }
@@ -55,6 +55,9 @@ values as model names.}
 
 \item{control}{Optional \code{list} of further arguments 
 passed to the function specified in \code{weights}.}
+
+\item{seed}{A single numeric value passed to \code{\link{set.seed}}
+to make results reproducible.}
 }
 \value{
 Same as the output of the method specified 

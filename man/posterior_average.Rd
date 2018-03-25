@@ -6,7 +6,8 @@
 \title{Posterior samples of parameters averaged across models}
 \usage{
 \method{posterior_average}{brmsfit}(x, ..., pars = NULL, weights = "loo2",
-  nsamples = NULL, missing = NULL, model_names = NULL, control = list())
+  nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
+  seed = NULL)
 
 posterior_average(x, ...)
 }
@@ -46,6 +47,9 @@ values as model names.}
 
 \item{control}{Optional \code{list} of further arguments 
 passed to the function specified in \code{weights}.}
+
+\item{seed}{A single numeric value passed to \code{\link{set.seed}}
+to make results reproducible.}
 }
 \value{
 A \code{data.frame} of posterior samples. Samples are rows
