@@ -2002,9 +2002,9 @@ posterior_average.brmsfit <- function(
         stop2("Argument 'missing' has no value for parameters ",
               collapse_comma(inv_pars), ".")
       }
-      missing <- lapply(missing, as_one_numeric)
+      missing <- lapply(missing, as_one_numeric, allow_na = TRUE)
     } else {
-      missing <- as_one_numeric(missing)
+      missing <- as_one_numeric(missing, allow_na = TRUE)
       missing <- named_list(pars, missing)
     }
   }
