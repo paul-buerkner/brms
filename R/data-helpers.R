@@ -479,6 +479,11 @@ extract_old_standata <- function(x, data, ...) {
 }
 
 #' @export
+extract_old_standata.default <- function(x, data, ...) {
+  NULL
+}
+
+#' @export
 extract_old_standata.mvbrmsterms <- function(x, data, ...) {
   out <- named_list(names(x$responses))
   for (i in seq_along(out)) {

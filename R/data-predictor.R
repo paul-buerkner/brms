@@ -72,6 +72,10 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
+  if (is_nlpar(x)) {
+    # no data needs to be specified for nested nlpars
+    return(out)
+  }
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != ncol(C)) {
     stop2("Factors with more than two levels are not allowed as covariates.")

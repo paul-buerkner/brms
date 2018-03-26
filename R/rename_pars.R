@@ -32,6 +32,11 @@ change_effects <- function(x, ...) {
 }
 
 #' @export
+change_effects.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 change_effects.mvbrmsterms <- function(x, pars, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {

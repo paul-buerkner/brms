@@ -26,6 +26,7 @@
       via \code{mmc} terms. (#353)
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
+      \item Specify nested non-linear formulas.
     }
   }
   \subsection{OTHER CHANGES}{

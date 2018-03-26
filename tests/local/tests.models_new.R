@@ -281,24 +281,27 @@ test_that("generalized multivariate models work correctly", {
 })
 
 test_that("ZI and HU models work correctly", {
-  fit_hu <- brm(bf(count ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient),
-                   hu ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient)),
-                data = epilepsy, family = hurdle_poisson(),
-                prior = c(prior(normal(0, 5)),
-                          prior(normal(0, 5), dpar = "hu")),
-                chains = 2, cores = 2)
+  fit_hu <- brm(
+    bf(count ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient),
+       hu ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient)),
+    data = epilepsy, family = hurdle_poisson(),
+    prior = c(prior(normal(0, 5)),
+              prior(normal(0, 5), dpar = "hu")),
+    chains = 2, cores = 2
+  )
   print(fit_hu)
   expect_equal(dim(predict(fit_hu)), c(nobs(fit_hu), 4))
   expect_ggplot(plot(marginal_effects(fit_hu), ask = FALSE)[[2]])
 
-  fit_zi <- brm(bf(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
-                   zi ~ Trt),
-                data = epilepsy, family = zero_inflated_negbinomial(),
-                prior = prior(normal(0,5)) +
-                  prior(normal(0,3), class = "sd") +
-                  prior(cauchy(0,5), class = "shape") +
-                  prior(normal(0,5), dpar = "zi") ,
-                chains = 2, cores = 2)
+  fit_zi <- brm(
+    bf(count ~ log_Age_c + log_Base4_c * Trt + (1|patient), zi ~ Trt),
+    data = epilepsy, family = zero_inflated_negbinomial(),
+    prior = prior(normal(0,5)) +
+      prior(normal(0,3), class = "sd") +
+      prior(cauchy(0,5), class = "shape") +
+      prior(normal(0,5), dpar = "zi") ,
+    chains = 2, cores = 2
+  )
   print(fit_zi)
   expect_equal(dim(predict(fit_zi)), c(nobs(fit_zi), 4))
   expect_ggplot(plot(marginal_effects(fit_zi), ask = FALSE)[[2]])
@@ -309,9 +312,11 @@ test_that("ZI and HU models work correctly", {
   data("GasolineYield", package = "betareg")
   dat <- GasolineYield
   dat$yield[c(1, 5, 8, 12, 16)] <- 0
-  fit_zibeta <- brm(yield ~ batch + temp, data = dat,
-                    family = zero_inflated_beta(),
-                    chains = 2, cores = 2, inits = 0)
+  fit_zibeta <- brm(
+    yield ~ batch + temp, data = dat,
+    family = zero_inflated_beta(),
+    chains = 2, cores = 2, inits = 0
+  )
   print(fit_zibeta)
   expect_equal(dim(predict(fit_zibeta)), c(nobs(fit_zibeta), 4))
   expect_ggplot(plot(marginal_effects(fit_zibeta), ask = FALSE)[[1]])
@@ -321,20 +326,22 @@ test_that("ZI and HU models work correctly", {
 test_that("Non-linear models work correctly", {
   load("tests/local/data/loss.Rda")
   head(loss)
-  fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-                     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
-                     nl = TRUE),
-                  data = loss, family = gaussian(),
-                  prior = c(prior(normal(5000, 1000), nlpar = "ult"),
-                            prior(normal(1, 2), nlpar = "omega"),
-                            prior(normal(45, 10), nlpar = "theta")),
-                  control = list(adapt_delta = 0.9))
+  fit_loss <- brm(
+    bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+       ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+       nl = TRUE),
+    data = loss, family = gaussian(),
+    prior = c(prior(normal(5000, 1000), nlpar = "ult"),
+              prior(normal(1, 2), nlpar = "omega"),
+              prior(normal(45, 10), nlpar = "theta")),
+    control = list(adapt_delta = 0.9)
+  )
   print(fit_loss)
   expect_ggplot(plot(marginal_effects(fit_loss))[[1]])
   expect_range(LOO(fit_loss)$looic, 700, 720)
 })
 
-test_that("Non-linear models of auxiliary parameters work correctly", {
+test_that("Non-linear models of distributional parameters work correctly", {
   x <- rnorm(100)
   y <- rnorm(100, 1, exp(x))
   dat <- data.frame(y, x, g = rep(1:10, each = 10))
@@ -347,6 +354,24 @@ test_that("Non-linear models of auxiliary parameters work correctly", {
   expect_ggplot(plot(marginal_effects(fit, method = "predict"), ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
   expect_range(LOO(fit)$looic, 240, 350)
+})
+
+test_that("Nested non-linear models work correctly", {
+  dat <- data.frame(x = rnorm(100), z = 1:5)
+  dat$y <- 0.3 + 0.7 * brms:::inv_logit(2 * dat$x)
+  bform <- bf(
+    y ~ lb + (1 - lb) * inv_logit(b * x),
+    b + a ~ 1 + (1 | z), nlf(lb ~ inv_logit(a)),
+    nl = TRUE
+  )
+  bprior <- prior(normal(0, 1), nlpar = "a") +
+    prior(normal(0, 1), nlpar = "b")
+  fit <- brm(bform, dat, prior = bprior, family = Beta())
+  print(fit)
+  
+  me <- marginal_effects(fit)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_range(bayes_R2(fit)[, 1], 0.2, 0.55)
 })
 
 test_that("Multivariate GAMMs work correctly", {

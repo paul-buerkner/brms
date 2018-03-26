@@ -4,6 +4,11 @@ extract_draws <- function(x, ...) {
 }
 
 #' @export
+extract_draws.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
                                   sample_new_levels = "uncertainty",
                                   incl_autocor = TRUE, resp = NULL,
@@ -138,7 +143,15 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 
 #' @export
 extract_draws.btnl <- function(x, samples, sdata, ...) {
-  draws <- list(f = x$family, nsamples = nrow(samples), nobs = sdata$N)
+  draws <- list(
+    f = x$family, nlform = x$formula[[2]],
+    nsamples = nrow(samples), nobs = sdata$N
+  )
+  class(draws) <- "bdrawsnl"
+  if (is_nlpar(x)) {
+    draws$nlpar <- x$nlpar
+    return(draws)
+  }
   nlpars <- names(x$nlpars)
   for (nlp in nlpars) {
     draws$nlpars[[nlp]] <- extract_draws(
@@ -153,8 +166,6 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
       C[, cov], dim = c(nrow(samples), nrow(C))
     )
   }
-  draws$nlform <- x$formula[[2]]
-  draws$f <- x$family
   draws
 }
 
@@ -162,12 +173,13 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
 extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
   nsamples <- nrow(samples)
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
+  class(draws) <- "bdrawsl"
   args <- nlist(bterms = x, samples, sdata, ...)
   draws$fe <- do.call(extract_draws_fe, args)
   draws$sm <- do.call(extract_draws_sm, args)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
-    return(structure(draws, predicted = TRUE))
+    return(draws)
   }
   draws$sp <- do.call(extract_draws_sp, args)
   draws$cs <- do.call(extract_draws_cs, args)
@@ -177,7 +189,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
   if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
     draws$ac <- do.call(extract_draws_autocor, args)
   }
-  structure(draws, predicted = TRUE)
+  draws
 }
 
 extract_draws_fe <- function(bterms, samples, sdata, ...) {
@@ -798,3 +810,13 @@ is.brmsdraws <- function(x) {
 is.mvbrmsdraws <- function(x) {
   inherits(x, "mvbrmsdraws")
 }
+
+is.bdrawsl <- function(x) {
+  inherits(x, "bdrawsl")
+}
+
+is.bdrawsnl <- function(x) {
+  inherits(x, "bdrawsnl")
+}
+
+

@@ -494,6 +494,11 @@ prior_effects <- function(x, ...) {
   UseMethod("prior_effects")
 }
 
+#' @export
+prior_effects.default <- function(x, ...) {
+  empty_brmsprior()
+}
+
 prior_effects.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior <- empty_brmsprior()
   for (i in seq_along(x$terms)) {
@@ -1139,9 +1144,8 @@ check_prior_special <- function(x, ...) {
 }
 
 #' @export
-check_prior_special.default <- function(x, ...) {
-  # invalid class will result in an empty brmsprior object
-  check_prior_special(empty_brmsprior(), ...)
+check_prior_special.default <- function(x, prior = empty_brmsprior(), ...) {
+  prior
 }
 
 #' @export

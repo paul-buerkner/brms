@@ -410,11 +410,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   stopifnot(!is.null(x))
   if (is.list(x)) {
     # compute samples of a predicted parameter
-    if (!is.null(x$nlpars)) {
-      out <- nonlinear_predictor(x, i = i, fdraws = draws)
-    } else {
-      out <- linear_predictor(x, i = i, fdraws = draws)
-    }
+    out <- predictor(x, i = i, fdraws = draws)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = draws$f)
     }
