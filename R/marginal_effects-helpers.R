@@ -283,8 +283,8 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 
 #' @export
 marginal_effects_internal.brmsterms <- function(
-  x, fit, marg_data, int_conditions, method, 
-  surface, spaghetti, ordinal, probs, robust, ...
+  x, fit, marg_data, int_conditions, method, surface, 
+  spaghetti, ordinal, probs, robust, dpar = NULL, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))
@@ -294,8 +294,8 @@ marginal_effects_internal.brmsterms <- function(
   ordinal <- ordinal && is_ordinal(x$family)
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
-    incl_autocor = FALSE, summary = FALSE, 
-    resp = if (nzchar(x$resp)) x$resp, ...
+    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
+    incl_autocor = FALSE, summary = FALSE, ...
   )
   out <- do.call(method, pred_args)
   if (is_ordinal(x$family) && !ordinal && method == "fitted") {
@@ -348,8 +348,9 @@ marginal_effects_internal.brmsterms <- function(
     colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   }
   out <- cbind(marg_data, out)
+  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
   attr(out, "effects") <- c(eff, if (ordinal) "cats__")
-  attr(out, "response") <- as.character(x$formula[2])
+  attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
   attr(out, "ordinal") <- ordinal
   attr(out, "spaghetti") <- spaghetti_data
