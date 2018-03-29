@@ -724,7 +724,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   )
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
-    if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
+    if (any(Rhats > 1.1, na.rm = TRUE)) {
       warning2(
         "The model has not converged (some Rhats are > 1.1). ",
         "Do not analyse the results! \nWe recommend running ", 
