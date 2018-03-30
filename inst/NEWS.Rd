@@ -27,6 +27,8 @@
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
       \item Specify nested non-linear formulas.
+      \item Introduce function \code{make_conditions} to ease 
+      preparation of conditions for \code{marginal_effects}.
     }
   }
   \subsection{OTHER CHANGES}{

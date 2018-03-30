@@ -689,6 +689,7 @@ stanplot <- function(object, ...) {
 #'   be plotted separately for each row of \code{data}. 
 #'   The row names of \code{data} will be treated as titles of the subplots. 
 #'   It is recommended to only define a few rows in order to keep the plots clear.
+#'   See \code{\link{make_conditions}} for an easy way to define conditions.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
 #'   by using their means and factors will get their reference level assigned.
 #' @param int_conditions An optional named \code{list} whose elements are numeric

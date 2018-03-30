@@ -102,6 +102,66 @@ get_int_vars.brmsterms <- function(x, ...) {
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
+#' Prepare Fully Crossed Conditions
+#' 
+#' This is a helper function to prepare fully crossed conditions primarily 
+#' for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+#' 
+#' @param x An \R object from which to extract the variables
+#'   that should be part of the conditions.
+#' @param vars Names of the variables that should be part of the conditions.
+#' @param show_vars Logical; indicates if variables names should be 
+#'   part of the rownames of the output. Defaults to \code{FALSE}.
+#' @param sep A single character string defining the separator
+#'   used in the rownames of the output.
+#' @param ... Currently unused.
+#' 
+#' @return A \code{data.frame} where each row indicates a condition.
+#' 
+#' @details For factor like variables, all levels are used as conditions.
+#'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
+#'   
+#' @seealso \code{\link{marginal_effects}}
+#'   
+#' @examples
+#' df <- data.frame(x = c("a", "b"), y = rnorm(10))
+#' make_conditions(df, vars = c("x", "y"))
+#'
+#' @export
+make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
+  vars <- as.character(vars)
+  show_vars <- as_one_logical(show_vars)
+  sep <- as_one_character(sep)
+  if (!is.data.frame(x) && "data" %in% names(x)) {
+    x <- x$data
+  }
+  x <- as.data.frame(x)
+  out <- rnames <-named_list(vars)
+  for (v in vars) {
+    tmp <- get(v, x)
+    if (is_like_factor(tmp)) {
+      tmp <- levels(tmp)
+    } else {
+      tmp <- mean(tmp, na.rm = TRUE) + (-1:1) * sd(tmp, na.rm = TRUE)
+    }
+    out[[v]] <- tmp
+  }
+  out <- rnames <- expand.grid(out)
+  for (i in seq_along(rnames)) {
+    if (!is_like_factor(rnames[[i]])) {
+      rnames[[i]] <- round(rnames[[i]], 2)
+    }
+    if (show_vars) {
+      rnames[[i]] <- paste0(names(rnames)[i], ":", rnames[[i]])
+    }
+  }
+  paste_sep <- function(..., sep__ = sep) {
+    paste(..., sep = sep__)
+  }
+  rownames(out) <- Reduce(paste_sep, rnames)
+  out
+}
+
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   # prepare conditions for use in marginal_effects
