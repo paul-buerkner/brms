@@ -52,6 +52,11 @@ marginal_smooths_internal <- function(x, ...) {
 }
 
 #' @export
+marginal_smooths_internal.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 marginal_smooths_internal.mvbrmsterms <- function(x, ...) {
   out <- list()
   for (r in names(x$terms)) {
@@ -153,7 +158,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       draws$fe$X <- draws$fe$X[, scs, drop = FALSE]
       draws$fe$b <- draws$fe$b[, scs, drop = FALSE]
       draws$sm <- draws$sm[J]
-      eta <- linear_predictor(draws, i = NULL)
+      eta <- predictor(draws, i = NULL)
       spa_data <- NULL
       if (spaghetti && ncovars == 1L) {
         sample <- rep(seq_len(nrow(eta)), each = ncol(eta))

@@ -31,6 +31,9 @@
       via \code{mmc} terms. (#353)
       \item Fit shifted log-normal models via
       family \code{shifted_lognormal}. (#218)
+      \item Specify nested non-linear formulas.
+      \item Introduce function \code{make_conditions} to ease 
+      preparation of conditions for \code{marginal_effects}.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -72,6 +75,8 @@
       the GitHub user philj1s. (#375)
       \item Fix a rare error when post-processing \code{binomial} 
       models thanks to the GitHub user SeanH94. (#382)
+      \item Keep attributes of variables when preparing the 
+      \code{model.frame} thanks to Daniel Luedecke. (#393)
     }
   }
 }

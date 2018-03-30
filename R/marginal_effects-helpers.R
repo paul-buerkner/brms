@@ -16,6 +16,7 @@
 #'   be plotted separately for each row of \code{data}. 
 #'   The row names of \code{data} will be treated as titles of the subplots. 
 #'   It is recommended to only define a few rows in order to keep the plots clear.
+#'   See \code{\link{make_conditions}} for an easy way to define conditions.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
 #'   by using their means and factors will get their reference level assigned.
 #' @param int_conditions An optional named \code{list} whose elements are numeric
@@ -242,6 +243,11 @@ get_all_effects <- function(x, ...) {
 }
 
 #' @export
+get_all_effects.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 get_all_effects.mvbrmsterms <- function(x, ...) {
   out <- lapply(x$terms, get_all_effects, ...)
   unique(unlist(out, recursive = FALSE))
@@ -315,6 +321,66 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 get_int_vars.brmsterms <- function(x, ...) {
   advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all.vars)
   unique(c(advars, get_sp_vars(x, "mo")))
+}
+
+#' Prepare Fully Crossed Conditions
+#' 
+#' This is a helper function to prepare fully crossed conditions primarily 
+#' for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+#' 
+#' @param x An \R object from which to extract the variables
+#'   that should be part of the conditions.
+#' @param vars Names of the variables that should be part of the conditions.
+#' @param show_vars Logical; indicates if variables names should be 
+#'   part of the rownames of the output. Defaults to \code{FALSE}.
+#' @param sep A single character string defining the separator
+#'   used in the rownames of the output.
+#' @param ... Currently unused.
+#' 
+#' @return A \code{data.frame} where each row indicates a condition.
+#' 
+#' @details For factor like variables, all levels are used as conditions.
+#'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
+#'   
+#' @seealso \code{\link{marginal_effects}}
+#'   
+#' @examples
+#' df <- data.frame(x = c("a", "b"), y = rnorm(10))
+#' make_conditions(df, vars = c("x", "y"))
+#'
+#' @export
+make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
+  vars <- as.character(vars)
+  show_vars <- as_one_logical(show_vars)
+  sep <- as_one_character(sep)
+  if (!is.data.frame(x) && "data" %in% names(x)) {
+    x <- x$data
+  }
+  x <- as.data.frame(x)
+  out <- rnames <-named_list(vars)
+  for (v in vars) {
+    tmp <- get(v, x)
+    if (is_like_factor(tmp)) {
+      tmp <- levels(tmp)
+    } else {
+      tmp <- mean(tmp, na.rm = TRUE) + (-1:1) * sd(tmp, na.rm = TRUE)
+    }
+    out[[v]] <- tmp
+  }
+  out <- rnames <- expand.grid(out)
+  for (i in seq_along(rnames)) {
+    if (!is_like_factor(rnames[[i]])) {
+      rnames[[i]] <- round(rnames[[i]], 2)
+    }
+    if (show_vars) {
+      rnames[[i]] <- paste0(names(rnames)[i], ":", rnames[[i]])
+    }
+  }
+  paste_sep <- function(..., sep__ = sep) {
+    paste(..., sep = sep__)
+  }
+  rownames(out) <- Reduce(paste_sep, rnames)
+  out
 }
 
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
@@ -498,8 +564,8 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 
 #' @export
 marginal_effects_internal.brmsterms <- function(
-  x, fit, marg_data, int_conditions, method, 
-  surface, spaghetti, ordinal, probs, robust, ...
+  x, fit, marg_data, int_conditions, method, surface, 
+  spaghetti, ordinal, probs, robust, dpar = NULL, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))
@@ -509,8 +575,8 @@ marginal_effects_internal.brmsterms <- function(
   ordinal <- ordinal && is_ordinal(x$family)
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
-    incl_autocor = FALSE, summary = FALSE, 
-    resp = if (nzchar(x$resp)) x$resp, ...
+    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
+    incl_autocor = FALSE, summary = FALSE, ...
   )
   out <- do.call(method, pred_args)
   if (is_ordinal(x$family) && !ordinal && method == "fitted") {
@@ -563,8 +629,9 @@ marginal_effects_internal.brmsterms <- function(
     colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   }
   out <- cbind(marg_data, out)
+  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
   attr(out, "effects") <- c(eff, if (ordinal) "cats__")
-  attr(out, "response") <- as.character(x$formula[2])
+  attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
   attr(out, "ordinal") <- ordinal
   attr(out, "spaghetti") <- spaghetti_data

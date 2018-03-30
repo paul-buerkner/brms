@@ -261,6 +261,11 @@ get_re <- function(x, ...) {
 }
 
 #' @export
+get_re.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 get_re.brmsterms <- function(x, all = TRUE, ...) {
   # get group-level information in a data.frame
   # Args:

@@ -96,3 +96,10 @@ test_that(".predictor_arma runs without errors", {
   expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ma = ma))
   expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ar = ar, ma = ma))
 })
+
+test_that("make_conditions works correctly", {
+  conds <- make_conditions(epilepsy, c("log_Base4_c", "log_Age_c"))
+  expect_equal(dim(conds), c(9, 2))
+  expect_equal(rownames(conds)[3], "0.75 | -0.22")
+})
+

@@ -4,6 +4,11 @@ extract_draws <- function(x, ...) {
 }
 
 #' @export
+extract_draws.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
                                   sample_new_levels = "uncertainty",
                                   incl_autocor = TRUE, resp = NULL,
@@ -138,10 +143,15 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 
 #' @export
 extract_draws.btnl <- function(x, samples, sdata, ...) {
-  # Args:
-  #   C: matrix containing covariates
-  #   ...: passed to extract_draws.btl
-  draws <- list(f = x$family, nsamples = nrow(samples), nobs = sdata$N)
+  draws <- list(
+    f = x$family, nlform = x$formula[[2]],
+    nsamples = nrow(samples), nobs = sdata$N
+  )
+  class(draws) <- "bdrawsnl"
+  if (is_nlpar(x)) {
+    draws$nlpar <- x$nlpar
+    return(draws)
+  }
   nlpars <- names(x$nlpars)
   for (nlp in nlpars) {
     draws$nlpars[[nlp]] <- extract_draws(
@@ -156,29 +166,20 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
       C[, cov], dim = c(nrow(samples), nrow(C))
     )
   }
-  draws$nlform <- x$formula[[2]]
-  draws$f <- x$family
   draws
 }
 
 #' @export
 extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
-  # extract draws of all kinds of effects
-  # Args:
-  #   fit: a brmsfit object
-  #   mv: is the model multivariate?
-  #   ...: further elements to store in draws
-  #   other arguments: see extract_draws.brmsfit
-  # Returns:
-  #   A named list to be interpreted by linear_predictor
   nsamples <- nrow(samples)
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
+  class(draws) <- "bdrawsl"
   args <- nlist(bterms = x, samples, sdata, ...)
   draws$fe <- do.call(extract_draws_fe, args)
   draws$sm <- do.call(extract_draws_sm, args)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
-    return(structure(draws, predicted = TRUE))
+    return(draws)
   }
   draws$sp <- do.call(extract_draws_sp, args)
   draws$cs <- do.call(extract_draws_cs, args)
@@ -188,18 +189,11 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
   if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
     draws$ac <- do.call(extract_draws_autocor, args)
   }
-  structure(draws, predicted = TRUE)
+  draws
 }
 
 extract_draws_fe <- function(bterms, samples, sdata, ...) {
   # extract draws of ordinary population-level effects
-  # Args:
-  #   fixef: names of the population-level effects
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   nlpar: name of a non-linear parameter
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
-  # stopifnot("x" %in% names(args))
   draws <- list()
   p <- usc(combine_prefix(bterms))
   X <- sdata[[paste0("X", p)]]
@@ -215,10 +209,6 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
 extract_draws_sp <- function(bterms, samples, sdata, data, 
                              meef, new = FALSE, ...) {
   # extract draws of special effects terms
-  # Args:
-  #   meef: output of tidy_meef()
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (is.null(spef)) {
@@ -350,15 +340,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
 }
 
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
-  # category specific effects 
   # extract draws of category specific effects
-  # Args:
-  #   csef: names of the category specific effects
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   nlpar: name of a non-linear parameter
-  #   old_cat: see old_categorical
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
   draws <- list()
   p <- usc(combine_prefix(bterms))
   resp <- usc(bterms$resp)
@@ -379,13 +361,6 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
 
 extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
   # extract draws of smooth terms
-  # Args:
-  #   smooths: names of the smooth terms
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   sdata: list returned by make_standata
-  #   nlpar: name of a non-linear parameter
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
   smooths <- get_sm_labels(bterms, data, covars = TRUE)
   if (!length(smooths)) {
     return(list())
@@ -408,9 +383,11 @@ extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
 extract_draws_gp <- function(bterms, samples, sdata, data,
                              new = FALSE, nug = NULL,
                              old_sdata = NULL, ...) {
-  # extract draws for gaussian processes
+  # extract draws for Gaussian processes
   # Args:
-  #   gpef: names of the gaussian process terms
+  #   new: Is new data used?
+  #   nug: small numeric value to avoid numerical problems in GPs
+  #   old_sdata: standata object based on the original data
   gpef <- get_gp_labels(bterms, data, covars = TRUE)
   if (!length(gpef)) {
     return(list()) 
@@ -460,12 +437,8 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
                              sample_new_levels = "uncertainty", ...) {
   # extract draws of group-level effects
   # Args:,
-  #   ranef: data.frame returned by tidy_ranef
-  #   args: list of arguments passed to as.matrix.brmsfit
-  #   sdata: list returned by make_standata
-  #   sample_new_levels: see help("predict.brmsfit")
-  # Returns: 
-  #   A named list to be interpreted by linear_predictor
+  #   ranef: output of tidy_ranef based on the new formula and old data
+  #   old_ranef: same as 'ranef' but based on the original formula
   draws <- list()
   px <- check_prefix(bterms)
   ranef <- subset2(ranef, ls = px)
@@ -806,8 +779,8 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   # Args:
   #   A: matrix to be expanded
   #   x: levels to expand the matrix
+  #   max_level: maximal number of levels that x can take on
   #   weights: weights to apply to rows of A before expanding
-  #   nlevels: number of levels that x can take on
   # Returns:
   #   A sparse matrix of dimension nrow(A) x (ncol(A) * max_level)
   stopifnot(is.matrix(A))
@@ -837,4 +810,13 @@ is.brmsdraws <- function(x) {
 is.mvbrmsdraws <- function(x) {
   inherits(x, "mvbrmsdraws")
 }
+
+is.bdrawsl <- function(x) {
+  inherits(x, "bdrawsl")
+}
+
+is.bdrawsnl <- function(x) {
+  inherits(x, "bdrawsnl")
+}
+
 

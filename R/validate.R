@@ -241,41 +241,54 @@ parse_lf <- function(formula, family = NULL) {
   structure(y, class = "btl")
 }
 
-parse_nlf <- function(formula, nlpar_forms, dpar, resp = "") {
+parse_nlf <- function(formula, nlpar_forms, dpar = "mu", 
+                      resp = "", is_nlpar = FALSE) {
   # parse non-linear formulas
   # Args:
   #   formula: formula of the non-linear model
-  #   nlpar_forms: a list for formulas specifying linear predictors 
-  #                for non-linear parameters
+  #   nlpar_forms: a list for formulas specifying linear 
+  #     predictors for non-linear parameters
+  #   is_nlpar: Is this a nested non-linear formula?
   # Returns:
   #   object of class 'btnl'
   stopifnot(is.list(nlpar_forms))
   stopifnot(length(dpar) == 1L)
+  if (!length(nlpar_forms)) {
+    stop2("No non-linear parameters specified.")
+  }
+  is_nlpar <- as_one_logical(is_nlpar)
   formula <- rhs(as.formula(formula))
-  y <- list()
-  if (length(nlpar_forms)) {
-    y$formula <- formula
-    nlpars <- names(nlpar_forms)
-    y$nlpars <- named_list(nlpars)
+  y <- nlist(formula)
+  nlpars <- names(nlpar_forms)
+  y$nlpars <- named_list(nlpars)
+  if (!is_nlpar) {
     for (nlp in nlpars) {
-      y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
+      if (get_nl(nlpar_forms[[nlp]])) {
+        take <- !names(nlpar_forms) %in% nlp
+        y$nlpars[[nlp]] <- parse_nlf(
+          nlpar_forms[[nlp]], nlpar_forms[take], is_nlpar = TRUE
+        )     
+      } else {
+        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]]) 
+      }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$dpar <- dpar
       y$nlpars[[nlp]]$resp <- resp
     }
-    model_vars <- all.vars(formula)
-    missing_pars <- setdiff(names(y$nlpars), model_vars)
-    if (length(missing_pars)) {
-      stop2("Some non-linear parameters are missing in formula: ", 
-            collapse_comma(missing_pars))
+  }
+  covars <- setdiff(all.vars(formula), nlpars)
+  covars <- unique(c(covars, ulapply(y$nlpars, "[[", "covars")))
+  y$covars <- structure(str2formula(covars), rsv_intercept = TRUE)
+  lformula <- c(covars, lapply(y$nlpars, "[[", "allvars"))
+  y$allvars <- allvars_formula(lformula)
+  environment(y$allvars) <- environment(formula)
+  for (nlp in names(y$nlpars)) {
+    # make sure that nested non-linear parameters 
+    # are aware of all data variables
+    if (is.btnl(y$nlpars[[nlp]])) {
+      y$nlpars[[nlp]]$covars <- y$covars
+      y$nlpars[[nlp]]$allvars <- y$allvars
     }
-    covars <- str2formula(setdiff(all.vars(formula), nlpars))
-    y$covars <- structure(covars, rsv_intercept = TRUE)
-    lformula <- c(covars, lapply(y$nlpars, "[[", "allvars"))
-    y$allvars <- allvars_formula(lformula)
-    environment(y$allvars) <- environment(formula)
-  } else {
-    stop2("No non-linear parameters specified.")
   }
   structure(y, class = "btnl")
 }
@@ -738,9 +751,18 @@ plus_rhs <- function(x) {
   out
 }
 
+is_nlpar <- function(x) {
+  !is.null(x[["nlpar"]])
+}
+
 get_effect <- function(x, ...) {
   # extract various kind of effects
   UseMethod("get_effect")
+}
+
+#' @export
+get_effect.default <- function(x, ...) {
+  NULL
 }
 
 #' @export

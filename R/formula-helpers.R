@@ -19,6 +19,8 @@
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
 #'  but setting it to \code{TRUE} is usually the better choice.
+#' @param scale Logical; Indicates whether weights should be scaled
+#'  so that the average weight equals one. Defaults to \code{FALSE}.
 #' @param y2 A vector specifying the upper bounds in interval censoring.
 #' @param lb A numeric vector or single numeric value specifying 
 #'   the lower truncation bound.
@@ -99,13 +101,17 @@ resp_se_no_data <- function(x, sigma = FALSE) {
 
 #' @rdname addition-terms
 #' @export
-resp_weights <- function(x) {
+resp_weights <- function(x, scale = FALSE) {
   # weights to be applied on any model
   if (!is.numeric(x)) {
     stop2("Weights must be numeric.")
   }
   if (min(x) < 0) {
     stop2("Weights must be non-negative.")
+  }
+  scale <- as_one_logical(scale)
+  if (scale) {
+    x <- x / sum(x) * length(x)
   }
   x
 }

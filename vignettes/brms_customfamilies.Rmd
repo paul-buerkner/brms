@@ -59,7 +59,7 @@ $$
 p_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)}
 $$
 
-where $\eta_i$ is the linear predictor term of observation $i$ (see `vignette(brms_overview)` for more details on linear predictors in **brms**). Predicting `incidence` by `period` and a varying intercept of `herd` is straight forward in **brms**:
+where $\eta_i$ is the linear predictor term of observation $i$ (see `vignette("brms_overview")` for more details on linear predictors in **brms**). Predicting `incidence` by `period` and a varying intercept of `herd` is straight forward in **brms**:
 
 ```{r fit1, results='hide'}
 fit1 <- brm(incidence | trials(size) ~ period + (1|herd), 

@@ -662,6 +662,22 @@ test_that("Stan code for non-linear models is correct", {
                "Priors on population-level effects are required")
 })
 
+test_that("Stan code for nested non-linear parameters is correct", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), z = 1:5)
+  bform <- bf(
+    y ~ lb + (1 - lb) * inv_logit(b * x),
+    b + a ~ 1 + (1 | z), nlf(lb ~ inv_logit(a / x)),
+    nl = TRUE
+  )
+  bprior <- prior(normal(0, 1), nlpar = "a") +
+   prior(normal(0, 1), nlpar = "b")
+  scode <- make_stancode(bform, dat, prior = bprior)
+  expect_match2(scode, "mu_lb[n] = inv_logit(mu_a[n] / C_1[n]);")
+  expect_match2(scode, 
+    "mu[n] = mu_lb[n] + (1 - mu_lb[n]) * inv_logit(mu_b[n] * C_1[n]);"
+  )
+})
+
 test_that("make_stancode accepts very long non-linear formulas", {
   data <- data.frame(y = rnorm(10), this_is_a_very_long_predictor = rnorm(10))
   expect_silent(make_stancode(bf(y ~ b0 + this_is_a_very_long_predictor + 

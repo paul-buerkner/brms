@@ -48,6 +48,11 @@ exclude_pars_internal <- function(x, ...) {
 }
 
 #' @export
+exclude_pars_internal.default <- function(x, ...) {
+  NULL
+}
+
+#' @export
 exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars, ...) {
   out <- c("Rescor", "Sigma")
   if (!save_all_pars) {

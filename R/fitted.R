@@ -35,10 +35,12 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
       stop2("Invalid argument 'dpar'. Valid distributional ",
             "parameters are: ", collapse_comma(dpars))
     }
-    if (!isTRUE(attr(draws$dpars[[dpar]], "predicted"))) {
+    predicted <- is.bdrawsl(draws$dpars[[dpar]]) ||
+      is.bdrawsnl(draws$dpars[[dpar]])
+    if (!predicted) {
       stop2("Distributional parameter '", dpar, "' was not predicted.")
     }
-    if (scale == "linear" && is.list(draws$dpars[[dpar]])) {
+    if (scale == "linear") {
       draws$dpars[[dpar]]$f$link <- "identity"
     }
     if (dpar_class(dpar) == "theta" && scale == "response") {

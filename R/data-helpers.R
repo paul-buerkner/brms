@@ -40,15 +40,13 @@ update_data <- function(data, bterms, na.action = na.omit2,
     stop2("The following variables are missing in 'data':\n",
           collapse_comma(missing_vars))
   }
+  for (v in intersect(vars_keep_na(bterms), names(data))) {
+    attr(data[[v]], "keep_na") <- TRUE
+  }
   data <- model.frame(
-    bterms$allvars, data, na.action = na.pass,
+    bterms$allvars, data, na.action = na.action,
     drop.unused.levels = drop.unused.levels
   )
-  nrow_with_na <- nrow(data)
-  data <- na.action(data, ignore = vars_keep_na(bterms))
-  if (nrow(data) != nrow_with_na) {
-    warning2("Rows containing NAs were excluded from the model")
-  }
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
@@ -476,6 +474,11 @@ extract_old_standata <- function(x, data, ...) {
   # helper function for validate_newdata to extract
   # old standata required for the computation of new standata
   UseMethod("extract_old_standata")
+}
+
+#' @export
+extract_old_standata.default <- function(x, data, ...) {
+  NULL
 }
 
 #' @export

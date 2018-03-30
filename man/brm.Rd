@@ -214,12 +214,12 @@ Fit a generalized (non-)linear multivariate multilevel model
   \bold{Formula syntax of brms models}
   
   Details of the formula syntax applied in \pkg{brms} 
-  can be found in \code{\link[brms:brmsformula]{brmsformula}}.
+  can be found in \code{\link{brmsformula}}.
   
   \bold{Families and link functions}
   
   Details of families supported by \pkg{brms} 
-  can be found in \code{\link[brms:brmsfamily]{brmsfamily}}.
+  can be found in \code{\link{brmsfamily}}.
   
   \bold{Prior distributions}
   
@@ -267,87 +267,96 @@ Fit a generalized (non-)linear multivariate multilevel model
 }
 \examples{
 \dontrun{ 
-## Poisson regression for the number of seizures in epileptic patients
-## using student_t priors for population-level effects 
-## and half cauchy priors for standard deviations of group-level effects 
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt  
-              + (1|patient) + (1|obs), 
-            data = epilepsy, family = poisson(), 
-            prior = c(prior(student_t(5,0,10), class = b),
-                      prior(cauchy(0,2), class = sd)))
-## generate a summary of the results
+# Poisson regression for the number of seizures in epileptic patients
+# using student_t priors for population-level effects 
+# and half cauchy priors for standard deviations of group-level effects
+bprior1 <- prior(student_t(5,0,10), class = b) + 
+  prior(cauchy(0,2), class = sd)
+fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+            data = epilepsy, family = poisson(), prior = bprior1)
+            
+# generate a summary of the results
 summary(fit1)
-## plot the MCMC chains as well as the posterior distributions
+
+# plot the MCMC chains as well as the posterior distributions
 plot(fit1, ask = FALSE)
-## extract random effects standard devations and covariance matrices
-VarCorr(fit1)
-## extract group specific effects of each level
-ranef(fit1)
-## predict responses based on the fitted model
+
+# predict responses based on the fitted model
 head(predict(fit1))  
-## plot marginal effects of each predictor
+
+# plot marginal effects for each predictor
 plot(marginal_effects(fit1), ask = FALSE)
-## investigate model fit
-WAIC(fit1)
+
+# investigate model fit
+LOO(fit1)
 pp_check(fit1)
- 
-## Ordinal regression modeling patient's rating of inhaler instructions 
-## category specific effects are estimated for variable 'treat'
+
+
+# Ordinal regression modeling patient's rating of inhaler instructions 
+# category specific effects are estimated for variable 'treat'
 fit2 <- brm(rating ~ period + carry + cs(treat), 
-            data = inhaler, family = sratio("cloglog"), 
+            data = inhaler, family = sratio("logit"), 
             prior = set_prior("normal(0,5)"), chains = 2)
 summary(fit2)
 plot(fit2, ask = FALSE) 
-WAIC(fit2)   
-head(predict(fit2))
+WAIC(fit2)
 
-## Survival regression modeling the time between the first 
-## and second recurrence of an infection in kidney patients.
+
+# Survival regression modeling the time between the first 
+# and second recurrence of an infection in kidney patients.
 fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
             data = kidney, family = lognormal())
 summary(fit3) 
 plot(fit3, ask = FALSE)
 plot(marginal_effects(fit3), ask = FALSE)   
 
-## Probit regression using the binomial family
-n <- sample(1:10, 100, TRUE)  # number of trials
-success <- rbinom(100, size = n, prob = 0.4)
+
+# Probit regression using the binomial family
+ntrials <- sample(1:10, 100, TRUE)
+success <- rbinom(100, size = ntrials, prob = 0.4)
 x <- rnorm(100)
-data4 <- data.frame(n, success, x)
-fit4 <- brm(success | trials(n) ~ x, data = data4,
+data4 <- data.frame(ntrials, success, x)
+fit4 <- brm(success | trials(ntrials) ~ x, data = data4,
             family = binomial("probit"))
 summary(fit4)
 
-## Simple non-linear gaussian model
+
+# Simple non-linear gaussian model
 x <- rnorm(100)
 y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
 data5 <- data.frame(x, y)
+bprior5 <- prior(normal(0, 2), nlpar = a1) +
+  prior(normal(0, 2), nlpar = a2)
 fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
-            data = data5,
-            prior = c(prior(normal(0, 2), nlpar = a1),
-                      prior(normal(0, 2), nlpar = a2)))
+            data = data5, prior = bprior5)
 summary(fit5)
 plot(marginal_effects(fit5), ask = FALSE)
 
-## Normal model with heterogeneous variances
-data_het <- data.frame(y = c(rnorm(50), rnorm(50, 1, 2)),
-                       x = factor(rep(c("a", "b"), each = 50)))
+
+# Normal model with heterogeneous variances
+data_het <- data.frame(
+  y = c(rnorm(50), rnorm(50, 1, 2)),
+  x = factor(rep(c("a", "b"), each = 50))
+)
 fit6 <- brm(bf(y ~ x, sigma ~ 0 + x), data = data_het)
 summary(fit6)
 plot(fit6)
 marginal_effects(fit6)
+
 # extract estimated residual SDs of both groups
 sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
 ggplot(stack(sigmas), aes(values)) + 
   geom_density(aes(fill = ind))
   
-## Quantile regression predicting the 25\%-quantile
+ 
+# Quantile regression predicting the 25\%-quantile
 fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het, 
             family = asym_laplace())
 summary(fit7)
 marginal_effects(fit7)
 
-## use the future package for parallelization
+
+# use the future package for more flexible parallelization
 library(future)
 plan(multiprocess)
 fit7 <- update(fit7, future = TRUE)
@@ -358,6 +367,9 @@ fit7 <- update(fit7, future = TRUE)
 Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
   Models Using Stan. Journal of Statistical Software, 80(1), 1-28. 
   doi:10.18637/jss.v080.i01
+  
+  Paul-Christian Buerkner (in review). Advanced Bayesian Multilevel Modeling 
+  with the R Package brms. arXiv preprint.
 }
 \seealso{
 \code{\link{brms}}, 
