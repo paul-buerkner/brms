@@ -294,30 +294,39 @@ collapse_comma <- function(...) {
   paste0(x, value)
 }
 
-na.omit2 <- function (object, ignore = NULL, ...) {
+na.omit2 <- function (object, ...) {
   # like stats:::na.omit.data.frame but allows to ignore variables
+  # keeps NAs in variables with attribute keep_na = TRUE 
   # Args:
   #  ignore: names of variables for which NAs should be kept
   stopifnot(is.data.frame(object))
   omit <- logical(nrow(object))
-  vars <- setdiff(names(object), ignore)
-  for (j in vars) {
+  for (j in seq_along(object)) {
     x <- object[[j]]
-    if (!is.atomic(x)) 
+    keep_na <- isTRUE(attr(x, "keep_na", TRUE))
+    if (!is.atomic(x) || keep_na) {
       next
+    } 
     x <- is.na(x)
     d <- dim(x)
-    if (is.null(d) || length(d) != 2L) 
+    if (is.null(d) || length(d) != 2L) {
       omit <- omit | x
-    else for (ii in 1L:d[2L]) omit <- omit | x[, ii]
+    } else {
+      for (ii in seq_len(d[2L])) {
+        omit <- omit | x[, ii]
+      } 
+    } 
   }
-  xx <- object[!omit, , drop = FALSE]
   if (any(omit > 0L)) {
+    out <- object[!omit, , drop = FALSE]
     temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
     attr(temp, "class") <- "omit"
-    attr(xx, "na.action") <- temp
+    attr(out, "na.action") <- temp
+    warning2("Rows containing NAs were excluded from the model.")
+  } else {
+    out <- object
   }
-  xx
+  out
 }
 
 require_package <- function(package) {

@@ -68,6 +68,8 @@
       the GitHub user philj1s. (#375)
       \item Fix a rare error when post-processing \code{binomial} 
       models thanks to the GitHub user SeanH94. (#382)
+      \item Keep attributes of variables when preparing the 
+      \code{model.frame} thanks to Daniel Luedecke. (#393)
     }
   }
 }
