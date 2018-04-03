@@ -27,7 +27,7 @@ test_that("Poisson model from brm doc works correctly", {
   expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
   # test kfold
-  kfold1 <- kfold(fit1, update_args = list(chains = 1, iter = 1000))
+  kfold1 <- kfold(fit1, chains = 1, iter = 1000)
   expect_range(kfold1$kfoldic, 1210, 1260)
 })
 
@@ -197,8 +197,7 @@ test_that("varying slopes without a fixed effect work", {
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
   expect_range(reloo1$estimates[3, 1], 1600, 1700)
-  up_args <- list(chains = 1, iter = 100)
-  reloo2 <- LOO(fit1, reloo = TRUE, update_args = up_args)
+  reloo2 <- LOO(fit1, reloo = TRUE, chains = 1, iter = 100)
   expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)

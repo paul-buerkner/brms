@@ -741,12 +741,12 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       Ksub <- unique(Ksub)
     }
   }
-  lppds <- vector("list", length(Ksub))
+  lppds <- pred_ids <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(
       list(), dim = c(length(Ksub), 2), 
       dimnames = list(NULL, c("fit", "omitted"))
-    )    
+    )
   }
   for (k in Ksub) {
     message("Fitting model ", k, " out of ", K)
@@ -759,6 +759,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
     ks <- match(k, Ksub)
+    pred_ids[[ks]] <- predicted
     lppds[[ks]] <- log_lik(
       fit_k, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE, resp = resp
@@ -768,6 +769,8 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     }
   }
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
+  # make sure elpds are put back in the right order
+  elpds <- elpds[order(unlist(pred_ids))]
   elpd_kfold <- sum(elpds)
   se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
   rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
