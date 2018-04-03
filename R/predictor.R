@@ -47,9 +47,13 @@ predictor.bdrawsnl <- function(draws, i = NULL, ...) {
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
   if (!is_nlpar(draws)) {
+    # nested non-linear parameters may depend on other 
+    # non-linear parameters and should thus come last
     nlpars <- names(draws$nlpars)
+    first <- ulapply(draws$nlpars, is.bdrawsl)
+    nlpars <- c(nlpars[first], nlpars[!first])
     covars <- names(draws$C)
-    args <- named_list(c(nlpars, covars))
+    args <- named_list(c(covars, nlpars))
     for (cov in covars) {
       args[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
     }
@@ -77,7 +81,7 @@ predictor.bdrawsnl <- function(draws, i = NULL, ...) {
       stop2(out)
     }
   }
-  dim(out) <- dim(args[[1]])
+  dim(out) <- dim(rmNULL(args)[[1]])
   unname(out)
 }
 
