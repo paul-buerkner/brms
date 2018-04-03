@@ -13,8 +13,9 @@
 #'   even if not originally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to condition on. Each effect defined in \code{effects} will
-#'   be plotted separately for each row of \code{data}. 
-#'   The row names of \code{data} will be treated as titles of the subplots. 
+#'   be plotted separately for each row of \code{conditions}. Values in the 
+#'   \code{cond__} column will be used as titles of the subplots. If \code{cond__} 
+#'   is not given, the row names will be used for this purpose instead.
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
@@ -204,8 +205,7 @@
 #'      
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
-#' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-#' rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
+#' conditions <- make_conditions(fit3way, "log_Age_c")
 #' marginal_effects(
 #'   fit3way, "log_Base4_c:Trt", conditions = conditions
 #' )
@@ -327,37 +327,33 @@ get_int_vars.brmsterms <- function(x, ...) {
 #' 
 #' This is a helper function to prepare fully crossed conditions primarily 
 #' for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+#' Automatically creates labels for each row in the \code{cond__} column.
 #' 
 #' @param x An \R object from which to extract the variables
 #'   that should be part of the conditions.
 #' @param vars Names of the variables that should be part of the conditions.
-#' @param show_vars Logical; indicates if variables names should be 
-#'   part of the rownames of the output. Defaults to \code{FALSE}.
-#' @param sep A single character string defining the separator
-#'   used in the rownames of the output.
-#' @param ... Currently unused.
+#' @param ... Arguments passed to \code{\link{rows2labels}}.
 #' 
 #' @return A \code{data.frame} where each row indicates a condition.
 #' 
 #' @details For factor like variables, all levels are used as conditions.
 #'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
 #'   
-#' @seealso \code{\link{marginal_effects}}
+#' @seealso \code{\link{marginal_effects}}, \code{\link{rows2labels}}
 #'   
 #' @examples
 #' df <- data.frame(x = c("a", "b"), y = rnorm(10))
 #' make_conditions(df, vars = c("x", "y"))
 #'
 #' @export
-make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
-  vars <- as.character(vars)
-  show_vars <- as_one_logical(show_vars)
-  sep <- as_one_character(sep)
+make_conditions <- function(x, vars, ...) {
+  # rev ensures that the last variable varies fastest in expand.grid
+  vars <- rev(as.character(vars))
   if (!is.data.frame(x) && "data" %in% names(x)) {
     x <- x$data
   }
   x <- as.data.frame(x)
-  out <- rnames <-named_list(vars)
+  out <- named_list(vars)
   for (v in vars) {
     tmp <- get(v, x)
     if (is_like_factor(tmp)) {
@@ -367,20 +363,55 @@ make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
     }
     out[[v]] <- tmp
   }
-  out <- rnames <- expand.grid(out)
-  for (i in seq_along(rnames)) {
-    if (!is_like_factor(rnames[[i]])) {
-      rnames[[i]] <- round(rnames[[i]], 2)
+  out <- rev(expand.grid(out))
+  out$cond__ <- rows2labels(out, ...)
+  out
+}
+
+get_cond__ <- function(x) {
+  # extract the cond__ variable used for faceting
+  out <- x[["cond__"]]
+  if (is.null(out)) {
+    out <- rownames(x)
+  }
+  out
+}
+
+#' Convert Rows to Labels
+#' 
+#' Convert information in rows to labels for each row. 
+#' 
+#' @param x A \code{data.frame} for which to extract labels.
+#' @param digits Minimal number of decimal places shown in
+#'   the labels of numeric variables.
+#' @param sep A single character string defining the separator 
+#'   between variables used in the labels.
+#' @param incl_vars Indicates if variable names should 
+#'   be part of the labels. Defaults to \code{TRUE}.
+#' @param ... Currently unused.
+#' 
+#' @return A character vector of the same length as the number
+#'   of rows of \code{x}.
+#'   
+#' @seealso \code{\link{make_conditions}}, code{\link{marginal_effects}}
+#' 
+#' @export
+rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
+  x <- as.data.frame(x)
+  incl_vars <- as_one_logical(incl_vars)
+  out <- x
+  for (i in seq_along(out)) {
+    if (!is_like_factor(out[[i]])) {
+      out[[i]] <- round(out[[i]], digits)
     }
-    if (show_vars) {
-      rnames[[i]] <- paste0(names(rnames)[i], ":", rnames[[i]])
+    if (incl_vars) {
+      out[[i]] <- paste0(names(out)[i], " = ", out[[i]])
     }
   }
   paste_sep <- function(..., sep__ = sep) {
     paste(..., sep = sep__)
   }
-  rownames(out) <- Reduce(paste_sep, rnames)
-  out
+  Reduce(paste_sep, out)
 }
 
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
@@ -417,10 +448,10 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     if (!nrow(conditions)) {
       stop2("Argument 'conditions' must have a least one row.")
     }
-    if (any(duplicated(rownames(conditions)))) {
-      stop2("Row names of 'conditions' should be unique.")
-    }
     conditions <- unique(conditions)
+    if (any(duplicated(get_cond__(conditions)))) {
+      stop2("Condition labels should be unique.")
+    }
     req_vars <- setdiff(req_vars, names(conditions))
   }
   trial_vars <- all.vars(bterms$adforms$trials)
@@ -451,7 +482,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       )
     }
   }
-  unused_vars <- setdiff(names(conditions), all.vars(bterms$allvars))
+  all_vars <- c(all.vars(bterms$allvars), "cond__")
+  unused_vars <- setdiff(names(conditions), all_vars)
   if (length(unused_vars)) {
     warning2(
       "The following variables in 'conditions' are not ", 
@@ -539,12 +571,13 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- data[do.call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   marg_vars <- setdiff(names(conditions), effects)
+  cond__ <- get_cond__(conditions)
   for (j in seq_len(nrow(conditions))) {
     data[[j]][, marg_vars] <- conditions[j, marg_vars]
-    data[[j]]$cond__ <- rownames(conditions)[j]
+    data[[j]]$cond__ <- cond__[j]
   }
   data <- do.call(rbind, data)
-  data$cond__ <- factor(data$cond__, rownames(conditions))
+  data$cond__ <- factor(data$cond__, cond__)
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
@@ -660,6 +693,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   req_vars <- intersect(req_vars, names(conditions))
   if (length(req_vars)) {
     # find out which data point is valid for which condition
+    cond__ <- get_cond__(conditions)
     mf <- mf[, req_vars, drop = FALSE]
     conditions <- conditions[, req_vars, drop = FALSE]
     points$cond__ <- NA
@@ -702,11 +736,11 @@ make_point_frame <- function(bterms, mf, effects, conditions,
         K <- seq_len(nrow(mf))
       }
       # cond__ allows to assign points to conditions
-      points[[i]]$cond__[K] <- rownames(conditions)[i]
+      points[[i]]$cond__[K] <- cond__[i]
     }
     points <- do.call(rbind, points)
     points <- points[!is.na(points$cond__), , drop = FALSE]
-    points$cond__ <- factor(points$cond__, rownames(conditions))
+    points$cond__ <- factor(points$cond__, cond__)
   }
   if (!is.numeric(points$resp__)) {
     points$resp__ <- as.numeric(as.factor(points$resp__))

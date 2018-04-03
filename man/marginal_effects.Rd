@@ -34,8 +34,9 @@ even if not originally modeled.}
 
 \item{conditions}{An optional \code{data.frame} containing variable values
 to condition on. Each effect defined in \code{effects} will
-be plotted separately for each row of \code{data}. 
-The row names of \code{data} will be treated as titles of the subplots. 
+be plotted separately for each row of \code{conditions}. Values in the 
+\code{cond__} column will be used as titles of the subplots. If \code{cond__} 
+is not given, the row names will be used for this purpose instead.
 It is recommended to only define a few rows in order to keep the plots clear.
 See \code{\link{make_conditions}} for an easy way to define conditions.
 If \code{NULL} (the default), numeric variables will be marginalized
@@ -269,8 +270,7 @@ marginal_effects(fit, effects = "Trt:log_Base4_c",
      
 ## fit a model to illustrate how to plot 3-way interactions
 fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
-conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
+conditions <- make_conditions(fit3way, "log_Age_c")
 marginal_effects(
   fit3way, "log_Base4_c:Trt", conditions = conditions
 )
