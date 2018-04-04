@@ -1,3 +1,51 @@
+#' Display Smooth Terms
+#' 
+#' Display smooth \code{s} and \code{t2} terms of models
+#' fitted with \pkg{brms}.
+#' 
+#' @inheritParams marginal_effects
+#' @param smooths Optional character vector of smooth terms
+#'   to display. If \code{NULL} (the default) all smooth terms
+#'   are shown.
+#' @param subset A numeric vector specifying
+#'  the posterior samples to be used. 
+#'  If \code{NULL} (the default), all samples are used.
+#' @param nsamples Positive integer indicating how many 
+#'  posterior samples should be used. 
+#'  If \code{NULL} (the default) all samples are used.
+#'  Ignored if \code{subset} is not \code{NULL}.
+#' @param ... Currently ignored.
+#'   
+#' @return For the \code{brmsfit} method, 
+#' an object of class \code{brmsMarginalEffects}. See
+#' \code{\link{marginal_effects}} for 
+#' more details and documentation of the related plotting function.
+#' 
+#' @details Two-dimensional smooth terms will be visualized using
+#'   either contour or raster plots.
+#'   
+#' @examples 
+#' \dontrun{
+#' set.seed(0) 
+#' dat <- mgcv::gamSim(1, n = 200, scale = 2)
+#' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
+#' # show all smooth terms
+#' plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
+#' # show only the smooth term s(x2)
+#' plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
+#' 
+#' # fit and plot a two-dimensional smooth term
+#' fit2 <- brm(y ~ t2(x0, x2), data = dat)
+#' ms <- marginal_smooths(fit2)
+#' plot(ms, stype = "contour")
+#' plot(ms, stype = "raster")
+#' }
+#' 
+#' @export
+marginal_smooths <- function(x, ...) {
+  UseMethod("marginal_smooths")
+}
+
 marginal_smooths_internal <- function(x, ...) {
   # compute predictions based on the smooths terms only
   UseMethod("marginal_smooths_internal")

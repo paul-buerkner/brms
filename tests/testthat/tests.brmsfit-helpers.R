@@ -99,7 +99,7 @@ test_that(".predictor_arma runs without errors", {
 
 test_that("make_conditions works correctly", {
   conds <- make_conditions(epilepsy, c("log_Base4_c", "log_Age_c"))
-  expect_equal(dim(conds), c(9, 2))
-  expect_equal(rownames(conds)[3], "0.75 | -0.22")
+  expect_equal(dim(conds), c(9, 3))
+  expect_equal(conds$cond__[3], "log_Base4_c = -0.75 & log_Age_c = 0.22")
 })
 

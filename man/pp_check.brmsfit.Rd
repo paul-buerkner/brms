@@ -6,10 +6,7 @@
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
-  resp = NULL, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, subset = NULL, nug = NULL,
-  ntrys = 5, loo_args = list(), ...)
+  newdata = NULL, resp = NULL, subset = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -34,68 +31,18 @@ ppc \code{*_grouped} types and ignored otherwise.}
 Only used for ppc types having an \code{x} argument 
 and ignored otherwise.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the original data of the model is used.}
 
-\item{re_formula}{formula containing group-level effects 
-to be considered in the prediction. 
-If \code{NULL} (default), include all group-level effects; 
-if \code{NA}, include no group-level effects.}
-
-\item{allow_new_levels}{A flag indicating if new
-levels of group-level effects are allowed 
-(defaults to \code{FALSE}). 
-Only relevant if \code{newdata} is provided.}
-
-\item{sample_new_levels}{Indicates how to sample new levels 
-for grouping factors specified in \code{re_formula}.
-This argument is only relevant if \code{newdata} is provided and 
-\code{allow_new_levels} is set to \code{TRUE}.
-If \code{"uncertainty"} (default), include group-level uncertainty
-in the predictions based on the variation of the existing levels. 
-If \code{"gaussian"}, sample new levels from the (multivariate) 
-normal distribution implied by the group-level standard deviations 
-and correlations. This options may be useful for conducting 
-Bayesian power analysis. 
-If \code{"old_levels"}, directly sample new levels from the
-existing levels.}
-
-\item{new_objects}{A named \code{list} of objects containing 
-new data, which cannot be passed via argument \code{newdata}.
-Currently, only required for objects passed to 
-\code{\link[brms:cor_sar]{cor_sar}} and 
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation
-parameters should be included in the predictions. Defaults to 
-\code{TRUE}. Setting it to \code{FALSE} will not affect other 
-correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
-or \code{\link[brms:cor_fixed]{cor_fixed}}.}
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
 
-\item{nug}{Small positive number for Gaussian process terms only. 
-For numerical reasons, the covariance matrix of a Gaussian 
-process might not be positive definite. Adding a very small 
-number to the matrix's diagonal often solves this problem. 
-If \code{NULL} (the default), \code{nug} is chosen internally.}
-
-\item{ntrys}{Parameter used in rejection sampling
-for truncated discrete models only
-(defaults to \code{5}). For more details see
-\code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
-
-\item{loo_args}{An optional list of additional arguments 
-passed to \code{\link[loo:psislw]{psislw}}. 
-Ignored for non \code{loo_*} ppc types.}
-
-\item{...}{Further arguments passed to the ppc functions
-of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.}
+\item{...}{Further arguments passed to \code{\link{predict.brmsfit}}
+as well as to the PPC function specified in \code{type}.}
 }
 \value{
 A ggplot object that can be further

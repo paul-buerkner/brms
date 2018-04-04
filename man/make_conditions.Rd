@@ -4,7 +4,7 @@
 \alias{make_conditions}
 \title{Prepare Fully Crossed Conditions}
 \usage{
-make_conditions(x, vars, show_vars = FALSE, sep = " | ", ...)
+make_conditions(x, vars, ...)
 }
 \arguments{
 \item{x}{An \R object from which to extract the variables
@@ -12,13 +12,7 @@ that should be part of the conditions.}
 
 \item{vars}{Names of the variables that should be part of the conditions.}
 
-\item{show_vars}{Logical; indicates if variables names should be 
-part of the rownames of the output. Defaults to \code{FALSE}.}
-
-\item{sep}{A single character string defining the separator
-used in the rownames of the output.}
-
-\item{...}{Currently unused.}
+\item{...}{Arguments passed to \code{\link{rows2labels}}.}
 }
 \value{
 A \code{data.frame} where each row indicates a condition.
@@ -26,6 +20,7 @@ A \code{data.frame} where each row indicates a condition.
 \description{
 This is a helper function to prepare fully crossed conditions primarily 
 for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+Automatically creates labels for each row in the \code{cond__} column.
 }
 \details{
 For factor like variables, all levels are used as conditions.
@@ -37,5 +32,5 @@ make_conditions(df, vars = c("x", "y"))
 
 }
 \seealso{
-\code{\link{marginal_effects}}
+\code{\link{marginal_effects}}, \code{\link{rows2labels}}
 }

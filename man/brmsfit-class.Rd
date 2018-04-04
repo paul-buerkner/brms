@@ -49,9 +49,9 @@ information criterion after model fitting}
 \item{\code{R2}}{An empty slot for adding the \code{\link{bayes_R2}}
 (Bayesian R-squared) value after model fitting}
 
-\item{\code{bridge}}{An empty slot for adding a \code{bridge} object 
-(see \code{\link{bridge_sampler}})
-after model fitting}
+\item{\code{marglik}}{An empty slot for adding a \code{bridge} object 
+after model fitting containing the log marginal likelihood 
+(see \code{\link{bridge_sampler}} for details)}
 
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
 among others containing the posterior samples}

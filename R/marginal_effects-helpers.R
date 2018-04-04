@@ -1,5 +1,226 @@
-# marginal_effects requires quit a few special helper functions
-# which are currently only used in this particular method
+#' Display Marginal Effects of Predictors
+#' 
+#' Display marginal effects of one or more numeric and/or categorical 
+#' predictors including two-way interaction effects.
+#' 
+#' @param x An \R object usually of class \code{brmsfit}.
+#' @param effects An optional character vector naming effects
+#'   (main effects or interactions) for which to compute marginal plots.
+#'   Interactions are specified by a \code{:} between variable names.
+#'   If \code{NULL} (the default), plots are generated for all main effects
+#'   and two-way interactions estimated in the model. When specifying
+#'   \code{effects} manually, \emph{all} two-way interactions may be plotted
+#'   even if not originally modeled.
+#' @param conditions An optional \code{data.frame} containing variable values
+#'   to condition on. Each effect defined in \code{effects} will
+#'   be plotted separately for each row of \code{conditions}. Values in the 
+#'   \code{cond__} column will be used as titles of the subplots. If \code{cond__} 
+#'   is not given, the row names will be used for this purpose instead.
+#'   It is recommended to only define a few rows in order to keep the plots clear.
+#'   See \code{\link{make_conditions}} for an easy way to define conditions.
+#'   If \code{NULL} (the default), numeric variables will be marginalized
+#'   by using their means and factors will get their reference level assigned.
+#' @param int_conditions An optional named \code{list} whose elements are numeric
+#'   vectors of values of the second variables in two-way interactions. 
+#'   At these values, predictions are evaluated. The names of 
+#'   \code{int_conditions} have to match the variable names exactly.
+#'   Additionally, the elements of the numeric vectors may be named themselves,
+#'   in which case their names appear as labels for the conditions in the plots.
+#'   Instead of vectors, functions returning vectors may be passed and are
+#'   applied on the original values of the corresponding variable.
+#'   If \code{NULL} (the default), predictions are evaluated at the 
+#'   \eqn{mean} and at \eqn{mean +/- sd}. 
+#' @param re_formula A formula containing random effects to be considered 
+#'   in the marginal predictions. If \code{NULL}, include all random effects; 
+#'   if \code{NA} (default), include no random effects.
+#' @param robust If \code{TRUE} (the default) the median is used as the 
+#'   measure of central tendency. If \code{FALSE} the mean is used instead.
+#' @param probs The quantiles to be used in the computation of credible
+#'   intervals (defaults to 2.5 and 97.5 percent quantiles)
+#' @param method Either \code{"fitted"} or \code{"predict"}. 
+#'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
+#'   If \code{"predict"}, plot marginal predictions of the responses.
+#' @param spaghetti Logical. Indicates if predictions should
+#'   be visualized via spaghetti plots. Only applied for numeric
+#'   predictors. If \code{TRUE}, it is recommended 
+#'   to set argument \code{nsamples} to a relatively small value 
+#'   (e.g. \code{100}) in order to reduce computation time.
+#' @param surface Logical. Indicates if interactions or 
+#'   two-dimensional smooths should be visualized as a surface. 
+#'   Defaults to \code{FALSE}. The surface type can be controlled 
+#'   via argument \code{stype} of the related plotting method.
+#' @param ordinal Logical. Indicates if effects in ordinal models
+#'   should be visualized as a raster with the response categories
+#'   on the y-axis. Defaults to \code{FALSE} and ignored in
+#'   non-ordinal models.
+#' @param transform A function or a character string naming 
+#'   a function to be applied on the predicted responses
+#'   before summary statistics are computed. Only allowed
+#'   if \code{method = "predict"}.
+#' @param resolution Number of support points used to generate 
+#'   the plots. Higher resolution leads to smoother plots. 
+#'   Defaults to \code{100}. If \code{surface} is \code{TRUE},
+#'   this implies \code{10000} support points for interaction terms,
+#'   so it might be necessary to reduce \code{resolution} 
+#'   when only few RAM is available.
+#' @param too_far Positive number. 
+#'   For surface plots only: Grid points that are too 
+#'   far away from the actual data points can be excluded from the plot. 
+#'   \code{too_far} determines what is too far. The grid is scaled into 
+#'   the unit square and then grid points more than \code{too_far} 
+#'   from the predictor variables are excluded. By default, all
+#'   grid points are used. Ignored for non-surface plots.
+#' @param select_points Positive number. 
+#'   Only relevant if \code{points} or \code{rug} are set to \code{TRUE}: 
+#'   Actual data points of numeric variables that 
+#'   are too far away from the values specified in \code{conditions} 
+#'   can be excluded from the plot. Values are scaled into 
+#'   the unit interval and then points more than \code{select_points} 
+#'   from the values in \code{conditions} are excluded. 
+#'   By default, all points are used.
+#' @param ... Further arguments such as \code{subset} or \code{nsamples}
+#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
+#' @inheritParams plot.brmsfit
+#' @param ncol Number of plots to display per column for each effect.
+#'   If \code{NULL} (default), \code{ncol} is computed internally based
+#'   on the number of rows of \code{conditions}.
+#' @param points Logical; indicating whether the original data points
+#'   should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#'   Default is \code{FALSE}. Note that only those data points will be added
+#'   that match the specified conditions defined in \code{conditions}.
+#'   For categorical predictors, the conditions have to match exactly. 
+#'   For numeric predictors, argument \code{select_points} is used to
+#'   determine, which points do match a condition.
+#' @param rug Logical; indicating whether a rug representation of predictor
+#'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   Default is \code{FALSE}. Depends on \code{select_points} in the same
+#'   way as \code{points} does.
+#' @param mean Logical; only relevant for spaghetti plots.
+#'   If \code{TRUE} (the default), display the mean regression 
+#'   line on top of the regression lines for each sample.
+#' @param jitter_width Only used if \code{points = TRUE}: 
+#'   Amount of horizontal jittering of the data points.
+#'   Mainly useful for ordinal models. Defaults to \code{0} that 
+#'   is no jittering.
+#' @param stype Indicates how surface plots should be displayed.
+#'   Either \code{"contour"} or \code{"raster"}.
+#' @param line_args Only used in plots of continuous predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#' @param cat_args Only used in plots of categorical predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_point]{geom_point}}.
+#' @param errorbar_args Only used in plots of categorical predictors:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
+#' @param surface_args Only used in surface plots:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
+#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
+#'   (depending on argument \code{stype}).
+#' @param spaghetti_args Only used in spaghetti plots:
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#' @param point_args Only used if \code{points = TRUE}: 
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#' @param rug_args Only used if \code{rug = TRUE}: 
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#' 
+#' @return An object of class \code{brmsMarginalEffects}, which is a named list
+#'   with one data.frame per effect containing all information required 
+#'   to generate marginal effects plots. Among others, these data.frames
+#'   contain some special variables, namely \code{estimate__} (predicted values
+#'   of the response), \code{se__} (standard error of the predicted response),
+#'   \code{lower__} and \code{upper__} (lower and upper bounds of the uncertainty
+#'   interval of the response), as well as \code{cond__} (used in faceting when 
+#'   \code{conditions} contains multiple rows).
+#'   
+#'   The corresponding \code{plot} method returns a named 
+#'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
+#'   customized using the \pkg{ggplot2} package.
+#'   
+#' @details When creating \code{marginal_effects} for a particular predictor 
+#'   (or interaction of two predictors), one has to choose the values of all 
+#'   other predictors to condition on. 
+#'   By default, the mean is used for continuous variables
+#'   and the reference category is used for factors, but you may change these
+#'   values via argument \code{conditions}. 
+#'   This also has an implication for the \code{points} argument: 
+#'   In the created plots, only those points will be shown that correspond 
+#'   to the factor levels actually used in the conditioning, in order not 
+#'   to create the false impression of bad model fit, where it is just 
+#'   due to conditioning on certain factor levels.
+#'   Since we condition on rather than actually marginalizing variables, 
+#'   the name  \code{marginal_effects} is possibly not ideally chosen in 
+#'   retrospect. 
+#' 
+#'   \code{NA} values within factors in \code{conditions}, 
+#'   are interpreted as if all dummy variables of this factor are 
+#'   zero. This allows, for instance, to make predictions of the grand mean 
+#'   when using sum coding. 
+#'   
+#'   To fully change colors of the created plots, 
+#'   one has to amend both \code{scale_colour} and \code{scale_fill}.
+#'   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
+#'   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
+#'   for more details.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1 | patient),
+#'            data = epilepsy, family = poisson()) 
+#'            
+#' ## plot all marginal effects
+#' plot(marginal_effects(fit), ask = FALSE)
+#' 
+#' ## change colours to grey scale
+#' me <- marginal_effects(fit, "log_Base4_c:Trt")
+#' plot(me, plot = FALSE)[[1]] + 
+#'   scale_color_grey() +
+#'   scale_fill_grey()
+#' 
+#' ## only plot the marginal interaction effect of 'log_Base4_c:Trt'
+#' ## for different values for 'log_Age_c'
+#' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
+#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
+#'                       conditions = conditions))
+#'                       
+#' ## also incorporate random effects variance over patients
+#' ## also add data points and a rug representation of predictor values
+#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
+#'                       conditions = conditions, re_formula = NULL), 
+#'      points = TRUE, rug = TRUE)
+#'  
+#' ## change handling of two-way interactions
+#' int_conditions <- list(
+#'   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
+#' )
+#' marginal_effects(fit, effects = "Trt:log_Base4_c",
+#'                  int_conditions = int_conditions)
+#' marginal_effects(fit, effects = "Trt:log_Base4_c",
+#'                  int_conditions = list(log_Base4_c = quantile))        
+#'      
+#' ## fit a model to illustrate how to plot 3-way interactions
+#' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
+#' conditions <- make_conditions(fit3way, "log_Age_c")
+#' marginal_effects(
+#'   fit3way, "log_Base4_c:Trt", conditions = conditions
+#' )
+#' ## only include points close to the specified values of log_Age_c
+#' me <- marginal_effects(
+#'  fit3way, "log_Base4_c:Trt", conditions = conditions, 
+#'  select_points = 0.1
+#' )
+#' plot(me, points = TRUE)
+#' }
+#' 
+#' @export
+marginal_effects <- function(x, ...) {
+  UseMethod("marginal_effects")
+}
 
 get_var_combs <- function(..., alist = list()) {
   # get all variable combinations occuring in elements of ...
@@ -106,37 +327,33 @@ get_int_vars.brmsterms <- function(x, ...) {
 #' 
 #' This is a helper function to prepare fully crossed conditions primarily 
 #' for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+#' Automatically creates labels for each row in the \code{cond__} column.
 #' 
 #' @param x An \R object from which to extract the variables
 #'   that should be part of the conditions.
 #' @param vars Names of the variables that should be part of the conditions.
-#' @param show_vars Logical; indicates if variables names should be 
-#'   part of the rownames of the output. Defaults to \code{FALSE}.
-#' @param sep A single character string defining the separator
-#'   used in the rownames of the output.
-#' @param ... Currently unused.
+#' @param ... Arguments passed to \code{\link{rows2labels}}.
 #' 
 #' @return A \code{data.frame} where each row indicates a condition.
 #' 
 #' @details For factor like variables, all levels are used as conditions.
 #'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
 #'   
-#' @seealso \code{\link{marginal_effects}}
+#' @seealso \code{\link{marginal_effects}}, \code{\link{rows2labels}}
 #'   
 #' @examples
 #' df <- data.frame(x = c("a", "b"), y = rnorm(10))
 #' make_conditions(df, vars = c("x", "y"))
 #'
 #' @export
-make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
-  vars <- as.character(vars)
-  show_vars <- as_one_logical(show_vars)
-  sep <- as_one_character(sep)
+make_conditions <- function(x, vars, ...) {
+  # rev ensures that the last variable varies fastest in expand.grid
+  vars <- rev(as.character(vars))
   if (!is.data.frame(x) && "data" %in% names(x)) {
     x <- x$data
   }
   x <- as.data.frame(x)
-  out <- rnames <-named_list(vars)
+  out <- named_list(vars)
   for (v in vars) {
     tmp <- get(v, x)
     if (is_like_factor(tmp)) {
@@ -146,20 +363,55 @@ make_conditions <- function(x, vars, show_vars = FALSE, sep = " | ", ...) {
     }
     out[[v]] <- tmp
   }
-  out <- rnames <- expand.grid(out)
-  for (i in seq_along(rnames)) {
-    if (!is_like_factor(rnames[[i]])) {
-      rnames[[i]] <- round(rnames[[i]], 2)
+  out <- rev(expand.grid(out))
+  out$cond__ <- rows2labels(out, ...)
+  out
+}
+
+get_cond__ <- function(x) {
+  # extract the cond__ variable used for faceting
+  out <- x[["cond__"]]
+  if (is.null(out)) {
+    out <- rownames(x)
+  }
+  out
+}
+
+#' Convert Rows to Labels
+#' 
+#' Convert information in rows to labels for each row. 
+#' 
+#' @param x A \code{data.frame} for which to extract labels.
+#' @param digits Minimal number of decimal places shown in
+#'   the labels of numeric variables.
+#' @param sep A single character string defining the separator 
+#'   between variables used in the labels.
+#' @param incl_vars Indicates if variable names should 
+#'   be part of the labels. Defaults to \code{TRUE}.
+#' @param ... Currently unused.
+#' 
+#' @return A character vector of the same length as the number
+#'   of rows of \code{x}.
+#'   
+#' @seealso \code{\link{make_conditions}}, code{\link{marginal_effects}}
+#' 
+#' @export
+rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
+  x <- as.data.frame(x)
+  incl_vars <- as_one_logical(incl_vars)
+  out <- x
+  for (i in seq_along(out)) {
+    if (!is_like_factor(out[[i]])) {
+      out[[i]] <- round(out[[i]], digits)
     }
-    if (show_vars) {
-      rnames[[i]] <- paste0(names(rnames)[i], ":", rnames[[i]])
+    if (incl_vars) {
+      out[[i]] <- paste0(names(out)[i], " = ", out[[i]])
     }
   }
   paste_sep <- function(..., sep__ = sep) {
     paste(..., sep = sep__)
   }
-  rownames(out) <- Reduce(paste_sep, rnames)
-  out
+  Reduce(paste_sep, out)
 }
 
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
@@ -196,10 +448,10 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     if (!nrow(conditions)) {
       stop2("Argument 'conditions' must have a least one row.")
     }
-    if (any(duplicated(rownames(conditions)))) {
-      stop2("Row names of 'conditions' should be unique.")
-    }
     conditions <- unique(conditions)
+    if (any(duplicated(get_cond__(conditions)))) {
+      stop2("Condition labels should be unique.")
+    }
     req_vars <- setdiff(req_vars, names(conditions))
   }
   trial_vars <- all.vars(bterms$adforms$trials)
@@ -230,7 +482,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       )
     }
   }
-  unused_vars <- setdiff(names(conditions), all.vars(bterms$allvars))
+  all_vars <- c(all.vars(bterms$allvars), "cond__")
+  unused_vars <- setdiff(names(conditions), all_vars)
   if (length(unused_vars)) {
     warning2(
       "The following variables in 'conditions' are not ", 
@@ -318,12 +571,13 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- data[do.call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   marg_vars <- setdiff(names(conditions), effects)
+  cond__ <- get_cond__(conditions)
   for (j in seq_len(nrow(conditions))) {
     data[[j]][, marg_vars] <- conditions[j, marg_vars]
-    data[[j]]$cond__ <- rownames(conditions)[j]
+    data[[j]]$cond__ <- cond__[j]
   }
   data <- do.call(rbind, data)
-  data$cond__ <- factor(data$cond__, rownames(conditions))
+  data$cond__ <- factor(data$cond__, cond__)
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
@@ -439,6 +693,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   req_vars <- intersect(req_vars, names(conditions))
   if (length(req_vars)) {
     # find out which data point is valid for which condition
+    cond__ <- get_cond__(conditions)
     mf <- mf[, req_vars, drop = FALSE]
     conditions <- conditions[, req_vars, drop = FALSE]
     points$cond__ <- NA
@@ -481,11 +736,11 @@ make_point_frame <- function(bterms, mf, effects, conditions,
         K <- seq_len(nrow(mf))
       }
       # cond__ allows to assign points to conditions
-      points[[i]]$cond__[K] <- rownames(conditions)[i]
+      points[[i]]$cond__[K] <- cond__[i]
     }
     points <- do.call(rbind, points)
     points <- points[!is.na(points$cond__), , drop = FALSE]
-    points$cond__ <- factor(points$cond__, rownames(conditions))
+    points$cond__ <- factor(points$cond__, cond__)
   }
   if (!is.numeric(points$resp__)) {
     points$resp__ <- as.numeric(as.factor(points$resp__))

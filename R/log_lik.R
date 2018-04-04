@@ -35,9 +35,10 @@ log_lik_internal.brmsdraws <- function(draws, ...) {
   reorder_obs(log_lik, old_order, sort = sort)
 }
 
-log_lik_pointwise <- function(i, draws, data = data.frame()) {
+log_lik_pointwise <- function(data_i, draws, ...) {
   # for use in pointwise evaluation only
   # cannot be made an S3 methods since i must be the first argument
+  i <- data_i$i
   if (is.mvbrmsdraws(draws) && !length(draws$mvpars$rescor)) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
     out <- Reduce("+", out)

@@ -10,15 +10,13 @@
 \title{Compute Weighted Expectations Using LOO}
 \usage{
 \method{loo_predict}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  resp = NULL, probs = 0.5, lw = NULL, cores = 1, wcp = 0.2,
-  wtrunc = 3/4, ...)
+  probs = 0.5, psis_object = NULL, resp = NULL, ...)
 
 \method{loo_linpred}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  resp = NULL, probs = 0.5, scale = "linear", lw = NULL, cores = 1,
-  wcp = 0.2, wtrunc = 3/4, ...)
+  probs = 0.5, psis_object = NULL, resp = NULL, scale = "linear", ...)
 
-\method{loo_predictive_interval}{brmsfit}(object, prob = 0.9, lw = NULL,
-  ...)
+\method{loo_predictive_interval}{brmsfit}(object, prob = 0.9,
+  psis_object = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -27,27 +25,15 @@
 Can by either \code{"mean"} (default), \code{"var"}, or
 \code{"quantile"}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
 \item{probs}{A vector of quantiles to compute. 
 Only used if \code{type = quantile}.}
 
-\item{lw}{An optional matrix of (smoothed) log-weights. If \code{lw} is 
-missing then \code{\link[loo]{psislw}} is executed internally, which may be
-time consuming for models fit to very large datasets. 
-If \code{lw} is specified, arguments passed via \code{...} may be ignored.}
+\item{psis_object}{An optional object returend by \code{\link[loo]{psis}}. 
+If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
+internally, which may be time consuming for models fit to very large datasets.}
 
-\item{cores}{The number of cores to use for parallelization. 
-Default is \code{1}.}
-
-\item{wcp}{Parameters used for 
-the Pareto smoothed importance sampling. 
-See \code{\link[loo:loo]{loo}} for details.}
-
-\item{wtrunc}{Parameters used for 
-the Pareto smoothed importance sampling. 
-See \code{\link[loo:loo]{loo}} for details.}
+\item{resp}{Optional names of response variables.
+If specified, fitted values of these response variables are returned.}
 
 \item{...}{Optional arguments passed to the underlying methods that is 
 \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
@@ -91,9 +77,9 @@ fit <- brm(weight ~ group, data = d)
 loo_predictive_interval(fit, prob = 0.8)
 
 ## optionally log-weights can be pre-computed and reused
-psis <- loo::psislw(-log_lik(fit), cores = 2)
-loo_predictive_interval(fit, prob = 0.8, lw = psis$lw_smooth)
-loo_predict(fit, type = "var", lw = psis$lw_smooth)
+psis <- loo::psis(-log_lik(fit), cores = 2)
+loo_predictive_interval(fit, prob = 0.8, psis_object = psis)
+loo_predict(fit, type = "var", psis_object = psis)
 }
 
 }

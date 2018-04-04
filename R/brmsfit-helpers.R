@@ -615,6 +615,69 @@ validate_resp <- function(resp, valid_resps, multiple = TRUE) {
   resp
 }
 
+split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
+  # split '...' into a list of model objects and other arguments
+  # takes its argument names from parent.frame() 
+  # Args:
+  #   ....: objects to split into model and non-model objects
+  #   x: object treated in the same way as '...'. Adding it is
+  #      necessary for substitute() to catch the name of the first 
+  #      argument passed to S3 methods.
+  #   model_names: optional names of the model objects  
+  #   other: allow non-model arguments in '...'?
+  # Returns
+  #   A list of arguments. All brmsfit objects are stored 
+  #   as a list in element 'models' unless 'other' is FALSE.
+  other <- as_one_logical(other)
+  dots <- list(x, ...)
+  names <- substitute(list(x, ...), env = parent.frame())[-1]
+  names <- ulapply(names, deparse_combine)
+  if (length(names)) {
+    if (!length(names(dots))) {
+      names(dots) <- names
+    } else {
+      has_no_name <- !nzchar(names(dots))
+      names(dots)[has_no_name] <- names[has_no_name]
+    }
+  }
+  is_brmsfit <- unlist(lapply(dots, is.brmsfit))
+  models <- dots[is_brmsfit]
+  models <- validate_models(models, model_names, names(models))
+  out <- dots[!is_brmsfit]
+  if (is.null(out$subset) && !is.null(out$nsamples)) {
+    out$subset <- sample(nsamples(models[[1]]), out$nsamples)
+    out$nsamples <- NULL
+  }
+  if (other) {
+    out$models <- models
+  } else {
+    if (length(out)) {
+      stop2("Only model objects can be passed to '...' for this method.")
+    }
+    out <- models
+  }
+  out
+}
+
+validate_weights <- function(weights, models, control = list()) {
+  # validate weights passed to model averaging functions
+  # Args: see pp_average.brmsfit
+  if (!is.numeric(weights)) {
+    weight_args <- c(unname(models), control)
+    weight_args$weights <- weights
+    weights <- do.call(model_weights, weight_args)
+  } else {
+    if (length(weights) != length(models)) {
+      stop2("If numeric, 'weights' must have the same length ",
+            "as the number of models.")
+    }
+    if (any(weights < 0)) {
+      stop2("If numeric, 'weights' must be positive.")
+    }
+  }
+  weights / sum(weights)
+}
+
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   # reorder observations to be in the initial user-defined order
   # currently only relevant for autocorrelation models 

@@ -1,11 +1,202 @@
-compute_ics <- function(models, model_names, 
-                        ic = c("loo", "waic", "psislw", "kfold"),
-                        use_stored_ic = FALSE, 
-                        compare = TRUE, ...) {
+#' Compute the LOO information criterion
+#' 
+#' Perform approximate leave-one-out cross-validation based 
+#' on the posterior likelihood using the \pkg{loo} package.
+#' 
+#' @aliases LOO.brmsfit loo.brmsfit loo
+#' 
+#' @param x A fitted model object.
+#' @param ... More fitted model objects or further arguments
+#'   passed to the underlying post-processing functions.
+#' @param compare A flag indicating if the information criteria
+#'  of the models should be compared to each other
+#'  via \code{\link{compare_ic}}.
+#' @param pointwise A flag indicating whether to compute the full
+#'  log-likelihood matrix at once or separately for each observation. 
+#'  The latter approach is usually considerably slower but 
+#'  requires much less working memory. Accordingly, if one runs 
+#'  into memory issues, \code{pointwise = TRUE} is the way to go.
+#'  By default, \code{pointwise} is automatically chosen based on 
+#'  the size of the model.
+#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
+#'  should be applied on problematic observations. Defaults to \code{FALSE}.
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   Only used if argument \code{reloo} is \code{TRUE}.
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
+#' @inheritParams predict.brmsfit
+#' 
+#' @details When comparing models fitted to the same data, 
+#'  the smaller the LOO, the better the fit.
+#'  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
+#'  Use method \code{\link{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{ic}. 
+#'  If multiple objects are provided, an object of class \code{iclist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' LOO(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' # compare both models
+#' LOO(fit1, fit2)                          
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @export
+LOO <- function(x, ...) {
+  UseMethod("LOO")
+}
+
+#' Compute the WAIC
+#' 
+#' Compute the widely applicable information criterion (WAIC)
+#' based on the posterior likelihood using the \pkg{loo} package.
+#' 
+#' @aliases WAIC.brmsfit waic.brmsfit waic
+#' 
+#' @inheritParams LOO
+#' 
+#' @details When comparing models fitted to the same data, 
+#'  the smaller the WAIC, the better the fit.
+#'  For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
+#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{ic}. 
+#'  If multiple objects are provided, an object of class \code{iclist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' WAIC(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' # compare both models
+#' WAIC(fit1, fit2)                          
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @export
+WAIC <- function(x, ...) {
+  UseMethod("WAIC")
+}
+
+#' K-Fold Cross-Validation
+#' 
+#' Perform exact K-fold cross-validation by refitting the model \eqn{K}
+#' times each leaving out one-\eqn{K}th of the original data.
+#' 
+#' @inheritParams LOO
+#' @param K The number of subsets of equal (if possible) size
+#'   into which the data will be randomly partitioned for performing
+#'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
+#'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
+#'   number of observations in the data then \eqn{K}-fold cross-validation is
+#'   equivalent to exact leave-one-out cross-validation.
+#' @param Ksub Optional number of subsets (of those subsets defined by \code{K}) 
+#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
+#'   will be performed on all subsets. If \code{Ksub} is a single integer, 
+#'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
+#'   If \code{Ksub} consists of multiple integers, the corresponding subsets 
+#'   will be used. This argument is primarily useful, if evaluation of all 
+#'   subsets is infeasible for some reason.
+#' @param exact_loo Logical; If \code{TRUE}, exact leave-one-out cross-validation
+#'   will be performed and \code{K} will be ignored. This argument alters
+#'   the way argument \code{group} is handled as described below. 
+#'   Defaults to \code{FALSE}.
+#' @param group Optional name of a grouping variable or factor in the model.
+#'   How this variable is handled depends on argument \code{exact_loo}.
+#'   If \code{exact_loo} is \code{FALSE}, the data is split 
+#'   up into subsets, each time omitting all observations of one of the 
+#'   factor levels, while ignoring argument \code{K}. 
+#'   If \code{exact_loo} is \code{TRUE}, all observations corresponding 
+#'   to the factor level of the currently predicted single value are omitted. 
+#'   Thus, in this case, the predicted values are only a subset of the 
+#'   omitted ones.
+#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
+#'   the returned object to store the cross-validated \code{brmsfit} 
+#'   objects and the indices of the omitted observations for each fold. 
+#'   Defaults to \code{FALSE}.
+#'   
+#' @return \code{kfold} returns an object that has a similar structure as the 
+#'   objects returned by the \code{loo} and \code{waic} methods.
+#'    
+#' @details The \code{kfold} function performs exact \eqn{K}-fold
+#'   cross-validation. First the data are randomly partitioned into \eqn{K}
+#'   subsets of equal (or as close to equal as possible) size. Then the model is
+#'   refit \eqn{K} times, each time leaving out one of the \code{K} subsets. If
+#'   \eqn{K} is equal to the total number of observations in the data then
+#'   \eqn{K}-fold cross-validation is equivalent to exact leave-one-out
+#'   cross-validation (to which \code{loo} is an efficient approximation). The
+#'   \code{compare_ic} function is also compatible with the objects returned
+#'   by \code{kfold}.
+#'   
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
+#'               (1|patient) + (1|obs),
+#'            data = epilepsy, family = poisson())
+#' # throws warning about some pareto k estimates being too high
+#' (loo1 <- loo(fit1))
+#' # perform 10-fold cross validation
+#' (kfold1 <- kfold(fit1, chains = 2, cores = 2)
+#' }   
+#'  
+#' @seealso \code{\link{loo}}, \code{\link{reloo}}
+#'  
+#' @export
+kfold <- function(x, ...) {
+  UseMethod("kfold")
+}
+
+compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold"),
+                        use_stored_ic = FALSE, compare = TRUE, ...) {
   # helper function used to create (lists of) 'ic' objects
   # Args:
   #   models: list of brmsfit objects
-  #   model_names: character vector containing model names
   #   ic: name of the information criterion to compute
   #   use_stored_ic: use recomputed ic objects if possible?
   #   ...: more arguments passed to compute_ic
@@ -15,35 +206,22 @@ compute_ics <- function(models, model_names,
   ic <- match.arg(ic)
   args <- nlist(ic, ...)
   if (length(models) > 1L) {
-    stopifnot(length(models) == length(model_names))
     if (length(use_stored_ic) == 1L) {
       use_stored_ic <- rep(use_stored_ic, length(models))
     }
-    out <- named_list(model_names)
-    for (i in seq_along(models)) {
-      # verify all model objects before computing any ICs
-      if (!is.brmsfit(models[[i]])) {
-        stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
-      }
-    }
+    out <- named_list(names(models))
     for (i in seq_along(models)) {
       ic_obj <- models[[i]][[ic]]
       if (use_stored_ic[i] && is.ic(ic_obj)) {
         out[[i]] <- ic_obj
-        out[[i]]$model_name <- model_names[i]
+        out[[i]]$model_name <- names(models)[i]
       } else {
         args$x <- models[[i]]
-        args$model_name <- model_names[i]
+        args$model_name <- names(models)[i]
         out[[i]] <- do.call(compute_ic, args) 
       }
     }
     if (compare) {
-      if (!match_response(models)) {
-        warning2(
-          "Model comparisons are likely invalid as the response ", 
-          "parts of at least two models do not match."
-        )
-      }
       out <- compare_ic(x = out)
     }
     class(out) <- "iclist"
@@ -52,51 +230,47 @@ compute_ics <- function(models, model_names,
     stopifnot(length(use_stored_ic) == 1L)
     if (use_stored_ic && is.ic(ic_obj)) {
       out <- ic_obj
-      out$model_name <- model_names
+      out$model_name <- names(models)
     } else {
       args$x <- models[[1]]
-      args$model_name <- model_names
+      args$model_name <- names(models)
       out <- do.call(compute_ic, args) 
     }
   }
   out
 }
 
-compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
-                       model_name = "", reloo = FALSE, k_threshold = 0.7,
-                       loo_args = list(), update_args = list(), ...) {
+compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
+                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
+                       model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   model_name: original variable name of object 'x'
   #   reloo: call 'reloo' after computing 'loo'?
-  #   loo_args: passed to functions of the loo package
-  #   update_args: passed to update.brmsfit
-  #   ...: passed to log_lik.brmsfit
+  #   pointwise: compute log-likelihood point-by-point?
+  #   ...: passed to other post-processing methods
   # Returns:
   #   an object of class 'ic' which inherits from class 'loo'
-  stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    IC <- do.call(kfold_internal, c(list(x, ...), update_args))
+    IC <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
-    loo_args$x <- log_lik(x, ...)
-    pointwise <- is.function(loo_args$x)
+    pointwise <- as_one_logical(pointwise)
+    loo_args <- list(...)
+    loo_args$x <- log_lik(x, pointwise = pointwise, ...)
     if (pointwise) {
-      loo_args$args <- attr(loo_args$x, "args")
-      attr(loo_args$x, "args") <- NULL
+      loo_args$draws <- attr(loo_args$x, "draws")
+      loo_args$data <- attr(loo_args$x, "data")
     }
-    if (ic == "psislw") {
+    if (ic == "psis") {
       if (pointwise) {
-        loo_args[["llfun"]] <- loo_args[["x"]]
-        loo_args[["llargs"]] <- loo_args[["args"]]
-        loo_args[["x"]] <- loo_args[["args"]] <- NULL
-      } else {
-        loo_args[["lw"]] <- -loo_args[["x"]]
-        loo_args[["x"]] <- NULL
+        stop2("Cannot use pointwise evaluation for 'psis'.")
       }
+      loo_args$log_ratios <- -loo_args$x
+      loo_args$x <- NULL
     }
     IC <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }
@@ -105,10 +279,10 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
   if (ic == "loo") {
     if (reloo) {
       reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
-      IC <- do.call(reloo.loo, c(reloo_args, update_args))
+      IC <- do.call(reloo.loo, c(reloo_args, ...))
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
-      recommend_loo_options(n_bad_obs, model_name) 
+      recommend_loo_options(n_bad_obs, k_threshold, model_name) 
     }
   }
   IC
@@ -157,7 +331,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
 #' }
 #' 
 #' @export
-compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
+compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   ic <- match.arg(ic)
   if (!(is.null(x) || is.list(x))) {
     stop2("Argument 'x' should be a list.")
@@ -209,7 +383,73 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
   rownames(ic_diffs) <- rnames
   colnames(ic_diffs) <- c(toupper(ics[1]), "SE")
   x$ic_diffs__ <- ic_diffs
-  class(x) <- c("iclist", "list")
+  class(x) <- "iclist"
+  x
+}
+
+#' Add information criteria and fit indices to fitted model objects
+#' 
+#' @param x An \R object typically of class \code{brmsfit}.
+#' @param ic,value Names of the information criteria / fit indices 
+#'   to compute. Currently supported are \code{"loo"}, 
+#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+#'   \code{"marglik"} (log marginal likelihood).
+#' @param model_name Optional name of the model. If \code{NULL}
+#'   (the default) the name is taken from the call to \code{x}.
+#' @param ... Further arguments passed to the underlying 
+#'   functions computing the information criteria or fit indices.
+#'   
+#' @return An object of the same class as \code{x}, but
+#'   with information criteria added for later usage.
+#'   
+#' @details The methods \code{add_loo} and add \code{add_waic}
+#'   are just convenient wrappers around \code{add_ic}.
+#'   
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ Trt, epilepsy, poisson())
+#' # add both LOO and WAIC at once
+#' fit <- add_ic(fit, ic = c("loo", "waic"))
+#' print(fit$loo)
+#' print(fit$waic)
+#' }
+#' 
+#' @export
+add_ic <- function(x, ...) {
+  UseMethod("add_ic")
+}
+
+#' @rdname add_ic
+#' @export
+add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
+  unused_args <- intersect(names(list(...)), args_not_for_reloo())
+  if (length(unused_args)) {
+    unused_args <- collapse_comma(unused_args)
+    stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
+  }
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  ic <- unique(tolower(as.character(ic)))
+  valid_ics <- c("loo", "waic", "kfold", "r2", "marglik")
+  if (!length(ic) || !all(ic %in% valid_ics)) {
+    stop2("Argument 'ic' should be a subset of ",
+          collapse_comma(valid_ics))
+  }
+  args <- list(x, ...)
+  for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
+    x[[fun]] <- do.call(fun, args)
+    x[[fun]]$model_name <- model_name
+  }
+  if ("r2" %in% ic) {
+    args$summary <- FALSE
+    x$R2 <- do.call(bayes_R2, args)
+  }
+  if ("marglik" %in% ic) {
+    x$marglik <- do.call(bridge_sampler, args)
+  }
   x
 }
 
@@ -221,68 +461,14 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
 
 #' @rdname add_ic
 #' @export
-add_ic.brmsfit <- function(x, ic = "loo", ...) {
-  dots <- list(...)
-  unused_args <- intersect(names(dots), args_not_for_reloo())
-  if (length(unused_args)) {
-    unused_args <- collapse_comma(unused_args)
-    stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
-  }
-  model_name <- deparse(substitute(x))
-  ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic", "kfold", "r2", "bridge")
-  if (!length(ic) || !all(ic %in% valid_ics)) {
-    stop2("Argument 'ic' should be a subset of ",
-          collapse_comma(valid_ics))
-  }
-  for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
-    x[[fun]] <- do.call(fun, c(list(x), dots))
-    x[[fun]]$model_name <- model_name
-  }
-  if ("r2" %in% ic) {
-    dots$summary <- FALSE
-    x[["R2"]] <- do.call(bayes_R2, c(list(x), dots))
-  }
-  if ("bridge" %in% ic) {
-    x[["bridge"]] <- do.call(bridge_sampler, c(list(x), dots))
-  }
-  x
-}
-
-#' @rdname add_loo
-#' @export
-add_loo.brmsfit <- function(x, ...) {
+add_loo <- function(x, ...) {
   add_ic(x, ic = "loo", ...)
 }
 
-#' @rdname add_waic
+#' @rdname add_ic
 #' @export
-add_waic.brmsfit <- function(x, ...) {
+add_waic <- function(x, ...) {
   add_ic(x, ic = "waic", ...)
-}
-
-loo_weights <- function(object, lw = NULL, log = FALSE, 
-                        loo_args = list(), ...) {
-  # compute loo weights for use in loo_predict and related methods
-  # Args:
-  #   object: a brmsfit object
-  #   lw: precomputed log weights matrix
-  #   log: return log weights?
-  #   loo_args: further arguments passed to functions of loo
-  #   ...: further arguments passed to compute_ic
-  # Returns:
-  #   an S x N matrix
-  if (!is.null(lw)) {
-    stopifnot(is.matrix(lw))
-  } else {
-    message("Running PSIS to compute weights")
-    psis <- compute_ic(object, ic = "psislw", loo_args = loo_args, ...)
-    lw <- psis[["lw_smooth"]]
-  }
-  if (!log) {
-    lw <- exp(lw) 
-  } 
-  lw
 }
 
 set_pointwise <- function(x, pointwise = NULL, newdata = NULL, 
@@ -358,10 +544,90 @@ match_response <- function(models) {
   out
 }
 
+validate_models <- function(models, model_names, sub_names) {
+  # validate models passed to LOO and related methods
+  # Args:
+  #   models: list of fitted model objects
+  #   model_names: names specified by the user
+  #   sub_names: names inferred by substitute()
+  stopifnot(is.list(models))
+  model_names <- as.character(model_names)
+  if (!length(model_names)) {
+    model_names <- as.character(sub_names)
+  }
+  if (length(model_names) != length(models)) {
+    stop2("Number of model names is not equal to the number of models.") 
+  }
+  names(models) <- model_names
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Object '", names(models)[i], "' is not of class 'brmsfit'.")
+    }
+  }
+  if (!match_response(models)) {
+    warning2(
+      "Model comparisons are likely invalid as the response ", 
+      "parts of at least two models do not match."
+    )
+  }
+  models
+}
+
+#' Compute exact cross-validation for problematic observations
+#' 
+#' Compute exact cross-validation for problematic observations
+#' for which approximate leave-one-out cross-validation may
+#' return incorrect results.
+#' 
+#' @inheritParams LOO
+#' @param x An \R object typically of class \code{loo}.
+#' @param fit An \R object typically of class \code{brmsfit}.
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
+#'   for more details.
+#' @param check Logical; If \code{TRUE} (the default), a crude 
+#'   check is performed if the \code{loo} object was generated
+#'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param ... Further arguments passed to 
+#'   \code{\link{update.brmsfit}} such
+#'   as \code{iter}, \code{chains}, or \code{cores}.
+#'   
+#' @return An object of the class as \code{x}.
+#' 
+#' @details 
+#' Warnings about Pareto \eqn{k} estimates indicate observations
+#' for which the approximation to LOO is problematic (this is described in
+#' detail in Vehtari, Gelman, and Gabry (2017) and the 
+#' \pkg{\link[loo:loo-package]{loo}} package documentation).
+#' If there are \eqn{J} observations with \eqn{k} estimates above
+#' \code{k_threshold}, then \code{reloo} will refit the original model 
+#' \eqn{J} times, each time leaving out one of the \eqn{J} 
+#' problematic observations. The pointwise contributions of these observations
+#' to the total ELPD are then computed directly and substituted for the
+#' previous estimates from these \eqn{J} observations that are stored in the
+#' original \code{loo} object.
+#' 
+#' @seealso \code{\link{loo}}, \code{\link{kfold}}
+#' 
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+#'            data = epilepsy, family = poisson())
+#' # throws warning about some pareto k estimates being too high
+#' (loo1 <- loo(fit1))
+#' (loo1 <- reloo(loo1, fit1))
+#' }
+#' 
+#' @export
+reloo <- function(x, ...) {
+  UseMethod("reloo")
+}
+
 #' @rdname reloo
 #' @export
-reloo.loo <- function(x, fit, k_threshold = 0.7, 
-                      resp = NULL, check = TRUE, ...) {
+reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
+                      resp = NULL, ...) {
   # most of the code is taken from rstanarm:::reloo
   stopifnot(is.brmsfit(fit))
   model_name <- deparse(substitute(fit))
@@ -373,7 +639,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7,
       "If this is a false positive, please set 'check' to FALSE."
     )
   }
-  if (is.null(x$pareto_k)) {
+  if (is.null(x$diagnostics$pareto_k)) {
     stop2("No Pareto k estimates found in the 'loo' object.")
   }
   obs <- loo::pareto_k_ids(x, k_threshold)
@@ -408,7 +674,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7,
   elpd_loo <- unlist(lapply(lls, log_mean_exp))
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
-  ll_x <- log_lik(fit, newdata = mf[obs,, drop=FALSE])
+  ll_x <- log_lik(fit, newdata = mf[obs, , drop = FALSE])
   hat_lpd <- apply(ll_x, 2, log_mean_exp)
   # compute effective number of parameters
   p_loo <- hat_lpd - elpd_loo
@@ -446,9 +712,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       stop2("'K' must be greater than one and smaller or ", 
             "equal to the number of observations in the model.")
     }
-    perm <- sample.int(N)
-    idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
-    bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
+    bin <- loo::kfold_split_random(K, N)
   } else {
     # validate argument 'group'
     valid_groups <- get_cat_vars(x)
@@ -477,12 +741,12 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       Ksub <- unique(Ksub)
     }
   }
-  lppds <- vector("list", length(Ksub))
+  lppds <- pred_ids <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(
       list(), dim = c(length(Ksub), 2), 
       dimnames = list(NULL, c("fit", "omitted"))
-    )    
+    )
   }
   for (k in Ksub) {
     message("Fitting model ", k, " out of ", K)
@@ -495,6 +759,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
     ks <- match(k, Ksub)
+    pred_ids[[ks]] <- predicted
     lppds[[ks]] <- log_lik(
       fit_k, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE, resp = resp
@@ -504,38 +769,42 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
     }
   }
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
+  # make sure elpds are put back in the right order
+  elpds <- elpds[order(unlist(pred_ids))]
   elpd_kfold <- sum(elpds)
   se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
+  rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
+  cnames <- c("Estimate", "SE")
+  estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
+  estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
+  estimates[3, ] <- c(- 2 * elpd_kfold, 2 * se_elpd_kfold)
   out <- nlist(
-    elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
-    se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
-    pointwise = cbind(elpd_kfold = elpds),
-    model_name = deparse(substitute(x)),
-    K, Ksub, exact_loo, group 
+    estimates, pointwise = cbind(elpd_kfold = elpds),
+    model_name = deparse(substitute(x)), K, Ksub, exact_loo, group 
   )
   if (save_fits) {
     out$fits <- fits 
   }
-  structure(out, class = "loo")
+  structure(out, class = c("kfold", "loo"))
 }
 
-recommend_loo_options <- function(n, model_name = "") {
+recommend_loo_options <- function(n, k_threshold, model_name = "") {
   model_name <- if (isTRUE(nzchar(model_name))) {
     paste0(" in model '", model_name, "'")
   }
   if (n > 0 && n <= 10) {
     warning2(
-      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
-      "It is recommended to set 'reloo = TRUE' in order to calculate ",
-      "the ELPD without the assumption that these observations are ", 
-      "negligible. This will refit the model ", n, " times to compute ", 
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". It is recommended to set 'reloo = TRUE' in order to ", 
+      "calculate the ELPD without the assumption that these observations " ,
+      "are negligible. This will refit the model ", n, " times to compute ", 
       "the ELPDs for the problematic observations directly."
     )
     out <- "reloo"
   } else if (n > 10) {
     warning2(
-      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
-      "With this many problematic observations, it may be more ", 
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". With this many problematic observations, it may be more ", 
       "appropriate to use 'kfold' with argument 'K = 10' to perform ", 
       "10-fold cross-validation rather than LOO."
     )
@@ -546,21 +815,12 @@ recommend_loo_options <- function(n, model_name = "") {
   invisible(out)
 }
 
-#' @export
-print.ic <- function(x, digits = 2, ...) {
-  # print the output of LOO(x) and WAIC(x)
-  ic <- names(x)[3]
-  mat <- matrix(
-    c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
-      dimnames = list("", c(toupper(ic), "SE"))
-  )
-  print(round(mat, digits = digits))
-  if (is_equal(ic, "kfoldic")) {
-    sub <- length(x$Ksub)
-    sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
-    cat(paste0("\nBased on ", sub, x$K, "-fold cross-validation\n"))
-  }
-  invisible(x)
+r_eff_helper <- function(log_lik, fit) {
+  # helper function to compute relative efficiences
+  stopifnot(is.matrix(log_lik), is.brmsfit(fit))
+  chains <- fit$fit@sim$chains
+  chain_id <- rep(seq_len(chains), each = nrow(log_lik) / chains)
+  loo::relative_eff(log_lik, chain_id = chain_id)
 }
 
 #' @export
@@ -569,11 +829,11 @@ print.iclist <- function(x, digits = 2, ...) {
   m <- x
   m$ic_diffs__ <- NULL
   if (length(m)) {
-    ic <- names(m[[1]])[3]
+    ic <- rownames(m[[1]]$estimates)[3]
     mat <- matrix(0, nrow = length(m), ncol = 2)
     dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
     for (i in seq_along(m)) { 
-      mat[i, ] <- c(m[[i]][[ic]], m[[i]][[paste0("se_", ic)]])
+      mat[i, ] <- m[[i]]$estimates[3, ]
     }
   } else {
     mat <- ic <- NULL
@@ -588,19 +848,23 @@ print.iclist <- function(x, digits = 2, ...) {
     mat <- rbind(mat, ic_diffs)
   }
   print(round(mat, digits = digits), na.print = "")
-  if (is_equal(ic, "kfoldic")) {
-    sub <- length(x[[1]]$Ksub)
-    sub <- ifelse(sub > 0 & sub < x[[1]]$K, paste0(sub, " subsets of "), "")
-    cat(paste0("\nBased on ", sub, x[[1]]$K, "-fold cross-validation\n"))
-  }
   invisible(x)
 }
 
+#' @importFrom loo print_dims
+#' @export
+print_dims.kfold <- function(x, ...) {
+  sub <- length(x$Ksub)
+  sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
+  cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
+}
+
 is.loo <- function(x) {
+  # class from the loo package
   inherits(x, "loo")
 }
 
 is.ic <- function(x) {
-  # objects of class 'ic' are returned by LOO and WAIC
+  # class 'ic' inherits from class 'loo'
   inherits(x, "ic")
 }

@@ -30,9 +30,9 @@
 #'   information criterion after model fitting
 #' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
-#' @slot bridge An empty slot for adding a \code{bridge} object 
-#'   (see \code{\link{bridge_sampler}})
-#'   after model fitting
+#' @slot marglik An empty slot for adding a \code{bridge} object 
+#'   after model fitting containing the log marginal likelihood 
+#'   (see \code{\link{bridge_sampler}} for details)
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
 #' @slot exclude The names of the parameters for which samples are not saved
@@ -52,7 +52,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
-                    bridge = NULL, stanvars = NULL, stan_funs = NULL, 
+                    marglik = NULL, stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
@@ -61,7 +61,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   )
   x <- nlist(
     formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, loo, waic, R2, bridge,
+    autocor, ranef, cov_ranef, loo, waic, R2, marglik,
     stanvars, stan_funs, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
@@ -266,312 +266,6 @@ ngrps <- function(object, ...) {
   UseMethod("ngrps")
 }
 
-#' Compute the WAIC
-#' 
-#' Compute the widely applicable information criterion (WAIC)
-#' based on the posterior likelihood using the \pkg{loo} package.
-#' 
-#' @aliases WAIC.brmsfit waic.brmsfit waic
-#' 
-#' @inheritParams LOO
-#' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the WAIC, the better the fit.
-#'  For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
-#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
-#'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' WAIC(fit1)
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' # compare both models
-#' WAIC(fit1, fit2)                          
-#' }
-#' 
-#' @references 
-#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
-#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
-#' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
-#' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
-#' @export
-WAIC <- function(x, ...) {
-  UseMethod("WAIC")
-}
-
-#' Compute the LOO information criterion
-#' 
-#' Perform approximate leave-one-out cross-validation based 
-#' on the posterior likelihood using the \pkg{loo} package.
-#' 
-#' @aliases LOO.brmsfit loo.brmsfit loo
-#' 
-#' @param x A fitted model object typically of class \code{brmsfit}. 
-#' @param ... Optionally more fitted model objects.
-#' @param compare A flag indicating if the information criteria
-#'  of the models should be compared to each other
-#'  via \code{\link{compare_ic}}.
-#' @param pointwise A flag indicating whether to compute the full
-#'  log-likelihood matrix at once or separately for each observation. 
-#'  The latter approach is usually considerably slower but 
-#'  requires much less working memory. Accordingly, if one runs 
-#'  into memory issues, \code{pointwise = TRUE} is the way to go.
-#'  By default, \code{pointwise} is automatically chosen based on 
-#'  the size of the model.
-#' @param reloo Logical; Indicate whether 
-#'  \code{\link{reloo}} should be applied
-#'  on problematic observations. Defaults to \code{FALSE}.
-#' @param k_threshold The threshold at which pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
-#'   Only used if argument \code{reloo} is \code{TRUE}.
-#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
-#'   for more details.
-#' @param update_args A \code{list} of further arguments passed to 
-#'   \code{\link{update.brmsfit}} such
-#'   as \code{iter}, \code{chains}, or \code{cores}.
-#' @param cores The number of cores to use for parallelization. 
-#'  Default is \code{1}.
-#' @param wcp,wtrunc Parameters used for 
-#'  the Pareto smoothed importance sampling. 
-#'  See \code{\link[loo:loo]{loo}} for details.
-#' @inheritParams predict.brmsfit
-#' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the LOO, the better the fit.
-#'  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
-#'  Use method \code{\link{add_ic}} to store
-#'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' LOO(fit1)
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' # compare both models
-#' LOO(fit1, fit2)                          
-#' }
-#' 
-#' @references 
-#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
-#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
-#' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
-#' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
-#' @export
-LOO <- function(x, ...) {
-  UseMethod("LOO")
-}
-
-#' Add information criteria and fit indices to fitted model objects
-#' 
-#' @param x An \R object typically of class \code{brmsfit}.
-#' @param ic,value Names of the information criteria / fit indices 
-#'   to compute. Currently supported are \code{"loo"}, 
-#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
-#'   \code{"bridge"} (log marginal likelihood).
-#' @param ... Further arguments passed to the underlying 
-#'   functions computing the information criteria.
-#'   
-#' @return An object of the same class as \code{x}, but
-#'   with information criteria added for later usage.
-#'   
-#' @examples
-#' \dontrun{
-#' fit <- brm(count ~ Trt, epilepsy, poisson())
-#' # add both LOO and WAIC at once
-#' fit <- add_ic(fit, ic = c("loo", "waic"))
-#' print(fit$loo)
-#' print(fit$waic)
-#' }
-#' 
-#' @export
-add_ic <- function(x, ...) {
-  UseMethod("add_ic")
-}
-
-#' Add the LOO information criterion to fitted model objects
-#' 
-#' @inheritParams add_ic
-#' 
-#' @return An object of the same class as \code{x}, but
-#'   with the LOO information criterion added for later usage.
-#'   
-#' @details For more details see \code{\link[brms:add_ic]{add_ic}}.
-#' 
-#' @export
-add_loo <- function(x, ...) {
-  UseMethod("add_loo")
-}
-
-#' Add the WAIC to fitted model objects
-#' 
-#' @inheritParams add_ic
-#' 
-#' @return An object of the same class as \code{x}, but
-#'   with the WAIC added for later usage.
-#'   
-#' @details For more details see \code{\link[brms:add_ic]{add_ic}}.
-#' 
-#' @export
-add_waic <- function(x, ...) {
-  UseMethod("add_waic")
-}
-
-#' Compute exact cross-validation for problematic observations
-#' 
-#' Compute exact cross-validation for problematic observations
-#' for which approximate leave-one-out cross-validation may
-#' return incorrect results.
-#' 
-#' @inheritParams LOO
-#' @param x An \R object typically of class \code{loo}.
-#' @param fit An \R object typically of class \code{brmsfit}.
-#' @param k_threshold The threshold at which pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
-#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
-#'   for more details.
-#' @param check Logical; If \code{TRUE} (the default), a crude 
-#'   check is performed if the \code{loo} object was generated
-#'   from the \code{brmsfit} object passed to argument \code{fit}.
-#' @param ... Further arguments passed to 
-#'   \code{\link{update.brmsfit}} such
-#'   as \code{iter}, \code{chains}, or \code{cores}.
-#'   
-#' @return An object of the class as \code{x}.
-#' 
-#' @details 
-#' Warnings about Pareto \eqn{k} estimates indicate observations
-#' for which the approximation to LOO is problematic (this is described in
-#' detail in Vehtari, Gelman, and Gabry (2017) and the 
-#' \pkg{\link[loo:loo-package]{loo}} package documentation).
-#' If there are \eqn{J} observations with \eqn{k} estimates above
-#' \code{k_threshold}, then \code{reloo} will refit the original model 
-#' \eqn{J} times, each time leaving out one of the \eqn{J} 
-#' problematic observations. The pointwise contributions of these observations
-#' to the total ELPD are then computed directly and substituted for the
-#' previous estimates from these \eqn{J} observations that are stored in the
-#' original \code{loo} object.
-#' 
-#' @seealso \code{\link{loo}}, \code{\link{kfold}}
-#' 
-#' @examples 
-#' \dontrun{
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
-#' # throws warning about some pareto k estimates being too high
-#' (loo1 <- loo(fit1))
-#' (loo1 <- reloo(loo1, fit1))
-#' }
-#' 
-#' @export
-reloo <- function(x, ...) {
-  UseMethod("reloo")
-}
-
-#' K-Fold Cross-Validation
-#' 
-#' Perform exact K-fold cross-validation by refitting the model \eqn{K}
-#' times each leaving out one-\eqn{K}th of the original data.
-#' 
-#' @inheritParams LOO
-#' @param K The number of subsets of equal (if possible) size
-#'   into which the data will be randomly partitioned for performing
-#'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
-#'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
-#'   number of observations in the data then \eqn{K}-fold cross-validation is
-#'   equivalent to exact leave-one-out cross-validation.
-#' @param Ksub Optional number of subsets (of those subsets defined by \code{K}) 
-#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
-#'   will be performed on all subsets. If \code{Ksub} is a single integer, 
-#'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
-#'   If \code{Ksub} consists of multiple integers, the corresponding subsets 
-#'   will be used. This argument is primarily useful, if evaluation of all 
-#'   subsets is infeasible for some reason.
-#' @param exact_loo Logical; If \code{TRUE}, exact leave-one-out cross-validation
-#'   will be performed and \code{K} will be ignored. This argument alters
-#'   the way argument \code{group} is handled as described below. 
-#'   Defaults to \code{FALSE}.
-#' @param group Optional name of a grouping variable or factor in the model.
-#'   How this variable is handled depends on argument \code{exact_loo}.
-#'   If \code{exact_loo} is \code{FALSE}, the data is split 
-#'   up into subsets, each time omitting all observations of one of the 
-#'   factor levels, while ignoring argument \code{K}. 
-#'   If \code{exact_loo} is \code{TRUE}, all observations corresponding 
-#'   to the factor level of the currently predicted single value are omitted. 
-#'   Thus, in this case, the predicted values are only a subset of the 
-#'   omitted ones.
-#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
-#'   the returned object to store the cross-validated \code{brmsfit} 
-#'   objects and the indices of the omitted observations for each fold. 
-#'   Defaults to \code{FALSE}.
-#'   
-#' @return \code{kfold} returns an object that has a similar structure as the 
-#'   objects returned by the \code{loo} and \code{waic} methods.
-#'    
-#' @details The \code{kfold} function performs exact \eqn{K}-fold
-#'   cross-validation. First the data are randomly partitioned into \eqn{K}
-#'   subsets of equal (or as close to equal as possible) size. Then the model is
-#'   refit \eqn{K} times, each time leaving out one of the \code{K} subsets. If
-#'   \eqn{K} is equal to the total number of observations in the data then
-#'   \eqn{K}-fold cross-validation is equivalent to exact leave-one-out
-#'   cross-validation (to which \code{loo} is an efficient approximation). The
-#'   \code{compare_ic} function is also compatible with the objects returned
-#'   by \code{kfold}.
-#'   
-#' @examples 
-#' \dontrun{
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
-#'               (1|patient) + (1|obs),
-#'            data = epilepsy, family = poisson())
-#' # throws warning about some pareto k estimates being too high
-#' (loo1 <- loo(fit1))
-#' # perform 10-fold cross validation
-#' (kfold1 <- kfold(fit1, update_args = list(chains = 2, cores = 2)))
-#' }   
-#'  
-#' @seealso \code{\link{loo}}, \code{\link{reloo}}
-#'  
-#' @export
-kfold <- function(x, ...) {
-  UseMethod("kfold")
-}
-
 #' Extract Stan model code
 #' 
 #' @aliases stancode.brmsfit
@@ -671,276 +365,45 @@ stanplot <- function(object, ...) {
   UseMethod("stanplot")
 }
 
-#' Display marginal effects of predictors
+#' Model Weighting Methods
 #' 
-#' Display marginal effects of one or more numeric and/or categorical 
-#' predictors including two-way interaction effects.
+#' Compute model weights in various ways, for instance via
+#' stacking of predictive distributions, Akaike weights, or
+#' marginal likelihoods.
 #' 
-#' @param x An \R object usually of class \code{brmsfit}.
-#' @param effects An optional character vector naming effects
-#'   (main effects or interactions) for which to compute marginal plots.
-#'   Interactions are specified by a \code{:} between variable names.
-#'   If \code{NULL} (the default), plots are generated for all main effects
-#'   and two-way interactions estimated in the model. When specifying
-#'   \code{effects} manually, \emph{all} two-way interactions may be plotted
-#'   even if not originally modeled.
-#' @param conditions An optional \code{data.frame} containing variable values
-#'   to condition on. Each effect defined in \code{effects} will
-#'   be plotted separately for each row of \code{data}. 
-#'   The row names of \code{data} will be treated as titles of the subplots. 
-#'   It is recommended to only define a few rows in order to keep the plots clear.
-#'   See \code{\link{make_conditions}} for an easy way to define conditions.
-#'   If \code{NULL} (the default), numeric variables will be marginalized
-#'   by using their means and factors will get their reference level assigned.
-#' @param int_conditions An optional named \code{list} whose elements are numeric
-#'   vectors of values of the second variables in two-way interactions. 
-#'   At these values, predictions are evaluated. The names of 
-#'   \code{int_conditions} have to match the variable names exactly.
-#'   Additionally, the elements of the numeric vectors may be named themselves,
-#'   in which case their names appear as labels for the conditions in the plots.
-#'   Instead of vectors, functions returning vectors may be passed and are
-#'   applied on the original values of the corresponding variable.
-#'   If \code{NULL} (the default), predictions are evaluated at the 
-#'   \eqn{mean} and at \eqn{mean +/- sd}. 
-#' @param re_formula A formula containing random effects to be considered 
-#'   in the marginal predictions. If \code{NULL}, include all random effects; 
-#'   if \code{NA} (default), include no random effects.
-#' @param robust If \code{TRUE} (the default) the median is used as the 
-#'   measure of central tendency. If \code{FALSE} the mean is used instead.
-#' @param probs The quantiles to be used in the computation of credible
-#'   intervals (defaults to 2.5 and 97.5 percent quantiles)
-#' @param method Either \code{"fitted"} or \code{"predict"}. 
-#'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
-#'   If \code{"predict"}, plot marginal predictions of the responses.
-#' @param spaghetti Logical. Indicates if predictions should
-#'   be visualized via spaghetti plots. Only applied for numeric
-#'   predictors. If \code{TRUE}, it is recommended 
-#'   to set argument \code{nsamples} to a relatively small value 
-#'   (e.g. \code{100}) in order to reduce computation time.
-#' @param surface Logical. Indicates if interactions or 
-#'   two-dimensional smooths should be visualized as a surface. 
-#'   Defaults to \code{FALSE}. The surface type can be controlled 
-#'   via argument \code{stype} of the related plotting method.
-#' @param ordinal Logical. Indicates if effects in ordinal models
-#'   should be visualized as a raster with the response categories
-#'   on the y-axis. Defaults to \code{FALSE} and ignored in
-#'   non-ordinal models.
-#' @param transform A function or a character string naming 
-#'   a function to be applied on the predicted responses
-#'   before summary statistics are computed. Only allowed
-#'   if \code{method = "predict"}.
-#' @param resolution Number of support points used to generate 
-#'   the plots. Higher resolution leads to smoother plots. 
-#'   Defaults to \code{100}. If \code{surface} is \code{TRUE},
-#'   this implies \code{10000} support points for interaction terms,
-#'   so it might be necessary to reduce \code{resolution} 
-#'   when only few RAM is available.
-#' @param too_far Positive number. 
-#'   For surface plots only: Grid points that are too 
-#'   far away from the actual data points can be excluded from the plot. 
-#'   \code{too_far} determines what is too far. The grid is scaled into 
-#'   the unit square and then grid points more than \code{too_far} 
-#'   from the predictor variables are excluded. By default, all
-#'   grid points are used. Ignored for non-surface plots.
-#' @param select_points Positive number. 
-#'   Only relevant if \code{points} or \code{rug} are set to \code{TRUE}: 
-#'   Actual data points of numeric variables that 
-#'   are too far away from the values specified in \code{conditions} 
-#'   can be excluded from the plot. Values are scaled into 
-#'   the unit interval and then points more than \code{select_points} 
-#'   from the values in \code{conditions} are excluded. 
-#'   By default, all points are used.
-#' @param ... Further arguments such as \code{subset} or \code{nsamples}
-#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
-#' @inheritParams plot.brmsfit
-#' @param ncol Number of plots to display per column for each effect.
-#'   If \code{NULL} (default), \code{ncol} is computed internally based
-#'   on the number of rows of \code{conditions}.
-#' @param points Logical; indicating whether the original data points
-#'   should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
-#'   Default is \code{FALSE}. Note that only those data points will be added
-#'   that match the specified conditions defined in \code{conditions}.
-#'   For categorical predictors, the conditions have to match exactly. 
-#'   For numeric predictors, argument \code{select_points} is used to
-#'   determine, which points do match a condition.
-#' @param rug Logical; indicating whether a rug representation of predictor
-#'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
-#'   Default is \code{FALSE}. Depends on \code{select_points} in the same
-#'   way as \code{points} does.
-#' @param mean Logical; only relevant for spaghetti plots.
-#'   If \code{TRUE} (the default), display the mean regression 
-#'   line on top of the regression lines for each sample.
-#' @param jitter_width Only used if \code{points = TRUE}: 
-#'   Amount of horizontal jittering of the data points.
-#'   Mainly useful for ordinal models. Defaults to \code{0} that 
-#'   is no jittering.
-#' @param stype Indicates how surface plots should be displayed.
-#'   Either \code{"contour"} or \code{"raster"}.
-#' @param line_args Only used in plots of continuous predictors:
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
-#' @param cat_args Only used in plots of categorical predictors:
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_point]{geom_point}}.
-#' @param errorbar_args Only used in plots of categorical predictors:
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
-#' @param surface_args Only used in surface plots:
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
-#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
-#'   (depending on argument \code{stype}).
-#' @param spaghetti_args Only used in spaghetti plots:
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
-#' @param point_args Only used if \code{points = TRUE}: 
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
-#' @param rug_args Only used if \code{rug = TRUE}: 
-#'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
-#' 
-#' @return An object of class \code{brmsMarginalEffects}, which is a named list
-#'   with one data.frame per effect containing all information required 
-#'   to generate marginal effects plots. Among others, these data.frames
-#'   contain some special variables, namely \code{estimate__} (predicted values
-#'   of the response), \code{se__} (standard error of the predicted response),
-#'   \code{lower__} and \code{upper__} (lower and upper bounds of the uncertainty
-#'   interval of the response), as well as \code{cond__} (used in faceting when 
-#'   \code{conditions} contains multiple rows).
+#' @inheritParams LOO
+#' @param weights Name of the criterion to compute weights from. 
+#'   Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
+#'   \code{"loo2"} (current default), or \code{"marglik"}. 
+#'   For the former three options, Akaike weights will be computed
+#'   based on the information criterion values returned by
+#'   the respective methods. For \code{"loo2"}, method
+#'   \code{\link{loo_model_weights}} will be used to obtain weights. 
+#'   For \code{"marglik"}, method \code{\link{post_prob}} 
+#'   will be used to compute weights based on log marginal 
+#'   likelihood values (make sure to specify reasonable priors in 
+#'   this case). Alternatively, \code{weights} can be a numeric vector 
+#'   of pre-specified weights.
 #'   
-#'   The corresponding \code{plot} method returns a named 
-#'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
-#'   customized using the \pkg{ggplot2} package.
-#'   
-#' @details When creating \code{marginal_effects} for a particular predictor 
-#'   (or interaction of two predictors), one has to choose the values of all 
-#'   other predictors to condition on. 
-#'   By default, the mean is used for continuous variables
-#'   and the reference category is used for factors, but you may change these
-#'   values via argument \code{conditions}. 
-#'   This also has an implication for the \code{points} argument: 
-#'   In the created plots, only those points will be shown that correspond 
-#'   to the factor levels actually used in the conditioning, in order not 
-#'   to create the false impression of bad model fit, where it is just 
-#'   due to conditioning on certain factor levels.
-#'   Since we condition on rather than actually marginalizing variables, 
-#'   the name  \code{marginal_effects} is possibly not ideally chosen in 
-#'   retrospect. 
-#' 
-#'   \code{NA} values within factors in \code{conditions}, 
-#'   are interpreted as if all dummy variables of this factor are 
-#'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding. 
-#'   
-#'   To fully change colors of the created plots, 
-#'   one has to amend both \code{scale_colour} and \code{scale_fill}.
-#'   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
-#'   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
-#'   for more details.
-#' 
-#' @examples 
-#' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1 | patient),
-#'            data = epilepsy, family = poisson()) 
-#'            
-#' ## plot all marginal effects
-#' plot(marginal_effects(fit), ask = FALSE)
-#' 
-#' ## change colours to grey scale
-#' me <- marginal_effects(fit, "log_Base4_c:Trt")
-#' plot(me, plot = FALSE)[[1]] + 
-#'   scale_color_grey() +
-#'   scale_fill_grey()
-#' 
-#' ## only plot the marginal interaction effect of 'log_Base4_c:Trt'
-#' ## for different values for 'log_Age_c'
-#' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
-#'                       conditions = conditions))
-#'                       
-#' ## also incorporate random effects variance over patients
-#' ## also add data points and a rug representation of predictor values
-#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
-#'                       conditions = conditions, re_formula = NULL), 
-#'      points = TRUE, rug = TRUE)
-#'  
-#' ## change handling of two-way interactions
-#' int_conditions <- list(
-#'   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
-#' )
-#' marginal_effects(fit, effects = "Trt:log_Base4_c",
-#'                  int_conditions = int_conditions)
-#' marginal_effects(fit, effects = "Trt:log_Base4_c",
-#'                  int_conditions = list(log_Base4_c = quantile))        
-#'      
-#' ## fit a model to illustrate how to plot 3-way interactions
-#' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
-#' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-#' rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
-#' marginal_effects(
-#'   fit3way, "log_Base4_c:Trt", conditions = conditions
-#' )
-#' ## only include points close to the specified values of log_Age_c
-#' me <- marginal_effects(
-#'  fit3way, "log_Base4_c:Trt", conditions = conditions, 
-#'  select_points = 0.1
-#' )
-#' plot(me, points = TRUE)
-#' }
-#' 
-#' @export
-marginal_effects <- function(x, ...) {
-  UseMethod("marginal_effects")
-}
-
-#' Display Smooth Terms
-#' 
-#' Display smooth \code{s} and \code{t2} terms of models
-#' fitted with \pkg{brms}.
-#' 
-#' @inheritParams marginal_effects
-#' @param smooths Optional character vector of smooth terms
-#'   to display. If \code{NULL} (the default) all smooth terms
-#'   are shown.
-#' @param subset A numeric vector specifying
-#'  the posterior samples to be used. 
-#'  If \code{NULL} (the default), all samples are used.
-#' @param nsamples Positive integer indicating how many 
-#'  posterior samples should be used. 
-#'  If \code{NULL} (the default) all samples are used.
-#'  Ignored if \code{subset} is not \code{NULL}.
-#' @param ... Currently ignored.
-#'   
-#' @return For the \code{brmsfit} method, 
-#' an object of class \code{brmsMarginalEffects}. See
-#' \code{\link{marginal_effects}} for 
-#' more details and documentation of the related plotting function.
-#' 
-#' @details Two-dimensional smooth terms will be visualized using
-#'   either contour or raster plots.
+#' @return A numeric vector of weights for the models.
 #'   
 #' @examples 
 #' \dontrun{
-#' set.seed(0) 
-#' dat <- mgcv::gamSim(1, n = 200, scale = 2)
-#' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
-#' # show all smooth terms
-#' plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
-#' # show only the smooth term s(x2)
-#' plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
 #' 
-#' # fit and plot a two-dimensional smooth term
-#' fit2 <- brm(y ~ t2(x0, x2), data = dat)
-#' ms <- marginal_smooths(fit2)
-#' plot(ms, stype = "contour")
-#' plot(ms, stype = "raster")
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # obtain Akaike weights based on the WAIC
+#' model_weights(fit1, fit2, weights = "waic")
 #' }
 #' 
 #' @export
-marginal_smooths <- function(x, ...) {
-  UseMethod("marginal_smooths")
+model_weights <- function(x, ...) {
+  UseMethod("model_weights")
 }
 
 #' Posterior predictive samples averaged across models
@@ -950,25 +413,31 @@ marginal_smooths <- function(x, ...) {
 #' Akaike weights based on information criteria or 
 #' marginal likelihoods.
 #' 
-#' @aliases pp_average
-#' 
-#' @param x A \code{brmsfit} object.
-#' @param ... More \code{brmsfit} objects.
-#' @param weights Name of the criterion to compute weights from. 
-#'   Should be one of \code{"loo"} (default), 
-#'   \code{"waic"}, \code{"kfold"}, or \code{"bridge"} 
-#'   (log marginal likelihood). Alternatively, a numeric
-#'   vector with pre-specified weights.
+#' @inheritParams model_weights
 #' @param method Type of predictions to average. Should be one of 
 #'   \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}. 
-#' @param more_args Optional \code{list} of further arguments 
-#'   passed to the function specified in \code{method}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
-#' @inheritParams predict.brmsfit
+#' @param nsamples Total number of posterior samples to use.
+#' @param seed A single numeric value passed to \code{\link{set.seed}}
+#'   to make results reproducible.
+#' @param summary Should summary statistics 
+#'   (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values? Default is \code{TRUE}.
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs  The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
 #' 
 #' @return Same as the output of the method specified 
 #'   in argument \code{method}.
+#'   
+#' @details Weights are computed with the \code{\link{model_weights}} method.
+#'   
+#' @seealso \code{\link{model_weights}}, \code{\link{posterior_average}}
 #'   
 #' @examples 
 #' \dontrun{
@@ -991,6 +460,48 @@ marginal_smooths <- function(x, ...) {
 #' @export
 pp_average <- function(x, ...) {
   UseMethod("pp_average")
+}
+
+#' Posterior samples of parameters averaged across models
+#' 
+#' Extract posterior samples of parameters averaged across models.
+#' Weighting can be done in various ways, for instance using
+#' Akaike weights based on information criteria or 
+#' marginal likelihoods.
+#' 
+#' @inheritParams pp_average
+#' @param pars Names of parameters for which to average across models.
+#'   Only those parameters can be averaged that appear in every model.
+#'   Defaults to all overlapping parameters.
+#' @param missing An optional numeric value or a named list of numeric values 
+#'   to use if a model does not contain a parameter for which posterior samples 
+#'   should be averaged. Defaults to \code{NULL}, in which case only those
+#'   parameters can be averaged that are present in all of the models.
+#' 
+#' @return A \code{data.frame} of posterior samples. Samples are rows
+#'   and parameters are columns.
+#' 
+#' @details Weights are computed with the \code{\link{model_weights}} method.
+#' 
+#' @seealso \code{\link{model_weights}}, \code{\link{pp_average}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
+#' 
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # compute model-averaged posteriors of overlapping parameters
+#' posterior_average(fit1, fit2, weights = "waic")
+#' }
+#' 
+#' @export
+posterior_average <- function(x, ...) {
+  UseMethod("posterior_average")
 }
 
 #' Posterior Probabilities of Mixture Component Memberships

@@ -24,10 +24,10 @@ test_that("Poisson model from brm doc works correctly", {
   me1 <- marginal_effects(fit1)
   expect_ggplot(plot(me1, ask = FALSE)[[4]])
   ## investigate model fit
-  expect_range(WAIC(fit1)$waic, 1120, 1160)
+  expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
   # test kfold
-  kfold1 <- kfold(fit1, update_args = list(chains = 1, iter = 1000))
+  kfold1 <- kfold(fit1, chains = 1, iter = 1000)
   expect_range(kfold1$kfoldic, 1210, 1260)
 })
 
@@ -41,7 +41,7 @@ test_that("Ordinal model from brm doc works correctly", {
     iter = 1000, chains = 2, cores = 2
   )
   print(fit2)
-  expect_range(WAIC(fit2)$waic, 900, 950)
+  expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
   expect_warning(me <- marginal_effects(fit2, effect = "treat"),
                  "Predictions are treated as continuous variables")
   expect_ggplot(plot(me)[[1]])
@@ -57,7 +57,7 @@ test_that("Survival model from brm doc works correctly", {
   print(fit3)
   me3 <- marginal_effects(fit3, method = "predict")
   expect_ggplot(plot(me3, ask = FALSE)[[2]])
-  expect_range(LOO(fit3)$looic, 650, 740)
+  expect_range(LOO(fit3)$estimates[3, 1], 650, 740)
 })
 
 test_that("Binomial model from brm doc works correctly", {
@@ -110,7 +110,7 @@ test_that("ARMA models work correctly", {
   fit_ma <- brm(y ~ x, data = dat, autocor = cor_ma(q = 1),
                 chains = 2, cores = 2)
   print(fit_ma)
-  expect_gt(LOO(fit_ma)$looic, LOO(fit_ar)$looic)
+  expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
 
   fit_arma <- brm(y ~ x + (1|g), data = dat,
                   autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
@@ -118,7 +118,7 @@ test_that("ARMA models work correctly", {
                             prior(normal(0, 6), class = "ma")),
                   chains = 2, cores = 2)
   print(fit_arma)
-  expect_range(waic(fit_arma)$waic, 280, 400)
+  expect_range(waic(fit_arma)$estimates[3, 1], 280, 400)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
 
@@ -196,10 +196,9 @@ test_that("varying slopes without a fixed effect work", {
   # test reloo
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
-  expect_range(reloo1$looic, 1600, 1700)
-  up_args <- list(chains = 1, iter = 100)
-  reloo2 <- LOO(fit1, reloo = TRUE, update_args = up_args)
-  expect_range(reloo2$looic, 1600, 1700)
+  expect_range(reloo1$estimates[3, 1], 1600, 1700)
+  reloo2 <- LOO(fit1, reloo = TRUE, chains = 1, iter = 100)
+  expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
   conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
   me <- marginal_effects(fit1, conditions = conditions)
@@ -210,7 +209,7 @@ test_that("varying slopes without a fixed effect work", {
   me <- marginal_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 
-  expect_range(WAIC(fit1)$waic, 1500, 1600)
+  expect_range(WAIC(fit1)$estimates[3, 1], 1500, 1600)
   expect_equal(dim(predict(fit1)), c(nobs(fit1), 4))
 })
 
@@ -221,7 +220,7 @@ test_that("categorical models work correctly", {
                         prior(normal(0,5), "Intercept")),
               chains = 2, cores = 2)
   print(fit2)
-  expect_range(WAIC(fit2)$waic, 830, 900)
+  expect_range(WAIC(fit2)$estimates[3, 1], 830, 900)
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
@@ -274,7 +273,7 @@ test_that("generalized multivariate models work correctly", {
 
   print(fit_mv)
   expect_ggplot(pp_check(fit_mv, resp = "back"))
-  expect_range(waic(fit_mv)$waic, 4300, 4400)
+  expect_range(waic(fit_mv)$estimates[3, 1], 4300, 4400)
   expect_ggplot(plot(marginal_effects(fit_mv), ask = FALSE)[[1]])
   expect_ggplot(plot(marginal_smooths(fit_mv))[[1]])
   expect_equal(dim(coef(fit_mv)$fosternest), c(104, 4, 7))
@@ -320,7 +319,7 @@ test_that("ZI and HU models work correctly", {
   print(fit_zibeta)
   expect_equal(dim(predict(fit_zibeta)), c(nobs(fit_zibeta), 4))
   expect_ggplot(plot(marginal_effects(fit_zibeta), ask = FALSE)[[1]])
-  expect_range(WAIC(fit_zibeta)$waic, -100, -70)
+  expect_range(WAIC(fit_zibeta)$estimates[3, 1], -100, -70)
 })
 
 test_that("Non-linear models work correctly", {
@@ -338,7 +337,7 @@ test_that("Non-linear models work correctly", {
   )
   print(fit_loss)
   expect_ggplot(plot(marginal_effects(fit_loss))[[1]])
-  expect_range(LOO(fit_loss)$looic, 700, 720)
+  expect_range(LOO(fit_loss)$estimates[3, 1], 700, 720)
 })
 
 test_that("Non-linear models of distributional parameters work correctly", {
@@ -353,7 +352,7 @@ test_that("Non-linear models of distributional parameters work correctly", {
   print(fit)
   expect_ggplot(plot(marginal_effects(fit, method = "predict"), ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
-  expect_range(LOO(fit)$looic, 240, 350)
+  expect_range(LOO(fit)$estimates[3, 1], 240, 350)
 })
 
 test_that("Nested non-linear models work correctly", {
@@ -393,7 +392,7 @@ test_that("Multivariate GAMMs work correctly", {
   ms <- marginal_smooths(fit_gam, resolution = 100, too_far = 0.05)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
 
-  expect_range(loo(fit_gam)$looic, 880, 940)
+  expect_range(loo(fit_gam)$estimates[3, 1], 880, 940)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
 
   newd <- data.frame(x0=(0:30)/30, x1=(0:30)/30,
@@ -446,7 +445,7 @@ test_that("generalized extreme value models work correctly", {
 
   prfi <- cbind(predict(fit_gev), fitted(fit_gev))
   expect_range(prfi[, 1], prfi[, 5] - 0.03, prfi[, 5] + 0.03)
-  # expect_range(loo(fit_gev)$looic, -115, -95)
+  # expect_range(loo(fit_gev)$estimates[3, 1], -115, -95)
   me <- marginal_effects(fit_gev, "cYear")
   expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
 })
@@ -501,7 +500,7 @@ test_that("disc parameter in ordinal models is handled correctly", {
      chains = 2, cores = 2
   )
   print(fit)
-  expect_range(waic(fit)$waic, 870, 920)
+  expect_range(waic(fit)$estimates[3, 1], 870, 920)
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
   expect_ggplot(plot(marginal_effects(fit), ask = FALSE,
@@ -543,7 +542,7 @@ test_that("Mixture models work correctly", {
   print(fit2)
   expect_ggplot(pp_check(fit2))
   loo2 <- LOO(fit2)
-  expect_gt(loo2$looic, loo1$looic)
+  expect_gt(loo2$estimates[3, 1], loo1$estimates[3, 1])
   expect_equal(dim(pp_mixture(fit2)), c(nobs(fit2), 4, 3))
 
   bform3 <- bf(bform1, theta1 ~ z, theta2 ~ 1)
@@ -558,7 +557,9 @@ test_that("Mixture models work correctly", {
   print(fit3)
   expect_ggplot(pp_check(fit3))
   loo3 <- LOO(fit3, pointwise = TRUE)
-  expect_range(loo3$looic, loo1$looic - 20, loo1$looic + 20)
+  expect_range(loo3$estimates[3, 1],
+    loo1$estimates[3, 1] - 20, loo1$estimates[3, 1] + 20
+  )
   expect_equal(dim(pp_mixture(fit3)), c(nobs(fit3), 4, 3))
 })
 
@@ -571,7 +572,7 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(pp_check(fit1))
   me = marginal_effects(fit1, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[3]])
-  expect_range(WAIC(fit1)$waic, 100, 200)
+  expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
   # multivariate GPs
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, cores = 2)
@@ -582,7 +583,7 @@ test_that("Gaussian processes work correctly", {
     surface = TRUE, resolution = 10
   )
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(WAIC(fit2)$waic, 100, 200)
+  expect_range(WAIC(fit2)$estimates[3, 1], 100, 200)
 
   # GP with continuous 'by' variable
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2)
@@ -590,7 +591,7 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(pp_check(fit3))
   me = marginal_effects(fit3, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(WAIC(fit3)$waic, 100, 200)
+  expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
   
   # GP with factor 'by' variable
   dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
@@ -599,7 +600,7 @@ test_that("Gaussian processes work correctly", {
   expect_ggplot(pp_check(fit4))
   me = marginal_effects(fit4, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(WAIC(fit4)$waic, 400, 600)
+  expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
 
 test_that("SAR models work correctly", {
@@ -612,7 +613,7 @@ test_that("SAR models work correctly", {
   expect_ggplot(pp_check(fit_lagsar))
   me = marginal_effects(fit_lagsar, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(LOO(fit_lagsar)$looic, 350, 380)
+  expect_range(LOO(fit_lagsar)$estimates[3, 1], 350, 380)
   
   fit_errorsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
                       autocor = cor_errorsar(COL.nb), 
@@ -621,7 +622,7 @@ test_that("SAR models work correctly", {
   expect_ggplot(pp_check(fit_errorsar))
   me = marginal_effects(fit_errorsar, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(LOO(fit_errorsar)$looic, 350, 380)
+  expect_range(LOO(fit_errorsar)$estimates[3, 1], 350, 380)
 })
 
 test_that("CAR models work correctly", {
@@ -659,7 +660,7 @@ test_that("CAR models work correctly", {
   expect_ggplot(pp_check(fit_car))
   me = marginal_effects(fit_car, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(LOO(fit_car)$looic, 450, 550)
+  expect_range(LOO(fit_car)$estimates[3, 1], 450, 550)
   expect_false(isTRUE(all.equal(
     fitted(fit_car, newdata = dat[1:5, ]), 
     fitted(fit_car, newdata = dat[1:5, ], incl_autocor = FALSE)
@@ -690,7 +691,7 @@ test_that("Missing value imputation works correctly", {
   me <- marginal_effects(fit_imp2, resp = "bmi")
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
-  expect_range(loo$looic, 200, 220)
+  expect_range(loo$estimates[3, 1], 200, 220)
   
   # overimputation within Stan
   dat <- nhanes
@@ -704,5 +705,5 @@ test_that("Missing value imputation works correctly", {
   me <- marginal_effects(fit_imp3, resp = "bmi")
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
-  expect_range(loo$looic, 200, 220)
+  expect_range(loo$estimates[3, 1], 200, 220)
 })

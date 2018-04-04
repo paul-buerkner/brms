@@ -10,6 +10,7 @@ r_check_args: '--ignore-vignettes'
 
 r_github_packages:
   - jimhester/covr
+  - stan-dev/loo
   
 after_success:
   - travis_wait 30 Rscript -e 'covr::codecov()'

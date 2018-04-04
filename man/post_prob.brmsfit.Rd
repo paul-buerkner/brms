@@ -5,13 +5,13 @@
 \alias{post_prob}
 \title{Posterior Model Probabilities from Marginal Likelihoods}
 \usage{
-\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL, model_names = NULL,
-  bs_args = list())
+\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL, model_names = NULL)
 }
 \arguments{
-\item{x}{A \code{brmsfit} object.}
+\item{x}{A fitted model object.}
 
-\item{...}{More \code{brmsfit} objects.}
+\item{...}{More fitted model objects or further arguments
+passed to the underlying post-processing functions.}
 
 \item{prior_prob}{Numeric vector with prior model probabilities. 
 If omitted, a uniform prior is used (i.e., all models are equally 
@@ -21,9 +21,6 @@ prior model weights.}
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
 values as model names.}
-
-\item{bs_args}{A list of additional arguments passed to 
-\code{\link[brms:bridge_sampler]{bridge_sampler}}.}
 }
 \description{
 Compute posterior model probabilities from marginal likelihoods.
