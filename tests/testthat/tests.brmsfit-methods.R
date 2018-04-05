@@ -43,6 +43,10 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(as.mcmc(fit1, inc_warmup = TRUE)[[1]]), 
                c(fit1$fit@sim$iter, length(parnames(fit1))))
   
+  # autocor
+  expect_true(is.cor_arma(autocor(fit1)))
+  expect_true(is.cor_brms(autocor(fit6, resp = "count")))
+  
   # bayes_factor
   # don't test for now as it requires calling Stan's C++ code
   

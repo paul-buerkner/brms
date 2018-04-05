@@ -400,10 +400,10 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
     } else {
       x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
     }
-    for (name in names(x$stanvars)) {
-      if (name %in% names(new_objects)) {
-        x$stanvars[[name]]$sdata <- new_objects[[name]]
-      }
+  }
+  for (name in names(x$stanvars)) {
+    if (name %in% names(new_objects)) {
+      x$stanvars[[name]]$sdata <- new_objects[[name]]
     }
   }
   x

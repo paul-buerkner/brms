@@ -305,13 +305,13 @@ standata <- function(object, ...) {
 
 #' Extract Autocorrelation Structures
 #' 
-#' @param x A \R object.
+#' @param object An \R object.
 #' @param ... Further arguments passed to or from other methods.
 #' 
 #' @return What exactly is returned depends on the specific method.
 #' 
 #' @export
-autocor <- function(x, ...) {
+autocor <- function(object, ...) {
   UseMethod("autocor")
 }
 

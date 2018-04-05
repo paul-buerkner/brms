@@ -870,7 +870,10 @@ family.brmsfit <- function(object, resp = NULL, ...) {
     resp <- validate_resp(resp, object$formula$responses)
     family <- object$formula$forms[[resp]]$family
   } else {
-    family <- object$family
+    family <- get_element(object$formula, "family")
+    if (is.null(family)) {
+      family <- object$family
+    }
   }
   family
 }
@@ -883,7 +886,10 @@ autocor.brmsfit <- function(object, resp = NULL, ...) {
     resp <- validate_resp(resp, object$formula$responses)
     autocor <- object$formula$forms[[resp]]$autocor
   } else {
-    autocor <- object$autocor
+    autocor <- get_element(object$formula, "autocor")
+    if (is.null(autocor)) {
+      autocor <- object$autocor
+    }
   }
   autocor
 }

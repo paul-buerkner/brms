@@ -4,10 +4,10 @@
 \alias{autocor}
 \title{Extract Autocorrelation Structures}
 \usage{
-autocor(x, ...)
+autocor(object, ...)
 }
 \arguments{
-\item{x}{A \R object.}
+\item{object}{An \R object.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }
