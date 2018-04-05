@@ -367,7 +367,7 @@ test_that("Nested non-linear models work correctly", {
     prior(normal(0, 1), nlpar = "b")
   fit <- brm(bform, dat, prior = bprior, family = Beta())
   print(fit)
-  
+
   me <- marginal_effects(fit)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_range(bayes_R2(fit)[, 1], 0.2, 0.55)
