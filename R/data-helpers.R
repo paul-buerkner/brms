@@ -388,18 +388,22 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
     }
     return(autocor)
   }
-  if (is_mv(x)) {
-    resps <- names(x$formula$forms)
-    for (i in seq_along(resps)) {
-      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- 
-        .update_autocor(x$formula$forms[[i]]$autocor, resps[i])
+  if (!isTRUE(attr(x, "autocor_updated"))) {
+    # attribute is set by subset_autocor() to prevent double updating
+    if (is_mv(x)) {
+      resps <- names(x$formula$forms)
+      for (i in seq_along(resps)) {
+        new_autocor <- autocor(x, resp = resps[i])
+        new_autocor <- .update_autocor(new_autocor, resps[i])
+        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+      }
+    } else {
+      x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
     }
-  } else {
-    x$formula$autocor <- x$autocor <- .update_autocor(x$formula$autocor)
-  }
-  for (name in names(x$stanvars)) {
-    if (name %in% names(new_objects)) {
-      x$stanvars[[name]]$sdata <- new_objects[[name]]
+    for (name in names(x$stanvars)) {
+      if (name %in% names(new_objects)) {
+        x$stanvars[[name]]$sdata <- new_objects[[name]]
+      }
     }
   }
   x

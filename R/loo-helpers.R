@@ -664,7 +664,9 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
     )
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
+    fit_j <- subset_autocor(fit, -omitted)
+    fit_j <- SW(update(fit_j, newdata = mf_omitted, refresh = 0, ...))
+    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
     lls[[j]] <- log_lik(
       fit_j, newdata = mf[omitted, , drop = FALSE],
       allow_new_levels = TRUE, resp = resp
@@ -674,6 +676,7 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
   elpd_loo <- unlist(lapply(lls, log_mean_exp))
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
+  fit <- subset_autocor(fit, obs)
   ll_x <- log_lik(fit, newdata = mf[obs, , drop = FALSE])
   hat_lpd <- apply(ll_x, 2, log_mean_exp)
   # compute effective number of parameters
@@ -681,9 +684,9 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
   # replace parts of the loo object with these computed quantities
   sel <- c("elpd_loo", "p_loo", "looic")
   x$pointwise[obs, sel] <- cbind(elpd_loo, p_loo, -2 * elpd_loo)
-  x[sel] <- colSums(x$pointwise[, sel])
-  x[paste0("se_", sel)] <- 
-    sqrt(nrow(x$pointwise) * apply(x$pointwise[, sel], 2, var))
+  new_pw <- x$pointwise[, sel, drop = FALSE]
+  x[sel] <- colSums(new_pw)
+  x[paste0("se_", sel)] <- sqrt(nrow(x$pointwise) * apply(new_pw, 2, var))
   # what should we do about pareto k? for now setting them to 0
   x$pareto_k[obs] <- 0
   x
@@ -736,20 +739,22 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       stop2("'Ksub' must contain positive integers not larger than 'K'.")
     }
     if (length(Ksub) == 1L) {
-      Ksub <- sort(sample(seq_len(K), Ksub))
+      Ksub <- sample(seq_len(K), Ksub)
     } else {
       Ksub <- unique(Ksub)
     }
+    Ksub <- sort(Ksub)
   }
-  lppds <- pred_ids <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(
       list(), dim = c(length(Ksub), 2), 
       dimnames = list(NULL, c("fit", "omitted"))
     )
   }
+  lppds <- obs_order <- vector("list", length(Ksub))
   for (k in Ksub) {
     message("Fitting model ", k, " out of ", K)
+    ks <- match(k, Ksub)
     if (exact_loo && !is.null(group)) {
       omitted <- which(bin == bin[k])
       predicted <- k
@@ -757,20 +762,21 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
       omitted <- predicted <- which(bin == k)
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
-    ks <- match(k, Ksub)
-    pred_ids[[ks]] <- predicted
+    fit_k <- subset_autocor(x, -omitted)
+    fit_k <- SW(update(fit_k, newdata = mf_omitted, refresh = 0, ...))
+    if (save_fits) {
+      fits[ks, ] <- list(fit = fit_k, omitted = omitted) 
+    }
+    fit_k <- subset_autocor(fit_k, predicted, autocor = x$autocor)
+    obs_order[[ks]] <- predicted
     lppds[[ks]] <- log_lik(
       fit_k, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE, resp = resp
     )
-    if (save_fits) {
-      fits[ks, ] <- list(fit = fit_k, omitted = omitted) 
-    }
   }
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
   # make sure elpds are put back in the right order
-  elpds <- elpds[order(unlist(pred_ids))]
+  elpds <- elpds[order(unlist(obs_order))]
   elpd_kfold <- sum(elpds)
   se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
   rnames <- c("elpd_kfold", "p_kfold", "kfoldic")

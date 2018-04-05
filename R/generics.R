@@ -303,6 +303,18 @@ standata <- function(object, ...) {
   UseMethod("standata")
 }
 
+#' Extract Autocorrelation Structures
+#' 
+#' @param x A \R object.
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return What exactly is returned depends on the specific method.
+#' 
+#' @export
+autocor <- function(x, ...) {
+  UseMethod("autocor")
+}
+
 #' MCMC Plots Implemented in \pkg{bayesplot} 
 #' 
 #' Convenient way to call MCMC plotting functions 

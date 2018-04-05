@@ -580,6 +580,38 @@ remove_autocor <- function(x) {
   x
 }
 
+subset_autocor <- function(x, subset, autocor = NULL) {
+  # subset matrices stored in cor_brms objects
+  # Args:
+  #   x: a brmsfit object to be updated
+  #   subset: indices of observations to keep
+  #   autocor: optional (list of) cor_brms objects
+  #     from which to take matrices
+  # Returns:
+  #   an updated brmsfit object
+  .subset_autocor <- function(autocor) {
+    if (is.cor_sar(autocor)) {
+      autocor$W <- autocor$W[subset, subset, drop = FALSE]
+    } else if (is.cor_fixed(autocor)) {
+      autocor$V <- autocor$V[subset, subset, drop = FALSE]
+    }
+    return(autocor)
+  }
+  if (is.null(autocor)) {
+    autocor <- autocor(x)
+  }
+  if (is_mv(x)) {
+    for (i in seq_along(x$formula$forms)) {
+      new_autocor <- .subset_autocor(autocor[[i]])
+      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+    }
+  } else {
+    x$formula$autocor <- x$autocor <- .subset_autocor(autocor)
+  }
+  # prevents double updating in add_new_objects()
+  structure(x, autocor_updated = TRUE)
+}
+
 regex_cor_pars <- function() {
   # regex to extract all pars of cor structures
   # used in summary.brmsfit

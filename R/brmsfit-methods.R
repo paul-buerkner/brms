@@ -875,6 +875,19 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   family
 }
 
+#' @export
+autocor.brmsfit <- function(object, resp = NULL, ...) {
+  if (!is.null(resp)) {
+    stopifnot(is_mv(object))
+    resp <- as_one_character(resp)
+    resp <- validate_resp(resp, object$formula$responses)
+    autocor <- object$formula$forms[[resp]]$autocor
+  } else {
+    autocor <- object$autocor
+  }
+  autocor
+}
+
 #' @rdname stancode
 #' @export
 stancode.brmsfit <- function(object, version = TRUE, ...) {
