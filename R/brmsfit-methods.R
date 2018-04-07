@@ -1103,34 +1103,37 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   if ("x" %in% mcmc_arg_names) {
     if (grepl("^nuts_", type)) {
       # x refers to a molten data.frame of NUTS parameters
-      mcmc_args[["x"]] <- nuts_params(object)
+      mcmc_args$x <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
       samples <- posterior_samples(
         object, pars, add_chain = TRUE, exact_match = exact_match
       )
+      if (!length(samples)) {
+        stop2("No valid parameters selected.")
+      }
       samples$iter <- NULL
       sel_pars <- names(samples)[!names(samples) %in% "chain"]
       if (type %in% c("scatter", "hex") && length(sel_pars) != 2L) {
         stop2("Exactly 2 parameters must be selected for this type.",
               "\nParameters selected: ", collapse_comma(sel_pars))
       }
-      mcmc_args[["x"]] <- samples
+      mcmc_args$x <- samples
     }
   }
   if ("lp" %in% mcmc_arg_names) {
-    mcmc_args[["lp"]] <- log_posterior(object)
+    mcmc_args$lp <- log_posterior(object)
   }
   use_nuts <- isTRUE(object$algorithm == "sampling")
   if ("np" %in% mcmc_arg_names && use_nuts) {
-    mcmc_args[["np"]] <- nuts_params(object)
+    mcmc_args$np <- nuts_params(object)
   }
   interval_type <- type %in% c("intervals", "areas")
   if ("rhat" %in% mcmc_arg_names && !interval_type) {
-    mcmc_args[["rhat"]] <- rhat(object)
+    mcmc_args$rhat <- rhat(object)
   }
   if ("ratio" %in% mcmc_arg_names) {
-    mcmc_args[["ratio"]] <- neff_ratio(object)
+    mcmc_args$ratio <- neff_ratio(object)
   }
   do.call(mcmc_fun, mcmc_args)
 }
