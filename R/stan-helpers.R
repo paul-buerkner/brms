@@ -1128,7 +1128,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
       }
       if (length(spars)) {
-        bpars <- grepl("^b(|sp|cs)(_|$)", pars)
+        bpars <- grepl("^(b|(bsp)|(bcs))(_|$)", pars)
         args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
       }
       lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")
