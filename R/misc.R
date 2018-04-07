@@ -59,7 +59,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
 
 subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   # subset x using arguments passed via ls and ...
-  x[find_rows(x, ..., ls = ls, fun = fun), ]
+  x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
 select_indices <- function(x, i) {

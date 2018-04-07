@@ -241,116 +241,117 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
   out <- list()
-  if (identical(sample_prior, "yes")) {
-    prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
-    prior <- prior[nzchar(prior)]
-    pars_regex <- "(?<=_lpdf\\()[^|]+" 
-    pars <- get_matches(pars_regex, prior, perl = TRUE, first = TRUE)
-    pars <- gsub("to_vector\\(|\\)$", "", pars)
-    excl_regex <- "^(z|(zs)|(zb)|(zgp)|(Xn)|Y|(hs))_?"
-    ilp_regex <- "^increment_log_prob\\("
-    take <- !(grepl(excl_regex, pars) | grepl(ilp_regex, pars))
-    prior <- prior[take]
-    pars <- sub("^L_", "cor_", pars[take])
-    pars <- sub("^Lrescor", "rescor", pars)
-    dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
-    dis <- get_matches(dis_regex, prior, perl = TRUE, first = TRUE)
-    dis <- sub("corr_cholesky$", "corr", dis)
-    args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
-    args <- get_matches(args_regex, prior, perl = TRUE, first = TRUE)
-    args <- ifelse(grepl("^lkj_corr$", dis), paste0("2,", args), args)
-    type <- rep("real", length(pars))
-    
-    # rename parameters containing indices
-    has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
-    pars[has_ind] <- ulapply(pars[has_ind], function(par) {
-      ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
-      ind <- get_matches(ind_regex, par, perl = TRUE)
-      gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
-    })
-    
-    # extract information from the initial parameter definition
-    par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
-    par_declars <- gsub("^[[:blank:]]*", "", par_declars)
-    par_declars <- par_declars[!grepl("^//", par_declars)]
-    all_pars_regex <- "(?<= )[^[:blank:]]+(?=;)"
-    all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE) 
-    all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
-    all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
-    all_types <- get_matches("^[^[:blank:]]+", par_declars)
-    
-    # define parameter types and boundaries
-    bounds <- rep("", length(pars))
-    types <- rep("real", length(pars))
-    for (i in seq_along(all_pars)) {
-      k <- which(grepl(paste0("^", all_pars[i]), pars))
-      bounds[k] <- all_bounds[i]
-      if (grepl("^simo", all_pars[i])) {
-        types[k] <- all_types[i]
-      }
+  if (!sample_prior %in% "yes") {
+    return(out)
+  }
+  prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
+  prior <- prior[nzchar(prior)]
+  pars_regex <- "(?<=_lpdf\\()[^|]+" 
+  pars <- get_matches(pars_regex, prior, perl = TRUE, first = TRUE)
+  pars <- gsub("to_vector\\(|\\)$", "", pars)
+  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs")
+  excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
+  excl_regex <- paste0("^(", excl_regex, ")(_|$)")
+  take <- !grepl(excl_regex, pars)
+  prior <- prior[take]
+  pars <- pars[take]
+  pars <- sub("^L_", "cor_", pars)
+  pars <- sub("^Lrescor", "rescor", pars)
+  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
+  dis <- get_matches(dis_regex, prior, perl = TRUE, first = TRUE)
+  dis <- sub("corr_cholesky$", "corr", dis)
+  args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
+  args <- get_matches(args_regex, prior, perl = TRUE, first = TRUE)
+  args <- ifelse(grepl("^lkj_corr$", dis), paste0("2,", args), args)
+  type <- rep("real", length(pars))
+  
+  # rename parameters containing indices
+  has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
+  pars[has_ind] <- ulapply(pars[has_ind], function(par) {
+    ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
+    ind <- get_matches(ind_regex, par, perl = TRUE)
+    gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
+  })
+  
+  # extract information from the initial parameter definition
+  par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
+  par_declars <- gsub("^[[:blank:]]*", "", par_declars)
+  par_declars <- par_declars[!grepl("^//", par_declars)]
+  all_pars_regex <- "(?<= )[^[:blank:]]+(?=;)"
+  all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE) 
+  all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
+  all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
+  all_types <- get_matches("^[^[:blank:]]+", par_declars)
+  
+  # define parameter types and boundaries
+  bounds <- rep("", length(pars))
+  types <- rep("real", length(pars))
+  for (i in seq_along(all_pars)) {
+    k <- which(grepl(paste0("^", all_pars[i]), pars))
+    bounds[k] <- all_bounds[i]
+    if (grepl("^simo", all_pars[i])) {
+      types[k] <- all_types[i]
     }
-    
-    # distinguish between bounded and unbounded parameters
-    has_bounds <- as.logical(nchar(bounds))
-    if (any(has_bounds)) {  
-      # bounded parameters have to be sampled in the model block
-      str_add(out$par) <- paste0(
-        "  // parameters to store prior samples\n",
-        collapse(
-          "  real", bounds[has_bounds], 
-          " prior_", pars[has_bounds], ";\n"
-        )
+  }
+  
+  # distinguish between bounded and unbounded parameters
+  has_bounds <- as.logical(nchar(bounds))
+  if (any(has_bounds)) {  
+    # bounded parameters have to be sampled in the model block
+    str_add(out$par) <- paste0(
+      "  // parameters to store prior samples\n",
+      collapse(
+        "  real", bounds[has_bounds], 
+        " prior_", pars[has_bounds], ";\n"
       )
-      str_add(out$model) <- paste0(
-        "  // additionally draw samples from priors\n",
-        collapse(
-          "  target += ", dis[has_bounds], "_lpdf(",
-          "prior_", pars[has_bounds], " | ", args[has_bounds], "); \n"
-        )
+    )
+    str_add(out$model) <- paste0(
+      "  // additionally draw samples from priors\n",
+      collapse(
+        "  target += ", dis[has_bounds], "_lpdf(",
+        "prior_", pars[has_bounds], " | ", args[has_bounds], ");\n"
       )
+    )
+  }
+  no_bounds <- !has_bounds
+  if (any(no_bounds)) {
+    # use parameters sampled from priors for use in other priors
+    spars <- character(0)
+    # cannot sample from the horseshoe prior anymore as of brms 1.5.0
+    lasso_prefix <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
+    lasso_prefix <- names(prior_special)[lasso_prefix]
+    lasso_prefix <- usc(sub("^mu(_|$)", "", lasso_prefix))
+    if (length(lasso_prefix)) {
+      spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
     }
-    no_bounds <- !has_bounds
-    if (any(no_bounds)) {
-      # use parameters sampled from priors for use in other priors
-      spars <- NULL
-      # cannot sample from the horseshoe prior anymore as of brms 1.5.0
-      lasso_prefix <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
-      lasso_prefix <- names(prior_special)[lasso_prefix]
-      lasso_prefix <- usc(sub("^mu(_|$)", "", lasso_prefix))
-      if (length(lasso_prefix)) {
-        spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
-      }
-      if (length(spars)) {
-        bpars <- grepl("^(b|(bsp)|(bcs))(_|$)", pars)
-        args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
-      }
-      lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")
-      # unbounded parameters can be sampled in the generatated quantities block
-      str_add(out$genD) <- paste0(
-        "  // additionally draw samples from priors \n",
-        collapse(
-          "  ", types[no_bounds], " prior_", pars[no_bounds], 
-          " = ", dis[no_bounds], "_rng(", args[no_bounds], ")",
-          lkj_index, "; \n"
-        )
-      )
+    if (length(spars)) {
+      bpars <- grepl("^(b|(bsp)|(bcs))(_|$)", pars)
+      args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
     }
-    # compute priors for the actual population-level intercepts
-    is_temp_intercept <- grepl("^temp.*_Intercept", pars)
-    if (any(is_temp_intercept)) {
-      temp_intercepts <- pars[is_temp_intercept]
-      p <- gsub("^temp|_Intercept$", "", temp_intercepts)
-      intercepts <- paste0("b", p, "_Intercept")
-      regex <- paste0(" (\\+|-) dot_product\\(means_X", p, ", b", p, "\\)")
-      sub_X_means <- lapply(regex, get_matches, gen_quantities)
-      sub_X_means <- ulapply(sub_X_means, 
-                             function(x) if (length(x)) x[1] else ""
+    lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")
+    # unbounded parameters can be sampled in the generatated quantities block
+    str_add(out$genD) <- paste0(
+      "  // additionally draw samples from priors\n",
+      collapse(
+        "  ", types[no_bounds], " prior_", pars[no_bounds], 
+        " = ", dis[no_bounds], "_rng(", args[no_bounds], ")",
+        lkj_index, ";\n"
       )
-      str_add(out$genD) <- collapse(
-        "  real prior_", intercepts,
-        " = prior_", temp_intercepts, sub_X_means, "; \n"
-      )
-    }
+    )
+  }
+  # compute priors for the actual population-level intercepts
+  is_temp_intercept <- grepl("^temp.*_Intercept", pars)
+  if (any(is_temp_intercept)) {
+    temp_intercepts <- pars[is_temp_intercept]
+    p <- gsub("^temp|_Intercept$", "", temp_intercepts)
+    intercepts <- paste0("b", p, "_Intercept")
+    regex <- paste0(" (\\+|-) dot_product\\(means_X", p, ", b", p, "\\)")
+    X_means <- lapply(regex, get_matches, gen_quantities)
+    X_means <- ulapply(X_means, function(x) if (length(x)) x[1] else "")
+    str_add(out$genD) <- collapse(
+      "  real prior_", intercepts,
+      " = prior_", temp_intercepts, X_means, ";\n"
+    )
   }
   out
 }
