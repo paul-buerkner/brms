@@ -48,15 +48,15 @@ summary(fit1)
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.55      0.07     0.43     0.70        753 1.00
+#> sd(Intercept)     0.55      0.07     0.43     0.70       1015 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.79      0.12     1.56     2.01       1058 1.00
-#> log_Age_c            0.46      0.39    -0.31     1.22       1082 1.00
-#> log_Base4_c          0.89      0.15     0.62     1.19        802 1.00
-#> Trt1                -0.34      0.16    -0.65    -0.02       1019 1.00
-#> log_Base4_c:Trt1     0.33      0.23    -0.11     0.77        797 1.00
+#> Intercept            1.79      0.11     1.57     2.01       1258 1.00
+#> log_Age_c            0.45      0.38    -0.31     1.18       1184 1.00
+#> log_Base4_c          0.89      0.14     0.61     1.18        963 1.00
+#> Trt1                -0.34      0.16    -0.66    -0.02       1277 1.00
+#> log_Base4_c:Trt1     0.32      0.23    -0.12     0.78       1044 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -91,8 +91,8 @@ This method uses some prediction functionality behind the scenes, which can also
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error 2.5%ile 97.5%ile
-#> [1,]  6.05725  2.559416       2       12
-#> [2,]  4.28025  2.118686       1        9
+#> [1,]  6.02375  2.592174       2       12
+#> [2,]  4.31500  2.155907       1        9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the group-level effects. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -100,8 +100,8 @@ We need to set `re_formula = NA` in order not to condition of the group-level ef
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error  2.5%ile 97.5%ile
-#> [1,] 6.034123 0.7020864 4.759135 7.475358
-#> [2,] 4.298426 0.4773137 3.425940 5.300204
+#> [1,] 6.019895 0.6805686 4.785420 7.448459
+#> [2,] 4.307248 0.4937274 3.394081 5.343603
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -118,9 +118,9 @@ We can then go ahead and compare both models via approximate leave-one-out cross
 ``` r
 LOO(fit1, fit2)
 #>               LOOIC    SE
-#> fit1        1347.64 75.25
-#> fit2        1193.43 28.03
-#> fit1 - fit2  154.21 56.89
+#> fit1        1345.91 73.74
+#> fit2        1193.77 27.85
+#> fit1 - fit2  152.14 55.10
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
@@ -150,6 +150,13 @@ devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+### How do I cite brms?
+
+Please cite one or more of the following publications:
+
+-   Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models using Stan. *Journal of Statistical Software*. 80(1), 1-28. <doi:10.18637/jss.v080.i01>
+-   Bürkner P. C. (in press). Advanced Bayesian Multilevel Modeling with the R Package brms. *The R Journal*.
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 
