@@ -1054,8 +1054,9 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     pars_regex <- "(?<=_lpdf\\()[^|]+" 
     pars <- get_matches(pars_regex, prior, perl = TRUE, first = TRUE)
     pars <- gsub("to_vector\\(|\\)$", "", pars)
-    excl_regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\("
-    take <- !grepl(excl_regex, pars)
+    excl_regex <- "^(z|(zs)|(zb)|(zgp)|(Xn)|Y|(hs))_?"
+    ilp_regex <- "^increment_log_prob\\("
+    take <- !(grepl(excl_regex, pars) | grepl(ilp_regex, pars))
     prior <- prior[take]
     pars <- sub("^L_", "cor_", pars[take])
     pars <- sub("^Lrescor", "rescor", pars)
@@ -1127,7 +1128,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
       }
       if (length(spars)) {
-        bpars <- grepl("^b(|mo|cs|me)(_|$)", pars)
+        bpars <- grepl("^b(|sp|cs)(_|$)", pars)
         args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
       }
       lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")

@@ -948,7 +948,8 @@ test_that("noise-free terms appear in the Stan code", {
     prior(cauchy(0, 5), "sdme", coef = "mez") +
     prior(lkj(2), "corme")
   scode <- make_stancode(
-    y ~ me(x, xsd)*me(z, zsd)*x, data = dat, prior = me_prior
+    y ~ me(x, xsd)*me(z, zsd)*x, data = dat, prior = me_prior,
+    sample_prior = "yes"
   )
   expect_match2(scode, 
     "(bsp[1]) * Xme_1[n] + (bsp[2]) * Xme_2[n] + (bsp[3]) * Xme_1[n] * Xme_2[n]"
@@ -1414,7 +1415,7 @@ test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
   dat$x[c(1, 3, 9)] <- NA
   bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
-  scode <- make_stancode(bform, dat)
+  scode <- make_stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
   expect_match2(scode, 
     "target += normal_lpdf(Y_xx[Jme_xx] | Yl_xx[Jme_xx], noise_xx[Jme_xx])"
