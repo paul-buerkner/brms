@@ -48,15 +48,15 @@ summary(fit1)
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.55      0.07     0.43     0.70       1015 1.00
+#> sd(Intercept)     0.55      0.07     0.44     0.69       1200 1.00
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.79      0.11     1.57     2.01       1258 1.00
-#> log_Age_c            0.45      0.38    -0.31     1.18       1184 1.00
-#> log_Base4_c          0.89      0.14     0.61     1.18        963 1.00
-#> Trt1                -0.34      0.16    -0.66    -0.02       1277 1.00
-#> log_Base4_c:Trt1     0.32      0.23    -0.12     0.78       1044 1.00
+#> Intercept            1.79      0.11     1.57     2.01       1171 1.00
+#> log_Age_c            0.49      0.39    -0.26     1.26       1212 1.00
+#> log_Base4_c          0.88      0.14     0.61     1.16       1356 1.00
+#> Trt1                -0.34      0.17    -0.67    -0.02       1226 1.00
+#> log_Base4_c:Trt1     0.35      0.22    -0.08     0.76       1207 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -91,8 +91,8 @@ This method uses some prediction functionality behind the scenes, which can also
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error 2.5%ile 97.5%ile
-#> [1,]  6.02375  2.592174       2       12
-#> [2,]  4.31500  2.155907       1        9
+#> [1,]    6.008  2.535556       2       11
+#> [2,]    4.280  2.150873       1        9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the group-level effects. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -100,8 +100,8 @@ We need to set `re_formula = NA` in order not to condition of the group-level ef
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error  2.5%ile 97.5%ile
-#> [1,] 6.019895 0.6805686 4.785420 7.448459
-#> [2,] 4.307248 0.4937274 3.394081 5.343603
+#> [1,] 6.021907 0.6776262 4.814979 7.447430
+#> [2,] 4.279981 0.4923769 3.361871 5.314148
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -118,19 +118,15 @@ We can then go ahead and compare both models via approximate leave-one-out cross
 ``` r
 LOO(fit1, fit2)
 #>               LOOIC    SE
-#> fit1        1345.91 73.74
-#> fit2        1193.77 27.85
-#> fit1 - fit2  152.14 55.10
+#> fit1        1343.27 73.34
+#> fit2        1201.13 28.56
+#> fit1 - fit2  142.14 54.50
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
 
 FAQ
 ---
-
-### I am new to brms. Where can I start?
-
-Detailed instructions and case studies are given in the package's extensive vignettes. See `vignette(package = "brms")` for an overview. For documentation on formula syntax, families, and prior distributions see `help("brm")`.
 
 ### How do I install brms?
 
@@ -150,6 +146,10 @@ devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+### I am new to brms. Where can I start?
+
+Detailed instructions and case studies are given in the package's extensive vignettes. See `vignette(package = "brms")` for an overview. For documentation on formula syntax, families, and prior distributions see `help("brm")`.
 
 ### How do I cite brms?
 

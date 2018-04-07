@@ -113,10 +113,6 @@ Since smaller `LOOIC` values indicate better fit, we see that the model accounti
 
 ## FAQ
 
-### I am new to brms. Where can I start?
-
-Detailed instructions and case studies are given in the package's extensive vignettes. See `vignette(package = "brms")` for an overview. For documentation on formula syntax, families, and prior distributions see `help("brm")`. 
-
 ### How do I install brms?
 
 To install the latest release version from CRAN use
@@ -135,6 +131,10 @@ devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
+
+### I am new to brms. Where can I start?
+
+Detailed instructions and case studies are given in the package's extensive vignettes. See `vignette(package = "brms")` for an overview. For documentation on formula syntax, families, and prior distributions see `help("brm")`. 
 
 ### How do I cite brms?
 
