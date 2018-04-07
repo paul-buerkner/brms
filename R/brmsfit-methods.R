@@ -1086,28 +1086,18 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
                              exact_match = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
-  if (length(type) != 1L) {
-    stop2("Argument 'type' must be of length 1.")
-  }
+  type <- as_one_character(type)
   if (!is.character(pars)) {
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  nuts_types <- c(
-    "acceptance", "divergence", "stepsize", "treedepth", "energy"
-  )
-  valid_types <- c(
-    "hist", "dens", "hist_by_chain", "dens_overlay", 
-    "violin", "intervals", "areas", "trace", "trace_highlight", 
-    "scatter", "hex", "pairs", "rhat", "rhat_hist", "neff", 
-    "neff_hist", "acf", "acf_bar", "recover_intervals",
-    paste0("nuts_", nuts_types)
-  )
+  valid_types <- as.character(bayesplot::available_mcmc(""))
+  valid_types <- sub("^mcmc_", "", valid_types)
   if (!type %in% valid_types) {
     stop2("Invalid plot type. Valid plot types are: \n",
           collapse_comma(valid_types))
   }
-  mcmc_fun <- get(paste0("mcmc_", type), pos = asNamespace("bayesplot"))
+  mcmc_fun <- get(paste0("mcmc_", type), asNamespace("bayesplot"))
   mcmc_arg_names <- names(formals(mcmc_fun))
   mcmc_args <- list(...)
   if ("x" %in% mcmc_arg_names) {
@@ -1218,13 +1208,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (!is.null(resp)) {
     resp <- as_one_character(resp)
   }
-  ppc_funs <- as.character(bayesplot::available_ppc(""))
-  valid_ppc_types <- sub("^ppc_", "", ppc_funs)
-  if (!type %in% valid_ppc_types) {
-    stop2("Type '", type, "' is not a valid ppc type. Valid types are: \n", 
-          collapse_comma(valid_ppc_types))
+  valid_types <- as.character(bayesplot::available_ppc(""))
+  valid_types <- sub("^ppc_", "", valid_types)
+  if (!type %in% valid_types) {
+    stop2("Type '", type, "' is not a valid ppc type. ", 
+          "Valid types are:\n", collapse_comma(valid_types))
   }
-  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
+  ppc_fun <- get(paste0("ppc_", type), asNamespace("bayesplot"))
   # validate arguments 'resp', 'group', and 'x'
   object <- restructure(object)
   stopifnot_resp(object, resp)
