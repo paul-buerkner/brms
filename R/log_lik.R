@@ -150,6 +150,7 @@ log_lik_student_mv <- function(i, draws, data = data.frame()) {
 
 log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
   # currently, only ARMA1 processes are implemented
+  stop_no_pw()
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(
     sigma = get_dpar(draws, "sigma", obs),
@@ -178,6 +179,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
   # currently, only ARMA1 processes are implemented
+  stop_no_pw()
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(
     sigma = get_dpar(draws, "sigma", obs),
@@ -206,6 +208,7 @@ log_lik_student_cov <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   .log_lik_gaussian_lagsar <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
@@ -220,6 +223,7 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   .log_lik_student_lagsar <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
@@ -238,6 +242,7 @@ log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   .log_lik_gaussian_errorsar <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
@@ -251,6 +256,7 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   .log_lik_student_errorsar <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
@@ -268,6 +274,7 @@ log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(draws, "mu"))
   ulapply(1:draws$nsamples, function(s) 
@@ -279,6 +286,7 @@ log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
+  stop_no_pw()
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(draws, "mu"))
   nu <- as.matrix(get_dpar(draws, "nu"))
@@ -787,4 +795,12 @@ log_lik_zero_inflated <- function(pdf, theta, args, i, data) {
     dbinom(0, size = 1, prob = theta, log = TRUE) +
       do.call(pdf, c(data$Y[i], args, log = TRUE))
   }
+}
+
+stop_no_pw <- function() {
+  # after some discussion with Aki Vehtari and Daniel Simpson,
+  # I disallowed computation of log-likelihood values for some models
+  # until pointwise solutions are implemented
+  stop2("Cannot yet compute pointwise log-likelihood for this model ",
+        "because the observations are not conditionally independent.")
 }
