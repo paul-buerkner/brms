@@ -685,10 +685,10 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
   sel <- c("elpd_loo", "p_loo", "looic")
   x$pointwise[obs, sel] <- cbind(elpd_loo, p_loo, -2 * elpd_loo)
   new_pw <- x$pointwise[, sel, drop = FALSE]
-  x[sel] <- colSums(new_pw)
-  x[paste0("se_", sel)] <- sqrt(nrow(x$pointwise) * apply(new_pw, 2, var))
-  # what should we do about pareto k? for now setting them to 0
-  x$pareto_k[obs] <- 0
+  x$estimates[, 1] <- colSums(new_pw)
+  x$estimates[, 2] <- sqrt(nrow(x$pointwise) * apply(new_pw, 2, var))
+  # what should we do about pareto-k? for now setting them to 0
+  x$diagnostics$pareto_k[obs] <- 0
   x
 }
 
