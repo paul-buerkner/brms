@@ -851,7 +851,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (is.null(sdy)) {
       # missings only
       which_mi <- which(is.na(out$Y))
-      out$Jmi <- which_mi
+      out$Jmi <- as.array(which_mi)
       out$Nmi <- length(out$Jmi)
     } else {
       # measurement error in the response
