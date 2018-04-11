@@ -514,7 +514,7 @@ test_that("make_standata handles missing value terms", {
   dat$x[miss] <- NA
   bform <- bf(y ~ mi(x)*g) + bf(x | mi() ~ g) + set_rescor(FALSE)
   sdata <- make_standata(bform, dat)
-  expect_equal(sdata$Jmi_x, miss)
+  expect_equal(sdata$Jmi_x, as.array(miss))
   expect_true(all(is.infinite(sdata$Y_x[miss])))
 })
 
@@ -524,7 +524,7 @@ test_that("make_standata handles overimputation", {
   dat$x[miss] <- dat$sdy[miss] <- NA
   bform <- bf(y ~ mi(x)*g) + bf(x | mi(sdy) ~ g) + set_rescor(FALSE)
   sdata <- make_standata(bform, dat)
-  expect_equal(sdata$Jme_x, setdiff(1:10, miss))
+  expect_equal(sdata$Jme_x, as.array(setdiff(1:10, miss)))
   expect_true(all(is.infinite(sdata$Y_x[miss])))
   expect_true(all(is.infinite(sdata$noise_x[miss])))
 })

@@ -863,7 +863,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       }
       # all observations will have a latent score
       which_mi <- which(is.na(out$Y) | is.infinite(sdy))
-      out$Jme <- setdiff(seq_along(out$Y), which_mi)
+      out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
       out$noise <- as.array(sdy)
     }
