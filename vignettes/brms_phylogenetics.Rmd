@@ -212,7 +212,7 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 
 ## A phylogenetic count-data model
 
-Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org provides an example.
+Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org) provides an example.
 
 ```{r}
 data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
