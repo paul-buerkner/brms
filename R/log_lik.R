@@ -208,7 +208,6 @@ log_lik_student_cov <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
-  # stop_no_pw()  # remove as soon as implementation is tested
   stopifnot(i == 1)
   .log_lik_gaussian_lagsar <- function(s) {
     # solution provided by Aki Vehtari
@@ -216,14 +215,13 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
     Cinv <- t(IB) %*% IB / sigma[s]^2
     g <- Cinv %*% (Y - solve(IB, mu[s, ]))
     cbar <- diag(Cinv);
-    ll <- - log(2 * pi) / 2 - log(cbar) / 2 - g^2 / cbar / 2
+    ll <- - log(2 * pi) / 2 + log(cbar) / 2 - g^2 / cbar / 2
     return(as.numeric(ll))
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   Y <- as.numeric(draws$data$Y)
   I <- diag(draws$nobs)
-  # weights, truncation and censoring not allowed
   out <- lapply(seq_len(draws$nsamples), .log_lik_gaussian_lagsar)
   do.call(rbind, out)
 }
