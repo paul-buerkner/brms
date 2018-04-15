@@ -99,7 +99,6 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' 
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for autoregression terms only.
-
 #' 
 #' @inheritParams cor_arma
 #' @param p A non-negative integer specifying the autoregressive (AR) 
