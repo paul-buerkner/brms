@@ -851,7 +851,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (is.null(sdy)) {
       # missings only
       which_mi <- which(is.na(out$Y))
-      out$Jmi <- which_mi
+      out$Jmi <- as.array(which_mi)
       out$Nmi <- length(out$Jmi)
     } else {
       # measurement error in the response
@@ -863,7 +863,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       }
       # all observations will have a latent score
       which_mi <- which(is.na(out$Y) | is.infinite(sdy))
-      out$Jme <- setdiff(seq_along(out$Y), which_mi)
+      out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
       out$noise <- as.array(sdy)
     }
