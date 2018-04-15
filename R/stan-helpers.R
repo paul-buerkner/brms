@@ -238,6 +238,11 @@ stan_autocor <- function(bterms, prior) {
   Karr <- get_arr(autocor)
   if (Karr) {
     # autoregressive effects of the response
+    warning2(
+      "The 'arr' correlation structure has been deprecated and ",
+      "will be removed from the package at some point. Consider ", 
+      "using lagged response values as ordinary predictors instead."
+    )
     err_msg <- "ARR models are not implemented"
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " for non-linear models.")
@@ -362,7 +367,7 @@ stan_autocor <- function(bterms, prior) {
   }
   if (is.cor_bsts(autocor)) {
     warning2(
-      "The `bsts' correlation structure has been deprecated and ",
+      "The 'bsts' correlation structure has been deprecated and ",
       "will be removed from the package at some point. Consider ", 
       "using splines or Gaussian processes instead."
     )

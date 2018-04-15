@@ -501,8 +501,10 @@ test_that("Stan code for ARMA models is correct", {
                          autocor = cor_ma(~time, q = 2))
   expect_match2(scode, "mu[n] += head(E[n], Kma) * ma;")
   
-  scode <- make_stancode(y ~ x, dat, student(), 
-                         autocor = cor_arr(~time, r = 2))
+  scode <- expect_warning(
+    make_stancode(y ~ x, dat, student(), autocor = cor_arr(~time, r = 2)),
+    "The 'arr' correlation structure has been deprecated"
+  )
   expect_match2(scode, "mu = Xc * b + temp_Intercept + Yarr * arr;")
   
   scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(),
