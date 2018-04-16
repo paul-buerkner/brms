@@ -60,8 +60,8 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 3)
-URL: https://github.com/paul-buerkner/brms, https://groups.google.com/forum/#!forum/brms-users
-BugReports: https://github.com/paul-buerkner/brms/issues
+URL: http://mc-stan.org/brms, http://discourse.mc-stan.org
+BugReports: https://github.com/stan-dev/brms/issues
 VignetteBuilder: 
     knitr,
     R.rsp

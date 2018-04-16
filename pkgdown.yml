@@ -1,0 +1,8 @@
+pandoc: 1.19.2.1
+pkgdown: 0.1.0.9000
+pkgdown_sha: 3e1bdfaf4ad79f999bb6ab3ddd8e84bd365037b6
+articles:
+  loo2-example: loo2-example.html
+  loo2-weights: loo2-weights.html
+  loo2-with-rstan: loo2-with-rstan.html
+
