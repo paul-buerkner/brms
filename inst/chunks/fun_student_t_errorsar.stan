@@ -3,6 +3,7 @@
    *   y: the response vector 
    *   nu: degrees of freedom parameter
    *   mu: mean parameter vector
+   *   sigma: residual scale parameter
    *   rho: positive autoregressive parameter
    *   W: spatial weight matrix
    * Returns:  

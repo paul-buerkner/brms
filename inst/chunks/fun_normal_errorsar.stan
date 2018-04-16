@@ -2,6 +2,7 @@
    * Args: 
    *   y: the response vector 
    *   mu: mean parameter vector
+   *   sigma: residual standard deviation
    *   rho: positive autoregressive parameter
    *   W: spatial weight matrix
    * Returns:  
