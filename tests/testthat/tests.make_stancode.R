@@ -1480,3 +1480,12 @@ test_that("custom families are handled correctly", {
   expect_match2(scode, "tau[n] = exp(tau[n]); ")
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
 })
+
+test_that("likelihood of distributional beta models is correct", {
+  # test issue #404
+  dat <- data.frame(prop = rbeta(100, shape1 = 2, shape2 = 2))
+  scode <- make_stancode(
+    bf(prop ~ 1, phi ~ 1), data = dat, family = Beta()
+  )
+  expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
+})

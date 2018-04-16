@@ -480,7 +480,8 @@ stan_llh_wiener <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_beta <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
+  reqn <- stan_llh_adj(bterms) || nzchar(mix) ||
+    paste0("phi", mix) %in% names(bterms$dpars)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   sdist("beta",
     paste0(p$mu, " * ", p$phi), 
