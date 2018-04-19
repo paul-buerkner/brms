@@ -226,9 +226,10 @@ stan_autocor <- function(bterms, prior) {
         " = rep_matrix(0, N, max_lag", p, "); \n",
         "  vector[N] e", p, "; \n"
       )
+      Y <- ifelse(is.formula(bterms$adforms$mi), "Yl", "Y")
       str_add(out$modelC2) <- paste0(
         "    // computation of ARMA correlations \n",
-        "    e", p, "[n] = Y", p, "[n] - mu", p, "[n]; \n",
+        "    e", p, "[n] = ", Y, p, "[n] - mu", p, "[n]; \n",
         "    for (i in 1:J_lag", p, "[n]) { \n",
         "      E", p, "[n + 1, i] = e", p, "[n + 1 - i]; \n",
         "    } \n"
