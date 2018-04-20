@@ -12,12 +12,13 @@
   real student_t_errorsar_lpdf(vector y, real nu, vector mu, 
                                real sigma, real rho, matrix W) {
     int N = rows(y);
+    real K = rows(y);  // avoid integer division warning
     real inv_sigma2 = 1 / square(sigma);
     matrix[N, N] W_tilde = -rho * W;
     vector[N] half_pred;
     for (n in 1:N) W_tilde[n, n] += 1;
     half_pred  = W_tilde * (y - mu);
-    return - N / 2 * log(nu) + lgamma((nu + N) / 2) - lgamma(nu / 2) +
+    return - K / 2 * log(nu) + lgamma((nu + K) / 2) - lgamma(nu / 2) +
            0.5 * log_determinant(crossprod(W_tilde) * inv_sigma2) -
-           (nu + N) / 2 * log(1 + dot_self(half_pred) * inv_sigma2 / nu);
+           (nu + K) / 2 * log(1 + dot_self(half_pred) * inv_sigma2 / nu);
   }
