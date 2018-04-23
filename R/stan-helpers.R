@@ -226,9 +226,10 @@ stan_autocor <- function(bterms, prior) {
         " = rep_matrix(0, N, max_lag", p, "); \n",
         "  vector[N] e", p, "; \n"
       )
+      Y <- ifelse(is.formula(bterms$adforms$mi), "Yl", "Y")
       str_add(out$modelC2) <- paste0(
         "    // computation of ARMA correlations \n",
-        "    e", p, "[n] = Y", p, "[n] - mu", p, "[n]; \n",
+        "    e", p, "[n] = ", Y, p, "[n] - mu", p, "[n]; \n",
         "    for (i in 1:J_lag", p, "[n]) { \n",
         "      E", p, "[n + 1, i] = e", p, "[n + 1 - i]; \n",
         "    } \n"
@@ -238,6 +239,11 @@ stan_autocor <- function(bterms, prior) {
   Karr <- get_arr(autocor)
   if (Karr) {
     # autoregressive effects of the response
+    warning2(
+      "The 'arr' correlation structure has been deprecated and ",
+      "will be removed from the package at some point. Consider ", 
+      "using lagged response values as ordinary predictors instead."
+    )
     err_msg <- "ARR models are not implemented"
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " for non-linear models.")
@@ -362,7 +368,7 @@ stan_autocor <- function(bterms, prior) {
   }
   if (is.cor_bsts(autocor)) {
     warning2(
-      "The `bsts' correlation structure has been deprecated and ",
+      "The 'bsts' correlation structure has been deprecated and ",
       "will be removed from the package at some point. Consider ", 
       "using splines or Gaussian processes instead."
     )

@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 2.2.0++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix a problem in the Stan code generation 
+      of distributional \code{beta} models thanks to 
+      Hans van Calster. (#404)
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 2.2.0}{
   \subsection{NEW FEATURES}{
     \itemize{
