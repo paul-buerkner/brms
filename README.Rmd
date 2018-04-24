@@ -22,9 +22,12 @@ knitr::opts_chunk$set(
 )
 library(brms)
 theme_set(theme_default())
+set.seed(1234)
 ```
 
-# brms <img src="man/figures/brms.png" align="right" width = 120 alt="brms Logo"/>
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+
+# brms 
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
 [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
