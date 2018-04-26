@@ -383,7 +383,7 @@ stanplot <- function(object, ...) {
 #' stacking of predictive distributions, Akaike weights, or
 #' marginal likelihoods.
 #' 
-#' @inheritParams LOO
+#' @inheritParams loo.brmsfit
 #' @param weights Name of the criterion to compute weights from. 
 #'   Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
 #'   \code{"loo2"} (current default), or \code{"marglik"}. 

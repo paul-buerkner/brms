@@ -1,7 +1,18 @@
-# brms 2.2.0+
+# brms 2.2.0++
+
+
+### Other changes 
+
+* Use hashes to check if models have the same response values when performing model comparisons. (#414)
+
+* No longer show information criteria in the summary output.
+
+
+### Bug fixes
 
 * Fix a problem in the Stan code generation of distributional `beta` models
 thanks to Hans van Calster. (#404)
+
 
 # brms 2.2.0
 
