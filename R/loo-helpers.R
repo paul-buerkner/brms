@@ -252,7 +252,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
     }
   }
   yhash <- lapply(x, attr, which = "yhash")
-  yhash_check <- ulapply(yhash[-1], is_equal, yhash[[1]])
+  yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
   if (!all(yhash_check)) {
     warning2(
       "Model comparisons are likely invalid as the response ", 
@@ -418,17 +418,18 @@ hash_response <- function(x, ...) {
   digest::sha1(x = out, ...)
 }
 
-match_response <- function(models) {
+match_response <- function(models, ...) {
   # compare the response parts of multiple brmsfit objects
   # Args:
   #   models: A list of brmsfit objects
+  #   ...: passed to hash_response
   # Returns:
   #   TRUE if the response parts of all models match and FALSE else
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
-    yhash <- lapply(models, hash_response)
-    yhash_check <- ulapply(yhash[-1], is_equal, yhash[[1]])
+    yhash <- lapply(models, hash_response, ...)
+    yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
     if (all(yhash_check)) {
       out <- TRUE
     } else {
