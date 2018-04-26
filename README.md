@@ -43,10 +43,9 @@ summary(fit1)
 #>   Links: mu = log 
 #> Formula: count ~ log_Age_c + log_Base4_c * Trt + (1 | patient) 
 #>    Data: epilepsy (Number of observations: 236) 
-#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
+#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = NA; R2 = NA
-#>  
+#> 
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat

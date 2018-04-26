@@ -105,13 +105,14 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
         out[[i]] <- do.call(compute_ic, args) 
       }
     }
+    compare <- as_one_logical(compare)
     if (compare) {
       out <- compare_ic(x = out)
     }
     class(out) <- "iclist"
   } else {
     ic_obj <- models[[1]][[ic]]
-    stopifnot(length(use_stored_ic) == 1L)
+    use_stored_ic <- as_one_logical(use_stored_ic)
     if (use_stored_ic && is.ic(ic_obj)) {
       out <- ic_obj
       out$model_name <- names(models)
