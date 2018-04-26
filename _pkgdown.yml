@@ -22,6 +22,10 @@ navbar:
           href: http://mc-stan.org/bayesplot
         - text: "shinystan"
           href: http://mc-stan.org/shinystan
+        - text: "loo"
+          href: http://mc-stan.org/loo
+        - text: "projpred"
+          href: http://mc-stan.org/projpred
         - text: "rstantools"
           href: http://mc-stan.org/rstantools
     - text: "Stan"
@@ -42,8 +46,15 @@ home:
 articles:
   - title: "Getting Started"
     desc: >
-      These vignettes demonstrate how to use the functions in the **brms**
-      package to fit regression models.
+      These vignettes demonstrate how to use various features of the **brms** package.
     contents:
-      - brms-vignette1
-      - brms-vignette2
+      - brms_custom_families
+      - brms_distreg
+      - brms_families
+      - brms_missings
+      - brms_monotonic
+      - brms_multivariate
+      - brms_nonlinear
+      - brms_phylogenetics
+
+      

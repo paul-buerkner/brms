@@ -1,6 +1,8 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-brms <img src="man/figures/brms.png" align="right" width = 120 alt="brms Logo"/>
-================================================================================
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+
+brms
+====
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 
@@ -16,7 +18,7 @@ Resources
 -   [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
 -   [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
 -   [Blog posts](https://paul-buerkner.github.io/blog/old-brms-blogposts/) (List of blog posts about brms)
--   [Ask a question](https://groups.google.com/forum/#!forum/brms-users) (brms-users google group)
+-   [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
 -   [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
 How to use brms
@@ -48,15 +50,15 @@ summary(fit1)
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.55      0.07     0.44     0.69       1200 1.00
+#> sd(Intercept)     0.55      0.07     0.43     0.70        966 1.01
 #> 
 #> Population-Level Effects: 
 #>                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept            1.79      0.11     1.57     2.01       1171 1.00
-#> log_Age_c            0.49      0.39    -0.26     1.26       1212 1.00
-#> log_Base4_c          0.88      0.14     0.61     1.16       1356 1.00
-#> Trt1                -0.34      0.17    -0.67    -0.02       1226 1.00
-#> log_Base4_c:Trt1     0.35      0.22    -0.08     0.76       1207 1.00
+#> Intercept            1.79      0.11     1.56     2.02       1093 1.00
+#> log_Age_c            0.47      0.37    -0.26     1.22       1350 1.00
+#> log_Base4_c          0.88      0.14     0.61     1.16       1142 1.00
+#> Trt1                -0.33      0.16    -0.64    -0.03       1094 1.00
+#> log_Base4_c:Trt1     0.34      0.22    -0.08     0.76       1192 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -91,8 +93,8 @@ This method uses some prediction functionality behind the scenes, which can also
 newdata <- data.frame(Trt = c(0, 1), log_Age_c = 0, log_Base4_c = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error 2.5%ile 97.5%ile
-#> [1,]    6.008  2.535556       2       11
-#> [2,]    4.280  2.150873       1        9
+#> [1,]  6.00375  2.517999       2       11
+#> [2,]  4.33475  2.087530       1        9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the group-level effects. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -100,8 +102,8 @@ We need to set `re_formula = NA` in order not to condition of the group-level ef
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error  2.5%ile 97.5%ile
-#> [1,] 6.021907 0.6776262 4.814979 7.447430
-#> [2,] 4.279981 0.4923769 3.361871 5.314148
+#> [1,] 5.999611 0.6901598 4.773145 7.517943
+#> [2,] 4.320005 0.4810514 3.385490 5.290729
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -118,9 +120,9 @@ We can then go ahead and compare both models via approximate leave-one-out cross
 ``` r
 LOO(fit1, fit2)
 #>               LOOIC    SE
-#> fit1        1343.27 73.34
-#> fit2        1201.13 28.56
-#> fit1 - fit2  142.14 54.50
+#> fit1        1344.94 73.61
+#> fit2        1193.47 28.18
+#> fit1 - fit2  151.48 54.10
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
