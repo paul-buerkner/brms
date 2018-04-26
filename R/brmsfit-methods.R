@@ -638,12 +638,6 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #'
 #' @param object An object of class \code{brmsfit}
-#' @param waic,loo Logical; Indicating if the LOO or WAIC information
-#'   criteria should be computed and shown in the summary. 
-#'   Defaults to \code{FALSE}.
-#' @param R2 Logical; Indicating if the Bayesian R-squared
-#'   should be computed and shown in the summary. 
-#'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
@@ -662,8 +656,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, 
-                            R2 = FALSE, priors = FALSE, prob = 0.95,
+summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             mc_se = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
@@ -694,15 +687,6 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
-  }
-  if (loo || is.ic(object[["loo"]])) {
-    out$loo <- SW(loo(object)$estimates[3, 1])
-  }
-  if (waic || is.ic(object[["waic"]])) {
-    out$waic <- SW(waic(object)$estimates[3, 1])
-  }
-  if (R2 || is.matrix(object[["R2"]])) {
-    out$R2 <- mean(bayes_R2(object, summary = FALSE))
   }
   
   pars <- parnames(object)

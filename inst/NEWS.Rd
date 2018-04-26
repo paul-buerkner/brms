@@ -7,6 +7,8 @@
     \itemize{
       \item Use hashes to check if models have the same
       response values when performing model comparisons. (#414)
+      \item No longer show information criteria in the 
+      summary output.
     }
   }
   \subsection{BUG FIXES}{
