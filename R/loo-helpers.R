@@ -255,7 +255,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   #   an object of class 'ic' which inherits from class 'loo'
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    IC <- do.call(kfold_internal, list(x, ...))
+    out <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
     pointwise <- as_one_logical(pointwise)
@@ -272,20 +272,21 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }
-    IC <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
+    out <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }
-  IC$model_name <- model_name
-  class(IC) <- c("ic", class(IC))
+  out$model_name <- model_name
+  class(out) <- c("ic", class(out))
+  attr(out, "yhash") <- hash_response(x)
   if (ic == "loo") {
     if (reloo) {
-      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
-      IC <- do.call(reloo.loo, c(reloo_args, ...))
+      reloo_args <- nlist(x = out, fit = x, k_threshold, check = FALSE)
+      out <- do.call(reloo.loo, c(reloo_args, ...))
     } else {
-      n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
+      n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
     }
   }
-  IC
+  out
 }
 
 #' Compare Information Criteria of Different Models
@@ -351,7 +352,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   if (length(x) < 2L) {
     stop2("Expecting at least two objects.")
   }
-  ics <- unname(sapply(x, function(y) names(y)[3]))
+  ics <- unname(sapply(x, function(y) rownames(y$estimates)[3]))
   if (!all(ics %in% ics[1])) {
     stop2("All inputs should be from the same criterion.")
   }
@@ -366,6 +367,14 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
       stop2("The number of subsets differs across kfold objects.")
     }
   }
+  yhash <- lapply(x, attr, which = "yhash")
+  yhash_check <- ulapply(yhash[-1], is_equal, yhash[[1]])
+  if (!all(yhash_check)) {
+    warning2(
+      "Model comparisons are likely invalid as the response ", 
+      "values of at least two models do not match."
+    )
+  }
   names(x) <- ulapply(x, "[[", "model_name")
   n_models <- length(x)
   ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
@@ -374,8 +383,8 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   n <- 1
   for (i in seq_len(n_models - 1)) {
     for (j in (i + 1):n_models) {
-      temp <- loo::compare(x[[j]], x[[i]])
-      ic_diffs[n, ] <- c(-2 * temp[["elpd_diff"]], 2 * temp[["se"]]) 
+      tmp <- loo::compare(x[[j]], x[[i]])
+      ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]]) 
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
     }
@@ -510,6 +519,21 @@ args_not_for_reloo <- function() {
     "allow_new_levels", "sample_new_levels", "new_objects")
 }
 
+hash_response <- function(x, ...) {
+  # create a hash based on the response of a model
+  require_package("digest")
+  stopifnot(is.brmsfit(x))
+  sdata <- standata(x, internal = TRUE)
+  add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
+  regex <- c("Y", sub("^resp_", "", add_funs))
+  regex <- paste0("(", regex, ")", collapse = "|")
+  regex <- paste0("^(", regex, ")(_|$)")
+  out <- sdata[grepl(regex, names(sdata))]
+  out <- as.matrix(as.data.frame(rmNULL(out)))
+  out <- p(out, attr(sdata, "old_order"))
+  digest::sha1(x = out, ...)
+}
+
 match_response <- function(models) {
   # compare the response parts of multiple brmsfit objects
   # Args:
@@ -519,27 +543,9 @@ match_response <- function(models) {
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
-    add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
-    regex <- c("Y", sub("^resp_", "", add_funs))
-    regex <- paste0("(", regex, ")", collapse = "|")
-    regex <- paste0("^(", regex, ")(_|$)")
-    .match_fun <- function(x, y) {
-      # checks if all relevant parts of the response are the same 
-      # Args:
-      #   x, y: named lists as returned by standata
-      old_order_x <- attr(x, "old_order")
-      old_order_y <- attr(y, "old_order")
-      match_vars <- union(names(x), names(y))
-      match_vars <- match_vars[grepl(regex, match_vars)]
-      all(ulapply(match_vars, function(v) {
-        a <- p(as.vector(x[[v]]), old_order_x)
-        b <- p(as.vector(y[[v]]), old_order_y)
-        is_equal(a, b)
-      }))
-    }
-    sdatas <- lapply(models, standata, internal = TRUE)
-    matches <- ulapply(sdatas[-1], .match_fun, y = sdatas[[1]]) 
-    if (all(matches)) {
+    yhash <- lapply(models, hash_response)
+    yhash_check <- ulapply(yhash[-1], is_equal, yhash[[1]])
+    if (all(yhash_check)) {
       out <- TRUE
     } else {
       out <- FALSE
@@ -567,12 +573,6 @@ validate_models <- function(models, model_names, sub_names) {
     if (!is.brmsfit(models[[i]])) {
       stop2("Object '", names(models)[i], "' is not of class 'brmsfit'.")
     }
-  }
-  if (!match_response(models)) {
-    warning2(
-      "Model comparisons are likely invalid as the response ", 
-      "values of at least two models do not match."
-    )
   }
   models
 }

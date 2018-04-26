@@ -3,6 +3,12 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 2.2.0++}{
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Use hashes to check if models have the same
+      response values when performing model comparisons. (#414)
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix a problem in the Stan code generation 
