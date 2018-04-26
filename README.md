@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
 
 brms
 ====
@@ -118,11 +118,11 @@ fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
 We can then go ahead and compare both models via approximate leave-one-out cross-validation.
 
 ``` r
-LOO(fit1, fit2)
+loo(fit1, fit2)
 #>               LOOIC    SE
-#> fit1        1344.94 73.61
-#> fit2        1193.47 28.18
-#> fit1 - fit2  151.48 54.10
+#> fit1        1347.06 74.22
+#> fit2        1198.44 28.61
+#> fit1 - fit2  148.62 54.52
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.

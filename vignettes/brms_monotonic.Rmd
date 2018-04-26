@@ -97,7 +97,7 @@ summary(fit3)
 We can easily compare the fit of the three models using leave-one-out cross-validation.
 
 ```{r}
-LOO(fit1, fit2, fit3)
+loo(fit1, fit2, fit3)
 ```
 
 The monotonic model fits better than the continuous model, which is not surprising given that the relationship between `income` and `ls` is non-linear. The monotonic and the unorderd factor model have almost identical fit in this example, but this may not be the case for other data sets.

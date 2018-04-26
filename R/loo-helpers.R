@@ -1,124 +1,8 @@
-#' Compute the LOO information criterion
-#' 
-#' Perform approximate leave-one-out cross-validation based 
-#' on the posterior likelihood using the \pkg{loo} package.
-#' 
-#' @aliases LOO.brmsfit loo.brmsfit loo
-#' 
-#' @param x A fitted model object.
-#' @param ... More fitted model objects or further arguments
-#'   passed to the underlying post-processing functions.
-#' @param compare A flag indicating if the information criteria
-#'  of the models should be compared to each other
-#'  via \code{\link{compare_ic}}.
-#' @param pointwise A flag indicating whether to compute the full
-#'  log-likelihood matrix at once or separately for each observation. 
-#'  The latter approach is usually considerably slower but 
-#'  requires much less working memory. Accordingly, if one runs 
-#'  into memory issues, \code{pointwise = TRUE} is the way to go.
-#'  By default, \code{pointwise} is automatically chosen based on 
-#'  the size of the model.
-#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
-#'  should be applied on problematic observations. Defaults to \code{FALSE}.
-#' @param k_threshold The threshold at which pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
-#'   Only used if argument \code{reloo} is \code{TRUE}.
-#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
-#' @param model_names If \code{NULL} (the default) will use model names 
-#'   derived from deparsing the call. Otherwise will use the passed 
-#'   values as model names.
-#' @inheritParams predict.brmsfit
-#' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the LOO, the better the fit.
-#'  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
-#'  Use method \code{\link{add_ic}} to store
-#'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' LOO(fit1)
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' # compare both models
-#' LOO(fit1, fit2)                          
-#' }
-#' 
-#' @references 
-#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
-#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
-#' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
-#' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
 #' @export
 LOO <- function(x, ...) {
   UseMethod("LOO")
 }
 
-#' Compute the WAIC
-#' 
-#' Compute the widely applicable information criterion (WAIC)
-#' based on the posterior likelihood using the \pkg{loo} package.
-#' 
-#' @aliases WAIC.brmsfit waic.brmsfit waic
-#' 
-#' @inheritParams LOO
-#' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the WAIC, the better the fit.
-#'  For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
-#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
-#'  information criteria in the fitted model object for later usage.
-#'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' WAIC(fit1)
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' # compare both models
-#' WAIC(fit1, fit2)                          
-#' }
-#' 
-#' @references 
-#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
-#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
-#' 
-#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
-#' Understanding predictive information criteria for Bayesian models. 
-#' Statistics and Computing, 24, 997-1016.
-#' 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
-#' and widely applicable information criterion in singular learning theory. 
-#' The Journal of Machine Learning Research, 11, 3571-3594.
-#' 
 #' @export
 WAIC <- function(x, ...) {
   UseMethod("WAIC")
@@ -129,7 +13,7 @@ WAIC <- function(x, ...) {
 #' Perform exact K-fold cross-validation by refitting the model \eqn{K}
 #' times each leaving out one-\eqn{K}th of the original data.
 #' 
-#' @inheritParams LOO
+#' @inheritParams loo.brmsfit
 #' @param K The number of subsets of equal (if possible) size
 #'   into which the data will be randomly partitioned for performing
 #'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
@@ -292,10 +176,10 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' Compare Information Criteria of Different Models
 #'
 #' Compare information criteria of different models fitted
-#' with \code{\link{WAIC}} or \code{\link{LOO}}.
+#' with \code{\link{WAIC}} or \code{\link{loo}}.
 #' 
 #' @param ... At least two objects returned by 
-#'   \code{\link{WAIC}} or \code{\link{LOO}}.
+#'   \code{\link{WAIC}} or \code{\link{loo}}.
 #'   Alternatively, \code{brmsfit} objects with information 
 #'   criteria precomputed via \code{\link{add_ic}}
 #'   may be passed, as well.
@@ -311,7 +195,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' 
 #' @seealso 
 #'   \code{\link{WAIC}}, 
-#'   \code{\link{LOO}},
+#'   \code{\link{loo}},
 #'   \code{\link{add_ic}},
 #'   \code{\link[loo:compare]{compare}}
 #'   
@@ -555,7 +439,7 @@ match_response <- function(models) {
 }
 
 validate_models <- function(models, model_names, sub_names) {
-  # validate models passed to LOO and related methods
+  # validate models passed to loo and related methods
   # Args:
   #   models: list of fitted model objects
   #   model_names: names specified by the user
@@ -583,7 +467,7 @@ validate_models <- function(models, model_names, sub_names) {
 #' for which approximate leave-one-out cross-validation may
 #' return incorrect results.
 #' 
-#' @inheritParams LOO
+#' @inheritParams loo.brmsfit
 #' @param x An \R object typically of class \code{loo}.
 #' @param fit An \R object typically of class \code{brmsfit}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
