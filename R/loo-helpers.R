@@ -520,13 +520,17 @@ match_response <- function(models) {
     out <- TRUE  
   } else {
     add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
-    match_vars <- c("Y", sub("^resp_", "", add_funs))
+    regex <- c("Y", sub("^resp_", "", add_funs))
+    regex <- paste0("(", regex, ")", collapse = "|")
+    regex <- paste0("^(", regex, ")(_|$)")
     .match_fun <- function(x, y) {
       # checks if all relevant parts of the response are the same 
       # Args:
       #   x, y: named lists as returned by standata
       old_order_x <- attr(x, "old_order")
       old_order_y <- attr(y, "old_order")
+      match_vars <- union(names(x), names(y))
+      match_vars <- match_vars[grepl(regex, match_vars)]
       all(ulapply(match_vars, function(v) {
         a <- p(as.vector(x[[v]]), old_order_x)
         b <- p(as.vector(y[[v]]), old_order_y)
@@ -567,7 +571,7 @@ validate_models <- function(models, model_names, sub_names) {
   if (!match_response(models)) {
     warning2(
       "Model comparisons are likely invalid as the response ", 
-      "parts of at least two models do not match."
+      "values of at least two models do not match."
     )
   }
   models
