@@ -2403,11 +2403,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
 WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = NULL, model_names = NULL) {
-  args <- split_dots(x, ..., model_names = model_names)
-  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
-  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
-  c(args) <- nlist(ic = "waic", compare, resp)
-  do.call(compute_ics, args)
+  warning2("Method name 'WAIC' is deprecated. Please use 'waic' instead.")
+  cl <- match.call()
+  cl[[1]] <- quote(waic)
+  eval(cl, parent.frame())
 }
 
 #' @importFrom loo waic
@@ -2415,9 +2414,11 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @export
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = NULL, model_names = NULL) {
-  cl <- match.call()
-  cl[[1]] <- quote(WAIC)
-  eval(cl, parent.frame())
+  args <- split_dots(x, ..., model_names = model_names)
+  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
+  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
+  c(args) <- nlist(ic = "waic", compare, resp)
+  do.call(compute_ics, args)
 }
 
 #' @export
@@ -2425,6 +2426,18 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
                         model_names = NULL) {
+  warning2("Method name 'LOO' is deprecated. Please use 'loo' instead.")
+  cl <- match.call()
+  cl[[1]] <- quote(loo)
+  eval(cl, parent.frame())
+}
+
+#' @importFrom loo loo
+#' @export loo
+#' @export
+loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                         model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
   not_for_reloo <- intersect(names(args), args_not_for_reloo())
@@ -2435,17 +2448,6 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   args$use_stored_ic <- !length(not_for_reloo)
   c(args) <- nlist(ic = "loo", compare, resp, k_threshold, reloo)
   do.call(compute_ics, args)
-}
-
-#' @importFrom loo loo
-#' @export loo
-#' @export
-loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
-                         model_names = NULL) {
-  cl <- match.call()
-  cl[[1]] <- quote(LOO)
-  eval(cl, parent.frame())
 }
 
 #' @export

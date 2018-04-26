@@ -207,7 +207,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(log_lik(fit2)), c(nsamples(fit2), nobs(fit2)))
   expect_equal(log_lik(fit1), logLik(fit1))
   
-  # LOO
+  # loo
   loo1 <- SW(LOO(fit1, cores = 1))
   expect_true(is.numeric(loo1$estimates))
   expect_output(print(loo1), "looic")
@@ -217,27 +217,27 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
   expect_output(print(loo_compare1), "fit1 - fit1")
   
-  loo_compare2 <- SW(LOO(fit1, fit1, fit1, cores = 1))
+  loo_compare2 <- SW(loo(fit1, fit1, fit1, cores = 1))
   expect_equal(length(loo_compare2), 4)
   expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
   
-  loo2 <- SW(LOO(fit2, cores = 1))
+  loo2 <- SW(loo(fit2, cores = 1))
   expect_true(is.numeric(loo2$estimates))
   
-  loo3 <- SW(LOO(fit3, cores = 1))
+  loo3 <- SW(loo(fit3, cores = 1))
   expect_true(is.numeric(loo3$estimates))
-  loo3 <- SW(LOO(fit3, pointwise = TRUE, cores = 1))
+  loo3 <- SW(loo(fit3, pointwise = TRUE, cores = 1))
   expect_true(is.numeric(loo3$estimates))
   
-  loo4 <- SW(LOO(fit4, cores = 1))
+  loo4 <- SW(loo(fit4, cores = 1))
   expect_true(is.numeric(loo4$estimates))
   
-  loo5 <- SW(LOO(fit5, cores = 1))
+  loo5 <- SW(loo(fit5, cores = 1))
   expect_true(is.numeric(loo5$estimates))
   
-  loo6_1 <- SW(LOO(fit6, cores = 1))
+  loo6_1 <- SW(loo(fit6, cores = 1))
   expect_true(is.numeric(loo6_1$estimates))
-  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data))
+  loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2$estimates))
   loo_compare <- compare_ic(loo6_1, loo6_2)
   expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
@@ -695,23 +695,23 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(vcov(fit1)), c(8, 8))
   expect_equal(dim(vcov(fit1, cor = TRUE)), c(8, 8))
   
-  # WAIC
+  # waic
   waic1 <- SW(WAIC(fit1))
   expect_true(is.numeric(waic1$estimates))
   expect_equal(waic1, SW(waic(fit1)))
   
   fit1 <- SW(add_ic(fit1, "waic"))
-  expect_equal(WAIC(fit1), fit1$waic)
+  expect_equal(waic(fit1), fit1$waic)
   
-  waic_compare <- SW(WAIC(fit1, fit1))
+  waic_compare <- SW(waic(fit1, fit1))
   expect_equal(length(waic_compare), 3)
   expect_equal(dim(waic_compare$ic_diffs__), c(1, 2))
-  waic2 <- SW(WAIC(fit2))
+  waic2 <- SW(waic(fit2))
   expect_true(is.numeric(waic2$estimates))
-  waic_pointwise <- SW(WAIC(fit2, pointwise = TRUE))
+  waic_pointwise <- SW(waic(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
-  expect_warning(WAIC(fit1, fit2), "Model comparisons are likely invalid")
-  waic4 <- SW(WAIC(fit4))
+  expect_warning(waic(fit1, fit2), "Model comparisons are likely invalid")
+  waic4 <- SW(waic(fit4))
   expect_true(is.numeric(waic4$estimates))
   
   # test diagnostic convenience functions
