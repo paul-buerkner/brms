@@ -2549,6 +2549,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 }
 
 #' @export
+#' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
 kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL, 
                           exact_loo = FALSE, group = NULL, resp = NULL,
                           model_names = NULL, save_fits = FALSE) {
