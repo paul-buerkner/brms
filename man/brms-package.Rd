@@ -12,26 +12,32 @@
 }
 
 The \pkg{brms} package provides an interface to fit Bayesian generalized
-(non-)linear multilevel models using \pkg{Stan}, which is a C++ package 
-for obtaining full Bayesian inference (see \url{http://mc-stan.org/}). 
+multivariate (non-)linear multilevel models using \pkg{Stan}, which is a 
+C++ package for obtaining full Bayesian inference (see \url{http://mc-stan.org/}).
 The formula syntax is an extended version of the syntax applied in the 
 \pkg{lme4} package to provide a familiar and simple interface for 
 performing regression analyses.
 }
 \details{
-The main function of the brms package is \code{\link{brm}}, which creates the
-model in Stan language and fits it using \pkg{\link[rstan:rstan]{Stan}}.
-Subsequently, a large number of methods can be applied:
+The main function of \pkg{brms} is \code{\link{brm}}, which uses
+formula syntax to specify a wide range of complex Bayesian models 
+(see \code{\link{brmsformula}} for details). Based on the supplied 
+formulas, data, and additional information, it writes the Stan code 
+on the fly via \code{\link{make_stancode}}, prepares the data via 
+\code{\link{make_standata}}, and fits the model using 
+\pkg{\link[rstan:rstan]{Stan}}.
+
+Subsequently, a large number of post-processing methods can be applied: 
 To get an overview on the estimated parameters, 
 \code{\link[brms:summary.brmsfit]{summary}} or 
 \code{\link[brms:marginal_effects.brmsfit]{marginal_effects}} 
 are perfectly suited. Detailed visual analyses can be performed by applying 
 the \code{\link{pp_check}} and \code{\link{stanplot}} methods, which both
 rely on the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} package.
-Information Criteria are also readily available via \code{\link{LOO}} 
-and \code{\link{WAIC}}, which both rely on the 
-\pkg{\link[loo:loo-package]{loo}} package. For a full list of methods to 
-apply, type \code{methods(class = "brmsfit")}.
+Model comparsions can be done via \code{\link{loo}} and \code{\link{waic}}, 
+which make use of the \pkg{\link[loo:loo-package]{loo}} package as well as
+via \code{\link{bayes_factor}} which relies on the \pkg{bridgesampling} package. 
+For a full list of methods to apply, type \code{methods(class = "brmsfit")}.
 
 Because \pkg{brms} is based on \pkg{Stan}, a C++ compiler is required. 
 The program Rtools (available on \url{https://cran.r-project.org/bin/windows/Rtools/}) 
@@ -41,15 +47,15 @@ prerequisites section at the
 \href{https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started}{RStan-Getting-Started}
 page.
 
-When comparing other packages fitting GLMMs to \pkg{brms}, keep in mind that
-the latter needs to compile models before actually fitting them, which will
-require between 20 and 40 seconds depending on your machine, operating system
-and overall model complexity.
+When comparing other packages fitting multilevel models to \pkg{brms}, keep 
+in mind that the latter needs to compile models before actually fitting them, 
+which will require between 20 and 40 seconds depending on your machine, 
+operating system and overall model complexity.
 
 Thus, fitting smaller models may be relatively slow as compilation time makes
-up the majority of the whole running time. For larger / more complicated
+up the majority of the whole running time. For larger / more complex
 models however, fitting my take several minutes or even hours, so that the
-compilation time won't make much of a difference here.
+compilation time won't make much of a difference for these models.
 
 See \code{vignette("brms_overview")} and \code{vignette("brms_multilevel")} 
 for a general introduction and overview of \pkg{brms}. For a full list of 
