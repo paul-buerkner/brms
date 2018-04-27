@@ -524,7 +524,7 @@ get_se <- function(draws, i = NULL) {
   # extract user-defined standard errors
   # Args: see get_dpar
   stopifnot(is.brmsdraws(draws))
-  se <- draws$data[["se"]]
+  se <- as.vector(draws$data[["se"]])
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]
