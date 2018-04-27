@@ -126,7 +126,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
 }
 
 compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
-                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
+                       reloo = FALSE, k_threshold = 0.7, pointwise = NULL,
                        model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
@@ -143,17 +143,20 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
     out <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
-    pointwise <- as_one_logical(pointwise)
     loo_args <- list(...)
+    if (ic == "psis") {
+      pointwise <- FALSE
+    } else {
+      pointwise <- set_pointwise(
+        x, pointwise, loo_args$newdata, loo_args$subset
+      )
+    }
     loo_args$x <- log_lik(x, pointwise = pointwise, ...)
     if (pointwise) {
       loo_args$draws <- attr(loo_args$x, "draws")
       loo_args$data <- attr(loo_args$x, "data")
     }
     if (ic == "psis") {
-      if (pointwise) {
-        stop2("Cannot use pointwise evaluation for 'psis'.")
-      }
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }

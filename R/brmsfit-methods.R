@@ -2445,9 +2445,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = NULL, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
   args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
-  c(args) <- nlist(ic = "waic", compare, resp)
+  c(args) <- nlist(ic = "waic", pointwise, compare, resp)
   do.call(compute_ics, args)
 }
 
@@ -2537,14 +2536,13 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
                          model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
   not_for_reloo <- intersect(names(args), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
     not_for_reloo <- collapse_comma(not_for_reloo)
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
   args$use_stored_ic <- !length(not_for_reloo)
-  c(args) <- nlist(ic = "loo", compare, resp, k_threshold, reloo)
+  c(args) <- nlist(ic = "loo", pointwise, compare, resp, k_threshold, reloo)
   do.call(compute_ics, args)
 }
 
