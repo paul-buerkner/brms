@@ -274,14 +274,14 @@ sar_weights <- function(W) {
 #'   to allow for handling of new data in post-processing methods.
 #' @param type Type of the CAR structure. Currently implemented
 #'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
-#'   (exact sparse intrinsic CAR). More information is
-#'   provided in the 'Details' section.
+#'   (exact sparse intrinsic CAR) and \code{"icar"} (intrinsic CAR). 
+#'   More information is provided in the 'Details' section.
 #' 
 #' @details The \code{escar} and \code{esicar} types are 
 #'   implemented based on the case study of Max Joseph
-#'   (\url{https://github.com/mbjoseph/CARstan}), who
-#'   deserves credit for helping to make CAR structures 
-#'   possible in \pkg{brms}.
+#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar}
+#'   type is implemented based on the case study of Mitzi Morris
+#'   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 #'   
 #' @examples
 #' \dontrun{
@@ -315,7 +315,7 @@ sar_weights <- function(W) {
 #' }
 #' 
 #' @export
-cor_car <- function(W, formula = ~1, type = c("escar", "esicar")) {
+cor_car <- function(W, formula = ~1, type = c("escar", "esicar", "icar")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
   W <- Matrix::Matrix(W, sparse = TRUE)
@@ -343,7 +343,7 @@ cor_car <- function(W, formula = ~1, type = c("escar", "esicar")) {
 #' @rdname cor_car
 #' @export
 cor_icar <- function(W, formula = ~1) {
-  out <- cor_car(W, formula, type = "esicar")
+  out <- cor_car(W, formula, type = "icar")
   out$W_name <- deparse(substitute(W))
   out
 }

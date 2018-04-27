@@ -1,5 +1,9 @@
 # brms 2.2.0++
 
+### New features
+
+* Extend `cor_car` to support intrinsic CAR models in pairwise
+difference formulation thanks to the case study of Mitzi Morris.
 
 ### Other changes 
 
