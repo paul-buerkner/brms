@@ -126,7 +126,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
 }
 
 compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
-                       reloo = FALSE, k_threshold = 0.7, pointwise = NULL,
+                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
                        model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
@@ -143,20 +143,17 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
     out <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
+    pointwise <- as_one_logical(pointwise)
     loo_args <- list(...)
-    if (ic == "psis") {
-      pointwise <- FALSE
-    } else {
-      pointwise <- set_pointwise(
-        x, pointwise, loo_args$newdata, loo_args$subset
-      )
-    }
     loo_args$x <- log_lik(x, pointwise = pointwise, ...)
     if (pointwise) {
       loo_args$draws <- attr(loo_args$x, "draws")
       loo_args$data <- attr(loo_args$x, "data")
     }
     if (ic == "psis") {
+      if (pointwise) {
+        stop2("Cannot use pointwise evaluation for 'psis'.")
+      }
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }
@@ -366,38 +363,6 @@ add_loo <- function(x, ...) {
 #' @export
 add_waic <- function(x, ...) {
   add_ic(x, ic = "waic", ...)
-}
-
-set_pointwise <- function(x, pointwise = NULL, newdata = NULL, 
-                          subset = NULL, thres = 1e+08) {
-  # set the pointwise argument based on the model size
-  # Args:
-  #   x: a brmsfit object
-  #   newdata: optional data.frame containing new data
-  #   subset: a vector to indicate a subset of the posterior samples
-  #   thres: threshold above which pointwise is set to TRUE
-  # Returns:
-  #   TRUE or FALSE
-  if (!is.null(pointwise)) {
-    pointwise <- as_one_logical(pointwise)
-  } else {
-    nsamples <- nsamples(x, subset = subset)
-    if (is.data.frame(newdata)) {
-      nobs <- nrow(newdata)
-    } else {
-      nobs <- nobs(x)
-    }
-    pointwise <- nsamples * nobs > thres
-    if (pointwise) {
-      message(
-        "Switching to pointwise evaluation to reduce ",  
-        "RAM requirements. This will likely increase ",
-        "computation time. You may overwrite the default ",
-        "behavior with the 'pointwise' argument."
-      )
-    }
-  }
-  pointwise
 }
 
 args_not_for_reloo <- function() {

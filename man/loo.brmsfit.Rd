@@ -8,7 +8,7 @@
 \title{Compute the LOO information criterion}
 \usage{
 \method{loo}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
-  pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+  pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
   model_names = NULL)
 }
 \arguments{
@@ -28,9 +28,7 @@ If specified, fitted values of these response variables are returned.}
 log-likelihood matrix at once or separately for each observation. 
 The latter approach is usually considerably slower but 
 requires much less working memory. Accordingly, if one runs 
-into memory issues, \code{pointwise = TRUE} is the way to go.
-By default, \code{pointwise} is automatically chosen based on 
-the size of the model.}
+into memory issues, \code{pointwise = TRUE} is the way to go.}
 
 \item{reloo}{Logical; Indicate whether \code{\link{reloo}} 
 should be applied on problematic observations. Defaults to \code{FALSE}.}

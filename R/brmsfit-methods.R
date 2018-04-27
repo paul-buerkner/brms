@@ -2385,7 +2385,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 
 #' @export
 WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, model_names = NULL) {
+                         pointwise = FALSE, model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(waic)
   eval(cl, parent.frame())
@@ -2443,7 +2443,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @export waic
 #' @export
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, model_names = NULL) {
+                         pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
   c(args) <- nlist(ic = "waic", pointwise, compare, resp)
@@ -2452,7 +2452,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 
 #' @export
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                        pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                        pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
                         model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(loo)
@@ -2478,8 +2478,6 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #'  The latter approach is usually considerably slower but 
 #'  requires much less working memory. Accordingly, if one runs 
 #'  into memory issues, \code{pointwise = TRUE} is the way to go.
-#'  By default, \code{pointwise} is automatically chosen based on 
-#'  the size of the model.
 #' @param reloo Logical; Indicate whether \code{\link{reloo}} 
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
@@ -2533,7 +2531,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @export loo
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                         pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
                          model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   not_for_reloo <- intersect(names(args), args_not_for_reloo())
