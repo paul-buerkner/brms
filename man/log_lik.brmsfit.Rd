@@ -70,7 +70,7 @@ the likelihood function along with all data and samples
 required to compute the log-likelihood separately for each
 observation. The latter option is rarely useful when
 calling \code{log_lik} directly, but rather when computing
-\code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.}
+\code{\link{waic}} or \code{\link{loo}}.}
 
 \item{nug}{Small positive number for Gaussian process terms only. 
 For numerical reasons, the covariance matrix of a Gaussian 

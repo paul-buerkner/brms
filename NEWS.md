@@ -1,0 +1,1485 @@
+# brms 2.2.0++
+
+### Features
+
+* Extend `cor_car` to support intrinsic CAR models in pairwise
+difference formulation thanks to the case study of Mitzi Morris.
+
+### Other changes 
+
+* Use hashes to check if models have the same response values 
+when performing model comparisons. (#414)
+* No longer set `pointwise` dynamically in `loo` and related methods. (#416)
+* No longer show information criteria in the summary output.
+
+### Bug fixes
+
+* Fix a problem in the Stan code generation of distributional `beta` models
+thanks to Hans van Calster. (#404)
+
+
+# brms 2.2.0
+
+### Features
+
+* Specify custom response distributions with function `custom_family`. (#381)
+* Model missing values and measurement error in responses using the `mi`
+addition term. (#27, #343)
+* Allow missing values in predictors using `mi` terms on the right-hand side of
+model formulas. (#27)
+* Model interactions between the special predictor terms `mo`, `me`, and `mi`.
+(#313)
+* Introduce methods `model_weights` and `loo_model_weights` providing several
+options to compute model weights. (#268)
+* Introduce method `posterior_average` to extract posterior samples averaged
+across models. (#386)
+* Allow hyperparameters of group-level effects to vary over the levels of a
+categorical covariate using argument `by` in function `gr`. (#365)
+* Allow predictions of measurement-error models with new data. (#335)
+* Pass user-defined variables to Stan via `stanvar`. (#219, #357)
+* Allow ordinal families in mixture models. (#389)
+* Model covariates in multi-membership structures that vary over the levels of
+the grouping factor via `mmc` terms. (#353)
+* Fit shifted log-normal models via family `shifted_lognormal`. (#218)
+* Specify nested non-linear formulas.
+* Introduce function `make_conditions` to ease preparation of conditions for
+`marginal_effects`.
+
+### Other changes
+
+* Change the parameterization of `weibull` and `exgaussian` models to be
+consistent with other model classes. Post-processing of related models fitted
+with earlier version of `brms` is no longer possible.
+* Treat integer responses in `ordinal` models as directly indicating categories
+even if the lowest integer is not one.
+* Improve output of the `hypothesis` method thanks to the ideas of Matti Vuorre.
+(#362)
+* Always plot `by` variables as facets in `marginal_smooths`.
+* Deprecate the `cor_bsts` correlation structure.
+
+### Bug fixes
+
+* Allow the `:` operator to combine groups in multi-membership terms thanks to
+Gang Chen.
+* Avoid an unexpected error when calling `LOO` with argument `reloo = TRUE`
+thanks to Peter Konings. (#348)
+* Fix problems in `predict` when applied to categorical models thanks to Lydia
+Andreyevna Krasilnikova and Thomas Vladeck. (#336, #345)
+* Allow truncation in multivariate models with missing values thanks to Malte
+Lau Petersen. (#380)
+* Force time points to be unique within groups in autocorrelation structures
+thanks to Ruben Arslan. (#363)
+* Fix problems when post-processing multiple uncorrelated group-level terms of
+the same grouping factor thanks to Ivy Jansen. (#374)
+* Fix a problem in the Stan code of multivariate `weibull` and `frechet` models
+thanks to the GitHub user philj1s. (#375)
+* Fix a rare error when post-processing `binomial` models thanks to the GitHub
+user SeanH94. (#382)
+* Keep attributes of variables when preparing the `model.frame` thanks to Daniel
+Luedecke. (#393)
+
+
+# brms 2.1.0
+
+### Features
+    
+* Fit models on multiple imputed 
+      datasets via `brm_multiple` thanks 
+      to Ruben Arslan. (#27)
+* Combine multiple `brmsfit` objects 
+      via function `combine_models`.
+* Compute model averaged posterior 
+      predictions with method `pp_average`. (#319)
+* Add new argument `ordinal` to
+      `marginal_effects` to generate special
+      plots for ordinal models thanks to the idea 
+      of the GitHub user silberzwiebel. (#190)
+* Use informative inverse-gamma priors
+      for length-scale parameters of Gaussian
+      processes. (#275)
+* Compute hypotheses for all levels of a 
+      grouping factor at once using argument `scope` 
+      in method `hypothesis`. (#327)
+* Vectorize user-defined `Stan` functions
+      exported via `export_functions` using
+      argument `vectorize`.
+* Allow predicting new data in models
+      with ARMA autocorrelation structures.
+
+
+### Bug fixes
+    
+* Correctly recover noise-free coefficients
+      through `me` terms thanks to Ruben Arslan.
+      As a side effect, it is no longer possible to define
+      priors on noise-free `Xme` variables directly, but 
+      only on their hyper-parameters `meanme` and `sdme`.
+* Fix problems in renaming parameters of the
+      `cor_bsts` structure thanks to Joshua Edward Morten. (#312)
+* Fix some unexpected errors when predicting
+      from ordinal models thanks to David Hervas and 
+      Florian Bader. (#306, #307, #331)
+* Fix problems when estimating and predicting
+      multivariate ordinal models thanks to David West. (#314)
+* Fix various minor problems in autocorrelation 
+      structures thanks to David West. (#320)
+
+
+
+
+# brms 2.0.1
+
+### Features
+    
+* Export the helper functions `posterior_summary` 
+      and `posterior_table` both being used to
+      summarize posterior samples and predictions.
+
+
+### Bug fixes
+    
+* Fix incorrect computation of intercepts
+      in `acat` and `cratio` models
+      thanks to Peter Phalen. (#302)
+* Fix `pointwise` computation of `LOO`
+      and `WAIC` in multivariate models with estimated 
+      residual correlation structure.
+* Fix problems in various S3 methods sometimes
+      requiring unused variables to be specified in 
+      `newdata`.
+* Fix naming of Stan models thanks to Hao Ran Lai.
+
+
+
+
+# brms 2.0.0
+
+  This is the second major release of `brms`. The main
+  new feature are generalized multivariate models, which now
+  support everything already possible in univariate models, 
+  but with multiple response variables. Further, the internal
+  structure of the package has been improved considerably to be 
+  easier to maintain and extend in the future.
+  In addition, most deprecated functionality and arguments have 
+  been removed to provide a clean new start for the package.
+  Models fitted with `brms` 1.0 or higher should remain
+  fully compatible with `brms` 2.0.
+  
+### Features
+    
+* Add support for generalized multivariate models,
+      where each of the univariate models may have a different 
+      family and autocorrelation structure. 
+      Residual correlations can be estimated for multivariate
+      `gaussian` and `student` models. All features
+      supported in univariate models are now also available in
+      multivariate models. (#3)
+* Specify different formulas for different
+      categories in `categorical` models.
+* Add weakly informative default priors for the 
+      parameter class `Intercept` to improve convergence 
+      of more complex distributional models.
+* Optionally display the MC standard error in the
+      `summary` output. (#280)
+* Add argument `re.form` as an alias of 
+      `re_formula` to the methods `posterior_predict`,
+      `posterior_linpred`, and `predictive_error`
+      for consistency with other packages making use of
+      these methods. (#283)
+
+
+### Other changes
+    
+* Refactor many parts of the package to make
+      it more consistent and easier to extend.
+* Show the link functions of all
+      distributional parameters in the `summary`
+      output. (#277)
+* Reduce working memory requirements when
+      extracting posterior samples for use in `predict`
+      and related methods thanks to Fanyi Zhang. (#224)
+* Remove deprecated aliases of functions
+      and arguments from the package. (#278)
+* No longer support certain prior specifications,
+      which were previously labeled as deprecated.
+* Remove the depreacted addition term 
+      `disp` from the package.
+* Remove old versions of methods `fixef`,
+      `ranef`, `coef`, and `VarCorr`.
+* No longer support models fitted with `brms` < 1.0, 
+      which used the multivariate `'trait'` syntax
+      orginally deprecated in `brms` 1.0.
+* Make posterior sample extraction in the 
+      `summary` method cleaner and less error prone.
+* No longer fix the seed for random number generation 
+      in `brm` to avoid unexpected behavior in simulation studies.
+
+
+### Bug fixes
+    
+* Store `stan_funs` in `brmsfit` objects
+      to allow using `update` on models with user-defined
+      Stan functions thanks to Tom Wallis. (#288)
+* Fix problems in various post-processing methods 
+      when applied to models with the reserved variable 
+      `intercept` in group-level terms thanks to
+      the GitHub user ASKurz. (#279)
+* Fix an unexpected error in `predict` and related 
+      methods when setting `sample_new_levels = "gaussian"`
+      in models with only one group-level effect.
+      Thanks to Timothy Mastny. (#286)
+
+
+
+
+# brms 1.10.2
+### Features
+    
+* Allow setting priors on noise-free
+      variables specified via function `me`.
+* Add arguments `Ksub`, `exact_loo` 
+      and `group` to method `kfold` for 
+      defining omitted subsets according to a
+      grouping variable or factor.
+* Allow addition argument `se`
+      in `skew_normal` models.
+
+
+### Bug fixes
+    
+* Ensure correct behavior of horseshoe
+      and lasso priors in multivariate models
+      thanks to Donald Williams.
+* Allow using `identity` links on
+      all parameters of the `wiener` family
+      thanks to Henrik Singmann. (#276)
+* Use reasonable dimnames in the output
+      of `fitted` when returning linear predictors
+      of ordinal models thanks to the GitHub user atrolle. (#274)
+* Fix problems in `marginal_smooths`
+      occuring for multi-membership models thanks to
+      Hans Tierens.
+
+
+
+
+# brms 1.10.0
+### Features
+    
+* Rebuild monotonic effects from scratch
+      to allow specifying interactions with other
+      variables. (#239)
+* Introduce methods `posterior_linpred`
+      and `posterior_interval` for consistency
+      with other model fitting packages based on 
+      `Stan`.
+* Introduce function `theme_black`
+      providing a black `ggplot2` theme.
+* Specify special group-level effects within 
+      the same terms as ordinary group-level effects.
+* Add argument `prob` to 
+      `summary`, which allows to control the 
+      width of the computed uncertainty intervals. (#259)
+* Add argument `newdata` to the 
+      `kfold` method.
+* Add several arguments to the `plot`
+      method of `marginal_effects` to improve
+      control over the appearences of the plots.
+
+
+### Other changes
+    
+* Use the same noise-free variables
+      for all model parts in measurement error models. (#257)
+* Make names of local-level terms used
+      in the `cor_bsts` structure more informative.
+* Store the `autocor` argument
+      within `brmsformula` objects.
+* Store posterior and prior samples in separate
+      slots in the output of method `hypothesis`.
+* No longer change the default theme of
+      `ggplot2` when attaching `brms`. (#256)
+* Make sure signs of estimates are not dropped 
+      when rounding to zero in `summary.brmsfit`. (#263)
+* Refactor parts of `extract_draws`
+      and `linear_predictor` to be more consistent
+      with the rest of the package.
+
+
+### Bug fixes
+    
+* Do not silence the `Stan` parser
+      when calling `brm` to get informative
+      error messages about invalid priors.
+* Fix problems with spaces in priors
+      passed to `set_prior`.
+* Handle non `data.frame` objects 
+      correctly in `hypothesis.default`.
+* Fix a problem relating to the colour
+      of points displayed in `marginal_effects`.
+
+
+
+
+# brms 1.9.0
+### Features
+    
+* Perform model comparisons based on 
+      marginal likelihoods using the methods
+      `bridge_sampler`, `bayes_factor`,
+      and `post_prob` all powered by the
+      `bridgesampling` package.
+* Compute a Bayesian version of R-squared 
+      with the `bayes_R2` method.
+* Specify non-linear models for all
+      distributional parameters.
+* Combine multiple model formulas using 
+      the `+` operator and the helper functions 
+      `lf`, `nlf`, and `set_nl`.
+* Combine multiple priors using the 
+      `+` operator.
+* Split the `nlpar` argument of
+      `set_prior` into the three arguments
+      `resp`, `dpar`, and `nlpar`
+      to allow for more flexible prior specifications.
+
+
+### Other changes
+    
+* Refactor parts of the package to prepare
+      for the implementation of more flexible 
+      multivariate models in future updates.
+* Keep all constants in the log-posterior
+      in order for `bridge_sampler` to be
+      working correctly.
+* Reduce the amount of renaming done
+      within the `stanfit` object.
+* Rename argument `auxpar` of 
+      `fitted.brmsfit` to `dpar`.
+* Use the `launch_shinystan` generic 
+      provided by the `shinystan` package.
+* Set `bayesplot::theme_default()`
+      as the default `ggplot2` theme when
+      attaching `brms`.
+* Include citations of the `brms`
+      overview paper as published in the
+      Journal of Statistical Software.
+
+
+### Bug fixes
+    
+* Fix problems when calling `fitted`
+      with `hurdle_lognormal` models thanks to
+      Meghna Krishnadas.
+* Fix problems when predicting `sigma`
+      in `asym_laplace` models thanks to 
+      Anna Josefine Sorensen.	
+
+
+
+
+# brms 1.8.0
+### Features
+    
+* Fit conditional autoregressive (CAR) models
+      via function `cor_car` thanks to the case
+      study of Max Joseph.
+* Fit spatial autoregressive (SAR) models
+      via function `cor_sar`. Currently works
+      for families `gaussian` and `student`.
+* Implement skew normal models via family 
+      `skew_normal`. Thanks to Stephen Martin 
+      for suggestions on the parameterization.
+* Add method `reloo` to perform exact 
+      cross-validation for problematic observations 
+      and `kfold` to perform k-fold cross-validation 
+      thanks to the Stan Team.
+* Regularize non-zero coefficients in the 
+      `horseshoe` prior thanks to Juho Piironen 
+      and Aki Vehtari.
+* Add argument `new_objects` to various
+      post-processing methods to allow for passing of
+      data objects, which cannot be passed via 
+      `newdata`.
+* Improve parallel execution flexibility
+      via the `future` package.
+
+
+### Other changes
+    
+* Improve efficiency and stability of ARMA models.
+* Throw an error when the intercept is removed 
+      in an ordinal model instead of silently adding
+      it back again.
+* Deprecate argument `threshold` in `brm`
+      and instead recommend passing `threshold` directly 
+      to the ordinal family functions.
+* Throw an error instead of a message when
+      invalid priors are passed.
+* Change the default value of the `autocor`
+      slot in `brmsfit` objects to an empty
+      `cor_brms` object.
+* Shorten `Stan` code by combining 
+      declarations and definitions where possible.
+
+
+### Bug fixes
+    
+* Fix problems in `pp_check`
+      when the variable specified in argument
+      `x` has attributes thanks to 
+      Paul Galpern.
+* Fix problems when computing fitted 
+      values for truncated discrete models based
+      on new data thanks to Nathan Doogan.
+* Fix unexpected errors when passing
+      models, which did not properly initiliaze,
+      to various post-processing methods.
+* Do not accidently drop the second 
+      dimension of matrices in `summary.brmsfit` 
+      for models with only a single observation. 
+
+
+
+
+# brms 1.7.0
+### Features
+    
+* Fit latent Gaussian processes of one
+      or more covariates via function `gp` 
+      specified in the model formula (#221).
+* Rework methods `fixef`, `ranef`,
+      `coef`, and `VarCorr` to be more flexible 
+      and consistent with other post-processing methods (#200).
+* Generalize method `hypothesis` to be
+      applicable on all objects coercible to a 
+      `data.frame` (#198).
+* Visualize predictions via spaghetti 
+      plots using argument `spaghetti` in
+      `marginal_effects` and `marginal_smooths`.
+* Introduce method `add_ic` to
+      store and reuse information criteria in 
+      fitted model objects (#220).
+* Allow for negative weights in 
+      multi-membership grouping structures.
+* Introduce an `as.array` method
+      for `brmsfit` objects.
+
+
+### Other changes
+    
+* Show output of \R code in HTML vignettes thanks
+      to Ben Goodrich (#158).
+* Resolve citations in PDF vignettes thanks
+      to Thomas Kluth (#223).
+* Improve sampling efficiency for
+      `exgaussian` models thanks to
+      Alex Forrence (#222).
+* Also transform data points when using argument 
+      `transform` in `marginal_effects`
+      thanks to Markus Gesmann.
+
+
+### Bug fixes
+    
+* Fix an unexpected error in `marginal_effects`
+      occuring for some models with autocorrelation terms 
+      thanks to Markus Gesmann.
+* Fix multiple problems occuring for models with  
+      the `cor_bsts` structure thanks to Andrew Ellis.
+
+
+
+
+# brms 1.6.1
+### Features
+    
+* Implement zero-one-inflated beta models
+      via family `zero_one_inflated_beta`.
+* Allow for more link functions in 
+      zero-inflated and hurdle models.
+
+
+### Other changes
+    
+* Ensure full compatibility with 
+      `bayesplot` version 1.2.0.
+* Deprecate addition argument `disp`.
+
+
+### Bug fixes
+    
+* Fix problems when setting priors
+      on coefficients of auxiliary parameters 
+      when also setting priors on the corresponding
+      coefficients of the mean parameter.
+      Thanks to Matti Vuorre for reporting this bug.
+* Allow ordered factors to be used
+      as grouping variables thanks to the GitHub
+      user itissid.
+
+
+
+
+# brms 1.6.0
+### Features
+    
+* Fit finite mixture models using family
+      function `mixture`.
+* Introduce method `pp_mixture` to compute
+      posterior probabilities of mixture component 
+      memberships thanks to a discussion with Stephen Martin.
+* Implement different ways to sample new levels
+      of grouping factors in `predict` and related 
+      methods through argument `sample_new_levels`.
+      Thanks to Tom Wallis and Jonah Gabry for a detailed 
+      discussion about this feature.
+* Add methods `loo_predict`, `loo_linpred`,
+      and `loo_predictive_interval` for computing
+      LOO predictions thanks to Aki Vehtari and Jonah Gabry.
+* Allow using `offset` in formulas
+      of non-linear and auxiliary parameters.
+* Allow sparse matrix multiplication in
+      non-linear and distributional models.
+* Allow using the `identity` link for
+      all auxiliary parameters.
+* Introduce argument `negative_rt` in
+      `predict` and `posterior_predict` to 
+      distinquish responses on the upper and lower 
+      boundary in `wiener` diffusion models
+      thanks to Guido Biele.
+* Introduce method `control_params` to
+      conveniently extract control parameters of the 
+      NUTS sampler.
+* Introduce argument `int_conditions` in
+      `marginal_effects` for enhanced plotting of 
+      two-way interactions thanks to a discussion with
+      Thomas Kluth.
+* Improve flexibility of the `conditions` 
+      argument of `marginal_effects`.
+* Extend method `stanplot` to correctly 
+      handle some new `mcmc_` plots of the 
+      `bayesplot` package.
+
+
+### Other changes
+    
+* Improve the `update` method to
+      only recompile models when the `Stan` code
+      changes.
+* Warn about divergent transitions when calling
+      `summary` or `print` on `brmsfit` objects.
+* Warn about unused variables in argument 
+      `conditions` when calling `marginal_effects`.
+* Export and document several distribution functions 
+      that were previously kept internal.
+
+
+### Bug fixes
+    
+* Fix problems with the inclusion of offsets
+      occuring for more complicated formulas thanks to 
+      Christian Stock.
+* Fix a bug that led to invalid Stan code when 
+      sampling from priors in intercept only models thanks 
+      to Tom Wallis.
+* Correctly check for category specific
+      group-level effects in non-ordinal models thanks to
+      Wayne Folta.
+* Fix problems in `pp_check` when specifying
+      argument `newdata` together with arguments 
+      `x` or `group`. 
+* Rename the last column in the output of 
+      `hypothesis` to `"star"` in order to avoid 
+      problems with zero length column names thanks to 
+      the GitHub user puterleat.
+* Add a missing new line statement at the end 
+      of the `summary` output thanks to Thomas Kluth.
+
+
+
+
+# brms 1.5.1
+### Features
+    
+* Allow `horseshoe` and `lasso` 
+      priors to be applied on population-level effects 
+      of non-linear and auxiliary parameters.
+* Force recompiling `Stan` models
+      in `update.brmsfit` via argument
+      `recompile`.
+
+
+### Other changes
+    
+* Avoid indexing of matrices in non-linear
+      models to slightly improve sampling speed.
+
+
+### Bug fixes
+    
+* Fix a severe problem (introduced in version 1.5.0), 
+      when predicting `Beta` models thanks to Vivian Lam.
+* Fix problems when summarizing some models
+      fitted with older version of `brms` thanks
+      to Vivian Lam.
+* Fix checks of argument `group` in
+      method `pp_check` thanks to Thomas K.
+* Get arguments `subset` and `nsamples`
+      working correctly in `marginal_smooths`.
+
+
+
+
+# brms 1.5.0
+### Features
+    
+* Implement the generalized extreme value
+      distribution via family `gen_extreme_value`.
+* Improve flexibility of the `horseshoe`
+      prior thanks to Juho Piironen.
+* Introduce auxiliary parameter `mu`
+      as an alternative to specifying effects within
+      the `formula` argument in function
+      `brmsformula`.
+* Return fitted values of auxiliary parameters 
+      via argument `auxpar` of method `fitted`.
+* Add vignette `"brms_multilevel"`, in which
+      the advanced formula syntax of `brms` is explained
+      in detail using several examples.
+
+
+### Other changes
+    
+* Refactor various parts of the package
+      to ease implementation of mixture and multivariate
+      models in future updates. This should not have
+      any user visible effects.
+* Save the version number of `rstan` in 
+      element `version` of `brmsfit` objects.
+
+
+### Bug fixes
+    
+* Fix a rare error when predicting `von_mises`
+      models thanks to John Kirwan.
+
+
+
+
+# brms 1.4.0
+### Features
+    
+* Fit quantile regression models via family
+      `asym_laplace` (asymmetric Laplace distribution).
+* Specify non-linear models in a (hopefully) more
+      intuitive way using `brmsformula`.
+* Fix auxiliary parameters to certain values
+      through `brmsformula`.
+* Allow `family` to be specified in
+      `brmsformula`.
+* Introduce family `frechet` for modelling
+      strictly positive responses.
+* Allow truncation and censoring at the same time.
+* Introduce function `prior_` allowing
+      to specify priors using one-sided formulas or `quote`.
+* Pass priors to `Stan` directly without
+      performing any checks by setting `check = FALSE` 
+      in `set_prior`.
+* Introduce method `nsamples` to extract
+      the number of posterior samples.
+* Export the main formula parsing function 
+      `parse_bf`.
+* Add more options to customize two-dimensional surface
+      plots created by `marginal_effects` or `marginal_smooths`.
+
+
+### Other changes
+    
+* Change structure of `brmsformula`
+      objects to be more reliable and easier to extend.
+* Make sure that parameter `nu` never 
+      falls below `1` to reduce convergence problems
+      when using family `student`.
+* Deprecate argument `nonlinear`.
+* Deprecate family `geometric`.
+* Rename `cov_fixed` to `cor_fixed`.
+* Make handling of addition terms more transparent
+      by exporting and documenting related functions.
+* Refactor helper functions of the `fitted`
+      method to be easier to extend in the future.
+* Remove many units tests of internal functions
+      and add tests of user-facing functions instead.
+* Import some generics from `nlme` instead
+      of `lme4` to remove dependency on the latter one.
+* Do not apply `structure` to `NULL`
+      anymore to get rid of warnings in \R-devel.
+
+
+### Bug fixes
+    
+* Fix problems when fitting smoothing terms
+      with factors as `by` variables thanks to
+      Milani Chaloupka.
+* Fix a bug that could cause some monotonic 
+      effects to be ignored in the `Stan` code thanks 
+      to the GitHub user bschneider.
+* Make sure that the data of models with
+      only a single observation are compatible with 
+      the generated `Stan` code.
+* Handle argument `algorithm` 
+      correctly in `update.brmsfit`.
+* Fix a bug sometimes causing an error in
+      `marginal_effects` when using family
+      `wiener` thanks to Andrew Ellis.
+* Fix problems in `fitted` when applied
+      to `zero_inflated_beta` models thanks to
+      Milani Chaloupka.
+* Fix minor problems related to the prediction
+      of autocorrelated models.
+* Fix a few minor bugs related to the backwards 
+      compatibility of multivariate and related models 
+      fitted with `brms` < 1.0.0.
+
+
+
+
+# brms 1.3.1
+### Features
+    
+* Introduce the auxiliary parameter `disc`
+      ('discrimination') to be used in ordinal models.
+      By default it is not estimated but fixed to one.
+* Create `marginal_effects` plots of 
+      two-way interactions of variables that were 
+      not explicitely modeled as interacting.
+
+
+### Other changes
+    
+* Move `rstan` to 'Imports' and `Rcpp` 
+      to 'Depends' in order to avoid loading `rstan` 
+      into the global environment automatically.
+
+
+### Bug fixes
+    
+* Fix a bug leading to unexpected errors
+      in some S3 methods when applied to ordinal models.
+
+
+
+
+# brms 1.3.0
+### Features
+    
+* Fit error-in-variables models
+      using function `me` in the model formulae.
+* Fit multi-membership models using function
+      `mm` in grouping terms.
+* Add families `exgaussian`
+      (exponentially modified Gaussian distribution) 
+      and `wiener` (Wiener diffusion model distribution)
+      specifically suited to handle for response times.
+* Add the `lasso` prior as an alternative
+      to the `horseshoe` prior for sparse models.
+* Add the methods `log_posterior`,
+      `nuts_params`, `rhat`, and `neff_ratio`
+      for `brmsfit` objects to conveniently access
+      quantities used to diagnose sampling behavior.
+* Combine chains in method `as.mcmc` using
+      argument `combine_chains`.
+* Estimate the auxiliary parameter
+      `sigma` in models with known standard errors of
+      the response by setting argument `sigma` to 
+      `TRUE` in addition function `se`.
+* Allow visualizing two-dimensional smooths
+      with the `marginal_smooths` method.
+
+
+### Other changes
+    
+* Require argument `data` to be explicitely 
+      specified in all user facing functions.
+* Refactor the `stanplot` method
+      to use `bayesplot` on the backend.
+* Use the `bayesplot` theme as the default
+      in all plotting functions.
+* Add the abbreviations `mo` and `cs`
+      to specify monotonic and category specific effects
+      respectively.
+* Rename generated variables in the data.frames 
+      returned by `marginal_effects` to avoid potential
+      naming conflicts.
+* Deprecate argument `cluster` and use 
+      the native `cores` argument of `rstan` instead.
+* Remove argument `cluster_type` as it is
+      no longer required to apply forking.
+* Remove the deprecated `partial` argument.
+
+
+
+
+# brms 1.2.0
+### Features
+    
+* Add the new family `hurdle_lognormal`
+      specifically suited for zero-inflated continuous responses.
+* Introduce the `pp_check` method to perform 
+      various posterior predictive checks
+      using the `bayesplot` package.
+* Introduce the `marginal_smooths` method to
+      better visualize smooth terms.
+* Allow varying the scale of global shrinkage 
+      parameter of the `horseshoe` prior.
+* Add functions `prior` and `prior_string`
+      as aliases of `set_prior`, the former 
+      allowing to pass arguments without quotes `""`
+      using non-standard evaluation.
+* Introduce four new vignettes explaining how to fit
+      non-linear models, distributional models, phylogenetic models, 
+      and monotonic effects respectively.
+* Extend the `coef` method to better 
+      handle category specific group-level effects.
+* Introduce the `prior_summary` method
+      for `brmsfit` objects to obtain a summary
+      of prior distributions applied.
+* Sample from the prior of the original population-level 
+      intercept when `sample_prior = TRUE` even in models
+      with an internal temporary intercept used to improve
+      sampling efficiency.
+* Introduce methods `posterior_predict`, 
+      `predictive_error` and `log_lik` as
+      (partial) aliases of `predict`, `residuals`,
+      and `logLik` respectively.
+
+
+### Other changes
+    
+* Improve computation of Bayes factors
+      in the `hypothesis` method to be less 
+      influenced by MCMC error.
+* Improve documentation of default priors.
+* Refactor internal structure of some 
+      formula and prior evaluating functions. 
+      This should not have any user visible effects.
+* Use the `bayesplot` package as the
+      new backend of `plot.brmsfit`.
+
+
+### Bug fixes
+     
+* Better mimic `mgcv` when parsing smooth terms
+      to make sure all arguments are correctly handled.
+* Avoid an error occuring during the prediction 
+      of new data when grouping factors with only a single 
+      factor level were supplied thanks to Tom Wallis.
+* Fix `marginal_effects` to consistently 
+      produce plots for all covariates in non-linear models 
+      thanks to David Auty.
+* Improve the `update` method to better recognize
+      situations where recompliation of the `Stan` code
+      is necessary thanks to Raphael P.H.
+* Allow to correctly `update` the `sample_prior`
+      argument to value `"only"`.
+* Fix an unexpected error occuring in many S3 methods
+      when the thinning rate is not a divisor of the total
+      number of posterior samples thanks to Paul Zerr.
+
+
+
+
+# brms 1.1.0
+### Features
+    
+* Estimate monotonic group-level effects.
+* Estimate category specific group-level effects.
+* Allow `t2` smooth terms based on
+      multiple covariates.
+* Estimate interval censored data via the
+      addition argument `cens` in the model formula.
+* Allow to compute `residuals` also based 
+      on predicted values instead of fitted values.
+
+
+### Other changes
+    
+* Use the prefix `bcs` in parameter names
+      of category specific effects and the prefix `bm` 
+      in parameter names of monotonic effects (instead
+      of the prefix `b`) to simplify their identifaction.
+* Ensure full compatibility with 
+      `ggplot2` version 2.2.
+
+
+### Bug fixes
+     
+* Fix a bug that could result in incorrect
+      threshold estimates for `cumulative` and
+      `sratio` models thanks to Peter Congdon.
+* Fix a bug that sometimes kept distributional 
+      `gamma` models from being compiled 
+      thanks to Tim Beechey.
+* Fix a bug causing an error in `predict` 
+      and related methods when two-level factors or 
+      logical variables were used as covariates in
+      non-linear models thanks to Martin Schmettow.
+* Fix a bug causing an error when passing 
+      lists to additional arguments of smoothing 
+      functions thanks to Wayne Folta.
+* Fix a bug causing an error in the 
+      `prior_samples` method for models with
+      multiple group-level terms that refer to the same 
+      grouping factor thanks to Marco Tullio Liuzza.
+* Fix a bug sometimes causing an error when 
+      calling `marginal_effects` for weighted models.
+
+
+
+
+# brms 1.0.1
+  \subsection{MINOR CHANGES
+    
+* Center design matrices inside the Stan code
+      instead of inside `make_standata`.
+* Get rid of several warning messages
+      occuring on CRAN.
+
+
+
+
+# brms 1.0.0
+  This is one of the largest updates of `brms` since its 
+  initial release. In addition to many new features, 
+  the multivariate `'trait'` syntax has been removed 
+  from the package as it was confusing for users, required 
+  much special case coding, and was hard to maintain.
+  See `help(brmsformula)` for details of the formula
+  syntax applied in `brms`.
+### Features
+     
+* Allow estimating correlations between 
+      group-level effects defined across multiple formulae 
+      (e.g., in non-linear models) by specifying IDs in
+      each grouping term via an extended `lme4` syntax.
+* Implement distributional regression models
+      allowing to fully predict auxiliary parameters 
+      of the response distribution. Among many other 
+      possibilities, this can be used to model 
+      heterogeneity of variances.
+* Zero-inflated and hurdle models do not use
+      multivariate syntax anymore but instead have
+      special auxiliary parameters named `zi` and 
+      `hu` defining zero-inflation / hurdle probabilities.
+* Implement the `von_mises` family to model
+      circular responses.
+* Introduce the `brmsfamily` function for
+      convenient specification of `family` objects.
+* Allow predictions of `t2` smoothing
+      terms for new data.
+* Feature vectors as arguments for the addition 
+      argument `trunc` in order to model varying
+      truncation points.
+
+
+### Other changes
+    
+* Remove the `cauchy` family
+      after several months of deprecation.
+* Make sure that group-level parameter names
+      are unambiguous by adding double underscores 
+      thanks to the idea of the GitHub user schmettow.
+* The `predict` method now returns predicted 
+      probabilities instead of absolute frequencies of 
+      samples for ordinal and categorical models.
+* Compute the linear predictor in the model
+      block of the Stan program instead of in the
+      transformed parameters block. This avoids saving
+      samples of unnecessary parameters to disk.
+      Thanks goes to Rick Arrano for pointing me 
+      to this issue.
+* Colour points in `marginal_effects` plots if sensible.
+* Set the default of the `robust` argument to `TRUE` in
+`marginal_effects.brmsfit`.
+
+
+### Bug fixes
+     
+* Fix a bug that could occur when predicting factorial response variables for
+new data. Only affects categorical and ordinal models.
+* Fix a bug that could lead to duplicated variable names in the Stan code when
+sampling from priors in non-linear models thanks to Tom Wallis.
+* Fix problems when trying to pointwise evaluate non-linear formulae in
+`logLik.brmsfit` thanks to Tom Wallis.
+* Ensure full compatibility of the `ranef` and `coef` methods with non-linear
+models.
+* Fix problems that occasionally occured when handling `dplyr` datasets thanks
+to the GitHub user Atan1988.
+
+
+# brms 0.10.0
+### Features
+     
+* Add support for generalized additive mixed models (GAMMs). Smoothing terms can
+be specified using the `s` and `t2` functions in the model formula.
+* Introduce `as.data.frame` and `as.matrix` methods for `brmsfit` objects.
+
+### Other changes
+
+* The `gaussian("log")` family no longer implies a log-normal distribution, but
+a normal distribution with log-link to match the behavior of `glm`. The
+log-normal distribution can now be specified via family `lognormal`.
+* Update syntax of `Stan` models to match the recommended syntax of `Stan` 2.10.
+
+
+### Bug fixes
+     
+* The `ngrps` method should now always return the correct result for non-linear
+models.
+* Fix problems in `marginal_effects` for models using the reserved variable
+`intercept` thanks to Frederik Aust.
+* Fix a bug in the `print` method of `brmshypothesis` objects that could lead to
+duplicated and thus invalid row names.
+* Residual standard deviation parameters of multivariate models are again
+correctly displayed in the output of the `summary` method.
+* Fix problems when using variational Bayes algorithms with `brms` while having
+`rstan` >= 2.10.0 installed thanks to the GitHub user cwerner87.
+
+
+# brms 0.9.1
+### Features
+     
+* Allow the '/' symbol in group-level terms in the `formula` argument to
+indicate nested grouping structures.
+* Allow to compute `WAIC` and `LOO` based on the pointwise log-likelihood using
+argument `pointwise` to substantially reduce memory requirements.
+
+
+### Other changes
+     
+* Add horizontal lines to the errorbars in `marginal_effects` plots for factors.
+
+
+### Bug fixes
+    
+* Fix a bug that could lead to a cryptic error message when changing some parts
+of the model `formula` using the `update` method.
+* Fix a bug that could lead to an error when calling `marginal_effects` for
+predictors that were generated with the `base::scale` function thanks to Tom
+Wallis.
+* Allow interactions of numeric and categorical predictors in `marginal_effects`
+to be passed to the `effects` argument in any order.
+* Fix a bug that could lead to incorrect results of `predict` and related
+methods when called with `newdata` in models using the `poly` function thanks to
+Brock Ferguson.
+* Make sure that user-specified factor contrasts are always applied in
+multivariate models.
+
+
+# brms 0.9.0
+### Features
+     
+* Add support for `monotonic` effects allowing to use ordinal predictors without
+assuming their categories to be equidistant.
+* Apply multivariate formula syntax in categorical models to considerably
+increase modeling flexibility.
+* Add the addition argument `disp` to define multiplicative factors on
+dispersion parameters. For linear models, `disp` applies to the residual
+standard deviation `sigma` so that it can be used to weight observations.
+* Treat the fixed effects design matrix as sparse by using the `sparse` argument
+of `brm`. This can considerably reduce working memory requirements if the
+predictors contain many zeros.
+* Add the `cor_fixed` correlation structure to allow for fixed user-defined
+covariance matrices of the response variable.
+* Allow to pass self-defined `Stan` functions via argument `stan_funs` of `brm`.
+* Add the `expose_functions` method allowing to expose self-defined `Stan`
+functions in `R`.
+* Extend the functionality of the `update` method to allow all model parts to be
+updated.
+* Center the fixed effects design matrix also in multivariate models. This may
+lead to increased sampling speed in models with many predictors.
+
+
+### Other changes
+    
+* Refactor `Stan` code and data generating functions to be more consistent and
+easier to extent.
+* Improve checks of user-define prior specifications.
+* Warn about models that have not converged.
+* Make sure that regression curves computed by the `marginal_effects` method are
+always smooth.
+* Allow to define category specific effects in ordinal models directly within
+the `formula` argument.
+
+
+### Bug fixes
+    
+* Fix problems in the generated `Stan` code when using very long non-linear
+model formulas thanks to Emmanuel Charpentier.
+* Fix a bug that prohibited to change priors on single standard deviation
+parameters in non-linear models thanks to Emmanuel Charpentier.
+* Fix a bug that prohibited to use nested grouping factors in non-linear models
+thanks to Tom Wallis.
+* Fix a bug in the linear predictor computation within `R`, occuring for ordinal
+models with multiple category specific effects. This could lead to incorrect
+outputs of `predict`, `fitted`, and `logLik` for these models.
+* Make sure that the global `"contrasts"` option is not used when
+post-processing a model.
+
+
+# brms 0.8.0
+### Features
+     
+* Implement generalized non-linear models, which can be specified with the help
+of the `nonlinear` argument in `brm`.
+* Compute and plot marginal effects using the `marginal_effects` method thanks
+to the help of Ruben Arslan.
+* Implement zero-inflated beta models through family `zero_inflated_beta` thanks
+to the idea of Ali Roshan Ghias.
+* Allow to restrict domain of fixed effects and autocorrelation parameters using
+new arguments `lb` and `ub` in function `set_prior` thanks to the idea of Joel
+Gombin.
+* Add an `as.mcmc` method for compatibility with the `coda` package.
+* Allow to call the `WAIC`, `LOO`, and `logLik` methods with new data.
+
+
+### Other changes
+    
+* Make sure that `brms` is fully compatible with `loo` version 0.1.5.
+* Optionally define the intercept as an ordinary fixed effect to avoid the
+reparametrization via centering of the fixed effects design matrix.
+* Do not compute the WAIC in `summary` by default anymore to reduce computation
+time of the method for larger models.
+* The `cauchy` family is now deprecated and will be removed soon as it often has
+convergence issues and not much practical application anyway.
+* Change the default settings of the number of chains and warmup samples to the
+defaults of `rstan` (i.e., `chains = 4` and `warmup = iter / 2`).
+* Do not remove bad behaving chains anymore as they may point to general
+convergence problems that are dangerous to ignore.
+* Improve flexibility of the `theme` argument in all plotting functions.
+* Only show the legend once per page, when computing trace and density plots
+with the `plot` method.
+* Move code of self-defined `Stan` functions to `inst/chunks` and incorporate
+them into the models using `rstan::stanc_builder`. Also, add unit tests for
+these functions.
+
+
+### Bug fixes
+    
+* Fix problems when predicting with `newdata` for zero-inflated and hurdle
+models thanks to Ruben Arslan.
+* Fix problems when predicting with `newdata` if it is a subset of the data
+stored in a `brmsfit` object thanks to Ruben Arslan.
+* Fix data preparation for multivariate models if some responses are `NA` thanks
+to Raphael Royaute.
+* Fix a bug in the `predict` method occurring for some multivariate models so
+that it now always returns the predictions of all response variables, not just
+the first one.
+* Fix a bug in the log-likelihood computation of `hurdle_poisson` and
+`hurdle_negbinomial` models. This may lead to minor changes in the values
+obtained by `WAIC` and `LOO` for these models.
+* Fix some backwards compatibility issues of models fitted with version <= 0.5.0
+thanks to Ulf Koether.
+
+
+
+# brms 0.7.0
+
+### Features
+    
+* Use variational inference algorithms as alternative to the NUTS sampler by
+specifying argument `algorithm` in the `brm` function.
+* Implement beta regression models through family `Beta`.
+* Implement zero-inflated binomial models through family
+`zero_inflated_binomial`.
+* Implement multiplicative effects for family `bernoulli` to fit (among others)
+2PL IRT models.
+* Generalize the `formula` argument for zero-inflated and hurdle models so that
+predictors can be included in only one of the two model parts thanks to the idea
+of Wade Blanchard.
+* Combine fixed and random effects estimates using the new `coef` method.
+* Call the `residuals` method with `newdata` thanks to the idea of Friederike
+Holz-Ebeling.
+* Allow new levels of random effects grouping factors in the `predict`,
+`fitted`, and `residuals` methods using argument `allow_new_levels`.
+* Selectively exclude random effects in the `predict`, `fitted`, and `residuals`
+methods using argument `re_formula`.
+* Add a `plot` method for objects returned by method `hypothesis` to visualize
+prior and posterior distributions of the hypotheses being tested.
+
+
+### Other changes
+    
+* Improve evaluation of the response part of the `formula` argument to reliably
+allow terms with more than one variable (e.g., `y/x ~ 1`).
+* Improve sampling efficiency of models containing many fixed effects through
+centering the fixed effects design matrix thanks to Wayne Folta.
+* Improve sampling efficiency of models containing uncorrelated random effects
+specified by means of `(random || group)` terms in `formula` thanks to Ali
+Roshan Ghias.
+* Utilize user-defined functions in the `Stan` code of ordinal models to improve
+readability as well as sampling efficiency.
+* Make sure that model comparisons using `LOO` or `WAIC` are only performed when
+models are based on the same responses.
+* Use some generic functions of the `lme4` package to avoid unnecessary function
+masking. This leads to a change in the argument order of method `VarCorr`.
+* Change the `ggplot` theme in the `plot` method through argument `theme`.
+* Remove the `n.` prefix in arguments `n.iter`, `n.warmup`, `n.thin`,
+`n.chains`, and `n.cluster` of the `brm` function. The old argument names remain
+usable as deprecated aliases.
+* Amend names of random effects parameters to simplify matching with their
+respective grouping factor levels.
+
+
+### Bug fixes
+    
+* Fix a bug in the `hypothesis` method that could cause valid model parameters
+to be falsely reported as invalid.
+* Fix a bug in the `prior_samples` method that could cause prior samples of
+parameters of the same class to be artifically correlated.
+* Fix `Stan` code of linear models with moving-average effects and non-identity
+link functions so that they no longer contain code related solely to
+autoregressive effects.
+* Fix a bug in the evaluation of `formula` that could cause complicated random
+effects terms to be falsely treated as fixed effects.
+* Fix several bugs when calling the `fitted` and `predict` methods with
+`newdata` thanks to Ali Roshan Ghias.
+
+
+# brms 0.6.0
+
+### Features
+    
+* Add support for zero-inflated and hurdle models thanks to the idea of Scott
+Baldwin.
+* Implement inverse gaussian models through family `inverse.gaussian`.
+* Allow to specify truncation boundaries of the response variable thanks to the
+idea of Maciej Beresewicz.
+* Add support for autoregressive (AR) effects of residuals, which can be modeled
+using the `cor_ar` and `cor_arma` functions.
+* Stationary autoregressive-moving-average (ARMA) effects of order one can now
+also be fitted using special covariance matrices.
+* Implement multivariate student-t models.
+* Binomial and ordinal families now support the `cauchit` link function.
+* Allow family functions to be used in the `family` argument.
+* Easy access to various `rstan` plotting functions using the `stanplot` method.
+* Implement horseshoe priors to model sparsity in fixed effects coefficients
+thanks to the idea of Josh Chang.
+* Automatically scale default standard deviation priors so that they remain only
+weakly informative independent on the response scale.
+* Report model weights computed by the `loo` package when comparing multiple
+fitted models.
+
+
+### Other changes
+    
+* Separate the fixed effects Intercept from other fixed effects in the `Stan`
+code to slightly improve sampling efficiency.
+* Move autoregressive (AR) effects of the response from the `cor_ar` to the
+`cor_arr` function as the result of implementing AR effects of residuals.
+* Improve checks on argument `newdata` used in the `fitted` and `predict`
+method.
+* Method `standata` is now the only way to extract data that was passed to
+`Stan` from a `brmsfit` object.
+* Slightly improve `Stan` code for models containing no random effects.
+* Change the default prior of the degrees of freedom of the `student` family to
+`gamma(2,0.1)`.
+* Improve readability of the output of method `VarCorr`.
+* Export the `make_stancode` function to give users direct access to `Stan` code
+generated by `brms`.
+* Rename the `brmdata` function to `make_standata`. The former remains usable as
+a deprecated alias.
+* Improve documenation to better explain differences in autoregressive effects
+across R packages.
+
+### Bug fixes
+
+* Fix a bug that could cause an unexpected error when the `predict` method was
+called with `newdata`.
+* Avoid side effects of the `rstan` compilation routines that could occasionally
+cause R to crash.
+* Make `brms` work correctly with `loo` version 0.1.3 thanks to Mauricio Garnier
+Villarreal and Jonah Gabry.
+* Fix a bug that could cause WAIC and LOO estimates to be slightly incorrect for
+`gaussian` models with `log` link.
+
+
+
+
+# brms 0.5.0
+### Features
+    
+* Compute the Watanabe-Akaike information criterion (WAIC) and leave-one-out
+cross-validation (LOO) using the `loo` package.
+* Provide an interface to `shinystan` with S3 method `launch_shiny`.
+* New functions `get_prior` and `set_prior` to make prior specifications easier.
+* Log-likelihood values and posterior predictive samples can now be calculated
+within R after the model has been fitted.
+* Make predictions based on new data using S3 method `predict`.
+* Allow for customized covariance structures of grouping factors with multiple
+random effects.
+* New S3 methods `fitted` and `residuals` to compute fitted values and
+residuals, respectively.
+
+
+### Other changes
+    
+* Arguments `WAIC` and `predict` are removed from the `brm` function, as they
+are no longer necessary.
+* New argument `cluster_type` in function `brm` allowing to choose the cluster
+type created by the parallel package.
+* Remove chains that fail to initialize while sampling in parallel leaving the
+other chains untouched.
+* Redesign trace and density plots to be faster and more stable.
+* S3 method `VarCorr` now always returns covariance matrices regardless of
+whether correlations were estimated.
+
+
+### Bug fixes
+    
+* Fix a bug in S3 method `hypothesis` related to the calculation of
+Bayes-factors for point hypotheses.
+* User-defined covariance matrices that are not strictly positive definite for
+numerical reasons should now be handled correctly.
+* Fix problems when a factor is used as fixed effect and as random effects
+grouping variable at the same time thanks to Ulf Koether.
+* Fix minor issues with internal parameter naming.
+* Perform additional checking on user defined priors.
+
+
+# brms 0.4.1
+
+### Features
+    
+* Allow for sampling from all specified proper priors in the model.
+* Compute Bayes-factors for point hypotheses in S3 method `hypothesis`.
+
+### Bug fixes
+    
+* Fix a bug that could cause an error for models with multiple grouping factors
+thanks to Jonathan Williams.
+* Fix a bug that could cause an error for weighted poisson and exponential
+models.
+
+
+# brms 0.4.0
+
+### Features
+    
+* Implement the Watanabe-Akaike Information Criterion (WAIC).
+* Implement the `||`-syntax for random effects allowing for the estimation of
+random effects standard deviations without the estimation of correlations.
+* Allow to combine multiple grouping factors within one random effects argument
+using the interaction symbol `:`.
+* Generalize S3 method `hypothesis` to be used with all parameter classes not
+just fixed effects. In addition, one-sided hypothesis testing is now possible.
+* Introduce new family `multigaussian` allowing for multivariate normal
+regression.
+* Introduce new family `bernoulli` for dichotomous response variables as a more
+efficient alternative to families `binomial` or `categorical` in this special
+case.
+
+
+### Other changes
+    
+* Slightly change the internal structure of brms to reflect that `rstan` is
+finally on CRAN.
+* Thoroughly check validity of the response variable before the data is passed
+to `Stan`.
+* Prohibit variable names containing double underscores `__` to avoid naming
+conflicts.
+* Allow function calls with several arguments (e.g. `poly(x,3)`) in the formula
+argument of function `brm`.
+* Always center random effects estimates returned by S3 method `ranef` around
+zero.
+* Prevent the use of customized covariance matrices for grouping factors with
+multiple random effects for now.
+* Remove any experimental `JAGS` code from the package.
+
+
+### Bug fixes
+    
+* Fix a bug in S3 method `hypothesis` leading to an error when numbers with
+decimal places were used in the formulation of the hypotheses.
+* Fix a bug in S3 method `ranef` that caused an error for grouping factors with
+only one random effect.
+* Fix a bug that could cause the fixed intercept to be wrongly estimated in the
+presence of multiple random intercepts thanks to Jarrod Hadfield.
+
+
+
+# brms 0.3.0
+
+### Features
+    
+* Introduce new methods `parnames` and `posterior_samples` for class 'brmsfit'
+to extract parameter names and posterior samples for given parameters,
+respectively.
+* Introduce new method `hypothesis` for class `brmsfit` allowing to test
+non-linear hypotheses concerning fixed effects.
+* Introduce new argument `addition` in function brm to get a more flexible
+approach in specifying additional information on the response variable (e.g.,
+standard errors for meta-analysis). Alternatively, this information can also be
+passed to the `formula` argument directly.
+* Introduce weighted and censored regressions through argument `addition` of
+function brm.
+* Introduce new argument `cov.ranef` in the `brm` function allowing for
+customized covariance structures of random effects thanks to the idea of Boby
+Mathew.
+* Introduce new argument `autocor` in function brm allowing for autocorrelation
+of the response variable.
+* Introduce new functions `cor.ar`, `cor.ma`, and `cor.arma`, to be used with
+argument `autocor` for modeling autoregressive, moving-average, and
+autoregressive-moving-average models.
+
+
+### Other changes
+    
+* Amend parametrization of random effects to increase efficiency of the sampling
+algorithms. 
+* Improve vectorization of sampling statements.
+
+
+### Bug fixes
+    
+* Fix a bug that could cause an error when fitting poisson models while 
+`predict = TRUE`.
+* Fix a bug that caused an error when sampling only one chain while `silent =
+TRUE`.
+
+
+# brms 0.2.0
+
+### Features
+    
+* New S3 class `brmsfit` to be returned by the `brm` function.
+* New methods for class `brmsfit`: `summary`, `print`, `plot`, `predict`,
+`fixef`, `ranef`, `VarCorr`, `nobs`, `ngrps`, and `formula`.
+* Introduce new argument `silent` in the `brm` function, allowing to suppress
+most of `Stan`'s intermediate output.
+* Introduce new families `negbinomial` (negative binomial) and `geometric` to
+allow for more flexibility in modeling count data.
+
+
+### Other changes
+    
+* Amend warning and error messages to make them more informative.
+* Correct examples in the documentation.
+* Extend the README file.
+
+
+### Bug fixes
+    
+* Fix a bug that caused problems when formulas contained more complicated
+function calls.
+* Fix a bug that caused an error when posterior predictives were sampled for
+family `cumulative`.
+* Fix a bug that prohibited to use of improper flat priors for parameters that
+have proper priors by default.
+
+
+# brms 0.1.0
+  
+* Initial release version
+
+

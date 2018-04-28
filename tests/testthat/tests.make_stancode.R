@@ -501,8 +501,10 @@ test_that("Stan code for ARMA models is correct", {
                          autocor = cor_ma(~time, q = 2))
   expect_match2(scode, "mu[n] += head(E[n], Kma) * ma;")
   
-  scode <- make_stancode(y ~ x, dat, student(), 
-                         autocor = cor_arr(~time, r = 2))
+  scode <- expect_warning(
+    make_stancode(y ~ x, dat, student(), autocor = cor_arr(~time, r = 2)),
+    "The 'arr' correlation structure has been deprecated"
+  )
   expect_match2(scode, "mu = Xc * b + temp_Intercept + Yarr * arr;")
   
   scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(),
@@ -1338,12 +1340,16 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "target += sparse_car_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 
-  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W),
-                         silent = TRUE)
+  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W, type = "esicar"))
   expect_match2(scode, "real sparse_icar_lpdf(vector phi")
   expect_match2(scode, "target += sparse_icar_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
+  
+  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
+  expect_match2(scode, "target += -0.5 * dot_self(rcar[edges1] - rcar[edges2])")
+  expect_match2(scode, "target += normal_lpdf(sum(rcar) | 0, 0.001 * Nloc)")
+  expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 })
 
 test_that("Stan code for skew_normal models is correct", {
@@ -1477,4 +1483,13 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode, "tau[n] = exp(tau[n]); ")
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
+})
+
+test_that("likelihood of distributional beta models is correct", {
+  # test issue #404
+  dat <- data.frame(prop = rbeta(100, shape1 = 2, shape2 = 2))
+  scode <- make_stancode(
+    bf(prop ~ 1, phi ~ 1), data = dat, family = Beta()
+  )
+  expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
 })

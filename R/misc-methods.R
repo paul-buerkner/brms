@@ -1,9 +1,5 @@
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
-  if (!is.null(x[["WAIC"]])) {
-    # deprecated as of 1.7.0
-    x[["waic"]] <- x[["WAIC"]]
-  }
   cat(" Family: ")
   cat(summarise_families(x$formula), "\n")
   cat("  Links: ")
@@ -18,18 +14,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat("\nThe model does not contain posterior samples.\n")
   } else {
     final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
-    valid_ics <- c("loo", "waic", "R2")
-    for (ic in valid_ics) {
-      if (is.numeric(x[[ic]])) {
-        x[[ic]] <- round(x[[ic]], digits = digits)
-      }
-    }
     cat(paste0(
       "Samples: ", x$chains, " chains, each with iter = ", x$iter, 
-      "; warmup = ", x$warmup, "; thin = ", x$thin, "; \n",
-      "         total post-warmup samples = ", final_samples, "\n"))
-    cat(paste0(
-      "    ICs: LOO = ", x$loo, "; WAIC = ", x$waic, "; R2 = ", x$R2, "\n \n"
+      "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
+      "         total post-warmup samples = ", final_samples, "\n\n"
     ))
     if (nrow(x$prior)) {
       cat("Priors: \n")

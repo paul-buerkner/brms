@@ -61,8 +61,8 @@ default is \code{prob = 0.9} (\eqn{90}\% intervals).}
   column names.
 }
 \description{
-These functions are wrappers around the \code{\link[loo]{E_loo}} function 
-of the \pkg{loo} package.
+These functions are wrappers around the \code{\link[loo]{E_loo}} 
+function of the \pkg{loo} package.
 }
 \examples{
 \dontrun{

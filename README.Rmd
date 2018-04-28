@@ -22,9 +22,12 @@ knitr::opts_chunk$set(
 )
 library(brms)
 theme_set(theme_default())
+set.seed(1234)
 ```
 
-# brms <img src="man/figures/brms.png" align="right" width = 120 alt="brms Logo"/>
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+
+# brms 
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
 [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
@@ -41,7 +44,7 @@ The **brms** package provides an interface to fit Bayesian generalized (non-)lin
 * [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
 * [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
 * [Blog posts](https://paul-buerkner.github.io/blog/old-brms-blogposts/) (List of blog posts about brms)
-* [Ask a question](https://groups.google.com/forum/#!forum/brms-users) (brms-users google group)
+* [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
 ##  How to use brms
@@ -106,7 +109,7 @@ fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
 We can then go ahead and compare both models via approximate leave-one-out cross-validation.
 
 ```{r loo, warning=FALSE}
-LOO(fit1, fit2)
+loo(fit1, fit2)
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
