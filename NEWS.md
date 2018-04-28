@@ -4,6 +4,7 @@
 
 * Extend `cor_car` to support intrinsic CAR models in pairwise
 difference formulation thanks to the case study of Mitzi Morris.
+* Compute `loo` and related methods for non-factorizable normal models.
 
 ### Other changes 
 

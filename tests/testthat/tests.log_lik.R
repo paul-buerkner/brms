@@ -101,75 +101,73 @@ test_that("log_lik for multivariate linear models runs without errors", {
   
   ll <- brms:::log_lik_gaussian_mv(1, draws = draws)
   expect_equal(length(ll), ns)
-  
   ll <- brms:::log_lik_student_mv(2, draws = draws)
   expect_equal(length(ll), ns)
 })
 
-# test_that("log_lik for ARMA covariance models runs without errors", {
-#   ns <- 20
-#   nobs <- 15
-#   draws <- structure(list(nsamples = ns), class = "mvbrmsdraws")
-#   draws$dpars <- list(
-#     mu = matrix(rnorm(ns*nobs), ncol = nobs),
-#     sigma = rchisq(ns, 3),
-#     nu = rgamma(ns, 5)
-#   )
-#   draws$ac <- list(
-#     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
-#     ma = matrix(rnorm(ns, 0.2, 1), ncol = 1),
-#     begin_tg = 2, nobs_tg = 4
-#   )
-#   draws$data <- list(Y = rnorm(nobs), se = rgamma(ns, 10))
-#   
-#   draws$f$fun <- "gaussian_cov"  
-#   ll <- brms:::log_lik_gaussian_cov(1, draws = draws)
-#   expect_equal(length(ll), ns)
-#   
-#   draws$f$fun <- "student_cov"
-#   ll <- brms:::log_lik_student_cov(1, draws = draws)
-#   expect_equal(length(ll), ns)
-# })
+test_that("log_lik for ARMA covariance models runs without errors", {
+  ns <- 20
+  nobs <- 15
+  draws <- structure(list(nsamples = ns), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = matrix(rnorm(ns*nobs), ncol = nobs),
+    sigma = rchisq(ns, 3),
+    nu = rgamma(ns, 5)
+  )
+  draws$ac <- list(
+    ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
+    ma = matrix(rbeta(ns, 0.2, 1), ncol = 1),
+    begin_tg = 2, nobs_tg = 4
+  )
+  draws$data <- list(Y = rnorm(nobs), se = rgamma(ns, 10))
 
-# test_that("log_lik for SAR models runs without errors", {
-#   draws <- structure(list(nsamples = 3, nobs = 10), class = "brmsdraws")
-#   draws$dpars <- list(
-#     mu = matrix(rnorm(30), nrow = 3),
-#     nu = rep(2, 3),
-#     sigma = rep(10, 3)
-#   )
-#   draws$ac <-  list(
-#     lagsar = matrix(c(0.3, 0.5, 0.7)),
-#     W = diag(10)
-#   )
-#   draws$data <- list(Y = rnorm(10))
-#   
-#   ll <- brms:::log_lik_gaussian_lagsar(1, draws = draws)
-#   expect_equal(length(ll), 3)
-#   ll <- brms:::log_lik_student_lagsar(1, draws = draws)
-#   expect_equal(length(ll), 3)
-#   
-#   draws$ac$errorsar <- draws$ac$lagsar
-#   draws$ac$lagsar <- NULL
-#   ll <- brms:::log_lik_gaussian_errorsar(1, draws = draws)
-#   expect_equal(length(ll), 3)
-#   ll <- brms:::log_lik_student_errorsar(1, draws = draws)
-#   expect_equal(length(ll), 3)
-# })
+  draws$f$fun <- "gaussian_cov"
+  ll <- brms:::log_lik_gaussian_cov(1, draws = draws)
+  expect_equal(dim(ll), c(ns, 4))
+  # draws$f$fun <- "student_cov"
+  # ll <- brms:::log_lik_student_cov(1, draws = draws)
+  # expect_equal(length(ll), ns)
+})
 
-# test_that("log_lik for 'cor_fixed' models runs without errors", {
-#   draws <- structure(list(nsamples = 3), class = "brmsdraws")
-#   draws$dpars <- list(
-#     mu = matrix(rnorm(30), nrow = 3),
-#     nu = rep(2, 3)
-#   )
-#   draws$ac$V <- diag(10)
-#   draws$data$Y <- rnorm(10)
-#   ll <- brms:::log_lik_gaussian_fixed(1, draws = draws)
-#   expect_equal(length(ll), 3)
-#   ll <- brms:::log_lik_student_fixed(1, draws = draws)
-#   expect_equal(length(ll), 3)
-# })
+test_that("log_lik for SAR models runs without errors", {
+  draws <- structure(list(nsamples = 3, nobs = 10), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = matrix(rnorm(30), nrow = 3),
+    nu = rep(2, 3),
+    sigma = rep(10, 3)
+  )
+  draws$ac <-  list(
+    lagsar = matrix(c(0.3, 0.5, 0.7)),
+    W = diag(10)
+  )
+  draws$data <- list(Y = rnorm(10))
+
+  ll <- brms:::log_lik_gaussian_lagsar(1, draws = draws)
+  expect_equal(dim(ll), c(3, 10))
+  # ll <- brms:::log_lik_student_lagsar(1, draws = draws)
+  # expect_equal(length(ll), 3)
+
+  draws$ac$errorsar <- draws$ac$lagsar
+  draws$ac$lagsar <- NULL
+  ll <- brms:::log_lik_gaussian_errorsar(1, draws = draws)
+  expect_equal(dim(ll), c(3, 10))
+  # ll <- brms:::log_lik_student_errorsar(1, draws = draws)
+  # expect_equal(length(ll), 3)
+})
+
+test_that("log_lik for 'cor_fixed' models runs without errors", {
+  draws <- structure(list(nsamples = 3), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = matrix(rnorm(30), nrow = 3),
+    nu = rep(2, 3)
+  )
+  draws$ac$V <- diag(10)
+  draws$data$Y <- rnorm(10)
+  ll <- brms:::log_lik_gaussian_fixed(1, draws = draws)
+  expect_equal(dim(ll), c(3, 10))
+  # ll <- brms:::log_lik_student_fixed(1, draws = draws)
+  # expect_equal(length(ll), 3)
+})
 
 test_that("log_lik for count and survival models works correctly", {
   ns <- 25
