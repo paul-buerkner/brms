@@ -118,7 +118,7 @@ test_that("ARMA models work correctly", {
                             prior(normal(0, 6), class = "ma")),
                   chains = 2, cores = 2)
   print(fit_arma)
-  # expect_range(waic(fit_arma)$estimates[3, 1], 280, 400)
+  expect_range(waic(fit_arma)$estimates[3, 1], 200, 280)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
 
@@ -606,14 +606,13 @@ test_that("Gaussian processes work correctly", {
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                    family = student(),
                     autocor = cor_lagsar(COL.nb), 
                     chains = 2, cores = 2)
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
   me = marginal_effects(fit_lagsar, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  # expect_range(LOO(fit_lagsar)$estimates[3, 1], 350, 380)
+  expect_range(WAIC(fit_lagsar)$estimates[3, 1], 350, 380)
   
   fit_errorsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
                       autocor = cor_errorsar(COL.nb), 
@@ -622,7 +621,7 @@ test_that("SAR models work correctly", {
   expect_ggplot(pp_check(fit_errorsar))
   me = marginal_effects(fit_errorsar, nsamples = 200)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  # expect_range(LOO(fit_errorsar)$estimates[3, 1], 350, 380)
+  expect_range(WAIC(fit_errorsar)$estimates[3, 1], 350, 380)
 })
 
 test_that("CAR models work correctly", {
