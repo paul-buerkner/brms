@@ -765,7 +765,7 @@ eval_rhs <- function(formula, data = NULL) {
   eval(rhs(formula)[[2]], data, environment(formula))
 }
 
-str2formula <- function(x, ...) {
+str2formula <- function(x, ..., collapse = "+") {
   # converts a string to a formula
   # Args:
   #   x: vector of strings to be converted
@@ -774,7 +774,7 @@ str2formula <- function(x, ...) {
   #   a formula
   has_chars <- nzchar(x)
   if (length(x) && any(has_chars)) {
-    out <- paste(x[has_chars], collapse = "+") 
+    out <- paste(x[has_chars], collapse = collapse) 
   } else {
     out <- "1"
   }
