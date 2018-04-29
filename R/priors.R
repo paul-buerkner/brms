@@ -638,7 +638,7 @@ prior_sp <- function(bterms, data) {
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   spef <- tidy_spef(bterms, data)
-  if (!is.null(spef)) {
+  if (nrow(spef)) {
     px <- check_prefix(bterms)
     prior <- prior + brmsprior(
       class = "b", coef = c("", spef$coef), ls = px
@@ -707,15 +707,15 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for random effects SDs
   prior <- empty_brmsprior()
-  gpef <- get_gp_labels(bterms)
-  if (length(gpef)) {
+  gpterms <- all_terms(bterms[["gp"]])
+  if (length(gpterms)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpef, ls = px) +
+      brmsprior(class = "sdgp", coef = gpterms, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", prior = lscale_prior, coef = gpef, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, coef = gpterms, ls = px)
   }
   prior
 }
@@ -817,12 +817,12 @@ prior_sm <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for smooth SDs
   prior <- empty_brmsprior()
-  smooths <- get_sm_labels(bterms)
-  if (length(smooths)) {
+  smterms <- all_terms(bterms[["sm"]])
+  if (length(smterms)) {
     px <- check_prefix(bterms)
-    prior_strings <- c(def_scale_prior, rep("", length(smooths)))
+    prior_strings <- c(def_scale_prior, rep("", length(smterms)))
     prior <- prior + brmsprior(
-      class = "sds", coef = c("", smooths), 
+      class = "sds", coef = c("", smterms), 
       prior = prior_strings, ls = px
     )
   }

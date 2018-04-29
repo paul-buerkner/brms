@@ -365,38 +365,6 @@ add_waic <- function(x, ...) {
   add_ic(x, ic = "waic", ...)
 }
 
-set_pointwise <- function(x, pointwise = NULL, newdata = NULL, 
-                          subset = NULL, thres = 1e+08) {
-  # set the pointwise argument based on the model size
-  # Args:
-  #   x: a brmsfit object
-  #   newdata: optional data.frame containing new data
-  #   subset: a vector to indicate a subset of the posterior samples
-  #   thres: threshold above which pointwise is set to TRUE
-  # Returns:
-  #   TRUE or FALSE
-  if (!is.null(pointwise)) {
-    pointwise <- as_one_logical(pointwise)
-  } else {
-    nsamples <- nsamples(x, subset = subset)
-    if (is.data.frame(newdata)) {
-      nobs <- nrow(newdata)
-    } else {
-      nobs <- nobs(x)
-    }
-    pointwise <- nsamples * nobs > thres
-    if (pointwise) {
-      message(
-        "Switching to pointwise evaluation to reduce ",  
-        "RAM requirements. This will likely increase ",
-        "computation time. You may overwrite the default ",
-        "behavior with the 'pointwise' argument."
-      )
-    }
-  }
-  pointwise
-}
-
 args_not_for_reloo <- function() {
   # arguments not usable with 'reloo'
   # the same arguments cannot be used in add_ic

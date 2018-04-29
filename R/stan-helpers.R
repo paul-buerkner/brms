@@ -310,26 +310,30 @@ stan_autocor <- function(bterms, prior) {
       stop2(err_msg, " when 'rescor' is estimated.")
     }
     str_add(out$data) <- paste0(
-      "  // data for the CAR structure \n",
-      "  int<lower=1> Nloc", p, "; \n",
-      "  vector[Nloc] Nneigh", p, "; \n",
-      "  vector[Nloc] eigenW", p, "; \n",
-      "  int<lower=1> Jloc", p, "[N]; \n",
-      "  int<lower=0> Nedges", p, "; \n",
-      "  int<lower=1> edges1", p, "[Nedges", p, "]; \n",
-      "  int<lower=1> edges2", p, "[Nedges", p, "]; \n"
+      "  // data for the CAR structure\n",
+      "  int<lower=1> Nloc", p, ";\n",
+      "  int<lower=1> Jloc", p, "[N];\n",
+      "  int<lower=0> Nedges", p, ";\n",
+      "  int<lower=1> edges1", p, "[Nedges", p, "];\n",
+      "  int<lower=1> edges2", p, "[Nedges", p, "];\n"
     )
-    str_add(out$par) <- paste0(
-      "  // parameters for the CAR structure \n",
-      "  real<lower=0> sdcar", p, "; \n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "sdcar", px = px, suffix = p
-    )
-    if (identical(autocor$type, "escar")) {
+    if (autocor$type %in% c("escar", "esicar")) {
+      str_add(out$data) <- paste0(
+        "  vector[Nloc] Nneigh", p, ";\n",
+        "  vector[Nloc] eigenW", p, ";\n"
+      )
       str_add(out$par) <- paste0(
-        "  real<lower=0, upper=1> car", p, "; \n",
-        "  vector[Nloc", p, "] rcar", p, "; \n"
+        "  // parameters for the CAR structure\n",
+        "  real<lower=0> sdcar", p, ";\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "sdcar", px = px, suffix = p
+      )
+    }
+    if (autocor$type %in% "escar") {
+      str_add(out$par) <- paste0(
+        "  real<lower=0, upper=1> car", p, ";\n",
+        "  vector[Nloc", p, "] rcar", p, ";\n"
       )
       car_args <- c(
         "car", "sdcar", "Nloc", "Nedges", 
@@ -342,17 +346,17 @@ stan_autocor <- function(bterms, prior) {
         "    rcar", p, " | ", car_args, "\n",
         "  ); \n"
       )
-    } else if (identical(autocor$type, "esicar")) {
+    } else if (autocor$type %in% "esicar") {
       str_add(out$par) <- paste0(
-        "  vector[Nloc - 1] zcar", p, "; \n"
+        "  vector[Nloc - 1] zcar", p, ";\n"
       )
       str_add(out$tparD) <- paste0(
-        "  vector[Nloc] rcar", p, "; \n"                
+        "  vector[Nloc] rcar", p, ";\n"                
       )
       str_add(out$tparC1) <- paste0(
-        "  // apply sum-to-zero constraint \n",
-        "  rcar[1:(Nloc", p, " - 1)] = zcar", p, "; \n",
-        "  rcar[Nloc", p, "] = - sum(zcar", p, "); \n"
+        "  // sum-to-zero constraint\n",
+        "  rcar[1:(Nloc", p, " - 1)] = zcar", p, ";\n",
+        "  rcar[Nloc", p, "] = - sum(zcar", p, ");\n"
       )
       car_args <- c(
         "sdcar", "Nloc", "Nedges", 
@@ -364,7 +368,20 @@ stan_autocor <- function(bterms, prior) {
         "    rcar", p, " | ", car_args, "\n",
         "  ); \n"
       )
-    } 
+    } else if (autocor$type %in% "icar") {
+      # intrinsic car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$par) <- paste0(
+        "  // parameters for the ICAR structure\n",
+        "  vector[Nloc", p, "] rcar", p, ";\n"
+      )
+      str_add(out$prior) <- paste0(
+        "  target += -0.5 * dot_self(rcar", p, "[edges1", p, "]", 
+        " - rcar", p, "[edges2", p, "]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(rcar", p, ") | 0, 0.001 * Nloc", p, ");\n"
+      )
+    }
   }
   if (is.cor_bsts(autocor)) {
     warning2(

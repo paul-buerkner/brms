@@ -119,7 +119,9 @@ restructure_v1 <- function(x) {
   if (version <= "1.0.1") {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
-    change <- change_old_sm(bterms, parnames(x), x$fit@sim$dims_oi)
+    change <- change_old_sm(
+      bterms, model.frame(x), parnames(x), x$fit@sim$dims_oi
+    )
     x <- do_renaming(x, change)
   }
   if (version <= "1.8.0") {
@@ -275,16 +277,16 @@ change_old_re2 <- function(ranef, pars, dims) {
   out
 }
 
-change_old_sm <- function(bterms, pars, dims) {
+change_old_sm <- function(bterms, data, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing smooths with multiple covariates
   .change_old_sm <- function(bt) {
     out <- list()
-    sm_labels <- get_sm_labels(bt)
-    if (length(sm_labels)) {
+    smef <- tidy_smef(bt, data)
+    if (nrow(smef)) {
       p <- usc(combine_prefix(bt), "suffix")
-      old_smooths <- rename(paste0(p, sm_labels))
-      new_smooths <- rename(paste0(p, get_sm_labels(bt, covars = TRUE)))
+      old_smooths <- rename(paste0(p, smef$term))
+      new_smooths <- rename(paste0(p, smef$label))
       old_sds_pars <- paste0("sds_", old_smooths)
       new_sds_pars <- paste0("sds_", new_smooths, "_1")
       old_s_pars <- paste0("s_", old_smooths)

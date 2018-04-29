@@ -1,12 +1,17 @@
 # brms 2.2.0++
 
+### Features
+
+* Extend `cor_car` to support intrinsic CAR models in pairwise
+difference formulation thanks to the case study of Mitzi Morris.
+* Compute `loo` and related methods for non-factorizable normal models.
 
 ### Other changes 
 
-* Use hashes to check if models have the same response values when performing model comparisons. (#414)
-
+* Use hashes to check if models have the same response values 
+when performing model comparisons. (#414)
+* No longer set `pointwise` dynamically in `loo` and related methods. (#416)
 * No longer show information criteria in the summary output.
-
 
 ### Bug fixes
 

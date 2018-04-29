@@ -8,7 +8,7 @@
 \title{Compute the WAIC}
 \usage{
 \method{waic}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
-  pointwise = NULL, model_names = NULL)
+  pointwise = FALSE, model_names = NULL)
 }
 \arguments{
 \item{x}{A fitted model object.}
@@ -27,9 +27,7 @@ If specified, fitted values of these response variables are returned.}
 log-likelihood matrix at once or separately for each observation. 
 The latter approach is usually considerably slower but 
 requires much less working memory. Accordingly, if one runs 
-into memory issues, \code{pointwise = TRUE} is the way to go.
-By default, \code{pointwise} is automatically chosen based on 
-the size of the model.}
+into memory issues, \code{pointwise = TRUE} is the way to go.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 

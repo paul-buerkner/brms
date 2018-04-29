@@ -98,20 +98,22 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
   out <- list()
   mf <- model.frame(fit)
   too_many_covars <- FALSE
-  sm_labels <- get_sm_labels(x)
-  sm_labels_by <- get_sm_labels(x, data = mf)
-  all_vars <- get_sm_labels(x, covars = TRUE, combine = FALSE)
-  for (i in seq_along(sm_labels)) {
+  smef <- tidy_smef(x, mf)
+  smterms <- unique(smef$term) 
+  for (i in seq_along(smterms)) {
     # loop over smooth terms and compute their predictions
-    byvars <- attr(all_vars, "byvars")[[i]]
-    covars <- setdiff(all_vars[[i]], byvars)
+    term <- smterms[i]
+    sub_smef <- subset2(smef, term = term)
+    byvars <- sub_smef$byvars[[1]]
+    covars <- sub_smef$covars[[1]]
+    vars <- sub_smef$vars[[1]]
     ncovars <- length(covars)
     if (ncovars > 2L) {
       too_many_covars <- TRUE
     }
-    include_smooth <- !length(smooths) || sm_labels[[i]] %in% smooths
+    include_smooth <- !length(smooths) || term %in% smooths
     if (include_smooth && !too_many_covars) {
-      values <- named_list(all_vars[[i]])
+      values <- named_list(vars)
       for (cv in covars) {
         if (is.numeric(mf[[cv]])) {
           values[[cv]] <- seq(
@@ -145,7 +147,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
         )
         newdata <- newdata[!ex_too_far, ]  
       }
-      other_vars <- setdiff(names(conditions), all_vars[[i]])
+      other_vars <- setdiff(names(conditions), vars)
       newdata[, other_vars] <- conditions[1, other_vars]
       sdata <- standata(
         fit, newdata, re_formula = NA, 
@@ -153,8 +155,8 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       )
       draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
       draws <- do.call(extract_draws, draws_args)
-      J <- which(attr(sm_labels_by, "termnum") == i)
-      scs <- unlist(attr(draws$fe$X, "smooth_cols")[J])
+      J <- which(smef$termnum == i)
+      scs <- unlist(attr(draws$fe$X, "smcols")[J])
       draws$fe$X <- draws$fe$X[, scs, drop = FALSE]
       draws$fe$b <- draws$fe$b[, scs, drop = FALSE]
       draws$sm <- draws$sm[J]
@@ -164,11 +166,11 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
         sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
         spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
         colnames(spa_data) <- c("estimate__", "sample__")
-        spa_data <- cbind(newdata[, all_vars[[i]], drop = FALSE], spa_data)
+        spa_data <- cbind(newdata[, vars, drop = FALSE], spa_data)
       }
       eta <- posterior_summary(eta, robust = TRUE, probs = probs)
       colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-      eta <- cbind(newdata[, all_vars[[i]], drop = FALSE], eta)
+      eta <- cbind(newdata[, vars, drop = FALSE], eta)
       if (length(byvars)) {
         # byvars will be plotted as facets
         bynumeric <- byvars[ulapply(eta[byvars], is.numeric)]
@@ -178,12 +180,12 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
         eta$cond__ <- Reduce(paste_colon, eta[, byvars, drop = FALSE]) 
       }
       response <- combine_prefix(x, keep_mu = TRUE)
-      response <- paste0(response, ": ", sm_labels[[i]])
+      response <- paste0(response, ": ", term)
       attr(eta, "response") <- response
       attr(eta, "effects") <- covars
       attr(eta, "surface") <- ncovars == 2L
       attr(eta, "spaghetti") <- spa_data
-      attr(eta, "points") <- mf[, all_vars[[i]], drop = FALSE]
+      attr(eta, "points") <- mf[, vars, drop = FALSE]
       attr(eta, "too_many_covars") <- too_many_covars
       out[[response]] <- eta
     }

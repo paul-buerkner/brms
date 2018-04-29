@@ -149,153 +149,95 @@ log_lik_student_mv <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
-  # currently, only ARMA1 processes are implemented
-  stop_no_pw()
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  args <- list(
-    sigma = get_dpar(draws, "sigma", obs),
-    se = draws$data$se[obs], nrows = length(obs)
-  )
-  if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
-    args$ar <- draws$ac$ar
-    Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ac$ar) && !is.null(draws$ac$ma)) {
-    args$ma <- draws$ac$ma
-    Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
-    args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_arma1, args)
+  Y <- as.numeric(draws$data$Y[obs])
+  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
+  Sigma <- get_cov_matrix_arma(draws, obs)
+  .log_lik <- function(s) {
+    C <- as.matrix(Sigma[s, , ])
+    g <- solve(C, Y - mu[s, ])
+    cbar <- diag(solve(C))
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
   }
-  # make sure par[s, ] is valid even if obs is of length 1
-  mu <- as.matrix(get_dpar(draws, "mu", obs))
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, function(s)
-    dmulti_normal(
-      draws$data$Y[obs], mu = mu[s, ], 
-      Sigma = Sigma[s, , ], log = TRUE
-    )
-  )
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
-  # currently, only ARMA1 processes are implemented
   stop_no_pw()
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  args <- list(
-    sigma = get_dpar(draws, "sigma", obs),
-    se = draws$data$se[obs], nrows = length(obs)
-  )
-  if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
-    args$ar <- draws$ac$ar
-    Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ac$ar) && !is.null(draws$ac$ma)) {
-    args$ma <- draws$ac$ma
-    Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
-    args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_arma1, args)
-  }
-  # make sure par[s, ] is valid even if obs is of length 1
-  mu <- as.matrix(get_dpar(draws, "mu", obs))
-  nu <- as.matrix(get_dpar(draws, "nu", obs))
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, function(s)
-    dmulti_student_t(
-      draws$data$Y[obs], df = nu[s, ], mu = mu[s, ], 
-      Sigma = Sigma[s, , ], log = TRUE
-    )
-  )
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_gaussian_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_normal(draws$data$Y, mu = mu, Sigma = Sigma, log = TRUE)
-  }
+  # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_gaussian_lagsar)
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  stopifnot(i == 1)
+  .log_lik <- function(s) {
+    IB <- I - with(draws$ac, lagsar[s, ] * W)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    g <- Cinv %*% (Y - solve(IB, mu[s, ]))
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_student_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_student_t(
-      draws$data$Y, df = nu[s], mu = mu, 
-      Sigma = Sigma, log = TRUE
-    )
-  }
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  nu <- get_dpar(draws, "nu")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_student_lagsar)
 }
 
 log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
   stopifnot(i == 1)
-  .log_lik_gaussian_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_normal(draws$data$Y, mu = mu[s, ], Sigma = Sigma, log = TRUE)
-  }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_gaussian_errorsar)
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  .log_lik <- function(s) {
+    IB <- I - with(draws$ac, errorsar[s, ] * W)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    g <- Cinv %*% (Y - mu[s, ])
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_student_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_student_t(
-      draws$data$Y, df = nu[s], mu = mu[s, ], 
-      Sigma = Sigma, log = TRUE
-    )
-  }
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  nu <- get_dpar(draws, "nu")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_student_errorsar)
 }
 
 log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
   stopifnot(i == 1)
-  mu <- as.matrix(get_dpar(draws, "mu"))
-  ulapply(1:draws$nsamples, function(s) 
-    dmulti_normal(
-      draws$data$Y, mu = mu[s, ], 
-      Sigma = draws$ac$V, log = TRUE
-    )
-  )
+  mu <- get_dpar(draws, "mu")
+  Y <- as.numeric(draws$data$Y)
+  C <- draws$ac$V
+  cbar <- diag(solve(C))
+  .log_lik <- function(s) {
+    g <- solve(C, Y - mu[s, ])
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  mu <- as.matrix(get_dpar(draws, "mu"))
-  nu <- as.matrix(get_dpar(draws, "nu"))
-  sapply(1:draws$nsamples, function(s) 
-    dmulti_student_t(
-      draws$data$Y, df = nu[s, ], mu = mu[s, ],
-      Sigma = draws$ac$V, log = TRUE
-    )
-  )
 }
 
 log_lik_binomial <- function(i, draws, data = data.frame()) {

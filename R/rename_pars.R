@@ -112,9 +112,7 @@ change_sp <- function(bterms, data, pars) {
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (is.null(spef)) {
-    return(out) 
-  }
+  if (!nrow(spef)) return(out)
   p <- usc(combine_prefix(bterms))
   bsp <- paste0("bsp", p)
   pos <- grepl(paste0("^", bsp, "\\["), pars)
@@ -229,12 +227,11 @@ change_gp <- function(bterms, data, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  gpef <- get_gp_labels(bterms, data = data, covars = TRUE)
   p <- usc(combine_prefix(bterms), "prefix")
-  for (i in seq_along(gpef)) {
+  gpef <- tidy_gpef(bterms, data)
+  for (i in seq_len(nrow(gpef))) {
     # rename GP hyperparameters
-    by_levels = attr(gpef, "by_levels")[[i]]
-    gp_names <- paste0(gpef[i], usc(by_levels))
+    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
@@ -246,17 +243,17 @@ change_gp <- function(bterms, data, pars) {
     lc(out) <- clist(sdgp_pos, sdgp_names)
     lc(out) <- clist(lscale_pos, lscale_names)
     c(out) <- change_prior(
-      sdgp_old, pars, names = gpef[i], new_class = sdgp
+      sdgp_old, pars, names = gpef$label[i], new_class = sdgp
     )
     c(out) <- change_prior(
-      lscale_old, pars, names = gpef[i], new_class = lscale
+      lscale_old, pars, names = gpef$label[i], new_class = lscale
     )
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
     zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
     if (any(zgp_pos)) {
       # users may choose not to save zgp
-      zgp_new <- paste0(zgp, "_", gpef[i])
+      zgp_new <- paste0(zgp, "_", gpef$label[i])
       fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
       lc(out) <- clist(zgp_pos, fnames)
     }
@@ -269,24 +266,22 @@ change_sm <- function(bterms, data, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  smooths <- get_sm_labels(bterms, data, covars = TRUE)
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
+  smef <- tidy_smef(bterms, data)
+  if (nrow(smef)) {
     p <- usc(combine_prefix(bterms), "prefix")
     sds <- paste0("sds", p)
-    sds_names <- paste0(sds, "_", smooths)
+    sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
-    s_names <- paste0(s, "_", smooths)
-    for (i in seq_along(smooths)) {
-      nb <- attr(smooths, "nbases")[[i]]
-      for (j in seq_len(nb)) {
+    snames <- paste0(s, "_", smef$label)
+    for (i in seq_len(nrow(smef))) {
+      for (j in seq_len(smef$nbases[i])) {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
         lc(out) <- clist(sds_pos, paste0(sds_names[i], "_", j))
-        s_pos <- grepl(paste0("^", s, "_", ij), pars)
-        s_fnames <- paste0(s_names[i], "_", j, "[", seq_len(sum(s_pos)), "]")
-        lc(out) <- clist(s_pos, s_fnames)
-        new_prior_class <- paste0(sds, "_", smooths[i], "_", j)
+        spos <- grepl(paste0("^", s, "_", ij), pars)
+        sfnames <- paste0(snames[i], "_", j, "[", seq_len(sum(spos)), "]")
+        lc(out) <- clist(spos, sfnames)
+        new_prior_class <- paste0(sds, "_", smef$label[i], "_", j)
         c(out) <- change_prior(
           paste0(sds, "_", ij), pars, new_class = new_prior_class
         )
