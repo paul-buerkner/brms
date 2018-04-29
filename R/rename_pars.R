@@ -269,24 +269,22 @@ change_sm <- function(bterms, data, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  smooths <- get_sm_labels(bterms, data, covars = TRUE)
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
+  smef <- tidy_smef(bterms, data)
+  if (length(smef)) {
     p <- usc(combine_prefix(bterms), "prefix")
     sds <- paste0("sds", p)
-    sds_names <- paste0(sds, "_", smooths)
+    sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
-    s_names <- paste0(s, "_", smooths)
-    for (i in seq_along(smooths)) {
-      nb <- attr(smooths, "nbases")[[i]]
-      for (j in seq_len(nb)) {
+    snames <- paste0(s, "_", smef$label)
+    for (i in seq_len(nrow(smef))) {
+      for (j in seq_len(smef$nbases[i])) {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
         lc(out) <- clist(sds_pos, paste0(sds_names[i], "_", j))
-        s_pos <- grepl(paste0("^", s, "_", ij), pars)
-        s_fnames <- paste0(s_names[i], "_", j, "[", seq_len(sum(s_pos)), "]")
-        lc(out) <- clist(s_pos, s_fnames)
-        new_prior_class <- paste0(sds, "_", smooths[i], "_", j)
+        spos <- grepl(paste0("^", s, "_", ij), pars)
+        sfnames <- paste0(snames[i], "_", j, "[", seq_len(sum(spos)), "]")
+        lc(out) <- clist(spos, sfnames)
+        new_prior_class <- paste0(sds, "_", smef$label[i], "_", j)
         c(out) <- change_prior(
           paste0(sds, "_", ij), pars, new_class = new_prior_class
         )

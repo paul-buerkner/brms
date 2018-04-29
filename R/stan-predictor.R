@@ -680,43 +680,47 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
 stan_sm <- function(bterms, data, prior) {
   # Stan code of smooth terms
   out <- list()
-  smooths <- get_sm_labels(bterms, data = data)
+  smef <- tidy_smef(bterms, data)
+  if (is.null(smef)) {
+    return(out)
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
-    for (i in seq_along(smooths)) {
-      pi <- paste0(p, "_", i)
-      nb <- seq_len(attr(smooths, "nbases")[[i]])
-      str_add(out$data) <- paste0(
-        "  // data of smooth ", smooths[i], "\n",  
-        "  int nb", pi, ";  // number of bases \n",
-        "  int knots", pi, "[nb", pi, "]; \n"
+  for (i in seq_len(nrow(smef))) {
+    pi <- paste0(p, "_", i)
+    nb <- seq_len(smef$nbases[[i]])
+    str_add(out$data) <- paste0(
+      "  // data of smooth ", smef$byterm[i], "\n",  
+      "  int nb", pi, ";  // number of bases \n",
+      "  int knots", pi, "[nb", pi, "]; \n"
+    )
+    str_add(out$data) <- collapse(
+      "  matrix[N, knots", pi, "[", nb, "]]", 
+      " Zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$par) <- paste0(
+      "  // parameters of smooth ", smef$byterm[i], "\n",
+      collapse(
+        "  vector[knots", pi, "[", nb, "]] zs", pi,"_", nb, "; \n",
+        "  real<lower=0> sds", pi, "_", nb, "; \n"
       )
-      str_add(out$data) <- collapse(
-        "  matrix[N, knots", pi, "[", nb, "]]", 
-        " Zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$tparD) <- collapse(
+      "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
+      " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$prior) <- paste0(
+      collapse(
+        "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
+      ),
+      stan_prior(
+        prior, class = "sds", coef = smef$term[i], 
+        px = px, suffix = paste0(pi, "_", nb)
       )
-      str_add(out$par) <- paste0(
-        "  // parameters of smooth ", smooths[i], "\n",
-        collapse(
-          "  vector[knots", pi, "[", nb, "]] zs", pi,"_", nb, "; \n",
-          "  real<lower=0> sds", pi, "_", nb, "; \n"
-        )
-      )
-      str_add(out$tparD) <- collapse(
-        "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
-        " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
-      )
-      str_add(out$prior) <- paste0(
-        collapse(
-          "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
-        ),
-        stan_prior(prior, class = "sds", coef = smooths[i], 
-                   px = px, suffix = paste0(pi, "_", nb))
-      )
-    }
-    out$eta <- stan_eta_sm(smooths, px = px)
+    )
+    str_add(out$eta) <- collapse(
+      " + Zs", pi, "_", nb, " * s", pi, "_", nb
+    )
   }
   out
 }
@@ -1012,26 +1016,6 @@ stan_eta_rsp <- function(r) {
     out <- paste0("r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
   }
   out
-}
-
-stan_eta_sm <- function(smooths, px = list()) {
-  # write the linear predictor for smooth terms
-  # Args:
-  #   smooths: names of the smooth terms
-  #   nlpar: optional character string to add to the varnames
-  p <- usc(combine_prefix(px))
-  eta_smooths <- ""
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
-    for (i in seq_along(smooths)) {
-      pi <- paste0(p, "_", i)
-      nb <- seq_len(attr(smooths, "nbases")[[smooths[i]]])
-      str_add(eta_smooths) <- collapse(
-        " + Zs", pi, "_", nb, " * s", pi, "_", nb
-      )
-    }
-  }
-  eta_smooths
 }
 
 stan_eta_autocor <- function(autocor, px = list()) {

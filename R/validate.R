@@ -430,24 +430,12 @@ parse_sm <- function(formula) {
       stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
             "implemented in brms. Consider using 't2' instead.")
     }
-    covars <- byvars <- named_list(out)
-    for (i in seq_along(out)) {
-      es <- eval2(out[i])
-      covars[[i]] <- es$term
-      if (es$by != "NA") {
-        byvars[[i]] <- es$by 
-      }
-    }
     out <- str2formula(out)
     allvars <- mgcv::interpret.gam(out)$fake.formula
   } else {
-    covars <- byvars <- NULL
     allvars <- ~ 1
   }
-  structure(
-    out, covars = covars, 
-    byvars = byvars, allvars = allvars
-  )
+  structure(out, allvars = allvars)
 }
 
 parse_gp <- function(formula) {
@@ -818,62 +806,54 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
   unique(ulapply(x$terms, get_advars, ad = ad, ...))
 }
 
-get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
-  # extract labels of smooth terms
+tidy_smef <- function(x, data) {
+  # extract information about smooth terms
   # Args:
   #   x: either a formula or a list containing an element "sm"
-  #   data: optional data frame containing the covariates
-  #   covars: should the names of the covariates be returned
-  #           instead of the full term names?
-  #   combine: combine names of the covariates (TRUE) 
-  #            or just return the covariate names (FALSE)?
+  #   data: data frame containing the covariates
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    sm_form <- x$dpars$mu[["sm"]]
-  } else {
-    sm_form <- x[["sm"]] 
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
-  if (!is.formula(sm_form)) {
-    return(character(0))
+  form <- x[["sm"]] 
+  if (!is.formula(form)) {
+    return(NULL)
   }
-  return_covars <- covars
-  byvars <- attr(sm_form, "byvars")
-  out <- all_terms(sm_form) 
-  if (return_covars) {
-    sfuns <- get_matches("^[^\\(]+", out)
-    covars <- attr(sm_form, "covars")
-    for (i in seq_along(covars)) {
-      covars[[i]] <- c(covars[[i]], byvars[[i]])
+  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  nterms <- nrow(out)
+  out$sfun <- get_matches("^[^\\(]+", out$term)
+  out$vars <- out$byvars <- out$covars <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    sm <- eval2(out$term[i])
+    out$covars[[i]] <- sm$term
+    if (sm$by != "NA") {
+      out$byvars[[i]] <- sm$by
     }
-    if (combine) {
-      out <- paste0(sfuns, rename(ulapply(covars, collapse)))
+    out$vars[[i]] <- c(out$covars[[i]], out$byvars[[i]])
+  }
+  out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
+  # prepare information inferred from the data
+  sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
+  bylevels <- attr(sdata_fe$X, "bylevels")
+  nby <- lengths(bylevels)
+  tmp <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    tmp[[i]] <- out[i, , drop = FALSE]
+    tmp[[i]]$termnum <- i
+    if (nby[i] > 0L) {
+      tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
+      tmp[[i]]$bylevel <- bylevels[[i]]
+      tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
+      str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
     } else {
-      out <- covars
+      tmp[[i]]$bylevel <- NA
+      tmp[[i]]$byterm <- tmp[[i]]$term
     }
   }
-  if (length(out) && !is.null(data)) {
-    # one smooth term may contain multiple design matrices
-    if (return_covars && !combine) {
-      stop("Invalid combination of arguments. Please report a bug.")
-    }
-    sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
-    by_levels <- attr(sdata_fe$X, "by_levels")
-    nby <- lengths(by_levels)
-    out <- as.list(out)
-    for (i in seq_along(out)) {
-      if (nby[i] > 0L) {
-        out[[i]] <- paste0(out[[i]], rename(by_levels[[i]]))
-      }
-    }
-    nby[nby == 0L] <- 1L
-    termnum <- rep(seq_along(out), nby)
-    out <- unlist(out)
-    knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
-    nbases <- setNames(ulapply(knots, length), out)
-    alist <- nlist(nbases, by_levels, termnum)
-    attributes(out)[names(alist)] <- alist
-  }
-  structure(out, byvars = byvars)
+  out <- do.call(rbind, tmp)
+  out$knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
+  out$nbases <- lengths(out$knots)
+  rownames(out) <- NULL
+  out
 }
 
 get_gp_labels <- function(x, data = NULL, covars = FALSE) {

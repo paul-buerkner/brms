@@ -116,21 +116,21 @@ data_fe <- function(bterms, data, knots = NULL,
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
-  sm_labels <- get_sm_labels(bterms)
-  if (length(sm_labels)) {
-    stopifnot(is.null(smooths) || length(smooths) == length(sm_labels))
+  smterms <- all_terms(bterms[["sm"]])
+  if (length(smterms)) {
+    stopifnot(is.null(smooths) || length(smooths) == length(smterms))
     Xs <- Zs <- list()
     new_smooths <- !length(smooths)
     if (new_smooths) {
-      smooths <- named_list(sm_labels)
-      for (i in seq_along(sm_labels)) {
+      smooths <- named_list(smterms)
+      for (i in seq_along(smterms)) {
         smooths[[i]] <- mgcv::smoothCon(
-          eval2(sm_labels[i]), data = data, 
+          eval2(smterms[i]), data = data, 
           knots = knots, absorb.cons = TRUE
         )
       }
     }
-    by_levels <- named_list(sm_labels)
+    bylevels <- named_list(smterms)
     ns <- 0
     for (i in seq_along(smooths)) {
       # may contain multiple terms when 'by' is a factor
@@ -138,7 +138,7 @@ data_fe <- function(bterms, data, knots = NULL,
         ns <- ns + 1
         sm <- smooths[[i]][[j]]
         if (length(sm$by.level)) {
-          by_levels[[i]][j] <- sm$by.level
+          bylevels[[i]][j] <- sm$by.level
         }
         if (!new_smooths) {
           sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
@@ -156,8 +156,8 @@ data_fe <- function(bterms, data, knots = NULL,
       }
     }
     X <- cbind(X, do.call(cbind, Xs))
-    scols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
-    X <- structure(X, smooth_cols = scols, by_levels = by_levels)
+    smcols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
+    X <- structure(X, smcols = smcols, bylevels = bylevels)
     colnames(X) <- rename(colnames(X))
   }
   avoid_dpars(colnames(X), bterms = bterms)

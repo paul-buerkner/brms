@@ -131,11 +131,9 @@ tidy_spef <- function(x, data) {
   #   x: either a formula or a list containing an element "sp"
   #   data: data frame containing the monotonic variables
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    form <- x$dpars$mu[["sp"]]
-  } else {
-    form <- x[["sp"]]
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
+  form <- x[["sp"]]
   if (!is.formula(form)) {
     return(NULL)
   }

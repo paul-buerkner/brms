@@ -361,19 +361,18 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
 
 extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
   # extract draws of smooth terms
-  smooths <- get_sm_labels(bterms, data, covars = TRUE)
-  if (!length(smooths)) {
+  smef <- tidy_smef(bterms, data)
+  if (!length(smef)) {
     return(list())
   }
   p <- usc(combine_prefix(bterms))
-  draws <- named_list(smooths)
-  for (i in seq_along(smooths)) {
+  draws <- named_list(smef$label)
+  for (i in seq_along(draws)) {
     sm <- list()
-    nb <- seq_len(attr(smooths, "nbases")[[i]])
-    for (j in nb) {
+    for (j in seq_len(smef$nbases[i])) {
       sm$Zs[[j]] <- sdata[[paste0("Zs", p, "_", i, "_", j)]]
-      s_pars <- paste0("^s", p, "_", smooths[i], "_", j, "\\[")
-      sm$s[[j]] <- get_samples(samples, s_pars)
+      spars <- paste0("^s", p, "_", smef$label[i], "_", j, "\\[")
+      sm$s[[j]] <- get_samples(samples, spars)
     }
     draws[[i]] <- sm
   }

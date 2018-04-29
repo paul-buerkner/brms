@@ -817,12 +817,12 @@ prior_sm <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for smooth SDs
   prior <- empty_brmsprior()
-  smooths <- get_sm_labels(bterms)
-  if (length(smooths)) {
+  smterms <- all_terms(bterms[["sm"]])
+  if (length(smterms)) {
     px <- check_prefix(bterms)
-    prior_strings <- c(def_scale_prior, rep("", length(smooths)))
+    prior_strings <- c(def_scale_prior, rep("", length(smterms)))
     prior <- prior + brmsprior(
-      class = "sds", coef = c("", smooths), 
+      class = "sds", coef = c("", smterms), 
       prior = prior_strings, ls = px
     )
   }
