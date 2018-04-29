@@ -638,7 +638,7 @@ prior_sp <- function(bterms, data) {
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   spef <- tidy_spef(bterms, data)
-  if (!is.null(spef)) {
+  if (nrow(spef)) {
     px <- check_prefix(bterms)
     prior <- prior + brmsprior(
       class = "b", coef = c("", spef$coef), ls = px
@@ -707,15 +707,15 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for random effects SDs
   prior <- empty_brmsprior()
-  gpef <- get_gp_labels(bterms)
-  if (length(gpef)) {
+  gpterms <- all_terms(bterms[["gp"]])
+  if (length(gpterms)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpef, ls = px) +
+      brmsprior(class = "sdgp", coef = gpterms, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", prior = lscale_prior, coef = gpef, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, coef = gpterms, ls = px)
   }
   prior
 }

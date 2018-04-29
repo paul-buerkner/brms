@@ -135,7 +135,7 @@ tidy_spef <- function(x, data) {
   }
   form <- x[["sp"]]
   if (!is.formula(form)) {
-    return(NULL)
+    return(empty_data_frame())
   }
   mm <- get_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)

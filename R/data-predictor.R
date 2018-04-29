@@ -324,9 +324,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   # Args: see data_effects
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (is.null(spef)) {
-    return(out) 
-  }
+  if (!nrow(spef)) return(out)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   # prepare general data
@@ -448,46 +446,44 @@ data_gp <- function(bterms, data, gps = NULL) {
   # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
-  gpef <- get_gp_labels(bterms)
-  if (length(gpef)) {
-    p <- usc(combine_prefix(px))
-    for (i in seq_along(gpef)) {
-      pi <- paste0(p, "_", i)
-      gp <- eval2(gpef[i])
-      Xgp <- lapply(gp$term, eval2, data)
-      out[[paste0("Mgp", pi)]] <- length(Xgp)
-      invalid <- ulapply(Xgp, function(x)
-        !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
-      )
-      if (any(invalid)) {
-        stop2("Predictors of Gaussian processes should be numeric vectors.")
+  p <- usc(combine_prefix(px))
+  gpef <- tidy_gpef(bterms, data)
+  for (i in seq_len(nrow(gpef))) {
+    pi <- paste0(p, "_", i)
+    Xgp <- lapply(gpef$covars[[i]], eval2, data)
+    out[[paste0("Mgp", pi)]] <- length(Xgp)
+    invalid <- ulapply(Xgp, function(x)
+      !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
+    )
+    if (any(invalid)) {
+      stop2("Predictors of Gaussian processes should be numeric vectors.")
+    }
+    Xgp <- do.call(cbind, Xgp)
+    if (gpef$scale[i]) {
+      # scale predictor for easier specification of priors
+      if (length(gps)) {
+        # scale Xgp based on the original data
+        Xgp <- Xgp / gps[[i]]$dmax
+      } else {
+        dmax <- sqrt(max(diff_quad(Xgp)))
+        Xgp <- Xgp / dmax
       }
-      Xgp <- do.call(cbind, Xgp)
-      if (gp$scale) {
-        # scale predictor for easier specification of priors
-        if (length(gps)) {
-          # scale Xgp based on the original data
-          Xgp <- Xgp / gps[[i]]$dmax
-        } else {
-          dmax <- sqrt(max(diff_quad(Xgp)))
-          Xgp <- Xgp / dmax
-        }
-      }
-      out[[paste0("Xgp", pi)]] <- Xgp
-      out[[paste0("Kgp", pi)]] <- 1L
-      if (gp$by != "NA") {
-        Cgp <- get(gp$by, data)
-        if (is.numeric(Cgp)) {
-          out[[paste0("Cgp", pi)]] <- Cgp
-        } else {
-          Cgp <- factor(Cgp)
-          lCgp <- levels(Cgp)
-          Jgp <- lapply(lCgp, function(x) which(Cgp == x))
-          out[[paste0("Kgp", pi)]] <- length(Jgp)
-          out[[paste0("Igp", pi)]] <- lengths(Jgp)
-          Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
-          out <- c(out, setNames(Jgp, Jgp_names))
-        }
+    }
+    out[[paste0("Xgp", pi)]] <- Xgp
+    out[[paste0("Kgp", pi)]] <- 1L
+    byvar <- gpef$byvars[[i]]
+    if (length(byvar)) {
+      Cgp <- get(byvar, data)
+      if (is.numeric(Cgp)) {
+        out[[paste0("Cgp", pi)]] <- Cgp
+      } else {
+        Cgp <- factor(Cgp)
+        lCgp <- levels(Cgp)
+        Jgp <- lapply(lCgp, function(x) which(Cgp == x))
+        out[[paste0("Kgp", pi)]] <- length(Jgp)
+        out[[paste0("Igp", pi)]] <- lengths(Jgp)
+        Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
+        out <- c(out, setNames(Jgp, Jgp_names))
       }
     }
   }

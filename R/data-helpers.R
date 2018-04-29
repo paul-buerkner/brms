@@ -558,10 +558,10 @@ make_gp_list <- function(x, data, ...) {
   # extract data related to gaussian processes
   # for use in extract_old_standata
   stopifnot(is.btl(x))
-  gpef <- get_gp_labels(x)
-  out <- named_list(gpef)
-  for (i in seq_along(gpef)) {
-    gp <- eval2(gpef[i])
+  gpterms <- all_terms(x[["gp"]])
+  out <- named_list(gpterms)
+  for (i in seq_along(gpterms)) {
+    gp <- eval2(gpterms[i])
     Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
     out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
   }

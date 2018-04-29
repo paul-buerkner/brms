@@ -570,7 +570,7 @@ test_that("Gaussian processes work correctly", {
               chains = 2, cores = 2)
   print(fit1)
   expect_ggplot(pp_check(fit1))
-  me = marginal_effects(fit1, nsamples = 200, nug = 1e-07)
+  me <- marginal_effects(fit1, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
@@ -578,7 +578,7 @@ test_that("Gaussian processes work correctly", {
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, cores = 2)
   print(fit2)
   expect_ggplot(pp_check(fit2))
-  me = marginal_effects(
+  me <- marginal_effects(
     fit2, nsamples = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
@@ -589,7 +589,7 @@ test_that("Gaussian processes work correctly", {
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  me = marginal_effects(fit3, nsamples = 200, nug = 1e-07)
+  me <- marginal_effects(fit3, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
   
@@ -598,7 +598,7 @@ test_that("Gaussian processes work correctly", {
   fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, cores = 2)
   print(fit4)
   expect_ggplot(pp_check(fit4))
-  me = marginal_effects(fit4, nsamples = 200, nug = 1e-07)
+  me <- marginal_effects(fit4, nsamples = 200, nug = 1e-07)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })

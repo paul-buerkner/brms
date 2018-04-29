@@ -452,10 +452,9 @@ parse_gp <- function(formula) {
     }
     out <- str2formula(out)
   } else {
-    byvars <- NULL
     allvars <- ~ 1
   }
-  structure(out, byvars = byvars, allvars = allvars)
+  structure(out, allvars = allvars)
 }
 
 parse_offset <- function(formula) {
@@ -816,7 +815,7 @@ tidy_smef <- function(x, data) {
   }
   form <- x[["sm"]] 
   if (!is.formula(form)) {
-    return(NULL)
+    return(empty_data_frame())
   }
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
@@ -843,7 +842,7 @@ tidy_smef <- function(x, data) {
       tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
       tmp[[i]]$bylevel <- bylevels[[i]]
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
-      str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
+      str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
     } else {
       tmp[[i]]$bylevel <- NA
       tmp[[i]]$byterm <- tmp[[i]]$term
@@ -856,48 +855,37 @@ tidy_smef <- function(x, data) {
   out
 }
 
-get_gp_labels <- function(x, data = NULL, covars = FALSE) {
+tidy_gpef <- function(x, data) {
   # get labels of gaussian process terms
   # Args:
   #   x: either a formula or a list containing an element "gp"
-  #   covars: should the conbined names of the covariates be 
-  #           returned instead of the full term names?
+  #   data: data frame containing the covariates
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    gp_form <- x$dpars$mu[["gp"]]
-  } else {
-    gp_form <- x[["gp"]]
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
-  if (!is.formula(gp_form)) {
-    return(character(0))
+  form <- x[["gp"]]
+  if (!is.formula(form)) {
+    return(empty_data_frame())
   }
-  byvars = attr(gp_form, "byvars")
-  gp_terms <- all_terms(gp_form)
-  by_levels <- named_list(gp_terms)
-  out <- rep(NA, length(gp_terms))
-  for (i in seq_along(gp_terms)) {
-    gp <- eval2(gp_terms[i])
-    if (covars) {
-      out[i] <- paste0("gp", collapse(gp$term))
-      if (gp$by != "NA") {
-        out[i] <- paste0(out[i], gp$by)
-      }
-    } else {
-      out[i] <- gp$label
-    }
-    if (!is.null(data)) {
-      if (gp$by != "NA") {
-        Cgp <- get(gp$by, data)
-        if (!is.numeric(Cgp)) {
-          by_levels[[i]] <- levels(factor(Cgp))
-        }
+  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  nterms <- nrow(out)
+  out$bylevels <- out$byvars <- out$covars <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    gp <- eval2(out$term[i])
+    out$label[i] <- paste0("gp", rename(collapse(gp$term)))
+    out$cov[i] <- gp$cov
+    out$scale[i] <- gp$scale
+    out$covars[[i]] <- gp$term
+    if (gp$by != "NA") {
+      out$byvars[[i]] <- gp$by
+      str_add(out$label[i]) <- rename(gp$by)
+      Cgp <- get(gp$by, data)
+      if (is_like_factor(Cgp)) {
+        out$bylevels[[i]] <- levels(factor(Cgp))
       }
     }
   }
-  if (covars) {
-    out <- rename(out)
-  }
-  structure(out, byvars = byvars, by_levels = by_levels)
+  out
 }
 
 all_terms <- function(x) {
@@ -1134,7 +1122,7 @@ get_bounds <- function(bterms, data = NULL, incl_family = FALSE,
 }
 
 get_family_bounds <- function(bterms) {
-  # get boundaries of response distribution
+  # get boundaries of response distributions
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family$family
   if (is.null(family)) {

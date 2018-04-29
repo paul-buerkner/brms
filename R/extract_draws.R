@@ -211,9 +211,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   # extract draws of special effects terms
   draws <- list()
   spef <- tidy_spef(bterms, data)
-  if (is.null(spef)) {
-    return(draws) 
-  }
+  if (!nrow(spef)) return(draws)
   p <- usc(combine_prefix(bterms))
   # prepare calls evaluated in sp_predictor
   draws$calls <- vector("list", nrow(spef))
@@ -362,9 +360,6 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
 extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
   # extract draws of smooth terms
   smef <- tidy_smef(bterms, data)
-  if (!length(smef)) {
-    return(list())
-  }
   p <- usc(combine_prefix(bterms))
   draws <- named_list(smef$label)
   for (i in seq_along(draws)) {
@@ -387,9 +382,9 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   #   new: Is new data used?
   #   nug: small numeric value to avoid numerical problems in GPs
   #   old_sdata: standata object based on the original data
-  gpef <- get_gp_labels(bterms, data, covars = TRUE)
-  if (!length(gpef)) {
-    return(list()) 
+  gpef <- tidy_gpef(bterms, data)
+  if (!nrow(gpef)) {
+    return(list())
   }
   if (new) {
     stopifnot(!is.null(old_sdata))
@@ -398,16 +393,15 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   if (is.null(nug)) {
     nug <- ifelse(new, 1e-8, 1e-11)
   }
-  draws <- named_list(gpef)
-  for (i in seq_along(gpef)) {
+  draws <- named_list(gpef$label)
+  for (i in seq_along(draws)) {
     gp <- list()
-    by_levels <- attr(gpef, "by_levels")[[i]]
-    gp_names <- paste0(gpef[i], usc(by_levels))
+    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
     sdgp <- paste0("^sdgp", p, "_", gp_names)
     gp$sdgp <- get_samples(samples, sdgp)
     lscale <- paste0("^lscale", p, "_", gp_names)
     gp$lscale <- get_samples(samples, lscale)
-    zgp <- paste0("^zgp", p, "_", gpef[i], "\\[")
+    zgp <- paste0("^zgp", p, "_", gpef$label[i], "\\[")
     gp$zgp <- get_samples(samples, zgp)
     gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
     Jgp_pos <- grepl(paste0("^Jgp", p, "_", i), names(sdata))

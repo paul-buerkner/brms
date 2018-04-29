@@ -438,6 +438,10 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 }
 
+empty_data_frame <- function() {
+  as.data.frame(matrix(nrow = 0, ncol = 0))
+}
+
 'replace_args<-' <- function(x, dont_replace = NULL, value) {
   # replace elements in x with elements in value
   # Args:
