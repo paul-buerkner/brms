@@ -968,7 +968,31 @@ launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
   contains_samples(object)
-  launch_shinystan(object$fit, rstudio = rstudio, ...)
+  
+  if (object$algorithm != "sampling") {
+    return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
+  } 
+  
+  draws <- as.array(object)
+  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup=FALSE)
+  cntrl <- object$fit@stan_args[[1]]
+  if (is.null(cntrl)) {
+    max_td <- 11
+  } else {
+    max_td <- cntrl$max_treedepth
+    if (is.null(max_td))
+      max_td <- 11
+  }
+  
+  sso <- shinystan::as.shinystan(
+    X = draws, 
+    model_name = object$fit@model_name,
+    warmup = 0, 
+    sampler_params = sampler_params, 
+    max_treedepth = max_td,
+    algorithm = "NUTS"
+  )
+  shinystan::launch_shinystan(sso, rstudio = rstudio, ...)
 }
 
 #' Trace and Density Plots for MCMC Samples
