@@ -17,6 +17,8 @@ when performing model comparisons. (#414)
 
 * Fix a problem in the Stan code generation of distributional `beta` models
 thanks to Hans van Calster. (#404)
+* Fix `launch_shinystan.brmsfit` so that all parameters
+are now shown correctly in the diagnose tab. (#340)
 
 
 # brms 2.2.0
