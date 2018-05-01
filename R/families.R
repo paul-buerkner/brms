@@ -1161,6 +1161,39 @@ is_zero_one_inflated <- function(family, zi_beta = FALSE) {
   any(family_names(family) %in% "zero_one_inflated_beta")
 }
 
+ad_families <- function(x) {
+  # names of valid families for addition arguments
+  switch(x, 
+    weights = "all",
+    se = c("gaussian", "student", "skew_normal", "custom"),
+    trials = c("binomial", "zero_inflated_binomial", "custom"),
+    cat = c("cumulative", "cratio", "sratio", "acat", "custom"), 
+    cens = c(
+      "gaussian", "student", "lognormal", "skew_normal",
+      "inverse.gaussian", "binomial", "poisson", 
+      "geometric", "negbinomial", "exponential", "beta",
+      "weibull", "gamma", "exgaussian", "frechet",
+      "asym_laplace", "gen_extreme_value", "shifted_lognormal",
+      "custom"
+    ),
+    trunc = c(
+      "gaussian", "student", "lognormal", "skew_normal",
+      "binomial", "poisson", "geometric", "negbinomial",
+      "exponential", "weibull", "gamma", "inverse.gaussian",
+      "exgaussian", "frechet", "asym_laplace", "beta",
+      "gen_extreme_value", "shifted_lognormal", "custom"
+    ),
+    mi = c(
+      "gaussian", "student", "lognormal", "skew_normal",
+      "inverse.gaussian", "exponential", "weibull", 
+      "gamma", "exgaussian", "frechet", "beta",
+      "asym_laplace", "gen_extreme_value", "custom"
+    ),
+    dec = c("wiener", "custom"),
+    stop2("Addition argument '", x, "' is not supported.")
+  )
+}
+
 real_families <- function() {
   c("gaussian", "student", "skew_normal", "lognormal", 
     "gamma", "weibull", "exponential", "frechet",
