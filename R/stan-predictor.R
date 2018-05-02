@@ -1034,7 +1034,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # manually using the link functions
   # Args:
   #   llh_adj: is the model censored or truncated?
-  !(!is_skewed(family) && family$link == "identity" ||
+  transeta <- "transeta" %in% family_info(family, "specials")
+  !(family$link == "identity" && !transeta ||
     is_ordinal(family) || is_categorical(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
@@ -1279,7 +1280,7 @@ stan_sigma_transform <- function(bterms, id = "") {
   }
   p <- usc(combine_prefix(bterms))
   ns <- ifelse(paste0("sigma", id) %in% names(bterms$dpars), "[n]", "")
-  has_sigma <- has_sigma(family, bterms)
+  has_sigma <- has_sigma(family) && !no_sigma(bterms)
   sigma <- ifelse(has_sigma, paste0("sigma", id, p, ns), "")
   if (is.formula(bterms$adforms$se)) {
     sigma <- ifelse(

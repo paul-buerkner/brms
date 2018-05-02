@@ -947,9 +947,6 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   prior_location <- 0
   prior_scale <- 10
   link <- x$family$link
-  if (is_lognormal(x$family)) {
-    link <- "log"
-  }
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)

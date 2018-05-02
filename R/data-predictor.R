@@ -684,70 +684,57 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     family4error <- families
   }
   if (check_response) {
-    factors_allowed <- is_ordinal(x$family) || 
-      any(families %in% c("bernoulli", "categorical"))
-    if (!factors_allowed && !is.numeric(out$Y)) {
+    if (!allow_factors(x$family) && !is.numeric(out$Y)) {
       stop2("Family '", family4error, "' requires numeric responses.")
     }
-    # transform and check response variables for different families
-    regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
-    if (any(grepl(regex_pos_int, families))) {
-      if (!all(is_wholenumber(out$Y)) || min(out$Y) < 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be non-negative integers.")
-      }
-    } else if (any(families %in% "bernoulli")) {
+    if (is_binary(x$family)) {
       out$Y <- as.numeric(as.factor(out$Y)) - 1
       if (any(!out$Y %in% c(0, 1))) {
-        stop2("Family '", family4error, "' requires responses ", 
+        stop2("Family '", family4error, "' requires responses ",
               "to contain only two different values.")
       }
-    } else if (any(grepl("(^|_)beta$", families))) {
-      if (any(families %in% "beta")) {
-        lower <- any(out$Y <= 0)
-      } else {
-        lower <- any(out$Y < 0) 
-      } 
-      if (any(families %in% "zero_one_inflated_beta")) {
-        upper <- any(out$Y > 1) 
-      } else {
-        upper <- any(out$Y >= 1) 
-      }
-      if (lower || upper) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "between 0 and 1.")
-      }
-    } else if (any(families %in% "von_mises")) {
-      if (any(out$Y < -pi | out$Y > pi)) {
-        stop2("Family '", family4error, "' requires responses ",
-              "between -pi and pi.")
-      }
-    } else if (is_categorical(x$family)) { 
+    }
+    if (is_categorical(x$family)) { 
       out$Y <- as.numeric(factor(out$Y))
       if (length(unique(out$Y)) < 3L) {
         stop2("At least three response categories are required.")
       }
-    } else if (is_ordinal(x$family)) {
+    }
+    if (is_ordinal(x$family)) {
       if (is.ordered(out$Y)) {
         out$Y <- as.numeric(out$Y)
       }
       if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
-        stop2("Family '", family4error, "' requires either positive ", 
+        stop2("Family '", family4error, "' requires either positive ",
               "integers or ordered factors as responses.")
       }
       if (length(unique(out$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
-    } else if (is_skewed(x$family) || is_lognormal(x$family) || 
-               is_wiener(x$family)) {
-      if (min(out$Y) <= 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be positive.")
+    }
+    if (use_int(x$family)) {
+      if (!all(is_wholenumber(out$Y))) {
+        stop2("Family '", family4error, "' requires integer responses.")
       }
-    } else if (is_zero_inflated(x$family) || is_hurdle(x$family)) {
-      if (min(out$Y) < 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be non-negative.")
+    }
+    ybounds <- family_info(x$family, "ybounds")
+    closed <- family_info(x$family, "closed")
+    if (is.finite(ybounds[1])) {
+      if (closed[1] && min(out$Y) < ybounds[1]) {
+        stop2("Family '", family4error, "' requires response greater ",
+              "than or equal to ", ybounds[1], ".")
+      } else if (!closed[1] && min(out$Y) <= ybounds[1]) {
+        stop2("Family '", family4error, "' requires response greater ",
+              "than ", round(ybounds[1], 2), ".")
+      }
+    }
+    if (is.finite(ybounds[2])) {
+      if (closed[2] && max(out$Y) > ybounds[2]) {
+        stop2("Family '", family4error, "' requires response smaller ",
+              "than or equal to ", ybounds[2], ".")
+      } else if (!closed[2] && max(out$Y) >= ybounds[2]) {
+        stop2("Family '", family4error, "' requires response smaller ",
+              "than ", round(ybounds[2], 2), ".")
       }
     }
     out$Y <- as.array(out$Y)
