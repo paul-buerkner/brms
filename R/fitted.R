@@ -276,12 +276,11 @@ fitted_ordinal <- function(draws) {
 
 fitted_lagsar <- function(draws) {
   stopifnot(!is.null(draws$ac$lagsar))
-  stopifnot(is_linear(draws$f))
-  .fitted_lagsar <- function(s) {
+  .fitted <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     as.numeric(solve(W_new) %*% draws$dpars$mu[s, ])
   }
-  do.call(rbind, lapply(1:draws$nsamples, .fitted_lagsar))
+  do.call(rbind, lapply(1:draws$nsamples, .fitted))
 }
 
 as_draws_matrix <- function(x, dim) {

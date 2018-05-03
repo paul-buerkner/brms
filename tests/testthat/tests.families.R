@@ -43,7 +43,7 @@ test_that("family functions returns expected results", {
   expect_error(weibull(link_shape = "logit"), 
                "'logit' is not a supported link for parameter 'shape'")
   expect_error(weibull(link_shape = c("log", "logit")),
-               "Link functions must be of length 1")
+               "Cannot coerce alink to a single character value")
 })
 
 test_that("print brmsfamily works correctly", {

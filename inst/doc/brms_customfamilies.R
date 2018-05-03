@@ -1,5 +1,5 @@
 params <-
-structure(list(EVAL = TRUE), .Names = "EVAL")
+list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -73,7 +73,7 @@ log_lik_beta_binomial2 <- function(i, draws) {
 }
 
 ## ----loo--------------------------------------------------------------------------------
-LOO(fit1, fit2)
+loo(fit1, fit2)
 
 ## ----predict----------------------------------------------------------------------------
 predict_beta_binomial2 <- function(i, draws, ...) {

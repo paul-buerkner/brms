@@ -219,4 +219,11 @@ For ease of interpretation we have set `trials` to 1 so that the y-axis of the a
 
 ## Turning a Custom Family into a Native Family
 
-Family functions built natively into **brms** are saver to use and more convenient, as they require much less user input. Unfortunately, the current internal structure of **brms** makes it rather hard for an outside developer to implement a native family herself. If you feel that your custom family is general enough to be useful to other users, please feel free to open an issue on [GitHub](https://github.com/paul-buerkner/brms/issues), in which you provide general information about your family as well as all the necessary functions described above. Provided that you convince me, I will then go ahead and make the required changes to the **brms** code base.
+Family functions built natively into **brms** are saver to use and more convenient, as they require much less user input. If you think that your custom family is general enough to be useful to other users, please feel free to open an issue on [GitHub](https://github.com/paul-buerkner/brms/issues) so that we can discuss all the details. Provided that we agree it makes sense to implement your family natively in brms, the following steps are required (`foo` is a placeholder for the family name):
+
+* In `family-lists.R`, add function `.family_foo` which should contain basic information about your family (you will find lots of examples for other families there).
+* In `families.R`, add family function `foo` which should be a simple wrapper around `.brmsfamily`.
+* In `stan-likelihood.R`, add function `stan_llh_foo` which provides the likelihood of the family in Stan language.
+* If necessary, add self-defined Stan functions in separate files under `inst/chunks`.
+* Add functions `predict_foo`, `fitted_foo` and `log_lik_foo` to `predict.R`, `fitted.R` and `log_lik.R`, respectively.
+* If necessary, add distribution functions to `distributions.R`.

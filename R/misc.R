@@ -150,12 +150,8 @@ first_not_null <- function(...) {
   out
 }
 
-isFALSE <- function(x) {
-  identical(FALSE, x)
-}
-
 isNA <- function(x) {
-  identical(NA, x)
+  length(x) == 1L && is.na(x)
 }
 
 is_equal <- function(x, y, ...) {
