@@ -270,7 +270,7 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
     out <- c(out, get_all_effects(x$dpars[[dp]]))
   }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
-  if (comb_all) {
+  if (length(out) && comb_all) {
     out <- unique(unlist(out))
     int <- expand.grid(out, out, stringsAsFactors = FALSE)
     int <- int[int[, 1] != int[, 2], ]
