@@ -178,10 +178,11 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
           "'sratio', 'cratio', or 'acat'.")
   }
   # parse autocor formula
+  y$time <- parse_time(autocor)
   if (!is.null(y$dpars[["mu"]])) {
     y$dpars$mu$autocor <- autocor
+    y$dpars$mu$time <- y$time
   }
-  y$time <- parse_time(autocor)
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all.vars(y$respform)
