@@ -12,6 +12,7 @@ difference formulation thanks to the case study of Mitzi Morris.
 when performing model comparisons. (#414)
 * No longer set `pointwise` dynamically in `loo` and related methods. (#416)
 * No longer show information criteria in the summary output.
+* Simplify internal workflow to implement native response distributions. (#421)
 
 ### Bug fixes
 
