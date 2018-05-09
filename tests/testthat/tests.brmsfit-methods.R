@@ -87,7 +87,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # fitted
   fi <- fitted(fit1)
   expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_equal(colnames(fi), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(fi), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
   
   newdata <- data.frame(
     Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
@@ -487,7 +487,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # predict
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))
-  expect_equal(colnames(pred), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(pred), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
   pred <- predict(fit1, nsamples = 10, probs = c(0.2, 0.5, 0.8))
   expect_equal(dim(pred), c(nobs(fit1), 5))
   

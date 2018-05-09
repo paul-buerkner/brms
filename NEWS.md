@@ -8,6 +8,8 @@ difference formulation thanks to the case study of Mitzi Morris.
 
 ### Other changes 
 
+* Rename quantile columns in `posterior_summary`. This affects the
+output of `predict` and related methods if `summary = TRUE`. (#425)
 * Use hashes to check if models have the same response values 
 when performing model comparisons. (#414)
 * No longer set `pointwise` dynamically in `loo` and related methods. (#416)
