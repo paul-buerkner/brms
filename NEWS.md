@@ -18,7 +18,8 @@ when performing model comparisons. (#414)
 
 ### Bug fixes
 
-* Allow `cor_car` in multivariate models thanks to Quentin Read. (#427)
+* Allow `cor_car` in multivariate models with residual correlations 
+thanks to Quentin Read. (#427)
 * Fix a problem in the Stan code generation of distributional `beta` models
 thanks to Hans van Calster. (#404)
 * Fix `launch_shinystan.brmsfit` so that all parameters
