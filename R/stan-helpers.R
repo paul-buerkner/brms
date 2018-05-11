@@ -306,9 +306,6 @@ stan_autocor <- function(bterms, prior) {
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
-    if (isTRUE(bterms$rescor)) {
-      stop2(err_msg, " when 'rescor' is estimated.")
-    }
     str_add(out$data) <- paste0(
       "  // data for the CAR structure\n",
       "  int<lower=1> Nloc", p, ";\n",
@@ -319,8 +316,8 @@ stan_autocor <- function(bterms, prior) {
     )
     if (autocor$type %in% c("escar", "esicar")) {
       str_add(out$data) <- paste0(
-        "  vector[Nloc] Nneigh", p, ";\n",
-        "  vector[Nloc] eigenW", p, ";\n"
+        "  vector[Nloc", p, "] Nneigh", p, ";\n",
+        "  vector[Nloc", p, "] eigenW", p, ";\n"
       )
       str_add(out$par) <- paste0(
         "  // parameters for the CAR structure\n",
@@ -348,10 +345,10 @@ stan_autocor <- function(bterms, prior) {
       )
     } else if (autocor$type %in% "esicar") {
       str_add(out$par) <- paste0(
-        "  vector[Nloc - 1] zcar", p, ";\n"
+        "  vector[Nloc", p, " - 1] zcar", p, ";\n"
       )
       str_add(out$tparD) <- paste0(
-        "  vector[Nloc] rcar", p, ";\n"                
+        "  vector[Nloc", p, "] rcar", p, ";\n"                
       )
       str_add(out$tparC1) <- paste0(
         "  // sum-to-zero constraint\n",
