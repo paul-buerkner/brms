@@ -4,7 +4,7 @@
 \alias{mm}
 \title{Set up multi-membership grouping terms in \pkg{brms}}
 \usage{
-mm(..., weights = NULL, scale = TRUE, dist = "normal")
+mm(..., weights = NULL, scale = TRUE, dist = "gaussian")
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
@@ -19,7 +19,7 @@ If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
 
 \item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"normal"} is the only option.}
+Currently \code{"gaussian"} is the only option.}
 }
 \description{
 Function to set up a multi-membership grouping term in \pkg{brms}.

@@ -4,7 +4,7 @@
 \alias{gr}
 \title{Set up basic grouping terms in \pkg{brms}}
 \usage{
-gr(..., by = NULL, dist = "normal")
+gr(..., by = NULL, dist = "gaussian")
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
@@ -16,7 +16,7 @@ Levels of the grouping factor must be nested in levels
 of the \code{by} variable.}
 
 \item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"normal"} is the only option.}
+Currently \code{"gaussian"} is the only option.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.

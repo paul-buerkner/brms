@@ -603,7 +603,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #'   Levels of the grouping factor must be nested in levels 
 #'   of the \code{by} variable.
 #' @param dist Name of the distribution of the group-level effects.
-#'   Currently \code{"normal"} is the only option.
+#'   Currently \code{"gaussian"} is the only option.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
@@ -623,7 +623,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' }
 #' 
 #' @export
-gr <- function(..., by = NULL, dist = "normal") {
+gr <- function(..., by = NULL, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -639,7 +639,7 @@ gr <- function(..., by = NULL, dist = "normal") {
   } else {
     by <- ""
   }
-  dist <- match.arg(dist, c("normal", "student"))
+  dist <- match.arg(dist, c("gaussian", "student"))
   allvars <- str2formula(c(groups, by))
   nlist(groups, allvars, label, by, dist, type = "")
 }
@@ -686,7 +686,7 @@ gr <- function(..., by = NULL, dist = "normal") {
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, dist = "normal") {
+mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -695,7 +695,7 @@ mm <- function(..., weights = NULL, scale = TRUE, dist = "normal") {
   for (i in seq_along(groups)) {
     stopif_illegal_group(groups[i])
   }
-  dist <- match.arg(dist, c("normal", "student"))
+  dist <- match.arg(dist, c("gaussian", "student"))
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all.vars(weights)

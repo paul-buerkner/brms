@@ -507,6 +507,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
               }
             }
           } else if (sample_new_levels == "gaussian") {
+            if (any(!sub_ranef$dist %in% "gaussian")) {
+              stop2("Option sample_new_levels = 'gaussian' is not ",
+                    "available for non-gaussian group-level effects.")
+            }
             for (j in seq_along(new_indices)) {
               # extract hyperparameters used to compute the covariance matrix
               if (length(old_by_per_level)) {
