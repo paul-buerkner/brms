@@ -228,22 +228,21 @@ test_that("make_standata handles multivariate models", {
 
 test_that("make_standata returns correct data for autocor structures", {
   dat <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_arr(~tim|g))$Yarr,
-               cbind(c(0,9,7,5,3,0,10,8,6,4)))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_arr(~tim|g, r = 2))$Yarr,
-               cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ma(~tim|g))$J_lag,
-               c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ar(~tim|g, p = 2))$J_lag,
-               c(1, 2, 2, 2, 0, 1, 2, 2, 2, 0))
-  standata <- make_standata(y ~ x, data = dat,
-                            autocor = cor_ar(~tim|g, cov = TRUE))
-  expect_equal(standata$begin_tg, as.array(c(1, 6)))
-  expect_equal(standata$nobs_tg, as.array(c(5, 5)))
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_arr(~tim|g))
+  expect_equal(sdata$Yarr, cbind(c(0,9,7,5,3,0,10,8,6,4)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_arr(~tim|g, r = 2))
+  expect_equal(sdata$Yarr, cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ma(~tim|g))
+  expect_equal(sdata$J_lag, as.array(c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ar(~tim|g, p = 2))
+  expect_equal(sdata$J_lag, as.array(c(1, 2, 2, 2, 0, 1, 2, 2, 2, 0)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ar(~tim|g, cov = TRUE))
+  expect_equal(sdata$begin_tg, as.array(c(1, 6)))
+  expect_equal(sdata$nobs_tg, as.array(c(5, 5)))
 })
 
 test_that("make_standata allows to retrieve the initial data order", {
