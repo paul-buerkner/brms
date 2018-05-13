@@ -1493,3 +1493,18 @@ test_that("likelihood of distributional beta models is correct", {
   )
   expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
 })
+
+test_that("student-t group-level effects work without errors", {
+  scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
+  expect_match2(scode, "sqrt(df_1 * udf_1) * sd_1[1] * (z_1[1]);")
+  expect_match2(scode, "target += gamma_lpdf(df_1 | 2, 0.1);")
+  expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")
+  
+  bprior <- prior(normal(20, 5), class = df, group = patient)
+  scode <- make_stancode(
+    count ~ Trt + (Trt|gr(patient, dist = "st")), 
+    epilepsy, prior = bprior
+  )
+  expect_match2(scode, "sqrt(df_1 * udf_1) * (diag_pre_multiply(sd_1, L_1) * z_1)';")
+  expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
+})

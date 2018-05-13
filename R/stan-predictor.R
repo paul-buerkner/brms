@@ -493,8 +493,34 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
   out
 }
 
-stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
-  # group-level effects in Stan 
+stan_re <- function(ranef, prior, ...) {
+  # Stan code for group-level effects
+  # the ID syntax requires group-level effects to be evaluated separately
+  IDs <- unique(ranef$id)
+  out <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
+  out <- collapse_lists(ls = out)
+  # special handling of student-t group effects
+  tranef <- get_dist_groups(ranef, "student")
+  if (has_rows(tranef)) {
+    str_add(out$par) <- 
+      "  // parameters for student-t distributed group-level effects\n"
+    for (i in seq_len(nrow(tranef))) {
+      g <- paste0("_", tranef$ggn[i])
+      str_add(out$par) <- paste0(
+        "  real<lower=1> df", g, ";\n",
+        "  real<lower=0> udf", g, ";\n"
+      )
+      str_add(out$prior) <- paste0(
+        stan_prior(prior, class = "df", group = tranef$group[i], suffix = g),
+        "  target += inv_chi_square_lpdf(udf", g, " | df", g, ");\n"
+      )
+    }
+  }
+  out
+}
+
+.stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
+  # Stan code for group-level effects per ID
   # Args:
   #   id: the ID of the grouping factor
   #   ranef: a data.frame returned by tidy_ranef
@@ -567,6 +593,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       px = px, suffix = paste0("_", id)
     )
   }
+  tr <- get_dist_groups(r, "student")
+  if (has_rows(tr)) {
+    dff <- paste0("sqrt(df_", tr$ggn[1], " * udf_", tr$ggn[1], ") * ")
+  } else {
+    dff <- ""
+  }
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     str_add(out$data) <- paste0( 
@@ -593,7 +625,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       str_add(out$tparD) <- paste0(
         "  // group-level effects \n",
         "  matrix[N_", id, ", M_", id, "] r_", id, 
-        " = scale_r_cor_by(z_", id, ", sd_", id, 
+        " = ", dff, "scale_r_cor_by(z_", id, ", sd_", id, 
         ", L_", id, ", Jby_", id, ");\n"
       )
       str_add(out$prior) <- stan_prior(
@@ -616,13 +648,14 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  matrix[N_", id, ", M_", id, "] r_", id, 
         if (has_ccov) {
           paste0(
-            " = as_matrix(kronecker(Lcov_", id, ",", 
+            " = ", dff, "as_matrix(kronecker(Lcov_", id, ",", 
             " diag_pre_multiply(sd_", id,", L_", id,")) *",
             " to_vector(z_", id, "), N_", id, ", M_", id, ");\n"
           )
         } else {
           paste0(
-            " = (diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")';\n"
+            " = ", dff, "(diag_pre_multiply(sd_", id, 
+            ", L_", id,") * z_", id, ")';\n"
           )
         }
       )
@@ -657,7 +690,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  // group-level effects \n", 
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
-          " = sd_", id, "[", J, ", Jby_", id, "]' .* (", 
+          " = ", dff, "sd_", id, "[", J, ", Jby_", id, "]' .* (", 
           if (has_ccov) paste0("Lcov_", id, " * "), 
           "z_", id, "[", J, "]);\n"
         )
@@ -667,7 +700,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  // group-level effects \n", 
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
-          " = sd_", id, "[", J, "] * (", 
+          " = ", dff, "sd_", id, "[", J, "] * (", 
           if (has_ccov) paste0("Lcov_", id, " * "), 
           "z_", id, "[", J, "]);\n"
         )

@@ -330,6 +330,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
   #     dpar: name of the distributional parameter
   #     nlpar: name of the non-linear parameter
   #     cor: are correlations modeled for this effect?
+  #     ggn: global number of the grouping factor
   #     type: special effects type; can be 'sp' or 'cs'
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
@@ -375,13 +376,16 @@ tidy_ranef <- function(bterms, data, all = TRUE,
       group = re$group[[i]],
       gn = re$gn[[i]],
       gtype = re$gtype[[i]],
-      coef = coef, cn = NA,
+      coef = coef, 
+      cn = NA,
       resp = re$resp[[i]],
       dpar = re$dpar[[i]],
       nlpar = re$nlpar[[i]],
+      ggn = NA,
       cor = re$cor[[i]],
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
+      dist = re$gcall[[i]]$dist,
       stringsAsFactors = FALSE
     )
     bylevels <- NULL
@@ -437,6 +441,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
     for (id in unique(ranef$id)) {
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
     }
+    ranef$ggn <- match(ranef$group, unique(ranef$group))
     if (is.null(old_levels)) {
       rsub <- ranef[!duplicated(ranef$group), ]
       levels <- named_list(rsub$group)
@@ -477,8 +482,8 @@ empty_ranef <- function() {
     data.frame(
       id = numeric(0), group = character(0), gn = numeric(0),
       coef = character(0), cn = numeric(0), resp = character(0),
-      dpar = character(0), nlpar = character(0), cor = logical(0), 
-      type = character(0), form = character(0), 
+      dpar = character(0), nlpar = character(0), ggn = numeric(0),
+      cor = logical(0), type = character(0), form = character(0), 
       stringsAsFactors = FALSE
     ),
     class = c("ranef_frame", "data.frame")
@@ -517,4 +522,10 @@ get_group_vars.meef_frame <- function(x, ...) {
     out <- NULL
   }
   out
+}
+
+get_dist_groups <- function(ranef, dist) {
+  # extract information about groups with a certain distribution
+  out <- subset2(ranef, dist = dist)
+  out[!duplicated(out$group), c("group", "ggn")]
 }

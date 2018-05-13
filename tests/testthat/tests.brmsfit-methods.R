@@ -610,7 +610,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # stanplot tested in tests.plots.R
   
   # summary
-  summary1 <- SW(summary(fit1, waic = TRUE, priors = TRUE))
+  summary1 <- SW(summary(fit1, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
                c("Intercept", "sigma_Intercept", "Trt1", "Age", 
@@ -623,7 +623,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   
-  summary5 <- SW(summary(fit5, waic = TRUE))
+  summary5 <- SW(summary(fit5))
   expect_output(print(summary5), "sigma1")
   expect_output(print(summary5), "theta1")
   

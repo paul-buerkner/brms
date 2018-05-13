@@ -808,6 +808,11 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE) {
       }
     }
   }
+  tranef <- get_dist_groups(ranef, "student")
+  if (isTRUE(nrow(tranef) > 0L)) {
+    prior <- prior + 
+      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group)
+  }
   prior
 }
 

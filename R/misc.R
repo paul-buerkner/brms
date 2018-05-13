@@ -196,6 +196,14 @@ as_one_character <- function(x, allow_na = FALSE) {
   x
 }
 
+has_rows <- function(x) {
+  isTRUE(nrow(x) > 0L)
+}
+
+has_cols <- function(x) {
+  isTRUE(ncol(x) > 0L)
+}
+
 expand <- function(..., dots = list(), length = NULL) {
   # expand arguments of be of the same length
   # Args:
