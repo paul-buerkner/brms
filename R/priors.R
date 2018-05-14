@@ -957,12 +957,12 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y) 
     }
-    sgst_scale <- SW(round(link(sd(Y), link = link)))
+    sgst_scale <- SW(round(mad(link(Y, link = link))))
     if (is.finite(sgst_scale)) {
       prior_scale <- max(prior_scale, sgst_scale)
     } 
     if (!center) {
-      sgst_location <- SW(round(link(median(Y), link = link)))
+      sgst_location <- SW(round(median(link(Y, link = link))))
       if (is.finite(sgst_location)) {
         prior_location <- sgst_location
       }
