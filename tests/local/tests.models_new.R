@@ -706,3 +706,15 @@ test_that("Missing value imputation works correctly", {
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
   expect_range(loo$estimates[3, 1], 200, 220)
 })
+
+test_that("student-t-distributed group-level effects work correctly", {
+  fit <- brm(
+    count ~ Trt * log_Base4_c + (1 | gr(patient, dist = "student")),
+    data = epilepsy, family = poisson(), chains = 1
+  )
+  print(summary(fit))
+  expect_true("df_patient" %in% parnames(fit))
+  expect_true("udf_1" %in% fit$exclude)
+  waic <- suppressWarnings(waic(fit))
+  expect_range(waic$estimates[3, 1], 1300, 1400)
+})
