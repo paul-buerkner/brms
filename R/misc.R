@@ -908,3 +908,7 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   )
   invisible(NULL)
 }
+
+.onLoad <- function(libname, pkgname) {
+  backports::import(pkgname)
+}

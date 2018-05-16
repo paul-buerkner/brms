@@ -29,6 +29,7 @@ Imports:
     utils,
     parallel,
     grDevices,
+    backports
 Suggests: 
     testthat (>= 0.9.1),
     RWiener,
