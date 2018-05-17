@@ -973,22 +973,20 @@ launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
   contains_samples(object)
-  
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
   } 
-  
   draws <- as.array(object)
-  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup=FALSE)
-  cntrl <- object$fit@stan_args[[1]]
-  if (is.null(cntrl)) {
+  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
+  control <- object$fit@stan_args[[1]]$control
+  if (is.null(control)) {
     max_td <- 11
   } else {
-    max_td <- cntrl$max_treedepth
-    if (is.null(max_td))
-      max_td <- 11
+    max_td <- control$max_treedepth
+    if (is.null(max_td)) {
+      max_td <- 11 
+    }
   }
-  
   sso <- shinystan::as.shinystan(
     X = draws, 
     model_name = object$fit@model_name,

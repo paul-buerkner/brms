@@ -6,6 +6,12 @@ Improve sampling efficiency of the ordinal families
 `cumulative`, `sratio`, and `cratio`. (#433)
 
 
+### Bug fixes
+
+* Fix a problem in `launch_shinystan` due to which the
+maximum treedepth was not correctly displayed thanks to
+Paul Galpern. (#431)
+
 # brms 2.3.0
 
 ### Features
