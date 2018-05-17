@@ -560,69 +560,87 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
   }
   cs_arg <- ifelse(cs, "row_vector mucs, ", "")
   out <- paste0(
-    "  /* ", family, "-", link, " log-PDF for a single response \n",
-    if (cs) "   * including category specific effects \n",
-    "   * Args: \n",
-    "   *   y: response category \n",
-    "   *   mu: linear predictor \n",
-    if (cs) "   *   mucs: predictor for category specific effects \n",
-    "   *   thres: ordinal thresholds \n",
-    "   *   disc: discrimination parameter \n",
-    "   * Returns: \n", 
-    "   *   a scalar to be added to the log posterior \n",
-    "   */ \n",
+    "  /* ", family, "-", link, " log-PDF for a single response\n",
+    if (cs) "   * including category specific effects\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: linear predictor\n",
+    if (cs) "   *   mucs: predictor for category specific effects\n",
+    "   *   thres: ordinal thresholds\n",
+    "   *   disc: discrimination parameter\n",
+    "   * Returns:\n", 
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
     "   real ", family, "_", link, ifelse(cs, "_cs", ""), 
-    "_lpmf(int y, real mu, ", cs_arg, "vector thres, real disc) { \n",
-    "     int ncat = num_elements(thres) + 1; \n",
-    "     vector[ncat] p; \n",
-    if (family != "cumulative") "     vector[ncat - 1] q; \n"
+    "_lpmf(int y, real mu, ", cs_arg, "vector thres, real disc) {\n"
   )
-  # define actual function content
+  # define the function body
   if (family == "cumulative") {
     str_add(out) <- paste0(
-      "     p[1] = ", ilink, "(", th(1), "); \n",
-      "     for (k in 2:(ncat - 1)) { \n", 
-      "       p[k] = ", ilink, "(", th("k"), ") - \n",
-      "              ", ilink, "(", th("k - 1"), "); \n", 
-      "     } \n",
-      "     p[ncat] = 1 - ", ilink, "(", th("ncat - 1"), "); \n"
+      "     int ncat = num_elements(thres) + 1;\n",
+      "     real p;\n",
+      "     if (y == 1) {\n",
+      "       p = ", ilink, "(", th(1), ");\n",
+      "     } else if (y == ncat) {\n",
+      "       p = 1 - ", ilink, "(", th("ncat - 1"), ");\n",
+      "     } else {\n",
+      "       p = ", ilink, "(", th("y"), ") -\n",
+      "           ", ilink, "(", th("y - 1"), ");\n",
+      "     }\n",
+      "     return log(p);\n"
     )
   } else if (family %in% c("sratio", "cratio")) {
     sc <- ifelse(family == "sratio", "1 - ", "")
     str_add(out) <- paste0(
-      "     for (k in 1:(ncat - 1)) { \n",
-      "       q[k] = ", sc, ilink, "(", th("k"), "); \n",
-      "       p[k] = 1 - q[k]; \n",
-      "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n", 
-      "     } \n",
-      "     p[ncat] = prod(q); \n"
+      "     int ncat = num_elements(thres) + 1;\n",
+      "     vector[ncat] p;\n",
+      "     vector[ncat - 1] q;\n",
+      "     int k = 1;\n",
+      "     while (k <= min(y, ncat - 1)) {\n",
+      "       q[k] = ", sc, ilink, "(", th("k"), ");\n",
+      "       p[k] = 1 - q[k];\n",
+      "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n", 
+      "       k += 1;\n",
+      "     }\n",
+      "     if (y == ncat) {\n",
+      "       p[ncat] = prod(q);\n",
+      "     }\n",
+      "     return log(p[y]);\n"
     )
   } else if (family == "acat") {
     if (ilink == "inv_logit") {
       str_add(out) <- paste0(
-        "     p[1] = 1.0; \n",
-        "     for (k in 1:(ncat - 1)) { \n",
-        "       q[k] = ", th("k"), "; \n",
-        "       p[k + 1] = q[1]; \n",
-        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk]; \n",
-        "       p[k + 1] = exp(p[k + 1]); \n",
-        "     } \n",
-        "     p = p / sum(p); \n"
+        "     int ncat = num_elements(thres) + 1;\n",
+        "     vector[ncat] p;\n",
+        "     vector[ncat - 1] q;\n",
+        "     p[1] = 1.0;\n",
+        "     for (k in 1:(ncat - 1)) {\n",
+        "       q[k] = ", th("k"), ";\n",
+        "       p[k + 1] = q[1];\n",
+        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk];\n",
+        "       p[k + 1] = exp(p[k + 1]);\n",
+        "     }\n",
+        "     p = p / sum(p);\n",
+        "     return log(p[y]);\n"
       )
     } else {
       str_add(out) <- paste0(   
+        "     int ncat = num_elements(thres) + 1;\n",
+        "     vector[ncat] p;\n",
+        "     vector[ncat - 1] q;\n",
         "     for (k in 1:(ncat - 1)) \n",
         "       q[k] = ", ilink, "(", th("k"), "); \n",
-        "     for (k in 1:ncat) { \n",     
-        "       p[k] = 1.0; \n",
-        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n",
-        "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]); \n",   
-        "     } \n",
-        "     p = p / sum(p); \n"
+        "     for (k in 1:ncat) {\n",     
+        "       p[k] = 1.0;\n",
+        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
+        "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]);\n",   
+        "     }\n",
+        "     p = p / sum(p);\n",
+        "     return log(p[y]);\n"
       )
     }
   }
-  str_add(out) <- "     return categorical_lpmf(y | p); \n   } \n" 
+  str_add(out) <- "   } \n"
   out
 }
 

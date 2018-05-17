@@ -539,7 +539,7 @@ test_that("Stan code of ordinal models is correct", {
     y ~ x1, dat, cumulative("probit", threshold = "equidistant")
   )
   expect_match2(scode, "real cumulative_probit_lpmf(int y")
-  expect_match2(scode, "p[1] = Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "p = Phi(disc * (thres[1] - mu));")
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
