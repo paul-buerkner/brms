@@ -1,3 +1,11 @@
+# brms 2.3.0++
+
+### Other changes
+
+Improve sampling efficiency of the ordinal families 
+`cumulative`, `sratio`, and `cratio`. (#433)
+
+
 # brms 2.3.0
 
 ### Features
