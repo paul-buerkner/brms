@@ -620,8 +620,7 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
         "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk];\n",
         "       p[k + 1] = exp(p[k + 1]);\n",
         "     }\n",
-        "     p = p / sum(p);\n",
-        "     return log(p[y]);\n"
+        "     return log(p[y] / sum(p));\n"
       )
     } else {
       str_add(out) <- paste0(   
@@ -635,8 +634,7 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
         "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]);\n",   
         "     }\n",
-        "     p = p / sum(p);\n",
-        "     return log(p[y]);\n"
+        "     return log(p[y] / sum(p));\n"
       )
     }
   }
