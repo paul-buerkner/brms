@@ -1,10 +1,14 @@
 # brms 2.3.0++
 
+### New features
+
+* Allow censoring and truncation in zero-inflated and hurdle models. (#430)
+* Export zero-inflated and hurdle distribution functions. 
+
 ### Other changes
 
-Improve sampling efficiency of the ordinal families 
+* Improve sampling efficiency of the ordinal families 
 `cumulative`, `sratio`, and `cratio`. (#433)
-
 
 ### Bug fixes
 

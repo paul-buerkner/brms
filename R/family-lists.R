@@ -292,7 +292,7 @@
     links = c("log", "identity", "sqrt"),
     dpars = c("mu", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_hurdle_poisson.stan"
   )
 }
@@ -302,7 +302,7 @@
     links = c("log", "identity", "sqrt"),
     dpars = c("mu", "shape", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_hurdle_negbinomial.stan"
   )
 }
@@ -312,7 +312,7 @@
     links = c("log", "identity", "inverse"),
     dpars = c("mu", "shape", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_hurdle_gamma.stan"
   )
 }
@@ -322,7 +322,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_hurdle_lognormal.stan"
   )
 }
@@ -332,7 +332,7 @@
     links = c("log", "identity", "sqrt"),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_zero_inflated_poisson.stan"
   )
 }
@@ -342,7 +342,7 @@
     links = c("log", "identity", "sqrt"),
     dpars = c("mu", "shape", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_zero_inflated_negbinomial.stan"
   )
 }
@@ -355,7 +355,7 @@
     ),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "trials"),
+    ad = c("weights", "trials", "cens", "trunc"),
     include = "fun_zero_inflated_binomial.stan"
   )
 }
@@ -368,7 +368,7 @@
     ),
     dpars = c("mu", "phi", "zi"), type = "real",
     ybounds = c(0, 1), closed = c(TRUE, FALSE),
-    ad = c("weights"),
+    ad = c("weights", "cens", "trunc"),
     include = "fun_zero_inflated_beta.stan"
   )
 }

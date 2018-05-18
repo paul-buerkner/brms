@@ -213,12 +213,13 @@ stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
   named_list(dpars, out)
 }
 
-stan_llh_simple_lpdf <- function(lpdf, link, bterms) {
+stan_llh_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
   # adjust lpdf name if a more efficient version is available
   # for a specific link. For instance poisson_log
+  stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_llh_adj(bterms, c("cens", "trunc"))
   if (bterms$family$link == link && !cens_or_trunc) {
-    lpdf <- paste0(lpdf, paste0("_", link))
+    lpdf <- paste0(lpdf, sep, link)
   }
   lpdf
 }
@@ -228,8 +229,9 @@ stan_llh_dpar_usc_logit <- function(dpar, bterms) {
   # currently only used in zero-inflated and hurdle models
   stopifnot(dpar %in% c("zi", "hu"))
   stopifnot(is.brmsterms(bterms))
-  usc_logit <- bterms$dpars[[dpar]]$family$link == "logit"
-  ifelse(usc_logit, "_logit", "")
+  cens_or_trunc <- stan_llh_adj(bterms, c("cens", "trunc"))
+  usc_logit <- isTRUE(bterms$dpars[[dpar]]$family$link == "logit")
+  ifelse(usc_logit && !cens_or_trunc, "_logit", "")
 }
 
 stan_llh_add_se <- function(sigma, bterms, reqn, resp = "") {
@@ -543,17 +545,15 @@ stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
 
 stan_llh_hurdle_poisson <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  usc_log <- if (bterms$family$link == "log") "_log"
-  usc_logit <- stan_llh_dpar_usc_logit("hu", bterms)
-  lpdf <- paste0("hurdle_poisson", usc_log, usc_logit)
+  lpdf <- stan_llh_simple_lpdf("hurdle_poisson", "log", bterms)
+  lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("hu", bterms))
   sdist(lpdf, p$mu, p$hu)
 }
 
 stan_llh_hurdle_negbinomial <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  usc_log <- if (bterms$family$link == "log") "_log"
-  usc_logit <- stan_llh_dpar_usc_logit("hu", bterms)
-  lpdf <- paste0("hurdle_neg_binomial", usc_log, usc_logit)
+  lpdf <- stan_llh_simple_lpdf("hurdle_neg_binomial", "log", bterms)
+  lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("hu", bterms))
   sdist(lpdf, p$mu, p$shape, p$hu)
 }
 
@@ -573,26 +573,24 @@ stan_llh_hurdle_lognormal <- function(bterms, resp = "", mix = "") {
 
 stan_llh_zero_inflated_poisson <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  usc_log <- if (bterms$family$link == "log") "_log"
-  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
-  lpdf <- paste0("zero_inflated_poisson", usc_log, usc_logit)
+  lpdf <- stan_llh_simple_lpdf("zero_inflated_poisson", "log", bterms)
+  lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("zi", bterms))
   sdist(lpdf, p$mu, p$zi)
 }
 
 stan_llh_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  usc_log <- if (bterms$family$link == "log") "_log"
-  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
-  lpdf <- paste0("zero_inflated_neg_binomial", usc_log, usc_logit)
+  lpdf <- stan_llh_simple_lpdf("zero_inflated_neg_binomial", "log", bterms)
+  lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("zi", bterms))
   sdist(lpdf, p$mu, p$shape, p$zi)
 }
 
 stan_llh_zero_inflated_binomial <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   p$trials <- "trials[n]"
-  usc_blogit <- if (bterms$family$link == "logit") "_blogit"
-  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
-  lpdf <- paste0("zero_inflated_binomial", usc_blogit, usc_logit)
+  lpdf <- "zero_inflated_binomial"
+  lpdf <- stan_llh_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
+  lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("zi", bterms))
   sdist(lpdf, p$trials, p$mu, p$zi)
 }
 
