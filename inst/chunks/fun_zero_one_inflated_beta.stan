@@ -10,15 +10,12 @@
    */ 
    real zero_one_inflated_beta_lpdf(real y, real mu, real phi,
                                     real zoi, real coi) {
-     vector[2] shape;
-     shape[1] = mu * phi; 
-     shape[2] = (1 - mu) * phi; 
+     row_vector[2] shape = [mu * phi, (1 - mu) * phi]; 
      if (y == 0) { 
        return bernoulli_lpmf(1 | zoi) + bernoulli_lpmf(0 | coi); 
      } else if (y == 1) {
        return bernoulli_lpmf(1 | zoi) + bernoulli_lpmf(1 | coi);
      } else { 
-       return bernoulli_lpmf(0 | zoi) +  
-              beta_lpdf(y | shape[1], shape[2]); 
+       return bernoulli_lpmf(0 | zoi) + beta_lpdf(y | shape[1], shape[2]);
      } 
    }

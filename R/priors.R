@@ -808,6 +808,11 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE) {
       }
     }
   }
+  tranef <- get_dist_groups(ranef, "student")
+  if (isTRUE(nrow(tranef) > 0L)) {
+    prior <- prior + 
+      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group)
+  }
   prior
 }
 
@@ -947,20 +952,17 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   prior_location <- 0
   prior_scale <- 10
   link <- x$family$link
-  if (is_lognormal(x$family)) {
-    link <- "log"
-  }
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y) 
     }
-    sgst_scale <- SW(round(link(sd(Y), link = link)))
+    sgst_scale <- SW(round(mad(link(Y, link = link))))
     if (is.finite(sgst_scale)) {
       prior_scale <- max(prior_scale, sgst_scale)
     } 
     if (!center) {
-      sgst_location <- SW(round(link(median(Y), link = link)))
+      sgst_location <- SW(round(median(link(Y, link = link))))
       if (is.finite(sgst_location)) {
         prior_location <- sgst_location
       }

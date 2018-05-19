@@ -306,10 +306,8 @@ log_lik_exponential <- function(i, draws, data = data.frame()) {
 
 log_lik_gamma <- function(i, draws, data = data.frame()) {
   shape <- get_dpar(draws, "shape", i = i)
-  args <- list(
-    shape = shape, 
-    scale = get_dpar(draws, "mu", i) / shape
-  )
+  scale <- get_dpar(draws, "mu", i) / shape
+  args <- nlist(shape, scale)
   out <- log_lik_censor(dist = "gamma", args = args, i = i, data = draws$data)
   out <- log_lik_truncate(
     out, cdf = pgamma, args = args, i = i, data = draws$data
@@ -425,81 +423,80 @@ log_lik_asym_laplace <- function(i, draws, ...) {
 }
 
 log_lik_hurdle_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
-  args <- list(lambda = get_dpar(draws, "mu", i))
-  out <- log_lik_hurdle_discrete(pdf = dpois, theta = theta, 
-                                args = args, i = i, data = draws$data)
+  hu <- get_dpar(draws, "hu", i)
+  lambda <- get_dpar(draws, "mu", i)
+  args <- nlist(lambda, hu)
+  out <- log_lik_censor("hurdle_poisson", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_poisson, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               size = get_dpar(draws, "shape", i = i))
-  out <- log_lik_hurdle_discrete(pdf = dnbinom, theta = theta, 
-                                args = args, i = i, data = draws$data)
+  hu <- get_dpar(draws, "hu", i)
+  mu <- get_dpar(draws, "mu", i)
+  shape <- get_dpar(draws, "shape", i = i)
+  args <- nlist(mu, shape, hu)
+  out <- log_lik_censor("hurdle_negbinomial", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_negbinomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_gamma <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
+  hu <- get_dpar(draws, "hu", i)
   shape <- get_dpar(draws, "shape", i = i)
-  args <- list(
-    shape = shape, 
-    scale = get_dpar(draws, "mu", i) / shape
-  )
-  out <- log_lik_hurdle_continuous(
-    pdf = dgamma, theta = theta, args = args, i = i, data = draws$data
-  )
+  scale <- get_dpar(draws, "mu", i) / shape
+  args <- nlist(shape, scale, hu)
+  out <- log_lik_censor("hurdle_gamma", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_gamma, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
+  hu <- get_dpar(draws, "hu", i)
+  mu <- get_dpar(draws, "mu", i)
   sigma <- get_dpar(draws, "sigma", i = i)
-  args <- list(meanlog = get_dpar(draws, "mu", i), sdlog = sigma)
-  out <- log_lik_hurdle_continuous(pdf = dlnorm, theta = theta, 
-                                  args = args, i = i, data = draws$data)
+  args <- nlist(mu, sigma, hu)
+  out <- log_lik_censor("hurdle_lognormal", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_lognormal, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(lambda = get_dpar(draws, "mu", i))
-  out <- log_lik_zero_inflated(pdf = dpois, theta = theta, 
-                              args = args, i = i, data = draws$data)
+  zi <- get_dpar(draws, "zi", i)
+  lambda <- get_dpar(draws, "mu", i)
+  args <- nlist(lambda, zi)
+  out <- log_lik_censor("zero_inflated_poisson", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_poisson, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    size = get_dpar(draws, "shape", i = i)
-  )
-  out <- log_lik_zero_inflated(
-    pdf = dnbinom, theta = theta, args = args, i = i, data = draws$data
-  )
+  zi <- get_dpar(draws, "zi", i)
+  mu <- get_dpar(draws, "mu", i)
+  shape <- get_dpar(draws, "shape", i = i)
+  args <- nlist(mu, shape, zi)
+  out <- log_lik_censor("zero_inflated_negbinomial", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_negbinomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
   trials <- draws$data$trials[i] 
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(size = trials, prob = get_dpar(draws, "mu", i))
-  out <- log_lik_zero_inflated(pdf = dbinom, theta = theta, 
-                              args = args, i = i, data = draws$data)
+  mu <- get_dpar(draws, "mu", i) 
+  zi <- get_dpar(draws, "zi", i)
+  args <- list(size = trials, prob = mu, zi)
+  out <- log_lik_censor("zero_inflated_binomial", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_binomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
+  zi <- get_dpar(draws, "zi", i)
   mu <- get_dpar(draws, "mu", i)
   phi <- get_dpar(draws, "phi", i)
-  args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  # zi_beta is technically a hurdle model
-  out <- log_lik_hurdle_continuous(
-    pdf = dbeta, theta = theta, args = args, i = i, data = draws$data)
+  args <- nlist(shape1 = mu * phi, shape2 = (1 - mu) * phi, zi)
+  out <- log_lik_censor("zero_inflated_beta", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_beta, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
@@ -686,56 +683,6 @@ log_lik_weight <- function(x, i, data) {
     x * data$weights[i]
   } else {
     x
-  }
-}
-
-log_lik_hurdle_discrete <- function(pdf, theta, args, i, data) {
-  # log_lik values for discrete hurdle models
-  # Args:
-  #  pdf: a probability density function 
-  #  theta: bernoulli hurdle parameter
-  #  args: arguments passed to pdf
-  #  data: data initially passed to Stan
-  # Returns:
-  #   vector of log_lik values
-  if (data$Y[i] == 0) {
-    dbinom(1, size = 1, prob = theta, log = TRUE)
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) + 
-      do.call(pdf, c(data$Y[i], args, log = TRUE)) -
-      log(1 - do.call(pdf, c(0, args)))
-  }
-}
-
-log_lik_hurdle_continuous <- function(pdf, theta, args, i, data) {
-  # log_lik values for continuous hurdle models
-  # does not call log(1 - do.call(pdf, c(0, args)))
-  # Args:
-  #   same as log_lik_hurdle_discrete
-  if (data$Y[i] == 0) {
-    dbinom(1, size = 1, prob = theta, log = TRUE)
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) + 
-      do.call(pdf, c(data$Y[i], args, log = TRUE))
-  }
-}
-
-log_lik_zero_inflated <- function(pdf, theta, args, i, data) {
-  # log_lik values for zero-inflated models
-  # Args:
-  #  pdf: a probability density function 
-  #  theta: bernoulli zero-inflation parameter
-  #  args: arguments passed to pdf
-  #  data: data initially passed to Stan
-  # Returns:
-  #   vector of log_lik values
-  if (data$Y[i] == 0) {
-    log(dbinom(1, size = 1, prob = theta) + 
-        dbinom(0, size = 1, prob = theta) *
-          do.call(pdf, c(0, args)))
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) +
-      do.call(pdf, c(data$Y[i], args, log = TRUE))
   }
 }
 

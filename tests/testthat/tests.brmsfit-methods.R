@@ -87,7 +87,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # fitted
   fi <- fitted(fit1)
   expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_equal(colnames(fi), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(fi), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
   
   newdata <- data.frame(
     Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
@@ -487,7 +487,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # predict
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))
-  expect_equal(colnames(pred), c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(colnames(pred), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
   pred <- predict(fit1, nsamples = 10, probs = c(0.2, 0.5, 0.8))
   expect_equal(dim(pred), c(nobs(fit1), 5))
   
@@ -610,7 +610,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # stanplot tested in tests.plots.R
   
   # summary
-  summary1 <- SW(summary(fit1, waic = TRUE, priors = TRUE))
+  summary1 <- SW(summary(fit1, priors = TRUE))
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
                c("Intercept", "sigma_Intercept", "Trt1", "Age", 
@@ -623,7 +623,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   
-  summary5 <- SW(summary(fit5, waic = TRUE))
+  summary5 <- SW(summary(fit5))
   expect_output(print(summary5), "sigma1")
   expect_output(print(summary5), "theta1")
   

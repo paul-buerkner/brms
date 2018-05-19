@@ -1,4 +1,22 @@
-# brms 2.2.0++
+# brms 2.3.0++
+
+### New features
+
+* Allow censoring and truncation in zero-inflated and hurdle models. (#430)
+* Export zero-inflated and hurdle distribution functions. 
+
+### Other changes
+
+* Improve sampling efficiency of the ordinal families 
+`cumulative`, `sratio`, and `cratio`. (#433)
+
+### Bug fixes
+
+* Fix a problem in `launch_shinystan` due to which the
+maximum treedepth was not correctly displayed thanks to
+Paul Galpern. (#431)
+
+# brms 2.3.0
 
 ### Features
 
@@ -8,15 +26,22 @@ difference formulation thanks to the case study of Mitzi Morris.
 
 ### Other changes 
 
+* Rename quantile columns in `posterior_summary`. This affects the
+output of `predict` and related methods if `summary = TRUE`. (#425)
 * Use hashes to check if models have the same response values 
 when performing model comparisons. (#414)
 * No longer set `pointwise` dynamically in `loo` and related methods. (#416)
 * No longer show information criteria in the summary output.
+* Simplify internal workflow to implement native response distributions. (#421)
 
 ### Bug fixes
 
+* Allow `cor_car` in multivariate models with residual correlations 
+thanks to Quentin Read. (#427)
 * Fix a problem in the Stan code generation of distributional `beta` models
 thanks to Hans van Calster. (#404)
+* Fix `launch_shinystan.brmsfit` so that all parameters
+are now shown correctly in the diagnose tab. (#340)
 
 
 # brms 2.2.0

@@ -29,7 +29,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       c(out) <- paste0("Xme_", K)
     }
   }
-  if (nrow(ranef)) {
+  if (has_rows(ranef)) {
     rm_re_pars <- c(if (!save_all_pars) c("z", "L"), "Cor", "r")
     for (id in unique(ranef$id)) {
       c(out) <- paste0(rm_re_pars, "_", id)
@@ -37,6 +37,10 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     if (!save_ranef) {
       p <- usc(combine_prefix(ranef))
       c(out) <- paste0("r_", ranef$id, p, "_", ranef$cn)
+    }
+    tranef <- get_dist_groups(ranef, "student")
+    if (!save_all_pars && has_rows(tranef)) {
+      c(out) <- paste0("udf_", tranef$ggn)
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)

@@ -614,5 +614,7 @@ subset_autocor <- function(x, subset, autocor = NULL) {
 regex_cor_pars <- function() {
   # regex to extract all pars of cor structures
   # used in summary.brmsfit
-  "^(ar|ma|lagsar|errorsar|car|sdcar|sigmaLL)(\\[|_|$)"
+  p <- c("ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", "sigmaLL")
+  p <- paste0("(", p, ")", collapse = "|")
+  paste0("^(", p, ")(\\[|_|$)")
 }

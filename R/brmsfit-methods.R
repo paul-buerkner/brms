@@ -764,12 +764,17 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     sd_pars <- pars[grepl(sd_prefix, pars)]
     cor_prefix <- paste0("^cor_", gregex, "__")
     cor_pars <- pars[grepl(cor_prefix, pars)]
-    out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    if (nrow(out$random[[g]])) {
+    df_prefix <- paste0("^df_", gregex, "$")
+    df_pars <- pars[grepl(df_prefix, pars)]
+    gpars <- c(df_pars, sd_pars, cor_pars)
+    out$random[[g]] <- fit_summary[gpars, , drop = FALSE]
+    if (has_rows(out$random[[g]])) {
       sd_names <- sub(sd_prefix, "sd(", sd_pars)
       cor_names <- sub(cor_prefix, "cor(", cor_pars)
       cor_names <- sub("__", ",", cor_names)
-      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")")
+      df_names <- sub(df_prefix, "df", df_pars)
+      gnames <- c(df_names, paste0(c(sd_names, cor_names), ")"))
+      rownames(out$random[[g]]) <- gnames
     }
   }
   # summary of smooths
@@ -968,22 +973,20 @@ launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
   contains_samples(object)
-  
   if (object$algorithm != "sampling") {
     return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
   } 
-  
   draws <- as.array(object)
-  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup=FALSE)
-  cntrl <- object$fit@stan_args[[1]]
-  if (is.null(cntrl)) {
+  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
+  control <- object$fit@stan_args[[1]]$control
+  if (is.null(control)) {
     max_td <- 11
   } else {
-    max_td <- cntrl$max_treedepth
-    if (is.null(max_td))
-      max_td <- 11
+    max_td <- control$max_treedepth
+    if (is.null(max_td)) {
+      max_td <- 11 
+    }
   }
-  
   sso <- shinystan::as.shinystan(
     X = draws, 
     model_name = object$fit@model_name,

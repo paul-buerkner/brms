@@ -122,7 +122,7 @@ stan_autocor <- function(bterms, prior) {
   family <- bterms$family
   autocor <- bterms$autocor
   resp <- bterms$response
-  is_linear <- is_linear(family)
+  allow_autocor <- allow_autocor(family)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   out <- list()
@@ -133,7 +133,7 @@ stan_autocor <- function(bterms, prior) {
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!is_linear) {
+    if (!allow_autocor) {
       stop2(err_msg, " for family '", family$family, "'.") 
     }
     str_add(out$data) <- paste0( 
@@ -270,7 +270,7 @@ stan_autocor <- function(bterms, prior) {
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!is_linear) {
+    if (!allow_autocor) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -306,9 +306,6 @@ stan_autocor <- function(bterms, prior) {
     if (length(bterms$dpars[["mu"]]$nlpars)) {
       stop2(err_msg, " in non-linear models.")
     }
-    if (isTRUE(bterms$rescor)) {
-      stop2(err_msg, " when 'rescor' is estimated.")
-    }
     str_add(out$data) <- paste0(
       "  // data for the CAR structure\n",
       "  int<lower=1> Nloc", p, ";\n",
@@ -319,8 +316,8 @@ stan_autocor <- function(bterms, prior) {
     )
     if (autocor$type %in% c("escar", "esicar")) {
       str_add(out$data) <- paste0(
-        "  vector[Nloc] Nneigh", p, ";\n",
-        "  vector[Nloc] eigenW", p, ";\n"
+        "  vector[Nloc", p, "] Nneigh", p, ";\n",
+        "  vector[Nloc", p, "] eigenW", p, ";\n"
       )
       str_add(out$par) <- paste0(
         "  // parameters for the CAR structure\n",
@@ -348,10 +345,10 @@ stan_autocor <- function(bterms, prior) {
       )
     } else if (autocor$type %in% "esicar") {
       str_add(out$par) <- paste0(
-        "  vector[Nloc - 1] zcar", p, ";\n"
+        "  vector[Nloc", p, " - 1] zcar", p, ";\n"
       )
       str_add(out$tparD) <- paste0(
-        "  vector[Nloc] rcar", p, ";\n"                
+        "  vector[Nloc", p, "] rcar", p, ";\n"                
       )
       str_add(out$tparC1) <- paste0(
         "  // sum-to-zero constraint\n",
@@ -406,7 +403,7 @@ stan_autocor <- function(bterms, prior) {
       "  vector[N] loclev", p, ";  // local level terms \n",
       "  real<lower=0> sigmaLL", p, ";  // SD of local level terms \n"
     )
-    if (is_linear) {
+    if (allow_autocor) {
       # ensures that the means of the loclev priors start close 
       # to the response values; this often helps with convergence
       link <- stan_link(family$link)
@@ -434,7 +431,7 @@ stan_autocor <- function(bterms, prior) {
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!is_linear) {
+    if (!allow_autocor) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -457,7 +454,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   # Returns:
   #   a list of character strings
   families <- family_names(bterms)
-  links <- family_names(bterms, link = TRUE)
+  links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
   families <- families[unique_combs]
   links <- links[unique_combs]
@@ -466,9 +463,6 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_cauchit.stan' \n"
   } else if (any(links == "cloglog")) {
     str_add(out$fun) <- "  #include 'fun_cloglog.stan' \n"
-  }
-  if (any(families %in% c("student", "frechet"))) {
-    str_add(out$fun) <- "  #include 'fun_logm1.stan' \n"
   }
   hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
   if (any(nzchar(hs_dfs))) {
@@ -483,64 +477,21 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       "  #include 'fun_kronecker.stan' \n"
     )
   }
-  if (any(families %in% "zero_inflated_poisson")) {
-    str_add(out$fun) <- "  #include 'fun_zero_inflated_poisson.stan' \n"
-  } 
-  if (any(families %in% "zero_inflated_negbinomial")) {
-    str_add(out$fun) <- "  #include 'fun_zero_inflated_negbinomial.stan' \n"
-  } 
-  if (any(families %in% "zero_inflated_binomial")) {
-    str_add(out$fun) <- "  #include 'fun_zero_inflated_binomial.stan' \n"
+  family_files <- family_info(bterms, "include")
+  if (length(family_files)) {
+    str_add(out$fun) <- collapse("  #include '", family_files, "'\n")
   }
-  if (any(families %in% "zero_inflated_beta")) {
-    str_add(out$fun) <- "  #include 'fun_zero_inflated_beta.stan' \n"
-  }
-  if (any(families %in% "zero_one_inflated_beta")) {
-    str_add(out$fun) <- "  #include 'fun_zero_one_inflated_beta.stan' \n"
-  }
-  if (any(families %in% "hurdle_poisson")) {
-    str_add(out$fun) <- "  #include 'fun_hurdle_poisson.stan' \n"
-  }
-  if (any(families %in% "hurdle_negbinomial")) {
-    str_add(out$fun) <- "  #include 'fun_hurdle_negbinomial.stan' \n"
-  }
-  if (any(families %in% "hurdle_gamma")) {
-    str_add(out$fun) <- "  #include 'fun_hurdle_gamma.stan' \n"
-  }
-  if (any(families %in% "hurdle_lognormal")) {
-    str_add(out$fun) <- "  #include 'fun_hurdle_lognormal.stan' \n"
-  }
-  if (any(families %in% "inverse.gaussian")) {
-    str_add(out$fun) <- "  #include 'fun_inv_gaussian.stan' \n"
-  } 
-  if (any(families %in% "von_mises")) {
-    str_add(out$fun) <- paste0(
-      "  #include 'fun_tan_half.stan' \n",
-      "  #include 'fun_von_mises.stan' \n"
-    )
-  } 
-  if (any(families %in% "wiener")) {
-    str_add(out$fun) <- "  #include 'fun_wiener_diffusion.stan' \n"
-  }
-  if (any(families %in% "asym_laplace")) {
-    str_add(out$fun) <- "  #include 'fun_asym_laplace.stan' \n"
-  } 
-  if (any(families %in% "skew_normal")) {
-    str_add(out$tdataD) <- "  real sqrt_2_div_pi = sqrt(2 / pi()); \n"
-  } 
-  if (any(families %in% "gen_extreme_value")) {
-    str_add(out$fun) <- paste0(
-      "  #include 'fun_gen_extreme_value.stan' \n",
-      "  #include 'fun_scale_xi.stan' \n"
-    )
+  const <- family_info(bterms, "const")
+  if (length(const)) {
+    str_add(out$tdataD) <- collapse("  ", const, ";\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
   if (any(is_ordinal)) {
-    ord_families <- families[is_ordinal]
+    ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
-    for (i in seq_along(ord_families)) {
-      for (cs in c(FALSE, TRUE)) {
-        str_add(out$fun) <- stan_ordinal_lpmf(ord_families[i], ord_links[i], cs)
+    for (i in seq_along(ord_fams)) {
+      for (cs in 0:1) {
+        str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i], cs)
       }
     }
   }
@@ -567,12 +518,18 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     )
   }
   if (any(ulapply(autocors, is.cor_sar))) {
-    str_add(out$fun) <- paste0(
-      "  #include 'fun_normal_lagsar.stan'\n",
-      "  #include 'fun_student_t_lagsar.stan'\n",
-      "  #include 'fun_normal_errorsar.stan'\n",
-      "  #include 'fun_student_t_errorsar.stan'\n"
-    )
+    if ("gaussian" %in% families) {
+      str_add(out$fun) <- paste0(
+        "  #include 'fun_normal_lagsar.stan'\n",
+        "  #include 'fun_normal_errorsar.stan'\n"
+      )
+    }
+    if ("student" %in% families) {
+      str_add(out$fun) <- paste0(
+        "  #include 'fun_student_t_lagsar.stan'\n",
+        "  #include 'fun_student_t_errorsar.stan'\n"
+      )
+    }
   }
   if (any(ulapply(autocors, is.cor_car))) {
     str_add(out$fun) <- paste0(
@@ -603,69 +560,85 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
   }
   cs_arg <- ifelse(cs, "row_vector mucs, ", "")
   out <- paste0(
-    "  /* ", family, "-", link, " log-PDF for a single response \n",
-    if (cs) "   * including category specific effects \n",
-    "   * Args: \n",
-    "   *   y: response category \n",
-    "   *   mu: linear predictor \n",
-    if (cs) "   *   mucs: predictor for category specific effects \n",
-    "   *   thres: ordinal thresholds \n",
-    "   *   disc: discrimination parameter \n",
-    "   * Returns: \n", 
-    "   *   a scalar to be added to the log posterior \n",
-    "   */ \n",
+    "  /* ", family, "-", link, " log-PDF for a single response\n",
+    if (cs) "   * including category specific effects\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: linear predictor\n",
+    if (cs) "   *   mucs: predictor for category specific effects\n",
+    "   *   thres: ordinal thresholds\n",
+    "   *   disc: discrimination parameter\n",
+    "   * Returns:\n", 
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
     "   real ", family, "_", link, ifelse(cs, "_cs", ""), 
-    "_lpmf(int y, real mu, ", cs_arg, "vector thres, real disc) { \n",
-    "     int ncat = num_elements(thres) + 1; \n",
-    "     vector[ncat] p; \n",
-    if (family != "cumulative") "     vector[ncat - 1] q; \n"
+    "_lpmf(int y, real mu, ", cs_arg, "vector thres, real disc) {\n"
   )
-  # define actual function content
+  # define the function body
   if (family == "cumulative") {
     str_add(out) <- paste0(
-      "     p[1] = ", ilink, "(", th(1), "); \n",
-      "     for (k in 2:(ncat - 1)) { \n", 
-      "       p[k] = ", ilink, "(", th("k"), ") - \n",
-      "              ", ilink, "(", th("k - 1"), "); \n", 
-      "     } \n",
-      "     p[ncat] = 1 - ", ilink, "(", th("ncat - 1"), "); \n"
+      "     int ncat = num_elements(thres) + 1;\n",
+      "     real p;\n",
+      "     if (y == 1) {\n",
+      "       p = ", ilink, "(", th(1), ");\n",
+      "     } else if (y == ncat) {\n",
+      "       p = 1 - ", ilink, "(", th("ncat - 1"), ");\n",
+      "     } else {\n",
+      "       p = ", ilink, "(", th("y"), ") -\n",
+      "           ", ilink, "(", th("y - 1"), ");\n",
+      "     }\n",
+      "     return log(p);\n"
     )
   } else if (family %in% c("sratio", "cratio")) {
     sc <- ifelse(family == "sratio", "1 - ", "")
     str_add(out) <- paste0(
-      "     for (k in 1:(ncat - 1)) { \n",
-      "       q[k] = ", sc, ilink, "(", th("k"), "); \n",
-      "       p[k] = 1 - q[k]; \n",
-      "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n", 
-      "     } \n",
-      "     p[ncat] = prod(q); \n"
+      "     int ncat = num_elements(thres) + 1;\n",
+      "     vector[ncat] p;\n",
+      "     vector[ncat - 1] q;\n",
+      "     int k = 1;\n",
+      "     while (k <= min(y, ncat - 1)) {\n",
+      "       q[k] = ", sc, ilink, "(", th("k"), ");\n",
+      "       p[k] = 1 - q[k];\n",
+      "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n", 
+      "       k += 1;\n",
+      "     }\n",
+      "     if (y == ncat) {\n",
+      "       p[ncat] = prod(q);\n",
+      "     }\n",
+      "     return log(p[y]);\n"
     )
   } else if (family == "acat") {
     if (ilink == "inv_logit") {
       str_add(out) <- paste0(
-        "     p[1] = 1.0; \n",
-        "     for (k in 1:(ncat - 1)) { \n",
-        "       q[k] = ", th("k"), "; \n",
-        "       p[k + 1] = q[1]; \n",
-        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk]; \n",
-        "       p[k + 1] = exp(p[k + 1]); \n",
-        "     } \n",
-        "     p = p / sum(p); \n"
+        "     int ncat = num_elements(thres) + 1;\n",
+        "     vector[ncat] p;\n",
+        "     vector[ncat - 1] q;\n",
+        "     p[1] = 1.0;\n",
+        "     for (k in 1:(ncat - 1)) {\n",
+        "       q[k] = ", th("k"), ";\n",
+        "       p[k + 1] = q[1];\n",
+        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk];\n",
+        "       p[k + 1] = exp(p[k + 1]);\n",
+        "     }\n",
+        "     return log(p[y] / sum(p));\n"
       )
     } else {
       str_add(out) <- paste0(   
+        "     int ncat = num_elements(thres) + 1;\n",
+        "     vector[ncat] p;\n",
+        "     vector[ncat - 1] q;\n",
         "     for (k in 1:(ncat - 1)) \n",
         "       q[k] = ", ilink, "(", th("k"), "); \n",
-        "     for (k in 1:ncat) { \n",     
-        "       p[k] = 1.0; \n",
-        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n",
-        "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]); \n",   
-        "     } \n",
-        "     p = p / sum(p); \n"
+        "     for (k in 1:ncat) {\n",     
+        "       p[k] = 1.0;\n",
+        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
+        "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]);\n",   
+        "     }\n",
+        "     return log(p[y] / sum(p));\n"
       )
     }
   }
-  str_add(out) <- "     return categorical_lpmf(y | p); \n   } \n" 
+  str_add(out) <- "   } \n"
   out
 }
 

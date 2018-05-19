@@ -74,3 +74,11 @@
              log(1 - (phi / (exp(eta) + phi))^phi); 
     } 
   }
+  // hurdle negative binomial log-CCDF and log-CDF functions
+  real hurdle_neg_binomial_lccdf(int y, real mu, real phi, real hu) { 
+    return bernoulli_lpmf(0 | hu) + neg_binomial_2_lccdf(y | mu, phi) - 
+           log(1 - (phi / (mu + phi))^phi);
+  }
+  real hurdle_neg_binomial_lcdf(int y, real mu, real phi, real hu) { 
+    return log1m_exp(hurdle_neg_binomial_lccdf(y | mu, phi, hu));
+  }

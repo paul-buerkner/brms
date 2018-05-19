@@ -62,8 +62,6 @@ restructure_v2 <- function(x) {
     }
   }
   if (version <= "2.1.8") {
-    # added 'by' variables to grouping terms
-    x$ranef <- tidy_ranef(bterms, model.frame(x))
     # reworked 'me' terms (#372)
     meef <- tidy_meef(bterms, model.frame(x))
     if (isTRUE(nrow(meef) > 0)) {
@@ -73,6 +71,10 @@ restructure_v2 <- function(x) {
         "model with the latest version of brms."
       )
     }
+  }
+  if (version <= "2.2.3") {
+    # added 'dist' argument to grouping terms
+    x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
   x
 }

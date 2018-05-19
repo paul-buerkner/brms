@@ -82,3 +82,10 @@
              binomial_logit_lpmf(y | trials, eta); 
     } 
   }
+  // zero-inflated binomial log-CCDF and log-CDF functions
+  real zero_inflated_binomial_lccdf(int y, int trials, real theta, real zi) { 
+    return bernoulli_lpmf(0 | zi) + binomial_lccdf(y | trials, theta); 
+  }
+  real zero_inflated_binomial_lcdf(int y, int trials, real theta, real zi) { 
+    return log1m_exp(zero_inflated_binomial_lccdf(y | trials, theta, zi));
+  }

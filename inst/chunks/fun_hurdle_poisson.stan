@@ -70,3 +70,11 @@
              log1m_exp(-exp(eta)); 
     } 
   }
+  // hurdle poisson log-CCDF and log-CDF functions
+  real hurdle_poisson_lccdf(int y, real lambda, real hu) { 
+    return bernoulli_lpmf(0 | hu) + poisson_lccdf(y | lambda) - 
+           log1m_exp(-lambda);
+  }
+  real hurdle_poisson_lcdf(int y, real lambda, real hu) { 
+    return log1m_exp(hurdle_poisson_lccdf(y | lambda, hu));
+  }

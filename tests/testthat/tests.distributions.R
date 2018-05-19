@@ -127,3 +127,54 @@ test_that("asym_laplace distribution functions run without errors", {
                               quantile = runif(n, 0, 1))
   expect_true(length(res) == n)
 })
+
+test_that("zero-inflated distribution functions run without errors", {
+  n <- 10
+  x <- rpois(n, lambda = 1)
+  
+  res <- dzero_inflated_poisson(x, lambda = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_poisson(x, lambda = 1, zi = 0.1)
+  expect_true(length(res) == n)
+  
+  res <- dzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_negbinomial(x, mu = 2, shape = 5, zi = 0.1)
+  expect_true(length(res) == n)
+  
+  res <- dzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_binomial(x, size = c(2, 10), prob = 0.4, zi = 0.1)
+  expect_true(length(res) == n)
+  
+  x <- c(rbeta(n - 2, shape1 = 2, shape2 = 3), 0, 0)
+  res <- dzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
+  expect_true(length(res) == n)
+  res <- pzero_inflated_beta(x, shape1 = 2, shape2 = 3, zi = 0.1)
+  expect_true(length(res) == n)
+})
+
+test_that("hurdle distribution functions run without errors", {
+  n <- 10
+  x <- rpois(n, lambda = 1)
+  
+  res <- dhurdle_poisson(x, lambda = 1, hu = 0.1)
+  expect_true(length(res) == n)
+  res <- phurdle_poisson(x, lambda = 1, hu = 0.1)
+  expect_true(length(res) == n)
+  
+  res <- dhurdle_negbinomial(x, mu = 2, shape = 5, hu = 0.1)
+  expect_true(length(res) == n)
+  res <- phurdle_negbinomial(x, mu = 2, shape = 5, hu = 0.1)
+  expect_true(length(res) == n)
+  
+  res <- dhurdle_gamma(x, shape = 1, scale = 3, hu = 0.1)
+  expect_true(length(res) == n)
+  res <- phurdle_gamma(x, shape = 1, scale = 3, hu = 0.1)
+  expect_true(length(res) == n)
+  
+  res <- dhurdle_lognormal(x, mu = 2, sigma = 5, hu = 0.1)
+  expect_true(length(res) == n)
+  res <- phurdle_lognormal(x, mu = 2, sigma = 5, hu = 0.1)
+  expect_true(length(res) == n)
+})

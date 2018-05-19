@@ -299,7 +299,7 @@ change_re <- function(ranef, pars) {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  if (nrow(ranef)) {
+  if (has_rows(ranef)) {
     for (id in unique(ranef$id)) {
       r <- subset2(ranef, id = id)
       g <- r$group[1]
@@ -335,6 +335,12 @@ change_re <- function(ranef, pars) {
     }
     if (any(grepl("^r_", pars))) {
       c(out) <- change_re_levels(ranef, pars = pars)
+    }
+    tranef <- get_dist_groups(ranef, "student")
+    for (i in seq_len(nrow(tranef))) {
+      df_pos <- grepl(paste0("^df_", tranef$ggn[i], "$"), pars)
+      df_name <- paste0("df_", tranef$group[i])
+      lc(out) <- clist(df_pos, df_name)
     }
   }
   out
@@ -500,8 +506,8 @@ reorder_pars <- function(x) {
   #   x: brmsfit object
   all_classes <- c(
     "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
-    "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "sds", 
-    "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
+    "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
+    "sds", "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
     "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
   )
