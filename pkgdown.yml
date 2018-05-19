@@ -1,8 +1,13 @@
 pandoc: 1.19.2.1
-pkgdown: 0.1.0.9000
-pkgdown_sha: 3e1bdfaf4ad79f999bb6ab3ddd8e84bd365037b6
+pkgdown: 1.0.0
+pkgdown_sha: d43ca38c74827d1d6babc3a80d48cd3a8e8fad8c
 articles:
-  loo2-example: loo2-example.html
-  loo2-weights: loo2-weights.html
-  loo2-with-rstan: loo2-with-rstan.html
+  brms_customfamilies: brms_customfamilies.html
+  brms_distreg: brms_distreg.html
+  brms_families: brms_families.html
+  brms_missings: brms_missings.html
+  brms_monotonic: brms_monotonic.html
+  brms_multivariate: brms_multivariate.html
+  brms_nonlinear: brms_nonlinear.html
+  brms_phylogenetics: brms_phylogenetics.html
 
