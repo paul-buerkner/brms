@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.2.1
-Date: 2018-04-19
+Version: 2.3.1
+Date: 2018-05-14
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -29,6 +29,7 @@ Imports:
     utils,
     parallel,
     grDevices,
+    backports
 Suggests: 
     testthat (>= 0.9.1),
     RWiener,
@@ -40,6 +41,8 @@ Suggests:
     MCMCglmm,
     ape,
     arm,
+    statmod,
+    digest,
     R.rsp,
     knitr,
     rmarkdown
@@ -60,8 +63,8 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 3)
-URL: http://mc-stan.org/brms, http://discourse.mc-stan.org
-BugReports: https://github.com/stan-dev/brms/issues
+URL: https://github.com/paul-buerkner/brms, http://discourse.mc-stan.org
+BugReports: https://github.com/paul-buerkner/brms/issues
 VignetteBuilder: 
     knitr,
     R.rsp

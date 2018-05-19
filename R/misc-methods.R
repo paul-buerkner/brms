@@ -1,9 +1,5 @@
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
-  if (!is.null(x[["WAIC"]])) {
-    # deprecated as of 1.7.0
-    x[["waic"]] <- x[["WAIC"]]
-  }
   cat(" Family: ")
   cat(summarise_families(x$formula), "\n")
   cat("  Links: ")
@@ -18,18 +14,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat("\nThe model does not contain posterior samples.\n")
   } else {
     final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
-    valid_ics <- c("loo", "waic", "R2")
-    for (ic in valid_ics) {
-      if (is.numeric(x[[ic]])) {
-        x[[ic]] <- round(x[[ic]], digits = digits)
-      }
-    }
     cat(paste0(
       "Samples: ", x$chains, " chains, each with iter = ", x$iter, 
-      "; warmup = ", x$warmup, "; thin = ", x$thin, "; \n",
-      "         total post-warmup samples = ", final_samples, "\n"))
-    cat(paste0(
-      "    ICs: LOO = ", x$loo, "; WAIC = ", x$waic, "; R2 = ", x$R2, "\n \n"
+      "; warmup = ", x$warmup, "; thin = ", x$thin, ";\n",
+      "         total post-warmup samples = ", final_samples, "\n\n"
     ))
     if (nrow(x$prior)) {
       cat("Priors: \n")
@@ -186,6 +174,6 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
     out <- abind(out, along = 3)
     dimnames(out)[c(1, 3)] <- dimnames(x)[c(2, 3)]
   }
-  colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
+  colnames(out) <- c("Estimate", "Est.Error", paste0("Q", probs * 100))
   out  
 }

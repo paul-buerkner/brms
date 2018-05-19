@@ -489,14 +489,19 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   K <- max(J_lag, 1)
   Ks <- 1:K
   N <- length(Y)
+  # relevant if time-series are shorter than the ARMA orders
+  sel_ar <- seq_len(min(Kar, K))
+  ar <- ar[, sel_ar, drop = FALSE]
+  sel_ma <- seq_len(min(Kma, K))
+  ma <- ma[, sel_ma, drop = FALSE]
   E <- array(0, dim = c(S, K, K + 1))
   e <- matrix(0, nrow = S, ncol = K)
   zero_mat <- e
   zero_vec <- rep(0, S)
-  for (n in 1:N) {
+  for (n in seq_len(N)) {
     if (Kma) {
       # add MA correlations
-      eta[, n] <- eta[, n] + rowSums(ma * E[, 1:Kma, K])
+      eta[, n] <- eta[, n] + rowSums(ma * E[, sel_ma, K])
     }
     y <- Y[n]
     if (is.na(y)) {
@@ -511,7 +516,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     }
     if (Kar) {
       # add AR correlations
-      eta[, n] <- eta[, n] + rowSums(ar * E[, 1:Kar, K])
+      eta[, n] <- eta[, n] + rowSums(ar * E[, sel_ar, K])
     }
     # allows to keep the object size of e and E small
     E <- abind(E[, , 2:(K + 1), drop = FALSE], zero_mat)

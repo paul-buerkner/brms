@@ -638,7 +638,7 @@ prior_sp <- function(bterms, data) {
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   spef <- tidy_spef(bterms, data)
-  if (!is.null(spef)) {
+  if (nrow(spef)) {
     px <- check_prefix(bterms)
     prior <- prior + brmsprior(
       class = "b", coef = c("", spef$coef), ls = px
@@ -707,15 +707,15 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for random effects SDs
   prior <- empty_brmsprior()
-  gpef <- get_gp_labels(bterms)
-  if (length(gpef)) {
+  gpterms <- all_terms(bterms[["gp"]])
+  if (length(gpterms)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpef, ls = px) +
+      brmsprior(class = "sdgp", coef = gpterms, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", prior = lscale_prior, coef = gpef, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, coef = gpterms, ls = px)
   }
   prior
 }
@@ -808,6 +808,11 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE) {
       }
     }
   }
+  tranef <- get_dist_groups(ranef, "student")
+  if (isTRUE(nrow(tranef) > 0L)) {
+    prior <- prior + 
+      brmsprior("gamma(2, 0.1)", class = "df", group = tranef$group)
+  }
   prior
 }
 
@@ -817,12 +822,12 @@ prior_sm <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for smooth SDs
   prior <- empty_brmsprior()
-  smooths <- get_sm_labels(bterms)
-  if (length(smooths)) {
+  smterms <- all_terms(bterms[["sm"]])
+  if (length(smterms)) {
     px <- check_prefix(bterms)
-    prior_strings <- c(def_scale_prior, rep("", length(smooths)))
+    prior_strings <- c(def_scale_prior, rep("", length(smterms)))
     prior <- prior + brmsprior(
-      class = "sds", coef = c("", smooths), 
+      class = "sds", coef = c("", smterms), 
       prior = prior_strings, ls = px
     )
   }
@@ -947,20 +952,17 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   prior_location <- 0
   prior_scale <- 10
   link <- x$family$link
-  if (is_lognormal(x$family)) {
-    link <- "log"
-  }
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y) 
     }
-    sgst_scale <- SW(round(link(sd(Y), link = link)))
+    sgst_scale <- SW(round(mad(link(Y, link = link))))
     if (is.finite(sgst_scale)) {
       prior_scale <- max(prior_scale, sgst_scale)
     } 
     if (!center) {
-      sgst_location <- SW(round(link(median(Y), link = link)))
+      sgst_location <- SW(round(median(link(Y, link = link))))
       if (is.finite(sgst_location)) {
         prior_location <- sgst_location
       }

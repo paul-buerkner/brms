@@ -265,10 +265,10 @@ pp_check(model_normal)
 Apparently, the distribution of the phenotype predicted by the Poisson model resembles the original distribution of the phenotype pretty closely, while the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.
 
 ```{r}
-LOO(model_pois, model_normal)
+loo(model_pois, model_normal)
 ```
 
-Since smaller values of LOO indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family `negative_binomial`), which already contains an overdispersion parameter so that modeling a varying intercept of `obs` becomes obsolete.
+Since smaller values of loo indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family `negative_binomial`), which already contains an overdispersion parameter so that modeling a varying intercept of `obs` becomes obsolete.
 
 ## Phylogenetic models with multiple group-level effects
 

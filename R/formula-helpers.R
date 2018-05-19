@@ -602,6 +602,8 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #'   a separate variance-covariance matrix will be fitted. 
 #'   Levels of the grouping factor must be nested in levels 
 #'   of the \code{by} variable.
+#' @param dist Name of the distribution of the group-level effects.
+#'   Currently \code{"gaussian"} is the only option.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
@@ -621,7 +623,7 @@ gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
 #' }
 #' 
 #' @export
-gr <- function(..., by = NULL) {
+gr <- function(..., by = NULL, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -637,8 +639,9 @@ gr <- function(..., by = NULL) {
   } else {
     by <- ""
   }
+  dist <- match.arg(dist, c("gaussian", "student"))
   allvars <- str2formula(c(groups, by))
-  nlist(groups, allvars, label, by, type = "")
+  nlist(groups, allvars, label, by, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -683,7 +686,7 @@ gr <- function(..., by = NULL) {
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE) {
+mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -692,6 +695,7 @@ mm <- function(..., weights = NULL, scale = TRUE) {
   for (i in seq_along(groups)) {
     stopif_illegal_group(groups[i])
   }
+  dist <- match.arg(dist, c("gaussian", "student"))
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
   weightvars <- all.vars(weights)
@@ -701,7 +705,10 @@ mm <- function(..., weights = NULL, scale = TRUE) {
     attr(weights, "scale") <- scale
     weightvars <- str2formula(weightvars)
   }
-  nlist(groups, weights, weightvars, allvars, label, by = "", type = "mm")
+  nlist(
+    groups, weights, weightvars, allvars, 
+    label, by = "", dist, type = "mm"
+  )
 }
 
 #' Multi-Membership Covariates
@@ -765,7 +772,7 @@ eval_rhs <- function(formula, data = NULL) {
   eval(rhs(formula)[[2]], data, environment(formula))
 }
 
-str2formula <- function(x, ...) {
+str2formula <- function(x, ..., collapse = "+") {
   # converts a string to a formula
   # Args:
   #   x: vector of strings to be converted
@@ -774,7 +781,7 @@ str2formula <- function(x, ...) {
   #   a formula
   has_chars <- nzchar(x)
   if (length(x) && any(has_chars)) {
-    out <- paste(x[has_chars], collapse = "+") 
+    out <- paste(x[has_chars], collapse = collapse) 
   } else {
     out <- "1"
   }

@@ -82,3 +82,10 @@
              neg_binomial_2_log_lpmf(y | eta, phi); 
     } 
   }
+  // zero_inflated negative binomial log-CCDF and log-CDF functions
+  real zero_inflated_neg_binomial_lccdf(int y, real mu, real phi, real hu) { 
+    return bernoulli_lpmf(0 | hu) + neg_binomial_2_lccdf(y | mu, phi);
+  }
+  real zero_inflated_neg_binomial_lcdf(int y, real mu, real phi, real hu) { 
+    return log1m_exp(zero_inflated_neg_binomial_lccdf(y | mu, phi, hu));
+  }

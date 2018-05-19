@@ -69,7 +69,7 @@ test_that("update_re_terms works correctly", {
 test_that("exclude_pars returns expected parameter names", {
   ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
                        gn = c(1, 1, 2), coef = c("x", "z", "x"), 
-                       cn = c(1, 2, 1), nlpar = "", 
+                       cn = c(1, 2, 1), nlpar = "", ggn = c(1, 2, 2), 
                        cor = c(TRUE, TRUE, FALSE))
   empty_effects <- structure(list(), class = "brmsterms")
   ep <- exclude_pars(empty_effects, ranef = ranef)

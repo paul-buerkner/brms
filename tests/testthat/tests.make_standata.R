@@ -103,7 +103,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                "Family 'student' requires numeric responses")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -5:5), 
                              family = "geometric"),
-               "Family 'geometric' requires responses to be non-negative integers")
+               "Family 'geometric' requires response greater than or equal to 0")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -1:1), 
                              family = "bernoulli"),
                "contain only two different values")
@@ -115,16 +115,16 @@ test_that(paste("make_standata rejects incorrect response variables",
                "Family 'sratio' requires either positive integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
-               "Family 'gamma' requires responses to be positive")
-  expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 1)),
+               "Family 'gamma' requires response greater than 0")
+  expect_error(make_standata(y ~ 1, data = data.frame(y = c(0.1, 0.5, 1)),
                              family = Beta()),
-               "requires responses between 0 and 1")
+               "Family 'beta' requires response smaller than 1")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 4)),
                              family = von_mises()),
-               "requires responses between -pi and pi")
+               "Family 'von_mises' requires response smaller than or equal to 3.14")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(-1, 2, 5)),
                              family = hurdle_gamma()),
-               "requires responses to be non-negative")
+               "Family 'hurdle_gamma' requires response greater than or equal to 0")
 })
 
 test_that("make_standata suggests using family bernoulli if appropriate", {
@@ -228,22 +228,21 @@ test_that("make_standata handles multivariate models", {
 
 test_that("make_standata returns correct data for autocor structures", {
   dat <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_arr(~tim|g))$Yarr,
-               cbind(c(0,9,7,5,3,0,10,8,6,4)))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_arr(~tim|g, r = 2))$Yarr,
-               cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ma(~tim|g))$J_lag,
-               c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0))
-  expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ar(~tim|g, p = 2))$J_lag,
-               c(1, 2, 2, 2, 0, 1, 2, 2, 2, 0))
-  standata <- make_standata(y ~ x, data = dat,
-                            autocor = cor_ar(~tim|g, cov = TRUE))
-  expect_equal(standata$begin_tg, as.array(c(1, 6)))
-  expect_equal(standata$nobs_tg, as.array(c(5, 5)))
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_arr(~tim|g))
+  expect_equal(sdata$Yarr, cbind(c(0,9,7,5,3,0,10,8,6,4)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_arr(~tim|g, r = 2))
+  expect_equal(sdata$Yarr, cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ma(~tim|g))
+  expect_equal(sdata$J_lag, as.array(c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ar(~tim|g, p = 2))
+  expect_equal(sdata$J_lag, as.array(c(1, 2, 2, 2, 0, 1, 2, 2, 2, 0)))
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_ar(~tim|g, cov = TRUE))
+  expect_equal(sdata$begin_tg, as.array(c(1, 6)))
+  expect_equal(sdata$nobs_tg, as.array(c(5, 5)))
 })
 
 test_that("make_standata allows to retrieve the initial data order", {
@@ -453,7 +452,7 @@ test_that("make_standata handles category specific effects", {
                          data = inhaler, family = cratio())
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
   expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "cumulative"), "only meaningful")
+                             family = "cumulative"), "require families")
   expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
@@ -738,3 +737,4 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_equal(sdata$M, rep(0, 2))
   expect_equal(sdata$V, diag(2))
 })
+

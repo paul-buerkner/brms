@@ -258,7 +258,7 @@
 #' plot(marginal_effects(fit1), ask = FALSE)
 #' 
 #' # investigate model fit
-#' LOO(fit1)
+#' loo(fit1)
 #' pp_check(fit1)
 #' 
 #' 

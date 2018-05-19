@@ -51,11 +51,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     bterms, data = data, prior = prior, 
     ranef = ranef, meef = meef, sparse = sparse
   )
-  # the ID syntax requires group-level effects to be evaluated separately
-  scode_ranef <- collapse_lists(ls = lapply(
-    X = unique(ranef$id), FUN = stan_re,
-    ranef = ranef, prior = prior, cov_ranef = cov_ranef
-  ))
+  scode_ranef <- stan_re(ranef, prior = prior, cov_ranef = cov_ranef)
   scode_llh <- stan_llh(bterms, data = data)
   scode_global_defs <- stan_global_defs(
     bterms, prior = prior, ranef = ranef, cov_ranef = cov_ranef

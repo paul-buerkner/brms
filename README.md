@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org) 
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/> [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
 
 brms
 ====
@@ -17,7 +17,7 @@ Resources
 -   [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
 -   [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
 -   [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
--   [Blog posts](https://paul-buerkner.github.io/blog/old-brms-blogposts/) (List of blog posts about brms)
+-   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
 -   [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
 -   [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
@@ -43,10 +43,9 @@ summary(fit1)
 #>   Links: mu = log 
 #> Formula: count ~ log_Age_c + log_Base4_c * Trt + (1 | patient) 
 #>    Data: epilepsy (Number of observations: 236) 
-#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
+#> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup samples = 4000
-#>     ICs: LOO = NA; WAIC = NA; R2 = NA
-#>  
+#> 
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
@@ -118,11 +117,11 @@ fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
 We can then go ahead and compare both models via approximate leave-one-out cross-validation.
 
 ``` r
-LOO(fit1, fit2)
+loo(fit1, fit2)
 #>               LOOIC    SE
-#> fit1        1344.94 73.61
-#> fit2        1193.47 28.18
-#> fit1 - fit2  151.48 54.10
+#> fit1        1347.06 74.22
+#> fit2        1198.44 28.61
+#> fit1 - fit2  148.62 54.52
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
@@ -162,7 +161,7 @@ Please cite one or more of the following publications:
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 
-Questions can be asked on the [brms-users](https://groups.google.com/forum/#!forum/brms-users) google group. To propose a new feature or report a bug, please open an issue on [GitHub](https://github.com/paul-buerkner/brms).
+Questions can be asked on the [Stan forums](http://discourse.mc-stan.org/) on Discourse. To propose a new feature or report a bug, please open an issue on [GitHub](https://github.com/paul-buerkner/brms).
 
 ### How can I extract the generated Stan code?
 

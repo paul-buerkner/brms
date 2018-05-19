@@ -539,7 +539,7 @@ test_that("Stan code of ordinal models is correct", {
     y ~ x1, dat, cumulative("probit", threshold = "equidistant")
   )
   expect_match2(scode, "real cumulative_probit_lpmf(int y")
-  expect_match2(scode, "p[1] = Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "p = Phi(disc * (thres[1] - mu));")
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
@@ -1340,12 +1340,16 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "target += sparse_car_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 
-  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W),
-                         silent = TRUE)
+  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W, type = "esicar"))
   expect_match2(scode, "real sparse_icar_lpdf(vector phi")
   expect_match2(scode, "target += sparse_icar_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
+  
+  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
+  expect_match2(scode, "target += -0.5 * dot_self(rcar[edges1] - rcar[edges2])")
+  expect_match2(scode, "target += normal_lpdf(sum(rcar) | 0, 0.001 * Nloc)")
+  expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 })
 
 test_that("Stan code for skew_normal models is correct", {
@@ -1488,4 +1492,19 @@ test_that("likelihood of distributional beta models is correct", {
     bf(prop ~ 1, phi ~ 1), data = dat, family = Beta()
   )
   expect_match2(scode, "beta_lpdf(Y[n] | mu[n] * phi[n], (1 - mu[n]) * phi[n])")
+})
+
+test_that("student-t group-level effects work without errors", {
+  scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
+  expect_match2(scode, "sqrt(df_1 * udf_1) * sd_1[1] * (z_1[1]);")
+  expect_match2(scode, "target += gamma_lpdf(df_1 | 2, 0.1);")
+  expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")
+  
+  bprior <- prior(normal(20, 5), class = df, group = patient)
+  scode <- make_stancode(
+    count ~ Trt + (Trt|gr(patient, dist = "st")), 
+    epilepsy, prior = bprior
+  )
+  expect_match2(scode, "sqrt(df_1 * udf_1) * (diag_pre_multiply(sd_1, L_1) * z_1)';")
+  expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
 })

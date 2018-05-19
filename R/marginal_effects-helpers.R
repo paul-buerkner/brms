@@ -270,7 +270,7 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
     out <- c(out, get_all_effects(x$dpars[[dp]]))
   }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
-  if (comb_all) {
+  if (length(out) && comb_all) {
     out <- unique(unlist(out))
     int <- expand.grid(out, out, stringsAsFactors = FALSE)
     int <- int[int[, 1] != int[, 2], ]
@@ -283,14 +283,21 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  int_formula <- function(x) {
-    formula(paste("~", paste(x, collapse = "*")))
+  out <- get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]], x[["gp"]])
+  c(out, get_all_effects_sm(x))
+}
+
+get_all_effects_sm <- function(x) {
+  # extract combinations of covars and byvars from splines
+  stopifnot(is.btl(x))
+  terms <- all_terms(x[["sm"]])
+  out <- named_list(terms)
+  for (i in seq_along(terms)) {
+    sm <- eval2(terms[i])
+    vars <- setdiff(union(sm$term, sm$by), "NA")
+    out[[i]] <- str2formula(vars, collapse = "*")
   }
-  covars <- attr(x[["sm"]], "covars")
-  byvars <- attr(x[["sm"]], "byvars")
-  svars <- mapply(c, covars, byvars, SIMPLIFY = FALSE)
-  alist <- lapply(svars, int_formula)
-  get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]], x[["gp"]], alist = alist)
+  get_var_combs(alist = out)
 }
 
 #' @export

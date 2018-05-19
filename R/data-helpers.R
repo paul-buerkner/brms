@@ -537,17 +537,17 @@ make_smooth_list <- function(x, data, ...) {
   # extract data related to smooth terms
   # for use in extract_old_standata
   stopifnot(is.btl(x))
-  sm_labels <- get_sm_labels(x)
-  out <- named_list(sm_labels)
-  if (length(sm_labels)) {
+  smterms <- all_terms(x[["sm"]])
+  out <- named_list(smterms)
+  if (length(smterms)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
     gam_args <- list(
       data = data, knots = knots, 
       absorb.cons = TRUE, modCon = 3
     )
-    for (i in seq_along(sm_labels)) {
-      sc_args <- c(list(eval2(sm_labels[i])), gam_args)
+    for (i in seq_along(smterms)) {
+      sc_args <- c(list(eval2(smterms[i])), gam_args)
       out[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
   }
@@ -558,10 +558,10 @@ make_gp_list <- function(x, data, ...) {
   # extract data related to gaussian processes
   # for use in extract_old_standata
   stopifnot(is.btl(x))
-  gpef <- get_gp_labels(x)
-  out <- named_list(gpef)
-  for (i in seq_along(gpef)) {
-    gp <- eval2(gpef[i])
+  gpterms <- all_terms(x[["gp"]])
+  out <- named_list(gpterms)
+  for (i in seq_along(gpterms)) {
+    gp <- eval2(gpterms[i])
     Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
     out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
   }

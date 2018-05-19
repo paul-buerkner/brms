@@ -116,21 +116,21 @@ data_fe <- function(bterms, data, knots = NULL,
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
-  sm_labels <- get_sm_labels(bterms)
-  if (length(sm_labels)) {
-    stopifnot(is.null(smooths) || length(smooths) == length(sm_labels))
+  smterms <- all_terms(bterms[["sm"]])
+  if (length(smterms)) {
+    stopifnot(is.null(smooths) || length(smooths) == length(smterms))
     Xs <- Zs <- list()
     new_smooths <- !length(smooths)
     if (new_smooths) {
-      smooths <- named_list(sm_labels)
-      for (i in seq_along(sm_labels)) {
+      smooths <- named_list(smterms)
+      for (i in seq_along(smterms)) {
         smooths[[i]] <- mgcv::smoothCon(
-          eval2(sm_labels[i]), data = data, 
+          eval2(smterms[i]), data = data, 
           knots = knots, absorb.cons = TRUE
         )
       }
     }
-    by_levels <- named_list(sm_labels)
+    bylevels <- named_list(smterms)
     ns <- 0
     for (i in seq_along(smooths)) {
       # may contain multiple terms when 'by' is a factor
@@ -138,7 +138,7 @@ data_fe <- function(bterms, data, knots = NULL,
         ns <- ns + 1
         sm <- smooths[[i]][[j]]
         if (length(sm$by.level)) {
-          by_levels[[i]][j] <- sm$by.level
+          bylevels[[i]][j] <- sm$by.level
         }
         if (!new_smooths) {
           sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
@@ -156,8 +156,8 @@ data_fe <- function(bterms, data, knots = NULL,
       }
     }
     X <- cbind(X, do.call(cbind, Xs))
-    scols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
-    X <- structure(X, smooth_cols = scols, by_levels = by_levels)
+    smcols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
+    X <- structure(X, smcols = smcols, bylevels = bylevels)
     colnames(X) <- rename(colnames(X))
   }
   avoid_dpars(colnames(X), bterms = bterms)
@@ -324,9 +324,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   # Args: see data_effects
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (is.null(spef)) {
-    return(out) 
-  }
+  if (!nrow(spef)) return(out)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   # prepare general data
@@ -448,46 +446,44 @@ data_gp <- function(bterms, data, gps = NULL) {
   # Args: see data_effects
   out <- list()
   px <- check_prefix(bterms)
-  gpef <- get_gp_labels(bterms)
-  if (length(gpef)) {
-    p <- usc(combine_prefix(px))
-    for (i in seq_along(gpef)) {
-      pi <- paste0(p, "_", i)
-      gp <- eval2(gpef[i])
-      Xgp <- lapply(gp$term, eval2, data)
-      out[[paste0("Mgp", pi)]] <- length(Xgp)
-      invalid <- ulapply(Xgp, function(x)
-        !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
-      )
-      if (any(invalid)) {
-        stop2("Predictors of Gaussian processes should be numeric vectors.")
+  p <- usc(combine_prefix(px))
+  gpef <- tidy_gpef(bterms, data)
+  for (i in seq_len(nrow(gpef))) {
+    pi <- paste0(p, "_", i)
+    Xgp <- lapply(gpef$covars[[i]], eval2, data)
+    out[[paste0("Mgp", pi)]] <- length(Xgp)
+    invalid <- ulapply(Xgp, function(x)
+      !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
+    )
+    if (any(invalid)) {
+      stop2("Predictors of Gaussian processes should be numeric vectors.")
+    }
+    Xgp <- do.call(cbind, Xgp)
+    if (gpef$scale[i]) {
+      # scale predictor for easier specification of priors
+      if (length(gps)) {
+        # scale Xgp based on the original data
+        Xgp <- Xgp / gps[[i]]$dmax
+      } else {
+        dmax <- sqrt(max(diff_quad(Xgp)))
+        Xgp <- Xgp / dmax
       }
-      Xgp <- do.call(cbind, Xgp)
-      if (gp$scale) {
-        # scale predictor for easier specification of priors
-        if (length(gps)) {
-          # scale Xgp based on the original data
-          Xgp <- Xgp / gps[[i]]$dmax
-        } else {
-          dmax <- sqrt(max(diff_quad(Xgp)))
-          Xgp <- Xgp / dmax
-        }
-      }
-      out[[paste0("Xgp", pi)]] <- Xgp
-      out[[paste0("Kgp", pi)]] <- 1L
-      if (gp$by != "NA") {
-        Cgp <- get(gp$by, data)
-        if (is.numeric(Cgp)) {
-          out[[paste0("Cgp", pi)]] <- Cgp
-        } else {
-          Cgp <- factor(Cgp)
-          lCgp <- levels(Cgp)
-          Jgp <- lapply(lCgp, function(x) which(Cgp == x))
-          out[[paste0("Kgp", pi)]] <- length(Jgp)
-          out[[paste0("Igp", pi)]] <- lengths(Jgp)
-          Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
-          out <- c(out, setNames(Jgp, Jgp_names))
-        }
+    }
+    out[[paste0("Xgp", pi)]] <- Xgp
+    out[[paste0("Kgp", pi)]] <- 1L
+    byvar <- gpef$byvars[[i]]
+    if (length(byvar)) {
+      Cgp <- get(byvar, data)
+      if (is.numeric(Cgp)) {
+        out[[paste0("Cgp", pi)]] <- Cgp
+      } else {
+        Cgp <- factor(Cgp)
+        lCgp <- levels(Cgp)
+        Jgp <- lapply(lCgp, function(x) which(Cgp == x))
+        out[[paste0("Kgp", pi)]] <- length(Jgp)
+        out[[paste0("Igp", pi)]] <- lengths(Jgp)
+        Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
+        out <- c(out, setNames(Jgp, Jgp_names))
       }
     }
   }
@@ -550,7 +546,7 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       } else {
         # data for the 'predictor' version of ARMA
         max_lag <- max(Kar, Kma)
-        out$J_lag <- rep(0, N)
+        out$J_lag <- as.array(rep(0, N))
         for (n in seq_len(N)) {
           for (i in seq_len(max_lag)) {
             valid_lag <- n + 1 - i > 0 && n < N && 
@@ -688,70 +684,57 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     family4error <- families
   }
   if (check_response) {
-    factors_allowed <- is_ordinal(x$family) || 
-      any(families %in% c("bernoulli", "categorical"))
-    if (!factors_allowed && !is.numeric(out$Y)) {
+    if (!allow_factors(x$family) && !is.numeric(out$Y)) {
       stop2("Family '", family4error, "' requires numeric responses.")
     }
-    # transform and check response variables for different families
-    regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
-    if (any(grepl(regex_pos_int, families))) {
-      if (!all(is_wholenumber(out$Y)) || min(out$Y) < 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be non-negative integers.")
-      }
-    } else if (any(families %in% "bernoulli")) {
+    if (is_binary(x$family)) {
       out$Y <- as.numeric(as.factor(out$Y)) - 1
       if (any(!out$Y %in% c(0, 1))) {
-        stop2("Family '", family4error, "' requires responses ", 
+        stop2("Family '", family4error, "' requires responses ",
               "to contain only two different values.")
       }
-    } else if (any(grepl("(^|_)beta$", families))) {
-      if (any(families %in% "beta")) {
-        lower <- any(out$Y <= 0)
-      } else {
-        lower <- any(out$Y < 0) 
-      } 
-      if (any(families %in% "zero_one_inflated_beta")) {
-        upper <- any(out$Y > 1) 
-      } else {
-        upper <- any(out$Y >= 1) 
-      }
-      if (lower || upper) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "between 0 and 1.")
-      }
-    } else if (any(families %in% "von_mises")) {
-      if (any(out$Y < -pi | out$Y > pi)) {
-        stop2("Family '", family4error, "' requires responses ",
-              "between -pi and pi.")
-      }
-    } else if (is_categorical(x$family)) { 
+    }
+    if (is_categorical(x$family)) { 
       out$Y <- as.numeric(factor(out$Y))
       if (length(unique(out$Y)) < 3L) {
         stop2("At least three response categories are required.")
       }
-    } else if (is_ordinal(x$family)) {
+    }
+    if (is_ordinal(x$family)) {
       if (is.ordered(out$Y)) {
         out$Y <- as.numeric(out$Y)
       }
       if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
-        stop2("Family '", family4error, "' requires either positive ", 
+        stop2("Family '", family4error, "' requires either positive ",
               "integers or ordered factors as responses.")
       }
       if (length(unique(out$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
-    } else if (is_skewed(x$family) || is_lognormal(x$family) || 
-               is_wiener(x$family)) {
-      if (min(out$Y) <= 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be positive.")
+    }
+    if (use_int(x$family)) {
+      if (!all(is_wholenumber(out$Y))) {
+        stop2("Family '", family4error, "' requires integer responses.")
       }
-    } else if (is_zero_inflated(x$family) || is_hurdle(x$family)) {
-      if (min(out$Y) < 0) {
-        stop2("Family '", family4error, "' requires responses ", 
-              "to be non-negative.")
+    }
+    ybounds <- family_info(x$family, "ybounds")
+    closed <- family_info(x$family, "closed")
+    if (is.finite(ybounds[1])) {
+      if (closed[1] && min(out$Y) < ybounds[1]) {
+        stop2("Family '", family4error, "' requires response greater ",
+              "than or equal to ", ybounds[1], ".")
+      } else if (!closed[1] && min(out$Y) <= ybounds[1]) {
+        stop2("Family '", family4error, "' requires response greater ",
+              "than ", round(ybounds[1], 2), ".")
+      }
+    }
+    if (is.finite(ybounds[2])) {
+      if (closed[2] && max(out$Y) > ybounds[2]) {
+        stop2("Family '", family4error, "' requires response smaller ",
+              "than or equal to ", ybounds[2], ".")
+      } else if (!closed[2] && max(out$Y) >= ybounds[2]) {
+        stop2("Family '", family4error, "' requires response smaller ",
+              "than ", round(ybounds[2], 2), ".")
       }
     }
     out$Y <- as.array(out$Y)

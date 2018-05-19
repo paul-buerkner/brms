@@ -150,7 +150,7 @@ summary(fit2)
 
 ## Post-Processing Custom Family Models
 
-Some post-proecssing methods such as `summary` or `plot` work out of the box for custom family models. However, there are three particularily important methods, which require additional input by the user. These are `fitted`, `predict` and `log_lik` computing predicted mean values, predicted response values, and log-likelihood values, respectively. They are not only relevant for their own sake, but also provide the basis of many other post-processing methods. For instance, we may be interested in comparing the fit of the binomial model with that of the beta-binomial model by means of approximate leave-one-out cross-validation implemented in method `LOO`, which in turn requires `log_lik` to be working. 
+Some post-proecssing methods such as `summary` or `plot` work out of the box for custom family models. However, there are three particularily important methods, which require additional input by the user. These are `fitted`, `predict` and `log_lik` computing predicted mean values, predicted response values, and log-likelihood values, respectively. They are not only relevant for their own sake, but also provide the basis of many other post-processing methods. For instance, we may be interested in comparing the fit of the binomial model with that of the beta-binomial model by means of approximate leave-one-out cross-validation implemented in method `loo`, which in turn requires `log_lik` to be working. 
 
 The `log_lik` function of a family should be named `log_lik_<family-name>` and have the two arguments `i` (indicating observations) and `draws`. You don't have to worry too much about how `draws` is created. Instead, all you need to know is that parameters are stored in slot `dpars` and data are stored in slot `data`. Generally, parameters take on the form of a $S \times N$ matrix (with $S =$ number of posterior samples and $N =$ number of observations) if they are predicted (as is `mu` in our example) and a vector of size $N$ if the are not predicted (as is `phi`).
 
@@ -175,7 +175,7 @@ log_lik_beta_binomial2 <- function(i, draws) {
 With that being done, all of the post-processing methods requiring `log_lik` will work as well. For instance, model comparison can simply be performed via
 
 ```{r loo}
-LOO(fit1, fit2)
+loo(fit1, fit2)
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.
@@ -219,4 +219,11 @@ For ease of interpretation we have set `trials` to 1 so that the y-axis of the a
 
 ## Turning a Custom Family into a Native Family
 
-Family functions built natively into **brms** are saver to use and more convenient, as they require much less user input. Unfortunately, the current internal structure of **brms** makes it rather hard for an outside developer to implement a native family herself. If you feel that your custom family is general enough to be useful to other users, please feel free to open an issue on [GitHub](https://github.com/paul-buerkner/brms/issues), in which you provide general information about your family as well as all the necessary functions described above. Provided that you convince me, I will then go ahead and make the required changes to the **brms** code base.
+Family functions built natively into **brms** are saver to use and more convenient, as they require much less user input. If you think that your custom family is general enough to be useful to other users, please feel free to open an issue on [GitHub](https://github.com/paul-buerkner/brms/issues) so that we can discuss all the details. Provided that we agree it makes sense to implement your family natively in brms, the following steps are required (`foo` is a placeholder for the family name):
+
+* In `family-lists.R`, add function `.family_foo` which should contain basic information about your family (you will find lots of examples for other families there).
+* In `families.R`, add family function `foo` which should be a simple wrapper around `.brmsfamily`.
+* In `stan-likelihood.R`, add function `stan_llh_foo` which provides the likelihood of the family in Stan language.
+* If necessary, add self-defined Stan functions in separate files under `inst/chunks`.
+* Add functions `predict_foo`, `fitted_foo` and `log_lik_foo` to `predict.R`, `fitted.R` and `log_lik.R`, respectively.
+* If necessary, add distribution functions to `distributions.R`.

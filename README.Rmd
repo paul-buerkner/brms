@@ -43,7 +43,7 @@ The **brms** package provides an interface to fit Bayesian generalized (non-)lin
 * [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
 * [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
 * [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
-* [Blog posts](https://paul-buerkner.github.io/blog/old-brms-blogposts/) (List of blog posts about brms)
+* [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
 * [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/paul-buerkner/brms/issues) (GitHub issues for bug reports and feature requests)
 
@@ -109,7 +109,7 @@ fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
 We can then go ahead and compare both models via approximate leave-one-out cross-validation.
 
 ```{r loo, warning=FALSE}
-LOO(fit1, fit2)
+loo(fit1, fit2)
 ```
 
 Since smaller `LOOIC` values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
@@ -148,7 +148,7 @@ Please cite one or more of the following publications:
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 
-Questions can be asked on the [brms-users](https://groups.google.com/forum/#!forum/brms-users) google group. To propose a new feature or report a bug, please open an issue on [GitHub](https://github.com/paul-buerkner/brms).
+Questions can be asked on the [Stan forums](http://discourse.mc-stan.org/) on Discourse. To propose a new feature or report a bug, please open an issue on [GitHub](https://github.com/paul-buerkner/brms).
 
 ### How can I extract the generated Stan code?
 

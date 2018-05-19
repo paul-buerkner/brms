@@ -493,8 +493,34 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
   out
 }
 
-stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
-  # group-level effects in Stan 
+stan_re <- function(ranef, prior, ...) {
+  # Stan code for group-level effects
+  # the ID syntax requires group-level effects to be evaluated separately
+  IDs <- unique(ranef$id)
+  out <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
+  out <- collapse_lists(ls = out)
+  # special handling of student-t group effects
+  tranef <- get_dist_groups(ranef, "student")
+  if (has_rows(tranef)) {
+    str_add(out$par) <- 
+      "  // parameters for student-t distributed group-level effects\n"
+    for (i in seq_len(nrow(tranef))) {
+      g <- paste0("_", tranef$ggn[i])
+      str_add(out$par) <- paste0(
+        "  real<lower=1> df", g, ";\n",
+        "  real<lower=0> udf", g, ";\n"
+      )
+      str_add(out$prior) <- paste0(
+        stan_prior(prior, class = "df", group = tranef$group[i], suffix = g),
+        "  target += inv_chi_square_lpdf(udf", g, " | df", g, ");\n"
+      )
+    }
+  }
+  out
+}
+
+.stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
+  # Stan code for group-level effects per ID
   # Args:
   #   id: the ID of the grouping factor
   #   ranef: a data.frame returned by tidy_ranef
@@ -567,6 +593,12 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       px = px, suffix = paste0("_", id)
     )
   }
+  tr <- get_dist_groups(r, "student")
+  if (has_rows(tr)) {
+    dff <- paste0("sqrt(df_", tr$ggn[1], " * udf_", tr$ggn[1], ") * ")
+  } else {
+    dff <- ""
+  }
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     str_add(out$data) <- paste0( 
@@ -593,7 +625,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
       str_add(out$tparD) <- paste0(
         "  // group-level effects \n",
         "  matrix[N_", id, ", M_", id, "] r_", id, 
-        " = scale_r_cor_by(z_", id, ", sd_", id, 
+        " = ", dff, "scale_r_cor_by(z_", id, ", sd_", id, 
         ", L_", id, ", Jby_", id, ");\n"
       )
       str_add(out$prior) <- stan_prior(
@@ -616,13 +648,14 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  matrix[N_", id, ", M_", id, "] r_", id, 
         if (has_ccov) {
           paste0(
-            " = as_matrix(kronecker(Lcov_", id, ",", 
+            " = ", dff, "as_matrix(kronecker(Lcov_", id, ",", 
             " diag_pre_multiply(sd_", id,", L_", id,")) *",
             " to_vector(z_", id, "), N_", id, ", M_", id, ");\n"
           )
         } else {
           paste0(
-            " = (diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")';\n"
+            " = ", dff, "(diag_pre_multiply(sd_", id, 
+            ", L_", id,") * z_", id, ")';\n"
           )
         }
       )
@@ -657,7 +690,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  // group-level effects \n", 
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
-          " = sd_", id, "[", J, ", Jby_", id, "]' .* (", 
+          " = ", dff, "sd_", id, "[", J, ", Jby_", id, "]' .* (", 
           if (has_ccov) paste0("Lcov_", id, " * "), 
           "z_", id, "[", J, "]);\n"
         )
@@ -667,7 +700,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
         "  // group-level effects \n", 
         collapse(
           "  vector[N_", id, "] r_", idp, "_", r$cn,
-          " = sd_", id, "[", J, "] * (", 
+          " = ", dff, "sd_", id, "[", J, "] * (", 
           if (has_ccov) paste0("Lcov_", id, " * "), 
           "z_", id, "[", J, "]);\n"
         )
@@ -680,43 +713,44 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
 stan_sm <- function(bterms, data, prior) {
   # Stan code of smooth terms
   out <- list()
-  smooths <- get_sm_labels(bterms, data = data)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
-    for (i in seq_along(smooths)) {
-      pi <- paste0(p, "_", i)
-      nb <- seq_len(attr(smooths, "nbases")[[i]])
-      str_add(out$data) <- paste0(
-        "  // data of smooth ", smooths[i], "\n",  
-        "  int nb", pi, ";  // number of bases \n",
-        "  int knots", pi, "[nb", pi, "]; \n"
+  smef <- tidy_smef(bterms, data)
+  for (i in seq_len(nrow(smef))) {
+    pi <- paste0(p, "_", i)
+    nb <- seq_len(smef$nbases[[i]])
+    str_add(out$data) <- paste0(
+      "  // data of smooth ", smef$byterm[i], "\n",  
+      "  int nb", pi, ";  // number of bases \n",
+      "  int knots", pi, "[nb", pi, "]; \n"
+    )
+    str_add(out$data) <- collapse(
+      "  matrix[N, knots", pi, "[", nb, "]]", 
+      " Zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$par) <- paste0(
+      "  // parameters of smooth ", smef$byterm[i], "\n",
+      collapse(
+        "  vector[knots", pi, "[", nb, "]] zs", pi,"_", nb, "; \n",
+        "  real<lower=0> sds", pi, "_", nb, "; \n"
       )
-      str_add(out$data) <- collapse(
-        "  matrix[N, knots", pi, "[", nb, "]]", 
-        " Zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$tparD) <- collapse(
+      "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
+      " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
+    )
+    str_add(out$prior) <- paste0(
+      collapse(
+        "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
+      ),
+      stan_prior(
+        prior, class = "sds", coef = smef$term[i], 
+        px = px, suffix = paste0(pi, "_", nb)
       )
-      str_add(out$par) <- paste0(
-        "  // parameters of smooth ", smooths[i], "\n",
-        collapse(
-          "  vector[knots", pi, "[", nb, "]] zs", pi,"_", nb, "; \n",
-          "  real<lower=0> sds", pi, "_", nb, "; \n"
-        )
-      )
-      str_add(out$tparD) <- collapse(
-        "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
-        " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
-      )
-      str_add(out$prior) <- paste0(
-        collapse(
-          "  target += normal_lpdf(zs", pi, "_", nb, " | 0, 1); \n"
-        ),
-        stan_prior(prior, class = "sds", coef = smooths[i], 
-                   px = px, suffix = paste0(pi, "_", nb))
-      )
-    }
-    out$eta <- stan_eta_sm(smooths, px = px)
+    )
+    str_add(out$eta) <- collapse(
+      " + Zs", pi, "_", nb, " * s", pi, "_", nb
+    )
   }
   out
 }
@@ -785,9 +819,7 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
   # Stan code for special effects
   out <- list()
   spef <- tidy_spef(bterms, data)
-  if (is.null(spef)) {
-    return(out)
-  }
+  if (!nrow(spef)) return(out)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   ranef <- subset2(ranef, type = "sp", ls = px)
@@ -873,16 +905,16 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
 stan_gp <- function(bterms, data, prior) {
   # Stan code for latent gaussian processes
   out <- list()
-  gpef <- get_gp_labels(bterms, data = data)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  for (i in seq_along(gpef)) {
+  gpef <- tidy_gpef(bterms, data)
+  for (i in seq_len(nrow(gpef))) {
     pi <- paste0(p, "_", i)
-    byvar <- attr(gpef, "byvars")[[i]]
-    by_levels <- attr(gpef, "by_levels")[[i]]
-    byfac <- length(by_levels) > 0L
-    bynum <- !byfac && !identical(byvar, "NA")
-    J <- seq_along(by_levels)
+    byvar <- gpef$byvars[[i]] 
+    bylevels <- gpef$bylevels[[i]]
+    byfac <- length(bylevels) > 0L
+    bynum <- !is.null(byvar) && !byfac 
+    J <- seq_along(bylevels)
     str_add(out$data) <- paste0(
       "  int<lower=1> Kgp", pi, "; \n",
       "  int<lower=1> Mgp", pi, "; \n",
@@ -906,9 +938,9 @@ stan_gp <- function(bterms, data, prior) {
       "  vector[N] zgp", pi, "; \n"
     ) 
     str_add(out$prior) <- paste0(
-      stan_prior(prior, class = "sdgp", coef = gpef[i], 
+      stan_prior(prior, class = "sdgp", coef = gpef$term[i], 
                  px = px, suffix = pi),
-      stan_prior(prior, class = "lscale", coef = gpef[i], 
+      stan_prior(prior, class = "lscale", coef = gpef$term[i], 
                  px = px, suffix = pi),
       collapse(tp(), "normal_lpdf(zgp", pi, " | 0, 1); \n")
     )
@@ -1014,26 +1046,6 @@ stan_eta_rsp <- function(r) {
   out
 }
 
-stan_eta_sm <- function(smooths, px = list()) {
-  # write the linear predictor for smooth terms
-  # Args:
-  #   smooths: names of the smooth terms
-  #   nlpar: optional character string to add to the varnames
-  p <- usc(combine_prefix(px))
-  eta_smooths <- ""
-  if (length(smooths)) {
-    stopifnot(!is.null(attr(smooths, "nbases")))
-    for (i in seq_along(smooths)) {
-      pi <- paste0(p, "_", i)
-      nb <- seq_len(attr(smooths, "nbases")[[smooths[i]]])
-      str_add(eta_smooths) <- collapse(
-        " + Zs", pi, "_", nb, " * s", pi, "_", nb
-      )
-    }
-  }
-  eta_smooths
-}
-
 stan_eta_autocor <- function(autocor, px = list()) {
   # Stan code for the linear predictor of certain autocorrelation terms 
   out <- ""
@@ -1055,7 +1067,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # manually using the link functions
   # Args:
   #   llh_adj: is the model censored or truncated?
-  !(!is_skewed(family) && family$link == "identity" ||
+  transeta <- "transeta" %in% family_info(family, "specials")
+  !(family$link == "identity" && !transeta ||
     is_ordinal(family) || is_categorical(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
@@ -1300,7 +1313,7 @@ stan_sigma_transform <- function(bterms, id = "") {
   }
   p <- usc(combine_prefix(bterms))
   ns <- ifelse(paste0("sigma", id) %in% names(bterms$dpars), "[n]", "")
-  has_sigma <- has_sigma(family, bterms)
+  has_sigma <- has_sigma(family) && !no_sigma(bterms)
   sigma <- ifelse(has_sigma, paste0("sigma", id, p, ns), "")
   if (is.formula(bterms$adforms$se)) {
     sigma <- ifelse(

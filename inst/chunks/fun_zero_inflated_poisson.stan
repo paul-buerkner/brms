@@ -74,3 +74,10 @@
              poisson_log_lpmf(y | eta); 
     } 
   }
+  // zero-inflated poisson log-CCDF and log-CDF functions
+  real zero_inflated_poisson_lccdf(int y, real lambda, real zi) { 
+    return bernoulli_lpmf(0 | zi) + poisson_lccdf(y | lambda); 
+  }
+  real zero_inflated_poisson_lcdf(int y, real lambda, real zi) { 
+    return log1m_exp(zero_inflated_poisson_lccdf(y | lambda, zi));
+  }

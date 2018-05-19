@@ -49,11 +49,12 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
                                  mv = FALSE, ...) {
   x <- validate_formula(formula, family = family, autocor = autocor)
   mv <- as_one_logical(mv)
+  rescor <- mv && isTRUE(x$rescor)
   mecor <- isTRUE(x$mecor)
   formula <- x$formula
   family <- x$family
   autocor <- x$autocor
-  y <- nlist(formula, family, autocor, mv, mecor) 
+  y <- nlist(formula, family, autocor, mv, rescor, mecor) 
   class(y) <- "brmsterms"
   
   if (check_response) {
@@ -154,6 +155,12 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     }
     x$pfix$sigma <- 0
   }
+  if ("nu" %in% valid_dpars && no_nu(y)) {
+    if ("nu" %in% c(names(x$pforms), names(x$pfix))) {
+      stop2("Cannot predict or fix 'nu' in this model.")
+    }
+    x$pfix$nu <- 0
+  }
   disc_pars <- valid_dpars[dpar_class(valid_dpars) %in% "disc"]
   for (dp in disc_pars) {
     # 'disc' is set to 1 and not estimated by default
@@ -166,15 +173,16 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   }
   check_fdpars(y$fdpars)
   # check for illegal use of cs terms
-  if (has_cs(y) && !(is.null(family) || allows_cs(family))) {
-    stop2("Category specific effects are only meaningful for ", 
-          "families 'sratio', 'cratio', and 'acat'.")
+  if (has_cs(y) && !(is.null(family) || allow_cs(family))) {
+    stop2("Category specific effects require families ", 
+          "'sratio', 'cratio', or 'acat'.")
   }
   # parse autocor formula
+  y$time <- parse_time(autocor)
   if (!is.null(y$dpars[["mu"]])) {
     y$dpars$mu$autocor <- autocor
+    y$dpars$mu$time <- y$time
   }
-  y$time <- parse_time(autocor)
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all.vars(y$respform)
@@ -198,11 +206,12 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   x$rescor <- isTRUE(x$rescor)
   x$mecor <- isTRUE(x$mecor)
   out <- structure(list(), class = "mvbrmsterms")
-  out$terms <- lapply(x$forms, parse_bf, mv = TRUE, ...)
-  tmp <- list(rescor = x$rescor, mecor = x$mecor)
+  out$terms <- named_list(names(x$forms))
   for (i in seq_along(out$terms)) {
-    out$terms[[i]][names(tmp)] <- tmp
-  } 
+    x$forms[[i]]$rescor <- x$rescor
+    x$forms[[i]]$mecor <- x$mecor
+    out$terms[[i]] <- parse_bf(x$forms[[i]], mv = TRUE, ...)
+  }
   out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
@@ -306,6 +315,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   if (is.family(family) && any(nzchar(families))) {
     str_formula <- formula2str(formula)
     ad <- get_matches("(?<=\\|)[^~]*(?=~)", str_formula, perl = TRUE)
+    valid_ads <- family_info(family, "ad")
     if (length(ad)) {
       ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
       for (a in ad_funs) {
@@ -316,9 +326,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
             x[[a]] <- paste0("resp_", x[[a]])
           }
           ad_terms <- ad_terms[-matches]
-          ad_fams <- ad_families(a)
-          valid <- ad_fams[1] == "all" || all(families %in% ad_fams)
-          if (!is.na(x[[a]]) && valid) {
+          if (!is.na(x[[a]]) && a %in% valid_ads) {
             x[[a]] <- str2formula(x[[a]])
           } else {
             stop2("Argument '", a, "' is not supported for ", 
@@ -333,7 +341,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
               collapse_comma(ad_terms))
       }
     }
-    if (is_wiener(family) && check_response && !is.formula(x$dec)) {
+    if (check_response && "wiener" %in% families && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
     if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
@@ -430,24 +438,12 @@ parse_sm <- function(formula) {
       stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
             "implemented in brms. Consider using 't2' instead.")
     }
-    covars <- byvars <- named_list(out)
-    for (i in seq_along(out)) {
-      es <- eval2(out[i])
-      covars[[i]] <- es$term
-      if (es$by != "NA") {
-        byvars[[i]] <- es$by 
-      }
-    }
     out <- str2formula(out)
     allvars <- mgcv::interpret.gam(out)$fake.formula
   } else {
-    covars <- byvars <- NULL
     allvars <- ~ 1
   }
-  structure(
-    out, covars = covars, 
-    byvars = byvars, allvars = allvars
-  )
+  structure(out, allvars = allvars)
 }
 
 parse_gp <- function(formula) {
@@ -464,10 +460,9 @@ parse_gp <- function(formula) {
     }
     out <- str2formula(out)
   } else {
-    byvars <- NULL
     allvars <- ~ 1
   }
-  structure(out, byvars = byvars, allvars = allvars)
+  structure(out, allvars = allvars)
 }
 
 parse_offset <- function(formula) {
@@ -598,6 +593,8 @@ as.brmsterms <- function(x) {
     list(family = paste0(families[1], "_mv"), link = "identity"),
     class = c("brmsfamily", "family")
   )
+  info <- get(paste0(".family_", families[1]))()
+  out$family[names(info)] <- info
   out$sigma_pred <- any(ulapply(x$terms, 
     function(x) "sigma" %in% names(x$dpar) || is.formula(x$adforms$se)
   ))
@@ -693,39 +690,6 @@ check_fdpars <- function(x) {
   invisible(TRUE)
 }
 
-ad_families <- function(x) {
-  # names of valid families for addition arguments
-  switch(x, 
-    weights = "all",
-    se = c("gaussian", "student", "skew_normal", "custom"),
-    trials = c("binomial", "zero_inflated_binomial", "custom"),
-    cat = c("cumulative", "cratio", "sratio", "acat", "custom"), 
-    cens = c(
-      "gaussian", "student", "lognormal", "skew_normal",
-      "inverse.gaussian", "binomial", "poisson", 
-      "geometric", "negbinomial", "exponential", "beta",
-      "weibull", "gamma", "exgaussian", "frechet",
-      "asym_laplace", "gen_extreme_value", "shifted_lognormal",
-      "custom"
-    ),
-    trunc = c(
-      "gaussian", "student", "lognormal", "skew_normal",
-      "binomial", "poisson", "geometric", "negbinomial",
-      "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace", "beta",
-      "gen_extreme_value", "shifted_lognormal", "custom"
-    ),
-    mi = c(
-      "gaussian", "student", "lognormal", "skew_normal",
-      "inverse.gaussian", "exponential", "weibull", 
-      "gamma", "exgaussian", "frechet", "beta",
-      "asym_laplace", "gen_extreme_value", "custom"
-    ),
-    dec = c("wiener", "custom"),
-    stop2("Addition argument '", x, "' is not supported.")
-  )
-}
-
 allvars_formula <- function(x) {
   # combine all variables in one formuula
   # Args:
@@ -818,106 +782,87 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
   unique(ulapply(x$terms, get_advars, ad = ad, ...))
 }
 
-get_sm_labels <- function(x, data = NULL, covars = FALSE, combine = TRUE) {
-  # extract labels of smooth terms
+tidy_smef <- function(x, data) {
+  # extract information about smooth terms
   # Args:
   #   x: either a formula or a list containing an element "sm"
-  #   data: optional data frame containing the covariates
-  #   covars: should the names of the covariates be returned
-  #           instead of the full term names?
-  #   combine: combine names of the covariates (TRUE) 
-  #            or just return the covariate names (FALSE)?
+  #   data: data frame containing the covariates
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    sm_form <- x$dpars$mu[["sm"]]
-  } else {
-    sm_form <- x[["sm"]] 
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
-  if (!is.formula(sm_form)) {
-    return(character(0))
+  form <- x[["sm"]] 
+  if (!is.formula(form)) {
+    return(empty_data_frame())
   }
-  return_covars <- covars
-  byvars <- attr(sm_form, "byvars")
-  out <- all_terms(sm_form) 
-  if (return_covars) {
-    sfuns <- get_matches("^[^\\(]+", out)
-    covars <- attr(sm_form, "covars")
-    for (i in seq_along(covars)) {
-      covars[[i]] <- c(covars[[i]], byvars[[i]])
+  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  nterms <- nrow(out)
+  out$sfun <- get_matches("^[^\\(]+", out$term)
+  out$vars <- out$byvars <- out$covars <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    sm <- eval2(out$term[i])
+    out$covars[[i]] <- sm$term
+    if (sm$by != "NA") {
+      out$byvars[[i]] <- sm$by
     }
-    if (combine) {
-      out <- paste0(sfuns, rename(ulapply(covars, collapse)))
+    out$vars[[i]] <- c(out$covars[[i]], out$byvars[[i]])
+  }
+  out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
+  # prepare information inferred from the data
+  sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
+  bylevels <- attr(sdata_fe$X, "bylevels")
+  nby <- lengths(bylevels)
+  tmp <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    tmp[[i]] <- out[i, , drop = FALSE]
+    tmp[[i]]$termnum <- i
+    if (nby[i] > 0L) {
+      tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
+      tmp[[i]]$bylevel <- bylevels[[i]]
+      tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
+      str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
     } else {
-      out <- covars
+      tmp[[i]]$bylevel <- NA
+      tmp[[i]]$byterm <- tmp[[i]]$term
     }
   }
-  if (length(out) && !is.null(data)) {
-    # one smooth term may contain multiple design matrices
-    if (return_covars && !combine) {
-      stop("Invalid combination of arguments. Please report a bug.")
-    }
-    sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
-    by_levels <- attr(sdata_fe$X, "by_levels")
-    nby <- lengths(by_levels)
-    out <- as.list(out)
-    for (i in seq_along(out)) {
-      if (nby[i] > 0L) {
-        out[[i]] <- paste0(out[[i]], rename(by_levels[[i]]))
-      }
-    }
-    nby[nby == 0L] <- 1L
-    termnum <- rep(seq_along(out), nby)
-    out <- unlist(out)
-    knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
-    nbases <- setNames(ulapply(knots, length), out)
-    alist <- nlist(nbases, by_levels, termnum)
-    attributes(out)[names(alist)] <- alist
-  }
-  structure(out, byvars = byvars)
+  out <- do.call(rbind, tmp)
+  out$knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
+  out$nbases <- lengths(out$knots)
+  rownames(out) <- NULL
+  out
 }
 
-get_gp_labels <- function(x, data = NULL, covars = FALSE) {
+tidy_gpef <- function(x, data) {
   # get labels of gaussian process terms
   # Args:
   #   x: either a formula or a list containing an element "gp"
-  #   covars: should the conbined names of the covariates be 
-  #           returned instead of the full term names?
+  #   data: data frame containing the covariates
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)
-    gp_form <- x$dpars$mu[["gp"]]
-  } else {
-    gp_form <- x[["gp"]]
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
-  if (!is.formula(gp_form)) {
-    return(character(0))
+  form <- x[["gp"]]
+  if (!is.formula(form)) {
+    return(empty_data_frame())
   }
-  byvars = attr(gp_form, "byvars")
-  gp_terms <- all_terms(gp_form)
-  by_levels <- named_list(gp_terms)
-  out <- rep(NA, length(gp_terms))
-  for (i in seq_along(gp_terms)) {
-    gp <- eval2(gp_terms[i])
-    if (covars) {
-      out[i] <- paste0("gp", collapse(gp$term))
-      if (gp$by != "NA") {
-        out[i] <- paste0(out[i], gp$by)
-      }
-    } else {
-      out[i] <- gp$label
-    }
-    if (!is.null(data)) {
-      if (gp$by != "NA") {
-        Cgp <- get(gp$by, data)
-        if (!is.numeric(Cgp)) {
-          by_levels[[i]] <- levels(factor(Cgp))
-        }
+  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  nterms <- nrow(out)
+  out$bylevels <- out$byvars <- out$covars <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    gp <- eval2(out$term[i])
+    out$label[i] <- paste0("gp", rename(collapse(gp$term)))
+    out$cov[i] <- gp$cov
+    out$scale[i] <- gp$scale
+    out$covars[[i]] <- gp$term
+    if (gp$by != "NA") {
+      out$byvars[[i]] <- gp$by
+      str_add(out$label[i]) <- rename(gp$by)
+      Cgp <- get(gp$by, data)
+      if (is_like_factor(Cgp)) {
+        out$bylevels[[i]] <- levels(factor(Cgp))
       }
     }
   }
-  if (covars) {
-    out <- rename(out)
-  }
-  structure(out, byvars = byvars, by_levels = by_levels)
+  out
 }
 
 all_terms <- function(x) {
@@ -1154,7 +1099,7 @@ get_bounds <- function(bterms, data = NULL, incl_family = FALSE,
 }
 
 get_family_bounds <- function(bterms) {
-  # get boundaries of response distribution
+  # get boundaries of response distributions
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family$family
   if (is.null(family)) {

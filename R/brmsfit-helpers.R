@@ -290,6 +290,31 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   out
 }
 
+get_cov_matrix_arma <- function(draws, obs) {
+  # helper function to compute ARMA covariance matrices
+  # currently, only ARMA1 processes are implemented
+  # Args:
+  #   draws: a brmsdraws object
+  #   obs: observations for which to compute the covariance matrix
+  nobs <- length(obs)
+  # make sure not to add 'se' twice
+  se <- draws$data$se[obs]
+  draws$data$se <- NULL
+  sigma <- get_dpar(draws, "sigma", i = obs)
+  ar <- as.numeric(draws$ac$ar)
+  ma <- as.numeric(draws$ac$ma)
+  if (length(ar) && !length(ma)) {
+    out <- get_cov_matrix_ar1(ar, sigma, nobs, se)
+  } else if (!length(ar) && length(ma)) {
+    out <- get_cov_matrix_ma1(ma, sigma, nobs, se)
+  } else if (length(ar) && length(ma)) {
+    out <- get_cov_matrix_arma1(ar, ma, sigma, nobs, se)
+  } else {
+    out <- get_cov_matrix_ident(sigma, nobs, se)
+  }
+  out
+}
+
 get_cov_matrix_ar1 <- function(ar, sigma, nrows, se = NULL) {
   # compute the covariance matrix for an AR1 process
   # Args: 
@@ -524,7 +549,7 @@ get_se <- function(draws, i = NULL) {
   # extract user-defined standard errors
   # Args: see get_dpar
   stopifnot(is.brmsdraws(draws))
-  se <- draws$data[["se"]]
+  se <- as.vector(draws$data[["se"]])
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]

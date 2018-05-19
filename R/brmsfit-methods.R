@@ -638,12 +638,6 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #'
 #' @param object An object of class \code{brmsfit}
-#' @param waic,loo Logical; Indicating if the LOO or WAIC information
-#'   criteria should be computed and shown in the summary. 
-#'   Defaults to \code{FALSE}.
-#' @param R2 Logical; Indicating if the Bayesian R-squared
-#'   should be computed and shown in the summary. 
-#'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param prob A value between 0 and 1 indicating the desired probability 
@@ -662,8 +656,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, 
-                            R2 = FALSE, priors = FALSE, prob = 0.95,
+summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             mc_se = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(object$formula)
@@ -694,15 +687,6 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
-  }
-  if (loo || is.ic(object[["loo"]])) {
-    out$loo <- SW(LOO(object)$estimates[3, 1])
-  }
-  if (waic || is.ic(object[["waic"]])) {
-    out$waic <- SW(WAIC(object)$estimates[3, 1])
-  }
-  if (R2 || is.matrix(object[["R2"]])) {
-    out$R2 <- mean(bayes_R2(object, summary = FALSE))
   }
   
   pars <- parnames(object)
@@ -780,12 +764,17 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     sd_pars <- pars[grepl(sd_prefix, pars)]
     cor_prefix <- paste0("^cor_", gregex, "__")
     cor_pars <- pars[grepl(cor_prefix, pars)]
-    out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    if (nrow(out$random[[g]])) {
+    df_prefix <- paste0("^df_", gregex, "$")
+    df_pars <- pars[grepl(df_prefix, pars)]
+    gpars <- c(df_pars, sd_pars, cor_pars)
+    out$random[[g]] <- fit_summary[gpars, , drop = FALSE]
+    if (has_rows(out$random[[g]])) {
       sd_names <- sub(sd_prefix, "sd(", sd_pars)
       cor_names <- sub(cor_prefix, "cor(", cor_pars)
       cor_names <- sub("__", ",", cor_names)
-      rownames(out$random[[g]]) <- paste0(c(sd_names, cor_names), ")")
+      df_names <- sub(df_prefix, "df", df_pars)
+      gnames <- c(df_names, paste0(c(sd_names, cor_names), ")"))
+      rownames(out$random[[g]]) <- gnames
     }
   }
   # summary of smooths
@@ -984,7 +973,29 @@ launch_shinystan.brmsfit <- function(
   object, rstudio = getOption("shinystan.rstudio"), ...
 ) {
   contains_samples(object)
-  launch_shinystan(object$fit, rstudio = rstudio, ...)
+  if (object$algorithm != "sampling") {
+    return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
+  } 
+  draws <- as.array(object)
+  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
+  control <- object$fit@stan_args[[1]]$control
+  if (is.null(control)) {
+    max_td <- 11
+  } else {
+    max_td <- control$max_treedepth
+    if (is.null(max_td)) {
+      max_td <- 11 
+    }
+  }
+  sso <- shinystan::as.shinystan(
+    X = draws, 
+    model_name = object$fit@model_name,
+    warmup = 0, 
+    sampler_params = sampler_params, 
+    max_treedepth = max_td,
+    algorithm = "NUTS"
+  )
+  shinystan::launch_shinystan(sso, rstudio = rstudio, ...)
 }
 
 #' Trace and Density Plots for MCMC Samples
@@ -2400,52 +2411,164 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 }
 
 #' @export
-#' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
 WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, model_names = NULL) {
-  args <- split_dots(x, ..., model_names = model_names)
-  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
-  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
-  c(args) <- nlist(ic = "waic", compare, resp)
-  do.call(compute_ics, args)
+                         pointwise = FALSE, model_names = NULL) {
+  cl <- match.call()
+  cl[[1]] <- quote(waic)
+  eval(cl, parent.frame())
 }
 
+#' Compute the WAIC
+#' 
+#' Compute the widely applicable information criterion (WAIC)
+#' based on the posterior likelihood using the \pkg{loo} package.
+#' For more details see \code{\link[loo:waic]{waic}}
+#' 
+#' @aliases waic WAIC WAIC.brmsfit
+#' 
+#' @inheritParams loo.brmsfit
+#' 
+#' @details When comparing models fitted to the same data, 
+#'  the smaller the WAIC, the better the fit. For \code{brmsfit} 
+#'  objects, \code{WAIC} is an alias of \code{waic}.
+#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{ic}. 
+#'  If multiple objects are provided, an object of class \code{iclist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' waic(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' # compare both models
+#' waic(fit1, fit2)                          
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
 #' @importFrom loo waic
 #' @export waic
 #' @export
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, model_names = NULL) {
-  cl <- match.call()
-  cl[[1]] <- quote(WAIC)
-  eval(cl, parent.frame())
+                         pointwise = FALSE, model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
+  c(args) <- nlist(ic = "waic", pointwise, compare, resp)
+  do.call(compute_ics, args)
 }
 
 #' @export
-#' @describeIn LOO \code{LOO} method for \code{brmsfit} objects
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                        pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
+                        pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
                         model_names = NULL) {
+  cl <- match.call()
+  cl[[1]] <- quote(loo)
+  eval(cl, parent.frame())
+}
+
+#' Compute the LOO information criterion
+#' 
+#' Perform approximate leave-one-out cross-validation based 
+#' on the posterior likelihood using the \pkg{loo} package.
+#' For more details see \code{\link[loo:loo]{loo}}.
+#' 
+#' @aliases loo LOO LOO.brmsfit
+#' 
+#' @param x A fitted model object.
+#' @param ... More fitted model objects or further arguments
+#'   passed to the underlying post-processing functions.
+#' @param compare A flag indicating if the information criteria
+#'  of the models should be compared to each other
+#'  via \code{\link{compare_ic}}.
+#' @param pointwise A flag indicating whether to compute the full
+#'  log-likelihood matrix at once or separately for each observation. 
+#'  The latter approach is usually considerably slower but 
+#'  requires much less working memory. Accordingly, if one runs 
+#'  into memory issues, \code{pointwise = TRUE} is the way to go.
+#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
+#'  should be applied on problematic observations. Defaults to \code{FALSE}.
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   Only used if argument \code{reloo} is \code{TRUE}.
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
+#' @inheritParams predict.brmsfit
+#' 
+#' @details When comparing models fitted to the same data, 
+#'  the smaller the LOO, the better the fit. For \code{brmsfit} 
+#'  objects, \code{LOO} is an alias of \code{loo}.
+#'  Use method \code{\link{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{ic}. 
+#'  If multiple objects are provided, an object of class \code{iclist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' loo(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' # compare both models
+#' loo(fit1, fit2)                          
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @importFrom loo loo
+#' @export loo
+#' @export
+loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
+                         model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  args$pointwise <- set_pointwise(x, pointwise, args$newdata, args$subset)
   not_for_reloo <- intersect(names(args), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
     not_for_reloo <- collapse_comma(not_for_reloo)
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
   args$use_stored_ic <- !length(not_for_reloo)
-  c(args) <- nlist(ic = "loo", compare, resp, k_threshold, reloo)
+  c(args) <- nlist(ic = "loo", pointwise, compare, resp, k_threshold, reloo)
   do.call(compute_ics, args)
-}
-
-#' @importFrom loo loo
-#' @export loo
-#' @export
-loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = NULL, reloo = FALSE, k_threshold = 0.7,
-                         model_names = NULL) {
-  cl <- match.call()
-  cl[[1]] <- quote(LOO)
-  eval(cl, parent.frame())
 }
 
 #' @export
@@ -2464,8 +2587,8 @@ kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL,
 
 #' Compute Weighted Expectations Using LOO
 #' 
-#' These functions are wrappers around the \code{\link[loo]{E_loo}} function 
-#' of the \pkg{loo} package.
+#' These functions are wrappers around the \code{\link[loo]{E_loo}} 
+#' function of the \pkg{loo} package.
 #'
 #' @aliases loo_predict loo_linpred loo_predictive_interval
 #' 
@@ -2587,7 +2710,7 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' 
 #' @aliases loo_model_weights
 #' 
-#' @inheritParams LOO.brmsfit
+#' @inheritParams loo.brmsfit
 #' 
 #' @return A named vector of model weights.
 #' 
@@ -2638,7 +2761,7 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   required to compute the log-likelihood separately for each
 #'   observation. The latter option is rarely useful when
 #'   calling \code{log_lik} directly, but rather when computing
-#'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#'   \code{\link{waic}} or \code{\link{loo}}.
 #' @param ... Currently ignored
 #' 
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood
@@ -3019,7 +3142,7 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' 
 #' @aliases post_prob
 #' 
-#' @inheritParams LOO.brmsfit
+#' @inheritParams loo.brmsfit
 #' @param prior_prob Numeric vector with prior model probabilities. 
 #'   If omitted, a uniform prior is used (i.e., all models are equally 
 #'   likely a priori). The default \code{NULL} corresponds to equal 

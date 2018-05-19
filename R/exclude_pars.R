@@ -29,7 +29,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       c(out) <- paste0("Xme_", K)
     }
   }
-  if (nrow(ranef)) {
+  if (has_rows(ranef)) {
     rm_re_pars <- c(if (!save_all_pars) c("z", "L"), "Cor", "r")
     for (id in unique(ranef$id)) {
       c(out) <- paste0(rm_re_pars, "_", id)
@@ -37,6 +37,10 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     if (!save_ranef) {
       p <- usc(combine_prefix(ranef))
       c(out) <- paste0("r_", ranef$id, p, "_", ranef$cn)
+    }
+    tranef <- get_dist_groups(ranef, "student")
+    if (!save_all_pars && has_rows(tranef)) {
+      c(out) <- paste0("udf_", tranef$ggn)
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)
@@ -100,12 +104,10 @@ exclude_pars_internal.btl <- function(x, data, ...) {
     paste0("temp", p, "_Intercept"),
     paste0(c("hs_local", "hs_global", "zb"), p)
   )
-  sms <- get_sm_labels(x, data)
-  if (length(sms) && !is.null(data)) {
-    for (i in seq_along(sms)) {
-      nb <- seq_len(attr(sms, "nbases")[[i]])
-      c(out) <- paste0("zs", p, "_", i, "_", nb)
-    } 
+  smef <- tidy_smef(x, data)
+  for (i in seq_len(nrow(smef))) {
+    nb <- seq_len(smef$nbases[i])
+    c(out) <- paste0("zs", p, "_", i, "_", nb)
   }
   out
 }

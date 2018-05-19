@@ -1126,6 +1126,289 @@ rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   out
 }
 
+#' Zero-Inflated Distributions
+#' 
+#' Density and distribution functions for zero-inflated distributions.
+#' 
+#' @name ZeroInflated
+#' 
+#' @inheritParams StudentT
+#' @param zi zero-inflation propability
+#' @param mu,lambda location parameter
+#' @param shape,shape1,shape2 shape parameter
+#' @param size number of trials
+#' @param prob probability of success on each trial
+#' 
+#' @details 
+#' The density of a zero-inflated distribution can be specified as follows.
+#' If \eqn{x = 0} set \eqn{f(x) = \theta + (1 - \theta) * g(0)}.
+#' Else set \eqn{f(x) = (1 - \theta) * g(x)},
+#' where \eqn{g(x)} is the density of the non-zero-inflated part.
+NULL
+
+#' @rdname ZeroInflated
+#' @export
+dzero_inflated_poisson <- function(x, lambda, zi, log = FALSE) {
+  pars <- nlist(lambda)
+  .dzero_inflated(x, "pois", zi, pars, log)
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_poisson <- function(q, lambda, zi, lower.tail = TRUE, 
+                                   log.p = FALSE) {
+  pars <- nlist(lambda)
+  .pzero_inflated(q, "pois", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+dzero_inflated_negbinomial <- function(x, mu, shape, zi, log = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .dzero_inflated(x, "nbinom", zi, pars, log)
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_negbinomial <- function(q, mu, shape, zi, lower.tail = TRUE,
+                                       log.p = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .pzero_inflated(q, "nbinom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+dzero_inflated_binomial <- function(x, size, prob, zi, log = FALSE) {
+  pars <- nlist(size, prob)
+  .dzero_inflated(x, "binom", zi, pars, log)
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
+                                    log.p = FALSE) {
+  pars <- nlist(size, prob)
+  .pzero_inflated(q, "binom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+dzero_inflated_beta <- function(x, shape1, shape2, zi, log = FALSE) {
+  pars <- nlist(shape1, shape2)
+  # zi_beta is technically a hurdle model
+  .dhurdle(x, "beta", zi, pars, log, type = "real")
+}
+
+#' @rdname ZeroInflated
+#' @export
+pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE, 
+                                log.p = FALSE) {
+  pars <- nlist(shape1, shape2)
+  # zi_beta is technically a hurdle model
+  .phurdle(q, "beta", zi, pars, lower.tail, log.p, type = "real")
+}
+
+.dzero_inflated <- function(x, dist, zi, pars, log) {
+  # density function of zero-inflated models
+  # Args:
+  #   dist: name of the distribution
+  #   zi: bernoulli zero-inflated parameter
+  #   pars: list of parameters passed to pdf
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  log <- as_one_logical(log)
+  args <- expand(dots = c(nlist(x, zi), pars))
+  x <- args$x
+  zi <- args$zi
+  pars <- args[names(pars)]
+  pdf <- paste0("d", dist) 
+  out <- ifelse(x == 0, 
+    log(zi + (1 - zi) * do.call(pdf, c(0, pars))),
+    log(1 - zi) + do.call(pdf, c(list(x), pars, log = TRUE))
+  )
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+.pzero_inflated <- function(q, dist, zi, pars, lower.tail, log.p) {
+  # distribution function of zero-inflated models
+  # Args:
+  #   dist: name of the distribution
+  #   zi: bernoulli zero-inflated parameter
+  #   pars: list of parameters passed to pdf
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  args <- expand(dots = c(nlist(q, zi), pars))
+  q <- args$q
+  zi <- args$zi
+  pars <- args[names(pars)]
+  cdf <- paste0("p", dist)
+  out <- log(1 - zi) +
+    do.call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+  if (lower.tail) {
+    out <- 1 - exp(out)
+    if (log.p) {
+      out <- log(out)
+    }
+  } else {
+    if (!log.p) {
+      out <- exp(out)
+    }
+  }
+  out
+}
+
+#' Hurdle Distributions
+#' 
+#' Density and distribution functions for hurdle distributions.
+#' 
+#' @name Hurdle
+#' 
+#' @inheritParams StudentT
+#' @param hu hurdle propability
+#' @param mu,lambda location parameter
+#' @param shape shape parameter
+#' @param sigma,scale scale parameter
+#' 
+#' @details 
+#' The density of a hurdle distribution can be specified as follows.
+#' If \eqn{x = 0} set \eqn{f(x) = \theta}. Else set
+#' \eqn{f(x) = (1 - \theta) * g(x) / (1 - G(0))}
+#' where \eqn{g(x)} and \eqn{G(x)} are the density and distribution
+#' function of the non-hurdle part, respectively.
+NULL
+
+#' @rdname Hurdle
+#' @export
+dhurdle_poisson <- function(x, lambda, hu, log = FALSE) {
+  pars <- nlist(lambda)
+  .dhurdle(x, "pois", hu, pars, log, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+phurdle_poisson <- function(q, lambda, hu, lower.tail = TRUE, 
+                            log.p = FALSE) {
+  pars <- nlist(lambda)
+  .phurdle(q, "pois", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+dhurdle_negbinomial <- function(x, mu, shape, hu, log = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .dhurdle(x, "nbinom", hu, pars, log, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+phurdle_negbinomial <- function(q, mu, shape, hu, lower.tail = TRUE, 
+                                log.p = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .phurdle(q, "nbinom", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+dhurdle_gamma <- function(x, shape, scale, hu, log = FALSE) {
+  pars <- nlist(shape, scale)
+  .dhurdle(x, "gamma", hu, pars, log, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+phurdle_gamma <- function(q, shape, scale, hu, lower.tail = TRUE, 
+                          log.p = FALSE) {
+  pars <- nlist(shape, scale)
+  .phurdle(q, "gamma", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+dhurdle_lognormal <- function(x, mu, sigma, hu, log = FALSE) {
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .dhurdle(x, "lnorm", hu, pars, log, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
+                              log.p = FALSE) {
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .phurdle(q, "lnorm", hu, pars, lower.tail, log.p, type = "real")
+}
+
+.dhurdle <- function(x, dist, hu, pars, log, type) {
+  # density function of hurdle models
+  # Args:
+  #   dist: name of the distribution
+  #   hu: bernoulli hurdle parameter
+  #   pars: list of parameters passed to pdf
+  #   type: support of distribution (int or real)
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  log <- as_one_logical(log)
+  type <- match.arg(type, c("int", "real"))
+  args <- expand(dots = c(nlist(x, hu), pars))
+  x <- args$x
+  hu <- args$hu
+  pars <- args[names(pars)]
+  pdf <- paste0("d", dist)
+  if (type == "int") {
+    lccdf0 <- log(1 - do.call(pdf, c(0, pars)))
+  } else {
+    lccdf0 <- 0
+  }
+  out <- ifelse(x == 0, 
+    log(hu),
+    log(1 - hu) + do.call(pdf, c(list(x), pars, log = TRUE)) - lccdf0
+  )
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+.phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type) {
+  # distribution function of hurdle models
+  # Args:
+  #   dist: name of the distribution
+  #   hu: bernoulli hurdle parameter
+  #   pars: list of parameters passed to pdf
+  #   type: support of distribution (int or real)
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  type <- match.arg(type, c("int", "real"))
+  args <- expand(dots = c(nlist(q, hu), pars))
+  q <- args$q
+  hu <- args$hu
+  pars <- args[names(pars)]
+  cdf <- paste0("p", dist)
+  out <- log(1 - hu) +
+    do.call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+  if (type == "int") {
+    pdf <- paste0("d", dist)
+    out <- out - log(1 - do.call(pdf, c(0, pars)))
+  }
+  if (lower.tail) {
+    out <- 1 - exp(out)
+    if (log.p) {
+      out <- log(out)
+    }
+  } else {
+    if (!log.p) {
+      out <- exp(out)
+    }
+  }
+  out
+}
+
 dcategorical <- function(x, eta, link = "logit", log = FALSE) {
   # density of the categorical distribution
   # Args:

@@ -149,153 +149,95 @@ log_lik_student_mv <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
-  # currently, only ARMA1 processes are implemented
-  stop_no_pw()
   obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  args <- list(
-    sigma = get_dpar(draws, "sigma", obs),
-    se = draws$data$se[obs], nrows = length(obs)
-  )
-  if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
-    args$ar <- draws$ac$ar
-    Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ac$ar) && !is.null(draws$ac$ma)) {
-    args$ma <- draws$ac$ma
-    Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
-    args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_arma1, args)
+  Y <- as.numeric(draws$data$Y[obs])
+  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
+  Sigma <- get_cov_matrix_arma(draws, obs)
+  .log_lik <- function(s) {
+    C <- as.matrix(Sigma[s, , ])
+    g <- solve(C, Y - mu[s, ])
+    cbar <- diag(solve(C))
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
   }
-  # make sure par[s, ] is valid even if obs is of length 1
-  mu <- as.matrix(get_dpar(draws, "mu", obs))
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, function(s)
-    dmulti_normal(
-      draws$data$Y[obs], mu = mu[s, ], 
-      Sigma = Sigma[s, , ], log = TRUE
-    )
-  )
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
-  # currently, only ARMA1 processes are implemented
   stop_no_pw()
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  args <- list(
-    sigma = get_dpar(draws, "sigma", obs),
-    se = draws$data$se[obs], nrows = length(obs)
-  )
-  if (!is.null(draws$ac$ar) && is.null(draws$ac$ma)) {
-    args$ar <- draws$ac$ar
-    Sigma <- do.call(get_cov_matrix_ar1, args)
-  } else if (is.null(draws$ac$ar) && !is.null(draws$ac$ma)) {
-    args$ma <- draws$ac$ma
-    Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
-    args[c("ar", "ma")] <- draws$ac[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_arma1, args)
-  }
-  # make sure par[s, ] is valid even if obs is of length 1
-  mu <- as.matrix(get_dpar(draws, "mu", obs))
-  nu <- as.matrix(get_dpar(draws, "nu", obs))
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, function(s)
-    dmulti_student_t(
-      draws$data$Y[obs], df = nu[s, ], mu = mu[s, ], 
-      Sigma = Sigma[s, , ], log = TRUE
-    )
-  )
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_gaussian_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_normal(draws$data$Y, mu = mu, Sigma = Sigma, log = TRUE)
-  }
+  # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_gaussian_lagsar)
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  stopifnot(i == 1)
+  .log_lik <- function(s) {
+    IB <- I - with(draws$ac, lagsar[s, ] * W)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    g <- Cinv %*% (Y - solve(IB, mu[s, ]))
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_student_lagsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_student_t(
-      draws$data$Y, df = nu[s], mu = mu, 
-      Sigma = Sigma, log = TRUE
-    )
-  }
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  nu <- get_dpar(draws, "nu")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_student_lagsar)
 }
 
 log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
   stopifnot(i == 1)
-  .log_lik_gaussian_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_normal(draws$data$Y, mu = mu[s, ], Sigma = Sigma, log = TRUE)
-  }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_gaussian_errorsar)
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  .log_lik <- function(s) {
+    IB <- I - with(draws$ac, errorsar[s, ] * W)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    g <- Cinv %*% (Y - mu[s, ])
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  .log_lik_student_errorsar <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s, ] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
-    dmulti_student_t(
-      draws$data$Y, df = nu[s], mu = mu[s, ], 
-      Sigma = Sigma, log = TRUE
-    )
-  }
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  nu <- get_dpar(draws, "nu")
-  # weights, truncation and censoring not yet allowed
-  sapply(1:draws$nsamples, .log_lik_student_errorsar)
 }
 
 log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
   stopifnot(i == 1)
-  mu <- as.matrix(get_dpar(draws, "mu"))
-  ulapply(1:draws$nsamples, function(s) 
-    dmulti_normal(
-      draws$data$Y, mu = mu[s, ], 
-      Sigma = draws$ac$V, log = TRUE
-    )
-  )
+  mu <- get_dpar(draws, "mu")
+  Y <- as.numeric(draws$data$Y)
+  C <- draws$ac$V
+  cbar <- diag(solve(C))
+  .log_lik <- function(s) {
+    g <- solve(C, Y - mu[s, ])
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar)
+    ll <- dnorm(Y, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  out <- lapply(seq_len(draws$nsamples), .log_lik)
+  do.call(rbind, out)
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
   stop_no_pw()
-  stopifnot(i == 1)
-  mu <- as.matrix(get_dpar(draws, "mu"))
-  nu <- as.matrix(get_dpar(draws, "nu"))
-  sapply(1:draws$nsamples, function(s) 
-    dmulti_student_t(
-      draws$data$Y, df = nu[s, ], mu = mu[s, ],
-      Sigma = draws$ac$V, log = TRUE
-    )
-  )
 }
 
 log_lik_binomial <- function(i, draws, data = data.frame()) {
@@ -364,10 +306,8 @@ log_lik_exponential <- function(i, draws, data = data.frame()) {
 
 log_lik_gamma <- function(i, draws, data = data.frame()) {
   shape <- get_dpar(draws, "shape", i = i)
-  args <- list(
-    shape = shape, 
-    scale = get_dpar(draws, "mu", i) / shape
-  )
+  scale <- get_dpar(draws, "mu", i) / shape
+  args <- nlist(shape, scale)
   out <- log_lik_censor(dist = "gamma", args = args, i = i, data = draws$data)
   out <- log_lik_truncate(
     out, cdf = pgamma, args = args, i = i, data = draws$data
@@ -483,81 +423,80 @@ log_lik_asym_laplace <- function(i, draws, ...) {
 }
 
 log_lik_hurdle_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
-  args <- list(lambda = get_dpar(draws, "mu", i))
-  out <- log_lik_hurdle_discrete(pdf = dpois, theta = theta, 
-                                args = args, i = i, data = draws$data)
+  hu <- get_dpar(draws, "hu", i)
+  lambda <- get_dpar(draws, "mu", i)
+  args <- nlist(lambda, hu)
+  out <- log_lik_censor("hurdle_poisson", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_poisson, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               size = get_dpar(draws, "shape", i = i))
-  out <- log_lik_hurdle_discrete(pdf = dnbinom, theta = theta, 
-                                args = args, i = i, data = draws$data)
+  hu <- get_dpar(draws, "hu", i)
+  mu <- get_dpar(draws, "mu", i)
+  shape <- get_dpar(draws, "shape", i = i)
+  args <- nlist(mu, shape, hu)
+  out <- log_lik_censor("hurdle_negbinomial", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_negbinomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_gamma <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
+  hu <- get_dpar(draws, "hu", i)
   shape <- get_dpar(draws, "shape", i = i)
-  args <- list(
-    shape = shape, 
-    scale = get_dpar(draws, "mu", i) / shape
-  )
-  out <- log_lik_hurdle_continuous(
-    pdf = dgamma, theta = theta, args = args, i = i, data = draws$data
-  )
+  scale <- get_dpar(draws, "mu", i) / shape
+  args <- nlist(shape, scale, hu)
+  out <- log_lik_censor("hurdle_gamma", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_gamma, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "hu", i)
+  hu <- get_dpar(draws, "hu", i)
+  mu <- get_dpar(draws, "mu", i)
   sigma <- get_dpar(draws, "sigma", i = i)
-  args <- list(meanlog = get_dpar(draws, "mu", i), sdlog = sigma)
-  out <- log_lik_hurdle_continuous(pdf = dlnorm, theta = theta, 
-                                  args = args, i = i, data = draws$data)
+  args <- nlist(mu, sigma, hu)
+  out <- log_lik_censor("hurdle_lognormal", args, i, draws$data)
+  out <- log_lik_truncate(out, phurdle_lognormal, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(lambda = get_dpar(draws, "mu", i))
-  out <- log_lik_zero_inflated(pdf = dpois, theta = theta, 
-                              args = args, i = i, data = draws$data)
+  zi <- get_dpar(draws, "zi", i)
+  lambda <- get_dpar(draws, "mu", i)
+  args <- nlist(lambda, zi)
+  out <- log_lik_censor("zero_inflated_poisson", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_poisson, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    size = get_dpar(draws, "shape", i = i)
-  )
-  out <- log_lik_zero_inflated(
-    pdf = dnbinom, theta = theta, args = args, i = i, data = draws$data
-  )
+  zi <- get_dpar(draws, "zi", i)
+  mu <- get_dpar(draws, "mu", i)
+  shape <- get_dpar(draws, "shape", i = i)
+  args <- nlist(mu, shape, zi)
+  out <- log_lik_censor("zero_inflated_negbinomial", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_negbinomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
   trials <- draws$data$trials[i] 
-  theta <- get_dpar(draws, "zi", i)
-  args <- list(size = trials, prob = get_dpar(draws, "mu", i))
-  out <- log_lik_zero_inflated(pdf = dbinom, theta = theta, 
-                              args = args, i = i, data = draws$data)
+  mu <- get_dpar(draws, "mu", i) 
+  zi <- get_dpar(draws, "zi", i)
+  args <- list(size = trials, prob = mu, zi)
+  out <- log_lik_censor("zero_inflated_binomial", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_binomial, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
-  theta <- get_dpar(draws, "zi", i)
+  zi <- get_dpar(draws, "zi", i)
   mu <- get_dpar(draws, "mu", i)
   phi <- get_dpar(draws, "phi", i)
-  args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  # zi_beta is technically a hurdle model
-  out <- log_lik_hurdle_continuous(
-    pdf = dbeta, theta = theta, args = args, i = i, data = draws$data)
+  args <- nlist(shape1 = mu * phi, shape2 = (1 - mu) * phi, zi)
+  out <- log_lik_censor("zero_inflated_beta", args, i, draws$data)
+  out <- log_lik_truncate(out, pzero_inflated_beta, args, i, draws$data)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
@@ -744,56 +683,6 @@ log_lik_weight <- function(x, i, data) {
     x * data$weights[i]
   } else {
     x
-  }
-}
-
-log_lik_hurdle_discrete <- function(pdf, theta, args, i, data) {
-  # log_lik values for discrete hurdle models
-  # Args:
-  #  pdf: a probability density function 
-  #  theta: bernoulli hurdle parameter
-  #  args: arguments passed to pdf
-  #  data: data initially passed to Stan
-  # Returns:
-  #   vector of log_lik values
-  if (data$Y[i] == 0) {
-    dbinom(1, size = 1, prob = theta, log = TRUE)
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) + 
-      do.call(pdf, c(data$Y[i], args, log = TRUE)) -
-      log(1 - do.call(pdf, c(0, args)))
-  }
-}
-
-log_lik_hurdle_continuous <- function(pdf, theta, args, i, data) {
-  # log_lik values for continuous hurdle models
-  # does not call log(1 - do.call(pdf, c(0, args)))
-  # Args:
-  #   same as log_lik_hurdle_discrete
-  if (data$Y[i] == 0) {
-    dbinom(1, size = 1, prob = theta, log = TRUE)
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) + 
-      do.call(pdf, c(data$Y[i], args, log = TRUE))
-  }
-}
-
-log_lik_zero_inflated <- function(pdf, theta, args, i, data) {
-  # log_lik values for zero-inflated models
-  # Args:
-  #  pdf: a probability density function 
-  #  theta: bernoulli zero-inflation parameter
-  #  args: arguments passed to pdf
-  #  data: data initially passed to Stan
-  # Returns:
-  #   vector of log_lik values
-  if (data$Y[i] == 0) {
-    log(dbinom(1, size = 1, prob = theta) + 
-        dbinom(0, size = 1, prob = theta) *
-          do.call(pdf, c(0, args)))
-  } else {
-    dbinom(0, size = 1, prob = theta, log = TRUE) +
-      do.call(pdf, c(data$Y[i], args, log = TRUE))
   }
 }
 
