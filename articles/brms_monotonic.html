@@ -19,7 +19,7 @@
 <![endif]-->
 </head>
 <body>
-    <div class="container template-vignette">
+    <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.2.1</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.3.1</span>
       </span>
     </div>
 
@@ -113,9 +113,10 @@
       <h1>Estimating Monotonic Effects with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2018-04-25</h4>
+            <h4 class="date">2018-05-19</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_monotonic.Rmd"><code>vignettes/brms_monotonic.Rmd</code></a></small>
+      <div class="hidden name"><code>brms_monotonic.Rmd</code></div>
 
     </div>
 
@@ -159,7 +160,7 @@ fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.ht
 fit3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span>income, <span class="dt">data =</span> dat)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit3)</code></pre></div>
 <p>We can easily compare the fit of the three models using leave-one-out cross-validation.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/LOO.html">LOO</a></span>(fit1, fit2, fit3)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit1, fit2, fit3)</code></pre></div>
 <p>The monotonic model fits better than the continuous model, which is not surprising given that the relationship between <code>income</code> and <code>ls</code> is non-linear. The monotonic and the unorderd factor model have almost identical fit in this example, but this may not be the case for other data sets.</p>
 </div>
 <div id="setting-prior-distributions" class="section level2">

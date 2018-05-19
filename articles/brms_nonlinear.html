@@ -19,7 +19,7 @@
 <![endif]-->
 </head>
 <body>
-    <div class="container template-vignette">
+    <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.2.1</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.3.1</span>
       </span>
     </div>
 
@@ -113,9 +113,10 @@
       <h1>Estimating Non-Linear Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2018-04-25</h4>
+            <h4 class="date">2018-05-19</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_nonlinear.Rmd"><code>vignettes/brms_nonlinear.Rmd</code></a></small>
+      <div class="hidden name"><code>brms_nonlinear.Rmd</code></div>
 
     </div>
 
@@ -162,7 +163,7 @@ fit1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.ht
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(fit1)
 <span class="kw"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(fit2)</code></pre></div>
 <p>We can also easily compare model fit using leave-one-out cross-validation.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/LOO.html">LOO</a></span>(fit1, fit2)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</code></pre></div>
 <p>Since smaller <code>LOOIC</code> values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surpirsing since we simulated the data from exactly that model.</p>
 </div>
 <div id="a-real-world-non-linear-model" class="section level2">
@@ -226,7 +227,7 @@ dat_ir &lt;-<span class="st"> </span><span class="kw">data.frame</span>(ability,
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit_ir2)
 <span class="kw">plot</span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_ir2), <span class="dt">points =</span> <span class="ot">TRUE</span>)</code></pre></div>
 <p>Comparing model fit via leave-one-out cross-validation</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/LOO.html">LOO</a></span>(fit_ir1, fit_ir2)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit_ir1, fit_ir2)</code></pre></div>
 <p>shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don’t know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit_ir3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(
   <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(answer <span class="op">~</span><span class="st"> </span>guess <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>guess) <span class="op">*</span><span class="st"> </span><span class="kw">inv_logit</span>(eta), 

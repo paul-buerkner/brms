@@ -19,7 +19,7 @@
 <![endif]-->
 </head>
 <body>
-    <div class="container template-vignette">
+    <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.2.1</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">2.3.1</span>
       </span>
     </div>
 
@@ -113,9 +113,10 @@
       <h1>Define Custom Response Distributions with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2018-04-25</h4>
+            <h4 class="date">2018-05-19</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_customfamilies.Rmd"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
+      <div class="hidden name"><code>brms_customfamilies.Rmd</code></div>
 
     </div>
 
@@ -202,7 +203,7 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
 <div id="post-processing-custom-family-models" class="section level2">
 <h2 class="hasAnchor">
 <a href="#post-processing-custom-family-models" class="anchor"></a>Post-Processing Custom Family Models</h2>
-<p>Some post-proecssing methods such as <code>summary</code> or <code>plot</code> work out of the box for custom family models. However, there are three particularily important methods, which require additional input by the user. These are <code>fitted</code>, <code>predict</code> and <code>log_lik</code> computing predicted mean values, predicted response values, and log-likelihood values, respectively. They are not only relevant for their own sake, but also provide the basis of many other post-processing methods. For instance, we may be interested in comparing the fit of the binomial model with that of the beta-binomial model by means of approximate leave-one-out cross-validation implemented in method <code>LOO</code>, which in turn requires <code>log_lik</code> to be working.</p>
+<p>Some post-proecssing methods such as <code>summary</code> or <code>plot</code> work out of the box for custom family models. However, there are three particularily important methods, which require additional input by the user. These are <code>fitted</code>, <code>predict</code> and <code>log_lik</code> computing predicted mean values, predicted response values, and log-likelihood values, respectively. They are not only relevant for their own sake, but also provide the basis of many other post-processing methods. For instance, we may be interested in comparing the fit of the binomial model with that of the beta-binomial model by means of approximate leave-one-out cross-validation implemented in method <code>loo</code>, which in turn requires <code>log_lik</code> to be working.</p>
 <p>The <code>log_lik</code> function of a family should be named <code>log_lik_&lt;family-name&gt;</code> and have the two arguments <code>i</code> (indicating observations) and <code>draws</code>. You don’t have to worry too much about how <code>draws</code> is created. Instead, all you need to know is that parameters are stored in slot <code>dpars</code> and data are stored in slot <code>data</code>. Generally, parameters take on the form of a <span class="math inline">\(S \times N\)</span> matrix (with <span class="math inline">\(S =\)</span> number of posterior samples and <span class="math inline">\(N =\)</span> number of observations) if they are predicted (as is <code>mu</code> in our example) and a vector of size <span class="math inline">\(N\)</span> if the are not predicted (as is <code>phi</code>).</p>
 <p>We could define the complete log-likelihood function R directly, or we can expose the self-defined <strong>Stan</strong> functions and apply them. The latter approach is usually more convenient, but the former is more stable and the only option when implementing custom families in other R packages building upon <strong>brms</strong>. For the purpose of the present vignette, we will go with the latter approach</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/expose_functions.html">expose_functions</a></span>(fit2, <span class="dt">vectorize =</span> <span class="ot">TRUE</span>)</code></pre></div>
@@ -215,7 +216,7 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
   <span class="kw">beta_binomial2_lpmf</span>(y, mu, phi, N)
 }</code></pre></div>
 <p>With that being done, all of the post-processing methods requiring <code>log_lik</code> will work as well. For instance, model comparison can simply be performed via</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/LOO.html">LOO</a></span>(fit1, fit2)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</code></pre></div>
 <p>Since smaller <code>LOOIC</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
 <p>Next, we will define the function necessary for the <code>predict</code> method:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">predict_beta_binomial2 &lt;-<span class="st"> </span><span class="cf">function</span>(i, draws, ...) {
@@ -240,7 +241,15 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
 <div id="turning-a-custom-family-into-a-native-family" class="section level2">
 <h2 class="hasAnchor">
 <a href="#turning-a-custom-family-into-a-native-family" class="anchor"></a>Turning a Custom Family into a Native Family</h2>
-<p>Family functions built natively into <strong>brms</strong> are saver to use and more convenient, as they require much less user input. Unfortunately, the current internal structure of <strong>brms</strong> makes it rather hard for an outside developer to implement a native family herself. If you feel that your custom family is general enough to be useful to other users, please feel free to open an issue on <a href="https://github.com/paul-buerkner/brms/issues">GitHub</a>, in which you provide general information about your family as well as all the necessary functions described above. Provided that you convince me, I will then go ahead and make the required changes to the <strong>brms</strong> code base.</p>
+<p>Family functions built natively into <strong>brms</strong> are saver to use and more convenient, as they require much less user input. If you think that your custom family is general enough to be useful to other users, please feel free to open an issue on <a href="https://github.com/paul-buerkner/brms/issues">GitHub</a> so that we can discuss all the details. Provided that we agree it makes sense to implement your family natively in brms, the following steps are required (<code>foo</code> is a placeholder for the family name):</p>
+<ul>
+<li>In <code>family-lists.R</code>, add function <code>.family_foo</code> which should contain basic information about your family (you will find lots of examples for other families there).</li>
+<li>In <code>families.R</code>, add family function <code>foo</code> which should be a simple wrapper around <code>.brmsfamily</code>.</li>
+<li>In <code>stan-likelihood.R</code>, add function <code>stan_llh_foo</code> which provides the likelihood of the family in Stan language.</li>
+<li>If necessary, add self-defined Stan functions in separate files under <code>inst/chunks</code>.</li>
+<li>Add functions <code>predict_foo</code>, <code>fitted_foo</code> and <code>log_lik_foo</code> to <code>predict.R</code>, <code>fitted.R</code> and <code>log_lik.R</code>, respectively.</li>
+<li>If necessary, add distribution functions to <code>distributions.R</code>.</li>
+</ul>
 </div>
   </div>
 
