@@ -16,3 +16,6 @@
 ^tests/local/
 ^tests/brmsfit_examples\.R$
 ^LICENSE$
+
+^docs$
+^_pkgdown\.yml$

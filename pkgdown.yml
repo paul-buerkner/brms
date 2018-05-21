@@ -1,0 +1,13 @@
+pandoc: 1.19.2.1
+pkgdown: 1.0.0
+pkgdown_sha: d43ca38c74827d1d6babc3a80d48cd3a8e8fad8c
+articles:
+  brms_customfamilies: brms_customfamilies.html
+  brms_distreg: brms_distreg.html
+  brms_families: brms_families.html
+  brms_missings: brms_missings.html
+  brms_monotonic: brms_monotonic.html
+  brms_multivariate: brms_multivariate.html
+  brms_nonlinear: brms_nonlinear.html
+  brms_phylogenetics: brms_phylogenetics.html
+
