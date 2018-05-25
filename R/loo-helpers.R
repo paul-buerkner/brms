@@ -24,9 +24,10 @@ WAIC <- function(x, ...) {
 #'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
 #'   will be performed on all subsets. If \code{Ksub} is a single integer, 
 #'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
-#'   If \code{Ksub} consists of multiple integers, the corresponding subsets 
-#'   will be used. This argument is primarily useful, if evaluation of all 
-#'   subsets is infeasible for some reason.
+#'   If \code{Ksub} consists of multiple integers or a one-dimensional array
+#'   (created via \code{as.array}) potentially of length one, the corresponding 
+#'   subsets will be used. This argument is primarily useful, if evaluation of 
+#'   all subsets is infeasible for some reason.
 #' @param exact_loo Logical; If \code{TRUE}, exact leave-one-out cross-validation
 #'   will be performed and \code{K} will be ignored. This argument alters
 #'   the way argument \code{group} is handled as described below. 
@@ -592,11 +593,13 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, exact_loo = FALSE,
   if (is.null(Ksub)) {
     Ksub <- seq_len(K)
   } else {
+    # see issue #441 for reasons to check for arrays
+    is_array_Ksub <- is.array(Ksub)
     Ksub <- as.integer(Ksub)
     if (any(Ksub <= 0 | Ksub > K)) {
       stop2("'Ksub' must contain positive integers not larger than 'K'.")
     }
-    if (length(Ksub) == 1L) {
+    if (length(Ksub) == 1L && !is_array_Ksub) {
       Ksub <- sample(seq_len(K), Ksub)
     } else {
       Ksub <- unique(Ksub)

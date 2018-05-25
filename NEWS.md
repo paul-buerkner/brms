@@ -9,6 +9,7 @@
 
 * Improve sampling efficiency of the ordinal families 
 `cumulative`, `sratio`, and `cratio`. (#433)
+* Allow to specify a single k-fold subset in method `kfold`. (#441)
 
 ### Bug fixes
 

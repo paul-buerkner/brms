@@ -32,9 +32,10 @@ equivalent to exact leave-one-out cross-validation.}
 to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
 will be performed on all subsets. If \code{Ksub} is a single integer, 
 \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
-If \code{Ksub} consists of multiple integers, the corresponding subsets 
-will be used. This argument is primarily useful, if evaluation of all 
-subsets is infeasible for some reason.}
+If \code{Ksub} consists of multiple integers or a one-dimensional array
+(created via \code{as.array}) potentially of length one, the corresponding 
+subsets will be used. This argument is primarily useful, if evaluation of 
+all subsets is infeasible for some reason.}
 
 \item{exact_loo}{Logical; If \code{TRUE}, exact leave-one-out cross-validation
 will be performed and \code{K} will be ignored. This argument alters
