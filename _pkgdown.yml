@@ -1,0 +1,58 @@
+
+template:
+  params:
+    bootswatch: cosmo
+
+navbar:
+  title: "brms"
+  left:
+    - text: "Vignettes"
+      href: articles/index.html
+    - text: "Functions"
+      href: reference/index.html
+    - text: "News"
+      href: news/index.html
+    - text: "Other Packages"
+      menu:
+        - text: "rstan"
+          href: http://mc-stan.org/rstan
+        - text: "rstanarm"
+          href: http://mc-stan.org/rstanarm
+        - text: "bayesplot"
+          href: http://mc-stan.org/bayesplot
+        - text: "shinystan"
+          href: http://mc-stan.org/shinystan
+        - text: "loo"
+          href: http://mc-stan.org/loo
+        - text: "projpred"
+          href: http://mc-stan.org/projpred
+        - text: "rstantools"
+          href: http://mc-stan.org/rstantools
+    - text: "Stan"
+      href: http://mc-stan.org
+  right:
+   - icon: fa-twitter
+     href: https://twitter.com/mcmc_stan
+   - icon: fa-github
+     href: https://github.com/stan-dev/brms
+   - icon: fa-users
+     href: http://discourse.mc-stan.org/
+
+home:
+  links:
+  - text: Ask a question
+    href: http://discourse.mc-stan.org/
+
+articles:
+  - title: "Getting Started"
+    desc: >
+       These vignettes demonstrate how to use various features of the **brms** package.     
+    contents:
+      - brms_custom_families
+      - brms_distreg
+      - brms_families
+      - brms_missings
+      - brms_monotonic
+      - brms_multivariate
+      - brms_nonlinear
+      - brms_phylogenetics
