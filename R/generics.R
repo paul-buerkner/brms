@@ -345,8 +345,8 @@ autocor <- function(object, ...) {
 #' 
 #' @details 
 #'   Also consider using the \pkg{shinystan} package available via 
-#'   method \code{\link{launch_shinystan}}. 
-#'   in \pkg{brms} for flexible and interactive visual analysis. 
+#'   method \code{\link{launch_shinystan}} in \pkg{brms} for flexible 
+#'   and interactive visual analysis. 
 #' 
 #' @examples
 #' \dontrun{
