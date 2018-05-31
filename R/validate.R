@@ -159,7 +159,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     if ("nu" %in% c(names(x$pforms), names(x$pfix))) {
       stop2("Cannot predict or fix 'nu' in this model.")
     }
-    x$pfix$nu <- 0
+    x$pfix$nu <- 1
   }
   disc_pars <- valid_dpars[dpar_class(valid_dpars) %in% "disc"]
   for (dp in disc_pars) {
