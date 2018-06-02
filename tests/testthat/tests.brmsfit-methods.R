@@ -125,8 +125,6 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(!isTRUE(all.equal(fi, fi_lin)))
   expect_error(fitted(fit1, dpar = "inv"),
                "Invalid argument 'dpar'")
-  expect_error(fitted(fit1, dpar = "nu"),
-               "Distributional parameter 'nu' was not predicted")
 
   fi <- fitted(fit2)
   expect_equal(dim(fi), c(nobs(fit2), 4))
