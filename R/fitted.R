@@ -31,24 +31,29 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
       out <- get_dpar(draws, dpar = "mu", ilink = FALSE)
     }
   } else {
-    if (length(dpar) != 1L || !dpar %in% dpars) {
+    dpar <- as_one_character(dpar)
+    if (!dpar %in% dpars) {
       stop2("Invalid argument 'dpar'. Valid distributional ",
             "parameters are: ", collapse_comma(dpars))
     }
     predicted <- is.bdrawsl(draws$dpars[[dpar]]) ||
       is.bdrawsnl(draws$dpars[[dpar]])
-    if (!predicted) {
-      stop2("Distributional parameter '", dpar, "' was not predicted.")
-    }
-    if (scale == "linear") {
-      draws$dpars[[dpar]]$f$link <- "identity"
-    }
-    if (dpar_class(dpar) == "theta" && scale == "response") {
-      ap_id <- as.numeric(dpar_id(dpar))
-      out <- get_theta(draws)[, , ap_id, drop = FALSE]
-      dim(out) <- dim(out)[c(1, 2)]
+    if (predicted) {
+      # parameter varies across observations
+      if (scale == "linear") {
+        draws$dpars[[dpar]]$f$link <- "identity"
+      }
+      if (dpar_class(dpar) == "theta" && scale == "response") {
+        ap_id <- as.numeric(dpar_id(dpar))
+        out <- get_theta(draws)[, , ap_id, drop = FALSE]
+        dim(out) <- dim(out)[c(1, 2)]
+      } else {
+        out <- get_dpar(draws, dpar = dpar, ilink = TRUE)
+      }
     } else {
-      out <- get_dpar(draws, dpar = dpar, ilink = TRUE)
+      # parameter is constant across observations
+      out <- draws$dpars[[dpar]]
+      out <- matrix(out, nrow = draws$nsamples, ncol = draws$nobs)
     }
   }
   draws$dpars <- NULL
