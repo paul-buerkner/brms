@@ -114,7 +114,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # fitted values of auxiliary parameters
   newdata <- data.frame(
-    Age = 0, visit = c("a", "b"), Trt = 0, 
+    Age = 0, visit = c("a", "b"), Trt = 0,
     count = 20, patient = 1, Exp = 2
   )
   fi <- fitted(fit1, dpar = "sigma")
@@ -134,18 +134,18 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit2, dpar = "shape")
   expect_equal(dim(fi), c(nobs(fit2), 4))
   expect_equal(fi[1, ], fi[2, ])
-  
-  fi <- fitted(fit3, newdata = fit3$data[1:10, ]) 
+
+  fi <- fitted(fit3, newdata = fit3$data[1:10, ])
   expect_equal(dim(fi), c(10, 4))
-  
+
   fi <- fitted(fit4)
   expect_equal(dim(fi), c(nobs(fit4), 4, 4))
   fi <- fitted(fit4, newdata = fit4$data[1, ])
   expect_equal(dim(fi), c(1, 4, 4))
-  
+
   fi <- fitted(fit5)
   expect_equal(dim(fi), c(nobs(fit5), 4))
-  
+
   fi <- fitted(fit6)
   expect_equal(dim(fi), c(nobs(fit6), 4, 2))
   expect_equal(dimnames(fi)[[3]], c("volume", "count"))
@@ -207,69 +207,6 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(log_lik(fit1)), c(nsamples(fit1), nobs(fit1)))
   expect_equal(dim(log_lik(fit2)), c(nsamples(fit2), nobs(fit2)))
   expect_equal(log_lik(fit1), logLik(fit1))
-  
-  # loo
-  loo1 <- SW(LOO(fit1, cores = 1))
-  expect_true(is.numeric(loo1$estimates))
-  expect_output(print(loo1), "looic")
-  
-  loo_compare1 <- SW(loo(fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare1), 3)
-  expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
-  expect_output(print(loo_compare1), "fit1 - fit1")
-  
-  loo_compare2 <- SW(loo(fit1, fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare2), 4)
-  expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
-  
-  loo2 <- SW(loo(fit2, cores = 1))
-  expect_true(is.numeric(loo2$estimates))
-  
-  loo3 <- SW(loo(fit3, cores = 1))
-  expect_true(is.numeric(loo3$estimates))
-  loo3 <- SW(loo(fit3, pointwise = TRUE, cores = 1))
-  expect_true(is.numeric(loo3$estimates))
-  
-  loo4 <- SW(loo(fit4, cores = 1))
-  expect_true(is.numeric(loo4$estimates))
-  
-  loo5 <- SW(loo(fit5, cores = 1))
-  expect_true(is.numeric(loo5$estimates))
-  
-  loo6_1 <- SW(loo(fit6, cores = 1))
-  expect_true(is.numeric(loo6_1$estimates))
-  loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
-  expect_true(is.numeric(loo6_2$estimates))
-  loo_compare <- compare_ic(loo6_1, loo6_2)
-  expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
-
-  # loo_linpred
-  llp <- SW(loo_linpred(fit1))
-  expect_equal(length(llp), nobs(fit1))
-  expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
-  llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
-  expect_equal(length(llp), nobs(fit2))
-  
-  # loo_predict
-  llp <- SW(loo_predict(fit1))
-  expect_equal(length(llp), nobs(fit1))
-  llp <- SW(loo_predict(
-    fit1, newdata = newdata, 
-    type = "quantile", probs = c(0.25, 0.75),
-    allow_new_levels = TRUE
-  ))
-  expect_equal(dim(llp), c(2, nrow(newdata)))
-  llp <- SW(loo_predict(fit4))
-  expect_equal(length(llp), nobs(fit4))
-  
-  # loo_predictive_interval
-  llp <- SW(loo_predictive_interval(fit3))
-  expect_equal(dim(llp), c(nobs(fit3), 2))
-  
-  # loo_model_weights
-  llw <- SW(loo_model_weights(fit2, fit2))
-  expect_is(llw[1:2], "numeric")
-  expect_equal(names(llw), c("fit2", "fit2"))
   
   # marginal_effects
   me <- marginal_effects(fit1)
@@ -722,4 +659,70 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # test fix of issue #214
   expect_true(is.null(attr(fit1$data$patient, "contrasts")))
+  
+  # ------ tests skipped on CRAN ------ #
+  skip_on_cran()
+  
+  # loo
+  loo1 <- SW(LOO(fit1, cores = 1))
+  expect_true(is.numeric(loo1$estimates))
+  expect_output(print(loo1), "looic")
+  
+  loo_compare1 <- SW(loo(fit1, fit1, cores = 1))
+  expect_equal(length(loo_compare1), 3)
+  expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
+  expect_output(print(loo_compare1), "fit1 - fit1")
+  
+  loo_compare2 <- SW(loo(fit1, fit1, fit1, cores = 1))
+  expect_equal(length(loo_compare2), 4)
+  expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
+  
+  loo2 <- SW(loo(fit2, cores = 1))
+  expect_true(is.numeric(loo2$estimates))
+  
+  loo3 <- SW(loo(fit3, cores = 1))
+  expect_true(is.numeric(loo3$estimates))
+  loo3 <- SW(loo(fit3, pointwise = TRUE, cores = 1))
+  expect_true(is.numeric(loo3$estimates))
+  
+  loo4 <- SW(loo(fit4, cores = 1))
+  expect_true(is.numeric(loo4$estimates))
+  
+  loo5 <- SW(loo(fit5, cores = 1))
+  expect_true(is.numeric(loo5$estimates))
+  
+  loo6_1 <- SW(loo(fit6, cores = 1))
+  expect_true(is.numeric(loo6_1$estimates))
+  loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
+  expect_true(is.numeric(loo6_2$estimates))
+  loo_compare <- compare_ic(loo6_1, loo6_2)
+  expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
+  
+  # loo_linpred
+  llp <- SW(loo_linpred(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
+  llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
+  expect_equal(length(llp), nobs(fit2))
+
+  # loo_predict
+  llp <- SW(loo_predict(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  llp <- SW(loo_predict(
+    fit1, newdata = newdata,
+    type = "quantile", probs = c(0.25, 0.75),
+    allow_new_levels = TRUE
+  ))
+  expect_equal(dim(llp), c(2, nrow(newdata)))
+  llp <- SW(loo_predict(fit4))
+  expect_equal(length(llp), nobs(fit4))
+
+  # loo_predictive_interval
+  llp <- SW(loo_predictive_interval(fit3))
+  expect_equal(dim(llp), c(nobs(fit3), 2))
+
+  # loo_model_weights
+  llw <- SW(loo_model_weights(fit2, fit2))
+  expect_is(llw[1:2], "numeric")
+  expect_equal(names(llw), c("fit2", "fit2"))
 })
