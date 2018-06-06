@@ -952,7 +952,8 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   prior_location <- 0
   prior_scale <- 10
   link <- x$family$link
-  if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
+  tlinks <- c("identity", "log", "inverse", "sqrt", "1/mu^2")
+  if (link %in% tlinks && !is_like_factor(Y)) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y) 
