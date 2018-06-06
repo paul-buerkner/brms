@@ -1,3 +1,9 @@
+# brms 2.3.1++
+
+### New features
+
+* Compute LOO adjusted R-squared by setting `loo = TRUE` in method `bayes_R2`.
+
 # brms 2.3.1
 
 ### New features

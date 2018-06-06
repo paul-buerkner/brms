@@ -663,6 +663,13 @@ test_that("all S3 methods have reasonable ouputs", {
   # ------ tests skipped on CRAN ------ #
   skip_on_cran()
   
+  # bayes_R2
+  R2 <- SW(bayes_R2(fit2, loo = TRUE))
+  expect_equal(dim(R2), c(1, 4))
+  
+  R2 <- SW(bayes_R2(fit6, loo = TRUE))
+  expect_equal(dim(R2), c(2, 4))
+  
   # loo
   loo1 <- SW(LOO(fit1, cores = 1))
   expect_true(is.numeric(loo1$estimates))

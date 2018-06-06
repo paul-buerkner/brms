@@ -5,17 +5,21 @@
 \alias{bayes_R2}
 \title{Compute a Bayesian version of R-squared for regression models}
 \usage{
-\method{bayes_R2}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, subset = NULL,
-  nsamples = NULL, resp = NULL, nug = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{bayes_R2}{brmsfit}(object, newdata = NULL, loo = FALSE,
+  re_formula = NULL, allow_new_levels = FALSE,
+  sample_new_levels = "uncertainty", new_objects = list(),
+  incl_autocor = TRUE, subset = NULL, nsamples = NULL, resp = NULL,
+  nug = NULL, summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the original data of the model is used.}
+
+\item{loo}{Logical; Indicates if the LOO-adjusted version of the
+R-squared should be computed. Defaults to \code{FALSE}.}
 
 \item{re_formula}{formula containing group-level effects 
 to be considered in the prediction. 

@@ -2113,6 +2113,8 @@ pp_average.brmsfit <- function(
 #' @aliases bayes_R2
 #' 
 #' @inheritParams predict.brmsfit
+#' @param loo Logical; Indicates if the LOO-adjusted version of the
+#' R-squared should be computed. Defaults to \code{FALSE}.
 #' 
 #' @return If \code{summary = TRUE} a 1 x C matrix is returned
 #'  (\code{C = length(probs) + 2}) containing summary statistics
@@ -2138,8 +2140,8 @@ pp_average.brmsfit <- function(
 #' @importFrom rstantools bayes_R2
 #' @export bayes_R2
 #' @export
-bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                             allow_new_levels = FALSE, 
+bayes_R2.brmsfit <- function(object, newdata = NULL, loo = FALSE,
+                             re_formula = NULL, allow_new_levels = FALSE, 
                              sample_new_levels = "uncertainty",
                              new_objects = list(), incl_autocor = TRUE, 
                              subset = NULL, nsamples = NULL, resp = NULL,
@@ -2148,6 +2150,7 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # do it like residuals.brmsfit
   contains_samples(object)
   object <- restructure(object)
+  loo <- as_one_logical(loo)
   family_names <- family_names(object)
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("Residuals are not defined for ordinal or categorical models.")
@@ -2172,25 +2175,43 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       subset, nsamples, nug, summary = FALSE, sort = TRUE
     )
     ypred <- do.call(fitted, pred_args)
-    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
-    .bayes_R2 <- function(y, ypred) {
-      y <- as.numeric(y)
-      e <- - 1 * sweep(ypred, 2, y)
-      var_ypred <- matrixStats::rowVars(ypred)
-      var_e <- matrixStats::rowVars(e)
-      return(as.matrix(var_ypred / (var_ypred + var_e)))
+    chains <- object$fit@sim$chains
+    if (loo) {
+      ll <- do.call(log_lik, c(pred_args, combine = FALSE))
+      # see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
+      .bayes_R2 <- function(y, ypred, ll, chains, ...) {
+        chain_id <- rep(seq_len(chains), each = nrow(ll) / chains)
+        r_eff <- loo::relative_eff(exp(ll), chain_id = chain_id)
+        psis_object <- loo::psis(log_ratios = -ll, r_eff = r_eff)
+        ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
+        eloo <- ypredloo - y
+        return(as.matrix(1 - var(eloo) / var(y)))
+      }
+    } else {
+      ll <- NULL
+      # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+      .bayes_R2 <- function(y, ypred, ...) {
+        e <- - 1 * sweep(ypred, 2, y)
+        var_ypred <- matrixStats::rowVars(ypred)
+        var_e <- matrixStats::rowVars(e)
+        return(as.matrix(var_ypred / (var_ypred + var_e)))
+      }
     }
     if (is.matrix(ypred)) {
+      # only one response variable
       if (!length(resp)) resp <- ""
       resp <- usc(resp)
-      y <- sdata[[paste0("Y", resp)]]
-      R2 <- .bayes_R2(y, ypred)
+      y <- as.numeric(sdata[[paste0("Y", resp)]])
+      R2 <- .bayes_R2(y, ypred, ll = ll, chains = chains)
     } else {
+      # multiple response variables
       resp <- usc(dimnames(ypred)[[3]])
       R2 <- named_list(resp)
       for (i in seq_along(R2)) {
         y <- as.numeric(sdata[[paste0("Y", resp[i])]])
-        R2[[i]] <- .bayes_R2(y, ypred[, , i])
+        R2[[i]] <- .bayes_R2(
+          y, ypred[, , i], ll = ll[, , i], chains = chains
+        )
       }
       R2 <- do.call(cbind, R2)
     }
