@@ -1303,11 +1303,6 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   pred_args <- move2start(pred_args, "object")
   names(pred_args)[1] <- ""
   yrep <- do.call(method, pred_args)
-  if (has_trials(family(object, resp = resp))) {
-    # use success proportions following Gelman and Hill (2006)
-    y <- y / sdata$trials
-    yrep <- yrep / as_draws_matrix(sdata$trials, dim = dim(yrep))
-  }
   ppc_args <- c(list(y, yrep), dots[!for_pred])
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
