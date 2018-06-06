@@ -595,7 +595,8 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
     if (!anyNA(pars)) {
       .prior_samples <- function(par) {
         # get prior samples for parameter par 
-        matches <- lapply(paste0("^", names(samples)), regexpr, text = par)
+        matches <- paste0("^", escape_all(names(samples)))
+        matches <- lapply(matches, regexpr, text = par)
         matches <- ulapply(matches, attr, which = "match.length")
         if (max(matches) == -1) {
           out <- NULL
