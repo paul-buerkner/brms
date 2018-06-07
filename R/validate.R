@@ -990,7 +990,7 @@ rsv_vars <- function(bterms) {
   stopifnot(is.brmsterms(bterms) || is.mvbrmsterms(bterms))
   .rsv_vars <- function(x) {
     rsv_int <- any(ulapply(x$dpars, has_rsv_intercept))
-    if (rsv_int) "intercept" else NULL
+    if (rsv_int) c("intercept", "Intercept") else NULL
   }
   if (is.mvbrmsterms(bterms)) {
     out <- unique(ulapply(bterms$terms, .rsv_vars))
