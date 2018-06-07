@@ -738,3 +738,11 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_equal(sdata$V, diag(2))
 })
 
+test_that("reserved variables 'Intercept' is handled correctly", {
+  dat <- data.frame(y = 1:10)
+  sdata <- make_standata(y ~ 0 + intercept, dat)
+  expect_true(all(sdata$X[, "intercept"] == 1))
+  sdata <- make_standata(y ~ 0 + Intercept, dat)
+  expect_true(all(sdata$X[, "Intercept"] == 1))
+})
+

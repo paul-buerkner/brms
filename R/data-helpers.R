@@ -60,7 +60,7 @@ update_data <- function(data, bterms, na.action = na.omit2,
 }
 
 data_rsv_intercept <- function(data, bterms) {
-  # add the resevered variable 'intercept' to the data
+  # add the resevered intercept variables to the data
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
@@ -71,7 +71,11 @@ data_rsv_intercept <- function(data, bterms) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
     }
-    data$intercept <- rep(1, length(data[[1]]))
+    if (any(data[["Intercept"]] != 1)) {
+      stop2("Variable name 'Intercept' is resevered in models ",
+            "without a population-level intercept.")
+    }
+    data$intercept <- data$Intercept <- rep(1, length(data[[1]]))
   }
   data
 }
@@ -434,11 +438,11 @@ get_model_matrix <- function(formula, data = environment(formula),
   }
   X <- stats::model.matrix(terms, data)
   cols2remove <- which(colnames(X) %in% cols2remove)
-  if (rename) {
-    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
-  }
   if (length(cols2remove)) {
     X <- X[, -cols2remove, drop = FALSE]
+  }
+  if (rename) {
+    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
   }
   X
 }

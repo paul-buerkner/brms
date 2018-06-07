@@ -964,7 +964,8 @@ has_intercept <- function(formula) {
 }
 
 has_rsv_intercept <- function(formula) {
-  # check if model makes use of the reserved variable 'intercept'
+  # check if model makes use of the reserved 
+  # variables 'intercept' or 'Intercept'
   # can handle non-linear formulas
   formula <- try(as.formula(formula), silent = TRUE)
   if (is(formula, "try-error")) {
@@ -975,7 +976,8 @@ has_rsv_intercept <- function(formula) {
       out <- FALSE
     } else {
       has_intercept <- attr(try_terms, "intercept")
-      out <- !has_intercept && "intercept" %in% all.vars(rhs(formula))
+      intercepts <- c("intercept", "Intercept")
+      out <- !has_intercept && any(intercepts %in% all.vars(rhs(formula)))
     }
   }
   out
