@@ -732,7 +732,8 @@ NULL
 
 #' @rdname brmsformula-helpers
 #' @export
-nlf <- function(formula, ..., flist = NULL, dpar = NULL, resp = NULL) {
+nlf <- function(formula, ..., flist = NULL, dpar = NULL, 
+                resp = NULL, loop = NULL) {
   formula <- as.formula(formula)
   resp_pars <- all.vars(formula[[2]])
   if (length(resp_pars) == 0L) {
@@ -744,6 +745,12 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL, resp = NULL) {
     dpar <- resp_pars
   } else {
     stop2("LHS of non-linear formula should contain only one variable.")
+  }
+  if (!is.null(loop)) {
+    attr(formula, "loop") <- as_one_logical(loop)
+  }
+  if (is.null(attr(formula, "loop"))) {
+    attr(formula, "loop") <- TRUE
   }
   out <- c(
     setNames(list(structure(formula, nl = TRUE)), dpar),
