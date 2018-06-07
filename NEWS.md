@@ -2,9 +2,9 @@
 
 ### New features
 
-* Compute LOO adjusted R-squared by setting `loo = TRUE` in method `bayes_R2`.
-* Allow to compute non-linear predictors outside of a loop over observations
-by means of argument `loop` in `brmsformula`.
+* Compute LOO-adjusted R-squared using method `loo_R2`.
+* Allow computing non-linear predictors outside of a loop over 
+observations by means of argument `loop` in `brmsformula`.
 
 
 # brms 2.3.1
