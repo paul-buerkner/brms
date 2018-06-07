@@ -2113,8 +2113,9 @@ pp_average.brmsfit <- function(
 #' @aliases bayes_R2
 #' 
 #' @inheritParams predict.brmsfit
-#' @param loo Logical; Indicates if the LOO-adjusted version of the
-#' R-squared should be computed. Defaults to \code{FALSE}.
+#' @param ... Further arguments passed to 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}},
+#'   which is used in the computation of the R-squared values.
 #' 
 #' @return If \code{summary = TRUE} a 1 x C matrix is returned
 #'  (\code{C = length(probs) + 2}) containing summary statistics
@@ -2140,14 +2141,8 @@ pp_average.brmsfit <- function(
 #' @importFrom rstantools bayes_R2
 #' @export bayes_R2
 #' @export
-bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                             allow_new_levels = FALSE, 
-                             sample_new_levels = "uncertainty",
-                             new_objects = list(), incl_autocor = TRUE, 
-                             subset = NULL, nsamples = NULL, resp = NULL,
-                             nug = NULL, summary = TRUE, robust = FALSE, 
-                             probs = c(0.025, 0.975), ...) {
-  # do it like residuals.brmsfit
+bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE, 
+                             robust = FALSE, probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   family_names <- family_names(object)
@@ -2161,18 +2156,13 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     R2 <- object[["R2"]]
   } else {
     newd_args <- nlist(
-      object, newdata, re_formula, allow_new_levels,
-      new_objects, check_response = TRUE, internal = TRUE
+      object, resp, check_response = TRUE, internal = TRUE, ...
     )
     sdata <- do.call(standata, newd_args)
     if (any(grepl("^cens_", names(sdata)))) {
       warning2("'bayes_R2' may not be meaningful for censored models.")
     }
-    pred_args <- nlist(
-      object, newdata, re_formula, allow_new_levels,
-      sample_new_levels, new_objects, incl_autocor, resp,
-      subset, nsamples, nug, summary = FALSE, sort = TRUE
-    )
+    pred_args <- nlist(object, resp, summary = FALSE, sort = TRUE, ...)
     ypred <- do.call(fitted, pred_args)
     # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     .bayes_R2 <- function(y, ypred, ...) {
@@ -2210,6 +2200,10 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @aliases loo_R2
 #' 
 #' @inheritParams predict.brmsfit
+#' @param ... Further arguments passed to 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}} and
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
+#'   which are used in the computation of the R-squared values.
 #' 
 #' @return A real value per response variable indicating 
 #' the LOO-adjusted R-squared.
@@ -2227,33 +2221,19 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @method loo_R2 brmsfit
 #' @export
-loo_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                           allow_new_levels = FALSE, 
-                           sample_new_levels = "uncertainty",
-                           new_objects = list(), incl_autocor = TRUE, 
-                           subset = NULL, nsamples = NULL, resp = NULL,
-                           nug = NULL, summary = TRUE, robust = FALSE, 
-                           probs = c(0.025, 0.975), ...) {
-  # do it like residuals.brmsfit
+loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   family_names <- family_names(object)
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'loo_R2' is not defined for ordinal or categorical models.")
   }
-  newd_args <- nlist(
-    object, newdata, re_formula, allow_new_levels,
-    new_objects, check_response = TRUE, internal = TRUE
-  )
+  newd_args <- nlist(object, resp, check_response = TRUE, internal = TRUE, ...)
   sdata <- do.call(standata, newd_args)
   if (any(grepl("^cens_", names(sdata)))) {
     warning2("'loo_R2' may not be meaningful for censored models.")
   }
-  pred_args <- nlist(
-    object, newdata, re_formula, allow_new_levels,
-    sample_new_levels, new_objects, incl_autocor, resp,
-    subset, nsamples, nug, summary = FALSE, sort = TRUE
-  )
+  pred_args <- nlist(object, resp, summary = FALSE, sort = TRUE, ...)
   ypred <- do.call(fitted, pred_args)
   ll <- do.call(log_lik, c(pred_args, combine = FALSE))
   chains <- object$fit@sim$chains
