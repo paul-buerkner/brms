@@ -77,6 +77,12 @@ kfold <- function(x, ...) {
   UseMethod("kfold")
 }
 
+#' @export
+loo_R2 <- function(object, ...) {
+  # temporary generic until available in loo
+  UseMethod("loo_R2")
+}
+
 compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold"),
                         use_stored_ic = FALSE, compare = TRUE, ...) {
   # helper function used to create (lists of) 'ic' objects
