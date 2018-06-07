@@ -79,12 +79,13 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   rhs_needed <- FALSE
+  att <- c("nl", "loop")
   if (is.mixfamily(family)) {
     for (i in seq_along(family$mix)) {
       mui <- paste0("mu", i)
       if (!is.formula(x$pforms[[mui]])) {
         x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
-        attr(x$pforms[[mui]], "nl") <- attr(formula, "nl")
+        attributes(x$pforms[[mui]])[att] <- attributes(formula)[att]
         rhs_needed <- TRUE
       }
     }
@@ -92,14 +93,14 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     for (dp in x$family$dpars) {
       if (!is.formula(x$pforms[[dp]])) {
         x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
-        attr(x$pforms[[dp]], "nl") <- attr(formula, "nl")
+        attributes(x$pforms[[dp]])[att] <- attributes(formula)[att]
         rhs_needed <- TRUE
       }
     }
   } else {
     if (!is.formula(x$pforms[["mu"]])) { 
       x$pforms$mu <- eval2(paste0("mu", str_rhs_form))
-      attr(x$pforms$mu, "nl") <- attr(formula, "nl")
+      attributes(x$pforms$mu)[att] <- attributes(formula)[att]
       rhs_needed <- TRUE
     }
     x$pforms <- move2start(x$pforms, "mu")
@@ -266,6 +267,7 @@ parse_nlf <- function(formula, nlpar_forms, dpar = "mu",
     stop2("No non-linear parameters specified.")
   }
   is_nlpar <- as_one_logical(is_nlpar)
+  loop <- !isFALSE(attr(formula, "loop"))
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
   nlpars <- names(nlpar_forms)
@@ -299,6 +301,7 @@ parse_nlf <- function(formula, nlpar_forms, dpar = "mu",
       y$nlpars[[nlp]]$allvars <- y$allvars
     }
   }
+  y$loop <- loop
   structure(y, class = "btnl")
 }
 

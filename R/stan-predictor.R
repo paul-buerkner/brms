@@ -105,15 +105,16 @@ stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
   }
   x$nlpar <- NULL
   # prepare non-linear model
+  n <- if (x$loop) "[n] " else " "
   prefix <- combine_prefix(x, keep_mu = TRUE)
-  new_nlpars <- paste0(" ", prefix, "_", nlpars, "[n] ")
+  new_nlpars <- paste0(" ", prefix, "_", nlpars, n)
   # covariates in the non-linear model
   covars <- wsp(all.vars(rhs(x$covars)))
   new_covars <- NULL
   if (length(covars)) {
     p <- usc(combine_prefix(x))
     covar_names <- paste0("C", p, "_", seq_along(covars))
-    new_covars <- paste0(" ", covar_names, "[n] ")
+    new_covars <- paste0(" ", covar_names, n)
     if (!is_nlpar) {
       # use vectors as indexing matrices in Stan is slow
       str_add(out$data) <- paste0( 
@@ -132,10 +133,17 @@ stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
   )
   # possibly transform eta in the transformed params block
   str_add(out$modelD) <- paste0("  vector[N] ", par, ";\n")
-  str_add(out$modelC4) <- paste0(
-    "    // compute non-linear predictor \n",
-    "    ", par, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], ";\n"
-  )
+  if (x$loop) {
+    str_add(out$modelC4) <- paste0(
+      "    // compute non-linear predictor \n",
+      "    ", par, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], ";\n"
+    )
+  } else {
+    str_add(out$modelC5) <- paste0(
+      "  // compute non-linear predictor \n",
+      "  ", par, " = ", ilink[1], trimws(nlmodel), ilink[2], ";\n"
+    )
+  }
   out
 }
 

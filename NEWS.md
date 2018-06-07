@@ -3,6 +3,9 @@
 ### New features
 
 * Compute LOO adjusted R-squared by setting `loo = TRUE` in method `bayes_R2`.
+* Allow to compute non-linear predictors outside of a loop over observations
+by means of argument `loop` in `brmsformula`.
+
 
 # brms 2.3.1
 
@@ -22,6 +25,7 @@
 * Fix a problem in `launch_shinystan` due to which the
 maximum treedepth was not correctly displayed thanks to
 Paul Galpern. (#431)
+
 
 # brms 2.3.0
 

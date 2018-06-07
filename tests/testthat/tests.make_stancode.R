@@ -662,6 +662,13 @@ test_that("Stan code for non-linear models is correct", {
   
   expect_error(make_stancode(bform, data, family = skew_normal()),
                "Priors on population-level effects are required")
+  
+  # non-linear predictor can be computed outside a loop
+  flist <- list(a ~ x, b ~ z + (1|g))
+  scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 
+                            nl = TRUE, loop = FALSE), 
+                         data = data, prior = prior)
+  expect_match2(scode, "\n  mu = mu_a - exp(mu_b + C_1);")
 })
 
 test_that("Stan code for nested non-linear parameters is correct", {

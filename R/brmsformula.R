@@ -46,6 +46,10 @@
 #' @param nl Logical; Indicates whether \code{formula} should be
 #'   treated as specifying a non-linear model. By default, \code{formula} 
 #'   is treated as an ordinary linear model formula.
+#' @param loop Logical; Only used in non-linear models.
+#'   Indicates if the computation of the non-linear formula should be 
+#'   done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
+#'   over observations. Defaults to \code{TRUE}.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -543,7 +547,7 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        autocor = NULL, nl = NULL) {
+                        autocor = NULL, nl = NULL, loop = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -609,6 +613,12 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.null(attr(out$formula, "nl"))) {
     attr(out$formula, "nl") <- FALSE
   }
+  if (!is.null(loop)) {
+    attr(out$formula, "loop") <- as_one_logical(loop)
+  }
+  if (is.null(attr(out$formula, "loop"))) {
+    attr(out$formula, "loop") <- TRUE
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -663,10 +673,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, 
-               autocor = NULL, nl = NULL) {
+               autocor = NULL, nl = NULL, loop = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., flist = flist, family = family,
-              autocor = autocor, nl = nl)
+              autocor = autocor, nl = nl, loop = loop)
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
