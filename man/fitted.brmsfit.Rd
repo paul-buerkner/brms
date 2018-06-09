@@ -129,8 +129,8 @@ Fitted values extracted from \code{object}.
  where the third dimension indicates the response variables.
 }
 \description{
-Predict fitted values (i.e., the 'regression line') of a fitted model.
-Can be performed for the data used to fit the model 
+Predict mean values of the response distribution (i.e., the 'regression line')
+for a fitted model. Can be performed for the data used to fit the model 
 (posterior predictive checks) or for new data.
 By definition, these predictions have smaller variance
 than the response predictions performed by

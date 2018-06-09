@@ -1704,8 +1704,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
-#' Predict fitted values (i.e., the 'regression line') of a fitted model.
-#' Can be performed for the data used to fit the model 
+#' Predict mean values of the response distribution (i.e., the 'regression line')
+#' for a fitted model. Can be performed for the data used to fit the model 
 #' (posterior predictive checks) or for new data.
 #' By definition, these predictions have smaller variance
 #' than the response predictions performed by
