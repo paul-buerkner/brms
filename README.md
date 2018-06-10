@@ -15,7 +15,7 @@ Resources
 ---------
 
 -   [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
--   [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
+-   [Advanced multilevel modeling with brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html) (The R Journal)
 -   [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
 -   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
 -   [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
