@@ -26,9 +26,18 @@ Computing the marginal likelihood requires samples
   to be saved. Otherwise \code{bayes_factor} cannot be computed.
   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
   if you are planning to apply \code{bayes_factor} to your models.
+  
+  The computation of Bayes factors based on bridge sampling requires
+  a lot more posterior samples than usual. A good conservative 
+  rule of thump is perhaps 10-fold more samples (read: the default of 4000 
+  samples may not be enough in many cases). If not enough posterior
+  samples are provided, the bridge sampling algoritm tends to be unstable 
+  leading to considerably different results each time it is run. 
+  We thus recommend running \code{bayes_factor}
+  multiple times to check the stability of the results.
 
   More details are provided under 
-  \code{\link[bridgesampling:bayes_factor]{bayes_factor}}.
+  \code{\link[bridgesampling:bayes_factor]{bridgesampling:bayes_factor}}.
 }
 \examples{
 \dontrun{
