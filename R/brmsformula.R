@@ -267,6 +267,9 @@
 #'   to \code{success | trials(n)} in \pkg{brms} syntax. If the number of trials
 #'   is constant across all observations, say \code{10}, 
 #'   we may also write \code{success | trials(10)}. 
+#'   \bold{Please note that the \code{cbind()} syntax will not work 
+#'   in brms in the expected way because this syntax is resevered
+#'   for use in multivariate models, only.}
 #'   
 #'   For all ordinal families, \code{aterms} may contain a term 
 #'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
