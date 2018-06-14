@@ -11,7 +11,7 @@
 #' @param coef Name of the (population- or group-level) parameter.  
 #' @param group Grouping factor of group-level parameters.
 #' @param resp Name of the response variable / category.
-#'   Only used in multivariate and categorical models.
+#'   Only used in multivariate models.
 #' @param dpar Name of a distributional parameter.
 #'   Only used in distributional models.
 #' @param nlpar Name of a non-linear parameter. 

@@ -30,7 +30,7 @@ See 'Details' for other valid parameter classes.}
 \item{group}{Grouping factor of group-level parameters.}
 
 \item{resp}{Name of the response variable / category.
-Only used in multivariate and categorical models.}
+Only used in multivariate models.}
 
 \item{dpar}{Name of a distributional parameter.
 Only used in distributional models.}
