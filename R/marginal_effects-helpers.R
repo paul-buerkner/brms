@@ -619,7 +619,8 @@ marginal_effects_internal.brmsterms <- function(
     incl_autocor = FALSE, summary = FALSE, ...
   )
   out <- do.call(method, pred_args)
-  if (is_ordinal(x$family) && !ordinal && method == "fitted") {
+  if (is_ordinal(x$family) && !ordinal && 
+      method == "fitted" && is.null(dpar)) {
     for (k in seq_len(dim(out)[3])) {
       out[, , k] <- out[, , k] * k
     }

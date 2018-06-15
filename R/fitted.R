@@ -43,6 +43,11 @@ fitted_internal.brmsdraws <- function(draws, scale = "response",
       if (scale == "linear") {
         draws$dpars[[dpar]]$f$link <- "identity"
       }
+      if (is_ordinal(draws$f)) {
+        draws$dpars[[dpar]]$cs <- NULL
+        draws$f <- draws$dpars[[dpar]]$f <- 
+          .dpar_family(link = draws$dpars[[dpar]]$f$link)
+      }
       if (dpar_class(dpar) == "theta" && scale == "response") {
         ap_id <- as.numeric(dpar_id(dpar))
         out <- get_theta(draws)[, , ap_id, drop = FALSE]
