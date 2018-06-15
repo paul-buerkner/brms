@@ -820,7 +820,7 @@ tidy_smef <- function(x, data) {
     tmp[[i]]$termnum <- i
     if (nby[i] > 0L) {
       tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
-      tmp[[i]]$bylevel <- bylevels[[i]]
+      tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
       str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
     } else {
@@ -861,7 +861,7 @@ tidy_gpef <- function(x, data) {
       str_add(out$label[i]) <- rename(gp$by)
       Cgp <- get(gp$by, data)
       if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- levels(factor(Cgp))
+        out$bylevels[[i]] <- rm_wsp(levels(factor(Cgp)))
       }
     }
   }
