@@ -515,6 +515,12 @@ test_that("make_standata handles missing value terms", {
   sdata <- make_standata(bform, dat)
   expect_equal(sdata$Jmi_x, as.array(miss))
   expect_true(all(is.infinite(sdata$Y_x[miss])))
+  
+  # dots in variable names are correctly handled #452
+  dat$x.2 <- dat$x
+  bform <- bf(y ~ mi(x.2)*g) + bf(x.2 | mi() ~ g) + set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jmi_x, as.array(miss))
 })
 
 test_that("make_standata handles overimputation", {

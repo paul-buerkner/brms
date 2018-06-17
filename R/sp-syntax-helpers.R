@@ -8,7 +8,9 @@ vars_keep_na <- function(x, ...) {
 
 #' @export
 vars_keep_na.mvbrmsterms <- function(x, ...) {
-  out <- lapply(x$terms, vars_keep_na, responses = x$responses, ...)
+  resps <- get_element(x, "respform")
+  resps <- ulapply(resps, parse_resp, check_names = FALSE)
+  out <- lapply(x$terms, vars_keep_na, responses = resps, ...)
   vars_mi <- unique(ulapply(out, attr, "vars_mi"))
   out <- unique(unlist(out))
   miss_mi <- setdiff(vars_mi, out)
@@ -16,7 +18,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
     stop2(
       "Response models of variables in 'mi' terms require " ,
       "specification of the addition argument 'mi'. See ?mi. ", 
-      "Error cccured for ", collapse_comma(miss_mi), "."
+      "Error occured for ", collapse_comma(miss_mi), "."
     )
   }
   out
@@ -25,7 +27,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
-    mi_respvars <- parse_resp(x$respform)
+    mi_respvars <- parse_resp(x$respform, check_names = FALSE)
     mi_advars <- all.vars(x$adforms$mi)
     out <- unique(c(mi_respvars, mi_advars))
   } else {
@@ -34,14 +36,12 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   uni_mi <- ulapply(get_effect(x, "sp"), attr, "uni_mi")
   if (length(uni_mi)) {
     vars_mi <- gsub("(^mi\\()|(\\)$)", "", uni_mi)
-    # do it like parse_resp to ensure correct matching
-    vars_mi <- gsub("\\.|_", "", make.names(vars_mi))
     miss_mi <- setdiff(vars_mi, responses)
     if (length(miss_mi)) {
       stop2(
         "Variables in 'mi' terms should also be specified " ,
         "as response variables in the model. See ?mi. ", 
-        "Error cccured for ", collapse_comma(miss_mi), "."
+        "Error occured for ", collapse_comma(miss_mi), "."
       )
     }
     attr(out, "vars_mi") <- vars_mi
