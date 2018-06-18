@@ -761,6 +761,11 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (any(is_ordinal) && any(!is_ordinal)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
   }
+  for (fam in family$mix) {
+    if (is.customfamily(fam) && "theta" %in% fam$dpars) {
+      stop2("Parameter name 'theta' is reserved in mixture models.")
+    }
+  }
   if (is.null(order)) {
     if (any(is_ordinal)) {
       family$order <- "none"

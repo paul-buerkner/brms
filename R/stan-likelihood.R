@@ -609,7 +609,8 @@ stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
 stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
-  sdist(family$name, p[family$dpars], family$vars)
+  dpars <- paste0(family$dpars, mix)
+  sdist(family$name, p[dpars], family$vars)
 }
 
 sdist <- function(dist, ..., shift = NULL) {

@@ -1489,6 +1489,15 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode, "tau[n] = exp(tau[n]); ")
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
+  
+  # check custom families in mixture models
+  scode <- make_stancode(
+    y ~ x, data = dat, family = mixture(binomial, beta_binomial2), 
+    stan_funs = stan_funs, stanvars = stanvars
+  )
+  expect_match2(scode, 
+    "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, trials[n]);"
+  )
 })
 
 test_that("likelihood of distributional beta models is correct", {

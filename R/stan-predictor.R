@@ -1123,9 +1123,16 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 
 stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
   # default Stan definitions for distributional parameters
+  if (is.mixfamily(family)) {
+    if (isTRUE(dpar_class(dpar) == "theta")) {
+      return("")  # theta is handled in stan_mixture
+    }
+    family <- family$mix[[as.numeric(dpar_id(dpar))]]
+  }
   if (is.customfamily(family)) {
-    lb <- family$lb[[dpar]]
-    ub <- family$ub[[dpar]]
+    dpar_class <- dpar_class(dpar)
+    lb <- family$lb[[dpar_class]]
+    ub <- family$ub[[dpar_class]]
     lb <- if (!is.na(lb)) paste0("lower=", lb)
     ub <- if (!is.na(ub)) paste0("upper=", ub)
     bounds <- paste0(c(lb, ub), collapse = ",")
@@ -1202,7 +1209,6 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
       "  real ",
       ";  // skewness parameter \n"
     )
-    # theta is handled in stan_mixture
   )
   def <- default_defs[[dpar_class(dpar)]]
   if (!is.null(def)) {

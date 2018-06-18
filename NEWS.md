@@ -6,6 +6,10 @@
 * Allow computing non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
 
+### Bug fixes
+
+* Allow custom families in mixture models thanks to Noam Ross. (#453)
+
 
 # brms 2.3.1
 
