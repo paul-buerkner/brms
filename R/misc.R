@@ -344,9 +344,16 @@ na.omit2 <- function (object, ...) {
   out
 }
 
-require_package <- function(package) {
+require_package <- function(package, version = NULL) {
   if (!requireNamespace(package, quietly = TRUE)) {
     stop2("Please install the '", package, "' package.")
+  }
+  if (!is.null(version)) {
+    version <- as.package_version(version)
+    if (utils::packageVersion(package) < version) {
+      stop2("Please install package '", package, 
+            "' version ", version, " or higher.")
+    }
   }
   invisible(TRUE)
 }
