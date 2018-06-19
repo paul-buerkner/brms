@@ -9,6 +9,7 @@ observations by means of argument `loop` in `brmsformula`.
 ### Bug fixes
 
 * Allow custom families in mixture models thanks to Noam Ross. (#453)
+* Ensure compatibility with **mice** version 3.0. (#455)
 
 
 # brms 2.3.1

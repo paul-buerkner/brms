@@ -49,7 +49,7 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
   data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
   if (inherits(data, "mids")) {
     require_package("mice")
-    data <- lapply(seq_len(data$m), mice::complete, x = data)
+    data <- lapply(seq_len(data$m), mice::complete, data = data)
   } else if (!(is.list(data) && is.vector(data))) {
     stop2("'data' must be a list of data.frames.")
   }
