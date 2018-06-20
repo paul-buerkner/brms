@@ -2318,14 +2318,20 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots <- list(...)
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
-  if ("data" %in% names(dots)) {
-    # otherwise the data name cannot be found by substitute 
-    stop2("Please use argument 'newdata' to update the data.")
-  }
   object <- restructure(object)
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
+  if ("data" %in% names(dots)) {
+    # otherwise the data name cannot be found by substitute 
+    stop2("Please use argument 'newdata' to update the data.")
+  }
+  if (!is.null(newdata)) {
+    dots$data <- newdata
+  } else {
+    dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
+  }
+
   if (missing(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
@@ -2366,16 +2372,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- update(formula(object), dots$formula)
     }
   }
-  
-  arg_names <- c("prior", "cov_ranef", "stanvars", "stan_funs")
-  old_args <- setdiff(arg_names, names(dots))
-  dots[old_args] <- object[old_args]
-  if (!is.null(newdata)) {
-    dots$data <- newdata
+  dots$formula <- validate_formula(dots$formula, data = dots$data)
+
+  if (is.null(dots$prior)) {
+    dots$prior <- object$prior
   } else {
-    dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
-  }
-  if (!is.null(dots$prior)) {
+    # update existing priors
     if (!is.brmsprior(dots$prior)) { 
       stop2("Invalid 'prior' argument.")
     }
@@ -2402,6 +2404,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$sparse)) {
     dots$sparse <- grepl("sparse matrix", stancode(object))
   }
+  if (is.null(dots$knots)) {
+    dots$knots <- attr(object$data, "knots")
+  }
+  arg_names <- c("cov_ranef", "stanvars", "stan_funs")
+  old_args <- setdiff(arg_names, names(dots))
+  dots[old_args] <- object[old_args]
+  
+  # update arguments controlling the sampling process
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
   # brm computes warmup automatically based on iter 
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
