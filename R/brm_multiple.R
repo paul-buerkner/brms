@@ -44,7 +44,12 @@
 #' }
 #' 
 #' @export
-brm_multiple <- function(formula, data, combine = TRUE, ...) {
+brm_multiple <- function(formula, data, family = gaussian(), prior = NULL, 
+                         autocor = NULL, cov_ranef = NULL, 
+                         sample_prior = c("no", "yes", "only"), 
+                         sparse = FALSE, knots = NULL, stanvars = NULL,
+                         stan_funs = NULL, combine = TRUE, 
+                         seed = NA, ...) {
   combine <- as_one_logical(combine)
   data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
   if (inherits(data, "mids")) {
@@ -55,7 +60,11 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
   }
   fits <- vector("list", length(data))
   message("Fitting imputed model 1")
-  fits[[1]] <- brm(formula, data = data[[1]], ...)
+  args <- nlist(
+    formula, data = data[[1]], family, prior, autocor, cov_ranef,
+    sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
+  )
+  fits[[1]] <- do.call(brm, args)
   fits[[1]]$data.name <- data.name
   rhats <- data.frame(as.list(rhat(fits[[1]])))
   if (any(rhats > 1.1)) {
