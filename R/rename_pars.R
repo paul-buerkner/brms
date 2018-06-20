@@ -316,7 +316,7 @@ change_re <- function(ranef, pars) {
         type <- paste0("cor_", g)
         if (isTRUE(nzchar(r$by[1]))) {
           cor_names <- named_list(r$bylevels[[1]])
-          for (j in seq_len(nrow(rnames))) {
+          for (j in seq_along(cor_names)) {
             cor_names[[j]] <- get_cornames(
               rnames[, j], type, brackets = FALSE
             )
