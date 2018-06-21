@@ -719,8 +719,8 @@ test_that("functions defined in 'stan_funs' appear in the functions block", {
   test_fun <- paste0("  real test_fun(real a, real b) { \n",
                      "    return a + b; \n",
                      "  } \n")
-  expect_match2(make_stancode(time ~ age, data = kidney, stan_funs = test_fun),
-               test_fun)
+  scode <- SW(make_stancode(time ~ age, data = kidney, stan_funs = test_fun))
+  expect_match2(scode, test_fun)
 })
 
 test_that("fixed residual covariance matrices appear in the Stan code", {
@@ -1481,11 +1481,12 @@ test_that("custom families are handled correctly", {
       return beta_binomial_rng(N, mu * phi, (1 - mu) * phi);
     }
   "
-  stanvars <- stanvar(as.integer(dat$size), "trials")
+  stanvars <- stanvar(as.integer(dat$size), "trials") +
+    stanvar(scode = stan_funs, block = "functions")
   scode <- make_stancode(
     y ~ x, data = dat, family = beta_binomial2, 
-    stan_funs = stan_funs, stanvars = stanvars,
-    prior = prior(gamma(0.1, 0.1), class = "tau")
+    prior = prior(gamma(0.1, 0.1), class = "tau"),
+    stanvars = stanvars
   )
   expect_match2(scode, "int trials[20];")
   expect_match2(scode, "real<lower=0> tau;")
@@ -1495,7 +1496,7 @@ test_that("custom families are handled correctly", {
   
   scode <- make_stancode(
     bf(y ~ x, tau ~ x), data = dat, family = beta_binomial2, 
-    stan_funs = stan_funs, stanvars = stanvars
+    stanvars = stanvars
   )
   expect_match2(scode, "tau[n] = exp(tau[n]); ")
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
@@ -1503,7 +1504,7 @@ test_that("custom families are handled correctly", {
   # check custom families in mixture models
   scode <- make_stancode(
     y ~ x, data = dat, family = mixture(binomial, beta_binomial2), 
-    stan_funs = stan_funs, stanvars = stanvars
+    stanvars = stanvars
   )
   expect_match2(scode, 
     "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, trials[n]);"

@@ -87,10 +87,11 @@
 #'   See \code{\link[mgcv:gamm]{gamm}} for more details.
 #' @param stanvars An optional \code{stanvars} object generated
 #'   by function \code{\link{stanvar}} to define additional variables
-#'   in the data block of \pkg{Stan}.
-#' @param stan_funs An optional character string containing self-defined 
-#'   \pkg{Stan} functions, which will be included in the functions block 
-#'   of the generated \pkg{Stan} code.
+#'   for use in \pkg{Stan}'s program blocks.
+#' @param stan_funs (Deprecated) An optional character string containing 
+#'   self-defined  \pkg{Stan} functions, which will be included in the functions 
+#'   block of the generated \pkg{Stan} code. It is now recommended to use 
+#'   the \code{stanvars} argument for this purpose, instead.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
 #'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 

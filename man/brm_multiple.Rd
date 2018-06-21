@@ -76,11 +76,12 @@ See \code{\link[mgcv:gamm]{gamm}} for more details.}
 
 \item{stanvars}{An optional \code{stanvars} object generated
 by function \code{\link{stanvar}} to define additional variables
-in the data block of \pkg{Stan}.}
+for use in \pkg{Stan}'s program blocks.}
 
-\item{stan_funs}{An optional character string containing self-defined 
-\pkg{Stan} functions, which will be included in the functions block 
-of the generated \pkg{Stan} code.}
+\item{stan_funs}{(Deprecated) An optional character string containing 
+self-defined  \pkg{Stan} functions, which will be included in the functions 
+block of the generated \pkg{Stan} code. It is now recommended to use 
+the \code{stanvars} argument for this purpose, instead.}
 
 \item{combine}{Logical; Indicates if the fitted models
 should be combined into a single fitted model object

@@ -31,6 +31,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
   }
   if (length(stan_funs) > 0) {
+    warning2("Argument 'stan_funs' is deprecated. Please use argument ", 
+             "'stanvars' instead. See ?stanvar for more help.")
     stan_funs <- as_one_character(stan_funs) 
   }
   formula <- validate_formula(

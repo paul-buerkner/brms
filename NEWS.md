@@ -8,6 +8,11 @@ via function `stanvar`. (#459)
 * Allow computing non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
 
+### Other changes
+
+* Deprecate argument `stan_funs` in `brm` in favor of using the
+`stanvars` argument for the specification of custom Stan functions.
+
 ### Bug fixes
 
 * Allow custom families in mixture models thanks to Noam Ross. (#453)

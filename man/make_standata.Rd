@@ -66,7 +66,7 @@ all parameters must have proper priors.}
 
 \item{stanvars}{An optional \code{stanvars} object generated
 by function \code{\link{stanvar}} to define additional variables
-in the data block of \pkg{Stan}.}
+for use in \pkg{Stan}'s program blocks.}
 
 \item{knots}{Optional list containing user specified knot values to be 
 used for basis construction of smoothing terms. 

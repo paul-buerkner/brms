@@ -2,8 +2,8 @@
 #' 
 #' Prepare user-defined variables to be passed to one of Stan's 
 #' program blocks. This is primarily useful for defining more complex 
-#' priors and for refitting models without recompilation despite 
-#' changing priors.
+#' priors, for refitting models without recompilation despite 
+#' changing priors, or for defining custom Stan functions.
 #' 
 #' @aliases stanvars
 #'  
