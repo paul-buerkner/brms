@@ -162,7 +162,12 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
       probs = probs, na.rm = TRUE
     ))
   }
-  x <- as.array(x)
+  if (length(dim(x)) <= 2L) {
+    # data.frames cause trouble in as.array
+    x <- as.matrix(x)
+  } else {
+    x <- as.array(x) 
+  }
   if (!length(dim(x)) %in% 2:3) {
     stop("'x' must be of dimension 2 or 3.")
   }
