@@ -405,7 +405,8 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
       x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
     }
   }
-  for (name in names(x$stanvars)) {
+  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
+  for (name in names(stanvars_data)) {
     if (name %in% names(new_objects)) {
       x$stanvars[[name]]$sdata <- new_objects[[name]]
     }

@@ -89,6 +89,7 @@ make_standata <- function(formula, data, family = gaussian(),
   out$prior_only <- as.integer(identical(sample_prior, "only"))
   stanvars <- validate_stanvars(stanvars)
   if (is.stanvars(stanvars)) {
+    stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))
     if (length(inv_names)) {
       stop2("Cannot overwrite existing variables: ", 

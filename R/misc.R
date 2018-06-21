@@ -37,8 +37,30 @@ match_rows <- function(x, y, ...) {
   match(x, y, ...)
 }
 
+find_elements <- function(x, ..., ls = list(), fun = '%in%') {
+  # find elements of x matching subelements passed via ls and ...
+  x <- as.list(x)
+  if (!length(x)) {
+    return(logical(0))
+  }
+  out <- rep(TRUE, length(x))
+  ls <- c(ls, list(...))
+  if (!length(ls)) {
+    return(out)
+  }
+  if (is.null(names(ls))) {
+    stop("Argument 'ls' must be named.")
+  }
+  for (name in names(ls)) {
+    tmp <- lapply(x, "[[", name)
+    out <- out & do.call(fun, list(tmp, ls[[name]]))
+  }
+  out
+}
+
 find_rows <- function(x, ..., ls = list(), fun = '%in%') {
-  # finding rows matching columns passed via ls and ...
+  # find rows of x matching columns passed via ls and ...
+  # similar to 'find_elements' but for matrix like objects
   x <- as.data.frame(x)
   if (!nrow(x)) {
     return(logical(0))

@@ -70,6 +70,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions { \n",
       scode_global_defs$fun,
+      collapse_stanvars(stanvars, block = "functions"),
       stan_funs,
     "} \n"
   )
@@ -81,7 +82,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored? \n",
-    collapse_stanvars(stanvars),
+    collapse_stanvars(stanvars, block = "data"),
     "} \n"
   )
   # generate transformed parameters block
@@ -89,6 +90,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "transformed data { \n",
        scode_global_defs$tdataD,
        scode_effects$tdataD,
+       collapse_stanvars(stanvars, block = "tdata"),
        scode_effects$tdataC,
     "} \n"
   )
@@ -109,6 +111,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "parameters { \n",
       scode_parameters,
       scode_rngprior$par,
+      collapse_stanvars(stanvars, block = "parameters"),
     "} \n"
   )
   # generate transformed parameters block
@@ -117,6 +120,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_effects$tparD,
       scode_ranef$tparD,
       scode_Xme$tparD,
+      collapse_stanvars(stanvars, block = "tparameters"),
       scode_effects$tparC1,
       scode_ranef$tparC1,
     "} \n"
@@ -135,6 +139,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_model <- paste0(
     "model { \n",
       scode_effects$modelD,
+      collapse_stanvars(stanvars, block = "model"),
       scode_effects$modelC1,
       scode_effects$modelCgp1,
       scode_model_loop,
@@ -155,6 +160,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$genD,
       scode_Xme$genD,
       scode_rngprior$genD,
+      collapse_stanvars(stanvars, block = "genquant"),
       scode_effects$genC,
       scode_ranef$genC,
       scode_rngprior$genC,

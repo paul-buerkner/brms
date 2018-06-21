@@ -1451,6 +1451,16 @@ test_that("argument 'stanvars' is handled correctly", {
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "vector[K] M;")
   expect_match2(scode, "matrix[K, K] V;")
+  
+  # define a hierachical prior on the regression coefficients
+  bprior <- set_prior("normal(0, tau)", class = "b") +
+    set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
+  stanvars <- stanvar(scode = "real<lower=0> tau;", 
+                      block = "parameters")
+  scode <- make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+                         prior = bprior, stanvars = stanvars)
+  expect_match2(scode, "real<lower=0> tau;")
+  expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
 })
 
 test_that("custom families are handled correctly", {

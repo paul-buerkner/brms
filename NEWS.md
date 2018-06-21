@@ -2,6 +2,8 @@
 
 ### New features
 
+* Define custom variables in all of Stan's program blocks
+via function `stanvar`. (#459)
 * Compute LOO-adjusted R-squared using method `loo_R2`.
 * Allow computing non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
