@@ -44,7 +44,7 @@ samples1 <- prior_samples(fit)
 head(samples1)
 
 # extract prior samples for the population-level effects of 'treat'
-samples2 <- posterior_samples(fit, "b_treat")
+samples2 <- prior_samples(fit, "b_treat")
 head(samples2)
 }
 
