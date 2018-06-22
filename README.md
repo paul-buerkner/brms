@@ -140,10 +140,10 @@ install.packages("brms")
 The current developmental version can be downloaded from github via
 
 ``` r
-if (!require("devtools")) {
+if (!requireNamespace("devtools")) {
   install.packages("devtools")
 }
-devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
+devtools::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
