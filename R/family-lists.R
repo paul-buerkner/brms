@@ -173,7 +173,8 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "cens", "trunc", "mi")
+    ad = c("weights", "cens", "trunc", "mi"),
+    specials = "logscale"
   )
 }
 
@@ -182,7 +183,8 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma", "ndt"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "cens", "trunc", "mi")
+    ad = c("weights", "cens", "trunc", "mi"),
+    specials = "logscale"
   )
 }
 
@@ -323,7 +325,8 @@
     dpars = c("mu", "sigma", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "cens", "trunc"),
-    include = "fun_hurdle_lognormal.stan"
+    include = "fun_hurdle_lognormal.stan",
+    specials = "logscale"
   )
 }
 

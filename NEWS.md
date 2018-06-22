@@ -19,6 +19,7 @@ observations by means of argument `loop` in `brmsformula`.
 * Ensure compatibility with **mice** version 3.0. (#455)
 * Fix naming of correlation parameters of group-level terms 
 with multiple subgroups thanks to Kristoffer Magnusson. (#457) 
+* Improve scaling of default priors in `lognormal` models (#460).
 
 
 # brms 2.3.1

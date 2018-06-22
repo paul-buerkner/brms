@@ -1239,6 +1239,12 @@ allow_cs <- function(family) {
   "cs" %in% family_info(family, "specials")
 }
 
+has_logscale <- function(family) {
+  # indicate if the response is modeled on the log-scale
+  # even if formally the link function is not 'log'
+  "logscale" %in% family_info(family, "specials")
+}
+
 has_trials <- function(family) {
   # indicate if family makes use of argument trials
   "trials" %in% family_info(family, "ad") &&
