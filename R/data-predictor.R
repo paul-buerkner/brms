@@ -676,34 +676,36 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(Y = unname(Y))
-  families <- family_names(x$family)
-  if (is.mixfamily(x$family)) {
-    family4error <- paste0(families, collapse = ", ")
-    family4error <- paste0("mixture(", family4error, ")")
-  } else {
-    family4error <- families
+  if (is_binary(x$family)) {
+    out$Y <- as.numeric(factor(out$Y)) - 1
+  }
+  if (is_categorical(x$family)) { 
+    out$Y <- as.numeric(factor(out$Y))
+  }
+  if (is_ordinal(x$family) && is.ordered(out$Y)) {
+    out$Y <- as.numeric(out$Y)
   }
   if (check_response) {
+    family4error <- family_names(x$family)
+    if (is.mixfamily(x$family)) {
+      family4error <- paste0(family4error, collapse = ", ")
+      family4error <- paste0("mixture(", family4error, ")")
+    }
     if (!allow_factors(x$family) && !is.numeric(out$Y)) {
       stop2("Family '", family4error, "' requires numeric responses.")
     }
     if (is_binary(x$family)) {
-      out$Y <- as.numeric(as.factor(out$Y)) - 1
       if (any(!out$Y %in% c(0, 1))) {
         stop2("Family '", family4error, "' requires responses ",
               "to contain only two different values.")
       }
     }
     if (is_categorical(x$family)) { 
-      out$Y <- as.numeric(factor(out$Y))
       if (length(unique(out$Y)) < 3L) {
         stop2("At least three response categories are required.")
       }
     }
     if (is_ordinal(x$family)) {
-      if (is.ordered(out$Y)) {
-        out$Y <- as.numeric(out$Y)
-      }
       if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
         stop2("Family '", family4error, "' requires either positive ",
               "integers or ordered factors as responses.")
@@ -773,7 +775,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
       } else {
-        out$ncat <- as.numeric(max(out$Y))
+        out$ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
       out$ncat <- eval_rhs(x$adforms$cat, data = data)
