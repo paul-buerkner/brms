@@ -7,6 +7,8 @@ via function `stanvar`. (#459)
 * Compute LOO-adjusted R-squared using method `loo_R2`.
 * Allow computing non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
+* Allow `horseshoe` and `lasso` priors to be set on special 
+population-level effects.
 
 ### Other changes
 

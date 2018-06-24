@@ -1286,9 +1286,9 @@ check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE,
         stop2("Boundaries for population-level effects are not ", 
               "allowed when using the horseshoe or lasso priors.")
       }
-      if (any(ulapply(x[c("sp", "cs")], is.formula))) {
+      if (is.formula(x[["cs"]])) {
         stop2("Horseshoe or lasso priors are not yet allowed ",
-              "in models with special population-level effects.")
+              "in models with category-specific effects.")
       }
       b_coef_indices <- which(
         find_rows(prior, class = "b", ls = px) &

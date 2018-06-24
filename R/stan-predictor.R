@@ -30,7 +30,8 @@ stan_effects.btl <- function(x, data, prior, ranef, meef,
     text_sp <- stan_sp(x, data, prior, meef = meef, ranef = ranef),
     text_cs <- stan_cs(x, data, prior, ranef = ranef),
     text_sm <- stan_sm(x, data, prior),
-    text_gp <- stan_gp(x, data, prior)
+    text_gp <- stan_gp(x, data, prior),
+    stan_special_prior_global(x, data, prior)
   )
   p <- usc(combine_prefix(px))
   if (is.formula(x$offset)) {
@@ -355,59 +356,27 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
       )
     }
     # prepare population-level coefficients
-    ct <- ifelse(center_X, "c", "")
     prefix <- combine_prefix(px, keep_mu = TRUE)
     special <- attr(prior, "special")[[prefix]]
-    if (!is.null(special[["hs_df"]])) {
-      str_add(out$data) <- paste0(
-        "  real<lower=0> hs_df", p, "; \n",
-        "  real<lower=0> hs_df_global", p, "; \n",
-        "  real<lower=0> hs_df_slab", p, "; \n",
-        "  real<lower=0> hs_scale_global", p, "; \n",
-        "  real<lower=0> hs_scale_slab", p, "; \n"           
-      )
-      str_add(out$par) <- paste0(
-        "  // horseshoe shrinkage parameters \n",
-        "  vector[K", ct, p, "] zb", p, "; \n",
-        "  vector<lower=0>[K", ct, p, "] hs_local", p, "[2]; \n",
-        "  real<lower=0> hs_global", p, "[2]; \n",
-        "  real<lower=0> hs_c2", p, "; \n"
-      )
-      hs_scale_global <- paste0("hs_scale_global", p)
-      if (isTRUE(special[["hs_autoscale"]])) {
-        hs_scale_global <- paste0(hs_scale_global, " * sigma", resp)
-      }
-      hs_args <- sargs(
-        paste0(c("zb", "hs_local", "hs_global"), p), 
-        hs_scale_global, 
-        paste0("hs_scale_slab", p, "^2 * hs_c2", p)
-      )
-      str_add(out$tparD) <- paste0(
-        "  // population-level effects \n",
-        "  vector[K", ct, p, "] b", p,
-        " = horseshoe(", hs_args, "); \n"
-      )
-    } else {
+    if (is.null(special[["hs_df"]])) {
+      ct <- ifelse(center_X, "c", "")
       bound <- get_bound(prior, class = "b", px = px)
       str_add(out$par) <- paste0(
         "  vector", bound, "[K", ct, p, "] b", p, ";",
         "  // population-level effects \n"
       )
     }
-    if (!is.null(special[["lasso_df"]])) {
-      str_add(out$data) <- paste0(
-        "  real<lower=0> lasso_df", p, "; \n",
-        "  real<lower=0> lasso_scale", p, "; \n"
-      )
-      str_add(out$par) <- paste0(
-        "  // lasso shrinkage parameter \n",
-        "  real<lower=0> lasso_inv_lambda", p, "; \n"
-      )
-    }
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = fixef, px = px, suffix = p
     )
+    out <- collapse_lists(out,
+      stan_special_prior_local(
+        "b", prior, ncoef = length(fixef), 
+        px = px, center_X = center_X  
+      )                      
+    )
   }
+  
   if (center_X) {
     # centering of the fixed effects design matrix improves convergence
     if (length(fixef)) {
@@ -877,11 +846,15 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
       collapse("  vector[N] Csp", p, "_", seq_len(ncovars), ";\n")
     )
   )
-  bound <- get_bound(prior, class = "b", px = px)
-  str_add(out$par) <- paste0(
-    "  // special effects coefficients \n", 
-    "  vector", bound, "[Ksp", p, "] bsp", p, "; \n"
-  )
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attr(prior, "special")[[prefix]]
+  if (is.null(special[["hs_df"]])) {
+    bound <- get_bound(prior, class = "b", px = px)
+    str_add(out$par) <- paste0(
+      "  // special effects coefficients \n", 
+      "  vector", bound, "[Ksp", p, "] bsp", p, "; \n"
+    )
+  }
   str_add(out$prior) <- stan_prior(
     prior, class = "b", coef = spef$coef, 
     px = px, suffix = paste0("sp", p)
@@ -907,6 +880,12 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
       "simo", p, "_", I, " | con_simo", p, "_", I, "); \n"
     )
   }
+  out <- collapse_lists(out,
+    stan_special_prior_local(
+      "bsp", prior, ncoef = nrow(spef), 
+      px = px, center_X = FALSE
+    )                      
+  )
   out
 }
 

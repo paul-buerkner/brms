@@ -102,7 +102,8 @@ exclude_pars_internal.btl <- function(x, data, ...) {
   p <- usc(combine_prefix(x))
   out <- c(
     paste0("temp", p, "_Intercept"),
-    paste0(c("hs_local", "hs_global", "zb"), p)
+    paste0(c("hs_local", "hs_global", "zb"), p),
+    paste0(c("hs_localsp", "zbsp"), p)
   )
   smef <- tidy_smef(x, data)
   for (i in seq_len(nrow(smef))) {

@@ -160,6 +160,21 @@ test_that("special shrinkage priors appear in the Stan code", {
     )
   )
   
+  scode <- make_stancode(x1 ~ mo(y), dat, prior = prior(horseshoe()))
+  expect_match2(scode, "target += normal_lpdf(zbsp | 0, 1);")
+  expect_match2(scode,
+    "target += normal_lpdf(hs_localsp[1] | 0, 1)\n    - 1 * log(0.5);"          
+  )
+  expect_match2(scode,
+    "target += inv_gamma_lpdf(hs_localsp[2] | 0.5 * hs_df, 0.5 * hs_df);"          
+  )
+  expect_match2(scode,
+    paste0(
+      "bsp = horseshoe(zbsp, hs_localsp, hs_global, ", 
+      "hs_scale_global * sigma, hs_scale_slab^2 * hs_c2);"
+    )
+  )
+  
   # lasso prior
   scode <- make_stancode(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)),
@@ -170,6 +185,11 @@ test_that("special shrinkage priors appear in the Stan code", {
   )
   expect_match2(scode,
     "prior_b = double_exponential_rng(0,lasso_scale*prior_lasso_inv_lambda);"
+  )
+  
+  scode <- make_stancode(x1 ~ mo(y), dat, prior = prior(lasso()))
+  expect_match2(scode, 
+    "double_exponential_lpdf(bsp | 0, lasso_scale * lasso_inv_lambda)"
   )
   
   # horseshoe and lasso prior applied in a non-linear model
@@ -217,7 +237,7 @@ test_that("special shrinkage priors appear in the Stan code", {
                "Scale of the global prior")
   expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
-  expect_error(make_stancode(x1 ~ mo(y), dat, prior = prior(lasso())),
+  expect_error(make_stancode(x1 ~ cs(y), dat, acat(), prior = prior(lasso())),
                "Horseshoe or lasso priors are not yet allowed")
   bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
   expect_error(make_stancode(x1 ~ y, dat, prior = bprior),

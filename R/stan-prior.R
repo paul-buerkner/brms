@@ -108,10 +108,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   } else {
     out <- ""
   }
-  special_prior <- stan_special_prior(
-    class, prior, ncoef = length(coef), px = px
-  )
-  out <- collapse(c(out, special_prior))
+  out <- collapse(out)
   if (prior_only && nzchar(class) && !nchar(out)) {
     stop2("Sampling from priors is not possible as ", 
           "some parameters have no proper priors. ",
@@ -189,40 +186,93 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   out
 }
 
-stan_special_prior <- function(class, prior, ncoef, px = list()) {
-  # add special priors such as horseshoe and lasso
-  out <- ""
+stan_special_prior_global <- function(bterms, data, prior) {
+  # Stan code for global parameters of special priors
+  # currently implemented are horseshoe and lasso
+  out <- list()
+  tp <- tp()
+  px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (all(class == paste0("b", p))) {
-    stopifnot(length(p) == 1L)
-    tp <- tp()
-    # add horseshoe and lasso shrinkage priors
-    prefix <- combine_prefix(px, keep_mu = TRUE)
-    special <- attributes(prior)$special[[prefix]]
-    if (!is.null(special$hs_df)) {
-      local_args <- paste0("0.5 * hs_df", p)
-      local_args <- sargs(local_args, local_args)
-      global_args <- paste0("0.5 * hs_df_global", p)
-      global_args <- sargs(global_args, global_args)
-      c2_args <- paste0("0.5 * hs_df_slab", p)
-      c2_args <- sargs(c2_args, c2_args)
-      wsp <- wsp(nsp = 4)
-      str_add(out) <- paste0(
-        tp, "normal_lpdf(zb", p, " | 0, 1); \n",
-        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1)\n", 
-        wsp, "- ", ncoef, " * log(0.5); \n",
-        tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
-        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1)\n", 
-        wsp, "- 1 * log(0.5); \n",
-        tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
-        tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
-      )
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attributes(prior)$special[[prefix]]
+  if (!is.null(special[["hs_df"]])) {
+    str_add(out$data) <- paste0(
+      "  real<lower=0> hs_df", p, "; \n",
+      "  real<lower=0> hs_df_global", p, "; \n",
+      "  real<lower=0> hs_df_slab", p, "; \n",
+      "  real<lower=0> hs_scale_global", p, "; \n",
+      "  real<lower=0> hs_scale_slab", p, "; \n"           
+    )
+    str_add(out$par) <- paste0(
+      "  // horseshoe shrinkage parameters \n",
+      "  real<lower=0> hs_global", p, "[2]; \n",
+      "  real<lower=0> hs_c2", p, "; \n"
+    )
+    global_args <- paste0("0.5 * hs_df_global", p)
+    global_args <- sargs(global_args, global_args)
+    c2_args <- paste0("0.5 * hs_df_slab", p)
+    c2_args <- sargs(c2_args, c2_args)
+    str_add(out$prior) <- paste0(
+      tp, "normal_lpdf(hs_global", p, "[1] | 0, 1)\n    - 1 * log(0.5);\n",
+      tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, ");\n",
+      tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, ");\n"
+    )
+  }
+  if (!is.null(special[["lasso_df"]])) {
+    str_add(out$data) <- paste0(
+      "  real<lower=0> lasso_df", p, "; \n",
+      "  real<lower=0> lasso_scale", p, "; \n"
+    )
+    str_add(out$par) <- paste0(
+      "  // lasso shrinkage parameter \n",
+      "  real<lower=0> lasso_inv_lambda", p, "; \n"
+    )
+    str_add(out$prior) <- paste0(
+      tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, ");\n"
+    )
+  }
+  out
+}
+
+stan_special_prior_local <- function(class, prior, ncoef, px,
+                                     center_X = FALSE)  {
+  # Stan code for local parameters of special priors
+  # currently implemented are horseshoe
+  class <- as_one_character(class)
+  stopifnot(class %in% c("b", "bsp"))
+  out <- list()
+  p <- usc(combine_prefix(px))
+  sp <- paste0(sub("^b", "", class), p)
+  ct <- ifelse(center_X, "c", "")
+  tp <- tp()
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attributes(prior)$special[[prefix]]
+  if (!is.null(special[["hs_df"]])) {
+    str_add(out$par) <- paste0(
+      "  // local parameters for horseshoe prior\n",
+      "  vector[K", ct, sp, "] zb", sp, ";\n",
+      "  vector<lower=0>[K", ct, sp, "] hs_local", sp, "[2];\n"
+    )
+    hs_scale_global <- paste0("hs_scale_global", p)
+    if (isTRUE(special[["hs_autoscale"]])) {
+      str_add(hs_scale_global) <- paste0(" * sigma", usc(px$resp))
     }
-    if (!is.null(special$lasso_df)) {
-      str_add(out) <- paste0(
-        tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, "); \n"
-      )
-    }
+    hs_args <- sargs(
+      paste0(c("zb", "hs_local"), sp), paste0("hs_global", p), 
+      hs_scale_global, paste0("hs_scale_slab", p, "^2 * hs_c2", p)
+    )
+    str_add(out$tparD) <- paste0(
+      "  vector[K", ct, sp, "] b", sp,
+      " = horseshoe(", hs_args, "); \n"
+    )
+    local_args <- paste0("0.5 * hs_df", p)
+    local_args <- sargs(local_args, local_args)
+    str_add(out$prior) <- paste0(
+      tp, "normal_lpdf(zb", sp, " | 0, 1);\n",
+      tp, "normal_lpdf(hs_local", sp, "[1] | 0, 1)\n", 
+      "    - ", ncoef, " * log(0.5);\n",
+      tp, "inv_gamma_lpdf(hs_local", sp, "[2] | ", local_args, ");\n"
+    )
   }
   out
 }
