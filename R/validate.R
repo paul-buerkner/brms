@@ -854,6 +854,7 @@ tidy_gpef <- function(x, data) {
     gp <- eval2(out$term[i])
     out$label[i] <- paste0("gp", rename(collapse(gp$term)))
     out$cov[i] <- gp$cov
+    out$gr[i] <- gp$gr
     out$scale[i] <- gp$scale
     out$covars[[i]] <- gp$term
     if (gp$by != "NA") {
@@ -863,6 +864,10 @@ tidy_gpef <- function(x, data) {
       if (is_like_factor(Cgp)) {
         out$bylevels[[i]] <- rm_wsp(levels(factor(Cgp)))
       }
+    }
+    if (gp$gr && length(out$bylevels[[i]])) {
+      stop2("Cannot yet handle GPs with a categorical 'by' ",
+            "variable and 'gr' specified at the same time.")
     }
   }
   out

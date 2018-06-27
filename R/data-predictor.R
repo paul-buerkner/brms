@@ -461,7 +461,7 @@ data_gp <- function(bterms, data, gps = NULL) {
     Xgp <- do.call(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
-      if (length(gps)) {
+      if (length(gps) > 0L) {
         # scale Xgp based on the original data
         Xgp <- Xgp / gps[[i]]$dmax
       } else {
@@ -469,21 +469,51 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp / dmax
       }
     }
-    out[[paste0("Xgp", pi)]] <- Xgp
     out[[paste0("Kgp", pi)]] <- 1L
+    nXgp <- paste0("Xgp", pi)
+    out[[nXgp]] <- Xgp
     byvar <- gpef$byvars[[i]]
+    byfac <- length(gpef$bylevels[[i]]) > 0L
+    bynum <- !is.null(byvar) && !byfac 
     if (length(byvar)) {
       Cgp <- get(byvar, data)
-      if (is.numeric(Cgp)) {
+      if (bynum) {
         out[[paste0("Cgp", pi)]] <- Cgp
       } else {
         Cgp <- factor(Cgp)
         lCgp <- levels(Cgp)
-        Jgp <- lapply(lCgp, function(x) which(Cgp == x))
-        out[[paste0("Kgp", pi)]] <- length(Jgp)
-        out[[paste0("Igp", pi)]] <- lengths(Jgp)
-        Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
-        out <- c(out, setNames(Jgp, Jgp_names))
+        Igp <- lapply(lCgp, function(x) which(Cgp == x))
+        out[[paste0("Kgp", pi)]] <- length(Igp)
+        out[[paste0("IIgp", pi)]] <- lengths(Igp)
+        Igp_names <- paste0("Igp", pi, "_", seq_along(Igp))
+        out <- c(out, setNames(Igp, Igp_names))
+      }
+    }
+    if (gpef$gr[i]) {
+      if (byfac) {
+        # TODO: enable autogrouping for 'by' factors
+        for (j in seq_along(lCgp)) {
+          tmp <- Xgp[Igp, , drop = FALSE]
+        }
+      } else {
+        tmp <- Xgp
+        nCgp <- paste0("Cgp", pi)
+        if (!is.null(out[[nCgp]])) {
+          tmp <- cbind(tmp, out[[nCgp]])
+        }
+        groups <- factor(match_rows(tmp, tmp))
+        ilevels <- levels(groups)
+        Jgp <- match(groups, ilevels)
+        out[[paste0("Ngp", pi)]] <- length(ilevels)
+        out[[paste0("Jgp", pi)]] <- Jgp
+        not_dupl_Jgp <- !duplicated(Jgp)
+        to_order <- order(Jgp[not_dupl_Jgp])
+        out[[nXgp]] <- out[[nXgp]][not_dupl_Jgp, , drop = FALSE]
+        out[[nXgp]] <- out[[nXgp]][to_order, , drop = FALSE]
+        if (!is.null(out[[nCgp]])) {
+          # subset numeric 'by' variables
+          out[[nCgp]] <- out[[nCgp]][not_dupl_Jgp][to_order]
+        }
       }
     }
   }

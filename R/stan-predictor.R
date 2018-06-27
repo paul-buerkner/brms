@@ -901,28 +901,44 @@ stan_gp <- function(bterms, data, prior) {
     bylevels <- gpef$bylevels[[i]]
     byfac <- length(bylevels) > 0L
     bynum <- !is.null(byvar) && !byfac 
+    gr <- gpef$gr[i]
+    Ngp <- ifelse(gr, paste0("Ngp", pi), "N")
     J <- seq_along(bylevels)
     str_add(out$data) <- paste0(
-      "  int<lower=1> Kgp", pi, "; \n",
-      "  int<lower=1> Mgp", pi, "; \n",
-      "  vector[Mgp", pi, "] Xgp", p, "_", i, "[N]; \n",
+      "  int<lower=1> Kgp", pi, ";\n",
+      "  int<lower=1> Mgp", pi, ";\n",
+      if (gr) {
+        paste0("  int<lower=1> ", Ngp, ";\n")
+      },
+      "  vector[Mgp", pi, "] Xgp", p, "_", i, "[", Ngp, "];\n",
       if (bynum) {
-        paste0("  vector[N] Cgp", p, "_", i, "; \n")
+        paste0("  vector[", Ngp, "] Cgp", p, "_", i, ";\n")
       },
       if (byfac) {
         paste0(
-          "  int<lower=1> Igp", pi, "[Kgp", p, "_", i, "]; \n",
+          "  int<lower=1> IIgp", pi, "[Kgp", p, "_", i, "];\n",
           collapse(
-            "  int<lower=1> Jgp", pi, "_", J, "[Igp", pi, "[", J, "]]; \n"
+            "  int<lower=1> Igp", pi, "_", J, "[IIgp", pi, "[", J, "]];\n"
           )
         )
       }
     )
+    if (gr) {
+      if (byfac) {
+        str_add(out$data) <- collapse(
+          "  int<lower=1> Jgp", pi, "_", J, "[IIgp", pi, "[", J, "]];\n"
+        )
+      } else {
+        str_add(out$data) <- paste0(
+          "  int<lower=1> Jgp", pi, "[N];\n"
+        )
+      }
+    }
     str_add(out$par) <- paste0(
       "  // GP hyperparameters \n", 
       "  vector<lower=0>[Kgp", pi, "] sdgp", pi, "; \n",
       "  vector<lower=0>[Kgp", pi, "] lscale", pi, "; \n",
-      "  vector[N] zgp", pi, "; \n"
+      "  vector[", Ngp, "] zgp", pi, "; \n"
     ) 
     str_add(out$prior) <- paste0(
       stan_prior(prior, class = "sdgp", coef = gpef$term[i], 
@@ -932,22 +948,25 @@ stan_gp <- function(bterms, data, prior) {
       collapse(tp(), "normal_lpdf(zgp", pi, " | 0, 1); \n")
     )
     if (byfac) {
-      Jgp <- paste0("Jgp", pi, "_", J)
-      eta <- paste0(combine_prefix(px, keep_mu = TRUE), "[", Jgp, "]")
+      # TODO: enable autogrouping for 'by' factors
+      Igp <- paste0("Igp", pi, "_", J)
+      Jgp <- if (gr) paste0("[Jgp", pi, "_", J, "]")
+      eta <- paste0(combine_prefix(px, keep_mu = TRUE), "[", Igp, "]")
       gp_args <- paste0(
-        "Xgp", pi, "[", Jgp, "], sdgp", pi, "[", J, "], ", 
-        "lscale", pi, "[", J, "], zgp", pi, "[", Jgp, "]"
+        "Xgp", pi, "[", Igp, "], sdgp", pi, "[", J, "], ", 
+        "lscale", pi, "[", J, "], zgp", pi, "[", Igp, "]"
       )
       # compound '+=' statement currently causes a parser failure
       str_add(out$modelCgp1) <- paste0(
-        collapse("  ", eta, " = ", eta, " + gp(", gp_args, "); \n")
+        collapse("  ", eta, " = ", eta, " + gp(", gp_args, ")", Jgp, ";\n")
       )
     } else {
       gp_args <- paste0(
         "Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], zgp", pi
       )
       Cgp <- ifelse(bynum, paste0("Cgp", pi, " .* "), "")
-      str_add(out$eta) <- paste0(" + ", Cgp, "gp(", gp_args, ")")   
+      Jgp <- ifelse(gr, paste0("[Jgp", pi, "]"), "")
+      str_add(out$eta) <- paste0(" + ", Cgp, "gp(", gp_args, ")", Jgp)
     }
   }
   out

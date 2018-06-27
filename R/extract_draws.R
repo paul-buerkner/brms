@@ -404,21 +404,25 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
     zgp <- paste0("^zgp", p, "_", gpef$label[i], "\\[")
     gp$zgp <- get_samples(samples, zgp)
     gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
-    Jgp_pos <- grepl(paste0("^Jgp", p, "_", i), names(sdata))
+    Xgp_name <- paste0("Xgp", p, "_", i)
+    Igp_pos <- grepl(paste0("^Igp", p, "_", i), names(sdata))
+    Jgp_name <- paste0("Jgp", p, "_", i)
     if (new) {
-      gp$x <- old_sdata[[paste0("Xgp", p, "_", i)]]
-      gp$x_new <- sdata[[paste0("Xgp", p, "_", i)]]
-      gp$Jgp <- old_sdata[Jgp_pos]
-      gp$Jgp_new <- sdata[Jgp_pos]
+      gp$x <- old_sdata[[Xgp_name]]
+      gp$x_new <- sdata[[Xgp_name]]
+      gp$Igp <- old_sdata[Igp_pos]
+      gp$Igp_new <- sdata[Igp_pos]
       # computing GPs for new data requires the old GP terms
       gp$yL <- .predictor_gp(
         x = gp[["x"]], sdgp = gp[["sdgp"]],
         lscale = gp[["lscale"]], zgp = gp[["zgp"]], 
-        Jgp = gp[["Jgp"]]
+        Igp = gp[["Igp"]]
       )
+      gp$Jgp <- sdata[[Jgp_name]]
     } else {
-      gp$x <- sdata[[paste0("Xgp", p, "_", i)]]
-      gp$Jgp <- sdata[Jgp_pos]
+      gp$x <- sdata[[Xgp_name]]
+      gp$Igp <- sdata[Igp_pos]
+      gp$Jgp <- sdata[[Jgp_name]]
     }
     gp$nug <- nug
     draws[[i]] <- gp

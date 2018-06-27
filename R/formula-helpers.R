@@ -578,14 +578,15 @@ monotonic <- function(x) {
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' @export
-gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
+gp <- function(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
-  by <- deparse(substitute(by)) 
+  by <- deparse(substitute(by))
+  gr <- as_one_logical(gr)
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, by, cov, scale), class = "gpterm")
+  structure(nlist(term, label, by, cov, gr, scale), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}

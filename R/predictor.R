@@ -232,10 +232,11 @@ predictor_gp <- function(draws, i) {
     gp[["bynum"]] <- p(gp[["bynum"]], i)
     if (!is.null(gp[["x_new"]])) {
       gp[["x_new"]] <- p(gp[["x_new"]], i)
-      gp[["Jgp_new"]] <- select_indices(gp[["Jgp_new"]], i)
+      gp[["Igp_new"]] <- select_indices(gp[["Igp_new"]], i)
       eta <- eta + do.call(.predictor_gp, gp)  
     } else {
       gp[["x"]] <- p(gp[["x"]], i)
+      gp[["Igp"]] <- select_indices(gp[["Igp"]], i)
       gp[["Jgp"]] <- select_indices(gp[["Jgp"]], i)
       gp[["zgp"]] <- p(gp[["zgp"]], i, row = FALSE)
       eta <- eta + do.call(.predictor_gp, gp)  
@@ -245,8 +246,8 @@ predictor_gp <- function(draws, i) {
 }
 
 .predictor_gp <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
-                          yL = NULL, Jgp = NULL, Jgp_new = NULL,
-                          bynum = NULL, nug = 1e-11) {
+                          yL = NULL, Igp = NULL, Igp_new = NULL,
+                          bynum = NULL, Jgp = NULL, nug = 1e-11) {
   # compute predictions for gaussian processes
   # Does not work with pointwise evaluation!
   # Args:
@@ -298,15 +299,15 @@ predictor_gp <- function(draws, i) {
   if (!is.null(x_new)) {
     # compute the gaussian process for new data
     stopifnot(!is.null(yL))
-    stopifnot(length(Jgp_new) == length(Jgp))
-    if (length(Jgp)) {
+    stopifnot(length(Igp_new) == length(Igp))
+    if (length(Igp)) {
       # 'by' is a factor variable
       for (i in seq_along(out)) {
-        for (j in seq_along(Jgp)) {
-          if (length(Jgp_new[[j]])) {
-            out[[i]][Jgp_new[[j]]] <- .predictor_gp_new(
-              x_new = x_new[Jgp_new[[j]], , drop = FALSE],
-              yL = yL[i, Jgp[[j]]], x = x[Jgp[[j]], , drop = FALSE],
+        for (j in seq_along(Igp)) {
+          if (length(Igp_new[[j]])) {
+            out[[i]][Igp_new[[j]]] <- .predictor_gp_new(
+              x_new = x_new[Igp_new[[j]], , drop = FALSE],
+              yL = yL[i, Igp[[j]]], x = x[Igp[[j]], , drop = FALSE],
               sdgp = sdgp[i, j], lscale = lscale[i, j]
             )
           }
@@ -325,14 +326,14 @@ predictor_gp <- function(draws, i) {
   } else {
     # compute the gaussian process for the old data
     stopifnot(!is.null(zgp))
-    if (length(Jgp)) {
+    if (length(Igp)) {
       # 'by' is a factor variable
       for (i in seq_along(out)) {
-        for (j in seq_along(Jgp)) {
-          if (length(Jgp[[j]])) {
-            out[[i]][Jgp[[j]]] <- .predictor_gp_old(
-              x = x[Jgp[[j]], , drop = FALSE], sdgp = sdgp[i, j],
-              lscale = lscale[i, j], zgp = zgp[i, Jgp[[j]]]
+        for (j in seq_along(Igp)) {
+          if (length(Igp[[j]])) {
+            out[[i]][Igp[[j]]] <- .predictor_gp_old(
+              x = x[Igp[[j]], , drop = FALSE], sdgp = sdgp[i, j],
+              lscale = lscale[i, j], zgp = zgp[i, Igp[[j]]]
             ) 
           }
         }
@@ -350,6 +351,9 @@ predictor_gp <- function(draws, i) {
   out <- do.call(rbind, out) 
   if (!is.null(bynum)) {
     out <- out * as_draws_matrix(bynum, dim = dim(out))
+  }
+  if (!is.null(Jgp)) {
+    out <- out[, Jgp, drop = FALSE]
   }
   out
 }
