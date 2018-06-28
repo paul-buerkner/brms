@@ -1310,14 +1310,16 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
   
+  prior <- prior(gamma(2, 2), "lscale", coef = "gp(x1,by=z,gr=TRUE)5", nlpar = "a")
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
-                         data = dat, silent = TRUE)
+                         data = dat, prior = prior, silent = TRUE)
   expect_match2(scode, 
     "mu_a[Igp_a_1_1] = mu_a[Igp_a_1_1] + gp(Xgp_a_1_1,"
   )
   expect_match2(scode,
     "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
   )
+  expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3] | 2, 2);")
   expect_match2(scode, "target += normal_lpdf(zgp_a_1_3 | 0, 1);")
 })
 

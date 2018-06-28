@@ -953,7 +953,7 @@ stan_gp <- function(bterms, data, prior) {
       str_add(out$modelCgp1) <- collapse(
         "  ", eta, " = ", eta, " + gp(", gp_args, ")", Jgp, ";\n"
       )
-      coefs <- paste0(gpef$term[i], ":", gpef$bylevels[[i]])
+      coefs <- paste0(gpef$term[i], gpef$bylevels[[i]])
       str_add(out$prior) <- stan_prior(
         prior, class = "lscale", coef = coefs, 
         px = px, suffix = pi

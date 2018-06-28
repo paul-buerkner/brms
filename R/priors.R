@@ -711,20 +711,16 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
-    gpterms <- gpef$term
-    gpterms_by <- named_list(gpterms, gpterms)
-    for (i in seq_along(gpterms_by)) {
-      # GPs of each 'by' level should get their own default lscale prior
-      if (length(gpef$bylevels[[i]])) {
-        str_add(gpterms_by[[i]]) <- paste0(":", gpef$bylevels[[i]])
-      }
-    }
-    gpterms_by <- unlist(gpterms_by)
+    # GPs of each 'by' level get their own 'lscale' prior
+    all_gpterms <- ulapply(seq_len(nrow(gpef)), 
+      function(i) paste0(gpef$term[i], gpef$bylevels[[i]])
+    )
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpterms, ls = px) +
+      brmsprior(class = "sdgp", coef = gpef$term, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", prior = lscale_prior, coef = gpterms_by, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, 
+                coef = all_gpterms, ls = px)
   }
   prior
 }
