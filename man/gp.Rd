@@ -4,7 +4,7 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., by = NA, cov = "exp_quad", scale = TRUE)
+gp(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE)
 }
 \arguments{
 \item{...}{One or more predictors for the Gaussian process.}
@@ -16,6 +16,13 @@ case, a separate Gaussian process is fitted for each factor level.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
+
+\item{gr}{Logical; Indicates if auto-grouping should be used (defaults 
+to \code{FALSE}). If enabled, observations sharing the same 
+predictor values will be represented by the same latent variable
+in the Gaussian process. This will improve sampling efficiency
+drastically if the number of unique predictor combinations is small
+relative to the number of observations.}
 
 \item{scale}{Logical; If \code{TRUE} (the default), predictors are
 scaled so that the maximum Euclidean distance between two points

@@ -500,6 +500,12 @@ monotonic <- function(x) {
 #'   case, a separate Gaussian process is fitted for each factor level.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#' @param gr Logical; Indicates if auto-grouping should be used (defaults 
+#'   to \code{FALSE}). If enabled, observations sharing the same 
+#'   predictor values will be represented by the same latent variable
+#'   in the Gaussian process. This will improve sampling efficiency
+#'   drastically if the number of unique predictor combinations is small
+#'   relative to the number of observations.
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
 #'   scaled so that the maximum Euclidean distance between two points
 #'   is 1. Since the default prior on \code{lscale} expects scaled
@@ -578,14 +584,15 @@ monotonic <- function(x) {
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' @export
-gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
+gp <- function(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
-  by <- deparse(substitute(by)) 
+  by <- deparse(substitute(by))
+  gr <- as_one_logical(gr)
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, by, cov, scale), class = "gpterm")
+  structure(nlist(term, label, by, cov, gr, scale), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}

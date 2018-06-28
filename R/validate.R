@@ -854,6 +854,7 @@ tidy_gpef <- function(x, data) {
     gp <- eval2(out$term[i])
     out$label[i] <- paste0("gp", rename(collapse(gp$term)))
     out$cov[i] <- gp$cov
+    out$gr[i] <- gp$gr
     out$scale[i] <- gp$scale
     out$covars[[i]] <- gp$term
     if (gp$by != "NA") {
@@ -861,7 +862,7 @@ tidy_gpef <- function(x, data) {
       str_add(out$label[i]) <- rename(gp$by)
       Cgp <- get(gp$by, data)
       if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- rm_wsp(levels(factor(Cgp)))
+        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
       }
     }
   }

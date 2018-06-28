@@ -283,14 +283,16 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  out <- get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]], x[["gp"]])
-  c(out, get_all_effects_sm(x))
+  c(get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]]), 
+    get_all_effects_type(x, "sm"), 
+    get_all_effects_type(x, "gp"))
 }
 
-get_all_effects_sm <- function(x) {
-  # extract combinations of covars and byvars from splines
+get_all_effects_type <- function(x, type) {
+  # extract combinations of covars and byvars from splines and GPs
   stopifnot(is.btl(x))
-  terms <- all_terms(x[["sm"]])
+  type <- as_one_character(type)
+  terms <- all_terms(x[[type]])
   out <- named_list(terms)
   for (i in seq_along(terms)) {
     sm <- eval2(terms[i])

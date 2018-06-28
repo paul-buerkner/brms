@@ -231,7 +231,7 @@ change_gp <- function(bterms, data, pars) {
   gpef <- tidy_gpef(bterms, data)
   for (i in seq_len(nrow(gpef))) {
     # rename GP hyperparameters
-    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
+    gp_names <- paste0(gpef$label[i], gpef$bylevels[[i]])
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
@@ -250,13 +250,27 @@ change_gp <- function(bterms, data, pars) {
     )
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
-    zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
-    if (any(zgp_pos)) {
-      # users may choose not to save zgp
-      zgp_new <- paste0(zgp, "_", gpef$label[i])
-      fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
-      lc(out) <- clist(zgp_pos, fnames)
+    lvls <- gpef$bylevels[[i]]
+    if (length(lvls) > 0L) {
+      # categorical 'by' variable
+      for (j in seq_along(lvls)) {
+        zgp_old_sub <- paste0(zgp_old, "_", j)
+        zgp_pos <- grepl(paste0("^", zgp_old_sub, "\\["), pars)
+        if (any(zgp_pos)) {
+          zgp_new <- paste0(zgp, "_", gpef$label[i], lvls[j])
+          fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+          lc(out) <- clist(zgp_pos, fnames)
+        }
+      }
+    } else {
+      zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
+      if (any(zgp_pos)) {
+        zgp_new <- paste0(zgp, "_", gpef$label[i])
+        fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+        lc(out) <- clist(zgp_pos, fnames)
+      }
     }
+    
   }
   out
 }

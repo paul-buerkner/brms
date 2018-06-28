@@ -707,15 +707,20 @@ prior_gp <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for random effects SDs
   prior <- empty_brmsprior()
-  gpterms <- all_terms(bterms[["gp"]])
-  if (length(gpterms)) {
+  gpef <- tidy_gpef(bterms, data)
+  if (nrow(gpef)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
+    # GPs of each 'by' level get their own 'lscale' prior
+    all_gpterms <- ulapply(seq_len(nrow(gpef)), 
+      function(i) paste0(gpef$term[i], gpef$bylevels[[i]])
+    )
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpterms, ls = px) +
+      brmsprior(class = "sdgp", coef = gpef$term, ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
-      brmsprior(class = "lscale", prior = lscale_prior, coef = gpterms, ls = px)
+      brmsprior(class = "lscale", prior = lscale_prior, 
+                coef = all_gpterms, ls = px)
   }
   prior
 }

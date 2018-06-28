@@ -222,43 +222,37 @@ predictor_sm <- function(draws, i) {
 
 predictor_gp <- function(draws, i) {
   # compute eta for gaussian processes
-  eta <- 0
+  if (!length(draws[["gp"]])) {
+    return(0)
+  }
+  if (!is.null(i)) {
+    stop2("Pointwise evaluation is not supported for Gaussian processes.")
+  }
+  eta <- matrix(0, nrow = draws$nsamples, ncol = draws$nobs)
   for (k in seq_along(draws[["gp"]])) {
-    if (!is.null(i)) {
-      stop2("Pointwise evaluation is currently not ", 
-            "supported for Gaussian processes.")
-    }
     gp <- draws[["gp"]][[k]]
-    gp[["bynum"]] <- p(gp[["bynum"]], i)
-    if (!is.null(gp[["x_new"]])) {
-      gp[["x_new"]] <- p(gp[["x_new"]], i)
-      gp[["Jgp_new"]] <- select_indices(gp[["Jgp_new"]], i)
-      eta <- eta + do.call(.predictor_gp, gp)  
+    if (isTRUE(attr(gp, "byfac"))) {
+      # categorical 'by' variable
+      for (j in seq_along(gp)) {
+        if (length(gp[[j]][["Igp"]])) {
+          eta[, gp[[j]][["Igp"]]] <- .predictor_gp(gp[[j]])
+        }
+      }
     } else {
-      gp[["x"]] <- p(gp[["x"]], i)
-      gp[["Jgp"]] <- select_indices(gp[["Jgp"]], i)
-      gp[["zgp"]] <- p(gp[["zgp"]], i, row = FALSE)
-      eta <- eta + do.call(.predictor_gp, gp)  
+      eta <- eta + .predictor_gp(gp)
     }
   }
   eta
 }
 
-.predictor_gp <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
-                          yL = NULL, Jgp = NULL, Jgp_new = NULL,
-                          bynum = NULL, nug = 1e-11) {
+.predictor_gp <- function(gp) {
   # compute predictions for gaussian processes
   # Does not work with pointwise evaluation!
   # Args:
-  #   x: old predictor values
-  #   sdgp: sample of parameter sdgp
-  #   lscale: sample of parameter lscale
-  #   zgp: only for old data; samples of parameter vector zgp
-  #   x_new: only for new data: new predictor values
-  #   yL: only for new data: linear predictor of the old data
+  #   gp: and list returned by .extract_draws_gp()
   # Returns:
   #   A S x N matrix to be added to the linear predictor
-  try_expr <- function(expr) {
+  try_expr <- function(expr, nug) {
     out <- try(expr, silent = TRUE)
     if (is(out, "try-error")) {
       stop2("The Gaussian process covariance matrix is not positive ", 
@@ -267,19 +261,31 @@ predictor_gp <- function(draws, i) {
     }
     out
   }
-  .predictor_gp_old <- function(x, sdgp, lscale, zgp) {
+  .predictor_gp_old <- function(x, sdgp, lscale, zgp, nug) {
+    # Args:
+    #   x: old predictor values
+    #   sdgp: sample of parameter sdgp
+    #   lscale: sample of parameter lscale
+    #   zgp: only for old data; samples of parameter vector zgp
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
     lx <- nrow(x)
     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
-    L_Sigma <- try_expr(t(chol(Sigma)))
+    L_Sigma <- try_expr(t(chol(Sigma)), nug = nug)
     as.numeric(L_Sigma %*% zgp)
   }
-  .predictor_gp_new <- function(x_new, yL, x, sdgp, lscale) {
+  .predictor_gp_new <- function(x_new, yL, x, sdgp, lscale, nug) {
+    # Args:
+    #   x_new: new predictor values
+    #   yL: linear predictor of the old data
+    #   x: old predictor values
+    #   sdgp: sample of parameter sdgp
+    #   lscale: sample of parameter lscale
+    #   zgp: only for old data; samples of parameter vector zgp
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
     lx <- nrow(x)
     lx_new <- nrow(x_new)
     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
-    L_Sigma <- try_expr(t(chol(Sigma)))
+    L_Sigma <- try_expr(t(chol(Sigma)), nug = nug)
     L_Sigma_inverse <- solve(L_Sigma)
     K_div_yL <- L_Sigma_inverse %*% yL
     K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
@@ -289,70 +295,150 @@ predictor_gp <- function(draws, i) {
     cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
       t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
     yL_new <- try_expr(
-      rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new)
+      rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new),
+      nug = nug
     )
     return(yL_new)
   }
-  nsamples <- nrow(sdgp)
+  nsamples <- length(gp[["sdgp"]])
   out <- as.list(rep(NA, nsamples))
-  if (!is.null(x_new)) {
-    # compute the gaussian process for new data
-    stopifnot(!is.null(yL))
-    stopifnot(length(Jgp_new) == length(Jgp))
-    if (length(Jgp)) {
-      # 'by' is a factor variable
-      for (i in seq_along(out)) {
-        for (j in seq_along(Jgp)) {
-          if (length(Jgp_new[[j]])) {
-            out[[i]][Jgp_new[[j]]] <- .predictor_gp_new(
-              x_new = x_new[Jgp_new[[j]], , drop = FALSE],
-              yL = yL[i, Jgp[[j]]], x = x[Jgp[[j]], , drop = FALSE],
-              sdgp = sdgp[i, j], lscale = lscale[i, j]
-            )
-          }
-        }
-      }
-    } else {
-      sdgp <- as.numeric(sdgp)
-      lscale <- as.numeric(lscale)
-      for (i in seq_along(out)) {
-        out[[i]] <- .predictor_gp_new(
-          x_new = x_new, yL = yL[i, ], x = x, 
-          sdgp = sdgp[i], lscale = lscale[i]
-        ) 
-      }
+  if (!is.null(gp[["x_new"]])) {
+    for (i in seq_along(out)) {
+      out[[i]] <- with(gp, .predictor_gp_new(
+        x_new = x_new, yL = yL[i, ], x = x, 
+        sdgp = sdgp[i], lscale = lscale[i], nug = nug
+      ))
     }
   } else {
-    # compute the gaussian process for the old data
-    stopifnot(!is.null(zgp))
-    if (length(Jgp)) {
-      # 'by' is a factor variable
-      for (i in seq_along(out)) {
-        for (j in seq_along(Jgp)) {
-          if (length(Jgp[[j]])) {
-            out[[i]][Jgp[[j]]] <- .predictor_gp_old(
-              x = x[Jgp[[j]], , drop = FALSE], sdgp = sdgp[i, j],
-              lscale = lscale[i, j], zgp = zgp[i, Jgp[[j]]]
-            ) 
-          }
-        }
-      }
-    } else {
-      sdgp <- as.numeric(sdgp)
-      lscale <- as.numeric(lscale)
-      for (i in seq_along(out)) {
-        out[[i]] <- .predictor_gp_old(
-          x = x, sdgp = sdgp[i], lscale = lscale[i], zgp = zgp[i, ]
-        )
-      }
+    for (i in seq_along(out)) {
+      out[[i]] <- with(gp, .predictor_gp_old(
+        x = x, sdgp = sdgp[i], lscale = lscale[i], 
+        zgp = zgp[i, ], nug = nug
+      ))
     }
   }
   out <- do.call(rbind, out) 
-  if (!is.null(bynum)) {
-    out <- out * as_draws_matrix(bynum, dim = dim(out))
+  if (!is.null(gp[["bynum"]])) {
+    out <- out * as_draws_matrix(gp[["bynum"]], dim = dim(out))
+  }
+  if (!is.null(gp[["Jgp"]])) {
+    out <- out[, gp[["Jgp"]], drop = FALSE]
   }
   out
 }
+
+# .predictor_gp <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
+#                           yL = NULL, Igp = NULL, Igp_new = NULL,
+#                           bynum = NULL, Jgp = NULL, nug = 1e-11) {
+#   # compute predictions for gaussian processes
+#   # Does not work with pointwise evaluation!
+#   # Args:
+#   #   x: old predictor values
+#   #   sdgp: sample of parameter sdgp
+#   #   lscale: sample of parameter lscale
+#   #   zgp: only for old data; samples of parameter vector zgp
+#   #   x_new: only for new data: new predictor values
+#   #   yL: only for new data: linear predictor of the old data
+#   # Returns:
+#   #   A S x N matrix to be added to the linear predictor
+#   try_expr <- function(expr) {
+#     out <- try(expr, silent = TRUE)
+#     if (is(out, "try-error")) {
+#       stop2("The Gaussian process covariance matrix is not positive ", 
+#             "definite.\nThis occurs for numerical reasons. Setting ",
+#             "'nug' above ", nug, " may help.")
+#     }
+#     out
+#   }
+#   .predictor_gp_old <- function(x, sdgp, lscale, zgp) {
+#     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+#     lx <- nrow(x)
+#     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+#     L_Sigma <- try_expr(t(chol(Sigma)))
+#     as.numeric(L_Sigma %*% zgp)
+#   }
+#   .predictor_gp_new <- function(x_new, yL, x, sdgp, lscale) {
+#     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+#     lx <- nrow(x)
+#     lx_new <- nrow(x_new)
+#     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+#     L_Sigma <- try_expr(t(chol(Sigma)))
+#     L_Sigma_inverse <- solve(L_Sigma)
+#     K_div_yL <- L_Sigma_inverse %*% yL
+#     K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
+#     k_x_x_new <- cov_exp_quad(x, x_new, sdgp = sdgp, lscale = lscale)
+#     mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
+#     v_new <- L_Sigma_inverse %*% k_x_x_new
+#     cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
+#       t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
+#     yL_new <- try_expr(
+#       rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new)
+#     )
+#     return(yL_new)
+#   }
+#   nsamples <- nrow(sdgp)
+#   out <- as.list(rep(NA, nsamples))
+#   if (!is.null(x_new)) {
+#     # compute the gaussian process for new data
+#     stopifnot(!is.null(yL))
+#     stopifnot(length(Igp_new) == length(Igp))
+#     if (length(Igp)) {
+#       # 'by' is a factor variable
+#       for (i in seq_along(out)) {
+#         for (j in seq_along(Igp)) {
+#           if (length(Igp_new[[j]])) {
+#             out[[i]][Igp_new[[j]]] <- .predictor_gp_new(
+#               x_new = x_new[Igp_new[[j]], , drop = FALSE],
+#               yL = yL[i, Igp[[j]]], x = x[Igp[[j]], , drop = FALSE],
+#               sdgp = sdgp[i, j], lscale = lscale[i, j]
+#             )
+#           }
+#         }
+#       }
+#     } else {
+#       sdgp <- as.numeric(sdgp)
+#       lscale <- as.numeric(lscale)
+#       for (i in seq_along(out)) {
+#         out[[i]] <- .predictor_gp_new(
+#           x_new = x_new, yL = yL[i, ], x = x, 
+#           sdgp = sdgp[i], lscale = lscale[i]
+#         ) 
+#       }
+#     }
+#   } else {
+#     # compute the gaussian process for the old data
+#     stopifnot(!is.null(zgp))
+#     if (length(Igp)) {
+#       # 'by' is a factor variable
+#       for (i in seq_along(out)) {
+#         for (j in seq_along(Igp)) {
+#           if (length(Igp[[j]])) {
+#             out[[i]][Igp[[j]]] <- .predictor_gp_old(
+#               x = x[Igp[[j]], , drop = FALSE], sdgp = sdgp[i, j],
+#               lscale = lscale[i, j], zgp = zgp[i, Igp[[j]]]
+#             ) 
+#           }
+#         }
+#       }
+#     } else {
+#       sdgp <- as.numeric(sdgp)
+#       lscale <- as.numeric(lscale)
+#       for (i in seq_along(out)) {
+#         out[[i]] <- .predictor_gp_old(
+#           x = x, sdgp = sdgp[i], lscale = lscale[i], zgp = zgp[i, ]
+#         )
+#       }
+#     }
+#   }
+#   out <- do.call(rbind, out) 
+#   if (!is.null(bynum)) {
+#     out <- out * as_draws_matrix(bynum, dim = dim(out))
+#   }
+#   if (!is.null(Jgp)) {
+#     out <- out[, Jgp, drop = FALSE]
+#   }
+#   out
+# }
 
 predictor_cs <- function(eta, draws, i) {
   # compute eta for category specific effects
