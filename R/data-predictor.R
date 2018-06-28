@@ -469,52 +469,54 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp / dmax
       }
     }
-    out[[paste0("Kgp", pi)]] <- 1L
-    nXgp <- paste0("Xgp", pi)
-    out[[nXgp]] <- Xgp
+    gr <- gpef$gr[i]
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$bylevels[[i]]) > 0L
-    bynum <- !is.null(byvar) && !byfac 
-    if (length(byvar)) {
-      Cgp <- get(byvar, data)
-      if (bynum) {
-        out[[paste0("Cgp", pi)]] <- Cgp
-      } else {
-        Cgp <- factor(Cgp)
-        lCgp <- levels(Cgp)
-        Igp <- lapply(lCgp, function(x) which(Cgp == x))
-        out[[paste0("Kgp", pi)]] <- length(Igp)
-        out[[paste0("IIgp", pi)]] <- lengths(Igp)
-        Igp_names <- paste0("Igp", pi, "_", seq_along(Igp))
-        out <- c(out, setNames(Igp, Igp_names))
+    bynum <- !is.null(byvar) && !byfac
+    if (byfac) {
+      # for categorical 'by' variables prepare one GP per level
+      # as.factor will keep unused levels needed for new data
+      Cgp <- as.factor(get(byvar, data))
+      lvls <- levels(Cgp)
+      Ngp <- Nsubgp <- rep(NA, length(lvls))
+      out[[paste0("Kgp", pi)]] <- length(lvls)
+      for (j in seq_along(lvls)) {
+        # loop along levels of 'by'
+        Igp <- which(Cgp == lvls[j])
+        Ngp[j] <- length(Igp)
+        Xgp_sub <- Xgp[Igp, , drop = FALSE]
+        if (gr) {
+          groups <- factor(match_rows(Xgp_sub, Xgp_sub))
+          ilevels <- levels(groups)
+          Jgp <- match(groups, ilevels)
+          Nsubgp[j] <- length(ilevels)
+          out[[paste0("Jgp", pi, "_", j)]] <- Jgp
+          not_dupl_Jgp <- !duplicated(Jgp)
+          Xgp_sub <-  Xgp_sub[not_dupl_Jgp, , drop = FALSE]
+        }
+        out[[paste0("Igp", pi, "_", j)]] <- Igp
+        out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
       }
-    }
-    if (gpef$gr[i]) {
-      if (byfac) {
-        # TODO: enable autogrouping for 'by' factors
-        for (j in seq_along(lCgp)) {
-          tmp <- Xgp[Igp, , drop = FALSE]
-        }
-      } else {
-        tmp <- Xgp
-        nCgp <- paste0("Cgp", pi)
-        if (!is.null(out[[nCgp]])) {
-          tmp <- cbind(tmp, out[[nCgp]])
-        }
-        groups <- factor(match_rows(tmp, tmp))
+      out[[paste0("Ngp", pi)]] <- Ngp
+      if (gr) {
+        out[[paste0("Nsubgp", pi)]] <- Nsubgp
+      }
+    } else {
+      out[[paste0("Kgp", pi)]] <- 1L
+      if (bynum) {
+        Cgp <- as.numeric(get(byvar, data))
+        out[[paste0("Cgp", pi)]] <- as.array(Cgp)
+      } 
+      if (gr) {
+        groups <- factor(match_rows(Xgp, Xgp))
         ilevels <- levels(groups)
         Jgp <- match(groups, ilevels)
-        out[[paste0("Ngp", pi)]] <- length(ilevels)
+        out[[paste0("Nsubgp", pi)]] <- length(ilevels)
         out[[paste0("Jgp", pi)]] <- Jgp
         not_dupl_Jgp <- !duplicated(Jgp)
-        to_order <- order(Jgp[not_dupl_Jgp])
-        out[[nXgp]] <- out[[nXgp]][not_dupl_Jgp, , drop = FALSE]
-        out[[nXgp]] <- out[[nXgp]][to_order, , drop = FALSE]
-        if (!is.null(out[[nCgp]])) {
-          # subset numeric 'by' variables
-          out[[nCgp]] <- out[[nCgp]][not_dupl_Jgp][to_order]
-        }
+        Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
+      out[[paste0("Xgp", pi)]] <- as.array(Xgp)
     }
   }
   out

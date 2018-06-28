@@ -67,7 +67,7 @@ brmsfit_example5 <- brm(
 )
 
 brmsfit_example6 <- brm(
-  bf(volume ~ Trt + gp(Age, by = Trt), family = gaussian()) +
+  bf(volume ~ Trt + gp(Age, by = Trt, gr = TRUE), family = gaussian()) +
     bf(count ~ Trt + Age, family = poisson()), 
   data = dat[1:40, ],
   prior = prior(normal(0, 0.25), lscale, resp = volume) +

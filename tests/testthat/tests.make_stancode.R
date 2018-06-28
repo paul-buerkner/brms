@@ -1287,16 +1287,18 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   prior <- prior + prior(normal(0, 1), lscale, coef = gp(x1))
-  scode <- SW(make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior))
+  scode <- SW(make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
+                            data = dat, prior = prior))
   expect_match2(scode, "target += normal_lpdf(lscale_1 | 0, 1)")
+  expect_match2(scode, "+ Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)[Jgp_2]")
   
   # Suppress Stan parser warnings that can currently not be avoided
   scode <- make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), 
                          dat, silent = TRUE)
   expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, paste0(
-    "mu[Jgp_2_2] = mu[Jgp_2_2] + gp(Xgp_2[Jgp_2_2], ", 
-    "sdgp_2[2], lscale_2[2], zgp_2[Jgp_2_2]);"
+    "mu[Igp_2_2] = mu[Igp_2_2] + gp(Xgp_2_2, ", 
+    "sdgp_2[2], lscale_2[2], zgp_2_2);"
   ))
   
   prior <- c(prior(normal(0, 10), lscale, coef = gp(x1), nlpar = a),
@@ -1308,12 +1310,15 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
   
-  
-  scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z), nl = TRUE),
+  scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
                          data = dat, silent = TRUE)
   expect_match2(scode, 
-    "mu_a[Jgp_a_1_1] = mu_a[Jgp_a_1_1] + gp(Xgp_a_1[Jgp_a_1_1],"
+    "mu_a[Igp_a_1_1] = mu_a[Igp_a_1_1] + gp(Xgp_a_1_1,"
   )
+  expect_match2(scode,
+    "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
+  )
+  expect_match2(scode, "target += normal_lpdf(zgp_a_1_3 | 0, 1);")
 })
 
 test_that("Stan code for SAR models is correct", {

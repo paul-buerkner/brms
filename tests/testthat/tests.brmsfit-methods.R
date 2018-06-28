@@ -328,7 +328,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
   expect_true(all(
-    c("lscale_volume_gpAgeTrt_0", "lscale_volume_gpAgeTrt_1") %in% 
+    c("lscale_volume_gpAgeTrt0", "lscale_volume_gpAgeTrt1") %in% 
       parnames(fit6)
   ))
   

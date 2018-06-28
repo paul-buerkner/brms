@@ -862,12 +862,8 @@ tidy_gpef <- function(x, data) {
       str_add(out$label[i]) <- rename(gp$by)
       Cgp <- get(gp$by, data)
       if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- rm_wsp(levels(factor(Cgp)))
+        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
       }
-    }
-    if (gp$gr && length(out$bylevels[[i]])) {
-      stop2("Cannot yet handle GPs with a categorical 'by' ",
-            "variable and 'gr' specified at the same time.")
     }
   }
   out

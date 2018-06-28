@@ -500,6 +500,12 @@ monotonic <- function(x) {
 #'   case, a separate Gaussian process is fitted for each factor level.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#' @param gr Logical; Indicates if auto-grouping should be used (defaults 
+#'   to \code{FALSE}). If enabled, observations sharing the same 
+#'   predictor values will be represented by the same latent variable
+#'   in the Gaussian process. This will improve sampling efficiency
+#'   drastically if the number of unique predictor combinations is small
+#'   relative to the number of observations.
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
 #'   scaled so that the maximum Euclidean distance between two points
 #'   is 1. Since the default prior on \code{lscale} expects scaled

@@ -395,39 +395,74 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   }
   draws <- named_list(gpef$label)
   for (i in seq_along(draws)) {
-    gp <- list()
-    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
-    sdgp <- paste0("^sdgp", p, "_", gp_names)
-    gp$sdgp <- get_samples(samples, sdgp)
-    lscale <- paste0("^lscale", p, "_", gp_names)
-    gp$lscale <- get_samples(samples, lscale)
-    zgp <- paste0("^zgp", p, "_", gpef$label[i], "\\[")
-    gp$zgp <- get_samples(samples, zgp)
-    gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
-    Xgp_name <- paste0("Xgp", p, "_", i)
-    Igp_pos <- grepl(paste0("^Igp", p, "_", i), names(sdata))
-    Jgp_name <- paste0("Jgp", p, "_", i)
-    if (new) {
-      gp$x <- old_sdata[[Xgp_name]]
-      gp$x_new <- sdata[[Xgp_name]]
-      gp$Igp <- old_sdata[Igp_pos]
-      gp$Igp_new <- sdata[Igp_pos]
-      # computing GPs for new data requires the old GP terms
-      gp$yL <- .predictor_gp(
-        x = gp[["x"]], sdgp = gp[["sdgp"]],
-        lscale = gp[["lscale"]], zgp = gp[["zgp"]], 
-        Igp = gp[["Igp"]]
-      )
-      gp$Jgp <- sdata[[Jgp_name]]
+    lvls <- gpef$bylevels[[i]]
+    if (length(lvls)) {
+      gp <- named_list(lvls)
+      for (j in seq_along(lvls)) {
+        gp[[lvls[j]]] <- .extract_draws_gp(
+          gpef, samples = samples, sdata = sdata,
+          old_sdata = old_sdata, nug = nug, new = new,
+          byj = j, p = p, i = i
+        )
+      }
+      attr(gp, "byfac") <- TRUE
     } else {
-      gp$x <- sdata[[Xgp_name]]
-      gp$Igp <- sdata[Igp_pos]
-      gp$Jgp <- sdata[[Jgp_name]]
+      gp <- .extract_draws_gp(
+        gpef, samples = samples, sdata = sdata,
+        old_sdata = old_sdata, nug = nug, new = new, 
+        p = p, i = i
+      )
     }
-    gp$nug <- nug
     draws[[i]] <- gp
   }
   draws
+}
+
+.extract_draws_gp <- function(gpef, samples, sdata, old_sdata,
+                              nug, new, p, i, byj = NULL) {
+  # extract draws for Gaussian processes
+  # Args:
+  #   gpef: output of tidy_gpef
+  #   p: prefix created by combine_prefix()
+  #   i: indiex of the Gaussian process
+  #   byj: index for the level of a categorical 'by' vaiable
+  # Return:
+  #   a list to be evaluated by .predictor_gp()
+  if (is.null(byj)) {
+    lvl <- ""
+  } else {
+    lvl <- gpef$bylevels[[i]][byj]
+  }
+  j <- usc(byj)
+  gp <- list()
+  gp_name <- escape_all(paste0(gpef$label[i], lvl))
+  sdgp <- paste0("^sdgp", p, "_", gp_name, "$")
+  gp$sdgp <- as.numeric(get_samples(samples, sdgp))
+  lscale <- paste0("^lscale", p, "_", gp_name, "$")
+  gp$lscale <- as.numeric(get_samples(samples, lscale))
+  zgp_regex <- paste0("^zgp", p, "_", gp_name, "\\[")
+  gp$zgp <- get_samples(samples, zgp_regex)
+  Xgp_name <- paste0("Xgp", p, "_", i, j)
+  Igp_name <- paste0("Igp", p, "_", i, j)
+  Jgp_name <- paste0("Jgp", p, "_", i, j)
+  if (new) {
+    gp$x <- old_sdata[[Xgp_name]]
+    gp$nug <- 1e-11
+    # computing GPs for new data requires the old GP terms
+    gp$yL <- .predictor_gp(gp)
+    gp$x_new <- sdata[[Xgp_name]]
+    gp$Igp <- sdata[[Igp_name]]
+  } else {
+    gp$x <- sdata[[Xgp_name]]
+    gp$Igp <- sdata[[Igp_name]]
+  }
+  gp$Jgp <- sdata[[Jgp_name]]
+  if (is.null(byj)) {
+    # possible continuous 'by' variable
+    gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
+  }
+  gp$nug <- nug
+  gp
 }
 
 extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef, 
