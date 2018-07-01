@@ -708,11 +708,12 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(Y = unname(Y))
-  if (is_binary(x$family)) {
-    out$Y <- as.numeric(as.factor(out$Y)) - 1
-  }
-  if (is_categorical(x$family)) { 
-    out$Y <- as.numeric(as.factor(out$Y))
+  if (is_binary(x$family) || is_categorical(x$family)) {
+    out$Y <- as_factor(out$Y, levels = old_sdata$resp_levels)
+    out$Y <- as.numeric(out$Y)
+    if (is_binary(x$family)) {
+      out$Y <- out$Y - 1
+    }
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     out$Y <- as.numeric(out$Y)

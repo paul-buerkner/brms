@@ -185,6 +185,16 @@ is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
 
+as_factor <- function(x, levels = NULL) {
+  # similar to as.factor but allows to pass levels
+  if (is.null(levels)) {
+    out <- as.factor(x)
+  } else {
+    out <- factor(x, levels = levels)
+  }
+  out
+}
+
 as_one_logical <- function(x, allow_na = FALSE) {
   # coerce 'x' to TRUE or FALSE if possible
   s <- substitute(x)

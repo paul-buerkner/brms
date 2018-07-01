@@ -25,6 +25,7 @@ population-level effects.
 * Fix naming of correlation parameters of group-level terms 
 with multiple subgroups thanks to Kristoffer Magnusson. (#457) 
 * Improve scaling of default priors in `lognormal` models (#460).
+* Fix multiple problems in the post-processing of categorical models.
 
 
 # brms 2.3.1

@@ -512,6 +512,10 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     out$trials <- data_response$trials
     out$ncat <- data_response$ncat
   }
+  if (is_binary(x$family) || is_categorical(x$family)) {
+    Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$resp_levels <- levels(as.factor(Y))
+  }
   if (is.cor_car(x$autocor)) {
     if (isTRUE(nzchar(x$time$group))) {
       out$locations <- levels(factor(get(x$time$group, data)))
