@@ -709,10 +709,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(Y = unname(Y))
   if (is_binary(x$family)) {
-    out$Y <- as.numeric(factor(out$Y)) - 1
+    out$Y <- as.numeric(as.factor(out$Y)) - 1
   }
   if (is_categorical(x$family)) { 
-    out$Y <- as.numeric(factor(out$Y))
+    out$Y <- as.numeric(as.factor(out$Y))
   }
   if (is_ordinal(x$family) && is.ordered(out$Y)) {
     out$Y <- as.numeric(out$Y)
@@ -732,18 +732,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
               "to contain only two different values.")
       }
     }
-    if (is_categorical(x$family)) { 
-      if (length(unique(out$Y)) < 3L) {
-        stop2("At least three response categories are required.")
-      }
-    }
     if (is_ordinal(x$family)) {
       if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
         stop2("Family '", family4error, "' requires either positive ",
               "integers or ordered factors as responses.")
-      }
-      if (length(unique(out$Y)) < 2L) {
-        stop2("At least two response categories are required.")
       }
     }
     if (use_int(x$family)) {
@@ -814,7 +806,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
-    if (max(out$ncat) == 2L) {
+    if (out$ncat < 2L) {
+      stop2("At least two response categories are required.")
+    }
+    if (out$ncat == 2L && !not4stan) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
     }

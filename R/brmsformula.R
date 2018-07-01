@@ -1111,9 +1111,8 @@ validate_formula.brmsformula <- function(
     respform <- formula(gsub("\\|+[^~]*~", "~", respform))
     model_response <- model.response(model.frame(respform, data))
     cats <- levels(factor(model_response))
-    if (length(cats) <= 2L) {
-      stop2("At least 3 response categories are required for family ", 
-            "'categorical'.\nPlease use family 'bernoulli' instead.")
+    if (length(cats) < 2L) {
+      stop2("At least 2 response categories are required.")
     }
     # the first level will serve as the reference category
     out$family$dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)

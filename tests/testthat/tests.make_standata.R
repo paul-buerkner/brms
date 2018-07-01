@@ -130,13 +130,13 @@ test_that(paste("make_standata rejects incorrect response variables",
 test_that("make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
-                 paste("family 'bernoulli' might be a more efficient choice."))
+                 "family 'bernoulli' might be a more efficient choice.")
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(1:2, 5)), 
                                family = "acat"),
-                 paste("family 'bernoulli' might be a more efficient choice."))
-  expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
+                 "family 'bernoulli' might be a more efficient choice.")
+  expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                              family = "categorical"),
-               paste("At least 3 response categories are required"))
+                "family 'bernoulli' might be a more efficient choice.")
 })
 
 test_that("make_standata returns correct values for addition terms", {
