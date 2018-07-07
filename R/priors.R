@@ -335,6 +335,21 @@
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", 
                       lb = NA, ub = NA, check = TRUE) {
+  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, check)
+  input <- try(as.data.frame(input), silent = TRUE)
+  if (is(input, "try-error")) {
+    stop2("Processing arguments of 'set_prior' has failed:\n", input)
+  }
+  out <- vector("list", nrow(input))
+  for (i in seq_along(out)) {
+    out[[i]] <- do.call(.set_prior, input[i, ])
+  }
+  Reduce("+", out)
+}
+  
+.set_prior <- function(prior, class, coef, group, resp, 
+                       dpar, nlpar, lb, ub, check) {
+  # validate arguments passed to 'set_prior'
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -1066,8 +1081,6 @@ check_prior_content <- function(prior, warn = TRUE) {
     lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-    # TODO: reflect again that delta is lb for family cumulative?
-    # TODO: list 'Intercept' under nb_pars and allow boundaries on it
     nb_pars <- c("b", "alpha", "xi")
     lb_pars <- c(
       "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
@@ -1114,9 +1127,8 @@ check_prior_content <- function(prior, warn = TRUE) {
       } else if (prior$class[i] %in% c("simo", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2(
-            "Currently 'dirichlet' is the only valid prior ",
-            "for simplex parameters. See help(set_prior) ",
-            "for more details."
+            "Currently 'dirichlet' is the only valid prior for ", 
+            "simplex parameters. See help(set_prior) for more details."
           )
         }
       }

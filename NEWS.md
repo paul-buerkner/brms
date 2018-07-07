@@ -12,6 +12,7 @@ considerable increase in sampling efficiency. (#300)
 observations by means of argument `loop` in `brmsformula`.
 * Allow `horseshoe` and `lasso` priors to be set on special 
 population-level effects.
+* Allow vectors of length greater one to be passed to `set_prior`.
 
 ### Other changes
 

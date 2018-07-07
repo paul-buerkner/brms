@@ -22,6 +22,13 @@ test_that("get_prior finds all classes for which priors can be specified", {
   )
 })
 
+test_that("set_prior allows arguments to be vectors", {
+  bprior <- set_prior("normal(0, 2)", class = c("b", "sd"))
+  expect_is(bprior, "brmsprior")
+  expect_equal(bprior$prior, rep("normal(0, 2)", 2))
+  expect_equal(bprior$class, c("b", "sd"))
+})
+
 test_that("print for class brmsprior works correctly", {
   expect_output(print(set_prior("normal(0,1)")), fixed = TRUE,
                 "b ~ normal(0,1)")
