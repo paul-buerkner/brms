@@ -81,7 +81,7 @@ The horseshoe prior is a special shrinkage prior initially proposed by
   Generally, models with horseshoe priors a more likely than other models
   to have divergent transitions so that increasing \code{adapt_delta} 
   from \code{0.8} to values closer to \code{1} will often be necessary.
-  See the documentation of \code{\link[brms:brm]{brm}} for instructions
+  See the documentation of \code{\link{brm}} for instructions
   on how to increase \code{adapt_delta}.
 }
 \examples{
@@ -102,5 +102,5 @@ Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
    \url{https://arxiv.org/abs/1707.01694}
 }
 \seealso{
-\code{\link[brms:set_prior]{set_prior}}
+\code{\link{set_prior}}
 }

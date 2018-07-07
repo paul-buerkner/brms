@@ -72,5 +72,5 @@ make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c
 
 }
 \seealso{
-\code{\link[brms:set_prior]{set_prior}}
+\code{\link{set_prior}}
 }

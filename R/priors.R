@@ -90,8 +90,7 @@
 #'   may slow down the sampling procedure a bit.
 #'   
 #'   In case of the default intercept parameterization 
-#'   (discussed in the 'Details' section of 
-#'   \code{\link[brms:brmsformula]{brmsformula}}),
+#'   (discussed in the 'Details' section of \code{\link{brmsformula}}), 
 #'   general priors on class \code{"b"} will \emph{not} affect 
 #'   the intercept. Instead, the intercept has its own parameter class 
 #'   named \code{"Intercept"} and priors can thus be 
@@ -109,9 +108,9 @@
 #'   use \code{0 + intercept} on the right-hand side of the model formula.
 #'   
 #'   A special shrinkage prior to be applied on population-level effects 
-#'   is the horseshoe prior. See \code{\link[brms:horseshoe]{horseshoe}}
+#'   is the horseshoe prior. See \code{\link{horseshoe}}
 #'   for details. Another shrinkage prior is the so-called lasso prior.
-#'   See \code{\link[brms:lasso]{lasso}} for details.
+#'   See \code{\link{lasso}} for details.
 #'   
 #'   In non-linear models, population-level effects are defined separately 
 #'   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -187,13 +186,12 @@
 #'   The corresponding parameter class of the Cholesky factors is \code{L},
 #'   but it is not recommended to specify priors for this parameter class directly.
 #'   
-#'   4. Smooth terms (splines)
+#'   4. Splines
 #'   
-#'   GAMMs are implemented in \pkg{brms} using the 'random effects' 
-#'   formulation of smooth terms (for details see 
-#'   \code{\link[mgcv:gamm]{gamm}}). Thus, each smooth term
-#'   has its corresponding standard deviation modeling
-#'   the variability within this term. In \pkg{brms}, this 
+#'   Splines are implemented in \pkg{brms} using the 'random effects' 
+#'   formulation as explained in \code{\link[mgcv:gamm]{gamm}}). 
+#'   Thus, each spline has its corresponding standard deviations 
+#'   modeling the variability within this term. In \pkg{brms}, this 
 #'   parameter class is called \code{sds} and priors can
 #'   be specified via \code{set_prior("<prior>", class = "sds", 
 #'   coef = "<term label>")}. The default prior is the same as
@@ -219,14 +217,17 @@
 #'   
 #'   The autocorrelation parameters currently implemented are named 
 #'   \code{ar} (autoregression), \code{ma} (moving average),
-#'   and \code{arr} (autoregression of the response).
+#'   \code{arr} (autoregression of the response), \code{car} 
+#'   (spatial conditional autoregression), as well as \code{lagsar} 
+#'   and \code{errorsar} (Spatial simultaneous autoregression).
 #'   
 #'   Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
-#'   for \code{ar} and similar for \code{ma} and \code{arr} effects.
+#'   for \code{ar} and similar for other autocorrelation parameters.
 #'   By default, \code{ar} and \code{ma} are bounded between \code{-1} 
-#'   and \code{1} and \code{arr} is unbounded (you may change this 
-#'   by using the arguments \code{lb} and \code{ub}). The default
-#'   prior is flat over the definition area.
+#'   and \code{1}, \code{car}, \code{lagsar}, and \code{errorsar} are 
+#'   bounded between \code{0}, and \code{1}, and \code{arr} is unbounded 
+#'   (you may change this by using the arguments \code{lb} and \code{ub}). 
+#'   The default prior is flat over the definition area.
 #'   
 #'   7. Distance parameters of monotonic effects
 #'   
@@ -449,7 +450,7 @@ prior_string <- function(prior, ...) {
 #'   and several rows, each providing information on a parameter (or parameter class) on which
 #'   priors can be specified. The prior column is empty except for internal default priors.
 #'   
-#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#' @seealso \code{\link{set_prior}}
 #' 
 #' @examples 
 #' ## get all parameters and parameters classes to define priors on
@@ -1629,7 +1630,7 @@ dirichlet <- function(...) {
 #'   Generally, models with horseshoe priors a more likely than other models
 #'   to have divergent transitions so that increasing \code{adapt_delta} 
 #'   from \code{0.8} to values closer to \code{1} will often be necessary.
-#'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
+#'   See the documentation of \code{\link{brm}} for instructions
 #'   on how to increase \code{adapt_delta}. 
 #'   
 #' @references 
@@ -1645,7 +1646,7 @@ dirichlet <- function(...) {
 #'    in the horseshoe and other shrinkage priors. 
 #'    \url{https://arxiv.org/abs/1707.01694}    
 #'   
-#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#' @seealso \code{\link{set_prior}}
 #'   
 #' @examples 
 #' set_prior(horseshoe(df = 3, par_ratio = 0.1))
@@ -1730,7 +1731,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
 #' Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American 
 #'    Statistical Association, 103(482), 681-686.
 #'    
-#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#' @seealso \code{\link{set_prior}}
 #'   
 #' @examples 
 #' set_prior(lasso(df = 1, scale = 10))
