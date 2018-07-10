@@ -13,6 +13,8 @@ observations by means of argument `loop` in `brmsformula`.
 * Allow `horseshoe` and `lasso` priors to be set on special 
 population-level effects.
 * Allow vectors of length greater one to be passed to `set_prior`.
+* Conveniently save and load fitted model objects in `brm`
+via argument `file`. (#472)
 
 ### Other changes
 

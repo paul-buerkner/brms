@@ -145,10 +145,16 @@
 #'   reproducible. If \code{NA} (the default), \pkg{Stan} will set
 #'   the seed randomly.
 #' @param save_model Either \code{NULL} or a character string. 
-#'   In the latter case, the model code is
-#'   saved in a file named after the string supplied in \code{save_model}, 
-#'   which may also contain the full path where to save the file.
-#'   If only a name is given, the file is saved in the current working directory.
+#'   In the latter case, the model's Stan code is saved via \code{\link{cat}} 
+#'   in a text file named after the string supplied in \code{save_model}.
+#' @param file Either \code{NULL} or a character string. In the latter case, 
+#'   the fitted model object is saved via \code{\link{saveRDS}} in a file
+#'   named after the string supplied in \code{file}. 
+#'   The \code{.rds} file ending is added automatically.
+#'   If the file already exists, \code{brm} will load and return the saved
+#'   model object instead of refitting the model. AS existing files
+#'   won't be overwritten, you have to manually remove the file in order
+#'   to refit and save the model under an existing file name.
 #' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether 
 #'   the dynamic shared object (DSO) compiled from the C++ code for the model 
 #'   will be saved or not. If \code{TRUE}, we can draw samples from the same 
@@ -350,15 +356,26 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 future = getOption("future", FALSE), silent = TRUE, 
-                seed = NA, save_model = NULL, save_dso = TRUE, ...) {
+                seed = NA, save_model = NULL, save_dso = TRUE,
+                file = NULL, ...) {
+  
+  if (!is.null(file)) {
+    # optionally load saved model object
+    file <- paste0(as_one_character(file), ".rds")
+    x <- suppressWarnings(try(readRDS(file), silent = TRUE))
+    if (!is(x, "try-error")) {
+      if (!is.brmsfit(x)) {
+        stop2("Object loaded via 'file' is not of class 'brmsfit'.")
+      }
+      return(x)
+    }
+  }
   
   dots <- list(...)
-  autocor <- check_autocor(autocor)
   algorithm <- match.arg(algorithm)
-  
-  testmode <- dots$testmode
+  testmode <- isTRUE(dots$testmode)
   dots$testmode <- NULL
-  if (is(fit, "brmsfit")) {
+  if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
     sdata <- standata(x)
@@ -462,8 +479,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # vb does not support parallel execution
     x$fit <- do.call(rstan::vb, args)
   }
-  if (!isTRUE(testmode)) {
+  if (!testmode) {
     x <- rename_pars(x)
+  }
+  if (!is.null(file)) {
+    saveRDS(x, file = file)
   }
   x
 }
