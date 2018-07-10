@@ -150,9 +150,9 @@
 #' @param file Either \code{NULL} or a character string. In the latter case, 
 #'   the fitted model object is saved via \code{\link{saveRDS}} in a file
 #'   named after the string supplied in \code{file}. 
-#'   The \code{.rds} file ending is added automatically.
+#'   The \code{.rds} extension is added automatically.
 #'   If the file already exists, \code{brm} will load and return the saved
-#'   model object instead of refitting the model. AS existing files
+#'   model object instead of refitting the model. As existing files
 #'   won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name.
 #' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether 
