@@ -4,71 +4,39 @@ stan_effects <- function(x, ...) {
 }
 
 #' @export
-stan_effects.btl <- function(x, data, prior, ranef, meef, 
-                             center_X = TRUE, sparse = FALSE, 
-                             ilink = rep("", 2), order_mixture = 'none',
-                             ...) {
+stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
-  #   center_X: center population-level design matrix if possible?
-  #   meef: output of tidy_meef() containing information about me terms
-  #   sparse: should the population-level design matrix be treated as sparse?
-  #   ilink: character vector of lenght 2 defining the link to be applied
-  #   order_mixture: indicates how to identify mixture models via ordering
+  #   ranef: output of tidy_ranef()
+  #   ilink: character vector of length 2 defining the link to be applied
+  #   ...: arguements passed to the underlying effect-specific functions
   stopifnot(length(ilink) == 2L)
   px <- check_prefix(x)
   eta <- combine_prefix(px, keep_mu = TRUE)
   stopifnot(nzchar(eta))
-  ranef <- subset2(ranef, ls = px)
-  center_X <- center_X && has_intercept(x$fe) && 
-    !is(x$autocor, "cor_bsts") && !sparse
+  
   out <- collapse_lists(
-    text_fe <- stan_fe(
-      x, data, prior = prior, center_X = center_X,
-      sparse = sparse, order_mixture = order_mixture
-    ),
-    text_sp <- stan_sp(x, data, prior, meef = meef, ranef = ranef),
-    text_cs <- stan_cs(x, data, prior, ranef = ranef),
-    text_sm <- stan_sm(x, data, prior),
-    text_gp <- stan_gp(x, data, prior),
-    stan_special_prior_global(x, data, prior)
-  )
-  p <- usc(combine_prefix(px))
-  if (is.formula(x$offset)) {
-    str_add(out$data) <- paste0( 
-      "  vector[N] offset", p, "; \n"
-    )
-  }
-  # initialize and compute eta_<nlpar>
-  str_add(out$modelD) <- paste0(
-    "  vector[N] ", eta, " = ", 
-    text_fe$eta, text_sm$eta, text_gp$eta,
-    if (center_X && !is_ordinal(x$family))
-      paste0(" + temp", p, "_Intercept"),
-    if (is.formula(x$offset))
-      paste0(" + offset", p),
-    if (get_arr(x$autocor))
-      paste0(" + Yarr", p, " * arr", p),
-    "; \n"
+    text_fe <- stan_fe(x, data, prior, ...),
+    text_sp <- stan_sp(x, data, prior, ranef = ranef, ...),
+    text_cs <- stan_cs(x, data, prior, ranef = ranef, ...),
+    text_sm <- stan_sm(x, data, prior, ...),
+    text_gp <- stan_gp(x, data, prior, ...),
+    text_ac <- stan_ac(x, ...),
+    text_offset <- stan_offset(x, ...),
+    stan_special_prior_global(x, data, prior, ...)
   )
   
-  # repare loop over eta
-  eta_loop <- paste0(
-    stan_eta_re(ranef, px = px), text_sp$eta,
-    stan_eta_autocor(x$autocor, px = px)
-  )
-  if (nzchar(eta_loop)) {
-    # trim initial '+' for aesthetical reasons
-    eta_loop <- sub("^[ \t\r\n]+\\+", "", eta_loop, perl = TRUE)
-    str_add(out$modelC2) <- paste0(
-      "    ", eta, "[n] +=", eta_loop, ";\n"
-    )
+  # initialize and compute eta
+  out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
+  str_add(out$modelD) <- paste0("  vector[N] ", eta, " =", out$eta, ";\n")
+  str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
+  if (nzchar(out$loopeta)) {
+    # parts of eta are computed in a loop over observations
+    out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
+    str_add(out$modelC2) <- paste0("    ", eta, "[n] +=", out$loopeta, ";\n")
   }
-  # include autoregressive effects
-  if (get_ar(x$autocor) && !use_cov(x$autocor)) {
-    eta_ar <- paste0("head(E", p, "[n], Kar", p, ") * ar", p)
-    str_add(out$modelC3) <- paste0("    ", eta, "[n] += ", eta_ar, ";\n")
-  }
+  out$eta <- out$loopeta <- NULL
+  
   # possibly transform eta before it is passed to the likelihood
   if (sum(nzchar(ilink))) {
     # make sure mu comes last as it might depend on other parameters
@@ -317,8 +285,9 @@ stan_effects.mvbrmsterms <- function(x, prior, ...) {
   out
 }
 
-stan_fe <- function(bterms, data, prior, center_X = TRUE,
-                    sparse = FALSE, order_mixture = 'none') {
+stan_fe <- function(bterms, data, prior, stanvars,
+                    center_X = TRUE, sparse = FALSE, 
+                    order_mixture = 'none', ...) {
   # Stan code for population-level effects
   # Args:
   #   center_X: center the design matrix?
@@ -329,7 +298,10 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
-  rm_intercept <- center_X || is.cor_bsts(bterms$autocor) || is_ordinal(family)
+  center_X <- center_X && has_intercept(bterms$fe) && 
+    !is.cor_bsts(bterms$autocor) && !sparse
+  rm_intercept <- center_X || is_ordinal(family) ||
+    is.cor_bsts(bterms$autocor)
   if (rm_intercept) {
     fixef <- setdiff(fixef, "Intercept")
   }
@@ -358,7 +330,9 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
     # prepare population-level coefficients
     prefix <- combine_prefix(px, keep_mu = TRUE)
     special <- attr(prior, "special")[[prefix]]
-    if (is.null(special[["hs_df"]])) {
+    define_b_in_pars <- is.null(special[["hs_df"]]) &&
+      !paste0("b", p) %in% names(stanvars)
+    if (define_b_in_pars) {
       ct <- ifelse(center_X, "c", "")
       bound <- get_bound(prior, class = "b", px = px)
       str_add(out$par) <- paste0(
@@ -444,6 +418,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
           "  real temp", p, "_Intercept;  // temporary intercept \n"
         )
       }
+      str_add(out$eta) <- paste0(" + temp", p, "_Intercept")
       str_add(out$genD) <- paste0(
         "  // actual population-level intercept \n",
         "  real b", p, "_Intercept",
@@ -466,7 +441,7 @@ stan_fe <- function(bterms, data, prior, center_X = TRUE,
       )
     }
   }
-  out$eta <- stan_eta_fe(fixef, center_X, sparse, px = px)
+  str_add(out$eta) <- stan_eta_fe(fixef, center_X, sparse, px = px)
   out
 }
 
@@ -687,7 +662,7 @@ stan_re <- function(ranef, prior, ...) {
   out
 }
 
-stan_sm <- function(bterms, data, prior) {
+stan_sm <- function(bterms, data, prior, ...) {
   # Stan code of smooth terms
   out <- list()
   px <- check_prefix(bterms)
@@ -732,7 +707,7 @@ stan_sm <- function(bterms, data, prior) {
   out
 }
 
-stan_cs <- function(bterms, data, prior, ranef) {
+stan_cs <- function(bterms, data, prior, ranef, ...) {
   # Stan code for category specific effects
   # (!) Not implemented for non-linear models
   out <- list()
@@ -792,7 +767,7 @@ stan_cs <- function(bterms, data, prior, ranef) {
   out
 }
 
-stan_sp <- function(bterms, data, prior, meef, ranef) {
+stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   # Stan code for special effects
   out <- list()
   spef <- tidy_spef(bterms, data)
@@ -835,7 +810,9 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
     }
     r <- subset2(ranef, coef = spef_coef[i])
     rpars <- if (nrow(r)) paste0(" + ", stan_eta_rsp(r))
-    str_add(out$eta) <- paste0(" + (bsp", p, "[", i, "]", rpars, ") * ", eta)
+    str_add(out$loopeta) <- paste0(
+      " + (bsp", p, "[", i, "]", rpars, ") * ", eta
+    )
   }
   # prepare general Stan code
   ncovars <- max(spef$Ic)
@@ -848,7 +825,9 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
   )
   prefix <- combine_prefix(px, keep_mu = TRUE)
   special <- attr(prior, "special")[[prefix]]
-  if (is.null(special[["hs_df"]])) {
+  define_bsp_in_pars <- is.null(special[["hs_df"]]) &&
+    !paste0("bsp", p) %in% names(stanvars)
+  if (define_bsp_in_pars) {
     bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- paste0(
       "  // special effects coefficients \n", 
@@ -889,7 +868,7 @@ stan_sp <- function(bterms, data, prior, meef, ranef) {
   out
 }
 
-stan_gp <- function(bterms, data, prior) {
+stan_gp <- function(bterms, data, prior, ...) {
   # Stan code for latent gaussian processes
   out <- list()
   px <- check_prefix(bterms)
@@ -995,14 +974,49 @@ stan_gp <- function(bterms, data, prior) {
   out
 }
 
-stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, 
-                        px = list()) {
+stan_ac <- function(bterms, ...) {
+  # Stan code for the linear predictor of certain autocorrelation terms 
+  out <- list()
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  autocor <- bterms$autocor
+  if (get_ar(autocor) && !use_cov(autocor)) {
+    eta <- combine_prefix(px, keep_mu = TRUE)
+    eta_ar <- paste0("head(E", p, "[n], Kar", p, ") * ar", p)
+    str_add(out$modelC3) <- paste0("    ", eta, "[n] += ", eta_ar, ";\n")
+  }
+  if (get_ma(autocor) && !use_cov(autocor)) {
+    str_add(out$loopeta) <- paste0(" + head(E", p, "[n], Kma", p, ") * ma", p)
+  }
+  if (get_arr(autocor)) {
+    str_add(out$eta) <- paste0(" + Yarr", p, " * arr", p)
+  }
+  if (is.cor_car(autocor)) {
+    str_add(out$loopeta) <- paste0(" + rcar", p, "[Jloc", p, "[n]]")
+  }
+  if (is.cor_bsts(autocor)) {
+    str_add(out$loopeta) <- paste0(" + loclev", p, "[n]")
+  }
+  out
+}
+
+stan_offset <- function(bterms, ...) {
+  # stan code for offsets
+  out <- list()
+  if (is.formula(bterms$offset)) {
+    p <- usc(combine_prefix(bterms))
+    str_add(out$data) <- paste0( "  vector[N] offset", p, ";\n")
+    str_add(out$eta) <- paste0(" + offset", p)
+  }
+  out
+}
+
+stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
   # define Stan code to compute the fixef part of eta
   # Args:
   #   fixef: names of the population-level effects
   #   center_X: use the centered design matrix?
   #   sparse: use sparse matrix multiplication?
-  #   nlpar: optional name of a non-linear parameter
   p <- usc(combine_prefix(px))
   if (length(fixef)) {
     if (sparse) {
@@ -1018,7 +1032,7 @@ stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE,
   } else { 
     eta_fe <- "rep_vector(0, N)"
   }
-  eta_fe
+  paste0(" + ", eta_fe)
 }
 
 stan_eta_re <- function(ranef, px = list()) {
@@ -1071,22 +1085,6 @@ stan_eta_rsp <- function(r) {
     }
   } else {
     out <- paste0("r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
-  }
-  out
-}
-
-stan_eta_autocor <- function(autocor, px = list()) {
-  # Stan code for the linear predictor of certain autocorrelation terms 
-  out <- ""
-  p <- usc(combine_prefix(px))
-  if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out) <- paste0(" + head(E", p, "[n], Kma", p, ") * ma", p)
-  }
-  if (is.cor_car(autocor)) {
-    str_add(out) <- paste0(" + rcar", p, "[Jloc", p, "[n]]")
-  }
-  if (is.cor_bsts(autocor)) {
-    str_add(out) <- paste0(" + loclev", p, "[n]")
   }
   out
 }

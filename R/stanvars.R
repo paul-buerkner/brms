@@ -124,6 +124,9 @@ collapse_stanvars <- function(x, block = NULL) {
   if (!is.null(block)) {
     x <- subset_stanvars(x, block = block)
   }
+  if (!length(x)) {
+    return("")
+  }
   collapse(ulapply(x, "[[", "scode"), "\n")
 }
 
@@ -139,7 +142,8 @@ c.stanvars <- function(x, ...) {
   dots <- lapply(list(...), validate_stanvars)
   class(x) <- "list"
   out <- unlist(c(list(x), dots), recursive = FALSE)
-  if (any(duplicated(names(out)))) {
+  svnames <- names(out)[nzchar(names(out))]
+  if (any(duplicated(svnames))) {
     stop2("Duplicated names in 'stanvars' are not allowed.")
   }
   structure(out, class = "stanvars")

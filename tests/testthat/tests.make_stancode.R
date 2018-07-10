@@ -502,7 +502,7 @@ test_that("Stan code for categorical models is correct", {
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
-  expect_match2(scode, "mu2 = Xc_mu2 * b_mu2 + temp_mu2_Intercept;")
+  expect_match2(scode, "mu2 = temp_mu2_Intercept + Xc_mu2 * b_mu2;")
   expect_match2(scode, "mu4[n] += r_1_mu4_3[J_1[n]] * Z_1_mu4_3[n];")
   expect_match2(scode, "target += normal_lpdf(b_mu2 | 0, 10);")
   expect_match2(scode, "target += normal_lpdf(b_mu4 | 0, 5);")
@@ -525,7 +525,7 @@ test_that("Stan code for ARMA models is correct", {
     make_stancode(y ~ x, dat, student(), autocor = cor_arr(~time, r = 2)),
     "The 'arr' correlation structure has been deprecated"
   )
-  expect_match2(scode, "mu = Xc * b + temp_Intercept + Yarr * arr;")
+  expect_match2(scode, "mu = temp_Intercept + Xc * b + Yarr * arr;")
   
   scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(),
                          autocor = cor_ar())
@@ -624,7 +624,7 @@ test_that("monotonic effects appear in the Stan code", {
   expect_match2(scode, "target += dirichlet_lpdf(simo_8 | con_simo_8);")
   
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
-  expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * mo(simo_1, Xmo_1[n]);")
+  expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * mo(simo_1, Xmo_1[n])")
   expect_true(!grepl("Z_1_w", scode))
   
   expect_error(
@@ -1179,7 +1179,7 @@ test_that("Stan code of GEV models is correct", {
 test_that("offsets appear in the Stan code", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   scode <- make_stancode(y ~ x + offset(c), data)
-  expect_match2(scode, "Xc * b + temp_Intercept + offset;")
+  expect_match2(scode, "temp_Intercept + Xc * b + offset;")
   scode <- make_stancode(bf(y ~ a, a ~ offset(log(c + 1)), nl = TRUE),
                          data, prior = prior(normal(0,1), nlpar = a))
   expect_match2(scode, "X_a * b_a + offset_a;")
@@ -1419,7 +1419,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode, 
-    "r_1_y_1[J_1[n]] * Z_1_y_1[n] + (bsp_y[1] + r_1_y_2[J_1[n]]) * Yl_x[n];"
+    "(bsp_y[1] + r_1_y_2[J_1[n]]) * Yl_x[n] + r_1_y_1[J_1[n]] * Z_1_y_1[n];"
   )
   
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
@@ -1488,6 +1488,24 @@ test_that("argument 'stanvars' is handled correctly", {
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
+  
+  # use the non-centered parameterization for 'b'
+  bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
+    set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
+  stanvars <- stanvar(scode = "vector[Kc] zb;", block = "parameters") +
+    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+    stanvar(scode = "vector[Kc] b = zb * tau;", 
+            block="tparameters", name = "b")
+  scode <- make_stancode(count ~ Trt, epilepsy, 
+                         prior = bprior, stanvars = stanvars)
+  expect_match2(scode, "vector[Kc] b = zb * tau;")
+  
+  stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
+    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+    stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
+            block="tparameters", name = "bsp")
+  scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
+  expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
 })
 
 test_that("custom families are handled correctly", {

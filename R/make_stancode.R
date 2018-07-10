@@ -51,7 +51,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   
   scode_effects <- stan_effects(
     bterms, data = data, prior = prior, 
-    ranef = ranef, meef = meef, sparse = sparse
+    ranef = ranef, meef = meef, sparse = sparse,
+    stanvars = stanvars
   )
   scode_ranef <- stan_re(ranef, prior = prior, cov_ranef = cov_ranef)
   scode_llh <- stan_llh(bterms, data = data)

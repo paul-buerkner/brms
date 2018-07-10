@@ -186,7 +186,7 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   out
 }
 
-stan_special_prior_global <- function(bterms, data, prior) {
+stan_special_prior_global <- function(bterms, data, prior, ...) {
   # Stan code for global parameters of special priors
   # currently implemented are horseshoe and lasso
   out <- list()
