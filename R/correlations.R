@@ -549,6 +549,10 @@ cor_empty <- function() {
   structure(list(), class = c("cor_empty", "cor_brms"))
 }
 
+is.cor_empty <- function(x) {
+  inherits(x, "cor_empty")
+}
+
 check_autocor <- function(autocor) {
   # check validity of autocor argument
   if (is.null(autocor))  {
