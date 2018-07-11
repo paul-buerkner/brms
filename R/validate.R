@@ -1070,6 +1070,11 @@ get_autocor_vars.brmsfit <- function(x, ...) {
   get_autocor_vars(x$formula, ...)
 }
 
+get_ac_groups <- function(x, ...) {
+  # convenient wrapper around get_autocor_vars()
+  get_autocor_vars(x, var = "group", ...)
+}
+
 get_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
                        stan = FALSE) {
   # extract truncation boundaries

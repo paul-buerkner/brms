@@ -205,3 +205,11 @@ get_sdy <- function(x, data = NULL) {
   }
   sdy
 }
+
+get_me_groups <- function(x) {
+  # get names of me grouping variables
+  uni_me <- get_uni_me(x)
+  out <- lapply(uni_me, eval_NA) 
+  out <- ulapply(out, attr, "grname")
+  out[nzchar(out)]
+}

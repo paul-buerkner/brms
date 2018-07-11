@@ -522,9 +522,12 @@ deparse_combine <- function(x, max_char = 100) {
   out
 }
 
-eval2 <- function(text, ...) {
-  # evaluate a string
-  eval(parse(text = text), ...)
+eval2 <- function(expr, ...) {
+  # like eval() but parses characters before evaluation
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  eval(expr, ...)
 }
 
 eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
@@ -541,6 +544,15 @@ eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
     out <- eval(expr, envir)
   }
   out
+}
+
+eval_NA <- function(expr, ...) {
+  # evaluate an expression for all variables set to NA
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  data <- named_list(all.vars(expr), NA_real_)
+  eval(expr, envir = data, ...)
 }
 
 stop2 <- function(...) {

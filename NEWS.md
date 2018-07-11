@@ -29,6 +29,8 @@ via argument `file`. (#472)
 with multiple subgroups thanks to Kristoffer Magnusson. (#457) 
 * Improve scaling of default priors in `lognormal` models (#460).
 * Fix multiple problems in the post-processing of categorical models.
+* Fix validation of nested grouping factors in post-processing 
+methods when passing new data thanks to Liam Kendall.
 
 
 # brms 2.3.1

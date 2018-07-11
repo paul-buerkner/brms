@@ -51,7 +51,7 @@ update_data <- function(data, bterms, na.action = na.omit2,
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
-  groups <- get_groups(bterms)
+  groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
@@ -248,21 +248,15 @@ validate_newdata <- function(
   }
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
-  new_ranef <- tidy_ranef(bterms, data = mf)
-  new_meef <- tidy_meef(bterms, data = mf)
-  group_vars <- unique(c(
-    get_group_vars(new_ranef),
-    get_group_vars(new_meef),
-    get_autocor_vars(bterms, "group")
-  ))
-  if (allow_new_levels && length(group_vars)) {
+  new_group_vars <- get_group_vars(bterms)
+  if (allow_new_levels && length(new_group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
-    new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
-    missing_gf <- setdiff(new_gf, names(newdata))
-    newdata[, missing_gf] <- NA
+    mis_group_vars <- new_group_vars[!grepl(":", new_group_vars)]
+    mis_group_vars <- setdiff(mis_group_vars, names(newdata))
+    newdata[, mis_group_vars] <- NA
   }
-  newdata <- combine_groups(newdata, group_vars)
+  newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
   if (is.null(all_group_vars)) {
     all_group_vars <- get_group_vars(object) 
@@ -339,6 +333,8 @@ validate_newdata <- function(
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
+  new_ranef <- tidy_ranef(bterms, data = mf)
+  new_meef <- tidy_meef(bterms, data = mf)
   old_levels <- get_levels(new_ranef, new_meef)
   if (!allow_new_levels) {
     new_levels <- get_levels(
