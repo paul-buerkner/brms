@@ -611,7 +611,7 @@ get_matches_expr <- function(pattern, expr, ...) {
   for (i in seq_along(expr)) {
     sexpr <- try(expr[[i]], silent = TRUE)
     if (!is(sexpr, "try-error")) {
-      sexpr_char <- deparse(sexpr)
+      sexpr_char <- deparse_combine(sexpr)
       out <- c(out, get_matches(pattern, sexpr_char, ...))
     }
     if (is.call(sexpr) || is.expression(sexpr)) {
