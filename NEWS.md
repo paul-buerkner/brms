@@ -15,6 +15,7 @@ population-level effects.
 * Allow vectors of length greater one to be passed to `set_prior`.
 * Conveniently save and load fitted model objects in `brm`
 via argument `file`. (#472)
+* Display posterior probabilities in the output of `hypothesis`.
 
 ### Other changes
 

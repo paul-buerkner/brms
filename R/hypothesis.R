@@ -31,7 +31,7 @@
 #' @details Among others, \code{hypothesis} computes an 
 #'  evidence ratio (\code{Evid.Ratio}) for each hypothesis. 
 #'  For a directed hypothesis, this is just the posterior probability 
-#'  under the hypothesis against its alternative.
+#'  (\code{Post.Prob}) under the hypothesis against its alternative.
 #'  That is, when the hypothesis if of the form \code{a > b}, 
 #'  the evidence ratio is the ratio of the posterior probability 
 #'  of \code{a > b} and the posterior probability of \code{a < b}.
@@ -251,6 +251,7 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   } else if (sign == ">") {
     sm[1, 4] <- Inf
   }
+  sm$Post.Prob <- sm$Evid.Ratio / (1 + sm$Evid.Ratio)
   sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
   if (!length(name) || !nzchar(name)) {
     name <- paste(h, sign, "0")
@@ -351,7 +352,9 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   print(x$hypothesis, quote = FALSE)
   cat(paste0(
     "---\n'*': The expected value under the hypothesis ", 
-    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n"
+    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n",
+    "Posterior probabilities of point hypotheses assume ",
+    "equal prior probabilities.\n"
   ))
   invisible(x)
 }
