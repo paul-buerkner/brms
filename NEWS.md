@@ -8,8 +8,9 @@ via function `stanvar`. (#459)
 processes specified via `gp`. This may lead to a
 considerable increase in sampling efficiency. (#300)
 * Compute LOO-adjusted R-squared using method `loo_R2`.
-* Allow computing non-linear predictors outside of a loop over 
+* Compute non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
+* Fit censored or truncated mixture models. (#469)
 * Allow `horseshoe` and `lasso` priors to be set on special 
 population-level effects.
 * Allow vectors of length greater one to be passed to `set_prior`.

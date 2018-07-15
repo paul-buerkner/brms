@@ -289,12 +289,12 @@ test_that("truncation appears in the Stan code", {
   scode <- make_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
                          data = kidney, family = student("log"))
   
-  expect_match2(scode, "target += student_t_lpdf(Y[n] | nu, mu[n], sigma) - ")
+  expect_match2(scode, "target += student_t_lpdf(Y[n] | nu, mu[n], sigma) -")
   expect_match2(scode, "student_t_lcdf(ub[n] | nu, mu[n], sigma);")
   
   scode <- make_stancode(count | trunc(0, 150) ~ Trt_c, 
                          data = epilepsy, family = "poisson")
-  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]) - ")
+  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]) -")
   expect_match2(scode, 
     "log_diff_exp(poisson_lcdf(ub[n] | mu[n]), poisson_lcdf(lb[n] | mu[n]));"
   )
@@ -924,8 +924,11 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   expect_match2(make_stancode(y | cens(x) ~ 1, dat, weibull()), 
                 "target += weibull_lccdf(Y[n] | shape, mu[n]);")
   dat$x[1] <- 2
-  expect_match2(make_stancode(y | cens(x, y2) ~ 1, dat, gaussian()), 
-                "target += log_diff_exp(normal_lcdf(rcens[n] | mu[n], sigma),")
+  scode <- make_stancode(y | cens(x, y2) ~ 1, dat, gaussian())
+  expect_match2(scode, paste0(
+    "target += log_diff_exp(\n", 
+    "          normal_lcdf(rcens[n] | mu[n], sigma),"
+  ))
   dat$x <- 1
   expect_match2(make_stancode(y | cens(x) + weights(x) ~ 1, dat, weibull()),
    "target += weights[n] * weibull_lccdf(Y[n] | shape, mu[n]);")
@@ -1243,6 +1246,24 @@ test_that("Stan code of mixture model is correct", {
   scode <- make_stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], temp_mu1_Intercept);")
   expect_match2(scode, "sratio_logit_lpmf(Y[n] | mu2[n], temp_mu2_Intercept, disc2);")
+  
+  # censored mixture model
+  fam <- mixture(gaussian, gaussian)
+  scode <- make_stancode(y | cens(2, y2 = 2) ~ x, data, fam)
+  expect_match2(scode, 
+    "ps[2] = log(theta2) + normal_lccdf(Y[n] | mu2[n], sigma2);"
+  )
+  expect_match2(scode, paste0(
+    "ps[2] = log(theta2) + log_diff_exp(\n",
+    "          normal_lcdf(rcens[n] | mu2[n], sigma2),"
+  ))
+  
+  # truncated mixture model
+  scode <- make_stancode(y | trunc(3) ~ x, data, fam)
+  expect_match2(scode, paste0(
+    "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], sigma1) -\n", 
+    "        normal_lccdf(lb[n] | mu1[n], sigma1);"
+  ))
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

@@ -36,7 +36,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   }
   if (grepl("\\[n\\]", out) && !nzchar(mix)) {
     # loop over likelihood if it cannot be vectorized
-    out <- paste0("  for (n in 1:N) { \n    ", out, "    } \n")
+    out <- paste0("  for (n in 1:N) {\n    ", out, "    }\n")
   }
   out
 }
@@ -59,11 +59,11 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   has_weights <- is.formula(bterms$adforms$weights)  
   weights <- if (has_weights) paste0("weights", resp, "[n] * ")
   paste0(
-    "  for (n in 1:N) { \n",
-    "      real ps[", length(llh), "]; \n",
+    "  for (n in 1:N) {\n",
+    "      real ps[", length(llh), "];\n",
     collapse("    ", llh),
-    "    ", tp(), weights, "log_sum_exp(ps); \n",
-    "    } \n"
+    "    ", tp(), weights, "log_sum_exp(ps);\n",
+    "    }\n"
   )
 }
 
@@ -91,35 +91,35 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   paste0(
     tp(), llh$dist, "_", lpdf, "(", Y, resp, n, llh$shift,
-    " | ", llh$args, ")", tr, "; \n"
+    " | ", llh$args, ")", tr, ";\n"
   )
 }
 
 stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   # censored likelihood in Stan language
   stopifnot(is.sdist(llh))
-  s <- collapse(rep(" ", 6))
+  s <- wsp(nsp = 6)
   cens <- has_cens(bterms, data = data)
-  interval <- isTRUE(attr(cens, "interval"))
   lpdf <- stan_llh_lpdf_name(bterms)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_llh_Y_name(bterms)
   w <- if (has_weights) paste0("weights", resp, "[n] * ")
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   tp <- tp()
-  if (interval) {
+  int_cens <- ""
+  if (isTRUE(attr(cens, "interval"))) {
     int_cens <- paste0(
-      s, "} else if (cens", resp, "[n] == 2) { \n",
-      s, tp, w, "log_diff_exp(", 
-      llh$dist, "_lcdf(rcens", resp, "[n]", llh$shift, " | ", llh$args, "), ",
-      llh$dist, "_lcdf(", Y, resp, "[n]", llh$shift, " | ", llh$args, "))", 
-      tr, "; \n"
+      s, "} else if (cens", resp, "[n] == 2) {\n",
+      s, tp, w, "log_diff_exp(\n", 
+      s, "    ", llh$dist, "_lcdf(rcens", resp, "[n]", llh$shift, 
+      " | ", llh$args, "),\n", 
+      s, "    ", llh$dist, "_lcdf(", Y, resp, "[n]", llh$shift, 
+      " | ", llh$args, ")\n", 
+      s, "  )", tr, ";\n"
     )
-  } else {
-    int_cens <- ""
   }
   paste0(
-    "  // special treatment of censored data \n",
+    "  // special treatment of censored data\n",
     s, "if (cens", resp, "[n] == 0) {\n", 
     s, tp, w, llh$dist, "_", lpdf, "(", Y, resp, "[n]", llh$shift,
     " | ", llh$args, ")", tr, ";\n",
@@ -129,7 +129,7 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
     s, "} else if (cens", resp, "[n] == -1) {\n",
     s, tp, w, llh$dist, "_lcdf(", Y, resp, "[n]", llh$shift, 
     " | ", llh$args, ")", tr, ";\n",
-    int_cens, s, "} \n"
+    int_cens, s, "}\n"
   )
 }
 
@@ -141,7 +141,7 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   Y <- stan_llh_Y_name(bterms)
   paste0(
     tp(), "weights", resp, "[n] * ", llh$dist, "_", lpdf, 
-    "(", Y, resp, "[n]", llh$shift, " | ", llh$args,")", tr, "; \n"
+    "(", Y, resp, "[n]", llh$shift, " | ", llh$args,")", tr, ";\n"
   )
 }
 
@@ -156,10 +156,46 @@ stan_llh_mix <- function(llh, bterms, data, mix,
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   lpdf <- stan_llh_lpdf_name(bterms)
   Y <- stan_llh_Y_name(bterms)
-  paste0(
-    "  ps[", mix, "] = ", theta, " + ", llh$dist, "_", 
-    lpdf, "(", Y, resp, "[n] | ", llh$args, ")", tr, "; \n"
-  )
+  if (is.formula(bterms$adforms$cens)) {
+    # mostly copied over from stan_llh_cens
+    cens <- has_cens(bterms, data = data)
+    s <- wsp(nsp = 6)
+    int_cens <- ""
+    if (isTRUE(attr(cens, "interval"))) {
+      int_cens <- paste0(
+        s, "} else if (cens", resp, "[n] == 2) {\n",
+        s, "  ps[", mix, "] = ", theta, " + log_diff_exp(\n", 
+        s, "    ", llh$dist, "_lcdf(rcens", resp, "[n]", llh$shift, 
+        " | ", llh$args, "),\n", 
+        s, "    ", llh$dist, "_lcdf(", Y, resp, "[n]", llh$shift, 
+        " | ", llh$args, ")\n", 
+        s, "  )", tr, ";\n"
+      )
+    }
+    out <- paste0(
+      "  // special treatment of censored data\n",
+      s, "if (cens", resp, "[n] == 0) {\n", 
+      s, "  ps[", mix, "] = ", theta, " + ", 
+      llh$dist, "_", lpdf, "(", Y, resp, "[n]", llh$shift,
+      " | ", llh$args, ")", tr, ";\n",
+      s, "} else if (cens", resp, "[n] == 1) {\n",         
+      s, "  ps[", mix, "] = ", theta, " + ",
+      llh$dist, "_lccdf(", Y, resp, "[n]", llh$shift, 
+      " | ", llh$args, ")", tr, ";\n",
+      s, "} else if (cens", resp, "[n] == -1) {\n",
+      s, "  ps[", mix, "] = ", theta, " + ",
+      llh$dist, "_lcdf(", Y, resp, "[n]", llh$shift, 
+      " | ", llh$args, ")", tr, ";\n",
+      int_cens, s, "}\n"
+    )
+  } else {
+    out <- paste0(
+      "  ps[", mix, "] = ", theta, " + ", 
+      llh$dist, "_", lpdf, "(", Y, resp, "[n]", llh$shift, 
+      " | ", llh$args, ")", tr, ";\n"
+    ) 
+  }
+  out
 }
 
 stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
@@ -178,7 +214,7 @@ stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
     out <- paste0(" T[", lb, ", ", ub, "]")
   } else {
     # truncation making use of _lcdf functions
-    ms <- paste0(" - \n", collapse(rep(" ", 8)))
+    ms <- paste0(" -\n", wsp(nsp = 8))
     if (any(bounds$lb > -Inf) && !any(bounds$ub < Inf)) {
       out <- paste0(ms, llh$dist, "_lccdf(", lb, " | ", llh$args, ")")
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {

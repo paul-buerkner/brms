@@ -347,9 +347,6 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (check_response && "wiener" %in% families && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
-    if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
-      stop2("Censoring or truncation is not yet allowed in mixture models.")
-    }
   }
   x
 }
