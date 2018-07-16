@@ -262,9 +262,12 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
   #   bterms: object of class brmsterms
   #   all: logical; include ranefs of nl and aux parameters?
   if (all) {
-    re <- named_list(names(x$dpars))
-    for (dp in names(re)) {
+    re <- named_list(c(names(x$dpars), names(x$nlpars)))
+    for (dp in names(x$dpars)) {
       re[[dp]] <- get_re(x$dpars[[dp]])
+    }
+    for (nlp in names(x$nlpars)) {
+      re[[nlp]] <- get_re(x$nlpars[[nlp]])
     }
     re <- do.call(rbind, re)
   } else {
@@ -292,11 +295,7 @@ get_re.btl <- function(x, ...) {
 
 #' @export
 get_re.btnl <- function(x, ...) {
-  re <- named_list(names(x$nlpars))
-  for (nlp in names(re)) {
-    re[[nlp]] <- get_re(x$nlpars[[nlp]])
-  }
-  do.call(rbind, re)
+  NULL
 }
 
 tidy_ranef <- function(bterms, data, all = TRUE, 

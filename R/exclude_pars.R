@@ -81,18 +81,12 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
     }
+    for (nlp in names(x$nlpars)) {
+      c(out) <- exclude_pars_internal(x$nlpars[[nlp]], ...)
+    }
   }
   if (!save_mevars && is.formula(x$adforms$mi)) {
     c(out) <- paste0("Yl", p)
-  }
-  out
-}
-
-#' @export
-exclude_pars_internal.btnl <- function(x, ...) {
-  out <- NULL
-  for (nlp in names(x$nlpars)) {
-    c(out) <- exclude_pars_internal(x$nlpars[[nlp]], ...)
   }
   out
 }

@@ -113,6 +113,12 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
       draws$dpars[[dp]] <- as.vector(get_samples(samples, dp_regex))
     }
   }
+  draws$nlpars <- named_list(names(x$nlpars))
+  for (nlp in names(x$nlpars)) {
+    draws$nlpars[[nlp]] <- extract_draws(
+      x$nlpars[[nlp]], samples = samples, sdata = sdata, ...
+    )
+  }
   if (is.mixfamily(x$family)) {
     families <- family_names(x$family)
     thetas <- paste0("theta", seq_along(families))
@@ -148,16 +154,6 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
     nsamples = nrow(samples), nobs = sdata$N
   )
   class(draws) <- "bdrawsnl"
-  if (is_nlpar(x)) {
-    draws$nlpar <- x$nlpar
-    return(draws)
-  }
-  nlpars <- names(x$nlpars)
-  for (nlp in nlpars) {
-    draws$nlpars[[nlp]] <- extract_draws(
-      x$nlpars[[nlp]], samples = samples, sdata = sdata, ...
-    )
-  }
   p <- usc(combine_prefix(x))
   C <- sdata[[paste0("C", p)]]
   stopifnot(is.matrix(C))

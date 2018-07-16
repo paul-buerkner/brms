@@ -305,14 +305,12 @@ test_that("make_standata correctly prepares data for non-linear models", {
   expect_equal(colnames(sdata$C), "z")
   
   bform <- bf(y ~ x) + 
-    nlf(sigma ~ a1 * exp(-x/(a2 + z)),
-        a1 ~ 1, a2 ~ z + (x|g)) +
+    nlf(sigma ~ a1 * exp(-x/(a2 + z))) +
+    lf(a1 ~ 1, a2 ~ z + (x|g)) +
     lf(alpha ~ x)
   sdata <- make_standata(bform, dat, family = skew_normal())
-  sdata_names <- c("C_sigma_1", "C_sigma_2", "X_sigma_a2", "Z_1_sigma_a2_1")
-  expect_true(
-    all(sdata_names %in% names(sdata))
-  )
+  sdata_names <- c("C_sigma_1", "C_sigma_2", "X_a2", "Z_1_a2_1")
+  expect_true(all(sdata_names %in% names(sdata)))
 })
 
 test_that("make_standata correctly prepares data for monotonic effects", {
@@ -424,8 +422,8 @@ test_that("make_standata returns correct group ID data", {
   form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
              a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   sdata <- make_standata(form, data = epilepsy, family = student())
-  expect_true(all(c("Z_3_sigma_1", "Z_2_a_1", "Z_2_sigma_3",  
-                    "Z_1_a_1") %in% names(sdata)))
+  expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
+                    "Z_3_a_1") %in% names(sdata)))
 })
 
 test_that("make_standata handles population-level intercepts", {

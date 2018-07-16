@@ -563,6 +563,15 @@ prior_effects.brmsterms <- function(x, data, ...) {
     }
     prior <- prior + dp_prior
   }
+  for (nlp in names(x$nlpars)) {
+    nlp_prior <- prior_effects(
+      x$nlpars[[nlp]], data = data,
+      def_scale_prior = def_scale_prior,
+      def_dprior = def_dprior, 
+      spec_intercept = FALSE
+    )
+    prior <- prior + nlp_prior
+  }
   # global population-level priors for categorical models
   if (is_categorical(x$family)) {
     for (cl in c("b", "Intercept")) {
@@ -612,19 +621,7 @@ prior_effects.btl <- function(x, data, spec_intercept = TRUE,
 
 #' @export
 prior_effects.btnl <- function(x, data, ...) {
-  # collect default priors for non-linear parameters
-  # Args:
-  #   see prior_effects.btl
-  nlpars <- names(x$nlpars)
-  prior <- empty_brmsprior()
-  for (i in seq_along(nlpars)) {
-    prior_eff <- prior_effects(
-      x$nlpars[[i]], data = data, 
-      spec_intercept = FALSE, ...
-    )
-    prior <- prior + prior_eff
-  }
-  prior
+  empty_brmsprior()
 }
 
 prior_fe <- function(bterms, data, spec_intercept = TRUE, def_dprior = "") {
@@ -1216,6 +1213,11 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
       x$dpars[[dp]], prior, allow_autoscale = allow_autoscale, ...
     )
   }
+  for (nlp in names(x$nlpars)) {
+    prior <- check_prior_special(
+      x$nlpars[[nlp]], prior, is_nlpar = TRUE, ...
+    )
+  }
   # copy over the global population-level prior in categorical models
   if (is_categorical(x$family)) {
     for (cl in c("b", "Intercept")) {
@@ -1248,12 +1250,6 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
 
 #' @export
 check_prior_special.btnl <- function(x, prior, ...) {
-  stopifnot(is.brmsprior(prior))
-  for (nlp in names(x$nlpars)) {
-    prior <- check_prior_special(
-      x$nlpars[[nlp]], prior, is_nlpar = TRUE, ...
-    )
-  }
   prior
 }
 

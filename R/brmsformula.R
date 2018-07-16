@@ -633,36 +633,6 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(respform)))
     out$resp <- parse_resp(respform)
   }
-  if (!is.null(out$family)) {
-    # check for the presence of non-linear parameters
-    dpars <- names(out$pforms)
-    dpars <- dpars[is_dpar_name(dpars, out$family)]
-    for (dp in names(out$pforms)) {
-      if (!dp %in% dpars) {
-        # indicate the correspondence to distributional parameter 
-        if (is.null(attr(out$pforms[[dp]], "dpar"))) {
-          attr(out$pforms[[dp]], "dpar") <- "mu"
-        }
-        dpar <- attr(out$pforms[[dp]], "dpar")
-        if (!is.null(out$pforms[[dpar]])) {
-          nl_allowed <- get_nl(out, dpar = dpar)
-        } else {
-          if (dpar_class(dpar) == "mu") {
-            nl_allowed <- get_nl(out)
-          } else {
-            nl_allowed <- FALSE
-          }
-        }
-        if (!nl_allowed) {
-          stop2(
-            "The parameter '", dp, "' is not a valid ", 
-            "distributional or non-linear parameter. ",
-            "Did you forget to set 'nl = TRUE'?"
-          )
-        }
-      }
-    }
-  }
   # add default values for unspecified elements
   defs <- list(
     pforms = list(), pfix = list(), family = NULL, 
@@ -718,8 +688,8 @@ bf <- function(formula, ..., flist = NULL, family = NULL,
 #' @examples
 #' # add more formulas to the model
 #' bf(y ~ 1) + 
-#'   nlf(sigma ~ a * exp(b * x), a ~ x) + 
-#'   lf(b ~ z + (1|g), dpar = "sigma") +
+#'   nlf(sigma ~ a * exp(b * x)) + 
+#'   lf(a ~ x, b ~ z + (1|g)) +
 #'   gaussian()
 #'
 #' # specify 'nl' later on
@@ -738,16 +708,18 @@ NULL
 nlf <- function(formula, ..., flist = NULL, dpar = NULL, 
                 resp = NULL, loop = NULL) {
   formula <- as.formula(formula)
-  resp_pars <- all.vars(formula[[2]])
-  if (length(resp_pars) == 0L) {
-    if (is.null(dpar)) {
-      stop2("No parameter name passed via the LHS of ", 
-            "'formula' or argument 'dpar'.")
-    }
-  } else if (length(resp_pars) == 1L) {
-    dpar <- resp_pars
-  } else {
-    stop2("LHS of non-linear formula should contain only one variable.")
+  if (is.null(lhs(formula))) {
+    stop2("Argument 'formula' must be two-sided.")
+  }
+  if (length(c(list(...), flist))) {
+    warning2(
+      "Arguments '...' and 'flist' in nlf() will be reworked ",
+      "at some point. Please avoid using them if possible."
+    )
+  }
+  warn_dpar(dpar)
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
   }
   if (!is.null(loop)) {
     attr(formula, "loop") <- as_one_logical(loop)
@@ -756,26 +728,21 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
     attr(formula, "loop") <- TRUE
   }
   out <- c(
-    setNames(list(structure(formula, nl = TRUE)), dpar),
-    lf(..., flist = flist, dpar = dpar)
+    list(structure(formula, nl = TRUE)),
+    lf(..., flist = flist)
   )
-  structure(out, dpar = dpar, resp = resp)
+  structure(out, resp = resp)
 }
 
 #' @rdname brmsformula-helpers
 #' @export
 lf <- function(..., flist = NULL, dpar = NULL, resp = NULL) {
   out <- c(list(...), flist)
-  if (!is.null(dpar)) {
-    dpar <- as_one_character(dpar)
-    for (i in seq_along(out)) {
-      attr(out[[i]], "dpar") <- dpar
-    }
-  }
+  warn_dpar(dpar)
   if (!is.null(resp)) {
     resp <- as_one_character(resp)
   }
-  structure(out, dpar = dpar, resp = resp)
+  structure(out, resp = resp)
 }
 
 #' @rdname brmsformula-helpers
@@ -1281,4 +1248,12 @@ is.mvbrmsformula <- function(x) {
 is_nonlinear <- function(x) {
   stopifnot(is.brmsfit(x))
   get_nl(bf(x$formula))
+}
+
+warn_dpar <- function(dpar) {
+  # deprecated as of version 2.3.7
+  if (!is.null(dpar)) {
+    warning2("Argument 'dpar' is no longer necessary and ignored.")
+  }
+  NULL
 }

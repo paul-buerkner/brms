@@ -269,6 +269,9 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL,
   for (dp in names(x$dpars)) {
     out <- c(out, get_all_effects(x$dpars[[dp]]))
   }
+  for (nlp in names(x$nlpars)) {
+    out <- c(out, get_all_effects(x$nlpars[[nlp]]))
+  }
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
   if (length(out) && comb_all) {
     out <- unique(unlist(out))
@@ -305,15 +308,11 @@ get_all_effects_type <- function(x, type) {
 #' @export
 get_all_effects.btnl <- function(x, ...) {
   covars <- all.vars(rhs(x$covars))
-  covars_comb <- as.list(covars)
+  out <- as.list(covars)
   if (length(covars) > 1L) {
-    covars_comb <- c(covars_comb, 
-      utils::combn(covars, 2, simplify = FALSE)
-    )
+    c(out) <- utils::combn(covars, 2, simplify = FALSE)
   }
-  nl_effects <- lapply(x$nlpars, get_all_effects)
-  nl_effects <- unlist(nl_effects, recursive = FALSE)
-  unique(c(covars_comb, nl_effects))
+  unique(out)
 }
 
 get_int_vars <- function(x, ...) {

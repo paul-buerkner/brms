@@ -20,6 +20,9 @@ predict_internal.mvbrmsdraws <- function(draws, ...) {
 predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
                                        sort = FALSE, robust = FALSE, 
                                        probs = c(0.025, 0.975), ...) {
+  for (nlp in names(draws$nlpars)) {
+    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+  }
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }

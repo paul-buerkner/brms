@@ -21,12 +21,15 @@ data_effects.brmsterms <- function(x, data, prior, ranef, meef,
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
-    data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-    out <- c(out, data_aux_eff)
+    c(out) <- do.call(data_effects, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     resp <- usc(combine_prefix(x))
     out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
+  }
+  for (nlp in names(x$nlpars)) {
+    args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
+    c(out) <- do.call(data_effects, c(args_eff_spec, args_eff))
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
@@ -72,10 +75,6 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
-  if (is_nlpar(x)) {
-    # no data needs to be specified for nested nlpars
-    return(out)
-  }
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != ncol(C)) {
     stop2("Factors with more than two levels are not allowed as covariates.")
@@ -91,15 +90,6 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
       Cnames <- paste0("C", p, "_", seq_len(ncol(C)))
       out <- c(out, setNames(as.list(as.data.frame(C)), Cnames))
     }
-  }
-  for (nlp in names(x$nlpars)) {
-    out <- c(out,
-      data_effects(
-        x$nlpars[[nlp]], data, ranef = ranef,
-        prior = prior, knots = knots, not4stan = not4stan,
-        old_sdata = old_sdata[[nlp]]
-      )
-    )
   }
   out
 }

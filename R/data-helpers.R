@@ -497,9 +497,12 @@ extract_old_standata.mvbrmsterms <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$dpars[[i]], data, ...)
+  out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
   if (has_trials(x$family) || has_cat(x$family)) {
     # trials and ncat should not be computed based on new data
@@ -522,11 +525,7 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$nlpars[[i]], data, ...)
-  }
-  out
+  NULL
 }
 
 #' @export
