@@ -120,10 +120,12 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   dpars <- names(x$pforms)[dpars]
   dpar_forms <- x$pforms[dpars]
   nlpars <- setdiff(names(x$pforms), dpars)
-  nlpar_forms <- x$pforms[nlpars]
+  
+  y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
       if (is.mixfamily(family) || is_ordinal(family)) {
+        # TODO: make this possible
         stop2("Non-linear formulas are not yet allowed for this family.")
       }
       y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
@@ -134,6 +136,9 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$dpar <- dp
     y$dpars[[dp]]$resp <- resp
   }
+  
+  nlpar_forms <- x$pforms[nlpars]
+  y$nlpars <- named_list(nlpars)
   for (nlp in nlpars) {
     if (get_nl(nlpar_forms[[nlp]])) {
       y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
@@ -152,6 +157,10 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       "Did you forget to set 'nl = TRUE'?"
     )
   }
+  # sort non-linear parameters after dependency
+  used_nlpars <- lapply(y$nlpars, "[[", "used_nlpars")
+  sorted_nlpars <- sort_dependencies(used_nlpars)
+  y$nlpars <- y$nlpars[sorted_nlpars]
   
   # fixed distributional parameters
   valid_dpars <- valid_dpars(y)
@@ -929,7 +938,7 @@ validate_terms <- function(x) {
   }
   x
 }
-
+ 
 has_intercept <- function(formula) {
   # checks if the formula contains an intercept
   # can handle non-linear formulas

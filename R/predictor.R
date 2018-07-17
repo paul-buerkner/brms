@@ -47,14 +47,11 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified.
   stopifnot(!is.null(fdraws))
-  nlpars <- names(fdraws$nlpars)
-  first <- ulapply(fdraws$nlpars, is.bdrawsl)
-  nlpars <- c(nlpars[first], nlpars[!first])
-  nlpars <- setdiff(nlpars, draws$nlpar)
+  # avoid recursive evaluation of the same parameter
+  nlpars <- setdiff(names(fdraws$nlpars), draws$nlpar)
   covars <- names(draws$C)
   args <- named_list(c(covars, nlpars))
   for (nlp in nlpars) {
-    # TODO: work on the order of nlpars to avoid double computations
     args[[nlp]] <- get_nlpar(fdraws, nlpar = nlp, i = i, ...)
   }
   for (cov in covars) {
