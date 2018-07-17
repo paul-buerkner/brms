@@ -79,13 +79,12 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   rhs_needed <- FALSE
-  att <- c("nl", "loop")
   if (is.mixfamily(family)) {
     for (i in seq_along(family$mix)) {
       mui <- paste0("mu", i)
       if (!is.formula(x$pforms[[mui]])) {
         x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
-        attributes(x$pforms[[mui]])[att] <- attributes(formula)[att]
+        attributes(x$pforms[[mui]]) <- attributes(formula)
         rhs_needed <- TRUE
       }
     }
@@ -93,14 +92,14 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     for (dp in x$family$dpars) {
       if (!is.formula(x$pforms[[dp]])) {
         x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
-        attributes(x$pforms[[dp]])[att] <- attributes(formula)[att]
+        attributes(x$pforms[[dp]]) <- attributes(formula)
         rhs_needed <- TRUE
       }
     }
   } else {
     if (!is.formula(x$pforms[["mu"]])) { 
       x$pforms$mu <- eval2(paste0("mu", str_rhs_form))
-      attributes(x$pforms$mu)[att] <- attributes(formula)[att]
+      attributes(x$pforms$mu) <- attributes(formula)
       rhs_needed <- TRUE
     }
     x$pforms <- move2start(x$pforms, "mu")
@@ -124,9 +123,8 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
-      if (is.mixfamily(family) || is_ordinal(family)) {
-        # TODO: make this possible
-        stop2("Non-linear formulas are not yet allowed for this family.")
+      if (is_ordinal(family)) {
+        stop2("Non-linear formulas are not yet allowed in ordinal models.")
       }
       y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
     } else {
@@ -137,30 +135,32 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$resp <- resp
   }
   
-  nlpar_forms <- x$pforms[nlpars]
   y$nlpars <- named_list(nlpars)
-  for (nlp in nlpars) {
-    if (get_nl(nlpar_forms[[nlp]])) {
-      y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
-    } else {
-      y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]], family = family)
+  if (length(nlpars)) {
+    nlpar_forms <- x$pforms[nlpars]
+    for (nlp in nlpars) {
+      if (get_nl(nlpar_forms[[nlp]])) {
+        y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
+      } else {
+        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]], family = family)
+      }
+      y$nlpars[[nlp]]$nlpar <- nlp
+      y$nlpars[[nlp]]$resp <- resp
     }
-    y$nlpars[[nlp]]$nlpar <- nlp
-    y$nlpars[[nlp]]$resp <- resp
+    used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
+    unused_nlpars <- setdiff(nlpars, used_nlpars)
+    if (length(unused_nlpars)) {
+      stop2(
+        "The parameter '", unused_nlpars[1], "' is not a ", 
+        "valid distributional or non-linear parameter. ",
+        "Did you forget to set 'nl = TRUE'?"
+      )
+    }
+    # sort non-linear parameters after dependency
+    used_nlpars <- lapply(y$nlpars, "[[", "used_nlpars")
+    sorted_nlpars <- sort_dependencies(used_nlpars)
+    y$nlpars <- y$nlpars[sorted_nlpars]
   }
-  used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
-  unused_nlpars <- setdiff(nlpars, used_nlpars)
-  if (length(unused_nlpars)) {
-    stop2(
-      "The parameter '", unused_nlpars[1], "' is not a ", 
-      "valid distributional or non-linear parameter. ",
-      "Did you forget to set 'nl = TRUE'?"
-    )
-  }
-  # sort non-linear parameters after dependency
-  used_nlpars <- lapply(y$nlpars, "[[", "used_nlpars")
-  sorted_nlpars <- sort_dependencies(used_nlpars)
-  y$nlpars <- y$nlpars[sorted_nlpars]
   
   # fixed distributional parameters
   valid_dpars <- valid_dpars(y)
