@@ -1264,6 +1264,18 @@ test_that("Stan code of mixture model is correct", {
     "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], sigma1) -\n", 
     "        normal_lccdf(lb[n] | mu1[n], sigma1);"
   ))
+  
+  # non-linear mixture model
+  bform <- bf(y ~ 1) + 
+    nlf(mu1 ~ eta^2) +
+    nlf(mu2 ~ log(eta) + a) +
+    lf(eta + a ~ x) +
+    mixture(gaussian, nmix = 2)
+  bprior <- prior(normal(0, 1), nlpar = "eta") + 
+    prior(normal(0, 1), nlpar = "a")
+  scode <- make_stancode(bform, data = data, prior = bprior)
+  expect_match2(scode, "mu1[n] = nlp_eta[n] ^ 2;")
+  expect_match2(scode, "mu2[n] = log(nlp_eta[n]) + nlp_a[n];")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {
