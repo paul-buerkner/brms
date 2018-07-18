@@ -599,15 +599,14 @@ index_col <- function(x, i) {
   #   x: an array
   #   i: colum index
   ldim <- length(dim(x))
-  stopifnot(ldim %in% 2:4)
+  if (ldim < 2L) {
+    return(x)
+  }
   if (ldim == 2L) {
     out <- x[, i]
   } else {
-    if (ldim == 3L) {
-      out <- x[, i, ]
-    } else {
-      out <- x[, i, , ]
-    }
+    expr <- paste0("x[, i", collapse(rep(", ", ldim - 2)), "]")
+    out <- eval2(expr)
     if (length(i) == 1L && dim(out) != dim(x)[-2]) {
       # some non-column dims were unintentionally dropped
       dim(out) <- dim(x)[-2]

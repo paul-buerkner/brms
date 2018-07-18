@@ -522,12 +522,12 @@ deparse_combine <- function(x, max_char = 100) {
   out
 }
 
-eval2 <- function(expr, ...) {
+eval2 <- function(expr, envir = parent.frame(), ...) {
   # like eval() but parses characters before evaluation
   if (is.character(expr)) {
     expr <- parse(text = expr)
   }
-  eval(expr, ...)
+  eval(expr, envir, ...)
 }
 
 eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
