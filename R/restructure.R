@@ -76,6 +76,9 @@ restructure_v2 <- function(x) {
     # added 'dist' argument to grouping terms
     x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
+  if (version <= "2.3.6") {
+    check_old_nl_dpars(bterms)
+  }
   x
 }
 
@@ -441,4 +444,25 @@ stop_parameterization_changed <- function(family, version) {
     version, " to be consistent with other model classes. ", 
     "Please refit your model with the current version of brms."
   )
+}
+
+check_old_nl_dpars <- function(bterms) {
+  .check_nl_dpars <- function(x) {
+    stopifnot(is.brmsterms(x))
+    non_mu_dpars <- x$dpars[names(x$dpars) != "mu"]
+    if (any(ulapply(non_mu_dpars, is.btnl))) {
+      stop2(
+        "Non-linear parameters are global within univariate models ",
+        "as of version 2.3.7. Please refit your model with the ",
+        "latest version of brms."
+      )
+    }
+    return(TRUE)
+  }
+  if (is.mvbrmsterms(bterms)) {
+    lapply(bterms$terms, .check_nl_dpars)
+  } else {
+    .check_nl_dpars(bterms)
+  }
+  TRUE
 }
