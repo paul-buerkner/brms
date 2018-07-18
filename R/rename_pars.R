@@ -78,11 +78,6 @@ change_effects.btl <- function(x, data, pars, scode = "", ...) {
     change_gp(x, data, pars))
 }
 
-#' @export
-change_effects.btnl <- function(x, data, pars, ...) {
-  NULL
-}
-
 change_fe <- function(bterms, data, pars, scode = "") {
   # helps in renaming fixed effects parameters
   # Returns:

@@ -279,7 +279,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   # Returns:
   #   object of class 'btnl'
   if (!length(nlpars)) {
-    stop2("No non-linear parameters specified")
+    stop2("No non-linear parameters specified.")
   }
   loop <- !isFALSE(attr(formula, "loop"))
   formula <- rhs(as.formula(formula))

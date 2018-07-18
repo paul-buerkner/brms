@@ -293,11 +293,6 @@ get_re.btl <- function(x, ...) {
   re
 }
 
-#' @export
-get_re.btnl <- function(x, ...) {
-  NULL
-}
-
 tidy_ranef <- function(bterms, data, all = TRUE, 
                        old_levels = NULL, old_sdata = NULL) {
   # combines helpful information on the group-level effects

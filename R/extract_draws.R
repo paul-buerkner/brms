@@ -151,7 +151,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 extract_draws.btnl <- function(x, samples, sdata, ...) {
   draws <- list(
     f = x$family, nlform = x$formula[[2]],
-    nsamples = nrow(samples), nobs = sdata$N
+    nsamples = nrow(samples), nobs = sdata$N,
+    used_nlpars = x$used_nlpars
   )
   class(draws) <- "bdrawsnl"
   p <- usc(combine_prefix(x))

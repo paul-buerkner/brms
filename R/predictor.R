@@ -47,10 +47,9 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified.
   stopifnot(!is.null(fdraws))
-  # avoid recursive evaluation of the same parameter
-  nlpars <- setdiff(names(fdraws$nlpars), draws$nlpar)
+  nlpars <- draws$used_nlpars
   covars <- names(draws$C)
-  args <- named_list(c(covars, nlpars))
+  args <- named_list(c(nlpars, covars))
   for (nlp in nlpars) {
     args[[nlp]] <- get_nlpar(fdraws, nlpar = nlp, i = i, ...)
   }

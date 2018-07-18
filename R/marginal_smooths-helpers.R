@@ -60,7 +60,7 @@ marginal_smooths_internal.default <- function(x, ...) {
 marginal_smooths_internal.mvbrmsterms <- function(x, ...) {
   out <- list()
   for (r in names(x$terms)) {
-    out <- c(out, marginal_smooths_internal(x$terms[[r]], ...))
+    c(out) <- marginal_smooths_internal(x$terms[[r]], ...)
   }
   out
 }
@@ -69,15 +69,10 @@ marginal_smooths_internal.mvbrmsterms <- function(x, ...) {
 marginal_smooths_internal.brmsterms <- function(x, ...) {
   out <- list()
   for (dp in names(x$dpars)) {
-    if (is.btl(x$dpars[[dp]])) {
-      btl <- x$dpars[[dp]]
-      out <- c(out, marginal_smooths_internal(btl, ...))
-    } else if (is.btnl(x$dpars[[dp]])) {
-      for (nlp in names(x$dpars[[dp]]$nlpars)) {
-        btl <- x$dpars[[dp]]$nlpars[[nlp]]
-        out <- c(out, marginal_smooths_internal(btl, ...))
-      }
-    }
+    c(out) <- marginal_smooths_internal(x$dpars[[dp]], ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    c(out) <- marginal_smooths_internal(x$nlpars[[nlp]], ...)
   }
   out
 }
