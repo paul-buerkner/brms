@@ -648,13 +648,13 @@ test_that("Stan code for non-linear models is correct", {
   # syntactic validity is already checked within make_stancode
   scode <- make_stancode(bf(y ~ a - exp(b^z), flist = flist, nl = TRUE), 
                             data = data, prior = prior)
-  expect_match2(scode, "mu[n] = mu_a[n] - exp(mu_b[n] ^ C_1[n]);")
+  expect_match2(scode, "mu[n] = nlp_a[n] - exp(nlp_b[n] ^ C_1[n]);")
   
   # non-linear predictor can be computed outside a loop
   scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 
                             nl = TRUE, loop = FALSE), 
                          data = data, prior = prior)
-  expect_match2(scode, "\n  mu = mu_a - exp(mu_b + C_1);")
+  expect_match2(scode, "\n  mu = nlp_a - exp(nlp_b + C_1);")
   
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
@@ -666,25 +666,25 @@ test_that("Stan code for non-linear models is correct", {
     prior = prior
   )
   expect_match2(scode,
-    paste("mu[n] = shape * exp(-(mu_a1[n] *", 
-          "exp( - C_1[n] / (mu_a2[n] + C_2[n]))));"))
+    paste("mu[n] = shape * exp(-(nlp_a1[n] *", 
+          "exp( - C_1[n] / (nlp_a2[n] + C_2[n]))));"))
   
   bform <- bf(y ~ x) + 
-    nlf(sigma ~ a1 * exp(-x/(a2 + z)),
-        a1 ~ 1, a2 ~ z + (x|g)) +
+    nlf(sigma ~ a1 * exp(-x/(a2 + z))) +
+    lf(a1 ~ 1, a2 ~ z + (x|g)) +
     lf(alpha ~ x)
   scode <- make_stancode(
     bform, data, family = skew_normal(),
     prior = c(
-      prior(normal(0, 1), dpar = sigma, nlpar = a1),
-      prior(normal(0, 5), dpar = sigma, nlpar = a2)
+      prior(normal(0, 1), nlpar = a1),
+      prior(normal(0, 5), nlpar = a2)
     )
   )
-  expect_match2(scode, "sigma_a1 = X_sigma_a1 * b_sigma_a1")
+  expect_match2(scode, "nlp_a1 = X_a1 * b_a1")
   expect_match2(scode,
-    "sigma[n] = exp(sigma_a1[n] * exp( - C_sigma_1[n] / (sigma_a2[n] + C_sigma_2[n])))"
+    "sigma[n] = exp(nlp_a1[n] * exp( - C_sigma_1[n] / (nlp_a2[n] + C_sigma_2[n])))"
   )
-  expect_match2(scode, "target += normal_lpdf(b_sigma_a2 | 0, 5)")
+  expect_match2(scode, "target += normal_lpdf(b_a2 | 0, 5)")
   
   expect_error(make_stancode(bform, data, family = skew_normal()),
                "Priors on population-level effects are required")
@@ -698,11 +698,11 @@ test_that("Stan code for nested non-linear parameters is correct", {
     nl = TRUE
   )
   bprior <- prior(normal(0, 1), nlpar = "a") +
-   prior(normal(0, 1), nlpar = "b")
+    prior(normal(0, 1), nlpar = "b")
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "mu_lb[n] = inv_logit(mu_a[n] / C_1[n]);")
+  expect_match2(scode, "nlp_lb[n] = inv_logit(nlp_a[n] / C_lb_1[n]);")
   expect_match2(scode, 
-    "mu[n] = mu_lb[n] + (1 - mu_lb[n]) * inv_logit(mu_b[n] * C_1[n]);"
+    "mu[n] = nlp_lb[n] + (1 - nlp_lb[n]) * inv_logit(nlp_b[n] * C_1[n]);"
   )
 })
 
@@ -866,8 +866,8 @@ test_that("Group IDs appear in the Stan code", {
              a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   scode <- make_stancode(form, data = epilepsy, family = student(),
                       prior = set_prior("normal(0,5)", nlpar = "a"))
-  expect_match2(scode, "r_2_a_1 = r_2[, 1];")
-  expect_match2(scode, "r_3_sigma_2 = sd_3[2] * (z_3[2]);")
+  expect_match2(scode, "r_2_a_2 = r_2[, 2];")
+  expect_match2(scode, "r_1_sigma_2 = sd_1[2] * (z_1[2]);")
 })
 
 test_that("distributional gamma models are handled correctly", {
@@ -892,7 +892,7 @@ test_that("distributional gamma models are handled correctly", {
   expect_match2(scode, paste0(
     "    shape[n] = exp(shape[n]); \n", 
     "    // compute non-linear predictor \n",
-    "    mu[n] = shape[n] / (inv_logit(mu_a[n]) * exp(mu_b[n] * C_1[n]));"
+    "    mu[n] = shape[n] / (inv_logit(nlp_a[n]) * exp(nlp_b[n] * C_1[n]));"
   ))
   
   scode <- make_stancode(
@@ -1017,8 +1017,8 @@ test_that("noise-free terms appear in the Stan code", {
     prior = prior(normal(0,5), nlpar = a) + 
       prior(normal(0, 5), nlpar = b)
   )
-  expect_match2(scode, "mu_a[n] += (bsp_a[1]) * Xme_1[n]")
-  expect_match2(scode, "mu_b[n] += (bsp_b[1]) * Xme_1[n]")
+  expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * Xme_1[n]")
+  expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * Xme_1[n]")
   
   bform <- bf(cbind(y, z) ~ me(x, xsd)) + set_mecor(FALSE)
   scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
@@ -1264,6 +1264,18 @@ test_that("Stan code of mixture model is correct", {
     "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], sigma1) -\n", 
     "        normal_lccdf(lb[n] | mu1[n], sigma1);"
   ))
+  
+  # non-linear mixture model
+  bform <- bf(y ~ 1) + 
+    nlf(mu1 ~ eta^2) +
+    nlf(mu2 ~ log(eta) + a) +
+    lf(eta + a ~ x) +
+    mixture(gaussian, nmix = 2)
+  bprior <- prior(normal(0, 1), nlpar = "eta") + 
+    prior(normal(0, 1), nlpar = "a")
+  scode <- make_stancode(bform, data = data, prior = bprior)
+  expect_match2(scode, "mu1[n] = nlp_eta[n] ^ 2;")
+  expect_match2(scode, "mu2[n] = log(nlp_eta[n]) + nlp_a[n];")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {
@@ -1293,7 +1305,7 @@ test_that("sparse matrix multiplication is applied correctly", {
     "vX_a[size(csr_extract_v(X_a))] = csr_extract_v(X_a);"
   )
   expect_match2(scode, 
-    "mu_a = csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
+    "nlp_a = csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
   )
 })
 
@@ -1335,7 +1347,7 @@ test_that("Stan code for Gaussian processes is correct", {
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
                          data = dat, prior = prior, silent = TRUE)
   expect_match2(scode, 
-    "mu_a[Igp_a_1_1] = mu_a[Igp_a_1_1] + gp(Xgp_a_1_1,"
+    "nlp_a[Igp_a_1_1] = nlp_a[Igp_a_1_1] + gp(Xgp_a_1_1,"
   )
   expect_match2(scode,
     "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
@@ -1446,7 +1458,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   bprior <- prior(normal(0, 1), nlpar = "a", resp = "y")
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "mu_y_a[n] += (bsp_y_a[1]) * Yl_x[n];")
+  expect_match2(scode, "nlp_y_a[n] += (bsp_y_a[1]) * Yl_x[n];")
   expect_match2(scode, "target += normal_lpdf(bsp_y_a | 0, 1);")
   
   bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)

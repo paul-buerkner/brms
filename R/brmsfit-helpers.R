@@ -419,9 +419,10 @@ get_cov_matrix_ident <- function(sigma, nrows, se = 0) {
 }
 
 get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
-  # get samples of an distributional parameter
+  # get samples of a distributional parameter
   # Args:
-  #   x: object to extract postarior samples from
+  #   x: object to extract posterior samples from
+  #   dpar: name of the distributional parameter
   #   i: the current observation number
   #   ilink: should the inverse link function be applied?
   #     if NULL the value is chosen internally
@@ -460,6 +461,32 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   } else if (dpar == "disc" && is.null(i) && is.matrix(out)) {
     # 'disc' will be multiplied by a 3D array
     out <- array(out, dim = c(dim(out), draws$data$ncat - 1))
+  }
+  out
+}
+
+get_nlpar <- function(draws, nlpar, i = NULL) {
+  # get samples of a non-linear parameter
+  # Args:
+  #   x: object to extract posterior samples from
+  #   nlpar: name of the non-linear parameter
+  #   i: the current observation number
+  # Returns:
+  #   If i is NULL or length(i) > 1: an S x N matrix
+  #   If length(i) == 1: a vector of length S
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  x <- draws$nlpars[[nlpar]]
+  stopifnot(!is.null(x))
+  if (is.list(x)) {
+    # compute samples of a predicted parameter
+    out <- predictor(x, i = i, fdraws = draws)
+    if (length(i) == 1L) {
+      out <- index_col(out, 1)
+    }
+  } else if (!is.null(i) && !is.null(dim(x))) {
+    out <- index_col(x, i)
+  } else {
+    out <- x
   }
   out
 }
@@ -570,15 +597,14 @@ index_col <- function(x, i) {
   #   x: an array
   #   i: colum index
   ldim <- length(dim(x))
-  stopifnot(ldim %in% 2:4)
+  if (ldim < 2L) {
+    return(x)
+  }
   if (ldim == 2L) {
     out <- x[, i]
   } else {
-    if (ldim == 3L) {
-      out <- x[, i, ]
-    } else {
-      out <- x[, i, , ]
-    }
+    expr <- paste0("x[, i", collapse(rep(", ", ldim - 2)), "]")
+    out <- eval2(expr)
     if (length(i) == 1L && dim(out) != dim(x)[-2]) {
       # some non-column dims were unintentionally dropped
       dim(out) <- dim(x)[-2]

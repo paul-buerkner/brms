@@ -64,6 +64,11 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print_format(x$spec_pars, digits)
       cat("\n")
     }
+    if (length(x$rescor_pars)) {
+      cat("Residual Correlations: \n")
+      print_format(x$rescor, digits)
+      cat("\n")
+    }
     cat(paste0("Samples were drawn using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(

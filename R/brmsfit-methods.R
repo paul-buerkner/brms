@@ -669,8 +669,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     ngrps = ngrps(object), 
     autocor = object$autocor,
     prior = empty_brmsprior(),
-    algorithm = algorithm(object),
-    waic = NA, loo = NA, R2 = NA
+    algorithm = algorithm(object)
   )
   class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
@@ -740,18 +739,19 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
-  spec_pars <- c(dpars(), "delta", "theta", "rescor")
+  spec_pars <- c(dpars(), "delta", "theta")
   spec_pars <- paste0(spec_pars, collapse = "|")
   spec_pars <- paste0("^(", spec_pars, ")($|_|[[:digit:]])")
   spec_pars <- pars[grepl(spec_pars, pars)]
   out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-  is_rescor <- grepl("^rescor_", spec_pars)
-  if (any(is_rescor)) {
-    rescor_pars <- spec_pars[is_rescor]
-    rescor_names <- sub("__", ",", sub("__", "(", rescor_pars))
-    spec_pars[is_rescor] <- paste0(rescor_names, ")")
-  }    
-  rownames(out$spec_pars) <- spec_pars
+  
+  # summary of residual correlations
+  rescor_pars <- pars[grepl("^rescor_", pars)]
+  if (length(rescor_pars)) {
+    out$rescor_pars <- fit_summary[rescor_pars, , drop = FALSE]
+    rescor_pars <- sub("__", ",", sub("__", "(", rescor_pars))
+    rownames(out$rescor_pars) <- paste0(rescor_pars, ")")
+  }
   
   # summary of autocorrelation effects
   cor_pars <- pars[grepl(regex_cor_pars(), pars)]

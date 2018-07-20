@@ -4,12 +4,15 @@
 
 * Define custom variables in all of Stan's program blocks
 via function `stanvar`. (#459)
+* Change the scope of non-linear parameters to be global 
+within univariate models. (#390)
 * Allow to automatically group predictor values in Gaussian 
 processes specified via `gp`. This may lead to a
 considerable increase in sampling efficiency. (#300)
 * Compute LOO-adjusted R-squared using method `loo_R2`.
 * Compute non-linear predictors outside of a loop over 
 observations by means of argument `loop` in `brmsformula`.
+* Fit non-linear mixture models. (#456)
 * Fit censored or truncated mixture models. (#469)
 * Allow `horseshoe` and `lasso` priors to be set on special 
 population-level effects.
@@ -22,6 +25,8 @@ via argument `file`. (#472)
 
 * Deprecate argument `stan_funs` in `brm` in favor of using the
 `stanvars` argument for the specification of custom Stan functions.
+* Deprecate arguments `flist` and `...` in `nlf`.
+* Deprecate argument `dpar` in `lf` and `nlf`.
 
 ### Bug fixes
 

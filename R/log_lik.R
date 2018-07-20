@@ -25,6 +25,9 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
 log_lik_internal.brmsdraws <- function(draws, ...) {
   log_lik_fun <- paste0("log_lik_", draws$f$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
+  for (nlp in names(draws$nlpars)) {
+    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+  }
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }

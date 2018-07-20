@@ -103,8 +103,8 @@ formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
 \examples{
 # add more formulas to the model
 bf(y ~ 1) + 
-  nlf(sigma ~ a * exp(b * x), a ~ x) + 
-  lf(b ~ z + (1|g), dpar = "sigma") +
+  nlf(sigma ~ a * exp(b * x)) + 
+  lf(a ~ x, b ~ z + (1|g)) +
   gaussian()
 
 # specify 'nl' later on

@@ -57,6 +57,9 @@ change_effects.brmsterms <- function(x, ...) {
   for (dp in names(x$dpars)) {
     c(out) <- change_effects(x$dpars[[dp]], ...)
   }
+  for (nlp in names(x$nlpars)) {
+    c(out) <- change_effects(x$nlpars[[nlp]], ...)
+  }
   if (is.formula(x$adforms$mi)) {
     c(out) <- change_Ymi(x, ...)
   }
@@ -68,24 +71,11 @@ change_effects.btl <- function(x, data, pars, scode = "", ...) {
   # helps in renaming various kinds of effects
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
-  c(
-    change_fe(x, data, pars, scode = scode),
+  c(change_fe(x, data, pars, scode = scode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
-    change_gp(x, data, pars)
-  )
-}
-
-change_effects.btnl <- function(x, data, pars, ...) {
-  # helps in renaming effects for non-linear parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  out <- list()
-  for (nlp in names(x$nlpars)) {
-    c(out) <- change_effects(x$nlpars[[nlp]], data, pars, ...)
-  }
-  out
+    change_gp(x, data, pars))
 }
 
 change_fe <- function(bterms, data, pars, scode = "") {

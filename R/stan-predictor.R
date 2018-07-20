@@ -11,10 +11,6 @@ stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   #   ilink: character vector of length 2 defining the link to be applied
   #   ...: arguements passed to the underlying effect-specific functions
   stopifnot(length(ilink) == 2L)
-  px <- check_prefix(x)
-  eta <- combine_prefix(px, keep_mu = TRUE)
-  stopifnot(nzchar(eta))
-  
   out <- collapse_lists(
     text_fe <- stan_fe(x, data, prior, ...),
     text_sp <- stan_sp(x, data, prior, ranef = ranef, ...),
@@ -27,6 +23,8 @@ stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   )
   
   # initialize and compute eta
+  px <- check_prefix(x)
+  eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
   str_add(out$modelD) <- paste0("  vector[N] ", eta, " =", out$eta, ";\n")
   str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
@@ -50,7 +48,7 @@ stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
+stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
@@ -59,24 +57,10 @@ stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
   #   ...: passed to stan_effects.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
-  nlpars <- names(x$nlpars)
-  par <- combine_prefix(x, keep_mu = TRUE)
-  # indicates a nested non-linear parameter
-  is_nlpar <- is_nlpar(x)
-  if (!is_nlpar) {
-    for (nlp in nlpars) {
-      nl_text <- stan_effects(
-        x = x$nlpars[[nlp]], data = data,
-        center_X = FALSE, ...
-      )
-      out <- collapse_lists(out, nl_text)
-    }
-  }
-  x$nlpar <- NULL
+  par <- combine_prefix(x, keep_mu = TRUE, nlp = TRUE)
   # prepare non-linear model
   n <- if (x$loop) "[n] " else " "
-  prefix <- combine_prefix(x, keep_mu = TRUE)
-  new_nlpars <- paste0(" ", prefix, "_", nlpars, n)
+  new_nlpars <- paste0(" nlp",  usc(x$resp), "_", nlpars, n)
   # covariates in the non-linear model
   covars <- wsp(all.vars(rhs(x$covars)))
   new_covars <- NULL
@@ -84,13 +68,11 @@ stan_effects.btnl <- function(x, data, ilink = rep("", 2), ...) {
     p <- usc(combine_prefix(x))
     covar_names <- paste0("C", p, "_", seq_along(covars))
     new_covars <- paste0(" ", covar_names, n)
-    if (!is_nlpar) {
-      # use vectors as indexing matrices in Stan is slow
-      str_add(out$data) <- paste0( 
-        "  // covariate vectors \n",
-        collapse("  vector[N] ", covar_names, ";\n")
-      )
-    }
+    # use vectors as indexing matrices in Stan is slow
+    str_add(out$data) <- paste0( 
+      "  // covariate vectors \n",
+      collapse("  vector[N] ", covar_names, ";\n")
+    )
   }
   # add whitespaces to be able to replace parameters and covariates
   meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
@@ -126,17 +108,21 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
   resp <- usc(combine_prefix(px))
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
-  args <- nlist(data, prior, ...)
+  args <- nlist(
+    data, prior, sparse, nlpars = names(x$nlpars),
+    order_mixture = x$family$order, ...
+  )
+  for (nlp in names(x$nlpars)) {
+    nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
+    out[[nlp]] <- do.call(stan_effects, c(nlp_args, args))
+  }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
     dp_def <- stan_dpar_defs(dp, resp, family = x$family)
     dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
-      dp_args <- list(
-        dp_terms, ilink = ilink, sparse = sparse, 
-        order_mixture = x$family$order
-      )
+      dp_args <- list(dp_terms, ilink = ilink)
       out[[dp]] <- do.call(stan_effects, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       out[[dp]] <- list(data = dp_def)
@@ -922,7 +908,8 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$prior) <- collapse(
         tp(), "normal_lpdf(zgp", pi, "_", J, " | 0, 1);\n"
       )
-      eta <- paste0(combine_prefix(px, keep_mu = TRUE), "[", Igp, "]")
+      eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
+      eta <- paste0(eta, "[", Igp, "]")
       gp_args <- paste0(
         "Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
         "lscale", pi, "[", J, "], zgp", pi, "_", J

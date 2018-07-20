@@ -522,12 +522,12 @@ deparse_combine <- function(x, max_char = 100) {
   out
 }
 
-eval2 <- function(expr, ...) {
+eval2 <- function(expr, envir = parent.frame(), ...) {
   # like eval() but parses characters before evaluation
   if (is.character(expr)) {
     expr <- parse(text = expr)
   }
-  eval(expr, ...)
+  eval(expr, envir, ...)
 }
 
 eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
@@ -553,6 +553,30 @@ eval_NA <- function(expr, ...) {
   }
   data <- named_list(all.vars(expr), NA_real_)
   eval(expr, envir = data, ...)
+}
+
+sort_dependencies <- function(x, sorted = NULL) {
+  # recursive sorting of dependencies
+  # Args:
+  #   x: named list of dependencies per element
+  #   sorted: already sorted element names
+  # Returns:
+  #   a vector of sorted element names
+  if (!length(x)) {
+    return(NULL)
+  }
+  if (length(names(x)) != length(x)) {
+    stop2("Argument 'x' must be named.")
+  }
+  take <- !ulapply(x, function(dep) any(!dep %in% sorted))
+  new <- setdiff(names(x)[take], sorted)
+  out <- union(sorted, new)
+  if (length(new)) {
+    out <- union(out, sort_dependencies(x, sorted = out))
+  } else if (!all(names(x) %in% out)) {
+    stop2("Cannot handle circular dependency structures.")
+  }
+  out
 }
 
 stop2 <- function(...) {
