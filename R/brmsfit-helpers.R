@@ -465,17 +465,15 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   out
 }
 
-get_nlpar <- function(draws, nlpar, i = NULL, ilink = NULL) {
+get_nlpar <- function(draws, nlpar, i = NULL) {
   # get samples of a non-linear parameter
   # Args:
   #   x: object to extract posterior samples from
   #   nlpar: name of the non-linear parameter
   #   i: the current observation number
   # Returns:
-  #   If the parameter is predicted and i is NULL or 
-  #   length(i) > 1, an S x N matrix.
-  #   If the parameter it not predicted or length(i) == 1,
-  #   a vector of length S.
+  #   If i is NULL or length(i) > 1: an S x N matrix
+  #   If length(i) == 1: a vector of length S
   stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
   x <- draws$nlpars[[nlpar]]
   stopifnot(!is.null(x))

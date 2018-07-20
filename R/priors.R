@@ -1254,24 +1254,24 @@ check_prior_special.btnl <- function(x, prior, ...) {
 }
 
 #' @export
-check_prior_special.btl <- function(x, prior, data, is_nlpar = FALSE, 
+check_prior_special.btl <- function(x, prior, data,
                                     check_nlpar_prior = TRUE,
                                     allow_autoscale = TRUE, ...) {
   # prepare special priors that cannot be passed to Stan as is
   # Args:
   #   prior: an object of class brmsprior
   #   allow_autoscale: allow autoscaling using sigma?
-  #   is_nlpar: is the parameter to be checked nonlinear?
+  #   check_nlpar_prior: check for priors on non-linear parameters?
   # Returns:
   #   a possibly amended brmsprior object with additional attributes
   px <- check_prefix(x)
-  if (is_nlpar && check_nlpar_prior) {
+  if (is_nlpar(x) && check_nlpar_prior) {
     nlp_prior <- subset2(prior, ls = px)
     if (!any(nzchar(nlp_prior$prior))) {
       stop2(
         "Priors on population-level effects are required in ",
         "non-linear models, but none were found for parameter ", 
-        "'", px$nlp, "'. See help(set_prior) for more details."
+        "'", px$nlpar, "'. See help(set_prior) for more details."
       )
     }
   }
