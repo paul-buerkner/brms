@@ -56,13 +56,14 @@ of the corresponding matrix. This argument can be used,
 among others to model pedigrees and phylogenetic effects.
 See \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from all specified 
-proper priors should be drawn additionally to the posterior samples
-(defaults to \code{"no"}). Among others, these samples can be used 
-to calculate Bayes factors for point hypotheses. 
+\item{sample_prior}{Indicate if samples from all specified proper priors 
+should be drawn additionally to the posterior samples (defaults to 
+\code{"no"}). Among others, these samples can be used to calculate 
+Bayes factors for point hypotheses via \code{\link{hypothesis}}.
 If set to \code{"only"}, samples are drawn solely from
-the priors ignoring the likelihood. In this case, 
-all parameters must have proper priors.}
+the priors ignoring the likelihood, which allows among others
+to generate samples from the prior predictive distribution.
+In this case, all parameters must have proper priors.}
 
 \item{stanvars}{An optional \code{stanvars} object generated
 by function \code{\link{stanvar}} to define additional variables
