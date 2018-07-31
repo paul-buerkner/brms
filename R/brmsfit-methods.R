@@ -3125,13 +3125,6 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "usable in method 'bridge_sampler'."
     )
   }
-  if (is.cor_car(samples$autocor)) {
-    warning2(
-      "Some constants were dropped from the log-posterior ",
-      "of CAR models so that the output of 'bridge_sampler' ",
-      "may not be valid."
-    )
-  }
   # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
   out <- try(
