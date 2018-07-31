@@ -264,25 +264,39 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   nlist(summary = sm, samples, prior_samples)
 }
 
-find_vars <- function(x) {
+find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   # find all valid variable names in a string 
   # Args:
   #   x: a character string
+  #   dot: are dots allowed in variable names?
+  #   brackets: allow brackets at the end of variable names?
   # Notes:
   #   Does not use the R parser itself to allow for double points, 
   #   square brackets and commas at the end of names.
-  #   currently only used in 'hypothesis_internal'
   # Returns:
   #   all valid variable names within the string
   x <- gsub("[[:space:]]", "", as_one_character(x))
-  regex_all <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.\\:]*"
-  regex_all <- paste0(regex_all, "(\\[[^],]+(,[^],]+)*\\])?")
+  dot <- as_one_logical(dot)
+  brackets <- as_one_logical(brackets)
+  regex_all <- paste0(
+    "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")",
+    "[[:alnum:]_\\:", if (dot) "\\.", "]*",
+    if (brackets) "(\\[[^],]+(,[^],]+)*\\])?"
+  )
   pos_all <- gregexpr(regex_all, x)[[1]]
-  regex_fun <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\("
+  regex_fun <- paste0(
+    "([^([:digit:]|[:punct:])]", if (dot) "|\\.", ")", 
+    "[[:alnum:]_", if (dot) "\\.", "]*\\("
+  )
   pos_fun <- gregexpr(regex_fun, x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
-  pos_var <- list(rmMatch(pos_all, pos_fun, pos_decnum))
-  unique(unlist(regmatches(x, pos_var)))
+  pos_var <- rmMatch(pos_all, pos_fun, pos_decnum)
+  if (length(pos_var)) {
+    out <- unique(unlist(regmatches(x, list(pos_var))))
+  } else {
+    out <- character(0)
+  }
+  out
 }
 
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 

@@ -1,3 +1,11 @@
+# brms 2.4.0++
+
+### New features
+
+* Allow using the `bridge_sampler` method even if 
+prior samples are drawn within the model. (#485)
+
+
 # brms 2.4.0
 
 ### New features

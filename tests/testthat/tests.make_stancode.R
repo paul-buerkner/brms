@@ -25,8 +25,10 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 10)")
   expect_match2(scode, "target += gamma_lpdf(sd_2 | 1, 1)")
   expect_match2(scode, "prior_b_1 = normal_rng(0,1);")
-  expect_match2(scode, "target += cauchy_lpdf(prior_sd_1_1 | 0,1)")
-  expect_match2(scode, "target += gamma_lpdf(prior_sd_2 | 1,1)")
+  expect_match2(scode, "prior_sd_1_1 = cauchy_rng(0,1)")
+  expect_match2(scode, "while (prior_sd_1_1 < 0)")
+  expect_match2(scode, "prior_sd_2 = gamma_rng(1,1)")
+  expect_match2(scode, "while (prior_sd_2 < 0)")
   
   prior <- c(prior(lkj(0.5), class = cor, group = g),
              prior(normal(0, 1), class = b),
@@ -41,9 +43,6 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1 | 0.5)")
   expect_match2(scode, "target += normal_lpdf(to_vector(bcs) | 0, 1)")
   expect_match2(scode, "prior_bcs = normal_rng(0,1)")
-  expect_match2(scode, 
-    "prior_b_Intercept = prior_temp_Intercept + dot_product(means_X, b)"
-  )
   
   prior <- c(prior(normal(0,5), nlpar = a),
              prior(normal(0,10), nlpar = b),
@@ -58,7 +57,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += cauchy_lpdf(sd_1[1] | 0, 1)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1 | 2)")
   expect_match2(scode, "prior_b_a = normal_rng(0,5)")
-  expect_match2(scode, "target += student_t_lpdf(prior_sd_1_2 | 3,0,10)")
+  expect_match2(scode, "prior_sd_1_2 = student_t_rng(3,0,10)")
   expect_match2(scode, "prior_cor_1 = lkj_corr_rng(2,2)[1, 2]")
   
   prior <- c(prior(lkj(2), rescor),
@@ -66,9 +65,8 @@ test_that("specified priors appear in the Stan code", {
              prior(cauchy(0, 1), sigma, resp = x1))
   scode <- make_stancode(cbind(y, x1) ~ x2, dat, prior = prior, 
                          sample_prior = TRUE)
-  expect_match2(scode, "target += cauchy_lpdf(prior_sigma_y | 0,5)")
-  expect_match2(scode, "target += cauchy_lpdf(prior_sigma_x1 | 0,1)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
+  expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
   expect_match2(scode, "prior_rescor = lkj_corr_rng(2,2)[1, 2]")
   
   prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
@@ -91,12 +89,8 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
   expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
-  expect_match2(scode, "target += uniform_lpdf(prior_ar | -1,1)")
-  
-  # test for problem described in #197
-  scode <- make_stancode(y ~ 1, dat, prior = prior(normal(0,1), Intercept),
-                         sample_prior = TRUE)
-  expect_match2(scode, "prior_b_Intercept = prior_temp_Intercept;")
+  expect_match2(scode, "prior_ar = uniform_rng(-1,1)")
+  expect_match2(scode, "while (prior_ar < -0.7 || prior_ar > 0.5)")
   
   # test for problem described in #213
   prior <- c(prior(normal(0, 1), coef = x1),
@@ -183,9 +177,6 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, 
     "target += double_exponential_lpdf(b | 0, lasso_scale * lasso_inv_lambda);"
   )
-  expect_match2(scode,
-    "prior_b = double_exponential_rng(0,lasso_scale*prior_lasso_inv_lambda);"
-  )
   
   scode <- make_stancode(x1 ~ mo(y), dat, prior = prior(lasso()))
   expect_match2(scode, 
@@ -223,9 +214,6 @@ test_that("special shrinkage priors appear in the Stan code", {
   )
   expect_match2(scode, 
     "target += double_exponential_lpdf(b_a2 | 0, lasso_scale_a2 * lasso_inv_lambda_a2);"
-  )
-  expect_match2(scode,
-    "prior_b_a2 = double_exponential_rng(0,lasso_scale_a2*prior_lasso_inv_lambda_a2);"
   )
   
   # check error messages
@@ -944,27 +932,6 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- make_stancode(y | weights(x) + trunc(0, 30) ~ 1, dat)
   expect_match2(scode, "target += weights[n] * normal_lpdf(Y[n] | mu[n], sigma) -")
   expect_match2(scode, "  log_diff_exp(normal_lcdf(ub[n] | mu[n], sigma),")
-})
-
-test_that("priors on intercepts appear in the Stan code", {
-  scode <- make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
-                      data = epilepsy, family = gaussian(), 
-                      prior = c(prior(student_t(5,0,10), class = b),
-                                prior(normal(0,5), class = Intercept)),
-                      sample_prior = TRUE)
-  expect_match2(scode, 
-    paste0("prior_b_Intercept = prior_temp_Intercept ", 
-           "- dot_product(means_X, b);")
-  )
-  scode <- make_stancode(cbind(count, log_Age_c) ~ log_Age_c + log_Base4_c * Trt_c,
-                      data = epilepsy, family = gaussian(), 
-                      prior = c(prior(student_t(5,0,10), class = b, resp = count),
-                                prior(normal(0,5), class = Intercept, resp = count)),
-                      sample_prior = TRUE)
-  expect_match2(scode, 
-    paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
-           "- dot_product(means_X_count, b_count);")
-  )
 })
 
 test_that("noise-free terms appear in the Stan code", {

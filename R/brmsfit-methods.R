@@ -3132,13 +3132,6 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "may not be valid."
     )
   }
-  sample_prior <- attr(samples$prior, "sample_prior")
-  if (isTRUE(sample_prior %in% c("yes", "only"))) {
-    stop2(
-      "Models including prior samples are not usable ",
-      "in method 'bridge_sampler'."
-    )
-  }
   # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
   out <- try(
