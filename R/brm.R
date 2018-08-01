@@ -419,7 +419,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stanvars = stanvars, stan_funs = stan_funs, 
-      save_model = save_model, brm_call = TRUE
+      save_model = save_model, silent = TRUE
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
@@ -429,10 +429,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       knots = knots, stanvars = stanvars
     )
     message("Compiling the C++ model")
-    x$fit <- eval_silent(
-      rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)
-    )
-    x$model <- x$model$model_code
+    x$fit <- eval_silent(rstan::stan_model(
+      model_code = x$model, save_dso = save_dso
+    ))
   }
   
   # arguments to be passed to Stan

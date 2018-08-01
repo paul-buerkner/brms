@@ -26,6 +26,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           stanvars = NULL, stan_funs = NULL, 
                           save_model = NULL, silent = FALSE, ...) {
   dots <- list(...)
+  silent <- as_one_logical(silent)
   # some input checks
   if (is.brmsfit(formula)) {
     stop2("Use 'stancode' to extract Stan code from 'brmsfit' objects.")
@@ -41,8 +42,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
-    prior, formula, data = data, sample_prior = sample_prior,
-    warn = !isTRUE(dots$brm_call)
+    prior, formula = formula, data = data, 
+    sample_prior = sample_prior, warn = !silent
   )
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
@@ -181,30 +182,24 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_generated_quantities
   )
   
-  # expand '#include' statements by calling rstan::stanc_builder
   if (!isTRUE(dots$testmode)) { 
+    # expand '#include' statements by calling rstan::stanc_builder
     temp_file <- tempfile(fileext = ".stan")
     cat(complete_model, file = temp_file) 
     isystem <- system.file("chunks", package = "brms")
     complete_model <- eval_silent(
       rstan::stanc_builder(
-        file = temp_file, isystem = isystem, 
+        file = temp_file, isystem = isystem,
         obfuscate_model_name = TRUE
       ),
       type = "message", silent = silent
     )
-    model_name <- paste(summarise_families(formula), "brms-model")
-    complete_model$model_name <- model_name
+    complete_model <- complete_model$model_code
+    str_add(complete_model) <- "\n"
     if (is.character(save_model)) {
-      str_add(complete_model$model_code) <- "\n"
-      cat(complete_model$model_code, file = save_model)
+      cat(complete_model, file = save_model)
     }
-    class(complete_model$model_code) <- c("character", "brmsmodel")
-    if (!isTRUE(dots$brm_call)) {
-      complete_model <- complete_model$model_code
-    }
-  } else {
-    class(complete_model) <- c("character", "brmsmodel")
   }
+  class(complete_model) <- c("character", "brmsmodel")
   complete_model
 }
