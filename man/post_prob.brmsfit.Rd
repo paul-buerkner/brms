@@ -5,7 +5,8 @@
 \alias{post_prob}
 \title{Posterior Model Probabilities from Marginal Likelihoods}
 \usage{
-\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL, model_names = NULL)
+\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL,
+  model_names = NULL)
 }
 \arguments{
 \item{x}{A fitted model object.}

@@ -5,8 +5,8 @@
 \alias{bf}
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
-brmsformula(formula, ..., flist = NULL, family = NULL, autocor = NULL,
-  nl = NULL, loop = NULL)
+brmsformula(formula, ..., flist = NULL, family = NULL,
+  autocor = NULL, nl = NULL, loop = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 

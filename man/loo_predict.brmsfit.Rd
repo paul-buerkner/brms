@@ -9,11 +9,12 @@
 \alias{loo_predictive_interval.brmsfit}
 \title{Compute Weighted Expectations Using LOO}
 \usage{
-\method{loo_predict}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  probs = 0.5, psis_object = NULL, resp = NULL, ...)
+\method{loo_predict}{brmsfit}(object, type = c("mean", "var",
+  "quantile"), probs = 0.5, psis_object = NULL, resp = NULL, ...)
 
-\method{loo_linpred}{brmsfit}(object, type = c("mean", "var", "quantile"),
-  probs = 0.5, psis_object = NULL, resp = NULL, scale = "linear", ...)
+\method{loo_linpred}{brmsfit}(object, type = c("mean", "var",
+  "quantile"), probs = 0.5, psis_object = NULL, resp = NULL,
+  scale = "linear", ...)
 
 \method{loo_predictive_interval}{brmsfit}(object, prob = 0.9,
   psis_object = NULL, ...)

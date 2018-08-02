@@ -9,16 +9,16 @@
 \method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   type = c("ordinary", "pearson"), method = c("fitted", "predict"),
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL, subset = NULL,
-  nsamples = NULL, sort = FALSE, nug = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  new_objects = list(), incl_autocor = TRUE, resp = NULL,
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{predictive_error}{brmsfit}(object, newdata = NULL,
   re_formula = NULL, re.form = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", new_objects = list(),
   incl_autocor = TRUE, resp = NULL, subset = NULL, nsamples = NULL,
-  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025, 0.975),
-  ...)
+  sort = FALSE, nug = NULL, robust = FALSE, probs = c(0.025,
+  0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}

@@ -5,9 +5,10 @@
 \alias{marginal_smooths}
 \title{Display Smooth Terms}
 \usage{
-\method{marginal_smooths}{brmsfit}(x, smooths = NULL, int_conditions = NULL,
-  probs = c(0.025, 0.975), spaghetti = FALSE, resolution = 100,
-  too_far = 0, subset = NULL, nsamples = NULL, ...)
+\method{marginal_smooths}{brmsfit}(x, smooths = NULL,
+  int_conditions = NULL, probs = c(0.025, 0.975), spaghetti = FALSE,
+  resolution = 100, too_far = 0, subset = NULL, nsamples = NULL,
+  ...)
 
 marginal_smooths(x, ...)
 }

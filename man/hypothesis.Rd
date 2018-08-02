@@ -7,7 +7,8 @@
 \title{Non-Linear Hypothesis Testing}
 \usage{
 \method{hypothesis}{brmsfit}(x, hypothesis, class = "b", group = "",
-  scope = c("standard", "ranef", "coef"), alpha = 0.05, seed = NULL, ...)
+  scope = c("standard", "ranef", "coef"), alpha = 0.05, seed = NULL,
+  ...)
 
 hypothesis(x, ...)
 

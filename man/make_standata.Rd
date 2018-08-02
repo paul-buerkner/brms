@@ -5,8 +5,8 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  stanvars = NULL, knots = NULL, check_response = TRUE,
+  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes",
+  "only"), stanvars = NULL, knots = NULL, check_response = TRUE,
   only_response = FALSE, control = list(), ...)
 }
 \arguments{

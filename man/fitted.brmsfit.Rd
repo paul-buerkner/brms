@@ -16,9 +16,9 @@
 \method{posterior_linpred}{brmsfit}(object, transform = FALSE,
   newdata = NULL, re_formula = NULL, re.form = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
-  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  new_objects = list(), incl_autocor = TRUE, dpar = NULL,
+  resp = NULL, subset = NULL, nsamples = NULL, sort = FALSE,
+  nug = NULL, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}

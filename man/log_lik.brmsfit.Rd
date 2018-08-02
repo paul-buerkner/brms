@@ -8,8 +8,9 @@
 \usage{
 \method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL, subset = NULL,
-  nsamples = NULL, pointwise = FALSE, nug = NULL, combine = TRUE, ...)
+  new_objects = list(), incl_autocor = TRUE, resp = NULL,
+  subset = NULL, nsamples = NULL, pointwise = FALSE, nug = NULL,
+  combine = TRUE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}

@@ -5,9 +5,9 @@
 \title{Run the same \pkg{brms} model on multiple datasets}
 \usage{
 brm_multiple(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  sparse = FALSE, knots = NULL, stanvars = NULL, stan_funs = NULL,
-  combine = TRUE, seed = NA, ...)
+  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes",
+  "only"), sparse = FALSE, knots = NULL, stanvars = NULL,
+  stan_funs = NULL, combine = TRUE, seed = NA, ...)
 }
 \arguments{
 \item{formula}{An object of class 

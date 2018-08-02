@@ -7,8 +7,8 @@
 \alias{posterior_summary.default}
 \title{Summarize Posterior Samples}
 \usage{
-\method{posterior_summary}{brmsfit}(x, pars = NA, probs = c(0.025, 0.975),
-  robust = FALSE, ...)
+\method{posterior_summary}{brmsfit}(x, pars = NA, probs = c(0.025,
+  0.975), robust = FALSE, ...)
 
 posterior_summary(x, ...)
 

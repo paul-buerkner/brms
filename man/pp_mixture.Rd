@@ -7,9 +7,9 @@
 \usage{
 \method{pp_mixture}{brmsfit}(x, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL, subset = NULL,
-  nsamples = NULL, nug = NULL, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), log = FALSE, ...)
+  new_objects = list(), incl_autocor = TRUE, resp = NULL,
+  subset = NULL, nsamples = NULL, nug = NULL, summary = TRUE,
+  robust = FALSE, probs = c(0.025, 0.975), log = FALSE, ...)
 
 pp_mixture(x, ...)
 }

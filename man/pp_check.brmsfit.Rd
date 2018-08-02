@@ -5,8 +5,8 @@
 \alias{pp_check}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
-  newdata = NULL, resp = NULL, subset = NULL, ...)
+\method{pp_check}{brmsfit}(object, type, nsamples, group = NULL,
+  x = NULL, newdata = NULL, resp = NULL, subset = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

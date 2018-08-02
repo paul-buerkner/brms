@@ -3,7 +3,6 @@
 \name{ngrps.brmsfit}
 \alias{ngrps.brmsfit}
 \alias{ngrps}
-\alias{ngrps.brmsfit}
 \title{Number of levels}
 \usage{
 \method{ngrps}{brmsfit}(object, ...)

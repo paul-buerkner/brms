@@ -3,7 +3,6 @@
 \name{prior_samples.brmsfit}
 \alias{prior_samples.brmsfit}
 \alias{prior_samples}
-\alias{prior_samples.brmsfit}
 \title{Extract prior samples}
 \usage{
 \method{prior_samples}{brmsfit}(x, pars = NA, ...)

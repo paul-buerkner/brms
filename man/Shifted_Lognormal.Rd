@@ -10,11 +10,11 @@
 \usage{
 dshifted_lnorm(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE)
 
-pshifted_lnorm(q, meanlog = 0, sdlog = 1, shift = 0, lower.tail = TRUE,
-  log.p = FALSE)
+pshifted_lnorm(q, meanlog = 0, sdlog = 1, shift = 0,
+  lower.tail = TRUE, log.p = FALSE)
 
-qshifted_lnorm(p, meanlog = 0, sdlog = 1, shift = 0, lower.tail = TRUE,
-  log.p = FALSE)
+qshifted_lnorm(p, meanlog = 0, sdlog = 1, shift = 0,
+  lower.tail = TRUE, log.p = FALSE)
 
 rshifted_lnorm(n, meanlog = 0, sdlog = 1, shift = 0)
 }

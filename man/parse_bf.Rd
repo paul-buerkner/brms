@@ -14,8 +14,8 @@ parse_bf(formula, ...)
 \method{parse_bf}{brmsformula}(formula, family = NULL, autocor = NULL,
   check_response = TRUE, resp_rhs_all = TRUE, mv = FALSE, ...)
 
-\method{parse_bf}{mvbrmsformula}(formula, family = NULL, autocor = NULL,
-  ...)
+\method{parse_bf}{mvbrmsformula}(formula, family = NULL,
+  autocor = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class 

@@ -7,14 +7,11 @@
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
-\alias{nlf}
-\alias{lf}
-\alias{set_nl}
-\alias{set_rescor}
 \alias{set_mecor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
-nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL, loop = NULL)
+nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
+  loop = NULL)
 
 lf(..., flist = NULL, dpar = NULL, resp = NULL)
 

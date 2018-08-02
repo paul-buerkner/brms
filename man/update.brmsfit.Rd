@@ -4,8 +4,8 @@
 \alias{update.brmsfit}
 \title{Update \pkg{brms} models}
 \usage{
-\method{update}{brmsfit}(object, formula., newdata = NULL, recompile = NULL,
-  ...)
+\method{update}{brmsfit}(object, formula., newdata = NULL,
+  recompile = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

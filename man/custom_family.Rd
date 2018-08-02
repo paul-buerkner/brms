@@ -5,8 +5,9 @@
 \alias{customfamily}
 \title{Custom Families in \pkg{brms} Models}
 \usage{
-custom_family(name, dpars = "mu", links = "identity", type = c("real",
-  "int"), lb = NA, ub = NA, vars = NULL, env = parent.frame())
+custom_family(name, dpars = "mu", links = "identity",
+  type = c("real", "int"), lb = NA, ub = NA, vars = NULL,
+  env = parent.frame())
 }
 \arguments{
 \item{name}{Name of the custom family.}

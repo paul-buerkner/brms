@@ -3,7 +3,6 @@
 \name{standata.brmsfit}
 \alias{standata.brmsfit}
 \alias{standata}
-\alias{standata.brmsfit}
 \title{Extract Data passed to Stan}
 \usage{
 \method{standata}{brmsfit}(object, newdata = NULL, re_formula = NULL,
