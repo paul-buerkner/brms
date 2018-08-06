@@ -202,6 +202,7 @@ validate_newdata <- function(
   }
   newdata <- rm_attr(newdata, c("terms", "brmsframe"))
   stopifnot(is.brmsfit(object))
+  resp <- validate_resp(resp, object)
   if (!incl_autocor) {
     object <- remove_autocor(object) 
   }

@@ -26,6 +26,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     x <- remove_autocor(x) 
   }
+  resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 

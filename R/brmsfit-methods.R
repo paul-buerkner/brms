@@ -1220,9 +1220,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (!is.null(x)) {
     x <- as_one_character(x)
   }
-  if (!is.null(resp)) {
-    resp <- as_one_character(resp)
-  }
+  resp <- validate_resp(resp, object, multiple = FALSE)
   valid_types <- as.character(bayesplot::available_ppc(""))
   valid_types <- sub("^ppc_", "", valid_types)
   if (!type %in% valid_types) {
@@ -1869,6 +1867,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   method <- match.arg(method)
   contains_samples(object)
   object <- restructure(object)
+  resp <- validate_resp(resp, object)
   family_names <- family_names(object)
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("Residuals are not defined for ordinal or categorical models.")
@@ -2145,6 +2144,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
                              robust = FALSE, probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
+  resp <- validate_resp(resp, object)
   family_names <- family_names(object)
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'bayes_R2' is not defined for ordinal or categorical models.")
@@ -2224,6 +2224,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
 loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
+  resp <- validate_resp(resp, object)
   family_names <- family_names(object)
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'loo_R2' is not defined for ordinal or categorical models.")

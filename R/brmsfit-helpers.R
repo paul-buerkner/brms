@@ -650,18 +650,31 @@ prepare_family <- function(x) {
   family
 }
 
-validate_resp <- function(resp, valid_resps, multiple = TRUE) {
+validate_resp <- function(resp, x, multiple = TRUE) {
   # validate the 'resp' argument of 'predict' and related methods
+  # Args:
+  #   resp: response names to be validated
+  #   x: valid response names or brmsfit object to extract names from
+  #   multiple: allow multiple response variables?
+  if (is.brmsfit(x)) {
+    x <- parse_bf(x$formula)$responses
+  }
+  x <- as.character(x)
+  if (!length(x)) {
+    # resp is unused in univariate models
+    resp <- NULL
+  }
   if (length(resp)) {
-    if (!all(resp %in% valid_resps)) {
+    resp <- as.character(resp)
+    if (!all(resp %in% x)) {
       stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(valid_resps))
+            "variables are: ", collapse_comma(x))
     }
     if (!multiple) {
       resp <- as_one_character(resp)
     }
   } else {
-    resp <- valid_resps
+    resp <- x
   }
   resp
 }
