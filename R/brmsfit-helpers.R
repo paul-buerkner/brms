@@ -662,7 +662,7 @@ validate_resp <- function(resp, x, multiple = TRUE) {
   x <- as.character(x)
   if (!length(x)) {
     # resp is unused in univariate models
-    resp <- NULL
+    return(NULL)
   }
   if (length(resp)) {
     resp <- as.character(resp)
