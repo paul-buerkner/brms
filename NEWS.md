@@ -4,6 +4,8 @@
 
 * Allow using the `bridge_sampler` method even if 
 prior samples are drawn within the model. (#485)
+* Allow to `overwrite` already stored fit indices
+when using `add_ic`.
 
 ### Other changes
 

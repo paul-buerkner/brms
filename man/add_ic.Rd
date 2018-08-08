@@ -10,7 +10,8 @@
 \usage{
 add_ic(x, ...)
 
-\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL, ...)
+\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL,
+  overwrite = FALSE, ...)
 
 add_ic(x, ...) <- value
 
@@ -31,6 +32,9 @@ to compute. Currently supported are \code{"loo"},
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
+
+\item{overwrite}{Logical; Indicates if already stored fit 
+indices should be overwritten. Defaults to \code{FALSE}.}
 }
 \value{
 An object of the same class as \code{x}, but
