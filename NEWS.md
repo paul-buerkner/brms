@@ -5,6 +5,16 @@
 * Allow using the `bridge_sampler` method even if 
 prior samples are drawn within the model. (#485)
 
+### Other changes
+
+* Ignore argument `resp` when post-processing
+univariate models thanks to Ruben Arslan. (#488)
+
+### Bug fixes
+
+* Remove stored fit indices when calling `update` on 
+brmsfit objects thanks to Emmanuel Charpentier. (#490)
+
 
 # brms 2.4.0
 

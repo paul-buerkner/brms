@@ -379,6 +379,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
+    icnames <- c("loo", "waic", "kfold", "R2", "marglik")
+    x[icnames] <- list(NULL)
     sdata <- standata(x)
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
