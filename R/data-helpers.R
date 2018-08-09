@@ -445,6 +445,17 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
+PredictMat <- function(object, data, ...) {
+  # convenient wrapper around mgcv::PredictMat
+  data <- rm_attr(data, "terms")
+  out <- mgcv::PredictMat(object, data = data, ...)
+  if (length(dim(out)) < 2L) {
+    # fixes issue #494
+    out <- matrix(out, nrow = 1)
+  }
+  out
+} 
+
 arr_design_matrix <- function(Y, r, group)  { 
   # compute the design matrix for ARR effects
   # Args:

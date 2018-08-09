@@ -131,7 +131,7 @@ data_fe <- function(bterms, data, knots = NULL,
           bylevels[[i]][j] <- sm$by.level
         }
         if (!new_smooths) {
-          sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
+          sm$X <- PredictMat(sm, data = data)
         }
         rasm <- mgcv::smooth2random(sm, names(data), type = 2)
         Xs[[ns]] <- rasm$Xf

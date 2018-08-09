@@ -18,6 +18,8 @@ univariate models thanks to Ruben Arslan. (#488)
 brmsfit objects thanks to Emmanuel Charpentier. (#490)
 * Correctly sample from LKJ correlation priors 
 thanks to Donald Williams.
+* Fix problems when predicting a single data point using 
+spline models thanks to Emmanuel Charpentier. (#494)
 
 
 # brms 2.4.0
