@@ -304,14 +304,14 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
-  D$par <- sub("^L_", "cor_", D$par)
-  D$par <- sub("^Lrescor", "rescor", D$par)
+  class_old <- c("^L_", "^Lrescor")
+  class_new <- c("cor_", "rescor")
+  D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
   dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
   D$dis <- get_matches(dis_regex, D$prior, perl = TRUE, first = TRUE)
   D$dis <- sub("corr_cholesky$", "corr", D$dis)
   args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
   D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
-  D$args <- paste0(ifelse(grepl("^lkj_corr$", D$dis), "2,", ""), D$args)
   
   # rename parameters containing indices
   has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
@@ -326,16 +326,20 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   par_declars <- gsub("^[[:blank:]]*", "", par_declars)
   par_declars <- par_declars[!grepl("^//", par_declars)]
   all_pars_regex <- "(?<= )[^[:blank:]]+(?=;)"
-  all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE) 
-  all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
-  all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
+  all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE)
+  all_pars <- rename(all_pars, class_old, class_new, fixed = FALSE)
+  all_bounds <- get_matches("<.+>", par_declars, first = TRUE)
   all_types <- get_matches("^[^[:blank:]]+", par_declars)
+  all_dims <- get_matches(
+    "(?<=\\[)[^\\]]*", par_declars, first = TRUE, perl = TRUE
+  )
   
   # define parameter types and boundaries
-  D$bounds <- ""
+  D$dim <- D$bounds <- ""
   D$type <- "real"
   for (i in seq_along(all_pars)) {
     k <- which(grepl(paste0("^", all_pars[i]), D$par))
+    D$dim[k] <- all_dims[i]
     D$bounds[k] <- all_bounds[i]
     if (grepl("^simo", all_pars[i])) {
       D$type[k] <- all_types[i]
@@ -349,7 +353,9 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D <- D[!contains_other_pars, ]
   
   # sample priors in the generated quantities block
-  D$lkj_index <- ifelse(grepl("^lkj_corr$", D$dis), "[1, 2]", "")
+  D$lkj <- grepl("^lkj_corr$", D$dis)
+  D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
+  D$lkj_index <- ifelse(D$lkj, "[1, 2]", "")
   D$prior_par <- paste0("prior_", D$par)
   str_add(out$genD) <- "  // additionally draw samples from priors\n"
   str_add(out$genD) <- collapse(
@@ -382,6 +388,5 @@ stan_extract_bounds <- function(x, bound = c("lower", "upper")) {
   bound <- match.arg(bound)
   x <- rm_wsp(x)
   regex <- paste0("(?<=", bound, "=)[^,>]*")
-  out <- get_matches(regex, x, perl = TRUE, simplify = FALSE)
-  ulapply(out, function(x) if (length(x)) x else "")
+  get_matches(regex, x, perl = TRUE, first = TRUE)
 }

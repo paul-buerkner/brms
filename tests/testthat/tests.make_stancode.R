@@ -58,7 +58,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1 | 2)")
   expect_match2(scode, "prior_b_a = normal_rng(0,5)")
   expect_match2(scode, "prior_sd_1_2 = student_t_rng(3,0,10)")
-  expect_match2(scode, "prior_cor_1 = lkj_corr_rng(2,2)[1, 2]")
+  expect_match2(scode, "prior_cor_1 = lkj_corr_rng(M_1,2)[1, 2]")
   
   prior <- c(prior(lkj(2), rescor),
              prior(cauchy(0, 5), sigma, resp = y),
@@ -67,7 +67,7 @@ test_that("specified priors appear in the Stan code", {
                          sample_prior = TRUE)
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
-  expect_match2(scode, "prior_rescor = lkj_corr_rng(2,2)[1, 2]")
+  expect_match2(scode, "prior_rescor = lkj_corr_rng(nresp,2)[1, 2]")
   
   prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
              prior(normal(0, 0.5), ma),

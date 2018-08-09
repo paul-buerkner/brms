@@ -16,6 +16,8 @@ univariate models thanks to Ruben Arslan. (#488)
 
 * Remove stored fit indices when calling `update` on 
 brmsfit objects thanks to Emmanuel Charpentier. (#490)
+* Correctly sample from LKJ correlation priors 
+thanks to Donald Williams.
 
 
 # brms 2.4.0

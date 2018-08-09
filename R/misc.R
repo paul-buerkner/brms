@@ -613,13 +613,17 @@ SW <- function(expr) {
 get_matches <- function(pattern, text, simplify = TRUE, 
                         first = FALSE, ...) {
   # get pattern matches in text as vector
+  # Args:
+  #   simplify: return an atomic vector of matches?
+  #   first: only return the first match in each string?
+  x <- regmatches(text, gregexpr(pattern, text, ...))
   if (first) {
-    x <- regexpr(pattern, text, ...)
-  } else {
-    x <- gregexpr(pattern, text, ...)
+    x <- lapply(x, function(t) if (length(t)) t[1] else t)
   }
-  x <- regmatches(text, x)
   if (simplify) {
+    if (first) {
+      x <- lapply(x, function(t) if (length(t)) t else "")
+    }
     x <- unlist(x)
   }
   x
