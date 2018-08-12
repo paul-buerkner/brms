@@ -1,5 +1,5 @@
 params <-
-structure(list(EVAL = TRUE), .Names = "EVAL")
+list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -165,5 +165,5 @@ pp_check(model_pois)
 pp_check(model_normal)
 
 ## ---------------------------------------------------------------------------------------
-LOO(model_pois, model_normal)
+loo(model_pois, model_normal)
 

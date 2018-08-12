@@ -36,7 +36,7 @@ theme_set(theme_default())
 
 ## Introduction
 
-In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (Garamszegi, 2014) -- more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from  http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11. Some of these models may take a few minutes to fit.
+In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from chapter 11 of the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data could be downloaded from the corresponding website (mpcm-evolution.org), which is currently offline, but I hope it comes back online soon. Some of these models may take a few minutes to fit.
 
 ## A Simple Phylogenetic Model
 
@@ -212,7 +212,7 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 
 ## A phylogenetic count-data model
 
-Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11) provides an example.
+Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org) provides an example.
 
 ```{r}
 data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
@@ -265,10 +265,10 @@ pp_check(model_normal)
 Apparently, the distribution of the phenotype predicted by the Poisson model resembles the original distribution of the phenotype pretty closely, while the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.
 
 ```{r}
-LOO(model_pois, model_normal)
+loo(model_pois, model_normal)
 ```
 
-Since smaller values of LOO indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family `negative_binomial`), which already contains an overdispersion parameter so that modeling a varying intercept of `obs` becomes obsolete.
+Since smaller values of loo indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family `negative_binomial`), which already contains an overdispersion parameter so that modeling a varying intercept of `obs` becomes obsolete.
 
 ## Phylogenetic models with multiple group-level effects
 
@@ -276,6 +276,6 @@ In the above examples, we have only used a single group-level effect (i.e., a va
 
 ## References
 
-Garamszegi, L. Z. (2014). *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology*. London, UK: Springer.
+de Villemeruil P. & Nakagawa, S. (2014) General quantitative genetic methods for comparative biology In: *Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice* (ed. Garamszegi L.) Springer, New York. pp. 287-303.
 
 Lawless, J. F. (1987). Negative binomial and mixed Poisson regression. *Canadian Journal of Statistics*, 15(3), 209-225.

@@ -96,7 +96,7 @@ summary(fit2)
 Let's find out, how model fit changed due to excluding certain effects from the initial model:
 
 ```{r loo12}
-LOO(fit1, fit2)
+loo(fit1, fit2)
 ```
 
 Apparently, there is no noteworthy difference in the model fit. Accordingly, we do not really need to model `sex` and `hatchdate` for both response variables, but there is also no harm in including them (so I would probably just include them).  

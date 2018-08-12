@@ -1,5 +1,5 @@
 params <-
-structure(list(EVAL = TRUE), .Names = "EVAL")
+list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -50,7 +50,7 @@ fit3 <- brm(ls ~ income, data = dat)
 summary(fit3)
 
 ## ---------------------------------------------------------------------------------------
-LOO(fit1, fit2, fit3)
+loo(fit1, fit2, fit3)
 
 ## ---- results='hide'--------------------------------------------------------------------
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simo", coef = "moincome1")

@@ -1,5 +1,5 @@
 params <-
-structure(list(EVAL = TRUE), .Names = "EVAL")
+list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -50,7 +50,7 @@ add_ic(fit2) <- "loo"
 summary(fit2)
 
 ## ----loo12------------------------------------------------------------------------------
-LOO(fit1, fit2)
+loo(fit1, fit2)
 
 ## ----fit3, message=FALSE, warning=FALSE-------------------------------------------------
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +

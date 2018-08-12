@@ -1,5 +1,5 @@
 params <-
-structure(list(EVAL = TRUE), .Names = "EVAL")
+list(EVAL = TRUE)
 
 ## ---- SETTINGS-knitr, include=FALSE-----------------------------------------------------
 stopifnot(require(knitr))
@@ -47,7 +47,7 @@ pp_check(fit1)
 pp_check(fit2)
 
 ## ---------------------------------------------------------------------------------------
-LOO(fit1, fit2)
+loo(fit1, fit2)
 
 ## ---------------------------------------------------------------------------------------
 url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"
@@ -109,7 +109,7 @@ summary(fit_ir2)
 plot(marginal_effects(fit_ir2), points = TRUE)
 
 ## ---------------------------------------------------------------------------------------
-LOO(fit_ir1, fit_ir2)
+loo(fit_ir1, fit_ir2)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit_ir3 <- brm(

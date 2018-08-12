@@ -100,7 +100,7 @@ pp_check(fit2)
 We can also easily compare model fit using leave-one-out cross-validation.
 
 ```{r}
-LOO(fit1, fit2)
+loo(fit1, fit2)
 ```
 
 Since smaller `LOOIC` values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surpirsing since we simulated the data from exactly that model.
@@ -205,7 +205,7 @@ plot(marginal_effects(fit_ir2), points = TRUE)
 Comparing model fit via leave-one-out cross-validation 
 
 ```{r}
-LOO(fit_ir1, fit_ir2)
+loo(fit_ir1, fit_ir2)
 ```
 
 shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don't know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.
