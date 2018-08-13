@@ -721,7 +721,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
   draws
 }
 
-extract_draws_data <- function(bterms, sdata, stanvars = NULL, ...) {
+extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   # extract data mainly related to the response variable
   # Args
   #   stanvars: *names* of variables stored in slot 'stanvars'
@@ -734,6 +734,9 @@ extract_draws_data <- function(bterms, sdata, stanvars = NULL, ...) {
   if (length(stanvars)) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]
+  }
+  if (is_categorical(bterms) || is_ordinal(bterms)) {
+    draws$cats <- extract_cat_names(bterms$formula, data)
   }
   draws
 }

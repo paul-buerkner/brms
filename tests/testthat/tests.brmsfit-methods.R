@@ -275,10 +275,12 @@ test_that("all S3 methods have reasonable ouputs", {
     "Predictions are treated as continuous variables"
   )
   expect_true(is(me4, "brmsMarginalEffects"))
-  me4 <- marginal_effects(fit4, "x2", ordinal = TRUE)
+  me4 <- marginal_effects(fit4, "x2", categorical = TRUE)
   expect_true(is(me4, "brmsMarginalEffects"))
-  me4 <- marginal_effects(fit4, "x2", method = "predict", ordinal = TRUE)
-  expect_true(is(me4, "brmsMarginalEffects"))
+  expect_error(
+    marginal_effects(fit4, "x2", method = "predict", categorical = TRUE),
+    "Can only use 'categorical' with method = 'fitted'."
+  )
   
   me5 <- marginal_effects(fit5)
   expect_true(is(me5, "brmsMarginalEffects"))

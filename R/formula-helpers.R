@@ -839,3 +839,11 @@ expand_dot_formula <- function(formula, data = NULL) {
   }
   formula
 }
+
+extract_cat_names <- function(formula, data) {
+  # extract names of response categories
+  respform <- formula2str(lhs(formula))
+  respform <- formula(gsub("\\|+[^~]*~", "~", respform))
+  model_response <- model.response(model.frame(respform, data))
+  levels(factor(model_response))
+}
