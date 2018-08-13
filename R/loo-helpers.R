@@ -97,6 +97,9 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
   ic <- match.arg(ic)
   args <- nlist(ic, ...)
   if (length(models) > 1L) {
+    if (!match_nobs(models)) {
+      stop2("Models have different number of observations.")
+    }
     if (length(use_stored_ic) == 1L) {
       use_stored_ic <- rep(use_stored_ic, length(models))
     }
@@ -414,6 +417,26 @@ match_response <- function(models, ...) {
     yhash <- lapply(models, hash_response, ...)
     yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
     if (all(yhash_check)) {
+      out <- TRUE
+    } else {
+      out <- FALSE
+    }
+  }
+  out
+}
+
+match_nobs <- function(models, ...) {
+  # compare number of observations of multipe models
+  # Args:
+  #   models: A list of brmsfit objects
+  # Returns:
+  #   TRUE if the number of rows match
+  if (length(models) <= 1L) {
+    out <- TRUE  
+  } else {
+    nobs <- lapply(models, nobs)
+    nobs_check <- ulapply(nobs, is_equal, nobs[[1]])
+    if (all(nobs_check)) {
       out <- TRUE
     } else {
       out <- FALSE
