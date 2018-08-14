@@ -49,10 +49,13 @@
 #'   two-dimensional smooths should be visualized as a surface. 
 #'   Defaults to \code{FALSE}. The surface type can be controlled 
 #'   via argument \code{stype} of the related plotting method.
-#' @param ordinal Logical. Indicates if effects in ordinal models
+#' @param categorical Logical. Indicates if effects of categorical 
+#'   or ordinal models should be shown in terms of probabilities
+#'   of response categories. Defaults to \code{FALSE}.
+#' @param ordinal Deprecated! Please use argument \code{categorical}.
+#'   Logical. Indicates if effects in ordinal models
 #'   should be visualized as a raster with the response categories
-#'   on the y-axis. Defaults to \code{FALSE} and ignored in
-#'   non-ordinal models.
+#'   on the y-axis. Defaults to \code{FALSE}.
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed. Only allowed
@@ -606,79 +609,101 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 #' @export
 marginal_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, surface, 
-  spaghetti, ordinal, probs, robust, dpar = NULL, ...
+  spaghetti, categorical, ordinal, probs, robust, dpar = NULL, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
   stopifnot(is.brmsfit(fit))
-  if (is_categorical(x$family)) {
-    stop2("'marginal_effects' is not implemented for categorical models.")
-  }
-  ordinal <- ordinal && is_ordinal(x$family)
+  effects <- attr(marg_data, "effects")
+  types <- attr(marg_data, "types")
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, summary = FALSE, ...
   )
   out <- do.call(method, pred_args)
-  if (is_ordinal(x$family) && !ordinal && 
-      method == "fitted" && is.null(dpar)) {
-    for (k in seq_len(dim(out)[3])) {
-      out[, , k] <- out[, , k] * k
-    }
-    out <- lapply(seq_len(dim(out)[2]), function(s) rowSums(out[, s, ]))
-    out <- do.call(cbind, out)
-  }
   rownames(marg_data) <- NULL
-  eff <- attr(marg_data, "effects")
-  types <- attr(marg_data, "types")
+  if (categorical || ordinal) {
+    if (method != "fitted") {
+      stop2("Can only use 'categorical' with method = 'fitted'.")
+    }
+    if (!(is_ordinal(x) || is_categorical(x))) {
+      stop2("Argument 'categorical' may only be used ", 
+            "for categorical or ordinal models.")
+    }
+    if (categorical && ordinal) {
+      stop2("Please use argument 'categorical' instead of 'ordinal'.")
+    }
+    cats <- dimnames(out)[[3]]
+    if (is.null(cats)) cats <- seq_len(dim(out)[3])
+    cats <- factor(rep(cats, each = ncol(out)))
+    marg_data <- cbind(marg_data, cats__ = cats)
+    effects[2] <- "cats__"
+    types[2] <- "factor"
+  } else {
+    if (is_categorical(x$family)) {
+      stop2("Please set 'categorical' to TRUE.")
+    }
+    if (is_ordinal(x$family) && is.null(dpar)) {
+      warning2(
+        "Predictions are treated as continuous variables in ",
+        "'marginal_effects' by default, which is likely invalid ", 
+        "for ordinal families. Please set 'categorical' to TRUE."
+      )
+      if (method == "fitted") {
+        for (k in seq_len(dim(out)[3])) {
+          out[, , k] <- out[, , k] * k
+        }
+        out <- lapply(seq_len(dim(out)[2]), function(s) rowSums(out[, s, ]))
+        out <- do.call(cbind, out)
+      }
+    }
+  }
   first_numeric <- types[1] %in% "numeric"
   second_numeric <- types[2] %in% "numeric"
   both_numeric <- first_numeric && second_numeric
   if (second_numeric && !surface) {
     # can only be converted to factor after having called method
-    mde2 <- round(marg_data[[eff[2]]], 2)
+    mde2 <- round(marg_data[[effects[2]]], 2)
     levels2 <- sort(unique(mde2), TRUE)
-    marg_data[[eff[2]]] <- factor(mde2, levels = levels2)
-    labels2 <- names(int_conditions[[eff[2]]])
+    marg_data[[effects[2]]] <- factor(mde2, levels = levels2)
+    labels2 <- names(int_conditions[[effects[2]]])
     if (length(labels2) == length(levels2)) {
-      levels(marg_data[[eff[2]]]) <- labels2
+      levels(marg_data[[effects[2]]]) <- labels2
     }
   }
-  spaghetti_data <- NULL
+  spag <- NULL
   if (first_numeric && spaghetti) {
     if (surface) {
       stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
     }
-    sample <- rep(seq_len(nrow(out)), each = ncol(out))
+    spag <- out
+    if (categorical) {
+      spag <- do.call(cbind, array2list(spag))
+    }
+    sample <- rep(seq_len(nrow(spag)), each = ncol(spag))
     if (length(types) == 2L) {
       # samples should be unique across plotting groups
-      sample <- paste0(sample, "_", marg_data[[eff[2]]])
+      sample <- paste0(sample, "_", marg_data[[effects[2]]])
     }
-    spaghetti_data <- data.frame(as.numeric(t(out)), factor(sample))
-    colnames(spaghetti_data) <- c("estimate__", "sample__")
-    spaghetti_data <- cbind(marg_data, spaghetti_data)
+    spag <- data.frame(as.numeric(t(spag)), factor(sample))
+    colnames(spag) <- c("estimate__", "sample__")
+    spag <- cbind(marg_data, spag)
   }
-  if (ordinal) {
-    if (method == "fitted") {
-      out <- posterior_summary(out, probs = probs, robust = robust)[, 1, ]
-    } else if (method == "predict") {
-      out <- posterior_table(out)
-    }
-    cats <- rep(seq_len(ncol(out)), each = nrow(out))
-    out <- cbind(estimate__ = as.vector(out), cats__ = cats)
-  } else {
-    out <- posterior_summary(out, probs = probs, robust = robust)
-    colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
+  out <- posterior_summary(out, probs = probs, robust = robust)
+  if (categorical || ordinal) {
+    out <- do.call(rbind, array2list(out))
   }
+  colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(marg_data, out)
   response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
-  attr(out, "effects") <- c(eff, if (ordinal) "cats__")
+  attr(out, "effects") <- effects
   attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
+  attr(out, "categorical") <- categorical
   attr(out, "ordinal") <- ordinal
-  attr(out, "spaghetti") <- spaghetti_data
-  attr(out, "points") <- make_point_frame(x, fit$data, eff, ...)
-  name <- paste0(usc(x$resp, "suffix"), paste0(eff, collapse = ":"))
+  attr(out, "spaghetti") <- spag
+  attr(out, "points") <- make_point_frame(x, fit$data, effects, ...)
+  name <- paste0(usc(x$resp, "suffix"), paste0(effects, collapse = ":"))
   setNames(list(out), name)
 }
 
@@ -689,14 +714,15 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   # Returns:
   #   a data.frame containing the data points to be plotted
   stopifnot(is.brmsterms(bterms), is.data.frame(mf))
+  effects <- intersect(effects, names(mf))
   points <- mf[, effects, drop = FALSE]
   points$resp__ <- model.response(
     model.frame(bterms$respform, mf, na.action = na.pass)
   )
   req_vars <- names(mf)
-  groups <- get_re(bterms)$group
+  groups <- get_re_groups(bterms)
   if (length(groups)) {
-    req_vars <- c(req_vars, unlist(strsplit(groups, ":")))
+    c(req_vars) <- unlist(strsplit(groups, ":"))
   }
   req_vars <- unique(setdiff(req_vars, effects))
   req_vars <- intersect(req_vars, names(conditions))
@@ -810,9 +836,11 @@ plot.brmsMarginalEffects <- function(
     response <- attr(x[[i]], "response")
     effects <- attr(x[[i]], "effects")
     ncond <- length(unique(x[[i]]$cond__))
+    categorical <- isTRUE(attr(x[[i]], "categorical"))
     surface <- isTRUE(attr(x[[i]], "surface"))
     # for backwards compatibility with brms < 1.4.0
     surface <- surface || isTRUE(attr(x[[i]], "contour"))
+    # for backwards compatibility with brms < 2.4.3
     ordinal <- isTRUE(attr(x[[i]], "ordinal"))
     if (surface || ordinal) {
       # surface plots for two dimensional interactions or ordinal plots
@@ -858,7 +886,7 @@ plot.brmsMarginalEffects <- function(
       # extract suggested colors for later use
       colors <- ggplot_build(plots[[i]])
       colors <- unique(colors$data[[1]][["colour"]])
-      if (points) {
+      if (points && !categorical && !surface) {
         # add points first so that they appear behind the predictions
         .point_args <- list(
           mapping = aes_string(x = effects[1], y = "resp__"),
@@ -937,6 +965,10 @@ plot.brmsMarginalEffects <- function(
         plots[[i]] <- plots[[i]] + 
           do.call(geom_point, .cat_args) +
           do.call(geom_errorbar, .errorbar_args)
+      }
+      if (categorical) {
+        plots[[i]] <- plots[[i]] + ylab("Probability") +
+          labs(fill = response, color = response)
       }
     }
     if (ncond > 1L) {

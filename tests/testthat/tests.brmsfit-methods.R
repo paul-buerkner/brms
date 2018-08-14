@@ -275,9 +275,7 @@ test_that("all S3 methods have reasonable ouputs", {
     "Predictions are treated as continuous variables"
   )
   expect_true(is(me4, "brmsMarginalEffects"))
-  me4 <- marginal_effects(fit4, "x2", ordinal = TRUE)
-  expect_true(is(me4, "brmsMarginalEffects"))
-  me4 <- marginal_effects(fit4, "x2", ordinal = TRUE, method = "predict")
+  me4 <- marginal_effects(fit4, "x2", categorical = TRUE)
   expect_true(is(me4, "brmsMarginalEffects"))
   
   me5 <- marginal_effects(fit5)

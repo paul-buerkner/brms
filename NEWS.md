@@ -6,11 +6,14 @@
 prior samples are drawn within the model. (#485)
 * Allow to `overwrite` already stored fit indices
 when using `add_ic`.
+* Improve `marginal_effects` to better display ordinal and 
+categorical models via argument `categorical`. (#491, #497)
 
 ### Other changes
 
 * Ignore argument `resp` when post-processing
 univariate models thanks to Ruben Arslan. (#488)
+* Deprecate argument `ordinal` in `marginal_effects` (#491)
 
 ### Bug fixes
 

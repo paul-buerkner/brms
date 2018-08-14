@@ -1366,12 +1366,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
                                      spaghetti = FALSE, surface = FALSE,
-                                     ordinal = FALSE, transform = NULL, 
-                                     resolution = 100, select_points = 0, 
-                                     too_far = 0, ...) {
+                                     categorical = FALSE, ordinal = FALSE,
+                                     transform = NULL, resolution = 100, 
+                                     select_points = 0, too_far = 0, ...) {
   method <- match.arg(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
+  categorical <- as_one_logical(categorical)
   ordinal <- as_one_logical(ordinal)
   contains_samples(x)
   x <- restructure(x)
@@ -1383,12 +1384,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   if (!is.null(transform) && method != "predict") {
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
   }
-  if (any(is_ordinal(family_names(x))) && !ordinal) {
-    warning2(
-      "Predictions are treated as continuous variables in ",
-      "'marginal_effects' by default, which is likely invalid ", 
-      "for ordinal families. Consider setting 'ordinal' to TRUE."
-    )
+  if (ordinal) {
+    warning2("Argument 'ordinal' is deprecated. ", 
+             "Please use 'categorical' instead.")
   }
   rsv_vars <- rsv_vars(bterms)
   use_def_effects <- is.null(effects)
@@ -1429,11 +1427,14 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       )
     }
   }
-  if (ordinal) {
+  if (categorical || ordinal) {
     int_effs <- lengths(effects) == 2L
     if (any(int_effs)) {
       effects <- effects[!int_effs]
-      warning2("Interactions cannot be plotted if 'ordinal' is TRUE.")
+      warning2(
+        "Interactions cannot be plotted directly if 'categorical' ", 
+        "is TRUE. Please use argument 'conditions' instead."
+      )
     }
   }
   if (!length(effects)) {
@@ -1468,8 +1469,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     me_args <- nlist(
       x = bterms, fit = x, marg_data, method, surface, 
-      spaghetti, ordinal, re_formula, transform, conditions,
-      int_conditions, select_points, probs, robust, ...
+      spaghetti, categorical, ordinal, re_formula, transform, 
+      conditions, int_conditions, select_points, probs, robust,
+      ...
     )
     out <- c(out, do.call(marginal_effects_internal, me_args))
   }
