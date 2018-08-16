@@ -225,7 +225,7 @@ fitted_zero_one_inflated_beta <- function(draws) {
 
 fitted_categorical <- function(draws) {
   get_probs <- function(i) {
-    dcategorical(cats, eta = eta[, i, ])
+    dcategorical(cats, eta = index_col(eta, i))
   }
   eta <- abind(draws$dpars, along = 3)
   cats <- seq_len(draws$data$ncat)
@@ -279,7 +279,7 @@ fitted_mixture <- function(draws) {
 
 fitted_ordinal <- function(draws) {
   get_probs <- function(i) {
-    do.call(dens, c(args, list(eta = eta[, i, ])))
+    do.call(dens, c(args, list(eta = index_col(eta, i))))
   }
   eta <- draws$dpars$disc * draws$dpars$mu
   ncat <- draws$data$ncat

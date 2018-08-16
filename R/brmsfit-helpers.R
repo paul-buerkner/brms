@@ -605,7 +605,7 @@ index_col <- function(x, i) {
   } else {
     expr <- paste0("x[, i", collapse(rep(", ", ldim - 2)), "]")
     out <- eval2(expr)
-    if (length(i) == 1L && dim(out) != dim(x)[-2]) {
+    if (length(i) == 1L && !is_equal(dim(out), dim(x)[-2])) {
       # some non-column dims were unintentionally dropped
       dim(out) <- dim(x)[-2]
     }

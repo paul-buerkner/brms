@@ -1074,7 +1074,7 @@ validate_formula.brmsformula <- function(
   out$mecor <- default_mecor(out$mecor)
   needs_cat <- is_categorical(out$family) && is.null(out$family$dpars)
   if (needs_cat && !is.null(data)) {
-    cats <- extract_cat_names(out$formula, data)
+    cats <- extract_cat_names(out, data)
     if (length(cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }

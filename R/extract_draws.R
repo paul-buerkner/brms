@@ -736,7 +736,7 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     draws[stanvars] <- sdata[stanvars]
   }
   if (is_categorical(bterms) || is_ordinal(bterms)) {
-    draws$cats <- extract_cat_names(bterms$formula, data)
+    draws$cats <- extract_cat_names(bterms, data)
   }
   draws
 }
