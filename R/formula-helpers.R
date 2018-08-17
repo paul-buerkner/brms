@@ -840,16 +840,16 @@ expand_dot_formula <- function(formula, data = NULL) {
   formula
 }
 
-extract_cat_names <- function(formula, data) {
+extract_cat_names <- function(x, data) {
   # extract names of response categories
-  stopifnot(is.brmsformula(formula) || is.brmsterms(formula))
-  respform <- formula2str(lhs(formula$formula))
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  respform <- formula2str(lhs(x$formula))
   respform <- formula(gsub("\\|+[^~]*~", "~", respform))
-  out <- model.response(model.frame(respform, data))
-  if (is_ordinal(formula) && is.numeric(out)) {
-    out <- as.character(seq_len(max(out)))
+  mr <- model.response(model.frame(respform, data))
+  if (is_ordinal(x) && is.numeric(mr)) {
+    out <- as.character(seq_len(max(mr)))
   } else {
-    out <- levels(factor(out))
+    out <- levels(factor(mr))
   }
   out
 }

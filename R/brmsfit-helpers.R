@@ -223,6 +223,10 @@ posterior_table <- function(x, levels = NULL) {
   if (is.null(levels)) {
     levels <- sort(unique(as.vector(x)))
   }
+  xlevels <- attr(x, "levels")
+  if (length(xlevels) != length(levels)) {
+    xlevels <- levels
+  }
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
@@ -230,7 +234,7 @@ posterior_table <- function(x, levels = NULL) {
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
-  colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
+  colnames(out) <- paste0("P(Y = ", xlevels, ")")
   out
 }
 
