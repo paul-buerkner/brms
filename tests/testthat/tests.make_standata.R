@@ -69,7 +69,7 @@ test_that(paste("make_standata accepts correct response variables",
                 "depending on the family"), {
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(-9.9,0,0.1)), 
                              family = "student")$Y, as.array(seq(-9.9,0,0.1)))
-  expect_equal(make_standata(y ~ 1, data = data.frame(y = 1:10), 
+  expect_equal(make_standata(y | trials(10) ~ 1, data = data.frame(y = 1:10), 
                              family = "binomial")$Y, as.array(1:10))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = 10:20), 
                              family = "poisson")$Y, as.array(10:20))
@@ -128,7 +128,7 @@ test_that(paste("make_standata rejects incorrect response variables",
 })
 
 test_that("make_standata suggests using family bernoulli if appropriate", {
-  expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
+  expect_message(make_standata(y | trials(1) ~ 1, data = list(y = rep(0:1,5)), 
                                family = "binomial"),
                  "family 'bernoulli' might be a more efficient choice.")
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(1:2, 5)), 
@@ -157,8 +157,8 @@ test_that("make_standata returns correct values for addition terms", {
                as.array(c(rep(1:0, 4), 0)))
   expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = dat)$rcens, 
                as.array(c(rep(0, 5), dat$y[6:9] + 2)))
-  expect_equal(make_standata(s ~ 1, dat, family = "binomial")$trials, 
-               as.array(rep(9, 9)))
+  sdata <- suppressWarnings(make_standata(s ~ 1, dat, family = "binomial"))
+  expect_equal(sdata$trials, as.array(rep(9, 9)))
   expect_equal(make_standata(s | trials(10) ~ 1, dat, 
                              family = "binomial")$trials, 
                as.array(rep(10, 9)))

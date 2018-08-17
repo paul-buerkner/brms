@@ -13,7 +13,8 @@ categorical models via argument `categorical`. (#491, #497)
 
 * Ignore argument `resp` when post-processing
 univariate models thanks to Ruben Arslan. (#488)
-* Deprecate argument `ordinal` in `marginal_effects` (#491)
+* Deprecate argument `ordinal` in `marginal_effects`. (#491)
+* Deprecate usage of `binomial` families without specifying `trials`.
 
 ### Bug fixes
 

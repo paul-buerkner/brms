@@ -762,6 +762,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       out$trials <- max(out$Y, na.rm = TRUE)
       if (is.finite(out$trials)) {
         message("Using the maximum response value as the number of trials.")
+        warning2(
+          "Using 'binomial' families without specifying 'trials' ", 
+          "on the left-hand side of the model formula is deprecated."
+        )
       } else if (!is.null(old_sdata$trials)) {
         out$trials <- max(old_sdata$trials)
       } else {
