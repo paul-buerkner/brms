@@ -528,7 +528,9 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
     attr(out, "mcpar") <- mcpar
     class(out) <- "mcmc"
   } else {
-    ps <- extract(x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup)
+    ps <- rstan::extract(
+      x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup
+    )
     mcpar <- c(
       if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
       x$fit@sim$iter, x$fit@sim$thin
@@ -656,6 +658,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @method summary brmsfit
+#' @importMethodsFrom rstan summary
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
                             mc_se = FALSE, use_cache = TRUE, ...) {
@@ -1047,6 +1050,7 @@ launch_shinystan.brmsfit <- function(
 #' 
 #' @method plot brmsfit
 #' @import ggplot2
+#' @importFrom graphics plot
 #' @importFrom grDevices devAskNewPage
 #' @export
 plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"), 
@@ -2993,13 +2997,13 @@ expose_functions.brmsfit <- function(x, vectorize = FALSE,
                                      env = globalenv(), ...) {
   vectorize <- as_one_logical(vectorize)
   if (vectorize) {
-    funs <- expose_stan_functions(x$fit, env = environment(), ...)
+    funs <- rstan::expose_stan_functions(x$fit, env = environment(), ...)
     for (i in seq_along(funs)) {
       FUN <- Vectorize(get(funs[i], mode = "function"))
       assign(funs[i], FUN, pos = env) 
     }
   } else {
-    funs <- expose_stan_functions(x$fit, env = env, ...)
+    funs <- rstan::expose_stan_functions(x$fit, env = env, ...)
   }
   invisible(funs)
 }

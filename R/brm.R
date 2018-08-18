@@ -340,7 +340,6 @@
 #' fit7 <- update(fit7, future = TRUE)
 #' }
 #' 
-#' @import rstan
 #' @import Rcpp
 #' @import parallel
 #' @import methods
