@@ -43,7 +43,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
     prior, formula = formula, data = data, 
-    sample_prior = sample_prior, warn = !silent
+    sample_prior = sample_prior, warn = TRUE
   )
   data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)

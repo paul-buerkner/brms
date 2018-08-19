@@ -399,7 +399,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
       prior, formula, data = data,  
-      sample_prior = sample_prior, warn = TRUE
+      sample_prior = sample_prior
     )
     # initialize S3 object
     x <- brmsfit(
@@ -420,7 +420,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stanvars = stanvars, stan_funs = stan_funs, 
-      save_model = save_model, silent = TRUE
+      save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
