@@ -1730,6 +1730,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  generic. 
 #' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
+#' @param nlpar Optional name of a predicted non-linear parameter.
+#'  If specified, fitted values of this parameters are returned.
 #'
 #' @return Fitted values extracted from \code{object}. 
 #'  The output depends on the family:
@@ -1772,9 +1774,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           dpar = NULL, resp = NULL, subset = NULL, 
-                           nsamples = NULL, sort = FALSE, nug = NULL,
-                           summary = TRUE, robust = FALSE, 
+                           resp = NULL, dpar = NULL, nlpar = NULL,
+                           subset = NULL, nsamples = NULL, sort = FALSE, 
+                           nug = NULL, summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   contains_samples(object)
@@ -1785,7 +1787,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     check_response = FALSE
   )
   draws <- do.call(extract_draws, draws_args)
-  fitted_args <- nlist(draws, scale, dpar, summary, robust, probs, sort)
+  fitted_args <- nlist(
+    draws, scale, dpar, nlpar, summary, robust, probs, sort
+  )
   do.call(fitted_internal, fitted_args)
 }
 

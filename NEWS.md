@@ -8,6 +8,8 @@ prior samples are drawn within the model. (#485)
 when using `add_ic`.
 * Improve `marginal_effects` to better display ordinal and 
 categorical models via argument `categorical`. (#491, #497)
+* Compute estimated values of non-linear parameters via
+argument `nlpar` in method `fitted`.
 
 ### Other changes
 
