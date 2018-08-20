@@ -1694,8 +1694,7 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       new_objects = list(), incl_autocor = TRUE, 
                                       resp = NULL, negative_rt = FALSE, subset = NULL, 
                                       nsamples = NULL, sort = FALSE, nug = NULL, 
-                                      ntrys = 5, robust = FALSE,
-                                      probs = c(0.025, 0.975), ...) {
+                                      ntrys = 5, ...) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
   cl$summary <- FALSE
@@ -1802,9 +1801,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, dpar = NULL, resp = NULL,
-  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
-  robust = FALSE, probs = c(0.025, 0.975), ...
+  new_objects = list(), incl_autocor = TRUE, resp = NULL, dpar = NULL, 
+  nlpar = NULL, subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
+  ...
 ) {
   cl <- match.call()
   cl[[1]] <- quote(fitted)

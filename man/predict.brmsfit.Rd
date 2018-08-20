@@ -19,8 +19,7 @@
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   new_objects = list(), incl_autocor = TRUE, resp = NULL,
   negative_rt = FALSE, subset = NULL, nsamples = NULL,
-  sort = FALSE, nug = NULL, ntrys = 5, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  sort = FALSE, nug = NULL, ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
