@@ -57,7 +57,7 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
     args[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
   }
   # evaluate non-linear predictor
-  out <- try(eval(draws$nlform, args), silent = TRUE)
+  out <- try(eval(draws$nlform, args, globalenv()), silent = TRUE)
   if (is(out, "try-error")) {
     if (grepl("could not find function", out)) {
       out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
