@@ -749,6 +749,10 @@ log1m <- function(x) {
   log(1 - x)
 }
 
+step <- function(x) {
+  ifelse(x > 0, 1, 0)
+}
+
 #' Logarithm with a minus one offset.
 #' 
 #' Computes \code{log(x - 1)}.
