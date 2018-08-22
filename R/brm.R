@@ -161,7 +161,8 @@
 #'   will be saved or not. If \code{TRUE}, we can draw samples from the same 
 #'   model in another \R session using the saved DSO 
 #'   (i.e., without compiling the C++ code again).
-#' @param ... Further arguments to be passed to Stan.
+#' @param ... Further arguments passed to Stan that is to
+#'   \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior samples along 
 #'   with many other useful information about the model.

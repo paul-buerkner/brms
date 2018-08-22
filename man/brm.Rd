@@ -191,7 +191,8 @@ model object instead of refitting the model. As existing files
 won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name.}
 
-\item{...}{Further arguments to be passed to Stan.}
+\item{...}{Further arguments passed to Stan that is to
+\code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior samples along 
