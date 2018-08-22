@@ -166,7 +166,9 @@ will be ignored. Can be set globally for the current \R session via the
 \item{silent}{logical; If \code{TRUE} (the default), most of the
 informational messages of compiler and sampler are suppressed.
 The actual sampling progress is still printed. 
-Set \code{refresh = 0} to turn this off as well.}
+Set \code{refresh = 0} to turn this off as well.
+To stop Stan from opening additional progress bars,
+set \code{open_progress = FALSE}.}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set
