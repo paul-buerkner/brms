@@ -251,7 +251,10 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   } else if (sign == ">") {
     sm[1, 4] <- Inf
   }
-  sm$Post.Prob <- sm$Evid.Ratio / (1 + sm$Evid.Ratio)
+  sm$Post.Prob <- ifelse(
+    is.infinite(sm$Evid.Ratio), 1, 
+    sm$Evid.Ratio / (1 + sm$Evid.Ratio)
+  )
   sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
   if (!length(name) || !nzchar(name)) {
     name <- paste(h, sign, "0")

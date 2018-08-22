@@ -26,6 +26,8 @@ brmsfit objects thanks to Emmanuel Charpentier. (#490)
 thanks to Donald Williams.
 * Fix problems when predicting a single data point using 
 spline models thanks to Emmanuel Charpentier. (#494)
+* Set `Post.Prob = 1` if `Evid.Ratio = Inf` in 
+method `hypothesis` thanks to Andrew Milne. (#509) 
 
 
 # brms 2.4.0
