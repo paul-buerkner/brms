@@ -49,8 +49,24 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          sample_prior = c("no", "yes", "only"), 
                          sparse = FALSE, knots = NULL, stanvars = NULL,
                          stan_funs = NULL, combine = TRUE, 
-                         seed = NA, ...) {
+                         seed = NA, file = NULL, ...) {
+  
   combine <- as_one_logical(combine)
+  if (!is.null(file)) {
+    # optionally load saved model object
+    if (!combine) {
+      stop2("Cannot use 'file' if 'combine' is FALSE.")
+    }
+    file <- paste0(as_one_character(file), ".rds")
+    x <- suppressWarnings(try(readRDS(file), silent = TRUE))
+    if (!is(x, "try-error")) {
+      if (!is.brmsfit_multiple(x)) {
+        stop2("Object loaded via 'file' is not of class 'brmsfit_multiple'.")
+      }
+      return(x)
+    }
+  }
+  
   data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
@@ -83,6 +99,9 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     fits <- combine_models(mlist = fits, check_data = FALSE)
     fits$rhats <- rhats
     class(fits) <- c("brmsfit_multiple", class(fits))
+  }
+  if (!is.null(file)) {
+    saveRDS(fits, file = file)
   }
   fits
 }

@@ -77,6 +77,15 @@ is.brmsfit <- function(x) {
   inherits(x, "brmsfit")
 }
 
+#' Checks if argument is a \code{brmsfit_multiple} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsfit_multiple <- function(x) {
+  inherits(x, "brmsfit_multiple")
+}
+
 #' Descriptions of \code{brmshypothesis} Objects
 #' 
 #' A \code{brmshypothesis} object contains posterior samples

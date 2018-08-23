@@ -28,7 +28,7 @@ thanks to Donald Williams.
 spline models thanks to Emmanuel Charpentier. (#494)
 * Set `Post.Prob = 1` if `Evid.Ratio = Inf` in 
 method `hypothesis` thanks to Andrew Milne. (#509) 
-
+* Ensure correct handling of argument `file` in `brm_multiple`.
 
 # brms 2.4.0
 
