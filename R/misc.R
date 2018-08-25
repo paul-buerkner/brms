@@ -28,8 +28,42 @@ p <- function(x, i = NULL, row = TRUE) {
   out
 }
 
-index_col <- function(x, i) {
-  # savely index columns without dropping other dimensions
+extract <- function(x, ..., drop = FALSE, drop_dim = NULL) {
+  # extract parts of an object with selective dropping of dimensions
+  # Args:
+  #   x, ..., drop: same as in x[..., drop]
+  #   drop_dim: Optional numeric or logical vector controlling 
+  #     which dimensions to drop. Will overwrite argument 'drop'.
+  if (!length(dim(x))) {
+    return(x[...])
+  }
+  if (length(drop_dim)) {
+    drop <- FALSE
+  } else {
+    drop <- as_one_logical(drop)
+  }
+  out <- x[..., drop = drop]
+  if (drop || !length(drop_dim) || any(dim(out) == 0L)) {
+    return(out)
+  }
+  if (is.numeric(drop_dim)) {
+    drop_dim <- seq_along(dim(x)) %in% drop_dim
+  }
+  if (!is.logical(drop_dim)) {
+    stop2("'drop_dim' needs to be logical or numeric.")
+  }
+  keep <- dim(out) > 1L | !drop_dim
+  new_dim <- dim(out)[keep]
+  if (length(new_dim) == 1L) {
+    # use vectors instead of 1D arrays
+    new_dim <- NULL  
+  }
+  dim(out) <- new_dim
+  out
+}
+
+extract_col <- function(x, i) {
+  # savely extract columns without dropping other dimensions
   # Args:
   #   x: an array
   #   i: colum index
@@ -38,12 +72,8 @@ index_col <- function(x, i) {
     return(x)
   }
   commas <- collapse(rep(", ", ldim - 2))
-  expr <- paste0("x[, i", commas, ", drop = FALSE]")
-  out <- eval2(expr)
-  if (dim(out)[2] == 1L) {
-    out <- abind::adrop(out, drop = 2) 
-  }
-  out
+  expr <- paste0("extract(x, , i", commas, ", drop_dim = 2)")
+  eval2(expr)
 }
 
 match_rows <- function(x, y, ...) {

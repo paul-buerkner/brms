@@ -448,10 +448,10 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
       out <- ilink(out, x$f$link)
     }
     if (length(i) == 1L) {
-      out <- index_col(out, 1)
+      out <- extract_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- index_col(x, i)
+    out <- extract_col(x, i)
   } else {
     out <- x
   }
@@ -485,10 +485,10 @@ get_nlpar <- function(draws, nlpar, i = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
     if (length(i) == 1L) {
-      out <- index_col(out, 1)
+      out <- extract_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- index_col(x, i)
+    out <- extract_col(x, i)
   } else {
     out <- x
   }
@@ -535,7 +535,7 @@ get_Mu <- function(draws, i = NULL) {
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- index_col(Mu, i)
+    Mu <- extract_col(Mu, i)
   }
   Mu
 }
@@ -570,7 +570,7 @@ get_Sigma <- function(draws, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- index_col(Sigma, i)
+      Sigma <- extract_col(Sigma, i)
     }
   }
   Sigma
