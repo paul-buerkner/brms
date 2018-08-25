@@ -595,28 +595,6 @@ get_se <- function(draws, i = NULL) {
   se
 }
 
-index_col <- function(x, i) {
-  # savely index columns without dropping other dimensions
-  # Args:
-  #   x: an array
-  #   i: colum index
-  ldim <- length(dim(x))
-  if (ldim < 2L) {
-    return(x)
-  }
-  if (ldim == 2L) {
-    out <- x[, i]
-  } else {
-    expr <- paste0("x[, i", collapse(rep(", ", ldim - 2)), "]")
-    out <- eval2(expr)
-    if (length(i) == 1L && !is_equal(dim(out), dim(x)[-2])) {
-      # some non-column dims were unintentionally dropped
-      dim(out) <- dim(x)[-2]
-    }
-  }
-  out
-}
-
 apply_dpar_ilink <- function(dpar, family) {
   # helper function of get_dpar to decide if
   # the link function should be applied by default

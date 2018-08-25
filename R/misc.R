@@ -28,6 +28,54 @@ p <- function(x, i = NULL, row = TRUE) {
   out
 }
 
+index <- function(x, ..., drop = FALSE, drop_dim = NULL) {
+  # indexing with selective dropping of dimensions
+  # Args:
+  #   x, ..., drop: same as in x[..., drop]
+  #   drop_dim: Optional numeric or logical vector controlling 
+  #     which dimensions to drop. Will overwrite argument 'drop'.
+  if (!length(dim(x))) {
+    return(x[...])
+  }
+  if (length(drop_dim)) {
+    drop <- FALSE
+  } else {
+    drop <- as_one_logical(drop)
+  }
+  out <- x[..., drop = drop]
+  if (drop || !length(drop_dim) || any(dim(out) == 0L)) {
+    return(out)
+  }
+  if (is.numeric(drop_dim)) {
+    drop_dim <- seq_along(dim(x)) %in% drop_dim
+  }
+  if (!is.logical(drop_dim)) {
+    stop2("'drop_dim' needs to be logical or numeric.")
+  }
+  keep <- dim(out) > 1L | !drop_dim
+  dim(out) <- dim(out)[keep]
+  out
+}
+
+index_col <- function(x, i) {
+  # savely index columns without dropping other dimensions
+  # Args:
+  #   x: an array
+  #   i: colum index
+  ldim <- length(dim(x))
+  if (ldim < 2L) {
+    return(x)
+  }
+  if (ldim == 2L) {
+    out <- x[, i]
+  } else {
+    commas <- collapse(rep(", ", ldim - 2))
+    expr <- paste0("index(x, , i", commas, ", drop_dim = 2)")
+    out <- eval2(expr)
+  }
+  out
+}
+
 match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
