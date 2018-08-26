@@ -10,6 +10,9 @@ when using `add_ic`.
 categorical models via argument `categorical`. (#491, #497)
 * Compute estimated values of non-linear parameters via
 argument `nlpar` in method `fitted`.
+* Disable automatic cell-mean coding in model formulas without 
+an intercept via argument `cmc` of `brmsformula` and related 
+functions thanks to Marie Beisemann.
 
 ### Other changes
 

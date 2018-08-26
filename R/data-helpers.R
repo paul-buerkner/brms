@@ -65,7 +65,7 @@ data_rsv_intercept <- function(data, bterms) {
   #   data: data.frame or list
   #   bterms: object of class brmsterms
   fe_forms <- get_effect(bterms, "fe")
-  rsv_int <- any(ulapply(fe_forms, attr, "rsv_intercept"))
+  rsv_int <- any(ulapply(fe_forms, no_cmc))
   if (rsv_int) {
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",

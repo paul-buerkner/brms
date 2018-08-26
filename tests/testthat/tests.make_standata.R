@@ -597,6 +597,15 @@ test_that("make_standata allows fixed distributional parameters", {
                "Invalid fixed parameters: 'bias'")
 })
 
+test_that("Cell-mean coding can be disabled", {
+  df <- data.frame(y = 1:10, g = rep(c("a", "b"), 5))
+  bform <- bf(y ~ g) + 
+    lf(disc ~ 0 + g, cmc = FALSE) + 
+    cumulative()
+  target <- matrix(rep(0:1, 5), dimnames = list(1:10, "gb"))
+  expect_equal(make_standata(bform, df)$X_disc, target)
+})
+
 test_that("make_standata correctly includes offsets", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   sdata <- make_standata(bf(y ~ x + offset(c), sigma ~ offset(c + 1)), data)

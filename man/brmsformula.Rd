@@ -6,7 +6,7 @@
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
 brmsformula(formula, ..., flist = NULL, family = NULL,
-  autocor = NULL, nl = NULL, loop = NULL)
+  autocor = NULL, nl = NULL, loop = NULL, cmc = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -65,6 +65,11 @@ is treated as an ordinary linear model formula.}
 Indicates if the computation of the non-linear formula should be 
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
+
+\item{cmc}{Logical; Indicates whether automatic cell-mean coding
+should be enabled when removing the intercept by adding \code{0} 
+to the right-hand of model formulas. Defaults to \code{TRUE} to 
+mirror the behavior of standard \R formula parsing.}
 }
 \value{
 An object of class \code{brmsformula}, which

@@ -50,6 +50,10 @@
 #'   Indicates if the computation of the non-linear formula should be 
 #'   done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 #'   over observations. Defaults to \code{TRUE}.
+#' @param cmc Logical; Indicates whether automatic cell-mean coding
+#'   should be enabled when removing the intercept by adding \code{0} 
+#'   to the right-hand of model formulas. Defaults to \code{TRUE} to 
+#'   mirror the behavior of standard \R formula parsing.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -550,7 +554,8 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        autocor = NULL, nl = NULL, loop = NULL) {
+                        autocor = NULL, nl = NULL, loop = NULL,
+                        cmc = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -622,6 +627,12 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.null(attr(out$formula, "loop"))) {
     attr(out$formula, "loop") <- TRUE
   }
+  if (!is.null(cmc)) {
+    attr(out$formula, "cmc") <- as_one_logical(cmc)
+  }
+  if (is.null(attr(out$formula, "cmc"))) {
+    attr(out$formula, "cmc") <- TRUE
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -646,10 +657,10 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, 
-               autocor = NULL, nl = NULL, loop = NULL) {
+               autocor = NULL, nl = NULL, loop = NULL, cmc = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., flist = flist, family = family,
-              autocor = autocor, nl = nl, loop = loop)
+              autocor = autocor, nl = nl, loop = loop, cmc = cmc)
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
@@ -736,11 +747,20 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 
 #' @rdname brmsformula-helpers
 #' @export
-lf <- function(..., flist = NULL, dpar = NULL, resp = NULL) {
+lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
     resp <- as_one_character(resp)
+  }
+  cmc <- if (!is.null(cmc)) as_one_logical(cmc)
+  for (i in seq_along(out)) {
+    if (!is.null(cmc)) {
+      attr(out[[i]], "cmc") <- cmc
+    }
+    if (is.null(attr(out[[i]], "cmc"))) {
+      attr(out[[i]], "cmc") <- TRUE
+    }
   }
   structure(out, resp = resp)
 }

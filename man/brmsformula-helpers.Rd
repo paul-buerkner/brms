@@ -13,7 +13,7 @@
 nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
   loop = NULL)
 
-lf(..., flist = NULL, dpar = NULL, resp = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -73,6 +73,11 @@ variable to which the formulas passed via \code{...} and
 Indicates if the computation of the non-linear formula should be 
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
+
+\item{cmc}{Logical; Indicates whether automatic cell-mean coding
+should be enabled when removing the intercept by adding \code{0} 
+to the right-hand of model formulas. Defaults to \code{TRUE} to 
+mirror the behavior of standard \R formula parsing.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 

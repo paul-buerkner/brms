@@ -287,7 +287,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   all_vars <- all.vars(formula)
   y$used_nlpars <- intersect(all_vars, nlpars)
   covars <- setdiff(all_vars, nlpars)
-  y$covars <- structure(str2formula(covars), rsv_intercept = TRUE)
+  y$covars <- structure(str2formula(covars), cmc = FALSE)
   y$allvars <- allvars_formula(covars)
   environment(y$allvars) <- environment(formula)
   y$loop <- loop
@@ -349,8 +349,8 @@ parse_fe <- function(formula) {
   out <- setdiff(all_terms, c(sp_terms, re_terms))
   out <- paste(c(int_term, out), collapse = "+")
   out <- str2formula(out)
-  if (has_rsv_intercept(out)) {
-    attr(out, "rsv_intercept") <- TRUE
+  if (has_rsv_intercept(out) || no_cmc(formula)) {
+    attr(out, "cmc") <- FALSE
   }
   out
 }
@@ -397,7 +397,7 @@ parse_cs <- function(formula) {
     out <- str2formula(out)
     # do not test whether variables were supplied to 'cs'
     # to allow category specific group-level intercepts
-    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "cmc") <- FALSE
   }
   out
 }
@@ -411,7 +411,7 @@ parse_sp <- function(formula) {
     uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
     uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
     out <- str2formula(out)
-    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "cmc") <- FALSE
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
     attr(out, "uni_mi") <- uni_mi
@@ -473,7 +473,7 @@ parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (length(out)) {
     out <- str2formula(out)
-    attr(out, "rsv_intercept") <- TRUE
+    attr(out, "cmc") <- FALSE
   }
   out
 }
@@ -709,6 +709,11 @@ is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))
 }
 
+no_cmc <- function(x) {
+  # indicates if cell mean coding should be disabled
+  isFALSE(attr(x, "cmc", exact = TRUE))
+}
+
 get_effect <- function(x, ...) {
   # extract various kind of effects
   UseMethod("get_effect")
@@ -924,14 +929,14 @@ validate_terms <- function(x) {
   #   x: any R object; if not a formula or terms, NULL is returned
   # Returns:
   #   a (possibly amended) terms object or NULL
-  rsv_intercept <- isTRUE(attr(x, "rsv_intercept"))
+  no_cmc <- no_cmc(x)
   if (is.formula(x) && !inherits(x, "terms")) {
     x <- terms(x)
   }
   if (!inherits(x, "terms")) {
     return(NULL)
   }
-  if (rsv_intercept) {
+  if (no_cmc) {
     # allows to remove the intercept without causing cell mean coding
     attr(x, "intercept") <- 1
     attr(x, "rm_intercept") <- TRUE
