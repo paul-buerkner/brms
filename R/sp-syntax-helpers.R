@@ -80,7 +80,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
       stringsAsFactors = FALSE
     )
     levels <- list("vector", nrow(out))
-    for (i in seq_len(nrow(out))) {
+    for (i in seq_rows(out)) {
       att <- attributes(eval2(out$term[i], data))
       out$xname[i] <- att$xname
       if (isTRUE(nzchar(att$grname))) {
@@ -146,7 +146,7 @@ tidy_spef <- function(x, data) {
   }
   kmo <- 0
   terms_split <- strsplit(out$term, ":")
-  for (i in seq_len(nrow(out))) {
+  for (i in seq_rows(out)) {
     # prepare mo terms
     take_mo <- grepl_expr(regex_sp("mo"), terms_split[[i]])
     if (sum(take_mo)) {

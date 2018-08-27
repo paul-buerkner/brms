@@ -76,6 +76,14 @@ extract_col <- function(x, i) {
   eval2(expr)
 }
 
+seq_rows <- function(x) {
+  seq_len(NROW(x))
+}
+
+seq_cols <- function(x) {
+  seq_len(NCOL(x))
+}
+
 match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
