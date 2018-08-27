@@ -379,6 +379,12 @@ parse_re <- function(formula) {
   if (length(out)) {
     out <- do.call(rbind, out)
     out <- out[order(out$group), ]
+    if (no_cmc(formula)) {
+      # disable cell-mean coding in all RE terms
+      for (i in seq_rows(out)) {
+        attr(out$form[[i]], "cmc") <- FALSE
+      }
+    }
   } else {
     out <- data.frame(
       group = character(0), gtype = character(0),

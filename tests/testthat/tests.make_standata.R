@@ -600,10 +600,14 @@ test_that("make_standata allows fixed distributional parameters", {
 test_that("Cell-mean coding can be disabled", {
   df <- data.frame(y = 1:10, g = rep(c("a", "b"), 5))
   bform <- bf(y ~ g) + 
-    lf(disc ~ 0 + g, cmc = FALSE) + 
+    lf(disc ~ 0 + g + (0 + g | y), cmc = FALSE) + 
     cumulative()
+  
+  sdata <- make_standata(bform, df)
   target <- matrix(rep(0:1, 5), dimnames = list(1:10, "gb"))
-  expect_equal(make_standata(bform, df)$X_disc, target)
+  expect_equal(sdata$X_disc, target)
+  expect_equal(unname(sdata$Z_1_disc_1), as.array(rep(0:1, 5)))
+  expect_true(!"Z_1_disc_2" %in% names(sdata))
 })
 
 test_that("make_standata correctly includes offsets", {
