@@ -13,12 +13,15 @@ argument `nlpar` in method `fitted`.
 * Disable automatic cell-mean coding in model formulas without 
 an intercept via argument `cmc` of `brmsformula` and related 
 functions thanks to Marie Beisemann.
+* Improve method `kfold` to offer more options for specifying
+omitted subsets. (#510)
 
 ### Other changes
 
 * Ignore argument `resp` when post-processing
 univariate models thanks to Ruben Arslan. (#488)
-* Deprecate argument `ordinal` in `marginal_effects`. (#491)
+* Deprecate argument `ordinal` of `marginal_effects`. (#491)
+* Deprecate argument `exact_loo` of `kfold`. (#510)
 * Deprecate usage of `binomial` families without specifying `trials`.
 
 ### Bug fixes

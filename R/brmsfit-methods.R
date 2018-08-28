@@ -2656,12 +2656,16 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #' @export
 #' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
 kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL, 
-                          exact_loo = FALSE, group = NULL, resp = NULL,
-                          model_names = NULL, save_fits = FALSE) {
+                          folds = NULL, group = NULL, exact_loo = NULL, 
+                          resp = NULL, model_names = NULL, save_fits = FALSE) {
   args <- split_dots(x, ..., model_names = model_names)
   use_stored_ic <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
+  if (!is.null(exact_loo) && as_one_logical(exact_loo)) {
+    warning2("'exact_loo' is deprecated. Please use folds = 'loo' instead.")
+    folds <- "loo"
+  }
   c(args) <- nlist(
-    ic = "kfold", compare, K, Ksub, exact_loo, 
+    ic = "kfold", compare, K, Ksub, folds, 
     group, resp, save_fits, use_stored_ic
   )
   do.call(compute_ics, args)
