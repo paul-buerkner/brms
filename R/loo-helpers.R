@@ -644,15 +644,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
       K <- length(levels(gvar))
       message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
     }
-  } else if (is.numeric(folds) || length(folds) > 1L) {
-    fold_type <- "custom"
-    folds <- as.numeric(factor(folds))
-    if (length(folds) != N) {
-      stop2("If 'folds' is a vector, it must be of length N.")
-    }
-    K <- max(folds)
-    message("Setting 'K' to the number of folds (", K, ")")
-  } else {
+  } else if (is.character(folds) && length(folds) == 1L) {
     opts <- c("stratified", "balanced", "loo")
     fold_type <- match.arg(folds, opts)
     if (fold_type == "loo") {
@@ -670,6 +662,14 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
       }
       folds <- loo::kfold_split_balanced(K, gvar)
     }
+  } else {
+    fold_type <- "custom"
+    folds <- as.numeric(factor(folds))
+    if (length(folds) != N) {
+      stop2("If 'folds' is a vector, it must be of length N.")
+    }
+    K <- max(folds)
+    message("Setting 'K' to the number of folds (", K, ")")
   }
   # validate argument 'Ksub'
   if (is.null(Ksub)) {
