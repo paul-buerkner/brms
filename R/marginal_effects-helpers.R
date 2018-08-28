@@ -257,8 +257,7 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
 }
 
 #' @export
-get_all_effects.brmsterms <- function(x, rsv_vars = NULL, 
-                                      comb_all = FALSE) {
+get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
   # get all effects for use in marginal_effects
   # Args:
   #   bterms: object of class brmsterms
