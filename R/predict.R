@@ -555,8 +555,11 @@ predict_ordinal <- function(i, draws, family, ...) {
 }
 
 predict_custom <- function(i, draws, ...) {
-  predict_fun <- paste0("predict_", draws$f$name)
-  predict_fun <- get(predict_fun, draws$f$env)
+  predict_fun <- draws$f$predict
+  if (!is.function(predict_fun)) {
+    predict_fun <- paste0("predict_", draws$f$name)
+    predict_fun <- get(predict_fun, draws$f$env)
+  }
   predict_fun(i = i, draws = draws, ...)
 }
 

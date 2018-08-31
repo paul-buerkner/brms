@@ -266,8 +266,11 @@ fitted_acat <- function(draws) {
 }
 
 fitted_custom <- function(draws) {
-  fitted_fun <- paste0("fitted_", draws$f$name)
-  fitted_fun <- get(fitted_fun, draws$f$env)
+  fitted_fun <- draws$f$fitted
+  if (!is.function(fitted_fun)) {
+    fitted_fun <- paste0("fitted_", draws$f$name)
+    fitted_fun <- get(fitted_fun, draws$f$env)
+  }
   fitted_fun(draws)
 }
 

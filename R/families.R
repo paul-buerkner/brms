@@ -828,8 +828,18 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{vars} can be used to pass data to the likelihood. 
 #'   See \code{\link{stanvar}} for details about adding self-defined
 #'   data to the generated \pkg{Stan} model.
+#' @param log_lik Optional function to compute log-likelihood values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#' @param predict Optional function to compute predicted values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.  
+#' @param fitted Optional function to compute fitted values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.     
 #' @param env An \code{\link{environment}} in which certain post-processing 
-#'   functions related to the custom family can be found. This is only
+#'   functions related to the custom family can be found if there were not 
+#'   directly passed to \code{custom_family}. This is only
 #'   relevant if one wants to ensure compatibility with the methods
 #'   \code{\link[brms:predict.brmsfit]{predict}}, 
 #'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
@@ -886,7 +896,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @export
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
-                          vars = NULL, env = parent.frame()) {
+                          vars = NULL, log_lik = NULL, predict = NULL, 
+                          fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
   dpars <- as.character(dpars)
   links <- as.character(links)
@@ -917,13 +928,37 @@ custom_family <- function(name, dpars = "mu", links = "identity",
       stop2("'", arg, "' must be of the same length as 'dpars'.")
     }
   }
+  if (!is.null(log_lik)) {
+    log_lik <- as.function(log_lik)
+    args <- names(formals(log_lik))
+    if (!is_equal(args[1:2], c("i", "draws"))) {
+      stop2("The first two arguments of 'log_lik' ", 
+            "should be 'i' and 'draws'.")
+    }
+  }
+  if (!is.null(predict)) {
+    predict <- as.function(predict)
+    args <- names(formals(predict))
+    if (!is_equal(args[1:3], c("i", "draws", "..."))) {
+      stop2("The first three arguments of 'predict' ", 
+            "should be 'i', 'draws', and '...'.")
+    }
+  }
+  if (!is.null(fitted)) {
+    fitted <- as.function(fitted)
+    args <- names(formals(fitted))
+    if (!is_equal(args[1], "draws")) {
+      stop2("The first argument of 'fitted' should be 'draws'.")
+    }
+  }
   lb <- named_list(dpars, lb)
   ub <- named_list(dpars, ub)
   is_mu <- "mu" == dpars
   link <- links[is_mu]
   out <- nlist(
     family = "custom", link, name, 
-    dpars, lb, ub, type, vars, env
+    dpars, lb, ub, type, vars, 
+    log_lik, predict, fitted, env
   )
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]

@@ -15,6 +15,8 @@ an intercept via argument `cmc` of `brmsformula` and related
 functions thanks to Marie Beisemann.
 * Improve method `kfold` to offer more options for specifying
 omitted subsets. (#510)
+* Specify post-processing functions of custom families 
+directly in `custom_family`.
 
 ### Other changes
 

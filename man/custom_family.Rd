@@ -7,6 +7,7 @@
 \usage{
 custom_family(name, dpars = "mu", links = "identity",
   type = c("real", "int"), lb = NA, ub = NA, vars = NULL,
+  log_lik = NULL, predict = NULL, fitted = NULL,
   env = parent.frame())
 }
 \arguments{
@@ -35,8 +36,21 @@ function without being distributional parameters. That is,
 See \code{\link{stanvar}} for details about adding self-defined
 data to the generated \pkg{Stan} model.}
 
+\item{log_lik}{Optional function to compute log-likelihood values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+
+\item{predict}{Optional function to compute predicted values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.}
+
+\item{fitted}{Optional function to compute fitted values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.}
+
 \item{env}{An \code{\link{environment}} in which certain post-processing 
-functions related to the custom family can be found. This is only
+functions related to the custom family can be found if there were not 
+directly passed to \code{custom_family}. This is only
 relevant if one wants to ensure compatibility with the methods
 \code{\link[brms:predict.brmsfit]{predict}}, 
 \code{\link[brms:fitted.brmsfit]{fitted}}, or

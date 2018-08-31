@@ -607,8 +607,11 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_custom <- function(i, draws, data = data.frame()) {
-  log_lik_fun <- paste0("log_lik_", draws$f$name)
-  log_lik_fun <- get(log_lik_fun, draws$f$env)
+  log_lik_fun <- draws$f$log_lik
+  if (!is.function(log_lik_fun)) {
+    log_lik_fun <- paste0("log_lik_", draws$f$name)
+    log_lik_fun <- get(log_lik_fun, draws$f$env)
+  }
   log_lik_fun(i = i, draws = draws)
 }
 

@@ -1512,10 +1512,34 @@ test_that("custom families are handled correctly", {
   dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
   
   # define a custom beta-binomial family
+  log_lik_beta_binomial2 <- function(i, draws) {
+    mu <- draws$dpars$mu[, i]
+    tau <- draws$dpars$tau
+    trials <- draws$data$trials[i]
+    y <- draws$data$Y[i]
+    beta_binomial2_lpmf(y, mu, tau, trials)
+  }
+  predict_beta_binomial2 <- function(i, draws, ...) {
+    mu <- draws$dpars$mu[, i]
+    tau <- draws$dpars$tau
+    trials <- draws$data$trials[i]
+    beta_binomial2_rng(mu, tau, trials)
+  }
+  fitted_beta_binomial2 <- function(draws) {
+    mu <- draws$dpars$mu
+    trials <- draws$data$trials
+    trials <- matrix(
+      trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE
+    )
+    mu * trials
+  }
   beta_binomial2 <- custom_family(
     "beta_binomial2", dpars = c("mu", "tau"),
     links = c("logit", "log"), lb = c(NA, 0),
-    type = "int", vars = "trials[n]"
+    type = "int", vars = "trials[n]",
+    log_lik = log_lik_beta_binomial2,
+    fitted = fitted_beta_binomial2,
+    predict = predict_beta_binomial2
   )
   # define custom stan functions
   stan_funs <- "
