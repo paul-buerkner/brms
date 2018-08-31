@@ -175,10 +175,17 @@ restructure_formula <- function(formula, nonlinear = NULL) {
     nl <- TRUE
   }
   out <- structure(nlist(formula), class = "brmsformula")
-  old_forms <- rmNULL(attributes(formula)[dpars()])
+  old_forms <- rmNULL(attributes(formula)[old_dpars()])
   old_forms <- c(old_forms, nonlinear)
   out$pforms[names(old_forms)] <- old_forms
   bf(out, nl = nl)
+}
+
+old_dpars <- function() {
+  # only used when restructuring old models
+  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
+    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
+    "quantile", "alpha", "theta")
 }
 
 change_old_re <- function(ranef, pars, dims) {

@@ -753,10 +753,10 @@ fixef_pars <- function() {
   "^b(|cs|sp|mo|me|mi|m)_"
 }
 
-default_plot_pars <- function() {
+default_plot_pars <- function(family) {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", dpars(), "[[:digit:]]*$"), "^delta$",
+    paste0("^", valid_dpars(family), "$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
     "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }

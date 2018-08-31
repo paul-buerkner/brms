@@ -742,9 +742,9 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
   
   # summary of family specific parameters
-  spec_pars <- c(dpars(), "delta", "theta")
+  spec_pars <- c(valid_dpars(object), "delta")
   spec_pars <- paste0(spec_pars, collapse = "|")
-  spec_pars <- paste0("^(", spec_pars, ")($|_|[[:digit:]])")
+  spec_pars <- paste0("^(", spec_pars, ")($|_)")
   spec_pars <- pars[grepl(spec_pars, pars)]
   out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
   
@@ -1062,7 +1062,7 @@ plot.brmsfit <- function(x, pars = NA, combo = c("dens", "trace"),
     stop2("Argument 'N' must be a positive integer.")
   }
   if (!is.character(pars)) {
-    pars <- default_plot_pars()
+    pars <- default_plot_pars(x)
     exact_match <- FALSE
   }
   samples <- posterior_samples(
@@ -1104,7 +1104,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   object <- restructure(object)
   type <- as_one_character(type)
   if (!is.character(pars)) {
-    pars <- default_plot_pars()
+    pars <- default_plot_pars(object)
     exact_match <- FALSE
   }
   valid_types <- as.character(bayesplot::available_mcmc(""))
@@ -1353,7 +1353,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #' @export
 pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   if (!is.character(pars)) {
-    pars <- default_plot_pars()
+    pars <- default_plot_pars(x)
     exact_match <- FALSE
   }
   samples <- posterior_samples(

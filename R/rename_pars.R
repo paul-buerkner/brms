@@ -508,13 +508,13 @@ reorder_pars <- function(x) {
   # order parameter samples after parameter class
   # Args:
   #   x: brmsfit object
-  all_classes <- c(
+  all_classes <- unique(c(
     "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
-    "sds", "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
-    "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
+    "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
+    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
-  )
+  ))
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(

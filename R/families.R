@@ -931,29 +931,17 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   structure(out, class = c("customfamily", "brmsfamily", "family"))
 }
 
-dpars <- function() {
-  # names of distributional parameters
-  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
-    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
-    "quantile", "alpha", "theta")
-}
-
 valid_dpars <- function(family, ...) {
-  # get valid auxiliary parameters for a family
+  # get valid distributional parameters for a family
   UseMethod("valid_dpars")
 }
 
 #' @export
 valid_dpars.default <- function(family, ...) {
   if (!length(family)) {
-    return(NULL)
+    return("mu")
   }
-  family <- check_family(family)
-  valid_dpars(family, ...)
-}
-
-#' @export
-valid_dpars.brmsfamily <- function(family, ...) {
+  family <- check_family(family) 
   family_info(family, "dpars", ...)
 }
 
@@ -967,30 +955,28 @@ valid_dpars.mixfamily <- function(family, ...) {
 }
 
 #' @export
+valid_dpars.brmsformula <- function(family, ...) {
+  valid_dpars(family$family, ...)
+}
+
+#' @export
+valid_dpars.mvbrmsformula <- function(family, ...) {
+  ulapply(family$forms, valid_dpars, ...)
+}
+
+#' @export
 valid_dpars.brmsterms <- function(family, ...) {
   valid_dpars(family$family, ...)
 }
 
-is_dpar_name <- function(dpars, family = NULL, ...) {
-  # check if provided names of distributional parameters are valid
-  # Args:
-  #   dpars: character vector to be checked
-  #   family: the model family
-  #   ...: further arguments passed to valid_dpars
-  dpars <- as.character(dpars)
-  if (!length(dpars)) {
-    return(logical(0))
-  }
-  if (is.null(family)) {
-    patterns <- paste0("^", dpars(), "[[:digit:]]*$")
-    .is_dpar_name <- function(dpar, ...) {
-      any(ulapply(patterns, grepl, x = dpar))
-    }
-    out <- ulapply(dpars, .is_dpar_name)
-  } else {
-    out <- dpars %in% valid_dpars(family, ...)
-  }
-  as.logical(out)
+#' @export
+valid_dpars.mvbrmsterms <- function(family, ...) {
+  ulapply(family$terms, valid_dpars, ...)
+}
+
+#' @export
+valid_dpars.brmsfit <- function(family, ...) {
+  valid_dpars(family$formula, ...)
 }
 
 dpar_class <- function(dpar) {
@@ -1004,9 +990,11 @@ dpar_id <- function(dpar) {
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-links_dpars <- function(dp) {
+links_dpars <- function(dpar) {
   # link functions for distributional parameters
-  switch(dp,
+  if (!length(dpar)) dpar <- ""
+  switch(dpar,
+    character(0),
     mu = "identity",  # not actually used
     sigma = c("log", "identity"), 
     shape = c("log", "identity"),
@@ -1025,8 +1013,7 @@ links_dpars <- function(dp) {
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
     alpha = c("identity", "log"),
-    theta = c("identity"), 
-    stop2("Parameter '", dp, "' is not supported.")
+    theta = c("identity")
   )
 }
 
@@ -1059,21 +1046,15 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   # Args:
   #   dpar: name of the distributional parameter
   #   link: optional link function of the parameter
-  dp_class <- dpar_class(dpar)
-  if (!isTRUE(dp_class %in% dpars())) {
-    if (is.null(link)) {
-      link <- "identity"
-    }
-    link <- as_one_character(link)
-  } else {
-    links <- links_dpars(dp_class)
-    if (is.null(link)) {
+  links <- links_dpars(dpar_class(dpar))
+  if (!length(link)) {
+    if (!length(links)) {
+      link <- "identity" 
+    } else {
       link <- links[1]
     }
-    if (!isTRUE(link %in% links)) {
-      stop2("Link '", link, "' is invalid for parameter '", dpar, "'.")
-    }
   }
+  link <- as_one_character(link)
   structure(
     nlist(family = "", link, dpar),
     class = c("brmsfamily", "family")

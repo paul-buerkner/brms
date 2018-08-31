@@ -115,8 +115,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   
   # predicted distributional parameters
   resp <- ifelse(mv && !is.null(y$resp), y$resp, "")
-  dpars <- is_dpar_name(names(x$pforms), family, bterms = y)
-  dpars <- names(x$pforms)[dpars]
+  dpars <- intersect(names(x$pforms), valid_dpars(family))
   dpar_forms <- x$pforms[dpars]
   nlpars <- setdiff(names(x$pforms), dpars)
   
