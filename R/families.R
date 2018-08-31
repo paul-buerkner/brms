@@ -1134,6 +1134,30 @@ print.mixfamily <- function(x, newline = TRUE, ...) {
   invisible(x)
 }
 
+#' @export
+print.customfamily <- function(x, links = FALSE, newline = TRUE, ...) {
+  cat("\nCustom family:", x$name, "\n")
+  cat("Link function:", x$link, "\n")
+  cat("Parameters: ", paste0(x$dpars, collapse = ", "), "\n")
+  if (isTRUE(links) || is.character(links)) {
+    dp_links <- x[grepl("^link_", names(x))]
+    names(dp_links) <- sub("^link_", "", names(dp_links))
+    if (is.character(links)) {
+      dp_links <- rmNULL(dp_links[links])
+    }
+    for (dp in names(dp_links)) {
+      cat(paste0(
+        "Link function of '", dp, "' (if predicted): ", 
+        dp_links[[dp]], "\n"
+      )) 
+    }
+  }
+  if (newline) {
+    cat("\n")
+  }
+  invisible(x)
+}
+
 #' @method summary family
 #' @export
 summary.family <- function(object, link = TRUE, ...) {
