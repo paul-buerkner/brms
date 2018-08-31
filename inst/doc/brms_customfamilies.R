@@ -48,13 +48,13 @@ stan_funs <- "
 "
 
 ## ----stanvars---------------------------------------------------------------------------
-stanvars <- stanvar(as.integer(cbpp$size), name = "trials")
+stanvars <- stanvar(scode = stan_funs, block = "functions") +
+  stanvar(as.integer(cbpp$size), name = "trials")
 
 ## ----fit2, results='hide'---------------------------------------------------------------
 fit2 <- brm(
   incidence ~ period + (1|herd), data = cbpp, 
-  family = beta_binomial2, stan_funs = stan_funs,
-  stanvars = stanvars
+  family = beta_binomial2, stanvars = stanvars
 )
 
 ## ----summary_fit2-----------------------------------------------------------------------

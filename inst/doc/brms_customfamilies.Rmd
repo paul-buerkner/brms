@@ -126,7 +126,8 @@ stan_funs <- "
 For the model fitting, we will only need `beta_binomial2_lpmf`, but `beta_binomial2_rng` will come in handy when it comes to post-processing. If additional data needs to be passed to the distribution, we need it to prepared as well. In our running example, this is the case for the `size` of the herd and so we define:
 
 ```{r stanvars}
-stanvars <- stanvar(as.integer(cbpp$size), name = "trials")
+stanvars <- stanvar(scode = stan_funs, block = "functions") +
+  stanvar(as.integer(cbpp$size), name = "trials")
 ```
 
 Actually, for this particular example, we could more elegantly apply the addition argument `trials()` as in the basic binomial model. However, since the present vignette is ment to give a general overview of the topic, we will go with the more general method of specifying custom data via `stanvar`. 
@@ -136,8 +137,7 @@ We now have all components together to fit our custom beta-binomial model:
 ```{r fit2, results='hide'}
 fit2 <- brm(
   incidence ~ period + (1|herd), data = cbpp, 
-  family = beta_binomial2, stan_funs = stan_funs,
-  stanvars = stanvars
+  family = beta_binomial2, stanvars = stanvars
 )
 ```
 
