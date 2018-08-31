@@ -640,8 +640,8 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
 rng_mix <- function(theta) {
   # sample the ID of the mixture component
   stopifnot(is.matrix(theta))
-  mix_comp <- seq_len(ncol(theta))
-  ulapply(seq_len(nrow(theta)), function(s)
+  mix_comp <- seq_cols(theta)
+  ulapply(seq_rows(theta), function(s)
     sample(mix_comp, 1, prob = theta[s, ])
   )
 }

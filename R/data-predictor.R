@@ -87,7 +87,7 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   } else {
     # use vectors as indexing matrices in Stan is slow
     if (ncol(C)) {
-      Cnames <- paste0("C", p, "_", seq_len(ncol(C)))
+      Cnames <- paste0("C", p, "_", seq_cols(C))
       out <- c(out, setNames(as.list(as.data.frame(C)), Cnames))
     }
   }
@@ -136,7 +136,7 @@ data_fe <- function(bterms, data, knots = NULL,
         rasm <- mgcv::smooth2random(sm, names(data), type = 2)
         Xs[[ns]] <- rasm$Xf
         if (ncol(Xs[[ns]])) {
-          colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[ns]])))
+          colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_cols(Xs[[ns]]))
         }
         Zs <- rasm$rand
         Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
@@ -208,7 +208,7 @@ data_re <- function(bterms, data, ranef) {
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
       }
-      for (j in seq_len(ncol(Z))) {
+      for (j in seq_cols(Z)) {
         out[[Znames[j]]] <- as.array(Z[, j])
       }
     }
@@ -322,7 +322,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   Csp <- get_model_matrix(bterms$sp, data)
   avoid_dpars(colnames(Csp), bterms = bterms)
   Csp <- Csp[, spef$Ic > 0, drop = FALSE]
-  Csp <- lapply(seq_len(ncol(Csp)), function(i) as.array(Csp[, i]))
+  Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
   if (length(Csp)) {
     Csp_names <- paste0("Csp", p, "_", seq_along(Csp))
     out <- c(out, setNames(Csp, Csp_names))
@@ -438,7 +438,7 @@ data_gp <- function(bterms, data, gps = NULL) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   gpef <- tidy_gpef(bterms, data)
-  for (i in seq_len(nrow(gpef))) {
+  for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpef$covars[[i]], eval2, data)
     out[[paste0("Mgp", pi)]] <- length(Xgp)

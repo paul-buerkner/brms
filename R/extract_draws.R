@@ -253,8 +253,8 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
     warn_me <- warn_me || !new && !save_mevars
     draws$Xme <- named_list(meef$coef)
     Xme_pars <- paste0("Xme_", escape_all(meef$coef), "\\[")
-    Xn <- sdata[paste0("Xn_", seq_len(nrow(meef)))]
-    noise <- sdata[paste0("noise_", seq_len(nrow(meef)))]
+    Xn <- sdata[paste0("Xn_", seq_rows(meef))]
+    noise <- sdata[paste0("noise_", seq_rows(meef))]
     groups <- unique(meef$grname)
     for (i in seq_along(groups)) {
       g <- groups[i]

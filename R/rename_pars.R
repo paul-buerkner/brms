@@ -219,7 +219,7 @@ change_gp <- function(bterms, data, pars) {
   out <- list()
   p <- usc(combine_prefix(bterms), "prefix")
   gpef <- tidy_gpef(bterms, data)
-  for (i in seq_len(nrow(gpef))) {
+  for (i in seq_rows(gpef)) {
     # rename GP hyperparameters
     gp_names <- paste0(gpef$label[i], gpef$bylevels[[i]])
     sdgp <- paste0("sdgp", p)
@@ -277,7 +277,7 @@ change_sm <- function(bterms, data, pars) {
     sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
     snames <- paste0(s, "_", smef$label)
-    for (i in seq_len(nrow(smef))) {
+    for (i in seq_rows(smef)) {
       for (j in seq_len(smef$nbases[i])) {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
@@ -341,7 +341,7 @@ change_re <- function(ranef, pars) {
       c(out) <- change_re_levels(ranef, pars = pars)
     }
     tranef <- get_dist_groups(ranef, "student")
-    for (i in seq_len(nrow(tranef))) {
+    for (i in seq_rows(tranef)) {
       df_pos <- grepl(paste0("^df_", tranef$ggn[i], "$"), pars)
       df_name <- paste0("df_", tranef$group[i])
       lc(out) <- clist(df_pos, df_name)
@@ -358,7 +358,7 @@ change_re_levels <- function(ranef, pars)  {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  for (i in seq_len(nrow(ranef))) {
+  for (i in seq_rows(ranef)) {
     r <- ranef[i, ]
     p <- usc(combine_prefix(r))
     r_parnames <- paste0("r_", r$id, p, "_", r$cn)

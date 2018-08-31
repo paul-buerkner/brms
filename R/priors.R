@@ -725,7 +725,7 @@ prior_gp <- function(bterms, data, def_scale_prior) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
     # GPs of each 'by' level get their own 'lscale' prior
-    all_gpterms <- ulapply(seq_len(nrow(gpef)), 
+    all_gpterms <- ulapply(seq_rows(gpef), 
       function(i) paste0(gpef$term[i], gpef$bylevels[[i]])
     )
     prior <- prior +
@@ -1034,7 +1034,7 @@ check_prior <- function(prior, formula, data = NULL,
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, rcols], prior[, rcols])))
-    invalid <- which(!seq_len(nrow(prior)) %in% (valid - nrow(all_priors)))
+    invalid <- which(!seq_rows(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
       stop2(
@@ -1088,7 +1088,7 @@ check_prior_content <- function(prior, warn = TRUE) {
     autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
     autocor_warning <- FALSE
-    for (i in seq_len(nrow(prior))) {
+    for (i in seq_rows(prior)) {
       msg_prior <- .print_prior(prior[i, , drop = FALSE])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])

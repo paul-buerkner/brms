@@ -87,7 +87,7 @@ fitted_internal.brmsdraws <- function(
     out <- posterior_summary(out, probs = probs, robust = robust)
     if (is_categorical(draws$f) || is_ordinal(draws$f)) {
       if (scale == "linear") {  
-        dimnames(out)[[3]] <- paste0("eta", seq_len(dim(out)[3]))
+        dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
         dimnames(out)[[3]] <- paste0("P(Y = ", dimnames(out)[[3]], ")")
       }
@@ -243,7 +243,7 @@ fitted_categorical <- function(draws) {
   }
   eta <- abind(draws$dpars, along = 3)
   cats <- seq_len(draws$data$ncat)
-  out <- abind(lapply(seq_len(ncol(eta)), get_probs), along = 3)
+  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- draws$data$cats
   out
@@ -302,7 +302,7 @@ fitted_ordinal <- function(draws) {
   ncat <- draws$data$ncat
   args <- list(seq_len(ncat), ncat = ncat, link = draws$f$link)
   dens <- get(paste0("d", draws$f$family), mode = "function")
-  out <- abind(lapply(seq_len(ncol(eta)), get_probs), along = 3)
+  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- draws$data$cats
   out

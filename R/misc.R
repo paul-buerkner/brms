@@ -84,6 +84,23 @@ seq_cols <- function(x) {
   seq_len(NCOL(x))
 }
 
+seq_dim <- function(x, dim) {
+  dim <- as_one_numeric(dim)
+  if (dim == 1) {
+    len <- NROW(x)
+  } else if (dim == 2) {
+    len <- NCOL(x)
+  } else {
+    len <- dim(x)[dim]
+  }
+  if (length(len) == 1L && !isNA(len)) {
+    out <- seq_len(len) 
+  } else {
+    out <- integer(0)
+  }
+  out
+}
+
 match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)

@@ -442,7 +442,7 @@ stan_re <- function(ranef, prior, ...) {
   if (has_rows(tranef)) {
     str_add(out$par) <- 
       "  // parameters for student-t distributed group-level effects\n"
-    for (i in seq_len(nrow(tranef))) {
+    for (i in seq_rows(tranef)) {
       g <- paste0("_", tranef$ggn[i])
       str_add(out$par) <- paste0(
         "  real<lower=1> df", g, ";\n",
@@ -496,7 +496,7 @@ stan_re <- function(ranef, prior, ...) {
       "  matrix[N_", id, ", N_", id,"] Lcov_", id,"; \n"
     )
   )
-  J <- seq_len(nrow(r))
+  J <- seq_rows(r)
   needs_Z <- !r$type %in% "sp"
   if (any(needs_Z)) {
     if (r$gtype[1] == "mm") {
@@ -654,7 +654,7 @@ stan_sm <- function(bterms, data, prior, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   smef <- tidy_smef(bterms, data)
-  for (i in seq_len(nrow(smef))) {
+  for (i in seq_rows(smef)) {
     pi <- paste0(p, "_", i)
     nb <- seq_len(smef$nbases[[i]])
     str_add(out$data) <- paste0(
@@ -771,7 +771,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
     )
   }
   # prepare Stan code of the linear predictor component
-  for (i in seq_len(nrow(spef))) {
+  for (i in seq_rows(spef)) {
     eta <- spef$call_prod[[i]]
     if (!is.null(spef$call_mo[[i]])) {
       new_mo <- paste0(
@@ -860,7 +860,7 @@ stan_gp <- function(bterms, data, prior, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   gpef <- tidy_gpef(bterms, data)
-  for (i in seq_len(nrow(gpef))) {
+  for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     byvar <- gpef$byvars[[i]] 
     bylevels <- gpef$bylevels[[i]]
@@ -1035,7 +1035,7 @@ stan_eta_re <- function(ranef, px = list()) {
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
     if (r$gtype[1] == "mm") {
       ng <- seq_along(r$gcall[[1]]$groups)
-      for (i in seq_len(nrow(r))) {
+      for (i in seq_rows(r)) {
         str_add(eta_re) <- collapse(
           " + W_", r$id[i], "_", ng, "[n]", 
           " * r_", idp[i], "_", r$cn[i], "[J_", r$id[i], "_", ng, "[n]]",

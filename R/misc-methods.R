@@ -98,7 +98,7 @@ print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
   }
   out <- x
   fmt <- paste0("%.", digits, "f")
-  for (i in seq_len(ncol(x))) {
+  for (i in seq_cols(x)) {
     if (isTRUE(colnames(x)[i] %in% no_digits)) {
       out[, i] <- sprintf("%.0f", x[, i])
     } else {

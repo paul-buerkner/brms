@@ -20,7 +20,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   meef <- tidy_meef(bterms, data)
   if (nrow(meef)) {
     I <- seq_along(unique(meef$grname))
-    K <- seq_len(nrow(meef))
+    K <- seq_rows(meef)
     c(out) <- paste0(c("Xme", "Corme_"), I)
     if (!save_all_pars) {
       c(out) <- c(paste0("zme_", K), paste0("Lme_", I))
@@ -100,7 +100,7 @@ exclude_pars_internal.btl <- function(x, data, ...) {
     paste0(c("hs_localsp", "zbsp"), p)
   )
   smef <- tidy_smef(x, data)
-  for (i in seq_len(nrow(smef))) {
+  for (i in seq_rows(smef)) {
     nb <- seq_len(smef$nbases[i])
     c(out) <- paste0("zs", p, "_", i, "_", nb)
   }

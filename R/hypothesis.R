@@ -416,9 +416,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
   hyps <- limit_chars(x$hypothesis$Hypothesis, chars = chars)
   names(samples)[seq_along(hyps)] <- hyps
-  n_plots <- ceiling(length(hyps) / N)
-  plots <- vector(mode = "list", length = n_plots)
-  for (i in seq_len(n_plots)) {
+  nplots <- ceiling(length(hyps) / N)
+  plots <- vector(mode = "list", length = nplots)
+  for (i in seq_len(nplots)) {
     rel_hyps <- hyps[((i - 1) * N + 1):min(i * N, length(hyps))]
     sub_samples <- cbind(
       utils::stack(samples[, rel_hyps, drop = FALSE]),

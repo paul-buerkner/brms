@@ -158,7 +158,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       eta <- predictor(draws, i = NULL)
       spa_data <- NULL
       if (spaghetti && ncovars == 1L) {
-        sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
+        sample <- rep(seq_rows(eta), each = ncol(eta))
         spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
         colnames(spa_data) <- c("estimate__", "sample__")
         spa_data <- cbind(newdata[, vars, drop = FALSE], spa_data)

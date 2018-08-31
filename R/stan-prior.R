@@ -40,7 +40,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   if (nrow(upx) > 1L) {
     # can only happen for SD parameters of the same ID
     base_prior <- rep(NA, nrow(upx))
-    for (i in seq_len(nrow(upx))) {
+    for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx) 
       base_prior[i] <- stan_base_prior(sub_prior)

@@ -582,7 +582,7 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   marg_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
-  for (j in seq_len(nrow(conditions))) {
+  for (j in seq_rows(conditions)) {
     data[[j]][, marg_vars] <- conditions[j, marg_vars]
     data[[j]]$cond__ <- cond__[j]
   }
@@ -633,7 +633,7 @@ marginal_effects_internal.brmsterms <- function(
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
     cats <- dimnames(out)[[3]]
-    if (is.null(cats)) cats <- seq_len(dim(out)[3])
+    if (is.null(cats)) cats <- seq_dim(out, 3)
     cats <- factor(rep(cats, each = ncol(out)))
     marg_data <- cbind(marg_data, cats__ = cats)
     effects[2] <- "cats__"
@@ -649,10 +649,10 @@ marginal_effects_internal.brmsterms <- function(
         "for ordinal families. Please set 'categorical' to TRUE."
       )
       if (method == "fitted") {
-        for (k in seq_len(dim(out)[3])) {
+        for (k in seq_dim(out, 3)) {
           out[, , k] <- out[, , k] * k
         }
-        out <- lapply(seq_len(dim(out)[2]), function(s) rowSums(out[, s, ]))
+        out <- lapply(seq_dim(out, 2), function(s) rowSums(out[, s, ]))
         out <- do.call(cbind, out)
       }
     }
@@ -679,7 +679,7 @@ marginal_effects_internal.brmsterms <- function(
     if (categorical) {
       spag <- do.call(cbind, array2list(spag))
     }
-    sample <- rep(seq_len(nrow(spag)), each = ncol(spag))
+    sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
       # samples should be unique across plotting groups
       sample <- paste0(sample, "_", marg_data[[effects[2]]])
@@ -767,7 +767,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
         K <- do.call("paste", c(mf_tmp, sep = "\r")) %in%
           do.call("paste", c(cond, sep = "\r"))
       } else {
-        K <- seq_len(nrow(mf))
+        K <- seq_rows(mf)
       }
       # cond__ allows to assign points to conditions
       points[[i]]$cond__[K] <- cond__[i]
