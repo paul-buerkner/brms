@@ -18,7 +18,7 @@ same way as objects passed via the \code{...} argument.}
 
 \item{nmix}{Optional numeric vector specifying the number of times
 each family is repeated. If specified, it must have the same length 
-as the number of families passed via \code{...} or \code{flist}.}
+as the number of families passed via \code{...} and \code{flist}.}
 
 \item{order}{Ordering constraint to identify mixture components.
 If \code{'mu'} or \code{TRUE}, population-level intercepts

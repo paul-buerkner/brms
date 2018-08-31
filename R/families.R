@@ -177,10 +177,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   #   slink: can be used with substitute(link) for 
   #          non-standard evaluation of the link function
   #   threshold: threshold type for ordinal models
-  #   ...: link functions (as character strings) of auxiliary parameters
-  # returns:
-  #  An object of class = c(brmsfamily, family) to be used
-  #  only inside the brms package
+  #   ...: link functions (as character strings) of parameters
+  # Returns:
+  #   An object of class = c('brmsfamily', 'family') to be used
+  #   only inside the brms package
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
   pattern <- c("^normal$", "^zi_", "^hu_")
@@ -655,7 +655,7 @@ acat <- function(link = "logit", link_disc = "log",
 #'   same way as objects passed via the \code{...} argument.
 #' @param nmix Optional numeric vector specifying the number of times
 #'   each family is repeated. If specified, it must have the same length 
-#'   as the number of families passed via \code{...} or \code{flist}.
+#'   as the number of families passed via \code{...} and \code{flist}.
 #' @param order Ordering constraint to identify mixture components.
 #'   If \code{'mu'} or \code{TRUE}, population-level intercepts
 #'   of the mean parameters are ordered. 
@@ -800,9 +800,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 
 #' Custom Families in \pkg{brms} Models
 #' 
-#' Define custom families for use in \pkg{brms} models.
-#' It allows users to benefit from the modeling flexibility of 
-#' \pkg{brms}, while applying their self-defined likelihood
+#' Define custom families (i.e. response distribution) for use in 
+#' \pkg{brms} models. It allows users to benefit from the modeling 
+#' flexibility of \pkg{brms}, while applying their self-defined likelihood
 #' functions. All of the post-processing methods for \code{brmsfit} 
 #' objects can be made compatible with custom families. 
 #' See \code{vignette("brms_customfamilies")} for more details.
@@ -838,12 +838,14 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.     
 #' @param env An \code{\link{environment}} in which certain post-processing 
-#'   functions related to the custom family can be found if there were not 
+#'   functions related to the custom family can be found, if there were not 
 #'   directly passed to \code{custom_family}. This is only
 #'   relevant if one wants to ensure compatibility with the methods
 #'   \code{\link[brms:predict.brmsfit]{predict}}, 
 #'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#'   By default, \code{env} is the enviroment from which 
+#'   \code{custom_family} is called.
 #'   
 #' @details The corresponding probability density or mass \code{Stan} 
 #'   functions need to have the same name as the custom family.
@@ -853,7 +855,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   continuous or discrete distribution.
 #'   
 #' @return An object of class \code{customfamily} inheriting
-#'   for class \code{\link{brmsfamily}}.
+#'   from class \code{\link{brmsfamily}}.
 #'   
 #' @seealso \code{\link{brmsfamily}}, \code{\link{stanvar}}
 #' 
@@ -1053,7 +1055,7 @@ links_dpars <- function(dpar) {
 }
 
 dpar_family <- function(family, dpar, ...) {
-  # generate a family object of an auxiliary parameter
+  # generate a family object of a distributional parameter
   UseMethod("dpar_family")
 }
 
@@ -1138,7 +1140,7 @@ print.mixfamily <- function(x, newline = TRUE, ...) {
 print.customfamily <- function(x, links = FALSE, newline = TRUE, ...) {
   cat("\nCustom family:", x$name, "\n")
   cat("Link function:", x$link, "\n")
-  cat("Parameters: ", paste0(x$dpars, collapse = ", "), "\n")
+  cat("Parameters:", paste0(x$dpars, collapse = ", "), "\n")
   if (isTRUE(links) || is.character(links)) {
     dp_links <- x[grepl("^link_", names(x))]
     names(dp_links) <- sub("^link_", "", names(dp_links))

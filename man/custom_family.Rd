@@ -49,21 +49,23 @@ the model in \R. This is only relevant if one wants to ensure
 compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.}
 
 \item{env}{An \code{\link{environment}} in which certain post-processing 
-functions related to the custom family can be found if there were not 
+functions related to the custom family can be found, if there were not 
 directly passed to \code{custom_family}. This is only
 relevant if one wants to ensure compatibility with the methods
 \code{\link[brms:predict.brmsfit]{predict}}, 
 \code{\link[brms:fitted.brmsfit]{fitted}}, or
-\code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+\code{\link[brms:log_lik.brmsfit]{log_lik}}.
+By default, \code{env} is the enviroment from which 
+\code{custom_family} is called.}
 }
 \value{
 An object of class \code{customfamily} inheriting
-  for class \code{\link{brmsfamily}}.
+  from class \code{\link{brmsfamily}}.
 }
 \description{
-Define custom families for use in \pkg{brms} models.
-It allows users to benefit from the modeling flexibility of 
-\pkg{brms}, while applying their self-defined likelihood
+Define custom families (i.e. response distribution) for use in 
+\pkg{brms} models. It allows users to benefit from the modeling 
+flexibility of \pkg{brms}, while applying their self-defined likelihood
 functions. All of the post-processing methods for \code{brmsfit} 
 objects can be made compatible with custom families. 
 See \code{vignette("brms_customfamilies")} for more details.
