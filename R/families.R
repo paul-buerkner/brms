@@ -744,22 +744,19 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   )
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
-  families <- family_names(family)
-  if (length(families) < 2L) {
+  if (length(family$mix) < 2L) {
     stop2("Expecting at least 2 mixture components.")
-  }
-  no_mix_families <- c("categorical")
-  no_mix_families <- intersect(families, no_mix_families)
-  if (length(no_mix_families)) {
-    stop2("Families ", collapse_comma(no_mix_families), 
-          " are currently not allowed in mixture models.")
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
   }
-  is_ordinal <- ulapply(families, is_ordinal)
+  is_ordinal <- ulapply(family$mix, is_ordinal)
   if (any(is_ordinal) && any(!is_ordinal)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
+  }
+  is_categorical <- ulapply(family$mix, is_categorical)
+  if (any(is_categorical)) {
+    stop2("Categorical families are not yet allowed in mixture models.")
   }
   for (fam in family$mix) {
     if (is.customfamily(fam) && "theta" %in% fam$dpars) {
@@ -770,7 +767,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
     if (any(is_ordinal)) {
       family$order <- "none"
       message("Setting order = 'none' for mixtures of ordinal families.")
-    } else if (length(unique(families)) == 1L) {
+    } else if (length(unique(family_names(family))) == 1L) {
       family$order <- "mu"
       message("Setting order = 'mu' for mixtures of the same family.")
     } else {
@@ -828,6 +825,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{vars} can be used to pass data to the likelihood. 
 #'   See \code{\link{stanvar}} for details about adding self-defined
 #'   data to the generated \pkg{Stan} model.
+#' @param specials A character vector of special options to enable
+#'   for this custom family. Currently for internal use only.
 #' @param log_lik Optional function to compute log-likelihood values of
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
@@ -898,7 +897,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @export
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
-                          vars = NULL, log_lik = NULL, predict = NULL, 
+                          vars = NULL, specials = NULL, 
+                          log_lik = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
   dpars <- as.character(dpars)
@@ -907,6 +907,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   lb <- as.character(lb)
   ub <- as.character(ub)
   vars <- as.character(vars)
+  specials <- as.character(specials)
   env <- as.environment(env)
   if (any(duplicated(dpars))) {
     stop2("Duplicated 'dpars' are not allowed.")
@@ -959,7 +960,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   link <- links[is_mu]
   out <- nlist(
     family = "custom", link, name, 
-    dpars, lb, ub, type, vars, 
+    dpars, lb, ub, type, vars, specials,
     log_lik, predict, fitted, env
   )
   if (length(dpars) > 1L) {
