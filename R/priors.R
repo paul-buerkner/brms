@@ -1208,14 +1208,16 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   }
   simple_sigma <- simple_sigma(x)
   for (dp in names(x$dpars)) {
-    allow_autoscale <- simple_sigma && identical(dp, "mu") 
+    allow_as <- simple_sigma && identical(dp, "mu") 
     prior <- check_prior_special(
-      x$dpars[[dp]], prior, allow_autoscale = allow_autoscale, ...
+      x$dpars[[dp]], prior = prior, 
+      allow_autoscale = allow_as, ...
     )
   }
   for (nlp in names(x$nlpars)) {
     prior <- check_prior_special(
-      x$nlpars[[nlp]], prior, is_nlpar = TRUE, ...
+      x$nlpars[[nlp]], prior = prior,
+      allow_autoscale = simple_sigma, ...
     )
   }
   # copy over the global population-level prior in categorical models
