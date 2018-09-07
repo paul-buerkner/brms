@@ -509,8 +509,6 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
   if (length(out)) {
     c(out) <- unlist(strsplit(out, ":"))
     out <- sort(unique(out))
-  } else {
-    out <- NULL
   }
   out
 }
