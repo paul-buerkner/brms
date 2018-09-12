@@ -1,22 +1,22 @@
-# brms 2.4.0++
+# brms 2.5.0
 
 ### New features
 
-* Allow using the `bridge_sampler` method even if 
-prior samples are drawn within the model. (#485)
-* Allow to `overwrite` already stored fit indices
-when using `add_ic`.
 * Improve `marginal_effects` to better display ordinal and 
 categorical models via argument `categorical`. (#491, #497)
+* Improve method `kfold` to offer more options for specifying
+omitted subsets. (#510)
 * Compute estimated values of non-linear parameters via
 argument `nlpar` in method `fitted`.
 * Disable automatic cell-mean coding in model formulas without 
 an intercept via argument `cmc` of `brmsformula` and related 
 functions thanks to Marie Beisemann.
-* Improve method `kfold` to offer more options for specifying
-omitted subsets. (#510)
+* Allow using the `bridge_sampler` method even if 
+prior samples are drawn within the model. (#485)
 * Specify post-processing functions of custom families 
 directly in `custom_family`.
+* Allow to `overwrite` already stored fit indices
+when using `add_ic`.
 
 ### Other changes
 
@@ -28,15 +28,16 @@ univariate models thanks to Ruben Arslan. (#488)
 
 ### Bug fixes
 
-* Remove stored fit indices when calling `update` on 
-brmsfit objects thanks to Emmanuel Charpentier. (#490)
 * Correctly sample from LKJ correlation priors 
 thanks to Donald Williams.
+* Remove stored fit indices when calling `update` on 
+brmsfit objects thanks to Emmanuel Charpentier. (#490)
 * Fix problems when predicting a single data point using 
 spline models thanks to Emmanuel Charpentier. (#494)
 * Set `Post.Prob = 1` if `Evid.Ratio = Inf` in 
 method `hypothesis` thanks to Andrew Milne. (#509) 
 * Ensure correct handling of argument `file` in `brm_multiple`.
+
 
 # brms 2.4.0
 
