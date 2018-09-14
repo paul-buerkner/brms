@@ -14,9 +14,10 @@ parnames.brmsfit <- function(x, ...) {
 #' 
 #' @aliases fixef
 #' 
-#' @param object An object of class \code{brmsfit}.
-#' @param ... Currently ignored.
 #' @inheritParams predict.brmsfit
+#' @param pars Optional names of coefficients to extract.
+#'   By default, all coefficients are extracted.
+#' @param ... Currently ignored.
 #' 
 #' @return If \code{summary} is \code{TRUE}, a matrix with one row per 
 #'   population-level effect and one column per calculated estimate. 
@@ -30,19 +31,25 @@ parnames.brmsfit <- function(x, ...) {
 #' fit <- brm(time | cens(censored) ~ age + sex + disease, 
 #'            data = kidney, family = "exponential")
 #' fixef(fit)
+#' # extract only some coefficients
+#' fixef(fit, pars = c("age", "sex"))
 #' }
 #' 
 #' @method fixef brmsfit
 #' @export
 #' @export fixef
 #' @importFrom nlme fixef
-fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), ...) {
+fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE, 
+                           probs = c(0.025, 0.975), pars = NULL, ...) {
   contains_samples(object)
-  pars <- parnames(object)
-  fpars <- pars[grepl(fixef_pars(), pars)]
+  all_pars <- parnames(object)
+  fpars <- all_pars[grepl(fixef_pars(), all_pars)]
+  if (!is.null(pars)) {
+    pars <- as.character(pars)
+    fpars <- intersect(fpars, paste0("b_", pars))
+  }
   if (!length(fpars)) {
-    stop2("The model does not contain population-level effects.")
+    return(NULL)
   }
   out <- as.matrix(object, pars = fpars, exact_match = TRUE)
   colnames(out) <- gsub(fixef_pars(), "", fpars)
@@ -57,11 +64,9 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #' Get a point estimate of the covariance or 
 #' correlation matrix of population-level parameters
 #' 
-#' @param object An object of class \code{brmsfit}
-#' @param correlation logical; if \code{FALSE} (the default), 
-#'   compute the covariance matrix,
-#'   if \code{TRUE}, compute the correlation matrix
-#' @param ... Currently ignored
+#' @inheritParams fixef.brmsfit
+#' @param correlation Logical; if \code{FALSE} (the default), compute 
+#'   the covariance matrix, if \code{TRUE}, compute the correlation matrix.
 #' 
 #' @return covariance or correlation matrix of population-level parameters
 #' 
@@ -76,12 +81,16 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #' }
 #'
 #' @export
-vcov.brmsfit <- function(object, correlation = FALSE, ...) {
+vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   contains_samples(object)
-  pars <- parnames(object)
-  fpars <- pars[grepl(fixef_pars(), pars)]
+  all_pars <- parnames(object)
+  fpars <- all_pars[grepl(fixef_pars(), all_pars)]
+  if (!is.null(pars)) {
+    pars <- as.character(pars)
+    fpars <- intersect(fpars, paste0("b_", pars))
+  }
   if (!length(fpars)) {
-    stop2("The model does not contain population-level effects.")
+    return(NULL)
   }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub(fixef_pars(), "", names(samples))
@@ -100,8 +109,9 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' 
 #' @aliases ranef
 #' 
-#' @param object An object of class \code{brmsfit}.
 #' @inheritParams fixef.brmsfit
+#' @param groups Optional names of grouping variables
+#'   for which to extract effects.
 #' @param ... Currently ignored.
 #'
 #' @return If \code{old} is \code{FALSE}: A list of arrays 
@@ -126,29 +136,46 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @export ranef
 #' @importFrom nlme ranef
 ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
-                          probs = c(0.025, 0.975), ...) {
+                          probs = c(0.025, 0.975), pars = NULL, 
+                          groups = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
-  pars <- parnames(object)
+  all_pars <- parnames(object)
+  if (!is.null(pars)) {
+    pars <- as.character(pars)
+  }
   ranef <- object$ranef
-  groups <- unique(ranef$group)
-  out <- named_list(groups)
-  for (g in groups) {
+  all_groups <- unique(ranef$group)
+  if (!is.null(groups)) {
+    groups <- as.character(groups)
+    all_groups <- intersect(all_groups, groups)
+  }
+  out <- named_list(all_groups)
+  for (g in all_groups) {
     r <- subset2(ranef, group = g)
     coefs <- paste0(usc(combine_prefix(r), "suffix"), r$coef)
-    levels <- attr(ranef, "levels")[[g]]
-    rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
+    rpars <- all_pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), all_pars)]
+    if (!is.null(pars)) {
+      coefs <- coefs[r$coef %in% pars]
+      if (!length(coefs)) {
+        next
+      }
+      regex <- paste0("(", escape_all(coefs), ")", collapse = "|")
+      regex <- paste0(",", regex, "\\]$")
+      rpars <- rpars[grepl(regex, rpars)]
+    }
     out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
+    levels <- attr(ranef, "levels")[[g]]
     dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
     if (summary) {
       out[[g]] <- posterior_summary(out[[g]], probs, robust)
     }
   }
-  out
+  rmNULL(out, recursive = FALSE)
 } 
 
 #' Extract Model Coefficients
@@ -156,8 +183,9 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' Extract model coefficients, which are the sum of population-level 
 #' effects and corresponding group-level effects
 #' 
-#' @param object An object of class \code{brmsfit}
 #' @inheritParams ranef.brmsfit
+#' @param ... Further arguments passed to \code{\link{fixef.brmsfit}}
+#'   and \code{\link{ranef.brmsfit}}.
 #'
 #' @return If \code{old} is \code{FALSE}: A list of arrays 
 #'  (one per grouping factor). If \code{summary} is \code{TRUE},

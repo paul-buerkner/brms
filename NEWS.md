@@ -15,6 +15,8 @@ functions thanks to Marie Beisemann.
 prior samples are drawn within the model. (#485)
 * Specify post-processing functions of custom families 
 directly in `custom_family`.
+* Select a subset of coefficients in `fixef`, `ranef`, 
+and `coef` via argument `pars`. (#520)
 * Allow to `overwrite` already stored fit indices
 when using `add_ic`.
 

@@ -159,6 +159,8 @@ test_that("all S3 methods have reasonable ouputs", {
     c("Intercept", "sigma_Intercept", "Trt1", "Age", 
       "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
   )
+  fixef1 <- SM(fixef(fit1, pars = c("Age", "sAge_1")))
+  expect_equal(rownames(fixef1), c("Age", "sAge_1"))
   
   # formula
   expect_equal(formula(fit1)$formula, 
@@ -504,6 +506,12 @@ test_that("all S3 methods have reasonable ouputs", {
   # ranef
   ranef1 <- SM(ranef(fit1))
   expect_equal(dim(ranef1$visit), c(4, 4, 2))
+  
+  ranef1 <- SM(ranef(fit1, pars = "Trt1"))
+  expect_equal(dimnames(ranef1$visit)[[3]], "Trt1")
+  
+  ranef1 <- SM(ranef(fit1, groups = "a"))
+  expect_equal(length(ranef1), 0L)
   
   ranef2 <- SM(ranef(fit2, summary = FALSE))
   expect_equal(dim(ranef2$patient), c(nsamples(fit2), 59, 2))
