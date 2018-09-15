@@ -85,74 +85,6 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(family(fit1), links = TRUE), "student.*log.*logm1")
   expect_output(print(family(fit5)), "Mixture.*gaussian.*exponential")
   
-  # fitted
-  fi <- fitted(fit1)
-  expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_equal(colnames(fi), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
-  
-  newdata <- data.frame(
-    Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
-    count = c(20, 13), patient = c(1, 42), Exp = c(2, 4)
-  )
-  fi <- fitted(fit1, newdata = newdata)
-  expect_equal(dim(fi), c(2, 4))
-  newdata$visit <- c(1, 6)
-  fi <- fitted(fit1, newdata = newdata, 
-               allow_new_levels = TRUE)
-  expect_equal(dim(fi), c(2, 4))
-  
-  # fitted values with new_levels
-  newdata <- data.frame(
-    Age = 0, visit = paste0("a", 1:100), Trt = 0, 
-    count = 20, patient = 1, Exp = 2
-  )
-  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "old_levels", nsamples = 10)
-  expect_equal(dim(fi), c(100, 4))
-  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "gaussian", nsamples = 1)
-  expect_equal(dim(fi), c(100, 4))
-  
-  # fitted values of auxiliary parameters
-  newdata <- data.frame(
-    Age = 0, visit = c("a", "b"), Trt = 0,
-    count = 20, patient = 1, Exp = 2
-  )
-  fi <- fitted(fit1, dpar = "sigma")
-  expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_true(all(fi > 0))
-  fi_lin <- fitted(fit1, dpar = "sigma", scale = "linear")
-  expect_equal(dim(fi_lin), c(nobs(fit1), 4))
-  expect_true(!isTRUE(all.equal(fi, fi_lin)))
-  expect_error(fitted(fit1, dpar = "inv"),
-               "Invalid argument 'dpar'")
-
-  fi <- fitted(fit2)
-  expect_equal(dim(fi), c(nobs(fit2), 4))
-  fi <- fitted(fit2, newdata = newdata,
-               allow_new_levels = TRUE)
-  expect_equal(dim(fi), c(2, 4))
-  fi <- fitted(fit2, dpar = "shape")
-  expect_equal(dim(fi), c(nobs(fit2), 4))
-  expect_equal(fi[1, ], fi[2, ])
-  fi <- fitted(fit2, nlpar = "a")
-  expect_equal(dim(fi), c(nobs(fit2), 4))
-
-  fi <- fitted(fit3, newdata = fit3$data[1:10, ])
-  expect_equal(dim(fi), c(10, 4))
-
-  fi <- fitted(fit4)
-  expect_equal(dim(fi), c(nobs(fit4), 4, 4))
-  fi <- fitted(fit4, newdata = fit4$data[1, ])
-  expect_equal(dim(fi), c(1, 4, 4))
-
-  fi <- fitted(fit5)
-  expect_equal(dim(fi), c(nobs(fit5), 4))
-
-  fi <- fitted(fit6)
-  expect_equal(dim(fi), c(nobs(fit6), 4, 2))
-  expect_equal(dimnames(fi)[[3]], c("volume", "count"))
-  
   # fixef
   fixef1 <- SM(fixef(fit1))
   expect_equal(rownames(fixef1), 
@@ -670,6 +602,74 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # ------ tests skipped on CRAN ------ #
   skip_on_cran()
+  
+  # fitted
+  fi <- fitted(fit1)
+  expect_equal(dim(fi), c(nobs(fit1), 4))
+  expect_equal(colnames(fi), c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
+  
+  newdata <- data.frame(
+    Age = c(0, -0.2), visit = c(1, 4), Trt = c(0, 1), 
+    count = c(20, 13), patient = c(1, 42), Exp = c(2, 4)
+  )
+  fi <- fitted(fit1, newdata = newdata)
+  expect_equal(dim(fi), c(2, 4))
+  newdata$visit <- c(1, 6)
+  fi <- fitted(fit1, newdata = newdata, 
+               allow_new_levels = TRUE)
+  expect_equal(dim(fi), c(2, 4))
+  
+  # fitted values with new_levels
+  newdata <- data.frame(
+    Age = 0, visit = paste0("a", 1:100), Trt = 0, 
+    count = 20, patient = 1, Exp = 2
+  )
+  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
+               sample_new_levels = "old_levels", nsamples = 10)
+  expect_equal(dim(fi), c(100, 4))
+  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
+               sample_new_levels = "gaussian", nsamples = 1)
+  expect_equal(dim(fi), c(100, 4))
+  
+  # fitted values of auxiliary parameters
+  newdata <- data.frame(
+    Age = 0, visit = c("a", "b"), Trt = 0,
+    count = 20, patient = 1, Exp = 2
+  )
+  fi <- fitted(fit1, dpar = "sigma")
+  expect_equal(dim(fi), c(nobs(fit1), 4))
+  expect_true(all(fi > 0))
+  fi_lin <- fitted(fit1, dpar = "sigma", scale = "linear")
+  expect_equal(dim(fi_lin), c(nobs(fit1), 4))
+  expect_true(!isTRUE(all.equal(fi, fi_lin)))
+  expect_error(fitted(fit1, dpar = "inv"),
+               "Invalid argument 'dpar'")
+  
+  fi <- fitted(fit2)
+  expect_equal(dim(fi), c(nobs(fit2), 4))
+  fi <- fitted(fit2, newdata = newdata,
+               allow_new_levels = TRUE)
+  expect_equal(dim(fi), c(2, 4))
+  fi <- fitted(fit2, dpar = "shape")
+  expect_equal(dim(fi), c(nobs(fit2), 4))
+  expect_equal(fi[1, ], fi[2, ])
+  fi <- fitted(fit2, nlpar = "a")
+  expect_equal(dim(fi), c(nobs(fit2), 4))
+  
+  fi <- fitted(fit3, newdata = fit3$data[1:10, ])
+  expect_equal(dim(fi), c(10, 4))
+  
+  fi <- fitted(fit4)
+  expect_equal(dim(fi), c(nobs(fit4), 4, 4))
+  fi <- fitted(fit4, newdata = fit4$data[1, ])
+  expect_equal(dim(fi), c(1, 4, 4))
+  
+  fi <- fitted(fit5)
+  expect_equal(dim(fi), c(nobs(fit5), 4))
+  
+  fi <- fitted(fit6)
+  expect_equal(dim(fi), c(nobs(fit6), 4, 2))
+  expect_equal(dimnames(fi)[[3]], c("volume", "count"))
   
   # loo_R2
   R2 <- SW(loo_R2(fit2))

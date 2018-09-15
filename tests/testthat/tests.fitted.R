@@ -1,5 +1,8 @@
 context("Tests for fitted helper functions")
 
+# to reduce testing time on CRAN
+skip_on_cran()
+
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
