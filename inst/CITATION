@@ -23,11 +23,14 @@ bibentry(
   title = "Advanced {Bayesian} Multilevel Modeling with the {R} Package {brms}",
   author = person(given = "Paul-Christian", family = "Bürkner"),
   journal = "The R Journal",
-  year = "in press",
+  year = "2018",
+  volume = "10",
+  number = "1",
+  pages = "395--411",  
   textVersion = paste(
-    "Paul-Christian Bürkner (in press).",
+    "Paul-Christian Bürkner (2018).",
     "Advanced Bayesian Multilevel Modeling with the R Package brms.",
-    "The R Journal."
+    "The R Journal, 10(1), 395-411."
   ),
   encoding = "UTF-8"
 )
