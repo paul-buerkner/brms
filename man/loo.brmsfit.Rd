@@ -62,14 +62,16 @@ When comparing models fitted to the same data,
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = "gaussian")
-loo(fit1)
+            data = inhaler)
+(loo1 <- loo(fit1))
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler, family = "gaussian")
+            data = inhaler)
+(loo2 <- loo(fit2))   
+
 # compare both models
-loo(fit1, fit2)                          
+loo_compare(loo1, loo2)                      
 }
 
 }

@@ -2528,39 +2528,39 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   eval(cl, parent.frame())
 }
 
-#' Compute the WAIC
+#' Widely Applicable Information Criterion (WAIC)
 #' 
 #' Compute the widely applicable information criterion (WAIC)
 #' based on the posterior likelihood using the \pkg{loo} package.
-#' For more details see \code{\link[loo:waic]{waic}}
+#' For more details see \code{\link[loo:waic]{waic}}.
 #' 
 #' @aliases waic WAIC WAIC.brmsfit
 #' 
 #' @inheritParams loo.brmsfit
 #' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the WAIC, the better the fit. For \code{brmsfit} 
-#'  objects, \code{WAIC} is an alias of \code{waic}.
+#' @details See \code{\link{loo_compare}} for details on model comparisons. 
+#'  For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
 #'  Use method \code{\link[brms:add_ic]{add_ic}} to store
 #'  information criteria in the fitted model object for later usage.
 #'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
+#' @return If just one object is provided, an object of class \code{loo}. 
+#'  If multiple objects are provided, an object of class \code{loolist}.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @examples
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' waic(fit1)
+#'             data = inhaler)
+#' (waic1 <- waic(fit1))
 #' 
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
+#'             data = inhaler)
+#' (waic2 <- waic(fit2))   
+#' 
 #' # compare both models
-#' waic(fit1, fit2)                          
+#' loo_compare(waic1, waic2)                      
 #' }
 #' 
 #' @references 
@@ -2596,7 +2596,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   eval(cl, parent.frame())
 }
 
-#' Compute the LOO information criterion
+#' Efficient approximate leave-one-out cross-validation (LOO)
 #' 
 #' Perform approximate leave-one-out cross-validation based 
 #' on the posterior likelihood using the \pkg{loo} package.
@@ -2626,14 +2626,13 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #'   values as model names.
 #' @inheritParams predict.brmsfit
 #' 
-#' @details When comparing models fitted to the same data, 
-#'  the smaller the LOO, the better the fit. For \code{brmsfit} 
-#'  objects, \code{LOO} is an alias of \code{loo}.
+#' @details See \code{\link{loo_compare}} for details on model comparisons.
+#'  For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
 #'  Use method \code{\link{add_ic}} to store
 #'  information criteria in the fitted model object for later usage.
 #'  
-#' @return If just one object is provided, an object of class \code{ic}. 
-#'  If multiple objects are provided, an object of class \code{iclist}.
+#' @return If just one object is provided, an object of class \code{loo}. 
+#'  If multiple objects are provided, an object of class \code{loolist}.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -2641,14 +2640,16 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' loo(fit1)
+#'             data = inhaler)
+#' (loo1 <- loo(fit1))
 #' 
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
+#'             data = inhaler)
+#' (loo2 <- loo(fit2))   
+#' 
 #' # compare both models
-#' loo(fit1, fit2)                          
+#' loo_compare(loo1, loo2)                      
 #' }
 #' 
 #' @references 
@@ -2664,7 +2665,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' and widely applicable information criterion in singular learning theory. 
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
-#' @importFrom loo loo
+#' @importFrom loo loo is.loo
 #' @export loo
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,

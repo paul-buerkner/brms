@@ -120,6 +120,10 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
   ic <- match.arg(ic)
   args <- nlist(ic, ...)
   if (length(models) > 1L) {
+    warning2(
+      "Passing multiple brmsfit objects to 'loo' and related methods is ",
+      "deprecated. Please see ?loo.brmsfit for the recommended workflow."
+    )
     if (!match_nobs(models)) {
       stop2("Models have different number of observations.")
     }
@@ -129,7 +133,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
     out <- named_list(names(models))
     for (i in seq_along(models)) {
       ic_obj <- models[[i]][[ic]]
-      if (use_stored_ic[i] && is.ic(ic_obj)) {
+      if (use_stored_ic[i] && is.loo(ic_obj)) {
         out[[i]] <- ic_obj
         out[[i]]$model_name <- names(models)[i]
       } else {
@@ -140,13 +144,15 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
     }
     compare <- as_one_logical(compare)
     if (compare) {
-      out <- compare_ic(x = out)
+      diffs__ <- loo::loo_compare(out)
+      out <- SW(compare_ic(x = out))
+      out$diffs__ <- diffs__
     }
-    class(out) <- "iclist"
+    class(out) <- "loolist"
   } else {
     ic_obj <- models[[1]][[ic]]
     use_stored_ic <- as_one_logical(use_stored_ic)
-    if (use_stored_ic && is.ic(ic_obj)) {
+    if (use_stored_ic && is.loo(ic_obj)) {
       out <- ic_obj
       out$model_name <- names(models)
     } else {
@@ -193,7 +199,6 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
     out <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
   }
   out$model_name <- model_name
-  class(out) <- c("ic", class(out))
   attr(out, "yhash") <- hash_response(x)
   if (ic == "loo") {
     if (reloo) {
@@ -207,13 +212,46 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   out
 }
 
+#' Model comparison with the \pkg{loo} package
+#' 
+#' @name loo_compare
+#' 
+#' @param x An object of class "\code{loo}" or a list of such objects.
+#' @param ... Additional objects of class "\code{loo}".
+#' 
+#' @details See \code{\link[loo:loo_compare]{loo::loo_compare}} for details.
+#'   
+#' @return An object of class "\code{compare.loo}".
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' (waic1 <- waic(fit1))
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' (waic2 <- waic(fit2))
+#' 
+#' # compare both models
+#' (loo_compare(waic1, waic2))
+#' }
+#' 
+#' @importFrom loo loo_compare
+#' @export loo_compare
+NULL
+
 #' Compare Information Criteria of Different Models
 #'
 #' Compare information criteria of different models fitted
-#' with \code{\link{WAIC}} or \code{\link{loo}}.
+#' with \code{\link{waic}} or \code{\link{loo}}.
+#' Deprecated and will be removed in the future. Please use
+#' \code{\link{loo_compare}} instead.
 #' 
 #' @param ... At least two objects returned by 
-#'   \code{\link{WAIC}} or \code{\link{loo}}.
+#'   \code{\link{waic}} or \code{\link{loo}}.
 #'   Alternatively, \code{brmsfit} objects with information 
 #'   criteria precomputed via \code{\link{add_ic}}
 #'   may be passed, as well.
@@ -228,7 +266,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' @details For more details see \code{\link[loo:compare]{compare}}.
 #' 
 #' @seealso 
-#'   \code{\link{WAIC}}, 
+#'   \code{\link{waic}}, 
 #'   \code{\link{loo}},
 #'   \code{\link{add_ic}},
 #'   \code{\link[loo:compare]{compare}}
@@ -237,13 +275,13 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler, family = "gaussian")
-#' waic1 <- WAIC(fit1)
+#'             data = inhaler)
+#' waic1 <- waic(fit1)
 #' 
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler, family = "gaussian")
-#' waic2 <- WAIC(fit2)
+#'             data = inhaler)
+#' waic2 <- waic(fit2)
 #' 
 #' # compare both models
 #' compare_ic(waic1, waic2)
@@ -251,6 +289,11 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' 
 #' @export
 compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
+  # will be removed in brms 3.0
+  warning2(
+    "'compare_ic' is deprecated and will be removed ", 
+    "in the future. Please use 'loo_compare' instead."
+  )
   ic <- match.arg(ic)
   if (!(is.null(x) || is.list(x))) {
     stop2("Argument 'x' should be a list.")
@@ -263,9 +306,9 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
       x[[i]] <- x[[i]][[ic]]
     }
   }
-  if (!all(sapply(x, inherits, "ic"))) {
-    stop2("All inputs should have class 'ic' ", 
-          "or contain precomputed 'ic' objects.")
+  if (!all(sapply(x, inherits, "loo"))) {
+    stop2("All inputs should have class 'loo' ", 
+          "or contain precomputed 'loo' objects.")
   }
   if (length(x) < 2L) {
     stop2("Expecting at least two objects.")
@@ -301,7 +344,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   n <- 1
   for (i in seq_len(n_models - 1)) {
     for (j in (i + 1):n_models) {
-      tmp <- loo::compare(x[[j]], x[[i]])
+      tmp <- SW(loo::compare(x[[j]], x[[i]]))
       ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]]) 
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
@@ -728,7 +771,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   cnames <- c("Estimate", "SE")
   estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
   estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
-  estimates[3, ] <- c(- 2 * elpd_kfold, 2 * se_elpd_kfold)
+  estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
   out <- nlist(
     estimates, pointwise = cbind(elpd_kfold = elpds),
     model_name = deparse(substitute(x)), K, Ksub, 
@@ -776,7 +819,33 @@ r_eff_helper <- function(log_lik, fit) {
 }
 
 #' @export
+print.loolist <- function(x, digits = 1, ...) {
+  # deprecated as of brms > 2.5.0 but will be retained
+  # print the output of LOO and WAIC with multiple models
+  loos <- x
+  loos$ic_diffs__ <- loos$diffs__ <- NULL
+  for (i in seq_along(loos)) {
+    name <- attributes(loos[[i]])[["model_name"]]
+    if (is.null(name)) {
+      name <- loos[[i]][["model_name"]]
+    }
+    if (is.null(name)) {
+      name <- paste0("model", i)
+    }
+    cat(paste0("Output of model '", name, "':\n"))
+    print(loos[[i]], digits = digits, ...)
+    cat("\n")
+  }
+  if (!is.null(x$diffs__)) {
+    cat("Model comparisons:\n")
+    print(x$diffs__, digits = digits, ...)
+  }
+  invisible(x)
+}
+
+#' @export
 print.iclist <- function(x, digits = 2, ...) {
+  # deprecated as of brms > 2.5.0 and will be removed in brms 3.0
   # print the output of LOO and WAIC with multiple models
   m <- x
   m$ic_diffs__ <- NULL
@@ -809,14 +878,4 @@ print_dims.kfold <- function(x, ...) {
   sub <- length(x$Ksub)
   sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
   cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
-}
-
-is.loo <- function(x) {
-  # class from the loo package
-  inherits(x, "loo")
-}
-
-is.ic <- function(x) {
-  # class 'ic' inherits from class 'loo'
-  inherits(x, "ic")
 }
