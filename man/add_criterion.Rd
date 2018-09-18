@@ -3,21 +3,11 @@
 \name{add_criterion}
 \alias{add_criterion}
 \alias{add_criterion.brmsfit}
-\alias{add_criterion<-}
-\alias{add_loo}
-\alias{add_waic}
 \title{Add model fit criteria to model objects}
 \usage{
 add_criterion(x, ...)
 
-\method{add_criterion}{brmsfit}(x, criterion, model_name = NULL,
-  overwrite = FALSE, ...)
-
-add_criterion(x, ...) <- value
-
-add_loo(x, ...)
-
-add_waic(x, ...)
+\method{add_criterion}{brmsfit}(x, criterion, model_name = NULL, ...)
 }
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
@@ -25,33 +15,27 @@ add_waic(x, ...)
 \item{...}{Further arguments passed to the underlying 
 functions computing the model fit criteria.}
 
-\item{criterion, value}{Names of model fit criteria
+\item{criterion}{Names of model fit criteria
 to compute. Currently supported are \code{"loo"}, 
 \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
 \code{"marglik"} (log marginal likelihood).}
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
-
-\item{overwrite}{Logical; Indicates if already stored model fit
-criteria should be overwritten. Defaults to \code{FALSE}.}
 }
 \value{
 An object of the same class as \code{x}, but
   with model fit criteria added for later usage.
+  Previously computed criterion objects will be overwritten.
 }
 \description{
 Add model fit criteria to model objects
 }
-\details{
-The methods \code{add_loo} and add \code{add_waic}
-  are just convenient wrappers around \code{add_criterion}.
-}
 \examples{
 \dontrun{
-fit <- brm(count ~ Trt, epilepsy, poisson())
+fit <- brm(count ~ Trt, data = epilepsy)
 # add both LOO and WAIC at once
-fit <- add_criterion(fit, criterion = c("loo", "waic"))
+fit <- add_criterion(fit, c("loo", "waic"))
 print(fit$loo)
 print(fit$waic)
 }

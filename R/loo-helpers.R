@@ -137,7 +137,7 @@ compute_loos <- function(
       loo_obj <- models[[i]][[criterion]]
       if (use_stored[i] && is.loo(loo_obj)) {
         out[[i]] <- loo_obj
-        out[[i]]$model_name <- names(models)[i]
+        attr(out[[i]], "model_name") <- names(models)[i]
       } else {
         args$x <- models[[i]]
         args$model_name <- names(models)[i]
@@ -156,7 +156,7 @@ compute_loos <- function(
     use_stored <- as_one_logical(use_stored)
     if (use_stored && is.loo(loo_obj)) {
       out <- loo_obj
-      out$model_name <- names(models)
+      attr(out, "model_name") <- names(models)
     } else {
       args$x <- models[[1]]
       args$model_name <- names(models)
@@ -200,7 +200,7 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
     }
     out <- SW(do.call(eval2(paste0("loo::", criterion)), loo_args))
   }
-  out$model_name <- model_name
+  attr(out, "model_name") <- model_name
   attr(out, "yhash") <- hash_response(x)
   if (criterion == "loo") {
     if (reloo) {
@@ -235,12 +235,12 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
-#' add_criterion(fit1) <- "waic"
+#' fit1 <- add_criterion(fit1, "waic")
 #' 
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
-#' add_criterion(fit2) <- "waic"
+#' fit2 <- add_criterion(fit2, "waic")
 #' 
 #' # compare both models
 #' loo_compare(fit1, fit2, criterion = "waic")
@@ -271,28 +271,24 @@ loo_compare.brmsfit <- function(
 #' Add model fit criteria to model objects
 #' 
 #' @param x An \R object typically of class \code{brmsfit}.
-#' @param criterion,value Names of model fit criteria
+#' @param criterion Names of model fit criteria
 #'   to compute. Currently supported are \code{"loo"}, 
 #'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
 #'   \code{"marglik"} (log marginal likelihood).
 #' @param model_name Optional name of the model. If \code{NULL}
 #'   (the default) the name is taken from the call to \code{x}.
-#' @param overwrite Logical; Indicates if already stored model fit
-#'  criteria should be overwritten. Defaults to \code{FALSE}.
 #' @param ... Further arguments passed to the underlying 
 #'   functions computing the model fit criteria.
 #'   
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
-#'   
-#' @details The methods \code{add_loo} and add \code{add_waic}
-#'   are just convenient wrappers around \code{add_criterion}.
+#'   Previously computed criterion objects will be overwritten.
 #'   
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ Trt, epilepsy, poisson())
+#' fit <- brm(count ~ Trt, data = epilepsy)
 #' # add both LOO and WAIC at once
-#' fit <- add_criterion(fit, criterion = c("loo", "waic"))
+#' fit <- add_criterion(fit, c("loo", "waic"))
 #' print(fit$loo)
 #' print(fit$waic)
 #' }
@@ -304,8 +300,7 @@ add_criterion <- function(x, ...) {
 
 #' @rdname add_criterion
 #' @export
-add_criterion.brmsfit <- function(x, criterion, model_name = NULL, 
-                                  overwrite = FALSE, ...) {
+add_criterion.brmsfit <- function(x, criterion, model_name = NULL, ...) {
   unused_args <- intersect(names(list(...)), args_not_for_reloo())
   if (length(unused_args)) {
     unused_args <- collapse_comma(unused_args)
@@ -323,14 +318,12 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     stop2("Argument 'criterion' should be a subset of ",
           collapse_comma(options))
   }
-  overwrite <- as_one_logical(overwrite)
-  if (overwrite) {
-    x[criterion] <- list(NULL)
-  }
+  # remove previously stored criterion objects
+  x[criterion] <- list(NULL)
   args <- list(x, ...)
   for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
     x[[fun]] <- do.call(fun, args)
-    x[[fun]]$model_name <- model_name
+    attr(x[[fun]], "model_name") <- model_name
   }
   if ("r2" %in% criterion) {
     args$summary <- FALSE
@@ -340,24 +333,6 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     x$marglik <- do.call(bridge_sampler, args)
   }
   x
-}
-
-#' @rdname add_criterion
-#' @export
-'add_criterion<-' <- function(x, ..., value) {
-  add_criterion(x, criterion = value, ...)
-}
-
-#' @rdname add_criterion
-#' @export
-add_loo <- function(x, ...) {
-  add_criterion(x, criterion = "loo", ...)
-}
-
-#' @rdname add_criterion
-#' @export
-add_waic <- function(x, ...) {
-  add_criterion(x, criterion = "waic", ...)
 }
 
 args_not_for_reloo <- function() {
@@ -504,7 +479,8 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
   # most of the code is taken from rstanarm:::reloo
   stopifnot(is.brmsfit(fit))
   model_name <- deparse(substitute(fit))
-  if (check && !is_equal(model_name, x$model_name)) {
+  stored_name <- loo::find_model_names(list(x))
+  if (check && !is_equal(model_name, stored_name)) {
     loo_name <- deparse(substitute(x))
     stop2(
       "Object '", loo_name, "' appears to be generated from ",
@@ -784,13 +760,26 @@ add_ic <- function(x, ...) {
 
 #' @rdname add_ic
 #' @export
-add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, 
-                           overwrite = FALSE, ...) {
+add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
   warning2("'add_ic' is deprecated. Please use 'add_criterion' instead.")
-  add_criterion(
-    x, criterion = ic, model_name = model_name,
-    overwrite = overwrite, ...
-  )
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  add_criterion(x, criterion = ic, model_name = model_name, ...)
+}
+
+#' @rdname add_ic
+#' @export
+add_loo <- function(x, ...) {
+  add_ic(x, ic = "loo", ...)
+}
+
+#' @rdname add_ic
+#' @export
+add_waic <- function(x, ...) {
+  add_ic(x, ic = "waic", ...)
 }
 
 #' @rdname add_ic
@@ -819,13 +808,13 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
 #'   
 #' @return An object of class \code{iclist}.
 #' 
-#' @details For more details see \code{\link[loo:compare]{compare}}.
+#' @details See \code{\link[loo_compare]{loo_compare}} for the 
+#'   recommended way of comparing models with the \pkg{loo} package.
 #' 
 #' @seealso 
-#'   \code{\link{waic}}, 
 #'   \code{\link{loo}},
-#'   \code{\link{add_ic}},
-#'   \code{\link[loo:compare]{compare}}
+#'   \code{\link{loo_compare}}
+#'   \code{\link{add_criterion}}
 #'   
 #' @examples 
 #' \dontrun{
@@ -892,7 +881,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
       "values of at least two models do not match."
     )
   }
-  names(x) <- ulapply(x, "[[", "model_name")
+  names(x) <- loo::find_model_names(x)
   n_models <- length(x)
   ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
   rnames <- rep("", nrow(ic_diffs))

@@ -35,12 +35,12 @@ All \code{brmsfit} objects should contain precomputed
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
             data = inhaler)
-add_criterion(fit1) <- "waic"
+fit1 <- add_criterion(fit1, "waic")
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler)
-add_criterion(fit2) <- "waic"
+fit2 <- add_criterion(fit2, "waic")
 
 # compare both models
 loo_compare(fit1, fit2, criterion = "waic")

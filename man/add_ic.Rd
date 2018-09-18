@@ -3,13 +3,18 @@
 \name{add_ic}
 \alias{add_ic}
 \alias{add_ic.brmsfit}
+\alias{add_loo}
+\alias{add_waic}
 \alias{add_ic<-}
 \title{Add model fit criteria to model objects}
 \usage{
 add_ic(x, ...)
 
-\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL,
-  overwrite = FALSE, ...)
+\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL, ...)
+
+add_loo(x, ...)
+
+add_waic(x, ...)
 
 add_ic(x, ...) <- value
 }
@@ -26,9 +31,6 @@ to compute. Currently supported are \code{"loo"},
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
-
-\item{overwrite}{Logical; Indicates if already stored model fit
-criteria should be overwritten. Defaults to \code{FALSE}.}
 }
 \value{
 
