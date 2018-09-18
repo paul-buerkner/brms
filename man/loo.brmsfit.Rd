@@ -5,7 +5,7 @@
 \alias{loo}
 \alias{LOO}
 \alias{LOO.brmsfit}
-\title{Compute the LOO information criterion}
+\title{Efficient approximate leave-one-out cross-validation (LOO)}
 \usage{
 \method{loo}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
   pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
@@ -43,8 +43,8 @@ derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{
-If just one object is provided, an object of class \code{ic}. 
- If multiple objects are provided, an object of class \code{iclist}.
+If just one object is provided, an object of class \code{loo}. 
+ If multiple objects are provided, an object of class \code{loolist}.
 }
 \description{
 Perform approximate leave-one-out cross-validation based 
@@ -52,9 +52,8 @@ on the posterior likelihood using the \pkg{loo} package.
 For more details see \code{\link[loo:loo]{loo}}.
 }
 \details{
-When comparing models fitted to the same data, 
- the smaller the LOO, the better the fit. For \code{brmsfit} 
- objects, \code{LOO} is an alias of \code{loo}.
+See \code{\link{loo_compare}} for details on model comparisons.
+ For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
  Use method \code{\link{add_ic}} to store
  information criteria in the fitted model object for later usage.
 }

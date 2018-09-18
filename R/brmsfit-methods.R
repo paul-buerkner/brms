@@ -1336,10 +1336,14 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   ppc_args <- c(list(y, yrep), dots[!for_pred])
   if ("psis_object" %in% names(formals(ppc_fun)) && 
       !"psis_object" %in% names(ppc_args)) {
-    ppc_args$psis_object <- do.call(compute_ic, c(pred_args, ic = "psis"))
+    ppc_args$psis_object <- do.call(
+      compute_loo, c(pred_args, criterion = "psis")
+    )
   }
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
-    ppc_args$lw <- weights(do.call(compute_ic, c(pred_args, ic = "psis")))
+    ppc_args$lw <- weights(
+      do.call(compute_loo, c(pred_args, criterion = "psis"))
+    )
   }
   # allow using arguments 'group' and 'x' for new data
   mf <- update_data(newdata, bterms, na.action = na.pass)
@@ -2554,6 +2558,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
+#' @examples 
 #' \dontrun{
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
@@ -2589,8 +2594,8 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
-  c(args) <- nlist(ic = "waic", pointwise, compare, resp)
-  do.call(compute_ics, args)
+  c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
+  do.call(compute_loos, args)
 }
 
 #' @export
@@ -2684,8 +2689,11 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
   args$use_stored_ic <- !length(not_for_reloo)
-  c(args) <- nlist(ic = "loo", pointwise, compare, resp, k_threshold, reloo)
-  do.call(compute_ics, args)
+  c(args) <- nlist(
+    criterion = "loo", pointwise, compare, 
+    resp, k_threshold, reloo
+  )
+  do.call(compute_loos, args)
 }
 
 #' @export
@@ -2700,10 +2708,10 @@ kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL,
     folds <- "loo"
   }
   c(args) <- nlist(
-    ic = "kfold", compare, K, Ksub, folds, 
+    criterion = "kfold", compare, K, Ksub, folds, 
     group, resp, save_fits, use_stored_ic
   )
-  do.call(compute_ics, args)
+  do.call(compute_loos, args)
 }
 
 #' Compute Weighted Expectations Using LOO
@@ -2774,7 +2782,7 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   stopifnot_resp(object, resp)
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_ic(object, ic = "psis", resp = resp, ...)
+    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
   }
   preds <- predict(object, resp = resp, summary = FALSE, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
@@ -2797,7 +2805,7 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
   }
   if (is.null(psis_object)) {
     message("Running PSIS to compute weights")
-    psis_object <- compute_ic(object, ic = "psis", resp = resp, ...)
+    psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
   }
   preds <- fitted(object, scale = scale, resp = resp, summary = FALSE, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value

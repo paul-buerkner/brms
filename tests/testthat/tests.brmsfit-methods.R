@@ -70,7 +70,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(combine_models(fit1, fit1)), nsamples(fit1) * 2)
   
   # bayes_R2
-  fit1 <- add_ic(fit1, "R2")
+  fit1 <- add_criterion(fit1, "R2")
   R2 <- bayes_R2(fit1, summary = FALSE)
   expect_equal(dim(R2), c(nsamples(fit1), 1))
   R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ])
@@ -577,7 +577,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(waic1$estimates))
   expect_equal(waic1, SW(waic(fit1)))
   
-  fit1 <- SW(add_ic(fit1, "waic"))
+  fit1 <- SW(add_criterion(fit1, "waic"))
   expect_equal(waic(fit1), fit1$waic)
   
   waic_compare <- SW(waic(fit1, fit1))

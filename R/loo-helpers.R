@@ -106,19 +106,21 @@ loo_R2 <- function(object, ...) {
   UseMethod("loo_R2")
 }
 
-compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold"),
-                        use_stored_ic = FALSE, compare = TRUE, ...) {
-  # helper function used to create (lists of) 'ic' objects
+compute_loos <- function(
+  models, criterion = c("loo", "waic", "psis", "psislw", "kfold"),
+  use_stored = FALSE, compare = TRUE, ...
+) {
+  # helper function used to create (lists of) 'loo' objects
   # Args:
   #   models: list of brmsfit objects
-  #   ic: name of the information criterion to compute
-  #   use_stored_ic: use recomputed ic objects if possible?
-  #   ...: more arguments passed to compute_ic
+  #   criterion: name of the criterion to compute
+  #   use_stored: use recomputed criterion objects if possible?
+  #   ...: more arguments passed to compute_loo
   # Returns:
-  #   If length(models) > 1 an object of class 'iclist'
-  #   If length(models) == 1 an object of class 'ic'
-  ic <- match.arg(ic)
-  args <- nlist(ic, ...)
+  #   If length(models) > 1 an object of class 'loolist'
+  #   If length(models) == 1 an object of class 'loo'
+  criterion <- match.arg(criterion)
+  args <- nlist(criterion, ...)
   if (length(models) > 1L) {
     warning2(
       "Passing multiple brmsfit objects to 'loo' and related methods is ",
@@ -127,58 +129,58 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
     if (!match_nobs(models)) {
       stop2("Models have different number of observations.")
     }
-    if (length(use_stored_ic) == 1L) {
-      use_stored_ic <- rep(use_stored_ic, length(models))
+    if (length(use_stored) == 1L) {
+      use_stored <- rep(use_stored, length(models))
     }
     out <- named_list(names(models))
     for (i in seq_along(models)) {
-      ic_obj <- models[[i]][[ic]]
-      if (use_stored_ic[i] && is.loo(ic_obj)) {
-        out[[i]] <- ic_obj
+      loo_obj <- models[[i]][[criterion]]
+      if (use_stored[i] && is.loo(loo_obj)) {
+        out[[i]] <- loo_obj
         out[[i]]$model_name <- names(models)[i]
       } else {
         args$x <- models[[i]]
         args$model_name <- names(models)[i]
-        out[[i]] <- do.call(compute_ic, args) 
+        out[[i]] <- do.call(compute_loo, args) 
       }
     }
     compare <- as_one_logical(compare)
     if (compare) {
-      diffs__ <- loo::loo_compare(out)
+      diffs__ <- loo_compare(out)
       out <- SW(compare_ic(x = out))
       out$diffs__ <- diffs__
     }
     class(out) <- "loolist"
   } else {
-    ic_obj <- models[[1]][[ic]]
-    use_stored_ic <- as_one_logical(use_stored_ic)
-    if (use_stored_ic && is.loo(ic_obj)) {
-      out <- ic_obj
+    loo_obj <- models[[1]][[criterion]]
+    use_stored <- as_one_logical(use_stored)
+    if (use_stored && is.loo(loo_obj)) {
+      out <- loo_obj
       out$model_name <- names(models)
     } else {
       args$x <- models[[1]]
       args$model_name <- names(models)
-      out <- do.call(compute_ic, args) 
+      out <- do.call(compute_loo, args) 
     }
   }
   out
 }
 
-compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
-                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
-                       model_name = "", ...) {
+compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
+                        reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
+                        model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
-  #   ic: the information criterion to be computed
+  #   criterion: the criterion to be computed
   #   model_name: original variable name of object 'x'
   #   reloo: call 'reloo' after computing 'loo'?
   #   pointwise: compute log-likelihood point-by-point?
   #   ...: passed to other post-processing methods
   # Returns:
-  #   an object of class 'ic' which inherits from class 'loo'
-  ic <- match.arg(ic)
-  if (ic == "kfold") {
+  #   an object of class 'loo'
+  criterion <- match.arg(criterion)
+  if (criterion == "kfold") {
     out <- do.call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
@@ -189,18 +191,18 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
       loo_args$draws <- attr(loo_args$x, "draws")
       loo_args$data <- attr(loo_args$x, "data")
     }
-    if (ic == "psis") {
+    if (criterion == "psis") {
       if (pointwise) {
         stop2("Cannot use pointwise evaluation for 'psis'.")
       }
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }
-    out <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
+    out <- SW(do.call(eval2(paste0("loo::", criterion)), loo_args))
   }
   out$model_name <- model_name
   attr(out, "yhash") <- hash_response(x)
-  if (ic == "loo") {
+  if (criterion == "loo") {
     if (reloo) {
       reloo_args <- nlist(x = out, fit = x, k_threshold, check = FALSE)
       out <- do.call(reloo.loo, c(reloo_args, ...))
@@ -214,10 +216,11 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 
 #' Model comparison with the \pkg{loo} package
 #' 
-#' @name loo_compare
+#' @aliases loo_compare
 #' 
-#' @param x An object of class "\code{loo}" or a list of such objects.
-#' @param ... Additional objects of class "\code{loo}".
+#' @inheritParams loo.brmsfit
+#' @param criterion The name of the criterion to be extracted 
+#'   from \code{brmsfit} objects.
 #' 
 #' @details See \code{\link[loo:loo_compare]{loo::loo_compare}} for details.
 #'   
@@ -228,229 +231,132 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
 #' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler)
-#' (waic1 <- waic(fit1))
+#' add_criterion(fit1) <- "waic"
 #' 
 #' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler)
-#' (waic2 <- waic(fit2))
+#' add_criterion(fit2) <- "waic"
 #' 
 #' # compare both models
-#' (loo_compare(waic1, waic2))
+#' loo_compare(fit1, fit2, criterion = "waic")
 #' }
 #' 
 #' @importFrom loo loo_compare
 #' @export loo_compare
-NULL
-
-#' Compare Information Criteria of Different Models
-#'
-#' Compare information criteria of different models fitted
-#' with \code{\link{waic}} or \code{\link{loo}}.
-#' Deprecated and will be removed in the future. Please use
-#' \code{\link{loo_compare}} instead.
-#' 
-#' @param ... At least two objects returned by 
-#'   \code{\link{waic}} or \code{\link{loo}}.
-#'   Alternatively, \code{brmsfit} objects with information 
-#'   criteria precomputed via \code{\link{add_ic}}
-#'   may be passed, as well.
-#' @param x A \code{list} containing the same types of objects as
-#'   can be passed via \code{...}.
-#' @param ic The name of the information criterion to be extracted 
-#'   from \code{brmsfit} objects. Ignored if information 
-#'   criterion objects are only passed directly.
-#'   
-#' @return An object of class \code{iclist}.
-#' 
-#' @details For more details see \code{\link[loo:compare]{compare}}.
-#' 
-#' @seealso 
-#'   \code{\link{waic}}, 
-#'   \code{\link{loo}},
-#'   \code{\link{add_ic}},
-#'   \code{\link[loo:compare]{compare}}
-#'   
-#' @examples 
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
-#' waic1 <- waic(fit1)
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
-#' waic2 <- waic(fit2)
-#' 
-#' # compare both models
-#' compare_ic(waic1, waic2)
-#' }
-#' 
 #' @export
-compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
-  # will be removed in brms 3.0
-  warning2(
-    "'compare_ic' is deprecated and will be removed ", 
-    "in the future. Please use 'loo_compare' instead."
-  )
-  ic <- match.arg(ic)
-  if (!(is.null(x) || is.list(x))) {
-    stop2("Argument 'x' should be a list.")
+loo_compare.brmsfit <- function(
+  x, ..., criterion = c("loo", "waic", "kfold"),
+  model_names = NULL
+) {
+  criterion <- match.arg(criterion)
+  args <- split_dots(x, ..., model_names = model_names)
+  models <- args$models
+  args$models <- NULL
+  loos <- named_list(names(models))
+  for (i in seq_along(loos)) {
+    args$x <- models[[i]]
+    args$model_names <- names(models)[i]
+    loos[[i]] <- do.call(criterion, args)
   }
-  x$ic_diffs__ <- NULL
-  x <- c(list(...), x)
-  for (i in seq_along(x)) {
-    # extract precomputed values from brmsfit objects
-    if (is.brmsfit(x[[i]]) && !is.null(x[[i]][[ic]])) {
-      x[[i]] <- x[[i]][[ic]]
-    }
-  }
-  if (!all(sapply(x, inherits, "loo"))) {
-    stop2("All inputs should have class 'loo' ", 
-          "or contain precomputed 'loo' objects.")
-  }
-  if (length(x) < 2L) {
-    stop2("Expecting at least two objects.")
-  }
-  ics <- unname(sapply(x, function(y) rownames(y$estimates)[3]))
-  if (!all(ics %in% ics[1])) {
-    stop2("All inputs should be from the same criterion.")
-  }
-  if (ics[1] == "kfoldic") {
-    Ks <- sapply(x, "[[", "K")
-    if (!all(Ks %in% Ks[1])) {
-      stop2("'K' differs across kfold objects.")
-    }
-    subs <- lengths(lapply(x, "[[", "Ksub"))
-    subs <- ifelse(subs %in% 0, Ks, subs)
-    if (!all(subs %in% subs[1])) {
-      stop2("The number of subsets differs across kfold objects.")
-    }
-  }
-  yhash <- lapply(x, attr, which = "yhash")
-  yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
-  if (!all(yhash_check)) {
-    warning2(
-      "Model comparisons are likely invalid as the response ", 
-      "values of at least two models do not match."
-    )
-  }
-  names(x) <- ulapply(x, "[[", "model_name")
-  n_models <- length(x)
-  ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
-  rnames <- rep("", nrow(ic_diffs))
-  # pairwise comparision to get differences in ICs and their SEs
-  n <- 1
-  for (i in seq_len(n_models - 1)) {
-    for (j in (i + 1):n_models) {
-      tmp <- SW(loo::compare(x[[j]], x[[i]]))
-      ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]]) 
-      rnames[n] <- paste(names(x)[i], "-", names(x)[j])
-      n <- n + 1
-    }
-  }
-  rownames(ic_diffs) <- rnames
-  colnames(ic_diffs) <- c(toupper(ics[1]), "SE")
-  x$ic_diffs__ <- ic_diffs
-  class(x) <- "iclist"
-  x
+  loo_compare(loos)
 }
 
-#' Add information criteria and fit indices to fitted model objects
+#' Add model fit criteria to model objects
 #' 
 #' @param x An \R object typically of class \code{brmsfit}.
-#' @param ic,value Names of the information criteria / fit indices 
+#' @param criterion,value Names of model fit criteria
 #'   to compute. Currently supported are \code{"loo"}, 
 #'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
 #'   \code{"marglik"} (log marginal likelihood).
 #' @param model_name Optional name of the model. If \code{NULL}
 #'   (the default) the name is taken from the call to \code{x}.
-#' @param overwrite Logical; Indicates if already stored fit 
-#'   indices should be overwritten. Defaults to \code{FALSE}.
+#' @param overwrite Logical; Indicates if already stored model fit
+#'  criteria should be overwritten. Defaults to \code{FALSE}.
 #' @param ... Further arguments passed to the underlying 
-#'   functions computing the information criteria or fit indices.
+#'   functions computing the model fit criteria.
 #'   
 #' @return An object of the same class as \code{x}, but
-#'   with information criteria added for later usage.
+#'   with model fit criteria added for later usage.
 #'   
 #' @details The methods \code{add_loo} and add \code{add_waic}
-#'   are just convenient wrappers around \code{add_ic}.
+#'   are just convenient wrappers around \code{add_criterion}.
 #'   
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ Trt, epilepsy, poisson())
 #' # add both LOO and WAIC at once
-#' fit <- add_ic(fit, ic = c("loo", "waic"))
+#' fit <- add_criterion(fit, criterion = c("loo", "waic"))
 #' print(fit$loo)
 #' print(fit$waic)
 #' }
 #' 
 #' @export
-add_ic <- function(x, ...) {
-  UseMethod("add_ic")
+add_criterion <- function(x, ...) {
+  UseMethod("add_criterion")
 }
 
-#' @rdname add_ic
+#' @rdname add_criterion
 #' @export
-add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, 
-                           overwrite = FALSE, ...) {
+add_criterion.brmsfit <- function(x, criterion, model_name = NULL, 
+                                  overwrite = FALSE, ...) {
   unused_args <- intersect(names(list(...)), args_not_for_reloo())
   if (length(unused_args)) {
     unused_args <- collapse_comma(unused_args)
-    stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
+    stop2("Cannot use arguments ", unused_args, 
+          " in calls to 'add_criterion'.")
   }
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
     model_name <- deparse_combine(substitute(x)) 
   }
-  ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic", "kfold", "r2", "marglik")
-  if (!length(ic) || !all(ic %in% valid_ics)) {
-    stop2("Argument 'ic' should be a subset of ",
-          collapse_comma(valid_ics))
+  criterion <- unique(tolower(as.character(criterion)))
+  options <- c("loo", "waic", "kfold", "r2", "marglik")
+  if (!length(criterion) || !all(criterion %in% options)) {
+    stop2("Argument 'criterion' should be a subset of ",
+          collapse_comma(options))
   }
   overwrite <- as_one_logical(overwrite)
   if (overwrite) {
-    x[ic] <- list(NULL)
+    x[criterion] <- list(NULL)
   }
   args <- list(x, ...)
-  for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
+  for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
     x[[fun]] <- do.call(fun, args)
     x[[fun]]$model_name <- model_name
   }
-  if ("r2" %in% ic) {
+  if ("r2" %in% criterion) {
     args$summary <- FALSE
     x$R2 <- do.call(bayes_R2, args)
   }
-  if ("marglik" %in% ic) {
+  if ("marglik" %in% criterion) {
     x$marglik <- do.call(bridge_sampler, args)
   }
   x
 }
 
-#' @rdname add_ic 
+#' @rdname add_criterion
 #' @export
-'add_ic<-' <- function(x, ..., value) {
-  add_ic(x, ic = value, ...)
+'add_criterion<-' <- function(x, ..., value) {
+  add_criterion(x, criterion = value, ...)
 }
 
-#' @rdname add_ic
+#' @rdname add_criterion
 #' @export
 add_loo <- function(x, ...) {
-  add_ic(x, ic = "loo", ...)
+  add_criterion(x, criterion = "loo", ...)
 }
 
-#' @rdname add_ic
+#' @rdname add_criterion
 #' @export
 add_waic <- function(x, ...) {
-  add_ic(x, ic = "waic", ...)
+  add_criterion(x, criterion = "waic", ...)
 }
 
 args_not_for_reloo <- function() {
   # arguments not usable with 'reloo'
-  # the same arguments cannot be used in add_ic
+  # the same arguments cannot be used in add_criterion
   c("newdata", "re_formula", "subset", "nsamples",
     "allow_new_levels", "sample_new_levels", "new_objects")
 }
@@ -820,7 +726,6 @@ r_eff_helper <- function(log_lik, fit) {
 
 #' @export
 print.loolist <- function(x, digits = 1, ...) {
-  # deprecated as of brms > 2.5.0 but will be retained
   # print the output of LOO and WAIC with multiple models
   loos <- x
   loos$ic_diffs__ <- loos$diffs__ <- NULL
@@ -841,6 +746,165 @@ print.loolist <- function(x, digits = 1, ...) {
     print(x$diffs__, digits = digits, ...)
   }
   invisible(x)
+}
+
+#' @importFrom loo print_dims
+#' @export
+print_dims.kfold <- function(x, ...) {
+  sub <- length(x$Ksub)
+  sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
+  cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
+}
+
+
+# ---------- deprecated functions ------------ #
+
+#' Add model fit criteria to model objects
+#' 
+#' Deprecated alias of \code{\link{add_criterion}}.
+#' 
+#' @inheritParams add_criterion
+#' @param ic,value Names of model fit criteria
+#'   to compute. Currently supported are \code{"loo"}, 
+#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+#'   \code{"marglik"} (log marginal likelihood).
+#' 
+#' @return 
+#' 
+#' @export
+add_ic <- function(x, ...) {
+  UseMethod("add_ic")
+}
+
+#' @rdname add_ic
+#' @export
+add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, 
+                           overwrite = FALSE, ...) {
+  warning2("'add_ic' is deprecated. Please use 'add_criterion' instead.")
+  add_criterion(
+    x, criterion = ic, model_name = model_name,
+    overwrite = overwrite, ...
+  )
+}
+
+#' @rdname add_ic
+#' @export
+'add_ic<-' <- function(x, ..., value) {
+  add_ic(x, ic = value, ...)
+}
+
+#' Compare Information Criteria of Different Models
+#'
+#' Compare information criteria of different models fitted
+#' with \code{\link{waic}} or \code{\link{loo}}.
+#' Deprecated and will be removed in the future. Please use
+#' \code{\link{loo_compare}} instead.
+#' 
+#' @param ... At least two objects returned by 
+#'   \code{\link{waic}} or \code{\link{loo}}.
+#'   Alternatively, \code{brmsfit} objects with information 
+#'   criteria precomputed via \code{\link{add_ic}}
+#'   may be passed, as well.
+#' @param x A \code{list} containing the same types of objects as
+#'   can be passed via \code{...}.
+#' @param ic The name of the information criterion to be extracted 
+#'   from \code{brmsfit} objects. Ignored if information 
+#'   criterion objects are only passed directly.
+#'   
+#' @return An object of class \code{iclist}.
+#' 
+#' @details For more details see \code{\link[loo:compare]{compare}}.
+#' 
+#' @seealso 
+#'   \code{\link{waic}}, 
+#'   \code{\link{loo}},
+#'   \code{\link{add_ic}},
+#'   \code{\link[loo:compare]{compare}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' waic1 <- waic(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' waic2 <- waic(fit2)
+#' 
+#' # compare both models
+#' compare_ic(waic1, waic2)
+#' }
+#' 
+#' @export
+compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
+  # will be removed in brms 3.0
+  warning2(
+    "'compare_ic' is deprecated and will be removed ", 
+    "in the future. Please use 'loo_compare' instead."
+  )
+  ic <- match.arg(ic)
+  if (!(is.null(x) || is.list(x))) {
+    stop2("Argument 'x' should be a list.")
+  }
+  x$ic_diffs__ <- NULL
+  x <- c(list(...), x)
+  for (i in seq_along(x)) {
+    # extract precomputed values from brmsfit objects
+    if (is.brmsfit(x[[i]]) && !is.null(x[[i]][[ic]])) {
+      x[[i]] <- x[[i]][[ic]]
+    }
+  }
+  if (!all(sapply(x, inherits, "loo"))) {
+    stop2("All inputs should have class 'loo' ", 
+          "or contain precomputed 'loo' objects.")
+  }
+  if (length(x) < 2L) {
+    stop2("Expecting at least two objects.")
+  }
+  ics <- unname(sapply(x, function(y) rownames(y$estimates)[3]))
+  if (!all(ics %in% ics[1])) {
+    stop2("All inputs should be from the same criterion.")
+  }
+  if (ics[1] == "kfoldic") {
+    Ks <- sapply(x, "[[", "K")
+    if (!all(Ks %in% Ks[1])) {
+      stop2("'K' differs across kfold objects.")
+    }
+    subs <- lengths(lapply(x, "[[", "Ksub"))
+    subs <- ifelse(subs %in% 0, Ks, subs)
+    if (!all(subs %in% subs[1])) {
+      stop2("The number of subsets differs across kfold objects.")
+    }
+  }
+  yhash <- lapply(x, attr, which = "yhash")
+  yhash_check <- ulapply(yhash, is_equal, yhash[[1]])
+  if (!all(yhash_check)) {
+    warning2(
+      "Model comparisons are likely invalid as the response ", 
+      "values of at least two models do not match."
+    )
+  }
+  names(x) <- ulapply(x, "[[", "model_name")
+  n_models <- length(x)
+  ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
+  rnames <- rep("", nrow(ic_diffs))
+  # pairwise comparision to get differences in ICs and their SEs
+  n <- 1
+  for (i in seq_len(n_models - 1)) {
+    for (j in (i + 1):n_models) {
+      tmp <- SW(loo::compare(x[[j]], x[[i]]))
+      ic_diffs[n, ] <- c(-2 * tmp[["elpd_diff"]], 2 * tmp[["se"]]) 
+      rnames[n] <- paste(names(x)[i], "-", names(x)[j])
+      n <- n + 1
+    }
+  }
+  rownames(ic_diffs) <- rnames
+  colnames(ic_diffs) <- c(toupper(ics[1]), "SE")
+  x$ic_diffs__ <- ic_diffs
+  class(x) <- "iclist"
+  x
 }
 
 #' @export
@@ -870,12 +934,4 @@ print.iclist <- function(x, digits = 2, ...) {
   }
   print(round(mat, digits = digits), na.print = "")
   invisible(x)
-}
-
-#' @importFrom loo print_dims
-#' @export
-print_dims.kfold <- function(x, ...) {
-  sub <- length(x$Ksub)
-  sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
-  cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
 }
