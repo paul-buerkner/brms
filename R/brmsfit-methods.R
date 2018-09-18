@@ -1986,22 +1986,28 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @rdname model_weights
 #' @export
 model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) {
-  args <- split_dots(x, ..., model_names = model_names)
-  model_names <- names(args$models)
-  args <- c(unname(args$models), args)
-  args$models <- NULL
+  options <- c("loo", "waic", "kfold", "loo2", "marglik")
   weights <- tolower(weights)
-  weights <- match.arg(weights, c("loo", "waic", "kfold", "loo2", "marglik"))
+  weights <- match.arg(weights, options)
+  args <- split_dots(x, ..., model_names = model_names)
+  models <- args$models
+  args$models <- NULL
+  model_names <- names(models)
   if (weights %in% c("loo", "waic", "kfold")) {
     # Akaike weights based on information criteria
-    args$compare <- FALSE
-    ics <- SW(do.call(weights, args))
-    ics <- ulapply(ics, function(x) x$estimates[3, 1])
+    ics <- rep(NA, length(models))
+    for (i in seq_along(ics)) {
+      args$x <- models[[i]]
+      args$model_names <- names(models)[i]
+      ics[i] <- SW(do.call(weights, args))$estimates[3, 1]
+    }
     ic_diffs <- ics - min(ics)
-    out <- exp(- ic_diffs / 2)
+    out <- exp(-ic_diffs / 2)
   } else if (weights %in% "loo2") {
+    args <- c(unname(models), args)
     out <- do.call("loo_model_weights", args)
   } else if (weights %in% "marglik") {
+    args <- c(unname(models), args)
     out <- do.call("post_prob", args)
   }
   out <- as.numeric(out)
