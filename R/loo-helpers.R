@@ -216,13 +216,17 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
 
 #' Model comparison with the \pkg{loo} package
 #' 
+#' For more details see \code{\link[loo:loo_compare]{loo_compare}}.
+#' 
 #' @aliases loo_compare
 #' 
 #' @inheritParams loo.brmsfit
+#' @param ... More \code{brmsfit} objects.
 #' @param criterion The name of the criterion to be extracted 
 #'   from \code{brmsfit} objects.
 #' 
-#' @details See \code{\link[loo:loo_compare]{loo::loo_compare}} for details.
+#' @details All \code{brmsfit} objects should contain precomputed
+#'   criterion objects. See \code{\link{add_criterion}} for more help.
 #'   
 #' @return An object of class "\code{compare.loo}".
 #' 
@@ -250,14 +254,16 @@ loo_compare.brmsfit <- function(
   model_names = NULL
 ) {
   criterion <- match.arg(criterion)
-  args <- split_dots(x, ..., model_names = model_names)
-  models <- args$models
-  args$models <- NULL
+  models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   loos <- named_list(names(models))
-  for (i in seq_along(loos)) {
-    args$x <- models[[i]]
-    args$model_names <- names(models)[i]
-    loos[[i]] <- do.call(criterion, args)
+  for (i in seq_along(models)) {
+    if (is.null(models[[i]][[criterion]])) {
+      stop2(
+        "Model '", names(models)[i], "' does not contain a precomputed '",
+        criterion, "' criterion. See ?loo_compare.brmsfit for help."
+      )
+    }
+    loos[[i]] <- models[[i]][[criterion]]
   }
   loo_compare(loos)
 }

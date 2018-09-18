@@ -9,10 +9,9 @@
   "kfold"), model_names = NULL)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
-passed to the underlying post-processing functions.}
+\item{...}{More \code{brmsfit} objects.}
 
 \item{criterion}{The name of the criterion to be extracted 
 from \code{brmsfit} objects.}
@@ -25,10 +24,11 @@ values as model names.}
 An object of class "\code{compare.loo}".
 }
 \description{
-Model comparison with the \pkg{loo} package
+For more details see \code{\link[loo:loo_compare]{loo_compare}}.
 }
 \details{
-See \code{\link[loo:loo_compare]{loo::loo_compare}} for details.
+All \code{brmsfit} objects should contain precomputed
+  criterion objects. See \code{\link{add_criterion}} for more help.
 }
 \examples{
 \dontrun{

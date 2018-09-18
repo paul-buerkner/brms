@@ -2615,8 +2615,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' 
 #' @aliases loo LOO LOO.brmsfit
 #' 
-#' @param x A fitted model object.
-#' @param ... More fitted model objects or further arguments
+#' @param x A \code{brmsfit} object.
+#' @param ... More \code{brmsfit} objects or further arguments
 #'   passed to the underlying post-processing functions.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
