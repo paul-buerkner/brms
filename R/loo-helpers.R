@@ -22,7 +22,7 @@ compute_loos <- function(
   # Args:
   #   models: list of brmsfit objects
   #   criterion: name of the criterion to compute
-  #   use_stored: use recomputed criterion objects if possible?
+  #   use_stored: use precomputed criterion objects if possible?
   #   ...: more arguments passed to compute_loo
   # Returns:
   #   If length(models) > 1 an object of class 'loolist'
@@ -42,15 +42,10 @@ compute_loos <- function(
     }
     out <- named_list(names(models))
     for (i in seq_along(models)) {
-      loo_obj <- models[[i]][[criterion]]
-      if (use_stored[i] && is.loo(loo_obj)) {
-        out[[i]] <- loo_obj
-        attr(out[[i]], "model_name") <- names(models)[i]
-      } else {
-        args$x <- models[[i]]
-        args$model_name <- names(models)[i]
-        out[[i]] <- do.call(compute_loo, args) 
-      }
+      args$x <- models[[i]]
+      args$model_name <- names(models)[i]
+      args$use_stored <- use_stored[i]
+      out[[i]] <- do.call(compute_loo, args) 
     }
     compare <- as_one_logical(compare)
     if (compare) {
@@ -60,60 +55,64 @@ compute_loos <- function(
     }
     class(out) <- "loolist"
   } else {
-    loo_obj <- models[[1]][[criterion]]
-    use_stored <- as_one_logical(use_stored)
-    if (use_stored && is.loo(loo_obj)) {
-      out <- loo_obj
-      attr(out, "model_name") <- names(models)
-    } else {
-      args$x <- models[[1]]
-      args$model_name <- names(models)
-      out <- do.call(compute_loo, args) 
-    }
+    args$x <- models[[1]]
+    args$model_name <- names(models)
+    args$use_stored <- use_stored
+    out <- do.call(compute_loo, args) 
   }
   out
 }
 
 compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
                         reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
-                        model_name = "", ...) {
+                        model_name = "", use_stored = TRUE, ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   criterion: the criterion to be computed
   #   model_name: original variable name of object 'x'
+  #   use_stored: use precomputed criterion objects if possible?
   #   reloo: call 'reloo' after computing 'loo'?
   #   pointwise: compute log-likelihood point-by-point?
   #   ...: passed to other post-processing methods
   # Returns:
   #   an object of class 'loo'
   criterion <- match.arg(criterion)
-  if (criterion == "kfold") {
-    out <- do.call(kfold_internal, list(x, ...))
+  model_name <- as_one_character(model_name)
+  use_stored <- as_one_logical(use_stored)
+  if (use_stored && is.loo(x[[criterion]])) {
+    # extract the stored criterion
+    out <- x[[criterion]]
   } else {
-    contains_samples(x)
-    pointwise <- as_one_logical(pointwise)
-    loo_args <- list(...)
-    loo_args$x <- log_lik(x, pointwise = pointwise, ...)
-    if (pointwise) {
-      loo_args$draws <- attr(loo_args$x, "draws")
-      loo_args$data <- attr(loo_args$x, "data")
-    }
-    if (criterion == "psis") {
+    # compute the criterion
+    if (criterion == "kfold") {
+      out <- do.call(kfold_internal, list(x, ...))
+    } else {
+      contains_samples(x)
+      pointwise <- as_one_logical(pointwise)
+      loo_args <- list(...)
+      loo_args$x <- log_lik(x, pointwise = pointwise, ...)
       if (pointwise) {
-        stop2("Cannot use pointwise evaluation for 'psis'.")
+        loo_args$draws <- attr(loo_args$x, "draws")
+        loo_args$data <- attr(loo_args$x, "data")
       }
-      loo_args$log_ratios <- -loo_args$x
-      loo_args$x <- NULL
+      if (criterion == "psis") {
+        if (pointwise) {
+          stop2("Cannot use pointwise evaluation for 'psis'.")
+        }
+        loo_args$log_ratios <- -loo_args$x
+        loo_args$x <- NULL
+      }
+      fun <- eval2(paste0("loo::", criterion))
+      out <- SW(do.call(fun, loo_args))
     }
-    out <- SW(do.call(eval2(paste0("loo::", criterion)), loo_args))
+    attr(out, "yhash") <- hash_response(x)
   }
   attr(out, "model_name") <- model_name
-  attr(out, "yhash") <- hash_response(x)
   if (criterion == "loo") {
     if (reloo) {
       reloo_args <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- do.call(reloo.loo, c(reloo_args, ...))
+      out <- do.call(reloo, c(reloo_args, ...))
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -336,8 +335,8 @@ validate_models <- function(models, model_names, sub_names) {
 #' return incorrect results.
 #' 
 #' @inheritParams loo.brmsfit
-#' @param x An \R object typically of class \code{loo}.
-#' @param fit An \R object typically of class \code{brmsfit}.
+#' @param x An \R object of class \code{loo}.
+#' @param fit An \R object of class \code{brmsfit}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
@@ -349,7 +348,7 @@ validate_models <- function(models, model_names, sub_names) {
 #'   \code{\link{update.brmsfit}} such
 #'   as \code{iter}, \code{chains}, or \code{cores}.
 #'   
-#' @return An object of the class as \code{x}.
+#' @return An object of the class \code{loo}.
 #' 
 #' @details 
 #' Warnings about Pareto \eqn{k} estimates indicate observations
@@ -369,23 +368,17 @@ validate_models <- function(models, model_names, sub_names) {
 #' @examples 
 #' \dontrun{
 #' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
+#'             data = epilepsy, family = poisson())
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
-#' (loo1 <- reloo(loo1, fit1))
+#' (reloo1 <- reloo(loo1, fit1, chains = 1))
 #' }
 #' 
 #' @export
-reloo <- function(x, ...) {
-  UseMethod("reloo")
-}
-
-#' @rdname reloo
-#' @export
-reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE,
-                      resp = NULL, ...) {
+reloo <- function(x, fit, k_threshold = 0.7, check = TRUE, 
+                  resp = NULL, ...) {
   # most of the code is taken from rstanarm:::reloo
-  stopifnot(is.brmsfit(fit))
+  stopifnot(is.loo(x), is.brmsfit(fit))
   model_name <- deparse(substitute(fit))
   stored_name <- loo::find_model_names(list(x))
   if (check && !is_equal(model_name, stored_name)) {
@@ -568,12 +561,11 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
   estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
   estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
-  out <- nlist(
-    estimates, pointwise = cbind(elpd_kfold = elpds),
-    K, Ksub, group, folds, fold_type
-  )
+  out <- nlist(estimates, pointwise = cbind(elpd_kfold = elpds))
+  atts <- nlist(K, Ksub, group, folds, fold_type)
+  attributes(out)[names(atts)] <- atts
   if (save_fits) {
-    out$fits <- fits 
+    out$fits <- fits
   }
   structure(out, class = c("kfold", "loo"))
 }
@@ -637,15 +629,6 @@ print.loolist <- function(x, digits = 1, ...) {
   invisible(x)
 }
 
-#' @importFrom loo print_dims
-#' @export
-print_dims.kfold <- function(x, ...) {
-  sub <- length(x$Ksub)
-  sub <- ifelse(sub > 0 & sub < x$K, paste0(sub, " subsets of "), "")
-  cat(paste0("Based on ", sub, x$K, "-fold cross-validation\n"))
-}
-
-
 # ---------- deprecated functions ----------
 #' Add model fit criteria to model objects
 #' 
@@ -657,7 +640,9 @@ print_dims.kfold <- function(x, ...) {
 #'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
 #'   \code{"marglik"} (log marginal likelihood).
 #' 
-#' @return 
+#' @return An object of the same class as \code{x}, but
+#'   with model fit criteria added for later usage.
+#'   Previously computed criterion objects will be overwritten.
 #' 
 #' @export
 add_ic <- function(x, ...) {
@@ -714,8 +699,8 @@ add_waic <- function(x, ...) {
 #'   
 #' @return An object of class \code{iclist}.
 #' 
-#' @details See \code{\link[loo_compare]{loo_compare}} for the 
-#'   recommended way of comparing models with the \pkg{loo} package.
+#' @details See \code{\link{loo_compare}} for the recommended way 
+#'   of comparing models with the \pkg{loo} package.
 #' 
 #' @seealso 
 #'   \code{\link{loo}},
@@ -767,17 +752,6 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   ics <- unname(sapply(x, function(y) rownames(y$estimates)[3]))
   if (!all(ics %in% ics[1])) {
     stop2("All inputs should be from the same criterion.")
-  }
-  if (ics[1] == "kfoldic") {
-    Ks <- sapply(x, "[[", "K")
-    if (!all(Ks %in% Ks[1])) {
-      stop2("'K' differs across kfold objects.")
-    }
-    subs <- lengths(lapply(x, "[[", "Ksub"))
-    subs <- ifelse(subs %in% 0, Ks, subs)
-    if (!all(subs %in% subs[1])) {
-      stop2("The number of subsets differs across kfold objects.")
-    }
   }
   yhash <- lapply(x, attr, which = "yhash")
   yhash_check <- ulapply(yhash, is_equal, yhash[[1]])

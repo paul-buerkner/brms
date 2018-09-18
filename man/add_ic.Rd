@@ -33,7 +33,9 @@ to compute. Currently supported are \code{"loo"},
 (the default) the name is taken from the call to \code{x}.}
 }
 \value{
-
+An object of the same class as \code{x}, but
+  with model fit criteria added for later usage.
+  Previously computed criterion objects will be overwritten.
 }
 \description{
 Deprecated alias of \code{\link{add_criterion}}.

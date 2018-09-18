@@ -2,22 +2,14 @@
 % Please edit documentation in R/loo-helpers.R
 \name{reloo}
 \alias{reloo}
-\alias{reloo.loo}
 \title{Compute exact cross-validation for problematic observations}
 \usage{
-reloo(x, ...)
-
-\method{reloo}{loo}(x, fit, k_threshold = 0.7, check = TRUE,
-  resp = NULL, ...)
+reloo(x, fit, k_threshold = 0.7, check = TRUE, resp = NULL, ...)
 }
 \arguments{
-\item{x}{An \R object typically of class \code{loo}.}
+\item{x}{An \R object of class \code{loo}.}
 
-\item{...}{Further arguments passed to 
-\code{\link{update.brmsfit}} such
-as \code{iter}, \code{chains}, or \code{cores}.}
-
-\item{fit}{An \R object typically of class \code{brmsfit}.}
+\item{fit}{An \R object of class \code{brmsfit}.}
 
 \item{k_threshold}{The threshold at which pareto \eqn{k} 
 estimates are treated as problematic. Defaults to \code{0.7}. 
@@ -30,9 +22,13 @@ from the \code{brmsfit} object passed to argument \code{fit}.}
 
 \item{resp}{Optional names of response variables.
 If specified, fitted values of these response variables are returned.}
+
+\item{...}{Further arguments passed to 
+\code{\link{update.brmsfit}} such
+as \code{iter}, \code{chains}, or \code{cores}.}
 }
 \value{
-An object of the class as \code{x}.
+An object of the class \code{loo}.
 }
 \description{
 Compute exact cross-validation for problematic observations
@@ -55,10 +51,10 @@ original \code{loo} object.
 \examples{
 \dontrun{
 fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
-           data = epilepsy, family = poisson())
+            data = epilepsy, family = poisson())
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
-(loo1 <- reloo(loo1, fit1))
+(reloo1 <- reloo(loo1, fit1, chains = 1))
 }
 
 }

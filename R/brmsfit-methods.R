@@ -2255,7 +2255,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
 #' @return A real value per response variable indicating 
 #' the LOO-adjusted R-squared.
 #'  
-#' @examples 
+#' @examples
 #' \dontrun{
 #' fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #' summary(fit)

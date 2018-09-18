@@ -30,8 +30,8 @@ Deprecated and will be removed in the future. Please use
 \code{\link{loo_compare}} instead.
 }
 \details{
-See \code{\link[loo_compare]{loo_compare}} for the 
-  recommended way of comparing models with the \pkg{loo} package.
+See \code{\link{loo_compare}} for the recommended way 
+  of comparing models with the \pkg{loo} package.
 }
 \examples{
 \dontrun{
