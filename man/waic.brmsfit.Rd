@@ -18,7 +18,7 @@ passed to the underlying post-processing functions.}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link{compare_ic}}.}
+via \code{\link{loo_compare}}.}
 
 \item{resp}{Optional names of response variables.
 If specified, fitted values of these response variables are returned.}
@@ -45,7 +45,7 @@ For more details see \code{\link[loo:waic]{waic}}.
 \details{
 See \code{\link{loo_compare}} for details on model comparisons. 
  For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
- Use method \code{\link[brms:add_ic]{add_ic}} to store
+ Use method \code{\link[brms:add_criterion]{add_criterion}} to store
  information criteria in the fitted model object for later usage.
 }
 \examples{

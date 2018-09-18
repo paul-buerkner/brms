@@ -8,98 +8,6 @@ WAIC <- function(x, ...) {
   UseMethod("WAIC")
 }
 
-#' K-Fold Cross-Validation
-#' 
-#' Perform exact K-fold cross-validation by refitting the model \eqn{K}
-#' times each leaving out one-\eqn{K}th of the original data.
-#' 
-#' @inheritParams loo.brmsfit
-#' @param K The number of subsets of equal (if possible) size
-#'   into which the data will be partitioned for performing
-#'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
-#'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
-#'   number of observations in the data then \eqn{K}-fold cross-validation is
-#'   equivalent to exact leave-one-out cross-validation.
-#' @param Ksub Optional number of subsets (of those subsets defined by \code{K}) 
-#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
-#'   will be performed on all subsets. If \code{Ksub} is a single integer, 
-#'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
-#'   If \code{Ksub} consists of multiple integers or a one-dimensional array
-#'   (created via \code{as.array}) potentially of length one, the corresponding 
-#'   subsets will be used. This argument is primarily useful, if evaluation of 
-#'   all subsets is infeasible for some reason.
-#' @param folds Determines how the subsets are being constructed.
-#'   Possible values are \code{NULL} (the default), \code{"stratified"},
-#'   \code{"balanced"}, or \code{"loo"}. May also be a vector of length
-#'   equal to the number of observations in the data. Alters the way
-#'   \code{group} is handled. More information is provided in the 'Details'
-#'   section.
-#' @param group Optional name of a grouping variable or factor in the model.
-#'   What exactly is done with this variable depends on argument \code{folds}.
-#'   More information is provided in the 'Details' section.
-#' @param exact_loo Deprecated! Please use \code{folds = "loo"} instead.
-#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
-#'   the returned object to store the cross-validated \code{brmsfit} 
-#'   objects and the indices of the omitted observations for each fold. 
-#'   Defaults to \code{FALSE}.
-#'   
-#' @return \code{kfold} returns an object that has a similar structure as the 
-#'   objects returned by the \code{loo} and \code{waic} methods.
-#'    
-#' @details The \code{kfold} function performs exact \eqn{K}-fold
-#'   cross-validation. First the data are partitioned into \eqn{K} folds 
-#'   (i.e. subsets) of equal (or as close to equal as possible) size by default. 
-#'   Then the model is refit \eqn{K} times, each time leaving out one of the 
-#'   \code{K} subsets. If \eqn{K} is equal to the total number of observations 
-#'   in the data then \eqn{K}-fold cross-validation is equivalent to exact 
-#'   leave-one-out cross-validation (to which \code{loo} is an efficient 
-#'   approximation). The \code{compare_ic} function is also compatible with 
-#'   the objects returned by \code{kfold}.
-#'   
-#'   The subsets can be constructed in multiple different ways: 
-#'   \itemize{
-#'   \item If both \code{folds} and \code{group} are \code{NULL}, the subsets 
-#'   are randomly chosen so that they have equal (or as close to equal as 
-#'   possible) size. 
-#'   \item If \code{folds} is \code{NULL} but \code{group} is specified, the 
-#'   data is split up into subsets, each time omitting all observations of one 
-#'   of the factor levels, while ignoring argument \code{K}. 
-#'   \item If \code{folds = "stratified"} the subsets are stratified after 
-#'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_stratified}}.
-#'   \item If \code{folds = "balanced"} the subsets are balanced by
-#'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_balanced}}.
-#'   \item If \code{folds = "loo"} exact leave-one-out cross-validation
-#'   will be performed and \code{K} will be ignored. Further, if \code{group}
-#'   is specified, all observations corresponding to the factor level of the 
-#'   currently predicted single value are omitted. Thus, in this case, the 
-#'   predicted values are only a subset of the omitted ones.
-#'   \item If \code{folds} is a numeric vector, it must contain one element per 
-#'   observation in the data. Each element of the vector is an integer in 
-#'   \code{1:K} indicating to which of the \code{K} folds the corresponding 
-#'   observation belongs. There are some convenience functions available in 
-#'   the \pkg{loo} package that create integer vectors to use for this purpose 
-#'   (see the Examples section below and also the 
-#'   \link[loo:kfold-helpers]{kfold-helpers} page).
-#'   }
-#'   
-#' @examples 
-#' \dontrun{
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
-#'               (1|patient) + (1|obs),
-#'            data = epilepsy, family = poisson())
-#' # throws warning about some pareto k estimates being too high
-#' (loo1 <- loo(fit1))
-#' # perform 10-fold cross validation
-#' (kfold1 <- kfold(fit1, chains = 1)
-#' }   
-#'  
-#' @seealso \code{\link{loo}}, \code{\link{reloo}}
-#'  
-#' @export
-kfold <- function(x, ...) {
-  UseMethod("kfold")
-}
-
 #' @export
 loo_R2 <- function(object, ...) {
   # temporary generic until available in loo
@@ -662,8 +570,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
   out <- nlist(
     estimates, pointwise = cbind(elpd_kfold = elpds),
-    model_name = deparse(substitute(x)), K, Ksub, 
-    group, folds, fold_type
+    K, Ksub, group, folds, fold_type
   )
   if (save_fits) {
     out$fits <- fits 
@@ -739,8 +646,7 @@ print_dims.kfold <- function(x, ...) {
 }
 
 
-# ---------- deprecated functions ------------ #
-
+# ---------- deprecated functions ----------
 #' Add model fit criteria to model objects
 #' 
 #' Deprecated alias of \code{\link{add_criterion}}.

@@ -2196,10 +2196,10 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'bayes_R2' is not defined for ordinal or categorical models.")
   }
-  use_stored_ic <- !length(
+  use_stored <- !length(
     intersect(names(match.call()), args_not_for_reloo())
   )
-  if (use_stored_ic && is.matrix(object[["R2"]])) {
+  if (use_stored && is.matrix(object[["R2"]])) {
     R2 <- object[["R2"]]
   } else {
     newd_args <- nlist(
@@ -2550,7 +2550,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' 
 #' @details See \code{\link{loo_compare}} for details on model comparisons. 
 #'  For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
-#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
+#'  Use method \code{\link[brms:add_criterion]{add_criterion}} to store
 #'  information criteria in the fitted model object for later usage.
 #'  
 #' @return If just one object is provided, an object of class \code{loo}. 
@@ -2593,7 +2593,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
+  args$use_stored <- !any(names(args) %in% args_not_for_reloo())
   c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
   do.call(compute_loos, args)
 }
@@ -2620,7 +2620,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #'   passed to the underlying post-processing functions.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
-#'  via \code{\link{compare_ic}}.
+#'  via \code{\link{loo_compare}}.
 #' @param pointwise A flag indicating whether to compute the full
 #'  log-likelihood matrix at once or separately for each observation. 
 #'  The latter approach is usually considerably slower but 
@@ -2639,7 +2639,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' 
 #' @details See \code{\link{loo_compare}} for details on model comparisons.
 #'  For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
-#'  Use method \code{\link{add_ic}} to store
+#'  Use method \code{\link{add_criterion}} to store
 #'  information criteria in the fitted model object for later usage.
 #'  
 #' @return If just one object is provided, an object of class \code{loo}. 
@@ -2688,7 +2688,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
     not_for_reloo <- collapse_comma(not_for_reloo)
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
-  args$use_stored_ic <- !length(not_for_reloo)
+  args$use_stored <- !length(not_for_reloo)
   c(args) <- nlist(
     criterion = "loo", pointwise, compare, 
     resp, k_threshold, reloo
@@ -2696,20 +2696,111 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
   do.call(compute_loos, args)
 }
 
+#' K-Fold Cross-Validation
+#' 
+#' Perform exact K-fold cross-validation by refitting the model \eqn{K}
+#' times each leaving out one-\eqn{K}th of the original data.
+#' 
+#' @aliases kfold
+#' 
+#' @inheritParams loo.brmsfit
+#' @param K The number of subsets of equal (if possible) size
+#'   into which the data will be partitioned for performing
+#'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
+#'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
+#'   number of observations in the data then \eqn{K}-fold cross-validation is
+#'   equivalent to exact leave-one-out cross-validation.
+#' @param Ksub Optional number of subsets (of those subsets defined by \code{K}) 
+#'   to be evaluated. If \code{NULL} (the default), \eqn{K}-fold cross-validation 
+#'   will be performed on all subsets. If \code{Ksub} is a single integer, 
+#'   \code{Ksub} subsets (out of all \code{K}) subsets will be randomly chosen.
+#'   If \code{Ksub} consists of multiple integers or a one-dimensional array
+#'   (created via \code{as.array}) potentially of length one, the corresponding 
+#'   subsets will be used. This argument is primarily useful, if evaluation of 
+#'   all subsets is infeasible for some reason.
+#' @param folds Determines how the subsets are being constructed.
+#'   Possible values are \code{NULL} (the default), \code{"stratified"},
+#'   \code{"balanced"}, or \code{"loo"}. May also be a vector of length
+#'   equal to the number of observations in the data. Alters the way
+#'   \code{group} is handled. More information is provided in the 'Details'
+#'   section.
+#' @param group Optional name of a grouping variable or factor in the model.
+#'   What exactly is done with this variable depends on argument \code{folds}.
+#'   More information is provided in the 'Details' section.
+#' @param exact_loo Deprecated! Please use \code{folds = "loo"} instead.
+#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
+#'   the returned object to store the cross-validated \code{brmsfit} 
+#'   objects and the indices of the omitted observations for each fold. 
+#'   Defaults to \code{FALSE}.
+#'   
+#' @return \code{kfold} returns an object that has a similar structure as the 
+#'   objects returned by the \code{loo} and \code{waic} methods and
+#'   can be used with the same post-processing functions.
+#'    
+#' @details The \code{kfold} function performs exact \eqn{K}-fold
+#'   cross-validation. First the data are partitioned into \eqn{K} folds 
+#'   (i.e. subsets) of equal (or as close to equal as possible) size by default. 
+#'   Then the model is refit \eqn{K} times, each time leaving out one of the 
+#'   \code{K} subsets. If \eqn{K} is equal to the total number of observations 
+#'   in the data then \eqn{K}-fold cross-validation is equivalent to exact 
+#'   leave-one-out cross-validation (to which \code{loo} is an efficient 
+#'   approximation). The \code{compare_ic} function is also compatible with 
+#'   the objects returned by \code{kfold}.
+#'   
+#'   The subsets can be constructed in multiple different ways: 
+#'   \itemize{
+#'   \item If both \code{folds} and \code{group} are \code{NULL}, the subsets 
+#'   are randomly chosen so that they have equal (or as close to equal as 
+#'   possible) size. 
+#'   \item If \code{folds} is \code{NULL} but \code{group} is specified, the 
+#'   data is split up into subsets, each time omitting all observations of one 
+#'   of the factor levels, while ignoring argument \code{K}. 
+#'   \item If \code{folds = "stratified"} the subsets are stratified after 
+#'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_stratified}}.
+#'   \item If \code{folds = "balanced"} the subsets are balanced by
+#'   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_balanced}}.
+#'   \item If \code{folds = "loo"} exact leave-one-out cross-validation
+#'   will be performed and \code{K} will be ignored. Further, if \code{group}
+#'   is specified, all observations corresponding to the factor level of the 
+#'   currently predicted single value are omitted. Thus, in this case, the 
+#'   predicted values are only a subset of the omitted ones.
+#'   \item If \code{folds} is a numeric vector, it must contain one element per 
+#'   observation in the data. Each element of the vector is an integer in 
+#'   \code{1:K} indicating to which of the \code{K} folds the corresponding 
+#'   observation belongs. There are some convenience functions available in 
+#'   the \pkg{loo} package that create integer vectors to use for this purpose 
+#'   (see the Examples section below and also the 
+#'   \link[loo:kfold-helpers]{kfold-helpers} page).
+#'   }
+#'   
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
+#'               (1|patient) + (1|obs),
+#'            data = epilepsy, family = poisson())
+#' # throws warning about some pareto k estimates being too high
+#' (loo1 <- loo(fit1))
+#' # perform 10-fold cross validation
+#' (kfold1 <- kfold(fit1, chains = 1)
+#' }   
+#'  
+#' @seealso \code{\link{loo}}, \code{\link{reloo}}
+#'  
+#' @importFrom loo kfold
+#' @export kfold
 #' @export
-#' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
-kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL, 
-                          folds = NULL, group = NULL, exact_loo = NULL, 
+kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL, 
+                          group = NULL, exact_loo = NULL, compare = TRUE,
                           resp = NULL, model_names = NULL, save_fits = FALSE) {
   args <- split_dots(x, ..., model_names = model_names)
-  use_stored_ic <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
+  use_stored <- ulapply(args$models, function(x) is_equal(x$kfold$K, K))
   if (!is.null(exact_loo) && as_one_logical(exact_loo)) {
     warning2("'exact_loo' is deprecated. Please use folds = 'loo' instead.")
     folds <- "loo"
   }
   c(args) <- nlist(
-    criterion = "kfold", compare, K, Ksub, folds, 
-    group, resp, save_fits, use_stored_ic
+    criterion = "kfold", K, Ksub, folds, group, 
+    compare, resp, save_fits, use_stored
   )
   do.call(compute_loos, args)
 }
