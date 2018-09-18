@@ -322,8 +322,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL, ...) {
   x[criterion] <- list(NULL)
   args <- list(x, ...)
   for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
+    args$model_names <- model_name
     x[[fun]] <- do.call(fun, args)
-    attr(x[[fun]], "model_name") <- model_name
   }
   if ("r2" %in% criterion) {
     args$summary <- FALSE
