@@ -86,11 +86,11 @@ predictor_fe <- function(draws, i) {
   eta <- try(.predictor_fe(X = p(fe[["X"]], i), b = fe[["b"]]))
   if (is(eta, "try-error")) {
     stop2(
-      "Something went wrong. Did you transform numeric variables ", 
+      "Something went wrong (see the error message above). ", 
+      "Perhaps you transformed numeric variables ", 
       "to factors or vice versa within the model formula? ",
       "If yes, please convert your variables beforehand. ",
-      "Or did you set a predictor variable to NA? If no to both, ", 
-      "this might be a bug. Please tell me about it."
+      "Or did you set a predictor variable to NA?"
     )
   }
   eta
