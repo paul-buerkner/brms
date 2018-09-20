@@ -1983,6 +1983,34 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eval(cl, parent.frame())
 }
 
+#' Predictive Intervals
+#'
+#' Compute intervals from the posterior predictive distribution.
+#' 
+#' @aliases predictive_interval
+#' 
+#' @param object An \R object of class \code{brmsfit}.
+#' @param prob A number p (0 < p < 1) indicating the desired probability mass to
+#'   include in the intervals. Defaults to \code{0.9}.
+#' @param ... Further arguments passed to \code{\link{posterior_predict}}.
+#' 
+#' @return A matrix with 2 columns for the lower and upper bounds of the
+#'   intervals, respectively, and as many rows as observations being predicted.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Base4_c, data = epilepsy, family = poisson())
+#' predictive_interval(fit)
+#' }
+#' 
+#' @importFrom rstantools predictive_interval
+#' @export predictive_interval
+#' @export
+predictive_interval.brmsfit <- function(object, prob = 0.9, ...) {
+  out <- posterior_predict(object, ...)
+  predictive_interval(out, prob = prob)
+}
+
 #' @rdname model_weights
 #' @export
 model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) {
