@@ -130,12 +130,14 @@ data_fe <- function(bterms, data, knots = NULL,
         if (length(sm$by.level)) {
           bylevels[[i]][j] <- sm$by.level
         }
-        if (!new_smooths) {
-          sm$X <- PredictMat(sm, data = data)
+        if (new_smooths) {
+          rasm <- mgcv::smooth2random(sm, names(data), type = 2)
+        } else {
+          # prepare rasm for use with new data
+          rasm <- s2rPred(sm, data)
         }
-        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
         Xs[[ns]] <- rasm$Xf
-        if (ncol(Xs[[ns]])) {
+        if (NCOL(Xs[[ns]])) {
           colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_cols(Xs[[ns]]))
         }
         Zs <- rasm$rand
