@@ -368,7 +368,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$ub <- stan_extract_bounds(D$bounds, bound = "upper")
   Ibounds <- which(nzchar(D$bounds))
   if (length(Ibounds)) {
-    str_add(out$genC) <- " // use rejection sampling for truncated priors\n"
+    str_add(out$genC) <- "  // use rejection sampling for truncated priors\n"
     for (i in Ibounds) {
       wl <- if (nzchar(D$lb[i])) paste0(D$prior_par[i], " < ", D$lb[i])
       wu <- if (nzchar(D$ub[i])) paste0(D$prior_par[i], " > ", D$ub[i])

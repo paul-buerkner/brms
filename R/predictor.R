@@ -199,13 +199,18 @@ predictor_sp <- function(draws, i) {
 predictor_sm <- function(draws, i) {
   # compute eta for smooth terms
   eta <- 0
-  smooths <- names(draws[["sm"]])
-  for (k in seq_along(smooths)) {
-    sm <- draws[["sm"]][[k]]
-    nb <- seq_along(sm[["s"]])
-    for (j in nb) {
-      Zs <- p(sm[["Zs"]][[j]], i)
-      s <- sm[["s"]][[j]]
+  if (!length(draws[["sm"]])) {
+    return(eta) 
+  }
+  fe <- draws[["sm"]]$fe
+  if (length(fe)) {
+    eta <- eta + .predictor_fe(X = p(fe$Xs, i), b = fe$bs)
+  }
+  re <- draws[["sm"]]$re
+  for (k in seq_along(re)) {
+    for (j in seq_along(re[[k]]$s)) {
+      Zs <- p(re[[k]]$Zs[[j]], i)
+      s <- re[[k]]$s[[j]]
       eta <- eta + .predictor_fe(X = Zs, b = s)
     }
   }

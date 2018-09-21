@@ -1,3 +1,14 @@
+# brms 2.5.0++
+
+### New features
+
+* Fit factor smooth interactions thanks to Simon Wood.
+
+### Other changes
+
+* Improve internal modularization of smooth terms.
+
+
 # brms 2.5.0
 
 ### New features

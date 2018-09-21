@@ -46,7 +46,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
-    fpars <- intersect(fpars, paste0("b_", pars))
+    fpars <- fpars[sub("^[^_]+_", "", fpars) %in% pars]
   }
   if (!length(fpars)) {
     return(NULL)

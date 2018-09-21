@@ -651,9 +651,29 @@ stan_re <- function(ranef, prior, ...) {
 stan_sm <- function(bterms, data, prior, ...) {
   # Stan code of smooth terms
   out <- list()
+  smef <- tidy_smef(bterms, data)
+  if (!NROW(smef)) {
+    return(out)
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  smef <- tidy_smef(bterms, data)
+  Xs_names <- attr(smef, "Xs_names")
+  if (length(Xs_names)) {
+    str_add(out$data) <- paste0(
+      "  // data for smooth terms\n",
+      "  int Ks", p, ";\n",
+      "  matrix[N, Ks", p, "] Xs", p, ";\n"
+    )
+    str_add(out$pars) <- paste0(
+      "  // parameters for smooth terms\n",
+      "  vector[Ks", p, "] bs", p, ";\n"
+    )
+    str_add(out$eta) <- paste0(" + Xs", p, " * bs", p)
+    str_add(out$prior) <- stan_prior(
+      prior, class = "b", coef = Xs_names,
+      px = px, suffix = paste0("s", p)
+    )
+  }
   for (i in seq_rows(smef)) {
     pi <- paste0(p, "_", i)
     nb <- seq_len(smef$nbases[[i]])

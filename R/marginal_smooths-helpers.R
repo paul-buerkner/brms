@@ -151,10 +151,10 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
       draws <- do.call(extract_draws, draws_args)
       J <- which(smef$termnum == i)
-      scs <- unlist(attr(draws$fe$X, "smcols")[J])
-      draws$fe$X <- draws$fe$X[, scs, drop = FALSE]
-      draws$fe$b <- draws$fe$b[, scs, drop = FALSE]
-      draws$sm <- draws$sm[J]
+      scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])
+      draws$sm$fe$Xs <- draws$sm$fe$Xs[, scs, drop = FALSE]
+      draws$sm$fe$bs <- draws$sm$fe$bs[, scs, drop = FALSE]
+      draws$sm$re <- draws$sm$re[J]
       eta <- predictor(draws, i = NULL)
       spa_data <- NULL
       if (spaghetti && ncovars == 1L) {

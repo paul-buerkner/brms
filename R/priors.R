@@ -840,9 +840,18 @@ prior_sm <- function(bterms, data, def_scale_prior) {
   #   def_scale_prior: a character string defining 
   #     the default prior for smooth SDs
   prior <- empty_brmsprior()
-  smterms <- all_terms(bterms[["sm"]])
-  if (length(smterms)) {
+  smef <- tidy_smef(bterms, data)
+  if (NROW(smef)) {
     px <- check_prefix(bterms)
+    # prior for the FE coefficients
+    Xs_names <- attr(smef, "Xs_names")
+    if (length(Xs_names)) {
+      prior <- prior + brmsprior(
+        class = "b", coef = c("", Xs_names), ls = px
+      )
+    }
+    # prior for SD parameters of the RE coefficients
+    smterms <- unique(smef$term)
     prior_strings <- c(def_scale_prior, rep("", length(smterms)))
     prior <- prior + brmsprior(
       class = "sds", coef = c("", smterms), 

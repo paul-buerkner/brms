@@ -466,7 +466,7 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
   expect_match2(scode, "ps[1] = log(theta1_x) + poisson_log_lpmf(Y_x[n] | mu1_x[n])")
   expect_match2(scode, "target += normal_lpdf(b_y1 | 0, 5)")
-  expect_match2(scode, "target += normal_lpdf(b_y2 | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(bs_y2 | 0, 10)")
   
   # multivariate binomial models
   bform <- bf(x ~ 1) + bf(g ~ 1) + binomial()
@@ -527,11 +527,6 @@ test_that("Stan code for intercept only models is correct", {
                "b_Intercept = temp_Intercept;") 
   expect_match2(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
                "b_mu3_Intercept = temp_mu3_Intercept;")
-})
-
-test_that("Stan code for smooth only models is correct", {
-  expect_match2(make_stancode(count ~ s(log_Age_c), data = epilepsy),
-               "matrix[N, K - 1] Xc;")
 })
 
 test_that("Stan code of ordinal models is correct", {

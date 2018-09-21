@@ -173,14 +173,15 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
   args <- nlist(bterms = x, samples, sdata, ...)
-  draws$fe <- do.call(extract_draws_fe, args)
-  draws$sm <- do.call(extract_draws_sm, args)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
+    draws$sm <- do.call(extract_draws_sm, args)
     return(draws)
   }
+  draws$fe <- do.call(extract_draws_fe, args)
   draws$sp <- do.call(extract_draws_sp, args)
   draws$cs <- do.call(extract_draws_cs, args)
+  draws$sm <- do.call(extract_draws_sm, args)
   draws$gp <- do.call(extract_draws_gp, args)
   draws$re <- do.call(extract_draws_re, args)
   draws$offset <- do.call(extract_draws_offset, args)
@@ -357,17 +358,28 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
 
 extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
   # extract draws of smooth terms
+  draws <- list()
   smef <- tidy_smef(bterms, data)
+  if (!NROW(smef)) {
+    return(draws)
+  }
   p <- usc(combine_prefix(bterms))
-  draws <- named_list(smef$label)
-  for (i in seq_along(draws)) {
+  Xs_names <- attr(smef, "Xs_names")
+  if (length(Xs_names)) {
+    draws$fe$Xs <- sdata[[paste0("Xs", p)]]
+    # allow for "b_" prefix for compatibility with version <= 2.5.0
+    bspars <- paste0("^bs?", p, "_", escape_all(Xs_names), "$")
+    draws$fe$bs <- get_samples(samples, bspars)
+  }
+  draws$re <- named_list(smef$label)
+  for (i in seq_rows(smef)) {
     sm <- list()
     for (j in seq_len(smef$nbases[i])) {
       sm$Zs[[j]] <- sdata[[paste0("Zs", p, "_", i, "_", j)]]
       spars <- paste0("^s", p, "_", smef$label[i], "_", j, "\\[")
       sm$s[[j]] <- get_samples(samples, spars)
     }
-    draws[[i]] <- sm
+    draws$re[[i]] <- sm
   }
   draws
 }

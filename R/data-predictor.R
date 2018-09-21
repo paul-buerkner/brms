@@ -55,13 +55,11 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   #   old_sdata: see 'extract_old_standata'
   # Returns:
   #   A named list of data to be passed to Stan
-  c(data_fe(
-      x, data, knots = knots, not4stan = not4stan, 
-      smooths = old_sdata$smooths
-    ),
+  c(data_fe(x, data, not4stan = not4stan),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
+    data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
     data_offset(x, data),
     data_prior(x, data, prior = prior)
@@ -106,54 +104,66 @@ data_fe <- function(bterms, data, knots = NULL,
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
-  smterms <- all_terms(bterms[["sm"]])
-  if (length(smterms)) {
-    stopifnot(is.null(smooths) || length(smooths) == length(smterms))
-    Xs <- Zs <- list()
-    new_smooths <- !length(smooths)
-    if (new_smooths) {
-      smooths <- named_list(smterms)
-      for (i in seq_along(smterms)) {
-        smooths[[i]] <- mgcv::smoothCon(
-          eval2(smterms[i]), data = data, 
-          knots = knots, absorb.cons = TRUE
-        )
-      }
-    }
-    bylevels <- named_list(smterms)
-    ns <- 0
-    for (i in seq_along(smooths)) {
-      # may contain multiple terms when 'by' is a factor
-      for (j in seq_along(smooths[[i]])) {
-        ns <- ns + 1
-        sm <- smooths[[i]][[j]]
-        if (length(sm$by.level)) {
-          bylevels[[i]][j] <- sm$by.level
-        }
-        if (new_smooths) {
-          rasm <- mgcv::smooth2random(sm, names(data), type = 2)
-        } else {
-          # prepare rasm for use with new data
-          rasm <- s2rPred(sm, data)
-        }
-        Xs[[ns]] <- rasm$Xf
-        if (NCOL(Xs[[ns]])) {
-          colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_cols(Xs[[ns]]))
-        }
-        Zs <- rasm$rand
-        Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-        knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-        knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
-        out <- c(out, knots, Zs)
-      }
-    }
-    X <- cbind(X, do.call(cbind, Xs))
-    smcols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
-    X <- structure(X, smcols = smcols, bylevels = bylevels)
-    colnames(X) <- rename(colnames(X))
-  }
   avoid_dpars(colnames(X), bterms = bterms)
-  c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
+  out[[paste0("K", p)]] <- ncol(X)
+  out[[paste0("X", p)]] <- X
+  out
+}
+
+data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
+  # data preparation for splines
+  out <- list()
+  smterms <- all_terms(bterms[["sm"]])
+  if (!length(smterms)) {
+    return(out)
+  }
+  p <- usc(combine_prefix(bterms))
+  new <- length(smooths) > 0L
+  if (!new) {
+    smooths <- named_list(smterms)
+    for (i in seq_along(smterms)) {
+      smooths[[i]] <- mgcv::smoothCon(
+        eval2(smterms[i]), data = data, 
+        knots = knots, absorb.cons = TRUE
+      )
+    }
+  }
+  bylevels <- named_list(smterms)
+  ns <- 0
+  lXs <- list()
+  for (i in seq_along(smooths)) {
+    # may contain multiple terms when 'by' is a factor
+    for (j in seq_along(smooths[[i]])) {
+      ns <- ns + 1
+      sm <- smooths[[i]][[j]]
+      if (length(sm$by.level)) {
+        bylevels[[i]][j] <- sm$by.level
+      }
+      if (new) {
+        # prepare rasm for use with new data
+        rasm <- s2rPred(sm, data)
+      } else {
+        rasm <- mgcv::smooth2random(sm, names(data), type = 2)
+      }
+      lXs[[ns]] <- rasm$Xf
+      if (NCOL(lXs[[ns]])) {
+        colnames(lXs[[ns]]) <- paste0(sm$label, "_", seq_cols(lXs[[ns]]))
+      }
+      Zs <- rasm$rand
+      Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
+      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
+      c(out) <- c(knots, Zs)
+    }
+  }
+  Xs <- do.call(cbind, lXs)
+  avoid_dpars(colnames(Xs), bterms = bterms)
+  smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
+  Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
+  colnames(Xs) <- rename(colnames(Xs))
+  out[[paste0("Ks", p)]] <- ncol(Xs)
+  out[[paste0("Xs", p)]] <- Xs
+  out
 }
 
 data_re <- function(bterms, data, ranef) {
