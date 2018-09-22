@@ -21,7 +21,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
   prior <- subset2(prior, 
-                   class = class, coef = c(coef, ""), group = c(group, "")
+    class = class, coef = c(coef, ""), group = c(group, "")
   )
   if (class %in% c("sd", "cor")) {
     # only sd and cor parameters have global priors
@@ -91,7 +91,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   
   # generate stan prior statements
   class <- paste0(prefix, class, suffix)
-  if (any(with(prior, nchar(coef) & nchar(prior)))) {
+  if (any(with(prior, nzchar(coef) & nzchar(prior)))) {
     # generate a prior for each coefficient
     out <- sapply(
       seq_along(coef), individual_prior, 

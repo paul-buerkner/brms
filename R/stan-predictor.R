@@ -367,9 +367,7 @@ stan_fe <- function(bterms, data, prior, stanvars,
         "  ", type, "[ncat", resp, "-1] temp", p, "_Intercept;",
         "  // temporary thresholds \n"
       )
-      if (family$threshold == "flexible") {
-        str_add(out$par) <- intercept
-      } else if (family$threshold == "equidistant") {
+      if (family$threshold == "equidistant") {
         str_add(out$par) <- paste0(
           "  real temp", p, "_Intercept1;  // threshold 1 \n",
           "  real", subset2(prior, class = "delta", ls = px)$bound,
@@ -384,6 +382,8 @@ stan_fe <- function(bterms, data, prior, stanvars,
           "  } \n"
         )
         str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
+      } else {
+        str_add(out$par) <- intercept
       }
       str_add(out$genD) <- paste0(
         "  // compute actual thresholds \n",
@@ -413,10 +413,15 @@ stan_fe <- function(bterms, data, prior, stanvars,
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
     prefix <- paste0("temp", p, "_")
-    suffix <- ifelse(is_equal(family$threshold, "equidistant"), "1", "")
+    Icoefs <- suffix <- ""
+    if (is_ordinal(family)) {
+      Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
+      Icoefs <- Icoefs[nzchar(Icoefs)]
+      if (family$threshold == "equidistant") suffix <- "1"
+    }
     str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", px = px,
-      prefix = prefix, suffix = suffix
+      prior, class = "Intercept", coef = Icoefs, 
+      px = px, prefix = prefix, suffix = suffix
     )
   } else {
     if (identical(dpar_class(px$dpar), order_mixture)) {
