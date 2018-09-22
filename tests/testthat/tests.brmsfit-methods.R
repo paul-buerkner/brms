@@ -217,7 +217,7 @@ test_that("all S3 methods have reasonable ouputs", {
   me5 <- marginal_effects(fit5)
   expect_true(is(me5, "brmsMarginalEffects"))
   
-  me6 <- marginal_effects(fit6, nsamples = 100)
+  me6 <- marginal_effects(fit6, nsamples = 40)
   expect_true(is(me6, "brmsMarginalEffects"))
   
   # marginal_smooths
@@ -248,9 +248,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nobs(fit1), nrow(epilepsy))
   
   # nsamples
-  expect_equal(nsamples(fit1), 100)
+  expect_equal(nsamples(fit1), 50)
   expect_equal(nsamples(fit1, subset = 10:1), 10)
-  expect_equal(nsamples(fit1, incl_warmup = TRUE), 400)
+  expect_equal(nsamples(fit1, incl_warmup = TRUE), 200)
   
   # parnames 
   expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 46, 47, 48)],
@@ -319,9 +319,9 @@ test_that("all S3 methods have reasonable ouputs", {
   # pp_average
   ppa <- pp_average(fit1, fit1, weights = "waic")
   expect_equal(dim(ppa), c(nobs(fit1), 4))
-  ppa <- pp_average(fit1, fit1, weights = c(1, 3))
-  expect_equal(attr(ppa, "weights"), c(fit1 = 0.25, fit1 = 0.75))
-  ns <- c(fit1 = nsamples(fit1) / 4, fit1 = 3 * nsamples(fit1) / 4)
+  ppa <- pp_average(fit1, fit1, weights = c(1, 4))
+  expect_equal(attr(ppa, "weights"), c(fit1 = 0.2, fit1 = 0.8))
+  ns <- c(fit1 = nsamples(fit1) / 5, fit1 = 4 * nsamples(fit1) / 5)
   expect_equal(attr(ppa, "nsamples"), ns)
 
   # pp_check
