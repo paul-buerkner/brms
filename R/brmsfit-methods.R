@@ -1537,11 +1537,6 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
-  too_many_covars <- any(ulapply(out, attr, "too_many_covars"))
-  if (too_many_covars) {
-    warning2("Smooth terms with more than two covariates ",
-             "are not yet supported by 'marginal_smooths'.")
-  }
   structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
 }
 

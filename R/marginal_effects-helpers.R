@@ -403,7 +403,7 @@ get_cond__ <- function(x) {
 #' @return A character vector of the same length as the number
 #'   of rows of \code{x}.
 #'   
-#' @seealso \code{\link{make_conditions}}, code{\link{marginal_effects}}
+#' @seealso \code{\link{make_conditions}}, \code{\link{marginal_effects}}
 #' 
 #' @export
 rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {

@@ -12,6 +12,10 @@
 * Improve internal modularization of smooth terms.
 * Reduce size of internal example models.
 
+### Bug fixes
+
+* Correctly plot splines with factorial covariates via `marginal_smooths`.
+
 
 # brms 2.5.0
 
