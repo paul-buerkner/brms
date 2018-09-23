@@ -89,7 +89,7 @@ test_that("all S3 methods have reasonable ouputs", {
   fixef1 <- SM(fixef(fit1))
   expect_equal(rownames(fixef1), 
     c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-      "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp")
+      "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp")
   )
   fixef1 <- SM(fixef(fit1, pars = c("Age", "sAge_1")))
   expect_equal(rownames(fixef1), c("Age", "sAge_1"))
@@ -217,7 +217,7 @@ test_that("all S3 methods have reasonable ouputs", {
   me5 <- marginal_effects(fit5)
   expect_true(is(me5, "brmsMarginalEffects"))
   
-  me6 <- marginal_effects(fit6, nsamples = 100)
+  me6 <- marginal_effects(fit6, nsamples = 40)
   expect_true(is(me6, "brmsMarginalEffects"))
   
   # marginal_smooths
@@ -248,12 +248,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nobs(fit1), nrow(epilepsy))
   
   # nsamples
-  expect_equal(nsamples(fit1), 100)
+  expect_equal(nsamples(fit1), 50)
   expect_equal(nsamples(fit1, subset = 10:1), 10)
-  expect_equal(nsamples(fit1, incl_warmup = TRUE), 400)
+  expect_equal(nsamples(fit1, incl_warmup = TRUE), 200)
   
   # parnames 
-  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 45, 46, 47)],
+  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 46, 47, 48)],
                c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
                  "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
@@ -294,7 +294,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(ps), parnames(fit1))
   expect_equal(names(posterior_samples(fit1, pars = "^b_")),
                c("b_Intercept", "b_sigma_Intercept", "b_Trt1", 
-                 "b_Age", "b_Trt1:Age", "b_sAge_1", "b_sigma_Trt1"))
+                 "b_Age", "b_Trt1:Age", "b_sigma_Trt1"))
   
   # test default method
   ps <- posterior_samples(fit1$fit, "^b_Intercept$")
@@ -302,7 +302,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # posterior_summary
   ps <- posterior_summary(fit1, "^b_")
-  expect_equal(dim(ps), c(7, 4))
+  expect_equal(dim(ps), c(6, 4))
   
   # posterior_interval
   expect_equal(dim(posterior_interval(fit1)), 
@@ -319,9 +319,9 @@ test_that("all S3 methods have reasonable ouputs", {
   # pp_average
   ppa <- pp_average(fit1, fit1, weights = "waic")
   expect_equal(dim(ppa), c(nobs(fit1), 4))
-  ppa <- pp_average(fit1, fit1, weights = c(1, 3))
-  expect_equal(attr(ppa, "weights"), c(fit1 = 0.25, fit1 = 0.75))
-  ns <- c(fit1 = nsamples(fit1) / 4, fit1 = 3 * nsamples(fit1) / 4)
+  ppa <- pp_average(fit1, fit1, weights = c(1, 4))
+  expect_equal(attr(ppa, "weights"), c(fit1 = 0.2, fit1 = 0.8))
+  ns <- c(fit1 = nsamples(fit1) / 5, fit1 = 4 * nsamples(fit1) / 5)
   expect_equal(attr(ppa, "nsamples"), ns)
 
   # pp_check
@@ -419,7 +419,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # prior_samples
   prs1 <- prior_samples(fit1)
   prior_names <- c(
-    "b", "bsp", paste0("simo_moExp1[", 1:4, "]"), 
+    "b", "bsp", paste0("simo_moExp1[", 1:4, "]"), "bs",
     "sds_sAge_1", "b_sigma", "nu", "sd_visit", "cor_visit"
   )
   expect_equal(colnames(prs1), prior_names)
@@ -474,9 +474,9 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # standata
   expect_equal(names(standata(fit1)),
-    c("N", "Y",  "Kar", "Kma", "J_lag", "nb_1", "knots_1", 
-      "Zs_1_1", "K", "X", "Ksp", "Imo", "Xmo_1", "Jmo", 
-      "con_simo_1", "Z_1_1", "Z_1_2", "offset", "K_sigma", 
+    c("N", "Y",  "Kar", "Kma", "J_lag", "K", "X", "Ksp", "Imo", 
+      "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1", 
+      "knots_1", "Zs_1_1", "Ks", "Xs", "offset", "K_sigma", 
       "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only")
   )
   expect_equal(names(standata(fit2)),
@@ -492,7 +492,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(summary1$fixed))
   expect_equal(rownames(summary1$fixed), 
                c("Intercept", "sigma_Intercept", "Trt1", "Age", 
-                 "Trt1:Age", "sAge_1", "sigma_Trt1", "moExp"))
+                 "Trt1:Age", "sigma_Trt1", "sAge_1", "moExp"))
   expect_equal(colnames(summary1$fixed), 
                c("Estimate", "Est.Error", "l-95% CI", 
                  "u-95% CI", "Eff.Sample", "Rhat"))

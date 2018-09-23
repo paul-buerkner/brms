@@ -806,8 +806,8 @@ tidy_smef <- function(x, data) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
-  sdata_fe <- data_fe(x, data, knots = attr(data, "knots"))
-  bylevels <- attr(sdata_fe$X, "bylevels")
+  sdata <- data_sm(x, data, knots = attr(data, "knots"))
+  bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)
   for (i in seq_len(nterms)) {
@@ -824,8 +824,9 @@ tidy_smef <- function(x, data) {
     }
   }
   out <- do.call(rbind, tmp)
-  out$knots <- sdata_fe[grepl("^knots_", names(sdata_fe))]
+  out$knots <- sdata[grepl("^knots_", names(sdata))]
   out$nbases <- lengths(out$knots)
+  attr(out, "Xs_names") <- colnames(sdata$Xs)
   rownames(out) <- NULL
   out
 }

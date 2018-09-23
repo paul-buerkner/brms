@@ -271,8 +271,16 @@ change_sm <- function(bterms, data, pars) {
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
   smef <- tidy_smef(bterms, data)
-  if (nrow(smef)) {
+  if (NROW(smef)) {
     p <- usc(combine_prefix(bterms), "prefix")
+    Xs_names <- attr(smef, "Xs_names")
+    if (length(Xs_names)) {
+      bs <- paste0("bs", p)
+      pos <- grepl(paste0("^", bs, "\\["), pars)
+      bsnames <- paste0(bs, "_", Xs_names)
+      lc(out) <- clist(pos, bsnames)
+      c(out) <- change_prior(bs, pars, names = Xs_names)
+    }
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
@@ -509,7 +517,7 @@ reorder_pars <- function(x) {
   # Args:
   #   x: brmsfit object
   all_classes <- unique(c(
-    "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
+    "b", "bs", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
     "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 

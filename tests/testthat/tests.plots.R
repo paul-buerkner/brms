@@ -30,7 +30,7 @@ test_that("plotting functions don't throw unexpected errors", {
                "Exactly 2 parameters must be selected")
   
   # pairs.brmsfit
-  expect_s3_class(pairs(fit, pars = parnames(fit)[1:3]), "bayesplot_grid")
+  expect_s3_class(SW(pairs(fit, pars = parnames(fit)[1:3])), "bayesplot_grid")
   
   # marginal_effects: manual checks of plotting method
   N <- 90

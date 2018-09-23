@@ -454,7 +454,38 @@ PredictMat <- function(object, data, ...) {
     out <- matrix(out, nrow = 1)
   }
   out
-} 
+}
+
+s2rPred <- function(sm, data) {
+  # Aid prediction from smooths represented as type == 2
+  # originally provided by Simon Wood 
+  # Params:
+  #   sm: output of mgcv::smoothCon
+  #   data: new data supplied for prediction
+  re <- mgcv::smooth2random(sm, names(data), type = 2)
+  # prediction matrix for new data
+  X <- PredictMat(sm, data)   
+  # transform to RE parameterization
+  if (!is.null(re$trans.U)) {
+    X <- X %*% re$trans.U
+  }
+  X <- t(t(X) * re$trans.D)
+  # re-order columns according to random effect re-ordering
+  X[, re$rind] <- X[, re$pen.ind != 0] 
+  # re-order penalization index in same way  
+  pen.ind <- re$pen.ind
+  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
+  # start returning the object
+  Xf <-  X[, which(re$pen.ind == 0), drop = FALSE]
+  out <- list(rand = list(), Xf = Xf)
+  for (i in seq_along(re$rand)) { 
+    # loop over random effect matrices
+    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
+    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+  }
+  names(out$rand) <- names(re$rand)
+  out
+}
 
 arr_design_matrix <- function(Y, r, group)  { 
   # compute the design matrix for ARR effects

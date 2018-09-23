@@ -7,7 +7,8 @@
 \usage{
 add_criterion(x, ...)
 
-\method{add_criterion}{brmsfit}(x, criterion, model_name = NULL, ...)
+\method{add_criterion}{brmsfit}(x, criterion, model_name = NULL,
+  overwrite = FALSE, file = NULL, force_save = FALSE, ...)
 }
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
@@ -22,6 +23,20 @@ to compute. Currently supported are \code{"loo"},
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
+
+\item{overwrite}{Logical; Indicates if already stored fit 
+indices should be overwritten. Defaults to \code{FALSE}.}
+
+\item{file}{Either \code{NULL} or a character string. In the latter case, the
+fitted model object including the newly added criterion values is saved via
+\code{\link{saveRDS}} in a file named after the string supplied in
+\code{file}. The \code{.rds} extension is added automatically. Only applies
+if new criteria were actually added via \code{add_ic} or if
+\code{force_save} was set to \code{TRUE}.}
+
+\item{force_save}{Logical; only relevant if \code{file} is specified and
+ignored otherwise. If \code{TRUE}, the fitted model object will be saved
+regardless of whether new criteria were added via \code{add_ic}.}
 }
 \value{
 An object of the same class as \code{x}, but

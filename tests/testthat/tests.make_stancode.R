@@ -466,7 +466,7 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
   expect_match2(scode, "ps[1] = log(theta1_x) + poisson_log_lpmf(Y_x[n] | mu1_x[n])")
   expect_match2(scode, "target += normal_lpdf(b_y1 | 0, 5)")
-  expect_match2(scode, "target += normal_lpdf(b_y2 | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(bs_y2 | 0, 10)")
   
   # multivariate binomial models
   bform <- bf(x ~ 1) + bf(g ~ 1) + binomial()
@@ -529,28 +529,30 @@ test_that("Stan code for intercept only models is correct", {
                "b_mu3_Intercept = temp_mu3_Intercept;")
 })
 
-test_that("Stan code for smooth only models is correct", {
-  expect_match2(make_stancode(count ~ s(log_Age_c), data = epilepsy),
-               "matrix[N, K - 1] Xc;")
-})
-
 test_that("Stan code of ordinal models is correct", {
   dat <- data.frame(y = c(rep(1:4, 2), 1, 1), x1 = rnorm(10), 
                     x2 = rnorm(10), g = rep(1:2, 5))
   
-  scode <- make_stancode(y ~ x1, dat, family = cumulative())
+  scode <- make_stancode(
+    y ~ x1, dat, family = cumulative(),
+    prior = prior(normal(0, 2), Intercept, coef = 2)
+  )
   expect_match2(scode, 
     "target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);"
   )
+  expect_match2(scode, "target += student_t_lpdf(temp_Intercept[1] | 3, 0, 10);")
+  expect_match2(scode, "target += normal_lpdf(temp_Intercept[2] | 0, 2);")
   
   scode <- make_stancode(
-    y ~ x1, dat, cumulative("probit", threshold = "equidistant")
+    y ~ x1, dat, cumulative("probit", threshold = "equidistant"),
+    prior = prior(normal(0, 2), Intercept, coef = 1)
   )
   expect_match2(scode, "real cumulative_probit_lpmf(int y")
   expect_match2(scode, "p = Phi(disc * (thres[1] - mu));")
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
+  expect_match2(scode, "target += normal_lpdf(temp_Intercept1 | 0, 2);")
   
   scode <- make_stancode(y ~ x1, dat, family = cratio("probit_approx"))
   expect_match2(scode, "real cratio_probit_approx_lpmf(int y")

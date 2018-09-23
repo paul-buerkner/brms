@@ -28,5 +28,5 @@ A character vector of the same length as the number
 Convert information in rows to labels for each row.
 }
 \seealso{
-\code{\link{make_conditions}}, code{\link{marginal_effects}}
+\code{\link{make_conditions}}, \code{\link{marginal_effects}}
 }

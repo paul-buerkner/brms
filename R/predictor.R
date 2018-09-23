@@ -86,11 +86,11 @@ predictor_fe <- function(draws, i) {
   eta <- try(.predictor_fe(X = p(fe[["X"]], i), b = fe[["b"]]))
   if (is(eta, "try-error")) {
     stop2(
-      "Something went wrong. Did you transform numeric variables ", 
+      "Something went wrong (see the error message above). ", 
+      "Perhaps you transformed numeric variables ", 
       "to factors or vice versa within the model formula? ",
       "If yes, please convert your variables beforehand. ",
-      "Or did you set a predictor variable to NA? If no to both, ", 
-      "this might be a bug. Please tell me about it."
+      "Or did you set a predictor variable to NA?"
     )
   }
   eta
@@ -199,13 +199,18 @@ predictor_sp <- function(draws, i) {
 predictor_sm <- function(draws, i) {
   # compute eta for smooth terms
   eta <- 0
-  smooths <- names(draws[["sm"]])
-  for (k in seq_along(smooths)) {
-    sm <- draws[["sm"]][[k]]
-    nb <- seq_along(sm[["s"]])
-    for (j in nb) {
-      Zs <- p(sm[["Zs"]][[j]], i)
-      s <- sm[["s"]][[j]]
+  if (!length(draws[["sm"]])) {
+    return(eta) 
+  }
+  fe <- draws[["sm"]]$fe
+  if (length(fe)) {
+    eta <- eta + .predictor_fe(X = p(fe$Xs, i), b = fe$bs)
+  }
+  re <- draws[["sm"]]$re
+  for (k in seq_along(re)) {
+    for (j in seq_along(re[[k]]$s)) {
+      Zs <- p(re[[k]]$Zs[[j]], i)
+      s <- re[[k]]$s[[j]]
       eta <- eta + .predictor_fe(X = Zs, b = s)
     }
   }

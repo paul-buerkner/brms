@@ -1,3 +1,24 @@
+# brms 2.5.0++
+
+### New features
+
+* Fit factor smooth interactions thanks to Simon Wood.
+* Specify separate priors for thresholds in ordinal models. (#524)
+* Pass additional arguments to `rstan::stan_model` via argument
+`stan_model_args` in `brm`. (#525)
+* Save model objects via argument `file` in `add_ic` 
+after adding model fit criteria. (#478) 
+
+### Other changes
+
+* Improve internal modularization of smooth terms.
+* Reduce size of internal example models.
+
+### Bug fixes
+
+* Correctly plot splines with factorial covariates via `marginal_smooths`.
+
+
 # brms 2.5.0
 
 ### New features

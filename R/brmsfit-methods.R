@@ -46,7 +46,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   fpars <- all_pars[grepl(fixef_pars(), all_pars)]
   if (!is.null(pars)) {
     pars <- as.character(pars)
-    fpars <- intersect(fpars, paste0("b_", pars))
+    fpars <- fpars[sub("^[^_]+_", "", fpars) %in% pars]
   }
   if (!length(fpars)) {
     return(NULL)
@@ -1541,11 +1541,6 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
-  too_many_covars <- any(ulapply(out, attr, "too_many_covars"))
-  if (too_many_covars) {
-    warning2("Smooth terms with more than two covariates ",
-             "are not yet supported by 'marginal_smooths'.")
-  }
   structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
 }
 
@@ -1985,6 +1980,34 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     cl$re.form <- NULL
   }
   eval(cl, parent.frame())
+}
+
+#' Predictive Intervals
+#'
+#' Compute intervals from the posterior predictive distribution.
+#' 
+#' @aliases predictive_interval
+#' 
+#' @param object An \R object of class \code{brmsfit}.
+#' @param prob A number p (0 < p < 1) indicating the desired probability mass to
+#'   include in the intervals. Defaults to \code{0.9}.
+#' @param ... Further arguments passed to \code{\link{posterior_predict}}.
+#' 
+#' @return A matrix with 2 columns for the lower and upper bounds of the
+#'   intervals, respectively, and as many rows as observations being predicted.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Base4_c, data = epilepsy, family = poisson())
+#' predictive_interval(fit)
+#' }
+#' 
+#' @importFrom rstantools predictive_interval
+#' @export predictive_interval
+#' @export
+predictive_interval.brmsfit <- function(object, prob = 0.9, ...) {
+  out <- posterior_predict(object, ...)
+  predictive_interval(out, prob = prob)
 }
 
 #' @rdname model_weights

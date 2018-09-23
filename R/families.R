@@ -361,6 +361,16 @@ family_info.mvbrmsterms <- function(x, y, ...) {
 }
 
 #' @export
+family_info.btl <- function(x, y, ...) {
+  family_info(x$family, y = y, ...)
+}
+
+#' @export
+family_info.btnl <- function(x, y, ...) {
+  family_info(x$family, y = y, ...)
+}
+
+#' @export
 family_info.brmsfit <- function(x, y, ...) {
   family_info(x$formula, y = y, ...)
 }
