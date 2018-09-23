@@ -6,6 +6,8 @@
 * Specify separate priors for thresholds in ordinal models. (#524)
 * Pass additional arguments to `rstan::stan_model` via argument
 `stan_model_args` in `brm`. (#525)
+* Save model objects via argument `file` in `add_ic` 
+after adding model fit criteria. (#478) 
 
 ### Other changes
 

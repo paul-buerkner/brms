@@ -325,6 +325,15 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
 #'   (the default) the name is taken from the call to \code{x}.
 #' @param overwrite Logical; Indicates if already stored fit 
 #'   indices should be overwritten. Defaults to \code{FALSE}.
+#' @param file Either \code{NULL} or a character string. In the latter case, the
+#'   fitted model object including the newly added criterion values is saved via
+#'   \code{\link{saveRDS}} in a file named after the string supplied in
+#'   \code{file}. The \code{.rds} extension is added automatically. Only applies
+#'   if new criteria were actually added via \code{add_ic} or if
+#'   \code{force_save} was set to \code{TRUE}.
+#' @param force_save Logical; only relevant if \code{file} is specified and
+#'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
+#'   regardless of whether new criteria were added via \code{add_ic}.
 #' @param ... Further arguments passed to the underlying 
 #'   functions computing the information criteria or fit indices.
 #'   
@@ -351,7 +360,8 @@ add_ic <- function(x, ...) {
 #' @rdname add_ic
 #' @export
 add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, 
-                           overwrite = FALSE, ...) {
+                           overwrite = FALSE, file = NULL,
+                           force_save = FALSE, ...) {
   unused_args <- intersect(names(list(...)), args_not_for_reloo())
   if (length(unused_args)) {
     unused_args <- collapse_comma(unused_args)
@@ -362,28 +372,36 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
   } else {
     model_name <- deparse_combine(substitute(x)) 
   }
-  ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic", "kfold", "r2", "marglik")
+  ic <- unique(as.character(ic))
+  valid_ics <- c("loo", "waic", "kfold", "R2", "marglik")
   if (!length(ic) || !all(ic %in% valid_ics)) {
     stop2("Argument 'ic' should be a subset of ",
           collapse_comma(valid_ics))
   }
+  if (!is.null(file)) {
+    file <- paste0(as_one_character(file), ".rds")
+  }
+  force_save <- as_one_logical(force_save)
   overwrite <- as_one_logical(overwrite)
   if (overwrite) {
     x[ic] <- list(NULL)
   }
+  new_ic <- ic[ulapply(x[ic], is.null)]
   args <- list(x, ...)
   for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
     x[[fun]] <- do.call(fun, args)
     x[[fun]]$model_name <- model_name
   }
-  if ("r2" %in% ic) {
+  if ("R2" %in% ic) {
     args$summary <- FALSE
     x$R2 <- do.call(bayes_R2, args)
   }
   if ("marglik" %in% ic) {
     x$marglik <- do.call(bridge_sampler, args)
   }
+  if (!is.null(file) && (force_save || length(new_ic))) {
+    saveRDS(x, file = file)
+  } 
   x
 }
 
