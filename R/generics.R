@@ -39,6 +39,8 @@
 #' @slot algorithm The name of the algorithm used to fit the model
 #' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
 #'   which the model was fitted
+#' @slot file Optional name of a file in which the model object was stored in
+#'   or loaded from
 #' 
 #' @seealso 
 #'   \code{\link{brms}}, 
@@ -53,7 +55,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
-                    fit = NA, exclude = NULL, algorithm = "sampling") {
+                    fit = NA, exclude = NULL, algorithm = "sampling",
+                    file = NULL) {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
@@ -62,7 +65,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   x <- nlist(
     formula, family, data, data.name, model, prior,
     autocor, ranef, cov_ranef, loo, waic, R2, marglik,
-    stanvars, stan_funs, fit, exclude, algorithm, version
+    stanvars, stan_funs, fit, exclude, algorithm, version, 
+    file
   )
   class(x) <- "brmsfit"
   x

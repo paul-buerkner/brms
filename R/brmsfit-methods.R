@@ -2380,6 +2380,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
   object <- restructure(object)
+  object$file <- NULL
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }

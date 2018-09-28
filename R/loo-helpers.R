@@ -328,9 +328,11 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
 #' @param file Either \code{NULL} or a character string. In the latter case, the
 #'   fitted model object including the newly added criterion values is saved via
 #'   \code{\link{saveRDS}} in a file named after the string supplied in
-#'   \code{file}. The \code{.rds} extension is added automatically. Only applies
-#'   if new criteria were actually added via \code{add_ic} or if
-#'   \code{force_save} was set to \code{TRUE}.
+#'   \code{file}. The \code{.rds} extension is added automatically. If \code{x}
+#'   was already stored in a file before, the file name will be reused
+#'   automatically (with a message) unless overwritten by \code{file}. In any
+#'   case, \code{file} only applies if new criteria were actually added via
+#'   \code{add_ic} or if \code{force_save} was set to \code{TRUE}.
 #' @param force_save Logical; only relevant if \code{file} is specified and
 #'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
 #'   regardless of whether new criteria were added via \code{add_ic}.
@@ -378,8 +380,12 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
     stop2("Argument 'ic' should be a subset of ",
           collapse_comma(valid_ics))
   }
+  auto_save <- FALSE
   if (!is.null(file)) {
     file <- paste0(as_one_character(file), ".rds")
+  } else {
+    file <- x$file
+    if (!is.null(file)) auto_save <- TRUE
   }
   force_save <- as_one_logical(force_save)
   overwrite <- as_one_logical(overwrite)
@@ -400,6 +406,10 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
     x$marglik <- do.call(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_ic))) {
+    if (auto_save) {
+      message("Automatically saving the model object in '", file, "'")
+    }
+    x$file <- file
     saveRDS(x, file = file)
   } 
   x

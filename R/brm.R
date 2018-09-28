@@ -144,7 +144,8 @@
 #'   added automatically. If the file already exists, \code{brm} will load and
 #'   return the saved model object instead of refitting the model. As existing
 #'   files won't be overwritten, you have to manually remove the file in order
-#'   to refit and save the model under an existing file name.
+#'   to refit and save the model under an existing file name. The file name
+#'   is stored in the \code{brmsfit} object for later usage.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
 #' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether the
@@ -349,6 +350,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       if (!is.brmsfit(x)) {
         stop2("Object loaded via 'file' is not of class 'brmsfit'.")
       }
+      x$file <- file
       return(x)
     }
   }
@@ -474,6 +476,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- rename_pars(x)
   }
   if (!is.null(file)) {
+    x$file <- file
     saveRDS(x, file = file)
   }
   x
