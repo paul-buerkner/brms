@@ -797,24 +797,24 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   }
   # prepare Stan code of the linear predictor component
   for (i in seq_rows(spef)) {
-    eta <- spef$call_prod[[i]]
-    if (!is.null(spef$call_mo[[i]])) {
+    eta <- spef$joint_call[[i]]
+    if (!is.null(spef$calls_mo[[i]])) {
       new_mo <- paste0(
         "mo(simo", p, "_", spef$Imo[[i]], 
         ", Xmo", p, "_", spef$Imo[[i]], "[n])"
       )
-      eta <- rename(eta, spef$call_mo[[i]], new_mo)
+      eta <- rename(eta, spef$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$call_me[[i]])) {
+    if (!is.null(spef$calls_me[[i]])) {
       Kme <- seq_along(meef$term)
       Ime <- match(meef$grname, unique(meef$grname))
       nme <- ifelse(nzchar(meef$grname), paste0("Jme_", Ime, "[n]"), "n")
       new_me <- paste0("Xme_", Kme, "[", nme,"]")
       eta <- rename(eta, meef$term, new_me)
     }
-    if (!is.null(spef$call_mi[[i]])) {
+    if (!is.null(spef$calls_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]], "[n]")
-      eta <- rename(eta, spef$call_mi[[i]], new_mi)
+      eta <- rename(eta, spef$calls_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
       str_add(eta) <- paste0(" * Csp", p, "_", spef$Ic[i], "[n]")

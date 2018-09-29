@@ -363,7 +363,12 @@ me <- function(x, sdx = NULL, gr = NULL) {
 #' 
 #' @export
 mi <- function(x) {
-  xname <- deparse(substitute(x))
+  xname <- substitute(x)
+  vars <- all.vars(xname)
+  xname <- deparse(xname)
+  if (!is_equal(xname, vars)) {
+    stop2("Function 'mi' can only handle single untransformed variables.")
+  }
   x <- as.vector(x)
   if (!is.numeric(x)) {
     stop2("Noisy variables should be numeric.")

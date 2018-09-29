@@ -624,7 +624,7 @@ make_Jmo_list <- function(x, data, ...) {
     # do it like data_sp()
     spef <- tidy_spef(x, data)
     Xmo_fun <- function(x) attr(eval2(x, data), "var")
-    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
+    Xmo <- lapply(unlist(spef$calls_mo), Xmo_fun)
     out <- as.array(ulapply(Xmo, max))
   }
   out

@@ -1300,7 +1300,7 @@ check_prior_special.btl <- function(x, prior, data,
   }
   # prepare priors of monotonic effects
   spef <- tidy_spef(x, data)
-  monef <- spef[lengths(spef$call_mo) > 0, "coef"]
+  monef <- spef[lengths(spef$calls_mo) > 0, "coef"]
   for (mo in monef) {
     take <- find_rows(prior, class = "simo", coef = mo, ls = px)
     simo_prior <- prior$prior[take]

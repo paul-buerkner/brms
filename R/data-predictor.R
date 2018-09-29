@@ -343,7 +343,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
     # prepare data specific to monotonic effects
     out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
     Xmo_fun <- function(x) as.array(attr(eval2(x, data), "var"))
-    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
+    Xmo <- lapply(unlist(spef$calls_mo), Xmo_fun)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
     out <- c(out, setNames(Xmo, Xmo_names))
     compute_Jmo <- is.null(Jmo)

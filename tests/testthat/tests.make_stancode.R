@@ -1432,7 +1432,7 @@ test_that("Stan code for missing value terms works correctly", {
   
   bform <- bf(y ~ mi(x)*mo(g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "(bsp_y[3]) * mo(simo_y_2, Xmo_y_2[n]) * Yl_x[n];")
+  expect_match2(scode, "(bsp_y[3]) * Yl_x[n] * mo(simo_y_2, Xmo_y_2[n]);")
   
   bform <- bf(x | mi() ~ y, family = "lognormal")
   scode <- make_stancode(bform, dat)

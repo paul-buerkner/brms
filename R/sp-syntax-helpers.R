@@ -35,7 +35,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   }
   uni_mi <- ulapply(get_effect(x, "sp"), attr, "uni_mi")
   if (length(uni_mi)) {
-    vars_mi <- gsub("(^mi\\()|(\\)$)", "", uni_mi)
+    vars_mi <- all.vars(str2formula(uni_mi))
     miss_mi <- setdiff(vars_mi, responses)
     if (length(miss_mi)) {
       stop2(
@@ -134,14 +134,15 @@ tidy_spef <- function(x, data) {
     x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sp"]]
+  all_sp <- c("mo", "me", "mi")
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
   mm <- get_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
-  call_cols <- paste0("call_", c("mo", "me", "mi"))
-  for (col in c(call_cols, "call_prod", "vars_mi", "Imo")) {
+  calls_cols <- paste0("calls_", all_sp)
+  for (col in c(calls_cols, "joint_call", "vars_mi", "Imo")) {
     out[[col]] <- vector("list", nrow(out))
   }
   kmo <- 0
@@ -150,12 +151,12 @@ tidy_spef <- function(x, data) {
     # prepare mo terms
     take_mo <- grepl_expr(regex_sp("mo"), terms_split[[i]])
     if (sum(take_mo)) {
-      out$call_mo[[i]] <- terms_split[[i]][take_mo]
-      nmo <- length(out$call_mo[[i]])
+      out$calls_mo[[i]] <- terms_split[[i]][take_mo]
+      nmo <- length(out$calls_mo[[i]])
       out$Imo[[i]] <- (kmo + 1):(kmo + nmo)
       kmo <- kmo + nmo
-      for (j in seq_along(out$call_mo[[i]])) {
-        mo_term <- out$call_mo[[i]][[j]]
+      for (j in seq_along(out$calls_mo[[i]])) {
+        mo_term <- out$calls_mo[[i]][[j]]
         mo_match <- get_matches_expr(regex_sp("mo"), mo_term)
         if (length(mo_match) > 1L || nchar(mo_match) < nchar(mo_term)) {
           stop2("The monotonic term '",  mo_term, "' is invalid.")
@@ -165,22 +166,23 @@ tidy_spef <- function(x, data) {
     # prepare me terms
     take_me <- grepl_expr(regex_sp("me"), terms_split[[i]])
     if (sum(take_me)) {
-      out$call_me[[i]] <- terms_split[[i]][take_me]
+      out$calls_me[[i]] <- terms_split[[i]][take_me]
       # remove 'I' (identity) function calls that 
       # were used solely to separate formula terms
-      out$call_me[[i]] <- gsub("^I\\(", "(", out$call_me[[i]])
+      out$calls_me[[i]] <- gsub("^I\\(", "(", out$calls_me[[i]])
     }
     # prepare mi terms 
     take_mi <- grepl_expr(regex_sp("mi"), terms_split[[i]])
     if (sum(take_mi)) {
-      out$call_mi[[i]] <- terms_split[[i]][take_mi]
-      out$call_mi[[i]] <- gsub("^I\\(", "(", out$call_mi[[i]])
-      out$vars_mi[[i]] <- get_matches_expr(regex_sp("mi"), out$call_mi[[i]])
-      out$vars_mi[[i]] <- gsub("(^mi\\()|(\\)$)", "", out$vars_mi[[i]])
+      mi_parts <- terms_split[[i]][take_mi]
+      out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
+      out$vars_mi[[i]] <- all.vars(str2formula(out$calls_mi[[i]]))
       # do it like parse_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
-    out$call_prod[[i]] <- paste0(unlist(out[i, call_cols]), collapse = " * ")
+    sp_calls <- grepl_expr(regex_sp(all_sp), terms_split[[i]])
+    sp_calls <- sub("^I\\(", "(", terms_split[[i]][sp_calls])
+    out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
   }
   not_one <- apply(mm, 2, function(x) any(x != 1))
   out$Ic <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))

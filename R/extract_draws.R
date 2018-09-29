@@ -215,20 +215,20 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   # prepare calls evaluated in sp_predictor
   draws$calls <- vector("list", nrow(spef))
   for (i in seq_along(draws$calls)) {
-    call <- spef$call_prod[[i]]
-    if (!is.null(spef$call_mo[[i]])) {
+    call <- spef$joint_call[[i]]
+    if (!is.null(spef$calls_mo[[i]])) {
       new_mo <- paste0(
         ".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")"
       )
-      call <- rename(call, spef$call_mo[[i]], new_mo)
+      call <- rename(call, spef$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$call_me[[i]])) {
+    if (!is.null(spef$calls_me[[i]])) {
       new_me <- paste0("Xme_", seq_along(meef$term))
       call <- rename(call, meef$term, new_me)
     }
-    if (!is.null(spef$call_mi[[i]])) {
+    if (!is.null(spef$calls_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]])
-      call <- rename(call, spef$call_mi[[i]], new_mi)
+      call <- rename(call, spef$calls_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
       str_add(call) <- paste0(" * Csp_", spef$Ic[i])
