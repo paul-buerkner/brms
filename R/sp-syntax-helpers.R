@@ -134,14 +134,13 @@ tidy_spef <- function(x, data) {
     x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sp"]]
-  all_sp <- c("mo", "me", "mi")
   if (!is.formula(form)) {
     return(empty_data_frame())
   }
-  mm <- get_model_matrix(form, data, rename = FALSE)
+  mm <- sp_model_matrix(form, data, rename = FALSE)
   out <- data.frame(term = rm_wsp(colnames(mm)), stringsAsFactors = FALSE)
   out$coef <- rename(out$term)
-  calls_cols <- paste0("calls_", all_sp)
+  calls_cols <- paste0("calls_", all_sp_types())
   for (col in c(calls_cols, "joint_call", "vars_mi", "Imo")) {
     out[[col]] <- vector("list", nrow(out))
   }
@@ -180,7 +179,7 @@ tidy_spef <- function(x, data) {
       # do it like parse_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
-    sp_calls <- grepl_expr(regex_sp(all_sp), terms_split[[i]])
+    sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
     sp_calls <- sub("^I\\(", "(", terms_split[[i]][sp_calls])
     out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
   }
@@ -214,4 +213,42 @@ get_me_groups <- function(x) {
   out <- lapply(uni_me, eval_NA) 
   out <- ulapply(out, attr, "grname")
   out[nzchar(out)]
+}
+
+sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
+  # get the design matrix of special effects terms
+  # Args:
+  #   formula: a formula containing special effects terms
+  #   data: data.frame passed by the user
+  #   types: types of special terms to consider
+  #   ...: passed to get_model_matrix
+  # Details: 
+  #   special terms will be evaluated to 1 so that columns 
+  #   containing not only ones are those with covariates
+  attributes(data)$terms <- NULL
+  terms_split <- strsplit(all_terms(formula), split = ":")
+  terms_unique <- unique(unlist(terms_split))
+  regex <- regex_sp(types)
+  terms_replace <- terms_unique[grepl_expr(regex, terms_unique)]
+  dummies <- paste0("dummy", seq_along(terms_replace), "__")
+  data[dummies] <- list(1)
+  terms_comb <- rep(NA, length(terms_split))
+  # loop over terms and add dummy variables
+  for (i in seq_along(terms_split)) {
+    replace_i <- grepl_expr(regex, terms_split[[i]])
+    terms_i_replace <- terms_split[[i]][replace_i]
+    dummies_i <- dummies[match(terms_i_replace, terms_replace)]
+    terms_split[[i]][replace_i] <- dummies_i
+    terms_comb[i] <- paste0(terms_split[[i]], collapse = ":") 
+  }
+  new_formula <- str2formula(terms_comb)
+  attributes(new_formula) <- attributes(formula)
+  out <- get_model_matrix(new_formula, data, ...)
+  # recover original column names
+  colnames(out) <- rename(colnames(out), dummies, terms_replace)
+  out
+}
+
+all_sp_types <- function() {
+  c("mo", "me", "mi")
 }

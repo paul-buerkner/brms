@@ -1438,10 +1438,13 @@ test_that("Stan code for missing value terms works correctly", {
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "vector<lower=0>[Nmi] Ymi;")
   
-  bform <- bf(y ~ mi(x)*g) + 
+  bform <- bf(y ~ I(log(mi(x))) * g) + 
     bf(x | mi() + trunc(lb = 1) ~ y, family = "lognormal")
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "vector<lower=1>[Nmi_x] Ymi_x;")
+  expect_match2(scode, 
+    "(bsp_y[1]) * (log(Yl_x[n])) + (bsp_y[2]) * (log(Yl_x[n])) * Csp_y_1[n]"              
+  )
   
   bform <- bf(y ~ mi(x)*g) + 
     bf(x | mi() + cens(z) ~ y, family = "beta")

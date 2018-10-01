@@ -331,7 +331,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   p <- usc(combine_prefix(px))
   # prepare general data
   out[[paste0("Ksp", p)]] <- nrow(spef)
-  Csp <- get_model_matrix(bterms$sp, data)
+  Csp <- sp_model_matrix(bterms$sp, data)
   avoid_dpars(colnames(Csp), bterms = bterms)
   Csp <- Csp[, spef$Ic > 0, drop = FALSE]
   Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
