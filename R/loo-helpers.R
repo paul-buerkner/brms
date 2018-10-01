@@ -436,8 +436,8 @@ add_waic <- function(x, ...) {
 args_not_for_reloo <- function() {
   # arguments not usable with 'reloo'
   # the same arguments cannot be used in add_ic
-  c("newdata", "re_formula", "subset", "nsamples",
-    "allow_new_levels", "sample_new_levels", "new_objects")
+  c("newdata", "re_formula", "allow_new_levels", 
+    "sample_new_levels", "new_objects")
 }
 
 hash_response <- function(x, ...) {
