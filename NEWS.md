@@ -17,6 +17,8 @@ after adding model fit criteria. (#478)
 ### Bug fixes
 
 * Correctly plot splines with factorial covariates via `marginal_smooths`.
+* Allow sampling from priors in intercept only models
+thanks to Emmanuel Charpentier. (#529)
 
 
 # brms 2.5.0

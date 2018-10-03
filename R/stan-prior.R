@@ -290,9 +290,8 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   #     such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
-  out <- list()
   if (!sample_prior %in% "yes") {
-    return(out)
+    return(list())
   }
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
   # D will contain all relevant information about the priors
@@ -304,6 +303,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
+  if (!NROW(D)) {
+    return(list())
+  }
+  
   class_old <- c("^L_", "^Lrescor")
   class_new <- c("cor_", "rescor")
   D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
@@ -352,6 +355,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   contains_other_pars <- ulapply(found_vars, function(x) any(x %in% all_pars))
   D <- D[!contains_other_pars, ]
   
+  out <- list()
   # sample priors in the generated quantities block
   D$lkj <- grepl("^lkj_corr$", D$dis)
   D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
