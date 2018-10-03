@@ -302,16 +302,73 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   out
 }
 
+#' Compute Density Ratios
+#'
+#' Compute the ratio of two densities at given points based on samples of the
+#' corresponding distributions.
+#'
+#' @param x Vector of samples from the first distribution, usually the posterior
+#'   distribution of the quantity of interest.
+#' @param y Optional vector of samples from the second distribution, usually the
+#'   prior distribution of the quantity of interest. If \code{NULL} (the
+#'   default), only the density of \code{x} will be evaluated.
+#' @param point Numeric values at which to evaluate and compare the densities.
+#'   Defaults to \code{0}.
+#' @param n Single numeric value. Influences the accuracy of the density
+#'   estimation. See \code{\link[stats:density]{density}} for details.
+#' @param ... Further arguments passed to \code{\link[stats:density]{density}}.
+#'
+#' @return A vector of length equal to \code{length(point)}. If \code{y} is
+#'   provided, the density ratio of \code{x} against \code{y} is returned. Else,
+#'   only the density of \code{x} is returned.
+#'
+#' @details In order to achieve sufficient accuracy in the density estimation,
+#'   more samples than usual are required. That is you may need an effective
+#'   sample size of 10,000 or more to reliably estimate the densities.
+#'
+#' @examples
+#' x <- rnorm(10000)
+#' y <- rnorm(10000, mean = 1)
+#' density_ratio(x, y, point = c(0, 1))
+#'
+#' @export
+density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
+  x <- as.numeric(x)
+  point <- as.numeric(point)
+  dots <- list(...)
+  dots <- dots[names(dots) %in% names(formals("density.default"))]
+  dots$n <- n
+  
+  eval_density <- function(x, point) {
+    # evaluate density of x at point
+    from <- min(x)
+    to <- max(x)
+    if (from > point) {
+      from <- point - sd(x) / 4
+    } else if (to < point) {
+      to <- point + sd(x) / 4
+    }
+    dens <- do.call(density, c(nlist(x, from, to), dots))
+    return(spline(dens$x, dens$y, xout = point)$y)
+  }
+  
+  out <- ulapply(point, eval_density, x = x)
+  if (!is.null(y)) {
+    y <- as.numeric(y)
+    out <- out / ulapply(point, eval_density, x = y)
+  }
+  out
+}
+
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
-                           prior_samples = NULL, pow = 12, ...) {
+                           prior_samples = NULL, ...) {
   # compute the evidence ratio between two disjunct hypotheses
   # Args:
   #   x: posterior samples 
   #   cut: the cut point between the two hypotheses
   #   wsign: direction of the hypothesis
   #   prior_samples: optional prior samples for undirected hypothesis
-  #   pow: influences the accuracy of the density
-  #   ...: optional arguments passed to density.default
+  #   ...: optional arguments passed to density_ratio
   # Returns:
   #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
@@ -319,22 +376,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     if (is.null(prior_samples)) {
       out <- NA
     } else {
-      dots <- list(...)
-      dots <- dots[names(dots) %in% names(formals("density.default"))]
-      args <- c(list(n = 2^pow), dots)
-      eval_dens <- function(x) {
-        # evaluate density of x at cut
-        from <- min(x)
-        to <- max(x)
-        if (from > cut) {
-          from <- cut - sd(x) / 4
-        } else if (to < cut) {
-          to <- cut + sd(x) / 4
-        }
-        dens <- do.call(density, c(nlist(x, from, to), args))
-        spline(dens$x, dens$y, xout = cut)$y
-      }
-      out <- eval_dens(x) / eval_dens(prior_samples)
+      out <- density_ratio(x, prior_samples, point = cut, ...)
     }
   } else if (wsign == "less") {
     out <- length(which(x < cut))

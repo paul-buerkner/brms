@@ -8,6 +8,7 @@
 `stan_model_args` in `brm`. (#525)
 * Save model objects via argument `file` in `add_ic` 
 after adding model fit criteria. (#478) 
+* Compute density ratios based on MCMC samples via `density_ratio`.
 
 ### Other changes
 
