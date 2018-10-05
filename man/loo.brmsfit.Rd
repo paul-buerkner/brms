@@ -9,7 +9,7 @@
 \usage{
 \method{loo}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
   pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-  model_names = NULL)
+  reloo_args = list(), model_names = NULL)
 }
 \arguments{
 \item{x}{A fitted model object.}
@@ -37,6 +37,9 @@ should be applied on problematic observations. Defaults to \code{FALSE}.}
 estimates are treated as problematic. Defaults to \code{0.7}. 
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.}
+
+\item{reloo_args}{Optional \code{list} of additional arguments passed to
+\code{\link{reloo}}.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 

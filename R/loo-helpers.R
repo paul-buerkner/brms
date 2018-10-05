@@ -159,14 +159,15 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
 }
 
 compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
-                       reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
-                       model_name = "", ...) {
+                       reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
+                       pointwise = FALSE, model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   model_name: original variable name of object 'x'
   #   reloo: call 'reloo' after computing 'loo'?
+  #   reloo_args: list of arguments passed to 'reloo'
   #   pointwise: compute log-likelihood point-by-point?
   #   ...: passed to other post-processing methods
   # Returns:
@@ -197,8 +198,8 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   attr(out, "yhash") <- hash_response(x)
   if (ic == "loo") {
     if (reloo) {
-      reloo_args <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- do.call(reloo.loo, c(reloo_args, ...))
+      c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
+      out <- do.call(reloo.loo, reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 

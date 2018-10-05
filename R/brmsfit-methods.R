@@ -2614,7 +2614,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @export
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                         pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-                        model_names = NULL) {
+                        reloo_args = list(), model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(loo)
   eval(cl, parent.frame())
@@ -2645,6 +2645,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   Only used if argument \code{reloo} is \code{TRUE}.
 #'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
+#' @param reloo_args Optional \code{list} of additional arguments passed to
+#'   \code{\link{reloo}}.
 #' @param model_names If \code{NULL} (the default) will use model names 
 #'   derived from deparsing the call. Otherwise will use the passed 
 #'   values as model names.
@@ -2693,7 +2695,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-                         model_names = NULL) {
+                         reloo_args = list(), model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   not_for_reloo <- intersect(names(args), args_not_for_reloo())
   if (reloo && length(not_for_reloo)) {
@@ -2701,7 +2703,10 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
     stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
   }
   args$use_stored_ic <- !length(not_for_reloo)
-  c(args) <- nlist(ic = "loo", pointwise, compare, resp, k_threshold, reloo)
+  c(args) <- nlist(
+    ic = "loo", pointwise, compare, resp, 
+    k_threshold, reloo, reloo_args
+  )
   do.call(compute_ics, args)
 }
 
