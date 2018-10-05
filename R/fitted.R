@@ -76,7 +76,14 @@ fitted_internal.brmsdraws <- function(
         out <- fitted_fun(draws)
       }
     } else {
-      out <- get_dpar(draws, dpar = "mu", ilink = FALSE)
+      mus <- dpars[dpar_class(dpars) %in% "mu"]
+      if (length(mus) == 1L) {
+        out <- get_dpar(draws, dpar = mus, ilink = FALSE)
+      } else {
+        # multiple mu parameters in categorical or mixture models
+        out <- lapply(mus, get_dpar, draws = draws, ilink = FALSE)
+        out <- abind::abind(out, along = 3)
+      }
     }
   }
   if (is.null(dim(out))) {
@@ -86,7 +93,7 @@ fitted_internal.brmsdraws <- function(
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
     if (is_categorical(draws$f) || is_ordinal(draws$f)) {
-      if (scale == "linear") {  
+      if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
         dimnames(out)[[3]] <- paste0("P(Y = ", dimnames(out)[[3]], ")")
