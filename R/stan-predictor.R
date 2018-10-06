@@ -75,9 +75,15 @@ stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
     )
   }
   # add whitespaces to be able to replace parameters and covariates
-  meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
+  syms <- c(
+    "+", "-", "*", "/", "%", "^", ".*", "./", "'", ")", "(", 
+    ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||" 
+  )
+  regex <- paste0("(?<!\\.)", escape_all(syms), "(?!=)")
   nlmodel <- rm_wsp(collapse(deparse(x$formula[[2]])))
-  nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
+  nlmodel <- wsp(rename(
+    nlmodel, regex, wsp(syms), fixed = FALSE, perl = TRUE
+  )) 
   nlmodel <- rename(nlmodel, 
     c(wsp(nlpars), covars, " ( ", " ) "), 
     c(new_nlpars, new_covars, "(", ")")

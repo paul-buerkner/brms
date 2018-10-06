@@ -20,6 +20,7 @@ after adding model fit criteria. (#478)
 * Correctly plot splines with factorial covariates via `marginal_smooths`.
 * Allow sampling from priors in intercept only models
 thanks to Emmanuel Charpentier. (#529)
+* Allow logical operators in non-linear formulas.
 
 
 # brms 2.5.0

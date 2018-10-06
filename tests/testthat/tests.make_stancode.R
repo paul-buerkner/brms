@@ -631,14 +631,20 @@ test_that("monotonic effects appear in the Stan code", {
 
 test_that("Stan code for non-linear models is correct", {
   flist <- list(a ~ x, b ~ z + (1|g))
-  data <- data.frame(y = rgamma(9, 1, 1), x = rnorm(9), z = rnorm(9), 
-                     g = rep(1:3, 3))
+  data <- data.frame(
+    y = rgamma(9, 1, 1), x = rnorm(9), 
+    z = rnorm(9), g = rep(1:3, 3)
+  )
   prior <- c(set_prior("normal(0,5)", nlpar = "a"),
              set_prior("normal(0,1)", nlpar = "b"))
   # syntactic validity is already checked within make_stancode
-  scode <- make_stancode(bf(y ~ a - exp(b^z), flist = flist, nl = TRUE), 
-                            data = data, prior = prior)
-  expect_match2(scode, "mu[n] = nlp_a[n] - exp(nlp_b[n] ^ C_1[n]);")
+  scode <- make_stancode(
+    bf(y ~ a - exp(b^z) * (z <= a), flist = flist, nl = TRUE), 
+    data = data, prior = prior
+  )
+  expect_match2(scode, 
+    "mu[n] = nlp_a[n] - exp(nlp_b[n] ^ C_1[n]) * (C_1[n] <= nlp_a[n]);"
+  )
   
   # non-linear predictor can be computed outside a loop
   scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 

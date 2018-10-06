@@ -733,7 +733,7 @@ escape_dot <- function(x) {
 }
 
 escape_all <- function(x) {
-  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]")
+  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")
   for (s in special) {
     x <- gsub(s, paste0("\\", s), x, fixed = TRUE)
   }
