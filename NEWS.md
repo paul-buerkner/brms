@@ -11,6 +11,7 @@ after adding model fit criteria. (#478)
 * Compute density ratios based on MCMC samples via `density_ratio`.
 * Ignore offsets in various post-processing methods via
 argument `offset`.
+* Update addition terms in formulas via `update_adterms`.
 
 ### Other changes
 
