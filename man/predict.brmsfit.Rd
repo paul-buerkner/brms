@@ -9,16 +9,16 @@
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   transform = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", new_objects = list(),
-  incl_autocor = TRUE, resp = NULL, negative_rt = FALSE,
-  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
-  ntrys = 5, summary = TRUE, robust = FALSE, probs = c(0.025,
-  0.975), ...)
+  incl_autocor = TRUE, offset = TRUE, resp = NULL,
+  negative_rt = FALSE, subset = NULL, nsamples = NULL,
+  sort = FALSE, nug = NULL, ntrys = 5, summary = TRUE,
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{posterior_predict}{brmsfit}(object, newdata = NULL,
   re_formula = NULL, re.form = NULL, transform = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL,
-  negative_rt = FALSE, subset = NULL, nsamples = NULL,
+  new_objects = list(), incl_autocor = TRUE, offset = TRUE,
+  resp = NULL, negative_rt = FALSE, subset = NULL, nsamples = NULL,
   sort = FALSE, nug = NULL, ntrys = 5, ...)
 }
 \arguments{
@@ -65,6 +65,9 @@ parameters should be included in the predictions. Defaults to
 \code{TRUE}. Setting it to \code{FALSE} will not affect other 
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
+
+\item{offset}{Logical; Indicates if offsets should be included in
+the predictions. Defaults to \code{TRUE}.}
 
 \item{resp}{Optional names of response variables.
 If specified, fitted values of these response variables are returned.}

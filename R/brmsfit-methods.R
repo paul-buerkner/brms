@@ -1588,6 +1588,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'  \code{TRUE}. Setting it to \code{FALSE} will not affect other 
 #'  correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 #'  or \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param offset Logical; Indicates if offsets should be included in
+#'  the predictions. Defaults to \code{TRUE}.
 #' @param negative_rt Only relevant for Wiener diffusion models. 
 #'   A flag indicating whether response times of responses
 #'   on the lower boundary should be returned as negative values.
@@ -1685,16 +1687,16 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
                             sample_new_levels = "uncertainty", 
                             new_objects = list(), incl_autocor = TRUE, 
-                            resp = NULL, negative_rt = FALSE, subset = NULL, 
-                            nsamples = NULL, sort = FALSE, nug = NULL, 
-                            ntrys = 5, summary = TRUE, robust = FALSE,
-                            probs = c(0.025, 0.975), ...) {
+                            offset = TRUE, resp = NULL, negative_rt = FALSE, 
+                            subset = NULL, nsamples = NULL, sort = FALSE, 
+                            nug = NULL, ntrys = 5, summary = TRUE, 
+                            robust = FALSE, probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels,
-    sample_new_levels, new_objects, resp, subset, nsamples, nug,
-    check_response = FALSE
+    sample_new_levels, new_objects, resp, subset, nsamples, offset, 
+    nug, check_response = FALSE
   )
   draws <- do.call(extract_draws, draws_args)
   predict_args <- nlist(
@@ -1710,14 +1712,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 #' @export posterior_predict
 #' @importFrom rstantools posterior_predict
-posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                                      re.form = NULL, transform = NULL, 
-                                      allow_new_levels = FALSE,
-                                      sample_new_levels = "uncertainty", 
-                                      new_objects = list(), incl_autocor = TRUE, 
-                                      resp = NULL, negative_rt = FALSE, subset = NULL, 
-                                      nsamples = NULL, sort = FALSE, nug = NULL, 
-                                      ntrys = 5, ...) {
+posterior_predict.brmsfit <- function(
+  object, newdata = NULL, re_formula = NULL, re.form = NULL, 
+  transform = NULL, allow_new_levels = FALSE, 
+  sample_new_levels = "uncertainty", new_objects = list(), 
+  incl_autocor = TRUE, offset = TRUE, resp = NULL, negative_rt = FALSE, 
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, ntrys = 5, ...
+) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
   cl$summary <- FALSE
@@ -1796,17 +1797,17 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            new_objects = list(), incl_autocor = TRUE, 
-                           resp = NULL, dpar = NULL, nlpar = NULL,
-                           subset = NULL, nsamples = NULL, sort = FALSE, 
-                           nug = NULL, summary = TRUE, robust = FALSE, 
-                           probs = c(0.025, 0.975), ...) {
+                           offset = TRUE, resp = NULL, dpar = NULL, 
+                           nlpar = NULL, subset = NULL, nsamples = NULL, 
+                           sort = FALSE, nug = NULL, summary = TRUE, 
+                           robust = FALSE, probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, incl_autocor, allow_new_levels, 
-    sample_new_levels, new_objects, resp, subset, nsamples, nug,
-    check_response = FALSE
+    sample_new_levels, new_objects, resp, subset, nsamples, offset, 
+    nug, check_response = FALSE
   )
   draws <- do.call(extract_draws, draws_args)
   fitted_args <- nlist(
@@ -1824,9 +1825,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_linpred.brmsfit <- function(
   object, transform = FALSE, newdata = NULL, re_formula = NULL,
   re.form = NULL, allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL, dpar = NULL, 
-  nlpar = NULL, subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL, 
-  ...
+  new_objects = list(), incl_autocor = TRUE, offset = TRUE, resp = NULL,
+  dpar = NULL, nlpar = NULL, subset = NULL, nsamples = NULL, sort = FALSE, 
+  nug = NULL, ...
 ) {
   cl <- match.call()
   cl[[1]] <- quote(fitted)
@@ -1892,9 +1893,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               allow_new_levels = FALSE, 
                               sample_new_levels = "uncertainty",
                               new_objects = list(), incl_autocor = TRUE, 
-                              resp = NULL, subset = NULL, nsamples = NULL, 
-                              sort = FALSE, nug = NULL, summary = TRUE, 
-                              robust = FALSE, probs = c(0.025, 0.975), ...) {
+                              offset = TRUE, resp = NULL, subset = NULL, 
+                              nsamples = NULL, sort = FALSE, nug = NULL, 
+                              summary = TRUE, robust = FALSE, 
+                              probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   method <- match.arg(method)
   contains_samples(object)
@@ -1917,7 +1919,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels,
-    sample_new_levels, new_objects, incl_autocor, 
+    sample_new_levels, new_objects, incl_autocor, offset,
     resp, subset, nug, summary = FALSE, sort = TRUE
   )
   mu <- do.call(method, pred_args)
@@ -1959,13 +1961,13 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 #' @export predictive_error
 #' @importFrom rstantools predictive_error
-predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                                     re.form = NULL, allow_new_levels = FALSE, 
-                                     sample_new_levels = "uncertainty",
-                                     new_objects = list(), incl_autocor = TRUE, 
-                                     resp = NULL, subset = NULL, nsamples = NULL, 
-                                     sort = FALSE, nug = NULL, robust = FALSE, 
-                                     probs = c(0.025, 0.975), ...) {
+predictive_error.brmsfit <- function(
+  object, newdata = NULL, re_formula = NULL, re.form = NULL, 
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
+  new_objects = list(), incl_autocor = TRUE, offset = TRUE, 
+  resp = NULL, subset = NULL, nsamples = NULL, sort = FALSE, 
+  nug = NULL, robust = FALSE, probs = c(0.025, 0.975), ...
+) {
   cl <- match.call()
   cl[[1]] <- quote(residuals)
   cl$method <- "predict"
@@ -2925,15 +2927,15 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, 
                             sample_new_levels = "uncertainty", 
                             new_objects = list(), incl_autocor = TRUE, 
-                            resp = NULL, subset = NULL, nsamples = NULL, 
-                            pointwise = FALSE, nug = NULL, combine = TRUE, 
-                            ...) {
+                            offset = TRUE, resp = NULL, subset = NULL, 
+                            nsamples = NULL, pointwise = FALSE, nug = NULL, 
+                            combine = TRUE, ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, allow_new_levels, incl_autocor,
-    sample_new_levels, new_objects, resp, subset, nsamples, nug, 
-    check_response = TRUE
+    sample_new_levels, new_objects, resp, subset, nsamples, offset,
+    nug, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
   if (pointwise) {
@@ -2959,8 +2961,9 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE,
                            sample_new_levels = "uncertainty",
                            new_objects = list(), incl_autocor = TRUE, 
-                           resp = NULL, subset = NULL, nsamples = NULL, 
-                           pointwise = FALSE, nug = NULL, ...) {
+                           offset = TRUE, resp = NULL, subset = NULL, 
+                           nsamples = NULL, pointwise = FALSE, nug = NULL,
+                           combine = TRUE, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -2972,8 +2975,8 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                allow_new_levels = FALSE, 
                                sample_new_levels = "uncertainty", 
                                new_objects = list(), incl_autocor = TRUE, 
-                               resp = NULL, subset = NULL, nsamples = NULL, 
-                               nug = NULL, summary = TRUE, 
+                               offset = TRUE, resp = NULL, subset = NULL, 
+                               nsamples = NULL, nug = NULL, summary = TRUE, 
                                robust = FALSE, probs = c(0.025, 0.975), 
                                log = FALSE, ...) {
   stopifnot_resp(x, resp)
@@ -2991,7 +2994,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   draws_args <- nlist(
     x, newdata, re_formula, allow_new_levels, incl_autocor, 
     sample_new_levels, new_objects, subset, nsamples, nug,
-    resp, check_response = TRUE
+    offset, resp, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
   stopifnot(is.brmsdraws(draws))

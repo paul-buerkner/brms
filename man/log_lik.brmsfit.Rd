@@ -8,9 +8,9 @@
 \usage{
 \method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, resp = NULL,
-  subset = NULL, nsamples = NULL, pointwise = FALSE, nug = NULL,
-  combine = TRUE, ...)
+  new_objects = list(), incl_autocor = TRUE, offset = TRUE,
+  resp = NULL, subset = NULL, nsamples = NULL, pointwise = FALSE,
+  nug = NULL, combine = TRUE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
@@ -52,6 +52,9 @@ parameters should be included in the predictions. Defaults to
 \code{TRUE}. Setting it to \code{FALSE} will not affect other 
 correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
 or \code{\link[brms:cor_fixed]{cor_fixed}}.}
+
+\item{offset}{Logical; Indicates if offsets should be included in
+the predictions. Defaults to \code{TRUE}.}
 
 \item{resp}{Optional names of response variables.
 If specified, fitted values of these response variables are returned.}

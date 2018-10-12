@@ -13,7 +13,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   sample_new_levels = "uncertainty",
                                   incl_autocor = TRUE, resp = NULL,
                                   subset = NULL, nsamples = NULL, nug = NULL, 
-                                  smooths_only = FALSE, ...) {
+                                  smooths_only = FALSE, offset = TRUE, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   see doc of logLik.brmsfit
@@ -43,8 +43,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   args <- nlist(
     x = bterms, samples, sdata, data = x$data,
     ranef, old_ranef = x$ranef, meef, resp,
-    sample_new_levels, nug, smooths_only, new,
-    stanvars = names(x$stanvars)
+    sample_new_levels, nug, smooths_only, offset,
+    new, stanvars = names(x$stanvars)
   )
   if (new) {
     # extract_draws_re() also requires the new level names
@@ -168,7 +168,10 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
 }
 
 #' @export
-extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
+extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, 
+                              offset = TRUE, ...) {
+  smooths_only <- as_one_logical(smooths_only)
+  offset <- as_one_logical(offset)
   nsamples <- nrow(samples)
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
@@ -184,7 +187,9 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
   draws$sm <- do.call(extract_draws_sm, args)
   draws$gp <- do.call(extract_draws_gp, args)
   draws$re <- do.call(extract_draws_re, args)
-  draws$offset <- do.call(extract_draws_offset, args)
+  if (offset) {
+    draws$offset <- do.call(extract_draws_offset, args) 
+  }
   if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
     draws$ac <- do.call(extract_draws_autocor, args)
   }
