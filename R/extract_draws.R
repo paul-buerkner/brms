@@ -1,25 +1,12 @@
-extract_draws <- function(x, ...) {
-  # extract data and posterior draws
-  UseMethod("extract_draws")
-}
-
 #' @export
-extract_draws.default <- function(x, ...) {
-  NULL
-}
-
-#' @export
+#' @rdname extract_draws
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
+                                  allow_new_levels = FALSE,
                                   sample_new_levels = "uncertainty",
                                   incl_autocor = TRUE, resp = NULL,
-                                  subset = NULL, nsamples = NULL, nug = NULL, 
-                                  smooths_only = FALSE, offset = TRUE, ...) {
-  # extract all data and posterior draws required in (non)linear_predictor
-  # Args:
-  #   see doc of logLik.brmsfit
-  #   ...: passed to validate_newdata
-  # Returns:
-  #   A named list to be interpreted by linear_predictor
+                                  nsamples = NULL, subset = NULL, nug = NULL, 
+                                  smooths_only = FALSE, offset = TRUE, 
+                                  new_objects = list(), ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   x <- restructure(x)
@@ -31,7 +18,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 
   new <- !is.null(newdata)
-  newd_args <- nlist(newdata, object = x, re_formula, resp, ...)
+  newd_args <- nlist(
+    newdata, object = x, re_formula, resp, 
+    allow_new_levels, new_objects, ...
+  )
   newdata <- do.call(validate_newdata, newd_args)
   newd_args$newdata <- newdata
   newd_args$internal <- TRUE
@@ -873,4 +863,71 @@ is.bdrawsnl <- function(x) {
   inherits(x, "bdrawsnl")
 }
 
+#' Extract Data and Posterior Draws
+#' 
+#' This method helps in preparing \pkg{brms} models for certin post-processing
+#' tasks most notably various forms of predictions. Unless you are a package
+#' developer, you will rarely need to call \code{extract_draws} directly.
+#' 
+#' @name extract_draws
+#' @aliases extract_draws.brmsfit
+#'
+#' @param x An \R object typically of class \code{'brmsfit'}.
+#' @param newdata An optional data.frame for which to evaluate predictions. If
+#'   \code{NULL} (default), the original data of the model is used.
+#' @param re_formula formula containing group-level effects to be considered in
+#'   the prediction. If \code{NULL} (default), include all group-level effects;
+#'   if \code{NA}, include no group-level effects.
+#' @param allow_new_levels A flag indicating if new levels of group-level
+#'   effects are allowed (defaults to \code{FALSE}). Only relevant if
+#'   \code{newdata} is provided.
+#' @param sample_new_levels Indicates how to sample new levels for grouping
+#'   factors specified in \code{re_formula}. This argument is only relevant if
+#'   \code{newdata} is provided and \code{allow_new_levels} is set to
+#'   \code{TRUE}. If \code{"uncertainty"} (default), include group-level
+#'   uncertainty in the predictions based on the variation of the existing
+#'   levels. If \code{"gaussian"}, sample new levels from the (multivariate)
+#'   normal distribution implied by the group-level standard deviations and
+#'   correlations. This options may be useful for conducting Bayesian power
+#'   analysis. If \code{"old_levels"}, directly sample new levels from the
+#'   existing levels.
+#' @param new_objects A named \code{list} of objects containing new data, which
+#'   cannot be passed via argument \code{newdata}. Currently, only required for
+#'   objects passed to \code{\link[brms:cor_sar]{cor_sar}} and
+#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
+#'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
+#'   to \code{FALSE} will not affect other correlation structures such as
+#'   \code{\link[brms:cor_bsts]{cor_bsts}}, or
+#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param offset Logical; Indicates if offsets should be included in the
+#'   predictions. Defaults to \code{TRUE}.
+#' @param smooths_only Logical; If \code{TRUE} only draws related to the
+#'   computation of smooth terms will be extracted.
+#' @param resp Optional names of response variables. If specified, predictions
+#'   are performed only for the specified response variables.
+#' @param subset A numeric vector specifying the posterior samples to be used.
+#'   If \code{NULL} (the default), all samples are used.
+#' @param nsamples Positive integer indicating how many posterior samples should
+#'   be used. If \code{NULL} (the default) all samples are used. Ignored if
+#'   \code{subset} is not \code{NULL}.
+#' @param nug Small positive number for Gaussian process terms only. For
+#'   numerical reasons, the covariance matrix of a Gaussian process might not be
+#'   positive definite. Adding a very small number to the matrix's diagonal
+#'   often solves this problem. If \code{NULL} (the default), \code{nug} is
+#'   chosen internally.
+#' @param ... Further arguments passed to \code{\link{validate_newdata}}.
+#'
+#' @return An object of class \code{'brmsdraws'} or \code{'mvbrmsdraws'},
+#'   depending on whether a univariate or multivariate model is passed.
+#'   
+#' @export
+extract_draws <- function(x, ...) {
+  # extract data and posterior draws
+  UseMethod("extract_draws")
+}
 
+#' @export
+extract_draws.default <- function(x, ...) {
+  NULL
+}

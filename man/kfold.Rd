@@ -50,8 +50,8 @@ More information is provided in the 'Details' section.}
 
 \item{exact_loo}{Deprecated! Please use \code{folds = "loo"} instead.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
@@ -107,11 +107,6 @@ The \code{kfold} function performs exact \eqn{K}-fold
   \link[loo:kfold-helpers]{kfold-helpers} page).
   }
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{brmsfit}: \code{kfold} method for \code{brmsfit} objects
-}}
-
 \examples{
 \dontrun{
 fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 

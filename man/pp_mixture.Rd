@@ -6,75 +6,33 @@
 \title{Posterior Probabilities of Mixture Component Memberships}
 \usage{
 \method{pp_mixture}{brmsfit}(x, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  new_objects = list(), incl_autocor = TRUE, offset = TRUE,
-  resp = NULL, subset = NULL, nsamples = NULL, nug = NULL,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
-  log = FALSE, ...)
+  resp = NULL, nsamples = NULL, subset = NULL, log = FALSE,
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 
 pp_mixture(x, ...)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}
 
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
+\item{newdata}{An optional data.frame for which to evaluate predictions. If
+\code{NULL} (default), the original data of the model is used.}
 
-\item{re_formula}{formula containing group-level effects 
-to be considered in the prediction. 
-If \code{NULL} (default), include all group-level effects; 
+\item{re_formula}{formula containing group-level effects to be considered in
+the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{allow_new_levels}{A flag indicating if new
-levels of group-level effects are allowed 
-(defaults to \code{FALSE}). 
-Only relevant if \code{newdata} is provided.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
-\item{sample_new_levels}{Indicates how to sample new levels 
-for grouping factors specified in \code{re_formula}.
-This argument is only relevant if \code{newdata} is provided and 
-\code{allow_new_levels} is set to \code{TRUE}.
-If \code{"uncertainty"} (default), include group-level uncertainty
-in the predictions based on the variation of the existing levels. 
-If \code{"gaussian"}, sample new levels from the (multivariate) 
-normal distribution implied by the group-level standard deviations 
-and correlations. This options may be useful for conducting 
-Bayesian power analysis. 
-If \code{"old_levels"}, directly sample new levels from the
-existing levels.}
+\item{nsamples}{Positive integer indicating how many posterior samples should
+be used. If \code{NULL} (the default) all samples are used. Ignored if
+\code{subset} is not \code{NULL}.}
 
-\item{new_objects}{A named \code{list} of objects containing 
-new data, which cannot be passed via argument \code{newdata}.
-Currently, only required for objects passed to 
-\code{\link[brms:cor_sar]{cor_sar}} and 
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation
-parameters should be included in the predictions. Defaults to 
-\code{TRUE}. Setting it to \code{FALSE} will not affect other 
-correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
-or \code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{offset}{Logical; Indicates if offsets should be included in
-the predictions. Defaults to \code{TRUE}.}
-
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
-
-\item{subset}{A numeric vector specifying
-the posterior samples to be used. 
+\item{subset}{A numeric vector specifying the posterior samples to be used.
 If \code{NULL} (the default), all samples are used.}
 
-\item{nsamples}{Positive integer indicating how many 
-posterior samples should be used. 
-If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset} is not \code{NULL}.}
-
-\item{nug}{Small positive number for Gaussian process terms only. 
-For numerical reasons, the covariance matrix of a Gaussian 
-process might not be positive definite. Adding a very small 
-number to the matrix's diagonal often solves this problem. 
-If \code{NULL} (the default), \code{nug} is chosen internally.}
+\item{log}{Logical; Indicates whether to return 
+probabilities on the log-scale.}
 
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
@@ -89,10 +47,8 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{log}{Logical; Indicates whether to return 
-probabilities on the log-scale.}
-
-\item{...}{Currently ignored.}
+\item{...}{Further arguments passed to \code{\link{extract_draws}}
+that control several aspects of data validation and prediction.}
 }
 \value{
 If \code{summary = TRUE}, an N x E x K array,

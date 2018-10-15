@@ -8,10 +8,10 @@
 \method{loo_R2}{brmsfit}(object, resp = NULL, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{...}{Further arguments passed to 
 \code{\link[brms:fitted.brmsfit]{fitted}} and

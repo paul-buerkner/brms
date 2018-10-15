@@ -168,6 +168,24 @@ order_data <- function(data, bterms) {
   data
 }
 
+#' Validate New Data
+#' 
+#' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
+#' are a package developer, you will rarely need to call \code{validate_newdata}
+#' directly.
+#' 
+#' @inheritParams extract_draws
+#' @param newdata A \code{data.frame} containing new data to be validated.
+#' @param object A \code{brmsfit} object.
+#' @param check_response Logical; Indicates if response variables should
+#'   be checked as well. Defaults to \code{TRUE}.
+#' @param all_group_vars Optional names of grouping variables to be validated.
+#'   Defaults to all grouping variables in the model.
+#' @param ... Currently ignored.
+#' 
+#' @return A validated \code{'data.frame'} based on \code{newdata}.
+#' 
+#' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,

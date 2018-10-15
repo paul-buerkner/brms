@@ -21,8 +21,8 @@ passed to the underlying post-processing functions.}
 of the models should be compared to each other
 via \code{\link{compare_ic}}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{pointwise}{A flag indicating whether to compute the full
 log-likelihood matrix at once or separately for each observation. 
