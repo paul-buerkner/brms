@@ -191,23 +191,6 @@ validate_newdata <- function(
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,
   all_group_vars = NULL, ...
 ) {
-  # validate newdata passed to post-processing methods
-  # Args:
-  #   newdata: a data.frame containing new data for prediction 
-  #   object: an object of class brmsfit
-  #   re_formula: a group-level formula
-  #   allow_new_levels: Are new group-levels allowed?
-  #   resp: optional name of response variables whose 
-  #     variables should be checked
-  #   check_response: Should response variables be checked
-  #     for existence and validity?
-  #   incl_autocor: Check data of autocorrelation terms?
-  #   all_group_vars: optional names of all grouping 
-  #     variables in the model
-  #   ...: currently ignored
-  # Returns:
-  #   validated data.frame being compatible with formula(object)
-  #   if newdata is NULL, the original data.frame is returned
   if (is.null(newdata)) {
     newdata <- structure(object$data, valid = TRUE, original = TRUE)
   }
