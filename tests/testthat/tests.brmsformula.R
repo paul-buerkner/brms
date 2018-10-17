@@ -33,3 +33,24 @@ test_that("brmsformula detects auxiliary parameter equations", {
   expect_error(bf(y~x, shape1 = "shape3", shape2 = "shape1"),
                "Cannot use fixed parameters on the right-hand side")
 })
+
+test_that("update_adterms works correctly", {
+  form <- y | trials(size) ~ x
+  expect_equal(
+    update_adterms(form, ~ trials(10)), 
+    y | trials(10) ~ x
+  )
+  expect_equal(
+    update_adterms(form, ~ weights(w)), 
+    y | trials(size) + weights(w) ~ x
+  )
+  expect_equal(
+    update_adterms(form, ~ weights(w), action = "replace"),
+    y | weights(w) ~ x
+  )
+  expect_equal(
+    update_adterms(y ~ x, ~ trials(10)),
+    y | trials(10) ~ x
+  )
+})
+

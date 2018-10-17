@@ -681,10 +681,19 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
   out
 }
 
+#' Prepare Response Data
+#' 
+#' Prepare data related to response variables in \pkg{brms}. 
+#' Only exported for use in package development.
+#' 
+#' @param x An \R object.
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return A named list of data related to response variables.
+#' 
+#' @keywords internal
+#' @export
 data_response <- function(x, ...) {
-  # prepare data for the response variable to be passed to Stan
-  # this shouldn't be part of stan_effects() to allow for
-  # preparation of response variables without anything else
   UseMethod("data_response")
 }
 
@@ -705,7 +714,7 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     not4stan = FALSE, new = FALSE,
-                                    old_sdata = NULL) {
+                                    old_sdata = NULL, ...) {
   # prepare data for the response variable
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))

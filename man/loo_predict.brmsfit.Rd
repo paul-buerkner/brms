@@ -33,8 +33,8 @@ Only used if \code{type = quantile}.}
 If \code{psis_object} is missing then \code{\link[loo]{psis}} is executed 
 internally, which may be time consuming for models fit to very large datasets.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{...}{Optional arguments passed to the underlying methods that is 
 \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as

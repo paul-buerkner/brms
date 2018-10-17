@@ -7,7 +7,7 @@
 \method{vcov}{brmsfit}(object, correlation = FALSE, pars = NULL, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{correlation}{Logical; if \code{FALSE} (the default), compute 
 the covariance matrix, if \code{TRUE}, compute the correlation matrix.}

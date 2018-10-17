@@ -168,28 +168,29 @@ order_data <- function(data, bterms) {
   data
 }
 
+#' Validate New Data
+#' 
+#' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
+#' are a package developer, you will rarely need to call \code{validate_newdata}
+#' directly.
+#' 
+#' @inheritParams extract_draws
+#' @param newdata A \code{data.frame} containing new data to be validated.
+#' @param object A \code{brmsfit} object.
+#' @param check_response Logical; Indicates if response variables should
+#'   be checked as well. Defaults to \code{TRUE}.
+#' @param all_group_vars Optional names of grouping variables to be validated.
+#'   Defaults to all grouping variables in the model.
+#' @param ... Currently ignored.
+#' 
+#' @return A validated \code{'data.frame'} based on \code{newdata}.
+#' 
+#' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,
   all_group_vars = NULL, ...
 ) {
-  # validate newdata passed to post-processing methods
-  # Args:
-  #   newdata: a data.frame containing new data for prediction 
-  #   object: an object of class brmsfit
-  #   re_formula: a group-level formula
-  #   allow_new_levels: Are new group-levels allowed?
-  #   resp: optional name of response variables whose 
-  #     variables should be checked
-  #   check_response: Should response variables be checked
-  #     for existence and validity?
-  #   incl_autocor: Check data of autocorrelation terms?
-  #   all_group_vars: optional names of all grouping 
-  #     variables in the model
-  #   ...: currently ignored
-  # Returns:
-  #   validated data.frame being compatible with formula(object)
-  #   if newdata is NULL, the original data.frame is returned
   if (is.null(newdata)) {
     newdata <- structure(object$data, valid = TRUE, original = TRUE)
   }
@@ -549,7 +550,9 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   }
   if (has_trials(x$family) || has_cat(x$family)) {
     # trials and ncat should not be computed based on new data
-    data_response <- data_response(x, data)
+    data_response <- data_response(
+      x, data, check_response = FALSE, not4stan = TRUE
+    )
     # partially match via $ to be independent of the response suffix
     out$trials <- data_response$trials
     out$ncat <- data_response$ncat

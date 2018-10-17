@@ -307,7 +307,7 @@ stancode <- function(object, ...) {
 #'   for internal use in other post-processing methods.
 #' @param control A named list currently for internal usage only.
 #' @param ... More arguments passed to \code{\link{make_standata}}.
-#' @inheritParams predict.brmsfit
+#' @inheritParams extract_draws
 #' 
 #' @return A named list containing the data originally passed to Stan.
 #' 
