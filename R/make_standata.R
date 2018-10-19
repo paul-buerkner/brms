@@ -84,7 +84,7 @@ make_standata <- function(formula, data, family = gaussian(),
       x = bterms, data, prior, ranef, meef, cov_ranef, 
       knots, not4stan, old_sdata = control$old_sdata
     )
-    out <- c(out, do.call(data_effects, args_eff))
+    out <- c(out, do.call(data_predictor, args_eff))
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
   stanvars <- validate_stanvars(stanvars)

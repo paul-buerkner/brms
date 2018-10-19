@@ -487,7 +487,7 @@ get_prior <- function(formula, data, family = gaussian(),
   # initialize output
   prior <- empty_brmsprior()
   # priors for distributional parameters
-  prior <- prior + prior_effects(
+  prior <- prior + prior_predictor(
     bterms, data = data, internal = internal
   )
   # priors of group-level parameters
@@ -505,20 +505,20 @@ get_prior <- function(formula, data, family = gaussian(),
   structure(prior, class = c("brmsprior", "data.frame"))
 }
 
-prior_effects <- function(x, ...) {
-  # generate priors various kind of effects 
-  UseMethod("prior_effects")
+prior_predictor <- function(x, ...) {
+  # generate priors for predictor terms
+  UseMethod("prior_predictor")
 }
 
 #' @export
-prior_effects.default <- function(x, ...) {
+prior_predictor.default <- function(x, ...) {
   empty_brmsprior()
 }
 
-prior_effects.mvbrmsterms <- function(x, internal = FALSE, ...) {
+prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior <- empty_brmsprior()
   for (i in seq_along(x$terms)) {
-    prior <- prior + prior_effects(x$terms[[i]], ...) 
+    prior <- prior + prior_predictor(x$terms[[i]], ...) 
   }
   # add "global" priors for population-level effects
   # in 1.8.0 as users keep asking about this
@@ -541,7 +541,7 @@ prior_effects.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior
 }
 
-prior_effects.brmsterms <- function(x, data, ...) {
+prior_predictor.brmsterms <- function(x, data, ...) {
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
   prior <- empty_brmsprior()
@@ -550,7 +550,7 @@ prior_effects.brmsterms <- function(x, data, ...) {
     def_dprior <- def_dprior(x, dp, data = data)
     if (!is.null(x$dpars[[dp]])) {
       # parameter is predicted
-      dp_prior <- prior_effects(
+      dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
         def_dprior = def_dprior, cats = cats
@@ -565,7 +565,7 @@ prior_effects.brmsterms <- function(x, data, ...) {
     prior <- prior + dp_prior
   }
   for (nlp in names(x$nlpars)) {
-    nlp_prior <- prior_effects(
+    nlp_prior <- prior_predictor(
       x$nlpars[[nlp]], data = data,
       def_scale_prior = def_scale_prior,
       def_dprior = def_dprior, 
@@ -604,7 +604,7 @@ prior_effects.brmsterms <- function(x, data, ...) {
 }
 
 #' @export
-prior_effects.btl <- function(x, data, ...) {
+prior_predictor.btl <- function(x, data, ...) {
   # collect default priors for various kinds of effects
   # Args:
   #   spec_intercept: special parameter class for the Intercept?
@@ -619,7 +619,7 @@ prior_effects.btl <- function(x, data, ...) {
 }
 
 #' @export
-prior_effects.btnl <- function(x, data, ...) {
+prior_predictor.btnl <- function(x, data, ...) {
   empty_brmsprior()
 }
 

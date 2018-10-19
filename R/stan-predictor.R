@@ -1,10 +1,10 @@
-stan_effects <- function(x, ...) {
-  # generate stan code various kind of effects 
-  UseMethod("stan_effects")
+stan_predictor <- function(x, ...) {
+  # generate stan code for predictor terms
+  UseMethod("stan_predictor")
 }
 
 #' @export
-stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
+stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   ranef: output of tidy_ranef()
@@ -48,13 +48,13 @@ stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
+stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
   #   ilink: character vector of length 2 containing
   #     Stan code for the link function
-  #   ...: passed to stan_effects.btl
+  #   ...: passed to stan_predictor.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
   par <- combine_prefix(x, keep_mu = TRUE, nlp = TRUE)
@@ -105,8 +105,8 @@ stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE, 
-                                   rescor = FALSE, ...) {
+stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE, 
+                                     rescor = FALSE, ...) {
   # Stan code for distributional parameters
   # Args:
   #   rescor: indicate if this is part of an MV model estimating rescor
@@ -120,7 +120,7 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
   )
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
-    out[[nlp]] <- do.call(stan_effects, c(nlp_args, args))
+    out[[nlp]] <- do.call(stan_predictor, c(nlp_args, args))
   }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
@@ -129,7 +129,7 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
-      out[[dp]] <- do.call(stan_effects, c(dp_args, args))
+      out[[dp]] <- do.call(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       out[[dp]] <- list(data = dp_def)
     } else if (is.character(x$fdpars[[dp]]$value)) {
@@ -159,10 +159,9 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
 }
 
 #' @export
-stan_effects.mvbrmsterms <- function(x, prior, ...) {
-  out <- collapse_lists(
-    ls = lapply(x$terms, stan_effects, prior = prior, rescor = x$rescor, ...)
-  )
+stan_predictor.mvbrmsterms <- function(x, prior, ...) {
+  out <- lapply(x$terms, stan_predictor, prior = prior, rescor = x$rescor, ...)
+  out <- collapse_lists(ls = out)
   if (x$rescor) {
     # we already know at this point that all families are identical
     adforms <- lapply(x$terms, "[[", "adforms")
