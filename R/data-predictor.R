@@ -1,5 +1,16 @@
+#' Prepare Predictor Data
+#' 
+#' Prepare data related to predictor variables in \pkg{brms}. 
+#' Only exported for use in package development.
+#' 
+#' @param x An \R object.
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return A named list of data related to predictor variables.
+#' 
+#' @keywords internal
+#' @export
 data_predictor <- function(x, ...) {
-  # generate data for predictor terms 
   UseMethod("data_predictor")
 }
 
@@ -14,9 +25,9 @@ data_predictor.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
+data_predictor.brmsterms <- function(x, data, prior, ranef, meef, 
                                      cov_ranef = NULL, knots = NULL, 
-                                     not4stan = FALSE, old_sdata = NULL) {
+                                     not4stan = FALSE, old_sdata = NULL, ...) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
@@ -41,7 +52,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), knots = NULL, 
-                               not4stan = FALSE, old_sdata = NULL) {
+                               not4stan = FALSE, old_sdata = NULL, ...) {
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
@@ -69,7 +80,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 #' @export 
 data_predictor.btnl <- function(x, data, ranef = empty_ranef(), 
                                 prior = brmsprior(), knots = NULL, 
-                                not4stan = FALSE, old_sdata = NULL) {
+                                not4stan = FALSE, old_sdata = NULL, ...) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
