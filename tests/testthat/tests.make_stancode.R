@@ -833,8 +833,7 @@ test_that("Stan code of response times models is correct", {
 })
 
 test_that("Stan code of wiener diffusion models is correct", {
-  dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
-  dat$x <- rnorm(100)
+  dat <- data.frame(q = 1:10, resp = sample(0:1, 10, TRUE), x = rnorm(10))
   scode <- make_stancode(q | dec(resp) ~ x, data = dat, family = wiener())
   expect_match2(scode, 
     "target += wiener_diffusion_lpdf(Y[n] | dec[n], bs, ndt, bias, mu[n])"

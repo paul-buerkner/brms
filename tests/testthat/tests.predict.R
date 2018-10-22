@@ -313,6 +313,7 @@ test_that("truncated predict run without errors", {
 })
 
 test_that("predict for the wiener diffusion model runs without errors", {
+  skip("skip as long as RWiener fails on R-devel for 3.6.0")
   ns <- 5
   nobs <- 3
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
