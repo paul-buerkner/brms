@@ -423,7 +423,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     message("Compiling the C++ model")
     x$fit <- eval_silent(
       do.call(rstan::stan_model, stan_model_args),
-      silent = silence_stan_model
+      silent = silence_stan_model, type = "message"
     )
   }
   

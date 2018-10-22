@@ -460,21 +460,21 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   links <- links[unique_combs]
   out <- list()
   if (any(links == "cauchit")) {
-    str_add(out$fun) <- "  #include 'fun_cauchit.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
-    str_add(out$fun) <- "  #include 'fun_cloglog.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
   }
   hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
   if (any(nzchar(hs_dfs))) {
-    str_add(out$fun) <- "  #include 'fun_horseshoe.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
   }
   if (any(nzchar(ranef$by))) {
-    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
   }
   if (stan_needs_kronecker(ranef, names(cov_ranef))) {
     str_add(out$fun) <- paste0(
-      "  #include 'fun_as_matrix.stan' \n",
-      "  #include 'fun_kronecker.stan' \n"
+      "  #include 'fun_as_matrix.stan'\n",
+      "  #include 'fun_kronecker.stan'\n"
     )
   }
   family_files <- family_info(bterms, "include")
@@ -497,10 +497,10 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
   if (length(uni_mo)) {
-    str_add(out$fun) <- "  #include fun_monotonic.stan \n"
+    str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
   } 
   if (length(get_effect(bterms, "gp"))) {
-    str_add(out$fun) <- "  #include fun_gaussian_process.stan \n"
+    str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
   }
   # functions related to autocorrelation structures
   if (is.brmsterms(bterms)) {

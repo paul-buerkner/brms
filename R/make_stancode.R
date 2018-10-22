@@ -187,12 +187,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     temp_file <- tempfile(fileext = ".stan")
     cat(complete_model, file = temp_file) 
     isystem <- system.file("chunks", package = "brms")
-    complete_model <- eval_silent(
-      rstan::stanc_builder(
-        file = temp_file, isystem = isystem,
-        obfuscate_model_name = TRUE
-      ),
-      type = "message", silent = silent
+    complete_model <- rstan::stanc_builder(
+      file = temp_file, isystem = isystem,
+      obfuscate_model_name = TRUE
     )
     complete_model <- complete_model$model_code
     str_add(complete_model) <- "\n"
