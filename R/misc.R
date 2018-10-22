@@ -582,7 +582,7 @@ deparse_no_string <- function(x) {
   # deparse x if it is no string
   if (!is.character(x)) {
     x <- deparse(x)
-  } 
+  }
   x
 }
 
@@ -603,16 +603,32 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
   eval(expr, envir, ...)
 }
 
-eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
+eval_silent <- function(expr, type = "output", try = FALSE, 
+                        silent = TRUE, ...) {
   # evaluate an expression without printing output or messages
   # Args:
   #   expr: expression to be evaluated
   #   type: type of output to be suppressed (see ?sink)
+  #   try: wrap evaluation of expr in 'try' and 
+  #     not suppress outputs if evaluation fails?
   #   silent: actually evaluate silently?
+  try <- as_one_logical(try)
+  silent <- as_one_logical(silent)
+  type <- match.arg(type, c("output", "message"))
   expr <- substitute(expr)
   envir <- parent.frame()
   if (silent) {
-    utils::capture.output(out <- eval(expr, envir), type = type, ...)
+    if (try && type == "message") {
+      try_out <- try(utils::capture.output(
+        out <- eval(expr, envir), type = type, ...
+      ))
+      if (is(try_out, "try-error")) {
+        # try again without suppressing error messages
+        out <- eval(expr, envir)
+      }
+    } else {
+      utils::capture.output(out <- eval(expr, envir), type = type, ...)
+    }
   } else {
     out <- eval(expr, envir)
   }
