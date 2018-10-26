@@ -7,8 +7,8 @@
 \usage{
 \method{extract_draws}{brmsfit}(x, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  incl_autocor = TRUE, resp = NULL, nsamples = NULL, subset = NULL,
-  nug = NULL, smooths_only = FALSE, offset = TRUE,
+  incl_autocor = TRUE, oos = NULL, resp = NULL, nsamples = NULL,
+  subset = NULL, nug = NULL, smooths_only = FALSE, offset = TRUE,
   new_objects = list(), ...)
 
 extract_draws(x, ...)
@@ -43,6 +43,11 @@ should be included in the predictions. Defaults to \code{TRUE}. Setting it
 to \code{FALSE} will not affect other correlation structures such as
 \code{\link[brms:cor_bsts]{cor_bsts}}, or
 \code{\link[brms:cor_fixed]{cor_fixed}}.}
+
+\item{oos}{Optional indices of observations for which to compute
+out-of-sample rather than in-sample predictions. Only required in models
+that make use of response values to make predictions, that is currently
+only ARMA models.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

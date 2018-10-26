@@ -3,7 +3,7 @@
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
                                   allow_new_levels = FALSE,
                                   sample_new_levels = "uncertainty",
-                                  incl_autocor = TRUE, resp = NULL,
+                                  incl_autocor = TRUE, oos = NULL, resp = NULL,
                                   nsamples = NULL, subset = NULL, nug = NULL, 
                                   smooths_only = FALSE, offset = TRUE, 
                                   new_objects = list(), ...) {
@@ -34,7 +34,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     x = bterms, samples, sdata, data = x$data,
     ranef, old_ranef = x$ranef, meef, resp,
     sample_new_levels, nug, smooths_only, offset,
-    new, stanvars = names(x$stanvars)
+    new, oos, stanvars = names(x$stanvars)
   )
   if (new) {
     # extract_draws_re() also requires the new level names
@@ -672,7 +672,8 @@ extract_draws_offset <- function(bterms, samples, sdata, ...) {
   sdata[[paste0("offset", p)]]
 }
 
-extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
+extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
+                                  new = FALSE, ...) {
   # extract draws of autocorrelation parameters
   draws <- list()
   autocor <- bterms$autocor
@@ -680,6 +681,13 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
   if (get_ar(autocor) || get_ma(autocor)) {
     draws$Y <- sdata[[paste0("Y", p)]]
+    if (!is.null(oos)) {
+      if (any(oos > length(draws$Y))) {
+        stop2("'oos' should not contain integers larger than N.")
+      }
+      # .predictor_arma has special behavior for NA responses 
+      draws$Y[oos] <- NA
+    }
     draws$J_lag <- sdata[[paste0("J_lag", p)]]
     if (get_ar(autocor)) {
       draws$ar <- get_samples(samples, paste0("^ar", p, "\\["))
@@ -902,6 +910,10 @@ is.bdrawsnl <- function(x) {
 #'   \code{\link[brms:cor_fixed]{cor_fixed}}.
 #' @param offset Logical; Indicates if offsets should be included in the
 #'   predictions. Defaults to \code{TRUE}.
+#' @param oos Optional indices of observations for which to compute
+#'   out-of-sample rather than in-sample predictions. Only required in models
+#'   that make use of response values to make predictions, that is currently
+#'   only ARMA models.
 #' @param smooths_only Logical; If \code{TRUE} only draws related to the
 #'   computation of smooth terms will be extracted.
 #' @param resp Optional names of response variables. If specified, predictions

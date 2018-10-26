@@ -1,3 +1,11 @@
+# brms 2.6.0++
+
+### New features
+
+* Indicate observations for out-of-sample predictions in 
+ARMA models via argument `oos` of `extract_draws`. (#539)
+
+
 # brms 2.6.0
 
 ### New features
