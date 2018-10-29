@@ -32,10 +32,12 @@ diff_quad <- function(x, x_new = NULL) {
 spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   # spectral density function
   # vectorized over parameter values
-  out <- matrix(NA, nrow = length(sdgp), ncol = length(x))
-  for (m in seq_along(x)) {
-    out[, m] <- sdgp^2 * sqrt(2 * pi) * 
-      lscale * exp(-0.5 * lscale^2 * x[m]^2);
+  NB <- NROW(x)
+  D <- NCOL(x)
+  out <- matrix(nrow = length(sdgp), ncol = NB)
+  for (m in seq_len(NB)) {
+    out[, m] <- sdgp^2 * sqrt(2 * pi)^D * 
+      lscale^D * exp(-0.5 * lscale^2 * sum(x[m, ]^2));
   }
   out
 }
@@ -47,7 +49,15 @@ eigen_val_cov_exp_quad <- function(m, L) {
 
 eigen_fun_cov_exp_quad <- function(x, m, L) {
   # compute the mth eigen function of an approximate GP
-  1 / sqrt(L) * sin((m * pi) / (2 * L) * (x + L))
+  x <- as.matrix(x)
+  D <- ncol(x)
+  stopifnot(length(m) == D, length(L) == D)
+  out <- vector("list", D)
+  for (i in seq_cols(x)) {
+    out[[i]] <- 1 / sqrt(L[i]) * 
+      sin((m[i] * pi) / (2 * L[i]) * (x[, i] + L[i]))
+  }
+  Reduce("*", out)
 }
 
 choose_L <- function(x, L) {

@@ -845,13 +845,13 @@ tidy_gpef <- function(x, data) {
   }
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
-  out$bylevels <- out$byvars <- out$covars <- vector("list", nterms)
+  out$bylevels <- out$byvars <- out$covars <- out$L <- vector("list", nterms)
   for (i in seq_len(nterms)) {
     gp <- eval2(out$term[i])
     out$label[i] <- paste0("gp", rename(collapse(gp$term)))
     out$cov[i] <- gp$cov
     out$k[i] <- gp$k
-    out$L[i] <- gp$L
+    out$L[[i]] <- gp$L
     out$gr[i] <- gp$gr
     out$scale[i] <- gp$scale
     out$covars[[i]] <- gp$term

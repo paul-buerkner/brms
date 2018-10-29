@@ -901,7 +901,7 @@ stan_gp <- function(bterms, data, prior, ...) {
     str_add(out$data) <- paste0(
       "  // data related to GPs\n",
       "  int<lower=1> Kgp", pi, ";\n",
-      "  int<lower=1> Mgp", pi, ";\n"
+      "  int<lower=1> Dgp", pi, ";\n"
     )
     if (!isNA(k)) {
       # !isNA(k) indicates the use of approximate GPs
@@ -940,7 +940,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       if (!isNA(k)) {
         str_add(out$data) <- collapse(
           "  matrix[", Nsubgp, "[", J, "], NBgp", pi, "] Xgp", pi, "_", J, ";\n",
-          "  vector[NBgp", pi, "] slambda", pi, "_", J, ";\n"
+          "  vector[Dgp", pi, "] slambda", pi, "_", J, "[NBgp", pi, "];\n"
         )
         str_add(out$par) <- collapse(
           "  vector[NBgp", pi, "] zgp", pi, "_", J, "; \n"
@@ -952,7 +952,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         )
       } else {
         str_add(out$data) <- collapse(
-          "  vector[Mgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
+          "  vector[Dgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
         )
         str_add(out$par) <- collapse(
           "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
@@ -989,7 +989,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       if (!isNA(k)) {
         str_add(out$data) <- paste0(
           "  matrix[", Nsubgp, ", NBgp", pi, "] Xgp", pi, ";\n",
-          "  vector[NBgp", pi, "] slambda", pi, ";\n"
+          "  vector[Dgp", pi, "] slambda", pi, "[NBgp", pi, "];\n"
         )
         str_add(out$par) <- paste0(
           "  vector[NBgp", pi, "] zgp", pi, "; \n"
@@ -1000,7 +1000,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         )
       } else {
         str_add(out$data) <- paste0(
-          "  vector[Mgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
+          "  vector[Dgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
         ) 
         str_add(out$par) <- paste0(
           "  vector[", Nsubgp, "] zgp", pi, "; \n"

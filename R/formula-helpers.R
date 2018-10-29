@@ -606,11 +606,14 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad",
     if (k < 1L) {
       stop2("'k' must be postive.")
     }
-    if (length(vars) > 1L) {
-      stop2("Only one-dimensional GPs are supported if 'k' is specified.")
+    L <- as.numeric(L)
+    if (length(L) == 1L) {
+      L <- rep(L, length(vars))
     }
-    L <- as_one_numeric(L)
-    if (L <= 0) {
+    if (length(L) != length(vars)) {
+      stop2("'L' must be of the same length as the number of covariates.")
+    }
+    if (any(L <= 0)) {
       stop2("'L' must be positive.")
     }
   } else {

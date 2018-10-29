@@ -464,7 +464,8 @@ data_gp <- function(bterms, data, gps = NULL) {
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpef$covars[[i]], eval2, data)
-    out[[paste0("Mgp", pi)]] <- length(Xgp)
+    D <- length(Xgp)
+    out[[paste0("Dgp", pi)]] <- D
     invalid <- ulapply(Xgp, function(x)
       !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
     )
@@ -485,7 +486,8 @@ data_gp <- function(bterms, data, gps = NULL) {
     gr <- gpef$gr[i]
     k <- gpef$k[i]
     if (!isNA(k)) {
-      out[[paste0("NBgp", pi)]] <- k
+      out[[paste0("NBgp", pi)]] <- k ^ D
+      Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
     }
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$bylevels[[i]]) > 0L
@@ -513,13 +515,15 @@ data_gp <- function(bterms, data, gps = NULL) {
         }
         out[[paste0("Igp", pi, "_", j)]] <- Igp
         if (!isNA(k)) {
-          L <- choose_L(Xgp_sub, L = gpef$L[i])
-          Xgp_sub <- lapply(seq_len(k), 
-            eigen_fun_cov_exp_quad, x = Xgp_sub, L = L
-          )
-          out[[paste0("Xgp", pi, "_", j)]] <- do.call(cbind, Xgp_sub)
-          out[[paste0("slambda", pi, "_", j)]] <- 
-            sqrt(eigen_val_cov_exp_quad(seq_len(k), L = L))
+          L <- choose_L(Xgp_sub, L = gpef$L[[i]])
+          XgpL <- matrix(nrow = NROW(Xgp_sub), ncol = NROW(Ks))
+          slambda <- matrix(nrow = NROW(Ks), ncol = D)
+          for (m in seq_rows(Ks)) {
+            XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp_sub, m = Ks[m, ], L = L)
+            slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+          }
+          out[[paste0("Xgp", pi, "_", j)]] <- XgpL
+          out[[paste0("slambda", pi, "_", j)]] <- slambda
         } else {
           out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
         }
@@ -544,11 +548,15 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
       if (!isNA(k)) {
-        L <- choose_L(Xgp, L = gpef$L[i])
-        Xgp <- lapply(seq_len(k), eigen_fun_cov_exp_quad, x = Xgp, L = L)
-        out[[paste0("Xgp", pi)]] <- do.call(cbind, Xgp)
-        out[[paste0("slambda", pi)]] <- 
-          sqrt(eigen_val_cov_exp_quad(seq_len(k), L = L))
+        L <- choose_L(Xgp, L = gpef$L[[i]])
+        XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
+        slambda <- matrix(nrow = NROW(Ks), ncol = D)
+        for (m in seq_rows(Ks)) {
+          XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
+          slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+        }
+        out[[paste0("Xgp", pi)]] <- XgpL
+        out[[paste0("slambda", pi)]] <- slambda
       } else {
         out[[paste0("Xgp", pi)]] <- as.array(Xgp)
       }
