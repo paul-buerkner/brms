@@ -932,34 +932,6 @@ log1m_inv_logit <- function(x) {
   log(1 - inv_logit(x))
 }
 
-cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
-  diff_quad <- diff_quad(x = x, x_new = x_new)
-  sdgp^2 * exp(-diff_quad / (2 * lscale^2))
-}
-
-diff_quad <- function(x, x_new = NULL) {
-  # compute squared differences
-  # Args:
-  #   x: vector or matrix
-  #   x_new: optional vector of matrix with the same ncol as x
-  # Returns:
-  #   An nrow(x) times nrow(x_new) matrix
-  # Details:
-  #   If matrices are passed results are summed over the columns
-  x <- as.matrix(x)
-  if (is.null(x_new)) {
-    x_new <- x
-  } else {
-    x_new <- as.matrix(x_new)
-  }
-  .diff_quad <- function(x1, x2) (x1 - x2)^2
-  out <- 0
-  for (i in seq_len(ncol(x))) {
-    out <- out + outer(x[, i], x_new[, i], .diff_quad)
-  }
-  out
-}
-
 scale_unit <- function(x, lb = min(x), ub = max(x)) {
   (x - lb) / (ub - lb)
 }

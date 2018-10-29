@@ -4,7 +4,8 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE)
+gp(..., by = NA, k = NA, cov = "exp_quad", gr = FALSE,
+  scale = TRUE, L = 5/4)
 }
 \arguments{
 \item{...}{One or more predictors for the Gaussian process.}
@@ -13,6 +14,9 @@ gp(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE)
 each predictor. In the numeric vector case, the elements multiply 
 the values returned by the Gaussian process. In the factor variable 
 case, a separate Gaussian process is fitted for each factor level.}
+
+\item{k}{Optional number of basis functions for computing approximate
+GPs. If \code{NA} (the default), exact GPs are computed.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
@@ -29,6 +33,10 @@ scaled so that the maximum Euclidean distance between two points
 is 1. Since the default prior on \code{lscale} expects scaled
 predictors, it is recommended to manually specify priors
 on \code{lscale}, if \code{scale} is set to \code{FALSE}.}
+
+\item{L}{Numeric value only used in approximate GPs. Defines the 
+multiplicative constant of the covariates's range over which
+predictions should be computed. Currently defaults to \code{5/4}.}
 }
 \value{
 An object of class \code{'gpterm'}, which is a list 

@@ -450,7 +450,8 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   Xgp_name <- paste0("Xgp", p, "_", i, j)
   Igp_name <- paste0("Igp", p, "_", i, j)
   Jgp_name <- paste0("Jgp", p, "_", i, j)
-  if (new) {
+  if (new && isNA(gpef$k[i])) {
+    # approximate GPs don't differentiate between new and old data
     gp$x <- old_sdata[[Xgp_name]]
     gp$nug <- 1e-11
     # computing GPs for new data requires the old GP terms
@@ -460,6 +461,9 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   } else {
     gp$x <- sdata[[Xgp_name]]
     gp$Igp <- sdata[[Igp_name]]
+    if (!isNA(gpef$k[i])) {
+      gp$slambda <- sdata[[paste0("slambda", p, "_", i, j)]]
+    }
   }
   gp$Jgp <- sdata[[Jgp_name]]
   if (is.null(byj)) {

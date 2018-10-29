@@ -503,6 +503,8 @@ monotonic <- function(x) {
 #'   each predictor. In the numeric vector case, the elements multiply 
 #'   the values returned by the Gaussian process. In the factor variable 
 #'   case, a separate Gaussian process is fitted for each factor level.
+#' @param k Optional number of basis functions for computing approximate
+#'   GPs. If \code{NA} (the default), exact GPs are computed.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
 #' @param gr Logical; Indicates if auto-grouping should be used (defaults 
@@ -516,6 +518,9 @@ monotonic <- function(x) {
 #'   is 1. Since the default prior on \code{lscale} expects scaled
 #'   predictors, it is recommended to manually specify priors
 #'   on \code{lscale}, if \code{scale} is set to \code{FALSE}.
+#' @param L Numeric value only used in approximate GPs. Defines the 
+#'   multiplicative constant of the covariates's range over which
+#'   predictions should be computed. Currently defaults to \code{5/4}.
 #'   
 #' @details A Gaussian process is a stochastic process, which
 #'  describes the relation between one or more predictors 
@@ -589,15 +594,31 @@ monotonic <- function(x) {
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' @export
-gp <- function(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE) {
+gp <- function(..., by = NA, k = NA, cov = "exp_quad", 
+               gr = FALSE, scale = TRUE, L = 5 / 4) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   by <- deparse(substitute(by))
   gr <- as_one_logical(gr)
+  if (!isNA(k)) {
+    k <- as.integer(as_one_numeric(k))
+    if (k < 1L) {
+      stop2("'k' must be postive.")
+    }
+    if (length(vars) > 1L) {
+      stop2("Only one-dimensional GPs are supported if 'k' is specified.")
+    }
+    L <- as_one_numeric(L)
+    if (L <= 0) {
+      stop2("'L' must be positive.")
+    }
+  } else {
+    L <- NA
+  }
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, by, cov, gr, scale), class = "gpterm")
+  structure(nlist(term, label, by, cov, k, gr, scale, L), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}

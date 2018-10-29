@@ -482,6 +482,7 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp / dmax
       }
     }
+    k <- gpef$k[i]
     gr <- gpef$gr[i]
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$bylevels[[i]]) > 0L
@@ -493,6 +494,9 @@ data_gp <- function(bterms, data, gps = NULL) {
       lvls <- levels(Cgp)
       Ngp <- Nsubgp <- rep(NA, length(lvls))
       out[[paste0("Kgp", pi)]] <- length(lvls)
+      if (!isNA(k)) {
+        out[[paste0("NBgp", pi)]] <- k
+      }
       for (j in seq_along(lvls)) {
         # loop along levels of 'by'
         Igp <- which(Cgp == lvls[j])
@@ -508,7 +512,17 @@ data_gp <- function(bterms, data, gps = NULL) {
           Xgp_sub <-  Xgp_sub[not_dupl_Jgp, , drop = FALSE]
         }
         out[[paste0("Igp", pi, "_", j)]] <- Igp
-        out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
+        if (!isNA(k)) {
+          L <- choose_L(Xgp_sub, L = gpef$L[i])
+          Xgp_sub <- lapply(seq_len(k), 
+            eigen_fun_cov_exp_quad, x = Xgp_sub, L = L
+          )
+          out[[paste0("Xgp", pi, "_", j)]] <- do.call(cbind, Xgp_sub)
+          out[[paste0("slambda", pi, "_", j)]] <- 
+            sqrt(eigen_val_cov_exp_quad(seq_len(k), L = L))
+        } else {
+          out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
+        }
       }
       out[[paste0("Ngp", pi)]] <- Ngp
       if (gr) {
@@ -529,7 +543,16 @@ data_gp <- function(bterms, data, gps = NULL) {
         not_dupl_Jgp <- !duplicated(Jgp)
         Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
-      out[[paste0("Xgp", pi)]] <- as.array(Xgp)
+      if (!isNA(k)) {
+        out[[paste0("NBgp", pi)]] <- k
+        L <- choose_L(Xgp, L = gpef$L[i])
+        Xgp <- lapply(seq_len(k), eigen_fun_cov_exp_quad, x = Xgp, L = L)
+        out[[paste0("Xgp", pi)]] <- do.call(cbind, Xgp)
+        out[[paste0("slambda", pi)]] <- 
+          sqrt(eigen_val_cov_exp_quad(seq_len(k), L = L))
+      } else {
+        out[[paste0("Xgp", pi)]] <- as.array(Xgp)
+      }
     }
   }
   out

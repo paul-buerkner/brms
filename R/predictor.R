@@ -249,72 +249,33 @@ predictor_gp <- function(draws, i) {
   #   gp: and list returned by .extract_draws_gp()
   # Returns:
   #   A S x N matrix to be added to the linear predictor
-  try_expr <- function(expr, nug) {
-    out <- try(expr, silent = TRUE)
-    if (is(out, "try-error")) {
-      stop2("The Gaussian process covariance matrix is not positive ", 
-            "definite.\nThis occurs for numerical reasons. Setting ",
-            "'nug' above ", nug, " may help.")
+  if (is.null(gp[["slambda"]])) {
+    # predictions for exact GPs
+    nsamples <- length(gp[["sdgp"]])
+    out <- as.list(rep(NA, nsamples))
+    if (!is.null(gp[["x_new"]])) {
+      for (i in seq_along(out)) {
+        out[[i]] <- with(gp, .predictor_gp_new(
+          x_new = x_new, yL = yL[i, ], x = x, 
+          sdgp = sdgp[i], lscale = lscale[i], nug = nug
+        ))
+      }
+    } else {
+      for (i in seq_along(out)) {
+        out[[i]] <- with(gp, .predictor_gp_old(
+          x = x, sdgp = sdgp[i], lscale = lscale[i], 
+          zgp = zgp[i, ], nug = nug
+        ))
+      }
     }
-    out
-  }
-  .predictor_gp_old <- function(x, sdgp, lscale, zgp, nug) {
-    # Args:
-    #   x: old predictor values
-    #   sdgp: sample of parameter sdgp
-    #   lscale: sample of parameter lscale
-    #   zgp: only for old data; samples of parameter vector zgp
-    Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    lx <- nrow(x)
-    Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
-    L_Sigma <- try_expr(t(chol(Sigma)), nug = nug)
-    as.numeric(L_Sigma %*% zgp)
-  }
-  .predictor_gp_new <- function(x_new, yL, x, sdgp, lscale, nug) {
-    # Args:
-    #   x_new: new predictor values
-    #   yL: linear predictor of the old data
-    #   x: old predictor values
-    #   sdgp: sample of parameter sdgp
-    #   lscale: sample of parameter lscale
-    #   zgp: only for old data; samples of parameter vector zgp
-    Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    lx <- nrow(x)
-    lx_new <- nrow(x_new)
-    Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
-    L_Sigma <- try_expr(t(chol(Sigma)), nug = nug)
-    L_Sigma_inverse <- solve(L_Sigma)
-    K_div_yL <- L_Sigma_inverse %*% yL
-    K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
-    k_x_x_new <- cov_exp_quad(x, x_new, sdgp = sdgp, lscale = lscale)
-    mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
-    v_new <- L_Sigma_inverse %*% k_x_x_new
-    cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
-      t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
-    yL_new <- try_expr(
-      rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new),
-      nug = nug
-    )
-    return(yL_new)
-  }
-  nsamples <- length(gp[["sdgp"]])
-  out <- as.list(rep(NA, nsamples))
-  if (!is.null(gp[["x_new"]])) {
-    for (i in seq_along(out)) {
-      out[[i]] <- with(gp, .predictor_gp_new(
-        x_new = x_new, yL = yL[i, ], x = x, 
-        sdgp = sdgp[i], lscale = lscale[i], nug = nug
-      ))
-    }
+    out <- do.call(rbind, out) 
   } else {
-    for (i in seq_along(out)) {
-      out[[i]] <- with(gp, .predictor_gp_old(
-        x = x, sdgp = sdgp[i], lscale = lscale[i], 
-        zgp = zgp[i, ], nug = nug
-      ))
-    }
+    # predictions for approximate GPs
+    out <- with(gp, .predictor_gpa(
+      x = x, sdgp = sdgp, lscale = lscale, 
+      zgp = zgp, slambda = slambda
+    ))
   }
-  out <- do.call(rbind, out) 
   if (!is.null(gp[["bynum"]])) {
     out <- out * as_draws_matrix(gp[["bynum"]], dim = dim(out))
   }
@@ -322,6 +283,60 @@ predictor_gp <- function(draws, i) {
     out <- out[, gp[["Jgp"]], drop = FALSE]
   }
   out
+}
+
+
+.predictor_gp_old <- function(x, sdgp, lscale, zgp, nug) {
+  # make GP predictions for existing data points
+  # pointwise over posterior samples
+  # Args:
+  #   x: old predictor values
+  #   sdgp: sample of parameter sdgp
+  #   lscale: sample of parameter lscale
+  #   zgp: only for old data; samples of parameter vector zgp
+  Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+  lx <- nrow(x)
+  Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+  L_Sigma <- try_nug(t(chol(Sigma)), nug = nug)
+  as.numeric(L_Sigma %*% zgp)
+}
+
+.predictor_gp_new <- function(x_new, yL, x, sdgp, lscale, nug) {
+  # make GP predictions for new data points
+  # pointwise over posterior samples
+  # Args:
+  #   x_new: new predictor values
+  #   yL: linear predictor of the old data
+  #   x: old predictor values
+  #   sdgp: sample of parameter sdgp
+  #   lscale: sample of parameter lscale
+  #   zgp: only for old data; samples of parameter vector zgp
+  Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+  lx <- nrow(x)
+  lx_new <- nrow(x_new)
+  Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+  L_Sigma <- try_nug(t(chol(Sigma)), nug = nug)
+  L_Sigma_inverse <- solve(L_Sigma)
+  K_div_yL <- L_Sigma_inverse %*% yL
+  K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
+  k_x_x_new <- cov_exp_quad(x, x_new, sdgp = sdgp, lscale = lscale)
+  mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
+  v_new <- L_Sigma_inverse %*% k_x_x_new
+  cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
+    t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
+  yL_new <- try_nug(
+    rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new),
+    nug = nug
+  )
+  return(yL_new)
+}
+
+.predictor_gpa <- function(x, sdgp, lscale, zgp, slambda) {
+  # make predictions for approximate GPs
+  # vectorized over posterior samples
+  # no need to differentiate between old and new data points
+  spd <- sqrt(spd_cov_exp_quad(slambda, sdgp, lscale))
+  (spd * zgp) %*% t(x)
 }
 
 predictor_cs <- function(eta, draws, i) {

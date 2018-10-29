@@ -896,11 +896,19 @@ stan_gp <- function(bterms, data, prior, ...) {
     bylevels <- gpef$bylevels[[i]]
     byfac <- length(bylevels) > 0L
     bynum <- !is.null(byvar) && !byfac 
+    k <- gpef$k[i]
     gr <- gpef$gr[i]
     str_add(out$data) <- paste0(
+      "  // data related to GPs\n",
       "  int<lower=1> Kgp", pi, ";\n",
       "  int<lower=1> Mgp", pi, ";\n"
     )
+    if (!isNA(k)) {
+      # !isNA(k) indicates the use of approximate GPs
+      str_add(out$data) <- paste0(
+        "  int<lower=1> NBgp", pi, ";\n"
+      )
+    } 
     str_add(out$par) <- paste0(
       "  // GP hyperparameters\n", 
       "  vector<lower=0>[Kgp", pi, "] sdgp", pi, ";\n",
@@ -929,32 +937,48 @@ stan_gp <- function(bterms, data, prior, ...) {
           )
         )
       }
-      str_add(out$data) <- collapse(
-        "  vector[Mgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
+      if (!isNA(k)) {
+        str_add(out$data) <- collapse(
+          "  matrix[", Nsubgp, "[", J, "], NBgp", pi, "] Xgp", pi, "_", J, ";\n",
+          "  vector[NBgp", pi, "] slambda", pi, "_", J, ";\n"
+        )
+        str_add(out$par) <- collapse(
+          "  vector[NBgp", pi, "] zgp", pi, "_", J, "; \n"
+        )
+        gp_call <- paste0(
+          "gpa(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
+          "lscale", pi, "[", J, "], zgp", pi, "_", J, ", ", 
+          "slambda", pi, "_", J, ")"
+        )
+      } else {
+        str_add(out$data) <- collapse(
+          "  vector[Mgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
+        )
+        str_add(out$par) <- collapse(
+          "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
+        )
+        gp_call <- paste0(
+          "gp(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
+          "lscale", pi, "[", J, "], zgp", pi, "_", J, ")"
+        )
+      }
+      Jgp <- if (gr) paste0("[Jgp", pi, "_", J, "]")
+      eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
+      eta <- paste0(eta, "[", Igp, "]")
+      # compound '+=' statement currently causes a parser failure
+      str_add(out$modelCgp1) <- collapse(
+        "  ", eta, " = ", eta, " + ", gp_call, Jgp, ";\n"
       )
-      str_add(out$par) <- collapse(
-        "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
-      )
+      coefs <- paste0(gpef$term[i], gpef$bylevels[[i]])
       str_add(out$prior) <- collapse(
         tp(), "normal_lpdf(zgp", pi, "_", J, " | 0, 1);\n"
       )
-      eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- paste0(eta, "[", Igp, "]")
-      gp_args <- paste0(
-        "Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
-        "lscale", pi, "[", J, "], zgp", pi, "_", J
-      )
-      Jgp <- if (gr) paste0("[Jgp", pi, "_", J, "]")
-      # compound '+=' statement currently causes a parser failure
-      str_add(out$modelCgp1) <- collapse(
-        "  ", eta, " = ", eta, " + gp(", gp_args, ")", Jgp, ";\n"
-      )
-      coefs <- paste0(gpef$term[i], gpef$bylevels[[i]])
       str_add(out$prior) <- stan_prior(
         prior, class = "lscale", coef = coefs, 
         px = px, suffix = pi
       )
     } else {
+      # not by-factor variable
       Nsubgp <- if (gr) paste0("Nsubgp", pi) else "N"
       if (gr) {
         str_add(out$data) <- paste0(
@@ -962,26 +986,40 @@ stan_gp <- function(bterms, data, prior, ...) {
           "  int<lower=1> Jgp", pi, "[N];\n"
         )
       }
-      str_add(out$data) <- paste0(
-        "  vector[Mgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
-      )
+      if (!isNA(k)) {
+        str_add(out$data) <- paste0(
+          "  matrix[", Nsubgp, ", NBgp", pi, "] Xgp", pi, ";\n",
+          "  vector[NBgp", pi, "] slambda", pi, ";\n"
+        )
+        str_add(out$par) <- paste0(
+          "  vector[NBgp", pi, "] zgp", pi, "; \n"
+        )
+        gp_call <- paste0(
+          "gpa(Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], ", 
+          "zgp", pi, ", slambda", pi, ")"
+        )
+      } else {
+        str_add(out$data) <- paste0(
+          "  vector[Mgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
+        ) 
+        str_add(out$par) <- paste0(
+          "  vector[", Nsubgp, "] zgp", pi, "; \n"
+        )
+        gp_call <- paste0(
+          "gp(Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], zgp", pi, ")"
+        )
+      }
       if (bynum) {
         str_add(out$data) <- paste0(
           "  vector[N] Cgp", pi, ";\n"
         )
       }
-      str_add(out$par) <- paste0(
-        "  vector[", Nsubgp, "] zgp", pi, "; \n"
-      )
+      Cgp <- if (bynum) paste0("Cgp", pi, " .* ")
+      Jgp <- if (gr) paste0("[Jgp", pi, "]")
+      str_add(out$eta) <- paste0(" + ", Cgp, gp_call, Jgp)
       str_add(out$prior) <- paste0(
         tp(), "normal_lpdf(zgp", pi, " | 0, 1);\n"
       )
-      gp_args <- paste0(
-        "Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], zgp", pi
-      )
-      Cgp <- if (bynum) paste0("Cgp", pi, " .* ")
-      Jgp <- if (gr) paste0("[Jgp", pi, "]")
-      str_add(out$eta) <- paste0(" + ", Cgp, "gp(", gp_args, ")", Jgp)
       str_add(out$prior) <- stan_prior(
         prior, class = "lscale", coef = gpef$term[i], 
         px = px, suffix = pi
