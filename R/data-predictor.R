@@ -482,8 +482,11 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp / dmax
       }
     }
-    k <- gpef$k[i]
     gr <- gpef$gr[i]
+    k <- gpef$k[i]
+    if (!isNA(k)) {
+      out[[paste0("NBgp", pi)]] <- k
+    }
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$bylevels[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
@@ -494,9 +497,6 @@ data_gp <- function(bterms, data, gps = NULL) {
       lvls <- levels(Cgp)
       Ngp <- Nsubgp <- rep(NA, length(lvls))
       out[[paste0("Kgp", pi)]] <- length(lvls)
-      if (!isNA(k)) {
-        out[[paste0("NBgp", pi)]] <- k
-      }
       for (j in seq_along(lvls)) {
         # loop along levels of 'by'
         Igp <- which(Cgp == lvls[j])
@@ -544,7 +544,6 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
       if (!isNA(k)) {
-        out[[paste0("NBgp", pi)]] <- k
         L <- choose_L(Xgp, L = gpef$L[i])
         Xgp <- lapply(seq_len(k), eigen_fun_cov_exp_quad, x = Xgp, L = L)
         out[[paste0("Xgp", pi)]] <- do.call(cbind, Xgp)

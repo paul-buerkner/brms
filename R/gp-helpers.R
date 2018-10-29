@@ -51,7 +51,7 @@ eigen_fun_cov_exp_quad <- function(x, m, L) {
 }
 
 choose_L <- function(x, L) {
-  # controls the width of the interval in which predictions are desired
+  # extended range of input data for which predictions should be made
   if (!length(x)) {
     range <- 1
   } else {
