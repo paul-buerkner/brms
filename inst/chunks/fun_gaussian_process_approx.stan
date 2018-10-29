@@ -12,7 +12,7 @@
     vector[NB] out;
     for (m in 1:NB) {
       out[m] = sdgp^2 * sqrt(2 * pi())^D * 
-        lscale^D * exp(-0.5 * lscale^2 * sum(x[m] .* x[m]));
+        lscale^D * exp(-0.5 * lscale^2 * sum(square(x[m])));
     }
     return out;
   }
