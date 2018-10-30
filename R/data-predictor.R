@@ -485,6 +485,7 @@ data_gp <- function(bterms, data, gps = NULL) {
     }
     gr <- gpef$gr[i]
     k <- gpef$k[i]
+    L <- gpef$L[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
       Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
@@ -497,71 +498,78 @@ data_gp <- function(bterms, data, gps = NULL) {
       # as.factor will keep unused levels needed for new data
       Cgp <- as.factor(get(byvar, data))
       lvls <- levels(Cgp)
-      Ngp <- Nsubgp <- rep(NA, length(lvls))
       out[[paste0("Kgp", pi)]] <- length(lvls)
+      Ngp <- Nsubgp <- vector("list", length(lvls))
       for (j in seq_along(lvls)) {
         # loop along levels of 'by'
         Igp <- which(Cgp == lvls[j])
-        Ngp[j] <- length(Igp)
-        Xgp_sub <- Xgp[Igp, , drop = FALSE]
-        if (gr) {
-          groups <- factor(match_rows(Xgp_sub, Xgp_sub))
-          ilevels <- levels(groups)
-          Jgp <- match(groups, ilevels)
-          Nsubgp[j] <- length(ilevels)
-          out[[paste0("Jgp", pi, "_", j)]] <- Jgp
-          not_dupl_Jgp <- !duplicated(Jgp)
-          Xgp_sub <-  Xgp_sub[not_dupl_Jgp, , drop = FALSE]
-        }
-        out[[paste0("Igp", pi, "_", j)]] <- Igp
-        if (!isNA(k)) {
-          L <- choose_L(Xgp_sub, L = gpef$L[[i]])
-          XgpL <- matrix(nrow = NROW(Xgp_sub), ncol = NROW(Ks))
-          slambda <- matrix(nrow = NROW(Ks), ncol = D)
-          for (m in seq_rows(Ks)) {
-            XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp_sub, m = Ks[m, ], L = L)
-            slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
-          }
-          out[[paste0("Xgp", pi, "_", j)]] <- XgpL
-          out[[paste0("slambda", pi, "_", j)]] <- slambda
-        } else {
-          out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
-        }
+        sfx <- paste0(pi, "_", j)
+        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Igp = Igp, L = L)
+        Ngp[[j]] <- attributes(tmp)[["Ngp"]]
+        Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
+        c(out) <- tmp
       }
-      out[[paste0("Ngp", pi)]] <- Ngp
+      out[[paste0("Ngp", pi)]] <- unlist(Ngp)
       if (gr) {
-        out[[paste0("Nsubgp", pi)]] <- Nsubgp
+        out[[paste0("Nsubgp", pi)]] <- unlist(Nsubgp)
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
+      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, L = L)
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
-      } 
-      if (gr) {
-        groups <- factor(match_rows(Xgp, Xgp))
-        ilevels <- levels(groups)
-        Jgp <- match(groups, ilevels)
-        out[[paste0("Nsubgp", pi)]] <- length(ilevels)
-        out[[paste0("Jgp", pi)]] <- Jgp
-        not_dupl_Jgp <- !duplicated(Jgp)
-        Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
-      }
-      if (!isNA(k)) {
-        L <- choose_L(Xgp, L = gpef$L[[i]])
-        XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
-        slambda <- matrix(nrow = NROW(Ks), ncol = D)
-        for (m in seq_rows(Ks)) {
-          XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
-          slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
-        }
-        out[[paste0("Xgp", pi)]] <- XgpL
-        out[[paste0("slambda", pi)]] <- slambda
-      } else {
-        out[[paste0("Xgp", pi)]] <- as.array(Xgp)
       }
     }
   }
+  out
+}
+
+.data_gp <- function(Xgp, k, gr, sfx, Igp = NULL, L = NULL) {
+  # helper function to preparae GP related data
+  # Args:
+  #   Xgp: matrix of covariate values
+  #   k, gr, L: see tidy_gpef
+  #   sfx: suffix to put at the end of data names
+  #   Igp: optional index vector of values belonging to
+  #     a certain level of a factor 'by' variable
+  out <- atts <- list()
+  if (!is.null(Igp)) {
+    Xgp <- Xgp[Igp, , drop = FALSE]
+    out[[paste0("Igp", sfx)]] <- Igp
+    atts$Ngp <- length(Igp)
+  }
+  if (gr) {
+    groups <- factor(match_rows(Xgp, Xgp))
+    ilevels <- levels(groups)
+    Jgp <- match(groups, ilevels)
+    Nsubgp <- length(ilevels)
+    if (!is.null(Igp)) {
+      atts$Nsubgp <- Nsubgp
+    } else {
+      out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
+    }
+    out[[paste0("Jgp", sfx)]] <- Jgp
+    not_dupl_Jgp <- !duplicated(Jgp)
+    Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+  }
+  if (!isNA(k)) {
+    D <- NCOL(Xgp)
+    L <- choose_L(Xgp, L = L)
+    Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
+    slambda <- matrix(nrow = NROW(Ks), ncol = D)
+    for (m in seq_rows(Ks)) {
+      XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
+      slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+    }
+    out[[paste0("Xgp", sfx)]] <- XgpL
+    out[[paste0("slambda", sfx)]] <- slambda
+  } else {
+    out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
+  }
+  # data stored as attributes are further processed later on
+  attributes(out)[names(atts)] <- atts
   out
 }
 
