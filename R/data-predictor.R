@@ -554,6 +554,8 @@ data_gp <- function(bterms, data, gps = NULL) {
     Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
   }
   if (!isNA(k)) {
+    # basis function approach requires centered variables
+    Xgp <- sweep(Xgp, 2, colMeans(Xgp))
     D <- NCOL(Xgp)
     L <- choose_L(Xgp, L = L)
     Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
@@ -568,7 +570,7 @@ data_gp <- function(bterms, data, gps = NULL) {
   } else {
     out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
   }
-  # data stored as attributes are further processed later on
+  # data stored as attributes are further processed in 'data_gp'
   attributes(out)[names(atts)] <- atts
   out
 }
