@@ -103,15 +103,16 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     # loop over smooth terms and compute their predictions
     term <- smterms[i]
     sub_smef <- subset2(smef, term = term)
-    byvars <- sub_smef$byvars[[1]]
-    covars <- sub_smef$covars[[1]]
-    vars <- sub_smef$vars[[1]]
+    # extract raw variable names before transformations
+    covars <- all_vars(sub_smef$covars[[1]])
+    byvars <- all_vars(sub_smef$byvars[[1]])
     ncovars <- length(covars)
     if (ncovars > 2L) {
       byvars <- c(covars[3:ncovars], byvars)
       covars <- covars[1:2]
       ncovars <- 2L
     }
+    vars <- c(covars, byvars)
     values <- named_list(vars)
     is_numeric <- setNames(rep(FALSE, ncovars), covars)
     for (cv in covars) {
@@ -172,14 +173,18 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     eta <- posterior_summary(eta, robust = TRUE, probs = probs)
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
     eta <- cbind(newdata[, vars, drop = FALSE], eta)
+    effects <- na.omit(sub_smef$covars[[1]][1:2])
+    eta <- add_effects__(eta, effects)
     if (length(byvars)) {
       # byvars will be plotted as facets
       eta$cond__ <- rows2labels(eta[, byvars, drop = FALSE]) 
+    } else {
+      eta$cond__ <- factor(1)
     }
     response <- combine_prefix(x, keep_mu = TRUE)
     response <- paste0(response, ": ", term)
     attr(eta, "response") <- response
-    attr(eta, "effects") <- covars
+    attr(eta, "effects") <- effects
     attr(eta, "surface") <- all(is_numeric) && ncovars == 2L
     attr(eta, "spaghetti") <- spa_data
     attr(eta, "points") <- mf[, vars, drop = FALSE]

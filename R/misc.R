@@ -381,6 +381,14 @@ ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
   unlist(lapply(X, FUN, ...), recursive, use.names)
 }
 
+all_vars <- function(expr, ...) {
+  # like all.vars but can handle characters
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  all.vars(expr, ...)
+}
+
 lc <- function(l, ...) {
   # append ... to l
   dots <- rmNULL(list(...), recursive = FALSE)
