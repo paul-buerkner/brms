@@ -538,8 +538,7 @@ parse_time <- function(autocor) {
   }
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
   stopif_illegal_group(group)
-  group <- formula(paste("~", ifelse(nchar(group), group, "1")))
-  group_vars <- all.vars(group)
+  group_vars <- all_vars(group)
   if (length(group_vars)) {
     out$group <- paste0(group_vars, collapse = ":")
   }
@@ -693,7 +692,7 @@ allvars_formula <- function(x) {
     x <- list(x)
   }
   out <- collapse(ulapply(rmNULL(x), plus_rhs))
-  out <- str2formula(c(out, all.vars(parse(text = out))))
+  out <- str2formula(c(out, all_vars(out)))
   update(out, ~ .)
 }
 

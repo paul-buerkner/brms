@@ -2414,7 +2414,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   
   # update arguments controlling the sampling process
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
-  # brm computes warmup automatically based on iter 
+  dots$warmup <- first_not_null(dots$warmup, object$fit@sim$warmup)
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
   control <- attr(object$fit@sim$samples[[1]], "args")$control

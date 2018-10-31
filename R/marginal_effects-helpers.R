@@ -621,6 +621,7 @@ marginal_effects_internal.brmsterms <- function(
   )
   out <- do.call(method, pred_args)
   rownames(marg_data) <- NULL
+  
   if (categorical || ordinal) {
     if (method != "fitted") {
       stop2("Can only use 'categorical' with method = 'fitted'.")
@@ -657,6 +658,7 @@ marginal_effects_internal.brmsterms <- function(
       }
     }
   }
+  
   first_numeric <- types[1] %in% "numeric"
   second_numeric <- types[2] %in% "numeric"
   both_numeric <- first_numeric && second_numeric
@@ -670,6 +672,8 @@ marginal_effects_internal.brmsterms <- function(
       levels(marg_data[[effects[2]]]) <- labels2
     }
   }
+  marg_data <- add_effects__(marg_data, effects)
+  
   spag <- NULL
   if (first_numeric && spaghetti) {
     if (surface) {
@@ -688,6 +692,7 @@ marginal_effects_internal.brmsterms <- function(
     colnames(spag) <- c("estimate__", "sample__")
     spag <- cbind(marg_data, spag)
   }
+  
   out <- posterior_summary(out, probs = probs, robust = robust)
   if (categorical || ordinal) {
     out <- do.call(rbind, array2list(out))
@@ -776,6 +781,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     points <- points[!is.na(points$cond__), , drop = FALSE]
     points$cond__ <- factor(points$cond__, cond__)
   }
+  points <- add_effects__(points, effects)
   if (!is.numeric(points$resp__)) {
     points$resp__ <- as.numeric(as.factor(points$resp__))
     if (is_binary(bterms$family)) {
@@ -786,6 +792,14 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     points$resp__ <- do.call(transform, list(points$resp__))
   }
   points
+}
+
+add_effects__ <- function(data, effects) {
+  # add effect<i>__ variables to the data
+  for (i in seq_along(effects)) {
+    data[[paste0("effect", i, "__")]] <- eval2(effects[i], data)
+  }
+  data
 }
 
 #' @export
@@ -837,15 +851,15 @@ plot.brmsMarginalEffects <- function(
     ncond <- length(unique(x[[i]]$cond__))
     categorical <- isTRUE(attr(x[[i]], "categorical"))
     surface <- isTRUE(attr(x[[i]], "surface"))
-    # for backwards compatibility with brms < 1.4.0
-    surface <- surface || isTRUE(attr(x[[i]], "contour"))
-    # for backwards compatibility with brms < 2.4.3
+    # deprecated as of brms 2.4.3
     ordinal <- isTRUE(attr(x[[i]], "ordinal"))
     if (surface || ordinal) {
       # surface plots for two dimensional interactions or ordinal plots
-      plots[[i]] <- ggplot(x[[i]]) + aes_string(effects[1], effects[2])
+      plots[[i]] <- ggplot(x[[i]]) + 
+        aes_(~ effect1__, ~ effect2__) +
+        labs(x = effects[1], y = effects[2])
       if (ordinal) {
-        width <- ifelse(is_like_factor(x[[i]][[effects[1]]]), 0.9, 1)
+        width <- ifelse(is_like_factor(x[[i]]$effect1__), 0.9, 1)
         .surface_args <- nlist(
           mapping = aes_(fill = ~ estimate__), 
           height = 0.9, width = width
@@ -873,14 +887,15 @@ plot.brmsMarginalEffects <- function(
       }
     } else {
       # plot effects of single predictors or two-way interactions
-      gvar <- if (length(effects) == 2L) effects[2]
+      gvar <- if (length(effects) == 2L) "effect2__"
       spaghetti <- attr(x[[i]], "spaghetti")
       plots[[i]] <- ggplot(x[[i]]) + 
-        aes_string(x = effects[1], y = "estimate__", colour = gvar) +
-        ylab(response)
+        aes_string(x = "effect1__", y = "estimate__", colour = gvar) +
+        labs(x = effects[1], y = response, colour = effects[2])
       if (is.null(spaghetti)) {
         plots[[i]] <- plots[[i]] +
-          aes_string(ymin = "lower__", ymax = "upper__", fill = gvar)  
+          aes_string(ymin = "lower__", ymax = "upper__", fill = gvar) +
+          labs(fill = effects[2])
       }
       # extract suggested colors for later use
       colors <- ggplot_build(plots[[i]])
@@ -888,7 +903,7 @@ plot.brmsMarginalEffects <- function(
       if (points && !categorical && !surface) {
         # add points first so that they appear behind the predictions
         .point_args <- list(
-          mapping = aes_string(x = effects[1], y = "resp__"),
+          mapping = aes_string(x = "effect1__", y = "resp__"),
           data = attr(x[[i]], "points"), inherit.aes = FALSE,
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
@@ -921,7 +936,7 @@ plot.brmsMarginalEffects <- function(
         plots[[i]] <- plots[[i]] +
           do.call(geom_smooth, .spaghetti_args)
       }
-      if (is.numeric(x[[i]][, effects[1]])) {
+      if (is.numeric(x[[i]]$effect1__)) {
         # line plots for numeric predictors
         .line_args <- list(stat = "identity")
         if (!is.null(spaghetti)) {
@@ -936,7 +951,7 @@ plot.brmsMarginalEffects <- function(
         }
         if (rug) {
           .rug_args <- list(
-            aes_string(x = effects[1]), sides = "b", 
+            aes_string(x = "effect1__", colour = gvar), sides = "b", 
             data = attr(x[[i]], "points"), inherit.aes = FALSE
           )
           if (is.null(gvar) && is_theme_black) {
