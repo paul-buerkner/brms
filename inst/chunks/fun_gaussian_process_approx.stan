@@ -9,10 +9,11 @@
   vector spd_cov_exp_quad(vector[] x, real sdgp, real lscale) {
     int NB = dims(x)[1];
     int D = dims(x)[2];
+    real constant = square(sdgp) * (sqrt(2 * pi()) * lscale)^D;
+    real neg_half_lscale2 = -0.5 * square(lscale);
     vector[NB] out;
     for (m in 1:NB) {
-      out[m] = sdgp^2 * sqrt(2 * pi())^D * 
-        lscale^D * exp(-0.5 * lscale^2 * sum(square(x[m])));
+      out[m] = constant * exp(neg_half_lscale2 * dot_self(x[m]));
     }
     return out;
   }
