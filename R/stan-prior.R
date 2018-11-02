@@ -344,7 +344,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     k <- which(grepl(paste0("^", all_pars[i]), D$par))
     D$dim[k] <- all_dims[i]
     D$bounds[k] <- all_bounds[i]
-    if (grepl("^simo", all_pars[i])) {
+    if (grepl("^(simo_)|(theta)", all_pars[i])) {
       D$type[k] <- all_types[i]
     }
   }

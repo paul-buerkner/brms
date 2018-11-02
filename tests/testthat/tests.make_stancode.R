@@ -1176,14 +1176,18 @@ test_that("prior only models are correctly checked", {
 
 test_that("Stan code of mixture model is correct", {
   data <- data.frame(y = 1:10, x = rnorm(10), c = 1)
-  scode <- make_stancode(bf(y ~ x,  sigma2 ~ x), data, 
-                         mixture(gaussian, gaussian))
+  scode <- make_stancode(
+    bf(y ~ x,  sigma2 ~ x), data, 
+    family = mixture(gaussian, gaussian),
+    sample_prior = TRUE
+  )
   expect_match2(scode, "ordered[2] ordered_Intercept;")
   expect_match2(scode, "temp_mu2_Intercept = ordered_Intercept[2];")
   expect_match2(scode, "target += dirichlet_lpdf(theta | con_theta);")
   expect_match2(scode, "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], sigma1);")
   expect_match2(scode, "ps[2] = log(theta2) + normal_lpdf(Y[n] | mu2[n], sigma2[n]);")
   expect_match2(scode, "target += log_sum_exp(ps);")
+  expect_match2(scode, "simplex[2] prior_theta = dirichlet_rng(con_theta);")
   
   data$z <- abs(data$y)
   scode <- make_stancode(bf(z | weights(c) ~ x, shape1 ~ x, theta1 = 1, theta2 = 2), 
