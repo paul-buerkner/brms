@@ -548,7 +548,7 @@ data_offset <- function(bterms, data) {
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
     }
-    out[[paste0("offset", p)]] <- offset
+    out[[paste0("offset", p)]] <- as.array(offset)
   }
   out
 }
