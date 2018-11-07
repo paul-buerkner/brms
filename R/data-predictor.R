@@ -78,9 +78,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 }
 
 #' @export 
-data_predictor.btnl <- function(x, data, ranef = empty_ranef(), 
-                                prior = brmsprior(), knots = NULL, 
-                                not4stan = FALSE, old_sdata = NULL, ...) {
+data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -103,8 +101,7 @@ data_predictor.btnl <- function(x, data, ranef = empty_ranef(),
   out
 }
 
-data_fe <- function(bterms, data, knots = NULL,
-                    not4stan = FALSE, smooths = NULL) {
+data_fe <- function(bterms, data, not4stan = FALSE) {
   # prepare data of fixed effects and smooth terms for use in Stan
   # handle smooth terms here as they also affect the FE design matrix 
   # Args: see data_predictor
@@ -162,9 +159,9 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
       }
       Zs <- rasm$rand
       Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
-      c(out) <- c(knots, Zs)
+      tmp <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+      tmp <- setNames(tmp, paste0(c("nb", "knots"), p, "_", ns))
+      c(out) <- c(tmp, Zs)
     }
   }
   Xs <- do.call(cbind, lXs)
