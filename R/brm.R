@@ -382,8 +382,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
-      prior, formula, data = data,  
-      sample_prior = sample_prior
+      prior, formula, data = data, sparse = sparse,
+      sample_prior = sample_prior, warn = FALSE
     )
     # initialize S3 object
     x <- brmsfit(

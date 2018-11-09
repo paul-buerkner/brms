@@ -471,12 +471,14 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data, family = gaussian(), 
-                      autocor = NULL, internal = FALSE) {
+get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
+                      sparse = FALSE, internal = FALSE) {
   # note that default priors are stored in this function
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
+  sparse <- as_one_logical(sparse)
+  internal <- as_one_logical(internal)
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
@@ -488,7 +490,7 @@ get_prior <- function(formula, data, family = gaussian(),
   prior <- empty_brmsprior()
   # priors for distributional parameters
   prior <- prior + prior_predictor(
-    bterms, data = data, internal = internal
+    bterms, data = data, sparse = sparse, internal = internal
   )
   # priors of group-level parameters
   def_scale_prior <- def_scale_prior(bterms, data)
@@ -541,7 +543,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior
 }
 
-prior_predictor.brmsterms <- function(x, data, ...) {
+prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
   prior <- empty_brmsprior()
@@ -553,7 +555,8 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
-        def_dprior = def_dprior, cats = cats
+        def_dprior = def_dprior, cats = cats,
+        spec_intercept = !sparse
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -1014,13 +1017,12 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
 }
 
-check_prior <- function(prior, formula, data = NULL, 
+check_prior <- function(prior, formula, data, sparse = FALSE, 
                         sample_prior = c("no", "yes", "only"),
-                        check_rows = NULL, warn = FALSE) {
+                        warn = FALSE) {
   # check prior input and amend it if needed
   # Args:
   #   same as the respective parameters in brm
-  #   check_rows: if not NULL, check only the rows given in check_rows
   #   warn: passed to check_prior_content
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior
@@ -1032,7 +1034,7 @@ check_prior <- function(prior, formula, data = NULL,
     return(prior)
   }
   bterms <- parse_bf(formula)
-  all_priors <- get_prior(formula = formula, data = data, internal = TRUE)
+  all_priors <- get_prior(formula, data, sparse = sparse, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (!is.brmsprior(prior)) {

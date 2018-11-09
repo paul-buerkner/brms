@@ -569,7 +569,7 @@ test_that("Stan code of ordinal models is correct", {
   
   scode <- make_stancode(y ~ x1 + cse(x2) + (cse(1)|g), dat, family = acat())
   expect_match2(scode, "real acat_logit_lpmf(int y")
-  expect_match2(scode, "q[k] = disc * (mu + mucs[k] - thres[k]);")
+  expect_match2(scode, "p[k + 1] = p[k] + disc * (mu + mucs[k] - thres[k]);")
   expect_match2(scode, "mucs[n, 1] = mucs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
   
@@ -1259,7 +1259,10 @@ test_that("Stan code of mixture model is correct", {
 test_that("sparse matrix multiplication is applied correctly", {
   data <- data.frame(y = rnorm(10), x = rnorm(10))
   # linear model
-  scode <- make_stancode(bf(y ~ x, sigma ~ x), data, sparse = TRUE)
+  scode <- make_stancode(
+    bf(y ~ x, sigma ~ x), data, sparse = TRUE,
+    prior = prior(normal(0, 5), coef = "Intercept")
+  )
   expect_match2(scode, "wX = csr_extract_w(X);")
   expect_match2(scode, 
     "mu = csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b);"
@@ -1273,6 +1276,7 @@ test_that("sparse matrix multiplication is applied correctly", {
       "wX_sigma, vX_sigma, uX_sigma, b_sigma);"
     )
   )
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 5);")
   # non-linear model
   scode <- make_stancode(
     bf(y ~ a, a ~ x, nl = TRUE), 

@@ -5,7 +5,7 @@
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
 get_prior(formula, data, family = gaussian(), autocor = NULL,
-  internal = FALSE)
+  sparse = FALSE, internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},
@@ -32,6 +32,11 @@ correlation structure within the response variable (i.e., the
 description of the available correlation structures. Defaults to
 \code{NULL}, corresponding to no correlations. In multivariate models,
 \code{autocor} might also be a list of autocorrelation structures.}
+
+\item{sparse}{Logical; indicates whether the population-level design matrices
+should be treated as sparse (defaults to \code{FALSE}). For design matrices
+with many zeros, this can considerably reduce required memory. Sampling
+speed is currently not improved or even slightly decreased.}
 
 \item{internal}{A flag indicating if the names of additional internal parameters 
 should be displayed. Setting priors on these parameters is not recommended}
