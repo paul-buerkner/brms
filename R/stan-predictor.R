@@ -897,7 +897,10 @@ stan_gp <- function(bterms, data, prior, ...) {
     byfac <- length(bylevels) > 0L
     bynum <- !is.null(byvar) && !byfac 
     k <- gpef$k[i]
+    iso <- gpef$iso[i]
     gr <- gpef$gr[i]
+    sfx1 <- gpef$sfx1[[i]]
+    sfx2 <- gpef$sfx2[[i]]
     str_add(out$data) <- paste0(
       "  // data related to GPs\n",
       "  int<lower=1> Kgp", pi, ";\n",
@@ -911,11 +914,19 @@ stan_gp <- function(bterms, data, prior, ...) {
     } 
     str_add(out$par) <- paste0(
       "  // GP hyperparameters\n", 
-      "  vector<lower=0>[Kgp", pi, "] sdgp", pi, ";\n",
-      "  vector<lower=0>[Kgp", pi, "] lscale", pi, ";\n"
-    ) 
+      "  vector<lower=0>[Kgp", pi, "] sdgp", pi, ";\n"
+    )
+    if (gpef$iso[i]) {
+      str_add(out$par) <- paste0(
+        "  vector<lower=0>[1] lscale", pi, "[Kgp", pi, "];\n" 
+      )
+    } else {
+      str_add(out$par) <- paste0(
+        "  vector<lower=0>[Dgp", pi, "] lscale", pi, "[Kgp", pi, "];\n"
+      )
+    }
     str_add(out$prior) <- stan_prior(
-      prior, class = "sdgp", coef = gpef$term[i], 
+      prior, class = "sdgp", coef = sfx1, 
       px = px, suffix = pi
     )
     if (byfac) {
@@ -969,16 +980,17 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$modelCgp1) <- collapse(
         "  ", eta, " = ", eta, " + ", gp_call, Jgp, ";\n"
       )
-      coefs <- paste0(gpef$term[i], gpef$bylevels[[i]])
       str_add(out$prior) <- collapse(
         tp(), "normal_lpdf(zgp", pi, "_", J, " | 0, 1);\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "lscale", coef = coefs, 
-        px = px, suffix = pi
-      )
+      for (j in seq_along(bylevels)) {
+        str_add(out$prior) <- stan_prior(
+          prior, class = "lscale", coef = sfx2[j, ], 
+          px = px, suffix = paste0(pi, "[", j, "]")
+        )
+      }
     } else {
-      # not by-factor variable
+      # no by-factor variable
       Nsubgp <- if (gr) paste0("Nsubgp", pi) else "N"
       if (gr) {
         str_add(out$data) <- paste0(
@@ -1021,8 +1033,8 @@ stan_gp <- function(bterms, data, prior, ...) {
         tp(), "normal_lpdf(zgp", pi, " | 0, 1);\n"
       )
       str_add(out$prior) <- stan_prior(
-        prior, class = "lscale", coef = gpef$term[i], 
-        px = px, suffix = pi
+        prior, class = "lscale", coef = sfx2, 
+        px = px, suffix = paste0(pi, "[1]")
       )
     }
   }

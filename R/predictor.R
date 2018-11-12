@@ -257,13 +257,13 @@ predictor_gp <- function(draws, i) {
       for (i in seq_along(out)) {
         out[[i]] <- with(gp, .predictor_gp_new(
           x_new = x_new, yL = yL[i, ], x = x, 
-          sdgp = sdgp[i], lscale = lscale[i], nug = nug
+          sdgp = sdgp[i], lscale = lscale[i, ], nug = nug
         ))
       }
     } else {
       for (i in seq_along(out)) {
         out[[i]] <- with(gp, .predictor_gp_old(
-          x = x, sdgp = sdgp[i], lscale = lscale[i], 
+          x = x, sdgp = sdgp[i], lscale = lscale[i, ], 
           zgp = zgp[i, ], nug = nug
         ))
       }

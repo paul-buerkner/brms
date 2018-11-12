@@ -1293,10 +1293,10 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
-  prior <- prior + prior(normal(0, 1), lscale, coef = gp(x1))
+  prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
   scode <- SW(make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
                             data = dat, prior = prior))
-  expect_match2(scode, "target += normal_lpdf(lscale_1 | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(lscale_1[1] | 0, 1)")
   expect_match2(scode, "+ Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)[Jgp_2]")
   
   # Suppress Stan parser warnings that can currently not be avoided
@@ -1308,16 +1308,16 @@ test_that("Stan code for Gaussian processes is correct", {
     "sdgp_2[2], lscale_2[2], zgp_2_2);"
   ))
   
-  prior <- c(prior(normal(0, 10), lscale, coef = gp(x1), nlpar = a),
+  prior <- c(prior(normal(0, 10), lscale, coef = gpx1, nlpar = a),
              prior(gamma(0.1, 0.1), sdgp, nlpar = a),
              prior(normal(0, 1), b, nlpar = a))
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_a_1 | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(lscale_a_1[1] | 0, 10)")
   expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
   
-  prior <- prior(gamma(2, 2), "lscale", coef = "gp(x1,by=z,gr=TRUE)5", nlpar = "a")
+  prior <- prior(gamma(2, 2), lscale, coef = gpx1z5, nlpar = "a")
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
                          data = dat, prior = prior, silent = TRUE)
   expect_match2(scode, 

@@ -4,16 +4,16 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., by = NA, k = NA, cov = "exp_quad", gr = FALSE,
-  scale = TRUE, L = 5/4)
+gp(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
+  gr = FALSE, scale = TRUE, L = 5/4)
 }
 \arguments{
-\item{...}{One or more predictors for the Gaussian process.}
+\item{...}{One or more predictors for the GP.}
 
 \item{by}{A numeric or factor variable of the same length as 
 each predictor. In the numeric vector case, the elements multiply 
-the values returned by the Gaussian process. In the factor variable 
-case, a separate Gaussian process is fitted for each factor level.}
+the values returned by the GP. In the factor variable 
+case, a separate GP is fitted for each factor level.}
 
 \item{k}{Optional number of basis functions for computing approximate
 GPs. If \code{NA} (the default), exact GPs are computed.}
@@ -21,45 +21,49 @@ GPs. If \code{NA} (the default), exact GPs are computed.}
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
 
+\item{iso}{A flag to indicate whether an isotropic (\code{TRUE}; the 
+default) of a non-isotropic GP should be used. 
+In the former case, the same amount of smoothing is applied to all
+predictors. In the latter case, predictors may have different smoothing.
+Ignored if only a single predictors is supplied.}
+
 \item{gr}{Logical; Indicates if auto-grouping should be used (defaults 
 to \code{FALSE}). If enabled, observations sharing the same 
 predictor values will be represented by the same latent variable
-in the Gaussian process. This will improve sampling efficiency
+in the GP. This will improve sampling efficiency
 drastically if the number of unique predictor combinations is small
 relative to the number of observations.}
 
 \item{scale}{Logical; If \code{TRUE} (the default), predictors are
 scaled so that the maximum Euclidean distance between two points
-is 1. Since the default prior on \code{lscale} expects scaled
-predictors, it is recommended to manually specify priors
-on \code{lscale}, if \code{scale} is set to \code{FALSE}.}
+is 1. This often improves sampling speed and convergence.}
 
 \item{L}{Numeric value only used in approximate GPs. Defines the 
-multiplicative constant of the covariates's range over which
+multiplicative constant of the predictors's range over which
 predictions should be computed. Currently defaults to \code{5/4}.}
 }
 \value{
 An object of class \code{'gpterm'}, which is a list 
   of arguments to be interpreted by the formula 
-  parsing functions of \code{brms}.
+  parsing functions of \pkg{brms}.
 }
 \description{
-Function used to set up a Gaussian process term in \pkg{brms}.
-The function does not evaluate its arguments --
-it exists purely to help set up a model with Gaussian process terms.
+Set up a Gaussian process (GP) term in \pkg{brms}. The function does not
+evaluate its arguments -- it exists purely to help set up a model with
+GP terms.
 }
 \details{
-A Gaussian process is a stochastic process, which
+A GP is a stochastic process, which
  describes the relation between one or more predictors 
  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
- \eqn{d} is the number of predictors. A Gaussian process is the
+ \eqn{d} is the number of predictors. A GP is the
  generalization of the multivariate normal distribution
  to an infinite number of dimensions. Thus, it can be
  interpreted as a prior over functions. Any finite sample 
  realized from this stochastic process is jointly multivariate 
  normal, with a covariance matrix defined by the covariance
  kernel \eqn{k_p(x)}, where \eqn{p} is the vector of parameters
- of the Gaussian process:
+ of the GP:
  \deqn{f(x) ~ MVN(0, k_p(x))}
  The smoothness and general behavior of the function \eqn{f} 
  depends only on the choice of covariance kernel. 
@@ -85,19 +89,19 @@ A Gaussian process is a stochastic process, which
 # simulate data using the mgcv package
 dat <- mgcv::gamSim(1, n = 30, scale = 2)
 
-# fit a simple gaussian process model
+# fit a simple GP model
 fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 summary(fit1)
 me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
 plot(me1, ask = FALSE, points = TRUE)
 
-# fit a more complicated gaussian process model
+# fit a more complicated GP model
 fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
 summary(fit2)
 me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
 plot(me2, ask = FALSE, points = TRUE)
 
-# fit a multivariate gaussian process model
+# fit a multivariate GP model
 fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
 summary(fit3)
 me3 <- marginal_effects(fit3, nsamples = 200, spaghetti = TRUE)

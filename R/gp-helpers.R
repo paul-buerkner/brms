@@ -1,9 +1,68 @@
 # R helper functions for Gaussian Processes 
 
+tidy_gpef <- function(x, data) {
+  # get labels of gaussian process terms
+  # Args:
+  #   x: either a formula or a list containing an element "gp"
+  #   data: data frame containing the covariates
+  if (is.formula(x)) {
+    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+  }
+  form <- x[["gp"]]
+  if (!is.formula(form)) {
+    return(empty_data_frame())
+  }
+  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
+  nterms <- nrow(out)
+  out$bylevels <- out$byvars <- out$covars <- 
+    out$sfx1 <- out$sfx2 <- out$L <- vector("list", nterms)
+  for (i in seq_len(nterms)) {
+    gp <- eval2(out$term[i])
+    out$label[i] <- paste0("gp", rename(collapse(gp$term)))
+    out$cov[i] <- gp$cov
+    out$k[i] <- gp$k
+    out$L[[i]] <- gp$L
+    out$iso[i] <- gp$iso
+    out$gr[i] <- gp$gr
+    out$scale[i] <- gp$scale
+    out$covars[[i]] <- gp$term
+    if (gp$by != "NA") {
+      out$byvars[[i]] <- gp$by
+      str_add(out$label[i]) <- rename(gp$by)
+      Cgp <- get(gp$by, data)
+      if (is_like_factor(Cgp)) {
+        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
+      }
+    }
+    # sfx1 is for sdgp and sfx2 is for lscale
+    out$sfx1[[i]] <- paste0(out$label[i], out$bylevels[[i]])
+    if (out$iso[i]) {
+      out$sfx2[[i]] <- matrix(out$sfx1[[i]])
+    } else {
+      out$sfx2[[i]] <- outer(out$sfx1[[i]], out$covars[[i]], paste0)
+    }
+  }
+  out
+}
+
 cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
   # exponential-quadratic covariance matrix
-  diff_quad <- diff_quad(x = x, x_new = x_new)
-  sdgp^2 * exp(-diff_quad / (2 * lscale^2))
+  # not vectorized over parameter values
+  Dls <- length(lscale)
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    diff_quad <- diff_quad(x = x, x_new = x_new)
+    out <- sdgp^2 * exp(-diff_quad / (2 * lscale^2))
+  } else {
+    # multi-dimensional non-isotropic GP
+    diff_quad <- diff_quad(x = x[, 1], x_new = x_new[, 1])
+    out <- sdgp^2 * exp(-diff_quad / (2 * lscale[1]^2))
+    for (d in seq_len(Dls)[-1]) {
+      diff_quad <- diff_quad(x = x[, d], x_new = x_new[, d])
+      out <- out * exp(-diff_quad / (2 * lscale[d]^2))
+    }
+  }
+  out
 }
 
 diff_quad <- function(x, x_new = NULL) {
@@ -23,7 +82,7 @@ diff_quad <- function(x, x_new = NULL) {
   }
   .diff_quad <- function(x1, x2) (x1 - x2)^2
   out <- 0
-  for (i in seq_len(ncol(x))) {
+  for (i in seq_cols(x)) {
     out <- out + outer(x[, i], x_new[, i], .diff_quad)
   }
   out
@@ -34,10 +93,23 @@ spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   # vectorized over parameter values
   NB <- NROW(x)
   D <- NCOL(x)
+  Dls <- NCOL(lscale)
   out <- matrix(nrow = length(sdgp), ncol = NB)
-  for (m in seq_len(NB)) {
-    out[, m] <- sdgp^2 * sqrt(2 * pi)^D * 
-      lscale^D * exp(-0.5 * lscale^2 * sum(x[m, ]^2));
+  if (Dls == 1L) {
+    # one dimensional or isotropic GP
+    constant <- sdgp^2 * (sqrt(2 * pi) * lscale)^D
+    neg_half_lscale2 <- -0.5 * lscale^2
+    for (m in seq_len(NB)) {
+      out[, m] <- constant * exp(neg_half_lscale2 * sum(x[m, ]^2))
+    }
+  } else {
+    # multi-dimensional non-isotropic GP
+    constant <- sdgp^2 * sqrt(2 * pi)^D * matrixStats::rowProds(lscale)
+    neg_half_lscale2 = -0.5 * lscale^2
+    for (m in seq_len(NB)) {
+      x2 <- as_draws_matrix(x[m, ]^2, dim = dim(lscale))
+      out[, m] <- constant * exp(rowSums(neg_half_lscale2 * x2))
+    }
   }
   out
 }

@@ -454,9 +454,10 @@ data_Xme <- function(meef, data) {
   out
 }
 
-data_gp <- function(bterms, data, gps = NULL) {
+data_gp <- function(bterms, data, gps = NULL, ...) {
   # prepare data for Gaussian process terms
   # Args: see data_predictor
+  #   ...: passed to '.data_gp'
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -504,7 +505,7 @@ data_gp <- function(bterms, data, gps = NULL) {
         # loop along levels of 'by'
         Igp <- which(Cgp == lvls[j])
         sfx <- paste0(pi, "_", j)
-        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Igp = Igp, L = L)
+        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Igp = Igp, L = L, ...)
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
         c(out) <- tmp
@@ -515,7 +516,7 @@ data_gp <- function(bterms, data, gps = NULL) {
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
-      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, L = L)
+      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, L = L, ...)
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
@@ -525,7 +526,7 @@ data_gp <- function(bterms, data, gps = NULL) {
   out
 }
 
-.data_gp <- function(Xgp, k, gr, sfx, Igp = NULL, L = NULL) {
+.data_gp <- function(Xgp, k, gr, sfx, Igp = NULL, L = NULL, rawXgp = FALSE) {
   # helper function to preparae GP related data
   # Args:
   #   Xgp: matrix of covariate values
@@ -533,11 +534,13 @@ data_gp <- function(bterms, data, gps = NULL) {
   #   sfx: suffix to put at the end of data names
   #   Igp: optional index vector of values belonging to
   #     a certain level of a factor 'by' variable
-  out <- atts <- list()
+  #   rawXgp: a flag to indicate if the covariate matrix should be returned 
+  #     without further processing; required in 'def_lscale_prior'
+  out <- list()
   if (!is.null(Igp)) {
     Xgp <- Xgp[Igp, , drop = FALSE]
     out[[paste0("Igp", sfx)]] <- Igp
-    atts$Ngp <- length(Igp)
+    attr(out, "Ngp") <- length(Igp)
   }
   if (gr) {
     groups <- factor(match_rows(Xgp, Xgp))
@@ -545,13 +548,17 @@ data_gp <- function(bterms, data, gps = NULL) {
     Jgp <- match(groups, ilevels)
     Nsubgp <- length(ilevels)
     if (!is.null(Igp)) {
-      atts$Nsubgp <- Nsubgp
+      attr(out, "Nsubgp") <- Nsubgp
     } else {
       out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
     }
     out[[paste0("Jgp", sfx)]] <- Jgp
     not_dupl_Jgp <- !duplicated(Jgp)
     Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+  }
+  if (rawXgp) {
+    out[[paste0("Xgp", sfx)]] <- Xgp
+    return(out)
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables
@@ -570,8 +577,6 @@ data_gp <- function(bterms, data, gps = NULL) {
   } else {
     out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
   }
-  # data stored as attributes are further processed in 'data_gp'
-  attributes(out)[names(atts)] <- atts
   out
 }
 
