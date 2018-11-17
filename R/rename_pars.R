@@ -239,7 +239,7 @@ change_gp <- function(bterms, data, pars) {
     
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
-    if (length(sfx1) > 0L) {
+    if (length(sfx1) > 1L) {
       # categorical 'by' variable
       for (j in seq_along(sfx1)) {
         zgp_old_sub <- paste0(zgp_old, "_", j)
