@@ -480,7 +480,7 @@ stan_re <- function(ranef, prior, ...) {
   r <- subset2(ranef, id = id)
   has_ccov <- r$group[1] %in% names(cov_ranef)
   has_by <- nzchar(r$by[[1]])
-  Nby <- seq_along(r$cons[[1]]) 
+  Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(px)))

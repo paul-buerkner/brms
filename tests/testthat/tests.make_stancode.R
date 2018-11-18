@@ -1304,7 +1304,7 @@ test_that("Stan code for Gaussian processes is correct", {
                          dat, silent = TRUE)
   expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, paste0(
-    "mu[Igp_2_2] = mu[Igp_2_2] + gp(Xgp_2_2, ", 
+    "mu[Igp_2_2] = mu[Igp_2_2] + Cgp_2_2 .* gp(Xgp_2_2, ", 
     "sdgp_2[2], lscale_2[2], zgp_2_2);"
   ))
   
@@ -1321,7 +1321,7 @@ test_that("Stan code for Gaussian processes is correct", {
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1, by = z, gr = TRUE), nl = TRUE),
                          data = dat, prior = prior, silent = TRUE)
   expect_match2(scode, 
-    "nlp_a[Igp_a_1_1] = nlp_a[Igp_a_1_1] + gp(Xgp_a_1_1,"
+    "nlp_a[Igp_a_1_1] = nlp_a[Igp_a_1_1] + Cgp_a_1_1 .* gp(Xgp_a_1_1,"
   )
   expect_match2(scode,
     "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
