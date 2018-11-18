@@ -14,7 +14,7 @@ tidy_gpef <- function(x, data) {
   }
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
-  out$bylevels <- out$byvars <- out$covars <- 
+  out$cons <- out$byvars <- out$covars <- 
     out$sfx1 <- out$sfx2 <- out$L <- vector("list", nterms)
   for (i in seq_len(nterms)) {
     gp <- eval2(out$term[i])
@@ -23,19 +23,23 @@ tidy_gpef <- function(x, data) {
     out$k[i] <- gp$k
     out$L[[i]] <- gp$L
     out$iso[i] <- gp$iso
+    out$cmc[i] <- gp$cmc
     out$gr[i] <- gp$gr
     out$scale[i] <- gp$scale
     out$covars[[i]] <- gp$term
     if (gp$by != "NA") {
       out$byvars[[i]] <- gp$by
       str_add(out$label[i]) <- rename(gp$by)
-      Cgp <- get(gp$by, data)
-      if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
+      byval <- get(gp$by, data)
+      if (is_like_factor(byval)) {
+        byval <- unique(as.factor(byval))
+        byform <- str2formula(c(ifelse(gp$cmc, "0", "1"), "byval"))
+        cons <- rename(colnames(model.matrix(byform)))
+        out$cons[[i]] <- rm_wsp(sub("^byval", "", cons))
       }
     }
     # sfx1 is for sdgp and sfx2 is for lscale
-    out$sfx1[[i]] <- paste0(out$label[i], out$bylevels[[i]])
+    out$sfx1[[i]] <- paste0(out$label[i], out$cons[[i]])
     if (out$iso[i]) {
       out$sfx2[[i]] <- matrix(out$sfx1[[i]])
     } else {

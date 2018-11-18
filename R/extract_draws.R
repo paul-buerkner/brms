@@ -400,11 +400,11 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   }
   draws <- named_list(gpef$label)
   for (i in seq_along(draws)) {
-    lvls <- gpef$bylevels[[i]]
-    if (length(lvls)) {
-      gp <- named_list(lvls)
-      for (j in seq_along(lvls)) {
-        gp[[lvls[j]]] <- .extract_draws_gp(
+    cons <- gpef$cons[[i]]
+    if (length(cons)) {
+      gp <- named_list(cons)
+      for (j in seq_along(cons)) {
+        gp[[j]] <- .extract_draws_gp(
           gpef, samples = samples, sdata = sdata,
           old_sdata = old_sdata, nug = nug, new = new,
           byj = j, p = p, i = i
@@ -430,7 +430,7 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   #   gpef: output of tidy_gpef
   #   p: prefix created by combine_prefix()
   #   i: indiex of the Gaussian process
-  #   byj: index for the level of a categorical 'by' variable
+  #   byj: index for the contrast of a categorical 'by' variable
   # Return:
   #   a list to be evaluated by .predictor_gp()
   sfx1 <- escape_all(gpef$sfx1[[i]])
@@ -443,6 +443,7 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
     sfx2 <- sfx2[byj, ]
   }
   j <- usc(byj)
+  pi <- paste0(p, "_", i)
   gp <- list()
   sdgp <- paste0("^sdgp", p, "_", sfx1, "$")
   gp$sdgp <- as.vector(get_samples(samples, sdgp))
@@ -450,9 +451,9 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   gp$lscale <- get_samples(samples, lscale)
   zgp_regex <- paste0("^zgp", p, "_", sfx1, "\\[")
   gp$zgp <- get_samples(samples, zgp_regex)
-  Xgp_name <- paste0("Xgp", p, "_", i, j)
-  Igp_name <- paste0("Igp", p, "_", i, j)
-  Jgp_name <- paste0("Jgp", p, "_", i, j)
+  Xgp_name <- paste0("Xgp", pi, j)
+  Igp_name <- paste0("Igp", pi, j)
+  Jgp_name <- paste0("Jgp", pi, j)
   if (new && isNA(gpef$k[i])) {
     # approximate GPs don't differentiate between new and old data
     gp$x <- old_sdata[[Xgp_name]]
@@ -465,14 +466,12 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
     gp$x <- sdata[[Xgp_name]]
     gp$Igp <- sdata[[Igp_name]]
     if (!isNA(gpef$k[i])) {
-      gp$slambda <- sdata[[paste0("slambda", p, "_", i, j)]]
+      gp$slambda <- sdata[[paste0("slambda", pi, j)]]
     }
   }
   gp$Jgp <- sdata[[Jgp_name]]
-  if (is.null(byj)) {
-    # possible continuous 'by' variable
-    gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
-  }
+  # possible factor from 'by' variable
+  gp$Cgp <- sdata[[paste0("Cgp", pi, j)]]
   gp$nug <- nug
   gp
 }

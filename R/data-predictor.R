@@ -484,6 +484,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
         Xgp <- Xgp / dmax
       }
     }
+    cmc <- gpef$cmc[i]
     gr <- gpef$gr[i]
     k <- gpef$k[i]
     L <- gpef$L[[i]]
@@ -492,20 +493,22 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
       Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
     }
     byvar <- gpef$byvars[[i]]
-    byfac <- length(gpef$bylevels[[i]]) > 0L
+    byfac <- length(gpef$cons[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
     if (byfac) {
       # for categorical 'by' variables prepare one GP per level
       # as.factor will keep unused levels needed for new data
-      Cgp <- as.factor(get(byvar, data))
-      lvls <- levels(Cgp)
-      out[[paste0("Kgp", pi)]] <- length(lvls)
-      Ngp <- Nsubgp <- vector("list", length(lvls))
-      for (j in seq_along(lvls)) {
-        # loop along levels of 'by'
-        Igp <- which(Cgp == lvls[j])
+      byval <- as.factor(get(byvar, data))
+      byform <- str2formula(c(ifelse(cmc, "0", "1"), "byval"))
+      con_mat <- model.matrix(byform)
+      cons <- colnames(con_mat)
+      out[[paste0("Kgp", pi)]] <- length(cons)
+      Ngp <- Nsubgp <- vector("list", length(cons))
+      for (j in seq_along(cons)) {
+        # loop along contrasts of 'by'
+        Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
-        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Igp = Igp, L = L, ...)
+        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, L = L, ...)
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
         c(out) <- tmp
@@ -526,20 +529,23 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
   out
 }
 
-.data_gp <- function(Xgp, k, gr, sfx, Igp = NULL, L = NULL, rawXgp = FALSE) {
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, L = NULL, rawXgp = FALSE) {
   # helper function to preparae GP related data
   # Args:
   #   Xgp: matrix of covariate values
   #   k, gr, L: see tidy_gpef
   #   sfx: suffix to put at the end of data names
-  #   Igp: optional index vector of values belonging to
+  #   Cgp: optional index vector of values belonging to
   #     a certain level of a factor 'by' variable
   #   rawXgp: a flag to indicate if the covariate matrix should be returned 
   #     without further processing; required in 'def_lscale_prior'
   out <- list()
-  if (!is.null(Igp)) {
+  if (!is.null(Cgp)) {
+    Cgp <- unname(Cgp)
+    Igp <- which(Cgp != 0)
     Xgp <- Xgp[Igp, , drop = FALSE]
     out[[paste0("Igp", sfx)]] <- Igp
+    out[[paste0("Cgp", sfx)]] <- Cgp[Igp]
     attr(out, "Ngp") <- length(Igp)
   }
   if (gr) {
@@ -547,7 +553,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     ilevels <- levels(groups)
     Jgp <- match(groups, ilevels)
     Nsubgp <- length(ilevels)
-    if (!is.null(Igp)) {
+    if (!is.null(Cgp)) {
       attr(out, "Nsubgp") <- Nsubgp
     } else {
       out[[paste0("Nsubgp", sfx)]]  <- Nsubgp

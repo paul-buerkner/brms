@@ -480,7 +480,7 @@ stan_re <- function(ranef, prior, ...) {
   r <- subset2(ranef, id = id)
   has_ccov <- r$group[1] %in% names(cov_ranef)
   has_by <- nzchar(r$by[[1]])
-  Nby <- seq_along(r$bylevels[[1]]) 
+  Nby <- seq_along(r$cons[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(px)))
@@ -893,8 +893,8 @@ stan_gp <- function(bterms, data, prior, ...) {
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     byvar <- gpef$byvars[[i]] 
-    bylevels <- gpef$bylevels[[i]]
-    byfac <- length(bylevels) > 0L
+    cons <- gpef$cons[[i]]
+    byfac <- length(cons) > 0L
     bynum <- !is.null(byvar) && !byfac 
     k <- gpef$k[i]
     iso <- gpef$iso[i]
@@ -930,14 +930,15 @@ stan_gp <- function(bterms, data, prior, ...) {
       px = px, suffix = pi
     )
     if (byfac) {
-      J <- seq_along(bylevels)
+      J <- seq_along(cons)
       Ngp <- paste0("Ngp", pi)
       Nsubgp <- paste0("N", if (gr) "sub", "gp", pi)
       Igp <- paste0("Igp", pi, "_", J)
       str_add(out$data) <- paste0(
         "  int<lower=1> ", Ngp, "[Kgp", pi, "];\n",
         collapse(
-          "  int<lower=1> ", Igp, "[", Ngp, "[", J, "]];\n"
+          "  int<lower=1> ", Igp, "[", Ngp, "[", J, "]];\n",
+          "  vector[",  Ngp, "[", J, "]] Cgp", pi, "_", J, ";\n"
         )
       )
       if (gr) {
@@ -948,6 +949,7 @@ stan_gp <- function(bterms, data, prior, ...) {
           )
         )
       }
+      gp_call <- paste0("Cgp", pi, "_", J, " .* ")
       if (!isNA(k)) {
         str_add(out$data) <- collapse(
           "  matrix[", Nsubgp, "[", J, "], NBgp", pi, "] Xgp", pi, "_", J, ";\n",
@@ -956,7 +958,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         str_add(out$par) <- collapse(
           "  vector[NBgp", pi, "] zgp", pi, "_", J, "; \n"
         )
-        gp_call <- paste0(
+        str_add(gp_call) <- paste0(
           "gpa(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
           "lscale", pi, "[", J, "], zgp", pi, "_", J, ", ", 
           "slambda", pi, "_", J, ")"
@@ -968,7 +970,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         str_add(out$par) <- collapse(
           "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
         )
-        gp_call <- paste0(
+        str_add(gp_call) <- paste0(
           "gp(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
           "lscale", pi, "[", J, "], zgp", pi, "_", J, ")"
         )
@@ -983,7 +985,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$prior) <- collapse(
         tp(), "normal_lpdf(zgp", pi, "_", J, " | 0, 1);\n"
       )
-      for (j in seq_along(bylevels)) {
+      for (j in seq_along(cons)) {
         str_add(out$prior) <- stan_prior(
           prior, class = "lscale", coef = sfx2[j, ], 
           px = px, suffix = paste0(pi, "[", j, "]")

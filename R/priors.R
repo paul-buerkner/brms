@@ -782,9 +782,9 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   for (i in seq_along(out)) {
     pi <- paste0(p, "_", i)
     iso <- gpef$iso[i]
-    lvls <- gpef$bylevels[[i]]
-    if (length(lvls) > 0L) {
-      for (j in seq_along(lvls)) {
+    cons <- gpef$cons[[i]]
+    if (length(cons) > 0L) {
+      for (j in seq_along(cons)) {
         Xgp <- gp_dat[[paste0("Xgp", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)

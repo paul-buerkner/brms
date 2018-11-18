@@ -276,8 +276,8 @@ predictor_gp <- function(draws, i) {
       zgp = zgp, slambda = slambda
     ))
   }
-  if (!is.null(gp[["bynum"]])) {
-    out <- out * as_draws_matrix(gp[["bynum"]], dim = dim(out))
+  if (!is.null(gp[["Cgp"]])) {
+    out <- out * as_draws_matrix(gp[["Cgp"]], dim = dim(out))
   }
   if (!is.null(gp[["Jgp"]])) {
     out <- out[, gp[["Jgp"]], drop = FALSE]

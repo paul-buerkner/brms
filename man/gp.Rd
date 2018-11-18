@@ -5,7 +5,7 @@
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
 gp(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
-  gr = FALSE, scale = TRUE, L = 5/4)
+  gr = FALSE, cmc = TRUE, scale = TRUE, L = 5/4)
 }
 \arguments{
 \item{...}{One or more predictors for the GP.}
@@ -33,6 +33,11 @@ predictor values will be represented by the same latent variable
 in the GP. This will improve sampling efficiency
 drastically if the number of unique predictor combinations is small
 relative to the number of observations.}
+
+\item{cmc}{Logical; Only relevant if \code{by} is a factor. If \code{TRUE}
+(the default), cell-mean coding is used for the \code{by}-factor, that is
+one GP per level is estimated. If \code{FALSE}, contrast GPs are estimated
+according to the contrasts set for the \code{by}-factor.}
 
 \item{scale}{Logical; If \code{TRUE} (the default), predictors are
 scaled so that the maximum Euclidean distance between two points

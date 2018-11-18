@@ -518,6 +518,10 @@ monotonic <- function(x) {
 #'   in the GP. This will improve sampling efficiency
 #'   drastically if the number of unique predictor combinations is small
 #'   relative to the number of observations.
+#' @param cmc Logical; Only relevant if \code{by} is a factor. If \code{TRUE}
+#'   (the default), cell-mean coding is used for the \code{by}-factor, that is
+#'   one GP per level is estimated. If \code{FALSE}, contrast GPs are estimated
+#'   according to the contrasts set for the \code{by}-factor.
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
 #'   scaled so that the maximum Euclidean distance between two points
 #'   is 1. This often improves sampling speed and convergence.
@@ -598,12 +602,13 @@ monotonic <- function(x) {
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
-               gr = FALSE, scale = TRUE, L = 5 / 4) {
+               gr = FALSE, cmc = TRUE, scale = TRUE, L = 5 / 4) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   by <- deparse(substitute(by))
   gr <- as_one_logical(gr)
+  cmc <- as_one_logical(cmc)
   if (length(vars) > 1L) {
     iso <- as_one_logical(iso)
   } else {
@@ -629,7 +634,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
   }
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  out <- nlist(term, label, by, cov, k, iso, gr, scale, L)
+  out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, L)
   structure(out, class = "gpterm")
 }
 
@@ -830,7 +835,9 @@ str2formula <- function(x, ..., collapse = "+") {
   } else {
     out <- "1"
   }
-  formula(paste("~", out), ...)
+  out <- formula(paste("~", out), ...)
+  environment(out) <- parent.frame()
+  out
 }
 
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
