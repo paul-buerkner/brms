@@ -604,6 +604,39 @@ test_that("Gaussian processes work correctly", {
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
 
+test_that("Approximate Gaussian processes work correctly", {
+  set.seed(1245)
+  dat <- mgcv::gamSim(4, n = 90, scale = 2)
+  
+  # isotropic approximate GP
+  fit1 <- brm(
+    y ~ gp(x1, x2, by = fac, k = 10), 
+    data = dat, chains = 2, cores = 2
+  )
+  print(fit1)
+  expect_range(bayes_R2(fit1)[1, 1], 0.60, 0.75) 
+  me <- marginal_effects(
+    fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    resolution = 20, surface = TRUE
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_range(WAIC(fit1)$estimates[3, 1], 390, 430)
+  
+  # non isotropic approximate GP
+  fit2 <- brm(
+    y ~ gp(x1, x2, by = fac, k = 10, iso = FALSE),
+    data = dat, chains = 2, cores = 2
+  )
+  print(fit2)
+  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.58) 
+  me <- marginal_effects(
+    fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    resolution = 20, surface = TRUE
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_range(WAIC(fit2)$estimates[3, 1], 420, 440)
+})
+
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 

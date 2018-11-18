@@ -535,8 +535,8 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
   #   Xgp: matrix of covariate values
   #   k, gr, L: see tidy_gpef
   #   sfx: suffix to put at the end of data names
-  #   Cgp: optional index vector of values belonging to
-  #     a certain level of a factor 'by' variable
+  #   Cgp: optional vector of values belonging to
+  #     a certain contrast of a factor 'by' variable
   #   rawXgp: a flag to indicate if the covariate matrix should be returned 
   #     without further processing; required in 'def_lscale_prior'
   out <- list()
@@ -544,8 +544,8 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     Cgp <- unname(Cgp)
     Igp <- which(Cgp != 0)
     Xgp <- Xgp[Igp, , drop = FALSE]
-    out[[paste0("Igp", sfx)]] <- Igp
-    out[[paste0("Cgp", sfx)]] <- Cgp[Igp]
+    out[[paste0("Igp", sfx)]] <- as.array(Igp)
+    out[[paste0("Cgp", sfx)]] <- as.array(Cgp[Igp])
     attr(out, "Ngp") <- length(Igp)
   }
   if (gr) {
@@ -558,7 +558,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     } else {
       out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
     }
-    out[[paste0("Jgp", sfx)]] <- Jgp
+    out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
     not_dupl_Jgp <- !duplicated(Jgp)
     Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
   }

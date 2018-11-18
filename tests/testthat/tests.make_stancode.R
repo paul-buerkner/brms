@@ -1288,16 +1288,21 @@ test_that("Stan code for Gaussian processes is correct", {
                     z = factor(rep(3:6, each = 10)))
   
   prior <- prior(gamma(0.1, 0.1), sdgp)
-  scode <- SW(make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior))
+  scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
   expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
   expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
-  scode <- SW(make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
-                            data = dat, prior = prior))
+  scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
+                         data = dat, prior = prior)
   expect_match2(scode, "target += normal_lpdf(lscale_1[1] | 0, 1)")
   expect_match2(scode, "+ Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)[Jgp_2]")
+  
+  # non-isotropic GP
+  scode <- make_stancode(y ~ gp(x1, x2, by = z, iso = FALSE), dat)
+  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1[1][2]")
+  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1[4][2]")
   
   # Suppress Stan parser warnings that can currently not be avoided
   scode <- make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), 
@@ -1307,6 +1312,16 @@ test_that("Stan code for Gaussian processes is correct", {
     "mu[Igp_2_2] = mu[Igp_2_2] + Cgp_2_2 .* gp(Xgp_2_2, ", 
     "sdgp_2[2], lscale_2[2], zgp_2_2);"
   ))
+  
+  # approximate GPS
+  scode <- make_stancode(y ~ gp(x1, k = 10) + gp(x2, by = x1, k = 10), dat)
+  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
+  expect_match2(scode, 
+    "gpa(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1, slambda_1)"           
+  )
+  expect_match2(scode, 
+    "Cgp_2 .* gpa(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2, slambda_2)"
+  )
   
   prior <- c(prior(normal(0, 10), lscale, coef = gpx1, nlpar = a),
              prior(gamma(0.1, 0.1), sdgp, nlpar = a),
