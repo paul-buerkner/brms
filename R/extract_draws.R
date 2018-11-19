@@ -30,23 +30,24 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  args <- nlist(
-    x = bterms, samples, sdata, data = x$data,
-    ranef, old_ranef = x$ranef, meef, resp,
-    sample_new_levels, nug, smooths_only, offset,
-    new, oos, stanvars = names(x$stanvars)
-  )
+  old_sdata <- NULL
   if (new) {
     # extract_draws_re() also requires the new level names
     # original level names are already passed via old_ranef
     new_levels <- attr(tidy_ranef(bterms, newdata), "levels")
-    attr(args$ranef, "levels") <- new_levels
+    attr(ranef, "levels") <- new_levels
     if (length(get_effect(bterms, "gp"))) {
       # GPs for new data require the original data as well
-      args$old_sdata <- standata(x, internal = TRUE, ...)
+      old_sdata <- standata(x, internal = TRUE, ...)
     }
   }
-  do.call(extract_draws, args)
+  extract_draws(
+    bterms, samples = samples, sdata = sdata, data = x$data, 
+    ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
+    sample_new_levels = sample_new_levels, nug = nug, 
+    smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
+    stanvars = names(x$stanvars), old_sdata = old_sdata
+  )
 }
 
 extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {

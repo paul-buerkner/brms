@@ -7,6 +7,8 @@ ARMA models via argument `oos` of `extract_draws`. (#539)
 
 ### Bug fixes
 
+* Fix an issue that could result in a large efficiency drop
+of various post-processing methods for larger models.
 * Fix an error when sampling from priors in mixture models
 thanks to Jacki Buros Novik. (#542)
 
