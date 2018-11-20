@@ -2,6 +2,7 @@
 
 ### New features
 
+* Fit approximate and non-isotropic Gaussian processes via `gp`. (#540)
 * Indicate observations for out-of-sample predictions in 
 ARMA models via argument `oos` of `extract_draws`. (#539)
 
