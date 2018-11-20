@@ -382,8 +382,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
-      prior, formula, data = data,  
-      sample_prior = sample_prior
+      prior, formula, data = data, sparse = sparse,
+      sample_prior = sample_prior, warn = FALSE
     )
     # initialize S3 object
     x <- brmsfit(
@@ -422,7 +422,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     message("Compiling the C++ model")
     x$fit <- eval_silent(
-      do.call(rstan::stan_model, stan_model_args),
+      run(rstan::stan_model, stan_model_args),
       silent = silence_stan_model, type = "message"
     )
   }
@@ -456,7 +456,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
           args$init <- inits[i]
         }
         futures[[i]] <- future::future(
-          do.call(rstan::sampling, args), packages = "rstan"
+          run(rstan::sampling, args), packages = "rstan"
         )
       }
       for (i in seq_len(chains)) {
@@ -466,11 +466,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       rm(futures, fits)
     } else {
       args <- c(args, nlist(chains, cores))
-      x$fit <- do.call(rstan::sampling, args) 
+      x$fit <- run(rstan::sampling, args) 
     }
   } else {
     # vb does not support parallel execution
-    x$fit <- do.call(rstan::vb, args)
+    x$fit <- run(rstan::vb, args)
   }
   if (!testmode) {
     x <- rename_pars(x)

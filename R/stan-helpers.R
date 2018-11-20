@@ -614,14 +614,11 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
       str_add(out) <- paste0(
         "     int ncat = num_elements(thres) + 1;\n",
         "     vector[ncat] p;\n",
-        "     vector[ncat - 1] q;\n",
-        "     p[1] = 1.0;\n",
+        "     p[1] = 0.0;\n",
         "     for (k in 1:(ncat - 1)) {\n",
-        "       q[k] = ", th("k"), ";\n",
-        "       p[k + 1] = q[1];\n",
-        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk];\n",
-        "       p[k + 1] = exp(p[k + 1]);\n",
+        "       p[k + 1] = p[k] + ", th("k"), ";\n",
         "     }\n",
+        "     p = exp(p);\n",
         "     return log(p[y] / sum(p));\n"
       )
     } else {

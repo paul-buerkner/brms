@@ -18,35 +18,38 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 
   new <- !is.null(newdata)
-  newd_args <- nlist(
-    newdata, object = x, re_formula, resp, 
-    allow_new_levels, new_objects, ...
+  newdata <- validate_newdata(
+    newdata, object = x, re_formula = re_formula, 
+    resp = resp, allow_new_levels = allow_new_levels, 
+    new_objects = new_objects, ...
   )
-  newdata <- do.call(validate_newdata, newd_args)
-  newd_args$newdata <- newdata
-  newd_args$internal <- TRUE
-  sdata <- do.call(standata, newd_args)
+  sdata <- standata(
+    x, newdata = newdata, re_formula = re_formula, 
+    resp = resp, allow_new_levels = allow_new_levels, 
+    new_objects = new_objects, internal = TRUE, ...
+  )
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  args <- nlist(
-    x = bterms, samples, sdata, data = x$data,
-    ranef, old_ranef = x$ranef, meef, resp,
-    sample_new_levels, nug, smooths_only, offset,
-    new, oos, stanvars = names(x$stanvars)
-  )
+  old_sdata <- NULL
   if (new) {
     # extract_draws_re() also requires the new level names
     # original level names are already passed via old_ranef
     new_levels <- attr(tidy_ranef(bterms, newdata), "levels")
-    attr(args$ranef, "levels") <- new_levels
+    attr(ranef, "levels") <- new_levels
     if (length(get_effect(bterms, "gp"))) {
       # GPs for new data require the original data as well
-      args$old_sdata <- standata(x, internal = TRUE, ...)
+      old_sdata <- standata(x, internal = TRUE, ...)
     }
   }
-  do.call(extract_draws, args)
+  extract_draws(
+    bterms, samples = samples, sdata = sdata, data = x$data, 
+    ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
+    sample_new_levels = sample_new_levels, nug = nug, 
+    smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
+    stanvars = names(x$stanvars), old_sdata = old_sdata
+  )
 }
 
 extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
@@ -72,7 +75,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$data$N <- draws$resps[[1]]$data$N
       draws$data$weights <- draws$resps[[1]]$data$weights
       Y <- lapply(draws$resps, function(x) x$data$Y)
-      draws$data$Y <- do.call(cbind, Y)
+      draws$data$Y <- run(cbind, Y)
     }
     draws <- structure(draws, class = "mvbrmsdraws")
   } else {
@@ -121,7 +124,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
       )
     } else {
       # theta was not predicted
-      draws$dpars$theta <- do.call(cbind, draws$dpars[thetas])
+      draws$dpars$theta <- run(cbind, draws$dpars[thetas])
       draws$dpars[thetas] <- NULL
       if (nrow(draws$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(draws$dpars$theta))
@@ -165,23 +168,22 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   nsamples <- nrow(samples)
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
-  args <- nlist(bterms = x, samples, sdata, ...)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
-    draws$sm <- do.call(extract_draws_sm, args)
+    draws$sm <- extract_draws_sm(x, samples, sdata, ...)
     return(draws)
   }
-  draws$fe <- do.call(extract_draws_fe, args)
-  draws$sp <- do.call(extract_draws_sp, args)
-  draws$cs <- do.call(extract_draws_cs, args)
-  draws$sm <- do.call(extract_draws_sm, args)
-  draws$gp <- do.call(extract_draws_gp, args)
-  draws$re <- do.call(extract_draws_re, args)
+  draws$fe <- extract_draws_fe(x, samples, sdata, ...)
+  draws$sp <- extract_draws_sp(x, samples, sdata, ...)
+  draws$cs <- extract_draws_cs(x, samples, sdata, ...)
+  draws$sm <- extract_draws_sm(x, samples, sdata, ...)
+  draws$gp <- extract_draws_gp(x, samples, sdata, ...)
+  draws$re <- extract_draws_re(x, samples, sdata, ...)
   if (offset) {
-    draws$offset <- do.call(extract_draws_offset, args) 
+    draws$offset <- extract_draws_offset(x, sdata, ...)
   }
   if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
-    draws$ac <- do.call(extract_draws_autocor, args)
+    draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws
 }
@@ -610,7 +612,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         new_rsamples[[i]] <- matrix(nrow = nrow(rsamples), ncol = 0)
       }
     }
-    new_rsamples <- do.call(cbind, new_rsamples)
+    new_rsamples <- run(cbind, new_rsamples)
     # we need row major instead of column major order
     sort_levels <- ulapply(seq_len(nlevels),
       function(l) seq(l, ncol(rsamples), nlevels)
@@ -639,7 +641,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       Znames <- paste0(
         "Z_", sub_ranef_cs$id[take], usc(p), "_", sub_ranef_cs$cn[take]
       )
-      Z <- do.call(cbind, sdata[Znames])
+      Z <- run(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       for (i in seq_len(sdata$ncat - 1)) {
         index <- paste0("\\[", i, "\\]$")
@@ -658,10 +660,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         ng <- length(sub_ranef_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)
         for (k in seq_len(ng)) {
-          Z[[k]] <- do.call(cbind, sdata[paste0(Znames, "_", k)])
+          Z[[k]] <- run(cbind, sdata[paste0(Znames, "_", k)])
         }
       } else {
-        Z <- do.call(cbind, sdata[Znames])
+        Z <- run(cbind, sdata[Znames])
       }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       take <- which(sub_ranef$type %in% c("", "mmc"))
@@ -673,7 +675,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
   draws
 }
 
-extract_draws_offset <- function(bterms, samples, sdata, ...) {
+extract_draws_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
   sdata[[paste0("offset", p)]]
 }

@@ -185,7 +185,7 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
   }
-  x <- do.call(apply, c(args, dots))
+  x <- run(apply, c(args, dots))
   if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
   } else if (coef == "quantile") {
@@ -230,7 +230,7 @@ posterior_table <- function(x, levels = NULL) {
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
-  out <- do.call(rbind, out)
+  out <- run(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
@@ -527,11 +527,11 @@ get_Mu <- function(draws, i = NULL) {
   if (is.null(Mu)) {
     Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
-      Mu <- do.call(cbind, Mu)
+      Mu <- run(cbind, Mu)
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do.call(abind, c(Mu, along = 3))
+      Mu <- run(abind, c(Mu, along = 3))
     }
   } else {
     stopifnot(!is.null(i))
@@ -549,7 +549,7 @@ get_Sigma <- function(draws, i = NULL) {
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- do.call(cbind, sigma)
+      sigma <- run(cbind, sigma)
       Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
@@ -559,7 +559,7 @@ get_Sigma <- function(draws, i = NULL) {
         }
       }
       nsigma <- length(sigma)
-      sigma <- do.call(abind, c(sigma, along = 3))
+      sigma <- abind(sigma, along = 3)
       Sigma <- array(dim = c(dim_mu(draws), nsigma, nsigma))
       for (n in seq_len(ncol(Sigma))) {
         Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], draws$mvpars$rescor)
@@ -711,7 +711,7 @@ validate_weights <- function(weights, models, control = list()) {
   if (!is.numeric(weights)) {
     weight_args <- c(unname(models), control)
     weight_args$weights <- weights
-    weights <- do.call(model_weights, weight_args)
+    weights <- run(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -807,7 +807,7 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      do.call(paste0("r", dist), list(x$fit@sim$iter, ...))
+      run(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

@@ -268,7 +268,7 @@ predictor_gp <- function(draws, i) {
         ))
       }
     }
-    out <- do.call(rbind, out) 
+    out <- run(rbind, out) 
   } else {
     # predictions for approximate GPs
     out <- with(gp, .predictor_gpa(

@@ -32,7 +32,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
-    c(out) <- do.call(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     resp <- usc(combine_prefix(x))
@@ -40,7 +40,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
-    c(out) <- do.call(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
@@ -78,9 +78,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 }
 
 #' @export 
-data_predictor.btnl <- function(x, data, ranef = empty_ranef(), 
-                                prior = brmsprior(), knots = NULL, 
-                                not4stan = FALSE, old_sdata = NULL, ...) {
+data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -103,8 +101,7 @@ data_predictor.btnl <- function(x, data, ranef = empty_ranef(),
   out
 }
 
-data_fe <- function(bterms, data, knots = NULL,
-                    not4stan = FALSE, smooths = NULL) {
+data_fe <- function(bterms, data, not4stan = FALSE) {
   # prepare data of fixed effects and smooth terms for use in Stan
   # handle smooth terms here as they also affect the FE design matrix 
   # Args: see data_predictor
@@ -162,12 +159,12 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
       }
       Zs <- rasm$rand
       Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
-      c(out) <- c(knots, Zs)
+      tmp <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+      tmp <- setNames(tmp, paste0(c("nb", "knots"), p, "_", ns))
+      c(out) <- c(tmp, Zs)
     }
   }
-  Xs <- do.call(cbind, lXs)
+  Xs <- run(cbind, lXs)
   avoid_dpars(colnames(Xs), bterms = bterms)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
@@ -226,7 +223,7 @@ data_re <- function(bterms, data, ranef) {
         for (k in seq_along(Z_temp)) {
           Z_temp[[k]] <- replicate(ncatM1, Z[, k], simplify = FALSE)
         }
-        Z <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
+        Z <- run(cbind, unlist(Z_temp, recursive = FALSE))
       }
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
@@ -473,7 +470,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     if (any(invalid)) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
-    Xgp <- do.call(cbind, Xgp)
+    Xgp <- run(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
       if (length(gps) > 0L) {
@@ -599,7 +596,7 @@ data_offset <- function(bterms, data) {
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
     }
-    out[[paste0("offset", p)]] <- offset
+    out[[paste0("offset", p)]] <- as.array(offset)
   }
   out
 }

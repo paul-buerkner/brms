@@ -254,7 +254,7 @@ parse_lf <- function(formula, family = NULL) {
   y <- nlist(formula)
   types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
-    tmp <- do.call(paste0("parse_", t), list(formula))
+    tmp <- run(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
       y[[t]] <- tmp 
     }
@@ -376,7 +376,7 @@ parse_re <- function(formula) {
     out[[i]]$form <- list(formula(paste("~", re_parts$lhs[i])))
   }
   if (length(out)) {
-    out <- do.call(rbind, out)
+    out <- run(rbind, out)
     out <- out[order(out$group), ]
     if (no_cmc(formula)) {
       # disable cell-mean coding in all RE terms
@@ -660,7 +660,7 @@ combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
     prefix$dpar <- "nlp"
   }
   prefix <- lapply(prefix, usc)
-  sub("^_", "", do.call(paste0, prefix))
+  sub("^_", "", run(paste0, prefix))
 }
 
 check_fdpars <- function(x) {
@@ -813,7 +813,7 @@ tidy_smef <- function(x, data) {
     tmp[[i]] <- out[i, , drop = FALSE]
     tmp[[i]]$termnum <- i
     if (nby[i] > 0L) {
-      tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
+      tmp[[i]] <- run(rbind, repl(tmp[[i]], nby[i]))
       tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
       str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
@@ -822,7 +822,7 @@ tidy_smef <- function(x, data) {
       tmp[[i]]$byterm <- tmp[[i]]$term
     }
   }
-  out <- do.call(rbind, tmp)
+  out <- run(rbind, tmp)
   out$knots <- sdata[grepl("^knots_", names(sdata))]
   out$nbases <- lengths(out$knots)
   attr(out, "Xs_names") <- colnames(sdata$Xs)
