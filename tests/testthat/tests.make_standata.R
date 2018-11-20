@@ -699,7 +699,7 @@ test_that("make_standata includes data for CAR models", {
                "'W' must be symmetric")
   W[10, 1] <- 0
   expect_error(make_standata(y ~ x, dat, autocor = cor_car(W)),
-               "All locations should have at least one neighbor")
+               "all locations should have at least one neighbor")
 })
 
 test_that("make_standata incldudes data of special priors", {
