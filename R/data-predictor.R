@@ -704,17 +704,25 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
     W_tmp <- autocor$W
     W_tmp[upper.tri(W_tmp)] <- NA
     edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
-    Nneigh <- Matrix::colSums(autocor$W)
-    if (any(Nneigh == 0)) {
-      stop2("All locations should have at least one neighbor.")
+    c(out) <- nlist(
+      Nloc, Jloc, Nedges = nrow(edges),  
+      edges1 = as.array(edges[, 1]), 
+      edges2 = as.array(edges[, 2])
+    )
+    if (autocor$type %in% c("escar", "esicar")) {
+      Nneigh <- Matrix::colSums(autocor$W)
+      if (any(Nneigh == 0)) {
+        stop2(
+          "For exact sparse CAR, all locations should have at ", 
+          "least one neighbor within the provided data set. ",
+          "Consider using type = 'icar' instead."
+        )
+      }
+      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+      eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+      c(out) <- nlist(Nneigh, eigenW)
     }
-    inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-    eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
-    eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
-    out <- c(out, nlist(
-      Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
-      edges1 = as.array(edges[, 1]), edges2 = as.array(edges[, 2])
-    ))
   } else if (is.cor_bsts(autocor)) {
     out$tg <- as.array(tgroup)
   } else if (is.cor_fixed(autocor)) {
