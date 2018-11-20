@@ -314,7 +314,7 @@ predictor_gp <- function(draws, i) {
       ))
     }
   }
-  out <- do.call(rbind, out) 
+  out <- run(rbind, out) 
   if (!is.null(gp[["bynum"]])) {
     out <- out * as_draws_matrix(gp[["bynum"]], dim = dim(out))
   }

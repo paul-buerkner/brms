@@ -105,8 +105,8 @@ match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
   y <- as.data.frame(y)
-  x <- do.call("paste", c(x, sep = "\r"))
-  y <- do.call("paste", c(y, sep = "\r"))
+  x <- run("paste", c(x, sep = "\r"))
+  y <- run("paste", c(y, sep = "\r"))
   match(x, y, ...)
 }
 
@@ -126,7 +126,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   }
   for (name in names(ls)) {
     tmp <- lapply(x, "[[", name)
-    out <- out & do.call(fun, list(tmp, ls[[name]]))
+    out <- out & run(fun, list(tmp, ls[[name]]))
   }
   out
 }
@@ -147,7 +147,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    out <- out & do.call(fun, list(x[[name]], ls[[name]]))
+    out <- out & run(fun, list(x[[name]], ls[[name]]))
   }
   out
 }
@@ -522,7 +522,7 @@ collapse_lists <- function(..., ls = list()) {
   #  a named list containg the collapsed strings
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
-  out <- do.call(mapply, 
+  out <- run(mapply, 
     c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
   )
   names(out) <- elements
@@ -560,6 +560,44 @@ named_list <- function(names, values = NULL) {
     values <- vector("list", length(names))
   }
   setNames(values, names)
+}
+
+run <- function(what, args, pkg = NULL) {
+  # like 'do.call' but avoids deparsing arguments
+  # Args:
+  #   what: function or function name
+  #   args: a list of arguments passed to 'what'
+  #   pkg: name of a package in which to look for 'what'
+  # Returns:
+  #   'what' evaluated with 'args'
+  call <- ""
+  if (length(args)) {
+    if (!is.list(args)) {
+      stop2("'args' must be a list.")
+    }
+    fun_args <- names(args)
+    if (is.null(fun_args)) {
+      fun_args <- rep("", length(args))
+    } else {
+      nzc <- nzchar(fun_args)
+      fun_args[nzc] <- paste0("`", fun_args[nzc], "` = ")
+    }
+    names(args) <- paste0(".x", seq_along(args))
+    call <- paste0(fun_args, names(args), collapse = ",")
+  } else {
+    args <- list()
+  }
+  if (is.function(what)) {
+    args$.fun <- what
+    what <- ".fun" 
+  } else {
+    what <- paste0("`", as_one_character(what), "`")
+    if (!is.null(pkg)) {
+      what <- paste0(as_one_character(pkg), "::", what)
+    }
+  }
+  call <- paste0(what, "(", call, ")")
+  eval2(call, envir = args, enclos = parent.frame())
 }
 
 empty_data_frame <- function() {

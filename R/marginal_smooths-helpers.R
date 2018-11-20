@@ -156,7 +156,7 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       internal = TRUE, check_response = FALSE
     )
     draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
-    draws <- do.call(extract_draws, draws_args)
+    draws <- run(extract_draws, draws_args)
     J <- which(smef$termnum == i)
     scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])
     draws$sm$fe$Xs <- draws$sm$fe$Xs[, scs, drop = FALSE]

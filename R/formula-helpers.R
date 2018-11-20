@@ -769,7 +769,7 @@ rhs <- function(x) {
   attri <- attributes(x)
   x <- as.formula(x)
   x <- if (length(x) == 3) x[-2] else x
-  do.call(structure, c(list(x), attri))
+  run(structure, c(list(x), attri))
 }
 
 lhs <- function(x) {

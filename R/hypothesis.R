@@ -185,12 +185,12 @@ combine_hlist <- function(hlist, class, alpha) {
   # combine list of outputs of eval_hypothesis
   # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
-  hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
+  hs <- run(rbind, lapply(hlist, function(h) h$summary))
   rownames(hs) <- NULL
   samples <- lapply(hlist, function(h) h$samples)
-  samples <- as.data.frame(do.call(cbind, samples))
+  samples <- as.data.frame(run(cbind, samples))
   prior_samples <- lapply(hlist, function(h) h$prior_samples)
-  prior_samples <- as.data.frame(do.call(cbind, prior_samples))
+  prior_samples <- as.data.frame(run(cbind, prior_samples))
   names(samples) <- names(prior_samples) <- paste0("H", seq_along(hlist))
   class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, prior_samples, class, alpha)
@@ -348,7 +348,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
     } else if (to < point) {
       to <- point + sd(x) / 4
     }
-    dens <- do.call(density, c(nlist(x, from, to), dots))
+    dens <- run(density, c(nlist(x, from, to), dots))
     return(spline(dens$x, dens$y, xout = point)$y)
   }
   

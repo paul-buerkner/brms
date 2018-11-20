@@ -160,7 +160,7 @@ order_data <- function(data, bterms) {
     if (any(duplicated(data.frame(gv, tv)))) {
       stop2("Time points within groups must be unique.")
     }
-    new_order <- do.call(order, list(gv, tv))
+    new_order <- run(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)
@@ -598,7 +598,7 @@ make_smooth_list <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- do.call(mgcv::smoothCon, sc_args)
+      out[[i]] <- run(mgcv::smoothCon, sc_args)
     }
   }
   out
@@ -612,7 +612,7 @@ make_gp_list <- function(x, data, ...) {
   out <- named_list(gpterms)
   for (i in seq_along(gpterms)) {
     gp <- eval2(gpterms[i])
-    Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
+    Xgp <- run(cbind, lapply(gp$term, eval2, data))
     out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
   }
   out

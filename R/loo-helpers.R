@@ -135,7 +135,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
       } else {
         args$x <- models[[i]]
         args$model_name <- names(models)[i]
-        out[[i]] <- do.call(compute_ic, args) 
+        out[[i]] <- run(compute_ic, args) 
       }
     }
     compare <- as_one_logical(compare)
@@ -152,7 +152,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
     } else {
       args$x <- models[[1]]
       args$model_name <- names(models)
-      out <- do.call(compute_ic, args) 
+      out <- run(compute_ic, args) 
     }
   }
   out
@@ -174,7 +174,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   #   an object of class 'ic' which inherits from class 'loo'
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    out <- do.call(kfold_internal, list(x, ...))
+    out <- run(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
     pointwise <- as_one_logical(pointwise)
@@ -191,15 +191,16 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }
-    out <- SW(do.call(eval2(paste0("loo::", ic)), loo_args))
+    out <- SW(run(ic, loo_args, pkg = "loo"))
   }
   out$model_name <- model_name
   class(out) <- c("ic", class(out))
+  # TODO: fix hashing when new data is passed
   attr(out, "yhash") <- hash_response(x)
   if (ic == "loo") {
     if (reloo) {
       c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- do.call(reloo.loo, reloo_args)
+      out <- run(reloo.loo, reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -396,15 +397,15 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
   new_ic <- ic[ulapply(x[ic], is.null)]
   args <- list(x, ...)
   for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
-    x[[fun]] <- do.call(fun, args)
+    x[[fun]] <- run(fun, args)
     x[[fun]]$model_name <- model_name
   }
   if ("R2" %in% ic) {
     args$summary <- FALSE
-    x$R2 <- do.call(bayes_R2, args)
+    x$R2 <- run(bayes_R2, args)
   }
   if ("marglik" %in% ic) {
-    x$marglik <- do.call(bridge_sampler, args)
+    x$marglik <- run(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_ic))) {
     if (auto_save) {
@@ -757,7 +758,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   cnames <- c("Estimate", "SE")
   estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
   estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
-  estimates[3, ] <- c(- 2 * elpd_kfold, 2 * se_elpd_kfold)
+  estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
   out <- nlist(
     estimates, pointwise = cbind(elpd_kfold = elpds),
     model_name = deparse(substitute(x)), K, Ksub, 

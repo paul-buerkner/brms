@@ -32,7 +32,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
-    c(out) <- do.call(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     resp <- usc(combine_prefix(x))
@@ -40,7 +40,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, meef,
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
-    c(out) <- do.call(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
@@ -164,7 +164,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
       c(out) <- c(tmp, Zs)
     }
   }
-  Xs <- do.call(cbind, lXs)
+  Xs <- run(cbind, lXs)
   avoid_dpars(colnames(Xs), bterms = bterms)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
@@ -223,7 +223,7 @@ data_re <- function(bterms, data, ranef) {
         for (k in seq_along(Z_temp)) {
           Z_temp[[k]] <- replicate(ncatM1, Z[, k], simplify = FALSE)
         }
-        Z <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
+        Z <- run(cbind, unlist(Z_temp, recursive = FALSE))
       }
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
@@ -468,7 +468,7 @@ data_gp <- function(bterms, data, gps = NULL) {
     if (any(invalid)) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
-    Xgp <- do.call(cbind, Xgp)
+    Xgp <- run(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
       if (length(gps) > 0L) {

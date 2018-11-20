@@ -343,7 +343,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
   out <- vector("list", nrow(input))
   for (i in seq_along(out)) {
-    out[[i]] <- do.call(.set_prior, input[i, ])
+    out[[i]] <- run(.set_prior, input[i, ])
   }
   Reduce("+", out)
 }
@@ -389,7 +389,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
   }
-  do.call(brmsprior, 
+  run(brmsprior, 
     nlist(prior, class, coef, group, resp, dpar, nlpar, bound)
   )
 }
@@ -402,7 +402,7 @@ prior <- function(prior, ...) {
   seval <- rmNULL(call[prior_seval_args()])
   call[prior_seval_args()] <- NULL
   call <- lapply(call, deparse_no_string)
-  do.call(set_prior, c(call, seval))
+  run(set_prior, c(call, seval))
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to specify 
@@ -422,7 +422,7 @@ prior_ <- function(prior, ...) {
     }
   }
   call <- lapply(call, as_string)
-  do.call(set_prior, c(call, seval))
+  run(set_prior, c(call, seval))
 }
 
 prior_seval_args <- function() {
@@ -1563,7 +1563,7 @@ print.brmsprior <- function(x, show_df, ...) {
 c.brmsprior <- function(x, ...) {
   # combine multiple brmsprior objects into one brmsprior
   if (all(sapply(list(...), is.brmsprior))) {
-    out <- do.call(rbind, list(x, ...)) 
+    out <- run(rbind, list(x, ...)) 
   } else {
     out <- c(as.data.frame(x), ...)
   }
