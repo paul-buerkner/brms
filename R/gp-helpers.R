@@ -15,13 +15,13 @@ tidy_gpef <- function(x, data) {
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- nrow(out)
   out$cons <- out$byvars <- out$covars <- 
-    out$sfx1 <- out$sfx2 <- out$L <- vector("list", nterms)
+    out$sfx1 <- out$sfx2 <- out$c <- vector("list", nterms)
   for (i in seq_len(nterms)) {
     gp <- eval2(out$term[i])
     out$label[i] <- paste0("gp", rename(collapse(gp$term)))
     out$cov[i] <- gp$cov
     out$k[i] <- gp$k
-    out$L[[i]] <- gp$L
+    out$c[[i]] <- gp$c
     out$iso[i] <- gp$iso
     out$cmc[i] <- gp$cmc
     out$gr[i] <- gp$gr
@@ -136,14 +136,14 @@ eigen_fun_cov_exp_quad <- function(x, m, L) {
   Reduce("*", out)
 }
 
-choose_L <- function(x, L) {
+choose_L <- function(x, c) {
   # extended range of input data for which predictions should be made
   if (!length(x)) {
     range <- 1
   } else {
     range <- max(1, max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
   }
-  L * range
+  c * range
 }
 
 try_nug <- function(expr, nug) {

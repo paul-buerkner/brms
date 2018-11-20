@@ -525,9 +525,9 @@ monotonic <- function(x) {
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
 #'   scaled so that the maximum Euclidean distance between two points
 #'   is 1. This often improves sampling speed and convergence.
-#' @param L Numeric value only used in approximate GPs. Defines the 
+#' @param c Numeric value only used in approximate GPs. Defines the 
 #'   multiplicative constant of the predictors' range over which
-#'   predictions should be computed. A good default could be \code{L = 5/4} 
+#'   predictions should be computed. A good default could be \code{c = 5/4} 
 #'   but we are still working on providing better recommendations.
 #'   
 #' @details A GP is a stochastic process, which
@@ -603,7 +603,7 @@ monotonic <- function(x) {
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
-               gr = FALSE, cmc = TRUE, scale = TRUE, L = NULL) {
+               gr = FALSE, cmc = TRUE, scale = TRUE, c = NULL) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
@@ -620,29 +620,29 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     if (k < 1L) {
       stop2("'k' must be postive.")
     }
-    if (is.null(L)) {
+    if (is.null(c)) {
       stop2(
-        "'L' must be specified for approximate GPs. ",
-        "A good default could be L = 5/4 but we are still ",
+        "'c' must be specified for approximate GPs. ",
+        "A good default could be c = 5/4 but we are still ",
         "working on providing better recommendations."
       )
     }
-    L <- as.numeric(L)
-    if (length(L) == 1L) {
-      L <- rep(L, length(vars))
+    c <- as.numeric(c)
+    if (length(c) == 1L) {
+      c <- rep(c, length(vars))
     }
-    if (length(L) != length(vars)) {
-      stop2("'L' must be of the same length as the number of covariates.")
+    if (length(c) != length(vars)) {
+      stop2("'c' must be of the same length as the number of covariates.")
     }
-    if (any(L <= 0)) {
-      stop2("'L' must be positive.")
+    if (any(c <= 0)) {
+      stop2("'c' must be positive.")
     }
   } else {
-    L <- NA
+    c <- NA
   }
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, L)
+  out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
   structure(out, class = "gpterm")
 }
 

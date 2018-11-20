@@ -484,7 +484,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     cmc <- gpef$cmc[i]
     gr <- gpef$gr[i]
     k <- gpef$k[i]
-    L <- gpef$L[[i]]
+    c <- gpef$c[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
       Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
@@ -505,7 +505,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
         # loop along contrasts of 'by'
         Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
-        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, L = L, ...)
+        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, ...)
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
         c(out) <- tmp
@@ -516,7 +516,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
-      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, L = L, ...)
+      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, c = c, ...)
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
@@ -526,11 +526,11 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
   out
 }
 
-.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, L = NULL, rawXgp = FALSE) {
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, rawXgp = FALSE) {
   # helper function to preparae GP related data
   # Args:
   #   Xgp: matrix of covariate values
-  #   k, gr, L: see tidy_gpef
+  #   k, gr, c: see tidy_gpef
   #   sfx: suffix to put at the end of data names
   #   Cgp: optional vector of values belonging to
   #     a certain contrast of a factor 'by' variable
@@ -567,7 +567,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, colMeans(Xgp))
     D <- NCOL(Xgp)
-    L <- choose_L(Xgp, L = L)
+    L <- choose_L(Xgp, c = c)
     Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)

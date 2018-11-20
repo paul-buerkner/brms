@@ -1323,7 +1323,7 @@ test_that("Stan code for Gaussian processes is correct", {
   
   # approximate GPS
   scode <- make_stancode(
-    y ~ gp(x1, k = 10, L = 5/4) + gp(x2, by = x1, k = 10, L = 5/4), dat
+    y ~ gp(x1, k = 10, c = 5/4) + gp(x2, by = x1, k = 10, c = 5/4), dat
   )
   expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
   expect_match2(scode, 
