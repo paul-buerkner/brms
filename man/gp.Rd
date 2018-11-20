@@ -5,7 +5,7 @@
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
 gp(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
-  gr = FALSE, cmc = TRUE, scale = TRUE, L = 5/4)
+  gr = FALSE, cmc = TRUE, scale = TRUE, L = NULL)
 }
 \arguments{
 \item{...}{One or more predictors for the GP.}
@@ -44,8 +44,9 @@ scaled so that the maximum Euclidean distance between two points
 is 1. This often improves sampling speed and convergence.}
 
 \item{L}{Numeric value only used in approximate GPs. Defines the 
-multiplicative constant of the predictors's range over which
-predictions should be computed. Currently defaults to \code{5/4}.}
+multiplicative constant of the predictors' range over which
+predictions should be computed. A good default could be \code{L = 5/4} 
+but we are still working on providing better recommendations.}
 }
 \value{
 An object of class \code{'gpterm'}, which is a list 

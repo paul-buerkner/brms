@@ -526,8 +526,9 @@ monotonic <- function(x) {
 #'   scaled so that the maximum Euclidean distance between two points
 #'   is 1. This often improves sampling speed and convergence.
 #' @param L Numeric value only used in approximate GPs. Defines the 
-#'   multiplicative constant of the predictors's range over which
-#'   predictions should be computed. Currently defaults to \code{5/4}.
+#'   multiplicative constant of the predictors' range over which
+#'   predictions should be computed. A good default could be \code{L = 5/4} 
+#'   but we are still working on providing better recommendations.
 #'   
 #' @details A GP is a stochastic process, which
 #'  describes the relation between one or more predictors 
@@ -602,7 +603,7 @@ monotonic <- function(x) {
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
-               gr = FALSE, cmc = TRUE, scale = TRUE, L = 5 / 4) {
+               gr = FALSE, cmc = TRUE, scale = TRUE, L = NULL) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
@@ -618,6 +619,13 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
     k <- as.integer(as_one_numeric(k))
     if (k < 1L) {
       stop2("'k' must be postive.")
+    }
+    if (is.null(L)) {
+      stop2(
+        "'L' must be specified for approximate GPs. ",
+        "A good default could be L = 5/4 but we are still ",
+        "working on providing better recommendations."
+      )
     }
     L <- as.numeric(L)
     if (length(L) == 1L) {
