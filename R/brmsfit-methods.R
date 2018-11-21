@@ -2951,7 +2951,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       class <- "" 
     }
     class <- as_one_character(class)
-    if (class %in% c("sd", "cor") && nzchar(group)) {
+    if (nzchar(group)) {
       class <- paste0(class, "_", group, "__")
     } else if (nzchar(class)) {
       class <- paste0(class, "_")
