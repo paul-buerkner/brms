@@ -57,7 +57,7 @@ Perform non-linear hypothesis testing for all model parameters.
 Among others, \code{hypothesis} computes an evidence ratio
   (\code{Evid.Ratio}) for each hypothesis. For a directed hypothesis, this is
   just the posterior probability (\code{Post.Prob}) under the hypothesis
-  against its alternative. That is, when the hypothesis if of the form
+  against its alternative. That is, when the hypothesis is of the form
   \code{a > b}, the evidence ratio is the ratio of the posterior probability
   of \code{a > b} and the posterior probability of \code{a < b}. In this
   example, values greater than one indicate that the evidence in favor of
