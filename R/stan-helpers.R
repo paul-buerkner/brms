@@ -500,7 +500,9 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
   } 
   if (length(get_effect(bterms, "gp"))) {
+    # TODO: include functions selectively
     str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
+    str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
   }
   # functions related to autocorrelation structures
   if (is.brmsterms(bterms)) {

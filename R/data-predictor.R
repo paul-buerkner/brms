@@ -451,9 +451,10 @@ data_Xme <- function(meef, data) {
   out
 }
 
-data_gp <- function(bterms, data, gps = NULL) {
+data_gp <- function(bterms, data, gps = NULL, ...) {
   # prepare data for Gaussian process terms
   # Args: see data_predictor
+  #   ...: passed to '.data_gp'
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -461,7 +462,8 @@ data_gp <- function(bterms, data, gps = NULL) {
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpef$covars[[i]], eval2, data)
-    out[[paste0("Mgp", pi)]] <- length(Xgp)
+    D <- length(Xgp)
+    out[[paste0("Dgp", pi)]] <- D
     invalid <- ulapply(Xgp, function(x)
       !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
     )
@@ -479,55 +481,104 @@ data_gp <- function(bterms, data, gps = NULL) {
         Xgp <- Xgp / dmax
       }
     }
+    cmc <- gpef$cmc[i]
     gr <- gpef$gr[i]
+    k <- gpef$k[i]
+    c <- gpef$c[[i]]
+    if (!isNA(k)) {
+      out[[paste0("NBgp", pi)]] <- k ^ D
+      Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    }
     byvar <- gpef$byvars[[i]]
-    byfac <- length(gpef$bylevels[[i]]) > 0L
+    byfac <- length(gpef$cons[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
     if (byfac) {
       # for categorical 'by' variables prepare one GP per level
       # as.factor will keep unused levels needed for new data
-      Cgp <- as.factor(get(byvar, data))
-      lvls <- levels(Cgp)
-      Ngp <- Nsubgp <- rep(NA, length(lvls))
-      out[[paste0("Kgp", pi)]] <- length(lvls)
-      for (j in seq_along(lvls)) {
-        # loop along levels of 'by'
-        Igp <- which(Cgp == lvls[j])
-        Ngp[j] <- length(Igp)
-        Xgp_sub <- Xgp[Igp, , drop = FALSE]
-        if (gr) {
-          groups <- factor(match_rows(Xgp_sub, Xgp_sub))
-          ilevels <- levels(groups)
-          Jgp <- match(groups, ilevels)
-          Nsubgp[j] <- length(ilevels)
-          out[[paste0("Jgp", pi, "_", j)]] <- Jgp
-          not_dupl_Jgp <- !duplicated(Jgp)
-          Xgp_sub <-  Xgp_sub[not_dupl_Jgp, , drop = FALSE]
-        }
-        out[[paste0("Igp", pi, "_", j)]] <- Igp
-        out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
+      byval <- as.factor(get(byvar, data))
+      byform <- str2formula(c(ifelse(cmc, "0", "1"), "byval"))
+      con_mat <- model.matrix(byform)
+      cons <- colnames(con_mat)
+      out[[paste0("Kgp", pi)]] <- length(cons)
+      Ngp <- Nsubgp <- vector("list", length(cons))
+      for (j in seq_along(cons)) {
+        # loop along contrasts of 'by'
+        Cgp <- con_mat[, j]
+        sfx <- paste0(pi, "_", j)
+        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, ...)
+        Ngp[[j]] <- attributes(tmp)[["Ngp"]]
+        Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
+        c(out) <- tmp
       }
-      out[[paste0("Ngp", pi)]] <- Ngp
+      out[[paste0("Ngp", pi)]] <- unlist(Ngp)
       if (gr) {
-        out[[paste0("Nsubgp", pi)]] <- Nsubgp
+        out[[paste0("Nsubgp", pi)]] <- unlist(Nsubgp)
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
+      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, c = c, ...)
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
-      } 
-      if (gr) {
-        groups <- factor(match_rows(Xgp, Xgp))
-        ilevels <- levels(groups)
-        Jgp <- match(groups, ilevels)
-        out[[paste0("Nsubgp", pi)]] <- length(ilevels)
-        out[[paste0("Jgp", pi)]] <- Jgp
-        not_dupl_Jgp <- !duplicated(Jgp)
-        Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
-      out[[paste0("Xgp", pi)]] <- as.array(Xgp)
     }
+  }
+  out
+}
+
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, rawXgp = FALSE) {
+  # helper function to preparae GP related data
+  # Args:
+  #   Xgp: matrix of covariate values
+  #   k, gr, c: see tidy_gpef
+  #   sfx: suffix to put at the end of data names
+  #   Cgp: optional vector of values belonging to
+  #     a certain contrast of a factor 'by' variable
+  #   rawXgp: a flag to indicate if the covariate matrix should be returned 
+  #     without further processing; required in 'def_lscale_prior'
+  out <- list()
+  if (!is.null(Cgp)) {
+    Cgp <- unname(Cgp)
+    Igp <- which(Cgp != 0)
+    Xgp <- Xgp[Igp, , drop = FALSE]
+    out[[paste0("Igp", sfx)]] <- as.array(Igp)
+    out[[paste0("Cgp", sfx)]] <- as.array(Cgp[Igp])
+    attr(out, "Ngp") <- length(Igp)
+  }
+  if (gr) {
+    groups <- factor(match_rows(Xgp, Xgp))
+    ilevels <- levels(groups)
+    Jgp <- match(groups, ilevels)
+    Nsubgp <- length(ilevels)
+    if (!is.null(Cgp)) {
+      attr(out, "Nsubgp") <- Nsubgp
+    } else {
+      out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
+    }
+    out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
+    not_dupl_Jgp <- !duplicated(Jgp)
+    Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+  }
+  if (rawXgp) {
+    out[[paste0("Xgp", sfx)]] <- Xgp
+    return(out)
+  }
+  if (!isNA(k)) {
+    # basis function approach requires centered variables
+    Xgp <- sweep(Xgp, 2, colMeans(Xgp))
+    D <- NCOL(Xgp)
+    L <- choose_L(Xgp, c = c)
+    Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
+    slambda <- matrix(nrow = NROW(Ks), ncol = D)
+    for (m in seq_rows(Ks)) {
+      XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
+      slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+    }
+    out[[paste0("Xgp", sfx)]] <- XgpL
+    out[[paste0("slambda", sfx)]] <- slambda
+  } else {
+    out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
   }
   out
 }

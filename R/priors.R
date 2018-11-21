@@ -739,16 +739,12 @@ prior_gp <- function(bterms, data, def_scale_prior, ...) {
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
     lscale_prior <- def_lscale_prior(bterms, data)
-    # GPs of each 'by' level get their own 'lscale' prior
-    all_gpterms <- ulapply(seq_rows(gpef), 
-      function(i) paste0(gpef$term[i], gpef$bylevels[[i]])
-    )
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
-      brmsprior(class = "sdgp", coef = gpef$term, ls = px) +
+      brmsprior(class = "sdgp", coef = unlist(gpef$sfx1), ls = px) +
       brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
       brmsprior(class = "lscale", prior = lscale_prior, 
-                coef = all_gpterms, ls = px)
+                coef = names(lscale_prior), ls = px)
   }
   prior
 }
@@ -766,24 +762,51 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
     y2 <- pinvgamma(ub, x[1], x[2], lower.tail = FALSE, log.p = TRUE)
     c(y1 - log(plb), y2 - log(pub))
   }
-  gp_dat <- data_gp(bterms, data)
-  Xgp_names <- names(gp_dat)[grepl("Xgp_", names(gp_dat))]
-  out <- rep("", length(Xgp_names))
-  for (i in seq_along(out)) {
-    dq <- diff_quad(gp_dat[[Xgp_names[i]]])
+  .def_lscale_prior <- function(X) {
+    dq <- diff_quad(X)
     lb <- sqrt(min(dq[dq > 0]))
     ub <- sqrt(max(dq))
     opt_res <- nleqslv::nleqslv(
       c(0, 0), .opt_fun, lb = lb, ub = ub,
       control = list(allowSingular = TRUE)
     )
+    str <- ""
     if (opt_res$termcd %in% 1:2) {
       # use the inverse-gamma prior only in case of convergence
       pars <- exp(opt_res$x)
-      out[i] <- paste0("inv_gamma(", sargs(round(pars, 6)), ")") 
+      str <- paste0("inv_gamma(", sargs(round(pars, 6)), ")") 
     }
+    return(str)
   }
-  out
+  p <- usc(combine_prefix(bterms))
+  gpef <- tidy_gpef(bterms, data)
+  gp_dat <- data_gp(bterms, data, rawXgp = TRUE)
+  out <- vector("list", NROW(gpef))
+  for (i in seq_along(out)) {
+    pi <- paste0(p, "_", i)
+    iso <- gpef$iso[i]
+    cons <- gpef$cons[[i]]
+    if (length(cons) > 0L) {
+      for (j in seq_along(cons)) {
+        Xgp <- gp_dat[[paste0("Xgp", pi, "_", j)]]
+        if (iso) {
+          c(out[[i]]) <- .def_lscale_prior(Xgp)
+        } else {
+          c(out[[i]]) <- apply(Xgp, 2, .def_lscale_prior)
+        }
+      }
+    } else {
+      Xgp <- gp_dat[[paste0("Xgp", pi)]]
+      if (iso) {
+        out[[i]] <- .def_lscale_prior(Xgp)
+      } else {
+        out[[i]] <- apply(Xgp, 2, .def_lscale_prior)
+      }
+    }
+    # transpose so that by-levels vary last
+    names(out[[i]]) <- as.vector(t(gpef$sfx2[[i]]))
+  }
+  unlist(out)
 }
 
 prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {

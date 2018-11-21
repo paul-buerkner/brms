@@ -830,40 +830,6 @@ tidy_smef <- function(x, data) {
   out
 }
 
-tidy_gpef <- function(x, data) {
-  # get labels of gaussian process terms
-  # Args:
-  #   x: either a formula or a list containing an element "gp"
-  #   data: data frame containing the covariates
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
-  }
-  form <- x[["gp"]]
-  if (!is.formula(form)) {
-    return(empty_data_frame())
-  }
-  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
-  nterms <- nrow(out)
-  out$bylevels <- out$byvars <- out$covars <- vector("list", nterms)
-  for (i in seq_len(nterms)) {
-    gp <- eval2(out$term[i])
-    out$label[i] <- paste0("gp", rename(collapse(gp$term)))
-    out$cov[i] <- gp$cov
-    out$gr[i] <- gp$gr
-    out$scale[i] <- gp$scale
-    out$covars[[i]] <- gp$term
-    if (gp$by != "NA") {
-      out$byvars[[i]] <- gp$by
-      str_add(out$label[i]) <- rename(gp$by)
-      Cgp <- get(gp$by, data)
-      if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
-      }
-    }
-  }
-  out
-}
-
 all_terms <- function(x) {
   if (!length(x)) {
     return(character(0))

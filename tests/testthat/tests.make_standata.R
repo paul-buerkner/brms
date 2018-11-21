@@ -645,12 +645,27 @@ test_that("make_standata includes data for Gaussian processes", {
   expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 9)
   
   sdata <- make_standata(y ~ gp(x1, by = z, gr = TRUE), dat)
-  expect_equal(sdata$Igp_1_2, 4)
-  expect_equal(sdata$Jgp_1_4, 1:5)
-  expect_equal(sdata$Igp_1_4, 6:10)
+  expect_equal(sdata$Igp_1_2, as.array(4))
+  expect_equal(sdata$Jgp_1_4, as.array(1:5))
+  expect_equal(sdata$Igp_1_4, as.array(6:10))
   
   sdata <- make_standata(y ~ gp(x1, by = y, gr = TRUE), dat)
   expect_equal(sdata$Cgp_1, as.array(dat$y))
+})
+
+test_that("make_standata includes data for approximate Gaussian processes", {
+  dat <- data.frame(y = rnorm(10), x1 = sample(1:10, 10),
+                    z = factor(c(2, 2, 2, 3, 4, rep(5, 5))))
+  
+  sdata <- make_standata(y ~ gp(x1, k = 5, c = 5/4), dat)
+  expect_equal(sdata$NBgp_1, 5)
+  expect_equal(dim(sdata$Xgp_1), c(10, 5))
+  expect_equal(dim(sdata$slambda_1), c(5, 1))
+  
+  sdata <- make_standata(y ~ gp(x1, by = z, k = 5, c = 5/4), dat)
+  expect_equal(sdata$Igp_1_2, as.array(4))
+  expect_equal(sdata$Cgp_1_2, as.array(1))
+  expect_equal(sdata$Igp_1_4, as.array(6:10))
 })
 
 test_that("make_standata includes data for SAR models", {

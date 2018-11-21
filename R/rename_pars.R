@@ -221,33 +221,31 @@ change_gp <- function(bterms, data, pars) {
   gpef <- tidy_gpef(bterms, data)
   for (i in seq_rows(gpef)) {
     # rename GP hyperparameters
-    gp_names <- paste0(gpef$label[i], gpef$bylevels[[i]])
+    sfx1 <- gpef$sfx1[[i]]
+    sfx2 <- as.vector(gpef$sfx2[[i]])
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
-    sdgp_names <- paste0(sdgp, "_", gp_names)
+    sdgp_names <- paste0(sdgp, "_", sfx1)
+    lc(out) <- clist(sdgp_pos, sdgp_names)
+    c(out) <- change_prior(sdgp_old, pars, names = sfx1, new_class = sdgp)
+
     lscale <- paste0("lscale", p)
     lscale_old <- paste0(lscale, "_", i)
     lscale_pos <- grepl(paste0("^", lscale_old, "\\["), pars)
-    lscale_names <- paste0(lscale, "_", gp_names)
-    lc(out) <- clist(sdgp_pos, sdgp_names)
+    lscale_names <- paste0(lscale, "_", sfx2)
     lc(out) <- clist(lscale_pos, lscale_names)
-    c(out) <- change_prior(
-      sdgp_old, pars, names = gpef$label[i], new_class = sdgp
-    )
-    c(out) <- change_prior(
-      lscale_old, pars, names = gpef$label[i], new_class = lscale
-    )
+    c(out) <- change_prior(lscale_old, pars, names = sfx2, new_class = lscale)
+    
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
-    lvls <- gpef$bylevels[[i]]
-    if (length(lvls) > 0L) {
+    if (length(sfx1) > 1L) {
       # categorical 'by' variable
-      for (j in seq_along(lvls)) {
+      for (j in seq_along(sfx1)) {
         zgp_old_sub <- paste0(zgp_old, "_", j)
         zgp_pos <- grepl(paste0("^", zgp_old_sub, "\\["), pars)
         if (any(zgp_pos)) {
-          zgp_new <- paste0(zgp, "_", gpef$label[i], lvls[j])
+          zgp_new <- paste0(zgp, "_", sfx1[j])
           fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
           lc(out) <- clist(zgp_pos, fnames)
         }
@@ -255,12 +253,11 @@ change_gp <- function(bterms, data, pars) {
     } else {
       zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
       if (any(zgp_pos)) {
-        zgp_new <- paste0(zgp, "_", gpef$label[i])
+        zgp_new <- paste0(zgp, "_", sfx1)
         fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
         lc(out) <- clist(zgp_pos, fnames)
       }
     }
-    
   }
   out
 }

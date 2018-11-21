@@ -273,7 +273,7 @@ as_one_logical <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.logical(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single logical value.")
   }
   x
@@ -284,7 +284,7 @@ as_one_numeric <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.numeric(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single numeric value.")
   }
   x
@@ -295,7 +295,7 @@ as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single character value.")
   }
   x
@@ -610,7 +610,7 @@ empty_data_frame <- function() {
   #   x: named list like object
   #   value: another named list like object
   #   dont_replace names of elements that cannot be replaced
-  value_name <- deparse_combine(substitute(value))
+  value_name <- deparse_combine(substitute(value), max_char = 100L)
   value <- as.list(value)
   if (length(value) && is.null(names(value))) {
     stop2("Argument '", value_name, "' must be named.")
@@ -632,11 +632,11 @@ deparse_no_string <- function(x) {
   x
 }
 
-deparse_combine <- function(x, max_char = 100) {
+deparse_combine <- function(x, max_char = NULL) {
   # combine deparse lines into one string
   out <- collapse(deparse(x))
   if (isTRUE(max_char > 0)) {
-    out <- substr(out, 1, max_char)
+    out <- substr(out, 1L, max_char)
   }
   out
 }
@@ -976,34 +976,6 @@ log_inv_logit <- function(x) {
 
 log1m_inv_logit <- function(x) {
   log(1 - inv_logit(x))
-}
-
-cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
-  diff_quad <- diff_quad(x = x, x_new = x_new)
-  sdgp^2 * exp(-diff_quad / (2 * lscale^2))
-}
-
-diff_quad <- function(x, x_new = NULL) {
-  # compute squared differences
-  # Args:
-  #   x: vector or matrix
-  #   x_new: optional vector of matrix with the same ncol as x
-  # Returns:
-  #   An nrow(x) times nrow(x_new) matrix
-  # Details:
-  #   If matrices are passed results are summed over the columns
-  x <- as.matrix(x)
-  if (is.null(x_new)) {
-    x_new <- x
-  } else {
-    x_new <- as.matrix(x_new)
-  }
-  .diff_quad <- function(x1, x2) (x1 - x2)^2
-  out <- 0
-  for (i in seq_len(ncol(x))) {
-    out <- out + outer(x[, i], x_new[, i], .diff_quad)
-  }
-  out
 }
 
 scale_unit <- function(x, lb = min(x), ub = max(x)) {
