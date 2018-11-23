@@ -3145,9 +3145,9 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #'   
 #'   The computation of Bayes factors based on bridge sampling requires
 #'   a lot more posterior samples than usual. A good conservative 
-#'   rule of thump is perhaps 10-fold more samples (read: the default of 4000 
+#'   rule of thumb is perhaps 10-fold more samples (read: the default of 4000 
 #'   samples may not be enough in many cases). If not enough posterior
-#'   samples are provided, the bridge sampling algoritm tends to be unstable 
+#'   samples are provided, the bridge sampling algorithm tends to be unstable, 
 #'   leading to considerably different results each time it is run. 
 #'   We thus recommend running \code{bayes_factor}
 #'   multiple times to check the stability of the results.
