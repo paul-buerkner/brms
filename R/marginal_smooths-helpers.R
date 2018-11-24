@@ -163,18 +163,18 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     draws$sm$fe$bs <- draws$sm$fe$bs[, scs, drop = FALSE]
     draws$sm$re <- draws$sm$re[J]
     eta <- predictor(draws, i = NULL)
+    effects <- na.omit(sub_smef$covars[[1]][1:2])
+    marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     spa_data <- NULL
     if (spaghetti && ncovars == 1L && is_numeric[1]) {
       sample <- rep(seq_rows(eta), each = ncol(eta))
       spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
       colnames(spa_data) <- c("estimate__", "sample__")
-      spa_data <- cbind(newdata[, vars, drop = FALSE], spa_data)
+      spa_data <- cbind(marg_data, spa_data)
     }
     eta <- posterior_summary(eta, robust = TRUE, probs = probs)
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-    eta <- cbind(newdata[, vars, drop = FALSE], eta)
-    effects <- na.omit(sub_smef$covars[[1]][1:2])
-    eta <- add_effects__(eta, effects)
+    eta <- cbind(marg_data, eta)
     if (length(byvars)) {
       # byvars will be plotted as facets
       eta$cond__ <- rows2labels(eta[, byvars, drop = FALSE]) 
