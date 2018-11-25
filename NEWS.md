@@ -71,6 +71,8 @@ univariate models thanks to Ruben Arslan. (#488)
 * Deprecate argument `ordinal` of `marginal_effects`. (#491)
 * Deprecate argument `exact_loo` of `kfold`. (#510)
 * Deprecate usage of `binomial` families without specifying `trials`.
+* No longer sample from priors of population-level intercepts 
+when using the default intercept parameterization.
 
 ### Bug fixes
 

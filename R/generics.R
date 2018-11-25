@@ -193,11 +193,15 @@ posterior_samples <- function(x, pars = NA, ...) {
 #'   By default, all prior samples are extracted
 #' @param ... Currently ignored
 #'   
-#' @details To make use of this function, 
-#'  the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{sample_prior = TRUE} 
-#'  in function \code{brm}.
-#'  Currently there are methods for \code{brmsfit} objects.
+#' @details To make use of this function, the model must contain samples of
+#'   prior distributions. This can be ensured by setting \code{sample_prior =
+#'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
+#'   for technical reasons. For instance, this is the case for the
+#'   population-level intercept, which is only computed after fitting the model
+#'   by default. If you want to treat the intercept as part of all the other
+#'   regression coefficients, so that sampling from its prior becomes possible,
+#'   use \code{... ~ 0 + Intercept + ...} in the formulas.
+#'   
 #' @return A data frame containing the prior samples.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
