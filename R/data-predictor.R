@@ -640,14 +640,9 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
         # data for the 'predictor' version of ARMA
         max_lag <- max(Kar, Kma)
         out$J_lag <- as.array(rep(0, N))
-        for (n in seq_len(N)) {
-          for (i in seq_len(max_lag)) {
-            valid_lag <- n + 1 - i > 0 && n < N && 
-              tgroup[n + 1] == tgroup[n + 1 - i]
-            if (valid_lag) {
-              out$J_lag[n] <- i
-            }
-          }
+        for (n in seq_len(N)[-1]) {
+          ind <- (n - 1):max(1, n - max_lag)
+          out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n])
         }
       }
     }
