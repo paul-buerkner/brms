@@ -863,13 +863,15 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (length(out$trials) == 1L) {
       out$trials <- rep(out$trials, nrow(data))
     }
-    if (max(out$trials) == 1L && !not4stan) {
-      message("Only 2 levels detected so that family 'bernoulli' ",
-              "might be a more efficient choice.")
-    }
-    if (check_response && any(out$Y > out$trials)) {
-      stop2("Number of trials is smaller than ",
-            "the number of events.")
+    if (has_trials(x$family)) {
+      if (max(out$trials) == 1L && !not4stan) {
+        message("Only 2 levels detected so that family 'bernoulli' ",
+                "might be a more efficient choice.")
+      }
+      if (check_response && any(out$Y > out$trials)) {
+        stop2("Number of trials is smaller than ",
+              "the number of events.")
+      }
     }
     out$trials <- as.array(out$trials)
   }
