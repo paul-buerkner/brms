@@ -179,7 +179,8 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   } else if (length(dim(x)) == 3L) {
     out <- lapply(array2list(x), .posterior_summary)
     out <- abind(out, along = 3)
-    dimnames(out)[c(1, 3)] <- dimnames(x)[c(2, 3)]
+    dnx <- dimnames(x)
+    dimnames(out) <- list(dnx[[2]], dimnames(out)[[2]], dnx[[3]])
   } else {
     stop("'x' must be of dimension 2 or 3.")
   }
