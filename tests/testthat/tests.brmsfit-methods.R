@@ -663,6 +663,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(fi), c(nobs(fit4), 4, 4))
   fi <- fitted(fit4, newdata = fit4$data[1, ])
   expect_equal(dim(fi), c(1, 4, 4))
+  fi <- fitted(fit4, newdata = fit4$data[1, ], scale = "linear")
+  expect_equal(dim(fi), c(1, 4, 3))
   
   fi <- fitted(fit5)
   expect_equal(dim(fi), c(nobs(fit5), 4))
