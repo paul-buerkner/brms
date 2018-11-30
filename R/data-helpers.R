@@ -457,6 +457,19 @@ PredictMat <- function(object, data, ...) {
   out
 }
 
+smoothCon <- function(object, data, ...) {
+  # convenient wrapper around mgcv::smoothCon
+  data <- rm_attr(data, "terms")
+  vars <- setdiff(c(object$term, object$by), "NA")
+  for (v in vars) {
+    # allow factor-like variables #562
+    if (is_like_factor(data[[v]])) {
+      data[[v]] <- as.factor(data[[v]])
+    }
+  }
+  mgcv::smoothCon(object, data = data, ...)
+}
+
 s2rPred <- function(sm, data) {
   # Aid prediction from smooths represented as type == 2
   # originally provided by Simon Wood 
@@ -577,13 +590,13 @@ extract_old_standata.btnl <- function(x, data, ...) {
 #' @export
 extract_old_standata.btl <- function(x, data, ...) {
   list(
-    smooths = make_smooth_list(x, data, ...),
+    smooths = make_sm_list(x, data, ...),
     gps = make_gp_list(x, data, ...),
     Jmo = make_Jmo_list(x, data, ...)
   )
 }
 
-make_smooth_list <- function(x, data, ...) {
+make_sm_list <- function(x, data, ...) {
   # extract data related to smooth terms
   # for use in extract_old_standata
   stopifnot(is.btl(x))
@@ -598,7 +611,7 @@ make_smooth_list <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- run(mgcv::smoothCon, sc_args)
+      out[[i]] <- run(smoothCon, sc_args)
     }
   }
   out

@@ -6,6 +6,10 @@
 * Indicate observations for out-of-sample predictions in 
 ARMA models via argument `oos` of `extract_draws`. (#539)
 
+### Other changes
+
+* Allow factor-like variables in smooth terms. (#562)
+
 ### Bug fixes
 
 * Fix an issue that could result in a large efficiency drop

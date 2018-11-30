@@ -402,6 +402,11 @@ test_that("make_standata returns data for GAMMs", {
   sdata <- make_standata(y ~ g + s(x2, by = g), data = dat)
   expect_true(all(c("knots_1", "knots_2") %in% names(sdata)))
   
+  # test issue #562
+  dat$g <- as.character(dat$g)
+  sdata <- make_standata(y ~ g + s(x2, by = g), data = dat)
+  expect_true(all(c("knots_1", "knots_2") %in% names(sdata)))
+  
   sdata <- make_standata(y ~ t2(x1, x2), data = dat)
   expect_equal(sdata$nb_1, 3)
   expect_equal(as.vector(sdata$knots_1), c(9, 6, 6))

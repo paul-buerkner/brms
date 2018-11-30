@@ -130,7 +130,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
   if (!new) {
     smooths <- named_list(smterms)
     for (i in seq_along(smterms)) {
-      smooths[[i]] <- mgcv::smoothCon(
+      smooths[[i]] <- smoothCon(
         eval2(smterms[i]), data = data, 
         knots = knots, absorb.cons = TRUE
       )
