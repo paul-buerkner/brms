@@ -608,13 +608,8 @@ make_gp_list <- function(x, data, ...) {
   # extract data related to gaussian processes
   # for use in extract_old_standata
   stopifnot(is.btl(x))
-  gpterms <- all_terms(x[["gp"]])
-  out <- named_list(gpterms)
-  for (i in seq_along(gpterms)) {
-    gp <- eval2(gpterms[i])
-    Xgp <- run(cbind, lapply(gp$term, eval2, data))
-    out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
-  }
+  out <- data_gp(x, data, raw = TRUE)
+  out <- out[grepl("^(dmax)|(cmeans)", names(out))]
   out
 }
 

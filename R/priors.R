@@ -780,7 +780,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   }
   p <- usc(combine_prefix(bterms))
   gpef <- tidy_gpef(bterms, data)
-  gp_dat <- data_gp(bterms, data, rawXgp = TRUE)
+  gp_dat <- data_gp(bterms, data, raw = TRUE)
   out <- vector("list", NROW(gpef))
   for (i in seq_along(out)) {
     pi <- paste0(p, "_", i)

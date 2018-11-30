@@ -451,11 +451,13 @@ data_Xme <- function(meef, data) {
   out
 }
 
-data_gp <- function(bterms, data, gps = NULL, ...) {
+data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
   # prepare data for Gaussian process terms
   # Args: see data_predictor
+  #   raw: store certain intermediate data for further processing?
   #   ...: passed to '.data_gp'
   out <- list()
+  raw <- as_one_logical(raw)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   gpef <- tidy_gpef(bterms, data)
@@ -473,13 +475,17 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     Xgp <- run(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
-      if (length(gps) > 0L) {
+      if (length(gps)) {
         # scale Xgp based on the original data
-        Xgp <- Xgp / gps[[i]]$dmax
+        dmax <- gps[[paste0("dmax", pi)]]
       } else {
         dmax <- sqrt(max(diff_quad(Xgp)))
-        Xgp <- Xgp / dmax
       }
+      if (raw) {
+        # required for scaling of GPs with new data
+        out[[paste0("dmax", pi)]] <- dmax
+      }
+      Xgp <- Xgp / dmax
     }
     cmc <- gpef$cmc[i]
     gr <- gpef$gr[i]
@@ -505,7 +511,10 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
         # loop along contrasts of 'by'
         Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
-        tmp <- .data_gp(Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, ...)
+        tmp <- .data_gp(
+          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, 
+          c = c, raw = raw, gps = gps, ...
+        )
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
         c(out) <- tmp
@@ -516,7 +525,10 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
-      c(out) <- .data_gp(Xgp, k = k, gr = gr, sfx = pi, c = c, ...)
+      c(out) <- .data_gp(
+        Xgp, k = k, gr = gr, sfx = pi, 
+        c = c, raw = raw, gps = gps, ...
+      )
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
@@ -526,7 +538,8 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
   out
 }
 
-.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, rawXgp = FALSE) {
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
+                     raw = FALSE, gps = NULL) {
   # helper function to preparae GP related data
   # Args:
   #   Xgp: matrix of covariate values
@@ -534,8 +547,7 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
   #   sfx: suffix to put at the end of data names
   #   Cgp: optional vector of values belonging to
   #     a certain contrast of a factor 'by' variable
-  #   rawXgp: a flag to indicate if the covariate matrix should be returned 
-  #     without further processing; required in 'def_lscale_prior'
+  #   raw, gps: see 'data_gp'
   out <- list()
   if (!is.null(Cgp)) {
     Cgp <- unname(Cgp)
@@ -559,13 +571,21 @@ data_gp <- function(bterms, data, gps = NULL, ...) {
     not_dupl_Jgp <- !duplicated(Jgp)
     Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
   }
-  if (rawXgp) {
+  if (length(gps)) {
+    # center Xgp based on the original data
+    cmeans <- gps[[paste0("cmeans", sfx)]]
+  } else {
+    cmeans <- colMeans(Xgp)
+  }
+  if (raw) {
     out[[paste0("Xgp", sfx)]] <- Xgp
+    # required for centering of GPs with new data
+    out[[paste0("cmeans", sfx)]] <- cmeans
     return(out)
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables
-    Xgp <- sweep(Xgp, 2, colMeans(Xgp))
+    Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
     L <- choose_L(Xgp, c = c)
     Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
