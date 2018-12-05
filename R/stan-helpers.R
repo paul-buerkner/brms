@@ -894,6 +894,12 @@ stan_has_built_in_fun <- function(family) {
   )
 }
 
+stan_all_vars <- function(x) {
+  # get all variable names accepted in Stan
+  x <- gsub("\\.", "+", x)
+  all_vars(x)
+}
+
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 

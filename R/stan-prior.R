@@ -298,14 +298,26 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D <- data.frame(prior = prior[nzchar(prior)])
   pars_regex <- "(?<=_lpdf\\()[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
-  D$par <- gsub("to_vector\\(|\\)$", "", D$par)
+  # 'to_vector' should be removed from the parameter names
+  has_tv <- grepl("^to_vector\\(", D$par)
+  D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
+  # do not sample from some auxiliary parameters
   excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "temp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
-  if (!NROW(D)) {
-    return(list())
-  }
+  if (!NROW(D)) return(list())
+  
+  # rename parameters containing indices
+  has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
+  D$par[has_ind] <- ulapply(D$par[has_ind], function(par) {
+    ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
+    ind <- get_matches(ind_regex, par, perl = TRUE)
+    gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
+  })
+  # cannot handle priors on variable transformations
+  D <- D[D$par %in% stan_all_vars(D$par), ]
+  if (!NROW(D)) return(list())
   
   class_old <- c("^L_", "^Lrescor")
   class_new <- c("cor_", "rescor")
@@ -315,14 +327,6 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$dis <- sub("corr_cholesky$", "corr", D$dis)
   args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
   D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
-  
-  # rename parameters containing indices
-  has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
-  D$par[has_ind] <- ulapply(D$par[has_ind], function(par) {
-    ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
-    ind <- get_matches(ind_regex, par, perl = TRUE)
-    gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
-  })
   
   # extract information from the initial parameter definition
   par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
@@ -354,6 +358,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   found_vars <- lapply(D$args, find_vars, dot = FALSE, brackets = FALSE)
   contains_other_pars <- ulapply(found_vars, function(x) any(x %in% all_pars))
   D <- D[!contains_other_pars, ]
+  if (!NROW(D)) return(list())
   
   out <- list()
   # sample priors in the generated quantities block
