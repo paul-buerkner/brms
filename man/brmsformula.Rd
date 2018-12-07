@@ -157,7 +157,7 @@ models for all parameters of the assumed response distribution.
   Category specific effects can only be estimated in
   ordinal models and are explained in more detail in the package's 
   main vignette (type \code{vignette("brms_overview")}). 
-  The other thee effect types are explained in the following.
+  The other three effect types are explained in the following.
   
   A monotonic predictor must either be integer valued or an ordered factor, 
   which is the first difference to an ordinary continuous predictor. 
@@ -285,7 +285,7 @@ models for all parameters of the assumed response distribution.
   is constant across all observations, say \code{10}, 
   we may also write \code{success | trials(10)}. 
   \bold{Please note that the \code{cbind()} syntax will not work 
-  in brms in the expected way because this syntax is resevered
+  in \pkg{brms} in the expected way because this syntax is reserved
   for use in multivariate models, only.}
   
   For all ordinal families, \code{aterms} may contain a term 
@@ -350,7 +350,7 @@ models for all parameters of the assumed response distribution.
   non-linear model being defined via
   \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
   can be added in the same way as for ordinary formulas).
-  To tell \code{brms} that this is a non-linear model, 
+  To tell \pkg{brms} that this is a non-linear model, 
   we set argument \code{nl} to \code{TRUE}.
   Now we have to specify a model for each of the non-linear parameters. 
   Let's say we just want to estimate those three parameters
@@ -435,12 +435,12 @@ models for all parameters of the assumed response distribution.
   terms allowed in non-mixture models are allowed in mixture models
   as well.
   
-  distributional parameters of mixture distributions have the same 
+  Distributional parameters of mixture distributions have the same 
   name as those of the corresponding ordinary distributions, but with 
   a number at the end to indicate the mixture component. For instance, if
   you use family \code{mixture(gaussian, gaussian)}, the distributional
   parameters are \code{sigma1} and \code{sigma2}.
-  distributional parameters of the same class can be fixed to the same value. 
+  Distributional parameters of the same class can be fixed to the same value. 
   For the above example, we could write \code{sigma2 = "sigma1"} to make
   sure that both components have the same residual standard deviation,
   which is in turn estimated from the data.
@@ -469,7 +469,7 @@ models for all parameters of the assumed response distribution.
   or with help of the \code{\link{mvbf}} function.
   Suppose that \code{y1} and \code{y2} are response variables 
   and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
-  specifies a multivariate model,
+  specifies a multivariate model.
   The effects of all terms specified at the RHS of the formula 
   are assumed to vary across response variables. 
   For instance, two parameters will be estimated for \code{x}, 
