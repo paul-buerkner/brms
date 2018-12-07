@@ -272,7 +272,7 @@
 #'   is constant across all observations, say \code{10}, 
 #'   we may also write \code{success | trials(10)}. 
 #'   \bold{Please note that the \code{cbind()} syntax will not work 
-#'   in \pkg{brms} in the expected way because this syntax is resevered
+#'   in \pkg{brms} in the expected way because this syntax is reserved
 #'   for use in multivariate models, only.}
 #'   
 #'   For all ordinal families, \code{aterms} may contain a term 
