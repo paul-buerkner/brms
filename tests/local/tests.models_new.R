@@ -26,8 +26,17 @@ test_that("Poisson model from brm doc works correctly", {
   expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
   # test kfold
-  kfold1 <- kfold(fit1, chains = 1, iter = 1000)
+  kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
   expect_range(kfold1$kfoldic, 1210, 1260)
+  # define a loss function
+  rmse <- function(y, yrep) {
+    yrep_mean <- colMeans(yrep)
+    sqrt(mean((yrep_mean - y)^2))
+  }
+  # predict responses and evaluate the loss
+  kfp1 <- kfold_predict(kfold1)
+  rmse1 <- rmse(y = kfp1$y, yrep = kfp1$yrep)
+  expect_range(rmse1, 6, 7)
 })
 
 test_that("Ordinal model from brm doc works correctly", {
