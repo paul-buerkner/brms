@@ -1312,14 +1312,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     newdata, object = object, resp = resp, 
     re_formula = NA, check_response = TRUE, ...
   )
-  sdata <- standata(
-    object, newdata = newdata, resp = resp, re_formula = NA, 
-    check_response = TRUE, internal = TRUE, only_response = TRUE, ...
-  )
-  if (any(grepl("^cens_", names(sdata)))) {
-    warning2("'pp_check' may not be meaningful for censored models.")
-  }
-  y <- as.vector(sdata[[paste0("Y", usc(resp))]])
+  y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
     object, newdata = newdata, resp = resp, subset = subset, 
@@ -1840,49 +1833,43 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
-  sdata <- standata(
-    object, newdata = newdata, re_formula = re_formula,
-    check_response = TRUE, internal = TRUE, ...
-  )
-  if (any(grepl("^cens_", names(sdata)))) {
-    warning2("'residuals' may not be meaningful for censored models.")
-  }
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- nlist(
     object, newdata, re_formula, resp, subset, 
     summary = FALSE, sort = TRUE, ...
   )
-  mu <- run(method, pred_args)
-  if (length(dim(mu)) == 3L) {
+  yrep <- run(method, pred_args)
+  y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
+  old_order <- attr(y, "old_order")
+  if (length(dim(yrep)) == 3L) {
     # multivariate model
-    Y <- sdata[paste0("Y_", dimnames(mu)[[3]])]
-    names(Y) <- dimnames(mu)[[3]]
-    Y <- lapply(Y, as_draws_matrix, dim = dim(mu)[1:2])
-    Y <- abind(Y, along = 3)
+    y <- lapply(seq_cols(y), function(i) y[, i])
+    y <- lapply(y, as_draws_matrix, dim = dim(yrep)[1:2])
+    y <- abind(y, along = 3)
+    dimnames(y)[[3]] <- dimnames(yrep)[[3]]
   } else {
-    Y <- sdata[[paste0("Y", usc(resp))]]
-    Y <- as_draws_matrix(Y, dim = dim(mu))
+    y <- as_draws_matrix(y, dim = dim(yrep))
   }
-  res <- Y - mu
-  remove(Y, mu)
+  out <- y - yrep
+  remove(y, yrep)
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     pred_args$summary <- TRUE
     pred <- run("predict", pred_args)
     if (length(dim(pred)) == 3L) {
       sd_pred <- array2list(pred[, 2, ])
-      sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(res)[1:2])
+      sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(out)[1:2])
       sd_pred <- abind(sd_pred, along = 3)
     } else {
-      sd_pred <- as_draws_matrix(pred[, 2], dim = dim(res))
+      sd_pred <- as_draws_matrix(pred[, 2], dim = dim(out))
     }
-    res <- res / sd_pred
+    out <- out / sd_pred
   }
-  res <- reorder_obs(res, attr(sdata, "old_order"), sort = sort)
+  out <- reorder_obs(out, old_order, sort = sort)
   if (summary) {
-    res <- posterior_summary(res, probs = probs, robust = robust)
+    out <- posterior_summary(out, probs = probs, robust = robust)
   }
-  res
+  out
 }
 
 #' @rdname residuals.brmsfit
@@ -2145,12 +2132,6 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   if (use_stored_ic && is.matrix(object[["R2"]])) {
     R2 <- object[["R2"]]
   } else {
-    sdata <- standata(
-      object, resp = resp, check_response = TRUE, internal = TRUE, ...
-    )
-    if (any(grepl("^cens_", names(sdata)))) {
-      warning2("'bayes_R2' may not be meaningful for censored models.")
-    }
     ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
     # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     .bayes_R2 <- function(y, ypred, ...) {
@@ -2159,19 +2140,15 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       var_e <- matrixStats::rowVars(e)
       return(as.matrix(var_ypred / (var_ypred + var_e)))
     }
+    y <- get_y(object, resp, warn = TRUE, ...)
     if (is.matrix(ypred)) {
       # only one response variable
-      if (!length(resp)) resp <- ""
-      resp <- usc(resp)
-      y <- as.numeric(sdata[[paste0("Y", resp)]])
       R2 <- .bayes_R2(y, ypred)
     } else {
       # multiple response variables
-      resp <- usc(dimnames(ypred)[[3]])
       R2 <- named_list(resp)
       for (i in seq_along(R2)) {
-        y <- as.numeric(sdata[[paste0("Y", resp[i])]])
-        R2[[i]] <- .bayes_R2(y, ypred[, , i])
+        R2[[i]] <- .bayes_R2(y[, i], ypred[, , i])
       }
       R2 <- run(cbind, R2)
     }
@@ -2217,12 +2194,6 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'loo_R2' is not defined for ordinal or categorical models.")
   }
-  sdata <- standata(
-    object, resp = resp, check_response = TRUE, internal = TRUE, ...
-  )
-  if (any(grepl("^cens_", names(sdata)))) {
-    warning2("'loo_R2' may not be meaningful for censored models.")
-  }
   ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
   ll <- log_lik(object, resp = resp, sort = TRUE, combine = FALSE, ...)
   chains <- object$fit@sim$chains
@@ -2235,21 +2206,15 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     eloo <- ypredloo - y
     return(1 - var(eloo) / var(y))
   }
+  y <- get_y(object, resp, warn = TRUE, ...)
   if (is.matrix(ypred)) {
     # only one response variable
-    if (!length(resp)) resp <- ""
-    resp <- usc(resp)
-    y <- as.numeric(sdata[[paste0("Y", resp)]])
-    R2 <- .loo_R2(y, ypred, ll = ll, chains = chains)
+    R2 <- .loo_R2(y, ypred, ll, chains)
   } else {
     # multiple response variables
-    resp <- usc(dimnames(ypred)[[3]])
     R2 <- named_list(resp)
     for (i in seq_along(R2)) {
-      y <- as.numeric(sdata[[paste0("Y", resp[i])]])
-      R2[[i]] <- .loo_R2(
-        y, ypred[, , i], ll = ll[, , i], chains = chains
-      )
+      R2[[i]] <- .loo_R2(y[, i], ypred[, , i], ll[, , i], chains)
     }
     R2 <- unlist(R2)
   }

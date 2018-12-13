@@ -532,6 +532,30 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+get_y <- function(x, resp = NULL, warn = FALSE, ...) {
+  # safely extract response values from a brmsfit object
+  stopifnot(is.brmsfit(x))
+  resp <- validate_resp(resp, x)
+  warn <- as_one_logical(warn)
+  sdata <- standata(
+    x, resp = resp, re_formula = NA, check_response = TRUE, 
+    internal = TRUE, only_response = TRUE, ...
+  )
+  if (warn) {
+    if (any(paste0("cens", usc(resp)) %in% names(sdata))) {
+      warning2("Results may not be meaningful for censored models.")
+    }
+  }
+  Ynames <- paste0("Y", usc(resp))
+  if (length(Ynames) > 1L) {
+    out <- run(cbind, sdata[Ynames])
+    colnames(out) <- resp
+  } else {
+    out <- sdata[[Ynames]]
+  }
+  structure(out, old_order = attr(sdata, "old_order"))
+}
+
 extract_old_standata <- function(x, data, ...) {
   # helper function for validate_newdata to extract
   # old standata required for the computation of new standata
