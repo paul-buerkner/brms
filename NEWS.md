@@ -1,21 +1,40 @@
-# brms 2.6.0++
+# brms 2.7.0
 
 ### New features
 
 * Fit approximate and non-isotropic Gaussian processes via `gp`. (#540)
+* Enable parallelization of model fitting in `brm_multiple` 
+via the future package. (#364)
+* Perform posterior predictions based on k-fold cross-validation 
+via `kfold_predict`. (#468)
 * Indicate observations for out-of-sample predictions in 
 ARMA models via argument `oos` of `extract_draws`. (#539)
 
 ### Other changes
 
 * Allow factor-like variables in smooth terms. (#562)
+* Make plotting of `marginal_effects` more robust to
+the usage of non-standard variable names.
+* Deactivate certain data validity checks when using custom families.
+* Improve efficiency of adjacent category models.
+* No longer print informational messages from the Stan parser.
 
 ### Bug fixes
 
-* Fix an issue that could result in a large efficiency drop
-of various post-processing methods for larger models.
+* Fix an issue that could result in a substantial efficiency 
+drop of various post-processing methods for larger models.
+* Fix an issue when that resulted in an error when
+using `fitted(..., scale = "linear")` with ordinal models
+thanks to Andrew Milne. (#557)
+* Allow setting priors on the overall intercept in sparse models.
+* Allow sampling from models with only a single observation 
+that also contain an offset thanks to Antonio Vargas. (#545)
 * Fix an error when sampling from priors in mixture models
 thanks to Jacki Buros Novik. (#542)
+* Fix a problem when trying to sample from priors of
+parameter transformations.
+* Correctly update `warmup` samples when using 
+`update.brmsfit`.
 
 
 # brms 2.6.0
