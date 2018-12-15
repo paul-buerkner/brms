@@ -909,9 +909,8 @@ plot.brmsMarginalEffects <- function(
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
         if (is_like_factor(df_points[, gvar])) {
-          expr_gvar <- parse(text = gvar)[[1]]
-          .point_args$mapping$colour <- expr_gvar
-          .point_args$mapping$fill <- expr_gvar
+          .point_args$mapping[c("colour", "fill")] <- 
+            aes_string(colour = gvar, fill = gvar)
         } else if (is_theme_black) {
           .point_args$colour <- "white"
         }
@@ -955,9 +954,8 @@ plot.brmsMarginalEffects <- function(
             data = df_points, inherit.aes = FALSE
           )
           if (is_like_factor(df_points[, gvar])) {
-            expr_gvar <- parse(text = gvar)[[1]]
-            .rug_args$mapping$colour <- expr_gvar
-            .rug_args$mapping$fill <- expr_gvar
+            .point_args$mapping[c("colour", "fill")] <- 
+              aes_string(colour = gvar, fill = gvar)
           } else if (is_theme_black) {
             .rug_args$colour <- "white"
           }
