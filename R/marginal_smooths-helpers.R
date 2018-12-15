@@ -183,11 +183,13 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     }
     response <- combine_prefix(x, keep_mu = TRUE)
     response <- paste0(response, ": ", term)
+    points <- mf[, vars, drop = FALSE]
+    points <- add_effects__(points, covars)
     attr(eta, "response") <- response
     attr(eta, "effects") <- effects
     attr(eta, "surface") <- all(is_numeric) && ncovars == 2L
     attr(eta, "spaghetti") <- spa_data
-    attr(eta, "points") <- mf[, vars, drop = FALSE]
+    attr(eta, "points") <- points
     out[[response]] <- eta
   }
   out

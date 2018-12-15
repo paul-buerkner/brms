@@ -408,7 +408,7 @@ test_that("Multivariate GAMMs work correctly", {
   ms <- marginal_smooths(fit_gam, resolution = 100, too_far = 0.05)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
 
-  expect_range(loo(fit_gam)$estimates[3, 1], 880, 940)
+  expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
 
   newd <- data.frame(x0 = (0:30)/30, x1 = (0:30)/30,
@@ -521,8 +521,10 @@ test_that("disc parameter in ordinal models is handled correctly", {
   expect_range(waic(fit)$estimates[3, 1], 870, 920)
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
-  expect_ggplot(plot(marginal_effects(fit), ask = FALSE,
-                     points = TRUE, jitter_width = 0.3)[[3]])
+  expect_ggplot(plot(
+    marginal_effects(fit), ask = FALSE,
+    points = TRUE, point_args = list(width = 0.3)
+  )[[3]])
 })
 
 test_that("Mixture models work correctly", {

@@ -849,6 +849,7 @@ plot.brmsMarginalEffects <- function(
     response <- attr(x[[i]], "response")
     effects <- attr(x[[i]], "effects")
     ncond <- length(unique(x[[i]]$cond__))
+    df_points <- attr(x[[i]], "points")
     categorical <- isTRUE(attr(x[[i]], "categorical"))
     surface <- isTRUE(attr(x[[i]], "surface"))
     # deprecated as of brms 2.4.3
@@ -904,11 +905,10 @@ plot.brmsMarginalEffects <- function(
         # add points first so that they appear behind the predictions
         .point_args <- list(
           mapping = aes_string(x = "effect1__", y = "resp__"),
-          data = attr(x[[i]], "points"), inherit.aes = FALSE,
+          data = df_points, inherit.aes = FALSE,
           size = 2 / ncond^0.25, height = 0, width = jitter_width
         )
-        is_factor_gvar <- is_like_factor(attr(x[[i]], "points")[, gvar])
-        if (is_factor_gvar) {
+        if (is_like_factor(df_points[, gvar])) {
           expr_gvar <- parse(text = gvar)[[1]]
           .point_args$mapping$colour <- expr_gvar
           .point_args$mapping$fill <- expr_gvar
@@ -951,10 +951,14 @@ plot.brmsMarginalEffects <- function(
         }
         if (rug) {
           .rug_args <- list(
-            aes_string(x = "effect1__", colour = gvar), sides = "b", 
-            data = attr(x[[i]], "points"), inherit.aes = FALSE
+            aes_string(x = "effect1__"), sides = "b", 
+            data = df_points, inherit.aes = FALSE
           )
-          if (is.null(gvar) && is_theme_black) {
+          if (is_like_factor(df_points[, gvar])) {
+            expr_gvar <- parse(text = gvar)[[1]]
+            .rug_args$mapping$colour <- expr_gvar
+            .rug_args$mapping$fill <- expr_gvar
+          } else if (is_theme_black) {
             .rug_args$colour <- "white"
           }
           replace_args(.rug_args, dont_replace) <- rug_args
