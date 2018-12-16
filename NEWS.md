@@ -33,6 +33,8 @@ that also contain an offset thanks to Antonio Vargas. (#545)
 thanks to Jacki Buros Novik. (#542)
 * Fix a problem when trying to sample from priors of
 parameter transformations.
+* Allow using `marginal_smooths` with ordinal models
+thanks to Andrew Milne. (#570)
 * Correctly update `warmup` samples when using 
 `update.brmsfit`.
 
