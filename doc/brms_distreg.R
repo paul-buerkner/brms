@@ -45,7 +45,7 @@ hyp <- "exp(sigma_Intercept + sigma_grouptreat) > exp(sigma_Intercept)"
 plot(hyp, chars = NULL)
 
 ## ---------------------------------------------------------------------------------------
-zinb <- read.csv("http://stats.idre.ucla.edu/stat/data/fish.csv")
+zinb <- read.csv("https://paul-buerkner.github.io/data/fish.csv")
 head(zinb)
 
 ## ---- results='hide'--------------------------------------------------------------------

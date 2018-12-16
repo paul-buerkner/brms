@@ -5,15 +5,13 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Estimating Monotonic Effects with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Estimate monotonic effects with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -36,7 +34,7 @@ theme_set(theme_default())
 
 ## Introduction
 
-This vignette is about monotonic effects, a special way of handling discrete predictors that are on an ordinal or higher scale. The idea was brought to me by Emmanuel Charpentier, who deserves full credit for it. A predictor, which we want to model as monotonic (i.e., having a monotonically increasing or decreasing relationship with the response), must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, $b$, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, $\zeta$, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, $x$, the linear predictor term of observation $n$ looks as follows:
+This vignette is about monotonic effects, a special way of handling discrete predictors that are on an ordinal or higher scale (Bürkner & Charpentier, in review). A predictor, which we want to model as monotonic (i.e., having a monotonically increasing or decreasing relationship with the response), must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, $b$, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, $\zeta$, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, $x$, the linear predictor term of observation $n$ looks as follows:
 
 $$\eta_n = b \sum_{i = 1}^{x_n} \zeta_i$$
 
@@ -166,3 +164,7 @@ summary(fit6)
 ```
 
 reveals that the effect of `income` varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed `income` to have the same effect across cities.
+
+## References
+
+Bürkner P. C. & Charpentier, E. (in review). [Monotonic Effects: A Principled Approach for Including Ordinal Predictors in Regression Models](https://psyarxiv.com/9qkhj/). *PsyArXiv preprint*. 

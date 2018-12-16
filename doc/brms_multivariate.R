@@ -23,7 +23,7 @@ theme_set(theme_default())
 data("BTdata", package = "MCMCglmm")
 head(BTdata)
 
-## ----fit1, message=FALSE, warning=FALSE-------------------------------------------------
+## ----fit1, message=FALSE, warning=FALSE, results='hide'---------------------------------
 fit1 <- brm(
   cbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
   data = BTdata, chains = 2, cores = 2
@@ -40,7 +40,7 @@ pp_check(fit1, resp = "back")
 ## ----R2_1-------------------------------------------------------------------------------
 bayes_R2(fit1)
 
-## ----fit2, message=FALSE, warning=FALSE-------------------------------------------------
+## ----fit2, message=FALSE, warning=FALSE, results='hide'---------------------------------
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam))
 bf_back <- bf(back ~ hatchdate + (1|p|fosternest) + (1|q|dam))
 fit2 <- brm(bf_tarsus + bf_back, data = BTdata, chains = 2, cores = 2)
@@ -52,7 +52,7 @@ summary(fit2)
 ## ----loo12------------------------------------------------------------------------------
 loo(fit1, fit2)
 
-## ----fit3, message=FALSE, warning=FALSE-------------------------------------------------
+## ----fit3, message=FALSE, warning=FALSE, results='hide'---------------------------------
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
 bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +

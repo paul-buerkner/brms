@@ -5,15 +5,14 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Handle Missing Values with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}  
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Handle missing values with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))

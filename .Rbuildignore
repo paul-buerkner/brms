@@ -1,3 +1,5 @@
+^Meta$
+^doc$
 ^.*\.Rproj$
 ^.*\.RData$
 ^.*\.Rhistory$

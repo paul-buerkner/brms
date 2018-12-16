@@ -5,15 +5,13 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Estimating Phylogenetic Multilevel Models with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Fit phylogenetic models with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -42,16 +40,12 @@ In the present vignette, we want to discuss how to specify phylogenetic multilev
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
-```{r, include = FALSE}
-my_path <- "C:/Users/paulb/Dropbox/brms/Models/MCMCglmm/"
-```
-
-
 ```{r}
-# uncomment and set your path to the folder where you stored the data
-# my_path <- "insert your path here"
-phylo <- ape::read.nexus(paste0(my_path, "phylo.nex"))
-data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
+phylo <- ape::read.nexus("https://paul-buerkner.github.io/data/phylo.nex")
+data_simple <- read.table(
+  "https://paul-buerkner.github.io/data/data_simple.txt", 
+  header = TRUE
+)
 head(data_simple)
 ```
 
@@ -102,7 +96,10 @@ Note that the phylogenetic signal is just a synonym of the intra-class correlati
 Often, we have multiple observations per species and this allows to fit more complicated phylogenetic models.
 
 ```{r}
-data_repeat <- read.table(paste0(my_path, "data_repeat.txt"), header = TRUE)
+data_repeat <- read.table(
+  "https://paul-buerkner.github.io/data/data_repeat.txt", 
+  header = TRUE
+)
 data_repeat$spec_mean_cf <- 
   with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 head(data_repeat)
@@ -179,7 +176,10 @@ hyp <- paste(
 Let's say we have Fisher's z-transformated correlation coefficients $Zr$ per species along with corresponding sample sizes (e.g., correlations between male coloration and reproductive success): 
 
 ```{r}
-data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
+data_fisher <- read.table(
+  "https://paul-buerkner.github.io/data/data_effect.txt", 
+  header = TRUE
+)
 data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 ```
@@ -215,7 +215,10 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org) provides an example.
 
 ```{r}
-data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
+data_pois <- read.table(
+  "https://paul-buerkner.github.io/data/data_pois.txt", 
+  header = TRUE
+)
 data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
