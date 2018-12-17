@@ -35,6 +35,8 @@ thanks to Jacki Buros Novik. (#542)
 parameter transformations.
 * Allow using `marginal_smooths` with ordinal models
 thanks to Andrew Milne. (#570)
+* Fix an error in the post-processing of `me` 
+terms thanks to the GitHub user hlluik. (#571)
 * Correctly update `warmup` samples when using 
 `update.brmsfit`.
 

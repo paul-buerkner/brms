@@ -331,6 +331,7 @@ me <- function(x, sdx = NULL, gr = NULL) {
     gr <- as.vector(gr)
   } else {
     grname <- ""
+    gr <- character(0)
   }
   out <- rep(1, length(x))
   structure(out, 

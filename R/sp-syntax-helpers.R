@@ -79,23 +79,23 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
       term = uni_me, xname = "", grname = "", 
       stringsAsFactors = FALSE
     )
-    levels <- list("vector", nrow(out))
+    levels <- vector("list", nrow(out))
     for (i in seq_rows(out)) {
       att <- attributes(eval2(out$term[i], data))
       out$xname[i] <- att$xname
       if (isTRUE(nzchar(att$grname))) {
         out$grname[i] <- att$grname
-      }
-      if (is.null(old_levels)) {
-        levels[[i]] <- levels(factor(att$gr))
-      } else {
-        levels[[i]] <- old_levels[[att$grname]]
+        if (length(old_levels)) {
+          levels[[i]] <- old_levels[[att$grname]]
+        } else {
+          levels[[i]] <- levels(factor(att$gr))
+        } 
       }
     }
     out$coef <- rename(paste0("me", out$xname))
     out$cor <- isTRUE(bterms$mecor)
     names(levels) <- out$grname
-    levels <- levels[!is.na(names(levels))]
+    levels <- levels[lengths(levels) > 0L]
     if (length(levels)) {
       levels <- levels[!duplicated(names(levels))]
       attr(out, "levels") <- levels
