@@ -1235,9 +1235,11 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
     gi <- find_rows(prior, class = cl, coef = "", resp = "")
     prior$remove[gi] <- TRUE
     for (r in x$responses) {
-      ri <- find_rows(prior, class = cl, coef = "", resp = r)
-      if (isTRUE(!prior$new[ri] || !nzchar(prior$prior[ri]))) {
-        prior$prior[ri] <- prior$prior[gi]
+      rows <- which(find_rows(prior, class = cl, coef = "", resp = r))
+      for (ri in rows) {
+        if (isTRUE(!prior$new[ri] || !nzchar(prior$prior[ri]))) {
+          prior$prior[ri] <- prior$prior[gi]
+        } 
       }
     }
   }
