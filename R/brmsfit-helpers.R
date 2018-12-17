@@ -258,8 +258,8 @@ get_cov_matrix <- function(sd, cor = NULL) {
     stopifnot(min(cor) >= -1, max(cor) <= 1)
     stopifnot(ncol(cor) == size * (size - 1) / 2)
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
@@ -276,16 +276,19 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   #     ignored is cor is specified
   if (length(cor)) {
     cor <- as.matrix(cor)
-    size <- - 1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
+    size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
     nsamples <- nrow(cor)
   } 
-  stopifnot(is_wholenumber(size) && size > 1, nsamples > 0)
+  size <- as_one_numeric(size)
+  nsamples <- as_one_numeric(nsamples)
+  stopifnot(is_wholenumber(size) && size > 0)
+  stopifnot(is_wholenumber(nsamples) && nsamples > 0)
   out <- array(diag(1, size), dim = c(size, size, nsamples))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k]
       }

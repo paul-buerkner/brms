@@ -4,7 +4,8 @@
 illegal_group_expr <- function(group) {
   # check if the group part of a group-level term is invalid
   # Args:
-  #  group: the group part of a group-level term
+  #   group: the group part of a group-level term
+  group <- as_one_character(group)
   valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
   rsv_signs <- c("+", "-", "*", "/", "|", "::")
   nzchar(gsub(valid_expr, "", group)) ||

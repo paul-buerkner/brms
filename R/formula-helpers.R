@@ -123,7 +123,7 @@ resp_trials <- function(x) {
   if (!is.numeric(x)) {
     stop2("Number of trials must be numeric.")
   }
-  if (any(!is_wholenumber(x) || x < 1)) {
+  if (any(!is_wholenumber(x) | x < 1)) {
     stop2("Number of trials must be positive integers.")
   }
   x
@@ -133,10 +133,8 @@ resp_trials <- function(x) {
 #' @export
 resp_cat <- function(x) {
   # number of categories for ordinal models
-  if (!is.numeric(x)) {
-    stop2("Number of categories must be numeric.")
-  }
-  if (length(x) != 1L || !is_wholenumber(x) || x < 1) {
+  x <- as_one_numeric(x)
+  if (!is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
   }
   x

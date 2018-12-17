@@ -910,8 +910,7 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   out <- FALSE
   for (id in ids) {
     r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && 
-             r$group[1] %in% names_cov_ranef
+    out <- out || nrow(r) > 1L && r$cor[1] && r$group[1] %in% names_cov_ranef
   }
   out
 }

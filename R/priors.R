@@ -1232,7 +1232,7 @@ check_prior_special.brmsprior <- function(x, bterms, ...) {
 check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level prior in MV models
-    gi <- find_rows(prior, class = cl, coef = "", resp = "")
+    gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
     prior$remove[gi] <- TRUE
     for (r in x$responses) {
       rows <- which(find_rows(prior, class = cl, coef = "", resp = r))
@@ -1271,16 +1271,18 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   # copy over the global population-level prior in categorical models
   if (is_categorical(x$family)) {
     for (cl in c("b", "Intercept")) {
-      gi <- find_rows(
+      gi <- which(find_rows(
         prior, class = cl, coef = "", dpar = "", resp = x$resp
-      )
+      ))
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
-        dpi <- find_rows(
+        rows <- which(find_rows(
           prior, class = cl, coef = "", dpar = dp, resp = x$resp
-        )
-        if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
-          prior$prior[dpi] <- prior$prior[gi]
+        ))
+        for (dpi in rows) {
+          if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
+            prior$prior[dpi] <- prior$prior[gi]
+          }
         }
       }
     }
