@@ -816,7 +816,7 @@ tidy_smef <- function(x, data) {
       tmp[[i]] <- run(rbind, repl(tmp[[i]], nby[i]))
       tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
-      str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
+      str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
     } else {
       tmp[[i]]$bylevel <- NA
       tmp[[i]]$byterm <- tmp[[i]]$term
