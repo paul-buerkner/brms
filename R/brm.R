@@ -355,10 +355,23 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
   
+  # validate arguments later passed to Stan
   dots <- list(...)
-  algorithm <- match.arg(algorithm)
   testmode <- isTRUE(dots$testmode)
   dots$testmode <- NULL
+  algorithm <- match.arg(algorithm)
+  silent <- as_one_logical(silent)
+  future <- as_one_logical(future)
+  iter <- as_one_numeric(iter)
+  warmup <- as_one_numeric(warmup)
+  thin <- as_one_numeric(thin)
+  chains <- as_one_numeric(chains)
+  cores <- as_one_numeric(cores)
+  seed <- as_one_numeric(seed, allow_na = TRUE)
+  if (is.character(inits) && !inits %in% c("random", "0")) {
+    inits <- get(inits, mode = "function", envir = parent.frame())
+  }
+  
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
@@ -427,21 +440,17 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
   }
   
-  # arguments to be passed to Stan
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
-  }
   args <- nlist(
     object = x$fit, data = sdata, pars = x$exclude, 
     include = FALSE, algorithm, iter, seed
   )
   args[names(dots)] <- dots
-  
   message("Start sampling")
   if (args$algorithm == "sampling") {
     args$algorithm <- NULL
-    args <- c(args,
-      nlist(init = inits, warmup, thin, control, show_messages = !silent)
+    c(args) <- nlist(
+      init = inits, warmup, thin, control, 
+      show_messages = !silent
     )
     if (future) {
       require_package("future")
@@ -465,7 +474,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x$fit <- rstan::sflist2stanfit(fits)
       rm(futures, fits)
     } else {
-      args <- c(args, nlist(chains, cores))
+      c(args) <- nlist(chains, cores)
       x$fit <- run(rstan::sampling, args) 
     }
   } else {
