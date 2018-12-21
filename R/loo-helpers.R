@@ -205,7 +205,9 @@ loo_compare.brmsfit <- function(
 #'   
 #' @return An object of the same class as \code{x}, but
 #'   with model fit criteria added for later usage.
-#'   Previously computed criterion objects will be overwritten.
+#'   
+#' @details Functions \code{add_loo} and \code{add_waic} are aliases of
+#'   \code{add_criterion} with fixed values for the \code{criterion} argument.
 #'   
 #' @examples
 #' \dontrun{
@@ -277,6 +279,28 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     saveRDS(x, file = file)
   } 
   x
+}
+
+#' @rdname add_criterion
+#' @export
+add_loo <- function(x, model_name = NULL, ...) {
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  add_criterion(x, criterion = "loo", model_name = model_name, ...)
+}
+
+#' @rdname add_criterion
+#' @export
+add_waic <- function(x, model_name = NULL, ...) {
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
 args_not_for_reloo <- function() {
@@ -568,18 +592,6 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL, ...) {
     model_name <- deparse_combine(substitute(x)) 
   }
   add_criterion(x, criterion = ic, model_name = model_name, ...)
-}
-
-#' @rdname add_ic
-#' @export
-add_loo <- function(x, ...) {
-  add_ic(x, ic = "loo", ...)
-}
-
-#' @rdname add_ic
-#' @export
-add_waic <- function(x, ...) {
-  add_ic(x, ic = "waic", ...)
 }
 
 #' @rdname add_ic

@@ -3,18 +3,12 @@
 \name{add_ic}
 \alias{add_ic}
 \alias{add_ic.brmsfit}
-\alias{add_loo}
-\alias{add_waic}
 \alias{add_ic<-}
 \title{Add model fit criteria to model objects}
 \usage{
 add_ic(x, ...)
 
 \method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL, ...)
-
-add_loo(x, ...)
-
-add_waic(x, ...)
 
 add_ic(x, ...) <- value
 }

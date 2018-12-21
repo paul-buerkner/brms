@@ -3,12 +3,18 @@
 \name{add_criterion}
 \alias{add_criterion}
 \alias{add_criterion.brmsfit}
+\alias{add_loo}
+\alias{add_waic}
 \title{Add model fit criteria to model objects}
 \usage{
 add_criterion(x, ...)
 
 \method{add_criterion}{brmsfit}(x, criterion, model_name = NULL,
   overwrite = FALSE, file = NULL, force_save = FALSE, ...)
+
+add_loo(x, model_name = NULL, ...)
+
+add_waic(x, model_name = NULL, ...)
 }
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
@@ -43,10 +49,13 @@ regardless of whether new criteria were added via \code{add_criterion}.}
 \value{
 An object of the same class as \code{x}, but
   with model fit criteria added for later usage.
-  Previously computed criterion objects will be overwritten.
 }
 \description{
 Add model fit criteria to model objects
+}
+\details{
+Functions \code{add_loo} and \code{add_waic} are aliases of
+  \code{add_criterion} with fixed values for the \code{criterion} argument.
 }
 \examples{
 \dontrun{
