@@ -4,7 +4,8 @@
 \alias{reloo}
 \title{Compute exact cross-validation for problematic observations}
 \usage{
-reloo(x, fit, k_threshold = 0.7, check = TRUE, resp = NULL, ...)
+reloo(x, fit, k_threshold = 0.7, newdata = NULL, resp = NULL,
+  check = TRUE, ...)
 }
 \arguments{
 \item{x}{An \R object of class \code{loo}.}
@@ -16,16 +17,18 @@ estimates are treated as problematic. Defaults to \code{0.7}.
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
 
-\item{check}{Logical; If \code{TRUE} (the default), a crude 
-check is performed if the \code{loo} object was generated
-from the \code{brmsfit} object passed to argument \code{fit}.}
+\item{newdata}{An optional data.frame for which to evaluate predictions. If
+\code{NULL} (default), the original data of the model is used.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
+\item{check}{Logical; If \code{TRUE} (the default), some checks
+check are performed if the \code{loo} object was generated
+from the \code{brmsfit} object passed to argument \code{fit}.}
+
 \item{...}{Further arguments passed to 
-\code{\link{update.brmsfit}} such
-as \code{iter}, \code{chains}, or \code{cores}.}
+\code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.}
 }
 \value{
 An object of the class \code{loo}.

@@ -16,7 +16,7 @@ loo_R2 <- function(object, ...) {
 
 compute_loos <- function(
   models, criterion = c("loo", "waic", "psis", "psislw", "kfold"),
-  use_stored = FALSE, compare = TRUE, ...
+  use_stored = TRUE, compare = TRUE, ...
 ) {
   # helper function used to create (lists of) 'loo' objects
   # Args:
@@ -65,7 +65,7 @@ compute_loos <- function(
 
 compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
-                        pointwise = FALSE, model_name = "", 
+                        pointwise = FALSE, newdata = NULL, model_name = "", 
                         use_stored = TRUE, ...) {
   # compute information criteria using the 'loo' package
   # Args:
@@ -73,10 +73,10 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   #   criterion: the criterion to be computed
   #   model_name: original variable name of object 'x'
   #   use_stored: use precomputed criterion objects if possible?
+  #   newdata: optional data.frame of new data
   #   reloo: call 'reloo' after computing 'loo'?
   #   reloo_args: list of arguments passed to 'reloo'
   #   pointwise: compute log-likelihood point-by-point?
-  #   use_stored: Use stored 'loo' object?
   #   ...: passed to other post-processing methods
   # Returns:
   #   an object of class 'loo'
@@ -89,12 +89,14 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   } else {
     # compute the criterion
     if (criterion == "kfold") {
-      out <- run(kfold_internal, list(x, ...))
+      kfold_args <- nlist(x, newdata, ...)
+      out <- run(kfold_internal, kfold_args)
     } else {
       contains_samples(x)
       pointwise <- as_one_logical(pointwise)
       loo_args <- list(...)
-      loo_args$x <- log_lik(x, pointwise = pointwise, ...)
+      ll_args <- nlist(object = x, newdata, pointwise, ...)
+      loo_args$x <- run(log_lik, ll_args)
       if (pointwise) {
         loo_args$draws <- attr(loo_args$x, "draws")
         loo_args$data <- attr(loo_args$x, "data")
@@ -108,14 +110,15 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
       }
       out <- SW(run(criterion, loo_args, pkg = "loo"))
     }
-    # TODO: fix hashing when new data is passed
-    attr(out, "yhash") <- hash_response(x)
+    attr(out, "yhash") <- hash_response(x, newdata = newdata)
   }
   attr(out, "model_name") <- model_name
   if (criterion == "loo") {
     if (reloo) {
-      c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- run(reloo.loo, reloo_args)
+      c(reloo_args) <- nlist(
+        x = out, fit = x, newdata, k_threshold, check = FALSE, ...
+      )
+      out <- run("reloo", reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -228,12 +231,6 @@ add_criterion <- function(x, ...) {
 add_criterion.brmsfit <- function(x, criterion, model_name = NULL, 
                                   overwrite = FALSE, file = NULL,
                                   force_save = FALSE, ...) {
-  unused_args <- intersect(names(list(...)), args_not_for_reloo())
-  if (length(unused_args)) {
-    unused_args <- collapse_comma(unused_args)
-    stop2("Cannot use arguments ", unused_args, 
-          " in calls to 'add_criterion'.")
-  }
   if (!is.null(model_name)) {
     model_name <- as_one_character(model_name)
   } else {
@@ -303,18 +300,14 @@ add_waic <- function(x, model_name = NULL, ...) {
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
-args_not_for_reloo <- function() {
-  # arguments not usable with 'reloo'
-  # the same arguments cannot be used in add_criterion
-  c("newdata", "re_formula", "allow_new_levels", 
-    "sample_new_levels", "new_objects")
-}
-
-hash_response <- function(x, ...) {
+hash_response <- function(x, newdata = NULL, ...) {
   # create a hash based on the response of a model
   require_package("digest")
   stopifnot(is.brmsfit(x))
-  sdata <- standata(x, internal = TRUE)
+  sdata <- standata(
+    x, newdata = newdata, re_formula = NA, internal = TRUE, 
+    check_response = TRUE, only_response = TRUE
+  )
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   regex <- c("Y", sub("^resp_", "", add_funs))
   regex <- paste0("(", regex, ")", collapse = "|")
@@ -331,7 +324,7 @@ match_response <- function(models, ...) {
   #   models: A list of brmsfit objects
   #   ...: passed to hash_response
   # Returns:
-  #   TRUE if the response parts of all models match and FALSE else
+  #   TRUE if the response parts of all models match and FALSE otherwise
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
@@ -395,19 +388,18 @@ validate_models <- function(models, model_names, sub_names) {
 #' for which approximate leave-one-out cross-validation may
 #' return incorrect results.
 #' 
-#' @inheritParams loo.brmsfit
+#' @inheritParams predict.brmsfit
 #' @param x An \R object of class \code{loo}.
 #' @param fit An \R object of class \code{brmsfit}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 #'   for more details.
-#' @param check Logical; If \code{TRUE} (the default), a crude 
-#'   check is performed if the \code{loo} object was generated
+#' @param check Logical; If \code{TRUE} (the default), some checks
+#'   check are performed if the \code{loo} object was generated
 #'   from the \code{brmsfit} object passed to argument \code{fit}.
 #' @param ... Further arguments passed to 
-#'   \code{\link{update.brmsfit}} such
-#'   as \code{iter}, \code{chains}, or \code{cores}.
+#'   \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.
 #'   
 #' @return An object of the class \code{loo}.
 #' 
@@ -436,19 +428,26 @@ validate_models <- function(models, model_names, sub_names) {
 #' }
 #' 
 #' @export
-reloo <- function(x, fit, k_threshold = 0.7, check = TRUE, 
-                  resp = NULL, ...) {
-  # most of the code is taken from rstanarm:::reloo
+reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL, 
+                  resp = NULL, check = TRUE, ...) {
   stopifnot(is.loo(x), is.brmsfit(fit))
-  model_name <- deparse(substitute(fit))
-  stored_name <- loo::find_model_names(list(x))
-  if (check && !is_equal(model_name, stored_name)) {
-    loo_name <- deparse(substitute(x))
-    stop2(
-      "Object '", loo_name, "' appears to be generated from ",
-      "a brmsfit object other than '", model_name, "'. ",
-      "If this is a false positive, please set 'check' to FALSE."
-    )
+  if (is.null(newdata)) {
+    mf <- model.frame(fit) 
+  } else {
+    mf <- as.data.frame(newdata)
+  }
+  if (NROW(mf) != NROW(x$pointwise)) {
+    stop2("Number of observations in 'x' and 'fit' do not match.")
+  }
+  if (check) {
+    yhash_loo <- attr(x, "yhash")
+    yhash_fit <- hash_response(fit, newdata = newdata)
+    if (!is_equal(yhash_loo, yhash_fit)) {
+      stop2(
+        "Response values used in 'x' and 'fit' do not match. ",
+        "If this is a false positive, please set 'check' to FALSE."
+      )
+    }
   }
   if (is.null(x$diagnostics$pareto_k)) {
     stop2("No Pareto k estimates found in the 'loo' object.")
@@ -462,7 +461,6 @@ reloo <- function(x, fit, k_threshold = 0.7, check = TRUE,
     )
     return(x)
   }
-  mf <- model.frame(fit)
   lls <- vector("list", J)
   message(
     J, " problematic observation(s) found.", 
@@ -480,11 +478,12 @@ reloo <- function(x, fit, k_threshold = 0.7, check = TRUE,
     fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
     lls[[j]] <- log_lik(
       fit_j, newdata = mf[omitted, , drop = FALSE],
-      allow_new_levels = TRUE, resp = resp
+      allow_new_levels = TRUE, resp = resp, ...
     )
   }
+  # most of the following code is taken from rstanarm:::reloo
   # compute elpd_{loo,j} for each of the held out observations
-  elpd_loo <- unlist(lapply(lls, log_mean_exp))
+  elpd_loo <- ulapply(lls, log_mean_exp)
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
   fit <- subset_autocor(fit, obs)

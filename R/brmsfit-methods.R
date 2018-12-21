@@ -2136,10 +2136,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   if (is_ordinal(family_names) || is_categorical(family_names)) {
     stop2("'bayes_R2' is not defined for ordinal or categorical models.")
   }
-  use_stored <- !length(
-    intersect(names(match.call()), args_not_for_reloo())
-  )
-  if (use_stored && is.matrix(object[["R2"]])) {
+  if (is.matrix(object[["R2"]])) {
     R2 <- object[["R2"]]
   } else {
     ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
@@ -2514,7 +2511,6 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  args$use_stored <- !any(names(args) %in% args_not_for_reloo())
   c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
   run(compute_loos, args)
 }
@@ -2606,12 +2602,6 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
                          reloo_args = list(), model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
-  not_for_reloo <- intersect(names(args), args_not_for_reloo())
-  if (reloo && length(not_for_reloo)) {
-    not_for_reloo <- collapse_comma(not_for_reloo)
-    stop2("Cannot use 'reloo' with arguments ", not_for_reloo, ".")
-  }
-  args$use_stored <- !length(not_for_reloo)
   c(args) <- nlist(
     criterion = "loo", pointwise, compare, 
     resp, k_threshold, reloo, reloo_args

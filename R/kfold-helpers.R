@@ -198,4 +198,3 @@ kfold_predict <- function(x, method = c("predict", "fitted"),
 is.kfold <- function(x) {
   inherits(x, "kfold")
 }
-
