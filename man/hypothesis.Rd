@@ -29,14 +29,13 @@ against each other, but have to be specified with their full name
 (see also \code{\link[brms:parnames]{parnames}})}
 
 \item{group}{Name of a grouping factor to evaluate only 
-group-level effects parameters related to this grouping factor.
-Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
+group-level effects parameters related to this grouping factor.}
 
 \item{scope}{Indicates where to look for the variables specified in
 \code{hypothesis}. If \code{"standard"}, use the full parameter names
-(subject to the restriction given by \code{class}). If \code{"coef"}
-or \code{"ranef"} compute the hypothesis for all levels of 
-the grouping factor given in \code{"group"}, based on the 
+(subject to the restriction given by \code{class} and \code{group}).
+If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels 
+of the grouping factor given in \code{"group"}, based on the 
 output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 respectively.}
 
@@ -55,40 +54,43 @@ A \code{\link{brmshypothesis}} object.
 Perform non-linear hypothesis testing for all model parameters.
 }
 \details{
-Among others, \code{hypothesis} computes an 
- evidence ratio (\code{Evid.Ratio}) for each hypothesis. 
- For a directed hypothesis, this is just the posterior probability 
- (\code{Post.Prob}) under the hypothesis against its alternative.
- That is, when the hypothesis if of the form \code{a > b}, 
- the evidence ratio is the ratio of the posterior probability 
- of \code{a > b} and the posterior probability of \code{a < b}.
- In this example, values greater than one indicate that the evidence in
- favor of \code{a > b} is larger than evidence in favor of \code{a < b}.
- For an undirected (point) hypothesis, the evidence ratio 
- is a Bayes factor between the hypothesis and its alternative
- computed via the Savage-Dickey density ratio method.
- That is the posterior density at the point of interest divided
- by the prior density at that point.
- Values greater than one indicate that evidence in favor of the point
- hypothesis has increased after seeing the data.
- In order to calculate this Bayes factor, all parameters related 
- to the hypothesis must have proper priors
- and argument \code{sample_prior} of function \code{brm} 
- must be set to \code{TRUE}. 
- When interpreting Bayes factors, make sure 
- that your priors are reasonable and carefully chosen,
- as the result will depend heavily on the priors. 
- In particular, avoid using default priors.
+Among others, \code{hypothesis} computes an evidence ratio
+  (\code{Evid.Ratio}) for each hypothesis. For a directed hypothesis, this is
+  just the posterior probability (\code{Post.Prob}) under the hypothesis
+  against its alternative. That is, when the hypothesis is of the form
+  \code{a > b}, the evidence ratio is the ratio of the posterior probability
+  of \code{a > b} and the posterior probability of \code{a < b}. In this
+  example, values greater than one indicate that the evidence in favor of
+  \code{a > b} is larger than evidence in favor of \code{a < b}. For an
+  undirected (point) hypothesis, the evidence ratio is a Bayes factor between
+  the hypothesis and its alternative computed via the Savage-Dickey density
+  ratio method. That is the posterior density at the point of interest
+  divided by the prior density at that point. Values greater than one
+  indicate that evidence in favor of the point hypothesis has increased after
+  seeing the data. In order to calculate this Bayes factor, all parameters
+  related to the hypothesis must have proper priors and argument
+  \code{sample_prior} of function \code{brm} must be set to \code{TRUE}. When
+  interpreting Bayes factors, make sure that your priors are reasonable and
+  carefully chosen, as the result will depend heavily on the priors. In
+  particular, avoid using default priors.
+  
+  The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
+  small or large evidence, respectively, in favor of the tested hypothesis.
+  For directional hypotheses pairs, this basically means that all posterior
+  samples are on the same side of the value dividing the two hypotheses. In
+  that sense, instead of \code{0} or \code{Inf,} you may rather read it as
+  \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
+  where \code{S} denotes the number of posterior samples used in the
+  computations.
  
- The argument \code{alpha} specifies the size of the credible interval
- (i.e., Bayesian confidence interval).
- For instance, if \code{alpha = 0.05} (5\%), the credible interval
- will contain \code{1 - alpha = 0.95} (95\%) of the posterior values.
- Hence, \code{alpha * 100}\% of the posterior values will lie
- outside of the credible interval. Although this allows testing of
- hypotheses in a similar manner as in the frequentist null-hypothesis
- testing framework, we strongly argue against using arbitrary cutoffs 
- (e.g., \code{p < .05}) to determine the 'existence' of an effect.
+  The argument \code{alpha} specifies the size of the credible interval
+  (i.e., Bayesian confidence interval). For instance, if \code{alpha = 0.05}
+  (5\%), the credible interval will contain \code{1 - alpha = 0.95} (95\%) of
+  the posterior values. Hence, \code{alpha * 100}\% of the posterior values
+  will lie outside of the credible interval. Although this allows testing of
+  hypotheses in a similar manner as in the frequentist null-hypothesis
+  testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
+  \code{p < .05}) to determine the 'existence' of an effect.
 }
 \examples{
 \dontrun{

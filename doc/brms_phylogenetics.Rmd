@@ -5,15 +5,13 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Estimating Phylogenetic Multilevel Models with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Fit phylogenetic models with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -36,26 +34,22 @@ theme_set(theme_default())
 
 ## Introduction
 
-In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from chapter 11 of the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data could be downloaded from the corresponding website (mpcm-evolution.org), which is currently offline, but I hope it comes back online soon. Some of these models may take a few minutes to fit.
+In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from chapter 11 of the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data can be downloaded from the corresponding website (http://www.mpcm-evolution.com/). Some of these models may take a few minutes to fit.
 
 ## A Simple Phylogenetic Model
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
-```{r, include = FALSE}
-my_path <- "C:/Users/paulb/Dropbox/brms/Models/MCMCglmm/"
-```
-
-
 ```{r}
-# uncomment and set your path to the folder where you stored the data
-# my_path <- "insert your path here"
-phylo <- ape::read.nexus(paste0(my_path, "phylo.nex"))
-data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
+phylo <- ape::read.nexus("https://paul-buerkner.github.io/data/phylo.nex")
+data_simple <- read.table(
+  "https://paul-buerkner.github.io/data/data_simple.txt", 
+  header = TRUE
+)
 head(data_simple)
 ```
 
-The `phylo` object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species.
+The `phylo` object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species (Hadfield & Nakagawa, 2010).
 
 ```{r}
 inv.phylo <- MCMCglmm::inverseA(phylo, nodes = "TIPS", scale = TRUE)
@@ -102,7 +96,10 @@ Note that the phylogenetic signal is just a synonym of the intra-class correlati
 Often, we have multiple observations per species and this allows to fit more complicated phylogenetic models.
 
 ```{r}
-data_repeat <- read.table(paste0(my_path, "data_repeat.txt"), header = TRUE)
+data_repeat <- read.table(
+  "https://paul-buerkner.github.io/data/data_repeat.txt", 
+  header = TRUE
+)
 data_repeat$spec_mean_cf <- 
   with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 head(data_repeat)
@@ -179,7 +176,10 @@ hyp <- paste(
 Let's say we have Fisher's z-transformated correlation coefficients $Zr$ per species along with corresponding sample sizes (e.g., correlations between male coloration and reproductive success): 
 
 ```{r}
-data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
+data_fisher <- read.table(
+  "https://paul-buerkner.github.io/data/data_effect.txt", 
+  header = TRUE
+)
 data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 ```
@@ -215,7 +215,10 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from mpcm-evolution.org) provides an example.
 
 ```{r}
-data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
+data_pois <- read.table(
+  "https://paul-buerkner.github.io/data/data_pois.txt", 
+  header = TRUE
+)
 data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
@@ -277,5 +280,7 @@ In the above examples, we have only used a single group-level effect (i.e., a va
 ## References
 
 de Villemeruil P. & Nakagawa, S. (2014) General quantitative genetic methods for comparative biology In: *Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice* (ed. Garamszegi L.) Springer, New York. pp. 287-303.
+
+Hadfield, J. D. & Nakagawa, S. (2010) General quantitative genetic methods for comparative biology: phylogenies, taxonomies, and multi-trait models for continuous and categorical characters. *Journal of Evolutionary Biology*. 23. 494-508.
 
 Lawless, J. F. (1987). Negative binomial and mixed Poisson regression. *Canadian Journal of Statistics*, 15(3), 209-225.

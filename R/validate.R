@@ -254,7 +254,7 @@ parse_lf <- function(formula, family = NULL) {
   y <- nlist(formula)
   types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
-    tmp <- do.call(paste0("parse_", t), list(formula))
+    tmp <- run(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
       y[[t]] <- tmp 
     }
@@ -376,7 +376,7 @@ parse_re <- function(formula) {
     out[[i]]$form <- list(formula(paste("~", re_parts$lhs[i])))
   }
   if (length(out)) {
-    out <- do.call(rbind, out)
+    out <- run(rbind, out)
     out <- out[order(out$group), ]
     if (no_cmc(formula)) {
       # disable cell-mean coding in all RE terms
@@ -538,8 +538,7 @@ parse_time <- function(autocor) {
   }
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
   stopif_illegal_group(group)
-  group <- formula(paste("~", ifelse(nchar(group), group, "1")))
-  group_vars <- all.vars(group)
+  group_vars <- all_vars(group)
   if (length(group_vars)) {
     out$group <- paste0(group_vars, collapse = ":")
   }
@@ -661,7 +660,7 @@ combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
     prefix$dpar <- "nlp"
   }
   prefix <- lapply(prefix, usc)
-  sub("^_", "", do.call(paste0, prefix))
+  sub("^_", "", run(paste0, prefix))
 }
 
 check_fdpars <- function(x) {
@@ -693,7 +692,7 @@ allvars_formula <- function(x) {
     x <- list(x)
   }
   out <- collapse(ulapply(rmNULL(x), plus_rhs))
-  out <- str2formula(c(out, all.vars(parse(text = out))))
+  out <- str2formula(c(out, all_vars(out)))
   update(out, ~ .)
 }
 
@@ -814,54 +813,20 @@ tidy_smef <- function(x, data) {
     tmp[[i]] <- out[i, , drop = FALSE]
     tmp[[i]]$termnum <- i
     if (nby[i] > 0L) {
-      tmp[[i]] <- do.call(rbind, repl(tmp[[i]], nby[i]))
+      tmp[[i]] <- run(rbind, repl(tmp[[i]], nby[i]))
       tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
-      str_add(tmp[[i]]$label) <- tmp[[i]]$bylevel
+      str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
     } else {
       tmp[[i]]$bylevel <- NA
       tmp[[i]]$byterm <- tmp[[i]]$term
     }
   }
-  out <- do.call(rbind, tmp)
+  out <- run(rbind, tmp)
   out$knots <- sdata[grepl("^knots_", names(sdata))]
   out$nbases <- lengths(out$knots)
   attr(out, "Xs_names") <- colnames(sdata$Xs)
   rownames(out) <- NULL
-  out
-}
-
-tidy_gpef <- function(x, data) {
-  # get labels of gaussian process terms
-  # Args:
-  #   x: either a formula or a list containing an element "gp"
-  #   data: data frame containing the covariates
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
-  }
-  form <- x[["gp"]]
-  if (!is.formula(form)) {
-    return(empty_data_frame())
-  }
-  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
-  nterms <- nrow(out)
-  out$bylevels <- out$byvars <- out$covars <- vector("list", nterms)
-  for (i in seq_len(nterms)) {
-    gp <- eval2(out$term[i])
-    out$label[i] <- paste0("gp", rename(collapse(gp$term)))
-    out$cov[i] <- gp$cov
-    out$gr[i] <- gp$gr
-    out$scale[i] <- gp$scale
-    out$covars[[i]] <- gp$term
-    if (gp$by != "NA") {
-      out$byvars[[i]] <- gp$by
-      str_add(out$label[i]) <- rename(gp$by)
-      Cgp <- get(gp$by, data)
-      if (is_like_factor(Cgp)) {
-        out$bylevels[[i]] <- rm_wsp(levels(as.factor(Cgp)))
-      }
-    }
-  }
   out
 }
 

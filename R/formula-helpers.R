@@ -123,7 +123,7 @@ resp_trials <- function(x) {
   if (!is.numeric(x)) {
     stop2("Number of trials must be numeric.")
   }
-  if (any(!is_wholenumber(x) || x < 1)) {
+  if (any(!is_wholenumber(x) | x < 1)) {
     stop2("Number of trials must be positive integers.")
   }
   x
@@ -133,10 +133,8 @@ resp_trials <- function(x) {
 #' @export
 resp_cat <- function(x) {
   # number of categories for ordinal models
-  if (!is.numeric(x)) {
-    stop2("Number of categories must be numeric.")
-  }
-  if (length(x) != 1L || !is_wholenumber(x) || x < 1) {
+  x <- as_one_numeric(x)
+  if (!is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
   }
   x
@@ -331,6 +329,7 @@ me <- function(x, sdx = NULL, gr = NULL) {
     gr <- as.vector(gr)
   } else {
     grname <- ""
+    gr <- character(0)
   }
   out <- rep(1, length(x))
   structure(out, 
@@ -363,7 +362,12 @@ me <- function(x, sdx = NULL, gr = NULL) {
 #' 
 #' @export
 mi <- function(x) {
-  xname <- deparse(substitute(x))
+  xname <- substitute(x)
+  vars <- all.vars(xname)
+  xname <- deparse(xname)
+  if (!is_equal(xname, vars)) {
+    stop2("Function 'mi' can only handle single untransformed variables.")
+  }
   x <- as.vector(x)
   if (!is.numeric(x)) {
     stop2("Noisy variables should be numeric.")
@@ -489,40 +493,53 @@ monotonic <- function(x) {
 
 #' Set up Gaussian process terms in \pkg{brms}
 #' 
-#' Function used to set up a Gaussian process term in \pkg{brms}.
-#' The function does not evaluate its arguments --
-#' it exists purely to help set up a model with Gaussian process terms.
+#' Set up a Gaussian process (GP) term in \pkg{brms}. The function does not
+#' evaluate its arguments -- it exists purely to help set up a model with
+#' GP terms.
 #' 
-#' @param ... One or more predictors for the Gaussian process.
+#' @param ... One or more predictors for the GP.
 #' @param by A numeric or factor variable of the same length as 
 #'   each predictor. In the numeric vector case, the elements multiply 
-#'   the values returned by the Gaussian process. In the factor variable 
-#'   case, a separate Gaussian process is fitted for each factor level.
+#'   the values returned by the GP. In the factor variable 
+#'   case, a separate GP is fitted for each factor level.
+#' @param k Optional number of basis functions for computing approximate
+#'   GPs. If \code{NA} (the default), exact GPs are computed.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#' @param iso A flag to indicate whether an isotropic (\code{TRUE}; the 
+#'   default) of a non-isotropic GP should be used. 
+#'   In the former case, the same amount of smoothing is applied to all
+#'   predictors. In the latter case, predictors may have different smoothing.
+#'   Ignored if only a single predictors is supplied.
 #' @param gr Logical; Indicates if auto-grouping should be used (defaults 
 #'   to \code{FALSE}). If enabled, observations sharing the same 
 #'   predictor values will be represented by the same latent variable
-#'   in the Gaussian process. This will improve sampling efficiency
+#'   in the GP. This will improve sampling efficiency
 #'   drastically if the number of unique predictor combinations is small
 #'   relative to the number of observations.
+#' @param cmc Logical; Only relevant if \code{by} is a factor. If \code{TRUE}
+#'   (the default), cell-mean coding is used for the \code{by}-factor, that is
+#'   one GP per level is estimated. If \code{FALSE}, contrast GPs are estimated
+#'   according to the contrasts set for the \code{by}-factor.
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
 #'   scaled so that the maximum Euclidean distance between two points
-#'   is 1. Since the default prior on \code{lscale} expects scaled
-#'   predictors, it is recommended to manually specify priors
-#'   on \code{lscale}, if \code{scale} is set to \code{FALSE}.
+#'   is 1. This often improves sampling speed and convergence.
+#' @param c Numeric value only used in approximate GPs. Defines the 
+#'   multiplicative constant of the predictors' range over which
+#'   predictions should be computed. A good default could be \code{c = 5/4} 
+#'   but we are still working on providing better recommendations.
 #'   
-#' @details A Gaussian process is a stochastic process, which
+#' @details A GP is a stochastic process, which
 #'  describes the relation between one or more predictors 
 #'  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
-#'  \eqn{d} is the number of predictors. A Gaussian process is the
+#'  \eqn{d} is the number of predictors. A GP is the
 #'  generalization of the multivariate normal distribution
 #'  to an infinite number of dimensions. Thus, it can be
 #'  interpreted as a prior over functions. Any finite sample 
 #'  realized from this stochastic process is jointly multivariate 
 #'  normal, with a covariance matrix defined by the covariance
 #'  kernel \eqn{k_p(x)}, where \eqn{p} is the vector of parameters
-#'  of the Gaussian process:
+#'  of the GP:
 #'  \deqn{f(x) ~ MVN(0, k_p(x))}
 #'  The smoothness and general behavior of the function \eqn{f} 
 #'  depends only on the choice of covariance kernel. 
@@ -545,26 +562,26 @@ monotonic <- function(x) {
 #'  
 #' @return An object of class \code{'gpterm'}, which is a list 
 #'   of arguments to be interpreted by the formula 
-#'   parsing functions of \code{brms}.
+#'   parsing functions of \pkg{brms}.
 #'   
 #' @examples
 #' \dontrun{
 #' # simulate data using the mgcv package
 #' dat <- mgcv::gamSim(1, n = 30, scale = 2)
 #' 
-#' # fit a simple gaussian process model
+#' # fit a simple GP model
 #' fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 #' summary(fit1)
 #' me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
 #' plot(me1, ask = FALSE, points = TRUE)
 #' 
-#' # fit a more complicated gaussian process model
+#' # fit a more complicated GP model
 #' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
 #' summary(fit2)
 #' me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
 #' plot(me2, ask = FALSE, points = TRUE)
 #' 
-#' # fit a multivariate gaussian process model
+#' # fit a multivariate GP model
 #' fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
 #' summary(fit3)
 #' me3 <- marginal_effects(fit3, nsamples = 200, spaghetti = TRUE)
@@ -584,15 +601,48 @@ monotonic <- function(x) {
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' @export
-gp <- function(..., by = NA, cov = "exp_quad", gr = FALSE, scale = TRUE) {
+gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
+               gr = FALSE, cmc = TRUE, scale = TRUE, c = NULL) {
   cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   by <- deparse(substitute(by))
   gr <- as_one_logical(gr)
+  cmc <- as_one_logical(cmc)
+  if (length(vars) > 1L) {
+    iso <- as_one_logical(iso)
+  } else {
+    iso <- TRUE
+  }
+  if (!isNA(k)) {
+    k <- as.integer(as_one_numeric(k))
+    if (k < 1L) {
+      stop2("'k' must be postive.")
+    }
+    if (is.null(c)) {
+      stop2(
+        "'c' must be specified for approximate GPs. ",
+        "A good default could be c = 5/4 but we are still ",
+        "working on providing better recommendations."
+      )
+    }
+    c <- as.numeric(c)
+    if (length(c) == 1L) {
+      c <- rep(c, length(vars))
+    }
+    if (length(c) != length(vars)) {
+      stop2("'c' must be of the same length as the number of covariates.")
+    }
+    if (any(c <= 0)) {
+      stop2("'c' must be positive.")
+    }
+  } else {
+    c <- NA
+  }
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, by, cov, gr, scale), class = "gpterm")
+  out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
+  structure(out, class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}
@@ -764,7 +814,7 @@ rhs <- function(x) {
   attri <- attributes(x)
   x <- as.formula(x)
   x <- if (length(x) == 3) x[-2] else x
-  do.call(structure, c(list(x), attri))
+  run(structure, c(list(x), attri))
 }
 
 lhs <- function(x) {
@@ -792,7 +842,9 @@ str2formula <- function(x, ..., collapse = "+") {
   } else {
     out <- "1"
   }
-  formula(paste("~", out), ...)
+  out <- formula(paste("~", out), ...)
+  environment(out) <- parent.frame()
+  out
 }
 
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {

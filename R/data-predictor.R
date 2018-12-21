@@ -1,27 +1,38 @@
-data_effects <- function(x, ...) {
-  # generate data for various kind of effects 
-  UseMethod("data_effects")
+#' Prepare Predictor Data
+#' 
+#' Prepare data related to predictor variables in \pkg{brms}. 
+#' Only exported for use in package development.
+#' 
+#' @param x An \R object.
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return A named list of data related to predictor variables.
+#' 
+#' @keywords internal
+#' @export
+data_predictor <- function(x, ...) {
+  UseMethod("data_predictor")
 }
 
 #' @export
-data_effects.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
     od <- old_sdata[[x$responses[i]]]
-    out <- c(out, data_effects(x$terms[[i]], old_sdata = od, ...))
+    out <- c(out, data_predictor(x$terms[[i]], old_sdata = od, ...))
   }
   out
 }
 
 #' @export
-data_effects.brmsterms <- function(x, data, prior, ranef, meef,
-                                   cov_ranef = NULL, knots = NULL, 
-                                   not4stan = FALSE, old_sdata = NULL) {
+data_predictor.brmsterms <- function(x, data, prior, ranef, meef, 
+                                     cov_ranef = NULL, knots = NULL, 
+                                     not4stan = FALSE, old_sdata = NULL, ...) {
   out <- list()
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
-    c(out) <- do.call(data_effects, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     resp <- usc(combine_prefix(x))
@@ -29,7 +40,7 @@ data_effects.brmsterms <- function(x, data, prior, ranef, meef,
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
-    c(out) <- do.call(data_effects, c(args_eff_spec, args_eff))
+    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out,
     data_gr(ranef, data, cov_ranef = cov_ranef),
@@ -39,9 +50,9 @@ data_effects.brmsterms <- function(x, data, prior, ranef, meef,
 }
 
 #' @export
-data_effects.btl <- function(x, data, ranef = empty_ranef(), 
-                             prior = brmsprior(), knots = NULL, 
-                             not4stan = FALSE, old_sdata = NULL) {
+data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
+                               prior = brmsprior(), knots = NULL, 
+                               not4stan = FALSE, old_sdata = NULL, ...) {
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
@@ -67,9 +78,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
 }
 
 #' @export 
-data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
-                              prior = brmsprior(), knots = NULL, 
-                              not4stan = FALSE, old_sdata = NULL) {
+data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
   out <- list()
@@ -92,11 +101,10 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
   out
 }
 
-data_fe <- function(bterms, data, knots = NULL,
-                    not4stan = FALSE, smooths = NULL) {
+data_fe <- function(bterms, data, not4stan = FALSE) {
   # prepare data of fixed effects and smooth terms for use in Stan
   # handle smooth terms here as they also affect the FE design matrix 
-  # Args: see data_effects
+  # Args: see data_predictor
   out <- list()
   p <- usc(combine_prefix(bterms))
   is_ordinal <- is_ordinal(bterms$family)
@@ -122,7 +130,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
   if (!new) {
     smooths <- named_list(smterms)
     for (i in seq_along(smterms)) {
-      smooths[[i]] <- mgcv::smoothCon(
+      smooths[[i]] <- smoothCon(
         eval2(smterms[i]), data = data, 
         knots = knots, absorb.cons = TRUE
       )
@@ -151,12 +159,12 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
       }
       Zs <- rasm$rand
       Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
-      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
-      c(out) <- c(knots, Zs)
+      tmp <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+      tmp <- setNames(tmp, paste0(c("nb", "knots"), p, "_", ns))
+      c(out) <- c(tmp, Zs)
     }
   }
-  Xs <- do.call(cbind, lXs)
+  Xs <- run(cbind, lXs)
   avoid_dpars(colnames(Xs), bterms = bterms)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
@@ -168,7 +176,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
 
 data_re <- function(bterms, data, ranef) {
   # prepare data for group-level effects for use in Stan
-  # Args: see data_effects
+  # Args: see data_predictor
   out <- list()
   px <- check_prefix(bterms)
   take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
@@ -215,7 +223,7 @@ data_re <- function(bterms, data, ranef) {
         for (k in seq_along(Z_temp)) {
           Z_temp[[k]] <- replicate(ncatM1, Z[, k], simplify = FALSE)
         }
-        Z <- do.call(cbind, unlist(Z_temp, recursive = FALSE))
+        Z <- run(cbind, unlist(Z_temp, recursive = FALSE))
       }
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
@@ -323,7 +331,7 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
 
 data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   # prepare data for special effects for use in Stan
-  # Args: see data_effects
+  # Args: see data_predictor
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -331,7 +339,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   p <- usc(combine_prefix(px))
   # prepare general data
   out[[paste0("Ksp", p)]] <- nrow(spef)
-  Csp <- get_model_matrix(bterms$sp, data)
+  Csp <- sp_model_matrix(bterms$sp, data)
   avoid_dpars(colnames(Csp), bterms = bterms)
   Csp <- Csp[, spef$Ic > 0, drop = FALSE]
   Csp <- lapply(seq_cols(Csp), function(i) as.array(Csp[, i]))
@@ -343,7 +351,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
     # prepare data specific to monotonic effects
     out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
     Xmo_fun <- function(x) as.array(attr(eval2(x, data), "var"))
-    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
+    Xmo <- lapply(unlist(spef$calls_mo), Xmo_fun)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
     out <- c(out, setNames(Xmo, Xmo_names))
     compute_Jmo <- is.null(Jmo)
@@ -375,7 +383,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
 
 data_cs <- function(bterms, data) {
   # prepare data for category specific effects
-  # Args: see data_effects
+  # Args: see data_predictor
   out <- list()
   if (length(all_terms(bterms[["cs"]]))) {
     p <- usc(combine_prefix(bterms))
@@ -443,90 +451,161 @@ data_Xme <- function(meef, data) {
   out
 }
 
-data_gp <- function(bterms, data, gps = NULL) {
+data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
   # prepare data for Gaussian process terms
-  # Args: see data_effects
+  # Args: see data_predictor
+  #   raw: store certain intermediate data for further processing?
+  #   ...: passed to '.data_gp'
   out <- list()
+  raw <- as_one_logical(raw)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   gpef <- tidy_gpef(bterms, data)
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     Xgp <- lapply(gpef$covars[[i]], eval2, data)
-    out[[paste0("Mgp", pi)]] <- length(Xgp)
+    D <- length(Xgp)
+    out[[paste0("Dgp", pi)]] <- D
     invalid <- ulapply(Xgp, function(x)
       !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
     )
     if (any(invalid)) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
-    Xgp <- do.call(cbind, Xgp)
+    Xgp <- run(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
-      if (length(gps) > 0L) {
+      if (length(gps)) {
         # scale Xgp based on the original data
-        Xgp <- Xgp / gps[[i]]$dmax
+        dmax <- gps[[paste0("dmax", pi)]]
       } else {
         dmax <- sqrt(max(diff_quad(Xgp)))
-        Xgp <- Xgp / dmax
       }
+      if (raw) {
+        # required for scaling of GPs with new data
+        out[[paste0("dmax", pi)]] <- dmax
+      }
+      Xgp <- Xgp / dmax
     }
+    cmc <- gpef$cmc[i]
     gr <- gpef$gr[i]
+    k <- gpef$k[i]
+    c <- gpef$c[[i]]
+    if (!isNA(k)) {
+      out[[paste0("NBgp", pi)]] <- k ^ D
+      Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    }
     byvar <- gpef$byvars[[i]]
-    byfac <- length(gpef$bylevels[[i]]) > 0L
+    byfac <- length(gpef$cons[[i]]) > 0L
     bynum <- !is.null(byvar) && !byfac
     if (byfac) {
       # for categorical 'by' variables prepare one GP per level
       # as.factor will keep unused levels needed for new data
-      Cgp <- as.factor(get(byvar, data))
-      lvls <- levels(Cgp)
-      Ngp <- Nsubgp <- rep(NA, length(lvls))
-      out[[paste0("Kgp", pi)]] <- length(lvls)
-      for (j in seq_along(lvls)) {
-        # loop along levels of 'by'
-        Igp <- which(Cgp == lvls[j])
-        Ngp[j] <- length(Igp)
-        Xgp_sub <- Xgp[Igp, , drop = FALSE]
-        if (gr) {
-          groups <- factor(match_rows(Xgp_sub, Xgp_sub))
-          ilevels <- levels(groups)
-          Jgp <- match(groups, ilevels)
-          Nsubgp[j] <- length(ilevels)
-          out[[paste0("Jgp", pi, "_", j)]] <- Jgp
-          not_dupl_Jgp <- !duplicated(Jgp)
-          Xgp_sub <-  Xgp_sub[not_dupl_Jgp, , drop = FALSE]
-        }
-        out[[paste0("Igp", pi, "_", j)]] <- Igp
-        out[[paste0("Xgp", pi, "_", j)]] <- as.array(Xgp_sub)
+      byval <- as.factor(get(byvar, data))
+      byform <- str2formula(c(ifelse(cmc, "0", "1"), "byval"))
+      con_mat <- model.matrix(byform)
+      cons <- colnames(con_mat)
+      out[[paste0("Kgp", pi)]] <- length(cons)
+      Ngp <- Nsubgp <- vector("list", length(cons))
+      for (j in seq_along(cons)) {
+        # loop along contrasts of 'by'
+        Cgp <- con_mat[, j]
+        sfx <- paste0(pi, "_", j)
+        tmp <- .data_gp(
+          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, 
+          c = c, raw = raw, gps = gps, ...
+        )
+        Ngp[[j]] <- attributes(tmp)[["Ngp"]]
+        Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
+        c(out) <- tmp
       }
-      out[[paste0("Ngp", pi)]] <- Ngp
+      out[[paste0("Ngp", pi)]] <- unlist(Ngp)
       if (gr) {
-        out[[paste0("Nsubgp", pi)]] <- Nsubgp
+        out[[paste0("Nsubgp", pi)]] <- unlist(Nsubgp)
       }
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
+      c(out) <- .data_gp(
+        Xgp, k = k, gr = gr, sfx = pi, 
+        c = c, raw = raw, gps = gps, ...
+      )
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
-      } 
-      if (gr) {
-        groups <- factor(match_rows(Xgp, Xgp))
-        ilevels <- levels(groups)
-        Jgp <- match(groups, ilevels)
-        out[[paste0("Nsubgp", pi)]] <- length(ilevels)
-        out[[paste0("Jgp", pi)]] <- Jgp
-        not_dupl_Jgp <- !duplicated(Jgp)
-        Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
       }
-      out[[paste0("Xgp", pi)]] <- as.array(Xgp)
     }
+  }
+  out
+}
+
+.data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
+                     raw = FALSE, gps = NULL) {
+  # helper function to preparae GP related data
+  # Args:
+  #   Xgp: matrix of covariate values
+  #   k, gr, c: see tidy_gpef
+  #   sfx: suffix to put at the end of data names
+  #   Cgp: optional vector of values belonging to
+  #     a certain contrast of a factor 'by' variable
+  #   raw, gps: see 'data_gp'
+  out <- list()
+  if (!is.null(Cgp)) {
+    Cgp <- unname(Cgp)
+    Igp <- which(Cgp != 0)
+    Xgp <- Xgp[Igp, , drop = FALSE]
+    out[[paste0("Igp", sfx)]] <- as.array(Igp)
+    out[[paste0("Cgp", sfx)]] <- as.array(Cgp[Igp])
+    attr(out, "Ngp") <- length(Igp)
+  }
+  if (gr) {
+    groups <- factor(match_rows(Xgp, Xgp))
+    ilevels <- levels(groups)
+    Jgp <- match(groups, ilevels)
+    Nsubgp <- length(ilevels)
+    if (!is.null(Cgp)) {
+      attr(out, "Nsubgp") <- Nsubgp
+    } else {
+      out[[paste0("Nsubgp", sfx)]]  <- Nsubgp
+    }
+    out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
+    not_dupl_Jgp <- !duplicated(Jgp)
+    Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+  }
+  if (length(gps)) {
+    # center Xgp based on the original data
+    cmeans <- gps[[paste0("cmeans", sfx)]]
+  } else {
+    cmeans <- colMeans(Xgp)
+  }
+  if (raw) {
+    out[[paste0("Xgp", sfx)]] <- Xgp
+    # required for centering of GPs with new data
+    out[[paste0("cmeans", sfx)]] <- cmeans
+    return(out)
+  }
+  if (!isNA(k)) {
+    # basis function approach requires centered variables
+    Xgp <- sweep(Xgp, 2, cmeans)
+    D <- NCOL(Xgp)
+    L <- choose_L(Xgp, c = c)
+    Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
+    slambda <- matrix(nrow = NROW(Ks), ncol = D)
+    for (m in seq_rows(Ks)) {
+      XgpL[, m] <- eigen_fun_cov_exp_quad(Xgp, m = Ks[m, ], L = L)
+      slambda[m, ] <- sqrt(eigen_val_cov_exp_quad(m = Ks[m, ], L = L))
+    }
+    out[[paste0("Xgp", sfx)]] <- XgpL
+    out[[paste0("slambda", sfx)]] <- slambda
+  } else {
+    out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
   }
   out
 }
 
 data_offset <- function(bterms, data) {
   # prepare data of offsets for use in Stan
-  # Args: see data_effects
+  # Args: see data_predictor
   out <- list()
   px <- check_prefix(bterms)
   if (is.formula(bterms$offset)) {
@@ -537,7 +616,7 @@ data_offset <- function(bterms, data) {
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
     }
-    out[[paste0("offset", p)]] <- offset
+    out[[paste0("offset", p)]] <- as.array(offset)
   }
   out
 }
@@ -581,14 +660,10 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
         # data for the 'predictor' version of ARMA
         max_lag <- max(Kar, Kma)
         out$J_lag <- as.array(rep(0, N))
-        for (n in seq_len(N)) {
-          for (i in seq_len(max_lag)) {
-            valid_lag <- n + 1 - i > 0 && n < N && 
-              tgroup[n + 1] == tgroup[n + 1 - i]
-            if (valid_lag) {
-              out$J_lag[n] <- i
-            }
-          }
+        for (n in seq_len(N)[-N]) {
+          ind <- n:max(1, n + 1 - max_lag)
+          # indexes errors to be used in the n+1th prediction
+          out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
         }
       }
     }
@@ -645,17 +720,25 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
     W_tmp <- autocor$W
     W_tmp[upper.tri(W_tmp)] <- NA
     edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
-    Nneigh <- Matrix::colSums(autocor$W)
-    if (any(Nneigh == 0)) {
-      stop2("All locations should have at least one neighbor.")
+    c(out) <- nlist(
+      Nloc, Jloc, Nedges = nrow(edges),  
+      edges1 = as.array(edges[, 1]), 
+      edges2 = as.array(edges[, 2])
+    )
+    if (autocor$type %in% c("escar", "esicar")) {
+      Nneigh <- Matrix::colSums(autocor$W)
+      if (any(Nneigh == 0)) {
+        stop2(
+          "For exact sparse CAR, all locations should have at ", 
+          "least one neighbor within the provided data set. ",
+          "Consider using type = 'icar' instead."
+        )
+      }
+      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+      eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+      c(out) <- nlist(Nneigh, eigenW)
     }
-    inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-    eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
-    eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
-    out <- c(out, nlist(
-      Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
-      edges1 = as.array(edges[, 1]), edges2 = as.array(edges[, 2])
-    ))
   } else if (is.cor_bsts(autocor)) {
     out$tg <- as.array(tgroup)
   } else if (is.cor_fixed(autocor)) {
@@ -681,10 +764,19 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
   out
 }
 
+#' Prepare Response Data
+#' 
+#' Prepare data related to response variables in \pkg{brms}. 
+#' Only exported for use in package development.
+#' 
+#' @param x An \R object.
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return A named list of data related to response variables.
+#' 
+#' @keywords internal
+#' @export
 data_response <- function(x, ...) {
-  # prepare data for the response variable to be passed to Stan
-  # this shouldn't be part of stan_effects() to allow for
-  # preparation of response variables without anything else
   UseMethod("data_response")
 }
 
@@ -705,7 +797,7 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     not4stan = FALSE, new = FALSE,
-                                    old_sdata = NULL) {
+                                    old_sdata = NULL, ...) {
   # prepare data for the response variable
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
@@ -791,13 +883,15 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (length(out$trials) == 1L) {
       out$trials <- rep(out$trials, nrow(data))
     }
-    if (max(out$trials) == 1L && !not4stan) {
-      message("Only 2 levels detected so that family 'bernoulli' ",
-              "might be a more efficient choice.")
-    }
-    if (check_response && any(out$Y > out$trials)) {
-      stop2("Number of trials is smaller than ",
-            "the number of events.")
+    if (has_trials(x$family)) {
+      if (max(out$trials) == 1L && !not4stan) {
+        message("Only 2 levels detected so that family 'bernoulli' ",
+                "might be a more efficient choice.")
+      }
+      if (check_response && any(out$Y > out$trials)) {
+        stop2("Number of trials is smaller than ",
+              "the number of events.")
+      }
     }
     out$trials <- as.array(out$trials)
   }

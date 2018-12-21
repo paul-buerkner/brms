@@ -50,8 +50,7 @@ pp_check(fit2)
 loo(fit1, fit2)
 
 ## ---------------------------------------------------------------------------------------
-url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"
-loss <- read.csv(url)
+loss <- read.csv("https://paul-buerkner.github.io/data/loss.csv")
 head(loss)
 
 ## ---- results='hide'--------------------------------------------------------------------

@@ -9,10 +9,10 @@
   robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned

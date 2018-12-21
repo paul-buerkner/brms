@@ -26,8 +26,17 @@ test_that("Poisson model from brm doc works correctly", {
   expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
   # test kfold
-  kfold1 <- kfold(fit1, chains = 1, iter = 1000)
+  kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
   expect_range(kfold1$kfoldic, 1210, 1260)
+  # define a loss function
+  rmse <- function(y, yrep) {
+    yrep_mean <- colMeans(yrep)
+    sqrt(mean((yrep_mean - y)^2))
+  }
+  # predict responses and evaluate the loss
+  kfp1 <- kfold_predict(kfold1)
+  rmse1 <- rmse(y = kfp1$y, yrep = kfp1$yrep)
+  expect_range(rmse1, 6, 7)
 })
 
 test_that("Ordinal model from brm doc works correctly", {
@@ -91,6 +100,7 @@ test_that("Non-linear model from brm doc works correctly", {
 })
 
 test_that("ARMA models work correctly", {
+  set.seed(1234)
   N <- 100
   y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
   dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
@@ -221,6 +231,8 @@ test_that("categorical models work correctly", {
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
+  expect_equal(dim(fitted(fit2, scale = "linear")), 
+               c(nobs(fit2), 4, ncat - 1))
   # tests with new data
   newd <- inhaler[1:10, ]
   newd$rating <- NULL
@@ -228,6 +240,7 @@ test_that("categorical models work correctly", {
 })
 
 test_that("multivariate normal models work correctly", {
+  set.seed(1234)
   N <- 300
   y1 <- rnorm(N)
   y2 <- rnorm(N, mean = 1, sd = 2)
@@ -338,6 +351,7 @@ test_that("Non-linear models work correctly", {
 })
 
 test_that("Non-linear models of distributional parameters work correctly", {
+  set.seed(1234)
   x <- rnorm(100)
   y <- rnorm(100, 1, exp(x))
   dat <- data.frame(y, x, g = rep(1:10, each = 10))
@@ -348,12 +362,14 @@ test_that("Non-linear models of distributional parameters work correctly", {
   bprior <- prior(normal(0, 3), nlpar = a)
   fit <- brm(bform, dat, prior = bprior, chains = 2)
   print(fit)
-  expect_ggplot(plot(marginal_effects(fit, method = "predict"), ask = FALSE)[[1]])
+  me <- marginal_effects(fit, method = "predict")
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
   expect_range(LOO(fit)$estimates[3, 1], 240, 350)
 })
 
 test_that("Nested non-linear models work correctly", {
+  set.seed(2345)
   dat <- data.frame(x = rnorm(100), z = 1:5)
   dat$y <- 0.3 + 0.7 * brms:::inv_logit(2 * dat$x)
   bform <- bf(
@@ -372,12 +388,14 @@ test_that("Nested non-linear models work correctly", {
 })
 
 test_that("Multivariate GAMMs work correctly", {
+  set.seed(4312)
   n <- 200
   sig <- 2
   dat <- mgcv::gamSim(1, n = n, scale = sig)
-  fit_gam <- brm(y ~ t2(x0, x2) + s(x1), data = dat,
-                 chains = 2,
-                 control = list(adapt_delta = 0.95))
+  fit_gam <- brm(
+    y ~ t2(x0, x2) + s(x1), data = dat, chains = 2,
+    control = list(adapt_delta = 0.95)
+  )
   print(fit_gam)
 
   me <- marginal_effects(fit_gam)
@@ -390,16 +408,17 @@ test_that("Multivariate GAMMs work correctly", {
   ms <- marginal_smooths(fit_gam, resolution = 100, too_far = 0.05)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
 
-  expect_range(loo(fit_gam)$estimates[3, 1], 880, 940)
+  expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
 
-  newd <- data.frame(x0=(0:30)/30, x1=(0:30)/30,
-                     x2=(0:30)/30, x3=(0:30)/30)
+  newd <- data.frame(x0 = (0:30)/30, x1 = (0:30)/30,
+                     x2 = (0:30)/30, x3 = (0:30)/30)
   prfi <- cbind(predict(fit_gam, newd), fitted(fit_gam, newdata = newd))
   expect_range(prfi[, 1], prfi[, 5] - 0.25, prfi[, 5] + 0.25)
 })
 
 test_that("GAMMs with factor variable in 'by' work correctly", {
+  set.seed(7)
   dat <- mgcv::gamSim(4, n = 200, dist = "normal")
   fit_gam2 <- brm(y ~ fac + s(x2, by = fac, k = 4), dat,
                   chains = 2)
@@ -466,8 +485,9 @@ test_that("update works correctly for some special cases", {
 })
 
 test_that("Wiener diffusion models work correctly", {
+  set.seed(312)
   x <- rnorm(100, mean = 1)
-  dat <- rwiener(n=1, alpha=2, tau=.3, beta=.5, delta=.5+x)
+  dat <- rwiener(n = 1, alpha = 2, tau = .3, beta = .5, delta = .5 + x)
   dat$x <- x
 
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,
@@ -501,11 +521,14 @@ test_that("disc parameter in ordinal models is handled correctly", {
   expect_range(waic(fit)$estimates[3, 1], 870, 920)
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit)), c(nobs(fit), ncat))
-  expect_ggplot(plot(marginal_effects(fit), ask = FALSE,
-                     points = TRUE, jitter_width = 0.3)[[3]])
+  expect_ggplot(plot(
+    marginal_effects(fit), ask = FALSE,
+    points = TRUE, point_args = list(width = 0.3)
+  )[[3]])
 })
 
 test_that("Mixture models work correctly", {
+  set.seed(12346)
   dat <- data.frame(
     y = c(rnorm(300), rnorm(100, 6), rnorm(200, 12)),
     x = rnorm(600),
@@ -564,6 +587,7 @@ test_that("Mixture models work correctly", {
 
 test_that("Gaussian processes work correctly", {
   ## Basic GPs
+  set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
   fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, 
               chains = 2)
@@ -602,6 +626,39 @@ test_that("Gaussian processes work correctly", {
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
 
+test_that("Approximate Gaussian processes work correctly", {
+  set.seed(1245)
+  dat <- mgcv::gamSim(4, n = 90, scale = 2)
+  
+  # isotropic approximate GP
+  fit1 <- brm(
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4), 
+    data = dat, chains = 2, cores = 2
+  )
+  print(fit1)
+  expect_range(bayes_R2(fit1)[1, 1], 0.60, 0.75) 
+  me <- marginal_effects(
+    fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    resolution = 20, surface = TRUE
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_range(WAIC(fit1)$estimates[3, 1], 390, 430)
+  
+  # non isotropic approximate GP
+  fit2 <- brm(
+    y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE),
+    data = dat, chains = 2, cores = 2
+  )
+  print(fit2)
+  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.58) 
+  me <- marginal_effects(
+    fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
+    resolution = 20, surface = TRUE
+  )
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_range(WAIC(fit2)$estimates[3, 1], 420, 440)
+})
+
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
@@ -625,6 +682,7 @@ test_that("SAR models work correctly", {
 
 test_that("CAR models work correctly", {
   # generate some spatial data
+  set.seed(4331)
   east <- north <- 1:10
   Grid <- expand.grid(east, north)
   K <- nrow(Grid)

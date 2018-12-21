@@ -84,7 +84,7 @@ brmsfit_example6 <- brm(
   stan_model_args = stan_model_args, testmode = TRUE
 )
 
-devtools::use_data(
+usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3, 
   brmsfit_example4, brmsfit_example5, brmsfit_example6,
   internal = TRUE, overwrite = TRUE

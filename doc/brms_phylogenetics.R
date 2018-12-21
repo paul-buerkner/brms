@@ -19,14 +19,12 @@ opts_chunk$set(
 library(brms)
 theme_set(theme_default())
 
-## ---- include = FALSE-------------------------------------------------------------------
-my_path <- "C:/Users/paulb/Dropbox/brms/Models/MCMCglmm/"
-
 ## ---------------------------------------------------------------------------------------
-# uncomment and set your path to the folder where you stored the data
-# my_path <- "insert your path here"
-phylo <- ape::read.nexus(paste0(my_path, "phylo.nex"))
-data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
+phylo <- ape::read.nexus("https://paul-buerkner.github.io/data/phylo.nex")
+data_simple <- read.table(
+  "https://paul-buerkner.github.io/data/data_simple.txt", 
+  header = TRUE
+)
 head(data_simple)
 
 ## ---------------------------------------------------------------------------------------
@@ -57,7 +55,10 @@ hyp <- "sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"
 plot(hyp)
 
 ## ---------------------------------------------------------------------------------------
-data_repeat <- read.table(paste0(my_path, "data_repeat.txt"), header = TRUE)
+data_repeat <- read.table(
+  "https://paul-buerkner.github.io/data/data_repeat.txt", 
+  header = TRUE
+)
 data_repeat$spec_mean_cf <- 
   with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 head(data_repeat)
@@ -109,7 +110,10 @@ hyp <- paste(
 (hyp <- hypothesis(model_repeat2, hyp, class = NULL))
 
 ## ---------------------------------------------------------------------------------------
-data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
+data_fisher <- read.table(
+  "https://paul-buerkner.github.io/data/data_effect.txt", 
+  header = TRUE
+)
 data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 
@@ -131,7 +135,10 @@ summary(model_fisher)
 plot(model_fisher)
 
 ## ---------------------------------------------------------------------------------------
-data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
+data_pois <- read.table(
+  "https://paul-buerkner.github.io/data/data_pois.txt", 
+  header = TRUE
+)
 data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 

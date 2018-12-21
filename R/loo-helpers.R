@@ -45,7 +45,7 @@ compute_loos <- function(
       args$x <- models[[i]]
       args$model_name <- names(models)[i]
       args$use_stored <- use_stored[i]
-      out[[i]] <- do.call(compute_loo, args) 
+      out[[i]] <- run(compute_loo, args) 
     }
     compare <- as_one_logical(compare)
     if (compare) {
@@ -58,14 +58,15 @@ compute_loos <- function(
     args$x <- models[[1]]
     args$model_name <- names(models)
     args$use_stored <- use_stored
-    out <- do.call(compute_loo, args) 
+    out <- run(compute_loo, args) 
   }
   out
 }
 
 compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
-                        reloo = FALSE, k_threshold = 0.7, pointwise = FALSE,
-                        model_name = "", use_stored = TRUE, ...) {
+                        reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
+                        pointwise = FALSE, model_name = "", 
+                        use_stored = TRUE, ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
@@ -73,7 +74,9 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   #   model_name: original variable name of object 'x'
   #   use_stored: use precomputed criterion objects if possible?
   #   reloo: call 'reloo' after computing 'loo'?
+  #   reloo_args: list of arguments passed to 'reloo'
   #   pointwise: compute log-likelihood point-by-point?
+  #   use_stored: Use stored 'loo' object?
   #   ...: passed to other post-processing methods
   # Returns:
   #   an object of class 'loo'
@@ -86,7 +89,7 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   } else {
     # compute the criterion
     if (criterion == "kfold") {
-      out <- do.call(kfold_internal, list(x, ...))
+      out <- run(kfold_internal, list(x, ...))
     } else {
       contains_samples(x)
       pointwise <- as_one_logical(pointwise)
@@ -103,16 +106,16 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         loo_args$log_ratios <- -loo_args$x
         loo_args$x <- NULL
       }
-      fun <- eval2(paste0("loo::", criterion))
-      out <- SW(do.call(fun, loo_args))
+      out <- SW(run(criterion, loo_args, pkg = "loo"))
     }
+    # TODO: fix hashing when new data is passed
     attr(out, "yhash") <- hash_response(x)
   }
   attr(out, "model_name") <- model_name
   if (criterion == "loo") {
     if (reloo) {
-      reloo_args <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- do.call(reloo, c(reloo_args, ...))
+      c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
+      out <- run(reloo.loo, reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -189,12 +192,14 @@ loo_compare.brmsfit <- function(
 #' @param file Either \code{NULL} or a character string. In the latter case, the
 #'   fitted model object including the newly added criterion values is saved via
 #'   \code{\link{saveRDS}} in a file named after the string supplied in
-#'   \code{file}. The \code{.rds} extension is added automatically. Only applies
-#'   if new criteria were actually added via \code{add_ic} or if
-#'   \code{force_save} was set to \code{TRUE}.
+#'   \code{file}. The \code{.rds} extension is added automatically. If \code{x}
+#'   was already stored in a file before, the file name will be reused
+#'   automatically (with a message) unless overwritten by \code{file}. In any
+#'   case, \code{file} only applies if new criteria were actually added via
+#'   \code{add_criterion} or if \code{force_save} was set to \code{TRUE}.
 #' @param force_save Logical; only relevant if \code{file} is specified and
 #'   ignored otherwise. If \code{TRUE}, the fitted model object will be saved
-#'   regardless of whether new criteria were added via \code{add_ic}.
+#'   regardless of whether new criteria were added via \code{add_criterion}.
 #' @param ... Further arguments passed to the underlying 
 #'   functions computing the model fit criteria.
 #'   
@@ -238,8 +243,12 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     stop2("Argument 'criterion' should be a subset of ",
           collapse_comma(options))
   }
+  auto_save <- FALSE
   if (!is.null(file)) {
     file <- paste0(as_one_character(file), ".rds")
+  } else {
+    file <- x$file
+    if (!is.null(file)) auto_save <- TRUE
   }
   force_save <- as_one_logical(force_save)
   overwrite <- as_one_logical(overwrite)
@@ -251,16 +260,20 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   args <- list(x, ...)
   for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
     args$model_names <- model_name
-    x[[fun]] <- do.call(fun, args)
+    x[[fun]] <- run(fun, args)
   }
   if ("R2" %in% criterion) {
     args$summary <- FALSE
-    x$R2 <- do.call(bayes_R2, args)
+    x$R2 <- run(bayes_R2, args)
   }
   if ("marglik" %in% criterion) {
-    x$marglik <- do.call(bridge_sampler, args)
+    x$marglik <- run(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_criteria))) {
+    if (auto_save) {
+      message("Automatically saving the model object in '", file, "'")
+    }
+    x$file <- file
     saveRDS(x, file = file)
   } 
   x
@@ -269,8 +282,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
 args_not_for_reloo <- function() {
   # arguments not usable with 'reloo'
   # the same arguments cannot be used in add_criterion
-  c("newdata", "re_formula", "subset", "nsamples",
-    "allow_new_levels", "sample_new_levels", "new_objects")
+  c("newdata", "re_formula", "allow_new_levels", 
+    "sample_new_levels", "new_objects")
 }
 
 hash_response <- function(x, ...) {
@@ -464,134 +477,6 @@ reloo <- function(x, fit, k_threshold = 0.7, check = TRUE,
   # what should we do about pareto-k? for now setting them to 0
   x$diagnostics$pareto_k[obs] <- 0
   x
-}
-
-kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL, 
-                           group = NULL, newdata = NULL, resp = NULL,
-                           save_fits = FALSE, ...) {
-  # most of the code is taken from rstanarm::kfold
-  # Args:
-  #   group: character string of length one naming 
-  #     a variable to group excluded chunks
-  stopifnot(is.brmsfit(x))
-  if (is.null(newdata)) {
-    mf <- model.frame(x) 
-  } else {
-    mf <- as.data.frame(newdata)
-  }
-  N <- nrow(mf)
-  # validate argument 'group'
-  if (!is.null(group)) {
-    valid_groups <- get_cat_vars(x)
-    if (length(group) != 1L || !group %in% valid_groups) {
-      stop2("Group '", group, "' is not a valid grouping factor. ",
-            "Valid groups are: \n", collapse_comma(valid_groups))
-    }
-    gvar <- factor(get(group, mf))
-  }
-  # validate argument 'folds'
-  if (is.null(folds)) {
-    if (is.null(group)) {
-      fold_type <- "random"
-      folds <- loo::kfold_split_random(K, N)
-    } else {
-      fold_type <- "group"
-      folds <- as.numeric(gvar)
-      K <- length(levels(gvar))
-      message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
-    }
-  } else if (is.character(folds) && length(folds) == 1L) {
-    opts <- c("stratified", "balanced", "loo")
-    fold_type <- match.arg(folds, opts)
-    if (fold_type == "loo") {
-      folds <- seq_len(N)
-      K <- N
-      message("Setting 'K' to the number of observations (", K, ")")
-    } else if (fold_type == "stratified") {
-      if (is.null(group)) {
-        stop2("Argument 'group' is required for stratified folds.")
-      }
-      folds <- loo::kfold_split_stratified(K, gvar)
-    } else if (fold_type == "balanced") {
-      if (is.null(group)) {
-        stop2("Argument 'group' is required for balanced folds.")
-      }
-      folds <- loo::kfold_split_balanced(K, gvar)
-    }
-  } else {
-    fold_type <- "custom"
-    folds <- as.numeric(factor(folds))
-    if (length(folds) != N) {
-      stop2("If 'folds' is a vector, it must be of length N.")
-    }
-    K <- max(folds)
-    message("Setting 'K' to the number of folds (", K, ")")
-  }
-  # validate argument 'Ksub'
-  if (is.null(Ksub)) {
-    Ksub <- seq_len(K)
-  } else {
-    # see issue #441 for reasons to check for arrays
-    is_array_Ksub <- is.array(Ksub)
-    Ksub <- as.integer(Ksub)
-    if (any(Ksub <= 0 | Ksub > K)) {
-      stop2("'Ksub' must contain positive integers not larger than 'K'.")
-    }
-    if (length(Ksub) == 1L && !is_array_Ksub) {
-      Ksub <- sample(seq_len(K), Ksub)
-    } else {
-      Ksub <- unique(Ksub)
-    }
-    Ksub <- sort(Ksub)
-  }
-  
-  if (save_fits) {
-    fits <- array(
-      list(), dim = c(length(Ksub), 2), 
-      dimnames = list(NULL, c("fit", "omitted"))
-    )
-  }
-  lppds <- obs_order <- vector("list", length(Ksub))
-  for (k in Ksub) {
-    message("Fitting model ", k, " out of ", K)
-    ks <- match(k, Ksub)
-    if (fold_type == "loo" && !is.null(group)) {
-      omitted <- which(folds == folds[k])
-      predicted <- k
-    } else {
-      omitted <- predicted <- which(folds == k)
-    }
-    mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_k <- subset_autocor(x, -omitted)
-    fit_k <- SW(update(fit_k, newdata = mf_omitted, refresh = 0, ...))
-    if (save_fits) {
-      fits[ks, ] <- list(fit = fit_k, omitted = omitted) 
-    }
-    fit_k <- subset_autocor(fit_k, predicted, autocor = x$autocor)
-    obs_order[[ks]] <- predicted
-    lppds[[ks]] <- log_lik(
-      fit_k, newdata = mf[predicted, , drop = FALSE], 
-      allow_new_levels = TRUE, resp = resp
-    )
-  }
-  
-  elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
-  # make sure elpds are put back in the right order
-  elpds <- elpds[order(unlist(obs_order))]
-  elpd_kfold <- sum(elpds)
-  se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
-  rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
-  cnames <- c("Estimate", "SE")
-  estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
-  estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
-  estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
-  out <- nlist(estimates, pointwise = cbind(elpd_kfold = elpds))
-  atts <- nlist(K, Ksub, group, folds, fold_type)
-  attributes(out)[names(atts)] <- atts
-  if (save_fits) {
-    out$fits <- fits
-  }
-  structure(out, class = c("kfold", "loo"))
 }
 
 recommend_loo_options <- function(n, k_threshold, model_name = "") {

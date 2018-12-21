@@ -48,8 +48,8 @@ More information is provided in the 'Details' section.}
 of the models should be compared to each other
 via \code{\link{loo_compare}}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 

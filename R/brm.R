@@ -144,7 +144,8 @@
 #'   added automatically. If the file already exists, \code{brm} will load and
 #'   return the saved model object instead of refitting the model. As existing
 #'   files won't be overwritten, you have to manually remove the file in order
-#'   to refit and save the model under an existing file name.
+#'   to refit and save the model under an existing file name. The file name
+#'   is stored in the \code{brmsfit} object for later usage.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
 #' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether the
@@ -349,14 +350,28 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       if (!is.brmsfit(x)) {
         stop2("Object loaded via 'file' is not of class 'brmsfit'.")
       }
+      x$file <- file
       return(x)
     }
   }
   
+  # validate arguments later passed to Stan
   dots <- list(...)
-  algorithm <- match.arg(algorithm)
   testmode <- isTRUE(dots$testmode)
   dots$testmode <- NULL
+  algorithm <- match.arg(algorithm)
+  silent <- as_one_logical(silent)
+  future <- as_one_logical(future)
+  iter <- as_one_numeric(iter)
+  warmup <- as_one_numeric(warmup)
+  thin <- as_one_numeric(thin)
+  chains <- as_one_numeric(chains)
+  cores <- as_one_numeric(cores)
+  seed <- as_one_numeric(seed, allow_na = TRUE)
+  if (is.character(inits) && !inits %in% c("random", "0")) {
+    inits <- get(inits, mode = "function", envir = parent.frame())
+  }
+  
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
@@ -380,8 +395,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
-      prior, formula, data = data,  
-      sample_prior = sample_prior
+      prior, formula, data = data, sparse = sparse,
+      sample_prior = sample_prior, warn = FALSE
     )
     # initialize S3 object
     x <- brmsfit(
@@ -420,26 +435,22 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     message("Compiling the C++ model")
     x$fit <- eval_silent(
-      do.call(rstan::stan_model, stan_model_args),
-      silent = silence_stan_model
+      run(rstan::stan_model, stan_model_args),
+      silent = silence_stan_model, type = "message"
     )
   }
   
-  # arguments to be passed to Stan
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
-  }
   args <- nlist(
     object = x$fit, data = sdata, pars = x$exclude, 
     include = FALSE, algorithm, iter, seed
   )
   args[names(dots)] <- dots
-  
   message("Start sampling")
   if (args$algorithm == "sampling") {
     args$algorithm <- NULL
-    args <- c(args,
-      nlist(init = inits, warmup, thin, control, show_messages = !silent)
+    c(args) <- nlist(
+      init = inits, warmup, thin, control, 
+      show_messages = !silent
     )
     if (future) {
       require_package("future")
@@ -454,7 +465,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
           args$init <- inits[i]
         }
         futures[[i]] <- future::future(
-          do.call(rstan::sampling, args), packages = "rstan"
+          run(rstan::sampling, args), packages = "rstan"
         )
       }
       for (i in seq_len(chains)) {
@@ -463,17 +474,18 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x$fit <- rstan::sflist2stanfit(fits)
       rm(futures, fits)
     } else {
-      args <- c(args, nlist(chains, cores))
-      x$fit <- do.call(rstan::sampling, args) 
+      c(args) <- nlist(chains, cores)
+      x$fit <- run(rstan::sampling, args) 
     }
   } else {
     # vb does not support parallel execution
-    x$fit <- do.call(rstan::vb, args)
+    x$fit <- run(rstan::vb, args)
   }
   if (!testmode) {
     x <- rename_pars(x)
   }
   if (!is.null(file)) {
+    x$file <- file
     saveRDS(x, file = file)
   }
   x

@@ -1,3 +1,5 @@
+^Meta$
+^doc$
 ^.*\.Rproj$
 ^.*\.RData$
 ^.*\.Rhistory$
@@ -12,6 +14,7 @@
 ^brm\.stan$
 ^\.travis\.yml$
 ^tests/testthat/Rplots\.pdf$
-^tests/local/
+^tests/local$
 ^tests/brmsfit_examples\.R$
 ^LICENSE$
+^CRAN-RELEASE$

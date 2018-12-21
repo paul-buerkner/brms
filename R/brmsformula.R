@@ -144,7 +144,7 @@
 #'   Category specific effects can only be estimated in
 #'   ordinal models and are explained in more detail in the package's 
 #'   main vignette (type \code{vignette("brms_overview")}). 
-#'   The other thee effect types are explained in the following.
+#'   The other three effect types are explained in the following.
 #'   
 #'   A monotonic predictor must either be integer valued or an ordered factor, 
 #'   which is the first difference to an ordinary continuous predictor. 
@@ -272,7 +272,7 @@
 #'   is constant across all observations, say \code{10}, 
 #'   we may also write \code{success | trials(10)}. 
 #'   \bold{Please note that the \code{cbind()} syntax will not work 
-#'   in brms in the expected way because this syntax is resevered
+#'   in \pkg{brms} in the expected way because this syntax is reserved
 #'   for use in multivariate models, only.}
 #'   
 #'   For all ordinal families, \code{aterms} may contain a term 
@@ -337,7 +337,7 @@
 #'   non-linear model being defined via
 #'   \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
 #'   can be added in the same way as for ordinary formulas).
-#'   To tell \code{brms} that this is a non-linear model, 
+#'   To tell \pkg{brms} that this is a non-linear model, 
 #'   we set argument \code{nl} to \code{TRUE}.
 #'   Now we have to specify a model for each of the non-linear parameters. 
 #'   Let's say we just want to estimate those three parameters
@@ -422,12 +422,12 @@
 #'   terms allowed in non-mixture models are allowed in mixture models
 #'   as well.
 #'   
-#'   distributional parameters of mixture distributions have the same 
+#'   Distributional parameters of mixture distributions have the same 
 #'   name as those of the corresponding ordinary distributions, but with 
 #'   a number at the end to indicate the mixture component. For instance, if
 #'   you use family \code{mixture(gaussian, gaussian)}, the distributional
 #'   parameters are \code{sigma1} and \code{sigma2}.
-#'   distributional parameters of the same class can be fixed to the same value. 
+#'   Distributional parameters of the same class can be fixed to the same value. 
 #'   For the above example, we could write \code{sigma2 = "sigma1"} to make
 #'   sure that both components have the same residual standard deviation,
 #'   which is in turn estimated from the data.
@@ -456,7 +456,7 @@
 #'   or with help of the \code{\link{mvbf}} function.
 #'   Suppose that \code{y1} and \code{y2} are response variables 
 #'   and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
-#'   specifies a multivariate model,
+#'   specifies a multivariate model.
 #'   The effects of all terms specified at the RHS of the formula 
 #'   are assumed to vary across response variables. 
 #'   For instance, two parameters will be estimated for \code{x}, 
@@ -1213,6 +1213,62 @@ update.mvbrmsformula <- function(object, formula., ...) {
     stop2("Updating formulas of multivariate models is not yet possible.")
   }
   object
+}
+
+#' Update Formula Addition Terms
+#'
+#' Update additions terms used in formulas of \pkg{brms}. See
+#' \code{\link{addition-terms}} for details.
+#'
+#' @param formula Two-sided formula to be updated.
+#' @param adform One-sided formula containing addition terms to update
+#'   \code{formula} with.
+#' @param action Indicates what should happen to the existing addition terms in
+#'   \code{formula}. If \code{"update"} (the default), old addition terms that
+#'   have no corresponding term in \code{adform} will be kept. If
+#'   \code{"replace"}, all old addition terms will be removed.
+#'
+#' @return An object of class \code{formula}.
+#' 
+#' @examples 
+#' form <- y | trials(size) ~ x
+#' update_adterms(form, ~ trials(10))
+#' update_adterms(form, ~ weights(w))
+#' update_adterms(form, ~ weights(w), action = "replace")
+#' update_adterms(y ~ x, ~ trials(10))
+#'
+#' @export
+update_adterms <- function(formula, adform, action = c("update", "replace")) {
+  formula <- as.formula(formula)
+  adform <- as.formula(adform)
+  action <- match.arg(action)
+  if (is.null(lhs(formula))) {
+    stop2("Can't update a ond-sided formula.")
+  }
+  str_formula <- formula2str(formula)
+  old_ad <- get_matches("(?<=\\|)[^~]*(?=~)", str_formula, perl = TRUE)
+  new_ad_terms <- attr(terms(adform), "term.labels")
+  if (action == "update" && length(old_ad)) {
+    # extract adterms from the original formula
+    old_ad <- formula(paste("~", old_ad))
+    old_ad_terms <- attr(terms(old_ad), "term.labels")
+    old_adnames <- get_matches("^[^\\(]+", old_ad_terms)
+    old_adnames <- sub("^resp_", "", old_adnames)
+    new_adnames <- get_matches("^[^\\(]+", new_ad_terms)
+    new_adnames <- sub("^resp_", "", new_adnames)
+    # keep unmatched adterms of the original formula
+    keep <- !old_adnames %in% new_adnames
+    new_ad_terms <- c(old_ad_terms[keep], new_ad_terms)
+  }
+  if (length(new_ad_terms)) {
+    new_ad_terms <- paste(new_ad_terms, collapse = "+")
+    new_ad_terms <- paste("|", new_ad_terms)
+  }
+  resp <- gsub("\\|.+", "", deparse_combine(formula[[2]]))
+  out <- formula(paste(resp, new_ad_terms, "~1"))
+  out[[3]] <- formula[[3]]
+  attributes(out) <- attributes(formula)
+  out
 }
 
 #' @export

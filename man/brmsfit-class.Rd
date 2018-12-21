@@ -65,6 +65,9 @@ among others containing the posterior samples}
 
 \item{\code{version}}{The versions of \pkg{brms} and \pkg{rstan} with 
 which the model was fitted}
+
+\item{\code{file}}{Optional name of a file in which the model object was stored in
+or loaded from}
 }}
 
 \seealso{

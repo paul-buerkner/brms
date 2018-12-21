@@ -182,7 +182,8 @@ after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
 return the saved model object instead of refitting the model. As existing
 files won't be overwritten, you have to manually remove the file in order
-to refit and save the model under an existing file name.}
+to refit and save the model under an existing file name. The file name
+is stored in the \code{brmsfit} object for later usage.}
 
 \item{...}{Further arguments passed to Stan that is to
 \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}

@@ -20,8 +20,8 @@ for more details.}
 check is performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{...}{Further arguments passed to 
 \code{\link{update.brmsfit}} such

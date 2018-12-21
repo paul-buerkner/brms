@@ -1,10 +1,10 @@
-stan_effects <- function(x, ...) {
-  # generate stan code various kind of effects 
-  UseMethod("stan_effects")
+stan_predictor <- function(x, ...) {
+  # generate stan code for predictor terms
+  UseMethod("stan_predictor")
 }
 
 #' @export
-stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
+stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   ranef: output of tidy_ranef()
@@ -48,13 +48,13 @@ stan_effects.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
+stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
   #   ilink: character vector of length 2 containing
   #     Stan code for the link function
-  #   ...: passed to stan_effects.btl
+  #   ...: passed to stan_predictor.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
   par <- combine_prefix(x, keep_mu = TRUE, nlp = TRUE)
@@ -75,9 +75,15 @@ stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
     )
   }
   # add whitespaces to be able to replace parameters and covariates
-  meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
+  syms <- c(
+    "+", "-", "*", "/", "%", "^", ".*", "./", "'", ")", "(", 
+    ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||" 
+  )
+  regex <- paste0("(?<!\\.)", escape_all(syms), "(?!=)")
   nlmodel <- rm_wsp(collapse(deparse(x$formula[[2]])))
-  nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
+  nlmodel <- wsp(rename(
+    nlmodel, regex, wsp(syms), fixed = FALSE, perl = TRUE
+  )) 
   nlmodel <- rename(nlmodel, 
     c(wsp(nlpars), covars, " ( ", " ) "), 
     c(new_nlpars, new_covars, "(", ")")
@@ -99,8 +105,8 @@ stan_effects.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE, 
-                                   rescor = FALSE, ...) {
+stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE, 
+                                     rescor = FALSE, ...) {
   # Stan code for distributional parameters
   # Args:
   #   rescor: indicate if this is part of an MV model estimating rescor
@@ -114,7 +120,7 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
   )
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
-    out[[nlp]] <- do.call(stan_effects, c(nlp_args, args))
+    out[[nlp]] <- run(stan_predictor, c(nlp_args, args))
   }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
@@ -123,7 +129,7 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
-      out[[dp]] <- do.call(stan_effects, c(dp_args, args))
+      out[[dp]] <- run(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       out[[dp]] <- list(data = dp_def)
     } else if (is.character(x$fdpars[[dp]]$value)) {
@@ -153,10 +159,9 @@ stan_effects.brmsterms <- function(x, data, prior, sparse = FALSE,
 }
 
 #' @export
-stan_effects.mvbrmsterms <- function(x, prior, ...) {
-  out <- collapse_lists(
-    ls = lapply(x$terms, stan_effects, prior = prior, rescor = x$rescor, ...)
-  )
+stan_predictor.mvbrmsterms <- function(x, prior, ...) {
+  out <- lapply(x$terms, stan_predictor, prior = prior, rescor = x$rescor, ...)
+  out <- collapse_lists(ls = out)
   if (x$rescor) {
     # we already know at this point that all families are identical
     adforms <- lapply(x$terms, "[[", "adforms")
@@ -797,24 +802,24 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   }
   # prepare Stan code of the linear predictor component
   for (i in seq_rows(spef)) {
-    eta <- spef$call_prod[[i]]
-    if (!is.null(spef$call_mo[[i]])) {
+    eta <- spef$joint_call[[i]]
+    if (!is.null(spef$calls_mo[[i]])) {
       new_mo <- paste0(
         "mo(simo", p, "_", spef$Imo[[i]], 
         ", Xmo", p, "_", spef$Imo[[i]], "[n])"
       )
-      eta <- rename(eta, spef$call_mo[[i]], new_mo)
+      eta <- rename(eta, spef$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$call_me[[i]])) {
+    if (!is.null(spef$calls_me[[i]])) {
       Kme <- seq_along(meef$term)
       Ime <- match(meef$grname, unique(meef$grname))
       nme <- ifelse(nzchar(meef$grname), paste0("Jme_", Ime, "[n]"), "n")
       new_me <- paste0("Xme_", Kme, "[", nme,"]")
       eta <- rename(eta, meef$term, new_me)
     }
-    if (!is.null(spef$call_mi[[i]])) {
+    if (!is.null(spef$calls_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]], "[n]")
-      eta <- rename(eta, spef$call_mi[[i]], new_mi)
+      eta <- rename(eta, spef$calls_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
       str_add(eta) <- paste0(" * Csp", p, "_", spef$Ic[i], "[n]")
@@ -888,32 +893,52 @@ stan_gp <- function(bterms, data, prior, ...) {
   for (i in seq_rows(gpef)) {
     pi <- paste0(p, "_", i)
     byvar <- gpef$byvars[[i]] 
-    bylevels <- gpef$bylevels[[i]]
-    byfac <- length(bylevels) > 0L
+    cons <- gpef$cons[[i]]
+    byfac <- length(cons) > 0L
     bynum <- !is.null(byvar) && !byfac 
+    k <- gpef$k[i]
+    iso <- gpef$iso[i]
     gr <- gpef$gr[i]
+    sfx1 <- gpef$sfx1[[i]]
+    sfx2 <- gpef$sfx2[[i]]
     str_add(out$data) <- paste0(
+      "  // data related to GPs\n",
       "  int<lower=1> Kgp", pi, ";\n",
-      "  int<lower=1> Mgp", pi, ";\n"
+      "  int<lower=1> Dgp", pi, ";\n"
     )
+    if (!isNA(k)) {
+      # !isNA(k) indicates the use of approximate GPs
+      str_add(out$data) <- paste0(
+        "  int<lower=1> NBgp", pi, ";\n"
+      )
+    } 
     str_add(out$par) <- paste0(
       "  // GP hyperparameters\n", 
-      "  vector<lower=0>[Kgp", pi, "] sdgp", pi, ";\n",
-      "  vector<lower=0>[Kgp", pi, "] lscale", pi, ";\n"
-    ) 
+      "  vector<lower=0>[Kgp", pi, "] sdgp", pi, ";\n"
+    )
+    if (gpef$iso[i]) {
+      str_add(out$par) <- paste0(
+        "  vector<lower=0>[1] lscale", pi, "[Kgp", pi, "];\n" 
+      )
+    } else {
+      str_add(out$par) <- paste0(
+        "  vector<lower=0>[Dgp", pi, "] lscale", pi, "[Kgp", pi, "];\n"
+      )
+    }
     str_add(out$prior) <- stan_prior(
-      prior, class = "sdgp", coef = gpef$term[i], 
+      prior, class = "sdgp", coef = sfx1, 
       px = px, suffix = pi
     )
     if (byfac) {
-      J <- seq_along(bylevels)
+      J <- seq_along(cons)
       Ngp <- paste0("Ngp", pi)
       Nsubgp <- paste0("N", if (gr) "sub", "gp", pi)
       Igp <- paste0("Igp", pi, "_", J)
       str_add(out$data) <- paste0(
         "  int<lower=1> ", Ngp, "[Kgp", pi, "];\n",
         collapse(
-          "  int<lower=1> ", Igp, "[", Ngp, "[", J, "]];\n"
+          "  int<lower=1> ", Igp, "[", Ngp, "[", J, "]];\n",
+          "  vector[",  Ngp, "[", J, "]] Cgp", pi, "_", J, ";\n"
         )
       )
       if (gr) {
@@ -924,32 +949,50 @@ stan_gp <- function(bterms, data, prior, ...) {
           )
         )
       }
-      str_add(out$data) <- collapse(
-        "  vector[Mgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
-      )
-      str_add(out$par) <- collapse(
-        "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
+      gp_call <- paste0("Cgp", pi, "_", J, " .* ")
+      if (!isNA(k)) {
+        str_add(out$data) <- collapse(
+          "  matrix[", Nsubgp, "[", J, "], NBgp", pi, "] Xgp", pi, "_", J, ";\n",
+          "  vector[Dgp", pi, "] slambda", pi, "_", J, "[NBgp", pi, "];\n"
+        )
+        str_add(out$par) <- collapse(
+          "  vector[NBgp", pi, "] zgp", pi, "_", J, "; \n"
+        )
+        str_add(gp_call) <- paste0(
+          "gpa(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
+          "lscale", pi, "[", J, "], zgp", pi, "_", J, ", ", 
+          "slambda", pi, "_", J, ")"
+        )
+      } else {
+        str_add(out$data) <- collapse(
+          "  vector[Dgp", pi, "] Xgp", pi, "_", J, "[", Nsubgp, "[", J, "]];\n"
+        )
+        str_add(out$par) <- collapse(
+          "  vector[", Nsubgp, "[", J, "]] zgp", pi, "_", J, "; \n"
+        )
+        str_add(gp_call) <- paste0(
+          "gp(Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
+          "lscale", pi, "[", J, "], zgp", pi, "_", J, ")"
+        )
+      }
+      Jgp <- if (gr) paste0("[Jgp", pi, "_", J, "]")
+      eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
+      eta <- paste0(eta, "[", Igp, "]")
+      # compound '+=' statement currently causes a parser failure
+      str_add(out$modelCgp1) <- collapse(
+        "  ", eta, " = ", eta, " + ", gp_call, Jgp, ";\n"
       )
       str_add(out$prior) <- collapse(
         tp(), "normal_lpdf(zgp", pi, "_", J, " | 0, 1);\n"
       )
-      eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- paste0(eta, "[", Igp, "]")
-      gp_args <- paste0(
-        "Xgp", pi, "_", J, ", sdgp", pi, "[", J, "], ", 
-        "lscale", pi, "[", J, "], zgp", pi, "_", J
-      )
-      Jgp <- if (gr) paste0("[Jgp", pi, "_", J, "]")
-      # compound '+=' statement currently causes a parser failure
-      str_add(out$modelCgp1) <- collapse(
-        "  ", eta, " = ", eta, " + gp(", gp_args, ")", Jgp, ";\n"
-      )
-      coefs <- paste0(gpef$term[i], gpef$bylevels[[i]])
-      str_add(out$prior) <- stan_prior(
-        prior, class = "lscale", coef = coefs, 
-        px = px, suffix = pi
-      )
+      for (j in seq_along(cons)) {
+        str_add(out$prior) <- stan_prior(
+          prior, class = "lscale", coef = sfx2[j, ], 
+          px = px, suffix = paste0(pi, "[", j, "]")
+        )
+      }
     } else {
+      # no by-factor variable
       Nsubgp <- if (gr) paste0("Nsubgp", pi) else "N"
       if (gr) {
         str_add(out$data) <- paste0(
@@ -957,29 +1000,43 @@ stan_gp <- function(bterms, data, prior, ...) {
           "  int<lower=1> Jgp", pi, "[N];\n"
         )
       }
-      str_add(out$data) <- paste0(
-        "  vector[Mgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
-      )
+      if (!isNA(k)) {
+        str_add(out$data) <- paste0(
+          "  matrix[", Nsubgp, ", NBgp", pi, "] Xgp", pi, ";\n",
+          "  vector[Dgp", pi, "] slambda", pi, "[NBgp", pi, "];\n"
+        )
+        str_add(out$par) <- paste0(
+          "  vector[NBgp", pi, "] zgp", pi, "; \n"
+        )
+        gp_call <- paste0(
+          "gpa(Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], ", 
+          "zgp", pi, ", slambda", pi, ")"
+        )
+      } else {
+        str_add(out$data) <- paste0(
+          "  vector[Dgp", pi, "] Xgp", pi, "[", Nsubgp, "];\n"
+        ) 
+        str_add(out$par) <- paste0(
+          "  vector[", Nsubgp, "] zgp", pi, "; \n"
+        )
+        gp_call <- paste0(
+          "gp(Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], zgp", pi, ")"
+        )
+      }
       if (bynum) {
         str_add(out$data) <- paste0(
           "  vector[N] Cgp", pi, ";\n"
         )
       }
-      str_add(out$par) <- paste0(
-        "  vector[", Nsubgp, "] zgp", pi, "; \n"
-      )
+      Cgp <- if (bynum) paste0("Cgp", pi, " .* ")
+      Jgp <- if (gr) paste0("[Jgp", pi, "]")
+      str_add(out$eta) <- paste0(" + ", Cgp, gp_call, Jgp)
       str_add(out$prior) <- paste0(
         tp(), "normal_lpdf(zgp", pi, " | 0, 1);\n"
       )
-      gp_args <- paste0(
-        "Xgp", pi, ", sdgp", pi, "[1], lscale", pi, "[1], zgp", pi
-      )
-      Cgp <- if (bynum) paste0("Cgp", pi, " .* ")
-      Jgp <- if (gr) paste0("[Jgp", pi, "]")
-      str_add(out$eta) <- paste0(" + ", Cgp, "gp(", gp_args, ")", Jgp)
       str_add(out$prior) <- stan_prior(
-        prior, class = "lscale", coef = gpef$term[i], 
-        px = px, suffix = pi
+        prior, class = "lscale", coef = sfx2, 
+        px = px, suffix = paste0(pi, "[1]")
       )
     }
   }

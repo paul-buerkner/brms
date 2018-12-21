@@ -31,14 +31,13 @@ ppc \code{*_grouped} types and ignored otherwise.}
 Only used for ppc types having an \code{x} argument 
 and ignored otherwise.}
 
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
+\item{newdata}{An optional data.frame for which to evaluate predictions. If
+\code{NULL} (default), the original data of the model is used.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
-\item{subset}{A numeric vector specifying
-the posterior samples to be used. 
+\item{subset}{A numeric vector specifying the posterior samples to be used.
 If \code{NULL} (the default), all samples are used.}
 
 \item{...}{Further arguments passed to \code{\link{predict.brmsfit}}

@@ -1,25 +1,12 @@
-extract_draws <- function(x, ...) {
-  # extract data and posterior draws
-  UseMethod("extract_draws")
-}
-
 #' @export
-extract_draws.default <- function(x, ...) {
-  NULL
-}
-
-#' @export
+#' @rdname extract_draws
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
+                                  allow_new_levels = FALSE,
                                   sample_new_levels = "uncertainty",
-                                  incl_autocor = TRUE, resp = NULL,
-                                  subset = NULL, nsamples = NULL, nug = NULL, 
-                                  smooths_only = FALSE, ...) {
-  # extract all data and posterior draws required in (non)linear_predictor
-  # Args:
-  #   see doc of logLik.brmsfit
-  #   ...: passed to validate_newdata
-  # Returns:
-  #   A named list to be interpreted by linear_predictor
+                                  incl_autocor = TRUE, oos = NULL, resp = NULL,
+                                  nsamples = NULL, subset = NULL, nug = NULL, 
+                                  smooths_only = FALSE, offset = TRUE, 
+                                  new_objects = list(), ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   x <- restructure(x)
@@ -31,32 +18,38 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 
   new <- !is.null(newdata)
-  newd_args <- nlist(newdata, object = x, re_formula, resp, ...)
-  newdata <- do.call(validate_newdata, newd_args)
-  newd_args$newdata <- newdata
-  newd_args$internal <- TRUE
-  sdata <- do.call(standata, newd_args)
+  newdata <- validate_newdata(
+    newdata, object = x, re_formula = re_formula, 
+    resp = resp, allow_new_levels = allow_new_levels, 
+    new_objects = new_objects, ...
+  )
+  sdata <- standata(
+    x, newdata = newdata, re_formula = re_formula, 
+    resp = resp, allow_new_levels = allow_new_levels, 
+    new_objects = new_objects, internal = TRUE, ...
+  )
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  args <- nlist(
-    x = bterms, samples, sdata, data = x$data,
-    ranef, old_ranef = x$ranef, meef, resp,
-    sample_new_levels, nug, smooths_only, new,
-    stanvars = names(x$stanvars)
-  )
+  old_sdata <- NULL
   if (new) {
     # extract_draws_re() also requires the new level names
     # original level names are already passed via old_ranef
     new_levels <- attr(tidy_ranef(bterms, newdata), "levels")
-    attr(args$ranef, "levels") <- new_levels
+    attr(ranef, "levels") <- new_levels
     if (length(get_effect(bterms, "gp"))) {
       # GPs for new data require the original data as well
-      args$old_sdata <- standata(x, internal = TRUE, ...)
+      old_sdata <- standata(x, internal = TRUE, ...)
     }
   }
-  do.call(extract_draws, args)
+  extract_draws(
+    bterms, samples = samples, sdata = sdata, data = x$data, 
+    ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
+    sample_new_levels = sample_new_levels, nug = nug, 
+    smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
+    stanvars = names(x$stanvars), old_sdata = old_sdata
+  )
 }
 
 extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
@@ -82,7 +75,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$data$N <- draws$resps[[1]]$data$N
       draws$data$weights <- draws$resps[[1]]$data$weights
       Y <- lapply(draws$resps, function(x) x$data$Y)
-      draws$data$Y <- do.call(cbind, Y)
+      draws$data$Y <- run(cbind, Y)
     }
     draws <- structure(draws, class = "mvbrmsdraws")
   } else {
@@ -131,7 +124,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
       )
     } else {
       # theta was not predicted
-      draws$dpars$theta <- do.call(cbind, draws$dpars[thetas])
+      draws$dpars$theta <- run(cbind, draws$dpars[thetas])
       draws$dpars[thetas] <- NULL
       if (nrow(draws$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(draws$dpars$theta))
@@ -168,25 +161,29 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
 }
 
 #' @export
-extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, ...) {
+extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, 
+                              offset = TRUE, ...) {
+  smooths_only <- as_one_logical(smooths_only)
+  offset <- as_one_logical(offset)
   nsamples <- nrow(samples)
   draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
-  args <- nlist(bterms = x, samples, sdata, ...)
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
-    draws$sm <- do.call(extract_draws_sm, args)
+    draws$sm <- extract_draws_sm(x, samples, sdata, ...)
     return(draws)
   }
-  draws$fe <- do.call(extract_draws_fe, args)
-  draws$sp <- do.call(extract_draws_sp, args)
-  draws$cs <- do.call(extract_draws_cs, args)
-  draws$sm <- do.call(extract_draws_sm, args)
-  draws$gp <- do.call(extract_draws_gp, args)
-  draws$re <- do.call(extract_draws_re, args)
-  draws$offset <- do.call(extract_draws_offset, args)
+  draws$fe <- extract_draws_fe(x, samples, sdata, ...)
+  draws$sp <- extract_draws_sp(x, samples, sdata, ...)
+  draws$cs <- extract_draws_cs(x, samples, sdata, ...)
+  draws$sm <- extract_draws_sm(x, samples, sdata, ...)
+  draws$gp <- extract_draws_gp(x, samples, sdata, ...)
+  draws$re <- extract_draws_re(x, samples, sdata, ...)
+  if (offset) {
+    draws$offset <- extract_draws_offset(x, sdata, ...)
+  }
   if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
-    draws$ac <- do.call(extract_draws_autocor, args)
+    draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws
 }
@@ -215,20 +212,20 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   # prepare calls evaluated in sp_predictor
   draws$calls <- vector("list", nrow(spef))
   for (i in seq_along(draws$calls)) {
-    call <- spef$call_prod[[i]]
-    if (!is.null(spef$call_mo[[i]])) {
+    call <- spef$joint_call[[i]]
+    if (!is.null(spef$calls_mo[[i]])) {
       new_mo <- paste0(
         ".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")"
       )
-      call <- rename(call, spef$call_mo[[i]], new_mo)
+      call <- rename(call, spef$calls_mo[[i]], new_mo)
     }
-    if (!is.null(spef$call_me[[i]])) {
+    if (!is.null(spef$calls_me[[i]])) {
       new_me <- paste0("Xme_", seq_along(meef$term))
       call <- rename(call, meef$term, new_me)
     }
-    if (!is.null(spef$call_mi[[i]])) {
+    if (!is.null(spef$calls_mi[[i]])) {
       new_mi <- paste0("Yl_", spef$vars_mi[[i]])
-      call <- rename(call, spef$call_mi[[i]], new_mi)
+      call <- rename(call, spef$calls_mi[[i]], new_mi)
     }
     if (spef$Ic[i] > 0) {
       str_add(call) <- paste0(" * Csp_", spef$Ic[i])
@@ -405,11 +402,11 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   }
   draws <- named_list(gpef$label)
   for (i in seq_along(draws)) {
-    lvls <- gpef$bylevels[[i]]
-    if (length(lvls)) {
-      gp <- named_list(lvls)
-      for (j in seq_along(lvls)) {
-        gp[[lvls[j]]] <- .extract_draws_gp(
+    cons <- gpef$cons[[i]]
+    if (length(cons)) {
+      gp <- named_list(cons)
+      for (j in seq_along(cons)) {
+        gp[[j]] <- .extract_draws_gp(
           gpef, samples = samples, sdata = sdata,
           old_sdata = old_sdata, nug = nug, new = new,
           byj = j, p = p, i = i
@@ -435,27 +432,32 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   #   gpef: output of tidy_gpef
   #   p: prefix created by combine_prefix()
   #   i: indiex of the Gaussian process
-  #   byj: index for the level of a categorical 'by' vaiable
+  #   byj: index for the contrast of a categorical 'by' variable
   # Return:
   #   a list to be evaluated by .predictor_gp()
+  sfx1 <- escape_all(gpef$sfx1[[i]])
+  sfx2 <- escape_all(gpef$sfx2[[i]])
   if (is.null(byj)) {
     lvl <- ""
   } else {
     lvl <- gpef$bylevels[[i]][byj]
+    sfx1 <- sfx1[byj]
+    sfx2 <- sfx2[byj, ]
   }
   j <- usc(byj)
+  pi <- paste0(p, "_", i)
   gp <- list()
-  gp_name <- escape_all(paste0(gpef$label[i], lvl))
-  sdgp <- paste0("^sdgp", p, "_", gp_name, "$")
-  gp$sdgp <- as.numeric(get_samples(samples, sdgp))
-  lscale <- paste0("^lscale", p, "_", gp_name, "$")
-  gp$lscale <- as.numeric(get_samples(samples, lscale))
-  zgp_regex <- paste0("^zgp", p, "_", gp_name, "\\[")
+  sdgp <- paste0("^sdgp", p, "_", sfx1, "$")
+  gp$sdgp <- as.vector(get_samples(samples, sdgp))
+  lscale <- paste0("^lscale", p, "_", sfx2, "$")
+  gp$lscale <- get_samples(samples, lscale)
+  zgp_regex <- paste0("^zgp", p, "_", sfx1, "\\[")
   gp$zgp <- get_samples(samples, zgp_regex)
-  Xgp_name <- paste0("Xgp", p, "_", i, j)
-  Igp_name <- paste0("Igp", p, "_", i, j)
-  Jgp_name <- paste0("Jgp", p, "_", i, j)
-  if (new) {
+  Xgp_name <- paste0("Xgp", pi, j)
+  Igp_name <- paste0("Igp", pi, j)
+  Jgp_name <- paste0("Jgp", pi, j)
+  if (new && isNA(gpef$k[i])) {
+    # approximate GPs don't differentiate between new and old data
     gp$x <- old_sdata[[Xgp_name]]
     gp$nug <- 1e-11
     # computing GPs for new data requires the old GP terms
@@ -465,12 +467,13 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   } else {
     gp$x <- sdata[[Xgp_name]]
     gp$Igp <- sdata[[Igp_name]]
+    if (!isNA(gpef$k[i])) {
+      gp$slambda <- sdata[[paste0("slambda", pi, j)]]
+    }
   }
   gp$Jgp <- sdata[[Jgp_name]]
-  if (is.null(byj)) {
-    # possible continuous 'by' variable
-    gp$bynum <- sdata[[paste0("Cgp", p, "_", i)]]
-  }
+  # possible factor from 'by' variable
+  gp$Cgp <- sdata[[paste0("Cgp", pi, j)]]
   gp$nug <- nug
   gp
 }
@@ -609,7 +612,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         new_rsamples[[i]] <- matrix(nrow = nrow(rsamples), ncol = 0)
       }
     }
-    new_rsamples <- do.call(cbind, new_rsamples)
+    new_rsamples <- run(cbind, new_rsamples)
     # we need row major instead of column major order
     sort_levels <- ulapply(seq_len(nlevels),
       function(l) seq(l, ncol(rsamples), nlevels)
@@ -638,7 +641,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       Znames <- paste0(
         "Z_", sub_ranef_cs$id[take], usc(p), "_", sub_ranef_cs$cn[take]
       )
-      Z <- do.call(cbind, sdata[Znames])
+      Z <- run(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       for (i in seq_len(sdata$ncat - 1)) {
         index <- paste0("\\[", i, "\\]$")
@@ -657,10 +660,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         ng <- length(sub_ranef_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)
         for (k in seq_len(ng)) {
-          Z[[k]] <- do.call(cbind, sdata[paste0(Znames, "_", k)])
+          Z[[k]] <- run(cbind, sdata[paste0(Znames, "_", k)])
         }
       } else {
-        Z <- do.call(cbind, sdata[Znames])
+        Z <- run(cbind, sdata[Znames])
       }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       take <- which(sub_ranef$type %in% c("", "mmc"))
@@ -672,12 +675,13 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
   draws
 }
 
-extract_draws_offset <- function(bterms, samples, sdata, ...) {
+extract_draws_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
   sdata[[paste0("offset", p)]]
 }
 
-extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
+extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
+                                  new = FALSE, ...) {
   # extract draws of autocorrelation parameters
   draws <- list()
   autocor <- bterms$autocor
@@ -685,6 +689,13 @@ extract_draws_autocor <- function(bterms, samples, sdata, new = FALSE, ...) {
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
   if (get_ar(autocor) || get_ma(autocor)) {
     draws$Y <- sdata[[paste0("Y", p)]]
+    if (!is.null(oos)) {
+      if (any(oos > length(draws$Y))) {
+        stop2("'oos' should not contain integers larger than N.")
+      }
+      # .predictor_arma has special behavior for NA responses 
+      draws$Y[oos] <- NA
+    }
     draws$J_lag <- sdata[[paste0("J_lag", p)]]
     if (get_ar(autocor)) {
       draws$ar <- get_samples(samples, paste0("^ar", p, "\\["))
@@ -868,4 +879,75 @@ is.bdrawsnl <- function(x) {
   inherits(x, "bdrawsnl")
 }
 
+#' Extract Data and Posterior Draws
+#' 
+#' This method helps in preparing \pkg{brms} models for certin post-processing
+#' tasks most notably various forms of predictions. Unless you are a package
+#' developer, you will rarely need to call \code{extract_draws} directly.
+#' 
+#' @name extract_draws
+#' @aliases extract_draws.brmsfit
+#'
+#' @param x An \R object typically of class \code{'brmsfit'}.
+#' @param newdata An optional data.frame for which to evaluate predictions. If
+#'   \code{NULL} (default), the original data of the model is used.
+#' @param re_formula formula containing group-level effects to be considered in
+#'   the prediction. If \code{NULL} (default), include all group-level effects;
+#'   if \code{NA}, include no group-level effects.
+#' @param allow_new_levels A flag indicating if new levels of group-level
+#'   effects are allowed (defaults to \code{FALSE}). Only relevant if
+#'   \code{newdata} is provided.
+#' @param sample_new_levels Indicates how to sample new levels for grouping
+#'   factors specified in \code{re_formula}. This argument is only relevant if
+#'   \code{newdata} is provided and \code{allow_new_levels} is set to
+#'   \code{TRUE}. If \code{"uncertainty"} (default), include group-level
+#'   uncertainty in the predictions based on the variation of the existing
+#'   levels. If \code{"gaussian"}, sample new levels from the (multivariate)
+#'   normal distribution implied by the group-level standard deviations and
+#'   correlations. This options may be useful for conducting Bayesian power
+#'   analysis. If \code{"old_levels"}, directly sample new levels from the
+#'   existing levels.
+#' @param new_objects A named \code{list} of objects containing new data, which
+#'   cannot be passed via argument \code{newdata}. Currently, only required for
+#'   objects passed to \code{\link[brms:cor_sar]{cor_sar}} and
+#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
+#'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
+#'   to \code{FALSE} will not affect other correlation structures such as
+#'   \code{\link[brms:cor_bsts]{cor_bsts}}, or
+#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param offset Logical; Indicates if offsets should be included in the
+#'   predictions. Defaults to \code{TRUE}.
+#' @param oos Optional indices of observations for which to compute
+#'   out-of-sample rather than in-sample predictions. Only required in models
+#'   that make use of response values to make predictions, that is currently
+#'   only ARMA models.
+#' @param smooths_only Logical; If \code{TRUE} only draws related to the
+#'   computation of smooth terms will be extracted.
+#' @param resp Optional names of response variables. If specified, predictions
+#'   are performed only for the specified response variables.
+#' @param subset A numeric vector specifying the posterior samples to be used.
+#'   If \code{NULL} (the default), all samples are used.
+#' @param nsamples Positive integer indicating how many posterior samples should
+#'   be used. If \code{NULL} (the default) all samples are used. Ignored if
+#'   \code{subset} is not \code{NULL}.
+#' @param nug Small positive number for Gaussian process terms only. For
+#'   numerical reasons, the covariance matrix of a Gaussian process might not be
+#'   positive definite. Adding a very small number to the matrix's diagonal
+#'   often solves this problem. If \code{NULL} (the default), \code{nug} is
+#'   chosen internally.
+#' @param ... Further arguments passed to \code{\link{validate_newdata}}.
+#'
+#' @return An object of class \code{'brmsdraws'} or \code{'mvbrmsdraws'},
+#'   depending on whether a univariate or multivariate model is passed.
+#'   
+#' @export
+extract_draws <- function(x, ...) {
+  # extract data and posterior draws
+  UseMethod("extract_draws")
+}
 
+#' @export
+extract_draws.default <- function(x, ...) {
+  NULL
+}

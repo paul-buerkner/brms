@@ -460,21 +460,21 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   links <- links[unique_combs]
   out <- list()
   if (any(links == "cauchit")) {
-    str_add(out$fun) <- "  #include 'fun_cauchit.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
-    str_add(out$fun) <- "  #include 'fun_cloglog.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
   }
   hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
   if (any(nzchar(hs_dfs))) {
-    str_add(out$fun) <- "  #include 'fun_horseshoe.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
   }
   if (any(nzchar(ranef$by))) {
-    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan' \n"
+    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
   }
   if (stan_needs_kronecker(ranef, names(cov_ranef))) {
     str_add(out$fun) <- paste0(
-      "  #include 'fun_as_matrix.stan' \n",
-      "  #include 'fun_kronecker.stan' \n"
+      "  #include 'fun_as_matrix.stan'\n",
+      "  #include 'fun_kronecker.stan'\n"
     )
   }
   family_files <- family_info(bterms, "include")
@@ -497,10 +497,12 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
   if (length(uni_mo)) {
-    str_add(out$fun) <- "  #include fun_monotonic.stan \n"
+    str_add(out$fun) <- "  #include 'fun_monotonic.stan'\n"
   } 
   if (length(get_effect(bterms, "gp"))) {
-    str_add(out$fun) <- "  #include fun_gaussian_process.stan \n"
+    # TODO: include functions selectively
+    str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
+    str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
   }
   # functions related to autocorrelation structures
   if (is.brmsterms(bterms)) {
@@ -612,14 +614,11 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
       str_add(out) <- paste0(
         "     int ncat = num_elements(thres) + 1;\n",
         "     vector[ncat] p;\n",
-        "     vector[ncat - 1] q;\n",
-        "     p[1] = 1.0;\n",
+        "     p[1] = 0.0;\n",
         "     for (k in 1:(ncat - 1)) {\n",
-        "       q[k] = ", th("k"), ";\n",
-        "       p[k + 1] = q[1];\n",
-        "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk];\n",
-        "       p[k + 1] = exp(p[k + 1]);\n",
+        "       p[k + 1] = p[k] + ", th("k"), ";\n",
         "     }\n",
+        "     p = exp(p);\n",
         "     return log(p[y] / sum(p));\n"
       )
     } else {
@@ -895,6 +894,12 @@ stan_has_built_in_fun <- function(family) {
   )
 }
 
+stan_all_vars <- function(x) {
+  # get all variable names accepted in Stan
+  x <- gsub("\\.", "+", x)
+  all_vars(x)
+}
+
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 
@@ -905,8 +910,7 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   out <- FALSE
   for (id in ids) {
     r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && 
-             r$group[1] %in% names_cov_ranef
+    out <- out || nrow(r) > 1L && r$cor[1] && r$group[1] %in% names_cov_ranef
   }
   out
 }

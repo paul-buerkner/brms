@@ -30,13 +30,15 @@ indices should be overwritten. Defaults to \code{FALSE}.}
 \item{file}{Either \code{NULL} or a character string. In the latter case, the
 fitted model object including the newly added criterion values is saved via
 \code{\link{saveRDS}} in a file named after the string supplied in
-\code{file}. The \code{.rds} extension is added automatically. Only applies
-if new criteria were actually added via \code{add_ic} or if
-\code{force_save} was set to \code{TRUE}.}
+\code{file}. The \code{.rds} extension is added automatically. If \code{x}
+was already stored in a file before, the file name will be reused
+automatically (with a message) unless overwritten by \code{file}. In any
+case, \code{file} only applies if new criteria were actually added via
+\code{add_criterion} or if \code{force_save} was set to \code{TRUE}.}
 
 \item{force_save}{Logical; only relevant if \code{file} is specified and
 ignored otherwise. If \code{TRUE}, the fitted model object will be saved
-regardless of whether new criteria were added via \code{add_ic}.}
+regardless of whether new criteria were added via \code{add_criterion}.}
 }
 \value{
 An object of the same class as \code{x}, but

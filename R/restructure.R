@@ -344,7 +344,7 @@ change_old_mo <- function(bterms, data, pars) {
   .change_old_mo <- function(bt) {
     out <- list()
     spef <- tidy_spef(bt, data)
-    has_mo <- lengths(spef$call_mo) > 0
+    has_mo <- lengths(spef$calls_mo) > 0
     if (!any(has_mo)) {
       return(out)
     }

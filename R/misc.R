@@ -105,8 +105,8 @@ match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
   y <- as.data.frame(y)
-  x <- do.call("paste", c(x, sep = "\r"))
-  y <- do.call("paste", c(y, sep = "\r"))
+  x <- run("paste", c(x, sep = "\r"))
+  y <- run("paste", c(y, sep = "\r"))
   match(x, y, ...)
 }
 
@@ -126,7 +126,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   }
   for (name in names(ls)) {
     tmp <- lapply(x, "[[", name)
-    out <- out & do.call(fun, list(tmp, ls[[name]]))
+    out <- out & run(fun, list(tmp, ls[[name]]))
   }
   out
 }
@@ -147,7 +147,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    out <- out & do.call(fun, list(x[[name]], ls[[name]]))
+    out <- out & run(fun, list(x[[name]], ls[[name]]))
   }
   out
 }
@@ -273,7 +273,7 @@ as_one_logical <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.logical(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single logical value.")
   }
   x
@@ -284,7 +284,7 @@ as_one_numeric <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- SW(as.numeric(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single numeric value.")
   }
   x
@@ -295,7 +295,7 @@ as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
-    s <- substr(deparse_combine(s), 1L, 100L)
+    s <- deparse_combine(s, max_char = 100L)
     stop2("Cannot coerce ", s, " to a single character value.")
   }
   x
@@ -379,6 +379,14 @@ is_symmetric <- function(x, tol = sqrt(.Machine$double.eps)) {
 ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
   # short for unlist(lapply())
   unlist(lapply(X, FUN, ...), recursive, use.names)
+}
+
+all_vars <- function(expr, ...) {
+  # like all.vars but can handle characters
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  all.vars(expr, ...)
 }
 
 lc <- function(l, ...) {
@@ -514,7 +522,7 @@ collapse_lists <- function(..., ls = list()) {
   #  a named list containg the collapsed strings
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
-  out <- do.call(mapply, 
+  out <- run(mapply, 
     c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
   )
   names(out) <- elements
@@ -554,6 +562,44 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 }
 
+run <- function(what, args, pkg = NULL) {
+  # like 'do.call' but avoids deparsing arguments
+  # Args:
+  #   what: function or function name
+  #   args: a list of arguments passed to 'what'
+  #   pkg: name of a package in which to look for 'what'
+  # Returns:
+  #   'what' evaluated with 'args'
+  call <- ""
+  if (length(args)) {
+    if (!is.list(args)) {
+      stop2("'args' must be a list.")
+    }
+    fun_args <- names(args)
+    if (is.null(fun_args)) {
+      fun_args <- rep("", length(args))
+    } else {
+      nzc <- nzchar(fun_args)
+      fun_args[nzc] <- paste0("`", fun_args[nzc], "` = ")
+    }
+    names(args) <- paste0(".x", seq_along(args))
+    call <- paste0(fun_args, names(args), collapse = ",")
+  } else {
+    args <- list()
+  }
+  if (is.function(what)) {
+    args$.fun <- what
+    what <- ".fun" 
+  } else {
+    what <- paste0("`", as_one_character(what), "`")
+    if (!is.null(pkg)) {
+      what <- paste0(as_one_character(pkg), "::", what)
+    }
+  }
+  call <- paste0(what, "(", call, ")")
+  eval2(call, envir = args, enclos = parent.frame())
+}
+
 empty_data_frame <- function() {
   as.data.frame(matrix(nrow = 0, ncol = 0))
 }
@@ -564,7 +610,7 @@ empty_data_frame <- function() {
   #   x: named list like object
   #   value: another named list like object
   #   dont_replace names of elements that cannot be replaced
-  value_name <- deparse_combine(substitute(value))
+  value_name <- deparse_combine(substitute(value), max_char = 100L)
   value <- as.list(value)
   if (length(value) && is.null(names(value))) {
     stop2("Argument '", value_name, "' must be named.")
@@ -582,15 +628,15 @@ deparse_no_string <- function(x) {
   # deparse x if it is no string
   if (!is.character(x)) {
     x <- deparse(x)
-  } 
+  }
   x
 }
 
-deparse_combine <- function(x, max_char = 100) {
+deparse_combine <- function(x, max_char = NULL) {
   # combine deparse lines into one string
   out <- collapse(deparse(x))
   if (isTRUE(max_char > 0)) {
-    out <- substr(out, 1, max_char)
+    out <- substr(out, 1L, max_char)
   }
   out
 }
@@ -603,16 +649,32 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
   eval(expr, envir, ...)
 }
 
-eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
+eval_silent <- function(expr, type = "output", try = FALSE, 
+                        silent = TRUE, ...) {
   # evaluate an expression without printing output or messages
   # Args:
   #   expr: expression to be evaluated
   #   type: type of output to be suppressed (see ?sink)
+  #   try: wrap evaluation of expr in 'try' and 
+  #     not suppress outputs if evaluation fails?
   #   silent: actually evaluate silently?
+  try <- as_one_logical(try)
+  silent <- as_one_logical(silent)
+  type <- match.arg(type, c("output", "message"))
   expr <- substitute(expr)
   envir <- parent.frame()
   if (silent) {
-    utils::capture.output(out <- eval(expr, envir), type = type, ...)
+    if (try && type == "message") {
+      try_out <- try(utils::capture.output(
+        out <- eval(expr, envir), type = type, ...
+      ))
+      if (is(try_out, "try-error")) {
+        # try again without suppressing error messages
+        out <- eval(expr, envir)
+      }
+    } else {
+      utils::capture.output(out <- eval(expr, envir), type = type, ...)
+    }
   } else {
     out <- eval(expr, envir)
   }
@@ -733,7 +795,7 @@ escape_dot <- function(x) {
 }
 
 escape_all <- function(x) {
-  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]")
+  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")
   for (s in special) {
     x <- gsub(s, paste0("\\", s), x, fixed = TRUE)
   }
@@ -914,34 +976,6 @@ log_inv_logit <- function(x) {
 
 log1m_inv_logit <- function(x) {
   log(1 - inv_logit(x))
-}
-
-cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
-  diff_quad <- diff_quad(x = x, x_new = x_new)
-  sdgp^2 * exp(-diff_quad / (2 * lscale^2))
-}
-
-diff_quad <- function(x, x_new = NULL) {
-  # compute squared differences
-  # Args:
-  #   x: vector or matrix
-  #   x_new: optional vector of matrix with the same ncol as x
-  # Returns:
-  #   An nrow(x) times nrow(x_new) matrix
-  # Details:
-  #   If matrices are passed results are summed over the columns
-  x <- as.matrix(x)
-  if (is.null(x_new)) {
-    x_new <- x
-  } else {
-    x_new <- as.matrix(x_new)
-  }
-  .diff_quad <- function(x1, x2) (x1 - x2)^2
-  out <- 0
-  for (i in seq_len(ncol(x))) {
-    out <- out + outer(x[, i], x_new[, i], .diff_quad)
-  }
-  out
 }
 
 scale_unit <- function(x, lb = min(x), ub = max(x)) {

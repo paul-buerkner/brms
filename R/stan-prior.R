@@ -290,28 +290,23 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   #     such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
-  out <- list()
   if (!sample_prior %in% "yes") {
-    return(out)
+    return(list())
   }
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
   # D will contain all relevant information about the priors
   D <- data.frame(prior = prior[nzchar(prior)])
   pars_regex <- "(?<=_lpdf\\()[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
-  D$par <- gsub("to_vector\\(|\\)$", "", D$par)
+  # 'to_vector' should be removed from the parameter names
+  has_tv <- grepl("^to_vector\\(", D$par)
+  D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
+  # do not sample from some auxiliary parameters
   excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "temp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
-  class_old <- c("^L_", "^Lrescor")
-  class_new <- c("cor_", "rescor")
-  D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
-  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
-  D$dis <- get_matches(dis_regex, D$prior, perl = TRUE, first = TRUE)
-  D$dis <- sub("corr_cholesky$", "corr", D$dis)
-  args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
-  D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
+  if (!NROW(D)) return(list())
   
   # rename parameters containing indices
   has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
@@ -320,6 +315,18 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     ind <- get_matches(ind_regex, par, perl = TRUE)
     gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
   })
+  # cannot handle priors on variable transformations
+  D <- D[D$par %in% stan_all_vars(D$par), ]
+  if (!NROW(D)) return(list())
+  
+  class_old <- c("^L_", "^Lrescor")
+  class_new <- c("cor_", "rescor")
+  D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
+  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
+  D$dis <- get_matches(dis_regex, D$prior, perl = TRUE, first = TRUE)
+  D$dis <- sub("corr_cholesky$", "corr", D$dis)
+  args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
+  D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
   
   # extract information from the initial parameter definition
   par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
@@ -341,7 +348,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     k <- which(grepl(paste0("^", all_pars[i]), D$par))
     D$dim[k] <- all_dims[i]
     D$bounds[k] <- all_bounds[i]
-    if (grepl("^simo", all_pars[i])) {
+    if (grepl("^(simo_)|(theta)", all_pars[i])) {
       D$type[k] <- all_types[i]
     }
   }
@@ -351,7 +358,9 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   found_vars <- lapply(D$args, find_vars, dot = FALSE, brackets = FALSE)
   contains_other_pars <- ulapply(found_vars, function(x) any(x %in% all_pars))
   D <- D[!contains_other_pars, ]
+  if (!NROW(D)) return(list())
   
+  out <- list()
   # sample priors in the generated quantities block
   D$lkj <- grepl("^lkj_corr$", D$dis)
   D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)

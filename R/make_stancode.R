@@ -42,7 +42,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
-    prior, formula = formula, data = data, 
+    prior, formula, data = data, sparse = sparse, 
     sample_prior = sample_prior, warn = TRUE
   )
   data <- update_data(data, bterms = bterms)
@@ -50,7 +50,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   meef <- tidy_meef(bterms, data = data)
   stanvars <- validate_stanvars(stanvars)
   
-  scode_effects <- stan_effects(
+  scode_predictor <- stan_predictor(
     bterms, data = data, prior = prior, 
     ranef = ranef, meef = meef, sparse = sparse,
     stanvars = stanvars
@@ -64,7 +64,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     
   # get priors for all parameters in the model
   scode_prior <- paste0(
-    scode_effects$prior,
+    scode_predictor$prior,
     scode_ranef$prior,
     scode_Xme$prior,
     stan_prior(class = "", prior = prior)
@@ -82,7 +82,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
-    scode_effects$data,
+    scode_predictor$data,
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored? \n",
@@ -93,21 +93,21 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_transformed_data <- paste0(
     "transformed data { \n",
        scode_global_defs$tdataD,
-       scode_effects$tdataD,
+       scode_predictor$tdataD,
        collapse_stanvars(stanvars, block = "tdata"),
-       scode_effects$tdataC,
+       scode_predictor$tdataC,
     "} \n"
   )
   # generate parameters block
   scode_parameters <- paste0(
-    scode_effects$par,
+    scode_predictor$par,
     scode_ranef$par,
     scode_Xme$par
   )
   scode_rngprior <- stan_rngprior(
     sample_prior = sample_prior, 
     par_declars = scode_parameters,
-    gen_quantities = scode_effects$genD,
+    gen_quantities = scode_predictor$genD,
     prior = scode_prior,
     prior_special = attr(prior, "special")
   )
@@ -121,19 +121,19 @@ make_stancode <- function(formula, data, family = gaussian(),
   # generate transformed parameters block
   scode_transformed_parameters <- paste0(
     "transformed parameters { \n",
-      scode_effects$tparD,
+      scode_predictor$tparD,
       scode_ranef$tparD,
       scode_Xme$tparD,
       collapse_stanvars(stanvars, block = "tparameters"),
-      scode_effects$tparC1,
+      scode_predictor$tparC1,
       scode_ranef$tparC1,
     "} \n"
   )
   # generate model block
   scode_model_loop <- paste0(
-    scode_effects$modelC2, 
-    scode_effects$modelC3,
-    scode_effects$modelC4
+    scode_predictor$modelC2, 
+    scode_predictor$modelC3,
+    scode_predictor$modelC4
   )
   if (isTRUE(nzchar(scode_model_loop))) {
     scode_model_loop <- paste0(
@@ -142,12 +142,12 @@ make_stancode <- function(formula, data, family = gaussian(),
   }
   scode_model <- paste0(
     "model { \n",
-      scode_effects$modelD,
+      scode_predictor$modelD,
       collapse_stanvars(stanvars, block = "model"),
-      scode_effects$modelC1,
-      scode_effects$modelCgp1,
+      scode_predictor$modelC1,
+      scode_predictor$modelCgp1,
       scode_model_loop,
-      scode_effects$modelC5,
+      scode_predictor$modelC5,
       "  // priors including all constants \n", 
       scode_prior, 
       "  // likelihood including all constants \n",
@@ -160,12 +160,12 @@ make_stancode <- function(formula, data, family = gaussian(),
   # generate generated quantities block
   scode_generated_quantities <- paste0(
     "generated quantities { \n",
-      scode_effects$genD,
+      scode_predictor$genD,
       scode_ranef$genD,
       scode_Xme$genD,
       scode_rngprior$genD,
       collapse_stanvars(stanvars, block = "genquant"),
-      scode_effects$genC,
+      scode_predictor$genC,
       scode_ranef$genC,
       scode_rngprior$genC,
       scode_Xme$genC,
@@ -187,12 +187,13 @@ make_stancode <- function(formula, data, family = gaussian(),
     temp_file <- tempfile(fileext = ".stan")
     cat(complete_model, file = temp_file) 
     isystem <- system.file("chunks", package = "brms")
+    # get rid of diagnostic messages from parser
     complete_model <- eval_silent(
       rstan::stanc_builder(
         file = temp_file, isystem = isystem,
         obfuscate_model_name = TRUE
       ),
-      type = "message", silent = silent
+      type = "message", try = TRUE
     )
     complete_model <- complete_model$model_code
     str_add(complete_model) <- "\n"

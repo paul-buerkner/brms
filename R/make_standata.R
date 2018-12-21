@@ -80,11 +80,11 @@ make_standata <- function(formula, data, family = gaussian(),
       old_sdata = control$old_sdata  
     )
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
-    args_eff <- nlist(
-      x = bterms, data, prior, ranef, meef, cov_ranef, 
-      knots, not4stan, old_sdata = control$old_sdata
+    c(out) <- data_predictor(
+      bterms, data = data, prior = prior, ranef = ranef, meef = meef, 
+      cov_ranef = cov_ranef, knots = knots, not4stan = not4stan, 
+      old_sdata = control$old_sdata
     )
-    out <- c(out, do.call(data_effects, args_eff))
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
   stanvars <- validate_stanvars(stanvars)

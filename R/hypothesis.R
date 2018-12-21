@@ -14,54 +14,56 @@
 #'  (see also \code{\link[brms:parnames]{parnames}}) 
 #' @param group Name of a grouping factor to evaluate only 
 #'  group-level effects parameters related to this grouping factor.
-#'  Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.
 #' @param alpha The alpha-level of the tests (default is 0.05;
 #'  see 'Details' for more information).
 #' @param scope Indicates where to look for the variables specified in
 #'  \code{hypothesis}. If \code{"standard"}, use the full parameter names
-#'  (subject to the restriction given by \code{class}). If \code{"coef"}
-#'  or \code{"ranef"} compute the hypothesis for all levels of 
-#'  the grouping factor given in \code{"group"}, based on the 
+#'  (subject to the restriction given by \code{class} and \code{group}).
+#'  If \code{"coef"} or \code{"ranef"}, compute the hypothesis for all levels 
+#'  of the grouping factor given in \code{"group"}, based on the 
 #'  output of \code{\link{coef.brmsfit}} and \code{\link{ranef.brmsfit}},
 #'  respectively.
 #' @param seed A single numeric value passed to \code{\link{set.seed}}
 #'  to make results reproducible.
 #' @param ... Currently ignored.
 #' 
-#' @details Among others, \code{hypothesis} computes an 
-#'  evidence ratio (\code{Evid.Ratio}) for each hypothesis. 
-#'  For a directed hypothesis, this is just the posterior probability 
-#'  (\code{Post.Prob}) under the hypothesis against its alternative.
-#'  That is, when the hypothesis if of the form \code{a > b}, 
-#'  the evidence ratio is the ratio of the posterior probability 
-#'  of \code{a > b} and the posterior probability of \code{a < b}.
-#'  In this example, values greater than one indicate that the evidence in
-#'  favor of \code{a > b} is larger than evidence in favor of \code{a < b}.
-#'  For an undirected (point) hypothesis, the evidence ratio 
-#'  is a Bayes factor between the hypothesis and its alternative
-#'  computed via the Savage-Dickey density ratio method.
-#'  That is the posterior density at the point of interest divided
-#'  by the prior density at that point.
-#'  Values greater than one indicate that evidence in favor of the point
-#'  hypothesis has increased after seeing the data.
-#'  In order to calculate this Bayes factor, all parameters related 
-#'  to the hypothesis must have proper priors
-#'  and argument \code{sample_prior} of function \code{brm} 
-#'  must be set to \code{TRUE}. 
-#'  When interpreting Bayes factors, make sure 
-#'  that your priors are reasonable and carefully chosen,
-#'  as the result will depend heavily on the priors. 
-#'  In particular, avoid using default priors.
+#' @details Among others, \code{hypothesis} computes an evidence ratio
+#'   (\code{Evid.Ratio}) for each hypothesis. For a directed hypothesis, this is
+#'   just the posterior probability (\code{Post.Prob}) under the hypothesis
+#'   against its alternative. That is, when the hypothesis is of the form
+#'   \code{a > b}, the evidence ratio is the ratio of the posterior probability
+#'   of \code{a > b} and the posterior probability of \code{a < b}. In this
+#'   example, values greater than one indicate that the evidence in favor of
+#'   \code{a > b} is larger than evidence in favor of \code{a < b}. For an
+#'   undirected (point) hypothesis, the evidence ratio is a Bayes factor between
+#'   the hypothesis and its alternative computed via the Savage-Dickey density
+#'   ratio method. That is the posterior density at the point of interest
+#'   divided by the prior density at that point. Values greater than one
+#'   indicate that evidence in favor of the point hypothesis has increased after
+#'   seeing the data. In order to calculate this Bayes factor, all parameters
+#'   related to the hypothesis must have proper priors and argument
+#'   \code{sample_prior} of function \code{brm} must be set to \code{TRUE}. When
+#'   interpreting Bayes factors, make sure that your priors are reasonable and
+#'   carefully chosen, as the result will depend heavily on the priors. In
+#'   particular, avoid using default priors.
+#'   
+#'   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
+#'   small or large evidence, respectively, in favor of the tested hypothesis.
+#'   For directional hypotheses pairs, this basically means that all posterior
+#'   samples are on the same side of the value dividing the two hypotheses. In
+#'   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
+#'   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
+#'   where \code{S} denotes the number of posterior samples used in the
+#'   computations.
 #'  
-#'  The argument \code{alpha} specifies the size of the credible interval
-#'  (i.e., Bayesian confidence interval).
-#'  For instance, if \code{alpha = 0.05} (5\%), the credible interval
-#'  will contain \code{1 - alpha = 0.95} (95\%) of the posterior values.
-#'  Hence, \code{alpha * 100}\% of the posterior values will lie
-#'  outside of the credible interval. Although this allows testing of
-#'  hypotheses in a similar manner as in the frequentist null-hypothesis
-#'  testing framework, we strongly argue against using arbitrary cutoffs 
-#'  (e.g., \code{p < .05}) to determine the 'existence' of an effect.
+#'   The argument \code{alpha} specifies the size of the credible interval
+#'   (i.e., Bayesian confidence interval). For instance, if \code{alpha = 0.05}
+#'   (5\%), the credible interval will contain \code{1 - alpha = 0.95} (95\%) of
+#'   the posterior values. Hence, \code{alpha * 100}\% of the posterior values
+#'   will lie outside of the credible interval. Although this allows testing of
+#'   hypotheses in a similar manner as in the frequentist null-hypothesis
+#'   testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
+#'   \code{p < .05}) to determine the 'existence' of an effect.
 #' 
 #' @return A \code{\link{brmshypothesis}} object.
 #' 
@@ -185,12 +187,12 @@ combine_hlist <- function(hlist, class, alpha) {
   # combine list of outputs of eval_hypothesis
   # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
-  hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
+  hs <- run(rbind, lapply(hlist, function(h) h$summary))
   rownames(hs) <- NULL
   samples <- lapply(hlist, function(h) h$samples)
-  samples <- as.data.frame(do.call(cbind, samples))
+  samples <- as.data.frame(run(cbind, samples))
   prior_samples <- lapply(hlist, function(h) h$prior_samples)
-  prior_samples <- as.data.frame(do.call(cbind, prior_samples))
+  prior_samples <- as.data.frame(run(cbind, prior_samples))
   names(samples) <- names(prior_samples) <- paste0("H", seq_along(hlist))
   class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, prior_samples, class, alpha)
@@ -302,16 +304,73 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   out
 }
 
+#' Compute Density Ratios
+#'
+#' Compute the ratio of two densities at given points based on samples of the
+#' corresponding distributions.
+#'
+#' @param x Vector of samples from the first distribution, usually the posterior
+#'   distribution of the quantity of interest.
+#' @param y Optional vector of samples from the second distribution, usually the
+#'   prior distribution of the quantity of interest. If \code{NULL} (the
+#'   default), only the density of \code{x} will be evaluated.
+#' @param point Numeric values at which to evaluate and compare the densities.
+#'   Defaults to \code{0}.
+#' @param n Single numeric value. Influences the accuracy of the density
+#'   estimation. See \code{\link[stats:density]{density}} for details.
+#' @param ... Further arguments passed to \code{\link[stats:density]{density}}.
+#'
+#' @return A vector of length equal to \code{length(point)}. If \code{y} is
+#'   provided, the density ratio of \code{x} against \code{y} is returned. Else,
+#'   only the density of \code{x} is returned.
+#'
+#' @details In order to achieve sufficient accuracy in the density estimation,
+#'   more samples than usual are required. That is you may need an effective
+#'   sample size of 10,000 or more to reliably estimate the densities.
+#'
+#' @examples
+#' x <- rnorm(10000)
+#' y <- rnorm(10000, mean = 1)
+#' density_ratio(x, y, point = c(0, 1))
+#'
+#' @export
+density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
+  x <- as.numeric(x)
+  point <- as.numeric(point)
+  dots <- list(...)
+  dots <- dots[names(dots) %in% names(formals("density.default"))]
+  dots$n <- n
+  
+  eval_density <- function(x, point) {
+    # evaluate density of x at point
+    from <- min(x)
+    to <- max(x)
+    if (from > point) {
+      from <- point - sd(x) / 4
+    } else if (to < point) {
+      to <- point + sd(x) / 4
+    }
+    dens <- run(density, c(nlist(x, from, to), dots))
+    return(spline(dens$x, dens$y, xout = point)$y)
+  }
+  
+  out <- ulapply(point, eval_density, x = x)
+  if (!is.null(y)) {
+    y <- as.numeric(y)
+    out <- out / ulapply(point, eval_density, x = y)
+  }
+  out
+}
+
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
-                           prior_samples = NULL, pow = 12, ...) {
+                           prior_samples = NULL, ...) {
   # compute the evidence ratio between two disjunct hypotheses
   # Args:
   #   x: posterior samples 
   #   cut: the cut point between the two hypotheses
   #   wsign: direction of the hypothesis
   #   prior_samples: optional prior samples for undirected hypothesis
-  #   pow: influences the accuracy of the density
-  #   ...: optional arguments passed to density.default
+  #   ...: optional arguments passed to density_ratio
   # Returns:
   #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
@@ -319,22 +378,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     if (is.null(prior_samples)) {
       out <- NA
     } else {
-      dots <- list(...)
-      dots <- dots[names(dots) %in% names(formals("density.default"))]
-      args <- c(list(n = 2^pow), dots)
-      eval_dens <- function(x) {
-        # evaluate density of x at cut
-        from <- min(x)
-        to <- max(x)
-        if (from > cut) {
-          from <- cut - sd(x) / 4
-        } else if (to < cut) {
-          to <- cut + sd(x) / 4
-        }
-        dens <- do.call(density, c(nlist(x, from, to), args))
-        spline(dens$x, dens$y, xout = cut)$y
-      }
-      out <- eval_dens(x) / eval_dens(prior_samples)
+      out <- density_ratio(x, prior_samples, point = cut, ...)
     }
   } else if (wsign == "less") {
     out <- length(which(x < cut))

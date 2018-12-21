@@ -1,4 +1,47 @@
-# brms 2.5.0++
+# brms 2.7.0
+
+### New features
+
+* Fit approximate and non-isotropic Gaussian processes via `gp`. (#540)
+* Enable parallelization of model fitting in `brm_multiple` 
+via the future package. (#364)
+* Perform posterior predictions based on k-fold cross-validation 
+via `kfold_predict`. (#468)
+* Indicate observations for out-of-sample predictions in 
+ARMA models via argument `oos` of `extract_draws`. (#539)
+
+### Other changes
+
+* Allow factor-like variables in smooth terms. (#562)
+* Make plotting of `marginal_effects` more robust to
+the usage of non-standard variable names.
+* Deactivate certain data validity checks when using custom families.
+* Improve efficiency of adjacent category models.
+* No longer print informational messages from the Stan parser.
+
+### Bug fixes
+
+* Fix an issue that could result in a substantial efficiency 
+drop of various post-processing methods for larger models.
+* Fix an issue when that resulted in an error when
+using `fitted(..., scale = "linear")` with ordinal models
+thanks to Andrew Milne. (#557)
+* Allow setting priors on the overall intercept in sparse models.
+* Allow sampling from models with only a single observation 
+that also contain an offset thanks to Antonio Vargas. (#545)
+* Fix an error when sampling from priors in mixture models
+thanks to Jacki Buros Novik. (#542)
+* Fix a problem when trying to sample from priors of
+parameter transformations.
+* Allow using `marginal_smooths` with ordinal models
+thanks to Andrew Milne. (#570)
+* Fix an error in the post-processing of `me` 
+terms thanks to the GitHub user hlluik. (#571)
+* Correctly update `warmup` samples when using 
+`update.brmsfit`.
+
+
+# brms 2.6.0
 
 ### New features
 
@@ -8,6 +51,10 @@
 `stan_model_args` in `brm`. (#525)
 * Save model objects via argument `file` in `add_ic` 
 after adding model fit criteria. (#478) 
+* Compute density ratios based on MCMC samples via `density_ratio`.
+* Ignore offsets in various post-processing methods via
+argument `offset`.
+* Update addition terms in formulas via `update_adterms`.
 
 ### Other changes
 
@@ -17,6 +64,9 @@ after adding model fit criteria. (#478)
 ### Bug fixes
 
 * Correctly plot splines with factorial covariates via `marginal_smooths`.
+* Allow sampling from priors in intercept only models
+thanks to Emmanuel Charpentier. (#529)
+* Allow logical operators in non-linear formulas.
 
 
 # brms 2.5.0
@@ -48,6 +98,8 @@ univariate models thanks to Ruben Arslan. (#488)
 * Deprecate argument `ordinal` of `marginal_effects`. (#491)
 * Deprecate argument `exact_loo` of `kfold`. (#510)
 * Deprecate usage of `binomial` families without specifying `trials`.
+* No longer sample from priors of population-level intercepts 
+when using the default intercept parameterization.
 
 ### Bug fixes
 

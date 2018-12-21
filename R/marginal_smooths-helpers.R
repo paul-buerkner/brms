@@ -103,15 +103,16 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     # loop over smooth terms and compute their predictions
     term <- smterms[i]
     sub_smef <- subset2(smef, term = term)
-    byvars <- sub_smef$byvars[[1]]
-    covars <- sub_smef$covars[[1]]
-    vars <- sub_smef$vars[[1]]
+    # extract raw variable names before transformations
+    covars <- all_vars(sub_smef$covars[[1]])
+    byvars <- all_vars(sub_smef$byvars[[1]])
     ncovars <- length(covars)
     if (ncovars > 2L) {
       byvars <- c(covars[3:ncovars], byvars)
       covars <- covars[1:2]
       ncovars <- 2L
     }
+    vars <- c(covars, byvars)
     values <- named_list(vars)
     is_numeric <- setNames(rep(FALSE, ncovars), covars)
     for (cv in covars) {
@@ -155,34 +156,41 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       internal = TRUE, check_response = FALSE
     )
     draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
-    draws <- do.call(extract_draws, draws_args)
+    draws <- run(extract_draws, draws_args)
     J <- which(smef$termnum == i)
     scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])
     draws$sm$fe$Xs <- draws$sm$fe$Xs[, scs, drop = FALSE]
     draws$sm$fe$bs <- draws$sm$fe$bs[, scs, drop = FALSE]
     draws$sm$re <- draws$sm$re[J]
+    draws$f <- brmsfamily("gaussian")
     eta <- predictor(draws, i = NULL)
+    effects <- na.omit(sub_smef$covars[[1]][1:2])
+    marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     spa_data <- NULL
     if (spaghetti && ncovars == 1L && is_numeric[1]) {
       sample <- rep(seq_rows(eta), each = ncol(eta))
       spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
       colnames(spa_data) <- c("estimate__", "sample__")
-      spa_data <- cbind(newdata[, vars, drop = FALSE], spa_data)
+      spa_data <- cbind(marg_data, spa_data)
     }
     eta <- posterior_summary(eta, robust = TRUE, probs = probs)
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-    eta <- cbind(newdata[, vars, drop = FALSE], eta)
+    eta <- cbind(marg_data, eta)
     if (length(byvars)) {
       # byvars will be plotted as facets
       eta$cond__ <- rows2labels(eta[, byvars, drop = FALSE]) 
+    } else {
+      eta$cond__ <- factor(1)
     }
     response <- combine_prefix(x, keep_mu = TRUE)
     response <- paste0(response, ": ", term)
+    points <- mf[, vars, drop = FALSE]
+    points <- add_effects__(points, covars)
     attr(eta, "response") <- response
-    attr(eta, "effects") <- covars
+    attr(eta, "effects") <- effects
     attr(eta, "surface") <- all(is_numeric) && ncovars == 2L
     attr(eta, "spaghetti") <- spa_data
-    attr(eta, "points") <- mf[, vars, drop = FALSE]
+    attr(eta, "points") <- points
     out[[response]] <- eta
   }
   out

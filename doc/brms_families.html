@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2018-08-12" />
+<meta name="date" content="2018-12-16" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -214,15 +214,25 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2018-08-12</em></h4>
+<h4 class="date"><em>2018-12-16</em></h4>
 
 
+<div id="TOC">
+<ul>
+<li><a href="#notation">Notation</a></li>
+<li><a href="#location-shift-models">Location shift models</a></li>
+<li><a href="#binary-and-count-data-models">Binary and count data models</a></li>
+<li><a href="#survival-models">Survival models</a></li>
+<li><a href="#extreme-value-models">Extreme value models</a></li>
+<li><a href="#response-time-models">Response time models</a></li>
+<li><a href="#quantile-regression">Quantile regression</a></li>
+<li><a href="#beta-models">Beta models</a></li>
+<li><a href="#circular-models">Circular models</a></li>
+<li><a href="#ordinal-and-categorical-models">Ordinal and categorical models</a></li>
+<li><a href="#zero-inflated-and-hurdle-models">Zero-inflated and hurdle models</a></li>
+</ul>
+</div>
 
-<!--
-%\VignetteIndexEntry{Parameterization of response distributions in brms}
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteEncoding{UTF-8}
--->
 <p>The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in <strong>brms</strong>. For a more general overview of the package see <code>vignette(&quot;brms_overview&quot;)</code>.</p>
 <div id="notation" class="section level2">
 <h2>Notation</h2>

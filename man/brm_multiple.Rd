@@ -90,7 +90,8 @@ after the string supplied in \code{file}. The \code{.rds} extension is
 added automatically. If the file already exists, \code{brm} will load and
 return the saved model object instead of refitting the model. As existing
 files won't be overwritten, you have to manually remove the file in order
-to refit and save the model under an existing file name.}
+to refit and save the model under an existing file name. The file name
+is stored in the \code{brmsfit} object for later usage.}
 
 \item{...}{Further arguments passed to \code{\link{brm}}.}
 }
@@ -100,10 +101,11 @@ which inherits from class \code{brmsfit} and behaves essentially
 the same. If \code{combine = FALSE} a list of \code{brmsfit} objects.
 }
 \description{
-Run the same \pkg{brms} model on multiple datasets and
-then combine the results into one fitted model object. 
-This is useful in particular for multiple missing value imputation,
-where the same model is fitted on multiple imputed data sets.
+Run the same \pkg{brms} model on multiple datasets and then combine the
+results into one fitted model object. This is useful in particular for
+multiple missing value imputation, where the same model is fitted on multiple
+imputed data sets. Models can be run in parallel using the \pkg{future}
+package.
 }
 \details{
 The combined model may issue false positive 
@@ -129,6 +131,12 @@ summary(fit_imp2)
 plot(fit_imp2, pars = "^b_")
 # investigate convergence of the original models
 fit_imp2$rhats
+
+# use the future package for parallelization
+library(future)
+plan(multiprocess)
+fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+summary(fit_imp3)
 }
 
 }

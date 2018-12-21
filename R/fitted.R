@@ -6,7 +6,7 @@ fitted_internal <- function(draws, ...) {
 fitted_internal.mvbrmsdraws <- function(draws, ...) {
   out <- lapply(draws$resps, fitted_internal, ...)
   along <- ifelse(length(out) > 1L, 3, 2)
-  do.call(abind, c(out, along = along))
+  run(abind, c(out, along = along))
 }
 
 #' @export
@@ -76,17 +76,25 @@ fitted_internal.brmsdraws <- function(
         out <- fitted_fun(draws)
       }
     } else {
-      out <- get_dpar(draws, dpar = "mu", ilink = FALSE)
+      mus <- dpars[dpar_class(dpars) %in% "mu"]
+      if (length(mus) == 1L) {
+        out <- get_dpar(draws, dpar = mus, ilink = FALSE)
+      } else {
+        # multiple mu parameters in categorical or mixture models
+        out <- lapply(mus, get_dpar, draws = draws, ilink = FALSE)
+        out <- abind::abind(out, along = 3)
+      }
     }
   }
   if (is.null(dim(out))) {
     out <- as.matrix(out)
   }
+  colnames(out) <- NULL
   out <- reorder_obs(out, draws$old_order, sort = sort)
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
     if (is_categorical(draws$f) || is_ordinal(draws$f)) {
-      if (scale == "linear") {  
+      if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
         dimnames(out)[[3]] <- paste0("P(Y = ", dimnames(out)[[3]], ")")
@@ -296,7 +304,7 @@ fitted_mixture <- function(draws) {
 
 fitted_ordinal <- function(draws) {
   get_probs <- function(i) {
-    do.call(dens, c(args, list(eta = extract_col(eta, i))))
+    run(dens, c(args, list(eta = extract_col(eta, i))))
   }
   eta <- draws$dpars$disc * draws$dpars$mu
   ncat <- draws$data$ncat
@@ -314,7 +322,7 @@ fitted_lagsar <- function(draws) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     as.numeric(solve(W_new) %*% draws$dpars$mu[s, ])
   }
-  do.call(rbind, lapply(1:draws$nsamples, .fitted))
+  run(rbind, lapply(1:draws$nsamples, .fitted))
 }
 
 as_draws_matrix <- function(x, dim) {
@@ -349,7 +357,7 @@ fitted_trunc <- function(draws) {
           "for truncated '", draws$f$family, "' models.")
   }
   trunc_args <- nlist(draws, lb, ub)
-  do.call(fitted_trunc_fun, trunc_args)
+  run(fitted_trunc_fun, trunc_args)
 }
 
 # ----- family specific truncation functions -----
@@ -474,7 +482,7 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
   cdf <- get(paste0("p", dist), mode = "function")
   mean_kernel <- function(x, args) {
     # just x * density(x)
-    x * do.call(pdf, c(x, args))
+    x * run(pdf, c(x, args))
   }
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
@@ -485,7 +493,7 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
   min_lb <- min(vec_lb)
   # array of dimension S x N x length((lb+1):ub)
   mk <- lapply((min_lb + 1):max(vec_ub), mean_kernel, args = args)
-  mk <- do.call(abind, c(mk, along = 3))
+  mk <- run(abind, c(mk, along = 3))
   m1 <- vector("list", ncol(mk))
   for (n in seq_along(m1)) {
     # summarize only over non-truncated values for this observation
@@ -493,6 +501,6 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
-  m1 <- do.call(cbind, m1)
-  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
+  m1 <- run(cbind, m1)
+  m1 / (run(cdf, c(list(ub), args)) - run(cdf, c(list(lb), args)))
 }

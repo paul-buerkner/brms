@@ -41,6 +41,8 @@
 #' @slot algorithm The name of the algorithm used to fit the model
 #' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
 #'   which the model was fitted
+#' @slot file Optional name of a file in which the model object was stored in
+#'   or loaded from
 #' 
 #' @seealso 
 #'   \code{\link{brms}}, 
@@ -55,7 +57,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
                     loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
-                    fit = NA, exclude = NULL, algorithm = "sampling") {
+                    fit = NA, exclude = NULL, algorithm = "sampling",
+                    file = NULL) {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
@@ -64,7 +67,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   x <- nlist(
     formula, family, data, data.name, model, prior,
     autocor, ranef, cov_ranef, loo, waic, kfold, R2, marglik,
-    stanvars, stan_funs, fit, exclude, algorithm, version
+    stanvars, stan_funs, fit, exclude, algorithm, version, file
   )
   class(x) <- "brmsfit"
   x
@@ -191,11 +194,15 @@ posterior_samples <- function(x, pars = NA, ...) {
 #'   By default, all prior samples are extracted
 #' @param ... Currently ignored
 #'   
-#' @details To make use of this function, 
-#'  the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{sample_prior = TRUE} 
-#'  in function \code{brm}.
-#'  Currently there are methods for \code{brmsfit} objects.
+#' @details To make use of this function, the model must contain samples of
+#'   prior distributions. This can be ensured by setting \code{sample_prior =
+#'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
+#'   for technical reasons. For instance, this is the case for the
+#'   population-level intercept, which is only computed after fitting the model
+#'   by default. If you want to treat the intercept as part of all the other
+#'   regression coefficients, so that sampling from its prior becomes possible,
+#'   use \code{... ~ 0 + Intercept + ...} in the formulas.
+#'   
 #' @return A data frame containing the prior samples.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -305,7 +312,7 @@ stancode <- function(object, ...) {
 #'   for internal use in other post-processing methods.
 #' @param control A named list currently for internal usage only.
 #' @param ... More arguments passed to \code{\link{make_standata}}.
-#' @inheritParams predict.brmsfit
+#' @inheritParams extract_draws
 #' 
 #' @return A named list containing the data originally passed to Stan.
 #' 

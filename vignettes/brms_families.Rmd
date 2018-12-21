@@ -2,14 +2,14 @@
 title: "Parameterization of Response Distributions in brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{Parameterization of Response Distributions in brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}   
 ---
-
-<!--
-%\VignetteIndexEntry{Parameterization of response distributions in brms}
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteEncoding{UTF-8}
--->
 
 The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in **brms**. For a more general overview of the package see `vignette("brms_overview")`.
 
