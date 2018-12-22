@@ -23,6 +23,7 @@ compute_loos <- function(
   #   models: list of brmsfit objects
   #   criterion: name of the criterion to compute
   #   use_stored: use precomputed criterion objects if possible?
+  #   compare: compare models using 'loo_compare'?
   #   ...: more arguments passed to compute_loo
   # Returns:
   #   If length(models) > 1 an object of class 'loolist'
@@ -40,18 +41,18 @@ compute_loos <- function(
     if (length(use_stored) == 1L) {
       use_stored <- rep(use_stored, length(models))
     }
-    out <- named_list(names(models))
+    out <- list(loos = named_list(names(models)))
     for (i in seq_along(models)) {
       args$x <- models[[i]]
       args$model_name <- names(models)[i]
       args$use_stored <- use_stored[i]
-      out[[i]] <- run(compute_loo, args) 
+      out$loos[[i]] <- run(compute_loo, args) 
     }
     compare <- as_one_logical(compare)
     if (compare) {
-      diffs__ <- loo_compare(out)
-      out <- SW(compare_ic(x = out))
-      out$diffs__ <- diffs__
+      out$diffs <- loo_compare(out$loos)
+      # for backwards compatibility; remove in brms 3.0
+      out$ic_diffs__ <- SW(compare_ic(x = out$loos))$ic_diffs__
     }
     class(out) <- "loolist"
   } else {
@@ -735,24 +736,16 @@ r_eff_helper <- function(log_lik, fit) {
 
 #' @export
 print.loolist <- function(x, digits = 1, ...) {
-  # print the output of LOO and WAIC with multiple models
-  loos <- x
-  loos$ic_diffs__ <- loos$diffs__ <- NULL
-  for (i in seq_along(loos)) {
-    name <- attributes(loos[[i]])[["model_name"]]
-    if (is.null(name)) {
-      name <- loos[[i]][["model_name"]]
-    }
-    if (is.null(name)) {
-      name <- paste0("model", i)
-    }
-    cat(paste0("Output of model '", name, "':\n"))
-    print(loos[[i]], digits = digits, ...)
+  # print the output of loo and waic with multiple models
+  model_names <- loo::find_model_names(x$loos)
+  for (i in seq_along(x$loos)) {
+    cat(paste0("Output of model '", model_names[i], "':\n"))
+    print(x$loos[[i]], digits = digits, ...)
     cat("\n")
   }
-  if (!is.null(x$diffs__)) {
+  if (!is.null(x$diffs)) {
     cat("Model comparisons:\n")
-    print(x$diffs__, digits = digits, ...)
+    print(x$diffs, digits = digits, ...)
   }
   invisible(x)
 }
