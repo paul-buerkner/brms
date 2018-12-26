@@ -79,6 +79,9 @@ restructure_v2 <- function(x) {
   if (version <= "2.3.6") {
     check_old_nl_dpars(bterms)
   }
+  if (version <= "2.7.1") {
+    x <- rescale_old_mo(x)
+  }
   x
 }
 
@@ -443,6 +446,73 @@ change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
     out <- NULL
   }
   out
+}
+
+rescale_old_mo <- function(x, ...) {
+  # rescale old 'b' coefficients of monotonic effects 
+  # to represent average instead of total differences
+  UseMethod("rescale_old_mo")
+}
+
+#' @export
+rescale_old_mo.brmsfit <- function(x, ...) {
+  bterms <- parse_bf(x$formula)
+  rescale_old_mo(bterms, fit = x, ...)
+}
+
+#' @export
+rescale_old_mo.mvbrmsterms <- function(x, fit, ...) {
+  for (resp in x$responses) {
+    fit <- rescale_old_mo(x$terms[[resp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+rescale_old_mo.brmsterms <- function(x, fit, ...) {
+  for (dp in names(x$dpars)) {
+    fit <- rescale_old_mo(x$dpars[[dp]], fit = fit, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    fit <- rescale_old_mo(x$nlpars[[nlp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+rescale_old_mo.btnl <- function(x, fit, ...) {
+  fit
+}
+
+#' @export
+rescale_old_mo.btl <- function(x, fit, ...) {
+  spef <- tidy_spef(x, fit$data)
+  has_mo <- lengths(spef$Imo) > 0L
+  if (!any(has_mo)) {
+    return(fit)
+  }
+  warning2(
+    "The parameterization of monotonic effects has changed in brms 2.7.2 ",
+    "so that corresponding 'b' coefficients now represent average instead ",
+    "of total differences between categories. See vignette('brms_monotonic') ", 
+    "for more details. Parameters of old models are adjusted automatically."
+  )
+  p <- combine_prefix(x)
+  all_pars <- parnames(fit)
+  chains <- fit$fit@sim$chains
+  for (i in which(has_mo)) {
+    bsp_par <- paste0("bsp", p, "_", spef$coef[i])
+    simo_regex <- paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+    simo_regex <- paste0("simo", p, "_", simo_regex, "[")
+    simo_regex <- paste0("^", escape_all(simo_regex))
+    # scaling factor by which to divide the old 'b' coefficients
+    D <- prod(ulapply(simo_regex, function(r) sum(grepl(r, all_pars))))
+    for (j in seq_len(chains)) {
+      fit$fit@sim$samples[[j]][[bsp_par]] <- 
+        fit$fit@sim$samples[[j]][[bsp_par]] / D
+    }
+  }
+  fit
 }
 
 stop_parameterization_changed <- function(family, version) {
