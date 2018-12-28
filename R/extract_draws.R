@@ -908,9 +908,9 @@ is.bdrawsnl <- function(x) {
 #'   analysis. If \code{"old_levels"}, directly sample new levels from the
 #'   existing levels.
 #' @param new_objects A named \code{list} of objects containing new data, which
-#'   cannot be passed via argument \code{newdata}. Currently, only required for
-#'   objects passed to \code{\link[brms:cor_sar]{cor_sar}} and
-#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#'   cannot be passed via argument \code{newdata}. Required for objects passed
+#'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
+#'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
 #' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
 #'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
 #'   to \code{FALSE} will not affect other correlation structures such as
