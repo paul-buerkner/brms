@@ -237,7 +237,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
   }
   rm_fixef <- fixef_names %in% miss_fixef_no_digits
   fixef <- fixef[, !rm_fixef, drop = FALSE]
-  fixef <- run(cbind, c(list(fixef), rmNULL(new_fixef)))
+  fixef <- do_call(cbind, c(list(fixef), rmNULL(new_fixef)))
   
   for (g in names(coef)) {
     # add missing coefficients to ranef
@@ -1177,7 +1177,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   if ("ratio" %in% mcmc_arg_names) {
     mcmc_args$ratio <- neff_ratio(object)
   }
-  run(mcmc_fun, mcmc_args)
+  do_call(mcmc_fun, mcmc_args)
 }
 
 #' Posterior Predictive Checks for \code{brmsfit} Objects
@@ -1318,15 +1318,15 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     object, newdata = newdata, resp = resp, subset = subset, 
     sort = FALSE, summary = FALSE, ...
   )
-  yrep <- run(method, pred_args)
+  yrep <- do_call(method, pred_args)
   # most ... arguments are ment for the prediction function
   for_pred <- names(dots) %in% names(formals(extract_draws.brmsfit))
   ppc_args <- c(list(y, yrep), dots[!for_pred])
   if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$psis_object <- run(compute_ic, c(pred_args, ic = "psis"))
+    ppc_args$psis_object <- do_call(compute_ic, c(pred_args, ic = "psis"))
   }
   if ("lw" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
-    ppc_args$lw <- weights(run(compute_ic, c(pred_args, ic = "psis")))
+    ppc_args$lw <- weights(do_call(compute_ic, c(pred_args, ic = "psis")))
   }
   # allow using arguments 'group' and 'x' for new data
   mf <- update_data(newdata, bterms, na.action = na.pass)
@@ -1340,7 +1340,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
       ppc_args$x <- as.numeric(ppc_args$x)
     }
   }
-  run(ppc_fun, ppc_args)
+  do_call(ppc_fun, ppc_args)
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
@@ -1838,7 +1838,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     object, newdata, re_formula, resp, subset, 
     summary = FALSE, sort = TRUE, ...
   )
-  yrep <- run(method, pred_args)
+  yrep <- do_call(method, pred_args)
   y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
   old_order <- attr(y, "old_order")
   if (length(dim(yrep)) == 3L) {
@@ -1855,7 +1855,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     pred_args$summary <- TRUE
-    pred <- run("predict", pred_args)
+    pred <- do_call("predict", pred_args)
     if (length(dim(pred)) == 3L) {
       sd_pred <- array2list(pred[, 2, ])
       sd_pred <- lapply(sd_pred, as_draws_matrix, dim = dim(out)[1:2])
@@ -1935,14 +1935,14 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
   if (weights %in% c("loo", "waic", "kfold")) {
     # Akaike weights based on information criteria
     args$compare <- FALSE
-    ics <- SW(run(weights, args))
+    ics <- SW(do_call(weights, args))
     ics <- ulapply(ics, function(x) x$estimates[3, 1])
     ic_diffs <- ics - min(ics)
     out <- exp(-ic_diffs / 2)
   } else if (weights %in% "loo2") {
-    out <- run("loo_model_weights", args)
+    out <- do_call("loo_model_weights", args)
   } else if (weights %in% "marglik") {
-    out <- run("post_prob", args)
+    out <- do_call("post_prob", args)
   }
   out <- as.numeric(out)
   out <- out / sum(out)
@@ -2033,7 +2033,7 @@ posterior_average.brmsfit <- function(
       }
     }
   }
-  out <- run(rbind, out)
+  out <- do_call(rbind, out)
   rownames(out) <- NULL
   attr(out, "weights") <- weights
   attr(out, "nsamples") <- nsamples
@@ -2072,10 +2072,10 @@ pp_average.brmsfit <- function(
     if (nsamples[i] > 0) {
       args$object <- models[[i]]
       args$nsamples <- nsamples[i]
-      out[[i]] <- run(method, args)
+      out[[i]] <- do_call(method, args)
     }
   }
-  out <- run(rbind, out)
+  out <- do_call(rbind, out)
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust) 
   }
@@ -2150,7 +2150,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       for (i in seq_along(R2)) {
         R2[[i]] <- .bayes_R2(y[, i], ypred[, , i])
       }
-      R2 <- run(cbind, R2)
+      R2 <- do_call(cbind, R2)
     }
     colnames(R2) <- paste0("R2", resp)
   }
@@ -2380,7 +2380,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   
   if (is.null(recompile)) {
     # only recompile if new and old stan code do not match
-    new_stancode <- suppressMessages(run(make_stancode, dots))
+    new_stancode <- suppressMessages(do_call(make_stancode, dots))
     # stan code may differ just because of the version number (#288)
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
@@ -2400,7 +2400,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$data.name <- object$data.name
     }
     if (!testmode) {
-      object <- run(brm, dots)
+      object <- do_call(brm, dots)
     }
   } else {
     # refit the model without compiling it again
@@ -2435,7 +2435,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
     if (!testmode) {
       dots$fit <- object
-      object <- run(brm, dots)
+      object <- do_call(brm, dots)
     }
   }
   object
@@ -2505,7 +2505,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   args <- split_dots(x, ..., model_names = model_names)
   args$use_stored_ic <- !any(names(args) %in% args_not_for_reloo())
   c(args) <- nlist(ic = "waic", pointwise, compare, resp)
-  run(compute_ics, args)
+  do_call(compute_ics, args)
 }
 
 #' @export
@@ -2604,7 +2604,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
     ic = "loo", pointwise, compare, resp, 
     k_threshold, reloo, reloo_args
   )
-  run(compute_ics, args)
+  do_call(compute_ics, args)
 }
 
 #' @export
@@ -2622,7 +2622,7 @@ kfold.brmsfit <- function(x, ..., compare = TRUE, K = 10, Ksub = NULL,
     ic = "kfold", compare, K, Ksub, folds, 
     group, resp, save_fits, use_stored_ic
   )
-  run(compute_ics, args)
+  do_call(compute_ics, args)
 }
 
 #' Compute Weighted Expectations Using LOO
@@ -2773,12 +2773,14 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   models <- args$models
   args$models <- NULL
-  log_lik_list <- lapply(models, function(x) run(log_lik, c(list(x), args)))
+  log_lik_list <- lapply(models, function(x) 
+    do_call(log_lik, c(list(x), args))
+  )
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
     r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
   )
-  out <- run(loo::loo_model_weights, args)
+  out <- do_call(loo::loo_model_weights, args)
   names(out) <- names(models)
   out
 }
@@ -2925,7 +2927,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       x, hypothesis, class = class, alpha = alpha, ...
     )
   } else {
-    co <- run(scope, list(x, summary = FALSE))
+    co <- do_call(scope, list(x, summary = FALSE))
     if (!group %in% names(co)) {
       stop2("'group' should be one of ", collapse_comma(names(co)))
     }
@@ -3234,8 +3236,8 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL, model_names = NULL) {
   args$models <- NULL
   bs <- vector("list", length(models))
   for (i in seq_along(models)) {
-    bs[[i]] <- run(bridge_sampler, c(list(models[[i]]), args))
+    bs[[i]] <- do_call(bridge_sampler, c(list(models[[i]]), args))
   }
   model_names <- names(models)
-  run(post_prob, c(bs, nlist(prior_prob, model_names)))
+  do_call(post_prob, c(bs, nlist(prior_prob, model_names)))
 }

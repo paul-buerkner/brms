@@ -105,8 +105,8 @@ match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
   y <- as.data.frame(y)
-  x <- run("paste", c(x, sep = "\r"))
-  y <- run("paste", c(y, sep = "\r"))
+  x <- do_call("paste", c(x, sep = "\r"))
+  y <- do_call("paste", c(y, sep = "\r"))
   match(x, y, ...)
 }
 
@@ -126,7 +126,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   }
   for (name in names(ls)) {
     tmp <- lapply(x, "[[", name)
-    out <- out & run(fun, list(tmp, ls[[name]]))
+    out <- out & do_call(fun, list(tmp, ls[[name]]))
   }
   out
 }
@@ -147,7 +147,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    out <- out & run(fun, list(x[[name]], ls[[name]]))
+    out <- out & do_call(fun, list(x[[name]], ls[[name]]))
   }
   out
 }
@@ -522,7 +522,7 @@ collapse_lists <- function(..., ls = list()) {
   #  a named list containg the collapsed strings
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
-  out <- run(mapply, 
+  out <- do_call(mapply, 
     c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
   )
   names(out) <- elements
@@ -562,14 +562,23 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 }
 
-run <- function(what, args, pkg = NULL) {
-  # like 'do.call' but avoids deparsing arguments
-  # Args:
-  #   what: function or function name
-  #   args: a list of arguments passed to 'what'
-  #   pkg: name of a package in which to look for 'what'
-  # Returns:
-  #   'what' evaluated with 'args'
+#' Execute a Function Call
+#'
+#' Execute a function call similar to \code{\link{do.call}}, but without
+#' deparsing function arguments.
+#' 
+#' @param what Either a function or a non-empty character string naming the
+#'   function to be called.
+#' @param args A list of arguments to the function call. The names attribute of
+#'   \code{args} gives the argument names.
+#' @param pkg Optional name of the package in which to search for the
+#'   function if \code{what} is a character string.
+#'
+#' @return The result of the (evaluated) function call.
+#' 
+#' @keywords internal
+#' @export
+do_call <- function(what, args, pkg = NULL) {
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {

@@ -75,7 +75,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$data$N <- draws$resps[[1]]$data$N
       draws$data$weights <- draws$resps[[1]]$data$weights
       Y <- lapply(draws$resps, function(x) x$data$Y)
-      draws$data$Y <- run(cbind, Y)
+      draws$data$Y <- do_call(cbind, Y)
     }
     draws <- structure(draws, class = "mvbrmsdraws")
   } else {
@@ -124,7 +124,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
       )
     } else {
       # theta was not predicted
-      draws$dpars$theta <- run(cbind, draws$dpars[thetas])
+      draws$dpars$theta <- do_call(cbind, draws$dpars[thetas])
       draws$dpars[thetas] <- NULL
       if (nrow(draws$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(draws$dpars$theta))
@@ -612,7 +612,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         new_rsamples[[i]] <- matrix(nrow = nrow(rsamples), ncol = 0)
       }
     }
-    new_rsamples <- run(cbind, new_rsamples)
+    new_rsamples <- do_call(cbind, new_rsamples)
     # we need row major instead of column major order
     sort_levels <- ulapply(seq_len(nlevels),
       function(l) seq(l, ncol(rsamples), nlevels)
@@ -641,7 +641,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       Znames <- paste0(
         "Z_", sub_ranef_cs$id[take], usc(p), "_", sub_ranef_cs$cn[take]
       )
-      Z <- run(cbind, sdata[Znames])
+      Z <- do_call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       for (i in seq_len(sdata$ncat - 1)) {
         index <- paste0("\\[", i, "\\]$")
@@ -660,10 +660,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         ng <- length(sub_ranef_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)
         for (k in seq_len(ng)) {
-          Z[[k]] <- run(cbind, sdata[paste0(Znames, "_", k)])
+          Z[[k]] <- do_call(cbind, sdata[paste0(Znames, "_", k)])
         }
       } else {
-        Z <- run(cbind, sdata[Znames])
+        Z <- do_call(cbind, sdata[Znames])
       }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       take <- which(sub_ranef$type %in% c("", "mmc"))

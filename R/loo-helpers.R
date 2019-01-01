@@ -43,7 +43,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
       } else {
         args$x <- models[[i]]
         args$model_name <- names(models)[i]
-        out[[i]] <- run(compute_ic, args) 
+        out[[i]] <- do_call(compute_ic, args) 
       }
     }
     compare <- as_one_logical(compare)
@@ -60,7 +60,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
     } else {
       args$x <- models[[1]]
       args$model_name <- names(models)
-      out <- run(compute_ic, args) 
+      out <- do_call(compute_ic, args) 
     }
   }
   out
@@ -82,7 +82,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   #   an object of class 'ic' which inherits from class 'loo'
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    out <- run(kfold_internal, list(x, ...))
+    out <- do_call(kfold_internal, list(x, ...))
   } else {
     contains_samples(x)
     pointwise <- as_one_logical(pointwise)
@@ -99,7 +99,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
       loo_args$log_ratios <- -loo_args$x
       loo_args$x <- NULL
     }
-    out <- SW(run(ic, loo_args, pkg = "loo"))
+    out <- SW(do_call(ic, loo_args, pkg = "loo"))
   }
   out$model_name <- model_name
   class(out) <- c("ic", class(out))
@@ -108,7 +108,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   if (ic == "loo") {
     if (reloo) {
       c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
-      out <- run(reloo.loo, reloo_args)
+      out <- do_call(reloo.loo, reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -305,15 +305,15 @@ add_ic.brmsfit <- function(x, ic = "loo", model_name = NULL,
   new_ic <- ic[ulapply(x[ic], is.null)]
   args <- list(x, ...)
   for (fun in intersect(ic, c("loo", "waic", "kfold"))) {
-    x[[fun]] <- run(fun, args)
+    x[[fun]] <- do_call(fun, args)
     x[[fun]]$model_name <- model_name
   }
   if ("R2" %in% ic) {
     args$summary <- FALSE
-    x$R2 <- run(bayes_R2, args)
+    x$R2 <- do_call(bayes_R2, args)
   }
   if ("marglik" %in% ic) {
-    x$marglik <- run(bridge_sampler, args)
+    x$marglik <- do_call(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_ic))) {
     if (auto_save) {

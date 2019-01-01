@@ -162,7 +162,7 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
     coefs <- c("mean", "sd", "quantile")
   }
   .posterior_summary <- function(x) {
-    run(cbind, lapply(
+    do_call(cbind, lapply(
       coefs, get_estimate, samples = x, 
       probs = probs, na.rm = TRUE
     ))

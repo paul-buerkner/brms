@@ -435,7 +435,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     }
     message("Compiling the C++ model")
     x$fit <- eval_silent(
-      run(rstan::stan_model, stan_model_args),
+      do_call(rstan::stan_model, stan_model_args),
       silent = silence_stan_model, type = "message"
     )
   }
@@ -465,7 +465,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
           args$init <- inits[i]
         }
         futures[[i]] <- future::future(
-          run(rstan::sampling, args), packages = "rstan"
+          brms::do_call(rstan::sampling, args), 
+          packages = "rstan"
         )
       }
       for (i in seq_len(chains)) {
@@ -475,11 +476,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       rm(futures, fits)
     } else {
       c(args) <- nlist(chains, cores)
-      x$fit <- run(rstan::sampling, args) 
+      x$fit <- do_call(rstan::sampling, args) 
     }
   } else {
     # vb does not support parallel execution
-    x$fit <- run(rstan::vb, args)
+    x$fit <- do_call(rstan::vb, args)
   }
   if (!testmode) {
     x <- rename_pars(x)

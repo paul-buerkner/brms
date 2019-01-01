@@ -603,7 +603,7 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
     stop2("beta must be greater than 0.")
   }
   args <- nlist(x, mu, sigma, beta)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, x - mu - sigma^2 / beta)
   
@@ -628,7 +628,7 @@ pexgaussian <- function(q, mu, sigma, beta,
     stop2("beta must be greater than 0.")
   }
   args <- nlist(q, mu, sigma, beta)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
   
@@ -686,7 +686,7 @@ dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   }
   x <- (x - loc) / scale
   args <- nlist(x, loc, scale, shape)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   out <- with(args, 
     log(shape / scale) - (1 + shape) * log(x) - x^(-shape)
   )
@@ -771,7 +771,7 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
 #' @export
 dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
   args <- nlist(dist = "lnorm", x, shift, meanlog, sdlog, log)
-  run(dshifted, args)
+  do_call(dshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
@@ -779,7 +779,7 @@ dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
 pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0, 
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", q, shift, meanlog, sdlog, lower.tail, log.p)
-  run(pshifted, args)
+  do_call(pshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
@@ -787,14 +787,14 @@ pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0,
 qshifted_lnorm <- function(p, meanlog = 0, sdlog = 1, shift = 0, 
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", p, shift, meanlog, sdlog, lower.tail, log.p)
-  run(qshifted, args)
+  do_call(qshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
 #' @export
 rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
   args <- nlist(dist = "lnorm", n, shift, meanlog, sdlog)
-  run(rshifted, args)
+  do_call(rshifted, args)
 }
 
 #' The Inverse Gaussian Distribution
@@ -822,7 +822,7 @@ dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(x, mu, shape)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   out <- with(args,
     0.5 * log(shape / (2 * pi)) -  
     1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
@@ -844,7 +844,7 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(q, mu, shape)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   out <- with(args,
     pnorm(sqrt(shape / q) * (q / mu - 1)) + 
       exp(2 * shape / mu) * pnorm(- sqrt(shape / q) * (q / mu + 1))
@@ -871,7 +871,7 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(mu, shape, length = n)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   # algorithm from wikipedia
   args$y <- rnorm(n)^2
   args$x <- with(args, 
@@ -907,7 +907,7 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
   }
   x <- (x - mu) / sigma
   args <- nlist(x, mu, sigma, xi)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   args$t <- with(args, 1 + xi * x)
   out <- with(args, ifelse(
     xi == 0, 
@@ -929,7 +929,7 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
   }
   q <- (q - mu) / sigma
   args <- nlist(q, mu, sigma, xi)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   out <- with(args, ifelse(
     xi == 0, 
     exp(-exp(-q)),
@@ -951,7 +951,7 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
     stop2("sigma bust be greater than 0.")
   }
   args <- nlist(mu, sigma, xi, length = n)
-  args <- run(expand, args)
+  args <- do_call(expand, args)
   with(args, ifelse(
     xi == 0,
     mu - sigma * log(rexp(n)),
@@ -1081,7 +1081,7 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
     c("alpha", "tau", "beta", "delta")
   )
   args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
-  run(.dwiener, args)
+  do_call(.dwiener, args)
 }
 
 #' @rdname Wiener
@@ -1109,10 +1109,10 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
       c("alpha", "tau", "beta", "delta"),
       SIMPLIFY = FALSE
     )
-    run(rbind, fun(...))
+    do_call(rbind, fun(...))
   }
   args <- nlist(n, alpha, tau, beta, delta, types)
-  run(.rwiener, args)
+  do_call(.rwiener, args)
 }
 
 rwiener_num <- function(n, alpha, tau, beta, delta, types) {
@@ -1223,8 +1223,8 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   pars <- args[names(pars)]
   pdf <- paste0("d", dist) 
   out <- ifelse(x == 0, 
-    log(zi + (1 - zi) * run(pdf, c(0, pars))),
-    log(1 - zi) + run(pdf, c(list(x), pars, log = TRUE))
+    log(zi + (1 - zi) * do_call(pdf, c(0, pars))),
+    log(1 - zi) + do_call(pdf, c(list(x), pars, log = TRUE))
   )
   if (!log) {
     out <- exp(out)
@@ -1248,7 +1248,7 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
   out <- log(1 - zi) +
-    run(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
   if (lower.tail) {
     out <- 1 - exp(out)
     if (log.p) {
@@ -1359,13 +1359,13 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   pars <- args[names(pars)]
   pdf <- paste0("d", dist)
   if (type == "int") {
-    lccdf0 <- log(1 - run(pdf, c(0, pars)))
+    lccdf0 <- log(1 - do_call(pdf, c(0, pars)))
   } else {
     lccdf0 <- 0
   }
   out <- ifelse(x == 0, 
     log(hu),
-    log(1 - hu) + run(pdf, c(list(x), pars, log = TRUE)) - lccdf0
+    log(1 - hu) + do_call(pdf, c(list(x), pars, log = TRUE)) - lccdf0
   )
   if (!log) {
     out <- exp(out)
@@ -1391,10 +1391,10 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
   out <- log(1 - hu) +
-    run(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
   if (type == "int") {
     pdf <- paste0("d", dist)
-    out <- out - log(1 - run(pdf, c(0, pars)))
+    out <- out - log(1 - do_call(pdf, c(0, pars)))
   }
   if (lower.tail) {
     out <- 1 - exp(out)
@@ -1448,7 +1448,7 @@ pcategorical <- function(q, eta, ncat, link = "logit") {
   # Retruns: 
   #   probabilities P(x <= q)
   p <- dcategorical(1:max(q), eta = eta, link = link)
-  run(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
 }
 
 dcumulative <- function(x, eta, ncat, link = "logit") {
@@ -1472,7 +1472,7 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(1 - mu[, ncat - 1]))
-  p <- run(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1497,7 +1497,7 @@ dsratio <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(apply(1 - mu, 1, prod)))
-  p <- run(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1522,7 +1522,7 @@ dcratio <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(apply(mu, 1, prod)))
-  p <- run(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1576,26 +1576,26 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
   # Returns: 
   #   probabilites P(x <= q)
   args <- list(1:max(q), eta = eta, ncat = ncat, link = link)
-  p <- run(paste0("d", family), args)
+  p <- do_call(paste0("d", family), args)
   .fun <- function(j) {
     rowSums(as.matrix(p[, 1:j]))
   }
-  run(cbind, lapply(q, .fun))
+  do_call(cbind, lapply(q, .fun))
 }
 
 # helper functions to shift arbitrary distributions
 dshifted <- function(dist, x, shift = 0, ...) {
-  run(paste0("d", dist), list(x - shift, ...))
+  do_call(paste0("d", dist), list(x - shift, ...))
 }
 
 pshifted <- function(dist, q, shift = 0, ...) {
-  run(paste0("p", dist), list(q - shift, ...))
+  do_call(paste0("p", dist), list(q - shift, ...))
 }
 
 qshifted <- function(dist, p, shift = 0, ...) {
-  run(paste0("q", dist), list(p, ...)) + shift
+  do_call(paste0("q", dist), list(p, ...)) + shift
 }
 
 rshifted <- function(dist, n, shift = 0, ...) {
-  run(paste0("r", dist), list(n, ...)) + shift
+  do_call(paste0("r", dist), list(n, ...)) + shift
 }

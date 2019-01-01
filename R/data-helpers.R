@@ -160,7 +160,7 @@ order_data <- function(data, bterms) {
     if (any(duplicated(data.frame(gv, tv)))) {
       stop2("Time points within groups must be unique.")
     }
-    new_order <- run(order, list(gv, tv))
+    new_order <- do_call(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)
@@ -548,7 +548,7 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   }
   Ynames <- paste0("Y", usc(resp))
   if (length(Ynames) > 1L) {
-    out <- run(cbind, sdata[Ynames])
+    out <- do_call(cbind, sdata[Ynames])
     colnames(out) <- resp
   } else {
     out <- sdata[[Ynames]]
@@ -635,7 +635,7 @@ make_sm_list <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- run(smoothCon, sc_args)
+      out[[i]] <- do_call(smoothCon, sc_args)
     }
   }
   out

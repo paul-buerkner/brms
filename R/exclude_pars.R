@@ -44,7 +44,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)
-  run(structure, c(list(unique(out)), att))
+  do_call(structure, c(list(unique(out)), att))
 }
 
 exclude_pars_internal <- function(x, ...) {

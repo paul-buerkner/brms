@@ -11,7 +11,7 @@ predict_internal.mvbrmsdraws <- function(draws, ...) {
   } else {
     out <- lapply(draws$resps, predict_internal, ...)
     along <- ifelse(length(out) > 1L, 3, 2)
-    out <- run(abind, c(out, along = along))
+    out <- do_call(abind, c(out, along = along))
   }
   out
 }
@@ -31,11 +31,11 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   N <- choose_N(draws)
   out <- lapply(seq_len(N), predict_fun, draws = draws, ...)
   if (grepl("_mv$", draws$f$fun)) {
-    out <- run(abind, c(out, along = 3))
+    out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
     dimnames(out)[[3]] <- names(draws$resps)
   } else {
-    out <- run(cbind, out) 
+    out <- do_call(cbind, out) 
   }
   colnames(out) <- NULL
   # percentage of invalid samples for truncated discrete models
@@ -50,7 +50,7 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   out <- reorder_obs(out, draws$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
   if (!is.null(transform)) {
-    out <- run(transform, list(out))
+    out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- draws$data$cats
   if (summary) {
@@ -136,7 +136,7 @@ predict_gaussian_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_mv <- function(i, draws, ...) {
@@ -146,7 +146,7 @@ predict_student_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s], mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_cov <- function(i, draws, ...) {
@@ -156,7 +156,7 @@ predict_gaussian_cov <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_cov <- function(i, draws, ...) {
@@ -167,7 +167,7 @@ predict_student_cov <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_lagsar <- function(i, draws, ...) {
@@ -180,7 +180,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_lagsar <- function(i, draws, ...) {
@@ -194,7 +194,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_errorsar <- function(i, draws, ...) {
@@ -206,7 +206,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_errorsar <- function(i, draws, ...) {
@@ -219,7 +219,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_fixed <- function(i, draws, ...) {
@@ -228,7 +228,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_fixed <- function(i, draws, ...) {
@@ -238,7 +238,7 @@ predict_student_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
@@ -595,17 +595,17 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     rdist <- paste0("r", dist)
-    out <- run(rdist, c(nrng, args))
+    out <- do_call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
     pdist <- paste0("p", dist)
     qdist <- paste0("q", dist)
-    plb <- run(pdist, c(list(lb), args))
-    pub <- run(pdist, c(list(ub), args))
+    plb <- do_call(pdist, c(list(lb), args))
+    pub <- do_call(pdist, c(list(ub), args))
     rng <- list(runif(nrng, min = plb, max = pub))
-    out <- run(qdist, c(rng, args))
+    out <- do_call(qdist, c(rng, args))
     # remove infinte values caused by numerical imprecision
     out[out %in% c(-Inf, Inf)] <- NA
   }
@@ -628,12 +628,12 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
   rdist <- get(paste0("r", dist), mode = "function")
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
-    run(rdist, c(nrng, args))
+    do_call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution via rejection sampling
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
-    rng <- matrix(run(rdist, c(nrng * ntrys, args)), ncol = ntrys)
+    rng <- matrix(do_call(rdist, c(nrng * ntrys, args)), ncol = ntrys)
     apply(rng, 1, extract_valid_sample, lb = lb, ub = ub)
   }
 }

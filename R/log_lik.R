@@ -15,7 +15,7 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
       out <- Reduce("+", out)
     } else {
       along <- ifelse(length(out) > 1L, 3, 2)
-      out <- run(abind, c(out, along = along))
+      out <- do_call(abind, c(out, along = along))
     }
   }
   out
@@ -32,7 +32,7 @@ log_lik_internal.brmsdraws <- function(draws, ...) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
-  out <- run(cbind, lapply(seq_len(N), log_lik_fun, draws = draws))
+  out <- do_call(cbind, lapply(seq_len(N), log_lik_fun, draws = draws))
   colnames(out) <- NULL
   old_order <- draws$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
@@ -167,7 +167,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  run(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
@@ -192,7 +192,7 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  run(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
@@ -216,7 +216,7 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  run(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
@@ -237,7 +237,7 @@ log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  run(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
@@ -386,7 +386,7 @@ log_lik_wiener <- function(i, draws, data = data.frame()) {
     beta = get_dpar(draws, "bias", i = i),
     resp = draws$data[["dec"]][i]
   )
-  out <- run("dwiener", c(draws$data$Y[i], args, log = TRUE))
+  out <- do_call("dwiener", c(draws$data$Y[i], args, log = TRUE))
   log_lik_weight(out, i = i, data = draws$data)
 }
 
@@ -515,7 +515,7 @@ log_lik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
     mu <- get_dpar(draws, "mu", i)
     args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
     out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
-      run(dbeta, c(draws$data$Y[i], args, log = TRUE))
+      do_call(dbeta, c(draws$data$Y[i], args, log = TRUE))
   }
   log_lik_weight(out, i = i, data = draws$data)
 }
@@ -648,14 +648,14 @@ log_lik_censor <- function(dist, args, i, data) {
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
   if (is.null(data$cens) || data$cens[i] == 0) {
-    run(pdf, c(data$Y[i], args, log = TRUE))
+    do_call(pdf, c(data$Y[i], args, log = TRUE))
   } else if (data$cens[i] == 1) {
-    run(cdf, c(data$Y[i], args, lower.tail = FALSE, log.p = TRUE))
+    do_call(cdf, c(data$Y[i], args, lower.tail = FALSE, log.p = TRUE))
   } else if (data$cens[i] == -1) {
-    run(cdf, c(data$Y[i], args, log.p = TRUE))
+    do_call(cdf, c(data$Y[i], args, log.p = TRUE))
   } else if (data$cens[i] == 2) {
-    log(run(cdf, c(data$rcens[i], args)) - 
-          run(cdf, c(data$Y[i], args)))
+    log(do_call(cdf, c(data$rcens[i], args)) - 
+          do_call(cdf, c(data$Y[i], args)))
   }
 }
 
@@ -672,7 +672,7 @@ log_lik_truncate <- function(x, cdf, args, i, data) {
   if (!(is.null(data$lb) && is.null(data$ub))) {
     lb <- if (is.null(data$lb)) -Inf else data$lb[i]
     ub <- if (is.null(data$ub)) -Inf else data$ub[i]
-    x - log(run(cdf, c(ub, args)) - run(cdf, c(lb, args)))
+    x - log(do_call(cdf, c(ub, args)) - do_call(cdf, c(lb, args)))
   } else {
     x
   }

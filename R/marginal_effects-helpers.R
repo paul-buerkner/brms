@@ -572,13 +572,13 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     } else {
       values[[2]] <- unique(data[, effects[2]])
     }
-    data <- run(expand.grid, values)
+    data <- do_call(expand.grid, values)
   } else {
     data <- structure(data.frame(values), names = effects)
   }
   # no need to have the same value combination more than once
   data <- unique(data)
-  data <- data[run(order, as.list(data)), , drop = FALSE]
+  data <- data[do_call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   marg_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
@@ -586,7 +586,7 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     data[[j]][, marg_vars] <- conditions[j, marg_vars]
     data[[j]]$cond__ <- cond__[j]
   }
-  data <- run(rbind, data)
+  data <- do_call(rbind, data)
   data$cond__ <- factor(data$cond__, cond__)
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
@@ -619,7 +619,7 @@ marginal_effects_internal.brmsterms <- function(
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, summary = FALSE, ...
   )
-  out <- run(method, pred_args)
+  out <- do_call(method, pred_args)
   rownames(marg_data) <- NULL
   
   if (categorical || ordinal) {
@@ -654,7 +654,7 @@ marginal_effects_internal.brmsterms <- function(
           out[, , k] <- out[, , k] * k
         }
         out <- lapply(seq_dim(out, 2), function(s) rowSums(out[, s, ]))
-        out <- run(cbind, out)
+        out <- do_call(cbind, out)
       }
     }
   }
@@ -681,7 +681,7 @@ marginal_effects_internal.brmsterms <- function(
     }
     spag <- out
     if (categorical) {
-      spag <- run(cbind, array2list(spag))
+      spag <- do_call(cbind, array2list(spag))
     }
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
@@ -695,7 +695,7 @@ marginal_effects_internal.brmsterms <- function(
   
   out <- posterior_summary(out, probs = probs, robust = robust)
   if (categorical || ordinal) {
-    out <- run(rbind, array2list(out))
+    out <- do_call(rbind, array2list(out))
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(marg_data, out)
@@ -769,15 +769,15 @@ make_point_frame <- function(bterms, mf, effects, conditions,
       if (ncol(mf_tmp)) {
         # handle factors and grouping variables
         # do it like base::duplicated
-        K <- run("paste", c(mf_tmp, sep = "\r")) %in%
-          run("paste", c(cond, sep = "\r"))
+        K <- do_call("paste", c(mf_tmp, sep = "\r")) %in%
+          do_call("paste", c(cond, sep = "\r"))
       } else {
         K <- seq_rows(mf)
       }
       # cond__ allows to assign points to conditions
       points[[i]]$cond__[K] <- cond__[i]
     }
-    points <- run(rbind, points)
+    points <- do_call(rbind, points)
     points <- points[!is.na(points$cond__), , drop = FALSE]
     points$cond__ <- factor(points$cond__, cond__)
   }
@@ -789,7 +789,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     }
   }
   if (!is.null(transform)) {
-    points$resp__ <- run(transform, list(points$resp__))
+    points$resp__ <- do_call(transform, list(points$resp__))
   }
   points
 }
@@ -867,7 +867,7 @@ plot.brmsMarginalEffects <- function(
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_tile, .surface_args) + 
+          do_call(geom_tile, .surface_args) + 
           scale_fill_gradientn(colors = viridis6(), name = "Probability") + 
           ylab(response)
       } else if (stype == "contour") {
@@ -877,13 +877,13 @@ plot.brmsMarginalEffects <- function(
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_contour, .surface_args) +
+          do_call(geom_contour, .surface_args) +
           scale_color_gradientn(colors = viridis6(), name = response)
       } else if (stype == "raster") {
         .surface_args <- nlist(mapping = aes_(fill = ~ estimate__))
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_raster, .surface_args) + 
+          do_call(geom_raster, .surface_args) + 
           scale_fill_gradientn(colors = viridis6(), name = response)
       }
     } else {
@@ -916,7 +916,7 @@ plot.brmsMarginalEffects <- function(
         }
         replace_args(.point_args, dont_replace) <- point_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_jitter, .point_args)
+          do_call(geom_jitter, .point_args)
       }
       if (!is.null(spaghetti)) {
         # add a regression line for each sample separately
@@ -933,7 +933,7 @@ plot.brmsMarginalEffects <- function(
         }
         replace_args(.spaghetti_args, dont_replace) <- spaghetti_args
         plots[[i]] <- plots[[i]] +
-          run(geom_smooth, .spaghetti_args)
+          do_call(geom_smooth, .spaghetti_args)
       }
       if (is.numeric(x[[i]]$effect1__)) {
         # line plots for numeric predictors
@@ -946,7 +946,7 @@ plot.brmsMarginalEffects <- function(
         replace_args(.line_args, dont_replace) <- line_args
         if (mean || is.null(spaghetti)) {
           plots[[i]] <- plots[[i]] + 
-            run(geom_smooth, .line_args)
+            do_call(geom_smooth, .line_args)
         }
         if (rug) {
           .rug_args <- list(
@@ -961,7 +961,7 @@ plot.brmsMarginalEffects <- function(
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] + 
-            run(geom_rug, .rug_args)
+            do_call(geom_rug, .rug_args)
         }
       } else {
         # points and errorbars for factors
@@ -979,8 +979,8 @@ plot.brmsMarginalEffects <- function(
         replace_args(.cat_args, dont_replace) <- cat_args
         replace_args(.errorbar_args, dont_replace) <- errorbar_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_point, .cat_args) +
-          run(geom_errorbar, .errorbar_args)
+          do_call(geom_point, .cat_args) +
+          do_call(geom_errorbar, .errorbar_args)
       }
       if (categorical) {
         plots[[i]] <- plots[[i]] + ylab("Probability") +

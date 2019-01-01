@@ -87,7 +87,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     formula, data = data[[1]], family, prior, autocor, cov_ranef,
     sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
   )
-  fits[[1]] <- run(brm, args)
+  fits[[1]] <- do_call(brm, args)
   fits[[1]]$data.name <- data.name
   rhats <- data.frame(as.list(rhat(fits[[1]])))
   if (any(rhats > 1.1)) {

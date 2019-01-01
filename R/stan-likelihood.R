@@ -22,17 +22,17 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   # prepare family part of the likelihood
   llh_args <- nlist(bterms, resp, mix)
   llh_fun <- paste0("stan_llh_", prepare_family(bterms)$fun)
-  llh <- run(llh_fun, llh_args)
+  llh <- do_call(llh_fun, llh_args)
   # incorporate other parts into the likelihood
   args <- nlist(llh, bterms, data, resp, mix, ptheta)
   if (nzchar(mix)) {
-    out <- run(stan_llh_mix, args)
+    out <- do_call(stan_llh_mix, args)
   } else if (is.formula(bterms$adforms$cens)) {
-    out <- run(stan_llh_cens, args)
+    out <- do_call(stan_llh_cens, args)
   } else if (is.formula(bterms$adforms$weights)) {
-    out <- run(stan_llh_weights, args)
+    out <- do_call(stan_llh_weights, args)
   } else {
-    out <- run(stan_llh_general, args)
+    out <- do_call(stan_llh_general, args)
   }
   if (grepl("\\[n\\]", out) && !nzchar(mix)) {
     # loop over likelihood if it cannot be vectorized

@@ -185,7 +185,7 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
   }
-  x <- run(apply, c(args, dots))
+  x <- do_call(apply, c(args, dots))
   if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
   } else if (coef == "quantile") {
@@ -230,7 +230,7 @@ posterior_table <- function(x, levels = NULL) {
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
-  out <- run(rbind, out)
+  out <- do_call(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
@@ -530,11 +530,11 @@ get_Mu <- function(draws, i = NULL) {
   if (is.null(Mu)) {
     Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
-      Mu <- run(cbind, Mu)
+      Mu <- do_call(cbind, Mu)
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- run(abind, c(Mu, along = 3))
+      Mu <- do_call(abind, c(Mu, along = 3))
     }
   } else {
     stopifnot(!is.null(i))
@@ -552,7 +552,7 @@ get_Sigma <- function(draws, i = NULL) {
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- run(cbind, sigma)
+      sigma <- do_call(cbind, sigma)
       Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
@@ -714,7 +714,7 @@ validate_weights <- function(weights, models, control = list()) {
   if (!is.numeric(weights)) {
     weight_args <- c(unname(models), control)
     weight_args$weights <- weights
-    weights <- run(model_weights, weight_args)
+    weights <- do_call(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -810,7 +810,7 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      run(paste0("r", dist), list(x$fit@sim$iter, ...))
+      do_call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

@@ -120,7 +120,7 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
   )
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
-    out[[nlp]] <- run(stan_predictor, c(nlp_args, args))
+    out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
   }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
@@ -129,7 +129,7 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
-      out[[dp]] <- run(stan_predictor, c(dp_args, args))
+      out[[dp]] <- do_call(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       out[[dp]] <- list(data = dp_def)
     } else if (is.character(x$fdpars[[dp]]$value)) {

@@ -387,11 +387,11 @@ combine_family_info <- function(x, y, ...) {
   } else if (y == "ad") {
     x <- Reduce("intersect", x)
   } else if (y == "ybounds") {
-    x <- run(rbind, x)
+    x <- do_call(rbind, x)
     x <- c(max(x[, 1]), min(x[, 2]))
   } else if (y == "closed") {
     # closed only if no bounds are open
-    x <- run(rbind, x)
+    x <- do_call(rbind, x)
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)

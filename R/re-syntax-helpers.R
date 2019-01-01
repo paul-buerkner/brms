@@ -91,7 +91,7 @@ split_re_terms <- function(re_terms) {
     valid_types <- c("sp", "cs", "mmc")
     invalid_types <- c("sm", "gp")
     for (t in c(valid_types, invalid_types)) {
-      lhs_tform <- run(paste0("parse_", t), list(lhs_form))
+      lhs_tform <- do_call(paste0("parse_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
         if (t %in% invalid_types) {
           stop2("Cannot handle splines or GPs in group-level terms.")
@@ -270,7 +270,7 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
     for (nlp in names(x$nlpars)) {
       re[[nlp]] <- get_re(x$nlpars[[nlp]])
     }
-    re <- run(rbind, re)
+    re <- do_call(rbind, re)
   } else {
     x$dpars[["mu"]]$nlpars <- NULL
     re <- get_re(x$dpars[["mu"]])
@@ -280,7 +280,7 @@ get_re.brmsterms <- function(x, all = TRUE, ...) {
 
 #' @export
 get_re.mvbrmsterms <- function(x, ...) {
-  run(rbind, lapply(x$terms, get_re, ...))
+  do_call(rbind, lapply(x$terms, get_re, ...))
 }
 
 #' @export
@@ -404,7 +404,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
     }
     ranef[[i]] <- rdat 
   }
-  ranef <- run(rbind, c(list(empty_ranef()), ranef))
+  ranef <- do_call(rbind, c(list(empty_ranef()), ranef))
   # check for overlap between different group types
   rsv_groups <- ranef[nzchar(ranef$gtype), "group"]
   other_groups <- ranef[!nzchar(ranef$gtype), "group"]
