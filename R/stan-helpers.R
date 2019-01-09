@@ -211,7 +211,7 @@ stan_autocor <- function(bterms, prior) {
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(bterms$dpars[["mu"]]$nlpars)) {
+      if (is.btnl(bterms$dpars[["mu"]])) {
         stop2(err_msg, " in non-linear models.")
       }
       if (!identical(family$link, "identity")) {
