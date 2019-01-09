@@ -612,6 +612,11 @@ test_that("Cell-mean coding can be disabled", {
   expect_equal(sdata$X_disc, target)
   expect_equal(unname(sdata$Z_1_disc_1), as.array(rep(0:1, 5)))
   expect_true(!"Z_1_disc_2" %in% names(sdata))
+  
+  bform <- bf(y ~ 0 + g + (1 | y), cmc = FALSE)
+  sdata <- make_standata(bform, df)
+  expect_equal(sdata$X, target)
+  expect_equal(unname(sdata$Z_1_1), as.array(rep(1, 10)))
 })
 
 test_that("make_standata correctly includes offsets", {

@@ -65,8 +65,7 @@ data_rsv_intercept <- function(data, bterms) {
   #   data: data.frame or list
   #   bterms: object of class brmsterms
   fe_forms <- get_effect(bterms, "fe")
-  rsv_int <- any(ulapply(fe_forms, no_cmc))
-  if (rsv_int) {
+  if (any(ulapply(fe_forms, no_int))) {
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
@@ -432,7 +431,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   if (is.null(terms)) {
     return(NULL)
   }
-  if (isTRUE(attr(terms, "rm_intercept"))) {
+  if (no_int(terms)) {
     cols2remove <- union(cols2remove, "(Intercept)")
   }
   X <- stats::model.matrix(terms, data)
