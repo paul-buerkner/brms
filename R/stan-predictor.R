@@ -124,21 +124,23 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
   }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
-    dp_def <- stan_dpar_defs(dp, resp, family = x$family)
-    dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
       out[[dp]] <- do_call(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
+      dp_def <- stan_dpar_defs(dp, resp, family = x$family, fixed = TRUE)
       out[[dp]] <- list(data = dp_def)
     } else if (is.character(x$fdpars[[dp]]$value)) {
       if (!x$fdpars[[dp]]$value %in% valid_dpars) {
         stop2("Parameter '", x$fdpars[[dp]]$value, "' cannot be found.")
       }
+      dp_def <- stan_dpar_defs(dp, resp, family = x$family)
       dp_co <- paste0("  ", dp, resp, " = ", x$fdpars[[dp]]$value, resp, ";\n")
       out[[dp]] <- list(tparD = dp_def, tparC1 = dp_co)
     } else {
+      dp_def <- stan_dpar_defs(dp, resp, family = x$family)
+      dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
       if (nzchar(dp_def_temp)) {
         dp_prior <- stan_prior(
           prior, dp, prefix = "temp_", suffix = resp, px = px
@@ -1209,10 +1211,18 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   out
 }
 
-stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
+stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   # default Stan definitions for distributional parameters
+  # Args:
+  #   dpar: name of a distributional parameter
+  #   suffix: optional suffix of the parameter name
+  #   family: optional brmsfamily object
+  #   fixed: should the parameter be fixed to a certain value?
+  dpar <- as_one_character(dpar)
+  suffix <- as_one_character(suffix)
+  fixed <- as_one_logical(fixed)
   if (is.mixfamily(family)) {
-    if (isTRUE(dpar_class(dpar) == "theta")) {
+    if (dpar_class(dpar) == "theta") {
       return("")  # theta is handled in stan_mixture
     }
     family <- family$mix[[as.numeric(dpar_id(dpar))]]
@@ -1227,6 +1237,11 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
     if (nzchar(bounds)) bounds <- paste0("<", bounds, ">")
     def <- paste0("  real", bounds, " ", dpar, suffix, ";\n")
     return(def)
+  }
+  if (fixed) {
+    min_Y <- paste0("min(Y", suffix, ")")
+  } else {
+    min_Y <- paste0("min_Y", suffix)
   }
   default_defs <- list(
     sigma = c(
@@ -1274,7 +1289,7 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
       ";  // boundary separation parameter \n"
     ),
     ndt = c(
-      "  real<lower=0,upper=min_Y> ", 
+      paste0("  real<lower=0,upper=", min_Y, "> "), 
       ";  // non-decision time parameter \n"
     ),
     bias = c(
@@ -1309,8 +1324,13 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL) {
 
 stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
   # default Stan definitions for temporary distributional parameters
+  dpar <- as_one_character(dpar)
+  suffix <- as_one_character(suffix)
+  if (is.mixfamily(family)) {
+    family <- family$mix[[as.numeric(dpar_id(dpar))]]
+  }
   if (is.customfamily(family)) {
-    return("")
+    return("")  # no temporary parameters in custom families
   }
   default_defs <- list(
     xi = c(

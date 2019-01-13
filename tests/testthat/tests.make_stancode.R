@@ -846,6 +846,10 @@ test_that("Stan code of wiener diffusion models is correct", {
   )
   expect_match2(scode, "bias[n] = inv_logit(bias[n]);")
   
+  scode <- make_stancode(bf(q | dec(resp) ~ x, ndt = 0.5), 
+                         data = dat, family = wiener())
+  expect_match2(scode, "real<lower=0,upper=min(Y)> ndt;")
+  
   expect_error(make_stancode(q ~ x, data = dat, family = wiener()),
                "Addition argument 'dec' is required for family 'wiener'")
 })
