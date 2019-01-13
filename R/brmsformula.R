@@ -1007,7 +1007,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
-      stop2("Expecting a single value when fixing parameters.")
+      stop2("Expecting a single value when fixing parameter '", par, "'.")
     }
     scalar <- SW(as.numeric(formula))
     if (!is.na(scalar)) {
