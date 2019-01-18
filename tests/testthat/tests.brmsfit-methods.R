@@ -146,7 +146,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(log_lik(fit1), logLik(fit1))
   
   # marginal_effects
-  me <- marginal_effects(fit1)
+  me <- marginal_effects(fit1, resp = "count")
   expect_equal(nrow(me[[2]]), 100)
   meplot <- plot(me, points = TRUE, rug = TRUE, 
                  ask = FALSE, plot = FALSE)

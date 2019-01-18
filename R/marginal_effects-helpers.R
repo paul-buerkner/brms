@@ -608,9 +608,11 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 #' @export
 marginal_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, surface, 
-  spaghetti, categorical, ordinal, probs, robust, dpar = NULL, ...
+  spaghetti, categorical, ordinal, probs, robust, 
+  dpar = NULL, resp = NULL, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
+  # argument 'resp' exists only to be excluded from ... (#589)
   stopifnot(is.brmsfit(fit))
   effects <- attr(marg_data, "effects")
   types <- attr(marg_data, "types")
