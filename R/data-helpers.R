@@ -531,8 +531,22 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+#' Extract response values
+#' 
+#' Extract response values from a \code{\link{brmsfit}} object.
+#' 
+#' @param x A \code{\link{brmsfit}} object.
+#' @param resp Optional names of response variables for which to extract values.
+#' @param warn For internal use only.
+#' @param ... Further arguments passed to \code{\link{standata}}.
+#' 
+#' @return Returns a vector of response values for univariate models and a
+#'   matrix of response values with one column per response variable for
+#'   multivariate models.
+#' 
+#' @keywords internal
+#' @export
 get_y <- function(x, resp = NULL, warn = FALSE, ...) {
-  # safely extract response values from a brmsfit object
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
   warn <- as_one_logical(warn)
