@@ -1415,16 +1415,18 @@ check_sample_prior <- function(sample_prior) {
 
 get_bound <- function(prior, class = "b", coef = "", 
                       group = "", px = list()) {
-  # extract the boundaries of a parameter described by class etc.
+  # extract prior boundaries of a parameter
   # Args:
   #   prior: object of class brmsprior
-  #   class, coef, group, nlpar: strings of length 1
-  stopifnot(length(class) == 1L)
+  #   class, coef, group, px: passed to subset2
+  stopifnot(is.brmsprior(prior))
+  class <- as_one_character(class)
   if (!length(coef)) coef <- ""
   if (!length(group)) group <- ""
   bound <- subset2(prior, ls = c(nlist(class, coef, group), px))$bound
-  if (length(bound) > 1L) {
-    stop("extracted more than one boundary at once")
+  if (!length(bound)) bound <- ""
+  if (length(bound) != 1L) {
+    stop("Extracting parameter boundaries failed. Please report a bug.")
   }
   bound
 }

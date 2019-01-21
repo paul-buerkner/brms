@@ -35,7 +35,7 @@ test_that("specified priors appear in the Stan code", {
              prior(normal(0, 5), class = Intercept),
              prior(cauchy(0, 5), class = sd))
   scode <- make_stancode(y ~ x1 + cs(x2) + (0 + x1 + x2 | g), 
-                         dat, family = acat(), 
+                         data = dat, family = acat(), 
                          prior = prior, sample_prior = TRUE)
   expect_match2(scode, "target += normal_lpdf(b | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(temp_Intercept | 0, 5)")
@@ -732,9 +732,9 @@ test_that("known standard errors appear in the Stan code", {
 })
 
 test_that("functions defined in 'stan_funs' appear in the functions block", {
-  test_fun <- paste0("  real test_fun(real a, real b) { \n",
-                     "    return a + b; \n",
-                     "  } \n")
+  test_fun <- paste0("  real test_fun(real a, real b) {\n",
+                     "    return a + b;\n",
+                     "  }\n")
   scode <- SW(make_stancode(time ~ age, data = kidney, stan_funs = test_fun))
   expect_match2(scode, test_fun)
 })
@@ -877,7 +877,7 @@ test_that("distributional gamma models are handled correctly", {
     data = kidney, family = Gamma("log")
   )
   expect_match2(scode, paste0(
-    "    shape[n] = exp(shape[n]); \n", 
+    "    shape[n] = exp(shape[n]);\n", 
     "    mu[n] = shape[n] * exp(-(mu[n]));"))
   
   scode <- make_stancode(
@@ -889,8 +889,8 @@ test_that("distributional gamma models are handled correctly", {
               set_prior("normal(0,3)", nlpar = "b"))
   )
   expect_match2(scode, paste0(
-    "    shape[n] = exp(shape[n]); \n", 
-    "    // compute non-linear predictor \n",
+    "    shape[n] = exp(shape[n]);\n", 
+    "    // compute non-linear predictor\n",
     "    mu[n] = shape[n] / (inv_logit(nlp_a[n]) * exp(nlp_b[n] * C_1[n]));"
   ))
   
@@ -901,9 +901,9 @@ test_that("distributional gamma models are handled correctly", {
   )
   # test that no link function is applied on 'shape'
   expect_match2(scode, paste0(
-    "  for (n in 1:N) { \n",
-    "    mu[n] = shape[n] * exp(-(mu[n])); \n",
-    "  } \n"
+    "  for (n in 1:N) {\n",
+    "    mu[n] = shape[n] * exp(-(mu[n]));\n",
+    "  }\n"
   ))
 })
 
@@ -1198,7 +1198,7 @@ test_that("Stan code of mixture model is correct", {
                          data = data, mixture(Gamma("log"), weibull))
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta1;")
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta2;")
-  expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\); \\\n    mu1\\[n\\] = ")
+  expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\);\\\n    mu1\\[n\\] = ")
   expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
   expect_match2(scode, "target += weights[n] * log_sum_exp(ps);")
   
@@ -1296,6 +1296,7 @@ test_that("sparse matrix multiplication is applied correctly", {
 })
 
 test_that("Stan code for Gaussian processes is correct", {
+  set.seed(1234)
   dat <- data.frame(y = rnorm(40), x1 = rnorm(40), x2 = rnorm(40),
                     z = factor(rep(3:6, each = 10)))
   
@@ -1606,7 +1607,7 @@ test_that("custom families are handled correctly", {
     bf(y ~ x, tau ~ x), data = dat, family = beta_binomial2, 
     stanvars = stanvars
   )
-  expect_match2(scode, "tau[n] = exp(tau[n]); ")
+  expect_match2(scode, "tau[n] = exp(tau[n]);")
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
   
   # check custom families in mixture models

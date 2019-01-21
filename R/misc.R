@@ -236,7 +236,7 @@ first_not_null <- function(...) {
   dots <- list(...)
   out <- NULL
   i <- 1L
-  while(isNULL(out) && i <= length(dots)) {
+  while (isNULL(out) && i <= length(dots)) {
     if (!isNULL(dots[[i]])) {
       out <- dots[[i]]
     }
@@ -389,10 +389,10 @@ all_vars <- function(expr, ...) {
   all.vars(expr, ...)
 }
 
-lc <- function(l, ...) {
-  # append ... to l
+lc <- function(x, ...) {
+  # append list(...) to x
   dots <- rmNULL(list(...), recursive = FALSE)
-  c(l, dots)
+  c(x, dots)
 }
 
 'c<-' <- function(x, value) {
@@ -422,11 +422,36 @@ collapse_comma <- function(...) {
   paste0(x, value)
 }
 
-na.omit2 <- function (object, ...) {
+str_if <- function(cond, yes, no = "") {
+  # type-stable if clause for strings with default else output
+  cond <- as_one_logical(cond)
+  if (cond) as.character(yes) else as.character(no)
+}
+
+glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
+                 open = "{", close = "}", na = "NA", 
+                 transformer = glue::identity_transformer) {
+  # like glue::glue but without trimming whitespaces
+  out <- glue::glue_data(
+    .x = NULL, ..., .sep = sep, .envir = envir, .open = open, 
+    .close = close, .na = na, .transformer = transformer,
+    .trim = FALSE
+  )
+  if (!is.null(collapse)) {
+    collapse <- as_one_character(collapse)
+    out <- paste0(out, collapse = collapse)
+  }
+  out
+}
+
+cglue <- function(..., envir = parent.frame()) {
+  # collapse strings evaluated with glue
+  glue(..., envir = envir, collapse = "")
+}
+
+na.omit2 <- function(object, ...) {
   # like stats:::na.omit.data.frame but allows to ignore variables
-  # keeps NAs in variables with attribute keep_na = TRUE 
-  # Args:
-  #  ignore: names of variables for which NAs should be kept
+  # keeps NAs in variables with attribute keep_na = TRUE
   stopifnot(is.data.frame(object))
   omit <- logical(nrow(object))
   for (j in seq_along(object)) {

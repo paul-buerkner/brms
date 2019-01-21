@@ -25,6 +25,7 @@ Imports:
     nlme,
     coda,
     abind,
+    glue,
     stats,
     utils,
     parallel,
