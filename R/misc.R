@@ -157,21 +157,6 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
 
-select_indices <- function(x, i) {
-  # select indices and restart indexing at 1
-  # Args:
-  #   x: list of index vectors
-  #   i: vector of indices to select
-  if (!is.null(i)) {
-    x <- as.list(x)
-    si <- sort(i)
-    for (j in seq_along(x)) {
-      x[[j]] <- match(intersect(i, x[[j]]), si)
-    }
-  }
-  x
-}
-
 array2list <- function(x) {
   # convert array to list of elements with reduced dimension
   # Args: 
@@ -321,11 +306,6 @@ expand <- function(..., dots = list(), length = NULL) {
   as.data.frame(lapply(dots, rep, length.out = length))
 }
 
-rmNum <- function(x) {
-  # remove all numeric elements from an object
-  x[sapply(x, Negate(is.numeric))]
-}
-
 structure_not_null <- function(.Data, ...) {
   # structure but ignore NULL
   if (!is.null(.Data)) {
@@ -334,32 +314,21 @@ structure_not_null <- function(.Data, ...) {
   .Data
 }
 
-rmMatch <- function(x, ...) {
-  # remove all elements in x that also appear in ... 
-  # while keeping all attributes
-  att <- attributes(x)
-  keep <- which(!(x %in% c(...)))
-  x <- x[keep]
-  attributes(x) <- att
-  attr(x, "match.length") <- att$match.length[keep] 
-  x
-}
-
 rm_attr <- function(x, attr) {
   # remove certain attributes
   attributes(x)[attr] <- NULL
   x
 }
 
-subset_attr <- function(x, y) {
-  # take a subset of vector, list, etc. 
+subset_keep_attr <- function(x, y) {
+  # take a subset of vector, list, etc.
   # while keeping all attributes except for names
   att <- attributes(x)
   x <- x[y]
-  att[["names"]] <- names(x)
+  att$names <- names(x)
   attributes(x) <- att
   x
-} 
+}
 
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
@@ -406,11 +375,6 @@ lc <- function(x, ...) {
 collapse <- function(..., sep = "") {
   # wrapper for paste with collapse = ""
   paste(..., sep = sep, collapse = "")
-}
-
-paste_colon <- function(..., collapse = NULL) {
-  # wrapper for paste with sep = ":"
-  paste(..., sep = ":", collapse = collapse)
 }
 
 collapse_comma <- function(...) {
@@ -764,7 +728,7 @@ get_arg <- function(x, ...) {
   dots <- list(...)
   i <- 1
   out <- NULL
-  while(i <= length(dots) && is.null(out)) {
+  while (i <= length(dots) && is.null(out)) {
     if (!is.null(dots[[i]][[x]])) {
       out <- dots[[i]][[x]]
     } else {

@@ -295,7 +295,9 @@ find_vars <- function(x, dot = TRUE, brackets = TRUE) {
   )
   pos_fun <- gregexpr(regex_fun, x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
-  pos_var <- rmMatch(pos_all, pos_fun, pos_decnum)
+  keep <- !pos_all %in% c(pos_fun, pos_decnum)
+  pos_var <- pos_all[keep]
+  attr(pos_var, "match.length") <- attributes(pos_all)$match.length[keep]
   if (length(pos_var)) {
     out <- unique(unlist(regmatches(x, list(pos_var))))
   } else {
