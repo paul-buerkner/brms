@@ -393,17 +393,27 @@ str_if <- function(cond, yes, no = "") {
 }
 
 glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
-                 open = "{", close = "}", na = "NA", 
-                 transformer = glue::identity_transformer) {
-  # like glue::glue but without trimming whitespaces
-  out <- glue::glue_data(
-    .x = NULL, ..., .sep = sep, .envir = envir, .open = open, 
-    .close = close, .na = na, .transformer = transformer,
+                 open = "{", close = "}", na = "NA") {
+  # similar to glue::glue but specialized for generating Stan code
+  dots <- list(...)
+  dots <- dots[lengths(dots) > 0L]
+  args <- list(
+    .x = NULL, .sep = sep, .envir = envir, .open = open, 
+    .close = close, .na = na, .transformer = zero_length_transformer,
     .trim = FALSE
   )
+  out <- do_call(glue::glue_data, c(dots, args))
   if (!is.null(collapse)) {
     collapse <- as_one_character(collapse)
     out <- paste0(out, collapse = collapse)
+  }
+  out
+}
+
+zero_length_transformer <- function(text, envir) {
+  out <- glue::identity_transformer(text, envir)
+  if (!length(out)) {
+    out <- ""
   }
   out
 }

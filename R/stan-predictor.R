@@ -919,7 +919,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       Nsubgp <- glue("N", str_if(gr, "sub"), glue("gp{pi}"))
       Igp <- glue("Igp{pi}_{J}")
       str_add(out$data) <- glue(
-        "  int<lower=1> {Ngp}[Kgp{pi}];\n",
+        "  int<lower=1> {Ngp}[Kgp{pi}];\n"
       )
       str_add(out$data) <- cglue(
         "  int<lower=1> {Igp} [{Ngp}[{J}]];\n",
