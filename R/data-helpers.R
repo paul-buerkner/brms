@@ -550,10 +550,12 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
   warn <- as_one_logical(warn)
-  sdata <- standata(
-    x, resp = resp, re_formula = NA, check_response = TRUE, 
-    internal = TRUE, only_response = TRUE, ...
-  )
+  args <- list(x, resp = resp, ...)
+  args$re_formula <- NA
+  args$check_response <- TRUE
+  args$only_response <- TRUE
+  args$internal <- TRUE
+  sdata <- do_call(standata, args)
   if (warn) {
     if (any(paste0("cens", usc(resp)) %in% names(sdata))) {
       warning2("Results may not be meaningful for censored models.")
