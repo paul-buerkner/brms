@@ -1,3 +1,28 @@
+# brms 2.7.0++
+
+### Other changes
+
+* Use the **glue** package in the Stan code generation. (#549)
+* Validate several sampling-related arguments in 
+`brm` before compiling the Stan model. (#576)
+* Show evaluated vignettes on CRAN again. (#591)
+* Export function `get_y` which is used to extract response
+values from `brmsfit` objects.
+
+### Bug fixes
+
+* Fix an error when trying to change argument `re_formula` 
+in `bayes_R2` thanks to the GitHub user emieldl. (#592)
+* Fix occasional problems when running chains in parallel
+via the **future** package thanks to Jared Knowles. (#579)
+* Ensure correct ordering of response categories in ordinal
+models thanks to Jonas Kristoffer Lindelov. (#580)
+* Ignore argument `resp` of `marginal_effects` in 
+univariate models thanks to Vassilis Kehayas. (#589)
+* Correctly disable cell-mean coding in varying effects.
+* Allow to fix parameter `ndt` in drift diffusion models.
+
+
 # brms 2.7.0
 
 ### New features
