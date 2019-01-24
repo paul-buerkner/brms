@@ -255,7 +255,7 @@ test_that("link functions appear in the Stan code", {
 test_that("customized covariances appear in the Stan code", {
   scode <- make_stancode(rating ~ treat + period + carry + (1|subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
-  expect_match2(scode, "r_1_1 = sd_1[1] * (Lcov_1 * z_1[1])")
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]))")
   
   scode <- make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
@@ -264,8 +264,8 @@ test_that("customized covariances appear in the Stan code", {
   
   scode <- make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
-  expect_match2(scode, " r_1_1 = sd_1[1] * (Lcov_1 * z_1[1]);")
-  expect_match2(scode, " r_1_2 = sd_1[2] * (Lcov_1 * z_1[2]);")
+  expect_match2(scode, " r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]));")
+  expect_match2(scode, " r_1_2 = (sd_1[2] * (Lcov_1 * z_1[2]));")
 })
 
 test_that("truncation appears in the Stan code", {
@@ -866,7 +866,7 @@ test_that("Group IDs appear in the Stan code", {
   scode <- make_stancode(form, data = epilepsy, family = student(),
                       prior = set_prior("normal(0,5)", nlpar = "a"))
   expect_match2(scode, "r_2_a_2 = r_2[, 2];")
-  expect_match2(scode, "r_1_sigma_2 = sd_1[2] * (z_1[2]);")
+  expect_match2(scode, "r_1_sigma_2 = (sd_1[2] * (z_1[2]));")
 })
 
 test_that("distributional gamma models are handled correctly", {
@@ -1039,7 +1039,7 @@ test_that("by variables in grouping terms are handled correctly", {
     z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20))
   )
   scode <- make_stancode(y ~ x + (1 | gr(g, by = z)), dat)
-  expect_match2(scode, "r_1_1 = sd_1[1, Jby_1]' .* (z_1[1]);")
+  expect_match2(scode, "r_1_1 = (sd_1[1, Jby_1]' .* (z_1[1]));")
   scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
   expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
   expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 10);")
@@ -1050,7 +1050,7 @@ test_that("Group syntax | and || is handled correctly,", {
   data <- data.frame(y = rnorm(10), x = rnorm(10),
                      g1 = rep(1:5, each = 2), g2 = rep(1:2, 5))
   scode <- make_stancode(y ~ x + (1+x||g1) + (I(x/4)|g2), data)
-  expect_match2(scode, "r_1_2 = sd_1[2] * (z_1[2]);")
+  expect_match2(scode, "r_1_2 = (sd_1[2] * (z_1[2]));")
   expect_match2(scode, "r_2_1 = r_2[, 1];")
   expect_match2(scode, "r_2 = (diag_pre_multiply(sd_2, L_2) * z_2)';")
 })
@@ -1631,7 +1631,8 @@ test_that("likelihood of distributional beta models is correct", {
 
 test_that("student-t group-level effects work without errors", {
   scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
-  expect_match2(scode, "sqrt(df_1 * udf_1) * sd_1[1] * (z_1[1]);")
+  expect_match2(scode, "vector[N_1] dfm_1 = sqrt(df_1 * udf_1);")
+  expect_match2(scode, "dfm_1 .* (sd_1[1] * (z_1[1]));")
   expect_match2(scode, "target += gamma_lpdf(df_1 | 2, 0.1);")
   expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")
   
@@ -1640,6 +1641,8 @@ test_that("student-t group-level effects work without errors", {
     count ~ Trt + (Trt|gr(patient, dist = "st")), 
     epilepsy, prior = bprior
   )
-  expect_match2(scode, "sqrt(df_1 * udf_1) * (diag_pre_multiply(sd_1, L_1) * z_1)';")
+  expect_match2(scode,
+    "rep_matrix(dfm_1, M_1) .* (diag_pre_multiply(sd_1, L_1) * z_1)';"
+  )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
 })

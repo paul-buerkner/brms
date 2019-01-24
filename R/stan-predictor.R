@@ -444,8 +444,7 @@ stan_re <- function(ranef, prior, ...) {
   # Stan code for group-level effects
   # the ID syntax requires group-level effects to be evaluated separately
   IDs <- unique(ranef$id)
-  out <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
-  out <- collapse_lists(ls = out)
+  out <- list()
   # special handling of student-t group effects
   tranef <- get_dist_groups(ranef, "student")
   if (has_rows(tranef)) {
@@ -453,9 +452,13 @@ stan_re <- function(ranef, prior, ...) {
       "  // parameters for student-t distributed group-level effects\n"
     for (i in seq_rows(tranef)) {
       g <- usc(tranef$ggn[i])
+      id <- tranef$id[i]
       str_add(out$par) <- glue(
         "  real<lower=1> df{g};\n",
-        "  real<lower=0> udf{g};\n"
+        "  vector<lower=0>[N_{id}] udf{g};\n"
+      )
+      str_add(out$tparD) <- glue(
+        "  vector[N_{id}] dfm{g} = sqrt(df{g} * udf{g});\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "df", group = tranef$group[i], suffix = g
@@ -465,6 +468,8 @@ stan_re <- function(ranef, prior, ...) {
       )
     }
   }
+  tmp <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
+  out <- collapse_lists(ls = c(list(out), tmp))
   out
 }
 
@@ -550,9 +555,6 @@ stan_re <- function(ranef, prior, ...) {
   }
   dff <- ""
   tr <- get_dist_groups(r, "student")
-  if (has_rows(tr)) {
-    dff <- glue("sqrt(df_{tr$ggn[1]} * udf_{tr$ggn[1]}) * ")
-  }
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     str_add(out$data) <- glue( 
@@ -565,6 +567,9 @@ stan_re <- function(ranef, prior, ...) {
     str_add(out$prior) <- glue( 
       "  target += normal_lpdf(to_vector(z_{id}) | 0, 1);\n"
     )
+    if (has_rows(tr)) {
+      dff <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
+    }
     if (has_by) {
       if (has_ccov) {
         stop2(
@@ -634,15 +639,18 @@ stan_re <- function(ranef, prior, ...) {
     )
     str_add(out$tparD) <- "  // group-level effects\n" 
     Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
+    if (has_rows(tr)) {
+      dff <- glue("dfm_{tr$ggn[1]} .* ")
+    }
     if (has_by) {
       str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dff}sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]);\n"
+        " = {dff}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
       )
     } else {
       str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dff}sd_{id}[{J}] * ({Lcov}z_{id}[{J}]);\n"
+        " = {dff}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
       )
     }
   }

@@ -522,5 +522,5 @@ get_re_groups <- function(x, ...) {
 get_dist_groups <- function(ranef, dist) {
   # extract information about groups with a certain distribution
   out <- subset2(ranef, dist = dist)
-  out[!duplicated(out$group), c("group", "ggn")]
+  out[!duplicated(out$group), c("group", "ggn", "id")]
 }
