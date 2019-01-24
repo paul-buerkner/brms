@@ -553,7 +553,7 @@ stan_re <- function(ranef, prior, ...) {
       px = px, suffix = glue("_{id}")
     )
   }
-  dff <- ""
+  dfm <- ""
   tr <- get_dist_groups(r, "student")
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
@@ -568,7 +568,7 @@ stan_re <- function(ranef, prior, ...) {
       "  target += normal_lpdf(to_vector(z_{id}) | 0, 1);\n"
     )
     if (has_rows(tr)) {
-      dff <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
+      dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
     }
     if (has_by) {
       if (has_ccov) {
@@ -584,7 +584,7 @@ stan_re <- function(ranef, prior, ...) {
       str_add(out$tparD) <- glue(
         "  // group-level effects\n",
         "  matrix[N_{id}, M_{id}] r_{id}", 
-        " = {dff}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
+        " = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "L", group = r$group[1],
@@ -614,7 +614,7 @@ stan_re <- function(ranef, prior, ...) {
       }
       str_add(out$tparD) <- glue(
         "  // group-level effects\n",
-        "  matrix[N_{id}, M_{id}] r_{id} = {dff}{rdef}"
+        "  matrix[N_{id}, M_{id}] r_{id} = {dfm}{rdef}"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "L", group = r$group[1], suffix = usc(id)
@@ -640,17 +640,17 @@ stan_re <- function(ranef, prior, ...) {
     str_add(out$tparD) <- "  // group-level effects\n" 
     Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
-      dff <- glue("dfm_{tr$ggn[1]} .* ")
+      dfm <- glue("dfm_{tr$ggn[1]} .* ")
     }
     if (has_by) {
       str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dff}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
+        " = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
       )
     } else {
       str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dff}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
+        " = {dfm}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
       )
     }
   }
