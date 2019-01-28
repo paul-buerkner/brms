@@ -273,7 +273,7 @@
 #'   we may also write \code{success | trials(10)}. 
 #'   \bold{Please note that the \code{cbind()} syntax will not work 
 #'   in \pkg{brms} in the expected way because this syntax is reserved
-#'   for use in multivariate models, only.}
+#'   for other purposes.}
 #'   
 #'   For all ordinal families, \code{aterms} may contain a term 
 #'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
@@ -452,21 +452,21 @@
 #'   
 #'   \bold{Formula syntax for multivariate models}
 #'   
-#'   Multivariate models may be specified using \code{cbind} notation
+#'   Multivariate models may be specified using \code{mvbind} notation
 #'   or with help of the \code{\link{mvbf}} function.
 #'   Suppose that \code{y1} and \code{y2} are response variables 
-#'   and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
+#'   and \code{x} is a predictor. Then \code{mvbind(y1, y2) ~ x} 
 #'   specifies a multivariate model.
 #'   The effects of all terms specified at the RHS of the formula 
 #'   are assumed to vary across response variables. 
 #'   For instance, two parameters will be estimated for \code{x}, 
 #'   one for the effect on \code{y1} and another for the effect on \code{y2}.
 #'   This is also true for group-level effects. When writing, for instance,
-#'   \code{cbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
+#'   \code{mvbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
 #'   estimated separately for each response. To model these effects
 #'   as correlated across responses, use the ID syntax (see above).
 #'   For the present example, this would look as follows:
-#'   \code{cbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
+#'   \code{mvbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
 #'   any value other than \code{2} as ID.
 #'   
 #'   It is also possible to specify different formulas for different responses.
@@ -502,7 +502,7 @@
 #' bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 #' 
 #' # define a multivariate model
-#' bf(cbind(y1, y2) ~ x * z + (1|g))
+#' bf(mvbind(y1, y2) ~ x * z + (1|g))
 #' 
 #' # define a zero-inflated model 
 #' # also predicting the zero-inflation part
@@ -814,7 +814,7 @@ set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
 mvbrmsformula <- function(..., flist = NULL, rescor = NULL) {
   dots <- c(list(...), flist)
   if (!length(dots)) {
-    stop2("No objects passed to 'mvbf'.")
+    stop2("No objects passed to 'mvbrmsformula'.")
   }
   forms <- list()
   for (i in seq_along(dots)) {
@@ -848,14 +848,14 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 
 split_bf <- function(x) {
   # build a mvbrmsformula object based on a brmsformula object
-  # which uses cbind on the left-hand side to specify MV models
+  # which uses mvbind on the left-hand side to specify MV models
   stopifnot(is.brmsformula(x))
   resp <- parse_resp(x$formula, check_names = FALSE)
   str_adform <- get_matches(
     "\\|[^~]*(?=~)", formula2str(x$formula), perl = TRUE
   )
   if (length(resp) > 1L) {
-    # cbind syntax used to specify MV model
+    # mvbind syntax used to specify MV model
     flist <- named_list(resp)
     for (i in seq_along(resp)) {
       flist[[i]] <- x
@@ -866,6 +866,24 @@ split_bf <- function(x) {
     x <- mvbf(flist = flist) 
   }
   x
+}
+
+#' Bind response variables in multivariate models
+#' 
+#' Can be used to specify a multivariate \pkg{brms} model within a single
+#' formula. Outside of \code{\link{brmsformula}}, it just behaves like
+#' \code{\link{cbind}}.
+#' 
+#' @param ... Same as in \code{\link{cbind}}
+#' 
+#' @seealso \code{\link{brmsformula}}, \code{\link{mvbrmsformula}}
+#' 
+#' @examples 
+#' bf(mvbind(y1, y2) ~ x)
+#' 
+#' @export
+mvbind <- function(...) {
+  cbind(...)
 }
 
 #' @rdname brmsformula-helpers

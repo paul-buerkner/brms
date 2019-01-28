@@ -286,7 +286,7 @@ models for all parameters of the assumed response distribution.
   we may also write \code{success | trials(10)}. 
   \bold{Please note that the \code{cbind()} syntax will not work 
   in \pkg{brms} in the expected way because this syntax is reserved
-  for use in multivariate models, only.}
+  for other purposes.}
   
   For all ordinal families, \code{aterms} may contain a term 
   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
@@ -465,21 +465,21 @@ models for all parameters of the assumed response distribution.
   
   \bold{Formula syntax for multivariate models}
   
-  Multivariate models may be specified using \code{cbind} notation
+  Multivariate models may be specified using \code{mvbind} notation
   or with help of the \code{\link{mvbf}} function.
   Suppose that \code{y1} and \code{y2} are response variables 
-  and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
+  and \code{x} is a predictor. Then \code{mvbind(y1, y2) ~ x} 
   specifies a multivariate model.
   The effects of all terms specified at the RHS of the formula 
   are assumed to vary across response variables. 
   For instance, two parameters will be estimated for \code{x}, 
   one for the effect on \code{y1} and another for the effect on \code{y2}.
   This is also true for group-level effects. When writing, for instance,
-  \code{cbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
+  \code{mvbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
   estimated separately for each response. To model these effects
   as correlated across responses, use the ID syntax (see above).
   For the present example, this would look as follows:
-  \code{cbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
+  \code{mvbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
   any value other than \code{2} as ID.
   
   It is also possible to specify different formulas for different responses.
@@ -515,7 +515,7 @@ bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 
 # define a multivariate model
-bf(cbind(y1, y2) ~ x * z + (1|g))
+bf(mvbind(y1, y2) ~ x * z + (1|g))
 
 # define a zero-inflated model 
 # also predicting the zero-inflation part

@@ -3,6 +3,8 @@
 ### Other changes
 
 * Use the **glue** package in the Stan code generation. (#549)
+* Introduce `mvbind` to eventually replace `cbind` 
+in the formula syntax of multivariate models.
 * Validate several sampling-related arguments in 
 `brm` before compiling the Stan model. (#576)
 * Show evaluated vignettes on CRAN again. (#591)
@@ -21,6 +23,8 @@ models thanks to Jonas Kristoffer Lindelov. (#580)
 univariate models thanks to Vassilis Kehayas. (#589)
 * Correctly disable cell-mean coding in varying effects.
 * Allow to fix parameter `ndt` in drift diffusion models.
+* Fix Stan code for t-distributed varying effects 
+thanks to Ozgur Asar.
 
 
 # brms 2.7.0

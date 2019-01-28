@@ -63,7 +63,7 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(lkj(2), rescor),
              prior(cauchy(0, 5), sigma, resp = y),
              prior(cauchy(0, 1), sigma, resp = x1))
-  scode <- make_stancode(cbind(y, x1) ~ x2, dat, prior = prior, 
+  scode <- make_stancode(mvbind(y, x1) ~ x2, dat, prior = prior, 
                          sample_prior = TRUE)
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
@@ -238,7 +238,7 @@ test_that("link functions appear in the Stan code", {
   dat <- data.frame(y = 1:10, x = rnorm(10))
   expect_match2(make_stancode(y ~ x, dat, family = poisson()), 
                "target += poisson_log_lpmf(Y | mu);")
-  expect_match2(make_stancode(cbind(y, y + 1) ~ x, dat, family = gaussian("log")), 
+  expect_match2(make_stancode(mvbind(y, y + 1) ~ x, dat, family = gaussian("log")), 
                "mu_y[n] = exp(mu_y[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = von_mises(tan_half)), 
                "mu[n] = inv_tan_half(mu[n]);")
@@ -413,7 +413,7 @@ test_that("invalid combinations of modeling options are detected", {
     "Invalid addition arguments for this model"
   )
   expect_error(
-    make_stancode(cbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
+    make_stancode(mvbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
     "ARMA covariance matrices are not implemented when 'rescor' is estimated."
   )
   expect_error(
@@ -429,7 +429,7 @@ test_that("Stan code for multivariate models is correct", {
     censi = sample(0:1, 10, TRUE)
   )
   # models with residual correlations
-  scode <- make_stancode(cbind(y1, y2) ~ x, dat, prior = prior(horseshoe(2)))
+  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, prior = prior(horseshoe(2)))
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
   expect_match2(scode, "target += normal_lpdf(hs_local_y1[1] | 0, 1)")
@@ -437,7 +437,7 @@ test_that("Stan code for multivariate models is correct", {
     "target += inv_gamma_lpdf(hs_local_y2[2] | 0.5 * hs_df_y2, 0.5 * hs_df_y2)"
   )
   
-  scode <- make_stancode(cbind(y1, y2) ~ x, dat, student(),
+  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, student(),
                          prior = prior(lasso(2, 10)))
   expect_match2(scode, "target += multi_student_t_lpdf(Y | nu, Mu, Sigma);")
   expect_match2(scode, "matrix[nresp, nresp] Sigma = multiply_lower")
@@ -448,7 +448,7 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, 
     "target += chi_square_lpdf(lasso_inv_lambda_y2 | lasso_df_y2)"
   )
-  expect_match2(make_stancode(cbind(y1, y2) | weights(x) ~ 1, dat),
+  expect_match2(make_stancode(mvbind(y1, y2) | weights(x) ~ 1, dat),
     "target += weights[n] * multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);"
   )
   
@@ -515,7 +515,7 @@ test_that("Stan code for ARMA models is correct", {
   )
   expect_match2(scode, "mu = temp_Intercept + Xc * b + Yarr * arr;")
   
-  scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(),
+  scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(),
                          autocor = cor_ar())
   expect_match2(scode, "e_y[n] = Y_y[n] - mu_y[n];")
 })
@@ -998,8 +998,8 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * Xme_1[n]")
   expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * Xme_1[n]")
   
-  bform <- bf(cbind(y, z) ~ me(x, xsd)) + set_mecor(FALSE)
-  scode <- make_stancode(cbind(y, z) ~ me(x, xsd), dat)
+  bform <- bf(mvbind(y, z) ~ me(x, xsd)) + set_mecor(FALSE)
+  scode <- make_stancode(mvbind(y, z) ~ me(x, xsd), dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
   expect_match2(scode, "vector[N] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")

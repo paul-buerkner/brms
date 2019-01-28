@@ -25,7 +25,7 @@ head(BTdata)
 
 ## ----fit1, message=FALSE, warning=FALSE, results='hide'---------------------------------
 fit1 <- brm(
-  cbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
+  mvbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
   data = BTdata, chains = 2, cores = 2
 )
 

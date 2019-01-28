@@ -488,7 +488,7 @@ parse_mmc <- function(formula) {
 
 parse_resp <- function(formula, check_names = TRUE) {
   # extract response variable names
-  # assumes multiple response variables to be combined via cbind
+  # assumes multiple response variables to be combined via mvbind
   formula <- lhs(as.formula(formula))
   if (is.null(formula)) {
     return(NULL)
@@ -499,8 +499,14 @@ parse_resp <- function(formula, check_names = TRUE) {
     out <- deparse_no_string(expr)
   } else {
     str_fun <- deparse_no_string(expr[[1]]) 
+    use_mvbind <- identical(str_fun, "mvbind")
     use_cbind <- identical(str_fun, "cbind")
-    if (use_cbind) {
+    if (use_mvbind) {
+      out <- ulapply(expr[-1], deparse_no_string)
+    } else if (use_cbind) {
+      # deprecated as of brms 2.7.2
+      warning2("Using 'cbind' for multivariate models is ", 
+               "deprecated. Please use 'mvbind' instead.")
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
       out <- deparse_no_string(expr) 
