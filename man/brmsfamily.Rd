@@ -28,6 +28,7 @@
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_binomial}
 \alias{categorical}
+\alias{multinomial}
 \alias{cumulative}
 \alias{sratio}
 \alias{cratio}
@@ -104,6 +105,8 @@ zero_inflated_binomial(link = "logit", link_zi = "logit")
 
 categorical(link = "logit")
 
+multinomial(link = "logit")
+
 cumulative(link = "logit", link_disc = "log",
   threshold = c("flexible", "equidistant"))
 
@@ -117,26 +120,24 @@ acat(link = "logit", link_disc = "log", threshold = c("flexible",
   "equidistant"))
 }
 \arguments{
-\item{family}{A character string naming the distribution
-of the response variable be used in the model.
-Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{binomial}, 
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
-\code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
-\code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
+\item{family}{A character string naming the distribution of the response
+variable be used in the model. Currently, the following families are
+supported: \code{gaussian}, \code{student}, \code{binomial},
+\code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
+\code{Gamma}, \code{skew_normal}, \code{lognormal},
+\code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+\code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-\code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
-\code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-\code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
-\code{zero_inflated_binomial}, \code{zero_inflated_beta},
-\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
-and \code{zero_one_inflated_beta}.}
+\code{gen_extreme_value}, \code{categorical}, \code{multinomial},
+\code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
+\code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
+\code{hurdle_lognormal}, \code{zero_inflated_binomial},
+\code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
+\code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
 
-\item{link}{A specification for the model link function. 
-This can be a name/expression or character string. 
-See the 'Details' section for more information on link
-functions supported by each family.}
+\item{link}{A specification for the model link function. This can be a
+name/expression or character string. See the 'Details' section for more
+information on link functions supported by each family.}
 
 \item{link_sigma}{Link of auxiliary parameter \code{sigma} if being predicted.}
 

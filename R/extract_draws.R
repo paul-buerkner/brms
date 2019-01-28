@@ -758,7 +758,7 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]
   }
-  if (is_categorical(bterms) || is_ordinal(bterms)) {
+  if (has_cat(bterms)) {
     draws$cats <- extract_cat_names(bterms, data)
   }
   draws

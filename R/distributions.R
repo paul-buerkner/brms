@@ -1409,46 +1409,65 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   out
 }
 
-dcategorical <- function(x, eta, link = "logit", log = FALSE) {
+dcategorical <- function(x, eta, log = FALSE) {
   # density of the categorical distribution
+  # with the softmax response function
   # Args:
   #   x: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   ncat: the number of categories
-  #   link: the link function
-  # Returns:
-  #   probabilities P(X = x)
+  #   eta: the linear predictor (of length or ncol ncat-1)
+  #   log: return values on the log scale?
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (link == "logit") {
-    p <- cbind(rep(0, nrow(eta)), eta)
-  } else {
-    stop2("Link '", link, "' not supported.")
-  }
+  eta <- cbind(rep(0, nrow(eta)), eta)
   if (log) {
-    p <- p - log(rowSums(exp(p)))
+    out <- log_softmax(eta)
   } else {
-    p <- exp(p)
-    p <- p / rowSums(p)
+    out <- softmax(eta)
   }
-  p[, x]
+  out[, x]
 }
 
-pcategorical <- function(q, eta, ncat, link = "logit") {
-  # distribution functions for the categorical family
+pcategorical <- function(q, eta, log = FALSE) {
+  # distribution function of the categorical distribution
+  # with the softmax response function
   # Args:
   #   q: positive integers not greater than ncat
   #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   ncat: the number of categories
-  #   link: a character string naming the link
-  # Retruns: 
-  #   probabilities P(x <= q)
-  p <- dcategorical(1:max(q), eta = eta, link = link)
-  do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  #   log: return values on the log scale?
+  p <- dcategorical(seq_len(max(q)), eta = eta)
+  out <- do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+dmultinomial <- function(x, eta, log = FALSE) {
+  # density of the multinomial distribution
+  # with the softmax response function
+  # Args:
+  #   x: positive integers not greater than ncat
+  #   eta: the linear predictor (of length or ncol ncat-1)
+  #   log: return values on the log scale?
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  if (length(dim(eta)) != 2L) {
+    stop2("eta must be a numeric vector or matrix.")
+  }
+  eta <- cbind(rep(0, nrow(eta)), eta)
+  log_prob <- log_softmax(eta)
+  size <- sum(x)
+  x <- as_draws_matrix(x, dim = dim(eta))
+  out <- lgamma(size + 1) + rowSums(x * log_prob - lgamma(x + 1))
+  if (!log) {
+    out <- exp(out)
+  }
+  out
 }
 
 dcumulative <- function(x, eta, ncat, link = "logit") {
@@ -1544,13 +1563,13 @@ dacat <- function(x, eta, ncat, link = "logit") {
                matrix(NA, nrow = nrow(eta), ncol = ncat - 2))
     if (ncat > 2) {
       .fun <- function(k) {
-        rowSums(eta[, 1:(k-1)])
+        rowSums(eta[, 1:(k - 1)])
       }
       p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
     }
   } else {
     mu <- ilink(eta, link)
-    p <- cbind(apply(1 - mu[,1:(ncat - 1)], 1, prod), 
+    p <- cbind(apply(1 - mu[, 1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2) {
       .fun <- function(k) {

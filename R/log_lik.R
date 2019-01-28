@@ -527,6 +527,13 @@ log_lik_categorical <- function(i, draws, data = data.frame()) {
   log_lik_weight(out, i = i, data = draws$data)
 }
 
+log_lik_multinomial <- function(i, draws, data = data.frame()) {
+  stopifnot(draws$f$link == "logit")
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  out <- dmultinomial(draws$data$Y[i, ], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, data = draws$data)
+}
+
 log_lik_cumulative <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)

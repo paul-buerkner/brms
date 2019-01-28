@@ -88,7 +88,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
         rhs_needed <- TRUE
       }
     }
-  } else if (is_categorical(x$family)) {
+  } else if (conv_cats_dpars(x$family)) {
     for (dp in x$family$dpars) {
       if (!is.formula(x$pforms[[dp]])) {
         x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))

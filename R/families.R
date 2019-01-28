@@ -9,25 +9,23 @@
 #' You can also specify custom families for use in \pkg{brms} with
 #' the \code{\link{custom_family}} function.
 #' 
-#' @param family A character string naming the distribution
-#'   of the response variable be used in the model.
-#'   Currently, the following families are supported:
-#'   \code{gaussian}, \code{student}, \code{binomial}, 
-#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
-#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
-#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
+#' @param family A character string naming the distribution of the response
+#'   variable be used in the model. Currently, the following families are
+#'   supported: \code{gaussian}, \code{student}, \code{binomial},
+#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
+#'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
+#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-#'   \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
-#'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-#'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
-#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
-#'   and \code{zero_one_inflated_beta}.
-#' @param link A specification for the model link function. 
-#'   This can be a name/expression or character string. 
-#'   See the 'Details' section for more information on link
-#'   functions supported by each family.
+#'   \code{gen_extreme_value}, \code{categorical}, \code{multinomial},
+#'   \code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
+#'   \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
+#'   \code{hurdle_lognormal}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
+#'   \code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.
+#' @param link A specification for the model link function. This can be a
+#'   name/expression or character string. See the 'Details' section for more
+#'   information on link functions supported by each family.
 #' @param link_sigma Link of auxiliary parameter \code{sigma} if being predicted.
 #' @param link_shape Link of auxiliary parameter \code{shape} if being predicted.
 #' @param link_nu Link of auxiliary parameter \code{nu} if being predicted.
@@ -618,6 +616,13 @@ categorical <- function(link = "logit") {
 
 #' @rdname brmsfamily
 #' @export
+multinomial <- function(link = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("multinomial", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
 cumulative <- function(link = "logit", link_disc = "log",
                        threshold = c("flexible", "equidistant")) {
   slink <- substitute(link)
@@ -766,7 +771,11 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   }
   is_categorical <- ulapply(family$mix, is_categorical)
   if (any(is_categorical)) {
-    stop2("Categorical families are not yet allowed in mixture models.")
+    stop2("Categorical families are not allowed in mixture models.")
+  }
+  is_multinomial <- ulapply(family$mix, is_multinomial)
+  if (any(is_multinomial)) {
+    stop2("Multinomial families are not allowed in mixture models.")
   }
   for (fam in family$mix) {
     if (is.customfamily(fam) && "theta" %in% fam$dpars) {
@@ -1277,6 +1286,10 @@ is_ordinal <- function(family) {
   "ordinal" %in% family_info(family, "specials")
 }
 
+is_multinomial <- function(family) {
+  "multinomial" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1292,6 +1305,16 @@ allow_cs <- function(family) {
   "cs" %in% family_info(family, "specials")
 }
 
+conv_cats_dpars <- function(family) {
+  # choose dpar names based on categories?
+  is_categorical(family) || is_multinomial(family)
+}
+
+has_multicol <- function(family) {
+  # indicate if the response should consist of multiple columns
+  is_multinomial(family)
+}
+
 has_logscale <- function(family) {
   # indicate if the response is modeled on the log-scale
   # even if formally the link function is not 'log'
@@ -1305,9 +1328,8 @@ has_trials <- function(family) {
 }
 
 has_cat <- function(family) {
-  # indicate if family makes use of argument cat
-  is_categorical(family) || is_ordinal(family) &&
-    !"custom" %in% family_names(family)
+  # indicate if family has more than two response categories
+  is_categorical(family) || is_ordinal(family) || is_multinomial(family)
 }
 
 has_ndt <- function(family) {

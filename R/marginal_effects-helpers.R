@@ -616,6 +616,7 @@ marginal_effects_internal.brmsterms <- function(
   stopifnot(is.brmsfit(fit))
   effects <- attr(marg_data, "effects")
   types <- attr(marg_data, "types")
+  catscale <- NULL
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
@@ -628,13 +629,14 @@ marginal_effects_internal.brmsterms <- function(
     if (method != "fitted") {
       stop2("Can only use 'categorical' with method = 'fitted'.")
     }
-    if (!(is_ordinal(x) || is_categorical(x))) {
+    if (!has_cat(x)) {
       stop2("Argument 'categorical' may only be used ", 
             "for categorical or ordinal models.")
     }
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
+    catscale <- if (is_multinomial(x)) "Count" else "Probability"
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
     cats <- factor(rep(cats, each = ncol(out)), levels = cats)
@@ -642,7 +644,7 @@ marginal_effects_internal.brmsterms <- function(
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (is_categorical(x$family)) {
+    if (is_categorical(x$family) || is_multinomial(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar)) {
@@ -706,6 +708,7 @@ marginal_effects_internal.brmsterms <- function(
   attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
   attr(out, "categorical") <- categorical
+  attr(out, "catscale") <- catscale
   attr(out, "ordinal") <- ordinal
   attr(out, "spaghetti") <- spag
   attr(out, "points") <- make_point_frame(x, fit$data, effects, ...)
@@ -853,6 +856,7 @@ plot.brmsMarginalEffects <- function(
     ncond <- length(unique(x[[i]]$cond__))
     df_points <- attr(x[[i]], "points")
     categorical <- isTRUE(attr(x[[i]], "categorical"))
+    catscale <- attr(x[[i]], "catscale")
     surface <- isTRUE(attr(x[[i]], "surface"))
     # deprecated as of brms 2.4.3
     ordinal <- isTRUE(attr(x[[i]], "ordinal"))
@@ -870,7 +874,7 @@ plot.brmsMarginalEffects <- function(
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
           do_call(geom_tile, .surface_args) + 
-          scale_fill_gradientn(colors = viridis6(), name = "Probability") + 
+          scale_fill_gradientn(colors = viridis6(), name = catscale) + 
           ylab(response)
       } else if (stype == "contour") {
         .surface_args <- nlist(
@@ -985,7 +989,7 @@ plot.brmsMarginalEffects <- function(
           do_call(geom_errorbar, .errorbar_args)
       }
       if (categorical) {
-        plots[[i]] <- plots[[i]] + ylab("Probability") +
+        plots[[i]] <- plots[[i]] + ylab(catscale) +
           labs(fill = response, color = response)
       }
     }

@@ -554,6 +554,12 @@ stan_llh_categorical <- function(bterms, resp = "", mix = "") {
   sdist("categorical_logit", p$mu)
 }
 
+stan_llh_multinomial <- function(bterms, resp = "", mix = "") {
+  stopifnot(bterms$family$link == "logit")
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix, dpars = "mu")
+  sdist("multinomial", glue("softmax({p$mu})"))
+}
+
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   # helper function for ordinal families
   has_cs <- has_cs(bterms)

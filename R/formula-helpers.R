@@ -900,6 +900,11 @@ extract_cat_names <- function(x, data) {
   mr <- model.response(model.frame(respform, data))
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))
+  } else if (has_multicol(x)) {
+    out <- as.character(colnames(mr))
+    if (!length(out)) {
+      out <- as.character(seq_cols(mr))
+    }
   } else {
     out <- levels(factor(mr))
   }

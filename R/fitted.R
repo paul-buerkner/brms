@@ -257,6 +257,19 @@ fitted_categorical <- function(draws) {
   out
 }
 
+fitted_multinomial <- function(draws) {
+  get_counts <- function(i) {
+    dcategorical(cats, eta = extract_col(eta, i)) * trials[i]
+  }
+  eta <- abind(draws$dpars, along = 3)
+  cats <- seq_len(draws$data$ncat)
+  trials <- draws$data$trials
+  out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
+  out <- aperm(out, perm = c(1, 3, 2))
+  dimnames(out)[[3]] <- draws$data$cats
+  out
+}
+
 fitted_cumulative <- function(draws) {
   fitted_ordinal(draws)
 }

@@ -93,6 +93,6 @@ test_that("lsp works correctly", {
   expect_equal(
     lsp("brms", pattern = "^log_[^l]"),
     c("log_diff_exp", "log_inv_logit",  "log_mean_exp", 
-      "log_posterior.brmsfit", "log_sum_exp")
+      "log_posterior.brmsfit", "log_softmax", "log_sum_exp")
   )
 })

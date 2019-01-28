@@ -3,18 +3,36 @@ stan_response <- function(bterms, data) {
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
+  multicol <- has_multicol(family)
   px <- check_prefix(bterms)
   resp <- usc(combine_prefix(px))
   out <- list()
-  if (rtype == "real") {
-    # don't use real Y[n]
+  if (has_cat(family) || is.formula(bterms$adforms$cat)) {
     str_add(out$data) <- glue(
-      "  vector[N] Y{resp};  // response variable\n"
+      "  int<lower=2> ncat{resp};  // number of categories\n"
     )
-  } else if (rtype == "int") {
-    str_add(out$data) <- glue(
-      "  int Y{resp}[N];  // response variable\n"
-    )
+  }
+  if (has_multicol(family)) {
+    if (rtype == "real") {
+      str_add(out$data) <- glue(
+        "  matrix[N, ncat{resp}] Y{resp};  // response matrix\n"
+      )
+    } else if (rtype == "int") {
+      str_add(out$data) <- glue(
+        "  int Y{resp}[N, ncat{resp}];  // response matrix\n"
+      )
+    }
+  } else {
+    if (rtype == "real") {
+      # don't use real Y[n]
+      str_add(out$data) <- glue(
+        "  vector[N] Y{resp};  // response variable\n"
+      )
+    } else if (rtype == "int") {
+      str_add(out$data) <- glue(
+        "  int Y{resp}[N];  // response variable\n"
+      )
+    }
   }
   if (has_ndt(family)) {
     str_add(out$tdataD) <- glue(
@@ -24,11 +42,6 @@ stan_response <- function(bterms, data) {
   if (has_trials(family) || is.formula(bterms$adforms$trials)) {
     str_add(out$data) <- glue(
       "  int trials{resp}[N];  // number of trials\n"
-    )
-  }
-  if (has_cat(family) || is.formula(bterms$adforms$cat)) {
-    str_add(out$data) <- glue(
-      "  int<lower=2> ncat{resp};  // number of categories\n"
     )
   }
   if (is.formula(bterms$adforms$weights)) {

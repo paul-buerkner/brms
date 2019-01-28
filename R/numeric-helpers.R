@@ -177,3 +177,10 @@ softmax <- function(x) {
   x <- exp(x) 
   x / rowSums(x)
 }
+
+log_softmax <- function(x) {
+  if (!is.matrix(x)) {
+    x <- matrix(x, nrow = 1)
+  }
+  x - log(rowSums(exp(x)))
+}

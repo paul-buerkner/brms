@@ -838,6 +838,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Family '", family4error, "' requires integer responses.")
       }
     }
+    if (has_multicol(x$family)) {
+      if (!is.matrix(out$Y)) {
+        stop2("This model requires a response matrix.")
+      }
+    }
     ybounds <- family_info(x$family, "ybounds")
     closed <- family_info(x$family, "closed")
     if (is.finite(ybounds[1])) {
@@ -863,17 +868,29 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
-      out$trials <- max(out$Y, na.rm = TRUE)
-      if (is.finite(out$trials)) {
-        message("Using the maximum response value as the number of trials.")
-        warning2(
-          "Using 'binomial' families without specifying 'trials' ", 
-          "on the left-hand side of the model formula is deprecated."
-        )
-      } else if (!is.null(old_sdata$trials)) {
-        out$trials <- max(old_sdata$trials)
+      if (is_multinomial(x$family)) {
+        out$trials <- rowSums(out$Y, na.rm = TRUE)
+        not_finite <- !is.finite(out$trials)
+        if (any(not_finite)) {
+          if (!is.null(old_sdata$trials)) {
+            out$trials[not_finite] <- max(old_sdata$trials)
+          } else {
+            stop2("Could not compute the number of trials.") 
+          }
+        }
       } else {
-        stop2("Could not compute the number of trials.")
+        out$trials <- max(out$Y, na.rm = TRUE)
+        if (is.finite(out$trials)) {
+          message("Using the maximum response value as the number of trials.")
+          warning2(
+            "Using 'binomial' families without specifying 'trials' ", 
+            "on the left-hand side of the model formula is deprecated."
+          )
+        } else if (!is.null(old_sdata$trials)) {
+          out$trials <- max(old_sdata$trials)
+        } else {
+          stop2("Could not compute the number of trials.")
+        }
       }
     } else if (is.formula(x$adforms$trials)) {
       out$trials <- eval_rhs(x$adforms$trials, data = data)
@@ -883,14 +900,20 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (length(out$trials) == 1L) {
       out$trials <- rep(out$trials, nrow(data))
     }
-    if (has_trials(x$family)) {
+    if (is_multinomial(x$family)) {
+      if (check_response) {
+        y_trials <- rowSums(out$Y, na.rm = TRUE)
+        if (!is_equal(y_trials, out$trials)) {
+          stop2("Number of trials does not match the number of events.")
+        }
+      }
+    } else if (has_trials(x$family)) {
       if (max(out$trials) == 1L && !not4stan) {
         message("Only 2 levels detected so that family 'bernoulli' ",
                 "might be a more efficient choice.")
       }
       if (check_response && any(out$Y > out$trials)) {
-        stop2("Number of trials is smaller than ",
-              "the number of events.")
+        stop2("Number of trials is smaller than the number of events.")
       }
     }
     out$trials <- as.array(out$trials)
@@ -899,6 +922,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (!length(x$adforms$cat)) {
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
+      } else if (is_multinomial(x$family)) {
+        out$ncat <- NCOL(out$Y)
       } else {
         out$ncat <- max(out$Y)
       }
@@ -910,13 +935,15 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (out$ncat < 2L) {
       stop2("At least two response categories are required.")
     }
-    if (out$ncat == 2L && !not4stan) {
-      message("Only 2 levels detected so that family 'bernoulli' ",
-              "might be a more efficient choice.")
-    }
-    if (check_response && any(out$Y > out$ncat)) {
-      stop2("Number of categories is smaller than the response ",
-            "variable would suggest.")
+    if (!has_multicol(x$family)) {
+      if (out$ncat == 2L && !not4stan) {
+        message("Only 2 levels detected so that family 'bernoulli' ",
+                "might be a more efficient choice.")
+      }
+      if (check_response && any(out$Y > out$ncat)) {
+        stop2("Number of categories is smaller than the response ",
+              "variable would suggest.")
+      }
     }
   }
   if (is.formula(x$adforms$se)) {
@@ -987,13 +1014,13 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   } 
   resp <- usc(combine_prefix(x))
-  c(setNames(out, paste0(names(out), resp)),
-    # specify data for autocors here in order to pass Y
-    data_autocor(
-      x, data = data, Y = out$Y, new = new,
-      old_locations = old_sdata$locations
-    )
+  out <- setNames(out, paste0(names(out), resp))
+  # specify data for autocors here in order to pass Y
+  c(out) <- data_autocor(
+    x, data = data, Y = out$Y, new = new,
+    old_locations = old_sdata$locations
   )
+  out
 }
 
 data_mixture <- function(bterms, prior = brmsprior()) {

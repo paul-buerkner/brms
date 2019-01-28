@@ -1340,7 +1340,7 @@ stan_dpar_transform <- function(bterms) {
   out <- list()
   families <- family_names(bterms)
   p <- usc(combine_prefix(bterms))
-  if (any(families %in% "categorical")) {
+  if (any(families %in% c("categorical", "multinomial"))) {
     str_add(out$modelD) <- glue( 
       "  // linear predictor matrix\n",
       "  vector[ncat{p}] mu{p}[N];\n"

@@ -34,6 +34,10 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
     dimnames(out)[[3]] <- names(draws$resps)
+  } else if (has_multicol(draws$f)) {
+    out <- do_call(abind, c(out, along = 3))
+    out <- aperm(out, perm = c(1, 3, 2))
+    dimnames(out)[[3]] <- draws$data$cats
   } else {
     out <- do_call(cbind, out) 
   }
@@ -526,6 +530,14 @@ predict_categorical <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
+}
+
+predict_multinomial <- function(i, draws, ...) {
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
+  size <- draws$data$trials[i]
+  out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+  do_call(rbind, out)
 }
 
 predict_cumulative <- function(i, draws, ...) {

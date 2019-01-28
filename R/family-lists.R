@@ -74,7 +74,18 @@
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights"), 
-    specials = "categorical"
+    specials = c("categorical")
+  )
+}
+
+.family_multinomial <- function() {
+  list(
+    links = "logit", 
+    dpars = NULL,  # is determind based on the data
+    type = "int", ybounds = c(-Inf, Inf), 
+    closed = c(NA, NA),
+    ad = c("weights", "trials"), 
+    specials = c("multinomial")
   )
 }
 
