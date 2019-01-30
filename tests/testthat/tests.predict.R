@@ -274,7 +274,7 @@ test_that("predict for ordinal models runs without erros", {
   expect_equal(dim(pred), c(ns, nobs))
 })
 
-test_that("loglik for categorical models runs without erros", {
+test_that("loglik for categorical and related models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -287,6 +287,15 @@ test_that("loglik for categorical models runs without erros", {
   draws$f$link <- "logit"
   pred <- sapply(1:nobs, brms:::predict_categorical, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
+  
+  draws$data$trials <- sample(1:20, nobs)
+  pred <- brms:::predict_multinomial(i = sample(1:nobs, 1), draws = draws)
+  expect_equal(dim(pred), c(ns, ncat))
+  
+  draws$dpars$phi <- rexp(ns, 1)
+  pred <- brms:::predict_dirichlet(i = sample(1:nobs, 1), draws = draws)
+  expect_equal(dim(pred), c(ns, ncat))
+  expect_equal(rowSums(pred), rep(1, nrow(pred)))
 })
 
 test_that("truncated predict run without errors", {

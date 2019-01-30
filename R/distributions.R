@@ -1054,6 +1054,7 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #' 
 #' @export
 ddirichlet <- function(x, alpha, log = FALSE) {
+  log <- as_one_logical(log)
   if (!is.matrix(x)) {
     x <- matrix(x, nrow = 1)
   }
@@ -1070,7 +1071,7 @@ ddirichlet <- function(x, alpha, log = FALSE) {
   if (any(x < 0)) {
     stop2("x must be non-negative.")
   }
-  if (any(!rowSums(x) %in% 1)) {
+  if (!is_equal(rowSums(x), rep(1, nrow(x)))) {
     stop2("x must sum to 1 per row.")
   }
   if (any(alpha <= 0)) {
@@ -1087,17 +1088,21 @@ ddirichlet <- function(x, alpha, log = FALSE) {
 #' @rdname Dirichlet
 #' @export
 rdirichlet <- function(n, alpha) {
+  n <- as_one_numeric(n)
   if (!is.matrix(alpha)) {
     alpha <- matrix(alpha, nrow = 1)
+  }
+  if (prod(dim(alpha)) == 0) {
+    stop2("alpha should be non-empty.")
   }
   if (any(alpha <= 0)) {
     stop2("alpha must be positive.")
   }
-  if (nrow(alpha) > 1L) {
-    if (nrow(alpha) %% n != 0) {
-      stop2("nrow(alpha) must be a multiple of n.")
-    }
+  if (n == 1) {
     n <- nrow(alpha)
+  }
+  if (n > nrow(alpha)) {
+    alpha <- matrix(alpha, nrow = n, ncol = ncol(alpha), byrow = TRUE)
   }
   x <- matrix(rgamma(ncol(alpha) * n, alpha), ncol = ncol(alpha))
   x / rowSums(x)

@@ -796,3 +796,33 @@ test_that("reserved variables 'Intercept' is handled correctly", {
   expect_true(all(sdata$X[, "Intercept"] == 1))
 })
 
+test_that("data for multinomial and dirichlet models is correct", {
+  N <- 15
+  dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$t1 <- round(dat$y1 * rpois(N, 10))
+  dat$t2 <- round(dat$y2 * rpois(N, 10))
+  dat$t3 <- round(dat$y3 * rpois(N, 10))
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  dat$t <- with(dat, cbind(t1, t2, t3))
+  dat$size <- rowSums(dat$t)
+  
+  sdata <- make_standata(t | trials(size) ~ x, dat, multinomial())
+  expect_equal(sdata$trials, as.array(dat$size))
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$t))
+  
+  sdata <- make_standata(y ~ x, data = dat, family = dirichlet())
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$y))
+  
+  expect_error(
+    make_standata(t | trials(10) ~ x, data = dat, family = multinomial()),
+    "Number of trials does not match the number of events"
+  )
+  expect_error(make_standata(y1 ~ x, data = dat, family = dirichlet()),
+               "This model requires a response matrix")
+  expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
+               "Response values in dirichlet models must sum to 1")
+})

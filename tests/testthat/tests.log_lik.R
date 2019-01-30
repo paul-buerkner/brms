@@ -383,7 +383,7 @@ test_that("log_lik for ordinal models runs without erros", {
   expect_equal(dim(ll), c(ns, nobs))
 })
 
-test_that("log_lik for categorical models runs without erros", {
+test_that("log_lik for categorical and related models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -395,6 +395,19 @@ test_that("log_lik for categorical models runs without erros", {
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$f$link <- "logit"
   ll <- sapply(1:nobs, brms:::log_lik_categorical, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
+  
+  draws$data$Y <- matrix(
+    sample(1:20, nobs * ncat, TRUE), 
+    nrow = nobs, ncol = ncat
+  )
+  draws$data$trials <- sample(1:20, nobs)
+  ll <- sapply(1:nobs, brms:::log_lik_multinomial, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
+  
+  draws$data$Y <- draws$data$Y / rowSums(draws$data$Y)
+  draws$dpars$phi <- rexp(ns, 10)
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
 

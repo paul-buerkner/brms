@@ -1,5 +1,10 @@
 # brms 2.7.0++
 
+### New Features
+
+* Fit multinomial models via family `multinomial`. (#463)
+* Fit Dirichlet models via family `dirichlet`. (#463)
+
 ### Other changes
 
 * Use the **glue** package in the Stan code generation. (#549)

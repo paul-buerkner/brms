@@ -138,3 +138,22 @@ test_that("fitted_lagsar runs without errors", {
   expect_equal(dim(mu_new), dim(draws$dpars$mu))
   expect_true(!identical(mu_new, draws$dpars$mu))
 })
+
+test_that("fitted for multinomial and dirichlet models runs without errors", {
+  ns <- 50
+  nobs <- 8
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+  )
+  draws$data <- list(ncat = ncat, trials = sample(1:20, nobs))
+  draws$f$link <- "logit"
+
+  pred <- brms:::fitted_multinomial(draws = draws)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
+  
+  pred <- brms:::fitted_dirichlet(draws = draws)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
+})

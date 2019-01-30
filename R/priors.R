@@ -577,7 +577,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
     prior <- prior + nlp_prior
   }
   # global population-level priors for categorical models
-  if (is_categorical(x$family)) {
+  if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
@@ -1269,7 +1269,7 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
     )
   }
   # copy over the global population-level prior in categorical models
-  if (is_categorical(x$family)) {
+  if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       gi <- which(find_rows(
         prior, class = cl, coef = "", dpar = "", resp = x$resp

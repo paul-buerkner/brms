@@ -481,12 +481,10 @@ test_that("Stan code for multivariate models is correct", {
 
 test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
-  prior <- c(
-    prior(normal(0, 5), "b"),
-    prior(normal(0, 10), "b", dpar = mu2),
-    prior(cauchy(0, 1), "Intercept"),
+  prior <- prior(normal(0, 5), "b") +
+    prior(normal(0, 10), "b", dpar = mu2) +
+    prior(cauchy(0, 1), "Intercept") +
     prior(normal(0, 2), "Intercept", dpar = mu3)
-  )
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
@@ -496,6 +494,50 @@ test_that("Stan code for categorical models is correct", {
   expect_match2(scode, "target += normal_lpdf(b_mu4 | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(temp_mu2_Intercept | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(temp_mu3_Intercept | 0, 2);")
+})
+
+test_that("Stan code for multinomial models is correct", {
+  N <- 15
+  dat <- data.frame(
+    y1 = rbinom(N, 10, 0.3), y2 = rbinom(N, 10, 0.5), 
+    y3 = rbinom(N, 10, 0.7), x = rnorm(N)
+  )
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  prior <- prior(normal(0, 10), "b", dpar = muy2) +
+    prior(cauchy(0, 1), "Intercept") +
+    prior(normal(0, 2), "Intercept", dpar = muy3)
+  scode <- make_stancode(bf(y | trials(size)  ~ 1, muy2 ~ x), data = dat, 
+                         family = multinomial(), prior = prior)
+  expect_match2(scode, "int Y[N, ncat];")
+  expect_match2(scode, "target += multinomial_logit_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "muy2 = temp_muy2_Intercept + Xc_muy2 * b_muy2;")
+  expect_match2(scode, "target += normal_lpdf(b_muy2 | 0, 10);")
+  expect_match2(scode, "target += cauchy_lpdf(temp_muy2_Intercept | 0, 1);")
+  expect_match2(scode, "target += normal_lpdf(temp_muy3_Intercept | 0, 2);")
+})
+
+test_that("Stan code for dirichlet models is correct", {
+  N <- 15
+  dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  prior <- prior(normal(0, 5), "b") +
+    prior(exponential(10), "phi")
+  scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
+                         family = dirichlet(), prior = prior)
+  expect_match2(scode, "vector[ncat] Y[N];")
+  expect_match2(scode, "target += dirichlet_logit_lpdf(Y[n] | mu[n], phi);")
+  expect_match2(scode, "muy3 = temp_muy3_Intercept + Xc_muy3 * b_muy3;")
+  expect_match2(scode, "target += normal_lpdf(b_muy3 | 0, 5);")
+  expect_match2(scode, "target += exponential_lpdf(phi | 10);")
+  
+  scode <- make_stancode(bf(y ~ x, phi ~ x), data = dat, 
+                         family = dirichlet())
+  expect_match2(scode, "target += dirichlet_logit_lpdf(Y[n] | mu[n], phi[n]);")
+  expect_match2(scode, "vector[N] phi = temp_phi_Intercept + Xc_phi * b_phi;")
+  expect_match2(scode, "phi[n] = exp(phi[n]);")
 })
 
 test_that("Stan code for ARMA models is correct", {

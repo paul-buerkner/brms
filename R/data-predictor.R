@@ -844,7 +844,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       }
     }
     if (is_dirichlet(x$family)) {
-      if (any(!rowSums(out$Y) %in% 1)) {
+      if (!is_equal(rowSums(out$Y), rep(1, nrow(out$Y)))) {
         stop2("Response values in dirichlet models must sum to 1.")
       }
     }
@@ -874,28 +874,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
       if (is_multinomial(x$family)) {
-        out$trials <- rowSums(out$Y, na.rm = TRUE)
-        not_finite <- !is.finite(out$trials)
-        if (any(not_finite)) {
-          if (!is.null(old_sdata$trials)) {
-            out$trials[not_finite] <- max(old_sdata$trials)
-          } else {
-            stop2("Could not compute the number of trials.") 
-          }
-        }
+        stop2("Specifying 'trials' is required in multinomial models.")
+      }
+      out$trials <- round(max(out$Y, na.rm = TRUE))
+      if (isTRUE(is.finite(out$trials))) {
+        message("Using the maximum response value as the number of trials.")
+        warning2(
+          "Using 'binomial' families without specifying 'trials' ", 
+          "on the left-hand side of the model formula is deprecated."
+        )
+      } else if (!is.null(old_sdata$trials)) {
+        out$trials <- max(old_sdata$trials)
       } else {
-        out$trials <- max(out$Y, na.rm = TRUE)
-        if (is.finite(out$trials)) {
-          message("Using the maximum response value as the number of trials.")
-          warning2(
-            "Using 'binomial' families without specifying 'trials' ", 
-            "on the left-hand side of the model formula is deprecated."
-          )
-        } else if (!is.null(old_sdata$trials)) {
-          out$trials <- max(old_sdata$trials)
-        } else {
-          stop2("Could not compute the number of trials.")
-        }
+        stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
       out$trials <- eval_rhs(x$adforms$trials, data = data)
@@ -905,20 +896,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (length(out$trials) == 1L) {
       out$trials <- rep(out$trials, nrow(data))
     }
-    if (is_multinomial(x$family)) {
-      if (check_response) {
-        y_trials <- rowSums(out$Y, na.rm = TRUE)
-        if (!is_equal(y_trials, out$trials)) {
+    if (check_response) {
+      if (is_multinomial(x$family)) {
+        if (!is_equal(rowSums(out$Y), out$trials)) {
           stop2("Number of trials does not match the number of events.")
         }
-      }
-    } else if (has_trials(x$family)) {
-      if (max(out$trials) == 1L && !not4stan) {
-        message("Only 2 levels detected so that family 'bernoulli' ",
-                "might be a more efficient choice.")
-      }
-      if (check_response && any(out$Y > out$trials)) {
-        stop2("Number of trials is smaller than the number of events.")
+      } else if (has_trials(x$family)) {
+        if (max(out$trials) == 1L && !not4stan) {
+          message("Only 2 levels detected so that family 'bernoulli' ",
+                  "might be a more efficient choice.")
+        }
+        if (any(out$Y > out$trials)) {
+          stop2("Number of trials is smaller than the number of events.")
+        }
       }
     }
     out$trials <- as.array(out$trials)
