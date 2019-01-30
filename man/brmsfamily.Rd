@@ -16,6 +16,7 @@
 \alias{exgaussian}
 \alias{wiener}
 \alias{Beta}
+\alias{dirichlet}
 \alias{von_mises}
 \alias{asym_laplace}
 \alias{hurdle_poisson}
@@ -75,6 +76,8 @@ wiener(link = "identity", link_bs = "log", link_ndt = "log",
 
 Beta(link = "logit", link_phi = "log")
 
+dirichlet(link = "logit", link_phi = "log")
+
 von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log",
@@ -127,13 +130,14 @@ supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{Gamma}, \code{skew_normal}, \code{lognormal},
 \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
-\code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-\code{gen_extreme_value}, \code{categorical}, \code{multinomial},
-\code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
-\code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
-\code{hurdle_lognormal}, \code{zero_inflated_binomial},
-\code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-\code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.}
+\code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
+\code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+\code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+\code{hurdle_gamma}, \code{hurdle_lognormal},
+\code{zero_inflated_binomial}, \code{zero_inflated_beta},
+\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
+\code{zero_one_inflated_beta}.}
 
 \item{link}{A specification for the model link function. This can be a
 name/expression or character string. See the 'Details' section for more

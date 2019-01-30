@@ -1293,7 +1293,7 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
     theta_prior <- prior$prior[take]
     if (isTRUE(nzchar(theta_prior))) {
       # hard code prior concentration
-      theta_prior <- paste0(eval2(theta_prior), collapse = ", ")
+      theta_prior <- paste0(eval_dirichlet(theta_prior), collapse = ", ")
       prior$prior[take] <- paste0("dirichlet(c(", theta_prior, "))")
     }
   }
@@ -1336,7 +1336,7 @@ check_prior_special.btl <- function(x, prior, data,
     if (isTRUE(nzchar(simo_prior))) {
       # hard code prior concentration 
       # in order not to depend on external objects
-      simo_prior <- paste0(eval2(simo_prior), collapse = ", ")
+      simo_prior <- paste0(eval_dirichlet(simo_prior), collapse = ", ")
       prior$prior[take] <- paste0("dirichlet(c(", simo_prior, "))")
     }
   }
@@ -1604,13 +1604,17 @@ c.brmsprior <- function(x, ...) {
   c(e1, e2)
 }
 
-dirichlet <- function(...) {
-  # dirichlet prior of simplex parameters
-  out <- as.numeric(c(...))
-  if (anyNA(out) || any(out <= 0)) {
-    stop2("The dirichlet prior expects positive values.")
+eval_dirichlet <- function(prior) {
+  # evaluate the dirichlet prior of simplex parameters
+  # avoid name clashing with the dirichlet family
+  dirichlet <- function(...) {
+    out <- as.numeric(c(...))
+    if (anyNA(out) || any(out <= 0)) {
+      stop2("The dirichlet prior expects positive values.")
+    }
+    out
   }
-  out
+  eval2(prior)
 }
 
 #' Set up a horseshoe prior in \pkg{brms}

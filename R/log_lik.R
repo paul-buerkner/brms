@@ -534,6 +534,17 @@ log_lik_multinomial <- function(i, draws, data = data.frame()) {
   log_lik_weight(out, i = i, data = draws$data)
 }
 
+log_lik_dirichlet <- function(i, draws, data = data.frame()) {
+  stopifnot(draws$f$link == "logit")
+  mu_dpars <- str_subset(names(draws$dpars), "^mu")
+  eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  phi <- get_dpar(draws, "phi", i = i)
+  cats <- seq_len(draws$data$ncat)
+  alpha <- dcategorical(cats, eta = eta) * phi
+  out <- ddirichlet(draws$data$Y[i, ], alpha = alpha, log = TRUE)
+  log_lik_weight(out, i = i, data = draws$data)
+}
+
 log_lik_cumulative <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)

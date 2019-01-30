@@ -1110,19 +1110,21 @@ validate_formula.brmsformula <- function(
     }
   }
   out$mecor <- default_mecor(out$mecor)
-  conv_cats_dpars <- conv_cats_dpars(out$family) && is.null(out$family$dpars)
-  if (conv_cats_dpars && !is.null(data)) {
+  mu_dpars <- str_subset(out$family$dpars, "^mu")
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
     cats <- extract_cat_names(out, data)
     if (length(cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }
     # the first level will serve as the reference category
-    out$family$dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)
-    out$family$dpars <- gsub("\\.|_", "", out$family$dpars)
-    if (any(duplicated(out$family$dpars))) {
+    mu_dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)
+    mu_dpars <- gsub("\\.|_", "", mu_dpars)
+    if (any(duplicated(mu_dpars))) {
       stop2("Invalid response category names. Please avoid ",
             "using any special characters in the names.")
     }
+    out$family$dpars <- c(mu_dpars, out$family$dpars)
   }
   bf(out)
 }

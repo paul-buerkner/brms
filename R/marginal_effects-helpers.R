@@ -644,7 +644,7 @@ marginal_effects_internal.brmsterms <- function(
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (is_categorical(x$family) || is_multinomial(x$family)) {
+    if (conv_cats_dpars(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar)) {

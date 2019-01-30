@@ -442,7 +442,7 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
     stop2("kappa must be non-negative")
   }
   be <- besselI(kappa, nu = 0, expon.scaled = TRUE)
-  out <- - log(2 * pi * be) + kappa * (cos(x - mu) - 1)
+  out <- -log(2 * pi * be) + kappa * (cos(x - mu) - 1)
   if (!log) {
     out <- exp(out)
   }
@@ -1035,6 +1035,72 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   # random numbers of the asymmetric laplace distribution
   u <- runif(n)
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
+}
+
+#' The Dirichlet Distribution
+#' 
+#' Density function and random number generation for the dirichlet
+#' distribution with shape parameter vector \code{alpha}.
+#' 
+#' @name Dirichlet
+#' 
+#' @inheritParams StudentT
+#' @param x Matrix of quantiles. Each row corresponds to one probability vector.
+#' @param alpha Matrix of positive shape parameters. Each row corresponds to one
+#'   probability vector.
+#'
+#' @details See \code{vignette("brms_families")} for details on the 
+#' parameterization.
+#' 
+#' @export
+ddirichlet <- function(x, alpha, log = FALSE) {
+  if (!is.matrix(x)) {
+    x <- matrix(x, nrow = 1)
+  }
+  if (!is.matrix(alpha)) {
+    alpha <- matrix(alpha, nrow(x), length(alpha), byrow = TRUE)
+  }
+  if (nrow(x) == 1L && nrow(alpha) > 1L) {
+    x <- repl(x, nrow(alpha))
+    x <- do_call(rbind, x)
+  } else if (nrow(x) > 1L && nrow(alpha) == 1L) {
+    alpha <- repl(alpha, nrow(x))
+    alpha <- do_call(rbind, alpha)
+  }
+  if (any(x < 0)) {
+    stop2("x must be non-negative.")
+  }
+  if (any(!rowSums(x) %in% 1)) {
+    stop2("x must sum to 1 per row.")
+  }
+  if (any(alpha <= 0)) {
+    stop2("alpha must be positive.")
+  }
+  out <- lgamma(rowSums(alpha)) - rowSums(lgamma(alpha)) + 
+    rowSums((alpha - 1) * log(x))
+  if (!log) {
+    out <- exp(out)
+  } 
+  return(out)
+}
+
+#' @rdname Dirichlet
+#' @export
+rdirichlet <- function(n, alpha) {
+  if (!is.matrix(alpha)) {
+    alpha <- matrix(alpha, nrow = 1)
+  }
+  if (any(alpha <= 0)) {
+    stop2("alpha must be positive.")
+  }
+  if (nrow(alpha) > 1L) {
+    if (nrow(alpha) %% n != 0) {
+      stop2("nrow(alpha) must be a multiple of n.")
+    }
+    n <- nrow(alpha)
+  }
+  x <- matrix(rgamma(ncol(alpha) * n, alpha), ncol = ncol(alpha))
+  x / rowSums(x)
 }
 
 #' The Wiener Diffusion Model Distribution

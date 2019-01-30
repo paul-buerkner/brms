@@ -1153,9 +1153,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # Args:
   #   llh_adj: is the model censored or truncated?
   transeta <- "transeta" %in% family_info(family, "specials")
-  !(family$link == "identity" && !transeta ||
-    is_ordinal(family) || is_categorical(family)) &&
-  (llh_adj || !stan_has_built_in_fun(family))
+  !(family$link == "identity" && !transeta || has_cat(family)) &&
+    (llh_adj || !stan_has_built_in_fun(family))
 }
 
 stan_eta_ilink <- function(dpar, bterms, resp = "") {
@@ -1340,13 +1339,13 @@ stan_dpar_transform <- function(bterms) {
   out <- list()
   families <- family_names(bterms)
   p <- usc(combine_prefix(bterms))
-  if (any(families %in% c("categorical", "multinomial"))) {
+  if (any(conv_cats_dpars(families))) {
     str_add(out$modelD) <- glue( 
       "  // linear predictor matrix\n",
       "  vector[ncat{p}] mu{p}[N];\n"
     )
-    dpars <- names(bterms$dpars)
-    mu_vector <- stan_vector(c("0", glue("{dpars}{p}[n]")))
+    mu_dpars <- str_subset(names(bterms$dpars), "^mu")
+    mu_vector <- stan_vector(c("0", glue("{mu_dpars}{p}[n]")))
     str_add(out$modelC4) <- glue(
       "    mu{p}[n] = {mu_vector};\n"
     )

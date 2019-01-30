@@ -270,6 +270,19 @@ fitted_multinomial <- function(draws) {
   out
 }
 
+fitted_dirichlet <- function(draws) {
+  get_probs <- function(i) {
+    dcategorical(cats, eta = extract_col(eta, i))
+  }
+  eta <- draws$dpars[grepl("^mu", names(draws$dpars))]
+  eta <- abind(eta, along = 3)
+  cats <- seq_len(draws$data$ncat)
+  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
+  out <- aperm(out, perm = c(1, 3, 2))
+  dimnames(out)[[3]] <- draws$data$cats
+  out
+}
+
 fitted_cumulative <- function(draws) {
   fitted_ordinal(draws)
 }

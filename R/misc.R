@@ -392,6 +392,11 @@ str_if <- function(cond, yes, no = "") {
   if (cond) as.character(yes) else as.character(no)
 }
 
+str_subset <- function(x, pattern, ...) {
+  # select elements which match a regex pattern
+  x[grepl(pattern, x, ...)]
+}
+
 glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
                  open = "{", close = "}", na = "NA") {
   # similar to glue::glue but specialized for generating Stan code

@@ -89,7 +89,8 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       }
     }
   } else if (conv_cats_dpars(x$family)) {
-    for (dp in x$family$dpars) {
+    mu_dpars <- str_subset(x$family$dpars, "^mu")
+    for (dp in mu_dpars) {
       if (!is.formula(x$pforms[[dp]])) {
         x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
         attributes(x$pforms[[dp]]) <- attributes(formula)

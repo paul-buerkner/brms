@@ -550,14 +550,25 @@ stan_llh_acat <- function(bterms, resp = "", mix = "") {
 
 stan_llh_categorical <- function(bterms, resp = "", mix = "") {
   stopifnot(bterms$family$link == "logit")
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_llh_dpars(bterms, TRUE, resp, mix, dpars = "mu")
   sdist("categorical_logit", p$mu)
 }
 
 stan_llh_multinomial <- function(bterms, resp = "", mix = "") {
   stopifnot(bterms$family$link == "logit")
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
   p <- stan_llh_dpars(bterms, TRUE, resp, mix, dpars = "mu")
-  sdist("multinomial", glue("softmax({p$mu})"))
+  sdist("multinomial_logit", p$mu)
+}
+
+stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
+  stopifnot(bterms$family$link == "logit")
+  stopifnot(!isTRUE(nzchar(mix)))  # mixture models are not allowed
+  mu <- stan_llh_dpars(bterms, TRUE, resp, mix, dpars = "mu")$mu
+  reqn <- glue("phi{mix}") %in% names(bterms$dpars)
+  phi <- stan_llh_dpars(bterms, reqn, resp, mix, dpars = "phi")$phi
+  sdist("dirichlet_logit", mu, phi)
 }
 
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {

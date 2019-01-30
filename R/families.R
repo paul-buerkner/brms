@@ -16,13 +16,14 @@
 #'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
 #'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
-#'   \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-#'   \code{gen_extreme_value}, \code{categorical}, \code{multinomial},
-#'   \code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
-#'   \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
-#'   \code{hurdle_lognormal}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial},
-#'   \code{zero_inflated_poisson}, and \code{zero_one_inflated_beta}.
+#'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
+#'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+#'   \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+#'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{hurdle_lognormal},
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
+#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
+#'   \code{zero_one_inflated_beta}.
 #' @param link A specification for the model link function. This can be a
 #'   name/expression or character string. See the 'Details' section for more
 #'   information on link functions supported by each family.
@@ -514,6 +515,14 @@ Beta <- function(link = "logit", link_phi = "log") {
 
 #' @rdname brmsfamily
 #' @export
+dirichlet <- function(link = "logit", link_phi = "log") {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet", link = link, slink = slink,
+              link_phi = link_phi)
+}
+
+#' @rdname brmsfamily
+#' @export
 von_mises <- function(link = "tan_half", link_kappa = "log") {
   slink <- substitute(link)
   .brmsfamily("von_mises", link = link, slink = slink,
@@ -769,13 +778,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (any(is_ordinal) && any(!is_ordinal)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
   }
-  is_categorical <- ulapply(family$mix, is_categorical)
-  if (any(is_categorical)) {
-    stop2("Categorical families are not allowed in mixture models.")
-  }
-  is_multinomial <- ulapply(family$mix, is_multinomial)
-  if (any(is_multinomial)) {
-    stop2("Multinomial families are not allowed in mixture models.")
+  no_mixture <- ulapply(family$mix, no_mixture)
+  if (any(no_mixture)) {
+    stop2("Some of the families are not allowed in mixture models.")
   }
   for (fam in family$mix) {
     if (is.customfamily(fam) && "theta" %in% fam$dpars) {
@@ -1290,6 +1295,10 @@ is_multinomial <- function(family) {
   "multinomial" %in% family_info(family, "specials")
 }
 
+is_dirichlet <- function(family) {
+  "dirichlet" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1307,12 +1316,17 @@ allow_cs <- function(family) {
 
 conv_cats_dpars <- function(family) {
   # choose dpar names based on categories?
-  is_categorical(family) || is_multinomial(family)
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+no_mixture <- function(family) {
+  # families not allowed in mixture models
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
 }
 
 has_multicol <- function(family) {
   # indicate if the response should consist of multiple columns
-  is_multinomial(family)
+  is_multinomial(family) || is_dirichlet(family)
 }
 
 has_logscale <- function(family) {
@@ -1329,7 +1343,8 @@ has_trials <- function(family) {
 
 has_cat <- function(family) {
   # indicate if family has more than two response categories
-  is_categorical(family) || is_ordinal(family) || is_multinomial(family)
+  is_categorical(family) || is_ordinal(family) || 
+    is_multinomial(family) || is_dirichlet(family)
 }
 
 has_ndt <- function(family) {

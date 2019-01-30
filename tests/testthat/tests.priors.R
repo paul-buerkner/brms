@@ -76,7 +76,7 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
 test_that("get_prior returns correct priors for multivariate models", {
   dat <- data.frame(y1 = rnorm(10), y2 = c(1, rep(1:3, 3)), 
                     x = rnorm(10), g = rep(1:2, 5))
-  bform <- bf(cbind(y1, y2) ~ x + (x|ID1|g))
+  bform <- bf(mvbind(y1, y2) ~ x + (x|ID1|g))
   
   # check global priors
   prior <- get_prior(bform, dat, family = gaussian())

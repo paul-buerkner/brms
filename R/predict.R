@@ -540,6 +540,15 @@ predict_multinomial <- function(i, draws, ...) {
   do_call(rbind, out)
 }
 
+predict_dirichlet <- function(i, draws, ...) {
+  mu_dpars <- str_subset(names(draws$dpars), "^mu")
+  eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  phi <- get_dpar(draws, "phi", i = i)
+  cats <- seq_len(draws$data$ncat)
+  alpha <- dcategorical(cats, eta = eta) * phi
+  rdirichlet(draws$nsamples, alpha = alpha)
+}
+
 predict_cumulative <- function(i, draws, ...) {
   predict_ordinal(i = i, draws = draws, family = "cumulative")
 }

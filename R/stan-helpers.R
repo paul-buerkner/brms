@@ -15,11 +15,11 @@ stan_response <- function(bterms, data) {
   if (has_multicol(family)) {
     if (rtype == "real") {
       str_add(out$data) <- glue(
-        "  matrix[N, ncat{resp}] Y{resp};  // response matrix\n"
+        "  vector[ncat{resp}] Y{resp}[N];  // response array\n"
       )
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
-        "  int Y{resp}[N, ncat{resp}];  // response matrix\n"
+        "  int Y{resp}[N, ncat{resp}];  // response array\n"
       )
     }
   } else {

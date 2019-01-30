@@ -367,7 +367,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
       )
       simo_prior <- simo_prior$prior
       if (isTRUE(nzchar(simo_prior))) {
-        simo_prior <- eval2(simo_prior)
+        simo_prior <- eval_dirichlet(simo_prior)
         if (length(simo_prior) != Jmo[i]) {
           stop2("Invalid Dirichlet prior for the simplex of coefficient '",
                 simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
@@ -843,6 +843,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("This model requires a response matrix.")
       }
     }
+    if (is_dirichlet(x$family)) {
+      if (any(!rowSums(out$Y) %in% 1)) {
+        stop2("Response values in dirichlet models must sum to 1.")
+      }
+    }
     ybounds <- family_info(x$family, "ybounds")
     closed <- family_info(x$family, "closed")
     if (is.finite(ybounds[1])) {
@@ -922,7 +927,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (!length(x$adforms$cat)) {
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
-      } else if (is_multinomial(x$family)) {
+      } else if (has_multicol(x$family)) {
         out$ncat <- NCOL(out$Y)
       } else {
         out$ncat <- max(out$Y)
@@ -1035,7 +1040,7 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       take <- find_rows(prior, class = "theta", resp = bterms$resp)
       theta_prior <- prior$prior[take]
       if (isTRUE(nzchar(theta_prior))) {
-        theta_prior <- eval2(theta_prior)
+        theta_prior <- eval_dirichlet(theta_prior)
         if (length(theta_prior) != length(families)) {
           stop2("Invalid dirichlet prior for the ", 
                 "mixture probabilities 'theta'.")
