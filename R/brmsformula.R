@@ -1098,6 +1098,7 @@ validate_formula.brmsformula <- function(
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
   }
+  out$mecor <- default_mecor(out$mecor)
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
       # slot 'threshold' is deprecated as of brms > 1.7.0
@@ -1109,16 +1110,29 @@ validate_formula.brmsformula <- function(
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  out$mecor <- default_mecor(out$mecor)
-  mu_dpars <- str_subset(out$family$dpars, "^mu")
-  conv_cats_dpars <- conv_cats_dpars(out$family)
-  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
-    cats <- extract_cat_names(out, data)
-    if (length(cats) < 2L) {
+  if (has_cat(out$family) && !is.null(data)) {
+    out$family$cats <- extract_cat_names(out, data)
+    if (length(out$family$cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }
-    # the first level will serve as the reference category
-    mu_dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)
+  }
+  mu_dpars <- str_subset(out$family$dpars, "^mu")
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !length(mu_dpars) && !is.null(out$family$cats)) {
+    if (is.null(out$family$refcat)) {
+      # the first level serves as the reference category
+      out$family$refcat <- out$family$cats[1]
+    } 
+    if (isNA(out$family$refcat)) {
+      predcats <- out$family$cats  # predict all categories
+    } else {
+      if (!out$family$refcat %in% out$family$cats) {
+        stop2("The reference response category must be one of ",
+              collapse_comma(out$family$cats), ".")
+      }
+      predcats <- setdiff(out$family$cats, out$family$refcat)
+    }
+    mu_dpars <- make.names(paste0("mu", predcats), unique = TRUE)
     mu_dpars <- gsub("\\.|_", "", mu_dpars)
     if (any(duplicated(mu_dpars))) {
       stop2("Invalid response category names. Please avoid ",

@@ -49,6 +49,11 @@
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
+#' @param refcat Optional name of the reference response category used in
+#'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
+#'   default), the first category is used as the reference. If \code{NA}, all
+#'   categories will be predicted, which requires strong priors or carefully
+#'   specified predictor terms in order to lead to an identified model.
 #' 
 #' @details 
 #'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
@@ -149,7 +154,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity", 
                        link_quantile = "logit",
-                       threshold = c("flexible", "equidistant")) {
+                       threshold = c("flexible", "equidistant"),
+                       refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily(
     family, link = link, slink = slink,
@@ -162,13 +168,13 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    threshold = threshold
+    threshold = threshold, refcat = refcat
   )
 }
 
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = c("flexible", "equidistant"),
-                        ...) {
+                        refcat = NULL, ...) {
   # helper function to prepare brmsfamily objects
   # Args:
   #   family: character string naming the model family
@@ -240,6 +246,11 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   }
   if (is_ordinal(out$family)) {
     out$threshold <- match.arg(threshold)
+  }
+  if (conv_cats_dpars(out$family)) {
+    if (!is.null(refcat)) {
+      out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+    }
   }
   out
 }
@@ -515,10 +526,10 @@ Beta <- function(link = "logit", link_phi = "log") {
 
 #' @rdname brmsfamily
 #' @export
-dirichlet <- function(link = "logit", link_phi = "log") {
+dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily("dirichlet", link = link, slink = slink,
-              link_phi = link_phi)
+              link_phi = link_phi, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -618,16 +629,16 @@ zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
 
 #' @rdname brmsfamily
 #' @export
-categorical <- function(link = "logit") {
+categorical <- function(link = "logit", refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("categorical", link = link, slink = slink)
+  .brmsfamily("categorical", link = link, slink = slink, refcat = refcat)
 }
 
 #' @rdname brmsfamily
 #' @export
-multinomial <- function(link = "logit") {
+multinomial <- function(link = "logit", refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("multinomial", link = link, slink = slink)
+  .brmsfamily("multinomial", link = link, slink = slink, refcat = refcat)
 }
 
 #' @rdname brmsfamily

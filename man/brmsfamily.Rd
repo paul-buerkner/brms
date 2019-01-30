@@ -42,7 +42,8 @@ brmsfamily(family, link = NULL, link_sigma = "log",
   link_hu = "logit", link_zoi = "logit", link_coi = "logit",
   link_disc = "log", link_bs = "log", link_ndt = "log",
   link_bias = "logit", link_xi = "log1p", link_alpha = "identity",
-  link_quantile = "logit", threshold = c("flexible", "equidistant"))
+  link_quantile = "logit", threshold = c("flexible", "equidistant"),
+  refcat = NULL)
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -76,7 +77,7 @@ wiener(link = "identity", link_bs = "log", link_ndt = "log",
 
 Beta(link = "logit", link_phi = "log")
 
-dirichlet(link = "logit", link_phi = "log")
+dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 
 von_mises(link = "tan_half", link_kappa = "log")
 
@@ -106,9 +107,9 @@ zero_inflated_negbinomial(link = "log", link_shape = "log",
 
 zero_inflated_binomial(link = "logit", link_zi = "logit")
 
-categorical(link = "logit")
+categorical(link = "logit", refcat = NULL)
 
-multinomial(link = "logit")
+multinomial(link = "logit", refcat = NULL)
 
 cumulative(link = "logit", link_disc = "log",
   threshold = c("flexible", "equidistant"))
@@ -182,6 +183,12 @@ of thresholds (i.e. intercepts) used in an ordinal model.
 \code{"flexible"} provides the standard unstructured thresholds and 
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
+
+\item{refcat}{Optional name of the reference response category used in
+categorical, multinomial, and dirichlet models. If \code{NULL} (the
+default), the first category is used as the reference. If \code{NA}, all
+categories will be predicted, which requires strong priors or carefully
+specified predictor terms in order to lead to an identified model.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 

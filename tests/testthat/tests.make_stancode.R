@@ -485,15 +485,21 @@ test_that("Stan code for categorical models is correct", {
     prior(normal(0, 10), "b", dpar = mu2) +
     prior(cauchy(0, 1), "Intercept") +
     prior(normal(0, 2), "Intercept", dpar = mu3)
+  
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "mu[n] = [0, mu2[n], mu3[n], mu4[n]]';")
   expect_match2(scode, "mu2 = temp_mu2_Intercept + Xc_mu2 * b_mu2;")
   expect_match2(scode, "mu4[n] += r_1_mu4_3[J_1[n]] * Z_1_mu4_3[n];")
   expect_match2(scode, "target += normal_lpdf(b_mu2 | 0, 10);")
   expect_match2(scode, "target += normal_lpdf(b_mu4 | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(temp_mu2_Intercept | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(temp_mu3_Intercept | 0, 2);")
+  
+  scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
+                         family = categorical(refcat = NA))
+  expect_match2(scode, "mu[n] = [mu1[n], mu2[n], mu3[n], mu4[n]]';")
 })
 
 test_that("Stan code for multinomial models is correct", {

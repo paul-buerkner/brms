@@ -4,6 +4,10 @@
 
 * Fit multinomial models via family `multinomial`. (#463)
 * Fit Dirichlet models via family `dirichlet`. (#463)
+* Fit conditional logistic models using the 
+`categorical` and `multinomial` families. (#560)
+* Choose the reference category of `categorical` and related 
+families via argument `refcat` of the corresponding family functions.
 
 ### Other changes
 

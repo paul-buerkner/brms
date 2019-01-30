@@ -1344,10 +1344,11 @@ stan_dpar_transform <- function(bterms) {
       "  // linear predictor matrix\n",
       "  vector[ncat{p}] mu{p}[N];\n"
     )
-    mu_dpars <- str_subset(names(bterms$dpars), "^mu")
-    mu_vector <- stan_vector(c("0", glue("{mu_dpars}{p}[n]")))
+    mu_dpars <- glue("mu{bterms$family$cats}{p}[n]")
+    iref <- match(bterms$family$refcat, bterms$family$cats)
+    mu_dpars[iref] <- "0" 
     str_add(out$modelC4) <- glue(
-      "    mu{p}[n] = {mu_vector};\n"
+      "    mu{p}[n] = {stan_vector(mu_dpars)};\n"
     )
   }
   if (any(families %in% "skew_normal")) {
