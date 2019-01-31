@@ -225,7 +225,7 @@ test_that("special shrinkage priors appear in the Stan code", {
                "Scale of the global prior")
   expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
-  expect_error(make_stancode(x1 ~ cs(y), dat, acat(), prior = prior(lasso())),
+  expect_error(make_stancode(y ~ cs(x1), dat, acat(), prior = prior(lasso())),
                "Horseshoe or lasso priors are not yet allowed")
   bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
   expect_error(make_stancode(x1 ~ y, dat, prior = bprior),

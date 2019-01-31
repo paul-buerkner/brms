@@ -1110,15 +1110,13 @@ validate_formula.brmsformula <- function(
       stop2("Cannot remove the intercept in an ordinal model.")
     }
   }
-  if (has_cat(out$family) && !is.null(data)) {
+  mu_dpars <- str_subset(out$family$dpars, "^mu")
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
     out$family$cats <- extract_cat_names(out, data)
     if (length(out$family$cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }
-  }
-  mu_dpars <- str_subset(out$family$dpars, "^mu")
-  conv_cats_dpars <- conv_cats_dpars(out$family)
-  if (conv_cats_dpars && !length(mu_dpars) && !is.null(out$family$cats)) {
     if (is.null(out$family$refcat)) {
       # the first level serves as the reference category
       out$family$refcat <- out$family$cats[1]

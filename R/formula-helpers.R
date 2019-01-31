@@ -901,9 +901,7 @@ extract_cat_names <- function(x, data) {
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))
   } else if (has_multicol(x)) {
-    if (!is.matrix(mr)) {
-      stop2("This model requires a response matrix.")
-    }
+    mr <- as.matrix(mr)
     out <- as.character(colnames(mr))
     if (!length(out)) {
       out <- as.character(seq_cols(mr))

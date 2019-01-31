@@ -821,8 +821,6 @@ test_that("data for multinomial and dirichlet models is correct", {
     make_standata(t | trials(10) ~ x, data = dat, family = multinomial()),
     "Number of trials does not match the number of events"
   )
-  expect_error(make_standata(y1 ~ x, data = dat, family = dirichlet()),
-               "This model requires a response matrix")
   expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
                "Response values in dirichlet models must sum to 1")
 })
