@@ -523,6 +523,7 @@ log_lik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
 log_lik_categorical <- function(i, draws, data = data.frame()) {
   stopifnot(draws$f$link == "logit")
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   out <- dcategorical(draws$data$Y[i], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, data = draws$data)
 }
@@ -530,6 +531,7 @@ log_lik_categorical <- function(i, draws, data = data.frame()) {
 log_lik_multinomial <- function(i, draws, data = data.frame()) {
   stopifnot(draws$f$link == "logit")
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   out <- dmultinomial(draws$data$Y[i, ], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, data = draws$data)
 }
@@ -538,6 +540,7 @@ log_lik_dirichlet <- function(i, draws, data = data.frame()) {
   stopifnot(draws$f$link == "logit")
   mu_dpars <- str_subset(names(draws$dpars), "^mu")
   eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   phi <- get_dpar(draws, "phi", i = i)
   cats <- seq_len(draws$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi

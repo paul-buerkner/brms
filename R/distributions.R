@@ -1493,7 +1493,6 @@ dcategorical <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  eta <- cbind(rep(0, nrow(eta)), eta)
   if (log) {
     out <- log_softmax(eta)
   } else {
@@ -1530,7 +1529,6 @@ dmultinomial <- function(x, eta, log = FALSE) {
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  eta <- cbind(rep(0, nrow(eta)), eta)
   log_prob <- log_softmax(eta)
   size <- sum(x)
   x <- as_draws_matrix(x, dim = dim(eta))

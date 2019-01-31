@@ -190,7 +190,7 @@ fitted_wiener <- function(draws) {
   # mu is the drift rate
   with(draws$dpars,
    ndt - bias / mu + bs / mu * 
-     (exp(- 2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
+     (exp(-2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
   )
 }
 
@@ -247,7 +247,8 @@ fitted_zero_one_inflated_beta <- function(draws) {
 
 fitted_categorical <- function(draws) {
   get_probs <- function(i) {
-    dcategorical(cats, eta = extract_col(eta, i))
+    eta <- insert_refcat(extract_col(eta, i), family = draws$f)
+    dcategorical(cats, eta = eta)
   }
   eta <- abind(draws$dpars, along = 3)
   cats <- seq_len(draws$data$ncat)
@@ -259,7 +260,8 @@ fitted_categorical <- function(draws) {
 
 fitted_multinomial <- function(draws) {
   get_counts <- function(i) {
-    dcategorical(cats, eta = extract_col(eta, i)) * trials[i]
+    eta <- insert_refcat(extract_col(eta, i), family = draws$f)
+    dcategorical(cats, eta = eta) * trials[i]
   }
   eta <- abind(draws$dpars, along = 3)
   cats <- seq_len(draws$data$ncat)
@@ -272,7 +274,8 @@ fitted_multinomial <- function(draws) {
 
 fitted_dirichlet <- function(draws) {
   get_probs <- function(i) {
-    dcategorical(cats, eta = extract_col(eta, i))
+    eta <- insert_refcat(extract_col(eta, i), family = draws$f)
+    dcategorical(cats, eta = eta)
   }
   eta <- draws$dpars[grepl("^mu", names(draws$dpars))]
   eta <- abind(eta, along = 3)

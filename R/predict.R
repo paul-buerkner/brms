@@ -528,12 +528,14 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 
 predict_categorical <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
 predict_multinomial <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   size <- draws$data$trials[i]
   out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
@@ -543,6 +545,7 @@ predict_multinomial <- function(i, draws, ...) {
 predict_dirichlet <- function(i, draws, ...) {
   mu_dpars <- str_subset(names(draws$dpars), "^mu")
   eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$f)
   phi <- get_dpar(draws, "phi", i = i)
   cats <- seq_len(draws$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi

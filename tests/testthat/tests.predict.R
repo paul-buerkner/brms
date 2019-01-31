@@ -1,3 +1,5 @@
+context("Tests for predict helper functions")
+
 test_that("predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
@@ -274,7 +276,7 @@ test_that("predict for ordinal models runs without erros", {
   expect_equal(dim(pred), c(ns, nobs))
 })
 
-test_that("loglik for categorical and related models runs without erros", {
+test_that("predict for categorical and related models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -284,15 +286,17 @@ test_that("loglik for categorical and related models runs without erros", {
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$f <- categorical()
   pred <- sapply(1:nobs, brms:::predict_categorical, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
   draws$data$trials <- sample(1:20, nobs)
+  draws$f <- multinomial()
   pred <- brms:::predict_multinomial(i = sample(1:nobs, 1), draws = draws)
   expect_equal(dim(pred), c(ns, ncat))
   
   draws$dpars$phi <- rexp(ns, 1)
+  draws$f <- dirichlet()
   pred <- brms:::predict_dirichlet(i = sample(1:nobs, 1), draws = draws)
   expect_equal(dim(pred), c(ns, ncat))
   expect_equal(rowSums(pred), rep(1, nrow(pred)))

@@ -609,6 +609,27 @@ apply_dpar_ilink <- function(dpar, family) {
   !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
 }
 
+insert_refcat  <- function(eta, family) {
+  # insert zeros for the predictor term of the reference category
+  # in categorical-like models using the softmax response function
+  stopifnot(is.matrix(eta), is.brmsfamily(family))
+  if (!conv_cats_dpars(family) || isNA(family$refcat)) {
+    return(eta)
+  }
+  # need to add zeros for the reference category
+  zeros <- as.matrix(rep(0, nrow(eta)))
+  if (is.null(family$refcat) || is.null(family$cats)) {
+    # no information on the categories provided:
+    # use the first category as the reference
+    return(cbind(zeros, eta))
+  }
+  colnames(zeros) <- paste0("mu", family$refcat)
+  iref <- match(family$refcat, family$cats)
+  before <- seq_len(iref - 1)
+  after <- setdiff(seq_cols(eta), before)
+  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
+}
+
 choose_N <- function(draws) {
   # choose N to be used in predict and log_lik
   stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))

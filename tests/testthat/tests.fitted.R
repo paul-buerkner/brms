@@ -149,11 +149,12 @@ test_that("fitted for multinomial and dirichlet models runs without errors", {
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   draws$data <- list(ncat = ncat, trials = sample(1:20, nobs))
-  draws$f$link <- "logit"
-
+ 
+  draws$f <- multinomial()
   pred <- brms:::fitted_multinomial(draws = draws)
   expect_equal(dim(pred), c(ns, nobs, ncat))
   
+  draws$f <- dirichlet()
   pred <- brms:::fitted_dirichlet(draws = draws)
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })

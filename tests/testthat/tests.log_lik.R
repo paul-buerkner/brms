@@ -393,7 +393,7 @@ test_that("log_lik for categorical and related models runs without erros", {
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$f <- categorical()
   ll <- sapply(1:nobs, brms:::log_lik_categorical, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
   
@@ -402,11 +402,13 @@ test_that("log_lik for categorical and related models runs without erros", {
     nrow = nobs, ncol = ncat
   )
   draws$data$trials <- sample(1:20, nobs)
+  draws$f <- multinomial()
   ll <- sapply(1:nobs, brms:::log_lik_multinomial, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
   
   draws$data$Y <- draws$data$Y / rowSums(draws$data$Y)
   draws$dpars$phi <- rexp(ns, 10)
+  draws$f <- dirichlet()
   ll <- sapply(1:nobs, brms:::log_lik_dirichlet, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
