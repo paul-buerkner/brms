@@ -42,13 +42,9 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
     out <- do_call(cbind, out) 
   }
   colnames(out) <- NULL
-  # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models
-  pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
-  if (pct_invalid >= 0.01) {
-    warning2(
-      round(pct_invalid * 100), "% of all predicted values ", 
-      "were invalid. Increasing argument 'ntrys' may help."
+  if (use_int(draws$f)) {
+    out <- check_discrete_trunc_bounds(
+      out, lb = draws$data$lb, ub = draws$data$ub
     )
   }
   out <- reorder_obs(out, draws$old_order, sort = sort)
@@ -680,30 +676,39 @@ extract_valid_sample <- function(rng, lb, ub) {
   #   ub: upper bound
   # Returns:
   #   a valid truncated sample or else the closest boundary
-  valid_rng <- match(TRUE, rng > lb & rng <= ub)
+  valid_rng <- match(TRUE, rng >= lb & rng <= ub)
   if (is.na(valid_rng)) {
     # no valid truncated value found
     # set sample to lb or ub
     # 1e-10 is only to identify the invalid draws later on
-    ifelse(max(rng) <= lb, lb + 1 - 1e-10, ub + 1e-10)
+    out <- ifelse(max(rng) < lb, lb - 1e-10, ub + 1e-10)
   } else {
-    rng[valid_rng]
+    out <- rng[valid_rng]
   }
+  out
 }
 
-get_pct_invalid <- function(x, lb = NULL, ub = NULL) {
-  # percentage of invalid predictions of truncated discrete models
+check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, 
+                                        thres = 0.01) {
+  # check for invalid predictions of truncated discrete models
   # Args:
   #   x: matrix of predicted values
   #   lb: optional lower truncation bound
   #   ub: optional upper truncation bound
-  if (!(is.null(lb) && is.null(ub))) {
-    if (is.null(lb)) lb <- -Inf
-    if (is.null(ub)) ub <- Inf
-    # ensures correct comparison with vector bounds
-    x <- c(t(x))
-    sum(x <= lb | x > ub, na.rm = TRUE) / length(x[!is.na(x)]) 
-  } else {
-    0
+  #   thres: threshold (in %) of invalid values at which to warn the user
+  if (is.null(lb) && is.null(ub)) {
+    return(x)
   }
+  if (is.null(lb)) lb <- -Inf
+  if (is.null(ub)) ub <- Inf
+  thres <- as_one_numeric(thres)
+  y <- as.vector(t(x))  # ensures correct comparison with vector bounds
+  pct_invalid <- sum(y < lb | y > ub, na.rm = TRUE) / sum(!is.na(y))
+  if (pct_invalid >= thres) {
+    warning2(
+      round(pct_invalid * 100), "% of all predicted values ", 
+      "were invalid. Increasing argument 'ntrys' may help."
+    )
+  }
+  round(x)
 }
