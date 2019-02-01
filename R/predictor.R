@@ -345,7 +345,7 @@ predictor_cs <- function(eta, draws, i) {
   cs <- draws[["cs"]]
   re <- draws[["re"]]
   ncat <- cs[["ncat"]]
-  if (is_ordinal(draws$f)) {
+  if (is_ordinal(draws$family)) {
     if (!is.null(cs) || !is.null(re[["rcs"]])) {
       if (!is.null(re[["rcs"]])) {
         groups <- names(re[["rcs"]])
@@ -372,7 +372,7 @@ predictor_cs <- function(eta, draws, i) {
       eta <- array(eta, dim = c(dim(eta), ncat - 1))
     } 
     for (k in seq_len(ncat - 1)) {
-      if (draws$f$family %in% c("cumulative", "sratio")) {
+      if (draws$family$family %in% c("cumulative", "sratio")) {
         eta[, , k] <- cs[["Intercept"]][, k] - eta[, , k]
       } else {
         eta[, , k] <- eta[, , k] - cs[["Intercept"]][, k]
@@ -465,7 +465,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   if (anyNA(Y)) {
     # predicting Y will be necessary at some point
     stopifnot(is.brmsdraws(fdraws) || is.mvbrmsdraws(fdraws))
-    predict_fun <- paste0("predict_", fdraws$f$fun)
+    predict_fun <- paste0("predict_", fdraws$family$fun)
     predict_fun <- get(predict_fun, asNamespace("brms"))
   }
   S <- nrow(eta)

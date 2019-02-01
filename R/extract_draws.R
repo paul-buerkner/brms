@@ -64,11 +64,11 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       )
     }
     if (x$rescor) {
-      draws$f <- draws$resps[[1]]$f
-      draws$f$fun <- paste0(draws$f$family, "_mv")
+      draws$family <- draws$resps[[1]]$family
+      draws$family$fun <- paste0(draws$family$family, "_mv")
       rescor <- get_cornames(resp, type = "rescor", brackets = FALSE)
       draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
-      if (draws$f$family == "student") {
+      if (draws$family$family == "student") {
         # store in draws$dpars so that get_dpar can be called on nu
         draws$dpars$nu <- as.vector(get_samples(samples, "^nu$"))
       }
@@ -91,7 +91,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata$N
   resp <- usc(combine_prefix(x))
-  draws <- nlist(f = prepare_family(x), nsamples, nobs, resp = x$resp)
+  draws <- nlist(family = prepare_family(x), nsamples, nobs, resp = x$resp)
   draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)
@@ -144,7 +144,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 #' @export
 extract_draws.btnl <- function(x, samples, sdata, ...) {
   draws <- list(
-    f = x$family, nlform = x$formula[[2]],
+    family = x$family, nlform = x$formula[[2]],
     nsamples = nrow(samples), nobs = sdata$N,
     used_nlpars = x$used_nlpars
   )
@@ -166,7 +166,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   smooths_only <- as_one_logical(smooths_only)
   offset <- as_one_logical(offset)
   nsamples <- nrow(samples)
-  draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
+  draws <- nlist(family = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
@@ -769,18 +769,18 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   # Args:
   #   comp: the mixture component number
   #   sample_ids: see predict_mixture
-  stopifnot(is.brmsdraws(draws), is.mixfamily(draws$f))
+  stopifnot(is.brmsdraws(draws), is.mixfamily(draws$family))
   if (!is.null(sample_ids)) {
     nsamples <- length(sample_ids)
   } else {
     nsamples <- draws$nsamples
   }
   out <- list(
-    f = draws$f$mix[[comp]], nsamples = nsamples,
+    family = draws$family$mix[[comp]], nsamples = nsamples,
     nobs = draws$nobs, data = draws$data
   )
-  out$f$fun <- out$f$family
-  for (dp in valid_dpars(out$f)) {
+  out$family$fun <- out$family$family
+  for (dp in valid_dpars(out$family)) {
     out$dpars[[dp]] <- draws$dpars[[paste0(dp, comp)]]
     if (length(sample_ids) && length(out$dpars[[dp]]) > 1L) {
       out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)

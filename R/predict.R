@@ -26,15 +26,15 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
-  predict_fun <- paste0("predict_", draws$f$fun)
+  predict_fun <- paste0("predict_", draws$family$fun)
   predict_fun <- get(predict_fun, asNamespace("brms"))
   N <- choose_N(draws)
   out <- lapply(seq_len(N), predict_fun, draws = draws, ...)
-  if (grepl("_mv$", draws$f$fun)) {
+  if (grepl("_mv$", draws$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
     dimnames(out)[[3]] <- names(draws$resps)
-  } else if (has_multicol(draws$f)) {
+  } else if (has_multicol(draws$family)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
     dimnames(out)[[3]] <- draws$data$cats
@@ -42,7 +42,7 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
     out <- do_call(cbind, out) 
   }
   colnames(out) <- NULL
-  if (use_int(draws$f)) {
+  if (use_int(draws$family)) {
     out <- check_discrete_trunc_bounds(
       out, lb = draws$data$lb, ub = draws$data$ub
     )
@@ -54,7 +54,7 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   }
   attr(out, "levels") <- draws$data$cats
   if (summary) {
-    if (is_ordinal(draws$f) || is_categorical(draws$f)) {
+    if (is_ordinal(draws$family) || is_categorical(draws$family)) {
       out <- posterior_table(out, levels = seq_len(draws$data$ncat))
     } else {
       out <- posterior_summary(out, probs = probs, robust = robust)
@@ -524,14 +524,14 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 
 predict_categorical <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
 predict_multinomial <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   size <- draws$data$trials[i]
   out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
@@ -541,7 +541,7 @@ predict_multinomial <- function(i, draws, ...) {
 predict_dirichlet <- function(i, draws, ...) {
   mu_dpars <- str_subset(names(draws$dpars), "^mu")
   eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   phi <- get_dpar(draws, "phi", i = i)
   cats <- seq_len(draws$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
@@ -570,22 +570,22 @@ predict_ordinal <- function(i, draws, family, ...) {
   eta <- (disc * get_dpar(draws, "mu", i = i))
   p <- pordinal(
     seq_len(ncat), eta = eta, ncat = ncat, 
-    family = family, link = draws$f$link
+    family = family, link = draws$family$link
   )
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
 predict_custom <- function(i, draws, ...) {
-  predict_fun <- draws$f$predict
+  predict_fun <- draws$family$predict
   if (!is.function(predict_fun)) {
-    predict_fun <- paste0("predict_", draws$f$name)
-    predict_fun <- get(predict_fun, draws$f$env)
+    predict_fun <- paste0("predict_", draws$family$name)
+    predict_fun <- get(predict_fun, draws$family$env)
   }
   predict_fun(i = i, draws = draws, ...)
 }
 
 predict_mixture <- function(i, draws, ...) {
-  families <- family_names(draws$f)
+  families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
   smix <- rng_mix(theta)
   out <- rep(NA, draws$nsamples)
@@ -703,7 +703,7 @@ check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL,
   if (is.null(ub)) ub <- Inf
   thres <- as_one_numeric(thres)
   y <- as.vector(t(x))  # ensures correct comparison with vector bounds
-  pct_invalid <- sum(y < lb | y > ub, na.rm = TRUE) / sum(!is.na(y))
+  pct_invalid <- mean(y < lb | y > ub, na.rm = TRUE)
   if (pct_invalid >= thres) {
     warning2(
       round(pct_invalid * 100), "% of all predicted values ", 

@@ -132,7 +132,7 @@ test_that("fitted_lagsar runs without errors", {
     ),
     nsamples = 3,
     nobs = 10,
-    f = gaussian()
+    family = gaussian()
   )
   mu_new <- brms:::fitted_lagsar(draws)
   expect_equal(dim(mu_new), dim(draws$dpars$mu))
@@ -150,11 +150,11 @@ test_that("fitted for multinomial and dirichlet models runs without errors", {
   )
   draws$data <- list(ncat = ncat, trials = sample(1:20, nobs))
  
-  draws$f <- multinomial()
+  draws$family <- multinomial()
   pred <- brms:::fitted_multinomial(draws = draws)
   expect_equal(dim(pred), c(ns, nobs, ncat))
   
-  draws$f <- dirichlet()
+  draws$family <- dirichlet()
   pred <- brms:::fitted_dirichlet(draws = draws)
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })

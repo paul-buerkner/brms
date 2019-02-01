@@ -445,10 +445,10 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
     if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = draws$f)
+      ilink <- apply_dpar_ilink(dpar, family = draws$family)
     }
     if (ilink) {
-      out <- ilink(out, x$f$link)
+      out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
       out <- extract_col(out, 1)
@@ -458,7 +458,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   } else {
     out <- x
   }
-  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
+  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$family$fun))) {
     # 'se' will be incorporated directly into 'sigma'
     if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
       out <- sqrt(get_se(draws, i = i)^2 + out^2)
@@ -506,11 +506,11 @@ get_theta <- function(draws, i = NULL) {
     theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    mix_family <- draws$f
+    mix_family <- draws$family
     families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      draws$f <- mix_family$mix[[j]]
+      draws$family <- mix_family$mix[[j]]
       theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
     theta <- abind(theta, along = 3)

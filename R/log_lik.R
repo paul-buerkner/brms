@@ -23,7 +23,7 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
 
 #' @export
 log_lik_internal.brmsdraws <- function(draws, ...) {
-  log_lik_fun <- paste0("log_lik_", draws$f$fun)
+  log_lik_fun <- paste0("log_lik_", draws$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
   for (nlp in names(draws$nlpars)) {
     draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
@@ -47,7 +47,7 @@ log_lik_pointwise <- function(data_i, draws, ...) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
     out <- Reduce("+", out)
   } else {
-    log_lik_fun <- paste0("log_lik_", draws$f$fun)
+    log_lik_fun <- paste0("log_lik_", draws$family$fun)
     log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
     out <- log_lik_fun(i, draws)
   }
@@ -521,26 +521,26 @@ log_lik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_categorical <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$f$link == "logit")
+  stopifnot(draws$family$link == "logit")
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   out <- dcategorical(draws$data$Y[i], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_multinomial <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$f$link == "logit")
+  stopifnot(draws$family$link == "logit")
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   out <- dmultinomial(draws$data$Y[i, ], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_dirichlet <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$f$link == "logit")
+  stopifnot(draws$family$link == "logit")
   mu_dpars <- str_subset(names(draws$dpars), "^mu")
   eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$f)
+  eta <- insert_refcat(eta, family = draws$family)
   phi <- get_dpar(draws, "phi", i = i)
   cats <- seq_len(draws$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
@@ -553,12 +553,13 @@ log_lik_cumulative <- function(i, draws, data = data.frame()) {
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
   if (y == 1) { 
-    out <- log(ilink(eta[, 1], draws$f$link))
+    out <- log(ilink(eta[, 1], draws$family$link))
   } else if (y == ncat) {
-    out <- log(1 - ilink(eta[, y - 1], draws$f$link)) 
+    out <- log(1 - ilink(eta[, y - 1], draws$family$link)) 
   } else {
     out <- log(
-      ilink(eta[, y], draws$f$link) - ilink(eta[, y - 1], draws$f$link)
+      ilink(eta[, y], draws$family$link) - 
+        ilink(eta[, y - 1], draws$family$link)
     )
   }
   log_lik_weight(out, i = i, data = draws$data)
@@ -568,8 +569,8 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat - 1), 
-    function(k) 1 - ilink(eta[, k], draws$f$link)
+  q <- sapply(seq_len(min(y, ncat - 1)), 
+    function(k) 1 - ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
@@ -587,7 +588,9 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat-1), function(k) ilink(eta[, k], draws$f$link))
+  q <- sapply(seq_len(min(y, ncat - 1)), 
+    function(k) ilink(eta[, k], draws$family$link)
+  )
   if (y == 1) {
     out <- log(1 - q[, 1])
   }  else if (y == 2) {
@@ -604,7 +607,7 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  if (draws$f$link == "logit") { # more efficient calculation 
+  if (draws$family$link == "logit") { # more efficient calculation 
     q <- sapply(1:(ncat - 1), function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
                matrix(0, nrow = nrow(eta), ncol = ncat - 2))
@@ -614,7 +617,7 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
     q <- sapply(1:(ncat - 1), function(k) 
-      ilink(eta[, k], draws$f$link))
+      ilink(eta[, k], draws$family$link))
     p <- cbind(apply(1 - q[, 1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2) {
@@ -629,16 +632,16 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_custom <- function(i, draws, data = data.frame()) {
-  log_lik_fun <- draws$f$log_lik
+  log_lik_fun <- draws$family$log_lik
   if (!is.function(log_lik_fun)) {
-    log_lik_fun <- paste0("log_lik_", draws$f$name)
-    log_lik_fun <- get(log_lik_fun, draws$f$env)
+    log_lik_fun <- paste0("log_lik_", draws$family$name)
+    log_lik_fun <- get(log_lik_fun, draws$family$env)
   }
   log_lik_fun(i = i, draws = draws)
 }
 
 log_lik_mixture <- function(i, draws, data = data.frame()) {
-  families <- family_names(draws$f)
+  families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
   out <- array(NA, dim = dim(theta))
   for (j in seq_along(families)) {
