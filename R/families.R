@@ -1098,7 +1098,7 @@ dpar_family <- function(family, dpar, ...) {
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
   dp_class <- dpar_class(dpar)
-  if (!identical(dp_class, "mu")) {
+  if (dp_class != "mu" || conv_cats_dpars(family)) {
     link <- family[[paste0("link_", dp_class)]]
     family <- .dpar_family(dpar, link)
   }
