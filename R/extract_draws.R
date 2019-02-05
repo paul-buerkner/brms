@@ -237,9 +237,10 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   draws$bsp <- get_samples(samples, bsp_pars, exact = TRUE)
   # prepare draws specific to monotonic effects
   simo_coef <- get_simo_labels(spef)
+  Jmo <- sdata[[paste0("Jmo", p)]]
   draws$simo <- draws$Xmo <- named_list(simo_coef)
   for (i in seq_along(simo_coef)) {
-    J <- seq_len(sdata$Jmo[i])
+    J <- seq_len(Jmo[i])
     simo_par <- paste0("simo", p, "_", simo_coef[i], "[", J, "]")
     draws$simo[[i]] <- get_samples(samples, simo_par, exact = TRUE)
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]

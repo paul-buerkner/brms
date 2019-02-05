@@ -34,6 +34,8 @@ univariate models thanks to Vassilis Kehayas. (#589)
 * Allow to fix parameter `ndt` in drift diffusion models.
 * Fix Stan code for t-distributed varying effects 
 thanks to Ozgur Asar.
+* Fix an error in the post-processing of monotonic effects
+occuring for multivariate models thanks to James Rae. (#598)
 
 
 # brms 2.7.0
