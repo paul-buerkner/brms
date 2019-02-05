@@ -806,6 +806,7 @@ test_that("dirichlet models work correctly", {
   
   fit <- brm(y ~ x, data = dat, family = dirichlet())
   print(summary(fit))
+  expect_output(print(fit), "muy2 = logit")
   pred <- predict(fit)
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
   waic <- waic(fit)

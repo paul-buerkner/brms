@@ -1255,6 +1255,9 @@ summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
   links[names(links_pred)] <- links_pred
+  if (conv_cats_dpars(x)) {
+    links[grepl("^mu", names(links))] <- x$family$link
+  }
   resp <- if (mv) usc(combine_prefix(x))
   names(links) <- paste0(names(links), resp)
   paste0(names(links), " = ", links, collapse = "; ")

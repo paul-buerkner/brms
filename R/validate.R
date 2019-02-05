@@ -128,7 +128,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       }
       y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
     } else {
-      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
+      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]])
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
@@ -142,7 +142,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       if (get_nl(nlpar_forms[[nlp]])) {
         y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
       } else {
-        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]], family = family)
+        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
       }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$resp <- resp
@@ -244,11 +244,10 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out
 }
 
-parse_lf <- function(formula, family = NULL) {
+parse_lf <- function(formula) {
   # parse linear formulas
   # Args:
   #   formula: an ordinary R formula
-  #   family: the model family
   # Returns:
   #   object of class 'btl'
   formula <- rhs(as.formula(formula))
