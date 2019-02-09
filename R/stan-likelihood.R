@@ -194,7 +194,8 @@ stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
   if (!any(bounds$lb > -Inf | bounds$ub < Inf)) {
     return("")
   }
-  lb <- str_if(any(bounds$lb > -Inf), glue("lb{resp}[n]"))
+  m1 <- str_if(use_int(bterms), " - 1")
+  lb <- str_if(any(bounds$lb > -Inf), glue("lb{resp}[n]{m1}"))
   ub <- str_if(any(bounds$ub < Inf), glue("ub{resp}[n]"))
   if (short) {
     # truncation using T[, ] syntax
