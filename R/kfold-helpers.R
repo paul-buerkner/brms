@@ -104,6 +104,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   } else {
     mf <- as.data.frame(newdata)
   }
+  mf <- rm_attr(mf, c("terms", "brmsframe"))
   N <- nrow(mf)
   # validate argument 'group'
   if (!is.null(group)) {
