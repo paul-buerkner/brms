@@ -9,25 +9,24 @@
 #' You can also specify custom families for use in \pkg{brms} with
 #' the \code{\link{custom_family}} function.
 #' 
-#' @param family A character string naming the distribution
-#'   of the response variable be used in the model.
-#'   Currently, the following families are supported:
-#'   \code{gaussian}, \code{student}, \code{binomial}, 
-#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
-#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
-#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
-#'   \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-#'   \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
-#'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-#'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
+#' @param family A character string naming the distribution of the response
+#'   variable be used in the model. Currently, the following families are
+#'   supported: \code{gaussian}, \code{student}, \code{binomial},
+#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
+#'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
+#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
+#'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
+#'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+#'   \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+#'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{hurdle_lognormal},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
-#'   and \code{zero_one_inflated_beta}.
-#' @param link A specification for the model link function. 
-#'   This can be a name/expression or character string. 
-#'   See the 'Details' section for more information on link
-#'   functions supported by each family.
+#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
+#'   \code{zero_one_inflated_beta}.
+#' @param link A specification for the model link function. This can be a
+#'   name/expression or character string. See the 'Details' section for more
+#'   information on link functions supported by each family.
 #' @param link_sigma Link of auxiliary parameter \code{sigma} if being predicted.
 #' @param link_shape Link of auxiliary parameter \code{shape} if being predicted.
 #' @param link_nu Link of auxiliary parameter \code{nu} if being predicted.
@@ -50,6 +49,11 @@
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
+#' @param refcat Optional name of the reference response category used in
+#'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
+#'   default), the first category is used as the reference. If \code{NA}, all
+#'   categories will be predicted, which requires strong priors or carefully
+#'   specified predictor terms in order to lead to an identified model.
 #' 
 #' @details 
 #'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
@@ -150,7 +154,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity", 
                        link_quantile = "logit",
-                       threshold = c("flexible", "equidistant")) {
+                       threshold = c("flexible", "equidistant"),
+                       refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily(
     family, link = link, slink = slink,
@@ -163,13 +168,13 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    threshold = threshold
+    threshold = threshold, refcat = refcat
   )
 }
 
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = c("flexible", "equidistant"),
-                        ...) {
+                        refcat = NULL, ...) {
   # helper function to prepare brmsfamily objects
   # Args:
   #   family: character string naming the model family
@@ -241,6 +246,11 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   }
   if (is_ordinal(out$family)) {
     out$threshold <- match.arg(threshold)
+  }
+  if (conv_cats_dpars(out$family)) {
+    if (!is.null(refcat)) {
+      out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+    }
   }
   out
 }
@@ -387,11 +397,11 @@ combine_family_info <- function(x, y, ...) {
   } else if (y == "ad") {
     x <- Reduce("intersect", x)
   } else if (y == "ybounds") {
-    x <- run(rbind, x)
+    x <- do_call(rbind, x)
     x <- c(max(x[, 1]), min(x[, 2]))
   } else if (y == "closed") {
     # closed only if no bounds are open
-    x <- run(rbind, x)
+    x <- do_call(rbind, x)
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)
@@ -516,6 +526,14 @@ Beta <- function(link = "logit", link_phi = "log") {
 
 #' @rdname brmsfamily
 #' @export
+dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet", link = link, slink = slink,
+              link_phi = link_phi, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
 von_mises <- function(link = "tan_half", link_kappa = "log") {
   slink <- substitute(link)
   .brmsfamily("von_mises", link = link, slink = slink,
@@ -611,9 +629,16 @@ zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
 
 #' @rdname brmsfamily
 #' @export
-categorical <- function(link = "logit") {
+categorical <- function(link = "logit", refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("categorical", link = link, slink = slink)
+  .brmsfamily("categorical", link = link, slink = slink, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
+multinomial <- function(link = "logit", refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("multinomial", link = link, slink = slink, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -764,9 +789,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   if (any(is_ordinal) && any(!is_ordinal)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
   }
-  is_categorical <- ulapply(family$mix, is_categorical)
-  if (any(is_categorical)) {
-    stop2("Categorical families are not yet allowed in mixture models.")
+  no_mixture <- ulapply(family$mix, no_mixture)
+  if (any(no_mixture)) {
+    stop2("Some of the families are not allowed in mixture models.")
   }
   for (fam in family$mix) {
     if (is.customfamily(fam) && "theta" %in% fam$dpars) {
@@ -1073,7 +1098,7 @@ dpar_family <- function(family, dpar, ...) {
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
   dp_class <- dpar_class(dpar)
-  if (!identical(dp_class, "mu")) {
+  if (dp_class != "mu" || conv_cats_dpars(family)) {
     link <- family[[paste0("link_", dp_class)]]
     family <- .dpar_family(dpar, link)
   }
@@ -1230,6 +1255,9 @@ summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
   links[names(links_pred)] <- links_pred
+  if (conv_cats_dpars(x)) {
+    links[grepl("^mu", names(links))] <- x$family$link
+  }
   resp <- if (mv) usc(combine_prefix(x))
   names(links) <- paste0(names(links), resp)
   paste0(names(links), " = ", links, collapse = "; ")
@@ -1277,6 +1305,14 @@ is_ordinal <- function(family) {
   "ordinal" %in% family_info(family, "specials")
 }
 
+is_multinomial <- function(family) {
+  "multinomial" %in% family_info(family, "specials")
+}
+
+is_dirichlet <- function(family) {
+  "dirichlet" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1292,6 +1328,21 @@ allow_cs <- function(family) {
   "cs" %in% family_info(family, "specials")
 }
 
+conv_cats_dpars <- function(family) {
+  # choose dpar names based on categories?
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+no_mixture <- function(family) {
+  # families not allowed in mixture models
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+has_multicol <- function(family) {
+  # indicate if the response should consist of multiple columns
+  is_multinomial(family) || is_dirichlet(family)
+}
+
 has_logscale <- function(family) {
   # indicate if the response is modeled on the log-scale
   # even if formally the link function is not 'log'
@@ -1305,9 +1356,9 @@ has_trials <- function(family) {
 }
 
 has_cat <- function(family) {
-  # indicate if family makes use of argument cat
-  is_categorical(family) || is_ordinal(family) &&
-    !"custom" %in% family_names(family)
+  # indicate if family has more than two response categories
+  is_categorical(family) || is_ordinal(family) || 
+    is_multinomial(family) || is_dirichlet(family)
 }
 
 has_ndt <- function(family) {

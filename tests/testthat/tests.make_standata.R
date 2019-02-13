@@ -91,7 +91,7 @@ test_that(paste("make_standata accepts correct response variables",
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
                              family = "exponential")$Y, as.array(seq(1,10,0.1)))
   dat <- data.frame(y1 = 1:10, y2 = 11:20, x = rep(0,10))
-  sdata <- make_standata(cbind(y1, y2) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1, y2) ~ x, data = dat)
   expect_equal(sdata$Y_y1, as.array(1:10))
   expect_equal(sdata$Y_y2, as.array(11:20))
 })
@@ -191,18 +191,18 @@ test_that("make_standata handles multivariate models", {
     tim = 10:1, w = 1:10
   )
   
-  sdata <- make_standata(cbind(y1, y2) | weights(w) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1, y2) | weights(w) ~ x, data = dat)
   expect_equal(sdata$Y_y1, as.array(dat$y1))
   expect_equal(sdata$Y_y2, as.array(dat$y2))
   expect_equal(sdata$weights_y1, as.array(1:10))
   
-  expect_error(make_standata(cbind(y1, y2, y2) ~ x, data = dat),
+  expect_error(make_standata(mvbind(y1, y2, y2) ~ x, data = dat),
                "Cannot use the same response variable twice")
   
-  sdata <- make_standata(cbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
   expect_equal(sdata$Y_y1y2, as.array(dat$y1 / dat$y2))
   
-  sdata <- make_standata(cbind(y1, y2) ~ x, dat,
+  sdata <- make_standata(mvbind(y1, y2) ~ x, dat,
                          autocor = cor_ar(~ tim | g))
   target1 <- c(seq(9, 1, -2), seq(10, 2, -2))
   expect_equal(sdata$Y_y1, as.array(target1))                 
@@ -255,7 +255,7 @@ test_that("make_standata allows to retrieve the initial data order", {
                           control = list(save_order = TRUE))
   expect_equal(dat$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   # multivariate model
-  sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = dat, 
+  sdata2 <- make_standata(mvbind(y1, y2) ~ 1, data = dat, 
                           autocor = cor_ma(~time|id),
                           control = list(save_order = TRUE))
   expect_equal(sdata2$Y_y1[attr(sdata2, "old_order")], as.array(dat$y1))
@@ -612,6 +612,11 @@ test_that("Cell-mean coding can be disabled", {
   expect_equal(sdata$X_disc, target)
   expect_equal(unname(sdata$Z_1_disc_1), as.array(rep(0:1, 5)))
   expect_true(!"Z_1_disc_2" %in% names(sdata))
+  
+  bform <- bf(y ~ 0 + g + (1 | y), cmc = FALSE)
+  sdata <- make_standata(bform, df)
+  expect_equal(sdata$X, target)
+  expect_equal(unname(sdata$Z_1_1), as.array(rep(1, 10)))
 })
 
 test_that("make_standata correctly includes offsets", {
@@ -791,3 +796,31 @@ test_that("reserved variables 'Intercept' is handled correctly", {
   expect_true(all(sdata$X[, "Intercept"] == 1))
 })
 
+test_that("data for multinomial and dirichlet models is correct", {
+  N <- 15
+  dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$t1 <- round(dat$y1 * rpois(N, 10))
+  dat$t2 <- round(dat$y2 * rpois(N, 10))
+  dat$t3 <- round(dat$y3 * rpois(N, 10))
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  dat$t <- with(dat, cbind(t1, t2, t3))
+  dat$size <- rowSums(dat$t)
+  
+  sdata <- make_standata(t | trials(size) ~ x, dat, multinomial())
+  expect_equal(sdata$trials, as.array(dat$size))
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$t))
+  
+  sdata <- make_standata(y ~ x, data = dat, family = dirichlet())
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$y))
+  
+  expect_error(
+    make_standata(t | trials(10) ~ x, data = dat, family = multinomial()),
+    "Number of trials does not match the number of events"
+  )
+  expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
+               "Response values in dirichlet models must sum to 1")
+})

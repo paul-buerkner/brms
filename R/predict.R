@@ -11,7 +11,7 @@ predict_internal.mvbrmsdraws <- function(draws, ...) {
   } else {
     out <- lapply(draws$resps, predict_internal, ...)
     along <- ifelse(length(out) > 1L, 3, 2)
-    out <- run(abind, c(out, along = along))
+    out <- do_call(abind, c(out, along = along))
   }
   out
 }
@@ -26,35 +26,35 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
-  predict_fun <- paste0("predict_", draws$f$fun)
+  predict_fun <- paste0("predict_", draws$family$fun)
   predict_fun <- get(predict_fun, asNamespace("brms"))
   N <- choose_N(draws)
   out <- lapply(seq_len(N), predict_fun, draws = draws, ...)
-  if (grepl("_mv$", draws$f$fun)) {
-    out <- run(abind, c(out, along = 3))
+  if (grepl("_mv$", draws$family$fun)) {
+    out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
     dimnames(out)[[3]] <- names(draws$resps)
+  } else if (has_multicol(draws$family)) {
+    out <- do_call(abind, c(out, along = 3))
+    out <- aperm(out, perm = c(1, 3, 2))
+    dimnames(out)[[3]] <- draws$data$cats
   } else {
-    out <- run(cbind, out) 
+    out <- do_call(cbind, out) 
   }
   colnames(out) <- NULL
-  # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models
-  pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
-  if (pct_invalid >= 0.01) {
-    warning2(
-      round(pct_invalid * 100), "% of all predicted values ", 
-      "were invalid. Increasing argument 'ntrys' may help."
+  if (use_int(draws$family)) {
+    out <- check_discrete_trunc_bounds(
+      out, lb = draws$data$lb, ub = draws$data$ub
     )
   }
   out <- reorder_obs(out, draws$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
   if (!is.null(transform)) {
-    out <- run(transform, list(out))
+    out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- draws$data$cats
   if (summary) {
-    if (is_ordinal(draws$f) || is_categorical(draws$f)) {
+    if (is_ordinal(draws$family) || is_categorical(draws$family)) {
       out <- posterior_table(out, levels = seq_len(draws$data$ncat))
     } else {
       out <- posterior_summary(out, probs = probs, robust = robust)
@@ -136,7 +136,7 @@ predict_gaussian_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_mv <- function(i, draws, ...) {
@@ -146,7 +146,7 @@ predict_student_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s], mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_cov <- function(i, draws, ...) {
@@ -156,7 +156,7 @@ predict_gaussian_cov <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_cov <- function(i, draws, ...) {
@@ -167,7 +167,7 @@ predict_student_cov <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_lagsar <- function(i, draws, ...) {
@@ -180,7 +180,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_lagsar <- function(i, draws, ...) {
@@ -194,7 +194,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_errorsar <- function(i, draws, ...) {
@@ -206,7 +206,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_errorsar <- function(i, draws, ...) {
@@ -219,7 +219,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_gaussian_fixed <- function(i, draws, ...) {
@@ -228,7 +228,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_student_fixed <- function(i, draws, ...) {
@@ -238,7 +238,7 @@ predict_student_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
   }
-  run(rbind, lapply(seq_len(draws$nsamples), .predict))
+  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
@@ -524,8 +524,28 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 
 predict_categorical <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
+}
+
+predict_multinomial <- function(i, draws, ...) {
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
+  p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
+  size <- draws$data$trials[i]
+  out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
+  do_call(rbind, out)
+}
+
+predict_dirichlet <- function(i, draws, ...) {
+  mu_dpars <- str_subset(names(draws$dpars), "^mu")
+  eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
+  phi <- get_dpar(draws, "phi", i = i)
+  cats <- seq_len(draws$data$ncat)
+  alpha <- dcategorical(cats, eta = eta) * phi
+  rdirichlet(draws$nsamples, alpha = alpha)
 }
 
 predict_cumulative <- function(i, draws, ...) {
@@ -550,22 +570,22 @@ predict_ordinal <- function(i, draws, family, ...) {
   eta <- (disc * get_dpar(draws, "mu", i = i))
   p <- pordinal(
     seq_len(ncat), eta = eta, ncat = ncat, 
-    family = family, link = draws$f$link
+    family = family, link = draws$family$link
   )
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
 predict_custom <- function(i, draws, ...) {
-  predict_fun <- draws$f$predict
+  predict_fun <- draws$family$predict
   if (!is.function(predict_fun)) {
-    predict_fun <- paste0("predict_", draws$f$name)
-    predict_fun <- get(predict_fun, draws$f$env)
+    predict_fun <- paste0("predict_", draws$family$name)
+    predict_fun <- get(predict_fun, draws$family$env)
   }
   predict_fun(i = i, draws = draws, ...)
 }
 
 predict_mixture <- function(i, draws, ...) {
-  families <- family_names(draws$f)
+  families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
   smix <- rng_mix(theta)
   out <- rep(NA, draws$nsamples)
@@ -595,17 +615,17 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     rdist <- paste0("r", dist)
-    out <- run(rdist, c(nrng, args))
+    out <- do_call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
     pdist <- paste0("p", dist)
     qdist <- paste0("q", dist)
-    plb <- run(pdist, c(list(lb), args))
-    pub <- run(pdist, c(list(ub), args))
+    plb <- do_call(pdist, c(list(lb), args))
+    pub <- do_call(pdist, c(list(ub), args))
     rng <- list(runif(nrng, min = plb, max = pub))
-    out <- run(qdist, c(rng, args))
+    out <- do_call(qdist, c(rng, args))
     # remove infinte values caused by numerical imprecision
     out[out %in% c(-Inf, Inf)] <- NA
   }
@@ -628,12 +648,12 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
   rdist <- get(paste0("r", dist), mode = "function")
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
-    run(rdist, c(nrng, args))
+    do_call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution via rejection sampling
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
-    rng <- matrix(run(rdist, c(nrng * ntrys, args)), ncol = ntrys)
+    rng <- matrix(do_call(rdist, c(nrng * ntrys, args)), ncol = ntrys)
     apply(rng, 1, extract_valid_sample, lb = lb, ub = ub)
   }
 }
@@ -656,30 +676,39 @@ extract_valid_sample <- function(rng, lb, ub) {
   #   ub: upper bound
   # Returns:
   #   a valid truncated sample or else the closest boundary
-  valid_rng <- match(TRUE, rng > lb & rng <= ub)
+  valid_rng <- match(TRUE, rng >= lb & rng <= ub)
   if (is.na(valid_rng)) {
     # no valid truncated value found
     # set sample to lb or ub
     # 1e-10 is only to identify the invalid draws later on
-    ifelse(max(rng) <= lb, lb + 1 - 1e-10, ub + 1e-10)
+    out <- ifelse(max(rng) < lb, lb - 1e-10, ub + 1e-10)
   } else {
-    rng[valid_rng]
+    out <- rng[valid_rng]
   }
+  out
 }
 
-get_pct_invalid <- function(x, lb = NULL, ub = NULL) {
-  # percentage of invalid predictions of truncated discrete models
+check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, 
+                                        thres = 0.01) {
+  # check for invalid predictions of truncated discrete models
   # Args:
   #   x: matrix of predicted values
   #   lb: optional lower truncation bound
   #   ub: optional upper truncation bound
-  if (!(is.null(lb) && is.null(ub))) {
-    if (is.null(lb)) lb <- -Inf
-    if (is.null(ub)) ub <- Inf
-    # ensures correct comparison with vector bounds
-    x <- c(t(x))
-    sum(x <= lb | x > ub, na.rm = TRUE) / length(x[!is.na(x)]) 
-  } else {
-    0
+  #   thres: threshold (in %) of invalid values at which to warn the user
+  if (is.null(lb) && is.null(ub)) {
+    return(x)
   }
+  if (is.null(lb)) lb <- -Inf
+  if (is.null(ub)) ub <- Inf
+  thres <- as_one_numeric(thres)
+  y <- as.vector(t(x))  # ensures correct comparison with vector bounds
+  pct_invalid <- mean(y < lb | y > ub, na.rm = TRUE)
+  if (pct_invalid >= thres) {
+    warning2(
+      round(pct_invalid * 100), "% of all predicted values ", 
+      "were invalid. Increasing argument 'ntrys' may help."
+    )
+  }
+  round(x)
 }

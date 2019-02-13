@@ -73,7 +73,7 @@ test_that("all S3 methods have reasonable ouputs", {
   fit1 <- add_criterion(fit1, "R2")
   R2 <- bayes_R2(fit1, summary = FALSE)
   expect_equal(dim(R2), c(nsamples(fit1), 1))
-  R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ])
+  R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ], re_formula = NA)
   expect_equal(dim(R2), c(1, 4))
   expect_error(bayes_R2(fit4), "'bayes_R2' is not defined for ordinal")
   R2 <- bayes_R2(fit6)
@@ -146,7 +146,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(log_lik(fit1), logLik(fit1))
   
   # marginal_effects
-  me <- marginal_effects(fit1)
+  me <- marginal_effects(fit1, resp = "count")
   expect_equal(nrow(me[[2]]), 100)
   meplot <- plot(me, points = TRUE, rug = TRUE, 
                  ask = FALSE, plot = FALSE)

@@ -64,18 +64,18 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       )
     }
     if (x$rescor) {
-      draws$f <- draws$resps[[1]]$f
-      draws$f$fun <- paste0(draws$f$family, "_mv")
+      draws$family <- draws$resps[[1]]$family
+      draws$family$fun <- paste0(draws$family$family, "_mv")
       rescor <- get_cornames(resp, type = "rescor", brackets = FALSE)
       draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
-      if (draws$f$family == "student") {
+      if (draws$family$family == "student") {
         # store in draws$dpars so that get_dpar can be called on nu
         draws$dpars$nu <- as.vector(get_samples(samples, "^nu$"))
       }
       draws$data$N <- draws$resps[[1]]$data$N
       draws$data$weights <- draws$resps[[1]]$data$weights
       Y <- lapply(draws$resps, function(x) x$data$Y)
-      draws$data$Y <- run(cbind, Y)
+      draws$data$Y <- do_call(cbind, Y)
     }
     draws <- structure(draws, class = "mvbrmsdraws")
   } else {
@@ -91,7 +91,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata$N
   resp <- usc(combine_prefix(x))
-  draws <- nlist(f = prepare_family(x), nsamples, nobs, resp = x$resp)
+  draws <- nlist(family = prepare_family(x), nsamples, nobs, resp = x$resp)
   draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)
@@ -124,7 +124,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
       )
     } else {
       # theta was not predicted
-      draws$dpars$theta <- run(cbind, draws$dpars[thetas])
+      draws$dpars$theta <- do_call(cbind, draws$dpars[thetas])
       draws$dpars[thetas] <- NULL
       if (nrow(draws$dpars$theta) == 1L) {
         dim <- c(nrow(samples), ncol(draws$dpars$theta))
@@ -144,7 +144,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 #' @export
 extract_draws.btnl <- function(x, samples, sdata, ...) {
   draws <- list(
-    f = x$family, nlform = x$formula[[2]],
+    family = x$family, nlform = x$formula[[2]],
     nsamples = nrow(samples), nobs = sdata$N,
     used_nlpars = x$used_nlpars
   )
@@ -166,7 +166,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   smooths_only <- as_one_logical(smooths_only)
   offset <- as_one_logical(offset)
   nsamples <- nrow(samples)
-  draws <- nlist(f = x$family, nsamples, nobs = sdata$N)
+  draws <- nlist(family = x$family, nsamples, nobs = sdata$N)
   class(draws) <- "bdrawsl"
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
@@ -237,9 +237,10 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   draws$bsp <- get_samples(samples, bsp_pars, exact = TRUE)
   # prepare draws specific to monotonic effects
   simo_coef <- get_simo_labels(spef)
+  Jmo <- sdata[[paste0("Jmo", p)]]
   draws$simo <- draws$Xmo <- named_list(simo_coef)
   for (i in seq_along(simo_coef)) {
-    J <- seq_len(sdata$Jmo[i])
+    J <- seq_len(Jmo[i])
     simo_par <- paste0("simo", p, "_", simo_coef[i], "[", J, "]")
     draws$simo[[i]] <- get_samples(samples, simo_par, exact = TRUE)
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
@@ -612,7 +613,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         new_rsamples[[i]] <- matrix(nrow = nrow(rsamples), ncol = 0)
       }
     }
-    new_rsamples <- run(cbind, new_rsamples)
+    new_rsamples <- do_call(cbind, new_rsamples)
     # we need row major instead of column major order
     sort_levels <- ulapply(seq_len(nlevels),
       function(l) seq(l, ncol(rsamples), nlevels)
@@ -641,7 +642,7 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
       Znames <- paste0(
         "Z_", sub_ranef_cs$id[take], usc(p), "_", sub_ranef_cs$cn[take]
       )
-      Z <- run(cbind, sdata[Znames])
+      Z <- do_call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       for (i in seq_len(sdata$ncat - 1)) {
         index <- paste0("\\[", i, "\\]$")
@@ -660,10 +661,10 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         ng <- length(sub_ranef_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)
         for (k in seq_len(ng)) {
-          Z[[k]] <- run(cbind, sdata[paste0(Znames, "_", k)])
+          Z[[k]] <- do_call(cbind, sdata[paste0(Znames, "_", k)])
         }
       } else {
-        Z <- run(cbind, sdata[Znames])
+        Z <- do_call(cbind, sdata[Znames])
       }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       take <- which(sub_ranef$type %in% c("", "mmc"))
@@ -758,7 +759,7 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]
   }
-  if (is_categorical(bterms) || is_ordinal(bterms)) {
+  if (has_cat(bterms)) {
     draws$cats <- extract_cat_names(bterms, data)
   }
   draws
@@ -769,18 +770,18 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   # Args:
   #   comp: the mixture component number
   #   sample_ids: see predict_mixture
-  stopifnot(is.brmsdraws(draws), is.mixfamily(draws$f))
+  stopifnot(is.brmsdraws(draws), is.mixfamily(draws$family))
   if (!is.null(sample_ids)) {
     nsamples <- length(sample_ids)
   } else {
     nsamples <- draws$nsamples
   }
   out <- list(
-    f = draws$f$mix[[comp]], nsamples = nsamples,
+    family = draws$family$mix[[comp]], nsamples = nsamples,
     nobs = draws$nobs, data = draws$data
   )
-  out$f$fun <- out$f$family
-  for (dp in valid_dpars(out$f)) {
+  out$family$fun <- out$family$family
+  for (dp in valid_dpars(out$family)) {
     out$dpars[[dp]] <- draws$dpars[[paste0(dp, comp)]]
     if (length(sample_ids) && length(out$dpars[[dp]]) > 1L) {
       out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
@@ -908,9 +909,9 @@ is.bdrawsnl <- function(x) {
 #'   analysis. If \code{"old_levels"}, directly sample new levels from the
 #'   existing levels.
 #' @param new_objects A named \code{list} of objects containing new data, which
-#'   cannot be passed via argument \code{newdata}. Currently, only required for
-#'   objects passed to \code{\link[brms:cor_sar]{cor_sar}} and
-#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#'   cannot be passed via argument \code{newdata}. Required for objects passed
+#'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
+#'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
 #' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
 #'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
 #'   to \code{FALSE} will not affect other correlation structures such as

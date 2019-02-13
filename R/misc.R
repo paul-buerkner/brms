@@ -105,8 +105,8 @@ match_rows <- function(x, y, ...) {
   # match rows in x with rows in y
   x <- as.data.frame(x)
   y <- as.data.frame(y)
-  x <- run("paste", c(x, sep = "\r"))
-  y <- run("paste", c(y, sep = "\r"))
+  x <- do_call("paste", c(x, sep = "\r"))
+  y <- do_call("paste", c(y, sep = "\r"))
   match(x, y, ...)
 }
 
@@ -126,7 +126,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   }
   for (name in names(ls)) {
     tmp <- lapply(x, "[[", name)
-    out <- out & run(fun, list(tmp, ls[[name]]))
+    out <- out & do_call(fun, list(tmp, ls[[name]]))
   }
   out
 }
@@ -147,7 +147,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
     stop("Argument 'ls' must be named.")
   }
   for (name in names(ls)) {
-    out <- out & run(fun, list(x[[name]], ls[[name]]))
+    out <- out & do_call(fun, list(x[[name]], ls[[name]]))
   }
   out
 }
@@ -155,21 +155,6 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
 subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   # subset x using arguments passed via ls and ...
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
-}
-
-select_indices <- function(x, i) {
-  # select indices and restart indexing at 1
-  # Args:
-  #   x: list of index vectors
-  #   i: vector of indices to select
-  if (!is.null(i)) {
-    x <- as.list(x)
-    si <- sort(i)
-    for (j in seq_along(x)) {
-      x[[j]] <- match(intersect(i, x[[j]]), si)
-    }
-  }
-  x
 }
 
 array2list <- function(x) {
@@ -236,7 +221,7 @@ first_not_null <- function(...) {
   dots <- list(...)
   out <- NULL
   i <- 1L
-  while(isNULL(out) && i <= length(dots)) {
+  while (isNULL(out) && i <= length(dots)) {
     if (!isNULL(dots[[i]])) {
       out <- dots[[i]]
     }
@@ -321,11 +306,6 @@ expand <- function(..., dots = list(), length = NULL) {
   as.data.frame(lapply(dots, rep, length.out = length))
 }
 
-rmNum <- function(x) {
-  # remove all numeric elements from an object
-  x[sapply(x, Negate(is.numeric))]
-}
-
 structure_not_null <- function(.Data, ...) {
   # structure but ignore NULL
   if (!is.null(.Data)) {
@@ -334,32 +314,21 @@ structure_not_null <- function(.Data, ...) {
   .Data
 }
 
-rmMatch <- function(x, ...) {
-  # remove all elements in x that also appear in ... 
-  # while keeping all attributes
-  att <- attributes(x)
-  keep <- which(!(x %in% c(...)))
-  x <- x[keep]
-  attributes(x) <- att
-  attr(x, "match.length") <- att$match.length[keep] 
-  x
-}
-
 rm_attr <- function(x, attr) {
   # remove certain attributes
   attributes(x)[attr] <- NULL
   x
 }
 
-subset_attr <- function(x, y) {
-  # take a subset of vector, list, etc. 
+subset_keep_attr <- function(x, y) {
+  # take a subset of vector, list, etc.
   # while keeping all attributes except for names
   att <- attributes(x)
   x <- x[y]
-  att[["names"]] <- names(x)
+  att$names <- names(x)
   attributes(x) <- att
   x
-} 
+}
 
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
@@ -389,10 +358,10 @@ all_vars <- function(expr, ...) {
   all.vars(expr, ...)
 }
 
-lc <- function(l, ...) {
-  # append ... to l
+lc <- function(x, ...) {
+  # append list(...) to x
   dots <- rmNULL(list(...), recursive = FALSE)
-  c(l, dots)
+  c(x, dots)
 }
 
 'c<-' <- function(x, value) {
@@ -408,11 +377,6 @@ collapse <- function(..., sep = "") {
   paste(..., sep = sep, collapse = "")
 }
 
-paste_colon <- function(..., collapse = NULL) {
-  # wrapper for paste with sep = ":"
-  paste(..., sep = ":", collapse = collapse)
-}
-
 collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
@@ -422,11 +386,51 @@ collapse_comma <- function(...) {
   paste0(x, value)
 }
 
-na.omit2 <- function (object, ...) {
+str_if <- function(cond, yes, no = "") {
+  # type-stable if clause for strings with default else output
+  cond <- as_one_logical(cond)
+  if (cond) as.character(yes) else as.character(no)
+}
+
+str_subset <- function(x, pattern, ...) {
+  # select elements which match a regex pattern
+  x[grepl(pattern, x, ...)]
+}
+
+glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(), 
+                 open = "{", close = "}", na = "NA") {
+  # similar to glue::glue but specialized for generating Stan code
+  dots <- list(...)
+  dots <- dots[lengths(dots) > 0L]
+  args <- list(
+    .x = NULL, .sep = sep, .envir = envir, .open = open, 
+    .close = close, .na = na, .transformer = zero_length_transformer,
+    .trim = FALSE
+  )
+  out <- do_call(glue::glue_data, c(dots, args))
+  if (!is.null(collapse)) {
+    collapse <- as_one_character(collapse)
+    out <- paste0(out, collapse = collapse)
+  }
+  out
+}
+
+zero_length_transformer <- function(text, envir) {
+  out <- glue::identity_transformer(text, envir)
+  if (!length(out)) {
+    out <- ""
+  }
+  out
+}
+
+cglue <- function(..., envir = parent.frame()) {
+  # collapse strings evaluated with glue
+  glue(..., envir = envir, collapse = "")
+}
+
+na.omit2 <- function(object, ...) {
   # like stats:::na.omit.data.frame but allows to ignore variables
-  # keeps NAs in variables with attribute keep_na = TRUE 
-  # Args:
-  #  ignore: names of variables for which NAs should be kept
+  # keeps NAs in variables with attribute keep_na = TRUE
   stopifnot(is.data.frame(object))
   omit <- logical(nrow(object))
   for (j in seq_along(object)) {
@@ -522,7 +526,7 @@ collapse_lists <- function(..., ls = list()) {
   #  a named list containg the collapsed strings
   ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
-  out <- run(mapply, 
+  out <- do_call(mapply, 
     c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE)
   )
   names(out) <- elements
@@ -562,14 +566,23 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 }
 
-run <- function(what, args, pkg = NULL) {
-  # like 'do.call' but avoids deparsing arguments
-  # Args:
-  #   what: function or function name
-  #   args: a list of arguments passed to 'what'
-  #   pkg: name of a package in which to look for 'what'
-  # Returns:
-  #   'what' evaluated with 'args'
+#' Execute a Function Call
+#'
+#' Execute a function call similar to \code{\link{do.call}}, but without
+#' deparsing function arguments.
+#' 
+#' @param what Either a function or a non-empty character string naming the
+#'   function to be called.
+#' @param args A list of arguments to the function call. The names attribute of
+#'   \code{args} gives the argument names.
+#' @param pkg Optional name of the package in which to search for the
+#'   function if \code{what} is a character string.
+#'
+#' @return The result of the (evaluated) function call.
+#' 
+#' @keywords internal
+#' @export
+do_call <- function(what, args, pkg = NULL) {
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {
@@ -730,7 +743,7 @@ get_arg <- function(x, ...) {
   dots <- list(...)
   i <- 1
   out <- NULL
-  while(i <= length(dots) && is.null(out)) {
+  while (i <= length(dots) && is.null(out)) {
     if (!is.null(dots[[i]][[x]])) {
       out <- dots[[i]][[x]]
     } else {
@@ -815,183 +828,6 @@ usc <- function(x, pos = c("prefix", "suffix")) {
     x <- ifelse(nzchar(x), paste0(x, "_"), "")
   }
   x
-}
-
-logit <- function(p) {
-  # logit link
-  log(p / (1 - p))
-}
-
-inv_logit <- function(x) { 
-  # inverse of logit link
-  1 / (1 + exp(-x))
-}
-
-cloglog <- function(x) {
-  # cloglog link
-  log(-log(1-x))
-}
-
-inv_cloglog <- function(x) {
-  # inverse of the cloglog link
-  1 - exp(-exp(x))
-}
-
-Phi <- function(x) {
-  pnorm(x)
-}
-
-incgamma <- function(x, a) {
-  # incomplete gamma funcion
-  pgamma(x, shape = a) * gamma(a)
-}
-
-square <- function(x) {
-  x^2
-}
-
-cbrt <- function(x) {
-  x^(1/3)
-}
-
-exp2 <- function(x) {
-  2^x
-}
-
-pow <- function(x, y) {
-  x^y
-}
-
-inv <- function(x) {
-  1/x
-}
-
-inv_sqrt <- function(x) {
-  1/sqrt(x)
-}
-
-inv_square <- function(x) {
-  1/x^2
-}
-
-hypot <- function(x, y) {
-  stopifnot(all(x >= 0))
-  stopifnot(all(y >= 0))
-  sqrt(x^2 + y^2)
-}
-
-log1m <- function(x) {
-  log(1 - x)
-}
-
-step <- function(x) {
-  ifelse(x > 0, 1, 0)
-}
-
-#' Logarithm with a minus one offset.
-#' 
-#' Computes \code{log(x - 1)}.
-#' 
-#' @param x A numeric or complex vector.
-#' @param base A positive or complex number: the base with respect to which
-#'   logarithms are computed. Defaults to \emph{e} = \code{exp(1)}.
-#'     
-#' @export
-logm1 <- function(x, base = exp(1)) {
-  log(x - 1, base = base)
-}
-
-#' Exponential function plus one.
-#' 
-#' Computes \code{exp(x) + 1}.
-#' 
-#' @param x A numeric or complex vector.
-#' 
-#' @export
-expp1 <- function(x) {
-  exp(x) + 1
-}
-
-#' Scaled logit-link
-#' 
-#' Computes \code{logit((x - lb) / (ub - lb))}
-#' 
-#' @param x A numeric or complex vector.
-#' @param lb Lower bound defaulting to \code{0}.
-#' @param ub Upper bound defaulting to \code{1}.
-#' 
-#' @return A numeric or complex vector.
-#' 
-#' @export
-logit_scaled <- function(x, lb = 0, ub = 1) {
-  logit((x - lb) / (ub - lb))
-}
-
-#' Scaled inverse logit-link
-#' 
-#' Computes \code{inv_logit(x) * (ub - lb) + lb}
-#' 
-#' @param x A numeric or complex vector.
-#' @param lb Lower bound defaulting to \code{0}.
-#' @param ub Upper bound defaulting to \code{1}.
-#' 
-#' @return A numeric or complex vector between \code{lb} and \code{ub}.
-#' 
-#' @export
-inv_logit_scaled <- function(x, lb = 0, ub = 1) {
-  inv_logit(x) * (ub - lb) + lb
-}
-
-multiply_log <- function(x, y) {
-  ifelse(x == y & x == 0, 0, x * log(y))
-}
-
-log1p_exp <- function(x) {
-  log(1 + exp(x))
-}
-
-log1m_exp <- function(x) {
-  ifelse(x < 0, log(1 - exp(x)), NaN)
-}
-
-log_diff_exp <- function(x, y) {
-  stopifnot(length(x) == length(y))
-  ifelse(x > y, log(exp(x) - exp(y)), NaN)
-}
-
-log_sum_exp <- function(x, y) {
-  max <- max(x, y)
-  max + log(exp(x - max) + exp(y - max))
-}
-
-log_mean_exp <- function(x) {
-  # just log_sum_exp(x) - log(length(x))
-  max_x <- max(x)
-  max_x + log(sum(exp(x - max_x))) - log(length(x))
-}
-
-log_inv_logit <- function(x) {
-  log(inv_logit(x))
-}
-
-log1m_inv_logit <- function(x) {
-  log(1 - inv_logit(x))
-}
-
-scale_unit <- function(x, lb = min(x), ub = max(x)) {
-  (x - lb) / (ub - lb)
-}
-
-fabs <- function(x) {
-  abs(x)
-}
-
-softmax <- function(x) {
-  if (!is.matrix(x)) {
-    x <- matrix(x, nrow = 1)
-  }
-  x <- exp(x) 
-  x / rowSums(x)
 }
 
 round_largest_remainder <- function(x) {

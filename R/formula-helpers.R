@@ -814,7 +814,7 @@ rhs <- function(x) {
   attri <- attributes(x)
   x <- as.formula(x)
   x <- if (length(x) == 3) x[-2] else x
-  run(structure, c(list(x), attri))
+  do_call(structure, c(list(x), attri))
 }
 
 lhs <- function(x) {
@@ -900,6 +900,12 @@ extract_cat_names <- function(x, data) {
   mr <- model.response(model.frame(respform, data))
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))
+  } else if (has_multicol(x)) {
+    mr <- as.matrix(mr)
+    out <- as.character(colnames(mr))
+    if (!length(out)) {
+      out <- as.character(seq_cols(mr))
+    }
   } else {
     out <- levels(factor(mr))
   }

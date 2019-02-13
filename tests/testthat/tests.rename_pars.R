@@ -12,7 +12,7 @@ test_that("rm_int_fe works as expected", {
   dat <- data.frame(y = 1:3,  y2 = 4:6, x = rnorm(3))
   code <- make_stancode(y ~ 1, data = dat)
   expect_equal(rm_int_fe("Intercept", code), character(0))
-  code <- make_stancode(cbind(y, y2) ~ x, data = dat)
+  code <- make_stancode(mvbind(y, y2) ~ x, data = dat)
   expect_equal(rm_int_fe(c("Intercept", "x"), code, px = list(resp = "y")), "x")
   code <- make_stancode(y ~ x, data = dat, family = sratio())
   expect_equal(rm_int_fe(c("Intercept", "x"), code), "x")

@@ -74,7 +74,19 @@
     type = "int", ybounds = c(-Inf, Inf), 
     closed = c(NA, NA),
     ad = c("weights"), 
-    specials = "categorical"
+    specials = c("categorical")
+  )
+}
+
+.family_multinomial <- function() {
+  list(
+    links = "logit", 
+    dpars = NULL,  # is determind based on the data
+    type = "int", ybounds = c(-Inf, Inf), 
+    closed = c(NA, NA),
+    ad = c("weights", "trials"), 
+    specials = c("multinomial"),
+    include = "fun_multinomial_logit.stan"
   )
 }
 
@@ -87,6 +99,18 @@
     dpars = c("mu", "phi"), type = "real",
     ybounds = c(0, 1), closed = c(FALSE, FALSE),
     ad = c("weights", "cens", "trunc", "mi")
+  )
+}
+
+.family_dirichlet <- function() {
+  list(
+    links = "logit", 
+    dpars = "phi",  # more dpars are determind based on the data
+    type = "real", ybounds = c(0, 1), 
+    closed = c(FALSE, FALSE),
+    ad = c("weights"), 
+    specials = c("dirichlet"),
+    include = "fun_dirichlet_logit.stan"
   )
 }
 

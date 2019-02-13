@@ -16,6 +16,7 @@
 \alias{exgaussian}
 \alias{wiener}
 \alias{Beta}
+\alias{dirichlet}
 \alias{von_mises}
 \alias{asym_laplace}
 \alias{hurdle_poisson}
@@ -28,6 +29,7 @@
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_binomial}
 \alias{categorical}
+\alias{multinomial}
 \alias{cumulative}
 \alias{sratio}
 \alias{cratio}
@@ -40,7 +42,8 @@ brmsfamily(family, link = NULL, link_sigma = "log",
   link_hu = "logit", link_zoi = "logit", link_coi = "logit",
   link_disc = "log", link_bs = "log", link_ndt = "log",
   link_bias = "logit", link_xi = "log1p", link_alpha = "identity",
-  link_quantile = "logit", threshold = c("flexible", "equidistant"))
+  link_quantile = "logit", threshold = c("flexible", "equidistant"),
+  refcat = NULL)
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -74,6 +77,8 @@ wiener(link = "identity", link_bs = "log", link_ndt = "log",
 
 Beta(link = "logit", link_phi = "log")
 
+dirichlet(link = "logit", link_phi = "log", refcat = NULL)
+
 von_mises(link = "tan_half", link_kappa = "log")
 
 asym_laplace(link = "identity", link_sigma = "log",
@@ -102,7 +107,9 @@ zero_inflated_negbinomial(link = "log", link_shape = "log",
 
 zero_inflated_binomial(link = "logit", link_zi = "logit")
 
-categorical(link = "logit")
+categorical(link = "logit", refcat = NULL)
+
+multinomial(link = "logit", refcat = NULL)
 
 cumulative(link = "logit", link_disc = "log",
   threshold = c("flexible", "equidistant"))
@@ -117,26 +124,25 @@ acat(link = "logit", link_disc = "log", threshold = c("flexible",
   "equidistant"))
 }
 \arguments{
-\item{family}{A character string naming the distribution
-of the response variable be used in the model.
-Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{binomial}, 
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
-\code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
-\code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
-\code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-\code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
-\code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-\code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
+\item{family}{A character string naming the distribution of the response
+variable be used in the model. Currently, the following families are
+supported: \code{gaussian}, \code{student}, \code{binomial},
+\code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
+\code{Gamma}, \code{skew_normal}, \code{lognormal},
+\code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+\code{inverse.gaussian}, \code{exponential}, \code{weibull},
+\code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
+\code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+\code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+\code{hurdle_gamma}, \code{hurdle_lognormal},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
-and \code{zero_one_inflated_beta}.}
+\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
+\code{zero_one_inflated_beta}.}
 
-\item{link}{A specification for the model link function. 
-This can be a name/expression or character string. 
-See the 'Details' section for more information on link
-functions supported by each family.}
+\item{link}{A specification for the model link function. This can be a
+name/expression or character string. See the 'Details' section for more
+information on link functions supported by each family.}
 
 \item{link_sigma}{Link of auxiliary parameter \code{sigma} if being predicted.}
 
@@ -177,6 +183,12 @@ of thresholds (i.e. intercepts) used in an ordinal model.
 \code{"flexible"} provides the standard unstructured thresholds and 
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
+
+\item{refcat}{Optional name of the reference response category used in
+categorical, multinomial, and dirichlet models. If \code{NULL} (the
+default), the first category is used as the reference. If \code{NA}, all
+categories will be predicted, which requires strong priors or carefully
+specified predictor terms in order to lead to an identified model.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 

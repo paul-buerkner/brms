@@ -40,11 +40,11 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     }
     tranef <- get_dist_groups(ranef, "student")
     if (!save_all_pars && has_rows(tranef)) {
-      c(out) <- paste0("udf_", tranef$ggn)
+      c(out) <- paste0(c("udf_", "dfm_"), tranef$ggn)
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)
-  run(structure, c(list(unique(out)), att))
+  do_call(structure, c(list(unique(out)), att))
 }
 
 exclude_pars_internal <- function(x, ...) {

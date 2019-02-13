@@ -185,7 +185,7 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
   }
-  x <- run(apply, c(args, dots))
+  x <- do_call(apply, c(args, dots))
   if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
   } else if (coef == "quantile") {
@@ -230,7 +230,7 @@ posterior_table <- function(x, levels = NULL) {
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
-  out <- run(rbind, out)
+  out <- do_call(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
@@ -445,10 +445,10 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
     if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = draws$f)
+      ilink <- apply_dpar_ilink(dpar, family = draws$family)
     }
     if (ilink) {
-      out <- ilink(out, x$f$link)
+      out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
       out <- extract_col(out, 1)
@@ -458,7 +458,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   } else {
     out <- x
   }
-  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
+  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$family$fun))) {
     # 'se' will be incorporated directly into 'sigma'
     if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
       out <- sqrt(get_se(draws, i = i)^2 + out^2)
@@ -506,11 +506,11 @@ get_theta <- function(draws, i = NULL) {
     theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    mix_family <- draws$f
+    mix_family <- draws$family
     families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      draws$f <- mix_family$mix[[j]]
+      draws$family <- mix_family$mix[[j]]
       theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
     theta <- abind(theta, along = 3)
@@ -530,11 +530,11 @@ get_Mu <- function(draws, i = NULL) {
   if (is.null(Mu)) {
     Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
-      Mu <- run(cbind, Mu)
+      Mu <- do_call(cbind, Mu)
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- run(abind, c(Mu, along = 3))
+      Mu <- do_call(abind, c(Mu, along = 3))
     }
   } else {
     stopifnot(!is.null(i))
@@ -552,7 +552,7 @@ get_Sigma <- function(draws, i = NULL) {
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- run(cbind, sigma)
+      sigma <- do_call(cbind, sigma)
       Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
@@ -607,6 +607,27 @@ apply_dpar_ilink <- function(dpar, family) {
     dpar <- dpar_class(dpar) 
   }
   !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
+}
+
+insert_refcat  <- function(eta, family) {
+  # insert zeros for the predictor term of the reference category
+  # in categorical-like models using the softmax response function
+  stopifnot(is.matrix(eta), is.brmsfamily(family))
+  if (!conv_cats_dpars(family) || isNA(family$refcat)) {
+    return(eta)
+  }
+  # need to add zeros for the reference category
+  zeros <- as.matrix(rep(0, nrow(eta)))
+  if (is.null(family$refcat) || is.null(family$cats)) {
+    # no information on the categories provided:
+    # use the first category as the reference
+    return(cbind(zeros, eta))
+  }
+  colnames(zeros) <- paste0("mu", family$refcat)
+  iref <- match(family$refcat, family$cats)
+  before <- seq_len(iref - 1)
+  after <- setdiff(seq_cols(eta), before)
+  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
 }
 
 choose_N <- function(draws) {
@@ -714,7 +735,7 @@ validate_weights <- function(weights, models, control = list()) {
   if (!is.numeric(weights)) {
     weight_args <- c(unname(models), control)
     weight_args$weights <- weights
-    weights <- run(model_weights, weight_args)
+    weights <- do_call(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -810,7 +831,7 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      run(paste0("r", dist), list(x$fit@sim$iter, ...))
+      do_call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

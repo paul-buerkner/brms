@@ -7,8 +7,8 @@ test_that("log_lik for location shift models works as expected", {
     mu = matrix(rnorm(ns * 2), ncol = 2),
     sigma = rchisq(ns, 3), nu = rgamma(ns, 4)
   )
-  draws$f <- gaussian()
-  draws$f$fun <- "gaussian"
+  draws$family <- gaussian()
+  draws$family$fun <- "gaussian"
   draws$data <- list(Y = rnorm(ns))
   
   ll_gaussian <- dnorm(
@@ -121,10 +121,10 @@ test_that("log_lik for ARMA covariance models runs without errors", {
   )
   draws$data <- list(Y = rnorm(nobs), se = rgamma(ns, 10))
 
-  draws$f$fun <- "gaussian_cov"
+  draws$family$fun <- "gaussian_cov"
   ll <- brms:::log_lik_gaussian_cov(1, draws = draws)
   expect_equal(dim(ll), c(ns, 4))
-  # draws$f$fun <- "student_cov"
+  # draws$family$fun <- "student_cov"
   # ll <- brms:::log_lik_student_cov(1, draws = draws)
   # expect_equal(length(ll), ns)
 })
@@ -254,7 +254,7 @@ test_that("log_lik for count and survival models works correctly", {
   expect_equal(ll, c(ll_weibull))
   
   # keep test at the end
-  draws$f$link <- "identity"
+  draws$family$link <- "identity"
   draws$data$Y[i] <- 0
   ll_gen_extreme_value <- SW(dgen_extreme_value(
     x = draws$data$Y[i], mu = draws$dpars$mu[, i],
@@ -364,7 +364,7 @@ test_that("log_lik for ordinal models runs without erros", {
     disc = rexp(ns)
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$family$link <- "logit"
   
   ll <- sapply(1:nobs, brms:::log_lik_cumulative, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
@@ -378,12 +378,12 @@ test_that("log_lik for ordinal models runs without erros", {
   ll <- sapply(1:nobs, brms:::log_lik_acat, data = data, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
   
-  draws$f$link <- "probit"
+  draws$family$link <- "probit"
   ll <- sapply(1:nobs, brms:::log_lik_acat, data = data, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
 
-test_that("log_lik for categorical models runs without erros", {
+test_that("log_lik for categorical and related models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -393,8 +393,23 @@ test_that("log_lik for categorical models runs without erros", {
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$family <- categorical()
   ll <- sapply(1:nobs, brms:::log_lik_categorical, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
+  
+  draws$data$Y <- matrix(
+    sample(1:20, nobs * ncat, TRUE), 
+    nrow = nobs, ncol = ncat
+  )
+  draws$data$trials <- sample(1:20, nobs)
+  draws$family <- multinomial()
+  ll <- sapply(1:nobs, brms:::log_lik_multinomial, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
+  
+  draws$data$Y <- draws$data$Y / rowSums(draws$data$Y)
+  draws$dpars$phi <- rexp(ns, 10)
+  draws$family <- dirichlet()
+  ll <- sapply(1:nobs, brms:::log_lik_dirichlet, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
 
@@ -439,7 +454,7 @@ test_that("log_lik_custom runs without errors", {
     Y = sample(0:1, nobs, replace = TRUE),
     trials = rep(1, nobs)
   )
-  draws$f <- custom_family(
+  draws$family <- custom_family(
     "beta_binomial2", dpars = c("mu", "tau"),
     links = c("logit", "log"), lb = c(NA, 0),
     type = "int", vars = "trials[n]"

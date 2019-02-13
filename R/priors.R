@@ -343,7 +343,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
   out <- vector("list", nrow(input))
   for (i in seq_along(out)) {
-    out[[i]] <- run(.set_prior, input[i, ])
+    out[[i]] <- do_call(.set_prior, input[i, ])
   }
   Reduce("+", out)
 }
@@ -389,7 +389,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
   }
-  run(brmsprior, 
+  do_call(brmsprior, 
     nlist(prior, class, coef, group, resp, dpar, nlpar, bound)
   )
 }
@@ -402,7 +402,7 @@ prior <- function(prior, ...) {
   seval <- rmNULL(call[prior_seval_args()])
   call[prior_seval_args()] <- NULL
   call <- lapply(call, deparse_no_string)
-  run(set_prior, c(call, seval))
+  do_call(set_prior, c(call, seval))
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to specify 
@@ -422,7 +422,7 @@ prior_ <- function(prior, ...) {
     }
   }
   call <- lapply(call, as_string)
-  run(set_prior, c(call, seval))
+  do_call(set_prior, c(call, seval))
 }
 
 prior_seval_args <- function() {
@@ -577,7 +577,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
     prior <- prior + nlp_prior
   }
   # global population-level priors for categorical models
-  if (is_categorical(x$family)) {
+  if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
@@ -1269,7 +1269,7 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
     )
   }
   # copy over the global population-level prior in categorical models
-  if (is_categorical(x$family)) {
+  if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       gi <- which(find_rows(
         prior, class = cl, coef = "", dpar = "", resp = x$resp
@@ -1293,7 +1293,7 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
     theta_prior <- prior$prior[take]
     if (isTRUE(nzchar(theta_prior))) {
       # hard code prior concentration
-      theta_prior <- paste0(eval2(theta_prior), collapse = ", ")
+      theta_prior <- paste0(eval_dirichlet(theta_prior), collapse = ", ")
       prior$prior[take] <- paste0("dirichlet(c(", theta_prior, "))")
     }
   }
@@ -1336,7 +1336,7 @@ check_prior_special.btl <- function(x, prior, data,
     if (isTRUE(nzchar(simo_prior))) {
       # hard code prior concentration 
       # in order not to depend on external objects
-      simo_prior <- paste0(eval2(simo_prior), collapse = ", ")
+      simo_prior <- paste0(eval_dirichlet(simo_prior), collapse = ", ")
       prior$prior[take] <- paste0("dirichlet(c(", simo_prior, "))")
     }
   }
@@ -1415,16 +1415,18 @@ check_sample_prior <- function(sample_prior) {
 
 get_bound <- function(prior, class = "b", coef = "", 
                       group = "", px = list()) {
-  # extract the boundaries of a parameter described by class etc.
+  # extract prior boundaries of a parameter
   # Args:
   #   prior: object of class brmsprior
-  #   class, coef, group, nlpar: strings of length 1
-  stopifnot(length(class) == 1L)
+  #   class, coef, group, px: passed to subset2
+  stopifnot(is.brmsprior(prior))
+  class <- as_one_character(class)
   if (!length(coef)) coef <- ""
   if (!length(group)) group <- ""
   bound <- subset2(prior, ls = c(nlist(class, coef, group), px))$bound
-  if (length(bound) > 1L) {
-    stop("extracted more than one boundary at once")
+  if (!length(bound)) bound <- ""
+  if (length(bound) != 1L) {
+    stop("Extracting parameter boundaries failed. Please report a bug.")
   }
   bound
 }
@@ -1590,7 +1592,7 @@ print.brmsprior <- function(x, show_df, ...) {
 c.brmsprior <- function(x, ...) {
   # combine multiple brmsprior objects into one brmsprior
   if (all(sapply(list(...), is.brmsprior))) {
-    out <- run(rbind, list(x, ...)) 
+    out <- do_call(rbind, list(x, ...)) 
   } else {
     out <- c(as.data.frame(x), ...)
   }
@@ -1602,13 +1604,17 @@ c.brmsprior <- function(x, ...) {
   c(e1, e2)
 }
 
-dirichlet <- function(...) {
-  # dirichlet prior of simplex parameters
-  out <- as.numeric(c(...))
-  if (anyNA(out) || any(out <= 0)) {
-    stop2("The dirichlet prior expects positive values.")
+eval_dirichlet <- function(prior) {
+  # evaluate the dirichlet prior of simplex parameters
+  # avoid name clashing with the dirichlet family
+  dirichlet <- function(...) {
+    out <- as.numeric(c(...))
+    if (anyNA(out) || any(out <= 0)) {
+      stop2("The dirichlet prior expects positive values.")
+    }
+    out
   }
-  out
+  eval2(prior)
 }
 
 #' Set up a horseshoe prior in \pkg{brms}

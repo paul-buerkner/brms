@@ -1,3 +1,43 @@
+# brms 2.7.0++
+
+### New Features
+
+* Fit multinomial models via family `multinomial`. (#463)
+* Fit Dirichlet models via family `dirichlet`. (#463)
+* Fit conditional logistic models using the 
+`categorical` and `multinomial` families. (#560)
+* Choose the reference category of `categorical` and related 
+families via argument `refcat` of the corresponding family functions.
+
+### Other changes
+
+* Use the **glue** package in the Stan code generation. (#549)
+* Introduce `mvbind` to eventually replace `cbind` 
+in the formula syntax of multivariate models.
+* Validate several sampling-related arguments in 
+`brm` before compiling the Stan model. (#576)
+* Show evaluated vignettes on CRAN again. (#591)
+* Export function `get_y` which is used to extract response
+values from `brmsfit` objects.
+
+### Bug fixes
+
+* Fix an error when trying to change argument `re_formula` 
+in `bayes_R2` thanks to the GitHub user emieldl. (#592)
+* Fix occasional problems when running chains in parallel
+via the **future** package thanks to Jared Knowles. (#579)
+* Ensure correct ordering of response categories in ordinal
+models thanks to Jonas Kristoffer Lindelov. (#580)
+* Ignore argument `resp` of `marginal_effects` in 
+univariate models thanks to Vassilis Kehayas. (#589)
+* Correctly disable cell-mean coding in varying effects.
+* Allow to fix parameter `ndt` in drift diffusion models.
+* Fix Stan code for t-distributed varying effects 
+thanks to Ozgur Asar.
+* Fix an error in the post-processing of monotonic effects
+occuring for multivariate models thanks to James Rae. (#598)
+
+
 # brms 2.7.0
 
 ### New features

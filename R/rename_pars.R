@@ -540,8 +540,9 @@ reorder_pars <- function(x) {
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[new_order]
   chains <- length(x$fit@sim$samples)
   for (i in seq_len(chains)) {
-    # subset_attr ensures that attributes are not removed
-    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], new_order)
+    # attributes of samples must be kept
+    x$fit@sim$samples[[i]] <- 
+      subset_keep_attr(x$fit@sim$samples[[i]], new_order)
   }
   x
 }

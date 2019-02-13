@@ -1,3 +1,5 @@
+context("Tests for predict helper functions")
+
 test_that("predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
@@ -82,11 +84,11 @@ test_that("predict for ARMA covariance models runs without errors", {
   )
   draws$data <- list(se = rgamma(ns, 10))
   
-  draws$f$fun <- "gaussian_cov"
+  draws$family$fun <- "gaussian_cov"
   pred <- brms:::predict_gaussian_cov(1, draws = draws)
   expect_equal(length(pred), ns * 4)
   
-  draws$f$fun <- "student_cov"
+  draws$family$fun <- "student_cov"
   pred <- brms:::predict_student_cov(2, draws = draws)
   expect_equal(length(pred), ns * 7)
 })
@@ -170,7 +172,7 @@ test_that("predict for count and survival models runs without errors", {
   pred <- brms:::predict_gen_extreme_value(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  draws$f$link <- "log"
+  draws$family$link <- "log"
   pred <- brms:::predict_weibull(i, draws = draws)
   expect_equal(length(pred), ns)
 })
@@ -255,7 +257,7 @@ test_that("predict for ordinal models runs without erros", {
     disc = rexp(ns)
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$family$link <- "logit"
   
   pred <- sapply(1:nobs, brms:::predict_cumulative, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
@@ -269,12 +271,12 @@ test_that("predict for ordinal models runs without erros", {
   pred <- sapply(1:nobs, brms:::predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  draws$f$link <- "probit"
+  draws$family$link <- "probit"
   pred <- sapply(1:nobs, brms:::predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })
 
-test_that("loglik for categorical models runs without erros", {
+test_that("predict for categorical and related models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 3
@@ -284,9 +286,20 @@ test_that("loglik for categorical models runs without erros", {
     mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
-  draws$f$link <- "logit"
+  draws$family <- categorical()
   pred <- sapply(1:nobs, brms:::predict_categorical, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
+  
+  draws$data$trials <- sample(1:20, nobs)
+  draws$family <- multinomial()
+  pred <- brms:::predict_multinomial(i = sample(1:nobs, 1), draws = draws)
+  expect_equal(dim(pred), c(ns, ncat))
+  
+  draws$dpars$phi <- rexp(ns, 1)
+  draws$family <- dirichlet()
+  pred <- brms:::predict_dirichlet(i = sample(1:nobs, 1), draws = draws)
+  expect_equal(dim(pred), c(ns, ncat))
+  expect_equal(rowSums(pred), rep(1, nrow(pred)))
 })
 
 test_that("truncated predict run without errors", {
@@ -335,7 +348,7 @@ test_that("predict_custom runs without errors", {
     mu = matrix(rbeta(ns * nobs * 2, 1, 1), ncol = nobs * 2)
   )
   draws$data <- list(trials = rep(1, nobs))
-  draws$f <- custom_family(
+  draws$family <- custom_family(
     "beta_binomial2", dpars = c("mu", "tau"),
     links = c("logit", "log"), lb = c(NA, 0),
     type = "int", vars = "trials[n]"

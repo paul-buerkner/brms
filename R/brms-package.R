@@ -65,8 +65,9 @@
 #' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
 #' \code{doi:10.18637/jss.v080.i01}
 #' 
-#' Paul-Christian Buerkner (in press). Advanced Bayesian Multilevel Modeling 
-#' with the R Package brms. \emph{The R Journal}.
+#' Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
+#' with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+#' \code{doi:10.32614/RJ-2018-017}
 #' 
 #' The Stan Development Team. \emph{Stan Modeling Language User's Guide and
 #' Reference Manual}. \url{http://mc-stan.org/users/documentation}.

@@ -156,13 +156,13 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
       internal = TRUE, check_response = FALSE
     )
     draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
-    draws <- run(extract_draws, draws_args)
+    draws <- do_call(extract_draws, draws_args)
     J <- which(smef$termnum == i)
     scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])
     draws$sm$fe$Xs <- draws$sm$fe$Xs[, scs, drop = FALSE]
     draws$sm$fe$bs <- draws$sm$fe$bs[, scs, drop = FALSE]
     draws$sm$re <- draws$sm$re[J]
-    draws$f <- brmsfamily("gaussian")
+    draws$family <- brmsfamily("gaussian")
     eta <- predictor(draws, i = NULL)
     effects <- na.omit(sub_smef$covars[[1]][1:2])
     marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)

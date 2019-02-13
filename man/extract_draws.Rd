@@ -72,9 +72,9 @@ computation of smooth terms will be extracted.}
 predictions. Defaults to \code{TRUE}.}
 
 \item{new_objects}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Currently, only required for
-objects passed to \code{\link[brms:cor_sar]{cor_sar}} and
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
+cannot be passed via argument \code{newdata}. Required for objects passed
+via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
+\code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.}
 
 \item{...}{Further arguments passed to \code{\link{validate_newdata}}.}
 }

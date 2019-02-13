@@ -88,8 +88,9 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
         rhs_needed <- TRUE
       }
     }
-  } else if (is_categorical(x$family)) {
-    for (dp in x$family$dpars) {
+  } else if (conv_cats_dpars(x$family)) {
+    mu_dpars <- str_subset(x$family$dpars, "^mu")
+    for (dp in mu_dpars) {
       if (!is.formula(x$pforms[[dp]])) {
         x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
         attributes(x$pforms[[dp]]) <- attributes(formula)
@@ -127,7 +128,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       }
       y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
     } else {
-      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]], family = family)
+      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]])
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
@@ -141,7 +142,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
       if (get_nl(nlpar_forms[[nlp]])) {
         y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
       } else {
-        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]], family = family)
+        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
       }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$resp <- resp
@@ -243,18 +244,17 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out
 }
 
-parse_lf <- function(formula, family = NULL) {
+parse_lf <- function(formula) {
   # parse linear formulas
   # Args:
   #   formula: an ordinary R formula
-  #   family: the model family
   # Returns:
   #   object of class 'btl'
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
   types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
   for (t in types) {
-    tmp <- run(paste0("parse_", t), list(formula))
+    tmp <- do_call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
       y[[t]] <- tmp 
     }
@@ -286,7 +286,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   all_vars <- all.vars(formula)
   y$used_nlpars <- intersect(all_vars, nlpars)
   covars <- setdiff(all_vars, nlpars)
-  y$covars <- structure(str2formula(covars), cmc = FALSE)
+  y$covars <- structure(str2formula(covars), int = FALSE)
   y$allvars <- allvars_formula(covars)
   environment(y$allvars) <- environment(formula)
   y$loop <- loop
@@ -348,7 +348,10 @@ parse_fe <- function(formula) {
   out <- setdiff(all_terms, c(sp_terms, re_terms))
   out <- paste(c(int_term, out), collapse = "+")
   out <- str2formula(out)
-  if (has_rsv_intercept(out) || no_cmc(formula)) {
+  if (has_rsv_intercept(out)) {
+    attr(out, "int") <- FALSE
+  }
+  if (no_cmc(formula)) {
     attr(out, "cmc") <- FALSE
   }
   out
@@ -376,7 +379,7 @@ parse_re <- function(formula) {
     out[[i]]$form <- list(formula(paste("~", re_parts$lhs[i])))
   }
   if (length(out)) {
-    out <- run(rbind, out)
+    out <- do_call(rbind, out)
     out <- out[order(out$group), ]
     if (no_cmc(formula)) {
       # disable cell-mean coding in all RE terms
@@ -402,7 +405,7 @@ parse_cs <- function(formula) {
     out <- str2formula(out)
     # do not test whether variables were supplied to 'cs'
     # to allow category specific group-level intercepts
-    attr(out, "cmc") <- FALSE
+    attr(out, "int") <- FALSE
   }
   out
 }
@@ -416,7 +419,7 @@ parse_sp <- function(formula) {
     uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
     uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
     out <- str2formula(out)
-    attr(out, "cmc") <- FALSE
+    attr(out, "int") <- FALSE
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
     attr(out, "uni_mi") <- uni_mi
@@ -478,14 +481,14 @@ parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (length(out)) {
     out <- str2formula(out)
-    attr(out, "cmc") <- FALSE
+    attr(out, "int") <- FALSE
   }
   out
 }
 
 parse_resp <- function(formula, check_names = TRUE) {
   # extract response variable names
-  # assumes multiple response variables to be combined via cbind
+  # assumes multiple response variables to be combined via mvbind
   formula <- lhs(as.formula(formula))
   if (is.null(formula)) {
     return(NULL)
@@ -496,8 +499,14 @@ parse_resp <- function(formula, check_names = TRUE) {
     out <- deparse_no_string(expr)
   } else {
     str_fun <- deparse_no_string(expr[[1]]) 
+    use_mvbind <- identical(str_fun, "mvbind")
     use_cbind <- identical(str_fun, "cbind")
-    if (use_cbind) {
+    if (use_mvbind) {
+      out <- ulapply(expr[-1], deparse_no_string)
+    } else if (use_cbind) {
+      # deprecated as of brms 2.7.2
+      warning2("Using 'cbind' for multivariate models is ", 
+               "deprecated. Please use 'mvbind' instead.")
       out <- ulapply(expr[-1], deparse_no_string)
     } else {
       out <- deparse_no_string(expr) 
@@ -660,7 +669,7 @@ combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
     prefix$dpar <- "nlp"
   }
   prefix <- lapply(prefix, usc)
-  sub("^_", "", run(paste0, prefix))
+  sub("^_", "", do_call(paste0, prefix))
 }
 
 check_fdpars <- function(x) {
@@ -711,6 +720,11 @@ plus_rhs <- function(x) {
 
 is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))
+}
+
+no_int <- function(x) {
+  # indicates if the intercept should be removed
+  isFALSE(attr(x, "int", exact = TRUE))
 }
 
 no_cmc <- function(x) {
@@ -813,7 +827,7 @@ tidy_smef <- function(x, data) {
     tmp[[i]] <- out[i, , drop = FALSE]
     tmp[[i]]$termnum <- i
     if (nby[i] > 0L) {
-      tmp[[i]] <- run(rbind, repl(tmp[[i]], nby[i]))
+      tmp[[i]] <- do_call(rbind, repl(tmp[[i]], nby[i]))
       tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
       tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
       str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
@@ -822,7 +836,7 @@ tidy_smef <- function(x, data) {
       tmp[[i]]$byterm <- tmp[[i]]$term
     }
   }
-  out <- run(rbind, tmp)
+  out <- do_call(rbind, tmp)
   out$knots <- sdata[grepl("^knots_", names(sdata))]
   out$nbases <- lengths(out$knots)
   attr(out, "Xs_names") <- colnames(sdata$Xs)
@@ -900,6 +914,7 @@ validate_terms <- function(x) {
   #   x: any R object; if not a formula or terms, NULL is returned
   # Returns:
   #   a (possibly amended) terms object or NULL
+  no_int <- no_int(x)
   no_cmc <- no_cmc(x)
   if (is.formula(x) && !inherits(x, "terms")) {
     x <- terms(x)
@@ -907,10 +922,10 @@ validate_terms <- function(x) {
   if (!inherits(x, "terms")) {
     return(NULL)
   }
-  if (no_cmc) {
+  if (no_int || !has_intercept(x) && no_cmc) {
     # allows to remove the intercept without causing cell mean coding
     attr(x, "intercept") <- 1
-    attr(x, "rm_intercept") <- TRUE
+    attr(x, "int") <- FALSE
   }
   x
 }

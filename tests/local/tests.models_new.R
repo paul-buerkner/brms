@@ -775,3 +775,43 @@ test_that("student-t-distributed group-level effects work correctly", {
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
 })
+
+test_that("multinomial models work correctly", {
+  set.seed(1245)
+  N <- 100
+  dat <- data.frame(
+    y1 = rbinom(N, 10, 0.1), y2 = rbinom(N, 10, 0.4), 
+    y3 = rbinom(N, 10, 0.7), x = rnorm(N)
+  )
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  fit <- brm(y | trials(size) ~ x, data = dat, family = multinomial())
+  print(summary(fit))
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], 550, 600)
+  me <- marginal_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+
+test_that("dirichlet models work correctly", {
+  set.seed(1246)
+  N <- 100
+  dat <- as.data.frame(rdirichlet(N, c(10, 5, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  fit <- brm(y ~ x, data = dat, family = dirichlet())
+  print(summary(fit))
+  expect_output(print(fit), "muy2 = logit")
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], -530, -500)
+  me <- marginal_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+

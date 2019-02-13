@@ -46,7 +46,7 @@ compute_loos <- function(
       args$x <- models[[i]]
       args$model_name <- names(models)[i]
       args$use_stored <- use_stored[i]
-      out$loos[[i]] <- run(compute_loo, args) 
+      out$loos[[i]] <- do_call(compute_loo, args) 
     }
     compare <- as_one_logical(compare)
     if (compare) {
@@ -59,7 +59,7 @@ compute_loos <- function(
     args$x <- models[[1]]
     args$model_name <- names(models)
     args$use_stored <- use_stored
-    out <- run(compute_loo, args) 
+    out <- do_call(compute_loo, args) 
   }
   out
 }
@@ -91,13 +91,13 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
     # compute the criterion
     if (criterion == "kfold") {
       kfold_args <- nlist(x, newdata, ...)
-      out <- run(kfold_internal, kfold_args)
+      out <- do_call(kfold_internal, kfold_args)
     } else {
       contains_samples(x)
       pointwise <- as_one_logical(pointwise)
       loo_args <- list(...)
       ll_args <- nlist(object = x, newdata, pointwise, ...)
-      loo_args$x <- run(log_lik, ll_args)
+      loo_args$x <- do_call(log_lik, ll_args)
       if (pointwise) {
         loo_args$draws <- attr(loo_args$x, "draws")
         loo_args$data <- attr(loo_args$x, "data")
@@ -109,7 +109,7 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         loo_args$log_ratios <- -loo_args$x
         loo_args$x <- NULL
       }
-      out <- SW(run(criterion, loo_args, pkg = "loo"))
+      out <- SW(do_call(criterion, loo_args, pkg = "loo"))
     }
     attr(out, "yhash") <- hash_response(x, newdata = newdata)
   }
@@ -119,7 +119,7 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
       c(reloo_args) <- nlist(
         x = out, fit = x, newdata, k_threshold, check = FALSE, ...
       )
-      out <- run("reloo", reloo_args)
+      out <- do_call("reloo", reloo_args)
     } else {
       n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
       recommend_loo_options(n_bad_obs, k_threshold, model_name) 
@@ -260,14 +260,14 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   args <- list(x, ...)
   for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
     args$model_names <- model_name
-    x[[fun]] <- run(fun, args)
+    x[[fun]] <- do_call(fun, args)
   }
   if ("R2" %in% criterion) {
     args$summary <- FALSE
-    x$R2 <- run(bayes_R2, args)
+    x$R2 <- do_call(bayes_R2, args)
   }
   if ("marglik" %in% criterion) {
-    x$marglik <- run(bridge_sampler, args)
+    x$marglik <- do_call(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_criteria))) {
     if (auto_save) {
@@ -514,6 +514,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   } else {
     mf <- as.data.frame(newdata)
   }
+  mf <- rm_attr(mf, c("terms", "brmsframe"))
   N <- nrow(mf)
   # validate argument 'group'
   if (!is.null(group)) {
