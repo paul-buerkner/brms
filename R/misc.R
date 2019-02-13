@@ -925,12 +925,11 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
 
 .onAttach <- function(libname, pkgname) {
   # startup messages for brms
+  version <- utils::packageVersion("brms")
   packageStartupMessage(
-    "Loading 'brms' package (version ", utils::packageVersion("brms"), "). ",
-    "Useful instructions\n", 
+    "Loading 'brms' package (version ", version, "). Useful instructions\n", 
     "can be found by typing help('brms'). A more detailed introduction\n", 
-    "to the package is available through vignette('brms_overview').\n",
-    "Run theme_set(theme_default()) to use the default bayesplot theme."
+    "to the package is available through vignette('brms_overview')."
   )
   invisible(NULL)
 }
