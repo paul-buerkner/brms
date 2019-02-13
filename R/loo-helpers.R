@@ -581,14 +581,8 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
     Ksub <- sort(Ksub)
   }
   
-  if (save_fits) {
-    fits <- array(list(), dim = c(length(Ksub), 3))
-    dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
-  }
-  lppds <- obs_order <- vector("list", length(Ksub))
-  for (k in Ksub) {
-    message("Fitting model ", k, " out of ", K)
-    ks <- match(k, Ksub)
+  .kfold <- function(k) {
+    # function to run inside future::future
     if (fold_type == "loo" && !is.null(group)) {
       omitted <- which(folds == folds[k])
       predicted <- k
@@ -596,18 +590,40 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
       omitted <- predicted <- which(folds == k)
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_k <- subset_autocor(x, -omitted)
-    fit_k <- SW(update(fit_k, newdata = mf_omitted, refresh = 0, ...))
-    if (save_fits) {
-      fits[ks, ] <- nlist(fit = fit_k, omitted, predicted) 
-    }
-    fit_k <- subset_autocor(fit_k, predicted, autocor = x$autocor)
-    obs_order[[ks]] <- predicted
-    lppds[[ks]] <- log_lik(
-      fit_k, newdata = mf[predicted, , drop = FALSE], 
+    fit <- subset_autocor(x, -omitted)
+    fit <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
+    # allow predictions for matrix based correlation structures
+    fit <- subset_autocor(fit, predicted, autocor = x$autocor)
+    lppds <- log_lik(
+      fit, newdata = mf[predicted, , drop = FALSE], 
       allow_new_levels = TRUE, resp = resp
     )
+    out <- nlist(lppds, omitted, predicted)
+    if (save_fits) out$fit <- fit
+    return(out)
   }
+  
+  futures <- vector("list", length(Ksub))
+  lppds <- obs_order <- vector("list", length(Ksub))
+  if (save_fits) {
+    fits <- array(list(), dim = c(length(Ksub), 3))
+    dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
+  }
+  for (k in Ksub) {
+    ks <- match(k, Ksub)
+    message("Fitting model ", k, " out of ", K)
+    futures[[ks]] <- future::future(.kfold(k), packages = "brms")
+  }
+  for (k in Ksub) {
+    ks <- match(k, Ksub)
+    tmp <- future::value(futures[[ks]])
+    if (save_fits) {
+      fits[ks, ] <- tmp[c("fit", "omitted", "predicted")]
+    }
+    obs_order[[ks]] <- tmp$predicted
+    lppds[[ks]] <- tmp$lppds
+  }
+  
   elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
   # make sure elpds are put back in the right order
   elpds <- elpds[order(unlist(obs_order))]
