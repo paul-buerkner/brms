@@ -265,7 +265,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       " = multiply_lower_tri_self_transpose(Lrescor);\n",
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
-    str_add(out$genC) <- stan_cor_genC("nresp", cor = "rescor", sfx = "")
+    str_add(out$genC) <- stan_cor_genC("rescor", "nresp")
   }
   out
 }
@@ -588,7 +588,7 @@ stan_re <- function(ranef, prior, ...) {
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id}_{Nby};\n"
       )
       str_add(out$genC) <- stan_cor_genC(
-        glue("M_{id}"), sfx = glue("{id}_{Nby}")
+        glue("cor_{id}_{Nby}"), glue("M_{id}")
       )
     } else {
       str_add(out$par) <- glue(
@@ -618,7 +618,7 @@ stan_re <- function(ranef, prior, ...) {
         " = multiply_lower_tri_self_transpose(L_{id});\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(glue("M_{id}"), sfx = id)
+      str_add(out$genC) <- stan_cor_genC(glue("cor_{id}"), glue("M_{id}"))
     }
     str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
