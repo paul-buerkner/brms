@@ -261,19 +261,11 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       }
     }
     str_add(out$genD) <- glue(
-      "  matrix[nresp, nresp] Rescor",
+      "  corr_matrix[nresp] Rescor",
       " = multiply_lower_tri_self_transpose(Lrescor);\n",
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
-    rescor_genC <- ulapply(seq_len(nresp), function(i) 
-      lapply(seq_len(i - 1), function(j) glue(
-        "  rescor[{(i - 1) * (i - 2) / 2 + j}] = Rescor[{j}, {i}];\n"
-      ))
-    )
-    str_add(out$genC) <- glue(
-      "  // take only relevant parts of residual correlation matrix\n",
-      collapse(rescor_genC)
-    )
+    str_add(out$genC) <- stan_cor_genC("nresp", cor = "rescor", sfx = "")
   }
   out
 }
@@ -595,7 +587,9 @@ stan_re <- function(ranef, prior, ...) {
         " = multiply_lower_tri_self_transpose(L_{id}[{Nby}]);\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id}_{Nby};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(nrow(r), glue("{id}_{Nby}"))
+      str_add(out$genC) <- stan_cor_genC(
+        glue("M_{id}"), sfx = glue("{id}_{Nby}")
+      )
     } else {
       str_add(out$par) <- glue(
         "  // cholesky factor of correlation matrix\n",
@@ -624,7 +618,7 @@ stan_re <- function(ranef, prior, ...) {
         " = multiply_lower_tri_self_transpose(L_{id});\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(nrow(r), id)
+      str_add(out$genC) <- stan_cor_genC(glue("M_{id}"), sfx = id)
     }
     str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"

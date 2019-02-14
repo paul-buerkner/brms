@@ -783,7 +783,9 @@ stan_Xme <- function(meef, prior) {
         " = multiply_lower_tri_self_transpose(Lme_{i});\n",
         "  vector<lower=-1,upper=1>[NCme_{i}] corme_{i};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(length(K), i, cor = "corme")
+      str_add(out$genC) <- stan_cor_genC(
+        glue("Mme_{i}"), cor = "corme", sfx = i
+      )
     } else {
       str_add(out$par) <- cglue(
         "  vector[{Nme}] zme_{K};\n"
@@ -847,25 +849,21 @@ stan_vector <- function(...) {
   paste0("[", paste0(c(...), collapse = ", "), "]'")
 }
 
-stan_cor_genC <- function(ncoef, sfx, cor = "cor") {
+stan_cor_genC <- function(ncol, cor = "cor", sfx = "") {
   # prepare Stan code for correlations in the generated quantities block
   # Args:
-  #   ncoef: number of coefficients of which to store correlations
-  #   sfx: suffix of the correlation names
+  #   ncol: number of columns of the correlation matrix
   #   cor: prefix of the correlation names
-  if (ncoef < 2L) {
-    return("")
-  }
+  #   sfx: suffix of the correlation names
+  sfx <- usc(sfx) 
   Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
-  out <- ulapply(seq_len(ncoef)[-1], function(k) 
-    lapply(seq_len(k - 1), function(j) cglue(
-      "  {cor}_{sfx}[{as.integer((k - 1) * (k - 2) / 2 + j)}]",
-      " = {Cor}_{sfx}[{j}, {k}];\n"
-    ))
-  )
   glue(
     "  // extract upper diagonal of correlation matrix\n", 
-    collapse(out)
+    "  for (k in 1:{ncol}) {{\n",
+    "    for (j in 1:(k - 1)) {{\n",
+    "      {cor}{sfx}[choose(k - 1, 2) + j] = {Cor}{sfx}[j, k];\n",
+    "    }}\n",
+    "  }}\n"
   )
 }
 
