@@ -68,6 +68,7 @@ Defaults to \code{FALSE}.}
 \description{
 Perform exact K-fold cross-validation by refitting the model \eqn{K}
 times each leaving out one-\eqn{K}th of the original data.
+Folds can be run in parallel using the \pkg{future} package.
 }
 \details{
 The \code{kfold} function performs exact \eqn{K}-fold
@@ -115,6 +116,11 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt +
 (loo1 <- loo(fit1))
 # perform 10-fold cross validation
 (kfold1 <- kfold(fit1, chains = 1)
+
+# use the future package for parallelization
+library(future)
+plan(multiprocess)
+kfold(fit1, chains = 1)
 }   
  
 }

@@ -385,9 +385,10 @@ validate_models <- function(models, model_names, sub_names) {
 
 #' Compute exact cross-validation for problematic observations
 #' 
-#' Compute exact cross-validation for problematic observations
-#' for which approximate leave-one-out cross-validation may
-#' return incorrect results.
+#' Compute exact cross-validation for problematic observations for which
+#' approximate leave-one-out cross-validation may return incorrect results.
+#' Models for problematic observations can be run in parallel using the
+#' \pkg{future} package.
 #' 
 #' @inheritParams predict.brmsfit
 #' @param x An \R object of class \code{loo}.
@@ -437,6 +438,7 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
   } else {
     mf <- as.data.frame(newdata)
   }
+  mf <- rm_attr(mf, c("terms", "brmsframe"))
   if (NROW(mf) != NROW(x$pointwise)) {
     stop2("Number of observations in 'x' and 'fit' do not match.")
   }
@@ -462,7 +464,20 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
     )
     return(x)
   }
-  lls <- vector("list", J)
+  
+  .reloo <- function(j) {
+    omitted <- obs[j]
+    mf_omitted <- mf[-omitted, , drop = FALSE]
+    fit_j <- subset_autocor(fit, -omitted)
+    fit_j <- SW(update(fit_j, newdata = mf_omitted, refresh = 0, ...))
+    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
+    log_lik(
+      fit_j, newdata = mf[omitted, , drop = FALSE],
+      allow_new_levels = TRUE, resp = resp, ...
+    )
+  }
+  
+  lls <- futures <- vector("list", J)
   message(
     J, " problematic observation(s) found.", 
     "\nThe model will be refit ", J, " times."
@@ -472,15 +487,10 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
       "\nFitting model ", j, " out of ", J,
       " (leaving out observation ", obs[j], ")"
     )
-    omitted <- obs[j]
-    mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- subset_autocor(fit, -omitted)
-    fit_j <- SW(update(fit_j, newdata = mf_omitted, refresh = 0, ...))
-    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
-    lls[[j]] <- log_lik(
-      fit_j, newdata = mf[omitted, , drop = FALSE],
-      allow_new_levels = TRUE, resp = resp, ...
-    )
+    futures[[j]] <- future::future(.reloo(j), packages = "brms")
+  }
+  for (j in seq_len(J)) {
+    lls[[j]] <- future::value(futures[[j]])
   }
   # most of the following code is taken from rstanarm:::reloo
   # compute elpd_{loo,j} for each of the held out observations

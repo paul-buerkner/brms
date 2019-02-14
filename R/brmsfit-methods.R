@@ -2613,6 +2613,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #' 
 #' Perform exact K-fold cross-validation by refitting the model \eqn{K}
 #' times each leaving out one-\eqn{K}th of the original data.
+#' Folds can be run in parallel using the \pkg{future} package.
 #' 
 #' @aliases kfold
 #' 
@@ -2695,6 +2696,11 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
 #' (kfold1 <- kfold(fit1, chains = 1)
+#' 
+#' # use the future package for parallelization
+#' library(future)
+#' plan(multiprocess)
+#' kfold(fit1, chains = 1)
 #' }   
 #'  
 #' @seealso \code{\link{loo}}, \code{\link{reloo}}

@@ -34,9 +34,10 @@ from the \code{brmsfit} object passed to argument \code{fit}.}
 An object of the class \code{loo}.
 }
 \description{
-Compute exact cross-validation for problematic observations
-for which approximate leave-one-out cross-validation may
-return incorrect results.
+Compute exact cross-validation for problematic observations for which
+approximate leave-one-out cross-validation may return incorrect results.
+Models for problematic observations can be run in parallel using the
+\pkg{future} package.
 }
 \details{
 Warnings about Pareto \eqn{k} estimates indicate observations
