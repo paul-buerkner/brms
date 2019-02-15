@@ -564,6 +564,12 @@ bf(y1 ~ x + (1|g)) +
 bf(bmi ~ age * mi(chl)) +
   bf(chl | mi() ~ age) + 
   set_rescor(FALSE)
+  
+# model sigma as a function of the mean
+bf(y ~ eta, nl = TRUE) + 
+  lf(eta ~ 1 + x) +
+  nlf(sigma ~ tau * sqrt(eta)) +
+  lf(tau ~ 1)
 
 }
 \seealso{
