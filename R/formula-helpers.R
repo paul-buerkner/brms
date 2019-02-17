@@ -12,6 +12,8 @@
 #'  \code{resp_trials} and \code{resp_cat} require positive integers.
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 #'  \code{'lower'} and \code{'upper'}; 
+#'  \code{resp_subset} requires \code{0} and \code{1}, or alternatively
+#'  \code{FALSE} and \code{TRUE};
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 #'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 #'  and \code{2}) to indicate left, no, right, or interval censoring.
@@ -214,6 +216,12 @@ resp_mi <- function(sdy = NULL) {
     stop2("Measurement error should be numeric.")
   }
   sdy
+}
+
+#' @rdname addition-terms
+#' @export
+resp_subset <- function(x) {
+  as.logical(x)
 }
 
 #' Defining smooths in \pkg{brms} formulas

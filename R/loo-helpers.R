@@ -68,7 +68,7 @@ compute_ics <- function(models, ic = c("loo", "waic", "psis", "psislw", "kfold")
 
 compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
                        reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
-                       pointwise = FALSE, model_name = "", ...) {
+                       resp = NULL, pointwise = FALSE, model_name = "", ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
@@ -82,12 +82,12 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   #   an object of class 'ic' which inherits from class 'loo'
   ic <- match.arg(ic)
   if (ic == "kfold") {
-    out <- do_call(kfold_internal, list(x, ...))
+    out <- do_call(kfold_internal, list(x, resp = resp, ...))
   } else {
     contains_samples(x)
     pointwise <- as_one_logical(pointwise)
     loo_args <- list(...)
-    loo_args$x <- log_lik(x, pointwise = pointwise, ...)
+    loo_args$x <- log_lik(x, resp = resp, pointwise = pointwise, ...)
     if (pointwise) {
       loo_args$draws <- attr(loo_args$x, "draws")
       loo_args$data <- attr(loo_args$x, "data")
@@ -104,7 +104,7 @@ compute_ic <- function(x, ic = c("loo", "waic", "psis", "kfold"),
   out$model_name <- model_name
   class(out) <- c("ic", class(out))
   # TODO: fix hashing when new data is passed
-  attr(out, "yhash") <- hash_response(x)
+  attr(out, "yhash") <- hash_response(x, resp = resp)
   if (ic == "loo") {
     if (reloo) {
       c(reloo_args) <- nlist(x = out, fit = x, k_threshold, check = FALSE)
@@ -350,14 +350,15 @@ args_not_for_reloo <- function() {
     "sample_new_levels", "new_objects")
 }
 
-hash_response <- function(x, ...) {
+hash_response <- function(x, resp = NULL, ...) {
   # create a hash based on the response of a model
   require_package("digest")
   stopifnot(is.brmsfit(x))
   sdata <- standata(x, internal = TRUE)
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   regex <- c("Y", sub("^resp_", "", add_funs))
-  regex <- paste0("(", regex, ")", collapse = "|")
+  regex <- outer(regex, escape_all(usc(resp)), FUN = paste0)
+  regex <- paste0("(", as.vector(regex), ")", collapse = "|")
   regex <- paste0("^(", regex, ")(_|$)")
   out <- sdata[grepl(regex, names(sdata))]
   out <- as.matrix(as.data.frame(rmNULL(out)))

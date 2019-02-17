@@ -167,6 +167,19 @@ order_data <- function(data, bterms) {
   data
 }
 
+subset_data <- function(data, bterms) {
+  # subset data according to addition argument 'subset'
+  if (is.formula(bterms$adforms$subset)) {
+    # only evaluate a subset of the data
+    subset <- eval_rhs(bterms$adforms$subset, data = data)
+    if (length(subset) != nrow(data)) {
+      stop2("Length of 'subset' does not match the rows of 'data'.")
+    }
+    data <- data[subset, , drop = FALSE]
+  }
+  data
+}
+
 #' Validate New Data
 #' 
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you

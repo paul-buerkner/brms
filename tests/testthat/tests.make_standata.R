@@ -19,10 +19,9 @@ test_that(paste("make_standata returns correct data names ",
                  "NC_1", "prior_only"))
   
   dat <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
-  expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
-                                   data = dat)),
+  expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), dat, "poisson")),
                c("N", "Y", "K", "X", "Z_1_1", "Z_2_1",
-                 "J_1", "N_1", "M_1", "NC_1", "J_2", "N_2", "M_2", "NC_2", 
+                 "J_1", "J_2", "N_1", "M_1", "NC_1", "N_2", "M_2", "NC_2", 
                  "prior_only"))
   expect_true(all(c("Z_1_1", "Z_1_2", "Z_2_1", "Z_2_2") %in%
                   names(make_standata(y ~ x + (1+x|g/h), dat))))
@@ -219,7 +218,7 @@ test_that("make_standata handles multivariate models", {
     prior(dirichlet(2, 1), theta, resp = x)
   sdata <- make_standata(bform, dat, prior = bprior)
   sdata_names <- c(
-    "N", "J_1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
+    "N", "J_1_y1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
     "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
   )
   expect_true(all(sdata_names %in% names(sdata)))

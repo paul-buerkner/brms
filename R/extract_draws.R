@@ -55,6 +55,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
   resp <- validate_resp(resp, x$responses)
   if (length(resp) > 1) {
+    if (has_subset(x)) {
+      stop2("Argument 'resp' must be a single variable name ",
+            "for models using addition argument 'subset'.")
+    }
     draws <- list(nsamples = nrow(samples), nobs = sdata$N)
     draws$resps <- named_list(resp)
     draws$old_order <- attr(sdata, "old_order")
@@ -87,9 +91,10 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
 }
 
 #' @export
-extract_draws.brmsterms <- function(x, samples, sdata, ...) {
+extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
+  data <- subset_data(data, x)
   nsamples <- nrow(samples)
-  nobs <- sdata$N
+  nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
   draws <- nlist(family = prepare_family(x), nsamples, nobs, resp = x$resp)
   draws$old_order <- attr(sdata, "old_order")
@@ -99,7 +104,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
     dp_regex <- paste0("^", dp, resp, "$")
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       draws$dpars[[dp]] <- extract_draws(
-        x$dpars[[dp]], samples = samples, sdata = sdata, ...
+        x$dpars[[dp]], samples = samples, 
+        sdata = sdata, data = data, ...
       )
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
@@ -110,7 +116,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
   draws$nlpars <- named_list(names(x$nlpars))
   for (nlp in names(x$nlpars)) {
     draws$nlpars[[nlp]] <- extract_draws(
-      x$nlpars[[nlp]], samples = samples, sdata = sdata, ...
+      x$nlpars[[nlp]], samples = samples, 
+      sdata = sdata, data = data, ...
     )
   }
   if (is.mixfamily(x$family)) {
@@ -137,7 +144,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
     # when using the covariance formulation of ARMA / SAR structures
     draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
-  draws$data <- extract_draws_data(x, sdata = sdata, ...)
+  draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
   structure(draws, class = "brmsdraws")
 }
 
@@ -145,7 +152,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, ...) {
 extract_draws.btnl <- function(x, samples, sdata, ...) {
   draws <- list(
     family = x$family, nlform = x$formula[[2]],
-    nsamples = nrow(samples), nobs = sdata$N,
+    nsamples = nrow(samples), 
+    nobs = sdata[[paste0("N", usc(x$resp))]],
     used_nlpars = x$used_nlpars
   )
   class(draws) <- "bdrawsnl"
@@ -166,7 +174,8 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   smooths_only <- as_one_logical(smooths_only)
   offset <- as_one_logical(offset)
   nsamples <- nrow(samples)
-  draws <- nlist(family = x$family, nsamples, nobs = sdata$N)
+  nobs <- sdata[[paste0("N", usc(x$resp))]]
+  draws <- nlist(family = x$family, nsamples, nobs)
   class(draws) <- "bdrawsl"
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
@@ -209,6 +218,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(draws)
   p <- usc(combine_prefix(bterms))
+  resp <- usc(bterms$resp)
   # prepare calls evaluated in sp_predictor
   draws$calls <- vector("list", nrow(spef))
   for (i in seq_along(draws$calls)) {
@@ -286,7 +296,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
     }
   }
   # prepare draws specific to missing value variables
-  dim <- c(nrow(draws$bsp), sdata$N)
+  dim <- c(nrow(draws$bsp), sdata[[paste0("N", resp)]])
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
     resps <- usc(vars_mi)
@@ -524,12 +534,13 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     # prepare data required for indexing parameters
     gtype <- sub_ranef$gtype[1]
     id <- sub_ranef$id[1]
+    idresp <- paste0(id, usc(sub_ranef$resp[1]))
     if (gtype == "mm") {
       ngf <- length(sub_ranef$gcall[[1]]$groups)
-      gf <- sdata[paste0("J_", id, "_", seq_len(ngf))]
-      weights <- sdata[paste0("W_", id, "_", seq_len(ngf))]
+      gf <- sdata[paste0("J_", idresp, "_", seq_len(ngf))]
+      weights <- sdata[paste0("W_", idresp, "_", seq_len(ngf))]
     } else {
-      gf <- sdata[paste0("J_", id)]
+      gf <- sdata[paste0("J_", idresp)]
       weights <- list(rep(1, length(gf[[1]])))
     }
     # incorporate new gf levels

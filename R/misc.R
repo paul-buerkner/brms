@@ -381,9 +381,9 @@ collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
 
-'str_add<-' <- function(x, value) {
+'str_add<-' <- function(x, value, start = FALSE) {
   # add characters to an existing string
-  paste0(x, value)
+  if (start) paste0(value, x) else paste0(x, value)
 }
 
 str_if <- function(cond, yes, no = "") {
@@ -822,6 +822,7 @@ usc <- function(x, pos = c("prefix", "suffix")) {
   #   pos: position of the underscore
   pos <- match.arg(pos)
   x <- as.character(x)
+  if (!length(x)) x <- ""
   if (pos == "prefix") {
     x <- ifelse(nzchar(x), paste0("_", x), "")
   } else {

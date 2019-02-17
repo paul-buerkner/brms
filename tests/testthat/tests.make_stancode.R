@@ -1508,7 +1508,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode, 
-    "(bsp_y[1] + r_1_y_2[J_1[n]]) * Yl_x[n] + r_1_y_1[J_1[n]] * Z_1_y_1[n];"
+    "(bsp_y[1] + r_1_y_2[J_1_y[n]]) * Yl_x[n] + r_1_y_1[J_1_y[n]] * Z_1_y_1[n];"
   )
   
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
@@ -1551,7 +1551,7 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, 
     "target += normal_lpdf(Y_xx[Jme_xx] | Yl_xx[Jme_xx], noise_xx[Jme_xx])"
   )
-  expect_match2(scode, "vector[N] Yl_xx;")
+  expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
 test_that("argument 'stanvars' is handled correctly", {

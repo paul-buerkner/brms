@@ -81,7 +81,6 @@ make_stancode <- function(formula, data, family = gaussian(),
   # generate data block
   scode_data <- paste0(
     "data {\n",
-    "  int<lower=1> N;  // total number of observations\n", 
     scode_predictor$data,
     scode_ranef$data,
     scode_Xme$data,
@@ -130,23 +129,13 @@ make_stancode <- function(formula, data, family = gaussian(),
     "}\n"
   )
   # generate model block
-  scode_model_loop <- paste0(
-    scode_predictor$modelC2, 
-    scode_predictor$modelC3,
-    scode_predictor$modelC4
-  )
-  if (isTRUE(nzchar(scode_model_loop))) {
-    scode_model_loop <- paste0(
-      "  for (n in 1:N) {\n", scode_model_loop, "  }\n"
-    )
-  }
   scode_model <- paste0(
     "model {\n",
       scode_predictor$modelD,
       collapse_stanvars(stanvars, block = "model"),
       scode_predictor$modelC1,
       scode_predictor$modelCgp1,
-      scode_model_loop,
+      scode_predictor$model_loop,
       scode_predictor$modelC5,
       "  // priors including all constants\n", 
       scode_prior, 

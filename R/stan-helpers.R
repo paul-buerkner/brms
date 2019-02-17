@@ -7,6 +7,9 @@ stan_response <- function(bterms, data) {
   px <- check_prefix(bterms)
   resp <- usc(combine_prefix(px))
   out <- list()
+  str_add(out$data) <- glue(
+    "  int<lower=1> N{resp};  // number of observations\n"
+  )
   if (has_cat(family) || is.formula(bterms$adforms$cat)) {
     str_add(out$data) <- glue(
       "  int<lower=2> ncat{resp};  // number of categories\n"
@@ -15,22 +18,22 @@ stan_response <- function(bterms, data) {
   if (has_multicol(family)) {
     if (rtype == "real") {
       str_add(out$data) <- glue(
-        "  vector[ncat{resp}] Y{resp}[N];  // response array\n"
+        "  vector[ncat{resp}] Y{resp}[N{resp}];  // response array\n"
       )
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
-        "  int Y{resp}[N, ncat{resp}];  // response array\n"
+        "  int Y{resp}[N{resp}, ncat{resp}];  // response array\n"
       )
     }
   } else {
     if (rtype == "real") {
       # don't use real Y[n]
       str_add(out$data) <- glue(
-        "  vector[N] Y{resp};  // response variable\n"
+        "  vector[N{resp}] Y{resp};  // response variable\n"
       )
     } else if (rtype == "int") {
       str_add(out$data) <- glue(
-        "  int Y{resp}[N];  // response variable\n"
+        "  int Y{resp}[N{resp}];  // response variable\n"
       )
     }
   }
@@ -41,36 +44,36 @@ stan_response <- function(bterms, data) {
   }
   if (has_trials(family) || is.formula(bterms$adforms$trials)) {
     str_add(out$data) <- glue(
-      "  int trials{resp}[N];  // number of trials\n"
+      "  int trials{resp}[N{resp}];  // number of trials\n"
     )
   }
   if (is.formula(bterms$adforms$weights)) {
     str_add(out$data) <- glue(
-      "  vector<lower=0>[N] weights{resp};  // model weights\n" 
+      "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n" 
     )
   }
   if (is.formula(bterms$adforms$se)) {
     str_add(out$data) <- glue(
-      "  vector<lower=0>[N] se{resp};  // known sampling error\n"
+      "  vector<lower=0>[N{resp}] se{resp};  // known sampling error\n"
     )
     str_add(out$tdataD) <- glue(
-      "  vector<lower=0>[N] se2{resp} = square(se{resp});\n"
+      "  vector<lower=0>[N{resp}] se2{resp} = square(se{resp});\n"
     )
   }
   if (is.formula(bterms$adforms$dec)) {
     str_add(out$data) <- glue(
-      "  int<lower=0,upper=1> dec{resp}[N];  // decisions\n"
+      "  int<lower=0,upper=1> dec{resp}[N{resp}];  // decisions\n"
     )
   }
   has_cens <- has_cens(bterms, data = data)
   if (has_cens) {
     str_add(out$data) <- glue(
-      "  int<lower=-1,upper=2> cens{resp}[N];  // indicates censoring\n"
+      "  int<lower=-1,upper=2> cens{resp}[N{resp}];  // indicates censoring\n"
     )
     if (isTRUE(attr(has_cens, "interval"))) {
       rcens <- str_if(rtype == "int", 
-        glue("  int rcens{resp}[N];"), 
-        glue("  vector[N] rcens{resp};")
+        glue("  int rcens{resp}[N{resp}];"), 
+        glue("  vector[N{resp}] rcens{resp};")
       )
       str_add(out$data) <- glue(
         rcens, "  // right censor points for interval censoring\n"
@@ -80,12 +83,12 @@ stan_response <- function(bterms, data) {
   bounds <- get_bounds(bterms, data = data)
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- glue(
-      "  {rtype} lb{resp}[N];  // lower truncation bounds;\n"
+      "  {rtype} lb{resp}[N{resp}];  // lower truncation bounds;\n"
     )
   }
   if (any(bounds$ub < Inf)) {
     str_add(out$data) <- glue(
-      "  {rtype} ub{resp}[N];  // upper truncation bounds\n"
+      "  {rtype} ub{resp}[N{resp}];  // upper truncation bounds\n"
     )
   }
   if (is.formula(bterms$adforms$mi)) {
@@ -103,7 +106,7 @@ stan_response <- function(bterms, data) {
         "  // positions of missings\n"
       )
       str_add(out$modelD) <- glue(
-        "  vector[N] Yl{resp} = Y{resp};\n" 
+        "  vector[N{resp}] Yl{resp} = Y{resp};\n" 
       )
       str_add(out$modelC1) <- glue(
         "  Yl{resp}[Jmi{resp}] = Ymi{resp};\n"
@@ -111,13 +114,13 @@ stan_response <- function(bterms, data) {
     } else {
       str_add(out$data) <- glue(
         "  // data for measurement-error in the response\n",
-        "  vector<lower=0>[N] noise{resp};\n",
+        "  vector<lower=0>[N{resp}] noise{resp};\n",
         "  // information about non-missings\n",
         "  int<lower=0> Nme{resp};\n",
         "  int<lower=1> Jme{resp}[Nme{resp}];\n"
       )
       str_add(out$par) <- glue(
-        "  vector{Ybounds}[N] Yl{resp};  // latent variable\n"
+        "  vector{Ybounds}[N{resp}] Yl{resp};  // latent variable\n"
       )
       str_add(out$prior) <- glue(
         "  target += normal_lpdf(Y{resp}[Jme{resp}]",
@@ -198,7 +201,7 @@ stan_autocor <- function(bterms, prior) {
       )
       if (!is.formula(bterms$adforms$se)) {
         str_add(out$tdataD) <- glue(
-          "  vector[N] se2{p} = rep_vector(0, N);\n"
+          "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
         )
       }
       str_add(out$tparD) <- glue(
@@ -231,13 +234,13 @@ stan_autocor <- function(bterms, prior) {
         stop2(err_msg, " when using non-identity links.")
       }
       str_add(out$data) <- glue( 
-        "  int<lower=0> J_lag{p}[N];\n"                
+        "  int<lower=0> J_lag{p}[N{p}];\n"                
       )
       str_add(out$modelD) <- glue(
         "  // objects storing residuals\n",
-        "  matrix[N, max_lag{p}] E{p}",
-        " = rep_matrix(0, N, max_lag{p});\n",
-        "  vector[N] e{p};\n"
+        "  matrix[N{p}, max_lag{p}] E{p}",
+        " = rep_matrix(0, N{p}, max_lag{p});\n",
+        "  vector[N{p}] e{p};\n"
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
       str_add(out$modelC2) <- glue(
@@ -267,7 +270,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$data) <- glue(
       "  // data needed for ARR correlations\n",
       "  int<lower=1> Karr{p};\n",
-      "  matrix[N, Karr{p}] Yarr{p};  // ARR design matrix\n"
+      "  matrix[N{p}, Karr{p}] Yarr{p};  // ARR design matrix\n"
     )
     bound <- subset2(prior, class = "arr", ls = px)$bound
     str_add(out$par) <- glue(
@@ -292,7 +295,7 @@ stan_autocor <- function(bterms, prior) {
       stop2(err_msg, " when predicting 'sigma' or 'nu'.")
     }
     str_add(out$data) <- glue(
-      "  matrix[N, N] W{p};  // spatial weight matrix\n"                  
+      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n"                  
     )
     if (identical(autocor$type, "lag")) {
       str_add(out$par) <- glue( 
@@ -321,7 +324,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$data) <- glue(
       "  // data for the CAR structure\n",
       "  int<lower=1> Nloc{p};\n",
-      "  int<lower=1> Jloc{p}[N];\n",
+      "  int<lower=1> Jloc{p}[N{p}];\n",
       "  int<lower=0> Nedges{p};\n",
       "  int<lower=1> edges1{p}[Nedges{p}];\n",
       "  int<lower=1> edges2{p}[Nedges{p}];\n"
@@ -411,10 +414,10 @@ stan_autocor <- function(bterms, prior) {
       stop2(err_msg, " in non-linear models.")
     }
     str_add(out$data) <- glue(
-      "  vector[N] tg{p};  // indicates independent groups\n"
+      "  vector[N{p}] tg{p};  // indicates independent groups\n"
     )
     str_add(out$par) <- glue(
-      "  vector[N] loclev{p};  // local level terms\n",
+      "  vector[N{p}] loclev{p};  // local level terms\n",
       "  real<lower=0> sigmaLL{p};  // SD of local level terms\n"
     )
     if (allow_autocor) {
@@ -429,7 +432,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$prior) <- glue(
       stan_prior(prior, class = "sigmaLL", px = px, suffix = p),
       "  target += normal_lpdf(loclev{p}[1] | {center[1]}, sigmaLL{p});\n",
-      "  for (n in 2:N) {{\n",
+      "  for (n in 2:N{p}) {{\n",
       "    if (tg{p}[n] == tg{p}[n - 1]) {{\n",
       "    {tp()}normal_lpdf(loclev{p}[n] | loclev{p}[n - 1], sigmaLL{p});\n",
       "    }} else {{\n",
@@ -450,11 +453,11 @@ stan_autocor <- function(bterms, prior) {
       stop2(err_msg, " when 'rescor' is estimated.")
     }
     str_add(out$data) <- glue( 
-      "  matrix[N, N] V{p};  // known residual covariance matrix\n"
+      "  matrix[N{p}, N{p}] V{p};  // known residual covariance matrix\n"
     )
     if (family$family %in% "gaussian") {
       str_add(out$tdataD) <- glue(
-        "  matrix[N, N] LV{p} = cholesky_decompose(V{p});\n"
+        "  matrix[N{p}, N{p}] LV{p} = cholesky_decompose(V{p});\n"
       )
     }
   }
@@ -673,7 +676,7 @@ stan_mixture <- function(bterms, prior) {
       }
       missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
       str_add(out$modelD) <- glue(
-        "  vector[N] theta{missing_id}{p} = rep_vector(0, N);\n",                   
+        "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
         "  real log_sum_exp_theta;\n"      
       )
       sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")

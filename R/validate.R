@@ -1134,3 +1134,18 @@ has_cens <- function(bterms, data = NULL) {
   }
   out
 }
+
+has_subset <- function(bterms) {
+  # check if addition argument 'subset' ist used in the model
+  .has_subset <- function(x) {
+    is.formula(x$adforms$subset)
+  }
+  if (is.brmsterms(bterms)) {
+    out <- .has_subset(bterms)
+  } else if (is.mvbrmsterms(bterms)) {
+    out <- any(ulapply(bterms$terms, .has_subset))
+  } else {
+    out <- FALSE
+  }
+  out 
+}
