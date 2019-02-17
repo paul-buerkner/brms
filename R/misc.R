@@ -381,7 +381,7 @@ collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
 
-'str_add<-' <- function(x, value, start = FALSE) {
+'str_add<-' <- function(x, start = FALSE, value) {
   # add characters to an existing string
   if (start) paste0(value, x) else paste0(x, value)
 }

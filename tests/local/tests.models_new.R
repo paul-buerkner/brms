@@ -231,7 +231,7 @@ test_that("categorical models work correctly", {
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
-  expect_equal(dim(fitted(fit2, scale = "linear")), 
+  expect_equal(dim(fitted(fit2, scale = "linear")),
                c(nobs(fit2), 4, ncat - 1))
   # tests with new data
   newd <- inhaler[1:10, ]
@@ -247,10 +247,10 @@ test_that("multivariate normal models work correctly", {
   x <- rnorm(N, 1)
   month <- sample(1:36, N, replace = TRUE)
   id <- sample(1:10, N, replace = TRUE)
-  tim <- sample(1:N, 100)
+  tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(cbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
+  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
                   data = data, autocor = cor_arma(~tim|id, p = 1),
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
@@ -267,7 +267,7 @@ test_that("multivariate normal models work correctly", {
   expect_equal(length(ms), 2)
   expect_ggplot(plot(ms, ask = FALSE)[[2]])
 
-  fit_mv2 <- brm(cbind(y1, y2) ~ 1, data = data,
+  fit_mv2 <- brm(mvbind(y1, y2) ~ 1, data = data,
                  prior = prior_(~lkj(5), class = "rescor"),
                  sample_prior = TRUE, iter = 1000)
   print(fit_mv2)
@@ -815,3 +815,24 @@ test_that("dirichlet models work correctly", {
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 })
 
+test_that("Addition argument 'subset' works correctly", {
+  set.seed(12454)
+  data("BTdata", package = "MCMCglmm")
+  BTdata$sub1 <- sample(0:1, nrow(BTdata), replace = TRUE)
+  BTdata$sub2 <- sample(0:1, nrow(BTdata), replace = TRUE)
+  
+  bform <- bf(tarsus | subset(sub1) ~ sex + (1|p|fosternest) + (1|q|dam)) +
+    bf(back | subset(sub2) ~ sex + (1|p|fosternest) + (1|q|dam)) +
+    set_rescor(FALSE)
+  fit <- brm(bform, BTdata)
+  print(summary(fit))
+  expect_error(predict(fit), "'resp' must be a single variable name")
+  pred <- predict(fit, resp = "tarsus")
+  expect_equal(nrow(pred), sum(BTdata$sub1))
+  pred <- fitted(fit, resp = "back")
+  expect_equal(nrow(pred), sum(BTdata$sub2))
+  waic <- waic(fit, resp = "back")
+  expect_range(waic$estimates[3, 1], 1100, 1130)
+  me <- marginal_effects(fit)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})

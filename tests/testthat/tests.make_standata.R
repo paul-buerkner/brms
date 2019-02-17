@@ -223,6 +223,17 @@ test_that("make_standata handles multivariate models", {
   )
   expect_true(all(sdata_names %in% names(sdata)))
   expect_equal(sdata$con_theta_x, c(2, 1))
+  
+  # test addition argument 'subset'
+  bform <- bf(y1 | subset(censi) ~ x + y2 + (x|2|g)) + 
+    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  sdata <- make_standata(bform, dat)
+  nsub <- sum(dat$censi)
+  expect_equal(sdata$N_y1, nsub)
+  expect_equal(sdata$N_y2, nrow(dat))
+  expect_equal(length(sdata$Y_y1), nsub)
+  expect_equal(nrow(sdata$X_y1), nsub)
+  expect_equal(length(sdata$Z_1_y1_2), nsub)
 })
 
 test_that("make_standata returns correct data for autocor structures", {

@@ -190,8 +190,10 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  // multivariate linear predictor matrix\n",
       "  vector[nresp] Mu[N];\n"
     )
-    str_add(out$modelC4) <- glue(
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
+    str_add(out$model_loop) <- glue(
+      "  for (n in 1:N) {{\n",
+      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n",
+      "  }}\n"
     )
     str_add(out$data) <- glue(
       "  int<lower=1> nresp;  // number of responses\n",   
