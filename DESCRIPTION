@@ -2,17 +2,17 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.7.2
-Date: 2018-12-15
+Version: 2.7.3
+Date: 2018-02-17
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
     R (>= 3.2.0),
     Rcpp (>= 0.12.0),
-    ggplot2 (>= 2.0.0),
     methods
 Imports: 
     rstan (>= 2.17.2),
+    ggplot2 (>= 2.0.0),
     loo (>= 2.0.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
@@ -26,6 +26,7 @@ Imports:
     coda,
     abind,
     glue,
+    future,
     stats,
     utils,
     parallel,
@@ -34,7 +35,6 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     RWiener,
-    future,
     mice,
     spdep,
     mnormt,

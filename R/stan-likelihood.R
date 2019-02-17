@@ -36,7 +36,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
   }
   if (grepl("\\[n\\]", out) && !nzchar(mix)) {
     # loop over likelihood if it cannot be vectorized
-    out <- paste0("  for (n in 1:N) {\n    ", out, "    }\n")
+    out <- paste0("  for (n in 1:N", resp, ") {\n    ", out, "    }\n")
   }
   out
 }
@@ -45,6 +45,7 @@ stan_llh.default <- function(family, bterms, data, mix = "",
 stan_llh.mixfamily <- function(family, bterms, ...) {
   dp_ids <- dpar_id(names(bterms$dpars))
   fdp_ids <- dpar_id(names(bterms$fdpars))
+  resp <- usc(bterms$resp)
   ptheta <- any(dpar_class(names(bterms$dpars)) %in% "theta")
   llh <- rep(NA, length(family$mix))
   for (i in seq_along(family$mix)) {
@@ -59,7 +60,7 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   has_weights <- is.formula(bterms$adforms$weights)  
   weights <- str_if(has_weights, glue("weights{resp}[n] * "))
   out <- glue(
-    "  for (n in 1:N) {{\n",
+    "  for (n in 1:N{resp}) {{\n",
     "      real ps[{length(llh)}];\n"
   )
   str_add(out) <- collapse("    ", llh)

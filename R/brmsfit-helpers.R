@@ -17,9 +17,9 @@ is_mv <- function(x) {
 }
 
 stopifnot_resp <- function(x, resp = NULL) {
-  if (is_mv(x) && is.null(resp)) {
-    stop2("Argument 'resp' is required when applying ", 
-          "this method to a multivariate model.")
+  if (is_mv(x) && length(resp) != 1L) {
+    stop2("Argument 'resp' must be a single variable name ", 
+          "when applying this method to a multivariate model.")
   }
   invisible(NULL)
 }

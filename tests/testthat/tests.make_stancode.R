@@ -260,7 +260,9 @@ test_that("customized covariances appear in the Stan code", {
   scode <- make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
   expect_match2(scode,
-    "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)")
+    "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)"
+  )
+  expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
   
   scode <- make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
@@ -436,6 +438,7 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, 
     "target += inv_gamma_lpdf(hs_local_y2[2] | 0.5 * hs_df_y2, 0.5 * hs_df_y2)"
   )
+  expect_match2(scode, "rescor[choose(k - 1, 2) + j] = Rescor[j, k];")
   
   scode <- make_stancode(mvbind(y1, y2) ~ x, dat, student(),
                          prior = prior(lasso(2, 10)))
@@ -1019,6 +1022,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "target += cauchy_lpdf(sdme_1[2] | 0, 5)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lme_1 | 2)")
   expect_match2(scode, "+ (diag_pre_multiply(sdme_1, Lme_1) * zme_1)'")
+  expect_match2(scode, "corme_1[choose(k - 1, 2) + j] = Corme_1[j, k];")
   
   scode <- make_stancode(
     y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
@@ -1504,7 +1508,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ mi(x) + (mi(x) | g)) + bf(x | mi() ~ 1) + set_rescor(FALSE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode, 
-    "(bsp_y[1] + r_1_y_2[J_1[n]]) * Yl_x[n] + r_1_y_1[J_1[n]] * Z_1_y_1[n];"
+    "(bsp_y[1] + r_1_y_2[J_1_y[n]]) * Yl_x[n] + r_1_y_1[J_1_y[n]] * Z_1_y_1[n];"
   )
   
   bform <- bf(y ~ a, a ~ mi(x), nl = TRUE) + bf(x | mi() ~ 1) + set_rescor(FALSE)
@@ -1547,7 +1551,7 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, 
     "target += normal_lpdf(Y_xx[Jme_xx] | Yl_xx[Jme_xx], noise_xx[Jme_xx])"
   )
-  expect_match2(scode, "vector[N] Yl_xx;")
+  expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
 test_that("argument 'stanvars' is handled correctly", {
@@ -1591,7 +1595,7 @@ test_that("argument 'stanvars' is handled correctly", {
   stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
     stanvar(scode = "real<lower=0> tau;", block = "parameters") +
     stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
-            block="tparameters", name = "bsp")
+            block = "tparameters", name = "bsp")
   scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
   expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
 })

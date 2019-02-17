@@ -381,9 +381,9 @@ collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
 
-'str_add<-' <- function(x, value) {
+'str_add<-' <- function(x, start = FALSE, value) {
   # add characters to an existing string
-  paste0(x, value)
+  if (start) paste0(value, x) else paste0(x, value)
 }
 
 str_if <- function(cond, yes, no = "") {
@@ -822,6 +822,7 @@ usc <- function(x, pos = c("prefix", "suffix")) {
   #   pos: position of the underscore
   pos <- match.arg(pos)
   x <- as.character(x)
+  if (!length(x)) x <- ""
   if (pos == "prefix") {
     x <- ifelse(nzchar(x), paste0("_", x), "")
   } else {
@@ -925,12 +926,11 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
 
 .onAttach <- function(libname, pkgname) {
   # startup messages for brms
+  version <- utils::packageVersion("brms")
   packageStartupMessage(
-    "Loading 'brms' package (version ", utils::packageVersion("brms"), "). ",
-    "Useful instructions\n", 
+    "Loading 'brms' package (version ", version, "). Useful instructions\n", 
     "can be found by typing help('brms'). A more detailed introduction\n", 
-    "to the package is available through vignette('brms_overview').\n",
-    "Run theme_set(theme_default()) to use the default bayesplot theme."
+    "to the package is available through vignette('brms_overview')."
   )
   invisible(NULL)
 }

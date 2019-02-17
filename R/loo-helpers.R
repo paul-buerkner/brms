@@ -66,8 +66,8 @@ compute_loos <- function(
 
 compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
-                        pointwise = FALSE, newdata = NULL, model_name = "", 
-                        use_stored = TRUE, ...) {
+                        pointwise = FALSE, newdata = NULL, resp = NULL, 
+                        model_name = "", use_stored = TRUE, ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
@@ -90,13 +90,13 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   } else {
     # compute the criterion
     if (criterion == "kfold") {
-      kfold_args <- nlist(x, newdata, ...)
+      kfold_args <- nlist(x, newdata, resp, ...)
       out <- do_call(kfold_internal, kfold_args)
     } else {
       contains_samples(x)
       pointwise <- as_one_logical(pointwise)
       loo_args <- list(...)
-      ll_args <- nlist(object = x, newdata, pointwise, ...)
+      ll_args <- nlist(object = x, newdata, pointwise, resp, ...)
       loo_args$x <- do_call(log_lik, ll_args)
       if (pointwise) {
         loo_args$draws <- attr(loo_args$x, "draws")
@@ -111,13 +111,13 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
       }
       out <- SW(do_call(criterion, loo_args, pkg = "loo"))
     }
-    attr(out, "yhash") <- hash_response(x, newdata = newdata)
+    attr(out, "yhash") <- hash_response(x, newdata = newdata, resp = resp)
   }
   attr(out, "model_name") <- model_name
   if (criterion == "loo") {
     if (reloo) {
       c(reloo_args) <- nlist(
-        x = out, fit = x, newdata, k_threshold, check = FALSE, ...
+        x = out, fit = x, newdata, resp, k_threshold, check = FALSE, ...
       )
       out <- do_call("reloo", reloo_args)
     } else {
@@ -301,7 +301,7 @@ add_waic <- function(x, model_name = NULL, ...) {
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
-hash_response <- function(x, newdata = NULL, ...) {
+hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   # create a hash based on the response of a model
   require_package("digest")
   stopifnot(is.brmsfit(x))
@@ -311,7 +311,8 @@ hash_response <- function(x, newdata = NULL, ...) {
   )
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   regex <- c("Y", sub("^resp_", "", add_funs))
-  regex <- paste0("(", regex, ")", collapse = "|")
+  regex <- outer(regex, escape_all(usc(resp)), FUN = paste0)
+  regex <- paste0("(", as.vector(regex), ")", collapse = "|")
   regex <- paste0("^(", regex, ")(_|$)")
   out <- sdata[grepl(regex, names(sdata))]
   out <- as.matrix(as.data.frame(rmNULL(out)))

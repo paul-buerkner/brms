@@ -219,7 +219,7 @@ models for all parameters of the assumed response distribution.
   \code{aterms} part, which may contain multiple terms of the form 
   \code{fun(<variable>)} separated by \code{+} each providing special 
   information on the response variable. \code{fun} can be replaced with 
-  either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
+  either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
   (see also \code{\link{addition-terms}}). 
   
@@ -248,6 +248,14 @@ models for all parameters of the assumed response distribution.
   and that \code{yi} is the response variable. 
   Then, formula \code{yi | weights(wei) ~ predictors} 
   implements a weighted regression. 
+  
+  For multivariate models, \code{subset} may be used in the \code{aterms}
+  part, to use different subsets of the data in different univariate
+  models. For instance, if \code{sub} is a logical variable and
+  \code{y} is the response of one of the univariate models, we may
+  write \code{y | subset(sub) ~ predictors} so that \code{y} is
+  predicted only for those observations for which \code{sub} evaluates
+  to \code{TRUE}.
   
   With the exception of categorical, ordinal, and mixture families, 
   left, right, and interval censoring can be modeled through 
@@ -564,6 +572,12 @@ bf(y1 ~ x + (1|g)) +
 bf(bmi ~ age * mi(chl)) +
   bf(chl | mi() ~ age) + 
   set_rescor(FALSE)
+  
+# model sigma as a function of the mean
+bf(y ~ eta, nl = TRUE) + 
+  lf(eta ~ 1 + x) +
+  nlf(sigma ~ tau * sqrt(eta)) +
+  lf(tau ~ 1)
 
 }
 \seealso{

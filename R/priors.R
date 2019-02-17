@@ -544,6 +544,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
 }
 
 prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
+  data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
   prior <- empty_brmsprior()
@@ -1250,7 +1251,8 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
 }
 
 #' @export
-check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
+check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
+  data <- subset_data(data, x)
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
@@ -1258,13 +1260,13 @@ check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
   for (dp in names(x$dpars)) {
     allow_as <- simple_sigma && identical(dp, "mu") 
     prior <- check_prior_special(
-      x$dpars[[dp]], prior = prior, 
+      x$dpars[[dp]], prior = prior, data = data,
       allow_autoscale = allow_as, ...
     )
   }
   for (nlp in names(x$nlpars)) {
     prior <- check_prior_special(
-      x$nlpars[[nlp]], prior = prior,
+      x$nlpars[[nlp]], prior = prior, data = data,
       allow_autoscale = simple_sigma, ...
     )
   }

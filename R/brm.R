@@ -453,7 +453,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       show_messages = !silent
     )
     if (future) {
-      require_package("future")
       if (cores > 1L) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }

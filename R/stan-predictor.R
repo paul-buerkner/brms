@@ -24,9 +24,10 @@ stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   
   # initialize and compute eta
   px <- check_prefix(x)
+  resp <- usc(x$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
-  str_add(out$modelD) <- glue("  vector[N] {eta} ={out$eta};\n")
+  str_add(out$modelD) <- glue("  vector[N{resp}] {eta} ={out$eta};\n")
   str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
   if (nzchar(out$loopeta)) {
     # parts of eta are computed in a loop over observations
@@ -57,6 +58,7 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
   #   ...: passed to stan_predictor.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
+  resp <- usc(x$resp)
   par <- combine_prefix(x, keep_mu = TRUE, nlp = TRUE)
   # prepare non-linear model
   n <- str_if(x$loop, "[n] ", " ")
@@ -71,7 +73,7 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
     # use vectors as indexing matrices in Stan is slow
     str_add(out$data) <- glue( 
       "  // covariate vectors\n",
-      cglue("  vector[N] {covar_names};\n")
+      cglue("  vector[N{resp}] {covar_names};\n")
     )
   }
   # add whitespaces to be able to replace parameters and covariates
@@ -87,7 +89,7 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
     c(new_nlpars, new_covars, "(", ")")
   )
   # possibly transform eta in the transformed params block
-  str_add(out$modelD) <- glue("  vector[N] {par};\n")
+  str_add(out$modelD) <- glue("  vector[N{resp}] {par};\n")
   if (x$loop) {
     str_add(out$modelC4) <- glue(
       "    // compute non-linear predictor\n",
@@ -110,6 +112,7 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
   #   rescor: indicate if this is part of an MV model estimating rescor
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
+  data <- subset_data(data, x)
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
   args <- nlist(
@@ -155,13 +158,22 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
     stan_mixture(x, prior = prior),
     stan_dpar_transform(x)
   )
-  collapse_lists(ls = out)
+  out <- collapse_lists(ls = out)
+  out$model_loop <- paste0(out$modelC2, out$modelC3, out$modelC4)
+  if (isTRUE(nzchar(out$model_loop))) {
+    out$model_loop <- paste0(
+      "  for (n in 1:N", resp, ") {\n", out$model_loop, "  }\n"
+    )
+  }
+  out
 }
 
 #' @export
 stan_predictor.mvbrmsterms <- function(x, prior, ...) {
   out <- lapply(x$terms, stan_predictor, prior = prior, rescor = x$rescor, ...)
   out <- collapse_lists(ls = out)
+  str_add(out$data, start = TRUE) <- 
+    "  int<lower=1> N;  // number of observations\n"
   if (x$rescor) {
     # we already know at this point that all families are identical
     adforms <- lapply(x$terms, "[[", "adforms")
@@ -178,8 +190,10 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  // multivariate linear predictor matrix\n",
       "  vector[nresp] Mu[N];\n"
     )
-    str_add(out$modelC4) <- glue(
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
+    str_add(out$model_loop) <- glue(
+      "  for (n in 1:N) {{\n",
+      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n",
+      "  }}\n"
     )
     str_add(out$data) <- glue(
       "  int<lower=1> nresp;  // number of responses\n",   
@@ -261,19 +275,11 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       }
     }
     str_add(out$genD) <- glue(
-      "  matrix[nresp, nresp] Rescor",
+      "  corr_matrix[nresp] Rescor",
       " = multiply_lower_tri_self_transpose(Lrescor);\n",
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
-    rescor_genC <- ulapply(seq_len(nresp), function(i) 
-      lapply(seq_len(i - 1), function(j) glue(
-        "  rescor[{(i - 1) * (i - 2) / 2 + j}] = Rescor[{j}, {i}];\n"
-      ))
-    )
-    str_add(out$genC) <- glue(
-      "  // take only relevant parts of residual correlation matrix\n",
-      collapse(rescor_genC)
-    )
+    str_add(out$genC) <- stan_cor_genC("rescor", "nresp")
   }
   out
 }
@@ -300,12 +306,12 @@ stan_fe <- function(bterms, data, prior, stanvars,
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  resp <- usc(bterms$resp)
+  resp <- usc(px$resp)
   if (length(fixef)) {
     str_add(out$data) <- glue( 
       "  int<lower=1> K{p};",
       "  // number of population-level effects\n", 
-      "  matrix[N, K{p}] X{p};",
+      "  matrix[N{resp}, K{p}] X{p};",
       "  // population-level design matrix\n"
     )
     if (sparse) {
@@ -348,7 +354,7 @@ stan_fe <- function(bterms, data, prior, stanvars,
     if (length(fixef)) {
       str_add(out$tdataD) <- glue(
         "  int Kc{p} = K{p} - 1;\n",
-        "  matrix[N, K{p} - 1] Xc{p};", 
+        "  matrix[N{resp}, K{p} - 1] Xc{p};", 
         "  // centered version of X{p}\n",
         "  vector[K{p} - 1] means_X{p};",
         "  // column means of X{p} before centering\n"
@@ -489,6 +495,7 @@ stan_re <- function(ranef, prior, ...) {
   Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
   px <- check_prefix(r)
+  uresp <- usc(unique(px$resp))
   idp <- paste0(r$id, usc(combine_prefix(px)))
   # define data needed for group-level effects
   str_add(out$data) <- glue(
@@ -497,13 +504,15 @@ stan_re <- function(ranef, prior, ...) {
     "  int<lower=1> M_{id};\n"
   )
   if (r$gtype[1] == "mm") {
-    str_add(out$data) <- cglue(
-      "  int<lower=1> J_{id}_{ng}[N];\n",
-      "  real W_{id}_{ng}[N];\n"
-    )
+    for (res in uresp) {
+      str_add(out$data) <- cglue(
+        "  int<lower=1> J_{id}{res}_{ng}[N{res}];\n",
+        "  real W_{id}{res}_{ng}[N{res}];\n"
+      )
+    }
   } else {
-    str_add(out$data) <- glue(
-      "  int<lower=1> J_{id}[N];\n"
+    str_add(out$data) <- cglue(
+      "  int<lower=1> J_{id}{uresp}[N{uresp}];\n"
     )
   }
   if (has_by) {
@@ -519,18 +528,18 @@ stan_re <- function(ranef, prior, ...) {
     )
   }
   J <- seq_rows(r)
-  needs_Z <- !r$type %in% "sp"
-  if (any(needs_Z)) {
+  reqZ <- !r$type %in% "sp"
+  if (any(reqZ)) {
     if (r$gtype[1] == "mm") {
-      for (i in which(needs_Z)) {
+      for (i in which(reqZ)) {
         str_add(out$data) <- cglue(
-          "  vector[N] Z_{idp[i]}_{r$cn[i]}_{ng};\n"
+          "  vector[N{usc(r$resp[i])}] Z_{idp[i]}_{r$cn[i]}_{ng};\n"
         )
       }
     } else {
       str_add(out$data) <- cglue(
-        "  vector[N] Z_{idp[needs_Z]}_{r$cn[needs_Z]};\n"
-      ) 
+        "  vector[N{usc(r$resp[reqZ])}] Z_{idp[reqZ]}_{r$cn[reqZ]};\n"
+      )
     }
   }
   # define standard deviation parameters
@@ -595,7 +604,9 @@ stan_re <- function(ranef, prior, ...) {
         " = multiply_lower_tri_self_transpose(L_{id}[{Nby}]);\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id}_{Nby};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(nrow(r), glue("{id}_{Nby}"))
+      str_add(out$genC) <- stan_cor_genC(
+        glue("cor_{id}_{Nby}"), glue("M_{id}")
+      )
     } else {
       str_add(out$par) <- glue(
         "  // cholesky factor of correlation matrix\n",
@@ -624,7 +635,7 @@ stan_re <- function(ranef, prior, ...) {
         " = multiply_lower_tri_self_transpose(L_{id});\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(nrow(r), id)
+      str_add(out$genC) <- stan_cor_genC(glue("cor_{id}"), glue("M_{id}"))
     }
     str_add(out$tparD) <- cglue(
         "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
@@ -666,12 +677,13 @@ stan_sm <- function(bterms, data, prior, ...) {
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
   Xs_names <- attr(smef, "Xs_names")
   if (length(Xs_names)) {
     str_add(out$data) <- glue(
       "  // data for smooth terms\n",
       "  int Ks{p};\n",
-      "  matrix[N, Ks{p}] Xs{p};\n"
+      "  matrix[N{resp}, Ks{p}] Xs{p};\n"
     )
     str_add(out$pars) <- glue(
       "  // parameters for smooth terms\n",
@@ -692,7 +704,7 @@ stan_sm <- function(bterms, data, prior, ...) {
       "  int knots{pi}[nb{pi}];\n"
     )
     str_add(out$data) <- cglue(
-      "  matrix[N, knots{pi}[{nb}]] Zs{pi}_{nb};\n"
+      "  matrix[N{resp}, knots{pi}[{nb}]] Zs{pi}_{nb};\n"
     )
     str_add(out$par) <- glue(
       "  // parameters of smooth {smef$byterm[i]}\n"
@@ -731,7 +743,7 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
   if (length(csef)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Kcs{p};  // number of category specific effects\n",
-      "  matrix[N, Kcs{p}] Xcs{p};  // category specific design matrix\n"
+      "  matrix[N{resp}, Kcs{p}] Xcs{p};  // category specific design matrix\n"
     )
     bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- glue(
@@ -740,7 +752,7 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
     )
     str_add(out$modelD) <- glue(
       "  // linear predictor for category specific effects\n",
-      "  matrix[N, ncat{resp} - 1] mucs{p} = Xcs{p} * bcs{p};\n"
+      "  matrix[N{resp}, ncat{resp} - 1] mucs{p} = Xcs{p} * bcs{p};\n"
     ) 
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = csef,
@@ -752,8 +764,8 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
       # only group-level category specific effects present
       str_add(out$modelD) <- glue(
         "  // linear predictor for category specific effects\n",               
-        "  matrix[N, ncat{resp} - 1] mucs{p}", 
-        " = rep_matrix(0, N, ncat{resp} - 1);\n"
+        "  matrix[N{resp}, ncat{resp} - 1] mucs{p}", 
+        " = rep_matrix(0, N{resp}, ncat{resp} - 1);\n"
       )
     }
     cats_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
@@ -768,8 +780,9 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
         r <- r_cat[r_cat$id == id, ]
         rpx <- check_prefix(r)
         idp <- paste0(r$id, usc(combine_prefix(rpx)))
+        idresp <- paste0(r$id, usc(rpx$resp))
         str_add(out$modelC2) <- cglue(
-          " + r_{idp}_{r$cn}[J_{r$id}[n]] * Z_{idp}_{r$cn}[n]"
+          " + r_{idp}_{r$cn}[J_{idresp}[n]] * Z_{idp}_{r$cn}[n]"
         )
       }
       str_add(out$modelC2) <- ";\n"
@@ -785,6 +798,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   if (!nrow(spef)) return(out)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
   ranef <- subset2(ranef, type = "sp", ls = px)
   spef_coef <- rename(spef$term)
   invalid_coef <- setdiff(ranef$coef, spef_coef)
@@ -828,7 +842,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   if (ncovars > 0L) {
     str_add(out$data) <- glue(
       "  // covariates of special effects terms\n",
-      cglue("  vector[N] Csp{p}_{seq_len(ncovars)};\n")
+      cglue("  vector[N{resp}] Csp{p}_{seq_len(ncovars)};\n")
     )
   }
   prefix <- combine_prefix(px, keep_mu = TRUE)
@@ -854,7 +868,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
       "  int<lower=2> Jmo{p}[Imo{p}];  // length of simplexes\n",
       "  // monotonic variables\n",
-      cglue("  int Xmo{p}_{I}[N];\n"),
+      cglue("  int Xmo{p}_{I}[N{resp}];\n"),
       "  // prior concentration of monotonic simplexes\n",
       cglue("  vector[Jmo{p}[{I}]] con_simo{p}_{I};\n")
     )
@@ -881,6 +895,7 @@ stan_gp <- function(bterms, data, prior, ...) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
   gpef <- tidy_gpef(bterms, data)
   for (i in seq_rows(gpef)) {
     pi <- glue("{p}_{i}")
@@ -984,11 +999,11 @@ stan_gp <- function(bterms, data, prior, ...) {
       }
     } else {
       # no by-factor variable
-      Nsubgp <- str_if(gr, glue("Nsubgp{pi}"), "N")
+      Nsubgp <- str_if(gr, glue("Nsubgp{pi}"), glue("N{resp}"))
       if (gr) {
         str_add(out$data) <- glue(
           "  int<lower=1> {Nsubgp};\n",
-          "  int<lower=1> Jgp{pi}[N];\n"
+          "  int<lower=1> Jgp{pi}[N{resp}];\n"
         )
       }
       if (!isNA(k)) {
@@ -1015,7 +1030,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       }
       if (bynum) {
         str_add(out$data) <- glue(
-          "  vector[N] Cgp{pi};\n"
+          "  vector[N{resp}] Cgp{pi};\n"
         )
       }
       Cgp <- str_if(bynum, glue("Cgp{pi} .* "))
@@ -1064,7 +1079,8 @@ stan_offset <- function(bterms, ...) {
   out <- list()
   if (is.formula(bterms$offset)) {
     p <- usc(combine_prefix(bterms))
-    str_add(out$data) <- glue( "  vector[N] offset{p};\n")
+    resp <- usc(bterms$resp)
+    str_add(out$data) <- glue( "  vector[N{resp}] offset{p};\n")
     str_add(out$eta) <- glue(" + offset{p}")
   }
   out
@@ -1077,6 +1093,7 @@ stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
   #   center_X: use the centered design matrix?
   #   sparse: use sparse matrix multiplication?
   p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
   if (length(fixef)) {
     if (sparse) {
       stopifnot(!center_X)
@@ -1089,7 +1106,7 @@ stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
       eta_fe <- glue("X", str_if(center_X, "c"), "{p} * b{p}")
     }
   } else { 
-    eta_fe <- "rep_vector(0, N)"
+    eta_fe <- glue("rep_vector(0, N{resp})")
   }
   glue(" + {eta_fe}")
 }
@@ -1105,18 +1122,19 @@ stan_eta_re <- function(ranef, px = list()) {
     r <- subset2(ranef, id = id)
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
+    idresp <- paste0(r$id, usc(rpx$resp))
     if (r$gtype[1] == "mm") {
       ng <- seq_along(r$gcall[[1]]$groups)
       for (i in seq_rows(r)) {
         str_add(eta_re) <- cglue(
           " + W_{r$id[i]}_{ng}[n]", 
-          " * r_{idp[i]}_{r$cn[i]}[J_{r$id[i]}_{ng}[n]]",
+          " * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
           " * Z_{idp[i]}_{r$cn[i]}_{ng}[n]"
         ) 
       }
     } else {
       str_add(eta_re) <- cglue(
-        " + r_{idp}_{r$cn}[J_{r$id}[n]] * Z_{idp}_{r$cn}[n]"
+        " + r_{idp}_{r$cn}[J_{idresp}[n]] * Z_{idp}_{r$cn}[n]"
       )
     }
   }
@@ -1132,17 +1150,18 @@ stan_eta_rsp <- function(r) {
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))
+  idresp <- paste0(r$id, usc(rpx$resp))
   if (r$gtype[1] == "mm") {
     ng <- seq_along(r$gcall[[1]]$groups)
     out <- rep("", nrow(r))
     for (i in seq_along(out)) {
       out[i] <- glue(
-        "W_{r$id[i]}_{ng}[n] * r_{idp[i]}_{r$cn[i]}[J_{r$id[i]}_{ng}[n]]",
+        "W_{r$id[i]}_{ng}[n] * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
         collapse = " + "
       ) 
     }
   } else {
-    out <- glue("r_{idp}_{r$cn}[J_{r$id}[n]]")
+    out <- glue("r_{idp}_{r$cn}[J_{idresp}[n]]")
   }
   out
 }
@@ -1339,10 +1358,11 @@ stan_dpar_transform <- function(bterms) {
   out <- list()
   families <- family_names(bterms)
   p <- usc(combine_prefix(bterms))
+  resp <- usc(bterms$resp)
   if (any(conv_cats_dpars(families))) {
     str_add(out$modelD) <- glue( 
       "  // linear predictor matrix\n",
-      "  vector[ncat{p}] mu{p}[N];\n"
+      "  vector[ncat{p}] mu{p}[N{resp}];\n"
     )
     mu_dpars <- glue("mu{bterms$family$cats}{p}[n]")
     iref <- match(bterms$family$refcat, bterms$family$cats)
@@ -1360,9 +1380,9 @@ stan_dpar_transform <- function(bterms) {
       sigma <- stan_sigma_transform(bterms, id = id)
       ns <- str_if(grepl("\\[n\\]", sigma), "[n]")
       na <- str_if(glue("alpha{id}") %in% ap_names, "[n]")
-      type_delta <- str_if(nzchar(na), "vector[N]", "real")
+      type_delta <- str_if(nzchar(na), glue("vector[N{resp}]"), "real")
       no <- str_if(any(nzchar(c(ns, na))), "[n]", "")
-      type_omega <- str_if(nzchar(no), "vector[N]", "real")
+      type_omega <- str_if(nzchar(no), glue("vector[N{resp}]"), "real")
       str_add(out$modelD) <- glue(
         "  {type_delta} delta{id}{p};\n",
         "  {type_omega} omega{id}{p};\n"
@@ -1379,7 +1399,7 @@ stan_dpar_transform <- function(bterms) {
       str_add(out$modelC5) <- glue(
         str_if(!nzchar(na), comp_delta),
         str_if(!nzchar(no), comp_omega),
-        "  for (n in 1:N) {{\n",
+        "  for (n in 1:N{resp}) {{\n",
         str_if(nzchar(na), glue("  ", comp_delta)),
         str_if(nzchar(no), glue("  ", comp_omega)),
         "    mu{id}{p}[n] = mu{id}{p}[n]", 

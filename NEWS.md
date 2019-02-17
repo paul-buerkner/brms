@@ -4,10 +4,12 @@
 
 * Fit multinomial models via family `multinomial`. (#463)
 * Fit Dirichlet models via family `dirichlet`. (#463)
-* Fit conditional logistic models using the 
-`categorical` and `multinomial` families. (#560)
+* Fit conditional logistic models using the `categorical` and
+`multinomial` families together with non-linear formula syntax. (#560)
 * Choose the reference category of `categorical` and related 
 families via argument `refcat` of the corresponding family functions.
+* Use different subsets of the data in different univariate parts
+of a multivariate model via addition argument `subset`. (#360)
 
 ### Other changes
 
@@ -36,6 +38,9 @@ univariate models thanks to Vassilis Kehayas. (#589)
 thanks to Ozgur Asar.
 * Fix an error in the post-processing of monotonic effects
 occuring for multivariate models thanks to James Rae. (#598)
+* Fix lower bounds in truncated discrete models.
+* Fix checks of the original data in `kfold` thanks to
+the GitHub user gcolitti. (#602)
 
 
 # brms 2.7.0
