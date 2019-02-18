@@ -857,8 +857,15 @@ nsamples.brmsfit <- function(x, subset = NULL,
 }
 
 #' @export
-nobs.brmsfit <- function(object, ...) {
-  nrow(model.frame(object))
+nobs.brmsfit <- function(object, resp = NULL, ...) {
+  if (is_mv(object) && length(resp)) {
+    resp <- validate_resp(resp, object, multiple = FALSE)
+    bterms <- parse_bf(object$formula$forms[[resp]])
+    out <- nrow(subset_data(model.frame(object), bterms))
+  } else {
+    out <- nrow(model.frame(object))
+  }
+  out
 }
 
 #' @rdname ngrps

@@ -835,4 +835,5 @@ test_that("Addition argument 'subset' works correctly", {
   expect_range(waic$estimates[3, 1], 1100, 1130)
   me <- marginal_effects(fit)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
 })
