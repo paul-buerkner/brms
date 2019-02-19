@@ -274,23 +274,23 @@ test_that("make_standata allows to retrieve the initial data order", {
 
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
-  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                                   cov_ranef = list(visit = A))$Lcov_1, A)
   B <- diag(1, 4)
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "Row names are required")
   B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "Row names .* do not match")
   B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
-  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B))$Lcov_1,
                     t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
   B <- A
   B[1,2] <- 0.5
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "not symmetric")
 })
@@ -428,14 +428,14 @@ test_that("make_standata returns data for GAMMs", {
 })
 
 test_that("make_standata returns correct group ID data", {
-  form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
-             shape ~ (1|3|visit) + (Trt_c||patient))
+  form <- bf(count ~ Trt + (1+Trt|3|visit) + (1|patient), 
+             shape ~ (1|3|visit) + (Trt||patient))
   sdata <- make_standata(form, data = epilepsy, family = negbinomial())
   expect_true(all(c("Z_1_1", "Z_2_2", "Z_3_shape_1", "Z_2_shape_3") %in% 
                     names(sdata)))
   
-  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
-             a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
+  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt||patient),
+             a ~ Trt + (1+Trt|3|visit) + (1|patient), nl = TRUE)
   sdata <- make_standata(form, data = epilepsy, family = student())
   expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
                     "Z_3_a_1") %in% names(sdata)))
@@ -792,7 +792,7 @@ test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(multi_normal(M, V), class = "b")
   stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
     stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
-  sdata <- make_standata(count ~ Trt + log_Base4_c, epilepsy,
+  sdata <- make_standata(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_equal(sdata$M, rep(0, 2))
   expect_equal(sdata$V, diag(2))

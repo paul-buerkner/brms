@@ -109,7 +109,7 @@ fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 summary(fit3)
 
 ## Poisson model with truncated counts  
-fit4 <- brm(count | trunc(ub = 104) ~ log_Base4_c * Trt_c, 
+fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
             data = epilepsy, family = poisson())
 summary(fit4)
 }

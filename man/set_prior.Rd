@@ -353,18 +353,18 @@ make_stancode(rating ~ treat + period + carry + (1|subject),
               prior = prior)
               
 ## use the horseshoe prior to model sparsity in population-level effects
-make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+make_stancode(count ~ zAge + zBase * Trt,
               data = epilepsy, family = poisson(),
               prior = set_prior("horseshoe(3)"))
               
 ## alternatively use the lasso prior
-make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+make_stancode(count ~ zAge + zBase * Trt,
               data = epilepsy, family = poisson(),
               prior = set_prior("lasso(1)"))
 
 ## pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
+make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 
 }
 \references{

@@ -24,7 +24,7 @@ Compute intervals from the posterior predictive distribution.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Base4_c, data = epilepsy, family = poisson())
+fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 predictive_interval(fit)
 }
 

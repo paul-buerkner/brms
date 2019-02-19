@@ -319,18 +319,18 @@
 #'               prior = prior)
 #'               
 #' ## use the horseshoe prior to model sparsity in population-level effects
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' make_stancode(count ~ zAge + zBase * Trt,
 #'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("horseshoe(3)"))
 #'               
 #' ## alternatively use the lasso prior
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' make_stancode(count ~ zAge + zBase * Trt,
 #'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("lasso(1)"))
 #' 
 #' ## pass priors to Stan without checking
 #' prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-#' make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
+#' make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
@@ -454,19 +454,17 @@ prior_string <- function(prior, ...) {
 #' 
 #' @examples 
 #' ## get all parameters and parameters classes to define priors on
-#' (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
-#'                     + (1|patient) + (1|visit),
+#' (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'                     data = epilepsy, family = poisson()))   
 #'          
 #' ## define a prior on all population-level effects a once
 #' prior$prior[1] <- "normal(0,10)"
 #' 
-#' ## define a specific prior on the population-level effect of Trt_c
+#' ## define a specific prior on the population-level effect of Trt
 #' prior$prior[5] <- "student_t(10, 0, 5)"       
 #' 
 #' ## verify that the priors indeed found their way into Stan's model code
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'               + (1|patient) + (1|visit),
+#' make_stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'               data = epilepsy, family = poisson(), 
 #'               prior = prior)
 #' 

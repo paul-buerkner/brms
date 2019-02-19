@@ -52,8 +52,7 @@ Also consider using the \pkg{shinystan} package available via
 }
 \examples{
 \dontrun{
-model <- brm(count ~ log_Age_c + log_Base4_c * Trt 
-             + (1|patient) + (1|visit),
+model <- brm(count ~ zAge + zBase * Trt + (1|patient),
              data = epilepsy, family = "poisson")
              
 # plot posterior intervals

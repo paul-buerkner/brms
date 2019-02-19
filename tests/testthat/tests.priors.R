@@ -5,7 +5,7 @@ test_that("get_prior finds all classes for which priors can be specified", {
   expect_equal(
     sort(
       get_prior(
-        count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
+        count ~ zBase * Trt + (1|patient) + (1+Trt|visit),
         data = epilepsy, family = "poisson"
       )$class
     ),
