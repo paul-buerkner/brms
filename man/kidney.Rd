@@ -4,7 +4,7 @@
 \name{kidney}
 \alias{kidney}
 \title{Infections in kidney patients}
-\format{A dataframe of 76 observations containing 
+\format{A data frame of 76 observations containing 
   information on the following 7 variables.
 \describe{
  \item{time}{The time to first or second recurrence of the infection, 

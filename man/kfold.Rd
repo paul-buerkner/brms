@@ -110,7 +110,7 @@ The \code{kfold} function performs exact \eqn{K}-fold
 }
 \examples{
 \dontrun{
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
+fit1 <- brm(count ~ zAge + zBase * Trt + 
               (1|patient) + (1|obs),
            data = epilepsy, family = poisson())
 # throws warning about some pareto k estimates being too high

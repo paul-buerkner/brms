@@ -18,8 +18,7 @@
 #'                        data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- make_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'                        + (1|patient) + (1|visit), 
+#' data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
 #'                        data = epilepsy, family = "poisson")
 #' names(data2)
 #'          

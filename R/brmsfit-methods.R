@@ -75,7 +75,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #'   
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' vcov(fit)
 #' }
@@ -126,7 +126,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 #'   
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ranef(fit)
 #' }
@@ -199,7 +199,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ## extract population and group-level coefficients separately
 #' fixef(fit)
@@ -307,7 +307,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' 
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' VarCorr(fit)
 #' }
@@ -492,7 +492,7 @@ as.array.brmsfit <- function(x, ...) {
 #'   
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' fit <- brm(count ~ zAge + zBase * Trt,
 #'            data = epilepsy, family = negbinomial())
 #' posterior_interval(fit)
 #' }
@@ -587,7 +587,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 #' 
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+#' fit <- brm(count ~ zAge + zBase * Trt  
 #'              + (1|patient) + (1|obs), 
 #'            data = epilepsy, family = poisson(), 
 #'            prior = c(prior(student_t(5,0,10), class = b),
@@ -1073,7 +1073,7 @@ launch_shinystan.brmsfit <- function(
 #' 
 #' @examples
 #' \dontrun{ 
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")
 #' plot(fit)
@@ -1225,7 +1225,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' 
 #' @examples
 #' \dontrun{
-#' fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c
+#' fit <-  brm(count ~ zAge + zBase * Trt
 #'             + (1|patient) + (1|obs),
 #'             data = epilepsy, family = poisson())
 #' 
@@ -1365,7 +1365,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #'  
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
 #' pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)
@@ -1918,7 +1918,7 @@ predictive_error.brmsfit <- function(
 #' 
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Base4_c, data = epilepsy, family = poisson())
+#' fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 #' predictive_interval(fit)
 #' }
 #' 
@@ -3048,7 +3048,7 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3058,7 +3058,7 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' 
 #' # model without the treatment effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3138,7 +3138,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3147,7 +3147,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' 
 #' # model without the treatment effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3210,7 +3210,7 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3219,7 +3219,7 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' 
 #' # model without the treatent effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE

@@ -54,7 +54,7 @@ original \code{loo} object.
 }
 \examples{
 \dontrun{
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
            data = epilepsy, family = poisson())
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))

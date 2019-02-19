@@ -4,7 +4,7 @@
 \name{inhaler}
 \alias{inhaler}
 \title{Clarity of inhaler instructions}
-\format{A dataframe of 572 observations containing 
+\format{A data frame of 572 observations containing 
   information on the following 5 variables. 
 \describe{
  \item{subject}{The subject number}

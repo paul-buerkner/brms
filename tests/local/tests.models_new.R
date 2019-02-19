@@ -5,7 +5,7 @@ test_that("Poisson model from brm doc works correctly", {
   ## using student_t priors for population-level effects
   ## and half cauchy priors for standard deviations of group-level effects
   fit1 <- brm(
-    count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
     data = epilepsy, family = poisson(),
     prior = prior(student_t(5,0,10), class = b) +
       prior(cauchy(0,2), class = sd)
@@ -167,7 +167,7 @@ test_that("Models from hypothesis doc work correctly", {
 test_that("bridgesampling methods work correctly", {
   # model with the treatment effect
   fit1 <- brm(
-    count ~ log_Age_c + log_Base4_c + Trt_c,
+    count ~ zAge + zBase + Trt,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
@@ -175,7 +175,7 @@ test_that("bridgesampling methods work correctly", {
   print(fit1)
   # model without the treatment effect
   fit2 <- brm(
-    count ~ log_Age_c + log_Base4_c,
+    count ~ zAge + zBase,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
@@ -193,7 +193,7 @@ test_that("bridgesampling methods work correctly", {
 })
 
 test_that("varying slopes without a fixed effect work", {
-  fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c +
+  fit1 <- brm(count ~ zAge + zBase * Trt +
                 (as.numeric(visit)|patient),
               data = epilepsy, family = gaussian(),
               chains = 2)
@@ -207,12 +207,12 @@ test_that("varying slopes without a fixed effect work", {
   reloo2 <- LOO(fit1, reloo = TRUE, chains = 1, iter = 100)
   expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
-  conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
+  conditions <- data.frame(zAge = 0, zBase = 0, Trt = 0)
   me <- marginal_effects(fit1, conditions = conditions)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 
-  conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0,
-                           Trt_c = 0, visit = c(1:4, NA))
+  conditions <- data.frame(zAge = 0, zBase = 0,
+                           Trt = 0, visit = c(1:4, NA))
   me <- marginal_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 
@@ -291,8 +291,8 @@ test_that("generalized multivariate models work correctly", {
 
 test_that("ZI and HU models work correctly", {
   fit_hu <- brm(
-    bf(count ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient),
-       hu ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient)),
+    bf(count ~ zAge + zBase * Trt + (1|id1|patient),
+       hu ~ zAge + zBase * Trt + (1|id1|patient)),
     data = epilepsy, family = hurdle_poisson(),
     prior = c(prior(normal(0, 5)),
               prior(normal(0, 5), dpar = "hu")),
@@ -303,7 +303,7 @@ test_that("ZI and HU models work correctly", {
   expect_ggplot(plot(marginal_effects(fit_hu), ask = FALSE)[[2]])
 
   fit_zi <- brm(
-    bf(count ~ log_Age_c + log_Base4_c * Trt + (1|patient), zi ~ Trt),
+    bf(count ~ zAge + zBase * Trt + (1|patient), zi ~ Trt),
     data = epilepsy, family = zero_inflated_negbinomial(),
     prior = prior(normal(0,5)) +
       prior(normal(0,3), class = "sd") +
@@ -470,9 +470,9 @@ test_that("generalized extreme value models work correctly", {
 test_that("update works correctly for some special cases", {
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy)
-  fit2 <- update(fit1, ~ . + Trt_c, newdata = epilepsy)
-  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt_c"))
-  fit3 <- update(fit2, ~ . - Trt_c, newdata = epilepsy)
+  fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy)
+  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt"))
+  fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy)
   expect_equal(rownames(fixef(fit3)), c("Intercept"))
 
   # test that family is correctly updated
@@ -766,7 +766,7 @@ test_that("Missing value imputation works correctly", {
 
 test_that("student-t-distributed group-level effects work correctly", {
   fit <- brm(
-    count ~ Trt * log_Base4_c + (1 | gr(patient, dist = "student")),
+    count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
     data = epilepsy, family = poisson(), chains = 1
   )
   print(summary(fit))
