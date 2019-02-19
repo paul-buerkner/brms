@@ -5,8 +5,10 @@
 \alias{customfamily}
 \title{Custom Families in \pkg{brms} Models}
 \usage{
-custom_family(name, dpars = "mu", links = "identity", type = c("real",
-  "int"), lb = NA, ub = NA, vars = NULL, env = parent.frame())
+custom_family(name, dpars = "mu", links = "identity",
+  type = c("real", "int"), lb = NA, ub = NA, vars = NULL,
+  specials = NULL, log_lik = NULL, predict = NULL, fitted = NULL,
+  env = parent.frame())
 }
 \arguments{
 \item{name}{Name of the custom family.}
@@ -34,21 +36,39 @@ function without being distributional parameters. That is,
 See \code{\link{stanvar}} for details about adding self-defined
 data to the generated \pkg{Stan} model.}
 
+\item{specials}{A character vector of special options to enable
+for this custom family. Currently for internal use only.}
+
+\item{log_lik}{Optional function to compute log-likelihood values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+
+\item{predict}{Optional function to compute predicted values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.}
+
+\item{fitted}{Optional function to compute fitted values of
+the model in \R. This is only relevant if one wants to ensure 
+compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.}
+
 \item{env}{An \code{\link{environment}} in which certain post-processing 
-functions related to the custom family can be found. This is only
+functions related to the custom family can be found, if there were not 
+directly passed to \code{custom_family}. This is only
 relevant if one wants to ensure compatibility with the methods
 \code{\link[brms:predict.brmsfit]{predict}}, 
 \code{\link[brms:fitted.brmsfit]{fitted}}, or
-\code{\link[brms:log_lik.brmsfit]{log_lik}}.}
+\code{\link[brms:log_lik.brmsfit]{log_lik}}.
+By default, \code{env} is the enviroment from which 
+\code{custom_family} is called.}
 }
 \value{
 An object of class \code{customfamily} inheriting
-  for class \code{\link{brmsfamily}}.
+  from class \code{\link{brmsfamily}}.
 }
 \description{
-Define custom families for use in \pkg{brms} models.
-It allows users to benefit from the modeling flexibility of 
-\pkg{brms}, while applying their self-defined likelihood
+Define custom families (i.e. response distribution) for use in 
+\pkg{brms} models. It allows users to benefit from the modeling 
+flexibility of \pkg{brms}, while applying their self-defined likelihood
 functions. All of the post-processing methods for \code{brmsfit} 
 objects can be made compatible with custom families. 
 See \code{vignette("brms_customfamilies")} for more details.

@@ -20,7 +20,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   meef <- tidy_meef(bterms, data)
   if (nrow(meef)) {
     I <- seq_along(unique(meef$grname))
-    K <- seq_len(nrow(meef))
+    K <- seq_rows(meef)
     c(out) <- paste0(c("Xme", "Corme_"), I)
     if (!save_all_pars) {
       c(out) <- c(paste0("zme_", K), paste0("Lme_", I))
@@ -40,11 +40,11 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     }
     tranef <- get_dist_groups(ranef, "student")
     if (!save_all_pars && has_rows(tranef)) {
-      c(out) <- paste0("udf_", tranef$ggn)
+      c(out) <- paste0(c("udf_", "dfm_"), tranef$ggn)
     }
   }
   att <- nlist(save_ranef, save_mevars, save_all_pars)
-  do.call(structure, c(list(unique(out)), att))
+  do_call(structure, c(list(unique(out)), att))
 }
 
 exclude_pars_internal <- function(x, ...) {
@@ -81,18 +81,12 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
     }
+    for (nlp in names(x$nlpars)) {
+      c(out) <- exclude_pars_internal(x$nlpars[[nlp]], ...)
+    }
   }
   if (!save_mevars && is.formula(x$adforms$mi)) {
     c(out) <- paste0("Yl", p)
-  }
-  out
-}
-
-#' @export
-exclude_pars_internal.btnl <- function(x, ...) {
-  out <- NULL
-  for (nlp in names(x$nlpars)) {
-    c(out) <- exclude_pars_internal(x$nlpars[[nlp]], ...)
   }
   out
 }
@@ -102,10 +96,11 @@ exclude_pars_internal.btl <- function(x, data, ...) {
   p <- usc(combine_prefix(x))
   out <- c(
     paste0("temp", p, "_Intercept"),
-    paste0(c("hs_local", "hs_global", "zb"), p)
+    paste0(c("hs_local", "hs_global", "zb"), p),
+    paste0(c("hs_localsp", "zbsp"), p)
   )
   smef <- tidy_smef(x, data)
-  for (i in seq_len(nrow(smef))) {
+  for (i in seq_rows(smef)) {
     nb <- seq_len(smef$nbases[i])
     c(out) <- paste0("zs", p, "_", i, "_", nb)
   }

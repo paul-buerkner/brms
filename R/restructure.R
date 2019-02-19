@@ -76,6 +76,9 @@ restructure_v2 <- function(x) {
     # added 'dist' argument to grouping terms
     x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
+  if (version <= "2.3.6") {
+    check_old_nl_dpars(bterms)
+  }
   x
 }
 
@@ -172,10 +175,17 @@ restructure_formula <- function(formula, nonlinear = NULL) {
     nl <- TRUE
   }
   out <- structure(nlist(formula), class = "brmsformula")
-  old_forms <- rmNULL(attributes(formula)[dpars()])
+  old_forms <- rmNULL(attributes(formula)[old_dpars()])
   old_forms <- c(old_forms, nonlinear)
   out$pforms[names(old_forms)] <- old_forms
   bf(out, nl = nl)
+}
+
+old_dpars <- function() {
+  # only used when restructuring old models
+  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
+    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
+    "quantile", "alpha", "theta")
 }
 
 change_old_re <- function(ranef, pars, dims) {
@@ -334,7 +344,7 @@ change_old_mo <- function(bterms, data, pars) {
   .change_old_mo <- function(bt) {
     out <- list()
     spef <- tidy_spef(bt, data)
-    has_mo <- lengths(spef$call_mo) > 0
+    has_mo <- lengths(spef$calls_mo) > 0
     if (!any(has_mo)) {
       return(out)
     }
@@ -441,4 +451,25 @@ stop_parameterization_changed <- function(family, version) {
     version, " to be consistent with other model classes. ", 
     "Please refit your model with the current version of brms."
   )
+}
+
+check_old_nl_dpars <- function(bterms) {
+  .check_nl_dpars <- function(x) {
+    stopifnot(is.brmsterms(x))
+    non_mu_dpars <- x$dpars[names(x$dpars) != "mu"]
+    if (any(ulapply(non_mu_dpars, is.btnl))) {
+      stop2(
+        "Non-linear parameters are global within univariate models ",
+        "as of version 2.3.7. Please refit your model with the ",
+        "latest version of brms."
+      )
+    }
+    return(TRUE)
+  }
+  if (is.mvbrmsterms(bterms)) {
+    lapply(bterms$terms, .check_nl_dpars)
+  } else {
+    .check_nl_dpars(bterms)
+  }
+  TRUE
 }

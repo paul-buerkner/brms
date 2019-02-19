@@ -5,40 +5,38 @@
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
 get_prior(formula, data, family = gaussian(), autocor = NULL,
-  internal = FALSE)
+  sparse = FALSE, internal = FALSE)
 }
 \arguments{
-\item{formula}{An object of class 
-\code{\link[stats:formula]{formula}},
-\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
-(or one that can be coerced to that classes): 
-A symbolic description of the model to be fitted. 
-The details of model specification are explained in 
+\item{formula}{An object of class \code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
+be coerced to that classes): A symbolic description of the model to be
+fitted. The details of model specification are explained in
 \code{\link{brmsformula}}.}
 
-\item{data}{An object of class \code{data.frame} 
-(or one that can be coerced to that class) 
-containing data of all variables used in the model.}
+\item{data}{An object of class \code{data.frame} (or one that can be coerced
+to that class) containing data of all variables used in the model.}
 
-\item{family}{A description of the response distribution and link function 
-to be used in the model. This can be a family function, 
-a call to a family function or a character string naming the family.
-Every family function has a \code{link} argument allowing to specify
-the link function to be applied on the response variable.
-If not specified, default links are used.
-For details of supported families see 
-\code{\link{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.
-In multivariate models, \code{family} might also be a list of families.}
+\item{family}{A description of the response distribution and link function to
+be used in the model. This can be a family function, a call to a family
+function or a character string naming the family. Every family function has
+a \code{link} argument allowing to specify the link function to be applied
+on the response variable. If not specified, default links are used. For
+details of supported families see \code{\link{brmsfamily}}. By default, a
+linear \code{gaussian} model is applied. In multivariate models,
+\code{family} might also be a list of families.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure within the response variable 
-(i.e., the 'autocorrelation'). 
-See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.
-In multivariate models, \code{autocor} might also be a list 
-of autocorrelation structures.}
+\item{autocor}{An optional \code{\link{cor_brms}} object describing the
+correlation structure within the response variable (i.e., the
+'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
+description of the available correlation structures. Defaults to
+\code{NULL}, corresponding to no correlations. In multivariate models,
+\code{autocor} might also be a list of autocorrelation structures.}
+
+\item{sparse}{Logical; indicates whether the population-level design matrices
+should be treated as sparse (defaults to \code{FALSE}). For design matrices
+with many zeros, this can considerably reduce required memory. Sampling
+speed is currently not improved or even slightly decreased.}
 
 \item{internal}{A flag indicating if the names of additional internal parameters 
 should be displayed. Setting priors on these parameters is not recommended}
@@ -72,5 +70,5 @@ make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c
 
 }
 \seealso{
-\code{\link[brms:set_prior]{set_prior}}
+\code{\link{set_prior}}
 }

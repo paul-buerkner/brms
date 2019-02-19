@@ -16,11 +16,6 @@ test_that("rmNULL removes all NULL entries", {
                list(b = 1))
 })
 
-test_that("rmNum remove all numeric entries", {
-  expect_equal(rmNum(list(1, "a", 2.3, "b")), list("a","b"))
-  expect_equal(rmNum(list(x = 1.5, y = "abc", z = pi)), list(y = "abc"))
-})
-
 test_that("rename returns an error on duplicated names", {
   expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
                paste("Internal renaming led to duplicated names.", 
@@ -55,15 +50,6 @@ test_that("collapse_lists performs correct collapsing after names", {
   expect_equal(collapse_lists(ls = list(c(x, c = "c <- "), y)),
                list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
                     c = "c <- normal(0,1)"))
-})
-
-test_that("subset_attr works correctly", {
-  x <- list(a = 1, b = 2, c = 3)
-  attr(x, "att") <- "x"
-  res <- subset_attr(x, c("a", "c"))
-  expect_equivalent(res, list(a = 1, c = 3))
-  expect_equal(attr(res, "att"), "x")
-  expect_equal(names(res), c("a", "c"))
 })
 
 test_that("nlist works correctly", {
@@ -107,6 +93,6 @@ test_that("lsp works correctly", {
   expect_equal(
     lsp("brms", pattern = "^log_[^l]"),
     c("log_diff_exp", "log_inv_logit",  "log_mean_exp", 
-      "log_posterior.brmsfit", "log_sum_exp")
+      "log_posterior.brmsfit", "log_softmax", "log_sum_exp")
   )
 })

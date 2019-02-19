@@ -9,25 +9,24 @@
 #' You can also specify custom families for use in \pkg{brms} with
 #' the \code{\link{custom_family}} function.
 #' 
-#' @param family A character string naming the distribution
-#'   of the response variable be used in the model.
-#'   Currently, the following families are supported:
-#'   \code{gaussian}, \code{student}, \code{binomial}, 
-#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal}, 
-#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener}, 
-#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull}, 
-#'   \code{frechet}, \code{Beta}, \code{von_mises}, \code{asym_laplace},
-#'   \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
-#'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-#'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
+#' @param family A character string naming the distribution of the response
+#'   variable be used in the model. Currently, the following families are
+#'   supported: \code{gaussian}, \code{student}, \code{binomial},
+#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
+#'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
+#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+#'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
+#'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
+#'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
+#'   \code{multinomial}, \code{cumulative}, \code{cratio}, \code{sratio},
+#'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{hurdle_lognormal},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
-#'   and \code{zero_one_inflated_beta}.
-#' @param link A specification for the model link function. 
-#'   This can be a name/expression or character string. 
-#'   See the 'Details' section for more information on link
-#'   functions supported by each family.
+#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson}, and
+#'   \code{zero_one_inflated_beta}.
+#' @param link A specification for the model link function. This can be a
+#'   name/expression or character string. See the 'Details' section for more
+#'   information on link functions supported by each family.
 #' @param link_sigma Link of auxiliary parameter \code{sigma} if being predicted.
 #' @param link_shape Link of auxiliary parameter \code{shape} if being predicted.
 #' @param link_nu Link of auxiliary parameter \code{nu} if being predicted.
@@ -50,6 +49,11 @@
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
+#' @param refcat Optional name of the reference response category used in
+#'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
+#'   default), the first category is used as the reference. If \code{NA}, all
+#'   categories will be predicted, which requires strong priors or carefully
+#'   specified predictor terms in order to lead to an identified model.
 #' 
 #' @details 
 #'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
@@ -150,7 +154,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity", 
                        link_quantile = "logit",
-                       threshold = c("flexible", "equidistant")) {
+                       threshold = c("flexible", "equidistant"),
+                       refcat = NULL) {
   slink <- substitute(link)
   .brmsfamily(
     family, link = link, slink = slink,
@@ -163,13 +168,13 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    threshold = threshold
+    threshold = threshold, refcat = refcat
   )
 }
 
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = c("flexible", "equidistant"),
-                        ...) {
+                        refcat = NULL, ...) {
   # helper function to prepare brmsfamily objects
   # Args:
   #   family: character string naming the model family
@@ -177,10 +182,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   #   slink: can be used with substitute(link) for 
   #          non-standard evaluation of the link function
   #   threshold: threshold type for ordinal models
-  #   ...: link functions (as character strings) of auxiliary parameters
-  # returns:
-  #  An object of class = c(brmsfamily, family) to be used
-  #  only inside the brms package
+  #   ...: link functions (as character strings) of parameters
+  # Returns:
+  #   An object of class = c('brmsfamily', 'family') to be used
+  #   only inside the brms package
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
   pattern <- c("^normal$", "^zi_", "^hu_")
@@ -241,6 +246,11 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   }
   if (is_ordinal(out$family)) {
     out$threshold <- match.arg(threshold)
+  }
+  if (conv_cats_dpars(out$family)) {
+    if (!is.null(refcat)) {
+      out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+    }
   }
   out
 }
@@ -361,6 +371,16 @@ family_info.mvbrmsterms <- function(x, y, ...) {
 }
 
 #' @export
+family_info.btl <- function(x, y, ...) {
+  family_info(x$family, y = y, ...)
+}
+
+#' @export
+family_info.btnl <- function(x, y, ...) {
+  family_info(x$family, y = y, ...)
+}
+
+#' @export
 family_info.brmsfit <- function(x, y, ...) {
   family_info(x$formula, y = y, ...)
 }
@@ -377,11 +397,11 @@ combine_family_info <- function(x, y, ...) {
   } else if (y == "ad") {
     x <- Reduce("intersect", x)
   } else if (y == "ybounds") {
-    x <- do.call(rbind, x)
+    x <- do_call(rbind, x)
     x <- c(max(x[, 1]), min(x[, 2]))
   } else if (y == "closed") {
     # closed only if no bounds are open
-    x <- do.call(rbind, x)
+    x <- do_call(rbind, x)
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)
@@ -506,6 +526,14 @@ Beta <- function(link = "logit", link_phi = "log") {
 
 #' @rdname brmsfamily
 #' @export
+dirichlet <- function(link = "logit", link_phi = "log", refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("dirichlet", link = link, slink = slink,
+              link_phi = link_phi, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
 von_mises <- function(link = "tan_half", link_kappa = "log") {
   slink <- substitute(link)
   .brmsfamily("von_mises", link = link, slink = slink,
@@ -601,9 +629,16 @@ zero_inflated_binomial <- function(link = "logit", link_zi = "logit") {
 
 #' @rdname brmsfamily
 #' @export
-categorical <- function(link = "logit") {
+categorical <- function(link = "logit", refcat = NULL) {
   slink <- substitute(link)
-  .brmsfamily("categorical", link = link, slink = slink)
+  .brmsfamily("categorical", link = link, slink = slink, refcat = refcat)
+}
+
+#' @rdname brmsfamily
+#' @export
+multinomial <- function(link = "logit", refcat = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("multinomial", link = link, slink = slink, refcat = refcat)
 }
 
 #' @rdname brmsfamily
@@ -655,7 +690,7 @@ acat <- function(link = "logit", link_disc = "log",
 #'   same way as objects passed via the \code{...} argument.
 #' @param nmix Optional numeric vector specifying the number of times
 #'   each family is repeated. If specified, it must have the same length 
-#'   as the number of families passed via \code{...} or \code{flist}.
+#'   as the number of families passed via \code{...} and \code{flist}.
 #' @param order Ordering constraint to identify mixture components.
 #'   If \code{'mu'} or \code{TRUE}, population-level intercepts
 #'   of the mean parameters are ordered. 
@@ -744,28 +779,30 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   )
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
-  families <- family_names(family)
-  if (length(families) < 2L) {
+  if (length(family$mix) < 2L) {
     stop2("Expecting at least 2 mixture components.")
-  }
-  no_mix_families <- c("categorical")
-  no_mix_families <- intersect(families, no_mix_families)
-  if (length(no_mix_families)) {
-    stop2("Families ", collapse_comma(no_mix_families), 
-          " are currently not allowed in mixture models.")
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
   }
-  is_ordinal <- ulapply(families, is_ordinal)
+  is_ordinal <- ulapply(family$mix, is_ordinal)
   if (any(is_ordinal) && any(!is_ordinal)) {
     stop2("Cannot mix ordinal and non-ordinal families.")
+  }
+  no_mixture <- ulapply(family$mix, no_mixture)
+  if (any(no_mixture)) {
+    stop2("Some of the families are not allowed in mixture models.")
+  }
+  for (fam in family$mix) {
+    if (is.customfamily(fam) && "theta" %in% fam$dpars) {
+      stop2("Parameter name 'theta' is reserved in mixture models.")
+    }
   }
   if (is.null(order)) {
     if (any(is_ordinal)) {
       family$order <- "none"
       message("Setting order = 'none' for mixtures of ordinal families.")
-    } else if (length(unique(families)) == 1L) {
+    } else if (length(unique(family_names(family))) == 1L) {
       family$order <- "mu"
       message("Setting order = 'mu' for mixtures of the same family.")
     } else {
@@ -795,9 +832,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 
 #' Custom Families in \pkg{brms} Models
 #' 
-#' Define custom families for use in \pkg{brms} models.
-#' It allows users to benefit from the modeling flexibility of 
-#' \pkg{brms}, while applying their self-defined likelihood
+#' Define custom families (i.e. response distribution) for use in 
+#' \pkg{brms} models. It allows users to benefit from the modeling 
+#' flexibility of \pkg{brms}, while applying their self-defined likelihood
 #' functions. All of the post-processing methods for \code{brmsfit} 
 #' objects can be made compatible with custom families. 
 #' See \code{vignette("brms_customfamilies")} for more details.
@@ -823,12 +860,26 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   \code{vars} can be used to pass data to the likelihood. 
 #'   See \code{\link{stanvar}} for details about adding self-defined
 #'   data to the generated \pkg{Stan} model.
+#' @param specials A character vector of special options to enable
+#'   for this custom family. Currently for internal use only.
+#' @param log_lik Optional function to compute log-likelihood values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#' @param predict Optional function to compute predicted values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.  
+#' @param fitted Optional function to compute fitted values of
+#'   the model in \R. This is only relevant if one wants to ensure 
+#'   compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.     
 #' @param env An \code{\link{environment}} in which certain post-processing 
-#'   functions related to the custom family can be found. This is only
+#'   functions related to the custom family can be found, if there were not 
+#'   directly passed to \code{custom_family}. This is only
 #'   relevant if one wants to ensure compatibility with the methods
 #'   \code{\link[brms:predict.brmsfit]{predict}}, 
 #'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#'   By default, \code{env} is the enviroment from which 
+#'   \code{custom_family} is called.
 #'   
 #' @details The corresponding probability density or mass \code{Stan} 
 #'   functions need to have the same name as the custom family.
@@ -838,7 +889,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   continuous or discrete distribution.
 #'   
 #' @return An object of class \code{customfamily} inheriting
-#'   for class \code{\link{brmsfamily}}.
+#'   from class \code{\link{brmsfamily}}.
 #'   
 #' @seealso \code{\link{brmsfamily}}, \code{\link{stanvar}}
 #' 
@@ -881,7 +932,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @export
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
-                          vars = NULL, env = parent.frame()) {
+                          vars = NULL, specials = NULL, 
+                          log_lik = NULL, predict = NULL, 
+                          fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
   dpars <- as.character(dpars)
   links <- as.character(links)
@@ -889,6 +942,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   lb <- as.character(lb)
   ub <- as.character(ub)
   vars <- as.character(vars)
+  specials <- as.character(specials)
   env <- as.environment(env)
   if (any(duplicated(dpars))) {
     stop2("Duplicated 'dpars' are not allowed.")
@@ -912,13 +966,37 @@ custom_family <- function(name, dpars = "mu", links = "identity",
       stop2("'", arg, "' must be of the same length as 'dpars'.")
     }
   }
+  if (!is.null(log_lik)) {
+    log_lik <- as.function(log_lik)
+    args <- names(formals(log_lik))
+    if (!is_equal(args[1:2], c("i", "draws"))) {
+      stop2("The first two arguments of 'log_lik' ", 
+            "should be 'i' and 'draws'.")
+    }
+  }
+  if (!is.null(predict)) {
+    predict <- as.function(predict)
+    args <- names(formals(predict))
+    if (!is_equal(args[1:3], c("i", "draws", "..."))) {
+      stop2("The first three arguments of 'predict' ", 
+            "should be 'i', 'draws', and '...'.")
+    }
+  }
+  if (!is.null(fitted)) {
+    fitted <- as.function(fitted)
+    args <- names(formals(fitted))
+    if (!is_equal(args[1], "draws")) {
+      stop2("The first argument of 'fitted' should be 'draws'.")
+    }
+  }
   lb <- named_list(dpars, lb)
   ub <- named_list(dpars, ub)
   is_mu <- "mu" == dpars
   link <- links[is_mu]
   out <- nlist(
     family = "custom", link, name, 
-    dpars, lb, ub, type, vars, env
+    dpars, lb, ub, type, vars, specials,
+    log_lik, predict, fitted, env
   )
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
@@ -926,29 +1004,17 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   structure(out, class = c("customfamily", "brmsfamily", "family"))
 }
 
-dpars <- function() {
-  # names of distributional parameters
-  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
-    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
-    "quantile", "alpha", "theta")
-}
-
 valid_dpars <- function(family, ...) {
-  # get valid auxiliary parameters for a family
+  # get valid distributional parameters for a family
   UseMethod("valid_dpars")
 }
 
 #' @export
 valid_dpars.default <- function(family, ...) {
   if (!length(family)) {
-    return(NULL)
+    return("mu")
   }
-  family <- check_family(family)
-  valid_dpars(family, ...)
-}
-
-#' @export
-valid_dpars.brmsfamily <- function(family, ...) {
+  family <- check_family(family) 
   family_info(family, "dpars", ...)
 }
 
@@ -962,30 +1028,28 @@ valid_dpars.mixfamily <- function(family, ...) {
 }
 
 #' @export
+valid_dpars.brmsformula <- function(family, ...) {
+  valid_dpars(family$family, ...)
+}
+
+#' @export
+valid_dpars.mvbrmsformula <- function(family, ...) {
+  ulapply(family$forms, valid_dpars, ...)
+}
+
+#' @export
 valid_dpars.brmsterms <- function(family, ...) {
   valid_dpars(family$family, ...)
 }
 
-is_dpar_name <- function(dpars, family = NULL, ...) {
-  # check if provided names of distributional parameters are valid
-  # Args:
-  #   dpars: character vector to be checked
-  #   family: the model family
-  #   ...: further arguments passed to valid_dpars
-  dpars <- as.character(dpars)
-  if (!length(dpars)) {
-    return(logical(0))
-  }
-  if (is.null(family)) {
-    patterns <- paste0("^", dpars(), "[[:digit:]]*$")
-    .is_dpar_name <- function(dpar, ...) {
-      any(ulapply(patterns, grepl, x = dpar))
-    }
-    out <- ulapply(dpars, .is_dpar_name)
-  } else {
-    out <- dpars %in% valid_dpars(family, ...)
-  }
-  as.logical(out)
+#' @export
+valid_dpars.mvbrmsterms <- function(family, ...) {
+  ulapply(family$terms, valid_dpars, ...)
+}
+
+#' @export
+valid_dpars.brmsfit <- function(family, ...) {
+  valid_dpars(family$formula, ...)
 }
 
 dpar_class <- function(dpar) {
@@ -999,9 +1063,11 @@ dpar_id <- function(dpar) {
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
-links_dpars <- function(dp) {
+links_dpars <- function(dpar) {
   # link functions for distributional parameters
-  switch(dp,
+  if (!length(dpar)) dpar <- ""
+  switch(dpar,
+    character(0),
     mu = "identity",  # not actually used
     sigma = c("log", "identity"), 
     shape = c("log", "identity"),
@@ -1020,20 +1086,19 @@ links_dpars <- function(dp) {
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
     alpha = c("identity", "log"),
-    theta = c("identity"), 
-    stop2("Parameter '", dp, "' is not supported.")
+    theta = c("identity")
   )
 }
 
 dpar_family <- function(family, dpar, ...) {
-  # generate a family object of an auxiliary parameter
+  # generate a family object of a distributional parameter
   UseMethod("dpar_family")
 }
 
 #' @export
 dpar_family.default <- function(family, dpar, ...) {
   dp_class <- dpar_class(dpar)
-  if (!identical(dp_class, "mu")) {
+  if (dp_class != "mu" || conv_cats_dpars(family)) {
     link <- family[[paste0("link_", dp_class)]]
     family <- .dpar_family(dpar, link)
   }
@@ -1054,21 +1119,15 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   # Args:
   #   dpar: name of the distributional parameter
   #   link: optional link function of the parameter
-  dp_class <- dpar_class(dpar)
-  if (!isTRUE(dp_class %in% dpars())) {
-    if (is.null(link)) {
-      link <- "identity"
-    }
-    link <- as_one_character(link)
-  } else {
-    links <- links_dpars(dp_class)
-    if (is.null(link)) {
+  links <- links_dpars(dpar_class(dpar))
+  if (!length(link)) {
+    if (!length(links)) {
+      link <- "identity" 
+    } else {
       link <- links[1]
     }
-    if (!isTRUE(link %in% links)) {
-      stop2("Link '", link, "' is invalid for parameter '", dpar, "'.")
-    }
   }
+  link <- as_one_character(link)
   structure(
     nlist(family = "", link, dpar),
     class = c("brmsfamily", "family")
@@ -1106,6 +1165,30 @@ print.mixfamily <- function(x, newline = TRUE, ...) {
   cat("\nMixture\n")
   for (i in seq_along(x$mix)) {
     print(x$mix[[i]], newline = FALSE, ...)
+  }
+  if (newline) {
+    cat("\n")
+  }
+  invisible(x)
+}
+
+#' @export
+print.customfamily <- function(x, links = FALSE, newline = TRUE, ...) {
+  cat("\nCustom family:", x$name, "\n")
+  cat("Link function:", x$link, "\n")
+  cat("Parameters:", paste0(x$dpars, collapse = ", "), "\n")
+  if (isTRUE(links) || is.character(links)) {
+    dp_links <- x[grepl("^link_", names(x))]
+    names(dp_links) <- sub("^link_", "", names(dp_links))
+    if (is.character(links)) {
+      dp_links <- rmNULL(dp_links[links])
+    }
+    for (dp in names(dp_links)) {
+      cat(paste0(
+        "Link function of '", dp, "' (if predicted): ", 
+        dp_links[[dp]], "\n"
+      )) 
+    }
   }
   if (newline) {
     cat("\n")
@@ -1172,6 +1255,9 @@ summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
   links[names(links_pred)] <- links_pred
+  if (conv_cats_dpars(x)) {
+    links[grepl("^mu", names(links))] <- x$family$link
+  }
   resp <- if (mv) usc(combine_prefix(x))
   names(links) <- paste0(names(links), resp)
   paste0(names(links), " = ", links, collapse = "; ")
@@ -1219,6 +1305,14 @@ is_ordinal <- function(family) {
   "ordinal" %in% family_info(family, "specials")
 }
 
+is_multinomial <- function(family) {
+  "multinomial" %in% family_info(family, "specials")
+}
+
+is_dirichlet <- function(family) {
+  "dirichlet" %in% family_info(family, "specials")
+}
+
 allow_factors <- function(family) {
   specials <- c("binary", "categorical", "ordinal")
   any(specials %in% family_info(family, "specials"))
@@ -1234,6 +1328,27 @@ allow_cs <- function(family) {
   "cs" %in% family_info(family, "specials")
 }
 
+conv_cats_dpars <- function(family) {
+  # choose dpar names based on categories?
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+no_mixture <- function(family) {
+  # families not allowed in mixture models
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+has_multicol <- function(family) {
+  # indicate if the response should consist of multiple columns
+  is_multinomial(family) || is_dirichlet(family)
+}
+
+has_logscale <- function(family) {
+  # indicate if the response is modeled on the log-scale
+  # even if formally the link function is not 'log'
+  "logscale" %in% family_info(family, "specials")
+}
+
 has_trials <- function(family) {
   # indicate if family makes use of argument trials
   "trials" %in% family_info(family, "ad") &&
@@ -1241,9 +1356,9 @@ has_trials <- function(family) {
 }
 
 has_cat <- function(family) {
-  # indicate if family makes use of argument cat
-  is_categorical(family) || is_ordinal(family) &&
-    !"custom" %in% family_names(family)
+  # indicate if family has more than two response categories
+  is_categorical(family) || is_ordinal(family) || 
+    is_multinomial(family) || is_dirichlet(family)
 }
 
 has_ndt <- function(family) {

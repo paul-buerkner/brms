@@ -9,7 +9,8 @@
 \usage{
 dinv_gaussian(x, mu = 1, shape = 1, log = FALSE)
 
-pinv_gaussian(q, mu = 1, shape = 1, lower.tail = TRUE, log.p = FALSE)
+pinv_gaussian(q, mu = 1, shape = 1, lower.tail = TRUE,
+  log.p = FALSE)
 
 rinv_gaussian(n, mu = 1, shape = 1)
 }

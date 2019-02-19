@@ -41,7 +41,7 @@ The **brms** package provides an interface to fit Bayesian generalized (non-)lin
 ## Resources
 
 * [Introduction to brms](https://www.jstatsoft.org/article/view/v080i01) (Journal of Statistical Software)
-* [Advanced multilevel modeling with brms](https://arxiv.org/abs/1705.11123) (arXiv preprint)
+* [Advanced multilevel modeling with brms](https://journal.r-project.org/archive/2018/RJ-2018-017/index.html) (The R Journal)
 * [CRAN website](https://cran.r-project.org/web/packages/brms/index.html) (CRAN website of brms with documentation and vignettes)
 * [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/) (List of blog posts about brms)
 * [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on Discourse)
@@ -127,10 +127,10 @@ install.packages("brms")
 The current developmental version can be downloaded from github via
 
 ```{r install_brms2, eval=FALSE}
-if (!require("devtools")) {
+if (!requireNamespace("devtools")) {
   install.packages("devtools")
 }
-devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
+devtools::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.

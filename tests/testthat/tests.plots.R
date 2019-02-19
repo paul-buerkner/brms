@@ -30,13 +30,13 @@ test_that("plotting functions don't throw unexpected errors", {
                "Exactly 2 parameters must be selected")
   
   # pairs.brmsfit
-  expect_s3_class(pairs(fit, pars = parnames(fit)[1:3]), "bayesplot_grid")
+  expect_s3_class(SW(pairs(fit, pars = parnames(fit)[1:3])), "bayesplot_grid")
   
   # marginal_effects: manual checks of plotting method
   N <- 90
   marg_results <- data.frame(
-    P1 = rpois(N, 20), 
-    P2 = factor(rep(1:3, each = N / 3)),
+    effect1__ = rpois(N, 20), 
+    effect2__ = factor(rep(1:3, each = N / 3)),
     estimate__ = rnorm(N, sd = 5), 
     se__ = rt(N, df = 10), 
     cond__ = rep(1:2, each = N / 2),
@@ -44,7 +44,7 @@ test_that("plotting functions don't throw unexpected errors", {
   )
   marg_results[["lower__"]] <- marg_results$estimate__ - 2
   marg_results[["upper__"]] <- marg_results$estimate__ + 2
-  marg_results <- list(marg_results[order(marg_results$P1), ])
+  marg_results <- list(marg_results[order(marg_results$effect1__), ])
   class(marg_results) <- "brmsMarginalEffects"
   attr(marg_results[[1]], "response") <- "count"
   # test with 1 numeric predictor

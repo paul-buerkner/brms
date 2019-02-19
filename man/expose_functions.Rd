@@ -5,8 +5,8 @@
 \alias{expose_functions}
 \title{Expose user-defined \pkg{Stan} functions}
 \usage{
-\method{expose_functions}{brmsfit}(x, vectorize = FALSE, env = globalenv(),
-  ...)
+\method{expose_functions}{brmsfit}(x, vectorize = FALSE,
+  env = globalenv(), ...)
 
 expose_functions(x, ...)
 }

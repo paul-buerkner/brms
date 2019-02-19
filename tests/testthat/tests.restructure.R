@@ -131,13 +131,13 @@ test_that("change_old_sm return expected lists", {
             paste0("s_sx1kEQ9[", 1:9, "]"))
   dims <- list(sds_sigma_t2x0 = numeric(0), sds_sx1kEQ9 = numeric(0),
                s_sigma_t2x0 = 6, s_sx1kEQ9 = 9)
-  bterms <- parse_bf(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)))
+  bterms <- parse_bf(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)), family = gaussian())
   dat <- data.frame(y = rnorm(100), x1 = rnorm(100), x0 = rnorm(100))
   expect_equivalent(brms:::change_old_sm(bterms, dat, pars, dims), target)
 })
 
 test_that("change_old_mo returns expected lists", {
-  bterms <- parse_bf(bf(y ~ mo(x), sigma ~ mo(x)))
+  bterms <- parse_bf(bf(y ~ mo(x), sigma ~ mo(x)), family = gaussian())
   data <- data.frame(y = rnorm(10), x = rep(1:5, 2))
   pars <- c(
     "bmo_x", "bmo_sigma_x", 

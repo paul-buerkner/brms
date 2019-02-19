@@ -1,9 +1,10 @@
 #' Run the same \pkg{brms} model on multiple datasets
 #' 
-#' Run the same \pkg{brms} model on multiple datasets and
-#' then combine the results into one fitted model object. 
-#' This is useful in particular for multiple missing value imputation,
-#' where the same model is fitted on multiple imputed data sets.
+#' Run the same \pkg{brms} model on multiple datasets and then combine the
+#' results into one fitted model object. This is useful in particular for
+#' multiple missing value imputation, where the same model is fitted on multiple
+#' imputed data sets. Models can be run in parallel using the \pkg{future}
+#' package.
 #' 
 #' @inheritParams brm
 #' @param data A list of data.frames each of which will
@@ -41,21 +42,52 @@
 #' plot(fit_imp2, pars = "^b_")
 #' # investigate convergence of the original models
 #' fit_imp2$rhats
+#' 
+#' # use the future package for parallelization
+#' library(future)
+#' plan(multiprocess)
+#' fit_imp3 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+#' summary(fit_imp3)
 #' }
 #' 
 #' @export
-brm_multiple <- function(formula, data, combine = TRUE, ...) {
+brm_multiple <- function(formula, data, family = gaussian(), prior = NULL, 
+                         autocor = NULL, cov_ranef = NULL, 
+                         sample_prior = c("no", "yes", "only"), 
+                         sparse = FALSE, knots = NULL, stanvars = NULL,
+                         stan_funs = NULL, combine = TRUE, 
+                         seed = NA, file = NULL, ...) {
+  require_package("future")
   combine <- as_one_logical(combine)
+  if (!is.null(file)) {
+    # optionally load saved model object
+    if (!combine) {
+      stop2("Cannot use 'file' if 'combine' is FALSE.")
+    }
+    file <- paste0(as_one_character(file), ".rds")
+    x <- suppressWarnings(try(readRDS(file), silent = TRUE))
+    if (!is(x, "try-error")) {
+      if (!is.brmsfit_multiple(x)) {
+        stop2("Object loaded via 'file' is not of class 'brmsfit_multiple'.")
+      }
+      return(x)
+    }
+  }
+  
   data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
   if (inherits(data, "mids")) {
-    require_package("mice")
-    data <- lapply(seq_len(data$m), mice::complete, x = data)
+    require_package("mice", version = "3.0.0")
+    data <- lapply(seq_len(data$m), mice::complete, data = data)
   } else if (!(is.list(data) && is.vector(data))) {
     stop2("'data' must be a list of data.frames.")
   }
-  fits <- vector("list", length(data))
+  fits <- futures <- vector("list", length(data))
   message("Fitting imputed model 1")
-  fits[[1]] <- brm(formula, data = data[[1]], ...)
+  args <- nlist(
+    formula, data = data[[1]], family, prior, autocor, cov_ranef,
+    sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
+  )
+  fits[[1]] <- do_call(brm, args)
   fits[[1]]$data.name <- data.name
   rhats <- data.frame(as.list(rhat(fits[[1]])))
   if (any(rhats > 1.1)) {
@@ -63,7 +95,13 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
   }
   for (i in seq_along(data)[-1]) {
     message("Fitting imputed model ", i)
-    fits[[i]] <- update(fits[[1]], newdata = data[[i]], recompile = FALSE, ...)
+    futures[[i]] <- future::future(
+      update(fits[[1]], newdata = data[[i]], recompile = FALSE, ...),
+      packages = "brms"
+    )
+  }
+  for (i in seq_along(data)[-1]) {
+    fits[[i]] <- future::value(futures[[i]]) 
     rhat_i <- data.frame(as.list(rhat(fits[[i]])))
     if (any(rhat_i > 1.1)) {
       warning2("Imputed model ", i, " did not converge.")
@@ -74,6 +112,9 @@ brm_multiple <- function(formula, data, combine = TRUE, ...) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
     fits$rhats <- rhats
     class(fits) <- c("brmsfit_multiple", class(fits))
+  }
+  if (!is.null(file)) {
+    saveRDS(fits, file = file)
   }
   fits
 }

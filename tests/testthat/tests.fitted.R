@@ -1,5 +1,8 @@
 context("Tests for fitted helper functions")
 
+# to reduce testing time on CRAN
+skip_on_cran()
+
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
@@ -129,9 +132,29 @@ test_that("fitted_lagsar runs without errors", {
     ),
     nsamples = 3,
     nobs = 10,
-    f = gaussian()
+    family = gaussian()
   )
   mu_new <- brms:::fitted_lagsar(draws)
   expect_equal(dim(mu_new), dim(draws$dpars$mu))
   expect_true(!identical(mu_new, draws$dpars$mu))
+})
+
+test_that("fitted for multinomial and dirichlet models runs without errors", {
+  ns <- 50
+  nobs <- 8
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+  )
+  draws$data <- list(ncat = ncat, trials = sample(1:20, nobs))
+ 
+  draws$family <- multinomial()
+  pred <- brms:::fitted_multinomial(draws = draws)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
+  
+  draws$family <- dirichlet()
+  pred <- brms:::fitted_dirichlet(draws = draws)
+  expect_equal(dim(pred), c(ns, nobs, ncat))
 })

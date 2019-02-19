@@ -12,8 +12,6 @@ test_that("brmsformula validates formulas of non-linear parameters", {
 test_that("brmsformula validates formulas of auxiliary parameters", {
   expect_error(bf(y ~ a, ~ 1, sigma ~ 1),
                "Additional formulas must be named")
-  expect_error(bf(y ~ a^x, a ~ 1, family = gaussian()),
-               "The parameter 'a' is not a valid distributional")
 })
 
 test_that("brmsformula does not change a 'brmsformula' object", {
@@ -35,3 +33,28 @@ test_that("brmsformula detects auxiliary parameter equations", {
   expect_error(bf(y~x, shape1 = "shape3", shape2 = "shape1"),
                "Cannot use fixed parameters on the right-hand side")
 })
+
+test_that("update_adterms works correctly", {
+  form <- y | trials(size) ~ x
+  expect_equal(
+    update_adterms(form, ~ trials(10)), 
+    y | trials(10) ~ x
+  )
+  expect_equal(
+    update_adterms(form, ~ weights(w)), 
+    y | trials(size) + weights(w) ~ x
+  )
+  expect_equal(
+    update_adterms(form, ~ weights(w), action = "replace"),
+    y | weights(w) ~ x
+  )
+  expect_equal(
+    update_adterms(y ~ x, ~ trials(10)),
+    y | trials(10) ~ x
+  )
+})
+
+test_that("deprecated 'cbind' syntax still works", {
+  expect_equal(suppressWarnings(bf(cbind(y1, y2) ~ x)), bf(mvbind(y1, y2) ~ x))
+})
+

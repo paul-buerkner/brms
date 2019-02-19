@@ -7,16 +7,13 @@
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
-\alias{nlf}
-\alias{lf}
-\alias{set_nl}
-\alias{set_rescor}
 \alias{set_mecor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
-nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL)
+nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
+  loop = NULL)
 
-lf(..., flist = NULL, dpar = NULL, resp = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -72,6 +69,16 @@ parameter to which the formulas passed via \code{...} and
 variable to which the formulas passed via \code{...} and
 \code{flist} belong. Only relevant in multivariate models.}
 
+\item{loop}{Logical; Only used in non-linear models.
+Indicates if the computation of the non-linear formula should be 
+done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
+over observations. Defaults to \code{TRUE}.}
+
+\item{cmc}{Logical; Indicates whether automatic cell-mean coding
+should be enabled when removing the intercept by adding \code{0} 
+to the right-hand of model formulas. Defaults to \code{TRUE} to 
+mirror the behavior of standard \R formula parsing.}
+
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
 is treated as an ordinary linear model formula.}
@@ -98,8 +105,8 @@ formulas for use with \code{\link[brms:brmsformula]{brmsformula}}.
 \examples{
 # add more formulas to the model
 bf(y ~ 1) + 
-  nlf(sigma ~ a * exp(b * x), a ~ x) + 
-  lf(b ~ z + (1|g), dpar = "sigma") +
+  nlf(sigma ~ a * exp(b * x)) + 
+  lf(a ~ x, b ~ z + (1|g)) +
   gaussian()
 
 # specify 'nl' later on

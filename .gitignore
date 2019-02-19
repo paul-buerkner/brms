@@ -1,9 +1,11 @@
+Meta
 .Rproj.user
 .Rhistory
 .RData
-brm.stan
+CRAN-release
 tests/testthat/Rplots.pdf
 cran-comments.md
 tests/local/models_0.8.0.Rda
 tests/local/models_0.10.0.Rda
 tests/local/models_1.2.0.Rda
+tests/local/Rplots.pdf

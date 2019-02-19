@@ -8,8 +8,9 @@
 \usage{
 \method{print}{brmshypothesis}(x, digits = 2, chars = 20, ...)
 
-\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE, chars = 40,
-  colors = NULL, theme = NULL, ask = TRUE, plot = TRUE, ...)
+\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
+  chars = 40, colors = NULL, theme = NULL, ask = TRUE,
+  plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}

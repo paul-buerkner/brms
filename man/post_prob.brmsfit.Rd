@@ -5,7 +5,8 @@
 \alias{post_prob}
 \title{Posterior Model Probabilities from Marginal Likelihoods}
 \usage{
-\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL, model_names = NULL)
+\method{post_prob}{brmsfit}(x, ..., prior_prob = NULL,
+  model_names = NULL)
 }
 \arguments{
 \item{x}{A fitted model object.}
@@ -33,9 +34,18 @@ Computing the marginal likelihood requires samples
   to be saved. Otherwise \code{post_prob} cannot be computed.
   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
   if you are planning to apply \code{post_prob} to your models.
+  
+  The computation of model probabilities based on bridge sampling requires
+  a lot more posterior samples than usual. A good conservative 
+  rule of thump is perhaps 10-fold more samples (read: the default of 4000 
+  samples may not be enough in many cases). If not enough posterior
+  samples are provided, the bridge sampling algorithm tends to be 
+  unstable leading to considerably different results each time it is run. 
+  We thus recommend running \code{post_prob}
+  multiple times to check the stability of the results.
 
   More details are provided under 
-  \code{\link[bridgesampling:post_prob]{post_prob}}.
+  \code{\link[bridgesampling:post_prob]{bridgesampling:post_prob}}.
 }
 \examples{
 \dontrun{

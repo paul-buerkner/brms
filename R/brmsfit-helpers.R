@@ -17,9 +17,9 @@ is_mv <- function(x) {
 }
 
 stopifnot_resp <- function(x, resp = NULL) {
-  if (is_mv(x) && is.null(resp)) {
-    stop2("Argument 'resp' is required when applying ", 
-          "this method to a multivariate model.")
+  if (is_mv(x) && length(resp) != 1L) {
+    stop2("Argument 'resp' must be a single variable name ", 
+          "when applying this method to a multivariate model.")
   }
   invisible(NULL)
 }
@@ -185,7 +185,7 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
   }
-  x <- do.call(apply, c(args, dots))
+  x <- do_call(apply, c(args, dots))
   if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
   } else if (coef == "quantile") {
@@ -223,14 +223,18 @@ posterior_table <- function(x, levels = NULL) {
   if (is.null(levels)) {
     levels <- sort(unique(as.vector(x)))
   }
+  xlevels <- attr(x, "levels")
+  if (length(xlevels) != length(levels)) {
+    xlevels <- levels
+  }
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
-  out <- do.call(rbind, out)
+  out <- do_call(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
-  colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
+  colnames(out) <- paste0("P(Y = ", xlevels, ")")
   out
 }
 
@@ -254,8 +258,8 @@ get_cov_matrix <- function(sd, cor = NULL) {
     stopifnot(min(cor) >= -1, max(cor) <= 1)
     stopifnot(ncol(cor) == size * (size - 1) / 2)
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
@@ -272,16 +276,19 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   #     ignored is cor is specified
   if (length(cor)) {
     cor <- as.matrix(cor)
-    size <- - 1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
+    size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
     nsamples <- nrow(cor)
   } 
-  stopifnot(is_wholenumber(size) && size > 1, nsamples > 0)
+  size <- as_one_numeric(size)
+  nsamples <- as_one_numeric(nsamples)
+  stopifnot(is_wholenumber(size) && size > 0)
+  stopifnot(is_wholenumber(nsamples) && nsamples > 0)
   out <- array(diag(1, size), dim = c(size, size, nsamples))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k]
       }
@@ -419,9 +426,10 @@ get_cov_matrix_ident <- function(sigma, nrows, se = 0) {
 }
 
 get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
-  # get samples of an distributional parameter
+  # get samples of a distributional parameter
   # Args:
-  #   x: object to extract postarior samples from
+  #   x: object to extract posterior samples from
+  #   dpar: name of the distributional parameter
   #   i: the current observation number
   #   ilink: should the inverse link function be applied?
   #     if NULL the value is chosen internally
@@ -437,20 +445,20 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
     if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = draws$f)
+      ilink <- apply_dpar_ilink(dpar, family = draws$family)
     }
     if (ilink) {
-      out <- ilink(out, x$f$link)
+      out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
-      out <- index_col(out, 1)
+      out <- extract_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- index_col(x, i)
+    out <- extract_col(x, i)
   } else {
     out <- x
   }
-  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
+  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$family$fun))) {
     # 'se' will be incorporated directly into 'sigma'
     if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
       out <- sqrt(get_se(draws, i = i)^2 + out^2)
@@ -464,6 +472,32 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   out
 }
 
+get_nlpar <- function(draws, nlpar, i = NULL) {
+  # get samples of a non-linear parameter
+  # Args:
+  #   x: object to extract posterior samples from
+  #   nlpar: name of the non-linear parameter
+  #   i: the current observation number
+  # Returns:
+  #   If i is NULL or length(i) > 1: an S x N matrix
+  #   If length(i) == 1: a vector of length S
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  x <- draws$nlpars[[nlpar]]
+  stopifnot(!is.null(x))
+  if (is.list(x)) {
+    # compute samples of a predicted parameter
+    out <- predictor(x, i = i, fdraws = draws)
+    if (length(i) == 1L) {
+      out <- extract_col(out, 1)
+    }
+  } else if (!is.null(i) && !is.null(dim(x))) {
+    out <- extract_col(x, i)
+  } else {
+    out <- x
+  }
+  out
+}
+
 get_theta <- function(draws, i = NULL) {
   # get the mixing proportions of mixture models
   stopifnot(is.brmsdraws(draws))
@@ -472,11 +506,11 @@ get_theta <- function(draws, i = NULL) {
     theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    mix_family <- draws$f
+    mix_family <- draws$family
     families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      draws$f <- mix_family$mix[[j]]
+      draws$family <- mix_family$mix[[j]]
       theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
     theta <- abind(theta, along = 3)
@@ -496,15 +530,15 @@ get_Mu <- function(draws, i = NULL) {
   if (is.null(Mu)) {
     Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
-      Mu <- do.call(cbind, Mu)
+      Mu <- do_call(cbind, Mu)
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do.call(abind, c(Mu, along = 3))
+      Mu <- do_call(abind, c(Mu, along = 3))
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- index_col(Mu, i)
+    Mu <- extract_col(Mu, i)
   }
   Mu
 }
@@ -518,7 +552,7 @@ get_Sigma <- function(draws, i = NULL) {
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- do.call(cbind, sigma)
+      sigma <- do_call(cbind, sigma)
       Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
@@ -528,7 +562,7 @@ get_Sigma <- function(draws, i = NULL) {
         }
       }
       nsigma <- length(sigma)
-      sigma <- do.call(abind, c(sigma, along = 3))
+      sigma <- abind(sigma, along = 3)
       Sigma <- array(dim = c(dim_mu(draws), nsigma, nsigma))
       for (n in seq_len(ncol(Sigma))) {
         Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], draws$mvpars$rescor)
@@ -539,7 +573,7 @@ get_Sigma <- function(draws, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- index_col(Sigma, i)
+      Sigma <- extract_col(Sigma, i)
     }
   }
   Sigma
@@ -564,29 +598,6 @@ get_se <- function(draws, i = NULL) {
   se
 }
 
-index_col <- function(x, i) {
-  # savely index columns without dropping other dimensions
-  # Args:
-  #   x: an array
-  #   i: colum index
-  ldim <- length(dim(x))
-  stopifnot(ldim %in% 2:4)
-  if (ldim == 2L) {
-    out <- x[, i]
-  } else {
-    if (ldim == 3L) {
-      out <- x[, i, ]
-    } else {
-      out <- x[, i, , ]
-    }
-    if (length(i) == 1L && dim(out) != dim(x)[-2]) {
-      # some non-column dims were unintentionally dropped
-      dim(out) <- dim(x)[-2]
-    }
-  }
-  out
-}
-
 apply_dpar_ilink <- function(dpar, family) {
   # helper function of get_dpar to decide if
   # the link function should be applied by default
@@ -596,6 +607,27 @@ apply_dpar_ilink <- function(dpar, family) {
     dpar <- dpar_class(dpar) 
   }
   !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
+}
+
+insert_refcat  <- function(eta, family) {
+  # insert zeros for the predictor term of the reference category
+  # in categorical-like models using the softmax response function
+  stopifnot(is.matrix(eta), is.brmsfamily(family))
+  if (!conv_cats_dpars(family) || isNA(family$refcat)) {
+    return(eta)
+  }
+  # need to add zeros for the reference category
+  zeros <- as.matrix(rep(0, nrow(eta)))
+  if (is.null(family$refcat) || is.null(family$cats)) {
+    # no information on the categories provided:
+    # use the first category as the reference
+    return(cbind(zeros, eta))
+  }
+  colnames(zeros) <- paste0("mu", family$refcat)
+  iref <- match(family$refcat, family$cats)
+  before <- seq_len(iref - 1)
+  after <- setdiff(seq_cols(eta), before)
+  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
 }
 
 choose_N <- function(draws) {
@@ -624,18 +656,31 @@ prepare_family <- function(x) {
   family
 }
 
-validate_resp <- function(resp, valid_resps, multiple = TRUE) {
+validate_resp <- function(resp, x, multiple = TRUE) {
   # validate the 'resp' argument of 'predict' and related methods
+  # Args:
+  #   resp: response names to be validated
+  #   x: valid response names or brmsfit object to extract names from
+  #   multiple: allow multiple response variables?
+  if (is.brmsfit(x)) {
+    x <- parse_bf(x$formula)$responses
+  }
+  x <- as.character(x)
+  if (!length(x)) {
+    # resp is unused in univariate models
+    return(NULL)
+  }
   if (length(resp)) {
-    if (!all(resp %in% valid_resps)) {
+    resp <- as.character(resp)
+    if (!all(resp %in% x)) {
       stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(valid_resps))
+            "variables are: ", collapse_comma(x))
     }
     if (!multiple) {
       resp <- as_one_character(resp)
     }
   } else {
-    resp <- valid_resps
+    resp <- x
   }
   resp
 }
@@ -690,7 +735,7 @@ validate_weights <- function(weights, models, control = list()) {
   if (!is.numeric(weights)) {
     weight_args <- c(unname(models), control)
     weight_args$weights <- weights
-    weights <- do.call(model_weights, weight_args)
+    weights <- do_call(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -729,13 +774,15 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 
 fixef_pars <- function() {
   # regex to extract population-level coefficients
-  "^b(|cs|sp|mo|me|mi|m)_"
+  types <- c("", "s", "cs", "sp", "mo", "me", "mi", "m")
+  types <- paste0("(", types, ")", collapse = "|")
+  paste0("^b(", types, ")_")
 }
 
-default_plot_pars <- function() {
+default_plot_pars <- function(family) {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", dpars(), "[[:digit:]]*$"), "^delta$",
+    paste0("^", valid_dpars(family), "$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
     "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }
@@ -784,7 +831,7 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      do.call(paste0("r", dist), list(x$fit@sim$iter, ...))
+      do_call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

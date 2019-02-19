@@ -6,10 +6,11 @@
 \alias{plot.brmsMarginalEffects}
 \title{Display Marginal Effects of Predictors}
 \usage{
-\method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
-  int_conditions = NULL, re_formula = NA, robust = TRUE,
-  probs = c(0.025, 0.975), method = c("fitted", "predict"),
-  spaghetti = FALSE, surface = FALSE, ordinal = FALSE, transform = NULL,
+\method{marginal_effects}{brmsfit}(x, effects = NULL,
+  conditions = NULL, int_conditions = NULL, re_formula = NA,
+  robust = TRUE, probs = c(0.025, 0.975), method = c("fitted",
+  "predict"), spaghetti = FALSE, surface = FALSE,
+  categorical = FALSE, ordinal = FALSE, transform = NULL,
   resolution = 100, select_points = 0, too_far = 0, ...)
 
 marginal_effects(x, ...)
@@ -17,9 +18,9 @@ marginal_effects(x, ...)
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
   rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
   "raster"), line_args = list(), cat_args = list(),
-  errorbar_args = list(), surface_args = list(), spaghetti_args = list(),
-  point_args = list(), rug_args = list(), theme = NULL, ask = TRUE,
-  plot = TRUE, ...)
+  errorbar_args = list(), surface_args = list(),
+  spaghetti_args = list(), point_args = list(), rug_args = list(),
+  theme = NULL, ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}
@@ -78,10 +79,14 @@ two-dimensional smooths should be visualized as a surface.
 Defaults to \code{FALSE}. The surface type can be controlled 
 via argument \code{stype} of the related plotting method.}
 
-\item{ordinal}{Logical. Indicates if effects in ordinal models
+\item{categorical}{Logical. Indicates if effects of categorical 
+or ordinal models should be shown in terms of probabilities
+of response categories. Defaults to \code{FALSE}.}
+
+\item{ordinal}{Deprecated! Please use argument \code{categorical}.
+Logical. Indicates if effects in ordinal models
 should be visualized as a raster with the response categories
-on the y-axis. Defaults to \code{FALSE} and ignored in
-non-ordinal models.}
+on the y-axis. Defaults to \code{FALSE}.}
 
 \item{transform}{A function or a character string naming 
 a function to be applied on the predicted responses

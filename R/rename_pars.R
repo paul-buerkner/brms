@@ -57,6 +57,9 @@ change_effects.brmsterms <- function(x, ...) {
   for (dp in names(x$dpars)) {
     c(out) <- change_effects(x$dpars[[dp]], ...)
   }
+  for (nlp in names(x$nlpars)) {
+    c(out) <- change_effects(x$nlpars[[nlp]], ...)
+  }
   if (is.formula(x$adforms$mi)) {
     c(out) <- change_Ymi(x, ...)
   }
@@ -68,24 +71,11 @@ change_effects.btl <- function(x, data, pars, scode = "", ...) {
   # helps in renaming various kinds of effects
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
-  c(
-    change_fe(x, data, pars, scode = scode),
+  c(change_fe(x, data, pars, scode = scode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
-    change_gp(x, data, pars)
-  )
-}
-
-change_effects.btnl <- function(x, data, pars, ...) {
-  # helps in renaming effects for non-linear parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  out <- list()
-  for (nlp in names(x$nlpars)) {
-    c(out) <- change_effects(x$nlpars[[nlp]], data, pars, ...)
-  }
-  out
+    change_gp(x, data, pars))
 }
 
 change_fe <- function(bterms, data, pars, scode = "") {
@@ -229,33 +219,44 @@ change_gp <- function(bterms, data, pars) {
   out <- list()
   p <- usc(combine_prefix(bterms), "prefix")
   gpef <- tidy_gpef(bterms, data)
-  for (i in seq_len(nrow(gpef))) {
+  for (i in seq_rows(gpef)) {
     # rename GP hyperparameters
-    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
+    sfx1 <- gpef$sfx1[[i]]
+    sfx2 <- as.vector(gpef$sfx2[[i]])
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
-    sdgp_names <- paste0(sdgp, "_", gp_names)
+    sdgp_names <- paste0(sdgp, "_", sfx1)
+    lc(out) <- clist(sdgp_pos, sdgp_names)
+    c(out) <- change_prior(sdgp_old, pars, names = sfx1, new_class = sdgp)
+
     lscale <- paste0("lscale", p)
     lscale_old <- paste0(lscale, "_", i)
     lscale_pos <- grepl(paste0("^", lscale_old, "\\["), pars)
-    lscale_names <- paste0(lscale, "_", gp_names)
-    lc(out) <- clist(sdgp_pos, sdgp_names)
+    lscale_names <- paste0(lscale, "_", sfx2)
     lc(out) <- clist(lscale_pos, lscale_names)
-    c(out) <- change_prior(
-      sdgp_old, pars, names = gpef$label[i], new_class = sdgp
-    )
-    c(out) <- change_prior(
-      lscale_old, pars, names = gpef$label[i], new_class = lscale
-    )
+    c(out) <- change_prior(lscale_old, pars, names = sfx2, new_class = lscale)
+    
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
-    zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
-    if (any(zgp_pos)) {
-      # users may choose not to save zgp
-      zgp_new <- paste0(zgp, "_", gpef$label[i])
-      fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
-      lc(out) <- clist(zgp_pos, fnames)
+    if (length(sfx1) > 1L) {
+      # categorical 'by' variable
+      for (j in seq_along(sfx1)) {
+        zgp_old_sub <- paste0(zgp_old, "_", j)
+        zgp_pos <- grepl(paste0("^", zgp_old_sub, "\\["), pars)
+        if (any(zgp_pos)) {
+          zgp_new <- paste0(zgp, "_", sfx1[j])
+          fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+          lc(out) <- clist(zgp_pos, fnames)
+        }
+      }
+    } else {
+      zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
+      if (any(zgp_pos)) {
+        zgp_new <- paste0(zgp, "_", sfx1)
+        fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+        lc(out) <- clist(zgp_pos, fnames)
+      }
     }
   }
   out
@@ -267,13 +268,21 @@ change_sm <- function(bterms, data, pars) {
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
   smef <- tidy_smef(bterms, data)
-  if (nrow(smef)) {
+  if (NROW(smef)) {
     p <- usc(combine_prefix(bterms), "prefix")
+    Xs_names <- attr(smef, "Xs_names")
+    if (length(Xs_names)) {
+      bs <- paste0("bs", p)
+      pos <- grepl(paste0("^", bs, "\\["), pars)
+      bsnames <- paste0(bs, "_", Xs_names)
+      lc(out) <- clist(pos, bsnames)
+      c(out) <- change_prior(bs, pars, names = Xs_names)
+    }
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
     snames <- paste0(s, "_", smef$label)
-    for (i in seq_len(nrow(smef))) {
+    for (i in seq_rows(smef)) {
       for (j in seq_len(smef$nbases[i])) {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
@@ -316,7 +325,7 @@ change_re <- function(ranef, pars) {
         type <- paste0("cor_", g)
         if (isTRUE(nzchar(r$by[1]))) {
           cor_names <- named_list(r$bylevels[[1]])
-          for (j in seq_len(nrow(rnames))) {
+          for (j in seq_along(cor_names)) {
             cor_names[[j]] <- get_cornames(
               rnames[, j], type, brackets = FALSE
             )
@@ -337,7 +346,7 @@ change_re <- function(ranef, pars) {
       c(out) <- change_re_levels(ranef, pars = pars)
     }
     tranef <- get_dist_groups(ranef, "student")
-    for (i in seq_len(nrow(tranef))) {
+    for (i in seq_rows(tranef)) {
       df_pos <- grepl(paste0("^df_", tranef$ggn[i], "$"), pars)
       df_name <- paste0("df_", tranef$group[i])
       lc(out) <- clist(df_pos, df_name)
@@ -354,7 +363,7 @@ change_re_levels <- function(ranef, pars)  {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  for (i in seq_len(nrow(ranef))) {
+  for (i in seq_rows(ranef)) {
     r <- ranef[i, ]
     p <- usc(combine_prefix(r))
     r_parnames <- paste0("r_", r$id, p, "_", r$cn)
@@ -504,13 +513,13 @@ reorder_pars <- function(x) {
   # order parameter samples after parameter class
   # Args:
   #   x: brmsfit object
-  all_classes <- c(
-    "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
+  all_classes <- unique(c(
+    "b", "bs", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
-    "sds", "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
-    "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
+    "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
+    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
-  )
+  ))
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(
@@ -531,8 +540,9 @@ reorder_pars <- function(x) {
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[new_order]
   chains <- length(x$fit@sim$samples)
   for (i in seq_len(chains)) {
-    # subset_attr ensures that attributes are not removed
-    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], new_order)
+    # attributes of samples must be kept
+    x$fit@sim$samples[[i]] <- 
+      subset_keep_attr(x$fit@sim$samples[[i]], new_order)
   }
   x
 }

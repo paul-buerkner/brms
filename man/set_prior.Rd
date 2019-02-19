@@ -30,7 +30,7 @@ See 'Details' for other valid parameter classes.}
 \item{group}{Grouping factor of group-level parameters.}
 
 \item{resp}{Name of the response variable / category.
-Only used in multivariate and categorical models.}
+Only used in multivariate models.}
 
 \item{dpar}{Name of a distributional parameter.
 Only used in distributional models.}
@@ -118,8 +118,7 @@ Define priors for specific parameters or classes of parameters
   may slow down the sampling procedure a bit.
   
   In case of the default intercept parameterization 
-  (discussed in the 'Details' section of 
-  \code{\link[brms:brmsformula]{brmsformula}}),
+  (discussed in the 'Details' section of \code{\link{brmsformula}}), 
   general priors on class \code{"b"} will \emph{not} affect 
   the intercept. Instead, the intercept has its own parameter class 
   named \code{"Intercept"} and priors can thus be 
@@ -137,9 +136,9 @@ Define priors for specific parameters or classes of parameters
   use \code{0 + intercept} on the right-hand side of the model formula.
   
   A special shrinkage prior to be applied on population-level effects 
-  is the horseshoe prior. See \code{\link[brms:horseshoe]{horseshoe}}
+  is the horseshoe prior. See \code{\link{horseshoe}}
   for details. Another shrinkage prior is the so-called lasso prior.
-  See \code{\link[brms:lasso]{lasso}} for details.
+  See \code{\link{lasso}} for details.
   
   In non-linear models, population-level effects are defined separately 
   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -215,13 +214,12 @@ Define priors for specific parameters or classes of parameters
   The corresponding parameter class of the Cholesky factors is \code{L},
   but it is not recommended to specify priors for this parameter class directly.
   
-  4. Smooth terms (splines)
+  4. Splines
   
-  GAMMs are implemented in \pkg{brms} using the 'random effects' 
-  formulation of smooth terms (for details see 
-  \code{\link[mgcv:gamm]{gamm}}). Thus, each smooth term
-  has its corresponding standard deviation modeling
-  the variability within this term. In \pkg{brms}, this 
+  Splines are implemented in \pkg{brms} using the 'random effects' 
+  formulation as explained in \code{\link[mgcv:gamm]{gamm}}). 
+  Thus, each spline has its corresponding standard deviations 
+  modeling the variability within this term. In \pkg{brms}, this 
   parameter class is called \code{sds} and priors can
   be specified via \code{set_prior("<prior>", class = "sds", 
   coef = "<term label>")}. The default prior is the same as
@@ -247,14 +245,17 @@ Define priors for specific parameters or classes of parameters
   
   The autocorrelation parameters currently implemented are named 
   \code{ar} (autoregression), \code{ma} (moving average),
-  and \code{arr} (autoregression of the response).
+  \code{arr} (autoregression of the response), \code{car} 
+  (spatial conditional autoregression), as well as \code{lagsar} 
+  and \code{errorsar} (Spatial simultaneous autoregression).
   
   Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
-  for \code{ar} and similar for \code{ma} and \code{arr} effects.
+  for \code{ar} and similar for other autocorrelation parameters.
   By default, \code{ar} and \code{ma} are bounded between \code{-1} 
-  and \code{1} and \code{arr} is unbounded (you may change this 
-  by using the arguments \code{lb} and \code{ub}). The default
-  prior is flat over the definition area.
+  and \code{1}, \code{car}, \code{lagsar}, and \code{errorsar} are 
+  bounded between \code{0}, and \code{1}, and \code{arr} is unbounded 
+  (you may change this by using the arguments \code{lb} and \code{ub}). 
+  The default prior is flat over the definition area.
   
   7. Distance parameters of monotonic effects
   

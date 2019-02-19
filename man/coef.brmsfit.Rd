@@ -8,7 +8,7 @@
   probs = c(0.025, 0.975), ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
@@ -23,7 +23,8 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{...}{Currently ignored.}
+\item{...}{Further arguments passed to \code{\link{fixef.brmsfit}}
+and \code{\link{ranef.brmsfit}}.}
 }
 \value{
 If \code{old} is \code{FALSE}: A list of arrays 

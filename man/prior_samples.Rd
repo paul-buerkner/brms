@@ -3,7 +3,6 @@
 \name{prior_samples.brmsfit}
 \alias{prior_samples.brmsfit}
 \alias{prior_samples}
-\alias{prior_samples.brmsfit}
 \title{Extract prior samples}
 \usage{
 \method{prior_samples}{brmsfit}(x, pars = NA, ...)
@@ -26,11 +25,14 @@ A data frame containing the prior samples.
 Extract prior samples of specified parameters
 }
 \details{
-To make use of this function, 
- the model must contain samples of prior distributions.
- This can be ensured by setting \code{sample_prior = TRUE} 
- in function \code{brm}.
- Currently there are methods for \code{brmsfit} objects.
+To make use of this function, the model must contain samples of
+  prior distributions. This can be ensured by setting \code{sample_prior =
+  TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
+  for technical reasons. For instance, this is the case for the
+  population-level intercept, which is only computed after fitting the model
+  by default. If you want to treat the intercept as part of all the other
+  regression coefficients, so that sampling from its prior becomes possible,
+  use \code{... ~ 0 + Intercept + ...} in the formulas.
 }
 \examples{
 \dontrun{
@@ -44,7 +46,7 @@ samples1 <- prior_samples(fit)
 head(samples1)
 
 # extract prior samples for the population-level effects of 'treat'
-samples2 <- posterior_samples(fit, "b_treat")
+samples2 <- prior_samples(fit, "b_treat")
 head(samples2)
 }
 

@@ -442,7 +442,7 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
     stop2("kappa must be non-negative")
   }
   be <- besselI(kappa, nu = 0, expon.scaled = TRUE)
-  out <- - log(2 * pi * be) + kappa * (cos(x - mu) - 1)
+  out <- -log(2 * pi * be) + kappa * (cos(x - mu) - 1)
   if (!log) {
     out <- exp(out)
   }
@@ -603,7 +603,7 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
     stop2("beta must be greater than 0.")
   }
   args <- nlist(x, mu, sigma, beta)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, x - mu - sigma^2 / beta)
   
@@ -628,7 +628,7 @@ pexgaussian <- function(q, mu, sigma, beta,
     stop2("beta must be greater than 0.")
   }
   args <- nlist(q, mu, sigma, beta)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
   
@@ -686,7 +686,7 @@ dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   }
   x <- (x - loc) / scale
   args <- nlist(x, loc, scale, shape)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   out <- with(args, 
     log(shape / scale) - (1 + shape) * log(x) - x^(-shape)
   )
@@ -771,7 +771,7 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
 #' @export
 dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
   args <- nlist(dist = "lnorm", x, shift, meanlog, sdlog, log)
-  do.call(dshifted, args)
+  do_call(dshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
@@ -779,7 +779,7 @@ dshifted_lnorm <- function(x, meanlog = 0, sdlog = 1, shift = 0, log = FALSE) {
 pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0, 
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", q, shift, meanlog, sdlog, lower.tail, log.p)
-  do.call(pshifted, args)
+  do_call(pshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
@@ -787,14 +787,14 @@ pshifted_lnorm <- function(q, meanlog = 0, sdlog = 1, shift = 0,
 qshifted_lnorm <- function(p, meanlog = 0, sdlog = 1, shift = 0, 
                            lower.tail = TRUE, log.p = FALSE) {
   args <- nlist(dist = "lnorm", p, shift, meanlog, sdlog, lower.tail, log.p)
-  do.call(qshifted, args)
+  do_call(qshifted, args)
 }
 
 #' @rdname Shifted_Lognormal
 #' @export
 rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
   args <- nlist(dist = "lnorm", n, shift, meanlog, sdlog)
-  do.call(rshifted, args)
+  do_call(rshifted, args)
 }
 
 #' The Inverse Gaussian Distribution
@@ -822,7 +822,7 @@ dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(x, mu, shape)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   out <- with(args,
     0.5 * log(shape / (2 * pi)) -  
     1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
@@ -844,7 +844,7 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(q, mu, shape)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   out <- with(args,
     pnorm(sqrt(shape / q) * (q / mu - 1)) + 
       exp(2 * shape / mu) * pnorm(- sqrt(shape / q) * (q / mu + 1))
@@ -871,7 +871,7 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
     stop2("Argument 'shape' must be positive.")
   }
   args <- nlist(mu, shape, length = n)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   # algorithm from wikipedia
   args$y <- rnorm(n)^2
   args$x <- with(args, 
@@ -907,7 +907,7 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
   }
   x <- (x - mu) / sigma
   args <- nlist(x, mu, sigma, xi)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   args$t <- with(args, 1 + xi * x)
   out <- with(args, ifelse(
     xi == 0, 
@@ -929,7 +929,7 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
   }
   q <- (q - mu) / sigma
   args <- nlist(q, mu, sigma, xi)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   out <- with(args, ifelse(
     xi == 0, 
     exp(-exp(-q)),
@@ -951,7 +951,7 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
     stop2("sigma bust be greater than 0.")
   }
   args <- nlist(mu, sigma, xi, length = n)
-  args <- do.call(expand, args)
+  args <- do_call(expand, args)
   with(args, ifelse(
     xi == 0,
     mu - sigma * log(rexp(n)),
@@ -1037,6 +1037,77 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
 }
 
+#' The Dirichlet Distribution
+#' 
+#' Density function and random number generation for the dirichlet
+#' distribution with shape parameter vector \code{alpha}.
+#' 
+#' @name Dirichlet
+#' 
+#' @inheritParams StudentT
+#' @param x Matrix of quantiles. Each row corresponds to one probability vector.
+#' @param alpha Matrix of positive shape parameters. Each row corresponds to one
+#'   probability vector.
+#'
+#' @details See \code{vignette("brms_families")} for details on the 
+#' parameterization.
+#' 
+#' @export
+ddirichlet <- function(x, alpha, log = FALSE) {
+  log <- as_one_logical(log)
+  if (!is.matrix(x)) {
+    x <- matrix(x, nrow = 1)
+  }
+  if (!is.matrix(alpha)) {
+    alpha <- matrix(alpha, nrow(x), length(alpha), byrow = TRUE)
+  }
+  if (nrow(x) == 1L && nrow(alpha) > 1L) {
+    x <- repl(x, nrow(alpha))
+    x <- do_call(rbind, x)
+  } else if (nrow(x) > 1L && nrow(alpha) == 1L) {
+    alpha <- repl(alpha, nrow(x))
+    alpha <- do_call(rbind, alpha)
+  }
+  if (any(x < 0)) {
+    stop2("x must be non-negative.")
+  }
+  if (!is_equal(rowSums(x), rep(1, nrow(x)))) {
+    stop2("x must sum to 1 per row.")
+  }
+  if (any(alpha <= 0)) {
+    stop2("alpha must be positive.")
+  }
+  out <- lgamma(rowSums(alpha)) - rowSums(lgamma(alpha)) + 
+    rowSums((alpha - 1) * log(x))
+  if (!log) {
+    out <- exp(out)
+  } 
+  return(out)
+}
+
+#' @rdname Dirichlet
+#' @export
+rdirichlet <- function(n, alpha) {
+  n <- as_one_numeric(n)
+  if (!is.matrix(alpha)) {
+    alpha <- matrix(alpha, nrow = 1)
+  }
+  if (prod(dim(alpha)) == 0) {
+    stop2("alpha should be non-empty.")
+  }
+  if (any(alpha <= 0)) {
+    stop2("alpha must be positive.")
+  }
+  if (n == 1) {
+    n <- nrow(alpha)
+  }
+  if (n > nrow(alpha)) {
+    alpha <- matrix(alpha, nrow = n, ncol = ncol(alpha), byrow = TRUE)
+  }
+  x <- matrix(rgamma(ncol(alpha) * n, alpha), ncol = ncol(alpha))
+  x / rowSums(x)
+}
+
 #' The Wiener Diffusion Model Distribution
 #' 
 #' Density function and random generation for the Wiener
@@ -1081,7 +1152,7 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
     c("alpha", "tau", "beta", "delta")
   )
   args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
-  do.call(.dwiener, args)
+  do_call(.dwiener, args)
 }
 
 #' @rdname Wiener
@@ -1109,10 +1180,10 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
       c("alpha", "tau", "beta", "delta"),
       SIMPLIFY = FALSE
     )
-    do.call(rbind, fun(...))
+    do_call(rbind, fun(...))
   }
   args <- nlist(n, alpha, tau, beta, delta, types)
-  do.call(.rwiener, args)
+  do_call(.rwiener, args)
 }
 
 rwiener_num <- function(n, alpha, tau, beta, delta, types) {
@@ -1223,8 +1294,8 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   pars <- args[names(pars)]
   pdf <- paste0("d", dist) 
   out <- ifelse(x == 0, 
-    log(zi + (1 - zi) * do.call(pdf, c(0, pars))),
-    log(1 - zi) + do.call(pdf, c(list(x), pars, log = TRUE))
+    log(zi + (1 - zi) * do_call(pdf, c(0, pars))),
+    log(1 - zi) + do_call(pdf, c(list(x), pars, log = TRUE))
   )
   if (!log) {
     out <- exp(out)
@@ -1248,7 +1319,7 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
   out <- log(1 - zi) +
-    do.call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
   if (lower.tail) {
     out <- 1 - exp(out)
     if (log.p) {
@@ -1359,13 +1430,13 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   pars <- args[names(pars)]
   pdf <- paste0("d", dist)
   if (type == "int") {
-    lccdf0 <- log(1 - do.call(pdf, c(0, pars)))
+    lccdf0 <- log(1 - do_call(pdf, c(0, pars)))
   } else {
     lccdf0 <- 0
   }
   out <- ifelse(x == 0, 
     log(hu),
-    log(1 - hu) + do.call(pdf, c(list(x), pars, log = TRUE)) - lccdf0
+    log(1 - hu) + do_call(pdf, c(list(x), pars, log = TRUE)) - lccdf0
   )
   if (!log) {
     out <- exp(out)
@@ -1391,10 +1462,10 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
   out <- log(1 - hu) +
-    do.call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
   if (type == "int") {
     pdf <- paste0("d", dist)
-    out <- out - log(1 - do.call(pdf, c(0, pars)))
+    out <- out - log(1 - do_call(pdf, c(0, pars)))
   }
   if (lower.tail) {
     out <- 1 - exp(out)
@@ -1409,46 +1480,63 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   out
 }
 
-dcategorical <- function(x, eta, link = "logit", log = FALSE) {
+dcategorical <- function(x, eta, log = FALSE) {
   # density of the categorical distribution
+  # with the softmax response function
   # Args:
   #   x: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   ncat: the number of categories
-  #   link: the link function
-  # Returns:
-  #   probabilities P(X = x)
+  #   eta: the linear predictor (of length or ncol ncat-1)
+  #   log: return values on the log scale?
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
   if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (link == "logit") {
-    p <- cbind(rep(0, nrow(eta)), eta)
-  } else {
-    stop2("Link '", link, "' not supported.")
-  }
   if (log) {
-    p <- p - log(rowSums(exp(p)))
+    out <- log_softmax(eta)
   } else {
-    p <- exp(p)
-    p <- p / rowSums(p)
+    out <- softmax(eta)
   }
-  p[, x]
+  out[, x]
 }
 
-pcategorical <- function(q, eta, ncat, link = "logit") {
-  # distribution functions for the categorical family
+pcategorical <- function(q, eta, log = FALSE) {
+  # distribution function of the categorical distribution
+  # with the softmax response function
   # Args:
   #   q: positive integers not greater than ncat
   #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   ncat: the number of categories
-  #   link: a character string naming the link
-  # Retruns: 
-  #   probabilities P(x <= q)
-  p <- dcategorical(1:max(q), eta = eta, link = link)
-  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  #   log: return values on the log scale?
+  p <- dcategorical(seq_len(max(q)), eta = eta)
+  out <- do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+dmultinomial <- function(x, eta, log = FALSE) {
+  # density of the multinomial distribution
+  # with the softmax response function
+  # Args:
+  #   x: positive integers not greater than ncat
+  #   eta: the linear predictor (of length or ncol ncat-1)
+  #   log: return values on the log scale?
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  if (length(dim(eta)) != 2L) {
+    stop2("eta must be a numeric vector or matrix.")
+  }
+  log_prob <- log_softmax(eta)
+  size <- sum(x)
+  x <- as_draws_matrix(x, dim = dim(eta))
+  out <- lgamma(size + 1) + rowSums(x * log_prob - lgamma(x + 1))
+  if (!log) {
+    out <- exp(out)
+  }
+  out
 }
 
 dcumulative <- function(x, eta, ncat, link = "logit") {
@@ -1472,7 +1560,7 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(1 - mu[, ncat - 1]))
-  p <- do.call(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1497,7 +1585,7 @@ dsratio <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(apply(1 - mu, 1, prod)))
-  p <- do.call(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1522,7 +1610,7 @@ dcratio <- function(x, eta, ncat, link = "logit") {
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
   rows <- c(rows, list(apply(mu, 1, prod)))
-  p <- do.call(cbind, rows)
+  p <- do_call(cbind, rows)
   p[, x]
 }
 
@@ -1544,13 +1632,13 @@ dacat <- function(x, eta, ncat, link = "logit") {
                matrix(NA, nrow = nrow(eta), ncol = ncat - 2))
     if (ncat > 2) {
       .fun <- function(k) {
-        rowSums(eta[, 1:(k-1)])
+        rowSums(eta[, 1:(k - 1)])
       }
       p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
     }
   } else {
     mu <- ilink(eta, link)
-    p <- cbind(apply(1 - mu[,1:(ncat - 1)], 1, prod), 
+    p <- cbind(apply(1 - mu[, 1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2) {
       .fun <- function(k) {
@@ -1576,26 +1664,26 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
   # Returns: 
   #   probabilites P(x <= q)
   args <- list(1:max(q), eta = eta, ncat = ncat, link = link)
-  p <- do.call(paste0("d", family), args)
+  p <- do_call(paste0("d", family), args)
   .fun <- function(j) {
     rowSums(as.matrix(p[, 1:j]))
   }
-  do.call(cbind, lapply(q, .fun))
+  do_call(cbind, lapply(q, .fun))
 }
 
 # helper functions to shift arbitrary distributions
 dshifted <- function(dist, x, shift = 0, ...) {
-  do.call(paste0("d", dist), list(x - shift, ...))
+  do_call(paste0("d", dist), list(x - shift, ...))
 }
 
 pshifted <- function(dist, q, shift = 0, ...) {
-  do.call(paste0("p", dist), list(q - shift, ...))
+  do_call(paste0("p", dist), list(q - shift, ...))
 }
 
 qshifted <- function(dist, p, shift = 0, ...) {
-  do.call(paste0("q", dist), list(p, ...)) + shift
+  do_call(paste0("q", dist), list(p, ...)) + shift
 }
 
 rshifted <- function(dist, n, shift = 0, ...) {
-  do.call(paste0("r", dist), list(n, ...)) + shift
+  do_call(paste0("r", dist), list(n, ...)) + shift
 }

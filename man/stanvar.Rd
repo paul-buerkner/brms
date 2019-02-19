@@ -5,26 +5,34 @@
 \alias{stanvars}
 \title{User-defined variables passed to Stan}
 \usage{
-stanvar(x, name = NULL, scode = NULL)
+stanvar(x = NULL, name = NULL, scode = NULL, block = "data")
 }
 \arguments{
-\item{x}{An \R object containing data to be passed to Stan.}
+\item{x}{An \R object containing data to be passed to Stan.
+Only required if \code{block = 'data'} and ignored otherwise.}
 
 \item{name}{Optinal character string providing the desired variable 
 name of the object in \code{x}. If \code{NULL} (the default)
 the variable name is directly infered from \code{x}.}
 
-\item{scode}{Optional line of Stan code to define the variable
-in Stan's data block. If \code{NULL} (the default), the
-Stan code is inferred based on the class of \code{x}.}
+\item{scode}{Line of Stan code to define the variable
+in Stan language. If \code{block = 'data'}, the
+Stan code is inferred based on the class of \code{x} by default.}
+
+\item{block}{Name of one of Stan's program blocks in
+which the variable should be defined. Can be \code{'data'},
+\code{'tdata'} (transformed data), \code{'parameters'},
+\code{'tparameters'} (transformed parameters), \code{'model'},
+\code{'genquant'} (generated quantities) or \code{'functions'}.}
 }
 \value{
 An object of class \code{stanvars}.
 }
 \description{
-Prepare user-defined variables to be passed to Stan's data block.
-This is primarily useful for defining more complex priors and 
-for refitting models without recompilation despite changing priors.
+Prepare user-defined variables to be passed to one of Stan's 
+program blocks. This is primarily useful for defining more complex 
+priors, for refitting models without recompilation despite 
+changing priors, or for defining custom Stan functions.
 }
 \examples{
 bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
@@ -36,6 +44,14 @@ make_stancode(count ~ Trt, epilepsy, prior = bprior,
 bprior <- prior(multi_normal(M, V), class = "b")
 stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
   stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
+make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+              prior = bprior, stanvars = stanvars)
+              
+# define a hierachical prior on the regression coefficients
+bprior <- set_prior("normal(0, tau)", class = "b") +
+  set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
+stanvars <- stanvar(scode = "real<lower=0> tau;", 
+                    block = "parameters")
 make_stancode(count ~ Trt + log_Base4_c, epilepsy,
               prior = bprior, stanvars = stanvars)
 

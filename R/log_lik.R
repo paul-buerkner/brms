@@ -15,7 +15,7 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
       out <- Reduce("+", out)
     } else {
       along <- ifelse(length(out) > 1L, 3, 2)
-      out <- do.call(abind, c(out, along = along))
+      out <- do_call(abind, c(out, along = along))
     }
   }
   out
@@ -23,16 +23,20 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
 
 #' @export
 log_lik_internal.brmsdraws <- function(draws, ...) {
-  log_lik_fun <- paste0("log_lik_", draws$f$fun)
+  log_lik_fun <- paste0("log_lik_", draws$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
+  for (nlp in names(draws$nlpars)) {
+    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+  }
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
-  log_lik <- do.call(cbind, lapply(seq_len(N), log_lik_fun, draws = draws))
+  out <- do_call(cbind, lapply(seq_len(N), log_lik_fun, draws = draws))
+  colnames(out) <- NULL
   old_order <- draws$old_order
-  sort <- isTRUE(ncol(log_lik) != length(old_order))
-  reorder_obs(log_lik, old_order, sort = sort)
+  sort <- isTRUE(ncol(out) != length(old_order))
+  reorder_obs(out, old_order, sort = sort)
 }
 
 log_lik_pointwise <- function(data_i, draws, ...) {
@@ -43,7 +47,7 @@ log_lik_pointwise <- function(data_i, draws, ...) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
     out <- Reduce("+", out)
   } else {
-    log_lik_fun <- paste0("log_lik_", draws$f$fun)
+    log_lik_fun <- paste0("log_lik_", draws$family$fun)
     log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
     out <- log_lik_fun(i, draws)
   }
@@ -163,7 +167,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do.call(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
@@ -188,7 +192,7 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do.call(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
@@ -212,7 +216,7 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do.call(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
@@ -233,7 +237,7 @@ log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
     return(as.numeric(ll))
   }
   out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do.call(rbind, out)
+  do_call(rbind, out)
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
@@ -382,7 +386,7 @@ log_lik_wiener <- function(i, draws, data = data.frame()) {
     beta = get_dpar(draws, "bias", i = i),
     resp = draws$data[["dec"]][i]
   )
-  out <- do.call("dwiener", c(draws$data$Y[i], args, log = TRUE))
+  out <- do_call("dwiener", c(draws$data$Y[i], args, log = TRUE))
   log_lik_weight(out, i = i, data = draws$data)
 }
 
@@ -511,15 +515,36 @@ log_lik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
     mu <- get_dpar(draws, "mu", i)
     args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
     out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
-      do.call(dbeta, c(draws$data$Y[i], args, log = TRUE))
+      do_call(dbeta, c(draws$data$Y[i], args, log = TRUE))
   }
   log_lik_weight(out, i = i, data = draws$data)
 }
 
 log_lik_categorical <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$f$link == "logit")
+  stopifnot(draws$family$link == "logit")
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
   out <- dcategorical(draws$data$Y[i], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, data = draws$data)
+}
+
+log_lik_multinomial <- function(i, draws, data = data.frame()) {
+  stopifnot(draws$family$link == "logit")
+  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
+  out <- dmultinomial(draws$data$Y[i, ], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, data = draws$data)
+}
+
+log_lik_dirichlet <- function(i, draws, data = data.frame()) {
+  stopifnot(draws$family$link == "logit")
+  mu_dpars <- str_subset(names(draws$dpars), "^mu")
+  eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
+  eta <- insert_refcat(eta, family = draws$family)
+  phi <- get_dpar(draws, "phi", i = i)
+  cats <- seq_len(draws$data$ncat)
+  alpha <- dcategorical(cats, eta = eta) * phi
+  out <- ddirichlet(draws$data$Y[i, ], alpha = alpha, log = TRUE)
   log_lik_weight(out, i = i, data = draws$data)
 }
 
@@ -528,12 +553,13 @@ log_lik_cumulative <- function(i, draws, data = data.frame()) {
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
   if (y == 1) { 
-    out <- log(ilink(eta[, 1], draws$f$link))
+    out <- log(ilink(eta[, 1], draws$family$link))
   } else if (y == ncat) {
-    out <- log(1 - ilink(eta[, y - 1], draws$f$link)) 
+    out <- log(1 - ilink(eta[, y - 1], draws$family$link)) 
   } else {
     out <- log(
-      ilink(eta[, y], draws$f$link) - ilink(eta[, y - 1], draws$f$link)
+      ilink(eta[, y], draws$family$link) - 
+        ilink(eta[, y - 1], draws$family$link)
     )
   }
   log_lik_weight(out, i = i, data = draws$data)
@@ -543,8 +569,8 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat - 1), 
-    function(k) 1 - ilink(eta[, k], draws$f$link)
+  q <- sapply(seq_len(min(y, ncat - 1)), 
+    function(k) 1 - ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
@@ -562,7 +588,9 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  q <- sapply(1:min(y, ncat-1), function(k) ilink(eta[, k], draws$f$link))
+  q <- sapply(seq_len(min(y, ncat - 1)), 
+    function(k) ilink(eta[, k], draws$family$link)
+  )
   if (y == 1) {
     out <- log(1 - q[, 1])
   }  else if (y == 2) {
@@ -579,7 +607,7 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
   eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
   y <- draws$data$Y[i]
-  if (draws$f$link == "logit") { # more efficient calculation 
+  if (draws$family$link == "logit") { # more efficient calculation 
     q <- sapply(1:(ncat - 1), function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
                matrix(0, nrow = nrow(eta), ncol = ncat - 2))
@@ -589,7 +617,7 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
     q <- sapply(1:(ncat - 1), function(k) 
-      ilink(eta[, k], draws$f$link))
+      ilink(eta[, k], draws$family$link))
     p <- cbind(apply(1 - q[, 1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2) {
@@ -604,13 +632,16 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_custom <- function(i, draws, data = data.frame()) {
-  log_lik_fun <- paste0("log_lik_", draws$f$name)
-  log_lik_fun <- get(log_lik_fun, draws$f$env)
+  log_lik_fun <- draws$family$log_lik
+  if (!is.function(log_lik_fun)) {
+    log_lik_fun <- paste0("log_lik_", draws$family$name)
+    log_lik_fun <- get(log_lik_fun, draws$family$env)
+  }
   log_lik_fun(i = i, draws = draws)
 }
 
 log_lik_mixture <- function(i, draws, data = data.frame()) {
-  families <- family_names(draws$f)
+  families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
   out <- array(NA, dim = dim(theta))
   for (j in seq_along(families)) {
@@ -641,14 +672,14 @@ log_lik_censor <- function(dist, args, i, data) {
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
   if (is.null(data$cens) || data$cens[i] == 0) {
-    do.call(pdf, c(data$Y[i], args, log = TRUE))
+    do_call(pdf, c(data$Y[i], args, log = TRUE))
   } else if (data$cens[i] == 1) {
-    do.call(cdf, c(data$Y[i], args, lower.tail = FALSE, log.p = TRUE))
+    do_call(cdf, c(data$Y[i], args, lower.tail = FALSE, log.p = TRUE))
   } else if (data$cens[i] == -1) {
-    do.call(cdf, c(data$Y[i], args, log.p = TRUE))
+    do_call(cdf, c(data$Y[i], args, log.p = TRUE))
   } else if (data$cens[i] == 2) {
-    log(do.call(cdf, c(data$rcens[i], args)) - 
-          do.call(cdf, c(data$Y[i], args)))
+    log(do_call(cdf, c(data$rcens[i], args)) - 
+          do_call(cdf, c(data$Y[i], args)))
   }
 }
 
@@ -665,7 +696,7 @@ log_lik_truncate <- function(x, cdf, args, i, data) {
   if (!(is.null(data$lb) && is.null(data$ub))) {
     lb <- if (is.null(data$lb)) -Inf else data$lb[i]
     ub <- if (is.null(data$ub)) -Inf else data$ub[i]
-    x - log(do.call(cdf, c(ub, args)) - do.call(cdf, c(lb, args)))
+    x - log(do_call(cdf, c(ub, args)) - do_call(cdf, c(lb, args)))
   } else {
     x
   }

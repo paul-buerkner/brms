@@ -64,6 +64,11 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print_format(x$spec_pars, digits)
       cat("\n")
     }
+    if (length(x$rescor_pars)) {
+      cat("Residual Correlations: \n")
+      print_format(x$rescor, digits)
+      cat("\n")
+    }
     cat(paste0("Samples were drawn using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(
@@ -93,7 +98,7 @@ print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
   }
   out <- x
   fmt <- paste0("%.", digits, "f")
-  for (i in seq_len(ncol(x))) {
+  for (i in seq_cols(x)) {
     if (isTRUE(colnames(x)[i] %in% no_digits)) {
       out[, i] <- sprintf("%.0f", x[, i])
     } else {
@@ -157,14 +162,16 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
     coefs <- c("mean", "sd", "quantile")
   }
   .posterior_summary <- function(x) {
-    do.call(cbind, lapply(
+    do_call(cbind, lapply(
       coefs, get_estimate, samples = x, 
       probs = probs, na.rm = TRUE
     ))
   }
-  x <- as.array(x)
-  if (!length(dim(x)) %in% 2:3) {
-    stop("'x' must be of dimension 2 or 3.")
+  if (length(dim(x)) <= 2L) {
+    # data.frames cause trouble in as.array
+    x <- as.matrix(x)
+  } else {
+    x <- as.array(x) 
   }
   if (length(dim(x)) == 2L) {
     out <- .posterior_summary(x)
@@ -172,7 +179,10 @@ posterior_summary.default <- function(x, probs = c(0.025, 0.975),
   } else if (length(dim(x)) == 3L) {
     out <- lapply(array2list(x), .posterior_summary)
     out <- abind(out, along = 3)
-    dimnames(out)[c(1, 3)] <- dimnames(x)[c(2, 3)]
+    dnx <- dimnames(x)
+    dimnames(out) <- list(dnx[[2]], dimnames(out)[[2]], dnx[[3]])
+  } else {
+    stop("'x' must be of dimension 2 or 3.")
   }
   colnames(out) <- c("Estimate", "Est.Error", paste0("Q", probs * 100))
   out  

@@ -51,7 +51,7 @@ update_data <- function(data, bterms, na.action = na.omit2,
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
-  groups <- get_groups(bterms)
+  groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
@@ -60,18 +60,21 @@ update_data <- function(data, bterms, na.action = na.omit2,
 }
 
 data_rsv_intercept <- function(data, bterms) {
-  # add the resevered variable 'intercept' to the data
+  # add the resevered intercept variables to the data
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
   fe_forms <- get_effect(bterms, "fe")
-  rsv_int <- any(ulapply(fe_forms, attr, "rsv_intercept"))
-  if (rsv_int) {
+  if (any(ulapply(fe_forms, no_int))) {
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
     }
-    data$intercept <- rep(1, length(data[[1]]))
+    if (any(data[["Intercept"]] != 1)) {
+      stop2("Variable name 'Intercept' is resevered in models ",
+            "without a population-level intercept.")
+    }
+    data$intercept <- data$Intercept <- rep(1, length(data[[1]]))
   }
   data
 }
@@ -156,7 +159,7 @@ order_data <- function(data, bterms) {
     if (any(duplicated(data.frame(gv, tv)))) {
       stop2("Time points within groups must be unique.")
     }
-    new_order <- do.call(order, list(gv, tv))
+    new_order <- do_call(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)
@@ -164,28 +167,42 @@ order_data <- function(data, bterms) {
   data
 }
 
+subset_data <- function(data, bterms) {
+  # subset data according to addition argument 'subset'
+  if (is.formula(bterms$adforms$subset)) {
+    # only evaluate a subset of the data
+    subset <- eval_rhs(bterms$adforms$subset, data = data)
+    if (length(subset) != nrow(data)) {
+      stop2("Length of 'subset' does not match the rows of 'data'.")
+    }
+    data <- data[subset, , drop = FALSE]
+  }
+  data
+}
+
+#' Validate New Data
+#' 
+#' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
+#' are a package developer, you will rarely need to call \code{validate_newdata}
+#' directly.
+#' 
+#' @inheritParams extract_draws
+#' @param newdata A \code{data.frame} containing new data to be validated.
+#' @param object A \code{brmsfit} object.
+#' @param check_response Logical; Indicates if response variables should
+#'   be checked as well. Defaults to \code{TRUE}.
+#' @param all_group_vars Optional names of grouping variables to be validated.
+#'   Defaults to all grouping variables in the model.
+#' @param ... Currently ignored.
+#' 
+#' @return A validated \code{'data.frame'} based on \code{newdata}.
+#' 
+#' @export
 validate_newdata <- function(
   newdata, object, re_formula = NULL, allow_new_levels = FALSE,
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,
   all_group_vars = NULL, ...
 ) {
-  # validate newdata passed to post-processing methods
-  # Args:
-  #   newdata: a data.frame containing new data for prediction 
-  #   object: an object of class brmsfit
-  #   re_formula: a group-level formula
-  #   allow_new_levels: Are new group-levels allowed?
-  #   resp: optional name of response variables whose 
-  #     variables should be checked
-  #   check_response: Should response variables be checked
-  #     for existence and validity?
-  #   incl_autocor: Check data of autocorrelation terms?
-  #   all_group_vars: optional names of all grouping 
-  #     variables in the model
-  #   ...: currently ignored
-  # Returns:
-  #   validated data.frame being compatible with formula(object)
-  #   if newdata is NULL, the original data.frame is returned
   if (is.null(newdata)) {
     newdata <- structure(object$data, valid = TRUE, original = TRUE)
   }
@@ -198,6 +215,7 @@ validate_newdata <- function(
   }
   newdata <- rm_attr(newdata, c("terms", "brmsframe"))
   stopifnot(is.brmsfit(object))
+  resp <- validate_resp(resp, object)
   if (!incl_autocor) {
     object <- remove_autocor(object) 
   }
@@ -244,21 +262,15 @@ validate_newdata <- function(
   }
   # fixes issue #279
   newdata <- data_rsv_intercept(newdata, bterms)
-  new_ranef <- tidy_ranef(bterms, data = mf)
-  new_meef <- tidy_meef(bterms, data = mf)
-  group_vars <- unique(c(
-    get_group_vars(new_ranef),
-    get_group_vars(new_meef),
-    get_autocor_vars(bterms, "group")
-  ))
-  if (allow_new_levels && length(group_vars)) {
+  new_group_vars <- get_group_vars(bterms)
+  if (allow_new_levels && length(new_group_vars)) {
     # grouping factors do not need to be specified 
     # by the user if new levels are allowed
-    new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
-    missing_gf <- setdiff(new_gf, names(newdata))
-    newdata[, missing_gf] <- NA
+    mis_group_vars <- new_group_vars[!grepl(":", new_group_vars)]
+    mis_group_vars <- setdiff(mis_group_vars, names(newdata))
+    newdata[, mis_group_vars] <- NA
   }
-  newdata <- combine_groups(newdata, group_vars)
+  newdata <- combine_groups(newdata, new_group_vars)
   # validate factor levels in newdata
   if (is.null(all_group_vars)) {
     all_group_vars <- get_group_vars(object) 
@@ -335,6 +347,8 @@ validate_newdata <- function(
     newdata[, unused_vars] <- NA
   }
   # validate grouping factors
+  new_ranef <- tidy_ranef(bterms, data = mf)
+  new_meef <- tidy_meef(bterms, data = mf)
   old_levels <- get_levels(new_ranef, new_meef)
   if (!allow_new_levels) {
     new_levels <- get_levels(
@@ -401,7 +415,8 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
       x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
     }
   }
-  for (name in names(x$stanvars)) {
+  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
+  for (name in names(stanvars_data)) {
     if (name %in% names(new_objects)) {
       x$stanvars[[name]]$sdata <- new_objects[[name]]
     }
@@ -429,18 +444,73 @@ get_model_matrix <- function(formula, data = environment(formula),
   if (is.null(terms)) {
     return(NULL)
   }
-  if (isTRUE(attr(terms, "rm_intercept"))) {
+  if (no_int(terms)) {
     cols2remove <- union(cols2remove, "(Intercept)")
   }
   X <- stats::model.matrix(terms, data)
   cols2remove <- which(colnames(X) %in% cols2remove)
-  if (rename) {
-    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
-  }
   if (length(cols2remove)) {
     X <- X[, -cols2remove, drop = FALSE]
   }
+  if (rename) {
+    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
+  }
   X
+}
+
+PredictMat <- function(object, data, ...) {
+  # convenient wrapper around mgcv::PredictMat
+  data <- rm_attr(data, "terms")
+  out <- mgcv::PredictMat(object, data = data, ...)
+  if (length(dim(out)) < 2L) {
+    # fixes issue #494
+    out <- matrix(out, nrow = 1)
+  }
+  out
+}
+
+smoothCon <- function(object, data, ...) {
+  # convenient wrapper around mgcv::smoothCon
+  data <- rm_attr(data, "terms")
+  vars <- setdiff(c(object$term, object$by), "NA")
+  for (v in vars) {
+    # allow factor-like variables #562
+    if (is_like_factor(data[[v]])) {
+      data[[v]] <- as.factor(data[[v]])
+    }
+  }
+  mgcv::smoothCon(object, data = data, ...)
+}
+
+s2rPred <- function(sm, data) {
+  # Aid prediction from smooths represented as type == 2
+  # originally provided by Simon Wood 
+  # Params:
+  #   sm: output of mgcv::smoothCon
+  #   data: new data supplied for prediction
+  re <- mgcv::smooth2random(sm, names(data), type = 2)
+  # prediction matrix for new data
+  X <- PredictMat(sm, data)   
+  # transform to RE parameterization
+  if (!is.null(re$trans.U)) {
+    X <- X %*% re$trans.U
+  }
+  X <- t(t(X) * re$trans.D)
+  # re-order columns according to random effect re-ordering
+  X[, re$rind] <- X[, re$pen.ind != 0] 
+  # re-order penalization index in same way  
+  pen.ind <- re$pen.ind
+  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
+  # start returning the object
+  Xf <-  X[, which(re$pen.ind == 0), drop = FALSE]
+  out <- list(rand = list(), Xf = Xf)
+  for (i in seq_along(re$rand)) { 
+    # loop over random effect matrices
+    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
+    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+  }
+  names(out$rand) <- names(re$rand)
+  out
 }
 
 arr_design_matrix <- function(Y, r, group)  { 
@@ -474,6 +544,46 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+#' Extract response values
+#' 
+#' Extract response values from a \code{\link{brmsfit}} object.
+#' 
+#' @param x A \code{\link{brmsfit}} object.
+#' @param resp Optional names of response variables for which to extract values.
+#' @param warn For internal use only.
+#' @param ... Further arguments passed to \code{\link{standata}}.
+#' 
+#' @return Returns a vector of response values for univariate models and a
+#'   matrix of response values with one column per response variable for
+#'   multivariate models.
+#' 
+#' @keywords internal
+#' @export
+get_y <- function(x, resp = NULL, warn = FALSE, ...) {
+  stopifnot(is.brmsfit(x))
+  resp <- validate_resp(resp, x)
+  warn <- as_one_logical(warn)
+  args <- list(x, resp = resp, ...)
+  args$re_formula <- NA
+  args$check_response <- TRUE
+  args$only_response <- TRUE
+  args$internal <- TRUE
+  sdata <- do_call(standata, args)
+  if (warn) {
+    if (any(paste0("cens", usc(resp)) %in% names(sdata))) {
+      warning2("Results may not be meaningful for censored models.")
+    }
+  }
+  Ynames <- paste0("Y", usc(resp))
+  if (length(Ynames) > 1L) {
+    out <- do_call(cbind, sdata[Ynames])
+    colnames(out) <- resp
+  } else {
+    out <- sdata[[Ynames]]
+  }
+  structure(out, old_order = attr(sdata, "old_order"))
+}
+
 extract_old_standata <- function(x, data, ...) {
   # helper function for validate_newdata to extract
   # old standata required for the computation of new standata
@@ -496,16 +606,25 @@ extract_old_standata.mvbrmsterms <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.brmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$dpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$dpars[[i]], data, ...)
+  out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
   if (has_trials(x$family) || has_cat(x$family)) {
     # trials and ncat should not be computed based on new data
-    data_response <- data_response(x, data)
+    data_response <- data_response(
+      x, data, check_response = FALSE, not4stan = TRUE
+    )
     # partially match via $ to be independent of the response suffix
     out$trials <- data_response$trials
     out$ncat <- data_response$ncat
+  }
+  if (is_binary(x$family) || is_categorical(x$family)) {
+    Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$resp_levels <- levels(as.factor(Y))
   }
   if (is.cor_car(x$autocor)) {
     if (isTRUE(nzchar(x$time$group))) {
@@ -517,23 +636,19 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.btnl <- function(x, data, ...) {
-  out <- named_list(names(x$nlpars))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$nlpars[[i]], data, ...)
-  }
-  out
+  NULL
 }
 
 #' @export
 extract_old_standata.btl <- function(x, data, ...) {
   list(
-    smooths = make_smooth_list(x, data, ...),
+    smooths = make_sm_list(x, data, ...),
     gps = make_gp_list(x, data, ...),
     Jmo = make_Jmo_list(x, data, ...)
   )
 }
 
-make_smooth_list <- function(x, data, ...) {
+make_sm_list <- function(x, data, ...) {
   # extract data related to smooth terms
   # for use in extract_old_standata
   stopifnot(is.btl(x))
@@ -548,7 +663,7 @@ make_smooth_list <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- do.call(mgcv::smoothCon, sc_args)
+      out[[i]] <- do_call(smoothCon, sc_args)
     }
   }
   out
@@ -558,13 +673,8 @@ make_gp_list <- function(x, data, ...) {
   # extract data related to gaussian processes
   # for use in extract_old_standata
   stopifnot(is.btl(x))
-  gpterms <- all_terms(x[["gp"]])
-  out <- named_list(gpterms)
-  for (i in seq_along(gpterms)) {
-    gp <- eval2(gpterms[i])
-    Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
-    out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
-  }
+  out <- data_gp(x, data, raw = TRUE)
+  out <- out[grepl("^(dmax)|(cmeans)", names(out))]
   out
 }
 
@@ -577,7 +687,7 @@ make_Jmo_list <- function(x, data, ...) {
     # do it like data_sp()
     spef <- tidy_spef(x, data)
     Xmo_fun <- function(x) attr(eval2(x, data), "var")
-    Xmo <- lapply(unlist(spef$call_mo), Xmo_fun)
+    Xmo <- lapply(unlist(spef$calls_mo), Xmo_fun)
     out <- as.array(ulapply(Xmo, max))
   }
   out
