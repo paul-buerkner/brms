@@ -248,9 +248,10 @@ Please cite one or more of the following publications:
 
 -   Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
     Models using Stan. *Journal of Statistical Software*. 80(1), 1-28.
-    <a href="doi:10.18637/jss.v080.i01" class="uri">doi:10.18637/jss.v080.i01</a>
--   Bürkner P. C. (in press). Advanced Bayesian Multilevel Modeling with
-    the R Package brms. *The R Journal*.
+    doi.org/10.18637/jss.v080.i01
+-   Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the
+    R Package brms. *The R Journal*. 10(1), 395-411.
+    doi.org/10.32614/RJ-2018-017
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 
