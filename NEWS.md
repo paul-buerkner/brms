@@ -4,6 +4,7 @@
 
 * Fit multinomial models via family `multinomial`. (#463)
 * Fit Dirichlet models via family `dirichlet`. (#463)
+* Fit discrete Weibull models via family `discrete_weibull`.
 * Fit conditional logistic models using the `categorical` and
 `multinomial` families together with non-linear formula syntax. (#560)
 * Choose the reference category of `categorical` and related 

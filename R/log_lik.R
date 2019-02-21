@@ -299,6 +299,20 @@ log_lik_geometric <- function(i, draws, data = data.frame()) {
   log_lik_weight(out, i = i, data = draws$data)
 }
 
+log_lik_discrete_weibull <- function(i, draws, data = data.frame()) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i), 
+    shape = get_dpar(draws, "shape", i = i)
+  )
+  out <- log_lik_censor(
+    dist = "discrete_weibull", args = args, i = i, data = draws$data
+  )
+  out <- log_lik_truncate(
+    out, cdf = pdiscrete_weibull, args = args, i = i, data = draws$data
+  )
+  log_lik_weight(out, i = i, data = draws$data)
+}
+
 log_lik_exponential <- function(i, draws, data = data.frame()) {
   args <- list(rate = 1 / get_dpar(draws, "mu", i))
   out <- log_lik_censor(dist = "exp", args = args, i = i, data = draws$data)

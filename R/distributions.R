@@ -1013,7 +1013,6 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
 #' @export
 qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
-  # quantile function of the asymmetric laplace distribution
   if (log.p) {
     p <- exp(p)
   }
@@ -1032,9 +1031,89 @@ qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
 #' @rdname AsymLaplace
 #' @export
 rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
-  # random numbers of the asymmetric laplace distribution
   u <- runif(n)
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
+}
+
+#' The Discrete Weibull Distribution
+#' 
+#' Density, distribution function, quantile function and random generation 
+#' for the discrete Weibull distribution with location \code{mu} and
+#' shape \code{shape}.
+#' 
+#' @name DiscreteWeibull
+#' 
+#' @inheritParams StudentT
+#' @param mu Location parameter in the unit interval.
+#' @param shape Positive shape parameter.
+#' 
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
+ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
+  if (any(!is_wholenumber(x) | x < 0)) {
+    stop2("x must be non-negative integers.")
+  }
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  out <- mu^x^shape - mu^(x + 1)^shape
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+#' @rdname DiscreteWeibull
+#' @export
+pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  if (any(!is_wholenumber(x) | x < 0)) {
+    stop2("x must be non-negative integers.")
+  }
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  if (lower.tail) {
+    out <- 1 - mu^(x + 1)^shape
+  } else {
+    out <- mu^(x + 1)^shape
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+#' @rdname DiscreteWeibull
+#' @export
+qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  ceiling((log(1 - p) / log(mu))^(1 / shape) - 1)
+}
+
+#' @rdname DiscreteWeibull
+#' @export
+rdiscrete_weibull <- function(n, mu, shape) {
+  r <- runif(n, 0, 1)
+  qdiscrete_weibull(r, mu, shape)
 }
 
 #' The Dirichlet Distribution

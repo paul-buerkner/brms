@@ -1554,6 +1554,13 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
+test_that("Stan code for the discrete weibull distribution is correct", {
+  scode <- make_stancode(count ~ zAge + zBase * Trt + (1|patient),
+                         data = epilepsy, family = discrete_weibull())
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  expect_match2(scode, "target += discrete_weibull_lpmf(Y[n] | mu[n], shape);")
+})
+
 test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5

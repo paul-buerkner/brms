@@ -454,6 +454,11 @@ stan_llh_bernoulli <- function(bterms, resp = "", mix = "") {
   sdist(lpdf, p$mu)
 }
 
+stan_llh_discrete_weibull <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  sdist("discrete_weibull", p$mu, p$shape)
+}
+
 stan_llh_gamma <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)

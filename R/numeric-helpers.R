@@ -25,7 +25,7 @@ Phi <- function(x) {
   pnorm(x)
 }
 
-incgamma <- function(x, a) {
+incgamma <- function(a, x) {
   # incomplete gamma funcion
   pgamma(x, shape = a) * gamma(a)
 }

@@ -184,7 +184,6 @@ test_that("log_lik for count and survival models works correctly", {
     Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)), 
     trials = trials
   )
-  
   i <- sample(nobs, 1)
   
   draws$dpars$mu <- brms:::inv_logit(draws$dpars$eta)
@@ -194,6 +193,10 @@ test_that("log_lik for count and survival models works correctly", {
   )
   ll <- brms:::log_lik_binomial(i, draws = draws)
   expect_equal(ll, ll_binom)
+  
+  # don't test the actual values as they will be -Inf for this data
+  ll <- brms:::log_lik_discrete_weibull(i, draws = draws)
+  expect_equal(length(ll), ns)
   
   draws$dpars$mu <- exp(draws$dpars$eta)
   ll_pois <- dpois(

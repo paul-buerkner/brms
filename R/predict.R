@@ -292,6 +292,18 @@ predict_geometric <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
+predict_discrete_weibull <- function(i, draws, ntrys = 5, ...) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i = i), 
+    shape = get_dpar(draws, "shape", i = i)
+  )
+  rng_discrete(
+    nrng = draws$nsamples, dist = "discrete_weibull", args = args, 
+    lb = draws$data$lb[i], ub = draws$data$ub[i],
+    ntrys = ntrys
+  )
+}
+
 predict_exponential <- function(i, draws, ...) {
   args <- list(rate = 1 / get_dpar(draws, "mu", i = i))
   rng_continuous(

@@ -158,6 +158,26 @@ fitted_geometric <- function(draws) {
   draws$dpars$mu
 }
 
+fitted_discrete_weibull <- function(draws, M = 1000) {
+  # TODO: make M adaptive to the observed data or model predictions?
+  warning2(
+    "Mean approximations of the 'discrete_weibull' distribution ",
+    "may be inaccurate if the model expects responses greater ", 
+    M, " to be plausible."
+  )
+  out <- 0
+  for (y in seq_len(M)) {
+    out <- out + draws$dpars$mu^y^draws$dpars$shape
+  }
+  # approximate the residual term of the sequence; see Englehart & Li 2011
+  # returns unreasonably large values presumably due to numerical issues
+  # resid <- with(draws$dpars, 
+  #   incgamma(1 / shape, -log(mu) * (M + 1)^shape) /
+  #     (shape * (-log(mu))^(1 / shape))
+  # )
+  out
+}
+
 fitted_exponential <- function(draws) {
   draws$dpars$mu
 }
@@ -437,7 +457,7 @@ fitted_trunc_gamma <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, 
     mu / gamma(shape) * 
-      (incgamma(ub / mu, 1 + shape) - incgamma(lb / mu, 1 + shape))
+      (incgamma(1 + shape, ub / mu) - incgamma(1 + shape, lb / mu))
   )
   with(draws$dpars, 
     m1 / (pgamma(ub, shape, scale = mu) - pgamma(lb, shape, scale = mu))
@@ -448,7 +468,7 @@ fitted_trunc_exponential <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu is already the scale parameter
   inv_mu <- 1 / draws$dpars$mu
-  m1 <- with(draws$dpars, mu * (incgamma(ub / mu, 2) - incgamma(lb / mu, 2)))
+  m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
@@ -458,7 +478,7 @@ fitted_trunc_weibull <- function(draws, lb, ub) {
   draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, family$link))
   a <- 1 + 1 / draws$dpars$shape
   m1 <- with(draws$dpars,
-    mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
+    mu * (incgamma(a, (ub / mu)^shape) - incgamma(a, (lb / mu)^shape))
   )
   with(draws$dpars,
     m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))

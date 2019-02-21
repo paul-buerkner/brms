@@ -139,6 +139,20 @@ test_that("fitted_lagsar runs without errors", {
   expect_true(!identical(mu_new, draws$dpars$mu))
 })
 
+test_that("fitted for discrete_weibull models runs without errors", {
+  ns <- 50
+  nobs <- 8
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = array(rbeta(ns*nobs, 2, 2), dim = c(ns, nobs)),
+    shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
+  )
+  draws$family <- discrete_weibull()
+  pred <- suppressWarnings(brms:::fitted_discrete_weibull(draws, M = 100))
+  expect_equal(dim(pred), c(ns, nobs))
+})
+
 test_that("fitted for multinomial and dirichlet models runs without errors", {
   ns <- 50
   nobs <- 8
