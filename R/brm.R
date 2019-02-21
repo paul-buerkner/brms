@@ -216,12 +216,14 @@
 #'   usually be larger than the current default of \code{10}. For more details
 #'   on the \code{control} argument see \code{\link[rstan:stan]{stan}}.
 #'
-#' @references Paul-Christian Buerkner (2017). brms: An R Package for Bayesian
-#' Multilevel Models Using Stan. Journal of Statistical Software, 80(1), 1-28.
-#' doi:10.18637/jss.v080.i01
-#'
-#' Paul-Christian Buerkner (in review). Advanced Bayesian Multilevel Modeling
-#' with the R Package brms. arXiv preprint.
+#' @references 
+#' Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+#' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+#' \code{doi:10.18637/jss.v080.i01}
+#' 
+#' Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
+#' with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+#' \code{doi:10.32614/RJ-2018-017}
 #'
 #' @seealso \code{\link{brms}}, \code{\link{brmsformula}},
 #' \code{\link{brmsfamily}}, \code{\link{brmsfit}}
