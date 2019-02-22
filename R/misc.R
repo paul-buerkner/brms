@@ -332,11 +332,12 @@ subset_keep_attr <- function(x, y) {
 
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
-  if (!is.numeric(x)) {
-    out <- FALSE
-  } else {
+  if (is.numeric(x)) {
     out <- abs(x - round(x)) < tol
+  } else {
+    out <- rep(FALSE, length(x))
   }
+  dim(out) <- dim(x)
   out
 }
 

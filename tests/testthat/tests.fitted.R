@@ -149,7 +149,7 @@ test_that("fitted for discrete_weibull models runs without errors", {
     shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
   )
   draws$family <- discrete_weibull()
-  pred <- suppressWarnings(brms:::fitted_discrete_weibull(draws, M = 100))
+  pred <- suppressWarnings(brms:::fitted_discrete_weibull(draws))
   expect_equal(dim(pred), c(ns, nobs))
 })
 

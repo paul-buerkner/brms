@@ -1052,16 +1052,15 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #' 
 #' @export
 ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
-  if (any(!is_wholenumber(x) | x < 0)) {
-    stop2("x must be non-negative integers.")
-  }
   if (any(mu < 0 | mu > 1)) {
     stop2("mu bust be between 0 and 1.")
   }
   if (any(shape <= 0)) {
     stop2("shape bust be greater than 0.")
   }
+  x <- round(x)
   out <- mu^x^shape - mu^(x + 1)^shape
+  out[x < 0] <- 0
   if (log) {
     out <- log(out)
   }
@@ -1071,19 +1070,19 @@ ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
 #' @rdname DiscreteWeibull
 #' @export
 pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
-  if (any(!is_wholenumber(x) | x < 0)) {
-    stop2("x must be non-negative integers.")
-  }
   if (any(mu < 0 | mu > 1)) {
     stop2("mu bust be between 0 and 1.")
   }
   if (any(shape <= 0)) {
     stop2("shape bust be greater than 0.")
   }
+  x <- round(x)
   if (lower.tail) {
     out <- 1 - mu^(x + 1)^shape
+    out[x < 0] <- 0
   } else {
     out <- mu^(x + 1)^shape
+    out[x < 0] <- 1
   }
   if (log.p) {
     out <- log(out)
