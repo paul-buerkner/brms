@@ -158,23 +158,9 @@ fitted_geometric <- function(draws) {
   draws$dpars$mu
 }
 
-fitted_discrete_weibull <- function(draws, e = 0.001) {
-  mu <- draws$dpars$mu
-  shape <- draws$dpars$shape
-  M <- ceiling(max((log(e) / log(mu))^(1 / shape)))
-  if (M > 1000) {
-    # avoid the loop below running too slow
-    warning2("Mean approximations of the 'discrete_weibull' ",
-             "family may be inaccurate.")
-    M <- 1000 
-  }
-  out <- 0
-  for (y in seq_len(M)) {
-    out <- out + mu^y^shape
-  }
-  # approximation of the residual series (see Englehart & Li, 2011)
-  # returns unreasonably large values presumably due to numerical issues
-  out
+fitted_discrete_weibull <- function(draws) {
+  mean_discrete_weibull(draws$dpars$mu, draws$dpars$shape)
+}
 }
 
 fitted_exponential <- function(draws) {

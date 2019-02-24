@@ -1111,8 +1111,35 @@ qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
 #' @rdname DiscreteWeibull
 #' @export
 rdiscrete_weibull <- function(n, mu, shape) {
-  r <- runif(n, 0, 1)
-  qdiscrete_weibull(r, mu, shape)
+  u <- runif(n, 0, 1)
+  qdiscrete_weibull(u, mu, shape)
+}
+
+mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
+  # mean of the discrete weibull distribution
+  # Args:
+  #   mu: location parameter
+  #   shape: shape parameter
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  opt_M <- ceiling(max((log(thres) / log(mu))^(1 / shape)))
+  if (opt_M <= M) {
+    M <- opt_M
+  } else {
+    # avoid the loop below running too slow
+    warning2(
+      "Approximating the mean of the 'discrete_weibull' ",
+      "distribution failed and results be inaccurate."
+    )
+  }
+  out <- 0
+  for (y in seq_len(M)) {
+    out <- out + mu^y^shape
+  }
+  # approximation of the residual series (see Englehart & Li, 2011)
+  # returns unreasonably large values presumably due to numerical issues
+  out
+}
 }
 
 #' The Dirichlet Distribution

@@ -2,7 +2,7 @@
   * Args: 
   *   y: the response value 
   *   mu: location parameter on the unit interval
-  *   shape: positive shap parameter
+  *   shape: positive shape parameter
   * Returns:  
   *   a scalar to be added to the log posterior 
   */ 
