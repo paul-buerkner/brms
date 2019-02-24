@@ -161,6 +161,9 @@ fitted_geometric <- function(draws) {
 fitted_discrete_weibull <- function(draws) {
   mean_discrete_weibull(draws$dpars$mu, draws$dpars$shape)
 }
+
+fitted_com_poisson <- function(draws) {
+  mean_com_poisson(draws$dpars$mu, draws$dpars$shape)
 }
 
 fitted_exponential <- function(draws) {

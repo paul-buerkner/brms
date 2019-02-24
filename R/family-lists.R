@@ -154,6 +154,16 @@
   )
 }
 
+.family_com_poisson <- function() {
+  list(
+    links = c("log", "identity", "sqrt"),
+    dpars = c("mu", "shape"), type = "int", 
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
+    ad = c("weights", "subset", "cens", "trunc"),
+    include = "fun_com_poisson.stan"
+  )
+}
+
 .family_gamma <- function() {
   list(
     links = c("log", "identity", "inverse"),

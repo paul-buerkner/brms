@@ -1140,6 +1140,161 @@ mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
   # returns unreasonably large values presumably due to numerical issues
   out
 }
+
+dcom_poisson <- function(x, mu, shape, log = FALSE) {
+  x <- round(x)
+  log_mu <- log(mu)
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  out <- shape * (x * log_mu - lgamma(x + 1)) - log_Z
+  out[x < 0] <- 0
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+rcom_poisson <- function(n, mu, shape) {
+  n <- as.integer(as_one_numeric(n))
+  if (n == 1) {
+    n <- max(length(mu), length(shape))
+  }
+  log_mu <- log(mu)
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  u <- runif(n, 0, 1)
+  cdf <- exp(-log_Z)
+  lfac <- y <- 0
+  out <- rep(NA, n)
+  not_found <- cdf < u
+  while (any(not_found)) {
+    y <- y + 1
+    out[not_found] <- y;
+    lfac <- lfac + log(y);
+    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z);
+    not_found <- cdf < u
+  }
+  return(out)
+}
+
+pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  x <- round(x)
+  if (all(shape == 1)) {
+    # shape = 1 implies the poisson distribution
+    return(ppois(x, mu, lower.tail = lower.tail, log.p = log.p))
+  }
+  if (any(shape <= 0)) {
+    stop2("'shape' must be positive.");
+  }
+  if (any(shape == Inf)) {
+    stop2("'shape' must be finite.")
+  }
+  log_mu <- log(mu)
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  out <- rep(0, length(log_Z))
+  dim(out) <- dim(log_Z)
+  out[x > 0] <- log1p_exp(shape * log_mu)
+  k <- 2
+  lfac <- 0
+  while (any(x >= k)) {
+    lfac <- lfac + log(k)
+    term <- shape * (k * log_mu - lfac)
+    out[x >= k] <- log_sum_exp(out[x >= k], term)
+    k <- k + 1
+  }
+  out <- out - log_Z
+  if (!lower.tail) {
+    out <- log1m_exp(out)
+  } 
+  if (!log.p) {
+    out <- exp(out)
+  }
+  out
+}
+
+log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16) {
+  # log normalizing constant of the COM Poisson distribution
+  if (all(shape == 1)) {
+    # shape = 1 implies the poisson distribution
+    return(exp(log_mu))
+  }
+  if (any(shape <= 0)) {
+    stop2("'shape' must be positive.");
+  }
+  if (any(shape == Inf)) {
+    stop2("'shape' must be finite.")
+  }
+  M <- as.integer(as_one_numeric(M))
+  thres <- as_one_numeric(thres)
+  log_thres <- log(thres)
+  # first 2 terms of the series
+  log_Z <- log1p_exp(shape * log_mu)
+  lfac <- 0
+  k <- 2
+  converged <- FALSE
+  while (!converged && k <= M) { 
+    lfac <- lfac + log(k)
+    term <- shape * (k * log_mu - lfac)
+    log_Z <- log_sum_exp(log_Z, term)
+    converged <- all(term <= log_thres)
+    k <- k + 1
+  }
+  if (!converged) {
+    warning2(
+      "Approximating the normalizing constant of the 'com_poisson' ",
+      "distribution failed and results may be inaccurate."
+    )
+  }
+  log_Z
+}
+
+mean_com_poisson <- function(mu, shape, approx = FALSE, 
+                             M = 10000, thres = 1e-16) {
+  # compute the log mean of the COM Poisson distribution
+  # Args:
+  #   mu: location parameter
+  #   shape: shape parameter
+  #   approx: use a closed form approximation of the mean? 
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  if (all(shape == 1)) {
+    return(mu)  # shape = 1 implies the poisson distribution
+  }
+  if (any(shape <= 0)) {
+    stop2("'shape' must be positive.");
+  }
+  if (any(shape == Inf)) {
+    stop2("'shape' must be finite.")
+  }
+  approx <- as_one_logical(approx)
+  if (approx) {
+    # proposed by Guikema and Coffelt (2008)
+    return(mu + 1 / (2 * shape) - 1 / 2)
+  }
+  M <- as.integer(as_one_numeric(M))
+  thres <- as_one_numeric(thres)
+  log_thres <- log(thres)
+  log_mu <- log(mu)
+  # first 2 terms of the series
+  log_num <- shape * log_mu  # numerator
+  log_Z <- log1p_exp(shape * log_mu)  # denominator
+  lfac <- 0
+  k <- 2
+  converged <- FALSE
+  while (!converged && k <= M) { 
+    log_k <- log(k)
+    lfac <- lfac + log_k
+    term <- shape * (k * log_mu - lfac)
+    log_num <- log_sum_exp(log_num, log_k + term)
+    log_Z <- log_sum_exp(log_Z, term)
+    converged <- all(term <= log_thres)
+    k <- k + 1
+  }
+  if (!converged) {
+    warning2(
+      "Approximating the mean of the 'com_poisson' ",
+      "distribution failed and results be inaccurate."
+    )
+  }
+  exp(log_num - log_Z)
 }
 
 #' The Dirichlet Distribution

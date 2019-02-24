@@ -1374,12 +1374,12 @@ stan_dpar_transform <- function(bterms) {
   if (any(families %in% "skew_normal")) {
     # as suggested by Stephen Martin use sigma and mu of CP 
     # but the skewness parameter alpha of DP
-    ap_names <- names(bterms$dpars)
+    dp_names <- names(bterms$dpars)
     for (i in which(families %in% "skew_normal")) {
       id <- str_if(length(families) == 1L, "", i)
       sigma <- stan_sigma_transform(bterms, id = id)
       ns <- str_if(grepl("\\[n\\]", sigma), "[n]")
-      na <- str_if(glue("alpha{id}") %in% ap_names, "[n]")
+      na <- str_if(glue("alpha{id}") %in% dp_names, "[n]")
       type_delta <- str_if(nzchar(na), glue("vector[N{resp}]"), "real")
       no <- str_if(any(nzchar(c(ns, na))), "[n]", "")
       type_omega <- str_if(nzchar(no), glue("vector[N{resp}]"), "real")
@@ -1409,11 +1409,11 @@ stan_dpar_transform <- function(bterms) {
     }
   }
   if (any(families %in% "gen_extreme_value")) {
-    ap_names <- c(names(bterms$dpars), names(bterms$fdpars))
+    dp_names <- c(names(bterms$dpars), names(bterms$fdpars))
     for (i in which(families %in% "gen_extreme_value")) {
       id <- str_if(length(families) == 1L, "", i)
       xi <- glue("xi{id}")
-      if (!xi %in% ap_names) {
+      if (!xi %in% dp_names) {
         str_add(out$modelD) <- glue(
           "  real {xi};  // scaled shape parameter\n"
         )

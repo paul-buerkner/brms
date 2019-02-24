@@ -447,6 +447,15 @@ discrete_weibull <- function(link = "logit", link_shape = "log") {
               link_shape = link_shape)
 }
 
+# do not export yet!
+# @rdname brmsfamily
+# @export
+com_poisson <- function(link = "log", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("com_poisson", link = link, slink = slink,
+              link_shape = link_shape)
+}
+
 #' @rdname brmsfamily
 #' @export
 lognormal <- function(link = "identity", link_sigma = "log") {

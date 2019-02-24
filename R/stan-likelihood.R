@@ -459,6 +459,12 @@ stan_llh_discrete_weibull <- function(bterms, resp = "", mix = "") {
   sdist("discrete_weibull", p$mu, p$shape)
 }
 
+stan_llh_com_poisson <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  lpdf <- stan_llh_simple_lpdf("com_poisson", "log", bterms)
+  sdist(lpdf, p$mu, p$shape)
+}
+
 stan_llh_gamma <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
