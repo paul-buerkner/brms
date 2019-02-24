@@ -88,11 +88,13 @@ where $\phi$ is a positive precision parameter. For $\phi \rightarrow \infty$,
 the negative binomial distribution becomes the poisson distribution. The density
 of the **geometric** family arises if $\phi$ is set to $1$.
 
+<!--
 The density of the **discrete_weibull** family is 
 $$
 f(y) = \mu^{{y}^\alpha} - \mu^{{(y + 1)}^\alpha}
 $$
 with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
+-->
 
 ## Survival models
 

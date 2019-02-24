@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2019-02-21" />
+<meta name="date" content="2019-02-24" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -214,7 +214,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2019-02-21</em></h4>
+<h4 class="date"><em>2019-02-24</em></h4>
 
 
 <div id="TOC">
@@ -270,9 +270,13 @@ f(y) = \frac{\mu^{y}}{y!} \exp(-\mu)
 f(y) = {y + \phi - 1 \choose y} \left(\frac{\mu}{\mu + \phi}\right)^{y}
 \left(\frac{\phi}{\mu + \phi}\right)^\phi
 \]</span> where <span class="math inline">\(\phi\)</span> is a positive precision parameter. For <span class="math inline">\(\phi \rightarrow \infty\)</span>, the negative binomial distribution becomes the poisson distribution. The density of the <strong>geometric</strong> family arises if <span class="math inline">\(\phi\)</span> is set to <span class="math inline">\(1\)</span>.</p>
-<p>The density of the <strong>discrete_weibull</strong> family is <span class="math display">\[
+<!--
+The density of the **discrete_weibull** family is 
+$$
 f(y) = \mu^{{y}^\alpha} - \mu^{{(y + 1)}^\alpha}
-\]</span> with location parameter <span class="math inline">\(\mu \in [0, 1]\)</span> and positive shape parameter <span class="math inline">\(\alpha\)</span>.</p>
+$$
+with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
+-->
 </div>
 <div id="survival-models" class="section level2">
 <h2>Survival models</h2>

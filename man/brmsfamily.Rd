@@ -6,7 +6,6 @@
 \alias{bernoulli}
 \alias{negbinomial}
 \alias{geometric}
-\alias{discrete_weibull}
 \alias{lognormal}
 \alias{shifted_lognormal}
 \alias{skew_normal}
@@ -53,8 +52,6 @@ bernoulli(link = "logit")
 negbinomial(link = "log", link_shape = "log")
 
 geometric(link = "log")
-
-discrete_weibull(link = "logit", link_shape = "log")
 
 lognormal(link = "identity", link_sigma = "log")
 
@@ -131,7 +128,7 @@ acat(link = "logit", link_disc = "log", threshold = c("flexible",
 variable be used in the model. Currently, the following families are
 supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
-\code{discrete_weibull}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
+\code{Gamma}, \code{skew_normal}, \code{lognormal},
 \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},

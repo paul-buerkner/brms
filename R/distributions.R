@@ -1035,22 +1035,22 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
 }
 
-#' The Discrete Weibull Distribution
-#' 
-#' Density, distribution function, quantile function and random generation 
-#' for the discrete Weibull distribution with location \code{mu} and
-#' shape \code{shape}.
-#' 
-#' @name DiscreteWeibull
-#' 
-#' @inheritParams StudentT
-#' @param mu Location parameter in the unit interval.
-#' @param shape Positive shape parameter.
-#' 
-#' @details See \code{vignette("brms_families")} for details
-#' on the parameterization.
-#' 
-#' @export
+# The Discrete Weibull Distribution
+# 
+# Density, distribution function, quantile function and random generation 
+# for the discrete Weibull distribution with location \code{mu} and
+# shape \code{shape}.
+# 
+# @name DiscreteWeibull
+# 
+# @inheritParams StudentT
+# @param mu Location parameter in the unit interval.
+# @param shape Positive shape parameter.
+# 
+# @details See \code{vignette("brms_families")} for details
+# on the parameterization.
+# 
+# @export
 ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
   if (any(mu < 0 | mu > 1)) {
     stop2("mu bust be between 0 and 1.")
@@ -1067,8 +1067,8 @@ ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
   out
 }
 
-#' @rdname DiscreteWeibull
-#' @export
+# @rdname DiscreteWeibull
+# @export
 pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   if (any(mu < 0 | mu > 1)) {
     stop2("mu bust be between 0 and 1.")
@@ -1090,8 +1090,8 @@ pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   out
 }
 
-#' @rdname DiscreteWeibull
-#' @export
+# @rdname DiscreteWeibull
+# @export
 qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   if (any(mu < 0 | mu > 1)) {
     stop2("mu bust be between 0 and 1.")
@@ -1108,8 +1108,8 @@ qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   ceiling((log(1 - p) / log(mu))^(1 / shape) - 1)
 }
 
-#' @rdname DiscreteWeibull
-#' @export
+# @rdname DiscreteWeibull
+# @export
 rdiscrete_weibull <- function(n, mu, shape) {
   u <- runif(n, 0, 1)
   qdiscrete_weibull(u, mu, shape)

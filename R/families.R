@@ -13,7 +13,7 @@
 #'   variable be used in the model. Currently, the following families are
 #'   supported: \code{gaussian}, \code{student}, \code{binomial},
 #'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{geometric},
-#'   \code{discrete_weibull}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
+#'   \code{Gamma}, \code{skew_normal}, \code{lognormal},
 #'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
@@ -439,8 +439,9 @@ geometric <- function(link = "log") {
   .brmsfamily("geometric", link = link, slink = slink)
 }
 
-#' @rdname brmsfamily
-#' @export
+# do not export yet!
+# @rdname brmsfamily
+# @export
 discrete_weibull <- function(link = "logit", link_shape = "log") {
   slink <- substitute(link)
   .brmsfamily("discrete_weibull", link = link, slink = slink,
