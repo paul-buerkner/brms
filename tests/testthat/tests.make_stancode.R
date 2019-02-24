@@ -1554,11 +1554,19 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
-test_that("Stan code for the discrete weibull distribution is correct", {
-  scode <- make_stancode(count ~ zAge + zBase * Trt + (1|patient),
-                         data = epilepsy, family = discrete_weibull())
+test_that("Stan code for advanced count data distribution is correct", {
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("discrete_weibull")
+  )
   expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
   expect_match2(scode, "target += discrete_weibull_lpmf(Y[n] | mu[n], shape);")
+  
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("com_poisson")
+  )
+  expect_match2(scode, "target += com_poisson_log_lpmf(Y[n] | mu[n], shape);")
 })
 
 test_that("argument 'stanvars' is handled correctly", {

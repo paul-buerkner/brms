@@ -160,6 +160,9 @@ test_that("predict for count and survival models runs without errors", {
   pred <- brms:::predict_geometric(i, draws = draws)
   expect_equal(length(pred), ns)
   
+  pred <- brms:::predict_com_poisson(i, draws = draws)
+  expect_equal(length(pred), ns)
+  
   pred <- brms:::predict_exponential(i, draws = draws)
   expect_equal(length(pred), ns)
   

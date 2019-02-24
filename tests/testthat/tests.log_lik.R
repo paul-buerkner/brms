@@ -219,6 +219,13 @@ test_that("log_lik for count and survival models works correctly", {
   ll <- brms:::log_lik_geometric(i, draws = draws)
   expect_equal(ll, ll_geo)
   
+  ll_com_pois <- brms:::dcom_poisson(
+    x = draws$data$Y[i], mu = draws$dpars$mu[, i],
+    shape = draws$dpars$shape, log = TRUE
+  )
+  ll <- brms:::log_lik_com_poisson(i, draws = draws)
+  expect_equal(ll, ll_com_pois)
+  
   ll_exp <- dexp(
     x = draws$data$Y[i], rate = 1 / draws$dpars$mu[, i], log = TRUE
   )
