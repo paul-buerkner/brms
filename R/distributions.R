@@ -1163,7 +1163,7 @@ rcom_poisson <- function(n, mu, shape) {
   u <- runif(n, 0, 1)
   cdf <- exp(-log_Z)
   lfac <- y <- 0
-  out <- rep(NA, n)
+  out <- rep(0, n)
   not_found <- cdf < u
   while (any(not_found)) {
     y <- y + 1
