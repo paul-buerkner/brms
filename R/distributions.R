@@ -1146,7 +1146,7 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
   log_mu <- log(mu)
   log_Z <- log_Z_com_poisson(log_mu, shape)
   out <- shape * (x * log_mu - lgamma(x + 1)) - log_Z
-  out[x < 0] <- 0
+  out[x < 0] <- -Inf
   if (!log) {
     out <- exp(out)
   }
@@ -1155,24 +1155,34 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
 
 rcom_poisson <- function(n, mu, shape) {
   n <- as.integer(as_one_numeric(n))
-  if (n == 1) {
-    n <- max(length(mu), length(shape))
+  max_len <- max(length(mu), length(shape))
+  if (max_len > 1L) {
+    if (n == 1L) {
+      n <- max_len
+    }
+    if (n != max_len) {
+      stop2("'n' must be equal to the maximum length of 'mu' and 'shape'.")
+    }
+  }
+  if (all(shape == 1)) {
+    return(rpois(n, mu))
   }
   log_mu <- log(mu)
   log_Z <- log_Z_com_poisson(log_mu, shape)
   u <- runif(n, 0, 1)
   cdf <- exp(-log_Z)
-  lfac <- y <- 0
+  lfac <- 0
+  y <- 0
   out <- rep(0, n)
   not_found <- cdf < u
   while (any(not_found)) {
     y <- y + 1
-    out[not_found] <- y;
-    lfac <- lfac + log(y);
-    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z);
+    out[not_found] <- y
+    lfac <- lfac + log(y)
+    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z)
     not_found <- cdf < u
   }
-  return(out)
+  out
 }
 
 pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
@@ -1182,7 +1192,7 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
     return(ppois(x, mu, lower.tail = lower.tail, log.p = log.p))
   }
   if (any(shape <= 0)) {
-    stop2("'shape' must be positive.");
+    stop2("'shape' must be positive.")
   }
   if (any(shape == Inf)) {
     stop2("'shape' must be finite.")
@@ -1217,7 +1227,7 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16) {
     return(exp(log_mu))
   }
   if (any(shape <= 0)) {
-    stop2("'shape' must be positive.");
+    stop2("'shape' must be positive.")
   }
   if (any(shape == Inf)) {
     stop2("'shape' must be finite.")
@@ -1259,7 +1269,7 @@ mean_com_poisson <- function(mu, shape, approx = FALSE,
     return(mu)  # shape = 1 implies the poisson distribution
   }
   if (any(shape <= 0)) {
-    stop2("'shape' must be positive.");
+    stop2("'shape' must be positive.")
   }
   if (any(shape == Inf)) {
     stop2("'shape' must be finite.")

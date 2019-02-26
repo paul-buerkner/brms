@@ -1,4 +1,5 @@
  /* log normalizing constant of the COM Poisson distribution
+  * implementation inspired by code of Ben Goodrich
   * Args:
   *   log_mu: log location parameter
   *   shape: positive shape parameter
