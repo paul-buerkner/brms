@@ -1152,27 +1152,32 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
   out
 }
 
-rcom_poisson <- function(n, mu, shape) {
+rcom_poisson <- function(n, mu, shape, M = 10000) {
   n <- check_n_rdist(n, mu, shape)
-  args <- expand(mu = mu, shape = shape)
-  mu <- args$mu
-  shape <- args$shape
-  
+  M <- as.integer(as_one_numeric(M))
   log_mu <- log(mu)
-  log_Z <- log_Z_com_poisson(log_mu, shape)
+  # approximating log_Z may yield too large random draws
+  log_Z <- log_Z_com_poisson(log_mu, shape, approx = FALSE)
   u <- runif(n, 0, 1)
   cdf <- exp(-log_Z)
   lfac <- 0
   y <- 0
   out <- rep(0, n)
-  dim(out) <- attributes(args)$max_dim
   not_found <- cdf < u
-  while (any(not_found)) {
+  while (any(not_found) && y <= M) {
     y <- y + 1
     out[not_found] <- y
     lfac <- lfac + log(y)
     cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z)
     not_found <- cdf < u
+  }
+  if (any(not_found)) {
+    out[not_found] <- NA
+    nfailed <- sum(not_found)
+    warning2(
+      "Drawing random numbers from the 'com_poisson' ", 
+      "distribution failed in ", nfailed, " cases."
+    )
   }
   out
 }
@@ -1197,7 +1202,8 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
     out[x >= k] <- log_sum_exp(out[x >= k], term)
     k <- k + 1
   }
-  out <- out - log_Z 
+  out <- out - log_Z
+  out[out > 0] <- 0
   if (!lower.tail) {
     out <- log1m_exp(out)
   } 
@@ -1207,14 +1213,22 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   out
 }
 
-log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16) {
+log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
+                              approx = TRUE) {
   # log normalizing constant of the COM Poisson distribution
+  # Args:
+  #   log_mu: log location parameter
+  #   shape: shape parameter
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  #   approx: use a closed form approximation of the mean if appropriate? 
   if (any(shape <= 0)) {
     stop2("'shape' must be positive.")
   }
   if (any(shape == Inf)) {
     stop2("'shape' must be finite.")
   }
+  approx <- as_one_logical(approx)
   args <- expand(log_mu = log_mu, shape = shape)
   log_mu <- args$log_mu
   shape <- args$shape
@@ -1226,12 +1240,14 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16) {
     # shape == 1 implies the poisson distribution
     out[use_poisson] <- exp(log_mu[use_poisson])
   }
-  use_approx <- log_mu * shape >= log(1.5) & log_mu >= log(1.5)
-  if (any(use_approx)) {
-    # use analytical approximation if appropriate
-    out[use_approx] <- log_Z_com_poisson_approx(
-      log_mu[use_approx], shape[use_approx]
-    )
+  if (approx) {
+    # use a closed form approximation if appropriate
+    use_approx <- log_mu * shape >= log(1.5) & log_mu >= log(1.5)
+    if (any(use_approx)) {
+      out[use_approx] <- log_Z_com_poisson_approx(
+        log_mu[use_approx], shape[use_approx]
+      )
+    }
   }
   use_exact <- is.na(out)
   if (any(use_exact)) {
@@ -1279,20 +1295,22 @@ log_Z_com_poisson_approx <- function(log_mu, shape) {
     ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
 }
 
-mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16) {
+mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
+                             approx = TRUE) {
   # compute the log mean of the COM Poisson distribution
   # Args:
   #   mu: location parameter
   #   shape: shape parameter
-  #   approx: use a closed form approximation of the mean? 
   #   M: maximal evaluated element of the series
   #   thres: threshold for new elements at which to stop evaluation
+  #   approx: use a closed form approximation of the mean if appropriate? 
   if (any(shape <= 0)) {
     stop2("'shape' must be positive.")
   }
   if (any(shape == Inf)) {
     stop2("'shape' must be finite.")
   }
+  approx <- as_one_logical(approx)
   args <- expand(mu = mu, shape = shape)
   mu <- args$mu
   shape <- args$shape
@@ -1304,12 +1322,14 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16) {
     # shape == 1 implies the poisson distribution
     out[use_poisson] <- mu[use_poisson]
   }
-  use_approx <- mu^shape >= 1.5 & mu >= 1.5
-  if (any(use_approx)) {
-    # use analytical approximation if appropriate
-    out[use_approx] <- mean_com_poisson_approx(
-      mu[use_approx], shape[use_approx]
-    )
+  if (approx) {
+    # use a closed form approximation if appropriate
+    use_approx <- mu^shape >= 1.5 & mu >= 1.5
+    if (any(use_approx)) {
+      out[use_approx] <- mean_com_poisson_approx(
+        mu[use_approx], shape[use_approx]
+      )
+    } 
   }
   use_exact <- is.na(out)
   if (any(use_exact)) {
