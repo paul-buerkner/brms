@@ -241,7 +241,8 @@ Approximate leave-one-out cross-validation using `loo` and related
 methods is done via the **loo** package. Marginal likelihood based
 methods such as `bayes_factor` are realized by means of the
 **bridgesampling** package. Splines specified via the `s` and `t2`
-functions rely on **mgcv**.
+functions rely on **mgcv**. If you use some of these features, please 
+also consider citing the related packages.
 
 FAQ
 ---
