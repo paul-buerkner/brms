@@ -748,12 +748,14 @@ column_to_row_major_order <- function(x, nranef) {
 }
 
 prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
-  # prepare group-level design matrices for use in linear_predictor
+  # prepare group-level design matrices for use in 'predictor'
   # Args:
   #   Z: (list of) matrices to be prepared
   #   gf: (list of) vectors containing grouping factor values
   #   weights: optional (list of) weights of the same length as gf
   #   max_level: maximal level of gf
+  # Returns:
+  #   a sparse matrix representation of Z
   if (!is.list(Z)) {
     Z <- list(Z)
   }

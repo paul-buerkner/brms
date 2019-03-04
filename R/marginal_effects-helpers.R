@@ -476,6 +476,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   # use default values for unspecified variables
   int_vars <- get_int_vars(bterms)
+  group_vars <- get_group_vars(bterms)
+  req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
     if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
