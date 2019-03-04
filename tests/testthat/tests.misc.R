@@ -91,7 +91,7 @@ test_that("lsp works correctly", {
     c("log", "log10", "log1p", "log2", "logb", "logical")
   )
   expect_equal(
-    lsp("brms", pattern = "inv_logit"),
-    c("inv_logit", "inv_logit_scaled", "log_inv_logit", "log1m_inv_logit")
+    lsp("brms", pattern = "^inv_logit"),
+    c("inv_logit", "inv_logit_scaled")
   )
 })
