@@ -90,7 +90,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   fits[[1]] <- do_call(brm, args)
   fits[[1]]$data.name <- data.name
   rhats <- data.frame(as.list(rhat(fits[[1]])))
-  if (isTRUE(any(rhats > 1.1, na.rm = TRUE))) {
+  if (any(rhats > 1.1, na.rm = TRUE)) {
     warning2("Imputed model 1 did not converge.")
   }
   for (i in seq_along(data)[-1]) {
@@ -103,7 +103,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   for (i in seq_along(data)[-1]) {
     fits[[i]] <- future::value(futures[[i]]) 
     rhat_i <- data.frame(as.list(rhat(fits[[i]])))
-    if (isTRUE(any(rhat_i > 1.1, na.rm = TRUE))) {
+    if (any(rhat_i > 1.1, na.rm = TRUE)) {
       warning2("Imputed model ", i, " did not converge.")
     }
     rhats <- rbind(rhats, rhat_i)
