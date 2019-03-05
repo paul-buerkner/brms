@@ -10,6 +10,8 @@
 families via argument `refcat` of the corresponding family functions.
 * Use different subsets of the data in different univariate parts
 of a multivariate model via addition argument `subset`. (#360)
+* Control the centering of population-level design matrices
+via argument `center` of `brmsformula` and related functions.
 
 ### Other changes
 

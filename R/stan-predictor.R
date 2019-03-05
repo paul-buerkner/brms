@@ -284,12 +284,10 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
   out
 }
 
-stan_fe <- function(bterms, data, prior, stanvars,
-                    center_X = TRUE, sparse = FALSE, 
+stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, 
                     order_mixture = 'none', ...) {
   # Stan code for population-level effects
   # Args:
-  #   center_X: center the design matrix?
   #   sparse: should the design matrix be treated as sparse?
   #   order_mixture: order intercepts to identify mixture models?
   # Returns:
@@ -297,9 +295,11 @@ stan_fe <- function(bterms, data, prior, stanvars,
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
-  center_X <- center_X && has_intercept(bterms$fe) && 
+  # center the design matrix?
+  center_X <- !no_center(bterms$fe) && has_intercept(bterms$fe) && 
     !is.cor_bsts(bterms$autocor) && !sparse
-  rm_intercept <- center_X || is_ordinal(family) ||
+  # remove the intercept from the design matrix?
+  rm_intercept <- center_X || is_ordinal(family) || 
     is.cor_bsts(bterms$autocor)
   if (rm_intercept) {
     fixef <- setdiff(fixef, "Intercept")

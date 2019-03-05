@@ -1713,3 +1713,17 @@ test_that("student-t group-level effects work without errors", {
   )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
 })
+
+test_that("centering design matrices can be changed correctly", {
+  dat <- data.frame(y = 1:10, x = 1:10)
+  scode <- make_stancode(
+    bf(y ~ x, center = FALSE), data = dat,
+    prior = prior(normal(0,1), coef = Intercept)
+  )
+  expect_match2(scode, "mu = X * b;")
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1);")
+  
+  bform <- bf(y ~ eta, nl = TRUE) + lf(eta ~ x, center = TRUE)
+  scode <- make_stancode(bform, data = dat)
+  expect_match2(scode, "nlp_eta = temp_eta_Intercept + Xc_eta * b_eta;")
+})

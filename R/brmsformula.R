@@ -50,6 +50,11 @@
 #'   Indicates if the computation of the non-linear formula should be 
 #'   done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 #'   over observations. Defaults to \code{TRUE}.
+#' @param center Logical; Indicates if the population-level design
+#'   matrix should be centered, which usually increases sampling efficiency.
+#'   See the 'Details' section for more information.
+#'   Defaults to \code{TRUE} for distributional parameters
+#'   and to \code{FALSE} for non-linear parameters.
 #' @param cmc Logical; Indicates whether automatic cell-mean coding
 #'   should be enabled when removing the intercept by adding \code{0} 
 #'   to the right-hand of model formulas. Defaults to \code{TRUE} to 
@@ -309,19 +314,19 @@
 #'   
 #'   \bold{Parameterization of the population-level intercept}
 #'   
-#'   The population-level intercept (if incorporated) is estimated separately 
-#'   and not as part of population-level parameter vector \code{b}. 
-#'   As a result, priors on the intercept also have to be specified separately.
-#'   Furthermore, to increase sampling efficiency, the population-level 
-#'   design matrix \code{X} is centered around its column means 
-#'   \code{X_means} if the intercept is incorporated. 
-#'   This leads to a temporary bias in the intercept equal to 
-#'   \code{<X_means, b>}, where \code{<,>} is the scalar product. 
-#'   The bias is corrected after fitting the model, but be aware 
-#'   that you are effectively defining a prior on the intercept 
-#'   of the centered design matrix not on the real intercept.
-#'   For more details on setting priors on population-level intercepts,
-#'   see \code{\link{set_prior}}.
+#'   By default, the population-level intercept (if incorporated) is estimated
+#'   separately and not as part of population-level parameter vector \code{b} As
+#'   a result, priors on the intercept also have to be specified separately.
+#'   Furthermore, to increase sampling efficiency, the population-level design
+#'   matrix \code{X} is centered around its column means \code{X_means} if the
+#'   intercept is incorporated. This leads to a temporary bias in the intercept
+#'   equal to \code{<X_means, b>}, where \code{<,>} is the scalar product. The
+#'   bias is corrected after fitting the model, but be aware that you are
+#'   effectively defining a prior on the intercept of the centered design matrix
+#'   not on the real intercept. You can turn off this special handling of the
+#'   intercept by setting argument \code{center} to \code{FALSE}. For more
+#'   details on setting priors on population-level intercepts, see
+#'   \code{\link{set_prior}}.
 #'   
 #'   This behavior can be avoided by using the reserved 
 #'   (and internally generated) variable \code{intercept}. 
@@ -568,8 +573,8 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        autocor = NULL, nl = NULL, loop = NULL,
-                        cmc = NULL) {
+                        autocor = NULL, nl = NULL, loop = NULL, 
+                        center = NULL, cmc = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -641,11 +646,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.null(attr(out$formula, "loop"))) {
     attr(out$formula, "loop") <- TRUE
   }
+  if (!is.null(center)) {
+    attr(out$formula, "center") <- as_one_logical(center)
+  }
   if (!is.null(cmc)) {
     attr(out$formula, "cmc") <- as_one_logical(cmc)
-  }
-  if (is.null(attr(out$formula, "cmc"))) {
-    attr(out$formula, "cmc") <- TRUE
   }
   if (!is.null(family)) {
     out$family <- check_family(family)
@@ -670,11 +675,13 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 }
 
 #' @export
-bf <- function(formula, ..., flist = NULL, family = NULL, 
-               autocor = NULL, nl = NULL, loop = NULL, cmc = NULL) {
+bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
+               nl = NULL, loop = NULL, center = NULL, cmc = NULL) {
   # alias of brmsformula
-  brmsformula(formula, ..., flist = flist, family = family,
-              autocor = autocor, nl = nl, loop = loop, cmc = cmc)
+  brmsformula(
+    formula, ..., flist = flist, family = family, autocor = autocor, 
+    nl = nl, loop = loop, center = center, cmc = cmc
+  )
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
@@ -761,19 +768,21 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 
 #' @rdname brmsformula-helpers
 #' @export
-lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL) {
+lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, 
+               center = NULL, cmc = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
     resp <- as_one_character(resp)
   }
   cmc <- if (!is.null(cmc)) as_one_logical(cmc)
+  center <- if (!is.null(center)) as_one_logical(center)
   for (i in seq_along(out)) {
     if (!is.null(cmc)) {
       attr(out[[i]], "cmc") <- cmc
     }
-    if (is.null(attr(out[[i]], "cmc"))) {
-      attr(out[[i]], "cmc") <- TRUE
+    if (!is.null(center)) {
+      attr(out[[i]], "center") <- center
     }
   }
   structure(out, resp = resp)
