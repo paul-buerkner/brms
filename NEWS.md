@@ -44,6 +44,8 @@ occuring for multivariate models thanks to James Rae. (#598)
 * Fix lower bounds in truncated discrete models.
 * Fix checks of the original data in `kfold` thanks to
 the GitHub user gcolitti. (#602)
+* Fix an error when applying the `VarCorr` method to
+meta-analytic models thanks to Michael Scharkow. (#616)
 
 
 # brms 2.7.0

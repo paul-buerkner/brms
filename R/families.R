@@ -1408,7 +1408,7 @@ no_sigma <- function(bterms) {
 simple_sigma <- function(bterms) {
   # has the model a non-predicted but estimated sigma parameter?
   stopifnot(is.brmsterms(bterms))
-  has_sigma(bterms) && is.null(bterms$dpars$sigma)
+  has_sigma(bterms) && !no_sigma(bterms) && !pred_sigma(bterms)
 }
 
 pred_sigma <- function(bterms) {
