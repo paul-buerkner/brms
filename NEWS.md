@@ -12,6 +12,7 @@ families via argument `refcat` of the corresponding family functions.
 of a multivariate model via addition argument `subset`. (#360)
 * Control the centering of population-level design matrices
 via argument `center` of `brmsformula` and related functions.
+* Add an `update` method for `brmsfit_multiple` objects. (#615)
 
 ### Other changes
 

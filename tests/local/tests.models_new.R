@@ -737,6 +737,11 @@ test_that("Missing value imputation works correctly", {
   expect_equal(nsamples(fit_imp1), 5000)
   expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
   
+  fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
+  print(fit_imp1)
+  expect_true(!"b_age" %in% parnames(fit_imp1))
+  expect_equal(nsamples(fit_imp1), 5000)
+  
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
