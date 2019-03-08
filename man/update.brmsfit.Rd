@@ -25,7 +25,7 @@ arguments to be ignored.}
 \item{...}{Other arguments passed to \code{\link{brm}}.}
 }
 \description{
-This method allows to update an existing \code{brmsfit} object
+This method allows to update an existing \code{brmsfit} object.
 }
 \details{
 Sometimes, when updating the model formula, 

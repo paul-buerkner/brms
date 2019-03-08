@@ -2231,7 +2231,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
 
 #' Update \pkg{brms} models
 #' 
-#' This method allows to update an existing \code{brmsfit} object
+#' This method allows to update an existing \code{brmsfit} object.
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param formula. Changes to the formula; for details see 
@@ -2290,8 +2290,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   if (!is.null(newdata)) {
     dots$data <- newdata
+    data.name <- substitute_name(newdata)
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
+    data.name <- object$data.name
   }
 
   if (missing(formula.)) {
@@ -2400,12 +2402,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (recompile) {
     # recompliation is necessary
     dots$fit <- NA
-    if (!is.null(newdata)) {
-      dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      dots$data.name <- substr(dots$data.name, 1, 50)
-    } else {
-      dots$data.name <- object$data.name
-    }
     if (!testmode) {
       object <- do_call(brm, dots)
     }
@@ -2421,9 +2417,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
-    if (!is.null(newdata)) {
-      object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-    }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
@@ -2445,6 +2438,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object <- do_call(brm, dots)
     }
   }
+  object$data.name <- data.name
   object
 }
 

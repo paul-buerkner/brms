@@ -389,12 +389,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     family <- get_element(formula, "family")
     autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
-    if (is.null(dots$data.name)) {
-      data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
-    } else {
-      data.name <- dots$data.name
-      dots$data.name <- NULL
-    }
+    data.name <- substitute_name(data)
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
       prior, formula, data = data, sparse = sparse,

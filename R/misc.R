@@ -708,6 +708,13 @@ eval_NA <- function(expr, ...) {
   eval(expr, envir = data, ...)
 }
 
+substitute_name <- function(x, envir = parent.frame(), nchar = 50) {
+  # find the name that x had in a specific environment
+  out <- substitute(x)
+  out <- eval2(paste0("substitute(", out, ")"), envir = envir)
+  substr(collapse(deparse(out)), 1, nchar)
+}
+
 sort_dependencies <- function(x, sorted = NULL) {
   # recursive sorting of dependencies
   # Args:
