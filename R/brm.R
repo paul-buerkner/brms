@@ -363,12 +363,12 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   dots$testmode <- NULL
   algorithm <- match.arg(algorithm)
   silent <- as_one_logical(silent)
-  future <- as_one_logical(future)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
   thin <- as_one_numeric(thin)
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
+  future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
