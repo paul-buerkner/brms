@@ -33,7 +33,7 @@ all subsets is infeasible for some reason.}
 
 \item{folds}{Determines how the subsets are being constructed.
 Possible values are \code{NULL} (the default), \code{"stratified"},
-\code{"balanced"}, or \code{"loo"}. May also be a vector of length
+\code{"grouped"}, or \code{"loo"}. May also be a vector of length
 equal to the number of observations in the data. Alters the way
 \code{group} is handled. More information is provided in the 'Details'
 section.}
@@ -91,8 +91,8 @@ The \code{kfold} function performs exact \eqn{K}-fold
   of the factor levels, while ignoring argument \code{K}. 
   \item If \code{folds = "stratified"} the subsets are stratified after 
   \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_stratified}}.
-  \item If \code{folds = "balanced"} the subsets are balanced by
-  \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_balanced}}.
+  \item If \code{folds = "grouped"} the subsets are split by
+  \code{group} using \code{\link[loo:kfold-helpers]{loo::kfold_split_grouped}}.
   \item If \code{folds = "loo"} exact leave-one-out cross-validation
   will be performed and \code{K} will be ignored. Further, if \code{group}
   is specified, all observations corresponding to the factor level of the 

@@ -548,22 +548,20 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
       message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
     }
   } else if (is.character(folds) && length(folds) == 1L) {
-    opts <- c("stratified", "balanced", "loo")
+    opts <- c("loo", "stratified", "grouped")
     fold_type <- match.arg(folds, opts)
+    req_group_opts <- c("stratified", "grouped")
+    if (fold_type %in% req_group_opts && is.null(group)) {
+      stop2("Argument 'group' is required for fold type '", fold_type, "'.")
+    }
     if (fold_type == "loo") {
       folds <- seq_len(N)
       K <- N
       message("Setting 'K' to the number of observations (", K, ")")
     } else if (fold_type == "stratified") {
-      if (is.null(group)) {
-        stop2("Argument 'group' is required for stratified folds.")
-      }
       folds <- loo::kfold_split_stratified(K, gvar)
-    } else if (fold_type == "balanced") {
-      if (is.null(group)) {
-        stop2("Argument 'group' is required for balanced folds.")
-      }
-      folds <- loo::kfold_split_balanced(K, gvar)
+    } else if (fold_type == "grouped") {
+      folds <- loo::kfold_split_grouped(K, gvar)
     }
   } else {
     fold_type <- "custom"
