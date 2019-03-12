@@ -23,7 +23,7 @@ Extract Priors of a Bayesian Model Fitted with \pkg{brms}
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+fit <- brm(count ~ zAge + zBase * Trt  
              + (1|patient) + (1|obs), 
            data = epilepsy, family = poisson(), 
            prior = c(prior(student_t(5,0,10), class = b),

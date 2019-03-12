@@ -375,7 +375,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
     )
     bylevels <- NULL
     if (nzchar(rdat$by[1])) {
-      bylevels <- levels(factor(get(rdat$by[1], data)))
+      bylevels <- rm_wsp(levels(factor(get(rdat$by[1], data))))
     }
     rdat$bylevels <- repl(bylevels, nrow(rdat))
     rdat$form <- repl(re$form[[i]], nrow(rdat))

@@ -216,12 +216,14 @@
 #'   usually be larger than the current default of \code{10}. For more details
 #'   on the \code{control} argument see \code{\link[rstan:stan]{stan}}.
 #'
-#' @references Paul-Christian Buerkner (2017). brms: An R Package for Bayesian
-#' Multilevel Models Using Stan. Journal of Statistical Software, 80(1), 1-28.
-#' doi:10.18637/jss.v080.i01
-#'
-#' Paul-Christian Buerkner (in review). Advanced Bayesian Multilevel Modeling
-#' with the R Package brms. arXiv preprint.
+#' @references 
+#' Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+#' Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+#' \code{doi:10.18637/jss.v080.i01}
+#' 
+#' Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
+#' with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+#' \code{doi:10.32614/RJ-2018-017}
 #'
 #' @seealso \code{\link{brms}}, \code{\link{brmsformula}},
 #' \code{\link{brmsfamily}}, \code{\link{brmsfit}}
@@ -233,7 +235,7 @@
 #' # and half cauchy priors for standard deviations of group-level effects
 #' bprior1 <- prior(student_t(5,0,10), class = b) +
 #'   prior(cauchy(0,2), class = sd)
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson(), prior = bprior1)
 #'
 #' # generate a summary of the results
@@ -361,12 +363,12 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   dots$testmode <- NULL
   algorithm <- match.arg(algorithm)
   silent <- as_one_logical(silent)
-  future <- as_one_logical(future)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
   thin <- as_one_numeric(thin)
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
+  future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
@@ -387,12 +389,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     family <- get_element(formula, "family")
     autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
-    if (is.null(dots$data.name)) {
-      data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
-    } else {
-      data.name <- dots$data.name
-      dots$data.name <- NULL
-    }
+    data.name <- substitute_name(data)
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
       prior, formula, data = data, sparse = sparse,

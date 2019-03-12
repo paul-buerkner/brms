@@ -139,8 +139,26 @@ test_that("fitted_lagsar runs without errors", {
   expect_true(!identical(mu_new, draws$dpars$mu))
 })
 
+test_that("fitted for advanced count data distributions runs without errors", {
+  ns <- 15
+  nobs <- 5
+  ncat <- 3
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
+  draws$dpars <- list(
+    mu = array(rbeta(ns*nobs, 2, 2), dim = c(ns, nobs)),
+    shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
+  )
+  draws$family <- brmsfamily("discrete_weibull")
+  pred <- suppressWarnings(brms:::fitted_discrete_weibull(draws))
+  expect_equal(dim(pred), c(ns, nobs))
+  
+  draws$family <- brmsfamily("com_poisson")
+  pred <- suppressWarnings(brms:::fitted_com_poisson(draws))
+  expect_equal(dim(pred), c(ns, nobs))
+})
+
 test_that("fitted for multinomial and dirichlet models runs without errors", {
-  ns <- 50
+  ns <- 15
   nobs <- 8
   ncat <- 3
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")

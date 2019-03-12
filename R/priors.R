@@ -319,18 +319,18 @@
 #'               prior = prior)
 #'               
 #' ## use the horseshoe prior to model sparsity in population-level effects
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' make_stancode(count ~ zAge + zBase * Trt,
 #'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("horseshoe(3)"))
 #'               
 #' ## alternatively use the lasso prior
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' make_stancode(count ~ zAge + zBase * Trt,
 #'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("lasso(1)"))
 #' 
 #' ## pass priors to Stan without checking
 #' prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
-#' make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
+#' make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
@@ -454,19 +454,17 @@ prior_string <- function(prior, ...) {
 #' 
 #' @examples 
 #' ## get all parameters and parameters classes to define priors on
-#' (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
-#'                     + (1|patient) + (1|visit),
+#' (prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'                     data = epilepsy, family = poisson()))   
 #'          
 #' ## define a prior on all population-level effects a once
 #' prior$prior[1] <- "normal(0,10)"
 #' 
-#' ## define a specific prior on the population-level effect of Trt_c
+#' ## define a specific prior on the population-level effect of Trt
 #' prior$prior[5] <- "student_t(10, 0, 5)"       
 #' 
 #' ## verify that the priors indeed found their way into Stan's model code
-#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'               + (1|patient) + (1|visit),
+#' make_stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'               data = epilepsy, family = poisson(), 
 #'               prior = prior)
 #' 
@@ -557,7 +555,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
         def_dprior = def_dprior, cats = cats,
-        spec_intercept = !sparse
+        sparse = sparse
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -573,7 +571,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
       x$nlpars[[nlp]], data = data,
       def_scale_prior = def_scale_prior,
       def_dprior = def_dprior, 
-      spec_intercept = FALSE
+      sparse = sparse
     )
     prior <- prior + nlp_prior
   }
@@ -627,16 +625,16 @@ prior_predictor.btnl <- function(x, data, ...) {
   empty_brmsprior()
 }
 
-prior_fe <- function(bterms, data, spec_intercept = TRUE, 
+prior_fe <- function(bterms, data, sparse = FALSE, 
                      def_dprior = "", cats = NULL, ...) {
   # priors for population-level parameters
-  # Args:
-  #   spec_intercept: special parameter class for the Intercept? 
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
+  # shell the intercept get its own prior class?
+  spec_intercept <- !no_center(bterms$fe) && !sparse
   if (has_intercept(bterms$fe) && spec_intercept) {
     coefs <- NULL
     if (is_ordinal(bterms)) {
@@ -1309,17 +1307,15 @@ check_prior_special.btnl <- function(x, prior, ...) {
 
 #' @export
 check_prior_special.btl <- function(x, prior, data,
-                                    check_nlpar_prior = TRUE,
                                     allow_autoscale = TRUE, ...) {
   # prepare special priors that cannot be passed to Stan as is
   # Args:
   #   prior: an object of class brmsprior
   #   allow_autoscale: allow autoscaling using sigma?
-  #   check_nlpar_prior: check for priors on non-linear parameters?
   # Returns:
   #   a possibly amended brmsprior object with additional attributes
   px <- check_prefix(x)
-  if (is_nlpar(x) && check_nlpar_prior) {
+  if (is_nlpar(x) && no_center(x$fe)) {
     nlp_prior <- subset2(prior, ls = px)
     if (!any(nzchar(nlp_prior$prior))) {
       stop2(

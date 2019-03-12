@@ -139,6 +139,11 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   if (length(nlpars)) {
     nlpar_forms <- x$pforms[nlpars]
     for (nlp in nlpars) {
+      if (is.null(attr(nlpar_forms[[nlp]], "center"))) {
+        # design matrices of non-linear parameters will not be 
+        # centered by default to make prior specification easier
+        attr(nlpar_forms[[nlp]], "center") <- FALSE
+      }
       if (get_nl(nlpar_forms[[nlp]])) {
         y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
       } else {
@@ -353,6 +358,9 @@ parse_fe <- function(formula) {
   }
   if (no_cmc(formula)) {
     attr(out, "cmc") <- FALSE
+  }
+  if (no_center(formula)) {
+    attr(out, "center") <- FALSE
   }
   out
 }
@@ -730,6 +738,11 @@ no_int <- function(x) {
 no_cmc <- function(x) {
   # indicates if cell mean coding should be disabled
   isFALSE(attr(x, "cmc", exact = TRUE))
+}
+
+no_center <- function(x) {
+  # indicate if centering of the design matrix should be disabled
+  isFALSE(attr(x, "center", exact = TRUE))
 }
 
 get_effect <- function(x, ...) {

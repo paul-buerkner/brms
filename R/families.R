@@ -439,6 +439,24 @@ geometric <- function(link = "log") {
   .brmsfamily("geometric", link = link, slink = slink)
 }
 
+# do not export yet!
+# @rdname brmsfamily
+# @export
+discrete_weibull <- function(link = "logit", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("discrete_weibull", link = link, slink = slink,
+              link_shape = link_shape)
+}
+
+# do not export yet!
+# @rdname brmsfamily
+# @export
+com_poisson <- function(link = "log", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("com_poisson", link = link, slink = slink,
+              link_shape = link_shape)
+}
+
 #' @rdname brmsfamily
 #' @export
 lognormal <- function(link = "identity", link_sigma = "log") {
@@ -1390,7 +1408,7 @@ no_sigma <- function(bterms) {
 simple_sigma <- function(bterms) {
   # has the model a non-predicted but estimated sigma parameter?
   stopifnot(is.brmsterms(bterms))
-  has_sigma(bterms) && is.null(bterms$dpars$sigma)
+  has_sigma(bterms) && !no_sigma(bterms) && !pred_sigma(bterms)
 }
 
 pred_sigma <- function(bterms) {

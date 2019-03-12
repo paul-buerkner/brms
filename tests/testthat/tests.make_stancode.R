@@ -282,7 +282,7 @@ test_that("truncation appears in the Stan code", {
   expect_match2(scode, "target += student_t_lpdf(Y[n] | nu, mu[n], sigma) -")
   expect_match2(scode, "student_t_lcdf(ub[n] | nu, mu[n], sigma);")
   
-  scode <- make_stancode(count | trunc(0, 150) ~ Trt_c, 
+  scode <- make_stancode(count | trunc(0, 150) ~ Trt, 
                          data = epilepsy, family = "poisson")
   expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]) -")
   expect_match2(scode, 
@@ -291,18 +291,18 @@ test_that("truncation appears in the Stan code", {
 })
 
 test_that("make_stancode combines strings of multiple grouping factors", {
-  expect_match2(make_stancode(count ~ (1|patient) + (1 + Trt_c | visit), 
+  expect_match2(make_stancode(count ~ (1|patient) + (1 + Trt | visit), 
                              data = epilepsy, family = "poisson"), 
                paste0("  vector[N] Z_1_1;\n",
                       "  // data for group-level effects of ID 2"))
-  expect_match2(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
+  expect_match2(make_stancode(count ~ (1|visit) + (1+Trt|patient), 
                              data = epilepsy, family = skew_normal()), 
                paste0("  int<lower=1> NC_1;\n",
                       "  // data for group-level effects of ID 2"))
 })
 
 test_that("make_stancode handles models without fixed effects", {
-  expect_match2(make_stancode(count ~ 0 + (1|patient) + (1+Trt_c|visit), 
+  expect_match2(make_stancode(count ~ 0 + (1|patient) + (1+Trt|visit), 
                              data = epilepsy, family = "poisson"), 
                "mu = rep_vector(0, N);")
 })
@@ -354,31 +354,31 @@ test_that("self-defined functions appear in the Stan code", {
   expect_match2(scode, "real von_mises_vector_lpdf(vector y")
   
   # zero-inflated and hurdle models
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                               family = "zero_inflated_poisson"),
                "real zero_inflated_poisson_lpmf(int y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = "zero_inflated_negbinomial"),
                "real zero_inflated_neg_binomial_lpmf(int y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                               family = "zero_inflated_binomial"),
                "real zero_inflated_binomial_lpmf(int y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = "zero_inflated_beta"),
                "real zero_inflated_beta_lpdf(real y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                               family = "zero_one_inflated_beta"),
                 "real zero_one_inflated_beta_lpdf(real y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = hurdle_poisson()),
                "real hurdle_poisson_lpmf(int y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = hurdle_negbinomial),
                "real hurdle_neg_binomial_lpmf(int y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = hurdle_gamma("log")),
                "real hurdle_gamma_lpdf(real y")
-  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+  expect_match2(make_stancode(count ~ Trt, data = epilepsy, 
                              family = hurdle_lognormal("identity")),
                "real hurdle_lognormal_lpdf(real y")
   
@@ -855,7 +855,7 @@ test_that("Stan code for GAMMs is correct", {
 test_that("Stan code of response times models is correct", {
   dat <- epilepsy
   dat$cens <- sample(-1:1, nrow(dat), TRUE)
-  scode <- make_stancode(count ~ Trt_c + (1|patient),
+  scode <- make_stancode(count ~ Trt + (1|patient),
                       data = dat, family = exgaussian("log"),
                       prior = prior(gamma(1,1), class = beta))
   expect_match2(scode,
@@ -864,22 +864,22 @@ test_that("Stan code of response times models is correct", {
   expect_match2(scode, "mu[n] = exp(mu[n])")
   expect_match2(scode, "target += gamma_lpdf(beta | 1, 1)")
   
-  scode <- make_stancode(bf(count ~ Trt_c + (1|patient),
-                         sigma ~ Trt_c, beta ~ Trt_c),
+  scode <- make_stancode(bf(count ~ Trt + (1|patient),
+                         sigma ~ Trt, beta ~ Trt),
                       data = dat, family = exgaussian())
   expect_match2(scode, 
     "target += exp_mod_normal_lpdf(Y | mu - beta, sigma, inv(beta))"
   )
   expect_match2(scode, "beta[n] = exp(beta[n])")
   
-  scode <- make_stancode(count | cens(cens) ~ Trt_c + (1|patient),
+  scode <- make_stancode(count | cens(cens) ~ Trt + (1|patient),
                       data = dat, family = exgaussian("inverse"))
   expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n] - beta, sigma, inv(beta))")
   
-  scode <- make_stancode(count ~ Trt_c, dat, family = shifted_lognormal())
+  scode <- make_stancode(count ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lpdf(Y - ndt | mu, sigma)")
   
-  scode <- make_stancode(count | cens(cens) ~ Trt_c, dat, family = shifted_lognormal())
+  scode <- make_stancode(count | cens(cens) ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lcdf(Y[n] - ndt | mu[n], sigma)")
 })
 
@@ -906,14 +906,14 @@ test_that("Stan code of wiener diffusion models is correct", {
 })
 
 test_that("Group IDs appear in the Stan code", {
-  form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
-             shape ~ (1|3|visit) + (Trt_c||patient))
+  form <- bf(count ~ Trt + (1+Trt|3|visit) + (1|patient), 
+             shape ~ (1|3|visit) + (Trt||patient))
   scode <- make_stancode(form, data = epilepsy, family = negbinomial())
   expect_match2(scode, "r_2_1 = r_2[, 1]")
   expect_match2(scode, "r_2_shape_3 = r_2[, 3]")
   
-  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
-             a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
+  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt||patient),
+             a ~ Trt + (1+Trt|3|visit) + (1|patient), nl = TRUE)
   scode <- make_stancode(form, data = epilepsy, family = student(),
                       prior = set_prior("normal(0,5)", nlpar = "a"))
   expect_match2(scode, "r_2_a_2 = r_2[, 2];")
@@ -1108,7 +1108,7 @@ test_that("Group syntax | and || is handled correctly,", {
 })
 
 test_that("predicting zi and hu works correctly", {
-  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy, 
                          family = "zero_inflated_poisson")
   expect_match2(scode, 
     "target += zero_inflated_poisson_log_logit_lpmf(Y[n] | mu[n], zi[n])"
@@ -1116,13 +1116,13 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("inv_logit\\(", scode))
   expect_true(!grepl("exp(mu[n])", scode, fixed = TRUE))
   
-  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy, 
                          family = zero_inflated_poisson(identity))
   expect_match2(scode, 
     "target += zero_inflated_poisson_logit_lpmf(Y[n] | mu[n], zi[n])"
   )
   
-  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy, 
                          family = "zero_inflated_binomial")
   expect_match2(scode, 
     "target += zero_inflated_binomial_blogit_logit_lpmf(Y[n] | trials[n], mu[n], zi[n])"
@@ -1130,7 +1130,7 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("inv_logit\\(", scode))
   
   fam <- zero_inflated_binomial("probit", link_zi = "identity")
-  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, zi ~ Trt), epilepsy, 
                          family = fam)
   expect_match2(scode, 
     "target += zero_inflated_binomial_lpmf(Y[n] | trials[n], mu[n], zi[n])"
@@ -1138,14 +1138,14 @@ test_that("predicting zi and hu works correctly", {
   expect_match2(scode, "mu[n] = Phi(mu[n]);")
   
   scode <- make_stancode(
-    bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+    bf(count ~ Trt, zi ~ Trt), epilepsy, 
     family = zero_inflated_beta()
   )
   expect_match2(scode,
     "target += zero_inflated_beta_logit_lpdf(Y[n] | mu[n], phi, zi[n])"      
   )
   
-  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, hu ~ Trt), epilepsy, 
                          family = "hurdle_negbinomial")
   expect_match2(scode, 
     "target += hurdle_neg_binomial_log_logit_lpmf(Y[n] | mu[n], shape, hu[n])"
@@ -1153,7 +1153,7 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("inv_logit\\(", scode))
   expect_true(!grepl("exp(mu[n])", scode, fixed = TRUE))
   
-  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+  scode <- make_stancode(bf(count ~ Trt, hu ~ Trt), epilepsy, 
                          family = "hurdle_gamma")
   expect_match2(scode, 
     "target += hurdle_gamma_logit_lpdf(Y[n] | shape, mu[n], hu[n])"
@@ -1162,7 +1162,7 @@ test_that("predicting zi and hu works correctly", {
   expect_match2(scode, "mu[n] = shape * exp(-(mu[n]));")
   
   scode <- make_stancode(
-    bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+    bf(count ~ Trt, hu ~ Trt), epilepsy, 
     family = hurdle_gamma(link_hu = "identity")
   )
   expect_match2(scode, "target += hurdle_gamma_lpdf(Y[n] | shape, mu[n], hu[n])")
@@ -1554,6 +1554,21 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
+test_that("Stan code for advanced count data distribution is correct", {
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("discrete_weibull")
+  )
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  expect_match2(scode, "target += discrete_weibull_lpmf(Y[n] | mu[n], shape);")
+  
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("com_poisson")
+  )
+  expect_match2(scode, "target += com_poisson_log_lpmf(Y[n] | mu[n], shape);")
+})
+
 test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5
@@ -1566,7 +1581,7 @@ test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(multi_normal(M, V), class = "b")
   stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
     stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
-  scode <- make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+  scode <- make_stancode(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "vector[K] M;")
   expect_match2(scode, "matrix[K, K] V;")
@@ -1576,7 +1591,7 @@ test_that("argument 'stanvars' is handled correctly", {
     set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
   stanvars <- stanvar(scode = "real<lower=0> tau;", 
                       block = "parameters")
-  scode <- make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+  scode <- make_stancode(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
@@ -1697,4 +1712,18 @@ test_that("student-t group-level effects work without errors", {
     "rep_matrix(dfm_1, M_1) .* (diag_pre_multiply(sd_1, L_1) * z_1)';"
   )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
+})
+
+test_that("centering design matrices can be changed correctly", {
+  dat <- data.frame(y = 1:10, x = 1:10)
+  scode <- make_stancode(
+    bf(y ~ x, center = FALSE), data = dat,
+    prior = prior(normal(0,1), coef = Intercept)
+  )
+  expect_match2(scode, "mu = X * b;")
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1);")
+  
+  bform <- bf(y ~ eta, nl = TRUE) + lf(eta ~ x, center = TRUE)
+  scode <- make_stancode(bform, data = dat)
+  expect_match2(scode, "nlp_eta = temp_eta_Intercept + Xc_eta * b_eta;")
 })

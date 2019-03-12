@@ -601,7 +601,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # test fix of issue #214
   expect_true(is.null(attr(fit1$data$patient, "contrasts")))
   
-  # ------ tests skipped on CRAN ------ #
+  # ------ tests skipped on CRAN ------
   skip_on_cran()
   
   # fitted

@@ -32,7 +32,7 @@ cross-validation via \code{\link{kfold}}.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Base4_c * Trt + (1|patient),
+fit <- brm(count ~ zBase * Trt + (1|patient),
            data = epilepsy, family = poisson())
             
 # perform k-fold cross validation

@@ -423,8 +423,8 @@ validate_models <- function(models, model_names, sub_names) {
 #' 
 #' @examples 
 #' \dontrun{
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
-#'             data = epilepsy, family = poisson())
+#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
+#'            data = epilepsy, family = poisson())
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' (reloo1 <- reloo(loo1, fit1, chains = 1))
@@ -676,7 +676,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
 #'   
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Base4_c * Trt + (1|patient),
+#' fit <- brm(count ~ zBase * Trt + (1|patient),
 #'            data = epilepsy, family = poisson())
 #'             
 #' # perform k-fold cross validation

@@ -30,7 +30,7 @@ Estimates are obtained by calculating the maximum likelihood
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
            data = epilepsy, family = gaussian(), chains = 2)
 vcov(fit)
 }

@@ -158,6 +158,14 @@ fitted_geometric <- function(draws) {
   draws$dpars$mu
 }
 
+fitted_discrete_weibull <- function(draws) {
+  mean_discrete_weibull(draws$dpars$mu, draws$dpars$shape)
+}
+
+fitted_com_poisson <- function(draws) {
+  mean_com_poisson(draws$dpars$mu, draws$dpars$shape)
+}
+
 fitted_exponential <- function(draws) {
   draws$dpars$mu
 }
@@ -437,7 +445,7 @@ fitted_trunc_gamma <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, 
     mu / gamma(shape) * 
-      (incgamma(ub / mu, 1 + shape) - incgamma(lb / mu, 1 + shape))
+      (incgamma(1 + shape, ub / mu) - incgamma(1 + shape, lb / mu))
   )
   with(draws$dpars, 
     m1 / (pgamma(ub, shape, scale = mu) - pgamma(lb, shape, scale = mu))
@@ -448,7 +456,7 @@ fitted_trunc_exponential <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu is already the scale parameter
   inv_mu <- 1 / draws$dpars$mu
-  m1 <- with(draws$dpars, mu * (incgamma(ub / mu, 2) - incgamma(lb / mu, 2)))
+  m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
@@ -458,7 +466,7 @@ fitted_trunc_weibull <- function(draws, lb, ub) {
   draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, family$link))
   a <- 1 + 1 / draws$dpars$shape
   m1 <- with(draws$dpars,
-    mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
+    mu * (incgamma(a, (ub / mu)^shape) - incgamma(a, (lb / mu)^shape))
   )
   with(draws$dpars,
     m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))

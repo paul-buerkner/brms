@@ -10,6 +10,9 @@
 families via argument `refcat` of the corresponding family functions.
 * Use different subsets of the data in different univariate parts
 of a multivariate model via addition argument `subset`. (#360)
+* Control the centering of population-level design matrices
+via argument `center` of `brmsformula` and related functions.
+* Add an `update` method for `brmsfit_multiple` objects. (#615)
 
 ### Other changes
 
@@ -41,6 +44,8 @@ occuring for multivariate models thanks to James Rae. (#598)
 * Fix lower bounds in truncated discrete models.
 * Fix checks of the original data in `kfold` thanks to
 the GitHub user gcolitti. (#602)
+* Fix an error when applying the `VarCorr` method to
+meta-analytic models thanks to Michael Scharkow. (#616)
 
 
 # brms 2.7.0

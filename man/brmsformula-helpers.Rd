@@ -13,7 +13,8 @@
 nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
   loop = NULL)
 
-lf(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL, center = NULL,
+  cmc = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -73,6 +74,12 @@ variable to which the formulas passed via \code{...} and
 Indicates if the computation of the non-linear formula should be 
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
+
+\item{center}{Logical; Indicates if the population-level design
+matrix should be centered, which usually increases sampling efficiency.
+See the 'Details' section for more information.
+Defaults to \code{TRUE} for distributional parameters
+and to \code{FALSE} for non-linear parameters.}
 
 \item{cmc}{Logical; Indicates whether automatic cell-mean coding
 should be enabled when removing the intercept by adding \code{0} 

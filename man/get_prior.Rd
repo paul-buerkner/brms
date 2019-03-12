@@ -52,19 +52,17 @@ may be specified including default priors.
 }
 \examples{
 ## get all parameters and parameters classes to define priors on
-(prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
-                    + (1|patient) + (1|visit),
+(prior <- get_prior(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
                     data = epilepsy, family = poisson()))   
          
 ## define a prior on all population-level effects a once
 prior$prior[1] <- "normal(0,10)"
 
-## define a specific prior on the population-level effect of Trt_c
+## define a specific prior on the population-level effect of Trt
 prior$prior[5] <- "student_t(10, 0, 5)"       
 
 ## verify that the priors indeed found their way into Stan's model code
-make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
-              + (1|patient) + (1|visit),
+make_stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
               data = epilepsy, family = poisson(), 
               prior = prior)
 

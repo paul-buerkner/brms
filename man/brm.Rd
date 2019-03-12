@@ -270,7 +270,7 @@ Fit a generalized (non-)linear multivariate multilevel model via
 # and half cauchy priors for standard deviations of group-level effects
 bprior1 <- prior(student_t(5,0,10), class = b) +
   prior(cauchy(0,2), class = sd)
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson(), prior = bprior1)
 
 # generate a summary of the results
@@ -362,12 +362,13 @@ fit7 <- update(fit7, future = TRUE)
 
 }
 \references{
-Paul-Christian Buerkner (2017). brms: An R Package for Bayesian
-Multilevel Models Using Stan. Journal of Statistical Software, 80(1), 1-28.
-doi:10.18637/jss.v080.i01
+Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+\code{doi:10.18637/jss.v080.i01}
 
-Paul-Christian Buerkner (in review). Advanced Bayesian Multilevel Modeling
-with the R Package brms. arXiv preprint.
+Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
+with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+\code{doi:10.32614/RJ-2018-017}
 }
 \seealso{
 \code{\link{brms}}, \code{\link{brmsformula}},

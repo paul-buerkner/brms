@@ -75,7 +75,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
 #'   
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' vcov(fit)
 #' }
@@ -126,7 +126,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 #'   
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ranef(fit)
 #' }
@@ -199,7 +199,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' ## extract population and group-level coefficients separately
 #' fixef(fit)
@@ -307,7 +307,7 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' 
 #' @examples
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
 #'            data = epilepsy, family = gaussian(), chains = 2)
 #' VarCorr(fit)
 #' }
@@ -492,7 +492,7 @@ as.array.brmsfit <- function(x, ...) {
 #'   
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c,
+#' fit <- brm(count ~ zAge + zBase * Trt,
 #'            data = epilepsy, family = negbinomial())
 #' posterior_interval(fit)
 #' }
@@ -587,7 +587,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 #' 
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+#' fit <- brm(count ~ zAge + zBase * Trt  
 #'              + (1|patient) + (1|obs), 
 #'            data = epilepsy, family = poisson(), 
 #'            prior = c(prior(student_t(5,0,10), class = b),
@@ -857,8 +857,15 @@ nsamples.brmsfit <- function(x, subset = NULL,
 }
 
 #' @export
-nobs.brmsfit <- function(object, ...) {
-  nrow(model.frame(object))
+nobs.brmsfit <- function(object, resp = NULL, ...) {
+  if (is_mv(object) && length(resp)) {
+    resp <- validate_resp(resp, object, multiple = FALSE)
+    bterms <- parse_bf(object$formula$forms[[resp]])
+    out <- nrow(subset_data(model.frame(object), bterms))
+  } else {
+    out <- nrow(model.frame(object))
+  }
+  out
 }
 
 #' @rdname ngrps
@@ -1066,7 +1073,7 @@ launch_shinystan.brmsfit <- function(
 #' 
 #' @examples
 #' \dontrun{ 
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")
 #' plot(fit)
@@ -1218,7 +1225,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' 
 #' @examples
 #' \dontrun{
-#' fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c
+#' fit <-  brm(count ~ zAge + zBase * Trt
 #'             + (1|patient) + (1|obs),
 #'             data = epilepsy, family = poisson())
 #' 
@@ -1362,7 +1369,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #'  
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#' fit <- brm(count ~ zAge + zBase * Trt 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
 #' pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)
@@ -1915,7 +1922,7 @@ predictive_error.brmsfit <- function(
 #' 
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Base4_c, data = epilepsy, family = poisson())
+#' fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
 #' predictive_interval(fit)
 #' }
 #' 
@@ -2231,7 +2238,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
 
 #' Update \pkg{brms} models
 #' 
-#' This method allows to update an existing \code{brmsfit} object
+#' This method allows to update an existing \code{brmsfit} object.
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param formula. Changes to the formula; for details see 
@@ -2290,8 +2297,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   if (!is.null(newdata)) {
     dots$data <- newdata
+    data.name <- substitute_name(newdata)
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
+    data.name <- object$data.name
   }
 
   if (missing(formula.)) {
@@ -2400,12 +2409,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (recompile) {
     # recompliation is necessary
     dots$fit <- NA
-    if (!is.null(newdata)) {
-      dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      dots$data.name <- substr(dots$data.name, 1, 50)
-    } else {
-      dots$data.name <- object$data.name
-    }
     if (!testmode) {
       object <- do_call(brm, dots)
     }
@@ -2421,9 +2424,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
-    if (!is.null(newdata)) {
-      object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-    }
     if (!is.null(dots$sample_prior)) {
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
@@ -2445,6 +2445,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object <- do_call(brm, dots)
     }
   }
+  object$data.name <- data.name
   object
 }
 
@@ -2689,8 +2690,7 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #'   
 #' @examples 
 #' \dontrun{
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + 
-#'               (1|patient) + (1|obs),
+#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #'            data = epilepsy, family = poisson())
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
@@ -3140,7 +3140,7 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3150,7 +3150,7 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' 
 #' # model without the treatment effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3230,7 +3230,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3239,7 +3239,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' 
 #' # model without the treatment effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3302,7 +3302,7 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' \dontrun{
 #' # model with the treatment effect
 #' fit1 <- brm(
-#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   count ~ zAge + zBase + Trt,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
@@ -3311,7 +3311,7 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' 
 #' # model without the treatent effect
 #' fit2 <- brm(
-#'   count ~ log_Age_c + log_Base4_c,
+#'   count ~ zAge + zBase,
 #'   data = epilepsy, family = negbinomial(), 
 #'   prior = prior(normal(0, 1), class = b),
 #'   save_all_pars = TRUE
