@@ -892,6 +892,9 @@ getCall.brmsfit <- function(x, ...) {
 
 #' @export
 family.brmsfit <- function(object, resp = NULL, ...) {
+  if (!is_mv(object)) {
+    resp <- NULL
+  }
   if (!is.null(resp)) {
     stopifnot(is_mv(object))
     resp <- as_one_character(resp)
@@ -1277,6 +1280,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (is.null(group) && is_group_type) {
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
+  family <- family(object, resp = resp)
+  if (has_multicol(family)) {
+    stop2("'pp_check' is not implemented for this family.")
+  }
   bterms <- parse_bf(object$formula)
   if ("x" %in% names(formals(ppc_fun)) && !is.null(x)) {
     ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
@@ -1286,7 +1293,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
   }
   if (type == "error_binned") {
-    if (is_ordinal(object$family)) {
+    if (is_ordinal(family)) {
       stop2("Type '", type, "' is not available for ordinal models.")
     }
     method <- "fitted"
