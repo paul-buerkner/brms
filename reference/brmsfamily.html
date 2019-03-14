@@ -72,7 +72,7 @@ the custom_family function." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -436,7 +436,8 @@ specified predictor terms in order to lead to an identified model.</p></td>
   family <code>wiener</code> the link <code>identity</code>.
   The first link mentioned for each family is the default.</p>  
 <p>Please note that when calling the <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>Gamma</a></code> 
-  family function, the default link will be <code>inverse</code> not <code>log</code>. 
+  family function, the default link will be <code>inverse</code> instead of 
+  <code>log</code> although the latter is the default in <span class="pkg">brms</span>. 
   Also, the <code>probit_approx</code> link cannot be used when calling the
   <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>binomial</a></code> family function.</p>  
 <p>The current implementation of <code>inverse.gaussian</code> models has some 

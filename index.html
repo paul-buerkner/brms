@@ -44,7 +44,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -159,66 +159,119 @@
 <div id="how-to-use-brms" class="section level2">
 <h2 class="hasAnchor">
 <a href="#how-to-use-brms" class="anchor"></a>How to use brms</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(brms)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(brms)</a></code></pre></div>
 <p>As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable <code>Trt</code>) can reduce the seizure counts and whether the effect of the treatment varies with the (standardized) baseline number of seizures a person had before treatment (variable <code>zBase</code>). As we have multiple observations per person, a group-level intercept is incorporated to account for the resulting dependency in the data.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="reference/brm.html">brm</a></span>(count <span class="op">~</span><span class="st"> </span>zAge <span class="op">+</span><span class="st"> </span>zBase <span class="op">*</span><span class="st"> </span>Trt <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>patient), </a>
-<a class="sourceLine" id="cb2-2" title="2">            <span class="dt">data =</span> epilepsy, <span class="dt">family =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">poisson</a></span>())</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="reference/brm.html">brm</a></span>(count <span class="op">~</span><span class="st"> </span>zAge <span class="op">+</span><span class="st"> </span>zBase <span class="op">*</span><span class="st"> </span>Trt <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>patient), </a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">            <span class="dt">data =</span> epilepsy, <span class="dt">family =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">poisson</a></span>())</a></code></pre></div>
 <p>The results (i.e., posterior samples) can be investigated using</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit1) </a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="co">#&gt;  Family: poisson </span></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">#&gt;   Links: mu = log </span></a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="co">#&gt; Formula: count ~ zAge + zBase * Trt + (1 | patient) </span></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="co">#&gt;    Data: epilepsy (Number of observations: 236) </span></a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="co">#&gt; Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;</span></a>
-<a class="sourceLine" id="cb3-7" title="7"><span class="co">#&gt;          total post-warmup samples = 4000</span></a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb3-9" title="9"><span class="co">#&gt; Group-Level Effects: </span></a>
-<a class="sourceLine" id="cb3-10" title="10"><span class="co">#&gt; ~patient (Number of levels: 59) </span></a>
-<a class="sourceLine" id="cb3-11" title="11"><span class="co">#&gt;               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat</span></a>
-<a class="sourceLine" id="cb3-12" title="12"><span class="co">#&gt; sd(Intercept)     0.59      0.07     0.47     0.74        786 1.00</span></a>
-<a class="sourceLine" id="cb3-13" title="13"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb3-14" title="14"><span class="co">#&gt; Population-Level Effects: </span></a>
-<a class="sourceLine" id="cb3-15" title="15"><span class="co">#&gt;            Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat</span></a>
-<a class="sourceLine" id="cb3-16" title="16"><span class="co">#&gt; Intercept      1.78      0.12     1.53     2.02        691 1.01</span></a>
-<a class="sourceLine" id="cb3-17" title="17"><span class="co">#&gt; zAge           0.09      0.09    -0.08     0.27        758 1.00</span></a>
-<a class="sourceLine" id="cb3-18" title="18"><span class="co">#&gt; zBase          0.70      0.12     0.47     0.96        496 1.01</span></a>
-<a class="sourceLine" id="cb3-19" title="19"><span class="co">#&gt; Trt1          -0.27      0.17    -0.62     0.06        650 1.01</span></a>
-<a class="sourceLine" id="cb3-20" title="20"><span class="co">#&gt; zBase:Trt1     0.06      0.17    -0.27     0.38        557 1.01</span></a>
-<a class="sourceLine" id="cb3-21" title="21"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb3-22" title="22"><span class="co">#&gt; Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample </span></a>
-<a class="sourceLine" id="cb3-23" title="23"><span class="co">#&gt; is a crude measure of effective sample size, and Rhat is the potential </span></a>
-<a class="sourceLine" id="cb3-24" title="24"><span class="co">#&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit1) </a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="co">#&gt;  Family: poisson </span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="co">#&gt;   Links: mu = log </span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="co">#&gt; Formula: count ~ zAge + zBase * Trt + (1 | patient) </span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="co">#&gt;    Data: epilepsy (Number of observations: 236) </span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="co">#&gt; Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="co">#&gt;          total post-warmup samples = 4000</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="co">#&gt; Group-Level Effects: </span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10"><span class="co">#&gt; ~patient (Number of levels: 59) </span></a>
+<a class="sourceLine" id="cb3-11" data-line-number="11"><span class="co">#&gt;               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat</span></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12"><span class="co">#&gt; sd(Intercept)     0.59      0.07     0.47     0.74        786 1.00</span></a>
+<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-14" data-line-number="14"><span class="co">#&gt; Population-Level Effects: </span></a>
+<a class="sourceLine" id="cb3-15" data-line-number="15"><span class="co">#&gt;            Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat</span></a>
+<a class="sourceLine" id="cb3-16" data-line-number="16"><span class="co">#&gt; Intercept      1.78      0.12     1.53     2.02        691 1.01</span></a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="co">#&gt; zAge           0.09      0.09    -0.08     0.27        758 1.00</span></a>
+<a class="sourceLine" id="cb3-18" data-line-number="18"><span class="co">#&gt; zBase          0.70      0.12     0.47     0.96        496 1.01</span></a>
+<a class="sourceLine" id="cb3-19" data-line-number="19"><span class="co">#&gt; Trt1          -0.27      0.17    -0.62     0.06        650 1.01</span></a>
+<a class="sourceLine" id="cb3-20" data-line-number="20"><span class="co">#&gt; zBase:Trt1     0.06      0.17    -0.27     0.38        557 1.01</span></a>
+<a class="sourceLine" id="cb3-21" data-line-number="21"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-22" data-line-number="22"><span class="co">#&gt; Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample </span></a>
+<a class="sourceLine" id="cb3-23" data-line-number="23"><span class="co">#&gt; is a crude measure of effective sample size, and Rhat is the potential </span></a>
+<a class="sourceLine" id="cb3-24" data-line-number="24"><span class="co">#&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</span></a></code></pre></div>
 <p>On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains. Next, group-level effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one group-level effect per grouping factor; not displayed here) correlations between group-level effects. On the bottom of the output, population-level effects (i.e. regression coefficients) are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g. the residual standard deviation ‘sigma’ in normal models) are also given.</p>
 <p>In general, every parameter is summarized using the mean (‘Estimate’) and the standard deviation (‘Est.Error’) of the posterior distribution as well as two-sided 95% credible intervals (‘l-95% CI’ and ‘u-95% CI’) based on quantiles. We see that the coefficient of <code>Trt</code> is negative with a completely negative 95%-CI indicating that, on average, the treatment reduces seizure counts by some amount. Further, we find little evidence that the treatment effect varies with the baseline number of seizures.</p>
 <p>The last two values (‘Eff.Sample’ and ‘Rhat’) provide information on how well the algorithm could estimate the posterior distribution of this parameter. If ‘Rhat’ is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.</p>
 <p>To visually investigate the chains as well as the posterior distributions, we can use the <code>plot</code> method. If we just want to see results of the regression coefficients of <code>Trt</code> and <code>zBase</code>, we go for</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit1, <span class="dt">pars =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Trt"</span>, <span class="st">"zBase"</span>)) </a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit1, <span class="dt">pars =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Trt"</span>, <span class="st">"zBase"</span>)) </a></code></pre></div>
 <p><img src="reference/figures/README-plot-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>A more detailed investigation can be performed by running <code><a href="reference/launch_shinystan.brmsfit.html">launch_shinystan(fit1)</a></code>. To better understand the relationship of the predictors with the response, I recommend the <code>marginal_effects</code> method:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="reference/marginal_effects.html">marginal_effects</a></span>(fit1, <span class="dt">effects =</span> <span class="st">"zBase:Trt"</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="reference/marginal_effects.html">marginal_effects</a></span>(fit1, <span class="dt">effects =</span> <span class="st">"zBase:Trt"</span>))</a></code></pre></div>
 <p><img src="reference/figures/README-marginal_effects-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>This method uses some prediction functionality behind the scenes, which can also be called directly. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (<code>Trt = 1</code>) and in the control group (<code>Trt = 0</code>) with average age and average number of previous seizures. Than we can use</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">newdata &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">Trt =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="dt">zAge =</span> <span class="dv">0</span>, <span class="dt">zBase =</span> <span class="dv">0</span>)</a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/predict">predict</a></span>(fit1, <span class="dt">newdata =</span> newdata, <span class="dt">re_formula =</span> <span class="ot">NA</span>)</a>
-<a class="sourceLine" id="cb6-3" title="3"><span class="co">#&gt;      Estimate Est.Error Q2.5 Q97.5</span></a>
-<a class="sourceLine" id="cb6-4" title="4"><span class="co">#&gt; [1,]    5.973  2.567181    2    12</span></a>
-<a class="sourceLine" id="cb6-5" title="5"><span class="co">#&gt; [2,]    4.548  2.129984    1     9</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">newdata &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">Trt =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="dt">zAge =</span> <span class="dv">0</span>, <span class="dt">zBase =</span> <span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/predict">predict</a></span>(fit1, <span class="dt">newdata =</span> newdata, <span class="dt">re_formula =</span> <span class="ot">NA</span>)</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co">#&gt;      Estimate Est.Error Q2.5 Q97.5</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="co">#&gt; [1,]    5.973  2.567181    2    12</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="co">#&gt; [2,]    4.548  2.129984    1     9</span></a></code></pre></div>
 <p>We need to set <code>re_formula = NA</code> in order not to condition of the group-level effects. While the <code>predict</code> method returns predictions of the responses, the <code>fitted</code> method returns predictions of the regression line.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/fitted.values">fitted</a></span>(fit1, <span class="dt">newdata =</span> newdata, <span class="dt">re_formula =</span> <span class="ot">NA</span>)</a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="co">#&gt;      Estimate Est.Error     Q2.5    Q97.5</span></a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="co">#&gt; [1,] 5.946417 0.7422929 4.637616 7.540027</span></a>
-<a class="sourceLine" id="cb7-4" title="4"><span class="co">#&gt; [2,] 4.535893 0.5274356 3.588178 5.640799</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/fitted.values">fitted</a></span>(fit1, <span class="dt">newdata =</span> newdata, <span class="dt">re_formula =</span> <span class="ot">NA</span>)</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="co">#&gt;      Estimate Est.Error     Q2.5    Q97.5</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="co">#&gt; [1,] 5.946417 0.7422929 4.637616 7.540027</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="co">#&gt; [2,] 4.535893 0.5274356 3.588178 5.640799</span></a></code></pre></div>
 <p>Both methods return the same estimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the <code>newdata</code> argument empty.</p>
 <p>Suppose, we want to investigate whether there is overdispersion in the model, that is residual variation not accounted for by the response distribution. For this purpose, we include a second group-level intercept that captures possible overdispersion.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="reference/brm.html">brm</a></span>(count <span class="op">~</span><span class="st"> </span>zAge <span class="op">+</span><span class="st"> </span>zBase <span class="op">*</span><span class="st"> </span>Trt <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>patient) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>obs), </a>
-<a class="sourceLine" id="cb8-2" title="2">            <span class="dt">data =</span> epilepsy, <span class="dt">family =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">poisson</a></span>())</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="reference/brm.html">brm</a></span>(count <span class="op">~</span><span class="st"> </span>zAge <span class="op">+</span><span class="st"> </span>zBase <span class="op">*</span><span class="st"> </span>Trt <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>patient) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>obs), </a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">            <span class="dt">data =</span> epilepsy, <span class="dt">family =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">poisson</a></span>())</a></code></pre></div>
 <p>We can then go ahead and compare both models via approximate leave-one-out cross-validation.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw"><a href="reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="co">#&gt;               LOOIC    SE</span></a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="co">#&gt; fit1        1344.40 75.20</span></a>
-<a class="sourceLine" id="cb9-4" title="4"><span class="co">#&gt; fit2        1183.91 27.21</span></a>
-<a class="sourceLine" id="cb9-5" title="5"><span class="co">#&gt; fit1 - fit2  160.48 57.69</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw"><a href="reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="co">#&gt; Output of model 'fit1':</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="co">#&gt; Computed from 4000 by 236 log-likelihood matrix</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="co">#&gt;          Estimate   SE</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="co">#&gt; elpd_loo   -672.2 37.6</span></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="co">#&gt; p_loo        95.1 15.6</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9"><span class="co">#&gt; looic      1344.4 75.2</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10"><span class="co">#&gt; ------</span></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11"><span class="co">#&gt; Monte Carlo SE of elpd_loo is NA.</span></a>
+<a class="sourceLine" id="cb9-12" data-line-number="12"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-13" data-line-number="13"><span class="co">#&gt; Pareto k diagnostic values:</span></a>
+<a class="sourceLine" id="cb9-14" data-line-number="14"><span class="co">#&gt;                          Count Pct.    Min. n_eff</span></a>
+<a class="sourceLine" id="cb9-15" data-line-number="15"><span class="co">#&gt; (-Inf, 0.5]   (good)     205   86.9%   655       </span></a>
+<a class="sourceLine" id="cb9-16" data-line-number="16"><span class="co">#&gt;  (0.5, 0.7]   (ok)        25   10.6%   103       </span></a>
+<a class="sourceLine" id="cb9-17" data-line-number="17"><span class="co">#&gt;    (0.7, 1]   (bad)        5    2.1%   55        </span></a>
+<a class="sourceLine" id="cb9-18" data-line-number="18"><span class="co">#&gt;    (1, Inf)   (very bad)   1    0.4%   3         </span></a>
+<a class="sourceLine" id="cb9-19" data-line-number="19"><span class="co">#&gt; See help('pareto-k-diagnostic') for details.</span></a>
+<a class="sourceLine" id="cb9-20" data-line-number="20"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-21" data-line-number="21"><span class="co">#&gt; Output of model 'fit2':</span></a>
+<a class="sourceLine" id="cb9-22" data-line-number="22"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-23" data-line-number="23"><span class="co">#&gt; Computed from 4000 by 236 log-likelihood matrix</span></a>
+<a class="sourceLine" id="cb9-24" data-line-number="24"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-25" data-line-number="25"><span class="co">#&gt;          Estimate   SE</span></a>
+<a class="sourceLine" id="cb9-26" data-line-number="26"><span class="co">#&gt; elpd_loo   -592.0 13.6</span></a>
+<a class="sourceLine" id="cb9-27" data-line-number="27"><span class="co">#&gt; p_loo       104.9  6.8</span></a>
+<a class="sourceLine" id="cb9-28" data-line-number="28"><span class="co">#&gt; looic      1183.9 27.2</span></a>
+<a class="sourceLine" id="cb9-29" data-line-number="29"><span class="co">#&gt; ------</span></a>
+<a class="sourceLine" id="cb9-30" data-line-number="30"><span class="co">#&gt; Monte Carlo SE of elpd_loo is NA.</span></a>
+<a class="sourceLine" id="cb9-31" data-line-number="31"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-32" data-line-number="32"><span class="co">#&gt; Pareto k diagnostic values:</span></a>
+<a class="sourceLine" id="cb9-33" data-line-number="33"><span class="co">#&gt;                          Count Pct.    Min. n_eff</span></a>
+<a class="sourceLine" id="cb9-34" data-line-number="34"><span class="co">#&gt; (-Inf, 0.5]   (good)     85    36.0%   653       </span></a>
+<a class="sourceLine" id="cb9-35" data-line-number="35"><span class="co">#&gt;  (0.5, 0.7]   (ok)       97    41.1%   215       </span></a>
+<a class="sourceLine" id="cb9-36" data-line-number="36"><span class="co">#&gt;    (0.7, 1]   (bad)      51    21.6%   30        </span></a>
+<a class="sourceLine" id="cb9-37" data-line-number="37"><span class="co">#&gt;    (1, Inf)   (very bad)  3     1.3%   12        </span></a>
+<a class="sourceLine" id="cb9-38" data-line-number="38"><span class="co">#&gt; See help('pareto-k-diagnostic') for details.</span></a>
+<a class="sourceLine" id="cb9-39" data-line-number="39"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb9-40" data-line-number="40"><span class="co">#&gt; Model comparisons:</span></a>
+<a class="sourceLine" id="cb9-41" data-line-number="41"><span class="co">#&gt;      elpd_diff se_diff</span></a>
+<a class="sourceLine" id="cb9-42" data-line-number="42"><span class="co">#&gt; fit2   0.0       0.0  </span></a>
+<a class="sourceLine" id="cb9-43" data-line-number="43"><span class="co">#&gt; fit1 -80.2      28.8</span></a></code></pre></div>
 <p>Since higher <code>LOOIC</code> values indicate better fit, we see that the model accounting for overdispersion fits substantially better. The post-processing methods we have shown so far are just the tip of the iceberg. For a full list of methods to apply on fitted model objects, type <code><a href="https://www.rdocumentation.org/packages/utils/topics/methods">methods(class = "brmsfit")</a></code>.</p>
+</div>
+<div id="citing-brms-and-related-software" class="section level2">
+<h2 class="hasAnchor">
+<a href="#citing-brms-and-related-software" class="anchor"></a>Citing brms and related software</h2>
+<p>Developing and maintaining open source software is an important yet often underappreciated contribution to scientific progress. Thus, whenever you are using open source software (or software in general), please make sure to cite it appropriately so that developers get credit for their work.</p>
+<p>When using brms, please cite one or more of the following publications:</p>
+<ul>
+<li>Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models using Stan. <em>Journal of Statistical Software</em>. 80(1), 1-28. doi.org/10.18637/jss.v080.i01</li>
+<li>Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R Package brms. <em>The R Journal</em>. 10(1), 395-411. doi.org/10.32614/RJ-2018-017</li>
+</ul>
+<p>As brms is a high-level interface to Stan, please additionally cite Stan:</p>
+<ul>
+<li>Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B., Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017). Stan: A probabilistic programming language. <em>Journal of Statistical Software</em>. 76(1). 10.18637/jss.v076.i01</li>
+</ul>
+<p>Further, brms relies on several other R packages and, of course, on R itself. To find out how to cite R and its packages, use the <code>citation</code> function. There are some features of brms which specifically rely on certain packages. The <strong>rstan</strong> package together with <strong>Rcpp</strong> makes Stan conveniently accessible in R. Visualizations and posterior-predictive checks are based on <strong>bayesplot</strong> and <strong>ggplot2</strong>. Approximate leave-one-out cross-validation using <code>loo</code> and related methods is done via the <strong>loo</strong> package. Marginal likelihood based methods such as <code>bayes_factor</code> are realized by means of the <strong>bridgesampling</strong> package. Splines specified via the <code>s</code> and <code>t2</code> functions rely on <strong>mgcv</strong>. If you use some of these features, please also consider citing the related packages.</p>
 </div>
 <div id="faq" class="section level2">
 <h2 class="hasAnchor">
@@ -227,28 +280,18 @@
 <h3 class="hasAnchor">
 <a href="#how-do-i-install-brms" class="anchor"></a>How do I install brms?</h3>
 <p>To install the latest release version from CRAN use</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/install.packages">install.packages</a></span>(<span class="st">"brms"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/install.packages">install.packages</a></span>(<span class="st">"brms"</span>)</a></code></pre></div>
 <p>The current developmental version can be downloaded from github via</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="cf">if</span> (<span class="op">!</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/ns-load">requireNamespace</a></span>(<span class="st">"devtools"</span>)) {</a>
-<a class="sourceLine" id="cb11-2" title="2">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/install.packages">install.packages</a></span>(<span class="st">"devtools"</span>)</a>
-<a class="sourceLine" id="cb11-3" title="3">}</a>
-<a class="sourceLine" id="cb11-4" title="4">devtools<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"paul-buerkner/brms"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="cf">if</span> (<span class="op">!</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/ns-load">requireNamespace</a></span>(<span class="st">"devtools"</span>)) {</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">  <span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/install.packages">install.packages</a></span>(<span class="st">"devtools"</span>)</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">}</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">devtools<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"paul-buerkner/brms"</span>)</a></code></pre></div>
 <p>Because brms is based on Stan, a C++ compiler is required. The program Rtools (available on <a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <a href="https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started" class="uri">https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started</a>.</p>
 </div>
 <div id="i-am-new-to-brms--where-can-i-start" class="section level3">
 <h3 class="hasAnchor">
 <a href="#i-am-new-to-brms--where-can-i-start" class="anchor"></a>I am new to brms. Where can I start?</h3>
 <p>Detailed instructions and case studies are given in the package’s extensive vignettes. See <code>vignette(package = "brms")</code> for an overview. For documentation on formula syntax, families, and prior distributions see <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help("brm")</a></code>.</p>
-</div>
-<div id="how-do-i-cite-brms" class="section level3">
-<h3 class="hasAnchor">
-<a href="#how-do-i-cite-brms" class="anchor"></a>How do I cite brms?</h3>
-<p>Please cite one or more of the following publications:</p>
-<ul>
-<li>Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models using Stan. <em>Journal of Statistical Software</em>. 80(1), 1-28. <a href="doi:10.18637/jss.v080.i01" class="uri">doi:10.18637/jss.v080.i01</a>
-</li>
-<li>Bürkner P. C. (in press). Advanced Bayesian Multilevel Modeling with the R Package brms. <em>The R Journal</em>.</li>
-</ul>
 </div>
 <div id="where-do-i-ask-questions-propose-a-new-feature-or-report-a-bug" class="section level3">
 <h3 class="hasAnchor">

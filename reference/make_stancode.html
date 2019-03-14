@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -271,7 +271,7 @@ the Stan parser will be suppressed.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='fu'>make_stancode</span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)</div><div class='output co'>#&gt; // generated with brms 2.7.3
+              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)</div><div class='output co'>#&gt; // generated with brms 2.8.0
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -375,7 +375,7 @@ the Stan parser will be suppressed.</p></td>
 #&gt;   vector[ncat - 1] b_Intercept = temp_Intercept + dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 <span class='fu'>make_stancode</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)</div><div class='output co'>#&gt; // generated with brms 2.7.3
+              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)</div><div class='output co'>#&gt; // generated with brms 2.8.0
 #&gt; functions {
 #&gt; }
 #&gt; data {

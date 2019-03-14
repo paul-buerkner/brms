@@ -33,7 +33,9 @@
 <meta property="og:title" content="Compare Information Criteria of Different Models — compare_ic" />
 
 <meta property="og:description" content="Compare information criteria of different models fitted
-with WAIC or loo." />
+with waic or loo.
+Deprecated and will be removed in the future. Please use
+loo_compare instead." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -66,7 +68,7 @@ with WAIC or loo." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -155,7 +157,9 @@ with WAIC or loo." />
     <div class="ref-description">
     
     <p>Compare information criteria of different models fitted
-with <code><a href='waic.brmsfit.html'>WAIC</a></code> or <code><a href='loo.brmsfit.html'>loo</a></code>.</p>
+with <code><a href='waic.brmsfit.html'>waic</a></code> or <code><a href='loo.brmsfit.html'>loo</a></code>.
+Deprecated and will be removed in the future. Please use
+<code><a href='loo_compare.brmsfit.html'>loo_compare</a></code> instead.</p>
     
     </div>
 
@@ -167,7 +171,7 @@ with <code><a href='waic.brmsfit.html'>WAIC</a></code> or <code><a href='loo.brm
     <tr>
       <th>...</th>
       <td><p>At least two objects returned by 
-<code><a href='waic.brmsfit.html'>WAIC</a></code> or <code><a href='loo.brmsfit.html'>loo</a></code>.
+<code><a href='waic.brmsfit.html'>waic</a></code> or <code><a href='loo.brmsfit.html'>loo</a></code>.
 Alternatively, <code>brmsfit</code> objects with information 
 criteria precomputed via <code><a href='add_ic.html'>add_ic</a></code>
 may be passed, as well.</p></td>
@@ -191,27 +195,27 @@ criterion objects are only passed directly.</p></td>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>For more details see <code><a href='https://www.rdocumentation.org/packages/loo/topics/compare'>compare</a></code>.</p>
+    <p>See <code><a href='loo_compare.brmsfit.html'>loo_compare</a></code> for the recommended way 
+  of comparing models with the <span class="pkg">loo</span> package.</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='waic.brmsfit.html'>WAIC</a></code>, 
-  <code><a href='loo.brmsfit.html'>loo</a></code>,
-  <code><a href='add_ic.html'>add_ic</a></code>,
-  <code><a href='https://www.rdocumentation.org/packages/loo/topics/compare'>compare</a></code></p></div>
+    <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>,
+  <code><a href='loo_compare.brmsfit.html'>loo_compare</a></code>
+  <code><a href='add_criterion.html'>add_criterion</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
 <span class='co'># model with population-level effects only</span>
 <span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
-<span class='no'>waic1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='waic.brmsfit.html'>WAIC</a></span>(<span class='no'>fit1</span>)
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+<span class='no'>waic1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='waic.brmsfit.html'>waic</a></span>(<span class='no'>fit1</span>)
 
 <span class='co'># model with an additional varying intercept for subjects</span>
 <span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
-<span class='no'>waic2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='waic.brmsfit.html'>WAIC</a></span>(<span class='no'>fit2</span>)
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+<span class='no'>waic2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='waic.brmsfit.html'>waic</a></span>(<span class='no'>fit2</span>)
 
 <span class='co'># compare both models</span>
 <span class='fu'>compare_ic</span>(<span class='no'>waic1</span>, <span class='no'>waic2</span>)

@@ -32,9 +32,10 @@
 
 <meta property="og:title" content="Compute exact cross-validation for problematic observations — reloo" />
 
-<meta property="og:description" content="Compute exact cross-validation for problematic observations
-for which approximate leave-one-out cross-validation may
-return incorrect results." />
+<meta property="og:description" content="Compute exact cross-validation for problematic observations for which
+approximate leave-one-out cross-validation may return incorrect results.
+Models for problematic observations can be run in parallel using the
+future package." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -67,7 +68,7 @@ return incorrect results." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -155,34 +156,26 @@ return incorrect results." />
 
     <div class="ref-description">
     
-    <p>Compute exact cross-validation for problematic observations
-for which approximate leave-one-out cross-validation may
-return incorrect results.</p>
+    <p>Compute exact cross-validation for problematic observations for which
+approximate leave-one-out cross-validation may return incorrect results.
+Models for problematic observations can be run in parallel using the
+<span class="pkg">future</span> package.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>reloo</span>(<span class='no'>x</span>, <span class='no'>...</span>)
-
-<span class='co'># S3 method for loo</span>
-<span class='fu'>reloo</span>(<span class='no'>x</span>, <span class='no'>fit</span>, <span class='kw'>k_threshold</span> <span class='kw'>=</span> <span class='fl'>0.7</span>, <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>reloo</span>(<span class='no'>x</span>, <span class='no'>fit</span>, <span class='kw'>k_threshold</span> <span class='kw'>=</span> <span class='fl'>0.7</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>An <span style="R">R</span> object typically of class <code>loo</code>.</p></td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td><p>Further arguments passed to 
-<code><a href='update.brmsfit.html'>update.brmsfit</a></code> such
-as <code>iter</code>, <code>chains</code>, or <code>cores</code>.</p></td>
+      <td><p>An <span style="R">R</span> object of class <code>loo</code>.</p></td>
     </tr>
     <tr>
       <th>fit</th>
-      <td><p>An <span style="R">R</span> object typically of class <code>brmsfit</code>.</p></td>
+      <td><p>An <span style="R">R</span> object of class <code>brmsfit</code>.</p></td>
     </tr>
     <tr>
       <th>k_threshold</th>
@@ -192,21 +185,31 @@ See <code><a href='https://www.rdocumentation.org/packages/loo/topics/pareto-k-d
 for more details.</p></td>
     </tr>
     <tr>
-      <th>check</th>
-      <td><p>Logical; If <code>TRUE</code> (the default), a crude 
-check is performed if the <code>loo</code> object was generated
-from the <code>brmsfit</code> object passed to argument <code>fit</code>.</p></td>
+      <th>newdata</th>
+      <td><p>An optional data.frame for which to evaluate predictions. If
+<code>NULL</code> (default), the original data of the model is used.</p></td>
     </tr>
     <tr>
       <th>resp</th>
       <td><p>Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.</p></td>
     </tr>
+    <tr>
+      <th>check</th>
+      <td><p>Logical; If <code>TRUE</code> (the default), some checks
+check are performed if the <code>loo</code> object was generated
+from the <code>brmsfit</code> object passed to argument <code>fit</code>.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Further arguments passed to 
+<code><a href='update.brmsfit.html'>update.brmsfit</a></code> and <code><a href='log_lik.brmsfit.html'>log_lik.brmsfit</a></code>.</p></td>
+    </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>An object of the class as <code>x</code>.</p>
+    <p>An object of the class <code>loo</code>.</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
@@ -224,7 +227,7 @@ original <code>loo</code> object.</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>, <code><a href='kfold.html'>kfold</a></code></p></div>
+    <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>, <code><a href='kfold.brmsfit.html'>kfold</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -233,7 +236,7 @@ original <code>loo</code> object.</p>
            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>())
 <span class='co'># throws warning about some pareto k estimates being too high</span>
 (<span class='no'>loo1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='loo.brmsfit.html'>loo</a></span>(<span class='no'>fit1</span>))
-(<span class='no'>loo1</span> <span class='kw'>&lt;-</span> <span class='fu'>reloo</span>(<span class='no'>loo1</span>, <span class='no'>fit1</span>))
+(<span class='no'>reloo1</span> <span class='kw'>&lt;-</span> <span class='fu'>reloo</span>(<span class='no'>loo1</span>, <span class='no'>fit1</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>))
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>

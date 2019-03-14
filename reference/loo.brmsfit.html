@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Compute the LOO information criterion — loo.brmsfit • brms</title>
+<title>Efficient approximate leave-one-out cross-validation (LOO) — loo.brmsfit • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,7 +30,7 @@
 
 
 
-<meta property="og:title" content="Compute the LOO information criterion — loo.brmsfit" />
+<meta property="og:title" content="Efficient approximate leave-one-out cross-validation (LOO) — loo.brmsfit" />
 
 <meta property="og:description" content="Perform approximate leave-one-out cross-validation based 
 on the posterior likelihood using the loo package.
@@ -67,7 +67,7 @@ For more details see loo." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -148,7 +148,7 @@ For more details see loo." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Compute the LOO information criterion</h1>
+    <h1>Efficient approximate leave-one-out cross-validation (LOO)</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/brmsfit-methods.R'><code>R/brmsfit-methods.R</code></a></small>
     <div class="hidden name"><code>loo.brmsfit.Rd</code></div>
     </div>
@@ -171,18 +171,18 @@ For more details see <code><a href='https://www.rdocumentation.org/packages/loo/
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>A fitted model object.</p></td>
+      <td><p>A <code>brmsfit</code> object.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>More fitted model objects or further arguments
+      <td><p>More <code>brmsfit</code> objects or further arguments
 passed to the underlying post-processing functions.</p></td>
     </tr>
     <tr>
       <th>compare</th>
       <td><p>A flag indicating if the information criteria
 of the models should be compared to each other
-via <code><a href='compare_ic.html'>compare_ic</a></code>.</p></td>
+via <code><a href='loo_compare.brmsfit.html'>loo_compare</a></code>.</p></td>
     </tr>
     <tr>
       <th>resp</th>
@@ -224,15 +224,14 @@ values as model names.</p></td>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>If just one object is provided, an object of class <code>ic</code>. 
- If multiple objects are provided, an object of class <code>iclist</code>.</p>
+    <p>If just one object is provided, an object of class <code>loo</code>. 
+ If multiple objects are provided, an object of class <code>loolist</code>.</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>When comparing models fitted to the same data, 
- the smaller the LOO, the better the fit. For <code>brmsfit</code> 
- objects, <code>LOO</code> is an alias of <code>loo</code>.
- Use method <code><a href='add_ic.html'>add_ic</a></code> to store
+    <p>See <code><a href='loo_compare.brmsfit.html'>loo_compare</a></code> for details on model comparisons.
+ For <code>brmsfit</code> objects, <code>LOO</code> is an alias of <code>loo</code>.
+ Use method <code><a href='add_criterion.html'>add_criterion</a></code> to store
  information criteria in the fitted model object for later usage.</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
@@ -252,14 +251,16 @@ The Journal of Machine Learning Research, 11, 3571-3594.</p>
     <pre class="examples"><span class='co'># NOT RUN {</span>
 <span class='co'># model with population-level effects only</span>
 <span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
-<span class='fu'>loo</span>(<span class='no'>fit1</span>)
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+(<span class='no'>loo1</span> <span class='kw'>&lt;-</span> <span class='fu'>loo</span>(<span class='no'>fit1</span>))
 
 <span class='co'># model with an additional varying intercept for subjects</span>
 <span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"gaussian"</span>)
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+(<span class='no'>loo2</span> <span class='kw'>&lt;-</span> <span class='fu'>loo</span>(<span class='no'>fit2</span>))
+
 <span class='co'># compare both models</span>
-<span class='fu'>loo</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)
+<span class='fu'><a href='loo_compare.brmsfit.html'>loo_compare</a></span>(<span class='no'>loo1</span>, <span class='no'>loo2</span>)
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>

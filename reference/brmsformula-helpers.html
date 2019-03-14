@@ -66,7 +66,7 @@ formulas for use with brmsformula." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -162,7 +162,8 @@ formulas for use with <code><a href='brmsformula.html'>brmsformula</a></code>.</
     <pre class="usage"><span class='fu'>nlf</span>(<span class='no'>formula</span>, <span class='no'>...</span>, <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>loop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
 
-<span class='fu'>lf</span>(<span class='no'>...</span>, <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cmc</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+<span class='fu'>lf</span>(<span class='no'>...</span>, <span class='kw'>flist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>center</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>cmc</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
 
 <span class='fu'>set_nl</span>(<span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>dpar</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
 
@@ -236,6 +237,14 @@ variable to which the formulas passed via <code>...</code> and
 Indicates if the computation of the non-linear formula should be 
 done inside (<code>TRUE</code>) or outside (<code>FALSE</code>) a loop
 over observations. Defaults to <code>TRUE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>center</th>
+      <td><p>Logical; Indicates if the population-level design
+matrix should be centered, which usually increases sampling efficiency.
+See the 'Details' section for more information.
+Defaults to <code>TRUE</code> for distributional parameters
+and to <code>FALSE</code> for non-linear parameters.</p></td>
     </tr>
     <tr>
       <th>cmc</th>

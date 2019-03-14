@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Predictions of K-Fold Cross-Validation — kfold_predict • brms</title>
+<title>Predictions from K-Fold Cross-Validation — kfold_predict • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Predictions of K-Fold Cross-Validation — kfold_predict" />
+<meta property="og:title" content="Predictions from K-Fold Cross-Validation — kfold_predict" />
 
-<meta property="og:description" content="Compute and evaluate predictions after performing from K-fold 
+<meta property="og:description" content="Compute and evaluate predictions after performing K-fold 
 cross-validation via kfold." />
 
 <meta property="og:image" content="/logo.png" />
@@ -66,7 +66,7 @@ cross-validation via kfold." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -147,15 +147,15 @@ cross-validation via kfold." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Predictions of K-Fold Cross-Validation</h1>
-    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/kfold-helpers.R'><code>R/kfold-helpers.R</code></a></small>
+    <h1>Predictions from K-Fold Cross-Validation</h1>
+    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/loo-helpers.R'><code>R/loo-helpers.R</code></a></small>
     <div class="hidden name"><code>kfold_predict.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Compute and evaluate predictions after performing from K-fold 
-cross-validation via <code><a href='kfold.html'>kfold</a></code>.</p>
+    <p>Compute and evaluate predictions after performing K-fold 
+cross-validation via <code><a href='kfold.brmsfit.html'>kfold</a></code>.</p>
     
     </div>
 
@@ -166,9 +166,9 @@ cross-validation via <code><a href='kfold.html'>kfold</a></code>.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>Object of class <code>'kfold'</code> computed by <code><a href='kfold.html'>kfold</a></code>.
-For <code>kfold_predict</code> to work, the fitted model objects need to be
-stored in <code>x</code> via argument <code>save_fits</code> of <code><a href='kfold.html'>kfold</a></code>.</p></td>
+      <td><p>Object of class <code>'kfold'</code> computed by <code><a href='kfold.brmsfit.html'>kfold</a></code>.
+For <code>kfold_predict</code> to work, the fitted model objects need to have
+been stored via argument <code>save_fits</code> of <code><a href='kfold.brmsfit.html'>kfold</a></code>.</p></td>
     </tr>
     <tr>
       <th>method</th>
@@ -196,7 +196,7 @@ that control several aspects of data validation and prediction.</p></td>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='kfold.html'>kfold</a></code></p></div>
+    <div class='dont-index'><p><code><a href='kfold.brmsfit.html'>kfold</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -205,7 +205,7 @@ that control several aspects of data validation and prediction.</p></td>
            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>())
 
 <span class='co'># perform k-fold cross validation</span>
-(<span class='no'>kf</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='kfold.html'>kfold</a></span>(<span class='no'>fit</span>, <span class='kw'>save_fits</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>))
+(<span class='no'>kf</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='kfold.brmsfit.html'>kfold</a></span>(<span class='no'>fit</span>, <span class='kw'>save_fits</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>))
 
 <span class='co'># define a loss function</span>
 <span class='no'>rmse</span> <span class='kw'>&lt;-</span> <span class='kw'>function</span>(<span class='no'>y</span>, <span class='no'>yrep</span>) {

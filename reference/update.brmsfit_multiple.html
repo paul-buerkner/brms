@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Extract Population-Level Estimates — fixef.brmsfit • brms</title>
+<title>Update <span class="pkg">brms</span> models based on multiple data sets — update.brmsfit_multiple • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,10 +30,9 @@
 
 
 
-<meta property="og:title" content="Extract Population-Level Estimates — fixef.brmsfit" />
+<meta property="og:title" content="Update <span class="pkg">brms</span> models based on multiple data sets — update.brmsfit_multiple" />
 
-<meta property="og:description" content="Extract the population-level ('fixed') effects 
-from a brmsfit object." />
+<meta property="og:description" content="This method allows to update an existing brmsfit_multiple object." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -147,74 +146,57 @@ from a brmsfit object." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Extract Population-Level Estimates</h1>
-    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/brmsfit-methods.R'><code>R/brmsfit-methods.R</code></a></small>
-    <div class="hidden name"><code>fixef.brmsfit.Rd</code></div>
+    <h1>Update <span class="pkg">brms</span> models based on multiple data sets</h1>
+    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/brm_multiple.R'><code>R/brm_multiple.R</code></a></small>
+    <div class="hidden name"><code>update.brmsfit_multiple.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Extract the population-level ('fixed') effects 
-from a <code>brmsfit</code> object.</p>
+    <p>This method allows to update an existing <code>brmsfit_multiple</code> object.</p>
     
     </div>
 
-    <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>fixef</span>(<span class='no'>object</span>, <span class='kw'>summary</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>robust</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>), <span class='kw'>pars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='co'># S3 method for brmsfit_multiple</span>
+<span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/update'>update</a></span>(<span class='no'>object</span>, <span class='no'>formula.</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>object</th>
-      <td><p>An object of class <code>brmsfit</code>.</p></td>
+      <td><p>An object of class <code>brmsfit_multiple</code>.</p></td>
     </tr>
     <tr>
-      <th>summary</th>
-      <td><p>Should summary statistics 
- (i.e. means, sds, and 95% intervals) be returned
-instead of the raw values? Default is <code>TRUE</code>.</p></td>
+      <th>formula.</th>
+      <td><p>Changes to the formula; for details see 
+<code><a href='https://www.rdocumentation.org/packages/stats/topics/update.formula'>update.formula</a></code> and <code><a href='brmsformula.html'>brmsformula</a></code>.</p></td>
     </tr>
     <tr>
-      <th>robust</th>
-      <td><p>If <code>FALSE</code> (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If <code>TRUE</code>, the median and the 
-median absolute deviation (MAD) are applied instead.
-Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>probs</th>
-      <td><p>The percentiles to be computed by the <code>quantile</code> 
-function. Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>pars</th>
-      <td><p>Optional names of coefficients to extract.
-By default, all coefficients are extracted.</p></td>
+      <th>newdata</th>
+      <td><p>List of <code>data.frames</code> to update the model with new data.
+Currently required even if the original data should be used.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Currently ignored.</p></td>
+      <td><p>Other arguments passed to <code><a href='update.brmsfit.html'>update.brmsfit</a></code>
+and <code><a href='brm_multiple.html'>brm_multiple</a></code>.</p></td>
     </tr>
     </table>
-    
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>If <code>summary</code> is <code>TRUE</code>, a matrix with one row per 
-  population-level effect and one column per calculated estimate. 
-  If <code>summary</code> is <code>FALSE</code>, a matrix with one row per 
-  posterior sample and one column per population-level effect.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> + <span class='no'>sex</span> + <span class='no'>disease</span>,
-           <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"exponential"</span>)
-<span class='fu'>fixef</span>(<span class='no'>fit</span>)
-<span class='co'># extract only some coefficients</span>
-<span class='fu'>fixef</span>(<span class='no'>fit</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"age"</span>, <span class='st'>"sex"</span>))
+<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/library'>library</a></span>(<span class='no'>mice</span>)
+<span class='no'>imp</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='http://stefvanbuuren.github.io/mice/reference/mice.html'>mice</a></span>(<span class='no'>nhanes2</span>)
+
+<span class='co'># initially fit the model </span>
+<span class='no'>fit_imp1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm_multiple.html'>brm_multiple</a></span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit_imp1</span>)
+
+<span class='co'># update the model using fewer predictors</span>
+<span class='no'>fit_imp2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/update'>update</a></span>(<span class='no'>fit_imp1</span>, <span class='kw'>formula.</span> <span class='kw'>=</span> <span class='no'>.</span> ~ <span class='no'>hyp</span> + <span class='no'>chl</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='no'>imp</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit_imp2</span>)
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>
@@ -222,14 +204,10 @@ By default, all coefficients are extracted.</p></td>
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-      
+            
       <li><a href="#examples">Examples</a></li>
     </ul>
 
-    <h2>Author</h2>
-    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
   </div>
 </div>
 

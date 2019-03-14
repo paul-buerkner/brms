@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -171,9 +171,15 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="add_ic.html">add_ic()</a></code> <code><a href="add_ic.html">`add_ic<-`()</a></code> <code><a href="add_ic.html">add_loo()</a></code> <code><a href="add_ic.html">add_waic()</a></code> </p>
+          <p><code><a href="add_criterion.html">add_criterion()</a></code> <code><a href="add_criterion.html">add_loo()</a></code> <code><a href="add_criterion.html">add_waic()</a></code> </p>
         </td>
-        <td><p>Add information criteria and fit indices to fitted model objects</p></td>
+        <td><p>Add model fit criteria to model objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="add_ic.html">add_ic()</a></code> <code><a href="add_ic.html">`add_ic<-`()</a></code> </p>
+        </td>
+        <td><p>Add model fit criteria to model objects</p></td>
       </tr><tr>
         
         <td>
@@ -525,7 +531,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="kfold.html">kfold()</a></code> </p>
+          <p><code><a href="kfold.brmsfit.html">kfold(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>K-Fold Cross-Validation</p></td>
       </tr><tr>
@@ -533,7 +539,7 @@
         <td>
           <p><code><a href="kfold_predict.html">kfold_predict()</a></code> </p>
         </td>
-        <td><p>Predictions of K-Fold Cross-Validation</p></td>
+        <td><p>Predictions from K-Fold Cross-Validation</p></td>
       </tr><tr>
         
         <td>
@@ -575,7 +581,13 @@
         <td>
           <p><code><a href="loo.brmsfit.html">loo(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Compute the LOO information criterion</p></td>
+        <td><p>Efficient approximate leave-one-out cross-validation (LOO)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="loo_compare.brmsfit.html">loo_compare(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Model comparison with the <span class="pkg">loo</span> package</p></td>
       </tr><tr>
         
         <td>
@@ -927,6 +939,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="update.brmsfit_multiple.html">update(<i>&lt;brmsfit_multiple&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Update <span class="pkg">brms</span> models based on multiple data sets</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="update_adterms.html">update_adterms()</a></code> </p>
         </td>
         <td><p>Update Formula Addition Terms</p></td>
@@ -959,7 +977,7 @@
         <td>
           <p><code><a href="waic.brmsfit.html">waic(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Compute the WAIC</p></td>
+        <td><p>Widely Applicable Information Criterion (WAIC)</p></td>
       </tr><tr>
         
         <td>

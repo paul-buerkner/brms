@@ -69,7 +69,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -168,7 +168,8 @@ package.</p>
     <pre class="usage"><span class='fu'>brm_multiple</span>(<span class='no'>formula</span>, <span class='no'>data</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>gaussian</a></span>(), <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"no"</span>, <span class='st'>"yes"</span>,
   <span class='st'>"only"</span>), <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>combine</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+  <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>combine</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>fit</span> <span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
+  <span class='kw'>file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -183,9 +184,9 @@ fitted. The details of model specification are explained in
     </tr>
     <tr>
       <th>data</th>
-      <td><p>A list of data.frames each of which will
-be used to fit a separate model. Alternatively, a 
-<code>mids</code> object from the <span class="pkg">mice</span> package.</p></td>
+      <td><p>A list of data.frames each of which will be used to fit a
+separate model. Alternatively, a <code>mids</code> object from the <span class="pkg">mice</span>
+package.</p></td>
     </tr>
     <tr>
       <th>family</th>
@@ -263,9 +264,18 @@ block of the generated <span class="pkg">Stan</span> code. It is now recommended
     </tr>
     <tr>
       <th>combine</th>
-      <td><p>Logical; Indicates if the fitted models
-should be combined into a single fitted model object
-via <code><a href='combine_models.html'>combine_models</a></code>. Defaults to <code>TRUE</code>.</p></td>
+      <td><p>Logical; Indicates if the fitted models should be combined
+into a single fitted model object via <code><a href='combine_models.html'>combine_models</a></code>.
+Defaults to <code>TRUE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>fit</th>
+      <td><p>An instance of S3 class <code>brmsfit_multiple</code> derived from a
+previous fit; defaults to <code>NA</code>. If <code>fit</code> is of class
+<code>brmsfit_multiple</code>, the compiled model associated with the fitted
+result is re-used and all arguments modifying the model code or data are
+ignored. It is not recommended to use this argument directly, but to call
+the <code><a href='update.brmsfit_multiple.html'>update</a></code> method, instead.</p></td>
     </tr>
     <tr>
       <th>seed</th>
@@ -292,19 +302,18 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>If <code>combine = TRUE</code> a <code>brmsfit_multiple</code> object,
-which inherits from class <code>brmsfit</code> and behaves essentially 
-the same. If <code>combine = FALSE</code> a list of <code>brmsfit</code> objects.</p>
+    <p>If <code>combine = TRUE</code> a <code>brmsfit_multiple</code> object, which
+  inherits from class <code>brmsfit</code> and behaves essentially the same. If
+  <code>combine = FALSE</code> a list of <code>brmsfit</code> objects.</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>The combined model may issue false positive 
-convergence warnings, as the MCMC chains corresponding
-to different datasets may not necessarily overlap, even 
-if each of the original models did converge.
-To find out whether each of the original models converged,
-investigate <code>fit$rhats</code>, where <code>fit</code> 
-denotes the output of <code>brm_multiple</code>.</p>
+    <p>The combined model may issue false positive convergence warnings, as
+  the MCMC chains corresponding to different datasets may not necessarily
+  overlap, even if each of the original models did converge. To find out
+  whether each of the original models converged, investigate
+  <code>fit$rhats</code>, where <code>fit</code> denotes the output of
+  <code>brm_multiple</code>.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -313,11 +322,11 @@ denotes the output of <code>brm_multiple</code>.</p>
 <span class='no'>imp</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='http://stefvanbuuren.github.io/mice/reference/mice.html'>mice</a></span>(<span class='no'>nhanes2</span>)
 
 <span class='co'># fit the model using mice and lm</span>
-<span class='no'>fit_imp1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/with'>with</a></span>(<span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/lm'>lm</a></span>(<span class='no'>bmi</span>~<span class='no'>age</span>+<span class='no'>hyp</span>+<span class='no'>chl</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>)
+<span class='no'>fit_imp1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/with'>with</a></span>(<span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/lm'>lm</a></span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='fu'><a href='http://stefvanbuuren.github.io/mice/reference/pool.html'>pool</a></span>(<span class='no'>fit_imp1</span>))
 
 <span class='co'># fit the model using brms</span>
-<span class='no'>fit_imp2</span> <span class='kw'>&lt;-</span> <span class='fu'>brm_multiple</span>(<span class='no'>bmi</span>~<span class='no'>age</span>+<span class='no'>hyp</span>+<span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
+<span class='no'>fit_imp2</span> <span class='kw'>&lt;-</span> <span class='fu'>brm_multiple</span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit_imp2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>fit_imp2</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='st'>"^b_"</span>)
 <span class='co'># investigate convergence of the original models</span>

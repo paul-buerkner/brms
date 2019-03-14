@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Extract Population-Level Estimates — fixef.brmsfit • brms</title>
+<title>Model comparison with the <span class="pkg">loo</span> package — loo_compare.brmsfit • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,10 +30,9 @@
 
 
 
-<meta property="og:title" content="Extract Population-Level Estimates — fixef.brmsfit" />
+<meta property="og:title" content="Model comparison with the <span class="pkg">loo</span> package — loo_compare.brmsfit" />
 
-<meta property="og:description" content="Extract the population-level ('fixed') effects 
-from a brmsfit object." />
+<meta property="og:description" content="For more details see loo_compare." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -147,74 +146,69 @@ from a brmsfit object." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Extract Population-Level Estimates</h1>
-    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/brmsfit-methods.R'><code>R/brmsfit-methods.R</code></a></small>
-    <div class="hidden name"><code>fixef.brmsfit.Rd</code></div>
+    <h1>Model comparison with the <span class="pkg">loo</span> package</h1>
+    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/loo-helpers.R'><code>R/loo-helpers.R</code></a></small>
+    <div class="hidden name"><code>loo_compare.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Extract the population-level ('fixed') effects 
-from a <code>brmsfit</code> object.</p>
+    <p>For more details see <code><a href='https://www.rdocumentation.org/packages/loo/topics/loo_compare'>loo_compare</a></code>.</p>
     
     </div>
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
-<span class='fu'>fixef</span>(<span class='no'>object</span>, <span class='kw'>summary</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>robust</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>probs</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='fl'>0.025</span>, <span class='fl'>0.975</span>), <span class='kw'>pars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>loo_compare</span>(<span class='no'>x</span>, <span class='no'>...</span>, <span class='kw'>criterion</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"loo"</span>, <span class='st'>"waic"</span>,
+  <span class='st'>"kfold"</span>), <span class='kw'>model_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>object</th>
-      <td><p>An object of class <code>brmsfit</code>.</p></td>
-    </tr>
-    <tr>
-      <th>summary</th>
-      <td><p>Should summary statistics 
- (i.e. means, sds, and 95% intervals) be returned
-instead of the raw values? Default is <code>TRUE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>robust</th>
-      <td><p>If <code>FALSE</code> (the default) the mean is used as 
-the measure of central tendency and the standard deviation as 
-the measure of variability. If <code>TRUE</code>, the median and the 
-median absolute deviation (MAD) are applied instead.
-Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>probs</th>
-      <td><p>The percentiles to be computed by the <code>quantile</code> 
-function. Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>pars</th>
-      <td><p>Optional names of coefficients to extract.
-By default, all coefficients are extracted.</p></td>
+      <th>x</th>
+      <td><p>A <code>brmsfit</code> object.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Currently ignored.</p></td>
+      <td><p>More <code>brmsfit</code> objects.</p></td>
+    </tr>
+    <tr>
+      <th>criterion</th>
+      <td><p>The name of the criterion to be extracted 
+from <code>brmsfit</code> objects.</p></td>
+    </tr>
+    <tr>
+      <th>model_names</th>
+      <td><p>If <code>NULL</code> (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>If <code>summary</code> is <code>TRUE</code>, a matrix with one row per 
-  population-level effect and one column per calculated estimate. 
-  If <code>summary</code> is <code>FALSE</code>, a matrix with one row per 
-  posterior sample and one column per population-level effect.</p>
+    <p>An object of class "<code>compare.loo</code>".</p>
+    
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>All <code>brmsfit</code> objects should contain precomputed
+  criterion objects. See <code><a href='add_criterion.html'>add_criterion</a></code> for more help.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> + <span class='no'>sex</span> + <span class='no'>disease</span>,
-           <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"exponential"</span>)
-<span class='fu'>fixef</span>(<span class='no'>fit</span>)
-<span class='co'># extract only some coefficients</span>
-<span class='fu'>fixef</span>(<span class='no'>fit</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"age"</span>, <span class='st'>"sex"</span>))
+<span class='co'># model with population-level effects only</span>
+<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span>,
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+<span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='add_criterion.html'>add_criterion</a></span>(<span class='no'>fit1</span>, <span class='st'>"waic"</span>)
+
+<span class='co'># model with an additional varying intercept for subjects</span>
+<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
+            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
+<span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='add_criterion.html'>add_criterion</a></span>(<span class='no'>fit2</span>, <span class='st'>"waic"</span>)
+
+<span class='co'># compare both models</span>
+<span class='fu'>loo_compare</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='kw'>criterion</span> <span class='kw'>=</span> <span class='st'>"waic"</span>)
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>
@@ -224,12 +218,12 @@ By default, all coefficients are extracted.</p></td>
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#details">Details</a></li>
       
       <li><a href="#examples">Examples</a></li>
     </ul>
 
-    <h2>Author</h2>
-    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
   </div>
 </div>
 
