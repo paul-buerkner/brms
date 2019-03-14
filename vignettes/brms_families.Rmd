@@ -91,7 +91,7 @@ of the **geometric** family arises if $\phi$ is set to $1$.
 <!--
 The density of the **discrete_weibull** family is 
 $$
-f(y) = \mu^{y^\alpha} - \mu^{{(y + 1)}^\alpha}
+f(y) = \mu^{y^\alpha} - \mu^{(y + 1)^\alpha}
 $$
 with location parameter $\mu \in [0, 1]$ and positive shape parameter $\alpha$.
 -->
