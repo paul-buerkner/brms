@@ -1,7 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>
-[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
+<img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
 
 brms
 ====
@@ -19,22 +17,21 @@ Overview
 The **brms** package provides an interface to fit Bayesian generalized
 (non-)linear multivariate multilevel models using Stan, which is a C++
 package for performing full Bayesian inference (see
-<a href="http://mc-stan.org/" class="uri">http://mc-stan.org/</a>). The
-formula syntax is very similar to that of the package lme4 to provide a
-familiar and simple interface for performing regression analyses. A wide
-range of response distributions are supported, allowing users to fit –
-among others – linear, robust linear, count data, survival, response
-times, ordinal, zero-inflated, and even self-defined mixture models all
-in a multilevel context. Further modeling options include non-linear and
-smooth terms, auto-correlation structures, censored data, missing value
-imputation, and quite a few more. In addition, all parameters of the
-response distribution can be predicted in order to perform
-distributional regression. Multivariate models (i.e., models with
-multiple response variables) can be fit, as well. Prior specifications
-are flexible and explicitly encourage users to apply prior distributions
-that actually reflect their beliefs. Model fit can easily be assessed
-and compared with posterior predictive checks, cross-validation, and
-Bayes factors.
+<http://mc-stan.org/>). The formula syntax is very similar to that of
+the package lme4 to provide a familiar and simple interface for
+performing regression analyses. A wide range of response distributions
+are supported, allowing users to fit – among others – linear, robust
+linear, count data, survival, response times, ordinal, zero-inflated,
+and even self-defined mixture models all in a multilevel context.
+Further modeling options include non-linear and smooth terms,
+auto-correlation structures, censored data, missing value imputation,
+and quite a few more. In addition, all parameters of the response
+distribution can be predicted in order to perform distributional
+regression. Multivariate models (i.e., models with multiple response
+variables) can be fit, as well. Prior specifications are flexible and
+explicitly encourage users to apply prior distributions that actually
+reflect their beliefs. Model fit can easily be assessed and compared
+with posterior predictive checks, cross-validation, and Bayes factors.
 
 Resources
 ---------
@@ -208,6 +205,45 @@ post-processing methods we have shown so far are just the tip of the
 iceberg. For a full list of methods to apply on fitted model objects,
 type `methods(class = "brmsfit")`.
 
+Citing brms and related software
+--------------------------------
+
+Developing and maintaining open source software is an important yet
+often underappreciated contribution to scientific progress. Thus,
+whenever you are using open source software (or software in general),
+please make sure to cite it appropriately so that developers get credit
+for their work.
+
+When using brms, please cite one or more of the following publications:
+
+-   Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
+    Models using Stan. *Journal of Statistical Software*. 80(1), 1-28.
+    doi.org/10.18637/jss.v080.i01
+-   Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the
+    R Package brms. *The R Journal*. 10(1), 395-411.
+    doi.org/10.32614/RJ-2018-017
+
+As brms is a high-level interface to Stan, please additionally cite
+Stan:
+
+-   Carpenter B., Gelman A., Hoffman M. D., Lee D., Goodrich B.,
+    Betancourt M., Brubaker M., Guo J., Li P., and Riddell A. (2017).
+    Stan: A probabilistic programming language. *Journal of Statistical
+    Software*. 76(1). 10.18637/jss.v076.i01
+
+Further, brms relies on several other R packages and, of course, on R
+itself. To find out how to cite R and its packages, use the `citation`
+function. There are some features of brms which specifically rely on
+certain packages. The **rstan** package together with **Rcpp** makes
+Stan conveniently accessible in R. Visualizations and
+posterior-predictive checks are based on **bayesplot** and **ggplot2**.
+Approximate leave-one-out cross-validation using `loo` and related
+methods is done via the **loo** package. Marginal likelihood based
+methods such as `bayes_factor` are realized by means of the
+**bridgesampling** package. Splines specified via the `s` and `t2`
+functions rely on **mgcv**. If you use some of these features, please 
+also consider citing the related packages.
+
 FAQ
 ---
 
@@ -229,12 +265,11 @@ devtools::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program
-Rtools (available on
-<a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>)
+Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>)
 comes with a C++ compiler for Windows. On Mac, you should install Xcode.
 For further instructions on how to get the compilers running, see the
 prerequisites section on
-<a href="https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started" class="uri">https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started</a>.
+<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
 
 ### I am new to brms. Where can I start?
 
@@ -242,16 +277,6 @@ Detailed instructions and case studies are given in the package’s
 extensive vignettes. See `vignette(package = "brms")` for an overview.
 For documentation on formula syntax, families, and prior distributions
 see `help("brm")`.
-
-### How do I cite brms?
-
-Please cite one or more of the following publications:
-
--   Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
-    Models using Stan. *Journal of Statistical Software*. 80(1), 1-28.
-    <a href="doi:10.18637/jss.v080.i01" class="uri">doi:10.18637/jss.v080.i01</a>
--   Bürkner P. C. (in press). Advanced Bayesian Multilevel Modeling with
-    the R Package brms. *The R Journal*.
 
 ### Where do I ask questions, propose a new feature, or report a bug?
 

@@ -25,7 +25,7 @@ Phi <- function(x) {
   pnorm(x)
 }
 
-incgamma <- function(x, a) {
+incgamma <- function(a, x) {
   # incomplete gamma funcion
   pgamma(x, shape = a) * gamma(a)
 }
@@ -144,7 +144,7 @@ log_diff_exp <- function(x, y) {
 }
 
 log_sum_exp <- function(x, y) {
-  max <- max(x, y)
+  max <- pmax(x, y)
   max + log(exp(x - max) + exp(y - max))
 }
 

@@ -121,7 +121,8 @@
 #'   The first link mentioned for each family is the default.     
 #'   
 #'   Please note that when calling the \code{\link[stats:family]{Gamma}} 
-#'   family function, the default link will be \code{inverse} not \code{log}. 
+#'   family function, the default link will be \code{inverse} instead of 
+#'   \code{log} although the latter is the default in \pkg{brms}. 
 #'   Also, the \code{probit_approx} link cannot be used when calling the
 #'   \code{\link[stats:family]{binomial}} family function. 
 #'   
@@ -437,6 +438,24 @@ negbinomial <- function(link = "log", link_shape = "log") {
 geometric <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("geometric", link = link, slink = slink)
+}
+
+# do not export yet!
+# @rdname brmsfamily
+# @export
+discrete_weibull <- function(link = "logit", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("discrete_weibull", link = link, slink = slink,
+              link_shape = link_shape)
+}
+
+# do not export yet!
+# @rdname brmsfamily
+# @export
+com_poisson <- function(link = "log", link_shape = "log") {
+  slink <- substitute(link)
+  .brmsfamily("com_poisson", link = link, slink = slink,
+              link_shape = link_shape)
 }
 
 #' @rdname brmsfamily
@@ -1390,7 +1409,7 @@ no_sigma <- function(bterms) {
 simple_sigma <- function(bterms) {
   # has the model a non-predicted but estimated sigma parameter?
   stopifnot(is.brmsterms(bterms))
-  has_sigma(bterms) && is.null(bterms$dpars$sigma)
+  has_sigma(bterms) && !no_sigma(bterms) && !pred_sigma(bterms)
 }
 
 pred_sigma <- function(bterms) {

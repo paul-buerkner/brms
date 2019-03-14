@@ -7,7 +7,8 @@
 brm_multiple(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes",
   "only"), sparse = FALSE, knots = NULL, stanvars = NULL,
-  stan_funs = NULL, combine = TRUE, seed = NA, file = NULL, ...)
+  stan_funs = NULL, combine = TRUE, fit = NA, seed = NA,
+  file = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},
@@ -16,9 +17,9 @@ be coerced to that classes): A symbolic description of the model to be
 fitted. The details of model specification are explained in
 \code{\link{brmsformula}}.}
 
-\item{data}{A list of data.frames each of which will
-be used to fit a separate model. Alternatively, a 
-\code{mids} object from the \pkg{mice} package.}
+\item{data}{A list of data.frames each of which will be used to fit a
+separate model. Alternatively, a \code{mids} object from the \pkg{mice}
+package.}
 
 \item{family}{A description of the response distribution and link function to
 be used in the model. This can be a family function, a call to a family
@@ -76,9 +77,16 @@ self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
 \code{stanvars} argument for this purpose, instead.}
 
-\item{combine}{Logical; Indicates if the fitted models
-should be combined into a single fitted model object
-via \code{\link{combine_models}}. Defaults to \code{TRUE}.}
+\item{combine}{Logical; Indicates if the fitted models should be combined
+into a single fitted model object via \code{\link{combine_models}}.
+Defaults to \code{TRUE}.}
+
+\item{fit}{An instance of S3 class \code{brmsfit_multiple} derived from a
+previous fit; defaults to \code{NA}. If \code{fit} is of class
+\code{brmsfit_multiple}, the compiled model associated with the fitted
+result is re-used and all arguments modifying the model code or data are
+ignored. It is not recommended to use this argument directly, but to call
+the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
@@ -96,9 +104,9 @@ is stored in the \code{brmsfit} object for later usage.}
 \item{...}{Further arguments passed to \code{\link{brm}}.}
 }
 \value{
-If \code{combine = TRUE} a \code{brmsfit_multiple} object,
-which inherits from class \code{brmsfit} and behaves essentially 
-the same. If \code{combine = FALSE} a list of \code{brmsfit} objects.
+If \code{combine = TRUE} a \code{brmsfit_multiple} object, which
+  inherits from class \code{brmsfit} and behaves essentially the same. If
+  \code{combine = FALSE} a list of \code{brmsfit} objects.
 }
 \description{
 Run the same \pkg{brms} model on multiple datasets and then combine the
@@ -108,13 +116,12 @@ imputed data sets. Models can be run in parallel using the \pkg{future}
 package.
 }
 \details{
-The combined model may issue false positive 
-convergence warnings, as the MCMC chains corresponding
-to different datasets may not necessarily overlap, even 
-if each of the original models did converge.
-To find out whether each of the original models converged,
-investigate \code{fit$rhats}, where \code{fit} 
-denotes the output of \code{brm_multiple}.
+The combined model may issue false positive convergence warnings, as
+  the MCMC chains corresponding to different datasets may not necessarily
+  overlap, even if each of the original models did converge. To find out
+  whether each of the original models converged, investigate
+  \code{fit$rhats}, where \code{fit} denotes the output of
+  \code{brm_multiple}.
 }
 \examples{
 \dontrun{
@@ -122,11 +129,11 @@ library(mice)
 imp <- mice(nhanes2)
 
 # fit the model using mice and lm
-fit_imp1 <- with(lm(bmi~age+hyp+chl), data = imp)
+fit_imp1 <- with(lm(bmi ~ age + hyp + chl), data = imp)
 summary(pool(fit_imp1))
 
 # fit the model using brms
-fit_imp2 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 summary(fit_imp2)
 plot(fit_imp2, pars = "^b_")
 # investigate convergence of the original models

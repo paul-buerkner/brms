@@ -1013,7 +1013,6 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
 #' @export
 qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
-  # quantile function of the asymmetric laplace distribution
   if (log.p) {
     p <- exp(p)
   }
@@ -1032,9 +1031,347 @@ qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
 #' @rdname AsymLaplace
 #' @export
 rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
-  # random numbers of the asymmetric laplace distribution
   u <- runif(n)
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
+}
+
+# The Discrete Weibull Distribution
+# 
+# Density, distribution function, quantile function and random generation 
+# for the discrete Weibull distribution with location \code{mu} and
+# shape \code{shape}.
+# 
+# @name DiscreteWeibull
+# 
+# @inheritParams StudentT
+# @param mu Location parameter in the unit interval.
+# @param shape Positive shape parameter.
+# 
+# @details See \code{vignette("brms_families")} for details
+# on the parameterization.
+# 
+# @export
+ddiscrete_weibull <- function(x, mu, shape, log = FALSE) {
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  x <- round(x)
+  out <- mu^x^shape - mu^(x + 1)^shape
+  out[x < 0] <- 0
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+# @rdname DiscreteWeibull
+# @export
+pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  x <- round(x)
+  if (lower.tail) {
+    out <- 1 - mu^(x + 1)^shape
+    out[x < 0] <- 0
+  } else {
+    out <- mu^(x + 1)^shape
+    out[x < 0] <- 1
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+# @rdname DiscreteWeibull
+# @export
+qdiscrete_weibull <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  if (any(mu < 0 | mu > 1)) {
+    stop2("mu bust be between 0 and 1.")
+  }
+  if (any(shape <= 0)) {
+    stop2("shape bust be greater than 0.")
+  }
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  ceiling((log(1 - p) / log(mu))^(1 / shape) - 1)
+}
+
+# @rdname DiscreteWeibull
+# @export
+rdiscrete_weibull <- function(n, mu, shape) {
+  u <- runif(n, 0, 1)
+  qdiscrete_weibull(u, mu, shape)
+}
+
+mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
+  # mean of the discrete weibull distribution
+  # Args:
+  #   mu: location parameter
+  #   shape: shape parameter
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  opt_M <- ceiling(max((log(thres) / log(mu))^(1 / shape)))
+  if (opt_M <= M) {
+    M <- opt_M
+  } else {
+    # avoid the loop below running too slow
+    warning2(
+      "Approximating the mean of the 'discrete_weibull' ",
+      "distribution failed and results be inaccurate."
+    )
+  }
+  out <- 0
+  for (y in seq_len(M)) {
+    out <- out + mu^y^shape
+  }
+  # approximation of the residual series (see Englehart & Li, 2011)
+  # returns unreasonably large values presumably due to numerical issues
+  out
+}
+
+dcom_poisson <- function(x, mu, shape, log = FALSE) {
+  x <- round(x)
+  log_mu <- log(mu)
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  out <- shape * (x * log_mu - lgamma(x + 1)) - log_Z
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+rcom_poisson <- function(n, mu, shape, M = 10000) {
+  n <- check_n_rdist(n, mu, shape)
+  M <- as.integer(as_one_numeric(M))
+  log_mu <- log(mu)
+  # approximating log_Z may yield too large random draws
+  log_Z <- log_Z_com_poisson(log_mu, shape, approx = FALSE)
+  u <- runif(n, 0, 1)
+  cdf <- exp(-log_Z)
+  lfac <- 0
+  y <- 0
+  out <- rep(0, n)
+  not_found <- cdf < u
+  while (any(not_found) && y <= M) {
+    y <- y + 1
+    out[not_found] <- y
+    lfac <- lfac + log(y)
+    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z)
+    not_found <- cdf < u
+  }
+  if (any(not_found)) {
+    out[not_found] <- NA
+    nfailed <- sum(not_found)
+    warning2(
+      "Drawing random numbers from the 'com_poisson' ", 
+      "distribution failed in ", nfailed, " cases."
+    )
+  }
+  out
+}
+
+pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
+  x <- round(x)
+  args <- expand(x = x, mu = mu, shape = shape)
+  x <- args$x
+  mu <- args$mu
+  shape <- args$shape
+  
+  log_mu <- log(mu)
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  out <- rep(0, length(x))
+  dim(out) <- attributes(args)$max_dim
+  out[x > 0] <- log1p_exp(shape * log_mu)
+  k <- 2
+  lfac <- 0
+  while (any(x >= k)) {
+    lfac <- lfac + log(k)
+    term <- shape * (k * log_mu - lfac)
+    out[x >= k] <- log_sum_exp(out[x >= k], term)
+    k <- k + 1
+  }
+  out <- out - log_Z
+  out[out > 0] <- 0
+  if (!lower.tail) {
+    out <- log1m_exp(out)
+  } 
+  if (!log.p) {
+    out <- exp(out)
+  }
+  out
+}
+
+log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
+                              approx = TRUE) {
+  # log normalizing constant of the COM Poisson distribution
+  # Args:
+  #   log_mu: log location parameter
+  #   shape: shape parameter
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  #   approx: use a closed form approximation of the mean if appropriate? 
+  if (any(shape <= 0)) {
+    stop2("'shape' must be positive.")
+  }
+  if (any(shape == Inf)) {
+    stop2("'shape' must be finite.")
+  }
+  approx <- as_one_logical(approx)
+  args <- expand(log_mu = log_mu, shape = shape)
+  log_mu <- args$log_mu
+  shape <- args$shape
+  
+  out <- rep(NA, length(log_mu))
+  dim(out) <- attributes(args)$max_dim
+  use_poisson <- shape == 1
+  if (any(use_poisson)) {
+    # shape == 1 implies the poisson distribution
+    out[use_poisson] <- exp(log_mu[use_poisson])
+  }
+  if (approx) {
+    # use a closed form approximation if appropriate
+    use_approx <- log_mu * shape >= log(1.5) & log_mu >= log(1.5)
+    if (any(use_approx)) {
+      out[use_approx] <- log_Z_com_poisson_approx(
+        log_mu[use_approx], shape[use_approx]
+      )
+    }
+  }
+  use_exact <- is.na(out)
+  if (any(use_exact)) {
+    # direct computation of the truncated series
+    M <- as.integer(as_one_numeric(M))
+    thres <- as_one_numeric(thres)
+    log_thres <- log(thres)
+    log_mu <- log_mu[use_exact]
+    shape <- shape[use_exact]
+    # first 2 terms of the series
+    out_exact <- log1p_exp(shape * log_mu)
+    lfac <- 0
+    k <- 2
+    converged <- FALSE
+    while (!converged && k <= M) { 
+      lfac <- lfac + log(k)
+      term <- shape * (k * log_mu - lfac)
+      out_exact <- log_sum_exp(out_exact, term)
+      converged <- all(term <= log_thres)
+      k <- k + 1
+    }
+    out[use_exact] <- out_exact
+    if (!converged) {
+      warning2(
+        "Approximating the normalizing constant of the 'com_poisson' ",
+        "distribution failed and results may be inaccurate."
+      )
+    } 
+  }
+  out
+}
+
+log_Z_com_poisson_approx <- function(log_mu, shape) {
+  # approximation based on doi:10.1007/s10463-017-0629-6
+  shape_mu <- shape * exp(log_mu)
+  shape2 <- shape^2
+  # first 4 terms of the residual series
+  log_sum_resid <- log(
+    1 + shape_mu^(-1) * (shape2 - 1) / 24 + 
+      shape_mu^(-2) * (shape2 - 1) / 1152 * (shape2 + 23) +
+      shape_mu^(-3) * (shape2 - 1) / 414720 * 
+        (5 * shape2^2 - 298 * shape2 + 11237)
+  )
+  shape_mu + log_sum_resid - 
+    ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
+}
+
+mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
+                             approx = TRUE) {
+  # compute the log mean of the COM Poisson distribution
+  # Args:
+  #   mu: location parameter
+  #   shape: shape parameter
+  #   M: maximal evaluated element of the series
+  #   thres: threshold for new elements at which to stop evaluation
+  #   approx: use a closed form approximation of the mean if appropriate? 
+  if (any(shape <= 0)) {
+    stop2("'shape' must be positive.")
+  }
+  if (any(shape == Inf)) {
+    stop2("'shape' must be finite.")
+  }
+  approx <- as_one_logical(approx)
+  args <- expand(mu = mu, shape = shape)
+  mu <- args$mu
+  shape <- args$shape
+  
+  out <- rep(NA, length(mu))
+  dim(out) <- attributes(args)$max_dim
+  use_poisson <- shape == 1
+  if (any(use_poisson)) {
+    # shape == 1 implies the poisson distribution
+    out[use_poisson] <- mu[use_poisson]
+  }
+  if (approx) {
+    # use a closed form approximation if appropriate
+    use_approx <- mu^shape >= 1.5 & mu >= 1.5
+    if (any(use_approx)) {
+      out[use_approx] <- mean_com_poisson_approx(
+        mu[use_approx], shape[use_approx]
+      )
+    } 
+  }
+  use_exact <- is.na(out)
+  if (any(use_exact)) {
+    # direct computation of the truncated series
+    M <- as.integer(as_one_numeric(M))
+    thres <- as_one_numeric(thres)
+    log_thres <- log(thres)
+    mu <- mu[use_exact]
+    shape <- shape[use_exact]
+    log_mu <- log(mu)
+    # first 2 terms of the series
+    log_num <- shape * log_mu  # numerator
+    log_Z <- log1p_exp(shape * log_mu)  # denominator
+    lfac <- 0
+    k <- 2
+    converged <- FALSE
+    while (!converged && k <= M) { 
+      log_k <- log(k)
+      lfac <- lfac + log_k
+      term <- shape * (k * log_mu - lfac)
+      log_num <- log_sum_exp(log_num, log_k + term)
+      log_Z <- log_sum_exp(log_Z, term)
+      converged <- all(term <= log_thres)
+      k <- k + 1
+    }
+    if (!converged) {
+      warning2(
+        "Approximating the mean of the 'com_poisson' ",
+        "distribution failed and results be inaccurate."
+      )
+    }
+    out[use_exact] <- exp(log_num - log_Z)
+  }
+  out
+}
+
+mean_com_poisson_approx <- function(mu, shape) {
+  # approximation based on doi:10.1007/s10463-017-0629-6
+  term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) - 
+    (shape^2 - 1) / (24 * shape^2) * mu^(-2) - 
+    (shape^2 - 1) / (24 * shape^3) * mu^(-3)
+  mu * term
 }
 
 #' The Dirichlet Distribution
@@ -1686,4 +2023,20 @@ qshifted <- function(dist, p, shift = 0, ...) {
 
 rshifted <- function(dist, n, shift = 0, ...) {
   do_call(paste0("r", dist), list(n, ...)) + shift
+}
+
+check_n_rdist <- function(n, ...) {
+  # check if 'n' in r<dist> functions is valid
+  # Args:
+  #   n: number of desired random draws
+  #   ...: parameter vectors
+  n <- as.integer(as_one_numeric(n))
+  max_len <- max(lengths(list(...)))
+  if (max_len > 1L) {
+    if (!n %in% c(1, max_len)) {
+      stop2("'n' must match the maximum length of the parameter vectors.")
+    }
+    n <- max_len
+  }
+  n
 }

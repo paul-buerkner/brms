@@ -1,4 +1,4 @@
-# brms 2.7.0++
+# brms 2.8.0
 
 ### New Features
 
@@ -10,9 +10,15 @@
 families via argument `refcat` of the corresponding family functions.
 * Use different subsets of the data in different univariate parts
 of a multivariate model via addition argument `subset`. (#360)
+* Control the centering of population-level design matrices
+via argument `center` of `brmsformula` and related functions.
+* Add an `update` method for `brmsfit_multiple` objects. (#615)
+* Split folds after `group` in the `kfold` method. (#619)
 
 ### Other changes
 
+* Deprecate `compare_ic` and instead recommend `loo_compare` for the
+comparison of `loo` objects to ensure consistency between packages. (#414)
 * Use the **glue** package in the Stan code generation. (#549)
 * Introduce `mvbind` to eventually replace `cbind` 
 in the formula syntax of multivariate models.
@@ -41,6 +47,8 @@ occuring for multivariate models thanks to James Rae. (#598)
 * Fix lower bounds in truncated discrete models.
 * Fix checks of the original data in `kfold` thanks to
 the GitHub user gcolitti. (#602)
+* Fix an error when applying the `VarCorr` method to
+meta-analytic models thanks to Michael Scharkow. (#616)
 
 
 # brms 2.7.0

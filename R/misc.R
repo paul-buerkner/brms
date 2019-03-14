@@ -300,10 +300,14 @@ expand <- function(..., dots = list(), length = NULL) {
   #   ...: arguments to expand
   #   length: optional expansion length
   dots <- c(dots, list(...))
+  max_dim <- NULL
   if (is.null(length)) {
-    length <- max(sapply(dots, length))
+    lengths <- lengths(dots)
+    length <- max(lengths)
+    max_dim <- dim(dots[[match(length, lengths)]])
   }
-  as.data.frame(lapply(dots, rep, length.out = length))
+  out <- as.data.frame(lapply(dots, rep, length.out = length))
+  structure(out, max_dim = max_dim)
 }
 
 structure_not_null <- function(.Data, ...) {
@@ -332,11 +336,12 @@ subset_keep_attr <- function(x, y) {
 
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
-  if (!is.numeric(x)) {
-    out <- FALSE
-  } else {
+  if (is.numeric(x)) {
     out <- abs(x - round(x)) < tol
+  } else {
+    out <- rep(FALSE, length(x))
   }
+  dim(out) <- dim(x)
   out
 }
 
@@ -701,6 +706,13 @@ eval_NA <- function(expr, ...) {
   }
   data <- named_list(all.vars(expr), NA_real_)
   eval(expr, envir = data, ...)
+}
+
+substitute_name <- function(x, envir = parent.frame(), nchar = 50) {
+  # find the name that x had in a specific environment
+  out <- substitute(x)
+  out <- eval2(paste0("substitute(", out, ")"), envir = envir)
+  substr(collapse(deparse(out)), 1, nchar)
 }
 
 sort_dependencies <- function(x, sorted = NULL) {

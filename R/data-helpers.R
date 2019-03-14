@@ -177,6 +177,13 @@ subset_data <- function(data, bterms) {
     }
     data <- data[subset, , drop = FALSE]
   }
+  if (!NROW(data)) {
+    stop2(
+      "All rows of 'data' were removed via 'subset'. ",
+      "Please make sure that variables do not contain NAs ",
+      "even in rows unused by the subsetted model."
+    )
+  }
   data
 }
 

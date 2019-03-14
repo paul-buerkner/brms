@@ -6,7 +6,8 @@
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
 brmsformula(formula, ..., flist = NULL, family = NULL,
-  autocor = NULL, nl = NULL, loop = NULL, cmc = NULL)
+  autocor = NULL, nl = NULL, loop = NULL, center = NULL,
+  cmc = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -65,6 +66,12 @@ is treated as an ordinary linear model formula.}
 Indicates if the computation of the non-linear formula should be 
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
+
+\item{center}{Logical; Indicates if the population-level design
+matrix should be centered, which usually increases sampling efficiency.
+See the 'Details' section for more information.
+Defaults to \code{TRUE} for distributional parameters
+and to \code{FALSE} for non-linear parameters.}
 
 \item{cmc}{Logical; Indicates whether automatic cell-mean coding
 should be enabled when removing the intercept by adding \code{0} 
@@ -322,19 +329,19 @@ models for all parameters of the assumed response distribution.
   
   \bold{Parameterization of the population-level intercept}
   
-  The population-level intercept (if incorporated) is estimated separately 
-  and not as part of population-level parameter vector \code{b}. 
-  As a result, priors on the intercept also have to be specified separately.
-  Furthermore, to increase sampling efficiency, the population-level 
-  design matrix \code{X} is centered around its column means 
-  \code{X_means} if the intercept is incorporated. 
-  This leads to a temporary bias in the intercept equal to 
-  \code{<X_means, b>}, where \code{<,>} is the scalar product. 
-  The bias is corrected after fitting the model, but be aware 
-  that you are effectively defining a prior on the intercept 
-  of the centered design matrix not on the real intercept.
-  For more details on setting priors on population-level intercepts,
-  see \code{\link{set_prior}}.
+  By default, the population-level intercept (if incorporated) is estimated
+  separately and not as part of population-level parameter vector \code{b} As
+  a result, priors on the intercept also have to be specified separately.
+  Furthermore, to increase sampling efficiency, the population-level design
+  matrix \code{X} is centered around its column means \code{X_means} if the
+  intercept is incorporated. This leads to a temporary bias in the intercept
+  equal to \code{<X_means, b>}, where \code{<,>} is the scalar product. The
+  bias is corrected after fitting the model, but be aware that you are
+  effectively defining a prior on the intercept of the centered design matrix
+  not on the real intercept. You can turn off this special handling of the
+  intercept by setting argument \code{center} to \code{FALSE}. For more
+  details on setting priors on population-level intercepts, see
+  \code{\link{set_prior}}.
   
   This behavior can be avoided by using the reserved 
   (and internally generated) variable \code{intercept}. 

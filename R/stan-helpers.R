@@ -876,7 +876,7 @@ stan_has_built_in_fun <- function(family) {
   dpar <- family$dpar
   family <- family$family
   log_families <- c(
-    "poisson", "negbinomial", "geometric", 
+    "poisson", "negbinomial", "geometric", "com_poisson",
     "zero_inflated_poisson", "zero_inflated_negbinomial",
     "hurdle_poisson", "hurdle_negbinomial"
   )

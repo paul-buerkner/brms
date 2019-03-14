@@ -7,25 +7,30 @@
 #' package.
 #' 
 #' @inheritParams brm
-#' @param data A list of data.frames each of which will
-#'   be used to fit a separate model. Alternatively, a 
-#'   \code{mids} object from the \pkg{mice} package.
-#' @param combine Logical; Indicates if the fitted models
-#'   should be combined into a single fitted model object
-#'   via \code{\link{combine_models}}. Defaults to \code{TRUE}.
+#' @param data A list of data.frames each of which will be used to fit a
+#'   separate model. Alternatively, a \code{mids} object from the \pkg{mice}
+#'   package.
+#' @param combine Logical; Indicates if the fitted models should be combined
+#'   into a single fitted model object via \code{\link{combine_models}}.
+#'   Defaults to \code{TRUE}.
+#' @param fit An instance of S3 class \code{brmsfit_multiple} derived from a
+#'   previous fit; defaults to \code{NA}. If \code{fit} is of class
+#'   \code{brmsfit_multiple}, the compiled model associated with the fitted
+#'   result is re-used and all arguments modifying the model code or data are
+#'   ignored. It is not recommended to use this argument directly, but to call
+#'   the \code{\link[brms:update.brmsfit_multiple]{update}} method, instead.
 #' @param ... Further arguments passed to \code{\link{brm}}.
 #' 
-#' @details The combined model may issue false positive 
-#' convergence warnings, as the MCMC chains corresponding
-#' to different datasets may not necessarily overlap, even 
-#' if each of the original models did converge.
-#' To find out whether each of the original models converged,
-#' investigate \code{fit$rhats}, where \code{fit} 
-#' denotes the output of \code{brm_multiple}.
+#' @details The combined model may issue false positive convergence warnings, as
+#'   the MCMC chains corresponding to different datasets may not necessarily
+#'   overlap, even if each of the original models did converge. To find out
+#'   whether each of the original models converged, investigate
+#'   \code{fit$rhats}, where \code{fit} denotes the output of
+#'   \code{brm_multiple}.
 #' 
-#' @return If \code{combine = TRUE} a \code{brmsfit_multiple} object,
-#' which inherits from class \code{brmsfit} and behaves essentially 
-#' the same. If \code{combine = FALSE} a list of \code{brmsfit} objects. 
+#' @return If \code{combine = TRUE} a \code{brmsfit_multiple} object, which
+#'   inherits from class \code{brmsfit} and behaves essentially the same. If
+#'   \code{combine = FALSE} a list of \code{brmsfit} objects.
 #' 
 #' @examples
 #' \dontrun{
@@ -33,11 +38,11 @@
 #' imp <- mice(nhanes2)
 #' 
 #' # fit the model using mice and lm
-#' fit_imp1 <- with(lm(bmi~age+hyp+chl), data = imp)
+#' fit_imp1 <- with(lm(bmi ~ age + hyp + chl), data = imp)
 #' summary(pool(fit_imp1))
 #' 
 #' # fit the model using brms
-#' fit_imp2 <- brm_multiple(bmi~age+hyp+chl, data = imp, chains = 1)
+#' fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #' summary(fit_imp2)
 #' plot(fit_imp2, pars = "^b_")
 #' # investigate convergence of the original models
@@ -55,9 +60,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
                          sparse = FALSE, knots = NULL, stanvars = NULL,
-                         stan_funs = NULL, combine = TRUE, 
+                         stan_funs = NULL, combine = TRUE, fit = NA,
                          seed = NA, file = NULL, ...) {
-  require_package("future")
   combine <- as_one_logical(combine)
   if (!is.null(file)) {
     # optionally load saved model object
@@ -74,43 +78,45 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
   
-  data.name <- substr(collapse(deparse(substitute(data))), 1, 50)
+  data.name <- substitute_name(data)
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
     data <- lapply(seq_len(data$m), mice::complete, data = data)
   } else if (!(is.list(data) && is.vector(data))) {
     stop2("'data' must be a list of data.frames.")
   }
-  fits <- futures <- vector("list", length(data))
-  message("Fitting imputed model 1")
-  args <- nlist(
-    formula, data = data[[1]], family, prior, autocor, cov_ranef,
-    sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
-  )
-  fits[[1]] <- do_call(brm, args)
-  fits[[1]]$data.name <- data.name
-  rhats <- data.frame(as.list(rhat(fits[[1]])))
-  if (any(rhats > 1.1)) {
-    warning2("Imputed model 1 did not converge.")
+  
+  if (is.brmsfit(fit)) {
+    # avoid complications when updating the model
+    class(fit) <- setdiff(class(fit), "brmsfit_multiple")
+  } else {
+    args <- nlist(
+      formula, data = data[[1]], family, prior, autocor, cov_ranef,
+      sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
+    )
+    args$chains <- 0
+    fit <- do_call(brm, args)
   }
-  for (i in seq_along(data)[-1]) {
-    message("Fitting imputed model ", i)
+  
+  fits <- futures <- rhats <- vector("list", length(data))
+  for (i in seq_along(data)) {
     futures[[i]] <- future::future(
-      update(fits[[1]], newdata = data[[i]], recompile = FALSE, ...),
+      update(fit, newdata = data[[i]], recompile = FALSE, ...),
       packages = "brms"
     )
   }
-  for (i in seq_along(data)[-1]) {
+  for (i in seq_along(data)) {
+    message("Fitting imputed model ", i)
     fits[[i]] <- future::value(futures[[i]]) 
-    rhat_i <- data.frame(as.list(rhat(fits[[i]])))
-    if (any(rhat_i > 1.1)) {
+    rhats[[i]] <- data.frame(as.list(rhat(fits[[i]])))
+    if (any(rhats[[i]] > 1.1, na.rm = TRUE)) {
       warning2("Imputed model ", i, " did not converge.")
     }
-    rhats <- rbind(rhats, rhat_i)
   }
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
-    fits$rhats <- rhats
+    fits$data.name <- data.name
+    fits$rhats <- do_call(rbind, rhats)
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {
@@ -170,4 +176,79 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
   sflist <- lapply(models, "[[", "fit")
   models[[1]]$fit <- rstan::sflist2stanfit(sflist)
   models[[1]]
+}
+
+#' Update \pkg{brms} models based on multiple data sets
+#' 
+#' This method allows to update an existing \code{brmsfit_multiple} object.
+#' 
+#' @param object An object of class \code{brmsfit_multiple}.
+#' @param formula. Changes to the formula; for details see 
+#'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
+#' @param newdata List of \code{data.frames} to update the model with new data.
+#'   Currently required even if the original data should be used.
+#' @param ... Other arguments passed to \code{\link{update.brmsfit}}
+#'   and \code{\link{brm_multiple}}.
+#'  
+#' @examples 
+#' \dontrun{
+#' library(mice)
+#' imp <- mice(nhanes2)
+#' 
+#' # initially fit the model 
+#' fit_imp1 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
+#' summary(fit_imp1)
+#' 
+#' # update the model using fewer predictors
+#' fit_imp2 <- update(fit_imp1, formula. = . ~ hyp + chl, newdata = imp)
+#' summary(fit_imp2)
+#' }
+#'
+#' @export
+update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
+  dots <- list(...)
+  if ("data" %in% names(dots)) {
+    # otherwise the data name cannot be found by substitute 
+    stop2("Please use argument 'newdata' to update the data.")
+  }
+  if (is.null(newdata)) {
+    stop2("'newdata' is required when updating a 'brmsfit_multiple' object.")
+  }
+  data.name <- substitute_name(newdata)
+  if (inherits(newdata, "mids")) {
+    require_package("mice", version = "3.0.0")
+    newdata <- lapply(seq_len(newdata$m), mice::complete, data = newdata)
+  } else if (!(is.list(newdata) && is.vector(newdata))) {
+    stop2("'newdata' must be a list of data.frames.")
+  }
+  
+  # update the template model using all arguments
+  args <- c(nlist(object, formula., newdata = newdata[[1]]), dots)
+  args$file <- NULL
+  args$chains <- 0
+  fit <- do_call(update.brmsfit, args)
+  
+  # arguments later passed to brm_multiple
+  args <- c(nlist(fit, data = newdata), dots)
+  # update arguments controlling the sampling process
+  # they cannot be accessed directly from the template model 
+  # as it does not contain any samples (chains = 0)
+  if (is.null(args$iter)) {
+    # only keep old 'warmup' if also keeping old 'iter'
+    args$warmup <- first_not_null(args$warmup, object$fit@sim$warmup)
+  }
+  if (is.null(args$chains)) {
+    # chains were combined across all submodels
+    args$chains <- object$fit@sim$chains / max(NROW(object$rhats), 1)
+  }
+  args$iter <- first_not_null(args$iter, object$fit@sim$iter)
+  args$thin <- first_not_null(args$thin, object$fit@sim$thin)
+  control <- attr(object$fit@sim$samples[[1]], "args")$control
+  control <- control[setdiff(names(control), names(args$control))]
+  args$control[names(control)] <- control
+  args$recompile <- NULL
+  
+  out <- do_call(brm_multiple, args)
+  out$data.name <- data.name
+  out
 }

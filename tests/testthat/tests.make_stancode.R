@@ -1554,6 +1554,21 @@ test_that("Stan code for overimputation works correctly", {
   expect_match2(scode, "vector[N_xx] Yl_xx;")
 })
 
+test_that("Stan code for advanced count data distribution is correct", {
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("discrete_weibull")
+  )
+  expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
+  expect_match2(scode, "target += discrete_weibull_lpmf(Y[n] | mu[n], shape);")
+  
+  scode <- make_stancode(
+    count ~ zAge + zBase * Trt + (1|patient),
+    data = epilepsy, family = brmsfamily("com_poisson")
+  )
+  expect_match2(scode, "target += com_poisson_log_lpmf(Y[n] | mu[n], shape);")
+})
+
 test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
   mean_intercept <- 5
@@ -1697,4 +1712,18 @@ test_that("student-t group-level effects work without errors", {
     "rep_matrix(dfm_1, M_1) .* (diag_pre_multiply(sd_1, L_1) * z_1)';"
   )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
+})
+
+test_that("centering design matrices can be changed correctly", {
+  dat <- data.frame(y = 1:10, x = 1:10)
+  scode <- make_stancode(
+    bf(y ~ x, center = FALSE), data = dat,
+    prior = prior(normal(0,1), coef = Intercept)
+  )
+  expect_match2(scode, "mu = X * b;")
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1);")
+  
+  bform <- bf(y ~ eta, nl = TRUE) + lf(eta ~ x, center = TRUE)
+  scode <- make_stancode(bform, data = dat)
+  expect_match2(scode, "nlp_eta = temp_eta_Intercept + Xc_eta * b_eta;")
 })

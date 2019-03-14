@@ -266,7 +266,8 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   The first link mentioned for each family is the default.     
   
   Please note that when calling the \code{\link[stats:family]{Gamma}} 
-  family function, the default link will be \code{inverse} not \code{log}. 
+  family function, the default link will be \code{inverse} instead of 
+  \code{log} although the latter is the default in \pkg{brms}. 
   Also, the \code{probit_approx} link cannot be used when calling the
   \code{\link[stats:family]{binomial}} family function. 
   
