@@ -8,7 +8,7 @@ compare_ic(..., x = NULL, ic = c("loo", "waic", "kfold"))
 }
 \arguments{
 \item{...}{At least two objects returned by 
-\code{\link{WAIC}} or \code{\link{loo}}.
+\code{\link{waic}} or \code{\link{loo}}.
 Alternatively, \code{brmsfit} objects with information 
 criteria precomputed via \code{\link{add_ic}}
 may be passed, as well.}
@@ -25,22 +25,25 @@ An object of class \code{iclist}.
 }
 \description{
 Compare information criteria of different models fitted
-with \code{\link{WAIC}} or \code{\link{loo}}.
+with \code{\link{waic}} or \code{\link{loo}}.
+Deprecated and will be removed in the future. Please use
+\code{\link{loo_compare}} instead.
 }
 \details{
-For more details see \code{\link[loo:compare]{compare}}.
+See \code{\link{loo_compare}} for the recommended way 
+  of comparing models with the \pkg{loo} package.
 }
 \examples{
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = "gaussian")
-waic1 <- WAIC(fit1)
+            data = inhaler)
+waic1 <- waic(fit1)
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler, family = "gaussian")
-waic2 <- WAIC(fit2)
+            data = inhaler)
+waic2 <- waic(fit2)
 
 # compare both models
 compare_ic(waic1, waic2)
@@ -48,8 +51,7 @@ compare_ic(waic1, waic2)
 
 }
 \seealso{
-\code{\link{WAIC}}, 
-  \code{\link{loo}},
-  \code{\link{add_ic}},
-  \code{\link[loo:compare]{compare}}
+\code{\link{loo}},
+  \code{\link{loo_compare}}
+  \code{\link{add_criterion}}
 }

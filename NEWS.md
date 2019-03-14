@@ -13,9 +13,12 @@ of a multivariate model via addition argument `subset`. (#360)
 * Control the centering of population-level design matrices
 via argument `center` of `brmsformula` and related functions.
 * Add an `update` method for `brmsfit_multiple` objects. (#615)
+* Split folds after `group` in the `kfold` method. (#619)
 
 ### Other changes
 
+* Deprecate `compare_ic` and instead recommend `loo_compare` for the
+comparison of `loo` objects to ensure consistency between packages. (#414)
 * Use the **glue** package in the Stan code generation. (#549)
 * Introduce `mvbind` to eventually replace `cbind` 
 in the formula syntax of multivariate models.

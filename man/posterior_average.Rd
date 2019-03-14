@@ -12,9 +12,9 @@
 posterior_average(x, ...)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{pars}{Names of parameters for which to average across models.

@@ -70,7 +70,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(combine_models(fit1, fit1)), nsamples(fit1) * 2)
   
   # bayes_R2
-  fit1 <- add_ic(fit1, "R2")
+  fit1 <- add_criterion(fit1, "R2")
   R2 <- bayes_R2(fit1, summary = FALSE)
   expect_equal(dim(R2), c(nsamples(fit1), 1))
   R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ], re_formula = NA)
@@ -577,17 +577,18 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(waic1$estimates))
   expect_equal(waic1, SW(waic(fit1)))
   
-  fit1 <- SW(add_ic(fit1, "waic"))
+  fit1 <- SW(add_criterion(fit1, "waic"))
   expect_equal(waic(fit1), fit1$waic)
   
   waic_compare <- SW(waic(fit1, fit1))
-  expect_equal(length(waic_compare), 3)
+  expect_equal(length(waic_compare$loos), 2)
   expect_equal(dim(waic_compare$ic_diffs__), c(1, 2))
   waic2 <- SW(waic(fit2))
   expect_true(is.numeric(waic2$estimates))
   waic_pointwise <- SW(waic(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
-  expect_warning(waic(fit1, fit2), "Model comparisons are likely invalid")
+  expect_warning(compare_ic(waic1, waic2), 
+                 "Model comparisons are likely invalid")
   waic4 <- SW(waic(fit4))
   expect_true(is.numeric(waic4$estimates))
   
@@ -686,13 +687,10 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(loo1), "looic")
   
   loo_compare1 <- SW(loo(fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare1), 3)
+  expect_equal(names(loo_compare1$loos), c("fit1", "fit1"))
   expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
-  expect_output(print(loo_compare1), "fit1 - fit1")
-  
-  loo_compare2 <- SW(loo(fit1, fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare2), 4)
-  expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
+  expect_output(print(loo_compare1), "'fit1':")
+  expect_is(loo_compare1$diffs, "compare.loo")
   
   loo2 <- SW(loo(fit2, cores = 1))
   expect_true(is.numeric(loo2$estimates))
@@ -712,8 +710,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(loo6_1$estimates))
   loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2$estimates))
-  loo_compare <- compare_ic(loo6_1, loo6_2)
-  expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
+  loo_compare <- loo_compare(loo6_1, loo6_2)
+  expect_range(loo_compare[2, 1], -1, 1)
   
   # loo_linpred
   llp <- SW(loo_linpred(fit1))

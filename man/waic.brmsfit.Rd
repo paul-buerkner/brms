@@ -5,20 +5,20 @@
 \alias{waic}
 \alias{WAIC}
 \alias{WAIC.brmsfit}
-\title{Compute the WAIC}
+\title{Widely Applicable Information Criterion (WAIC)}
 \usage{
 \method{waic}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
   pointwise = FALSE, model_names = NULL)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link{compare_ic}}.}
+via \code{\link{loo_compare}}.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
@@ -34,33 +34,34 @@ derived from deparsing the call. Otherwise will use the passed
 values as model names.}
 }
 \value{
-If just one object is provided, an object of class \code{ic}. 
- If multiple objects are provided, an object of class \code{iclist}.
+If just one object is provided, an object of class \code{loo}. 
+ If multiple objects are provided, an object of class \code{loolist}.
 }
 \description{
 Compute the widely applicable information criterion (WAIC)
 based on the posterior likelihood using the \pkg{loo} package.
-For more details see \code{\link[loo:waic]{waic}}
+For more details see \code{\link[loo:waic]{waic}}.
 }
 \details{
-When comparing models fitted to the same data, 
- the smaller the WAIC, the better the fit. For \code{brmsfit} 
- objects, \code{WAIC} is an alias of \code{waic}.
- Use method \code{\link[brms:add_ic]{add_ic}} to store
+See \code{\link{loo_compare}} for details on model comparisons. 
+ For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
+ Use method \code{\link[brms:add_criterion]{add_criterion}} to store
  information criteria in the fitted model object for later usage.
 }
 \examples{
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = "gaussian")
-waic(fit1)
+            data = inhaler)
+(waic1 <- waic(fit1))
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler, family = "gaussian")
+            data = inhaler)
+(waic2 <- waic(fit2))   
+
 # compare both models
-waic(fit1, fit2)                          
+loo_compare(waic1, waic2)                      
 }
 
 }
