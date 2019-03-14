@@ -12,7 +12,7 @@ test_that("Poisson model from brm doc works correctly", {
   )
   print(fit1)
   ## generate a summary of the results
-  expect_range(fixef(fit1)[4, 1], -0.35, -0.30)
+  expect_range(fixef(fit1)[4, 1], -0.28, -0.23)
   ## extract random effects standard devations and covariance matrices
   expect_equal(names(VarCorr(fit1)), c("obs", "patient"))
   ## extract group specific effects of each level
@@ -183,12 +183,12 @@ test_that("bridgesampling methods work correctly", {
   print(fit2)
 
   # compute the bayes factor
-  expect_gt(bayes_factor(fit1, fit2)$bf, 1)
+  expect_gt(bayes_factor(fit2, fit1)$bf, 1)
   # compute the posterior model probabilities
-  pp1 <- post_prob(fit1, fit2)
+  pp1 <- post_prob(fit2, fit1)
   expect_gt(pp1[1], pp1[2])
   # specify prior model probabilities
-  pp2 <- post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
+  pp2 <- post_prob(fit2, fit1, prior_prob = c(0.8, 0.2))
   expect_gt(pp2[1], pp1[1])
 })
 
@@ -471,7 +471,7 @@ test_that("update works correctly for some special cases", {
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy)
   fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy)
-  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt"))
+  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt1"))
   fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy)
   expect_equal(rownames(fixef(fit3)), c("Intercept"))
 
