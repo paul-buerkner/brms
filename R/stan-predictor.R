@@ -129,6 +129,9 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
       out[[dp]] <- do_call(stan_predictor, c(dp_args, args))
+      str_add_list(out[[dp]]) <- stan_thresholds(
+        dp_terms, prior = prior, sparse = sparse
+      )  
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       dp_def <- stan_dpar_defs(dp, resp, family = x$family, fixed = TRUE)
       out[[dp]] <- list(data = dp_def)
@@ -153,12 +156,10 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
       }
     }
   }
-  out <- lc(out,
-    stan_autocor(x, prior = prior),
-    stan_mixture(x, prior = prior),
-    stan_dpar_transform(x)
-  )
   out <- collapse_lists(ls = out)
+  str_add_list(out) <- stan_autocor(x, prior = prior)
+  str_add_list(out) <- stan_mixture(x, prior = prior)
+  str_add_list(out) <- stan_dpar_transform(x)
   out$model_loop <- paste0(out$modelC2, out$modelC3, out$modelC4)
   if (isTRUE(nzchar(out$model_loop))) {
     out$model_loop <- paste0(
@@ -350,7 +351,8 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
   }
   
   if (center_X) {
-    # centering of the fixed effects design matrix improves convergence
+    # centering the design matrix improves convergence
+    sub_X_means <- ""
     if (length(fixef)) {
       str_add(out$tdataD) <- glue(
         "  int Kc{p} = K{p} - 1;\n",
@@ -365,51 +367,17 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
         "    Xc{p}[, i - 1] = X{p}[, i] - means_X{p}[i - 1];\n",
         "  }}\n"
       )
-      # ordinal families either use thres - mu or mu - thres
-      # both implies adding <mean_X, b> to the temporary intercept
-      sign <- str_if(is_ordinal(family), " + ", " - ")
-      sub_X_means <- glue("{sign}dot_product(means_X{p}, b{p})")
-    } else {
-      sub_X_means <- ""
+      sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
     }
-    if (is_ordinal(family)) {
-      # intercepts in ordinal models require special treatment
-      type <- str_if(family$family == "cumulative", "ordered", "vector")
-      intercept <- glue(
-        "  {type}[ncat{resp}-1] temp{p}_Intercept;",
-        "  // temporary thresholds\n"
-      )
-      if (family$threshold == "equidistant") {
-        bound <- subset2(prior, class = "delta", ls = px)$bound
-        str_add(out$par) <- glue(
-          "  real temp{p}_Intercept1;  // first threshold\n",
-          "  real{bound} delta{p};  // distance between thresholds\n"
+    if (!is_ordinal(family)) {
+      # intercepts of ordinal models are handled in 'stan_thresholds'
+      if (identical(dpar_class(px$dpar), order_mixture)) {
+        # identify mixtures via ordering of the intercepts
+        dp_id <- dpar_id(px$dpar)
+        str_add(out$tparD) <- glue(
+          "  // identify mixtures via ordering of the intercepts\n",                   
+          "  real temp{p}_Intercept = ordered_Intercept{resp}[{dp_id}];\n"
         )
-        str_add(out$tparD) <- intercept
-        str_add(out$tparC1) <- glue(
-          "  // compute equidistant thresholds\n",
-          "  for (k in 1:(ncat{resp} - 1)) {{\n",
-          "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
-          " + (k - 1.0) * delta{p};\n",
-          "  }}\n"
-        )
-        str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
-      } else {
-        str_add(out$par) <- intercept
-      }
-      str_add(out$genD) <- glue(
-        "  // compute actual thresholds\n",
-        "  vector[ncat{resp} - 1] b{p}_Intercept",  
-        " = temp{p}_Intercept{sub_X_means};\n" 
-      )
-    } else {
-       if (identical(dpar_class(px$dpar), order_mixture)) {
-         # identify mixtures via ordering of the intercepts
-         dp_id <- dpar_id(px$dpar)
-         str_add(out$tparD) <- glue(
-           "  // identify mixtures via ordering of the intercepts\n",                   
-           "  real temp{p}_Intercept = ordered_Intercept{resp}[{dp_id}];\n"
-         )
       } else {
         str_add(out$par) <- glue(
           "  real temp{p}_Intercept;  // temporary intercept\n"
@@ -421,17 +389,8 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
         "  real b{p}_Intercept = temp{p}_Intercept{sub_X_means};\n"
       )
     }
-    # for equidistant thresholds only temp_Intercept1 is a parameter
-    prefix <- glue("temp{p}_")
-    Icoefs <- suffix <- ""
-    if (is_ordinal(family)) {
-      Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
-      Icoefs <- Icoefs[nzchar(Icoefs)]
-      if (family$threshold == "equidistant") suffix <- "1"
-    }
     str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", coef = Icoefs, 
-      px = px, prefix = prefix, suffix = suffix
+      prior, class = "Intercept", px = px, prefix = glue("temp{p}_")
     )
   } else {
     if (identical(dpar_class(px$dpar), order_mixture)) {
@@ -443,6 +402,65 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
     }
   }
   str_add(out$eta) <- stan_eta_fe(fixef, center_X, sparse, px = px)
+  out
+}
+
+stan_thresholds <- function(bterms, prior, sparse = FALSE) {
+  # intercepts in ordinal models require special treatment
+  # and must be present even when using non-linear predictors
+  # thus the relevant Stan code cannot be part of 'stan_fe'
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  out <- list()
+  family <- bterms$family
+  if (!is_ordinal(family)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
+  sub_X_means <- ""
+  if (is.btl(bterms) && length(all_terms(bterms$fe)) && !sparse) {
+    # centering of the design matrix improves convergence
+    # ordinal families either use thres - mu or mu - thres
+    # both implies adding <mean_X, b> to the temporary intercept
+    sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
+  }
+  type <- str_if(family$family == "cumulative", "ordered", "vector")
+  intercept <- glue(
+    "  {type}[ncat{resp}-1] temp{p}_Intercept;",
+    "  // temporary thresholds\n"
+  )
+  if (family$threshold == "equidistant") {
+    bound <- subset2(prior, class = "delta", ls = px)$bound
+    str_add(out$par) <- glue(
+      "  real temp{p}_Intercept1;  // first threshold\n",
+      "  real{bound} delta{p};  // distance between thresholds\n"
+    )
+    str_add(out$tparD) <- intercept
+    str_add(out$tparC1) <- glue(
+      "  // compute equidistant thresholds\n",
+      "  for (k in 1:(ncat{resp} - 1)) {{\n",
+      "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
+      " + (k - 1.0) * delta{p};\n",
+      "  }}\n"
+    )
+    str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
+  } else {
+    str_add(out$par) <- intercept
+  }
+  str_add(out$genD) <- glue(
+    "  // compute actual thresholds\n",
+    "  vector[ncat{resp} - 1] b{p}_Intercept",  
+    " = temp{p}_Intercept{sub_X_means};\n" 
+  )
+  prefix <- glue("temp{p}_")
+  suffix <- str_if(family$threshold == "equidistant", "1")
+  Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
+  Icoefs <- Icoefs[nzchar(Icoefs)]
+  str_add(out$prior) <- stan_prior(
+    prior, class = "Intercept", coef = Icoefs, 
+    px = px, prefix = prefix, suffix = suffix
+  )
   out
 }
 

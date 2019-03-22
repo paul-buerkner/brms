@@ -391,6 +391,13 @@ collapse_comma <- function(...) {
   if (start) paste0(value, x) else paste0(x, value)
 }
 
+'str_add_list<-' <- function(x, start = FALSE, value) {
+  # add list of characters to an existing list
+  stopifnot(is.list(x), is.list(value))
+  out <- if (start) list(value, x) else list(x, value)
+  collapse_lists(ls = out)
+}
+
 str_if <- function(cond, yes, no = "") {
   # type-stable if clause for strings with default else output
   cond <- as_one_logical(cond)

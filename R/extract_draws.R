@@ -107,6 +107,11 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
         x$dpars[[dp]], samples = samples, 
         sdata = sdata, data = data, ...
       )
+      draws$dpars[[dp]]$thresholds <- 
+        extract_draws_thresholds(
+          x$dpars[[dp]], samples = samples, 
+          sdata = sdata, data = data, ...
+        )
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
     } else if (any(grepl(dp_regex, colnames(samples)))) {
@@ -349,11 +354,8 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   p <- usc(combine_prefix(bterms))
   resp <- usc(bterms$resp)
-  int_regex <- paste0("^b", p, "_Intercept\\[")
-  is_ordinal <- any(grepl(int_regex, colnames(samples))) 
-  if (is_ordinal) {
+  if (is_ordinal(bterms$family)) {
     draws$ncat <- sdata[[paste0("ncat", resp)]]
-    draws$Intercept <- get_samples(samples, int_regex)
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
@@ -609,6 +611,19 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
 extract_draws_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
   sdata[[paste0("offset", p)]]
+}
+
+extract_draws_thresholds <- function(bterms, samples, sdata, ...) {
+  # extract draws of ordinal thresholds
+  draws <- list()
+  if (is_ordinal(bterms$family)) {
+    p <- usc(combine_prefix(bterms))
+    resp <- usc(bterms$resp)
+    int_regex <- paste0("^b", p, "_Intercept\\[")
+    draws$ncat <- sdata[[paste0("ncat", resp)]]
+    draws$thresholds <- get_samples(samples, int_regex)
+  }
+  draws
 }
 
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 

@@ -632,6 +632,16 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, 
     "target += acat_probit_cs_lpmf(Y[n] | mu[n], mucs[n], temp_Intercept, disc);"
   )
+  
+  # non-linear ordinal models
+  scode <- make_stancode(
+    bf(y ~ eta, eta ~ x1, nl = TRUE), dat, family = cumulative(),
+    prior = prior(normal(0, 2), nlpar = eta)
+  )
+  expect_match(socde, "ordered[ncat-1] temp_Intercept);")
+  expect_match(scode, 
+    "target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);"             
+  )
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {

@@ -444,6 +444,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   if (is.list(x)) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
+    out <- predictor_thresholds(out, draws = x, i = i)
     if (is.null(ilink)) {
       ilink <- apply_dpar_ilink(dpar, family = draws$family)
     }

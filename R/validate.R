@@ -123,9 +123,6 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
-      if (is_ordinal(family)) {
-        stop2("Non-linear formulas are not yet allowed in ordinal models.")
-      }
       y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
     } else {
       y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]])

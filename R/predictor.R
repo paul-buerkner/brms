@@ -28,7 +28,7 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
     predictor_offset(draws, i, nobs)
   # some autocorrelation structures depend on eta
   eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
-  # intentionally last
+  # intentionally last as it may return 3D arrays
   eta <- predictor_cs(eta, draws, i)
   unname(eta)
 }
@@ -339,6 +339,25 @@ predictor_gp <- function(draws, i) {
   (spd * zgp) %*% t(x)
 }
 
+predictor_thresholds <- function(eta, draws, i) {
+  # add ordinal thresholds to eta
+  # returns 3D array for ordinal models
+  if (!is_ordinal(draws$family)) {
+    return(0)
+  }
+  thres <- draws$thresholds
+  ncat <- thres[["ncat"]]
+  eta <- predictor_expand(eta, ncat)
+  for (k in seq_len(ncat - 1)) {
+    if (draws$family$family %in% c("cumulative", "sratio")) {
+      eta[, , k] <- thres[["thresholds"]][, k] - eta[, , k]
+    } else {
+      eta[, , k] <- eta[, , k] - thres[["thresholds"]][, k]
+    }
+  }
+  eta
+}
+
 predictor_cs <- function(eta, draws, i) {
   # compute eta for category specific effects
   # returns 3-dimensional eta if cs terms are present
@@ -367,16 +386,8 @@ predictor_cs <- function(eta, draws, i) {
         eta, X = p(cs[["Xcs"]], i), 
         b = cs[["bcs"]], ncat = ncat, r = rcs
       )
-      rm(rcs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), ncat - 1))
-    } 
-    for (k in seq_len(ncat - 1)) {
-      if (draws$family$family %in% c("cumulative", "sratio")) {
-        eta[, , k] <- cs[["Intercept"]][, k] - eta[, , k]
-      } else {
-        eta[, , k] <- eta[, , k] - cs[["Intercept"]][, k]
-      }
+      eta <- predictor_expand(eta, ncat)
     }
   }
   eta
@@ -394,7 +405,7 @@ predictor_cs <- function(eta, draws, i) {
   #   linear predictor including category specific effects as a 3D array
   stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
   ncat <- max(ncat)
-  eta <- array(eta, dim = c(dim(eta), ncat - 1))
+  eta <- predictor_expand(eta, ncat)
   if (!is.null(X)) {
     I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
     X <- t(X)
@@ -406,6 +417,14 @@ predictor_cs <- function(eta, draws, i) {
     if (!is.null(r[[k]])) {
       eta[, , k] <- eta[, , k] + r[[k]]
     }
+  }
+  eta
+}
+
+predictor_expand <- function(eta, ncat) {
+  # expand the predictor matrix for use in ordinal models
+  if (length(dim(eta)) == 2L) {
+    eta <- array(eta, dim = c(dim(eta), ncat - 1))    
   }
   eta
 }

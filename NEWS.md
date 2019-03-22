@@ -1,3 +1,10 @@
+# brms 2.8.0++
+
+### New Features
+
+* Specify non-linear ordinal models. (#623)
+
+
 # brms 2.8.0
 
 ### New Features
