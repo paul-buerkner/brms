@@ -347,7 +347,7 @@ predictor_thres <- function(eta, draws, i) {
   # add ordinal thresholds to eta
   # returns 3D array for ordinal models
   if (!is_ordinal(draws$family)) {
-    return(0)
+    return(eta)
   }
   ncat <- draws$thres[["ncat"]]
   eta <- predictor_expand(eta, ncat)
@@ -366,34 +366,29 @@ predictor_cs <- function(eta, draws, i) {
   # returns 3-dimensional eta if cs terms are present
   cs <- draws[["cs"]]
   re <- draws[["re"]]
+  if (!length(cs) && !length(re[["rcs"]])) {
+    return(eta)
+  }
   ncat <- cs[["ncat"]]
-  if (is_ordinal(draws$family)) {
-    if (!is.null(cs) || !is.null(re[["rcs"]])) {
-      if (!is.null(re[["rcs"]])) {
-        groups <- names(re[["rcs"]])
-        rcs <- vector("list", ncat - 1)
-        for (k in seq_along(rcs)) {
-          rcs[[k]] <- named_list(groups)
-          for (g in groups) {
-            rcs[[k]][[g]] <- .predictor_re(
-              Z = p(re[["Zcs"]][[g]], i),
-              r = re[["rcs"]][[g]][[k]]
-            )
-          }
-          rcs[[k]] <- Reduce("+", rcs[[k]])
-        }
-      } else {
-        rcs <- NULL
+  rcs <- NULL
+  if (!is.null(re[["rcs"]])) {
+    groups <- names(re[["rcs"]])
+    rcs <- vector("list", ncat - 1)
+    for (k in seq_along(rcs)) {
+      rcs[[k]] <- named_list(groups)
+      for (g in groups) {
+        rcs[[k]][[g]] <- .predictor_re(
+          Z = p(re[["Zcs"]][[g]], i),
+          r = re[["rcs"]][[g]][[k]]
+        )
       }
-      eta <- .predictor_cs(
-        eta, X = p(cs[["Xcs"]], i), 
-        b = cs[["bcs"]], ncat = ncat, r = rcs
-      )
-    } else {
-      eta <- predictor_expand(eta, ncat)
+      rcs[[k]] <- Reduce("+", rcs[[k]])
     }
   }
-  eta
+  .predictor_cs(
+    eta, X = p(cs[["Xcs"]], i), 
+    b = cs[["bcs"]], ncat = ncat, r = rcs
+  )
 }
 
 .predictor_cs <- function(eta, X, b, ncat, r = NULL) {
