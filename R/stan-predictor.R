@@ -413,6 +413,9 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   if (!is_ordinal(family)) {
     return(out)
   }
+  if (no_center(bterms$fe)) {
+    stop2("Cannot turn off centering in ordinal models.")
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
