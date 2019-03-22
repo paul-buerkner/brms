@@ -107,11 +107,6 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
         x$dpars[[dp]], samples = samples, 
         sdata = sdata, data = data, ...
       )
-      draws$dpars[[dp]]$thresholds <- 
-        extract_draws_thresholds(
-          x$dpars[[dp]], samples = samples, 
-          sdata = sdata, data = data, ...
-        )
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
     } else if (any(grepl(dp_regex, colnames(samples)))) {
@@ -170,6 +165,8 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
       C[, cov], dim = c(nrow(samples), nrow(C))
     )
   }
+  # ordinal thresholds need to be present also in non-linear models
+  draws$thres <- extract_draws_thres(x, samples, sdata, ...)
   draws
 }
 
@@ -193,6 +190,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
   draws$re <- extract_draws_re(x, samples, sdata, ...)
+  draws$thres <- extract_draws_thres(x, samples, sdata, ...)
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
   }
@@ -613,7 +611,7 @@ extract_draws_offset <- function(bterms, sdata, ...) {
   sdata[[paste0("offset", p)]]
 }
 
-extract_draws_thresholds <- function(bterms, samples, sdata, ...) {
+extract_draws_thres <- function(bterms, samples, sdata, ...) {
   # extract draws of ordinal thresholds
   draws <- list()
   if (is_ordinal(bterms$family)) {

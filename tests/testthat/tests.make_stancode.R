@@ -638,7 +638,7 @@ test_that("Stan code of ordinal models is correct", {
     bf(y ~ eta, eta ~ x1, nl = TRUE), dat, family = cumulative(),
     prior = prior(normal(0, 2), nlpar = eta)
   )
-  expect_match(socde, "ordered[ncat-1] temp_Intercept);")
+  expect_match(scode, "ordered[ncat-1] temp_Intercept);")
   expect_match(scode, 
     "target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);"             
   )

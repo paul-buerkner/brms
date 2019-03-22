@@ -4,7 +4,7 @@ stan_predictor <- function(x, ...) {
 }
 
 #' @export
-stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
+stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   ranef: output of tidy_ranef()
@@ -12,14 +12,15 @@ stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   #   ...: arguements passed to the underlying effect-specific functions
   stopifnot(length(ilink) == 2L)
   out <- collapse_lists(
-    text_fe <- stan_fe(x, data, prior, ...),
-    text_sp <- stan_sp(x, data, prior, ranef = ranef, ...),
-    text_cs <- stan_cs(x, data, prior, ranef = ranef, ...),
-    text_sm <- stan_sm(x, data, prior, ...),
-    text_gp <- stan_gp(x, data, prior, ...),
+    text_fe <- stan_fe(x, ...),
+    text_thres <- stan_thres(x, ...),
+    text_sp <- stan_sp(x, ranef = ranef, ...),
+    text_cs <- stan_cs(x, ranef = ranef, ...),
+    text_sm <- stan_sm(x, ...),
+    text_gp <- stan_gp(x, ...),
     text_ac <- stan_ac(x, ...),
     text_offset <- stan_offset(x, ...),
-    stan_special_prior_global(x, data, prior, ...)
+    stan_special_prior_global(x, ...)
   )
   
   # initialize and compute eta
@@ -49,13 +50,11 @@ stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
+stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
-  #   data: data.frame supplied by the user
   #   ilink: character vector of length 2 containing
   #     Stan code for the link function
-  #   ...: passed to stan_predictor.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -101,6 +100,8 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
       "  {par} = {ilink[1]}{trimws(nlmodel)}{ilink[2]};\n"
     )
   }
+  # ordinal thresholds need to be present also in non-linear models
+  str_add_list(out) <- stan_thres(x, ...)
   out
 }
 
@@ -129,9 +130,6 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
       out[[dp]] <- do_call(stan_predictor, c(dp_args, args))
-      str_add_list(out[[dp]]) <- stan_thresholds(
-        dp_terms, prior = prior, sparse = sparse
-      )  
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       dp_def <- stan_dpar_defs(dp, resp, family = x$family, fixed = TRUE)
       out[[dp]] <- list(data = dp_def)
@@ -370,7 +368,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
       sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
     }
     if (!is_ordinal(family)) {
-      # intercepts of ordinal models are handled in 'stan_thresholds'
+      # intercepts of ordinal models are handled in 'stan_thres'
       if (identical(dpar_class(px$dpar), order_mixture)) {
         # identify mixtures via ordering of the intercepts
         dp_id <- dpar_id(px$dpar)
@@ -405,7 +403,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
   out
 }
 
-stan_thresholds <- function(bterms, prior, sparse = FALSE) {
+stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   # intercepts in ordinal models require special treatment
   # and must be present even when using non-linear predictors
   # thus the relevant Stan code cannot be part of 'stan_fe'

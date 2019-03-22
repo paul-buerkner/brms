@@ -29,6 +29,7 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
   # some autocorrelation structures depend on eta
   eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
   # intentionally last as it may return 3D arrays
+  eta <- predictor_thres(eta, draws, i)
   eta <- predictor_cs(eta, draws, i)
   unname(eta)
 }
@@ -57,24 +58,27 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
     args[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
   }
   # evaluate non-linear predictor
-  out <- try(eval(draws$nlform, args), silent = TRUE)
-  if (is(out, "try-error")) {
-    if (grepl("could not find function", out)) {
-      out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
+  eta <- try(eval(draws$nlform, args), silent = TRUE)
+  if (is(eta, "try-error")) {
+    if (grepl("could not find function", eta)) {
+      eta <- rename(eta, "Error in eval(expr, envir, enclos) : ", "")
       message(
-        out, " Most likely this is because you used a Stan ",
+        eta, " Most likely this is because you used a Stan ",
         "function in the non-linear model formula that ",
         "is not defined in R. If this is a user-defined function, ",
         "please run 'expose_functions(., vectorize = TRUE)' on ",
         "your fitted model and try again."
       )
     } else {
-      out <- rename(out, "^Error :", "", fixed = FALSE)
-      stop2(out)
+      eta <- rename(eta, "^Error :", "", fixed = FALSE)
+      stop2(eta)
     }
   }
-  dim(out) <- dim(rmNULL(args)[[1]])
-  unname(out)
+  dim(eta) <- dim(rmNULL(args)[[1]])
+  # ordinal thresholds need to be present also in non-linear models
+  # intentionally last as it may return 3D arrays
+  eta <- predictor_thres(eta, draws, i)
+  unname(eta)
 }
 
 predictor_fe <- function(draws, i) {
@@ -252,37 +256,37 @@ predictor_gp <- function(draws, i) {
   if (is.null(gp[["slambda"]])) {
     # predictions for exact GPs
     nsamples <- length(gp[["sdgp"]])
-    out <- as.list(rep(NA, nsamples))
+    eta <- as.list(rep(NA, nsamples))
     if (!is.null(gp[["x_new"]])) {
-      for (i in seq_along(out)) {
-        out[[i]] <- with(gp, .predictor_gp_new(
+      for (i in seq_along(eta)) {
+        eta[[i]] <- with(gp, .predictor_gp_new(
           x_new = x_new, yL = yL[i, ], x = x, 
           sdgp = sdgp[i], lscale = lscale[i, ], nug = nug
         ))
       }
     } else {
-      for (i in seq_along(out)) {
-        out[[i]] <- with(gp, .predictor_gp_old(
+      for (i in seq_along(eta)) {
+        eta[[i]] <- with(gp, .predictor_gp_old(
           x = x, sdgp = sdgp[i], lscale = lscale[i, ], 
           zgp = zgp[i, ], nug = nug
         ))
       }
     }
-    out <- do_call(rbind, out) 
+    eta <- do_call(rbind, eta) 
   } else {
     # predictions for approximate GPs
-    out <- with(gp, .predictor_gpa(
+    eta <- with(gp, .predictor_gpa(
       x = x, sdgp = sdgp, lscale = lscale, 
       zgp = zgp, slambda = slambda
     ))
   }
   if (!is.null(gp[["Cgp"]])) {
-    out <- out * as_draws_matrix(gp[["Cgp"]], dim = dim(out))
+    eta <- eta * as_draws_matrix(gp[["Cgp"]], dim = dim(eta))
   }
   if (!is.null(gp[["Jgp"]])) {
-    out <- out[, gp[["Jgp"]], drop = FALSE]
+    eta <- eta[, gp[["Jgp"]], drop = FALSE]
   }
-  out
+  eta
 }
 
 
@@ -339,20 +343,19 @@ predictor_gp <- function(draws, i) {
   (spd * zgp) %*% t(x)
 }
 
-predictor_thresholds <- function(eta, draws, i) {
+predictor_thres <- function(eta, draws, i) {
   # add ordinal thresholds to eta
   # returns 3D array for ordinal models
   if (!is_ordinal(draws$family)) {
     return(0)
   }
-  thres <- draws$thresholds
-  ncat <- thres[["ncat"]]
+  ncat <- draws$thres[["ncat"]]
   eta <- predictor_expand(eta, ncat)
   for (k in seq_len(ncat - 1)) {
     if (draws$family$family %in% c("cumulative", "sratio")) {
-      eta[, , k] <- thres[["thresholds"]][, k] - eta[, , k]
+      eta[, , k] <- draws$thres[["thresholds"]][, k] - eta[, , k]
     } else {
-      eta[, , k] <- eta[, , k] - thres[["thresholds"]][, k]
+      eta[, , k] <- eta[, , k] - draws$thres[["thresholds"]][, k]
     }
   }
   eta

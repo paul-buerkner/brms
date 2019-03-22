@@ -10,8 +10,6 @@ test_that("brm produces expected errors", {
                "response variable is missing")
   expect_error(brm(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
-  expect_error(brm(bf(g ~ a, a ~ 1, nl = TRUE), dat, family = acat()),
-               "Non-linear formulas are not yet allowed in ordinal models")
   expect_error(brm(bf(g ~ 0 + a), dat, family = cumulative()),
                "Cannot remove the intercept in an ordinal model")
   expect_error(brm(bf(y | se(sei) ~ x, sigma ~ x), dat),
