@@ -43,6 +43,7 @@ link <- function(x, link) {
     "cauchit" = qcauchy(x),
     "cloglog" = cloglog(x), 
     "probit_approx" = qnorm(x),
+    "softplus" = log_expm1(x),
     stop2("Link '", link, "' not supported.")
   )
 }
@@ -66,6 +67,7 @@ ilink <- function(x, link) {
     "cauchit" = pcauchy(x),
     "cloglog" = inv_cloglog(x), 
     "probit_approx" = pnorm(x),
+    "softplus" = log1p_exp(x),
     stop2("Link '", link, "' not supported.")
   )
 }

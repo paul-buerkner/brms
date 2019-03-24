@@ -154,6 +154,14 @@ log_mean_exp <- function(x) {
   max_x + log(sum(exp(x - max_x))) - log(length(x))
 }
 
+expm1 <- function(x) {
+  exp(x) - 1
+}
+
+log_expm1 <- function(x) {
+  log(expm1(x))
+}
+
 log_inv_logit <- function(x) {
   log(inv_logit(x))
 }

@@ -330,6 +330,11 @@ test_that("self-defined functions appear in the Stan code", {
                          family = bernoulli("cauchit"))
   expect_match2(scode, "real inv_cauchit(real y)")
   
+  # softplus link
+  scode <- make_stancode(rating ~ treat, data = inhaler,
+                         family = brmsfamily("poisson", "softplus"))
+  expect_match2(scode, "real log_expm1(real x)")
+  
   # tan_half link
   expect_match2(make_stancode(rating ~ treat, data = inhaler,
                               family = von_mises("tan_half")),

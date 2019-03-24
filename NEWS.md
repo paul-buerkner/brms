@@ -3,6 +3,7 @@
 ### New Features
 
 * Specify non-linear ordinal models. (#623)
+* Use the `softplus` link function in various families. (#622)
 
 
 # brms 2.8.0

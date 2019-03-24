@@ -478,6 +478,8 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
     str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
+  } else if (any(links == "softplus")) {
+    str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
   }
   hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
   if (any(nzchar(hs_dfs))) {
@@ -820,7 +822,8 @@ stan_link <- function(link) {
     cloglog = "cloglog", 
     cauchit = "cauchit",
     tan_half = "tan_half",
-    log1p = "log1p"
+    log1p = "log1p",
+    softplus = "log_expm1"
   )
 }
 
@@ -841,7 +844,8 @@ stan_ilink <- function(link) {
     cloglog = "inv_cloglog",
     cauchit = "inv_cauchit",
     tan_half = "inv_tan_half",
-    log1p = "expm1"
+    log1p = "expm1",
+    softplus = "log1p_exp"
   )
 }
 
