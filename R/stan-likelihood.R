@@ -586,14 +586,14 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   # helper function for ordinal families
-  has_cs <- has_cs(bterms)
   prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$ord_intercept <- paste0("temp", prefix, "_Intercept")
-  p$cs <- str_if(has_cs, paste0("mucs", prefix, "[n]"))
-  lpdf <- bterms$family$family
-  lpdf <- paste0(lpdf, "_", bterms$family$link, if (has_cs) "_cs")
-  sdist(lpdf, p$mu, p$cs, p$ord_intercept, p$disc)
+  p$thres <- paste0("temp", prefix, "_Intercept")
+  if (has_cs(bterms)) {
+    str_add(p$thres) <- paste0(" - mucs", prefix, "[n]'")
+  }
+  lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
+  sdist(lpdf, p$mu, p$thres, p$disc)
 }
 
 stan_llh_hurdle_poisson <- function(bterms, resp = "", mix = "") {

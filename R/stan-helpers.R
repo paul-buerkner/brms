@@ -507,9 +507,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
     for (i in seq_along(ord_fams)) {
-      for (cs in 0:1) {
-        str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i], cs)
-      }
+      str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
     }
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
@@ -559,39 +557,30 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   out
 }
 
-stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
+stan_ordinal_lpmf <- function(family, link) {
   # ordinal log-probability densitiy functions in Stan language
-  # Args:
-  #   cs: Logical; add category specific effects?
   stopifnot(is.character(family), is.character(link))
-  cs <- as_one_logical(cs)
   ilink <- stan_ilink(link)
   th <- function(k) {
     # helper function generating stan code inside ilink(.)
-    sign <- str_if(family %in% c("cumulative", "sratio"), " - ", " + ")
-    ptl <- str_if(cs, glue("{sign}mucs[{k}]")) 
-    if (sign == " - ") {
-      out <- glue("thres[{k}]{ptl} - mu")
-    } else {
-      out <- glue("mu{ptl} - thres[{k}]")
+    if (family %in% c("cumulative", "sratio")) {
+      out <- glue("thres[{k}] - mu")
+    } else if (family %in% c("cratio", "acat")) {
+      out <- glue("mu - thres[{k}]")
     }
     glue("disc * ({out})")
   }
-  mucs <- str_if(cs, " row_vector mucs,")
   out <- glue(
     "  /* {family}-{link} log-PDF for a single response\n",
-    str_if(cs, "   * including category specific effects\n"),
     "   * Args:\n",
     "   *   y: response category\n",
     "   *   mu: linear predictor\n",
-    str_if(cs, "   *   mucs: predictor for category specific effects\n"),
     "   *   thres: ordinal thresholds\n",
     "   *   disc: discrimination parameter\n",
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}", str_if(cs, "_cs"), 
-    "_lpmf(int y, real mu,{mucs} vector thres, real disc) {{\n"
+    "   real {family}_{link}_lpmf(int y, real mu, vector thres, real disc) {{\n"
   )
   # define the function body
   if (family == "cumulative") {

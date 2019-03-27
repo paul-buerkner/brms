@@ -620,22 +620,20 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "matrix[Kcs, ncat - 1] bcs;")
   expect_match2(scode, "mucs = Xcs * bcs;")
   expect_match2(scode, 
-    "target += sratio_logit_cs_lpmf(Y[n] | mu[n], mucs[n], temp_Intercept, disc);"
+    "target += sratio_logit_lpmf(Y[n] | mu[n], temp_Intercept - mucs[n]', disc);"
   )
   
   scode <- make_stancode(y ~ x1 + cse(x2) + (cse(1)|g), dat, family = acat())
   expect_match2(scode, "real acat_logit_lpmf(int y")
-  expect_match2(scode, "p[k + 1] = p[k] + disc * (mu + mucs[k] - thres[k]);")
   expect_match2(scode, "mucs[n, 1] = mucs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
   
   scode <- make_stancode(y ~ x1 + (cse(x2)||g), dat, family = acat("probit"))
-  expect_match2(scode, "q[k] = Phi(disc * (mu + mucs[k] - thres[k]));")
   expect_match2(scode, 
     paste("mucs[n, 3] = mucs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
           "+ r_1_6[J_1[n]] * Z_1_6[n];"))
   expect_match2(scode, 
-    "target += acat_probit_cs_lpmf(Y[n] | mu[n], mucs[n], temp_Intercept, disc);"
+    "target += acat_probit_lpmf(Y[n] | mu[n], temp_Intercept - mucs[n]', disc);"
   )
   
   # non-linear ordinal models
