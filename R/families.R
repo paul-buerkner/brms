@@ -1422,10 +1422,12 @@ has_ordered_thres <- function(family) {
 }
 
 has_thres_minus_eta <- function(family) {
+  # compute threshold - eta in the likelihood
   "thres_minus_eta" %in% family_info(family, "specials")
 }
 
 has_eta_minus_thres <- function(family) {
+  # compute eta - threshold in the likelihood
   "eta_minus_thres" %in% family_info(family, "specials")
 }
 

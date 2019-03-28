@@ -350,12 +350,15 @@ predictor_thres <- function(eta, draws, i) {
     return(eta)
   }
   ncat <- draws$thres[["ncat"]]
+  thres <- draws$thres[["thresholds"]]
   eta <- predictor_expand(eta, ncat)
   for (k in seq_len(ncat - 1)) {
     if (has_thres_minus_eta(draws$family)) {
-      eta[, , k] <- draws$thres[["thresholds"]][, k] - eta[, , k]
+      eta[, , k] <- thres[, k] - eta[, , k]
     } else if (has_eta_minus_thres(draws$family)) {
-      eta[, , k] <- eta[, , k] - draws$thres[["thresholds"]][, k]
+      eta[, , k] <- eta[, , k] - thres[, k]
+    } else {
+      eta[, , k] <- eta[, , k] + thres[, k]
     }
   }
   eta

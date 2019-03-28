@@ -268,6 +268,8 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
           coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm] 
         } else if (has_eta_minus_thres(family)) {
           coef[[g]][, , nm] <- coef[[g]][, , nm] - fixef[, nm]
+        } else {
+          coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
         }
       } else {
         coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 

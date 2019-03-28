@@ -649,62 +649,63 @@ stan_ordinal_lpmf <- function(family, link) {
 
 stan_mixture <- function(bterms, prior) {
   # Stan code specific for mixture families
+  out <- list()
+  if (!is.mixfamily(bterms$family)) {
+    return(out)
+  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  out <- list()
-  if (is.mixfamily(bterms$family)) {
-    nmix <- length(bterms$family$mix)
-    theta_pred <- grepl("^theta", names(bterms$dpars))
-    theta_pred <- bterms$dpars[theta_pred]
-    theta_fix <- grepl("^theta", names(bterms$fdpars))
-    theta_fix <- bterms$fdpars[theta_fix]
-    def_thetas <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
+  nmix <- length(bterms$family$mix)
+  theta_pred <- grepl("^theta", names(bterms$dpars))
+  theta_pred <- bterms$dpars[theta_pred]
+  theta_fix <- grepl("^theta", names(bterms$fdpars))
+  theta_fix <- bterms$fdpars[theta_fix]
+  def_thetas <- cglue(
+    "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
+  )
+  if (length(theta_pred)) {
+    if (length(theta_pred) != nmix - 1) {
+      stop2("Can only predict all but one mixing proportion.")
+    }
+    missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
+    str_add(out$modelD) <- glue(
+      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
+      "  real log_sum_exp_theta;\n"      
     )
-    if (length(theta_pred)) {
-      if (length(theta_pred) != nmix - 1) {
-        stop2("Can only predict all but one mixing proportion.")
-      }
-      missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
-      str_add(out$modelD) <- glue(
-        "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
-        "  real log_sum_exp_theta;\n"      
-      )
-      sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
-      str_add(out$modelC3) <- glue(
-        "    log_sum_exp_theta = log({sum_exp_theta});\n"
-      )
-      str_add(out$modelC3) <- cglue(
-        "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
-      )
-    } else if (length(theta_fix)) {
-      if (length(theta_fix) != nmix) {
-        stop2("Can only fix no or all mixing proportions.")
-      }
-      str_add(out$data) <- "  // mixing proportions\n"
-      str_add(out$data) <- cglue(
-        "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
-      )
-    } else {
-      str_add(out$data) <- glue(
-        "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
-      )
-      str_add(out$par) <- glue(
-        "  simplex[{nmix}] theta{p};  // mixing proportions\n"
-      )
-      str_add(out$prior) <- glue(
-        "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
-      )
-      str_add(out$tparD) <- "  // mixing proportions\n"
-      str_add(out$tparD) <- cglue(
-        "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
-      )
+    sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
+    str_add(out$modelC3) <- glue(
+      "    log_sum_exp_theta = log({sum_exp_theta});\n"
+    )
+    str_add(out$modelC3) <- cglue(
+      "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
+    )
+  } else if (length(theta_fix)) {
+    if (length(theta_fix) != nmix) {
+      stop2("Can only fix no or all mixing proportions.")
     }
-    if (bterms$family$order %in% "mu") {
-      str_add(out$par) <- glue( 
-        "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
-      )
-    }
+    str_add(out$data) <- "  // mixing proportions\n"
+    str_add(out$data) <- cglue(
+      "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
+    )
+  } else {
+    str_add(out$data) <- glue(
+      "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
+    )
+    str_add(out$par) <- glue(
+      "  simplex[{nmix}] theta{p};  // mixing proportions\n"
+    )
+    str_add(out$prior) <- glue(
+      "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
+    )
+    str_add(out$tparD) <- "  // mixing proportions\n"
+    str_add(out$tparD) <- cglue(
+      "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
+    )
+  }
+  if (bterms$family$order %in% "mu") {
+    str_add(out$par) <- glue( 
+      "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
+    )
   }
   out
 }
