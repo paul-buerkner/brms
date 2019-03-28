@@ -293,8 +293,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    # 'ordered' implies ordered thresholds
-    specials = c("ordinal", "ordered")
+    specials = c("ordinal", "ordered_thres", "thres_minus_eta")
   )
 }
 
@@ -307,7 +306,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "thres_minus_eta")
   )
 }
 
@@ -320,7 +319,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
 
@@ -333,7 +332,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
 

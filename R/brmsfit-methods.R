@@ -264,11 +264,9 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
         # correct the sign of thresholds in ordinal models
         resp <- if (is_mv(object)) get_matches("^[^_]+", nm)
         family <- family(object, resp = resp)$family
-        if (family %in% c("cumulative", "sratio")) {
-          # threshold - mu
+        if (has_thres_minus_eta(family)) {
           coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm] 
-        } else {
-          # mu - threshold
+        } else if (has_eta_minus_thres(family)) {
           coef[[g]][, , nm] <- coef[[g]][, , nm] - fixef[, nm]
         }
       } else {

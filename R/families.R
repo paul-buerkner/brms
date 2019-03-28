@@ -1413,14 +1413,20 @@ has_cat <- function(family) {
 
 has_equidistant_thres <- function(family) {
   # indicate if family has equidistant thresholds
-  is_ordinal(family) && 
-    isTRUE(family_info(family, "threshold") == "equidistant")
+  isTRUE(family_info(family, "threshold") == "equidistant")
 }
 
 has_ordered_thres <- function(family) {
-  # indicate if family has equidistant thresholds
-  is_ordinal(family) && 
-    "ordered" %in% family_info(family, "specials")
+  # indicate if family has ordered thresholds
+  "ordered_thres" %in% family_info(family, "specials")
+}
+
+has_thres_minus_eta <- function(family) {
+  "thres_minus_eta" %in% family_info(family, "specials")
+}
+
+has_eta_minus_thres <- function(family) {
+  "eta_minus_thres" %in% family_info(family, "specials")
 }
 
 has_ndt <- function(family) {
