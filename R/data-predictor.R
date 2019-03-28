@@ -105,7 +105,7 @@ data_fe <- function(bterms, data, not4stan = FALSE) {
   is_ordinal <- is_ordinal(bterms$family)
   is_bsts <- is.cor_bsts(bterms$autocor)
   # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
+  cols2remove <- if (is_ordinal || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)

@@ -356,20 +356,37 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
     # centering the design matrix improves convergence
     sub_X_means <- ""
     if (length(fixef)) {
-      str_add(out$tdataD) <- glue(
-        "  int Kc{p} = K{p} - 1;\n",
-        "  matrix[N{resp}, K{p} - 1] Xc{p};", 
-        "  // centered version of X{p}\n",
-        "  vector[K{p} - 1] means_X{p};",
-        "  // column means of X{p} before centering\n"
-      )
-      str_add(out$tdataC) <- glue(
-        "  for (i in 2:K{p}) {{\n",
-        "    means_X{p}[i - 1] = mean(X{p}[, i]);\n",
-        "    Xc{p}[, i - 1] = X{p}[, i] - means_X{p}[i - 1];\n",
-        "  }}\n"
-      )
       sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
+      if (is_ordinal(family)) {
+        # the intercept was already removed during the data preparation
+        str_add(out$tdataD) <- glue(
+          "  int Kc{p} = K{p};\n",
+          "  matrix[N{resp}, Kc{p}] Xc{p};", 
+          "  // centered version of X{p}\n",
+          "  vector[Kc{p}] means_X{p};",
+          "  // column means of X{p} before centering\n"
+        )
+        str_add(out$tdataC) <- glue(
+          "  for (i in 1:K{p}) {{\n",
+          "    means_X{p}[i] = mean(X{p}[, i]);\n",
+          "    Xc{p}[, i] = X{p}[, i] - means_X{p}[i];\n",
+          "  }}\n"
+        )
+      } else {
+        str_add(out$tdataD) <- glue(
+          "  int Kc{p} = K{p} - 1;\n",
+          "  matrix[N{resp}, Kc{p}] Xc{p};", 
+          "  // centered version of X{p}\n",
+          "  vector[Kc{p}] means_X{p};",
+          "  // column means of X{p} before centering\n"
+        )
+        str_add(out$tdataC) <- glue(
+          "  for (i in 2:K{p}) {{\n",
+          "    means_X{p}[i - 1] = mean(X{p}[, i]);\n",
+          "    Xc{p}[, i - 1] = X{p}[, i] - means_X{p}[i - 1];\n",
+          "  }}\n"
+        )
+      }
     }
     if (!is_ordinal(family)) {
       # intercepts of ordinal models are handled in 'stan_thres'
@@ -409,15 +426,12 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   if (!is_ordinal(family)) {
     return(out)
   }
-  if (no_center(bterms$fe)) {
-    stop2("Cannot turn off centering in ordinal models.")
-  }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
   intercept <- glue(
-    "  {type}[ncat{resp}-1] temp{p}_Intercept;",
+    "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
     "  // temporary thresholds\n"
   )
   if (has_equidistant_thres(family)) {

@@ -638,8 +638,6 @@ prior_fe <- function(bterms, data, sparse = FALSE,
   center_X <- stan_center_X(bterms, sparse)
   if (center_X) {
     prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
-  }
-  if (center_X || is_ordinal(bterms) || is.cor_bsts(bterms$autocor)) {
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
