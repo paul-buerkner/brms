@@ -1050,7 +1050,8 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
   }
-  structure(out, class = c("customfamily", "brmsfamily", "family"))
+  class(out) <- c("customfamily", "brmsfamily", "family")
+  out
 }
 
 valid_dpars <- function(family, ...) {
@@ -1408,6 +1409,18 @@ has_cat <- function(family) {
   # indicate if family has more than two response categories
   is_categorical(family) || is_ordinal(family) || 
     is_multinomial(family) || is_dirichlet(family)
+}
+
+has_equidistant_thres <- function(family) {
+  # indicate if family has equidistant thresholds
+  is_ordinal(family) && 
+    isTRUE(family_info(family, "threshold") == "equidistant")
+}
+
+has_ordered_thres <- function(family) {
+  # indicate if family has equidistant thresholds
+  is_ordinal(family) && 
+    "ordered" %in% family_info(family, "specials")
 }
 
 has_ndt <- function(family) {

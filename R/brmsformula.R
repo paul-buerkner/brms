@@ -1127,11 +1127,6 @@ validate_formula.brmsformula <- function(
       # slot 'threshold' is deprecated as of brms > 1.7.0
       out$family <- check_family(out$family, threshold = threshold)
     }
-    try_terms <- try(stats::terms(out$formula), silent = TRUE)
-    intercept <- attr(try_terms, "intercept", TRUE)
-    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
-      stop2("Cannot remove the intercept in an ordinal model.")
-    }
   }
   mu_dpars <- str_subset(out$family$dpars, "^mu")
   conv_cats_dpars <- conv_cats_dpars(out$family)

@@ -293,7 +293,8 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = "ordinal"
+    # 'ordered' implies ordered thresholds
+    specials = c("ordinal", "ordered")
   )
 }
 

@@ -606,56 +606,67 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
 }
 
 #' @export
-prior_predictor.btl <- function(x, data, ...) {
+prior_predictor.btl <- function(x, ...) {
   # collect default priors for various kinds of effects
   # Args:
   #   spec_intercept: special parameter class for the Intercept?
   #   def_scale_prior: default prior for SD parameters
   # Return:
   #   An object of class brmsprior
-  prior_fe(x, data, ...) +
-    prior_sp(x, data, ...) +
-    prior_cs(x, data, ...) +
-    prior_sm(x, data, ...) + 
-    prior_gp(x, data, ...)
+  prior_fe(x, ...) +
+    prior_thres(x, ...) +
+    prior_sp(x, ...) +
+    prior_cs(x, ...) +
+    prior_sm(x, ...) + 
+    prior_gp(x, ...)
 }
 
 #' @export
-prior_predictor.btnl <- function(x, data, ...) {
-  empty_brmsprior()
+prior_predictor.btnl <- function(x, ...) {
+  # thresholds are required even in non-linear ordinal models
+  prior_thres(x, ...)
 }
 
 prior_fe <- function(bterms, data, sparse = FALSE, 
-                     def_dprior = "", cats = NULL, ...) {
+                     def_dprior = "", ...) {
   # priors for population-level parameters
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
-  # shell the intercept get its own prior class?
-  spec_intercept <- !no_center(bterms$fe) && !sparse
-  if (has_intercept(bterms$fe) && spec_intercept) {
-    coefs <- NULL
-    if (is_ordinal(bterms)) {
-      threshold <- bterms$family$threshold
-      if (isTRUE(threshold == "equidistant")) {
-        coefs <- "1"
-      } else {
-        stopifnot(!is.null(cats))
-        coefs <- cats[-length(cats)]
-      }
-    }
-    prior <- prior + brmsprior(
-      c(def_dprior, rep("", length(coefs))), 
-      class = "Intercept", coef = c("", coefs), ls = px
-    )
+  center_X <- stan_center_X(bterms, sparse)
+  if (center_X) {
+    prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
+  }
+  if (center_X || is_ordinal(bterms) || is.cor_bsts(bterms$autocor)) {
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
-    prior <- prior + 
-      brmsprior(class = "b", coef = c("", fixef), ls = px)
+    prior <- prior + brmsprior(class = "b", coef = c("", fixef), ls = px)
   }
+  prior
+}
+
+prior_thres <- function(bterms, cats, sparse = FALSE, def_dprior = "", ...) {
+  # priors for thresholds of ordinal models
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  prior <- empty_brmsprior()
+  family <- bterms$family
+  if (!is_ordinal(family)) {
+    return(prior)
+  }
+  px <- check_prefix(bterms)
+  if (has_equidistant_thres(bterms)) {
+    coefs <- "1"
+  } else {
+    stopifnot(!is.null(cats))
+    coefs <- cats[-length(cats)]
+  }
+  prior <- prior + brmsprior(
+    c(def_dprior, rep("", length(coefs))), 
+    class = "Intercept", coef = c("", coefs), ls = px
+  )
   prior
 }
 

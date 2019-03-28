@@ -294,13 +294,9 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
-  # center the design matrix?
-  center_X <- !no_center(bterms$fe) && has_intercept(bterms$fe) && 
-    !is.cor_bsts(bterms$autocor) && !sparse
+  center_X <- stan_center_X(bterms, sparse)
   # remove the intercept from the design matrix?
-  rm_intercept <- center_X || is_ordinal(family) || 
-    is.cor_bsts(bterms$autocor)
-  if (rm_intercept) {
+  if (center_X || is_ordinal(family) || is.cor_bsts(bterms$autocor)) {
     fixef <- setdiff(fixef, "Intercept")
   }
   px <- check_prefix(bterms)
@@ -348,6 +344,14 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
     )
   }
   
+  order_intercepts <- identical(dpar_class(px$dpar), order_mixture)
+  if (order_intercepts && !center_X) {
+    stop2(
+      "Identifying mixture components via ordering requires ",
+      "population-level intercepts to be present.\n",
+      "Try setting order = 'none' in function 'mixture'."
+    )
+  }
   if (center_X) {
     # centering the design matrix improves convergence
     sub_X_means <- ""
@@ -369,7 +373,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
     }
     if (!is_ordinal(family)) {
       # intercepts of ordinal models are handled in 'stan_thres'
-      if (identical(dpar_class(px$dpar), order_mixture)) {
+      if (order_intercepts) {
         # identify mixtures via ordering of the intercepts
         dp_id <- dpar_id(px$dpar)
         str_add(out$tparD) <- glue(
@@ -386,16 +390,8 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
         "  // actual population-level intercept\n",
         "  real b{p}_Intercept = temp{p}_Intercept{sub_X_means};\n"
       )
-    }
-    str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", px = px, prefix = glue("temp{p}_")
-    )
-  } else {
-    if (identical(dpar_class(px$dpar), order_mixture)) {
-      stop2(
-        "Identifying mixture components via ordering requires ",
-        "population-level intercepts to be present.\n",
-        "Try setting order = 'none' in function 'mixture'."
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", px = px, prefix = glue("temp{p}_")
       )
     }
   }
@@ -419,19 +415,12 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
-  sub_X_means <- ""
-  if (is.btl(bterms) && length(all_terms(bterms$fe)) && !sparse) {
-    # centering of the design matrix improves convergence
-    # ordinal families either use thres - mu or mu - thres
-    # both implies adding <mean_X, b> to the temporary intercept
-    sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
-  }
-  type <- str_if(family$family == "cumulative", "ordered", "vector")
+  type <- str_if(has_ordered_thres(family), "ordered", "vector")
   intercept <- glue(
     "  {type}[ncat{resp}-1] temp{p}_Intercept;",
     "  // temporary thresholds\n"
   )
-  if (family$threshold == "equidistant") {
+  if (has_equidistant_thres(family)) {
     bound <- subset2(prior, class = "delta", ls = px)$bound
     str_add(out$par) <- glue(
       "  real temp{p}_Intercept1;  // first threshold\n",
@@ -449,13 +438,20 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   } else {
     str_add(out$par) <- intercept
   }
+  sub_X_means <- ""
+  if (stan_center_X(bterms, sparse) && length(all_terms(bterms$fe))) {
+    # centering of the design matrix improves convergence
+    # ordinal families either use thres - mu or mu - thres
+    # both implies adding <mean_X, b> to the temporary intercept
+    sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
+  }
   str_add(out$genD) <- glue(
     "  // compute actual thresholds\n",
     "  vector[ncat{resp} - 1] b{p}_Intercept",  
     " = temp{p}_Intercept{sub_X_means};\n" 
   )
   prefix <- glue("temp{p}_")
-  suffix <- str_if(family$threshold == "equidistant", "1")
+  suffix <- str_if(has_equidistant_thres(family), "1")
   Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
   Icoefs <- Icoefs[nzchar(Icoefs)]
   str_add(out$prior) <- stan_prior(
@@ -1233,6 +1229,14 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
     )
   }
   out
+}
+
+stan_center_X <- function(bterms, sparse = FALSE) {
+  # indicates if the population-level design matrix should be centered
+  # implies a temporary shift in the intercept of the model
+  is.btl(bterms) && !no_center(bterms$fe) && 
+    has_intercept(bterms$fe) && !sparse &&
+    !is.cor_bsts(bterms$autocor)
 }
 
 stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {

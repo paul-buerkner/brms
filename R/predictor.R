@@ -29,8 +29,8 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
   # some autocorrelation structures depend on eta
   eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
   # intentionally last as it may return 3D arrays
-  eta <- predictor_thres(eta, draws, i)
   eta <- predictor_cs(eta, draws, i)
+  eta <- predictor_thres(eta, draws, i)
   unname(eta)
 }
 

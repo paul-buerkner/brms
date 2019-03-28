@@ -663,7 +663,8 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
   dpars <- paste0(family$dpars, mix)
-  sdist(family$name, p[dpars], family$vars)
+  thres <- if (is_ordinal(family)) "temp_Intercept"
+  sdist(family$name, p[dpars], thres, family$vars)
 }
 
 sdist <- function(dist, ..., shift = "") {
