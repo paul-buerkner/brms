@@ -345,7 +345,7 @@ fitted_ordinal <- function(draws) {
   }
   eta <- draws$dpars$disc * draws$dpars$mu
   ncat <- draws$data$ncat
-  args <- list(seq_len(ncat), ncat = ncat, link = draws$family$link)
+  args <- list(seq_len(ncat), link = draws$family$link)
   dens <- get(paste0("d", draws$family$family), mode = "function")
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))

@@ -702,9 +702,25 @@ stan_mixture <- function(bterms, prior) {
       "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
     )
   }
-  if (bterms$family$order %in% "mu") {
+  if (order_intercepts(bterms)) {
+    # identify mixtures by ordering the intercepts of their components
     str_add(out$par) <- glue( 
-      "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
+      "  ordered[{nmix}] ordered{p}_Intercept;  // to identify mixtures\n"
+    )
+  }
+  if (fix_intercepts(bterms)) {
+    # identify ordinal mixtures by fixing their thresholds to the same values
+    stopifnot(is_ordinal(bterms))
+    type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
+    str_add(out$par) <- glue( 
+      "  // thresholds fixed over mixture components\n",
+      "  {type}[ncat{p} - 1] fixed{p}_Intercept;\n"
+    )
+    Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
+    Icoefs <- Icoefs[nzchar(Icoefs)]
+    str_add(out$prior) <- stan_prior(
+      prior, class = "Intercept", coef = Icoefs, 
+      px = px, prefix = "fixed_", suffix = p
     )
   }
   out

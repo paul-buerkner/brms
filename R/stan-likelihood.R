@@ -586,7 +586,7 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   # helper function for ordinal families
-  prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   p$thres <- paste0("temp", prefix, "_Intercept")
   if (has_cs(bterms)) {

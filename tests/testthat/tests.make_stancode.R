@@ -645,6 +645,14 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, 
     "target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);"             
   )
+  
+  # ordinal mixture models with fixed intercepts
+  scode <- make_stancode(
+    bf(y ~ 1, mu1 ~ x1, mu2 ~ 1), data = dat, 
+    family = mixture(cumulative(), nmix = 2, order = "mu")
+  )
+  expect_match2(scode, "ordered[ncat - 1] temp_mu2_Intercept = fixed_Intercept;")
+  expect_match2(scode, "target += student_t_lpdf(fixed_Intercept | 3, 0, 10);")
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {

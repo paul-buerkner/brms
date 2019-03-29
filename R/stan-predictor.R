@@ -116,10 +116,7 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
   data <- subset_data(data, x)
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
-  args <- nlist(
-    data, prior, sparse, nlpars = names(x$nlpars),
-    order_mixture = x$family$order, ...
-  )
+  args <- nlist(data, prior, sparse, nlpars = names(x$nlpars), ...)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
     out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
@@ -283,12 +280,10 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
   out
 }
 
-stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, 
-                    order_mixture = 'none', ...) {
+stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, ...) {
   # Stan code for population-level effects
   # Args:
   #   sparse: should the design matrix be treated as sparse?
-  #   order_mixture: order intercepts to identify mixture models?
   # Returns:
   #   a list containing Stan code related to population-level effects
   out <- list()
@@ -344,7 +339,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
     )
   }
   
-  order_intercepts <- identical(dpar_class(px$dpar), order_mixture)
+  order_intercepts <- order_intercepts(bterms)
   if (order_intercepts && !center_X) {
     stop2(
       "Identifying mixture components via ordering requires ",
@@ -395,7 +390,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
         dp_id <- dpar_id(px$dpar)
         str_add(out$tparD) <- glue(
           "  // identify mixtures via ordering of the intercepts\n",                   
-          "  real temp{p}_Intercept = ordered_Intercept{resp}[{dp_id}];\n"
+          "  real temp{p}_Intercept = ordered{resp}_Intercept[{dp_id}];\n"
         )
       } else {
         str_add(out$par) <- glue(
@@ -430,27 +425,39 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
-  intercept <- glue(
-    "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
-    "  // temporary thresholds\n"
-  )
-  if (has_equidistant_thres(family)) {
-    bound <- subset2(prior, class = "delta", ls = px)$bound
-    str_add(out$par) <- glue(
-      "  real temp{p}_Intercept1;  // first threshold\n",
-      "  real{bound} delta{p};  // distance between thresholds\n"
+  if (fix_intercepts(bterms)) {
+    # identify ordinal mixtures by fixing their thresholds to the same values
+    if (has_equidistant_thres(family)) {
+      stop2("Cannot use equidistant and fixed thresholds at the same time.")
+    }
+    str_add(out$tparD) <- glue(
+      "  {type}[ncat{resp} - 1] temp{p}_Intercept = fixed{resp}_Intercept;\n"
     )
-    str_add(out$tparD) <- intercept
-    str_add(out$tparC1) <- glue(
-      "  // compute equidistant thresholds\n",
-      "  for (k in 1:(ncat{resp} - 1)) {{\n",
-      "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
-      " + (k - 1.0) * delta{p};\n",
-      "  }}\n"
-    )
-    str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
   } else {
-    str_add(out$par) <- intercept
+    if (has_equidistant_thres(family)) {
+      bound <- subset2(prior, class = "delta", ls = px)$bound
+      str_add(out$par) <- glue(
+        "  real temp{p}_Intercept1;  // first threshold\n",
+        "  real{bound} delta{p};  // distance between thresholds\n"
+      )
+      str_add(out$tparD) <- glue(
+        "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
+        "  // temporary thresholds\n"
+      )
+      str_add(out$tparC1) <- glue(
+        "  // compute equidistant thresholds\n",
+        "  for (k in 1:(ncat{resp} - 1)) {{\n",
+        "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
+        " + (k - 1.0) * delta{p};\n",
+        "  }}\n"
+      )
+      str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
+    } else {
+      str_add(out$par) <- glue(
+        "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
+        "  // temporary thresholds\n"
+      )
+    }
   }
   sub_X_means <- ""
   if (stan_center_X(bterms, sparse) && length(all_terms(bterms$fe))) {
@@ -1245,12 +1252,12 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   out
 }
 
-stan_center_X <- function(bterms, sparse = FALSE) {
+stan_center_X <- function(x, sparse = FALSE) {
   # indicates if the population-level design matrix should be centered
   # implies a temporary shift in the intercept of the model
-  is.btl(bterms) && !no_center(bterms$fe) && 
-    has_intercept(bterms$fe) && !sparse &&
-    !is.cor_bsts(bterms$autocor)
+  is.btl(x) && !no_center(x$fe) && 
+    has_intercept(x$fe) && !sparse &&
+    !fix_intercepts(x) && !is.cor_bsts(x$autocor)
 }
 
 stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {

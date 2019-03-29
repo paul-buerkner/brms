@@ -583,16 +583,22 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
       }
     }
   }
-  # prior for the delta parameter for equidistant thresholds
-  if (is_ordinal(x$family) && is_equal(x$family$threshold, "equidistant")) {
-    bound <- ifelse(x$family$family == "cumulative", "<lower=0>", "")
-    prior <- prior + brmsprior(class = "delta", bound = bound, resp = x$resp)
-  }
   # priors for mixture models
   dp_classes <- dpar_class(names(c(x$dpars, x$fdpars)))
-  if (is.mixfamily(x$family) && !any(dp_classes == "theta")) {
-    prior <- prior + brmsprior(class = "theta", resp = x$resp)
-  }
+  if (is.mixfamily(x$family)) {
+    if (!any(dp_classes == "theta")) {
+      prior <- prior + brmsprior(class = "theta", resp = x$resp)
+    }
+    if (fix_intercepts(x)) {
+      # fixing thresholds across mixture componenents 
+      # requires a single set of priors at the top level
+      stopifnot(is_ordinal(x))
+      cats <- extract_cat_names(x, data)
+      prior <- prior + 
+        prior_thres(x, cats = cats, sparse = sparse,
+                    def_scale_prior = def_scale_prior)
+    }
+  } 
   # priors for noise-free response variables
   sdy <- get_sdy(x, data)
   if (!is.null(sdy)) {
@@ -608,9 +614,6 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
 #' @export
 prior_predictor.btl <- function(x, ...) {
   # collect default priors for various kinds of effects
-  # Args:
-  #   spec_intercept: special parameter class for the Intercept?
-  #   def_scale_prior: default prior for SD parameters
   # Return:
   #   An object of class brmsprior
   prior_fe(x, ...) +
@@ -646,23 +649,30 @@ prior_fe <- function(bterms, data, sparse = FALSE,
   prior
 }
 
-prior_thres <- function(bterms, cats, sparse = FALSE, def_dprior = "", ...) {
+prior_thres <- function(bterms, cats, sparse = FALSE, 
+                        def_scale_prior = "", ...) {
   # priors for thresholds of ordinal models
-  stopifnot(is.btl(bterms) || is.btnl(bterms))
   prior <- empty_brmsprior()
-  family <- bterms$family
-  if (!is_ordinal(family)) {
+  if (!is_ordinal(bterms)) {
+    # thresholds only exist in ordinal models
+    return(prior)
+  }
+  if (fix_intercepts(bterms) && !is.mixfamily(bterms$family)) {
+    # fixed thresholds cannot have separate priors
     return(prior)
   }
   px <- check_prefix(bterms)
   if (has_equidistant_thres(bterms)) {
     coefs <- "1"
+    # prior for the delta parameter for equidistant thresholds
+    bound <- str_if(has_ordered_thres(bterms), "<lower=0>")
+    prior <- prior + brmsprior(class = "delta", bound = bound, ls = px)
   } else {
     stopifnot(!is.null(cats))
     coefs <- cats[-length(cats)]
   }
   prior <- prior + brmsprior(
-    c(def_dprior, rep("", length(coefs))), 
+    prior = c(def_scale_prior, rep("", length(coefs))), 
     class = "Intercept", coef = c("", coefs), ls = px
   )
   prior

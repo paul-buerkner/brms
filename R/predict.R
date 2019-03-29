@@ -573,28 +573,29 @@ predict_dirichlet <- function(i, draws, ...) {
 }
 
 predict_cumulative <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "cumulative")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_sratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "sratio")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_cratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "cratio")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_acat <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "acat")
+  predict_ordinal(i = i, draws = draws)
 }  
 
-predict_ordinal <- function(i, draws, family, ...) {
+predict_ordinal <- function(i, draws, ...) {
   ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   eta <- (disc * get_dpar(draws, "mu", i = i))
   p <- pordinal(
-    seq_len(ncat), eta = eta, ncat = ncat, 
-    family = family, link = draws$family$link
+    seq_len(ncat), eta = eta, 
+    family = draws$family$family, 
+    link = draws$family$link
   )
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }

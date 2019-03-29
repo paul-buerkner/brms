@@ -1876,7 +1876,7 @@ dmultinomial <- function(x, eta, log = FALSE) {
   out
 }
 
-dcumulative <- function(x, eta, ncat, link = "logit") {
+dcumulative <- function(x, eta, link = "logit") {
   # density of the cumulative distribution
   # Args: same as dcategorical
   if (is.null(dim(eta))) {
@@ -1885,9 +1885,7 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
   if (length(dim(eta)) != 2) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
+  ncat <- ncol(eta) + 1
   mu <- ilink(eta, link)
   rows <- list(mu[, 1])
   if (ncat > 2) {
@@ -1898,10 +1896,10 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
   }
   rows <- c(rows, list(1 - mu[, ncat - 1]))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dsratio <- function(x, eta, ncat, link = "logit") {
+dsratio <- function(x, eta, link = "logit") {
   # density of the sratio distribution
   # Args: same as dcategorical
   if (is.null(dim(eta))) {
@@ -1910,9 +1908,7 @@ dsratio <- function(x, eta, ncat, link = "logit") {
   if (length(dim(eta)) != 2) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
+  ncat <- ncol(eta) + 1
   mu <- ilink(eta, link)
   rows <- list(mu[, 1])
   if (ncat > 2) {
@@ -1923,10 +1919,10 @@ dsratio <- function(x, eta, ncat, link = "logit") {
   }
   rows <- c(rows, list(apply(1 - mu, 1, prod)))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dcratio <- function(x, eta, ncat, link = "logit") {
+dcratio <- function(x, eta, link = "logit") {
   # density of the cratio distribution
   # Args: same as dcategorical
   if (is.null(dim(eta))) {
@@ -1935,9 +1931,7 @@ dcratio <- function(x, eta, ncat, link = "logit") {
   if (length(dim(eta)) != 2) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
+  ncat <- ncol(eta) + 1
   mu <- ilink(eta, link)
   rows <- list(1 - mu[, 1])
   if (ncat > 2) {
@@ -1948,10 +1942,10 @@ dcratio <- function(x, eta, ncat, link = "logit") {
   }
   rows <- c(rows, list(apply(mu, 1, prod)))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dacat <- function(x, eta, ncat, link = "logit") {
+dacat <- function(x, eta, link = "logit") {
   # density of the acat distribution
   # Args: same as dcategorical
   if (is.null(dim(eta))) {
@@ -1960,9 +1954,7 @@ dacat <- function(x, eta, ncat, link = "logit") {
   if (length(dim(eta)) != 2) {
     stop2("eta must be a numeric vector or matrix.")
   }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
+  ncat <- ncol(eta) + 1
   if (link == "logit") { 
     # faster evaluation in this case
     p <- cbind(rep(1, nrow(eta)), exp(eta[,1]), 
@@ -1987,10 +1979,10 @@ dacat <- function(x, eta, ncat, link = "logit") {
     p[, ncat] <- apply(mu[, 1:(ncat - 1)], 1, prod)
   }
   p <- p / rowSums(p)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-pordinal <- function(q, eta, ncat, family, link = "logit") {
+pordinal <- function(q, eta, family, link = "logit") {
   # distribution functions for ordinal families
   # Args:
   #   q: positive integers not greater than ncat
@@ -2000,11 +1992,11 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
   #   link: a character string naming the link
   # Returns: 
   #   probabilites P(x <= q)
-  args <- list(1:max(q), eta = eta, ncat = ncat, link = link)
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  args <- list(seq_len(max(q)), eta = eta, link = link)
   p <- do_call(paste0("d", family), args)
-  .fun <- function(j) {
-    rowSums(as.matrix(p[, 1:j]))
-  }
+  .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
   do_call(cbind, lapply(q, .fun))
 }
 

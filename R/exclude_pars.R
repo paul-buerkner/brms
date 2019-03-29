@@ -76,6 +76,7 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
     c(out) <- c(
       paste0("temp", p, "_Intercept1"), 
       paste0("ordered", p, "_Intercept"),
+      paste0("fixed", p, "_Intercept"),
       paste0(c("theta", "zcar"), p)
     )
     for (dp in names(x$dpars)) {

@@ -265,15 +265,19 @@ test_that("predict for ordinal models runs without erros", {
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$family$link <- "logit"
   
+  draws$family$family <- "cumulative"
   pred <- sapply(1:nobs, brms:::predict_cumulative, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "sratio"
   pred <- sapply(1:nobs, brms:::predict_sratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "cratio"
   pred <- sapply(1:nobs, brms:::predict_cratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "acat"
   pred <- sapply(1:nobs, brms:::predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
