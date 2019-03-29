@@ -1509,3 +1509,10 @@ fix_intercepts <- function(bterms) {
   if (!length(dpar)) dpar <- "mu"
   isTRUE(is_ordinal(bterms) && dpar %in% bterms$family[["order"]])
 }
+
+has_joint_theta <- function(bterms) {
+  # does the mixture have a joint parameter vector 'theta'
+  stopifnot(is.brmsterms(bterms))
+  is.mixfamily(bterms$family) && 
+    !"theta" %in% dpar_class(names(c(bterms$dpars, bterms$fdpars)))
+}

@@ -433,19 +433,18 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
 
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  # Construct Design Matrices for \code{brms} models
+  # Construct design matrices for brms models
   # Args:
   #   formula: An object of class formula
   #   data: A data frame created with model.frame. 
-  #         If another sort of object, model.frame is called first.
+  #     If another sort of object, model.frame is called first.
   #   cols2remove: names of the columns to remove from 
-  #                the model matrix (mainly used for intercepts)
+  #     the model matrix (mainly used for intercepts)
   #   rename: rename column names via brms:::rename()?
   #   ...: currently ignored
   # Returns:
-  #   The design matrix for a regression-like model 
-  #   with the specified formula and data. 
-  #   For details see the documentation of \code{model.matrix}.
+  #   The design matrix for the given formula and data.
+  #   For details see ?stats::model.matrix
   stopifnot(is.atomic(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {

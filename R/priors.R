@@ -547,8 +547,24 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
 prior_predictor.brmsterms <- function(x, data, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
-  valid_dpars <- valid_dpars(x$family, bterms = x)
+  valid_dpars <- valid_dpars(x)
   prior <- empty_brmsprior()
+  # priors for mixture models
+  if (is.mixfamily(x$family)) {
+    if (has_joint_theta(x)) {
+      # individual theta parameters should not have a prior in this case
+      theta_dpars <- str_subset(valid_dpars, "^theta[[:digit:]]+")
+      valid_dpars <- setdiff(valid_dpars, theta_dpars)
+      prior <- prior + brmsprior(class = "theta", resp = x$resp)
+    }
+    if (fix_intercepts(x)) {
+      # fixing thresholds across mixture componenents 
+      # requires a single set of priors at the top level
+      stopifnot(is_ordinal(x))
+      prior <- prior + prior_thres(x, def_scale_prior = def_scale_prior)
+    }
+  } 
+  # priors for distributional parameters
   for (dp in valid_dpars) {
     def_dprior <- def_dprior(x, dp, data = data)
     if (!is.null(x$dpars[[dp]])) {
@@ -567,6 +583,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
     }
     prior <- prior + dp_prior
   }
+  # priors for non-linear parameters
   for (nlp in names(x$nlpars)) {
     nlp_prior <- prior_predictor(
       x$nlpars[[nlp]], data = data,
@@ -583,19 +600,6 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       }
     }
   }
-  # priors for mixture models
-  dp_classes <- dpar_class(names(c(x$dpars, x$fdpars)))
-  if (is.mixfamily(x$family)) {
-    if (!any(dp_classes == "theta")) {
-      prior <- prior + brmsprior(class = "theta", resp = x$resp)
-    }
-    if (fix_intercepts(x)) {
-      # fixing thresholds across mixture componenents 
-      # requires a single set of priors at the top level
-      stopifnot(is_ordinal(x))
-      prior <- prior + prior_thres(x, def_scale_prior = def_scale_prior)
-    }
-  } 
   # priors for noise-free response variables
   sdy <- get_sdy(x, data)
   if (!is.null(sdy)) {
