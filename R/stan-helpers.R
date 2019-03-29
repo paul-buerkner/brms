@@ -716,10 +716,8 @@ stan_mixture <- function(bterms, prior) {
       "  // thresholds fixed over mixture components\n",
       "  {type}[ncat{p} - 1] fixed{p}_Intercept;\n"
     )
-    Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
-    Icoefs <- Icoefs[nzchar(Icoefs)]
     str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", coef = Icoefs, 
+      prior, class = "Intercept", coef = get_thres(bterms), 
       px = px, prefix = "fixed_", suffix = p
     )
   }

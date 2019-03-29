@@ -549,7 +549,6 @@ prior_predictor.brmsterms <- function(x, data, ...) {
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
   prior <- empty_brmsprior()
-  cats <- if (is_ordinal(x)) extract_cat_names(x, data)
   for (dp in valid_dpars) {
     def_dprior <- def_dprior(x, dp, data = data)
     if (!is.null(x$dpars[[dp]])) {
@@ -557,7 +556,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
-        def_dprior = def_dprior, cats = cats
+        def_dprior = def_dprior
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -594,9 +593,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       # fixing thresholds across mixture componenents 
       # requires a single set of priors at the top level
       stopifnot(is_ordinal(x))
-      cats <- extract_cat_names(x, data)
-      prior <- prior + 
-        prior_thres(x, cats = cats, def_scale_prior = def_scale_prior)
+      prior <- prior + prior_thres(x, def_scale_prior = def_scale_prior)
     }
   } 
   # priors for noise-free response variables
@@ -648,7 +645,7 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
   prior
 }
 
-prior_thres <- function(bterms, cats, def_scale_prior = "", ...) {
+prior_thres <- function(bterms, def_scale_prior = "", ...) {
   # priors for thresholds of ordinal models
   prior <- empty_brmsprior()
   if (!is_ordinal(bterms)) {
@@ -660,18 +657,16 @@ prior_thres <- function(bterms, cats, def_scale_prior = "", ...) {
     return(prior)
   }
   px <- check_prefix(bterms)
+  thres <- get_thres(bterms)
   if (has_equidistant_thres(bterms)) {
-    coefs <- "1"
+    thres <- thres[1]
     # prior for the delta parameter for equidistant thresholds
     bound <- str_if(has_ordered_thres(bterms), "<lower=0>")
     prior <- prior + brmsprior(class = "delta", bound = bound, ls = px)
-  } else {
-    stopifnot(!is.null(cats))
-    coefs <- cats[-length(cats)]
   }
   prior <- prior + brmsprior(
-    prior = c(def_scale_prior, rep("", length(coefs))), 
-    class = "Intercept", coef = c("", coefs), ls = px
+    prior = c(def_scale_prior, rep("", length(thres))), 
+    class = "Intercept", coef = c("", thres), ls = px
   )
   prior
 }

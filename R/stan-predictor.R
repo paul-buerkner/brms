@@ -431,6 +431,7 @@ stan_thres <- function(bterms, prior, ...) {
       "  {type}[ncat{resp} - 1] temp{p}_Intercept = fixed{resp}_Intercept;\n"
     )
   } else {
+    thres <- get_thres(bterms)
     if (has_equidistant_thres(family)) {
       bound <- subset2(prior, class = "delta", ls = px)$bound
       str_add(out$par) <- glue(
@@ -449,10 +450,18 @@ stan_thres <- function(bterms, prior, ...) {
         "  }}\n"
       )
       str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", coef = thres[1], 
+        px = px, prefix = glue("temp{p}_"), suffix = "1"
+      )
     } else {
       str_add(out$par) <- glue(
         "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
         "  // temporary thresholds\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", coef = thres, 
+        px = px, prefix = glue("temp{p}_")
       )
     }
   }
@@ -467,14 +476,6 @@ stan_thres <- function(bterms, prior, ...) {
     "  // compute actual thresholds\n",
     "  vector[ncat{resp} - 1] b{p}_Intercept",  
     " = temp{p}_Intercept{sub_X_means};\n" 
-  )
-  prefix <- glue("temp{p}_")
-  suffix <- str_if(has_equidistant_thres(family), "1")
-  Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
-  Icoefs <- Icoefs[nzchar(Icoefs)]
-  str_add(out$prior) <- stan_prior(
-    prior, class = "Intercept", coef = Icoefs, 
-    px = px, prefix = prefix, suffix = suffix
   )
   out
 }

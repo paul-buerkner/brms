@@ -737,7 +737,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(llp), c(nobs(fit3), 2))
 
   # loo_model_weights
-  llw <- SW(loo_model_weights(fit2, fit2))
+  llw <- SW(loo_model_weights(fit1, fit1))
   expect_is(llw[1:2], "numeric")
-  expect_equal(names(llw), c("fit2", "fit2"))
+  expect_equal(names(llw), c("fit1", "fit1"))
 })

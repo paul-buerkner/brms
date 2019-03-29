@@ -420,7 +420,7 @@ combine_family_info <- function(x, y, ...) {
   # combine information from multiple families
   # provides special handling for certain elements
   y <- as_one_character(y)
-  unite <- c("dpars", "type", "specials", "include", "const")
+  unite <- c("dpars", "type", "specials", "include", "const", "cats")
   if (y %in% c("family", "link")) {
     x <- unlist(x)
   } else if (y %in% unite) {
@@ -1435,6 +1435,20 @@ has_thres_minus_eta <- function(family) {
 has_eta_minus_thres <- function(family) {
   # compute eta - threshold in the likelihood
   "eta_minus_thres" %in% family_info(family, "specials")
+}
+
+get_cats <- function(family) {
+  # get names of response categories
+  family_info(family, "cats")
+}
+
+get_thres <- function(family) {
+  # get names of ordinal thresholds for prior specification
+  if (!is_ordinal(family)) {
+    return(NULL)
+  }
+  out <- seq_along(get_cats(family))
+  out[-length(out)]
 }
 
 has_ndt <- function(family) {

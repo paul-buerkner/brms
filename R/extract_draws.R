@@ -703,7 +703,7 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     draws[stanvars] <- sdata[stanvars]
   }
   if (has_cat(bterms)) {
-    draws$cats <- extract_cat_names(bterms, data)
+    draws$cats <- get_cats(bterms)
   }
   draws
 }

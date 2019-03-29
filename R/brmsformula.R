@@ -1149,6 +1149,10 @@ validate_formula.brmsformula <- function(
     }
   }
   out$mecor <- default_mecor(out$mecor)
+  if (has_cat(out) && is.null(get_cats(out)) && !is.null(data)) {
+    # for easy access of response categories
+    out$family$cats <- extract_cat_names(out, data)
+  }
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
       # slot 'threshold' is deprecated as of brms 1.7.0
@@ -1159,11 +1163,17 @@ validate_formula.brmsformula <- function(
     if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
       stop2("Cannot remove the intercept in an ordinal model.")
     }
+    if (is.mixfamily(out$family)) {
+      # every mixture family needs to know about response categories
+      for (i in seq_along(out$family$mix)) {
+        out$family$mix[[i]]$cats <- out$family$cats
+      }
+    }
   }
   mu_dpars <- str_subset(out$family$dpars, "^mu")
   conv_cats_dpars <- conv_cats_dpars(out$family)
   if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
-    out$family$cats <- extract_cat_names(out, data)
+    # define distributional parameters based on response categories
     if (length(out$family$cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }
