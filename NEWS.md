@@ -3,7 +3,9 @@
 ### New Features
 
 * Specify non-linear ordinal models. (#623)
+* Allow to fix thresholds in ordinal mixture models (#626)
 * Use the `softplus` link function in various families. (#622)
+* Define argument `sparse` separately for each model formula.
 
 
 # brms 2.8.0
