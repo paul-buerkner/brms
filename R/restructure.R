@@ -79,6 +79,13 @@ restructure_v2 <- function(x) {
   if (version <= "2.3.6") {
     check_old_nl_dpars(bterms)
   }
+  if (version <= "2.8.2") {
+    # sparse is now specified within 'formula'
+    sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
+    x$formula <- SW(validate_formula(
+      formula(x), data = model.frame(x), sparse = sparse
+    ))
+  }
   x
 }
 

@@ -59,7 +59,7 @@
 brm_multiple <- function(formula, data, family = gaussian(), prior = NULL, 
                          autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
-                         sparse = FALSE, knots = NULL, stanvars = NULL,
+                         sparse = NULL, knots = NULL, stanvars = NULL,
                          stan_funs = NULL, combine = TRUE, fit = NA,
                          seed = NA, file = NULL, ...) {
   combine <- as_one_logical(combine)

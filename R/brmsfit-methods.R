@@ -2379,9 +2379,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$save_all_pars)) {
     dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
   }
-  if (is.null(dots$sparse)) {
-    dots$sparse <- grepl("sparse matrix", stancode(object))
-  }
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
   }

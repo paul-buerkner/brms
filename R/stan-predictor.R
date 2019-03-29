@@ -106,8 +106,7 @@ stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
 }
 
 #' @export
-stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE, 
-                                     rescor = FALSE, ...) {
+stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   # Stan code for distributional parameters
   # Args:
   #   rescor: indicate if this is part of an MV model estimating rescor
@@ -116,7 +115,7 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
   data <- subset_data(data, x)
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
-  args <- nlist(data, prior, sparse, nlpars = names(x$nlpars), ...)
+  args <- nlist(data, prior, nlpars = names(x$nlpars), ...)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
     out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
@@ -280,18 +279,17 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
   out
 }
 
-stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, ...) {
+stan_fe <- function(bterms, data, prior, stanvars, ...) {
   # Stan code for population-level effects
-  # Args:
-  #   sparse: should the design matrix be treated as sparse?
   # Returns:
   #   a list containing Stan code related to population-level effects
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
-  center_X <- stan_center_X(bterms, sparse)
+  sparse <- is_sparse(bterms$fe)
+  center_X <- stan_center_X(bterms)
   # remove the intercept from the design matrix?
-  if (center_X || is_ordinal(family) || is.cor_bsts(bterms$autocor)) {
+  if (center_X) {
     fixef <- setdiff(fixef, "Intercept")
   }
   px <- check_prefix(bterms)
@@ -305,7 +303,6 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, ...) {
       "  // population-level design matrix\n"
     )
     if (sparse) {
-      stopifnot(!center_X)
       str_add(out$tdataD) <- glue(
         "  // sparse matrix representation of X{p}\n",
         "  vector[rows(csr_extract_w(X{p}))] wX{p}", 
@@ -411,7 +408,7 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, ...) {
   out
 }
 
-stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
+stan_thres <- function(bterms, prior, ...) {
   # intercepts in ordinal models require special treatment
   # and must be present even when using non-linear predictors
   # thus the relevant Stan code cannot be part of 'stan_fe'
@@ -460,7 +457,7 @@ stan_thres <- function(bterms, prior, sparse = FALSE, ...) {
     }
   }
   sub_X_means <- ""
-  if (stan_center_X(bterms, sparse) && length(all_terms(bterms$fe))) {
+  if (stan_center_X(bterms) && length(all_terms(bterms$fe))) {
     # centering of the design matrix improves convergence
     # ordinal families either use thres - mu or mu - thres
     # both implies adding <mean_X, b> to the temporary intercept
@@ -1252,11 +1249,11 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   out
 }
 
-stan_center_X <- function(x, sparse = FALSE) {
+stan_center_X <- function(x) {
   # indicates if the population-level design matrix should be centered
   # implies a temporary shift in the intercept of the model
   is.btl(x) && !no_center(x$fe) && 
-    has_intercept(x$fe) && !sparse &&
+    has_intercept(x$fe) && !is_sparse(x$fe) &&
     !fix_intercepts(x) && !is.cor_bsts(x$autocor)
 }
 

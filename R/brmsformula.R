@@ -59,6 +59,10 @@
 #'   should be enabled when removing the intercept by adding \code{0} 
 #'   to the right-hand of model formulas. Defaults to \code{TRUE} to 
 #'   mirror the behavior of standard \R formula parsing.
+#' @param sparse Logical; indicates whether the population-level design matrices
+#'   should be treated as sparse (defaults to \code{FALSE}). For design matrices
+#'   with many zeros, this can considerably reduce required memory. Sampling
+#'   speed is currently not improved or even slightly decreased.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -574,7 +578,7 @@
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         autocor = NULL, nl = NULL, loop = NULL, 
-                        center = NULL, cmc = NULL) {
+                        center = NULL, cmc = NULL, sparse = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -652,6 +656,9 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(cmc)) {
     attr(out$formula, "cmc") <- as_one_logical(cmc)
   }
+  if (!is.null(sparse)) {
+    attr(out$formula, "sparse") <- as_one_logical(sparse)
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -676,11 +683,12 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
-               nl = NULL, loop = NULL, center = NULL, cmc = NULL) {
+               nl = NULL, loop = NULL, center = NULL, cmc = NULL,
+               sparse = NULL) {
   # alias of brmsformula
   brmsformula(
     formula, ..., flist = flist, family = family, autocor = autocor, 
-    nl = nl, loop = loop, center = center, cmc = cmc
+    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse
   )
 }
 
@@ -769,7 +777,7 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 #' @rdname brmsformula-helpers
 #' @export
 lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, 
-               center = NULL, cmc = NULL) {
+               center = NULL, cmc = NULL, sparse = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
@@ -783,6 +791,9 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
     }
     if (!is.null(center)) {
       attr(out[[i]], "center") <- center
+    }
+    if (!is.null(sparse)) {
+      attr(out[[i]], "sparse") <- sparse
     }
   }
   structure(out, resp = resp)
@@ -1098,7 +1109,7 @@ validate_formula.default <- function(formula, ...) {
 #' @export
 validate_formula.brmsformula <- function(
   formula, family = gaussian(), autocor = cor_empty(), 
-  data = NULL, threshold = NULL, ...
+  data = NULL, threshold = NULL, sparse = NULL, ...
 ) {
   # incorporate additional arguments into the model formula
   # Args:
@@ -1121,10 +1132,26 @@ validate_formula.brmsformula <- function(
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
   }
+  if (!is.null(sparse)) {
+    # a global 'sparse' argument is deprecated as of brms 2.8.3
+    warning2(
+      "Argument 'sparse' should be specified within the ", 
+      "'formula' argument. See ?brmsformula for help."
+    )
+    sparse <- as_one_logical(sparse)
+    if (is.null(attr(out$formula, "sparse"))) {
+      attr(out$formula, "sparse") <- sparse
+    }
+    for (i in seq_along(out$pforms)) {
+      if (is.null(attr(out$pforms[[i]], "sparse"))) {
+        attr(out$pforms[[i]], "sparse") <- sparse
+      }
+    }
+  }
   out$mecor <- default_mecor(out$mecor)
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
-      # slot 'threshold' is deprecated as of brms > 1.7.0
+      # slot 'threshold' is deprecated as of brms 1.7.0
       out$family <- check_family(out$family, threshold = threshold)
     }
     try_terms <- try(stats::terms(out$formula), silent = TRUE)

@@ -39,10 +39,11 @@
 #'   description of the available correlation structures. Defaults to
 #'   \code{NULL}, corresponding to no correlations. In multivariate models,
 #'   \code{autocor} might also be a list of autocorrelation structures.
-#' @param sparse Logical; indicates whether the population-level design matrices
-#'   should be treated as sparse (defaults to \code{FALSE}). For design matrices
-#'   with many zeros, this can considerably reduce required memory. Sampling
-#'   speed is currently not improved or even slightly decreased.
+#' @param sparse (Deprecated) Logical; indicates whether the population-level
+#'   design matrices should be treated as sparse (defaults to \code{FALSE}). For
+#'   design matrices with many zeros, this can considerably reduce required
+#'   memory. Sampling speed is currently not improved or even slightly
+#'   decreased.
 #' @param cov_ranef A list of matrices that are proportional to the (within)
 #'   covariance structure of the group-level effects. The names of the matrices
 #'   should correspond to columns in \code{data} that are used as grouping
@@ -333,7 +334,7 @@
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
-                sparse = FALSE, knots = NULL, stanvars = NULL,
+                sparse = NULL, knots = NULL, stanvars = NULL,
                 stan_funs = NULL, fit = NA, save_ranef = TRUE, 
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
@@ -384,7 +385,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   } else {  
     # build new model
     formula <- validate_formula(
-      formula, data = data, family = family, autocor = autocor
+      formula, data = data, family = family, 
+      autocor = autocor, sparse = sparse
     )
     family <- get_element(formula, "family")
     autocor <- get_element(formula, "autocor")
@@ -392,7 +394,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     data.name <- substitute_name(data)
     data <- update_data(data, bterms = bterms)
     prior <- check_prior(
-      prior, formula, data = data, sparse = sparse,
+      prior, formula = formula, data = data,
       sample_prior = sample_prior, warn = FALSE
     )
     # initialize S3 object
@@ -411,7 +413,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
-      sparse = sparse, cov_ranef = cov_ranef,
+      cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model

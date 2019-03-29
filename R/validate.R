@@ -359,6 +359,9 @@ parse_fe <- function(formula) {
   if (no_center(formula)) {
     attr(out, "center") <- FALSE
   }
+  if (is_sparse(formula)) {
+    attr(out, "sparse") <- TRUE
+  }
   out
 }
 
@@ -740,6 +743,11 @@ no_cmc <- function(x) {
 no_center <- function(x) {
   # indicate if centering of the design matrix should be disabled
   isFALSE(attr(x, "center", exact = TRUE))
+}
+
+is_sparse <- function(x) {
+  # indicate if the design matrix should be handled as sparse
+  isTRUE(attr(x, "sparse", exact = TRUE))
 }
 
 get_effect <- function(x, ...) {

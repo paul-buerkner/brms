@@ -675,7 +675,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dimnames(fi)[[3]], c("volume", "count"))
   
   # loo_R2
-  R2 <- SW(loo_R2(fit2))
+  R2 <- SW(loo_R2(fit1))
   expect_equal(length(R2), 1)
   
   R2 <- SW(loo_R2(fit6))

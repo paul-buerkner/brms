@@ -443,12 +443,15 @@ prior_string <- function(prior, ...) {
 #' may be specified including default priors.
 #' 
 #' @inheritParams brm
-#' @param internal A flag indicating if the names of additional internal parameters 
-#'   should be displayed. Setting priors on these parameters is not recommended
+#' @param internal A flag indicating if the names of additional internal
+#'   parameters should be displayed. Setting priors on these parameters is not
+#'   recommended
+#' @param ... Currently ignored.
 #' 
-#' @return A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
-#'   and several rows, each providing information on a parameter (or parameter class) on which
-#'   priors can be specified. The prior column is empty except for internal default priors.
+#' @return A data.frame with columns \code{prior}, \code{class}, \code{coef},
+#'   and \code{group} and several rows, each providing information on a
+#'   parameter (or parameter class) on which priors can be specified. The prior
+#'   column is empty except for internal default priors.
 #'   
 #' @seealso \code{\link{set_prior}}
 #' 
@@ -470,15 +473,15 @@ prior_string <- function(prior, ...) {
 #' 
 #' @export
 get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
-                      sparse = FALSE, internal = FALSE) {
+                      sparse = NULL, internal = FALSE, ...) {
   # note that default priors are stored in this function
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
-  sparse <- as_one_logical(sparse)
   internal <- as_one_logical(internal)
   formula <- validate_formula(
-    formula, data = data, family = family, autocor = autocor
+    formula, data = data, family = family, 
+    autocor = autocor, sparse = sparse
   )
   bterms <- parse_bf(formula)
   data <- update_data(data, bterms = bterms)
@@ -488,7 +491,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   prior <- empty_brmsprior()
   # priors for distributional parameters
   prior <- prior + prior_predictor(
-    bterms, data = data, sparse = sparse, internal = internal
+    bterms, data = data, internal = internal
   )
   # priors of group-level parameters
   def_scale_prior <- def_scale_prior(bterms, data)
@@ -541,7 +544,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   prior
 }
 
-prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
+prior_predictor.brmsterms <- function(x, data, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x$family, bterms = x)
@@ -554,8 +557,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
       dp_prior <- prior_predictor(
         x$dpars[[dp]], data = data,
         def_scale_prior = def_scale_prior,
-        def_dprior = def_dprior, cats = cats,
-        sparse = sparse
+        def_dprior = def_dprior, cats = cats
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
@@ -570,8 +572,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
     nlp_prior <- prior_predictor(
       x$nlpars[[nlp]], data = data,
       def_scale_prior = def_scale_prior,
-      def_dprior = def_dprior, 
-      sparse = sparse
+      def_dprior = def_dprior
     )
     prior <- prior + nlp_prior
   }
@@ -595,8 +596,7 @@ prior_predictor.brmsterms <- function(x, data, sparse = FALSE, ...) {
       stopifnot(is_ordinal(x))
       cats <- extract_cat_names(x, data)
       prior <- prior + 
-        prior_thres(x, cats = cats, sparse = sparse,
-                    def_scale_prior = def_scale_prior)
+        prior_thres(x, cats = cats, def_scale_prior = def_scale_prior)
     }
   } 
   # priors for noise-free response variables
@@ -630,15 +630,14 @@ prior_predictor.btnl <- function(x, ...) {
   prior_thres(x, ...)
 }
 
-prior_fe <- function(bterms, data, sparse = FALSE, 
-                     def_dprior = "", ...) {
+prior_fe <- function(bterms, data, def_dprior = "", ...) {
   # priors for population-level parameters
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
-  center_X <- stan_center_X(bterms, sparse)
+  center_X <- stan_center_X(bterms)
   if (center_X) {
     prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
     fixef <- setdiff(fixef, "Intercept")
@@ -649,8 +648,7 @@ prior_fe <- function(bterms, data, sparse = FALSE,
   prior
 }
 
-prior_thres <- function(bterms, cats, sparse = FALSE, 
-                        def_scale_prior = "", ...) {
+prior_thres <- function(bterms, cats, def_scale_prior = "", ...) {
   # priors for thresholds of ordinal models
   prior <- empty_brmsprior()
   if (!is_ordinal(bterms)) {
@@ -1058,7 +1056,7 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
 }
 
-check_prior <- function(prior, formula, data, sparse = FALSE, 
+check_prior <- function(prior, formula, data, 
                         sample_prior = c("no", "yes", "only"),
                         warn = FALSE) {
   # check prior input and amend it if needed
@@ -1075,7 +1073,7 @@ check_prior <- function(prior, formula, data, sparse = FALSE,
     return(prior)
   }
   bterms <- parse_bf(formula)
-  all_priors <- get_prior(formula, data, sparse = sparse, internal = TRUE)
+  all_priors <- get_prior(formula, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (!is.brmsprior(prior)) {

@@ -1337,8 +1337,8 @@ test_that("sparse matrix multiplication is applied correctly", {
   data <- data.frame(y = rnorm(10), x = rnorm(10))
   # linear model
   scode <- make_stancode(
-    bf(y ~ x, sigma ~ x), data, sparse = TRUE,
-    prior = prior(normal(0, 5), coef = "Intercept")
+    bf(y ~ x, sparse = TRUE) + lf(sigma ~ x, sparse = TRUE), 
+    data, prior = prior(normal(0, 5), coef = "Intercept")
   )
   expect_match2(scode, "wX = csr_extract_w(X);")
   expect_match2(scode, 
@@ -1356,9 +1356,8 @@ test_that("sparse matrix multiplication is applied correctly", {
   expect_match2(scode, "target += normal_lpdf(b[1] | 0, 5);")
   # non-linear model
   scode <- make_stancode(
-    bf(y ~ a, a ~ x, nl = TRUE), 
-    data, sparse = TRUE, 
-    prior = prior(normal(0, 1), nlpar = a)
+    bf(y ~ a, lf(a ~ x, sparse = TRUE), nl = TRUE), 
+    data, prior = prior(normal(0, 1), nlpar = a)
   )
   expect_match2(scode, 
     "vX_a[size(csr_extract_v(X_a))] = csr_extract_v(X_a);"
