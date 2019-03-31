@@ -3182,10 +3182,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   }
   # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
-  out <- try(
-    bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...),
-    silent = TRUE
-  )
+  out <- try(bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...))
   if (is(out, "try-error")) {
     stop2(
       "Bridgesampling failed. Did you set 'save_all_pars' ",
