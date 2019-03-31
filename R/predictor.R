@@ -30,7 +30,6 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
   eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
   # intentionally last as it may return 3D arrays
   eta <- predictor_cs(eta, draws, i)
-  eta <- predictor_thres(eta, draws, i)
   unname(eta)
 }
 
@@ -75,9 +74,6 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
     }
   }
   dim(eta) <- dim(rmNULL(args)[[1]])
-  # ordinal thresholds need to be present also in non-linear models
-  # intentionally last as it may return 3D arrays
-  eta <- predictor_thres(eta, draws, i)
   unname(eta)
 }
 
@@ -341,27 +337,6 @@ predictor_gp <- function(draws, i) {
   # no need to differentiate between old and new data points
   spd <- sqrt(spd_cov_exp_quad(slambda, sdgp, lscale))
   (spd * zgp) %*% t(x)
-}
-
-predictor_thres <- function(eta, draws, i) {
-  # add ordinal thresholds to eta
-  # returns 3D array for ordinal models
-  if (!is_ordinal(draws$family)) {
-    return(eta)
-  }
-  ncat <- draws$thres[["ncat"]]
-  thres <- draws$thres[["thresholds"]]
-  eta <- predictor_expand(eta, ncat)
-  for (k in seq_len(ncat - 1)) {
-    if (has_thres_minus_eta(draws$family)) {
-      eta[, , k] <- thres[, k] - eta[, , k]
-    } else if (has_eta_minus_thres(draws$family)) {
-      eta[, , k] <- eta[, , k] - thres[, k]
-    } else {
-      eta[, , k] <- eta[, , k] + thres[, k]
-    }
-  }
-  eta
 }
 
 predictor_cs <- function(eta, draws, i) {

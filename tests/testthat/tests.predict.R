@@ -259,9 +259,10 @@ test_that("predict for ordinal models runs without erros", {
   ncat <- 4
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
-    mu = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
+    mu = array(rnorm(ns * nobs), dim = c(ns, nobs)),
     disc = rexp(ns)
   )
+  draws$thres <- array(0, dim = c(ns, ncat - 1))
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$family$link <- "logit"
   

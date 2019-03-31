@@ -589,11 +589,11 @@ predict_acat <- function(i, draws, ...) {
 }  
 
 predict_ordinal <- function(i, draws, ...) {
-  ncat <- draws$data$ncat
-  disc <- get_dpar(draws, "disc", i = i)
-  eta <- (disc * get_dpar(draws, "mu", i = i))
   p <- pordinal(
-    seq_len(ncat), eta = eta, 
+    seq_len(draws$data$ncat), 
+    eta = get_dpar(draws, "mu", i = i), 
+    disc = get_dpar(draws, "disc", i = i),
+    thres = draws$thres, 
     family = draws$family$family, 
     link = draws$family$link
   )

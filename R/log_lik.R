@@ -574,7 +574,9 @@ log_lik_dirichlet <- function(i, draws, data = data.frame()) {
 
 log_lik_cumulative <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
-  eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
+  disc <- get_dpar(draws, "disc", i = i)
+  mu <- get_dpar(draws, "mu", i = i)
+  eta <- disc * (draws$thres - mu)
   y <- draws$data$Y[i]
   if (y == 1) { 
     out <- log(ilink(eta[, 1], draws$family$link))
@@ -591,7 +593,9 @@ log_lik_cumulative <- function(i, draws, data = data.frame()) {
 
 log_lik_sratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
-  eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
+  disc <- get_dpar(draws, "disc", i = i)
+  mu <- get_dpar(draws, "mu", i = i)
+  eta <- disc * (draws$thres - mu)
   y <- draws$data$Y[i]
   q <- sapply(seq_len(min(y, ncat - 1)), 
     function(k) 1 - ilink(eta[, k], draws$family$link)
@@ -610,7 +614,9 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
 
 log_lik_cratio <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
-  eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
+  disc <- get_dpar(draws, "disc", i = i)
+  mu <- get_dpar(draws, "mu", i = i)
+  eta <- disc * (mu - draws$thres)
   y <- draws$data$Y[i]
   q <- sapply(seq_len(min(y, ncat - 1)), 
     function(k) ilink(eta[, k], draws$family$link)
@@ -629,7 +635,9 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
 
 log_lik_acat <- function(i, draws, data = data.frame()) {
   ncat <- draws$data$ncat
-  eta <- get_dpar(draws, "disc", i = i) * get_dpar(draws, "mu", i = i)
+  disc <- get_dpar(draws, "disc", i = i)
+  mu <- get_dpar(draws, "mu", i = i)
+  eta <- disc * (mu - draws$thres)
   y <- draws$data$Y[i]
   if (draws$family$link == "logit") { # more efficient calculation 
     q <- sapply(1:(ncat - 1), function(k) eta[, k])

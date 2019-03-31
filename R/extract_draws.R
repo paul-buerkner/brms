@@ -138,6 +138,18 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
         draws$dpars$theta <- as_draws_matrix(draws$dpars$theta, dim = dim)
       }
     }
+  } 
+  if (is_ordinal(x$family)) {
+    # it is better to handle ordinal thresholds outside the
+    # main predictor term in particular for use in custom families
+    if (is.mixfamily(x$family)) {
+      mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
+      for (mu in mu_pars) {
+        draws$thres[[mu]] <- extract_draws_thres(x$dpars[[mu]], samples, ...)
+      }
+    } else {
+      draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
+    }
   }
   if (use_cov(x$autocor) || is.cor_sar(x$autocor)) {
     # only include autocor samples on the top-level of draws 
@@ -165,8 +177,6 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
       C[, cov], dim = c(nrow(samples), nrow(C))
     )
   }
-  # ordinal thresholds need to be present also in non-linear models
-  draws$thres <- extract_draws_thres(x, samples, sdata, ...)
   draws
 }
 
@@ -190,7 +200,6 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
   draws$re <- extract_draws_re(x, samples, sdata, ...)
-  draws$thres <- extract_draws_thres(x, samples, sdata, ...)
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
   }
@@ -350,12 +359,12 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   # extract draws of category specific effects
   draws <- list()
-  p <- usc(combine_prefix(bterms))
-  resp <- usc(bterms$resp)
   if (is_ordinal(bterms$family)) {
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
+      p <- usc(combine_prefix(bterms))
+      resp <- usc(bterms$resp)
+      draws$ncat <- sdata[[paste0("ncat", resp)]]
       cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
@@ -611,17 +620,14 @@ extract_draws_offset <- function(bterms, sdata, ...) {
   sdata[[paste0("offset", p)]]
 }
 
-extract_draws_thres <- function(bterms, samples, sdata, ...) {
+extract_draws_thres <- function(bterms, samples, ...) {
   # extract draws of ordinal thresholds
-  draws <- list()
-  if (is_ordinal(bterms$family)) {
-    p <- usc(combine_prefix(bterms))
-    resp <- usc(bterms$resp)
-    int_regex <- paste0("^b", p, "_Intercept\\[")
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
-    draws$thresholds <- get_samples(samples, int_regex)
+  if (!is_ordinal(bterms$family)) {
+    return(NULL)
   }
-  draws
+  p <- usc(combine_prefix(bterms))
+  int_regex <- paste0("^b", p, "_Intercept\\[")
+  get_samples(samples, int_regex)
 }
 
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
@@ -729,6 +735,9 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
     if (length(sample_ids) && length(out$dpars[[dp]]) > 1L) {
       out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
     }
+  }
+  if (is_ordinal(out$family)) {
+    out$thres <- draws$thres[[paste0("mu", comp)]]
   }
   structure(out, class = "brmsdraws")
 }

@@ -460,16 +460,8 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
   } else {
     out <- x
   }
-  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$family$fun))) {
-    # 'se' will be incorporated directly into 'sigma'
-    if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
-      out <- sqrt(get_se(draws, i = i)^2 + out^2)
-      # make sure not to add 'se' twice
-      attr(out, "se_added") <- TRUE
-    }
-  } else if (dpar == "disc" && is.null(i) && is.matrix(out)) {
-    # 'disc' will be multiplied by a 3D array
-    out <- array(out, dim = c(dim(out), draws$data$ncat - 1))
+  if (dpar == "sigma") {
+    out <- add_sigma_se(out, draws, i = i)
   }
   out
 }
@@ -600,15 +592,26 @@ get_se <- function(draws, i = NULL) {
   se
 }
 
+add_sigma_se <- function(sigma, draws, i = NULL) {
+  # add user defined standard errors to 'sigma'
+  needs_se <- "se" %in% names(draws$data) && 
+    !isTRUE(attr(sigma, "se_added")) &&
+    !isTRUE(grepl("_cov$", draws$family$fun))
+  if (needs_se) {
+    # 'se' will be incorporated directly into 'sigma'
+    sigma <- sqrt(get_se(draws, i = i)^2 + sigma^2)
+    # make sure not to add 'se' twice
+    attr(sigma, "se_added") <- TRUE
+  } 
+  sigma
+}
+
 apply_dpar_ilink <- function(dpar, family) {
   # helper function of get_dpar to decide if
   # the link function should be applied by default
   # Returns:
   #   TRUE or FALSE
-  if (is.mixfamily(family)) {
-    dpar <- dpar_class(dpar) 
-  }
-  !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
+  !(has_cat(family) && dpar_class(dpar) == "mu")
 }
 
 insert_refcat  <- function(eta, family) {

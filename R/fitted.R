@@ -340,14 +340,20 @@ fitted_mixture <- function(draws) {
 # ------ fitted helper functions ------
 
 fitted_ordinal <- function(draws) {
-  get_probs <- function(i) {
-    do_call(dens, c(args, list(eta = extract_col(eta, i))))
-  }
-  eta <- draws$dpars$disc * draws$dpars$mu
-  ncat <- draws$data$ncat
-  args <- list(seq_len(ncat), link = draws$family$link)
   dens <- get(paste0("d", draws$family$family), mode = "function")
-  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
+  args <- list(
+    seq_len(draws$data$ncat), 
+    thres = draws$thres,
+    link = draws$family$link
+  )
+  out <- vector("list", draws$nobs)
+  for (i in seq_along(out)) {
+    args_i <- args
+    args_i$eta <- extract_col(draws$dpars$mu, i)
+    args_i$disc <- extract_col(draws$dpars$disc, i)
+    out[[i]] <- do_call(dens, args_i)
+  }
+  out <- abind(out, along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- draws$data$cats
   out
