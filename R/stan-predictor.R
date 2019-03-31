@@ -1283,7 +1283,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   # Args:
   #   llh_adj: is the model censored or truncated?
   transeta <- "transeta" %in% family_info(family, "specials")
-  !(family$link == "identity" && !transeta || has_cat(family)) &&
+  !(family$link == "identity" && !transeta || 
+    has_cat(family) && !is.customfamily(family)) &&
     (llh_adj || !stan_has_built_in_fun(family))
 }
 
