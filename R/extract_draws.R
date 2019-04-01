@@ -739,6 +739,8 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   if (is_ordinal(out$family)) {
     out$thres <- draws$thres[[paste0("mu", comp)]]
   }
+  # weighting should happen after computing the mixture
+  out$data$weights <- NULL
   structure(out, class = "brmsdraws")
 }
 
