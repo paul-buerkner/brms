@@ -30,7 +30,7 @@ brmsfit_example1 <- brm(
       offset(Age) + (1+Trt|visit), sigma ~ Trt),
   data = dat, family = student(), 
   autocor = cor_arma(~visit|patient, 1, 1),
-  prior = set_prior("normal(0,5)", class = "b") +
+  prior = set_prior("normal(0,2)", class = "b") +
     set_prior("cauchy(0,2)", class = "sd") +
     set_prior("normal(0,3)", dpar = "sigma"),
   sample_prior = TRUE, 

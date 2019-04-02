@@ -188,12 +188,13 @@ predictor_sp <- function(draws, i) {
   #   simplex: posterior samples of a simplex parameter vector
   #   X: variable modeled as monotonic
   stopifnot(is.matrix(simplex), is.atomic(X))
+  D <- NCOL(simplex)
   simplex <- cbind(0, simplex)
-  for (i in 2:ncol(simplex)) {
+  for (i in seq_cols(simplex)[-1]) {
     # compute the cumulative representation of the simplex 
     simplex[, i] <- simplex[, i] + simplex[, i - 1]
   }
-  simplex[, X + 1]
+  D * simplex[, X + 1]
 }
 
 predictor_sm <- function(draws, i) {
