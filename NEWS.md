@@ -12,6 +12,13 @@
 * Change the parameterization of monotonic effects to 
 improve their interpretability. (#578)
 
+### Bug Fixes
+
+* Fix computation of log-likelihood values for weighted 
+mixture models.
+* Fix computation of fitted values for truncated lognormal 
+and weibull models.
+
 
 # brms 2.8.0
 

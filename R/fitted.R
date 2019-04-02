@@ -433,7 +433,7 @@ fitted_trunc_student <- function(draws, lb, ub) {
 }
 
 fitted_trunc_lognormal <- function(draws, lb, ub) {
-  # mu has to be on the linear scale
+  lb <- ifelse(lb < 0, 0, lb)
   m1 <- with(draws$dpars, 
     exp(mu + sigma^2 / 2) * 
       (pnorm((log(ub) - mu) / sigma - sigma) - 
@@ -446,15 +446,16 @@ fitted_trunc_lognormal <- function(draws, lb, ub) {
 }
 
 fitted_trunc_gamma <- function(draws, lb, ub) {
-  # mu becomes the scale parameter
-  draws$dpars$mu <- draws$dpars$mu / draws$dpars$shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  draws$dpars$scale <- draws$dpars$mu / draws$dpars$shape
   m1 <- with(draws$dpars, 
-    mu / gamma(shape) * 
-      (incgamma(1 + shape, ub / mu) - incgamma(1 + shape, lb / mu))
+    scale / gamma(shape) * 
+      (incgamma(1 + shape, ub / scale) - 
+       incgamma(1 + shape, lb / scale))
   )
   with(draws$dpars, 
-    m1 / (pgamma(ub, shape, scale = mu) - pgamma(lb, shape, scale = mu))
+    m1 / (pgamma(ub, shape, scale = scale) - 
+          pgamma(lb, shape, scale = scale))
   )
 }
 
@@ -468,14 +469,15 @@ fitted_trunc_exponential <- function(draws, lb, ub) {
 
 fitted_trunc_weibull <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  # mu becomes the scale parameter
-  draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, family$link))
-  a <- 1 + 1 / draws$dpars$shape
+  draws$dpars$a <- 1 + 1 / draws$dpars$shape
+  draws$dpars$scale <- with(draws$dpars, mu / gamma(a))
   m1 <- with(draws$dpars,
-    mu * (incgamma(a, (ub / mu)^shape) - incgamma(a, (lb / mu)^shape))
+    scale * (incgamma(a, (ub / scale)^shape) - 
+             incgamma(a, (lb / scale)^shape))
   )
   with(draws$dpars,
-    m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
+    m1 / (pweibull(ub, shape, scale = scale) - 
+          pweibull(lb, shape, scale = scale))
   )
 }
 
