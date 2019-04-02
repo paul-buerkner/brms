@@ -91,38 +91,6 @@ is.brmsfit_multiple <- function(x) {
   inherits(x, "brmsfit_multiple")
 }
 
-#' Descriptions of \code{brmshypothesis} Objects
-#' 
-#' A \code{brmshypothesis} object contains posterior samples
-#' as well as summary statistics of non-linear hypotheses as 
-#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
-#' 
-#' @name brmshypothesis
-#' 
-#' @param ignore_prior A flag indicating if prior distributions 
-#'  should also be plotted. Only used if priors were specified on
-#'  the relevant parameters.
-#' @param digits Minimal number of significant digits, 
-#'   see \code{\link[base:print.default]{print.default}}.
-#' @param chars Maximum number of characters of each hypothesis
-#'  to print or plot. If \code{NULL}, print the full hypotheses.
-#'  Defaults to \code{20}.
-#' @param colors Two values specifying the colors of the posterior
-#'  and prior density respectively. If \code{NULL} (the default)
-#'  colors are taken from the current color scheme of 
-#'  the \pkg{bayesplot} package.
-#' @param ... Currently ignored.
-#' @inheritParams plot.brmsfit
-#' 
-#' @details 
-#' The two most important elements of a \code{brmshypothesis} object are
-#' \code{hypothesis}, which is a data.frame containing the summary estimates
-#' of the hypotheses, and \code{samples}, which is a data.frame containing 
-#' the corresponding posterior samples.
-#' 
-#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
-NULL
-
 #' Extract posterior samples
 #' 
 #' Extract posterior samples of specified parameters 

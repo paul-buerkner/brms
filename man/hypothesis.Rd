@@ -69,7 +69,7 @@ Among others, \code{hypothesis} computes an evidence ratio
   indicate that evidence in favor of the point hypothesis has increased after
   seeing the data. In order to calculate this Bayes factor, all parameters
   related to the hypothesis must have proper priors and argument
-  \code{sample_prior} of function \code{brm} must be set to \code{TRUE}. When
+  \code{sample_prior} of function \code{brm} must be set to \code{"yes"}. When
   interpreting Bayes factors, make sure that your priors are reasonable and
   carefully chosen, as the result will depend heavily on the priors. In
   particular, avoid using default priors.

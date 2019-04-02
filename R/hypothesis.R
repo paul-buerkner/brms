@@ -42,7 +42,7 @@
 #'   indicate that evidence in favor of the point hypothesis has increased after
 #'   seeing the data. In order to calculate this Bayes factor, all parameters
 #'   related to the hypothesis must have proper priors and argument
-#'   \code{sample_prior} of function \code{brm} must be set to \code{TRUE}. When
+#'   \code{sample_prior} of function \code{brm} must be set to \code{"yes"}. When
 #'   interpreting Bayes factors, make sure that your priors are reasonable and
 #'   carefully chosen, as the result will depend heavily on the priors. In
 #'   particular, avoid using default priors.
@@ -125,6 +125,38 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
   x <- as.data.frame(x)
   hypothesis_internal(x, hypothesis, class = "", alpha = alpha, ...)
 }
+
+#' Descriptions of \code{brmshypothesis} Objects
+#' 
+#' A \code{brmshypothesis} object contains posterior samples
+#' as well as summary statistics of non-linear hypotheses as 
+#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' 
+#' @name brmshypothesis
+#' 
+#' @param ignore_prior A flag indicating if prior distributions 
+#'  should also be plotted. Only used if priors were specified on
+#'  the relevant parameters.
+#' @param digits Minimal number of significant digits, 
+#'   see \code{\link[base:print.default]{print.default}}.
+#' @param chars Maximum number of characters of each hypothesis
+#'  to print or plot. If \code{NULL}, print the full hypotheses.
+#'  Defaults to \code{20}.
+#' @param colors Two values specifying the colors of the posterior
+#'  and prior density respectively. If \code{NULL} (the default)
+#'  colors are taken from the current color scheme of 
+#'  the \pkg{bayesplot} package.
+#' @param ... Currently ignored.
+#' @inheritParams plot.brmsfit
+#' 
+#' @details 
+#' The two most important elements of a \code{brmshypothesis} object are
+#' \code{hypothesis}, which is a data.frame containing the summary estimates
+#' of the hypotheses, and \code{samples}, which is a data.frame containing 
+#' the corresponding posterior samples.
+#' 
+#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
+NULL
 
 hypothesis_internal <- function(x, hypothesis, class, alpha,
                                 combine = TRUE, ...) {
