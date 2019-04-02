@@ -7,6 +7,11 @@
 * Use the `softplus` link function in various families. (#622)
 * Define argument `sparse` separately for each model formula.
 
+### Other Changes
+
+* Change the parameterization of monotonic effects to 
+improve their interpretability. (#578)
+
 
 # brms 2.8.0
 
