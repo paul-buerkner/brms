@@ -17,7 +17,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
