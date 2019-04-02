@@ -102,7 +102,7 @@ prior <- c(set_prior("normal(0,2)", class = "b"),
 ## fit a linear mixed effects models
 fit <- brm(time ~ age + sex + disease + (1 + age|patient),
            data = kidney, family = lognormal(),
-           prior = prior, sample_prior = TRUE, 
+           prior = prior, sample_prior = "yes", 
            control = list(adapt_delta = 0.95))
 
 ## perform two-sided hypothesis testing
