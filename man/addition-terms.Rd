@@ -10,6 +10,7 @@
 \alias{resp_cens}
 \alias{resp_trunc}
 \alias{resp_mi}
+\alias{resp_subset}
 \title{Additional Response Information}
 \usage{
 resp_se(x, sigma = FALSE)
@@ -27,6 +28,8 @@ resp_cens(x, y2 = NULL)
 resp_trunc(lb = -Inf, ub = Inf)
 
 resp_mi(sdy = NULL)
+
+resp_subset(x)
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the
@@ -35,6 +38,8 @@ data. Allowed values depend on the function:
 \code{resp_trials} and \code{resp_cat} require positive integers.
 \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 \code{'lower'} and \code{'upper'}; 
+\code{resp_subset} requires \code{0} and \code{1}, or alternatively
+\code{FALSE} and \code{TRUE};
 \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 and \code{2}) to indicate left, no, right, or interval censoring.}
@@ -104,7 +109,7 @@ fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 summary(fit3)
 
 ## Poisson model with truncated counts  
-fit4 <- brm(count | trunc(ub = 104) ~ log_Base4_c * Trt_c, 
+fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
             data = epilepsy, family = poisson())
 summary(fit4)
 }

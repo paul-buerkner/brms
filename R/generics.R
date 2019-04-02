@@ -25,9 +25,11 @@
 #' @slot stanvars A \code{\link{stanvars}} object or \code{NULL}
 #' @slot stan_funs A character string of length one or \code{NULL}
 #' @slot loo An empty slot for adding the \code{\link{loo}} 
-#'   information criterion after model fitting
+#'   criterion after model fitting
 #' @slot waic An empty slot for adding the \code{\link{waic}} 
-#'   information criterion after model fitting
+#'   criterion after model fitting
+#' @slot kfold An empty slot for adding the \code{\link{kfold}} 
+#'   criterion after model fitting  
 #' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
 #' @slot marglik An empty slot for adding a \code{bridge} object 
@@ -52,8 +54,8 @@ NULL
 
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
-                    autocor = NULL, ranef = empty_ranef(), 
-                    cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
+                    autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
+                    loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
@@ -64,9 +66,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   )
   x <- nlist(
     formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, loo, waic, R2, marglik,
-    stanvars, stan_funs, fit, exclude, algorithm, version, 
-    file
+    autocor, ranef, cov_ranef, loo, waic, kfold, R2, marglik,
+    stanvars, stan_funs, fit, exclude, algorithm, version, file
   )
   class(x) <- "brmsfit"
   x
@@ -367,8 +368,7 @@ autocor <- function(object, ...) {
 #' 
 #' @examples
 #' \dontrun{
-#' model <- brm(count ~ log_Age_c + log_Base4_c * Trt 
-#'              + (1|patient) + (1|visit),
+#' model <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'              data = epilepsy, family = "poisson")
 #'              
 #' # plot posterior intervals

@@ -28,7 +28,7 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
     predictor_offset(draws, i, nobs)
   # some autocorrelation structures depend on eta
   eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
-  # intentionally last
+  # intentionally last as it may return 3D arrays
   eta <- predictor_cs(eta, draws, i)
   unname(eta)
 }
@@ -57,24 +57,24 @@ predictor.bdrawsnl <- function(draws, i = NULL, fdraws = NULL, ...) {
     args[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
   }
   # evaluate non-linear predictor
-  out <- try(eval(draws$nlform, args), silent = TRUE)
-  if (is(out, "try-error")) {
-    if (grepl("could not find function", out)) {
-      out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
+  eta <- try(eval(draws$nlform, args), silent = TRUE)
+  if (is(eta, "try-error")) {
+    if (grepl("could not find function", eta)) {
+      eta <- rename(eta, "Error in eval(expr, envir, enclos) : ", "")
       message(
-        out, " Most likely this is because you used a Stan ",
+        eta, " Most likely this is because you used a Stan ",
         "function in the non-linear model formula that ",
         "is not defined in R. If this is a user-defined function, ",
         "please run 'expose_functions(., vectorize = TRUE)' on ",
         "your fitted model and try again."
       )
     } else {
-      out <- rename(out, "^Error :", "", fixed = FALSE)
-      stop2(out)
+      eta <- rename(eta, "^Error :", "", fixed = FALSE)
+      stop2(eta)
     }
   }
-  dim(out) <- dim(rmNULL(args)[[1]])
-  unname(out)
+  dim(eta) <- dim(rmNULL(args)[[1]])
+  unname(eta)
 }
 
 predictor_fe <- function(draws, i) {
@@ -253,37 +253,37 @@ predictor_gp <- function(draws, i) {
   if (is.null(gp[["slambda"]])) {
     # predictions for exact GPs
     nsamples <- length(gp[["sdgp"]])
-    out <- as.list(rep(NA, nsamples))
+    eta <- as.list(rep(NA, nsamples))
     if (!is.null(gp[["x_new"]])) {
-      for (i in seq_along(out)) {
-        out[[i]] <- with(gp, .predictor_gp_new(
+      for (i in seq_along(eta)) {
+        eta[[i]] <- with(gp, .predictor_gp_new(
           x_new = x_new, yL = yL[i, ], x = x, 
           sdgp = sdgp[i], lscale = lscale[i, ], nug = nug
         ))
       }
     } else {
-      for (i in seq_along(out)) {
-        out[[i]] <- with(gp, .predictor_gp_old(
+      for (i in seq_along(eta)) {
+        eta[[i]] <- with(gp, .predictor_gp_old(
           x = x, sdgp = sdgp[i], lscale = lscale[i, ], 
           zgp = zgp[i, ], nug = nug
         ))
       }
     }
-    out <- run(rbind, out) 
+    eta <- do_call(rbind, eta) 
   } else {
     # predictions for approximate GPs
-    out <- with(gp, .predictor_gpa(
+    eta <- with(gp, .predictor_gpa(
       x = x, sdgp = sdgp, lscale = lscale, 
       zgp = zgp, slambda = slambda
     ))
   }
   if (!is.null(gp[["Cgp"]])) {
-    out <- out * as_draws_matrix(gp[["Cgp"]], dim = dim(out))
+    eta <- eta * as_draws_matrix(gp[["Cgp"]], dim = dim(eta))
   }
   if (!is.null(gp[["Jgp"]])) {
-    out <- out[, gp[["Jgp"]], drop = FALSE]
+    eta <- eta[, gp[["Jgp"]], drop = FALSE]
   }
-  out
+  eta
 }
 
 
@@ -345,42 +345,29 @@ predictor_cs <- function(eta, draws, i) {
   # returns 3-dimensional eta if cs terms are present
   cs <- draws[["cs"]]
   re <- draws[["re"]]
+  if (!length(cs) && !length(re[["rcs"]])) {
+    return(eta)
+  }
   ncat <- cs[["ncat"]]
-  if (is_ordinal(draws$f)) {
-    if (!is.null(cs) || !is.null(re[["rcs"]])) {
-      if (!is.null(re[["rcs"]])) {
-        groups <- names(re[["rcs"]])
-        rcs <- vector("list", ncat - 1)
-        for (k in seq_along(rcs)) {
-          rcs[[k]] <- named_list(groups)
-          for (g in groups) {
-            rcs[[k]][[g]] <- .predictor_re(
-              Z = p(re[["Zcs"]][[g]], i),
-              r = re[["rcs"]][[g]][[k]]
-            )
-          }
-          rcs[[k]] <- Reduce("+", rcs[[k]])
-        }
-      } else {
-        rcs <- NULL
+  rcs <- NULL
+  if (!is.null(re[["rcs"]])) {
+    groups <- names(re[["rcs"]])
+    rcs <- vector("list", ncat - 1)
+    for (k in seq_along(rcs)) {
+      rcs[[k]] <- named_list(groups)
+      for (g in groups) {
+        rcs[[k]][[g]] <- .predictor_re(
+          Z = p(re[["Zcs"]][[g]], i),
+          r = re[["rcs"]][[g]][[k]]
+        )
       }
-      eta <- .predictor_cs(
-        eta, X = p(cs[["Xcs"]], i), 
-        b = cs[["bcs"]], ncat = ncat, r = rcs
-      )
-      rm(rcs)
-    } else {
-      eta <- array(eta, dim = c(dim(eta), ncat - 1))
-    } 
-    for (k in seq_len(ncat - 1)) {
-      if (draws$f$family %in% c("cumulative", "sratio")) {
-        eta[, , k] <- cs[["Intercept"]][, k] - eta[, , k]
-      } else {
-        eta[, , k] <- eta[, , k] - cs[["Intercept"]][, k]
-      }
+      rcs[[k]] <- Reduce("+", rcs[[k]])
     }
   }
-  eta
+  .predictor_cs(
+    eta, X = p(cs[["Xcs"]], i), 
+    b = cs[["bcs"]], ncat = ncat, r = rcs
+  )
 }
 
 .predictor_cs <- function(eta, X, b, ncat, r = NULL) {
@@ -395,7 +382,7 @@ predictor_cs <- function(eta, draws, i) {
   #   linear predictor including category specific effects as a 3D array
   stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
   ncat <- max(ncat)
-  eta <- array(eta, dim = c(dim(eta), ncat - 1))
+  eta <- predictor_expand(eta, ncat)
   if (!is.null(X)) {
     I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
     X <- t(X)
@@ -407,6 +394,14 @@ predictor_cs <- function(eta, draws, i) {
     if (!is.null(r[[k]])) {
       eta[, , k] <- eta[, , k] + r[[k]]
     }
+  }
+  eta
+}
+
+predictor_expand <- function(eta, ncat) {
+  # expand the predictor matrix for use in ordinal models
+  if (length(dim(eta)) == 2L) {
+    eta <- array(eta, dim = c(dim(eta), ncat - 1))    
   }
   eta
 }
@@ -466,7 +461,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   if (anyNA(Y)) {
     # predicting Y will be necessary at some point
     stopifnot(is.brmsdraws(fdraws) || is.mvbrmsdraws(fdraws))
-    predict_fun <- paste0("predict_", fdraws$f$fun)
+    predict_fun <- paste0("predict_", fdraws$family$fun)
     predict_fun <- get(predict_fun, asNamespace("brms"))
   }
   S <- nrow(eta)

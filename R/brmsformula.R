@@ -50,10 +50,19 @@
 #'   Indicates if the computation of the non-linear formula should be 
 #'   done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 #'   over observations. Defaults to \code{TRUE}.
+#' @param center Logical; Indicates if the population-level design
+#'   matrix should be centered, which usually increases sampling efficiency.
+#'   See the 'Details' section for more information.
+#'   Defaults to \code{TRUE} for distributional parameters
+#'   and to \code{FALSE} for non-linear parameters.
 #' @param cmc Logical; Indicates whether automatic cell-mean coding
 #'   should be enabled when removing the intercept by adding \code{0} 
 #'   to the right-hand of model formulas. Defaults to \code{TRUE} to 
 #'   mirror the behavior of standard \R formula parsing.
+#' @param sparse Logical; indicates whether the population-level design matrices
+#'   should be treated as sparse (defaults to \code{FALSE}). For design matrices
+#'   with many zeros, this can considerably reduce required memory. Sampling
+#'   speed is currently not improved or even slightly decreased.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -206,7 +215,7 @@
 #'   \code{aterms} part, which may contain multiple terms of the form 
 #'   \code{fun(<variable>)} separated by \code{+} each providing special 
 #'   information on the response variable. \code{fun} can be replaced with 
-#'   either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
+#'   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
 #'   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
 #'   (see also \code{\link{addition-terms}}). 
 #'   
@@ -235,6 +244,14 @@
 #'   and that \code{yi} is the response variable. 
 #'   Then, formula \code{yi | weights(wei) ~ predictors} 
 #'   implements a weighted regression. 
+#'   
+#'   For multivariate models, \code{subset} may be used in the \code{aterms}
+#'   part, to use different subsets of the data in different univariate
+#'   models. For instance, if \code{sub} is a logical variable and
+#'   \code{y} is the response of one of the univariate models, we may
+#'   write \code{y | subset(sub) ~ predictors} so that \code{y} is
+#'   predicted only for those observations for which \code{sub} evaluates
+#'   to \code{TRUE}.
 #'   
 #'   With the exception of categorical, ordinal, and mixture families, 
 #'   left, right, and interval censoring can be modeled through 
@@ -273,7 +290,7 @@
 #'   we may also write \code{success | trials(10)}. 
 #'   \bold{Please note that the \code{cbind()} syntax will not work 
 #'   in \pkg{brms} in the expected way because this syntax is reserved
-#'   for use in multivariate models, only.}
+#'   for other purposes.}
 #'   
 #'   For all ordinal families, \code{aterms} may contain a term 
 #'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
@@ -301,19 +318,19 @@
 #'   
 #'   \bold{Parameterization of the population-level intercept}
 #'   
-#'   The population-level intercept (if incorporated) is estimated separately 
-#'   and not as part of population-level parameter vector \code{b}. 
-#'   As a result, priors on the intercept also have to be specified separately.
-#'   Furthermore, to increase sampling efficiency, the population-level 
-#'   design matrix \code{X} is centered around its column means 
-#'   \code{X_means} if the intercept is incorporated. 
-#'   This leads to a temporary bias in the intercept equal to 
-#'   \code{<X_means, b>}, where \code{<,>} is the scalar product. 
-#'   The bias is corrected after fitting the model, but be aware 
-#'   that you are effectively defining a prior on the intercept 
-#'   of the centered design matrix not on the real intercept.
-#'   For more details on setting priors on population-level intercepts,
-#'   see \code{\link{set_prior}}.
+#'   By default, the population-level intercept (if incorporated) is estimated
+#'   separately and not as part of population-level parameter vector \code{b} As
+#'   a result, priors on the intercept also have to be specified separately.
+#'   Furthermore, to increase sampling efficiency, the population-level design
+#'   matrix \code{X} is centered around its column means \code{X_means} if the
+#'   intercept is incorporated. This leads to a temporary bias in the intercept
+#'   equal to \code{<X_means, b>}, where \code{<,>} is the scalar product. The
+#'   bias is corrected after fitting the model, but be aware that you are
+#'   effectively defining a prior on the intercept of the centered design matrix
+#'   not on the real intercept. You can turn off this special handling of the
+#'   intercept by setting argument \code{center} to \code{FALSE}. For more
+#'   details on setting priors on population-level intercepts, see
+#'   \code{\link{set_prior}}.
 #'   
 #'   This behavior can be avoided by using the reserved 
 #'   (and internally generated) variable \code{intercept}. 
@@ -452,21 +469,21 @@
 #'   
 #'   \bold{Formula syntax for multivariate models}
 #'   
-#'   Multivariate models may be specified using \code{cbind} notation
+#'   Multivariate models may be specified using \code{mvbind} notation
 #'   or with help of the \code{\link{mvbf}} function.
 #'   Suppose that \code{y1} and \code{y2} are response variables 
-#'   and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
+#'   and \code{x} is a predictor. Then \code{mvbind(y1, y2) ~ x} 
 #'   specifies a multivariate model.
 #'   The effects of all terms specified at the RHS of the formula 
 #'   are assumed to vary across response variables. 
 #'   For instance, two parameters will be estimated for \code{x}, 
 #'   one for the effect on \code{y1} and another for the effect on \code{y2}.
 #'   This is also true for group-level effects. When writing, for instance,
-#'   \code{cbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
+#'   \code{mvbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
 #'   estimated separately for each response. To model these effects
 #'   as correlated across responses, use the ID syntax (see above).
 #'   For the present example, this would look as follows:
-#'   \code{cbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
+#'   \code{mvbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
 #'   any value other than \code{2} as ID.
 #'   
 #'   It is also possible to specify different formulas for different responses.
@@ -502,7 +519,7 @@
 #' bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 #' 
 #' # define a multivariate model
-#' bf(cbind(y1, y2) ~ x * z + (1|g))
+#' bf(mvbind(y1, y2) ~ x * z + (1|g))
 #' 
 #' # define a zero-inflated model 
 #' # also predicting the zero-inflation part
@@ -551,11 +568,17 @@
 #' bf(bmi ~ age * mi(chl)) +
 #'   bf(chl | mi() ~ age) + 
 #'   set_rescor(FALSE)
+#'   
+#' # model sigma as a function of the mean
+#' bf(y ~ eta, nl = TRUE) + 
+#'   lf(eta ~ 1 + x) +
+#'   nlf(sigma ~ tau * sqrt(eta)) +
+#'   lf(tau ~ 1)
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
-                        autocor = NULL, nl = NULL, loop = NULL,
-                        cmc = NULL) {
+                        autocor = NULL, nl = NULL, loop = NULL, 
+                        center = NULL, cmc = NULL, sparse = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -627,11 +650,14 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.null(attr(out$formula, "loop"))) {
     attr(out$formula, "loop") <- TRUE
   }
+  if (!is.null(center)) {
+    attr(out$formula, "center") <- as_one_logical(center)
+  }
   if (!is.null(cmc)) {
     attr(out$formula, "cmc") <- as_one_logical(cmc)
   }
-  if (is.null(attr(out$formula, "cmc"))) {
-    attr(out$formula, "cmc") <- TRUE
+  if (!is.null(sparse)) {
+    attr(out$formula, "sparse") <- as_one_logical(sparse)
   }
   if (!is.null(family)) {
     out$family <- check_family(family)
@@ -656,11 +682,14 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 }
 
 #' @export
-bf <- function(formula, ..., flist = NULL, family = NULL, 
-               autocor = NULL, nl = NULL, loop = NULL, cmc = NULL) {
+bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
+               nl = NULL, loop = NULL, center = NULL, cmc = NULL,
+               sparse = NULL) {
   # alias of brmsformula
-  brmsformula(formula, ..., flist = flist, family = family,
-              autocor = autocor, nl = nl, loop = loop, cmc = cmc)
+  brmsformula(
+    formula, ..., flist = flist, family = family, autocor = autocor, 
+    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse
+  )
 }
 
 #' Linear and Non-linear formulas in \pkg{brms}
@@ -747,19 +776,24 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 
 #' @rdname brmsformula-helpers
 #' @export
-lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL) {
+lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, 
+               center = NULL, cmc = NULL, sparse = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
     resp <- as_one_character(resp)
   }
   cmc <- if (!is.null(cmc)) as_one_logical(cmc)
+  center <- if (!is.null(center)) as_one_logical(center)
   for (i in seq_along(out)) {
     if (!is.null(cmc)) {
       attr(out[[i]], "cmc") <- cmc
     }
-    if (is.null(attr(out[[i]], "cmc"))) {
-      attr(out[[i]], "cmc") <- TRUE
+    if (!is.null(center)) {
+      attr(out[[i]], "center") <- center
+    }
+    if (!is.null(sparse)) {
+      attr(out[[i]], "sparse") <- sparse
     }
   }
   structure(out, resp = resp)
@@ -814,7 +848,7 @@ set_nl <- function(nl = TRUE, dpar = NULL, resp = NULL) {
 mvbrmsformula <- function(..., flist = NULL, rescor = NULL) {
   dots <- c(list(...), flist)
   if (!length(dots)) {
-    stop2("No objects passed to 'mvbf'.")
+    stop2("No objects passed to 'mvbrmsformula'.")
   }
   forms <- list()
   for (i in seq_along(dots)) {
@@ -848,14 +882,14 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 
 split_bf <- function(x) {
   # build a mvbrmsformula object based on a brmsformula object
-  # which uses cbind on the left-hand side to specify MV models
+  # which uses mvbind on the left-hand side to specify MV models
   stopifnot(is.brmsformula(x))
   resp <- parse_resp(x$formula, check_names = FALSE)
   str_adform <- get_matches(
     "\\|[^~]*(?=~)", formula2str(x$formula), perl = TRUE
   )
   if (length(resp) > 1L) {
-    # cbind syntax used to specify MV model
+    # mvbind syntax used to specify MV model
     flist <- named_list(resp)
     for (i in seq_along(resp)) {
       flist[[i]] <- x
@@ -866,6 +900,24 @@ split_bf <- function(x) {
     x <- mvbf(flist = flist) 
   }
   x
+}
+
+#' Bind response variables in multivariate models
+#' 
+#' Can be used to specify a multivariate \pkg{brms} model within a single
+#' formula. Outside of \code{\link{brmsformula}}, it just behaves like
+#' \code{\link{cbind}}.
+#' 
+#' @param ... Same as in \code{\link{cbind}}
+#' 
+#' @seealso \code{\link{brmsformula}}, \code{\link{mvbrmsformula}}
+#' 
+#' @examples 
+#' bf(mvbind(y1, y2) ~ x)
+#' 
+#' @export
+mvbind <- function(...) {
+  cbind(...)
 }
 
 #' @rdname brmsformula-helpers
@@ -1007,7 +1059,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
-      stop2("Expecting a single value when fixing parameters.")
+      stop2("Expecting a single value when fixing parameter '", par, "'.")
     }
     scalar <- SW(as.numeric(formula))
     if (!is.na(scalar)) {
@@ -1057,7 +1109,7 @@ validate_formula.default <- function(formula, ...) {
 #' @export
 validate_formula.brmsformula <- function(
   formula, family = gaussian(), autocor = cor_empty(), 
-  data = NULL, threshold = NULL, ...
+  data = NULL, threshold = NULL, sparse = NULL, ...
 ) {
   # incorporate additional arguments into the model formula
   # Args:
@@ -1080,9 +1132,30 @@ validate_formula.brmsformula <- function(
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
   }
+  if (!is.null(sparse)) {
+    # a global 'sparse' argument is deprecated as of brms 2.8.3
+    warning2(
+      "Argument 'sparse' should be specified within the ", 
+      "'formula' argument. See ?brmsformula for help."
+    )
+    sparse <- as_one_logical(sparse)
+    if (is.null(attr(out$formula, "sparse"))) {
+      attr(out$formula, "sparse") <- sparse
+    }
+    for (i in seq_along(out$pforms)) {
+      if (is.null(attr(out$pforms[[i]], "sparse"))) {
+        attr(out$pforms[[i]], "sparse") <- sparse
+      }
+    }
+  }
+  out$mecor <- default_mecor(out$mecor)
+  if (has_cat(out) && is.null(get_cats(out)) && !is.null(data)) {
+    # for easy access of response categories
+    out$family$cats <- extract_cat_names(out, data)
+  }
   if (is_ordinal(out$family)) {
     if (is.null(out$family$threshold) && !is.null(threshold)) {
-      # slot 'threshold' is deprecated as of brms > 1.7.0
+      # slot 'threshold' is deprecated as of brms 1.7.0
       out$family <- check_family(out$family, threshold = threshold)
     }
     try_terms <- try(stats::terms(out$formula), silent = TRUE)
@@ -1090,21 +1163,40 @@ validate_formula.brmsformula <- function(
     if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
       stop2("Cannot remove the intercept in an ordinal model.")
     }
+    if (is.mixfamily(out$family)) {
+      # every mixture family needs to know about response categories
+      for (i in seq_along(out$family$mix)) {
+        out$family$mix[[i]]$cats <- out$family$cats
+      }
+    }
   }
-  out$mecor <- default_mecor(out$mecor)
-  needs_cat <- is_categorical(out$family) && is.null(out$family$dpars)
-  if (needs_cat && !is.null(data)) {
-    cats <- extract_cat_names(out, data)
-    if (length(cats) < 2L) {
+  mu_dpars <- str_subset(out$family$dpars, "^mu")
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
+    # define distributional parameters based on response categories
+    if (length(out$family$cats) < 2L) {
       stop2("At least 2 response categories are required.")
     }
-    # the first level will serve as the reference category
-    out$family$dpars <- make.names(paste0("mu", cats[-1]), unique = TRUE)
-    out$family$dpars <- gsub("\\.|_", "", out$family$dpars)
-    if (any(duplicated(out$family$dpars))) {
+    if (is.null(out$family$refcat)) {
+      # the first level serves as the reference category
+      out$family$refcat <- out$family$cats[1]
+    } 
+    if (isNA(out$family$refcat)) {
+      predcats <- out$family$cats  # predict all categories
+    } else {
+      if (!out$family$refcat %in% out$family$cats) {
+        stop2("The reference response category must be one of ",
+              collapse_comma(out$family$cats), ".")
+      }
+      predcats <- setdiff(out$family$cats, out$family$refcat)
+    }
+    mu_dpars <- make.names(paste0("mu", predcats), unique = TRUE)
+    mu_dpars <- gsub("\\.|_", "", mu_dpars)
+    if (any(duplicated(mu_dpars))) {
       stop2("Invalid response category names. Please avoid ",
             "using any special characters in the names.")
     }
+    out$family$dpars <- c(mu_dpars, out$family$dpars)
   }
   bf(out)
 }

@@ -43,7 +43,7 @@ Computing the marginal likelihood requires samples
 \dontrun{
 # model with the treatment effect
 fit1 <- brm(
-  count ~ log_Age_c + log_Base4_c + Trt_c,
+  count ~ zAge + zBase + Trt,
   data = epilepsy, family = negbinomial(), 
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
@@ -53,7 +53,7 @@ bridge_sampler(fit1)
 
 # model without the treatment effect
 fit2 <- brm(
-  count ~ log_Age_c + log_Base4_c,
+  count ~ zAge + zBase,
   data = epilepsy, family = negbinomial(), 
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE

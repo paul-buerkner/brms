@@ -18,8 +18,7 @@
 #'                        data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- make_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'                        + (1|patient) + (1|visit), 
+#' data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
 #'                        data = epilepsy, family = "poisson")
 #' names(data2)
 #'          
@@ -66,25 +65,23 @@ make_standata <- function(formula, data, family = gaussian(),
     data <- order_data(data, bterms = bterms)
   }
   
-  out <- c(
-    list(N = nrow(data)), 
-    data_response(
-      bterms, data, check_response = check_response,
-      not4stan = not4stan, new = new, 
-      old_sdata = control$old_sdata
-    )
+  out <- data_response(
+    bterms, data, check_response = check_response,
+    not4stan = not4stan, new = new, 
+    old_sdata = control$old_sdata
   )
   if (!only_response) {
     ranef <- tidy_ranef(
       bterms, data, old_levels = control$old_levels,
       old_sdata = control$old_sdata  
     )
-    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, meef = meef, 
-      cov_ranef = cov_ranef, knots = knots, not4stan = not4stan, 
-      old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
+      not4stan = not4stan, old_sdata = control$old_sdata
     )
+    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef)
+    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
+    c(out) <- data_Xme(meef, data = data)
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
   stanvars <- validate_stanvars(stanvars)

@@ -4,23 +4,21 @@
 \name{epilepsy}
 \alias{epilepsy}
 \title{Epileptic seizure counts}
-\format{A dataframe of 236 observations containing information 
+\format{A data frame of 236 observations containing information 
   on the following 9 variables. 
 \describe{
  \item{Age}{The age of the patients in years}
  \item{Base}{The seizure count at 8-weeks baseline}
  \item{Trt}{Either \code{0} or \code{1} indicating 
    if the patient received anti-convulsant therapy} 
- \item{log_Age_c}{The logarithm of Age centered around its mean}
- \item{log_Base4_c}{The logarithm of Base divided by 4 
-   (i.e. log(Base/4)) centered around its mean}
- \item{Trt_c}{Trt centered around its mean}
+ \item{patient}{The patient number}
  \item{visit}{The session number from \code{1} (first visit) 
    to \code{4} (last visit)}
  \item{count}{The seizure count between two visits}
- \item{patient}{The patient number}
- \item{obs}{The observation number, 
-   i.e. a unique identifier for each observation}
+ \item{obs}{The observation number, that is 
+   a unique identifier for each observation}
+ \item{zAge}{Standardized \code{Age}}
+ \item{zBase}{Standardized \code{Base}}
 }}
 \source{
 Thall, P. F., & Vail, S. C. (1990). 
@@ -44,15 +42,14 @@ Breslow and Clayton (1993) analyze data initially
 \examples{
 \dontrun{
 ## poisson regression without random effects. 
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c, 
+fit1 <- brm(count ~ zAge + zBase * Trt, 
             data = epilepsy, family = poisson())
 summary(fit1) 
 plot(fit1)             
     
-## poisson regression with random intercepts of patients and visits
-## as well as normal priors for fixed effects parameters.    
-fit2 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
-            + (1|patient) + (1|visit), 
+## poisson regression with varying intercepts of patients
+## as well as normal priors for overall effects parameters.    
+fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient), 
             data = epilepsy, family = poisson(), 
             prior = set_prior("normal(0,5)"))
 summary(fit2) 

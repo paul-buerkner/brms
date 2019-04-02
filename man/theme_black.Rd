@@ -26,13 +26,13 @@ I recommend using the \code{"viridisC"} color scheme (see examples).
 \examples{
 \dontrun{
 # change default ggplot theme
-theme_set(theme_black())
+ggplot2::theme_set(theme_black())
 
 # change default bayesplot color scheme
 bayesplot::color_scheme_set("viridisC")
 
 # fit a simple model
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            data = epilepsy, family = poisson(), chains = 2)
 summary(fit)
            

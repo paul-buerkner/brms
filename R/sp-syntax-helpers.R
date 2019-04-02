@@ -75,6 +75,10 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
   # save all me-terms within a tidy data.frame
   uni_me <- get_uni_me(bterms)
   if (length(uni_me)) {
+    if (has_subset(bterms)) {
+      # 'Xme' variables need to be the same across univariate models
+      stop2("Argument 'subset' is not supported when using 'me' terms.")
+    }
     out <- data.frame(
       term = uni_me, xname = "", grname = "", 
       stringsAsFactors = FALSE

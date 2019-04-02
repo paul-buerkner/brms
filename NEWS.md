@@ -1,3 +1,66 @@
+# brms 2.8.0++
+
+### New Features
+
+* Specify non-linear ordinal models. (#623)
+* Allow to fix thresholds in ordinal mixture models (#626)
+* Use the `softplus` link function in various families. (#622)
+* Define argument `sparse` separately for each model formula.
+
+
+# brms 2.8.0
+
+### New Features
+
+* Fit multinomial models via family `multinomial`. (#463)
+* Fit Dirichlet models via family `dirichlet`. (#463)
+* Fit conditional logistic models using the `categorical` and
+`multinomial` families together with non-linear formula syntax. (#560)
+* Choose the reference category of `categorical` and related 
+families via argument `refcat` of the corresponding family functions.
+* Use different subsets of the data in different univariate parts
+of a multivariate model via addition argument `subset`. (#360)
+* Control the centering of population-level design matrices
+via argument `center` of `brmsformula` and related functions.
+* Add an `update` method for `brmsfit_multiple` objects. (#615)
+* Split folds after `group` in the `kfold` method. (#619)
+
+### Other changes
+
+* Deprecate `compare_ic` and instead recommend `loo_compare` for the
+comparison of `loo` objects to ensure consistency between packages. (#414)
+* Use the **glue** package in the Stan code generation. (#549)
+* Introduce `mvbind` to eventually replace `cbind` 
+in the formula syntax of multivariate models.
+* Validate several sampling-related arguments in 
+`brm` before compiling the Stan model. (#576)
+* Show evaluated vignettes on CRAN again. (#591)
+* Export function `get_y` which is used to extract response
+values from `brmsfit` objects.
+
+### Bug fixes
+
+* Fix an error when trying to change argument `re_formula` 
+in `bayes_R2` thanks to the GitHub user emieldl. (#592)
+* Fix occasional problems when running chains in parallel
+via the **future** package thanks to Jared Knowles. (#579)
+* Ensure correct ordering of response categories in ordinal
+models thanks to Jonas Kristoffer Lindelov. (#580)
+* Ignore argument `resp` of `marginal_effects` in 
+univariate models thanks to Vassilis Kehayas. (#589)
+* Correctly disable cell-mean coding in varying effects.
+* Allow to fix parameter `ndt` in drift diffusion models.
+* Fix Stan code for t-distributed varying effects 
+thanks to Ozgur Asar.
+* Fix an error in the post-processing of monotonic effects
+occuring for multivariate models thanks to James Rae. (#598)
+* Fix lower bounds in truncated discrete models.
+* Fix checks of the original data in `kfold` thanks to
+the GitHub user gcolitti. (#602)
+* Fix an error when applying the `VarCorr` method to
+meta-analytic models thanks to Michael Scharkow. (#616)
+
+
 # brms 2.7.0
 
 ### New features

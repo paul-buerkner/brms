@@ -173,48 +173,48 @@
 #' 
 #' @examples 
 #' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1 | patient),
+#' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #'            data = epilepsy, family = poisson()) 
 #'            
 #' ## plot all marginal effects
 #' plot(marginal_effects(fit), ask = FALSE)
 #' 
 #' ## change colours to grey scale
-#' me <- marginal_effects(fit, "log_Base4_c:Trt")
+#' me <- marginal_effects(fit, "zBase:Trt")
 #' plot(me, plot = FALSE)[[1]] + 
 #'   scale_color_grey() +
 #'   scale_fill_grey()
 #' 
-#' ## only plot the marginal interaction effect of 'log_Base4_c:Trt'
-#' ## for different values for 'log_Age_c'
-#' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
+#' ## only plot the marginal interaction effect of 'zBase:Trt'
+#' ## for different values for 'zAge'
+#' conditions <- data.frame(zAge = c(-1, 0, 1))
+#' plot(marginal_effects(fit, effects = "zBase:Trt", 
 #'                       conditions = conditions))
 #'                       
 #' ## also incorporate random effects variance over patients
 #' ## also add data points and a rug representation of predictor values
-#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt", 
+#' plot(marginal_effects(fit, effects = "zBase:Trt", 
 #'                       conditions = conditions, re_formula = NULL), 
 #'      points = TRUE, rug = TRUE)
 #'  
 #' ## change handling of two-way interactions
 #' int_conditions <- list(
-#'   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
+#'   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
 #' )
-#' marginal_effects(fit, effects = "Trt:log_Base4_c",
+#' marginal_effects(fit, effects = "Trt:zBase",
 #'                  int_conditions = int_conditions)
-#' marginal_effects(fit, effects = "Trt:log_Base4_c",
-#'                  int_conditions = list(log_Base4_c = quantile))        
+#' marginal_effects(fit, effects = "Trt:zBase",
+#'                  int_conditions = list(zBase = quantile))        
 #'      
 #' ## fit a model to illustrate how to plot 3-way interactions
-#' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt, data = epilepsy)
-#' conditions <- make_conditions(fit3way, "log_Age_c")
+#' fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
+#' conditions <- make_conditions(fit3way, "zAge")
 #' marginal_effects(
-#'   fit3way, "log_Base4_c:Trt", conditions = conditions
+#'   fit3way, "zBase:Trt", conditions = conditions
 #' )
-#' ## only include points close to the specified values of log_Age_c
+#' ## only include points close to the specified values of zAge
 #' me <- marginal_effects(
-#'  fit3way, "log_Base4_c:Trt", conditions = conditions, 
+#'  fit3way, "zBase:Trt", conditions = conditions, 
 #'  select_points = 0.1
 #' )
 #' plot(me, points = TRUE)
@@ -476,6 +476,8 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   }
   # use default values for unspecified variables
   int_vars <- get_int_vars(bterms)
+  group_vars <- get_group_vars(bterms)
+  req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
     if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
@@ -572,13 +574,13 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     } else {
       values[[2]] <- unique(data[, effects[2]])
     }
-    data <- run(expand.grid, values)
+    data <- do_call(expand.grid, values)
   } else {
     data <- structure(data.frame(values), names = effects)
   }
   # no need to have the same value combination more than once
   data <- unique(data)
-  data <- data[run(order, as.list(data)), , drop = FALSE]
+  data <- data[do_call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
   marg_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
@@ -586,7 +588,7 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     data[[j]][, marg_vars] <- conditions[j, marg_vars]
     data[[j]]$cond__ <- cond__[j]
   }
-  data <- run(rbind, data)
+  data <- do_call(rbind, data)
   data$cond__ <- factor(data$cond__, cond__)
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
@@ -608,39 +610,43 @@ marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
 #' @export
 marginal_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, surface, 
-  spaghetti, categorical, ordinal, probs, robust, dpar = NULL, ...
+  spaghetti, categorical, ordinal, probs, robust, 
+  dpar = NULL, resp = NULL, ...
 ) {
   # Returns: a list with the summarized prediction matrix as the only element
+  # argument 'resp' exists only to be excluded from ... (#589)
   stopifnot(is.brmsfit(fit))
   effects <- attr(marg_data, "effects")
   types <- attr(marg_data, "types")
+  catscale <- NULL
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, summary = FALSE, ...
   )
-  out <- run(method, pred_args)
+  out <- do_call(method, pred_args)
   rownames(marg_data) <- NULL
   
   if (categorical || ordinal) {
     if (method != "fitted") {
       stop2("Can only use 'categorical' with method = 'fitted'.")
     }
-    if (!(is_ordinal(x) || is_categorical(x))) {
+    if (!has_cat(x)) {
       stop2("Argument 'categorical' may only be used ", 
             "for categorical or ordinal models.")
     }
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
+    catscale <- if (is_multinomial(x)) "Count" else "Probability"
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
-    cats <- factor(rep(cats, each = ncol(out)))
+    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
     marg_data <- cbind(marg_data, cats__ = cats)
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
-    if (is_categorical(x$family)) {
+    if (conv_cats_dpars(x$family)) {
       stop2("Please set 'categorical' to TRUE.")
     }
     if (is_ordinal(x$family) && is.null(dpar)) {
@@ -654,7 +660,7 @@ marginal_effects_internal.brmsterms <- function(
           out[, , k] <- out[, , k] * k
         }
         out <- lapply(seq_dim(out, 2), function(s) rowSums(out[, s, ]))
-        out <- run(cbind, out)
+        out <- do_call(cbind, out)
       }
     }
   }
@@ -681,7 +687,7 @@ marginal_effects_internal.brmsterms <- function(
     }
     spag <- out
     if (categorical) {
-      spag <- run(cbind, array2list(spag))
+      spag <- do_call(cbind, array2list(spag))
     }
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
@@ -695,7 +701,7 @@ marginal_effects_internal.brmsterms <- function(
   
   out <- posterior_summary(out, probs = probs, robust = robust)
   if (categorical || ordinal) {
-    out <- run(rbind, array2list(out))
+    out <- do_call(rbind, array2list(out))
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
   out <- cbind(marg_data, out)
@@ -704,6 +710,7 @@ marginal_effects_internal.brmsterms <- function(
   attr(out, "response") <- response
   attr(out, "surface") <- unname(both_numeric && surface)
   attr(out, "categorical") <- categorical
+  attr(out, "catscale") <- catscale
   attr(out, "ordinal") <- ordinal
   attr(out, "spaghetti") <- spag
   attr(out, "points") <- make_point_frame(x, fit$data, effects, ...)
@@ -769,15 +776,15 @@ make_point_frame <- function(bterms, mf, effects, conditions,
       if (ncol(mf_tmp)) {
         # handle factors and grouping variables
         # do it like base::duplicated
-        K <- run("paste", c(mf_tmp, sep = "\r")) %in%
-          run("paste", c(cond, sep = "\r"))
+        K <- do_call("paste", c(mf_tmp, sep = "\r")) %in%
+          do_call("paste", c(cond, sep = "\r"))
       } else {
         K <- seq_rows(mf)
       }
       # cond__ allows to assign points to conditions
       points[[i]]$cond__[K] <- cond__[i]
     }
-    points <- run(rbind, points)
+    points <- do_call(rbind, points)
     points <- points[!is.na(points$cond__), , drop = FALSE]
     points$cond__ <- factor(points$cond__, cond__)
   }
@@ -789,7 +796,7 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     }
   }
   if (!is.null(transform)) {
-    points$resp__ <- run(transform, list(points$resp__))
+    points$resp__ <- do_call(transform, list(points$resp__))
   }
   points
 }
@@ -851,6 +858,7 @@ plot.brmsMarginalEffects <- function(
     ncond <- length(unique(x[[i]]$cond__))
     df_points <- attr(x[[i]], "points")
     categorical <- isTRUE(attr(x[[i]], "categorical"))
+    catscale <- attr(x[[i]], "catscale")
     surface <- isTRUE(attr(x[[i]], "surface"))
     # deprecated as of brms 2.4.3
     ordinal <- isTRUE(attr(x[[i]], "ordinal"))
@@ -867,8 +875,8 @@ plot.brmsMarginalEffects <- function(
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_tile, .surface_args) + 
-          scale_fill_gradientn(colors = viridis6(), name = "Probability") + 
+          do_call(geom_tile, .surface_args) + 
+          scale_fill_gradientn(colors = viridis6(), name = catscale) + 
           ylab(response)
       } else if (stype == "contour") {
         .surface_args <- nlist(
@@ -877,13 +885,13 @@ plot.brmsMarginalEffects <- function(
         )
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_contour, .surface_args) +
+          do_call(geom_contour, .surface_args) +
           scale_color_gradientn(colors = viridis6(), name = response)
       } else if (stype == "raster") {
         .surface_args <- nlist(mapping = aes_(fill = ~ estimate__))
         replace_args(.surface_args, dont_replace) <- surface_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_raster, .surface_args) + 
+          do_call(geom_raster, .surface_args) + 
           scale_fill_gradientn(colors = viridis6(), name = response)
       }
     } else {
@@ -916,7 +924,7 @@ plot.brmsMarginalEffects <- function(
         }
         replace_args(.point_args, dont_replace) <- point_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_jitter, .point_args)
+          do_call(geom_jitter, .point_args)
       }
       if (!is.null(spaghetti)) {
         # add a regression line for each sample separately
@@ -933,7 +941,7 @@ plot.brmsMarginalEffects <- function(
         }
         replace_args(.spaghetti_args, dont_replace) <- spaghetti_args
         plots[[i]] <- plots[[i]] +
-          run(geom_smooth, .spaghetti_args)
+          do_call(geom_smooth, .spaghetti_args)
       }
       if (is.numeric(x[[i]]$effect1__)) {
         # line plots for numeric predictors
@@ -946,7 +954,7 @@ plot.brmsMarginalEffects <- function(
         replace_args(.line_args, dont_replace) <- line_args
         if (mean || is.null(spaghetti)) {
           plots[[i]] <- plots[[i]] + 
-            run(geom_smooth, .line_args)
+            do_call(geom_smooth, .line_args)
         }
         if (rug) {
           .rug_args <- list(
@@ -961,7 +969,7 @@ plot.brmsMarginalEffects <- function(
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] + 
-            run(geom_rug, .rug_args)
+            do_call(geom_rug, .rug_args)
         }
       } else {
         # points and errorbars for factors
@@ -979,11 +987,11 @@ plot.brmsMarginalEffects <- function(
         replace_args(.cat_args, dont_replace) <- cat_args
         replace_args(.errorbar_args, dont_replace) <- errorbar_args
         plots[[i]] <- plots[[i]] + 
-          run(geom_point, .cat_args) +
-          run(geom_errorbar, .errorbar_args)
+          do_call(geom_point, .cat_args) +
+          do_call(geom_errorbar, .errorbar_args)
       }
       if (categorical) {
-        plots[[i]] <- plots[[i]] + ylab("Probability") +
+        plots[[i]] <- plots[[i]] + ylab(catscale) +
           labs(fill = response, color = response)
       }
     }

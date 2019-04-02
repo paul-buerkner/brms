@@ -1,11 +1,10 @@
 context("Tests for brmsfit helper functions")
 
 test_that("first_greater returns expected results", {
-  set.seed(12345)
   A <- cbind(1:10, 11:20, 21:30)
-  x <- sample(1:25, size = 10, replace = TRUE)
-  expect_equal(first_greater(A, x), c(3,3,3,3,2,1,2,2,2,3))
-  expect_equal(first_greater(A, x, i = 2), c(3,3,3,3,2,2,2,2,2,3))
+  x <- c(5, 25, 7, 15, 7, 10, 15, 19, 3, 11)
+  expect_equal(first_greater(A, x), c(2, 3, 2, 3, 2, 2, 2, 3, 1, 2))
+  expect_equal(first_greater(A, x, i = 2), c(2, 3, 2, 3, 2, 2, 2, 3, 2, 2))
 })
 
 test_that("array2list performs correct conversion", {
@@ -98,8 +97,8 @@ test_that(".predictor_arma runs without errors", {
 })
 
 test_that("make_conditions works correctly", {
-  conds <- make_conditions(epilepsy, c("log_Base4_c", "log_Age_c"))
+  conds <- make_conditions(epilepsy, c("zBase", "zAge"))
   expect_equal(dim(conds), c(9, 3))
-  expect_equal(conds$cond__[3], "log_Base4_c = -0.75 & log_Age_c = 0.22")
+  expect_equal(conds$cond__[3], "zBase = -1 & zAge = 1")
 })
 

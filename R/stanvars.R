@@ -33,7 +33,7 @@
 #' bprior <- prior(multi_normal(M, V), class = "b")
 #' stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
 #'   stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
-#' make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+#' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               prior = bprior, stanvars = stanvars)
 #'               
 #' # define a hierachical prior on the regression coefficients
@@ -41,7 +41,7 @@
 #'   set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
 #' stanvars <- stanvar(scode = "real<lower=0> tau;", 
 #'                     block = "parameters")
-#' make_stancode(count ~ Trt + log_Base4_c, epilepsy,
+#' make_stancode(count ~ Trt + zBase, epilepsy,
 #'               prior = bprior, stanvars = stanvars)
 #' 
 #' @export

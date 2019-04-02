@@ -5,14 +5,14 @@ test_that("Poisson model from brm doc works correctly", {
   ## using student_t priors for population-level effects
   ## and half cauchy priors for standard deviations of group-level effects
   fit1 <- brm(
-    count ~ log_Age_c + log_Base4_c * Trt + (1|patient) + (1|obs),
+    count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
     data = epilepsy, family = poisson(),
     prior = prior(student_t(5,0,10), class = b) +
       prior(cauchy(0,2), class = sd)
   )
   print(fit1)
   ## generate a summary of the results
-  expect_range(fixef(fit1)[4, 1], -0.35, -0.30)
+  expect_range(fixef(fit1)[4, 1], -0.28, -0.23)
   ## extract random effects standard devations and covariance matrices
   expect_equal(names(VarCorr(fit1)), c("obs", "patient"))
   ## extract group specific effects of each level
@@ -167,7 +167,7 @@ test_that("Models from hypothesis doc work correctly", {
 test_that("bridgesampling methods work correctly", {
   # model with the treatment effect
   fit1 <- brm(
-    count ~ log_Age_c + log_Base4_c + Trt_c,
+    count ~ zAge + zBase + Trt,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
@@ -175,7 +175,7 @@ test_that("bridgesampling methods work correctly", {
   print(fit1)
   # model without the treatment effect
   fit2 <- brm(
-    count ~ log_Age_c + log_Base4_c,
+    count ~ zAge + zBase,
     data = epilepsy, family = negbinomial(),
     prior = prior(normal(0, 1), class = b),
     save_all_pars = TRUE
@@ -183,17 +183,17 @@ test_that("bridgesampling methods work correctly", {
   print(fit2)
 
   # compute the bayes factor
-  expect_gt(bayes_factor(fit1, fit2)$bf, 1)
+  expect_gt(bayes_factor(fit2, fit1)$bf, 1)
   # compute the posterior model probabilities
-  pp1 <- post_prob(fit1, fit2)
+  pp1 <- post_prob(fit2, fit1)
   expect_gt(pp1[1], pp1[2])
   # specify prior model probabilities
-  pp2 <- post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
+  pp2 <- post_prob(fit2, fit1, prior_prob = c(0.8, 0.2))
   expect_gt(pp2[1], pp1[1])
 })
 
 test_that("varying slopes without a fixed effect work", {
-  fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c +
+  fit1 <- brm(count ~ zAge + zBase * Trt +
                 (as.numeric(visit)|patient),
               data = epilepsy, family = gaussian(),
               chains = 2)
@@ -207,12 +207,12 @@ test_that("varying slopes without a fixed effect work", {
   reloo2 <- LOO(fit1, reloo = TRUE, chains = 1, iter = 100)
   expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
-  conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
+  conditions <- data.frame(zAge = 0, zBase = 0, Trt = 0)
   me <- marginal_effects(fit1, conditions = conditions)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 
-  conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0,
-                           Trt_c = 0, visit = c(1:4, NA))
+  conditions <- data.frame(zAge = 0, zBase = 0,
+                           Trt = 0, visit = c(1:4, NA))
   me <- marginal_effects(fit1, conditions = conditions, re_formula = NULL)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
 
@@ -231,7 +231,7 @@ test_that("categorical models work correctly", {
   ncat <- length(unique(inhaler$rating))
   expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
-  expect_equal(dim(fitted(fit2, scale = "linear")), 
+  expect_equal(dim(fitted(fit2, scale = "linear")),
                c(nobs(fit2), 4, ncat - 1))
   # tests with new data
   newd <- inhaler[1:10, ]
@@ -247,10 +247,10 @@ test_that("multivariate normal models work correctly", {
   x <- rnorm(N, 1)
   month <- sample(1:36, N, replace = TRUE)
   id <- sample(1:10, N, replace = TRUE)
-  tim <- sample(1:N, 100)
+  tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(cbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
+  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
                   data = data, autocor = cor_arma(~tim|id, p = 1),
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
@@ -267,7 +267,7 @@ test_that("multivariate normal models work correctly", {
   expect_equal(length(ms), 2)
   expect_ggplot(plot(ms, ask = FALSE)[[2]])
 
-  fit_mv2 <- brm(cbind(y1, y2) ~ 1, data = data,
+  fit_mv2 <- brm(mvbind(y1, y2) ~ 1, data = data,
                  prior = prior_(~lkj(5), class = "rescor"),
                  sample_prior = TRUE, iter = 1000)
   print(fit_mv2)
@@ -291,8 +291,8 @@ test_that("generalized multivariate models work correctly", {
 
 test_that("ZI and HU models work correctly", {
   fit_hu <- brm(
-    bf(count ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient),
-       hu ~ log_Age_c + log_Base4_c * Trt_c + (1|id1|patient)),
+    bf(count ~ zAge + zBase * Trt + (1|id1|patient),
+       hu ~ zAge + zBase * Trt + (1|id1|patient)),
     data = epilepsy, family = hurdle_poisson(),
     prior = c(prior(normal(0, 5)),
               prior(normal(0, 5), dpar = "hu")),
@@ -303,7 +303,7 @@ test_that("ZI and HU models work correctly", {
   expect_ggplot(plot(marginal_effects(fit_hu), ask = FALSE)[[2]])
 
   fit_zi <- brm(
-    bf(count ~ log_Age_c + log_Base4_c * Trt + (1|patient), zi ~ Trt),
+    bf(count ~ zAge + zBase * Trt + (1|patient), zi ~ Trt),
     data = epilepsy, family = zero_inflated_negbinomial(),
     prior = prior(normal(0,5)) +
       prior(normal(0,3), class = "sd") +
@@ -470,9 +470,9 @@ test_that("generalized extreme value models work correctly", {
 test_that("update works correctly for some special cases", {
   # models are recompiled when changing number of FEs from 0 to 1
   fit1 <- brm(count ~ 1, data = epilepsy)
-  fit2 <- update(fit1, ~ . + Trt_c, newdata = epilepsy)
-  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt_c"))
-  fit3 <- update(fit2, ~ . - Trt_c, newdata = epilepsy)
+  fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy)
+  expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt1"))
+  fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy)
   expect_equal(rownames(fixef(fit3)), c("Intercept"))
 
   # test that family is correctly updated
@@ -737,6 +737,11 @@ test_that("Missing value imputation works correctly", {
   expect_equal(nsamples(fit_imp1), 5000)
   expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
   
+  fit_imp1 <- update(fit_imp1, . ~ chl, newdata = imp)
+  print(fit_imp1)
+  expect_true(!"b_age" %in% parnames(fit_imp1))
+  expect_equal(nsamples(fit_imp1), 5000)
+  
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
@@ -766,7 +771,7 @@ test_that("Missing value imputation works correctly", {
 
 test_that("student-t-distributed group-level effects work correctly", {
   fit <- brm(
-    count ~ Trt * log_Base4_c + (1 | gr(patient, dist = "student")),
+    count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
     data = epilepsy, family = poisson(), chains = 1
   )
   print(summary(fit))
@@ -774,4 +779,66 @@ test_that("student-t-distributed group-level effects work correctly", {
   expect_true("udf_1" %in% fit$exclude)
   waic <- suppressWarnings(waic(fit))
   expect_range(waic$estimates[3, 1], 1300, 1400)
+})
+
+test_that("multinomial models work correctly", {
+  set.seed(1245)
+  N <- 100
+  dat <- data.frame(
+    y1 = rbinom(N, 10, 0.1), y2 = rbinom(N, 10, 0.4), 
+    y3 = rbinom(N, 10, 0.7), x = rnorm(N)
+  )
+  dat$size <- with(dat, y1 + y2 + y3)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  fit <- brm(y | trials(size) ~ x, data = dat, family = multinomial())
+  print(summary(fit))
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], 550, 600)
+  me <- marginal_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+
+test_that("dirichlet models work correctly", {
+  set.seed(1246)
+  N <- 100
+  dat <- as.data.frame(rdirichlet(N, c(10, 5, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  
+  fit <- brm(y ~ x, data = dat, family = dirichlet())
+  print(summary(fit))
+  expect_output(print(fit), "muy2 = logit")
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  waic <- waic(fit)
+  expect_range(waic$estimates[3, 1], -530, -500)
+  me <- marginal_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+})
+
+test_that("Addition argument 'subset' works correctly", {
+  set.seed(12454)
+  data("BTdata", package = "MCMCglmm")
+  BTdata$sub1 <- sample(0:1, nrow(BTdata), replace = TRUE)
+  BTdata$sub2 <- sample(0:1, nrow(BTdata), replace = TRUE)
+  
+  bform <- bf(tarsus | subset(sub1) ~ sex + (1|p|fosternest) + (1|q|dam)) +
+    bf(back | subset(sub2) ~ sex + (1|p|fosternest) + (1|q|dam)) +
+    set_rescor(FALSE)
+  fit <- brm(bform, BTdata)
+  print(summary(fit))
+  expect_error(predict(fit), "'resp' must be a single variable name")
+  pred <- predict(fit, resp = "tarsus")
+  expect_equal(nrow(pred), sum(BTdata$sub1))
+  pred <- fitted(fit, resp = "back")
+  expect_equal(nrow(pred), sum(BTdata$sub2))
+  waic <- waic(fit, resp = "back")
+  expect_range(waic$estimates[3, 1], 1100, 1130)
+  me <- marginal_effects(fit)
+  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
 })

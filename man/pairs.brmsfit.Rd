@@ -30,7 +30,7 @@ For a detailed description see
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+fit <- brm(count ~ zAge + zBase * Trt 
            + (1|patient) + (1|visit), 
            data = epilepsy, family = "poisson")  
 pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)

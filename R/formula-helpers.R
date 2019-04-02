@@ -12,6 +12,8 @@
 #'  \code{resp_trials} and \code{resp_cat} require positive integers.
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
 #'  \code{'lower'} and \code{'upper'}; 
+#'  \code{resp_subset} requires \code{0} and \code{1}, or alternatively
+#'  \code{FALSE} and \code{TRUE};
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 #'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 #'  and \code{2}) to indicate left, no, right, or interval censoring.
@@ -73,7 +75,7 @@
 #' summary(fit3)
 #' 
 #' ## Poisson model with truncated counts  
-#' fit4 <- brm(count | trunc(ub = 104) ~ log_Base4_c * Trt_c, 
+#' fit4 <- brm(count | trunc(ub = 104) ~ zBase * Trt, 
 #'             data = epilepsy, family = poisson())
 #' summary(fit4)
 #' }
@@ -214,6 +216,12 @@ resp_mi <- function(sdy = NULL) {
     stop2("Measurement error should be numeric.")
   }
   sdy
+}
+
+#' @rdname addition-terms
+#' @export
+resp_subset <- function(x) {
+  as.logical(x)
 }
 
 #' Defining smooths in \pkg{brms} formulas
@@ -814,7 +822,7 @@ rhs <- function(x) {
   attri <- attributes(x)
   x <- as.formula(x)
   x <- if (length(x) == 3) x[-2] else x
-  run(structure, c(list(x), attri))
+  do_call(structure, c(list(x), attri))
 }
 
 lhs <- function(x) {
@@ -900,6 +908,12 @@ extract_cat_names <- function(x, data) {
   mr <- model.response(model.frame(respform, data))
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))
+  } else if (has_multicol(x)) {
+    mr <- as.matrix(mr)
+    out <- as.character(colnames(mr))
+    if (!length(out)) {
+      out <- as.character(seq_cols(mr))
+    }
   } else {
     out <- levels(factor(mr))
   }

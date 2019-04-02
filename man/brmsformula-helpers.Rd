@@ -13,7 +13,8 @@
 nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
   loop = NULL)
 
-lf(..., flist = NULL, dpar = NULL, resp = NULL, cmc = NULL)
+lf(..., flist = NULL, dpar = NULL, resp = NULL, center = NULL,
+  cmc = NULL, sparse = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -74,10 +75,21 @@ Indicates if the computation of the non-linear formula should be
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
 
+\item{center}{Logical; Indicates if the population-level design
+matrix should be centered, which usually increases sampling efficiency.
+See the 'Details' section for more information.
+Defaults to \code{TRUE} for distributional parameters
+and to \code{FALSE} for non-linear parameters.}
+
 \item{cmc}{Logical; Indicates whether automatic cell-mean coding
 should be enabled when removing the intercept by adding \code{0} 
 to the right-hand of model formulas. Defaults to \code{TRUE} to 
 mirror the behavior of standard \R formula parsing.}
+
+\item{sparse}{Logical; indicates whether the population-level design matrices
+should be treated as sparse (defaults to \code{FALSE}). For design matrices
+with many zeros, this can considerably reduce required memory. Sampling
+speed is currently not improved or even slightly decreased.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 

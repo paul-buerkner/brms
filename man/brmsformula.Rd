@@ -6,7 +6,8 @@
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
 brmsformula(formula, ..., flist = NULL, family = NULL,
-  autocor = NULL, nl = NULL, loop = NULL, cmc = NULL)
+  autocor = NULL, nl = NULL, loop = NULL, center = NULL,
+  cmc = NULL, sparse = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -66,10 +67,21 @@ Indicates if the computation of the non-linear formula should be
 done inside (\code{TRUE}) or outside (\code{FALSE}) a loop
 over observations. Defaults to \code{TRUE}.}
 
+\item{center}{Logical; Indicates if the population-level design
+matrix should be centered, which usually increases sampling efficiency.
+See the 'Details' section for more information.
+Defaults to \code{TRUE} for distributional parameters
+and to \code{FALSE} for non-linear parameters.}
+
 \item{cmc}{Logical; Indicates whether automatic cell-mean coding
 should be enabled when removing the intercept by adding \code{0} 
 to the right-hand of model formulas. Defaults to \code{TRUE} to 
 mirror the behavior of standard \R formula parsing.}
+
+\item{sparse}{Logical; indicates whether the population-level design matrices
+should be treated as sparse (defaults to \code{FALSE}). For design matrices
+with many zeros, this can considerably reduce required memory. Sampling
+speed is currently not improved or even slightly decreased.}
 }
 \value{
 An object of class \code{brmsformula}, which
@@ -219,7 +231,7 @@ models for all parameters of the assumed response distribution.
   \code{aterms} part, which may contain multiple terms of the form 
   \code{fun(<variable>)} separated by \code{+} each providing special 
   information on the response variable. \code{fun} can be replaced with 
-  either \code{se}, \code{weights}, \code{cens}, \code{trunc}, 
+  either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
   (see also \code{\link{addition-terms}}). 
   
@@ -248,6 +260,14 @@ models for all parameters of the assumed response distribution.
   and that \code{yi} is the response variable. 
   Then, formula \code{yi | weights(wei) ~ predictors} 
   implements a weighted regression. 
+  
+  For multivariate models, \code{subset} may be used in the \code{aterms}
+  part, to use different subsets of the data in different univariate
+  models. For instance, if \code{sub} is a logical variable and
+  \code{y} is the response of one of the univariate models, we may
+  write \code{y | subset(sub) ~ predictors} so that \code{y} is
+  predicted only for those observations for which \code{sub} evaluates
+  to \code{TRUE}.
   
   With the exception of categorical, ordinal, and mixture families, 
   left, right, and interval censoring can be modeled through 
@@ -286,7 +306,7 @@ models for all parameters of the assumed response distribution.
   we may also write \code{success | trials(10)}. 
   \bold{Please note that the \code{cbind()} syntax will not work 
   in \pkg{brms} in the expected way because this syntax is reserved
-  for use in multivariate models, only.}
+  for other purposes.}
   
   For all ordinal families, \code{aterms} may contain a term 
   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
@@ -314,19 +334,19 @@ models for all parameters of the assumed response distribution.
   
   \bold{Parameterization of the population-level intercept}
   
-  The population-level intercept (if incorporated) is estimated separately 
-  and not as part of population-level parameter vector \code{b}. 
-  As a result, priors on the intercept also have to be specified separately.
-  Furthermore, to increase sampling efficiency, the population-level 
-  design matrix \code{X} is centered around its column means 
-  \code{X_means} if the intercept is incorporated. 
-  This leads to a temporary bias in the intercept equal to 
-  \code{<X_means, b>}, where \code{<,>} is the scalar product. 
-  The bias is corrected after fitting the model, but be aware 
-  that you are effectively defining a prior on the intercept 
-  of the centered design matrix not on the real intercept.
-  For more details on setting priors on population-level intercepts,
-  see \code{\link{set_prior}}.
+  By default, the population-level intercept (if incorporated) is estimated
+  separately and not as part of population-level parameter vector \code{b} As
+  a result, priors on the intercept also have to be specified separately.
+  Furthermore, to increase sampling efficiency, the population-level design
+  matrix \code{X} is centered around its column means \code{X_means} if the
+  intercept is incorporated. This leads to a temporary bias in the intercept
+  equal to \code{<X_means, b>}, where \code{<,>} is the scalar product. The
+  bias is corrected after fitting the model, but be aware that you are
+  effectively defining a prior on the intercept of the centered design matrix
+  not on the real intercept. You can turn off this special handling of the
+  intercept by setting argument \code{center} to \code{FALSE}. For more
+  details on setting priors on population-level intercepts, see
+  \code{\link{set_prior}}.
   
   This behavior can be avoided by using the reserved 
   (and internally generated) variable \code{intercept}. 
@@ -465,21 +485,21 @@ models for all parameters of the assumed response distribution.
   
   \bold{Formula syntax for multivariate models}
   
-  Multivariate models may be specified using \code{cbind} notation
+  Multivariate models may be specified using \code{mvbind} notation
   or with help of the \code{\link{mvbf}} function.
   Suppose that \code{y1} and \code{y2} are response variables 
-  and \code{x} is a predictor. Then \code{cbind(y1, y2) ~ x} 
+  and \code{x} is a predictor. Then \code{mvbind(y1, y2) ~ x} 
   specifies a multivariate model.
   The effects of all terms specified at the RHS of the formula 
   are assumed to vary across response variables. 
   For instance, two parameters will be estimated for \code{x}, 
   one for the effect on \code{y1} and another for the effect on \code{y2}.
   This is also true for group-level effects. When writing, for instance,
-  \code{cbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
+  \code{mvbind(y1, y2) ~ x + (1+x|g)}, group-level effects will be
   estimated separately for each response. To model these effects
   as correlated across responses, use the ID syntax (see above).
   For the present example, this would look as follows:
-  \code{cbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
+  \code{mvbind(y1, y2) ~ x + (1+x|2|g)}. Of course, you could also use
   any value other than \code{2} as ID.
   
   It is also possible to specify different formulas for different responses.
@@ -515,7 +535,7 @@ bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 
 # define a multivariate model
-bf(cbind(y1, y2) ~ x * z + (1|g))
+bf(mvbind(y1, y2) ~ x * z + (1|g))
 
 # define a zero-inflated model 
 # also predicting the zero-inflation part
@@ -564,6 +584,12 @@ bf(y1 ~ x + (1|g)) +
 bf(bmi ~ age * mi(chl)) +
   bf(chl | mi() ~ age) + 
   set_rescor(FALSE)
+  
+# model sigma as a function of the mean
+bf(y ~ eta, nl = TRUE) + 
+  lf(eta ~ 1 + x) +
+  nlf(sigma ~ tau * sqrt(eta)) +
+  lf(tau ~ 1)
 
 }
 \seealso{

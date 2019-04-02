@@ -4,69 +4,33 @@
 \alias{add_ic}
 \alias{add_ic.brmsfit}
 \alias{add_ic<-}
-\alias{add_loo}
-\alias{add_waic}
-\title{Add information criteria and fit indices to fitted model objects}
+\title{Add model fit criteria to model objects}
 \usage{
 add_ic(x, ...)
 
-\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL,
-  overwrite = FALSE, file = NULL, force_save = FALSE, ...)
+\method{add_ic}{brmsfit}(x, ic = "loo", model_name = NULL, ...)
 
 add_ic(x, ...) <- value
-
-add_loo(x, ...)
-
-add_waic(x, ...)
 }
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
 
 \item{...}{Further arguments passed to the underlying 
-functions computing the information criteria or fit indices.}
+functions computing the model fit criteria.}
 
-\item{ic, value}{Names of the information criteria / fit indices 
+\item{ic, value}{Names of model fit criteria
 to compute. Currently supported are \code{"loo"}, 
 \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
 \code{"marglik"} (log marginal likelihood).}
 
 \item{model_name}{Optional name of the model. If \code{NULL}
 (the default) the name is taken from the call to \code{x}.}
-
-\item{overwrite}{Logical; Indicates if already stored fit 
-indices should be overwritten. Defaults to \code{FALSE}.}
-
-\item{file}{Either \code{NULL} or a character string. In the latter case, the
-fitted model object including the newly added criterion values is saved via
-\code{\link{saveRDS}} in a file named after the string supplied in
-\code{file}. The \code{.rds} extension is added automatically. If \code{x}
-was already stored in a file before, the file name will be reused
-automatically (with a message) unless overwritten by \code{file}. In any
-case, \code{file} only applies if new criteria were actually added via
-\code{add_ic} or if \code{force_save} was set to \code{TRUE}.}
-
-\item{force_save}{Logical; only relevant if \code{file} is specified and
-ignored otherwise. If \code{TRUE}, the fitted model object will be saved
-regardless of whether new criteria were added via \code{add_ic}.}
 }
 \value{
 An object of the same class as \code{x}, but
-  with information criteria added for later usage.
+  with model fit criteria added for later usage.
+  Previously computed criterion objects will be overwritten.
 }
 \description{
-Add information criteria and fit indices to fitted model objects
-}
-\details{
-The methods \code{add_loo} and add \code{add_waic}
-  are just convenient wrappers around \code{add_ic}.
-}
-\examples{
-\dontrun{
-fit <- brm(count ~ Trt, epilepsy, poisson())
-# add both LOO and WAIC at once
-fit <- add_ic(fit, ic = c("loo", "waic"))
-print(fit$loo)
-print(fit$waic)
-}
-
+Deprecated alias of \code{\link{add_criterion}}.
 }

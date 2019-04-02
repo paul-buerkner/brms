@@ -65,8 +65,7 @@ data_rsv_intercept <- function(data, bterms) {
   #   data: data.frame or list
   #   bterms: object of class brmsterms
   fe_forms <- get_effect(bterms, "fe")
-  rsv_int <- any(ulapply(fe_forms, no_cmc))
-  if (rsv_int) {
+  if (any(ulapply(fe_forms, no_int))) {
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")
@@ -160,10 +159,30 @@ order_data <- function(data, bterms) {
     if (any(duplicated(data.frame(gv, tv)))) {
       stop2("Time points within groups must be unique.")
     }
-    new_order <- run(order, list(gv, tv))
+    new_order <- do_call(order, list(gv, tv))
     data <- data[new_order, , drop = FALSE]
     # old_order will allow to retrieve the initial order of the data
     attr(data, "old_order") <- order(new_order)
+  }
+  data
+}
+
+subset_data <- function(data, bterms) {
+  # subset data according to addition argument 'subset'
+  if (is.formula(bterms$adforms$subset)) {
+    # only evaluate a subset of the data
+    subset <- eval_rhs(bterms$adforms$subset, data = data)
+    if (length(subset) != nrow(data)) {
+      stop2("Length of 'subset' does not match the rows of 'data'.")
+    }
+    data <- data[subset, , drop = FALSE]
+  }
+  if (!NROW(data)) {
+    stop2(
+      "All rows of 'data' were removed via 'subset'. ",
+      "Please make sure that variables do not contain NAs ",
+      "even in rows unused by the subsetted model."
+    )
   }
   data
 }
@@ -414,25 +433,24 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
 
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  # Construct Design Matrices for \code{brms} models
+  # Construct design matrices for brms models
   # Args:
   #   formula: An object of class formula
   #   data: A data frame created with model.frame. 
-  #         If another sort of object, model.frame is called first.
+  #     If another sort of object, model.frame is called first.
   #   cols2remove: names of the columns to remove from 
-  #                the model matrix (mainly used for intercepts)
+  #     the model matrix (mainly used for intercepts)
   #   rename: rename column names via brms:::rename()?
   #   ...: currently ignored
   # Returns:
-  #   The design matrix for a regression-like model 
-  #   with the specified formula and data. 
-  #   For details see the documentation of \code{model.matrix}.
+  #   The design matrix for the given formula and data.
+  #   For details see ?stats::model.matrix
   stopifnot(is.atomic(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {
     return(NULL)
   }
-  if (isTRUE(attr(terms, "rm_intercept"))) {
+  if (no_int(terms)) {
     cols2remove <- union(cols2remove, "(Intercept)")
   }
   X <- stats::model.matrix(terms, data)
@@ -532,15 +550,31 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+#' Extract response values
+#' 
+#' Extract response values from a \code{\link{brmsfit}} object.
+#' 
+#' @param x A \code{\link{brmsfit}} object.
+#' @param resp Optional names of response variables for which to extract values.
+#' @param warn For internal use only.
+#' @param ... Further arguments passed to \code{\link{standata}}.
+#' 
+#' @return Returns a vector of response values for univariate models and a
+#'   matrix of response values with one column per response variable for
+#'   multivariate models.
+#' 
+#' @keywords internal
+#' @export
 get_y <- function(x, resp = NULL, warn = FALSE, ...) {
-  # safely extract response values from a brmsfit object
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x)
   warn <- as_one_logical(warn)
-  sdata <- standata(
-    x, resp = resp, re_formula = NA, check_response = TRUE, 
-    internal = TRUE, only_response = TRUE, ...
-  )
+  args <- list(x, resp = resp, ...)
+  args$re_formula <- NA
+  args$check_response <- TRUE
+  args$only_response <- TRUE
+  args$internal <- TRUE
+  sdata <- do_call(standata, args)
   if (warn) {
     if (any(paste0("cens", usc(resp)) %in% names(sdata))) {
       warning2("Results may not be meaningful for censored models.")
@@ -548,7 +582,7 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   }
   Ynames <- paste0("Y", usc(resp))
   if (length(Ynames) > 1L) {
-    out <- run(cbind, sdata[Ynames])
+    out <- do_call(cbind, sdata[Ynames])
     colnames(out) <- resp
   } else {
     out <- sdata[[Ynames]]
@@ -635,7 +669,7 @@ make_sm_list <- function(x, data, ...) {
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- run(smoothCon, sc_args)
+      out[[i]] <- do_call(smoothCon, sc_args)
     }
   }
   out

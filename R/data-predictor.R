@@ -15,38 +15,36 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
-  out <- list()
+data_predictor.mvbrmsterms <- function(x, data, old_sdata = NULL, ...) {
+  out <- list(N = nrow(data))
   for (i in seq_along(x$terms)) {
     od <- old_sdata[[x$responses[i]]]
-    out <- c(out, data_predictor(x$terms[[i]], old_sdata = od, ...))
+    c(out) <- data_predictor(x$terms[[i]], data = data, old_sdata = od, ...)
   }
   out
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, meef, 
-                                     cov_ranef = NULL, knots = NULL, 
+data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL, 
                                      not4stan = FALSE, old_sdata = NULL, ...) {
   out <- list()
+  data <- subset_data(data, x)
+  resp <- usc(combine_prefix(x))
   args_eff <- nlist(data, ranef, prior, knots, not4stan)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
-    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
-    resp <- usc(combine_prefix(x))
     out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
-    c(out) <- run(data_predictor, c(args_eff_spec, args_eff))
+    c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
-  c(out,
-    data_gr(ranef, data, cov_ranef = cov_ranef),
-    data_Xme(meef, data),
-    data_mixture(x, prior = prior)
-  )
+  c(out) <- data_gr_local(x, data = data, ranef = ranef)
+  c(out) <- data_mixture(x, prior = prior)
+  out
 }
 
 #' @export
@@ -56,12 +54,9 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
   # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
-  #   family: the model family
+  #   ranef: object retuend by 'tidy_ranef'
   #   prior: an object of class brmsprior
-  #   autocor: object of class 'cor_brms'
-  #   cov_ranef: name list of user-defined covariance matrices
   #   knots: optional knot values for smoothing terms
-  #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
   #   old_sdata: see 'extract_old_standata'
   # Returns:
@@ -95,7 +90,7 @@ data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
     # use vectors as indexing matrices in Stan is slow
     if (ncol(C)) {
       Cnames <- paste0("C", p, "_", seq_cols(C))
-      out <- c(out, setNames(as.list(as.data.frame(C)), Cnames))
+      c(out) <- setNames(as.list(as.data.frame(C)), Cnames)
     }
   }
   out
@@ -110,7 +105,7 @@ data_fe <- function(bterms, data, not4stan = FALSE) {
   is_ordinal <- is_ordinal(bterms$family)
   is_bsts <- is.cor_bsts(bterms$autocor)
   # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
+  cols2remove <- if (is_ordinal || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)
@@ -164,7 +159,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
       c(out) <- c(tmp, Zs)
     }
   }
-  Xs <- run(cbind, lXs)
+  Xs <- do_call(cbind, lXs)
   avoid_dpars(colnames(Xs), bterms = bterms)
   smcols <- lapply(lXs, function(x) which(colnames(Xs) %in% colnames(x)))
   Xs <- structure(Xs, smcols = smcols, bylevels = bylevels)
@@ -223,7 +218,7 @@ data_re <- function(bterms, data, ranef) {
         for (k in seq_along(Z_temp)) {
           Z_temp[[k]] <- replicate(ncatM1, Z[, k], simplify = FALSE)
         }
-        Z <- run(cbind, unlist(Z_temp, recursive = FALSE))
+        Z <- do_call(cbind, unlist(Z_temp, recursive = FALSE))
       }
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
@@ -236,15 +231,17 @@ data_re <- function(bterms, data, ranef) {
   out
 }
 
-data_gr <- function(ranef, data, cov_ranef = NULL) {
-  # compute data specific for each group-level-ID
+data_gr_local <- function(bterms, data, ranef) {
+  # compute data for each group-level-ID per univariate model
   # Args:
   #   ranef: data.frame returned by tidy_ranef
-  #   cov_ranef: name list of user-defined covariance matrices
+  stopifnot(is.brmsterms(bterms))
   out <- list()
-  ids <- unique(ranef$id)
-  for (id in ids) {
+  ranef <- subset2(ranef, resp = bterms$resp)
+  resp <- usc(bterms$resp)
+  for (id in unique(ranef$id)) {
     id_ranef <- subset2(ranef, id = id)
+    idresp <- paste0(id, resp)
     nranef <- nrow(id_ranef)
     group <- id_ranef$group[1]
     levels <- attr(ranef, "levels")[[group]]
@@ -275,8 +272,8 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
       }
       for (i in seq_along(gs)) {
         J <- as.array(match(get(gs[i], data), levels))
-        out[[paste0("J_", id, "_", i)]] <- J
-        out[[paste0("W_", id, "_", i)]] <- as.array(weights[, i])
+        out[[paste0("J_", idresp, "_", i)]] <- J
+        out[[paste0("W_", idresp, "_", i)]] <- as.array(weights[, i])
       }
     } else {
       # ordinary grouping term
@@ -289,17 +286,33 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         new_levels <- unique(new_gdata)
         J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
       }
-      out[[paste0("J_", id)]] <- as.array(J)
-      if (nzchar(id_ranef$by[1])) {
-        stopifnot(!nzchar(id_ranef$type[1]))
-        bylevels <- id_ranef$bylevels[[1]]
-        Jby <- match(attr(levels, "by"), bylevels)
-        out[[paste0("Nby_", id)]] <- length(bylevels)
-        out[[paste0("Jby_", id)]] <- as.array(Jby)
-      }
+      out[[paste0("J_", idresp)]] <- as.array(J)
     }
-    temp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
-    out <- c(out, setNames(temp, paste0(c("N_", "M_", "NC_"), id)))
+  }
+  out
+}
+
+data_gr_global <- function(ranef, cov_ranef = NULL) {
+  # prepare global data for each group-level-ID
+  # Args:
+  #   ranef: data.frame returned by tidy_ranef
+  #   cov_ranef: name list of user-defined covariance matrices
+  out <- list()
+  for (id in unique(ranef$id)) {
+    id_ranef <- subset2(ranef, id = id)
+    nranef <- nrow(id_ranef)
+    group <- id_ranef$group[1]
+    levels <- attr(ranef, "levels")[[group]]
+    tmp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
+    c(out) <- setNames(tmp, paste0(c("N_", "M_", "NC_"), id))
+    # prepare number of levels of an optional 'by' variable
+    if (nzchar(id_ranef$by[1])) {
+      stopifnot(!nzchar(id_ranef$type[1]))
+      bylevels <- id_ranef$bylevels[[1]]
+      Jby <- match(attr(levels, "by"), bylevels)
+      out[[paste0("Nby_", id)]] <- length(bylevels)
+      out[[paste0("Jby_", id)]] <- as.array(Jby)
+    }
     # prepare customized covariance matrices
     if (group %in% names(cov_ranef)) {
       cov_mat <- as.matrix(cov_ranef[[group]])
@@ -323,7 +336,7 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
         stop2("Covariance matrix of grouping factor '", 
               group, "' is not positive definite.")
       }
-      out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
+      c(out) <- setNames(list(t(chol(cov_mat))), paste0("Lcov_", id))
     }
   }
   out
@@ -367,7 +380,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
       )
       simo_prior <- simo_prior$prior
       if (isTRUE(nzchar(simo_prior))) {
-        simo_prior <- eval2(simo_prior)
+        simo_prior <- eval_dirichlet(simo_prior)
         if (length(simo_prior) != Jmo[i]) {
           stop2("Invalid Dirichlet prior for the simplex of coefficient '",
                 simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
@@ -472,7 +485,7 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
     if (any(invalid)) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
-    Xgp <- run(cbind, Xgp)
+    Xgp <- do_call(cbind, Xgp)
     if (gpef$scale[i]) {
       # scale predictor for easier specification of priors
       if (length(gps)) {
@@ -785,7 +798,7 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
     od <- old_sdata[[x$responses[i]]]
-    out <- c(out, data_response(x$terms[[i]], old_sdata = od, ...))
+    c(out) <- data_response(x$terms[[i]], old_sdata = od, ...)
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -799,9 +812,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     not4stan = FALSE, new = FALSE,
                                     old_sdata = NULL, ...) {
   # prepare data for the response variable
+  data <- subset_data(data, x)
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-  out <- list(Y = unname(Y))
+  out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family) || is_categorical(x$family)) {
     out$Y <- as_factor(out$Y, levels = old_sdata$resp_levels)
     out$Y <- as.numeric(out$Y)
@@ -838,6 +852,16 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Family '", family4error, "' requires integer responses.")
       }
     }
+    if (has_multicol(x$family)) {
+      if (!is.matrix(out$Y)) {
+        stop2("This model requires a response matrix.")
+      }
+    }
+    if (is_dirichlet(x$family)) {
+      if (!is_equal(rowSums(out$Y), rep(1, nrow(out$Y)))) {
+        stop2("Response values in dirichlet models must sum to 1.")
+      }
+    }
     ybounds <- family_info(x$family, "ybounds")
     closed <- family_info(x$family, "closed")
     if (is.finite(ybounds[1])) {
@@ -863,8 +887,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   # data for addition arguments of the response
   if (has_trials(x$family) || is.formula(x$adforms$trials)) {
     if (!length(x$adforms$trials)) {
-      out$trials <- max(out$Y, na.rm = TRUE)
-      if (is.finite(out$trials)) {
+      if (is_multinomial(x$family)) {
+        stop2("Specifying 'trials' is required in multinomial models.")
+      }
+      out$trials <- round(max(out$Y, na.rm = TRUE))
+      if (isTRUE(is.finite(out$trials))) {
         message("Using the maximum response value as the number of trials.")
         warning2(
           "Using 'binomial' families without specifying 'trials' ", 
@@ -883,14 +910,19 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (length(out$trials) == 1L) {
       out$trials <- rep(out$trials, nrow(data))
     }
-    if (has_trials(x$family)) {
-      if (max(out$trials) == 1L && !not4stan) {
-        message("Only 2 levels detected so that family 'bernoulli' ",
-                "might be a more efficient choice.")
-      }
-      if (check_response && any(out$Y > out$trials)) {
-        stop2("Number of trials is smaller than ",
-              "the number of events.")
+    if (check_response) {
+      if (is_multinomial(x$family)) {
+        if (!is_equal(rowSums(out$Y), out$trials)) {
+          stop2("Number of trials does not match the number of events.")
+        }
+      } else if (has_trials(x$family)) {
+        if (max(out$trials) == 1L && !not4stan) {
+          message("Only 2 levels detected so that family 'bernoulli' ",
+                  "might be a more efficient choice.")
+        }
+        if (any(out$Y > out$trials)) {
+          stop2("Number of trials is smaller than the number of events.")
+        }
       }
     }
     out$trials <- as.array(out$trials)
@@ -899,6 +931,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (!length(x$adforms$cat)) {
       if (!is.null(old_sdata$ncat)) {
         out$ncat <- old_sdata$ncat
+      } else if (has_multicol(x$family)) {
+        out$ncat <- NCOL(out$Y)
       } else {
         out$ncat <- max(out$Y)
       }
@@ -910,13 +944,15 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     if (out$ncat < 2L) {
       stop2("At least two response categories are required.")
     }
-    if (out$ncat == 2L && !not4stan) {
-      message("Only 2 levels detected so that family 'bernoulli' ",
-              "might be a more efficient choice.")
-    }
-    if (check_response && any(out$Y > out$ncat)) {
-      stop2("Number of categories is smaller than the response ",
-            "variable would suggest.")
+    if (!has_multicol(x$family)) {
+      if (out$ncat == 2L && !not4stan) {
+        message("Only 2 levels detected so that family 'bernoulli' ",
+                "might be a more efficient choice.")
+      }
+      if (check_response && any(out$Y > out$ncat)) {
+        stop2("Number of categories is smaller than the response ",
+              "variable would suggest.")
+      }
     }
   }
   if (is.formula(x$adforms$se)) {
@@ -987,13 +1023,13 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   } 
   resp <- usc(combine_prefix(x))
-  c(setNames(out, paste0(names(out), resp)),
-    # specify data for autocors here in order to pass Y
-    data_autocor(
-      x, data = data, Y = out$Y, new = new,
-      old_locations = old_sdata$locations
-    )
+  out <- setNames(out, paste0(names(out), resp))
+  # specify data for autocors here in order to pass Y
+  c(out) <- data_autocor(
+    x, data = data, Y = out$Y, new = new,
+    old_locations = old_sdata$locations
   )
+  out
 }
 
 data_mixture <- function(bterms, prior = brmsprior()) {
@@ -1008,7 +1044,7 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       take <- find_rows(prior, class = "theta", resp = bterms$resp)
       theta_prior <- prior$prior[take]
       if (isTRUE(nzchar(theta_prior))) {
-        theta_prior <- eval2(theta_prior)
+        theta_prior <- eval_dirichlet(theta_prior)
         if (length(theta_prior) != length(families)) {
           stop2("Invalid dirichlet prior for the ", 
                 "mixture probabilities 'theta'.")

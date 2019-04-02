@@ -19,10 +19,9 @@ test_that(paste("make_standata returns correct data names ",
                  "NC_1", "prior_only"))
   
   dat <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
-  expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
-                                   data = dat)),
+  expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), dat, "poisson")),
                c("N", "Y", "K", "X", "Z_1_1", "Z_2_1",
-                 "J_1", "N_1", "M_1", "NC_1", "J_2", "N_2", "M_2", "NC_2", 
+                 "J_1", "J_2", "N_1", "M_1", "NC_1", "N_2", "M_2", "NC_2", 
                  "prior_only"))
   expect_true(all(c("Z_1_1", "Z_1_2", "Z_2_1", "Z_2_2") %in%
                   names(make_standata(y ~ x + (1+x|g/h), dat))))
@@ -91,7 +90,7 @@ test_that(paste("make_standata accepts correct response variables",
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
                              family = "exponential")$Y, as.array(seq(1,10,0.1)))
   dat <- data.frame(y1 = 1:10, y2 = 11:20, x = rep(0,10))
-  sdata <- make_standata(cbind(y1, y2) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1, y2) ~ x, data = dat)
   expect_equal(sdata$Y_y1, as.array(1:10))
   expect_equal(sdata$Y_y2, as.array(11:20))
 })
@@ -191,18 +190,18 @@ test_that("make_standata handles multivariate models", {
     tim = 10:1, w = 1:10
   )
   
-  sdata <- make_standata(cbind(y1, y2) | weights(w) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1, y2) | weights(w) ~ x, data = dat)
   expect_equal(sdata$Y_y1, as.array(dat$y1))
   expect_equal(sdata$Y_y2, as.array(dat$y2))
   expect_equal(sdata$weights_y1, as.array(1:10))
   
-  expect_error(make_standata(cbind(y1, y2, y2) ~ x, data = dat),
+  expect_error(make_standata(mvbind(y1, y2, y2) ~ x, data = dat),
                "Cannot use the same response variable twice")
   
-  sdata <- make_standata(cbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
+  sdata <- make_standata(mvbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
   expect_equal(sdata$Y_y1y2, as.array(dat$y1 / dat$y2))
   
-  sdata <- make_standata(cbind(y1, y2) ~ x, dat,
+  sdata <- make_standata(mvbind(y1, y2) ~ x, dat,
                          autocor = cor_ar(~ tim | g))
   target1 <- c(seq(9, 1, -2), seq(10, 2, -2))
   expect_equal(sdata$Y_y1, as.array(target1))                 
@@ -219,11 +218,22 @@ test_that("make_standata handles multivariate models", {
     prior(dirichlet(2, 1), theta, resp = x)
   sdata <- make_standata(bform, dat, prior = bprior)
   sdata_names <- c(
-    "N", "J_1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
+    "N", "J_1_y1",  "cens_y1", "Kma_y1", "Z_1_y2_3", 
     "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
   )
   expect_true(all(sdata_names %in% names(sdata)))
   expect_equal(sdata$con_theta_x, c(2, 1))
+  
+  # test addition argument 'subset'
+  bform <- bf(y1 | subset(censi) ~ x + y2 + (x|2|g)) + 
+    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  sdata <- make_standata(bform, dat)
+  nsub <- sum(dat$censi)
+  expect_equal(sdata$N_y1, nsub)
+  expect_equal(sdata$N_y2, nrow(dat))
+  expect_equal(length(sdata$Y_y1), nsub)
+  expect_equal(nrow(sdata$X_y1), nsub)
+  expect_equal(length(sdata$Z_1_y1_2), nsub)
 })
 
 test_that("make_standata returns correct data for autocor structures", {
@@ -255,7 +265,7 @@ test_that("make_standata allows to retrieve the initial data order", {
                           control = list(save_order = TRUE))
   expect_equal(dat$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   # multivariate model
-  sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = dat, 
+  sdata2 <- make_standata(mvbind(y1, y2) ~ 1, data = dat, 
                           autocor = cor_ma(~time|id),
                           control = list(save_order = TRUE))
   expect_equal(sdata2$Y_y1[attr(sdata2, "old_order")], as.array(dat$y1))
@@ -264,23 +274,23 @@ test_that("make_standata allows to retrieve the initial data order", {
 
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
-  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                                   cov_ranef = list(visit = A))$Lcov_1, A)
   B <- diag(1, 4)
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "Row names are required")
   B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "Row names .* do not match")
   B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
-  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B))$Lcov_1,
                     t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
   B <- A
   B[1,2] <- 0.5
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "not symmetric")
 })
@@ -418,14 +428,14 @@ test_that("make_standata returns data for GAMMs", {
 })
 
 test_that("make_standata returns correct group ID data", {
-  form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
-             shape ~ (1|3|visit) + (Trt_c||patient))
+  form <- bf(count ~ Trt + (1+Trt|3|visit) + (1|patient), 
+             shape ~ (1|3|visit) + (Trt||patient))
   sdata <- make_standata(form, data = epilepsy, family = negbinomial())
   expect_true(all(c("Z_1_1", "Z_2_2", "Z_3_shape_1", "Z_2_shape_3") %in% 
                     names(sdata)))
   
-  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
-             a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
+  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt||patient),
+             a ~ Trt + (1+Trt|3|visit) + (1|patient), nl = TRUE)
   sdata <- make_standata(form, data = epilepsy, family = student())
   expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
                     "Z_3_a_1") %in% names(sdata)))
@@ -612,6 +622,11 @@ test_that("Cell-mean coding can be disabled", {
   expect_equal(sdata$X_disc, target)
   expect_equal(unname(sdata$Z_1_disc_1), as.array(rep(0:1, 5)))
   expect_true(!"Z_1_disc_2" %in% names(sdata))
+  
+  bform <- bf(y ~ 0 + g + (1 | y), cmc = FALSE)
+  sdata <- make_standata(bform, df)
+  expect_equal(sdata$X, target)
+  expect_equal(unname(sdata$Z_1_1), as.array(rep(1, 10)))
 })
 
 test_that("make_standata correctly includes offsets", {
@@ -777,7 +792,7 @@ test_that("argument 'stanvars' is handled correctly", {
   bprior <- prior(multi_normal(M, V), class = "b")
   stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
     stanvar(diag(2), "V", scode = "  matrix[K, K] V;") 
-  sdata <- make_standata(count ~ Trt + log_Base4_c, epilepsy,
+  sdata <- make_standata(count ~ Trt + zBase, epilepsy,
                          prior = bprior, stanvars = stanvars)
   expect_equal(sdata$M, rep(0, 2))
   expect_equal(sdata$V, diag(2))
@@ -791,3 +806,31 @@ test_that("reserved variables 'Intercept' is handled correctly", {
   expect_true(all(sdata$X[, "Intercept"] == 1))
 })
 
+test_that("data for multinomial and dirichlet models is correct", {
+  N <- 15
+  dat <- as.data.frame(rdirichlet(N, c(3, 2, 1)))
+  names(dat) <- c("y1", "y2", "y3")
+  dat$t1 <- round(dat$y1 * rpois(N, 10))
+  dat$t2 <- round(dat$y2 * rpois(N, 10))
+  dat$t3 <- round(dat$y3 * rpois(N, 10))
+  dat$x <- rnorm(N)
+  dat$y <- with(dat, cbind(y1, y2, y3))
+  dat$t <- with(dat, cbind(t1, t2, t3))
+  dat$size <- rowSums(dat$t)
+  
+  sdata <- make_standata(t | trials(size) ~ x, dat, multinomial())
+  expect_equal(sdata$trials, as.array(dat$size))
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$t))
+  
+  sdata <- make_standata(y ~ x, data = dat, family = dirichlet())
+  expect_equal(sdata$ncat, 3)
+  expect_equal(sdata$Y, unname(dat$y))
+  
+  expect_error(
+    make_standata(t | trials(10) ~ x, data = dat, family = multinomial()),
+    "Number of trials does not match the number of events"
+  )
+  expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
+               "Response values in dirichlet models must sum to 1")
+})

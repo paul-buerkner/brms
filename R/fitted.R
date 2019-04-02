@@ -6,7 +6,7 @@ fitted_internal <- function(draws, ...) {
 fitted_internal.mvbrmsdraws <- function(draws, ...) {
   out <- lapply(draws$resps, fitted_internal, ...)
   along <- ifelse(length(out) > 1L, 3, 2)
-  run(abind, c(out, along = along))
+  do_call(abind, c(out, along = along))
 }
 
 #' @export
@@ -32,12 +32,12 @@ fitted_internal.brmsdraws <- function(
     if (predicted) {
       # parameter varies across observations
       if (scale == "linear") {
-        draws$dpars[[dpar]]$f$link <- "identity"
+        draws$dpars[[dpar]]$family$link <- "identity"
       }
-      if (is_ordinal(draws$f)) {
+      if (is_ordinal(draws$family)) {
         draws$dpars[[dpar]]$cs <- NULL
-        draws$f <- draws$dpars[[dpar]]$f <- 
-          .dpar_family(link = draws$dpars[[dpar]]$f$link)
+        draws$family <- draws$dpars[[dpar]]$family <- 
+          .dpar_family(link = draws$dpars[[dpar]]$family$link)
       }
       if (dpar_class(dpar) == "theta" && scale == "response") {
         ap_id <- as.numeric(dpar_id(dpar))
@@ -71,7 +71,7 @@ fitted_internal.brmsdraws <- function(
       if (is_trunc(draws)) {
         out <- fitted_trunc(draws)
       } else {
-        fitted_fun <- paste0("fitted_", draws$f$family)
+        fitted_fun <- paste0("fitted_", draws$family$family)
         fitted_fun <- get(fitted_fun, asNamespace("brms"))
         out <- fitted_fun(draws)
       }
@@ -93,7 +93,7 @@ fitted_internal.brmsdraws <- function(
   out <- reorder_obs(out, draws$old_order, sort = sort)
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (is_categorical(draws$f) || is_ordinal(draws$f)) {
+    if (is_categorical(draws$family) || is_ordinal(draws$family)) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
@@ -158,6 +158,14 @@ fitted_geometric <- function(draws) {
   draws$dpars$mu
 }
 
+fitted_discrete_weibull <- function(draws) {
+  mean_discrete_weibull(draws$dpars$mu, draws$dpars$shape)
+}
+
+fitted_com_poisson <- function(draws) {
+  mean_com_poisson(draws$dpars$mu, draws$dpars$shape)
+}
+
 fitted_exponential <- function(draws) {
   draws$dpars$mu
 }
@@ -190,7 +198,7 @@ fitted_wiener <- function(draws) {
   # mu is the drift rate
   with(draws$dpars,
    ndt - bias / mu + bs / mu * 
-     (exp(- 2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
+     (exp(-2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
   )
 }
 
@@ -247,9 +255,38 @@ fitted_zero_one_inflated_beta <- function(draws) {
 
 fitted_categorical <- function(draws) {
   get_probs <- function(i) {
-    dcategorical(cats, eta = extract_col(eta, i))
+    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    dcategorical(cats, eta = eta)
   }
   eta <- abind(draws$dpars, along = 3)
+  cats <- seq_len(draws$data$ncat)
+  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
+  out <- aperm(out, perm = c(1, 3, 2))
+  dimnames(out)[[3]] <- draws$data$cats
+  out
+}
+
+fitted_multinomial <- function(draws) {
+  get_counts <- function(i) {
+    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    dcategorical(cats, eta = eta) * trials[i]
+  }
+  eta <- abind(draws$dpars, along = 3)
+  cats <- seq_len(draws$data$ncat)
+  trials <- draws$data$trials
+  out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
+  out <- aperm(out, perm = c(1, 3, 2))
+  dimnames(out)[[3]] <- draws$data$cats
+  out
+}
+
+fitted_dirichlet <- function(draws) {
+  get_probs <- function(i) {
+    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    dcategorical(cats, eta = eta)
+  }
+  eta <- draws$dpars[grepl("^mu", names(draws$dpars))]
+  eta <- abind(eta, along = 3)
   cats <- seq_len(draws$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
@@ -274,16 +311,16 @@ fitted_acat <- function(draws) {
 }
 
 fitted_custom <- function(draws) {
-  fitted_fun <- draws$f$fitted
+  fitted_fun <- draws$family$fitted
   if (!is.function(fitted_fun)) {
-    fitted_fun <- paste0("fitted_", draws$f$name)
-    fitted_fun <- get(fitted_fun, draws$f$env)
+    fitted_fun <- paste0("fitted_", draws$family$name)
+    fitted_fun <- get(fitted_fun, draws$family$env)
   }
   fitted_fun(draws)
 }
 
 fitted_mixture <- function(draws) {
-  families <- family_names(draws$f)
+  families <- family_names(draws$family)
   draws$dpars$theta <- get_theta(draws)
   out <- 0
   for (j in seq_along(families)) {
@@ -303,14 +340,20 @@ fitted_mixture <- function(draws) {
 # ------ fitted helper functions ------
 
 fitted_ordinal <- function(draws) {
-  get_probs <- function(i) {
-    run(dens, c(args, list(eta = extract_col(eta, i))))
+  dens <- get(paste0("d", draws$family$family), mode = "function")
+  args <- list(
+    seq_len(draws$data$ncat), 
+    thres = draws$thres,
+    link = draws$family$link
+  )
+  out <- vector("list", draws$nobs)
+  for (i in seq_along(out)) {
+    args_i <- args
+    args_i$eta <- extract_col(draws$dpars$mu, i)
+    args_i$disc <- extract_col(draws$dpars$disc, i)
+    out[[i]] <- do_call(dens, args_i)
   }
-  eta <- draws$dpars$disc * draws$dpars$mu
-  ncat <- draws$data$ncat
-  args <- list(seq_len(ncat), ncat = ncat, link = draws$f$link)
-  dens <- get(paste0("d", draws$f$family), mode = "function")
-  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
+  out <- abind(out, along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- draws$data$cats
   out
@@ -322,7 +365,7 @@ fitted_lagsar <- function(draws) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
     as.numeric(solve(W_new) %*% draws$dpars$mu[s, ])
   }
-  run(rbind, lapply(1:draws$nsamples, .fitted))
+  do_call(rbind, lapply(1:draws$nsamples, .fitted))
 }
 
 as_draws_matrix <- function(x, dim) {
@@ -338,7 +381,7 @@ dim_mu <- function(draws) {
 
 is_trunc <- function(draws) {
   stopifnot(is.brmsdraws(draws))
-  any(draws$data[["lb"]] > - Inf) || any(draws$data[["ub"]] < Inf)
+  any(draws$data[["lb"]] > -Inf) || any(draws$data[["ub"]] < Inf)
 }
 
 fitted_trunc <- function(draws) {
@@ -347,17 +390,17 @@ fitted_trunc <- function(draws) {
   stopifnot(is_trunc(draws))
   lb <- as_draws_matrix(draws$data[["lb"]], dim_mu(draws))
   ub <- as_draws_matrix(draws$data[["ub"]], dim_mu(draws))
-  fitted_trunc_fun <- paste0("fitted_trunc_", draws$f$family)
+  fitted_trunc_fun <- paste0("fitted_trunc_", draws$family$family)
   fitted_trunc_fun <- try(
     get(fitted_trunc_fun, asNamespace("brms")), 
     silent = TRUE
   )
   if (is(fitted_trunc_fun, "try-error")) {
     stop2("Fitted values on the respone scale not yet implemented ",
-          "for truncated '", draws$f$family, "' models.")
+          "for truncated '", draws$family$family, "' models.")
   }
   trunc_args <- nlist(draws, lb, ub)
-  run(fitted_trunc_fun, trunc_args)
+  do_call(fitted_trunc_fun, trunc_args)
 }
 
 # ----- family specific truncation functions -----
@@ -408,7 +451,7 @@ fitted_trunc_gamma <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, 
     mu / gamma(shape) * 
-      (incgamma(ub / mu, 1 + shape) - incgamma(lb / mu, 1 + shape))
+      (incgamma(1 + shape, ub / mu) - incgamma(1 + shape, lb / mu))
   )
   with(draws$dpars, 
     m1 / (pgamma(ub, shape, scale = mu) - pgamma(lb, shape, scale = mu))
@@ -419,17 +462,17 @@ fitted_trunc_exponential <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu is already the scale parameter
   inv_mu <- 1 / draws$dpars$mu
-  m1 <- with(draws$dpars, mu * (incgamma(ub / mu, 2) - incgamma(lb / mu, 2)))
+  m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
 fitted_trunc_weibull <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu becomes the scale parameter
-  draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, f$link))
+  draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, family$link))
   a <- 1 + 1 / draws$dpars$shape
   m1 <- with(draws$dpars,
-    mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
+    mu * (incgamma(a, (ub / mu)^shape) - incgamma(a, (lb / mu)^shape))
   )
   with(draws$dpars,
     m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
@@ -482,7 +525,7 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
   cdf <- get(paste0("p", dist), mode = "function")
   mean_kernel <- function(x, args) {
     # just x * density(x)
-    x * run(pdf, c(x, args))
+    x * do_call(pdf, c(x, args))
   }
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
@@ -493,7 +536,7 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
   min_lb <- min(vec_lb)
   # array of dimension S x N x length((lb+1):ub)
   mk <- lapply((min_lb + 1):max(vec_ub), mean_kernel, args = args)
-  mk <- run(abind, c(mk, along = 3))
+  mk <- do_call(abind, c(mk, along = 3))
   m1 <- vector("list", ncol(mk))
   for (n in seq_along(m1)) {
     # summarize only over non-truncated values for this observation
@@ -501,6 +544,6 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
-  m1 <- run(cbind, m1)
-  m1 / (run(cdf, c(list(ub), args)) - run(cdf, c(list(lb), args)))
+  m1 <- do_call(cbind, m1)
+  m1 / (do_call(cdf, c(list(ub), args)) - do_call(cdf, c(list(lb), args)))
 }

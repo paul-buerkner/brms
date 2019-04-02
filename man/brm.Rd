@@ -6,7 +6,7 @@
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  sparse = FALSE, knots = NULL, stanvars = NULL, stan_funs = NULL,
+  sparse = NULL, knots = NULL, stanvars = NULL, stan_funs = NULL,
   fit = NA, save_ranef = TRUE, save_mevars = FALSE,
   save_all_pars = FALSE, inits = "random", chains = 4, iter = 2000,
   warmup = floor(iter/2), thin = 1, cores = getOption("mc.cores",
@@ -63,10 +63,11 @@ likelihood, which allows among others to generate samples from the prior
 predictive distribution. In this case, all parameters must have proper
 priors.}
 
-\item{sparse}{Logical; indicates whether the population-level design matrices
-should be treated as sparse (defaults to \code{FALSE}). For design matrices
-with many zeros, this can considerably reduce required memory. Sampling
-speed is currently not improved or even slightly decreased.}
+\item{sparse}{(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to \code{FALSE}). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
@@ -270,7 +271,7 @@ Fit a generalized (non-)linear multivariate multilevel model via
 # and half cauchy priors for standard deviations of group-level effects
 bprior1 <- prior(student_t(5,0,10), class = b) +
   prior(cauchy(0,2), class = sd)
-fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt + (1|patient),
+fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson(), prior = bprior1)
 
 # generate a summary of the results
@@ -362,12 +363,13 @@ fit7 <- update(fit7, future = TRUE)
 
 }
 \references{
-Paul-Christian Buerkner (2017). brms: An R Package for Bayesian
-Multilevel Models Using Stan. Journal of Statistical Software, 80(1), 1-28.
-doi:10.18637/jss.v080.i01
+Paul-Christian Buerkner (2017). brms: An R Package for Bayesian Multilevel 
+Models Using Stan. \emph{Journal of Statistical Software}, 80(1), 1-28. 
+\code{doi:10.18637/jss.v080.i01}
 
-Paul-Christian Buerkner (in review). Advanced Bayesian Multilevel Modeling
-with the R Package brms. arXiv preprint.
+Paul-Christian Buerkner (2018). Advanced Bayesian Multilevel Modeling 
+with the R Package brms. \emph{The R Journal}. 10(1), 395–411. 
+\code{doi:10.32614/RJ-2018-017}
 }
 \seealso{
 \code{\link{brms}}, \code{\link{brmsformula}},

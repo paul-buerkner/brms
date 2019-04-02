@@ -79,7 +79,14 @@ restructure_v2 <- function(x) {
   if (version <= "2.3.6") {
     check_old_nl_dpars(bterms)
   }
-  if (version <= "2.7.1") {
+  if (version <= "2.8.2") {
+    # argument 'sparse' is now specified within 'formula'
+    sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
+    x$formula <- SW(validate_formula(
+      formula(x), data = model.frame(x), sparse = sparse
+    ))
+  }
+  if (version <= "2.8.3") {
     x <- rescale_old_mo(x)
   }
   x
@@ -492,7 +499,7 @@ rescale_old_mo.btl <- function(x, fit, ...) {
     return(fit)
   }
   warning2(
-    "The parameterization of monotonic effects has changed in brms 2.7.2 ",
+    "The parameterization of monotonic effects has changed in brms 2.8.4 ",
     "so that corresponding 'b' coefficients now represent average instead ",
     "of total differences between categories. See vignette('brms_monotonic') ", 
     "for more details. Parameters of old models are adjusted automatically."
