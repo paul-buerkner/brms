@@ -1,7 +1,10 @@
 language: r
 r: devel
 sudo: FALSE
-cache: packages
+
+cache: 
+ - packages
+ - ccache
 
 addons:
   apt:
