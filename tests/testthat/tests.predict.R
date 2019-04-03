@@ -293,8 +293,8 @@ test_that("predict for categorical and related models runs without erros", {
   ncat <- 3
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
-    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
-    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+    mu1 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$family <- categorical()
