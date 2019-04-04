@@ -611,7 +611,7 @@ apply_dpar_ilink <- function(dpar, family) {
   # the link function should be applied by default
   # Returns:
   #   TRUE or FALSE
-  !(has_cat(family) && dpar_class(dpar) == "mu")
+  !(has_cat(family) && dpar_class(dpar) == "mu") || is.customfamily(family)
 }
 
 insert_refcat  <- function(eta, family) {
