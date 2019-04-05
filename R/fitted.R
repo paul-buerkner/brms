@@ -447,6 +447,7 @@ fitted_trunc_lognormal <- function(draws, lb, ub) {
 
 fitted_trunc_gamma <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  lb <- ifelse(lb < 0, 0, lb)
   draws$dpars$scale <- draws$dpars$mu / draws$dpars$shape
   m1 <- with(draws$dpars, 
     scale / gamma(shape) * 
@@ -461,7 +462,7 @@ fitted_trunc_gamma <- function(draws, lb, ub) {
 
 fitted_trunc_exponential <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  # mu is already the scale parameter
+  lb <- ifelse(lb < 0, 0, lb)
   inv_mu <- 1 / draws$dpars$mu
   m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
@@ -469,6 +470,7 @@ fitted_trunc_exponential <- function(draws, lb, ub) {
 
 fitted_trunc_weibull <- function(draws, lb, ub) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  lb <- ifelse(lb < 0, 0, lb)
   draws$dpars$a <- 1 + 1 / draws$dpars$shape
   draws$dpars$scale <- with(draws$dpars, mu / gamma(a))
   m1 <- with(draws$dpars,
