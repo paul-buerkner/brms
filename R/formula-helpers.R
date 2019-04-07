@@ -96,15 +96,14 @@ resp_se <- function(x, sigma = FALSE) {
   structure(x, sigma = sigma)  
 }
 
+# only evaluate the sigma argument of 'resp_se'
 resp_se_no_data <- function(x, sigma = FALSE) {
-  # only evaluate the sigma argument
   resp_se(1, sigma = sigma)
 }
 
 #' @rdname addition-terms
 #' @export
 resp_weights <- function(x, scale = FALSE) {
-  # weights to be applied on any model
   if (!is.numeric(x)) {
     stop2("Weights must be numeric.")
   }
@@ -121,7 +120,6 @@ resp_weights <- function(x, scale = FALSE) {
 #' @rdname addition-terms
 #' @export
 resp_trials <- function(x) {
-  # trials for binomial models
   if (!is.numeric(x)) {
     stop2("Number of trials must be numeric.")
   }
@@ -134,7 +132,6 @@ resp_trials <- function(x) {
 #' @rdname addition-terms
 #' @export
 resp_cat <- function(x) {
-  # number of categories for ordinal models
   x <- as_one_numeric(x)
   if (!is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
@@ -145,7 +142,6 @@ resp_cat <- function(x) {
 #' @rdname addition-terms
 #' @export
 resp_dec <- function(x) {
-  # decisions for the wiener diffusion model
   if (is.character(x) || is.factor(x)) {
     if (!all(unique(x) %in% c("lower", "upper"))) {
       stop2("Decisions should be 'lower' or 'upper' ", 
@@ -161,7 +157,6 @@ resp_dec <- function(x) {
 #' @rdname addition-terms
 #' @export
 resp_cens <- function(x, y2 = NULL) {
-  # indicator for censoring
   if (is.factor(x)) {
     x <- as.character(x)
   }
@@ -414,9 +409,9 @@ cs <- function(expr) {
   deparse_no_string(substitute(expr))
 }
 
+# alias of function 'cs'
 #' @export
 cse <- function(expr) {
-  # alias of function 'cs'
   deparse_no_string(substitute(expr))
 }
 
@@ -817,16 +812,16 @@ mmc <- function(...) {
   out
 }
 
+# return the right-hand side of a formula
 rhs <- function(x) {
-  # return the righthand side of a formula
   attri <- attributes(x)
   x <- as.formula(x)
   x <- if (length(x) == 3) x[-2] else x
   do_call(structure, c(list(x), attri))
 }
 
+# return the left-hand side of a formula
 lhs <- function(x) {
-  # return the lefthand side of a formula
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
@@ -837,13 +832,10 @@ eval_rhs <- function(formula, data = NULL) {
   eval(rhs(formula)[[2]], data, environment(formula))
 }
 
+# convert a string to a formula
+# @param x vector of strings to be converted
+# @param ... passed to formula()
 str2formula <- function(x, ..., collapse = "+") {
-  # converts a string to a formula
-  # Args:
-  #   x: vector of strings to be converted
-  #   ...: passed to formula(.)
-  # Returns:
-  #   a formula
   has_chars <- nzchar(x)
   if (length(x) && any(has_chars)) {
     out <- paste(x[has_chars], collapse = collapse) 
@@ -855,16 +847,12 @@ str2formula <- function(x, ..., collapse = "+") {
   out
 }
 
+# convert a formula to a character string
+# @param formula a model formula
+# @param rm a vector of to elements indicating how many characters 
+#   should be removed at the beginning and end of the string respectively
+# @param space how should whitespaces be treated?
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
-  # converts a formula to a string
-  # Args:
-  #   formula: a model formula
-  #   rm: a vector of to elements indicating how many characters 
-  #       should be removed at the beginning
-  #       and end of the string respectively
-  #   space: how should whitespaces be treated?
-  # Returns:
-  #   a string
   space <- match.arg(space)
   if (!is.formula(formula)) {
     formula <- as.formula(formula)
@@ -884,8 +872,8 @@ is.formula <- function(x) {
   inherits(x, "formula")
 }
 
+# expand the '.' variable in formula using stats::terms
 expand_dot_formula <- function(formula, data = NULL) {
-  # expand the '.' variable in formula using stats::terms
   if (isTRUE("." %in% all.vars(formula))) {
     att <- attributes(formula)
     try_terms <- try(
@@ -900,8 +888,8 @@ expand_dot_formula <- function(formula, data = NULL) {
   formula
 }
 
+# extract names of response categories
 extract_cat_names <- function(x, data) {
-  # extract names of response categories
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   respform <- formula2str(lhs(x$formula))
   respform <- formula(gsub("\\|+[^~]*~", "~", respform))

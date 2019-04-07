@@ -348,9 +348,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   Reduce("+", out)
 }
   
+# validate arguments passed to 'set_prior'
 .set_prior <- function(prior, class, coef, group, resp, 
                        dpar, nlpar, lb, ub, check) {
-  # validate arguments passed to 'set_prior'
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -425,8 +425,8 @@ prior_ <- function(prior, ...) {
   do_call(set_prior, c(call, seval))
 }
 
+# arguments for which to use standard evaluation
 prior_seval_args <- function() {
-  # arguments for which to use standard evaluation
   c("check")
 }
 
@@ -474,7 +474,6 @@ prior_string <- function(prior, ...) {
 #' @export
 get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
                       sparse = NULL, internal = FALSE, ...) {
-  # note that default priors are stored in this function
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
@@ -508,8 +507,9 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   structure(prior, class = c("brmsprior", "data.frame"))
 }
 
+# generate priors for predictor terms
+# @return a 'brmsprior' object
 prior_predictor <- function(x, ...) {
-  # generate priors for predictor terms
   UseMethod("prior_predictor")
 }
 
@@ -612,11 +612,9 @@ prior_predictor.brmsterms <- function(x, data, ...) {
   prior
 }
 
+# prior for linear predictor termss
 #' @export
 prior_predictor.btl <- function(x, ...) {
-  # collect default priors for various kinds of effects
-  # Return:
-  #   An object of class brmsprior
   prior_fe(x, ...) +
     prior_thres(x, ...) +
     prior_sp(x, ...) +
@@ -625,16 +623,15 @@ prior_predictor.btl <- function(x, ...) {
     prior_gp(x, ...)
 }
 
+# priors for non-linear predictor terms
 #' @export
 prior_predictor.btnl <- function(x, ...) {
   # thresholds are required even in non-linear ordinal models
   prior_thres(x, ...)
 }
 
+# priors for population-level parameters
 prior_fe <- function(bterms, data, def_dprior = "", ...) {
-  # priors for population-level parameters
-  # Returns:
-  #   an object of class brmsprior
   prior <- empty_brmsprior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
@@ -649,8 +646,8 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
   prior
 }
 
+# priors for thresholds of ordinal models
 prior_thres <- function(bterms, def_scale_prior = "", ...) {
-  # priors for thresholds of ordinal models
   prior <- empty_brmsprior()
   if (!is_ordinal(bterms)) {
     # thresholds only exist in ordinal models
@@ -675,10 +672,8 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
   prior
 }
 
+# priors for special effects parameters
 prior_sp <- function(bterms, data, ...) {
-  # priors for special effects parameters
-  # Returns:
-  #   an object of class brmsprior
   prior <- empty_brmsprior()
   spef <- tidy_spef(bterms, data)
   if (nrow(spef)) {
@@ -696,10 +691,8 @@ prior_sp <- function(bterms, data, ...) {
   prior
 }
 
+# priors for category spcific effects parameters
 prior_cs <- function(bterms, data, ...) {
-  # priors for category spcific effects parameters
-  # Returns:
-  #   an object of class brmsprior
   prior <- empty_brmsprior()
   csef <- colnames(get_model_matrix(bterms$cs, data = data))
   if (length(csef)) {
@@ -710,10 +703,8 @@ prior_cs <- function(bterms, data, ...) {
   prior
 }
 
+# default priors for hyper-parameters of noise-free variables
 prior_Xme <- function(meef, internal = FALSE, ...) {
-  # default priors for hyper-parameters of noise-free variables
-  # Returns:
-  #   an object of class brmsprior
   stopifnot(is.meef_frame(meef))
   prior <- empty_brmsprior()
   if (nrow(meef)) {
@@ -743,12 +734,10 @@ prior_Xme <- function(meef, internal = FALSE, ...) {
   prior
 }
 
+# default priors of gaussian processes
+# @param def_scale_prior: a character string defining 
+#   the default prior SD parameters
 prior_gp <- function(bterms, data, def_scale_prior, ...) {
-  # default priors of gaussian processes
-  # Returns:
-  #   an object of class brmsprior
-  #   def_scale_prior: a character string defining 
-  #     the default prior for random effects SDs
   prior <- empty_brmsprior()
   gpef <- tidy_gpef(bterms, data)
   if (nrow(gpef)) {
@@ -764,12 +753,11 @@ prior_gp <- function(bterms, data, def_scale_prior, ...) {
   prior
 }
 
+# default priors for length-scale parameters of GPs
+# see https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html
+# @param plb prior probability of being lower than minimum length-scale
+# @param pub prior probability of being higher than maximum length-scale
 def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
-  # default priors for length-scale parameters of GPs
-  # see https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html
-  # Args:
-  #   plb: prior probability of being lower than minimum length-scale
-  #   pub: prior probability of being higher than maximum length-scale
   .opt_fun <- function(x, lb, ub) {
     # optimize parameters on the log-scale to make them positive only
     x <- exp(x)
@@ -824,15 +812,12 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   unlist(out)
 }
 
+# priors for varying effects parameters
+# @param ranef: a list returned by tidy_ranef
+# @param def_scale_prior a character string defining 
+#   the default prior for SD parameters
+# @param internal: see 'get_prior'
 prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
-  # priors for random effects parameters
-  # Args:
-  #   ranef: a list returned by tidy_ranef
-  #   def_scale_prior: a character string defining the default
-  #     prior for random effects SDs
-  #   internal: see get_prior
-  # Returns:
-  #   an object of class brmsprior
   prior <- empty_brmsprior()
   if (!nrow(ranef)) {
     return(prior)
@@ -887,11 +872,8 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
   prior
 }
 
+# priors for smooth terms
 prior_sm <- function(bterms, data, def_scale_prior, ...) {
-  # priors for smooth terms
-  # Args:
-  #   def_scale_prior: a character string defining 
-  #     the default prior for smooth SDs
   prior <- empty_brmsprior()
   smef <- tidy_smef(bterms, data)
   if (NROW(smef)) {
@@ -914,8 +896,8 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
   prior
 }
 
+# priors for autocor parameters
 prior_autocor <- function(bterms, def_scale_prior) {
-  # priors for autocor parameters
   stopifnot(is.brmsterms(bterms))
   autocor <- bterms$autocor
   resp <- bterms$resp
@@ -952,8 +934,8 @@ prior_autocor <- function(bterms, def_scale_prior) {
   prior
 }
 
+# default priors for distributional parameters
 def_dprior <- function(x, dpar, data = NULL) {
-  # default priors for distributional parameters
   stopifnot(is.brmsterms(x))
   dpar <- as_one_character(dpar)
   dpar_class <- dpar_class(dpar)
@@ -1011,8 +993,8 @@ def_dprior <- function(x, dpar, data = NULL) {
   out
 }
 
+# default priors for scale/SD parameters
 def_scale_prior <- function(x, data, ...) {
-  # ensure that SD parameters have a weakly informative prior by default
   UseMethod("def_scale_prior")
 }
 
@@ -1023,11 +1005,10 @@ def_scale_prior.mvbrmsterms <- function(x, data, ...) {
   out
 }
 
+# @param center Should the prior be centererd around zero?
+#   If FALSE, the prior location is computed based on Y.
 #' @export
 def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
-  # Args:
-  #   center: Should the prior be centererd around zero?
-  #     If FALSE, the prior location is computed based on Y.
   Y <- unname(model.response(model.frame(x$respform, data)))
   prior_location <- 0
   prior_scale <- 10
@@ -1055,15 +1036,13 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
 }
 
+# check priors supplied by the user
+# @inheritParams get_prior
+# @param warn: passed to 'check_prior_content'
+# @return a 'brmsprior' object
 check_prior <- function(prior, formula, data, 
                         sample_prior = c("no", "yes", "only"),
                         warn = FALSE) {
-  # check prior input and amend it if needed
-  # Args:
-  #   same as the respective parameters in brm
-  #   warn: passed to check_prior_content
-  # Returns:
-  #   a data.frame of prior specifications to be used in stan_prior
   sample_prior <- check_sample_prior(sample_prior)
   if (isTRUE(attr(prior, "checked"))) {
     # prior has already been checked; no need to do it twice
@@ -1122,11 +1101,10 @@ check_prior <- function(prior, formula, data,
   prior
 }
 
+# try to check if prior distributions are reasonable
+# @param prior A brmsprior object
+# @param warn logical; print boundary warnings?
 check_prior_content <- function(prior, warn = TRUE) {
-  # try to check if prior distributions are reasonable
-  # Args:
-  #  prior: A brmsprior object
-  #  warn: logical; print boundary warnings?
   if (!is.brmsprior(prior)) {
     return(invisible(TRUE))
   }
@@ -1220,8 +1198,9 @@ check_prior_content <- function(prior, warn = TRUE) {
   invisible(TRUE)
 }
 
+# prepare special priors for use in Stan
+# required for priors that are not natively supported by Stan
 check_prior_special <- function(x, ...) {
-  # prepare special priors for use in Stan
   UseMethod("check_prior_special")
 }
 
@@ -1321,15 +1300,12 @@ check_prior_special.btnl <- function(x, prior, ...) {
   prior
 }
 
+# prepare special priors that cannot be passed to Stan as is
+# @param allow_autoscale allow autoscaling by parameter sigma?
+# @return a possibly updated brmsprior object with additional attributes
 #' @export
 check_prior_special.btl <- function(x, prior, data,
                                     allow_autoscale = TRUE, ...) {
-  # prepare special priors that cannot be passed to Stan as is
-  # Args:
-  #   prior: an object of class brmsprior
-  #   allow_autoscale: allow autoscaling using sigma?
-  # Returns:
-  #   a possibly amended brmsprior object with additional attributes
   px <- check_prefix(x)
   if (is_nlpar(x) && no_center(x$fe)) {
     nlp_prior <- subset2(prior, ls = px)
@@ -1417,8 +1393,9 @@ check_prior_special.btl <- function(x, prior, data,
   prior
 }
 
+
+# validate argument 'sample_prior'
 check_sample_prior <- function(sample_prior) {
-  # validate argument 'sample_prior'
   options <- c("no", "yes", "only")
   if (!is.character(sample_prior)) {
     sample_prior <- as_one_logical(sample_prior)
@@ -1427,12 +1404,11 @@ check_sample_prior <- function(sample_prior) {
   match.arg(sample_prior, options)
 }
 
+# extract prior boundaries of a parameter
+# @param prior a brmsprior object
+# @param class,coef,group,px passed to 'subset2'
 get_bound <- function(prior, class = "b", coef = "", 
                       group = "", px = list()) {
-  # extract prior boundaries of a parameter
-  # Args:
-  #   prior: object of class brmsprior
-  #   class, coef, group, px: passed to subset2
   stopifnot(is.brmsprior(prior))
   class <- as_one_character(class)
   if (!length(coef)) coef <- ""
@@ -1445,10 +1421,10 @@ get_bound <- function(prior, class = "b", coef = "",
   bound
 }
 
+# create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "", 
                       resp = "", dpar = "", nlpar = "", bound = "",
                       ls = list()) {
-  # helper function to create data.frames containing prior information
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
@@ -1472,8 +1448,8 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   out
 }
 
+# brmsprior object with zero rows
 empty_brmsprior <- function() {
-  # define a brmsprior object with zero rows
   char0 <- character(0)
   brmsprior(
     prior = char0, class = char0, coef = char0, 
@@ -1482,10 +1458,9 @@ empty_brmsprior <- function() {
   )
 }
 
+# natural upper and lower bounds for priors
+# @param a named list with elements 'lb and 'ub'
 prior_bounds <- function(prior) {
-  # natural upper and lower bounds for priors
-  # Returns:
-  #   A named list with elements 'lb and 'ub'
   switch(prior,
     lognormal = list(lb = 0, ub = Inf),
     chi_square = list(lb = 0, ub = Inf),
@@ -1505,15 +1480,16 @@ prior_bounds <- function(prior) {
   )
 }
 
+# relevant columns for duplication checks in brmsprior objects
 rcols_prior <- function() {
-  # relevant columns for duplication checks in brmsprior objects
   c("class", "coef", "group", "resp", "dpar", "nlpar")
 }
 
+# upper and lower bounds for parameter classes
+# @param par name of a distributional parameter
+# @param bound optional Stan code of boundaries to extract values from 
+# @return A named list with elements 'lb and 'ub'
 par_bounds <- function(par, bound = "") {
-  # upper and lower bounds for parameter classes
-  # Returns:
-  #   A named list with elements 'lb and 'ub'
   out <- switch(par,
     sigma = list(lb = 0, ub = Inf),
     shape = list(lb = 0, ub = Inf),
@@ -1586,8 +1562,8 @@ print.brmsprior <- function(x, show_df, ...) {
   invisible(x)
 }
 
+# prepare text for print.brmsprior
 .print_prior <- function(x) {
-  # prepare text for print.brmsprior
   group <-  usc(x$group)
   resp <- usc(x$resp)
   dpar <- usc(x$dpar)
@@ -1602,9 +1578,9 @@ print.brmsprior <- function(x, show_df, ...) {
   paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)
 }
 
+# combine multiple brmsprior objects into one brmsprior
 #' @export
 c.brmsprior <- function(x, ...) {
-  # combine multiple brmsprior objects into one brmsprior
   if (all(sapply(list(...), is.brmsprior))) {
     out <- do_call(rbind, list(x, ...)) 
   } else {
@@ -1618,9 +1594,9 @@ c.brmsprior <- function(x, ...) {
   c(e1, e2)
 }
 
+# evaluate the dirichlet prior of simplex parameters
+# avoid name clashing with the dirichlet family
 eval_dirichlet <- function(prior) {
-  # evaluate the dirichlet prior of simplex parameters
-  # avoid name clashing with the dirichlet family
   dirichlet <- function(...) {
     out <- as.numeric(c(...))
     if (anyNA(out) || any(out <= 0)) {

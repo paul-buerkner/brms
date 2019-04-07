@@ -108,15 +108,16 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
   structure(setNames(list(out), name), class = "stanvars")
 }
 
+# take a subset of a stanvars object 
+# @param x a stanvars object
+# @param ... conditions defining the desired subset
 subset_stanvars <- function(x, ...) {
-  # take a subset of a stanvars object 
-  # according to conditions specified in ...
   x <- validate_stanvars(x)
   structure_not_null(x[find_elements(x, ...)], class = "stanvars")
 }
 
+# collapse Stan code provided in a stanvars object
 collapse_stanvars <- function(x, block = NULL) {
-  # collapse Stan code provided in a stanvars object
   x <- validate_stanvars(x)
   if (!length(x)) {
     return(character(0))

@@ -52,6 +52,7 @@
 #' 
 NULL
 
+# brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
@@ -59,7 +60,6 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
-  # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")

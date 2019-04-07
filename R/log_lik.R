@@ -1,5 +1,5 @@
+# evaluate log_lik for jointly for all observations 
 log_lik_internal <- function(draws, ...) {
-  # for use in non-pointwise evaluation only
   UseMethod("log_lik_internal")
 }
 
@@ -39,9 +39,9 @@ log_lik_internal.brmsdraws <- function(draws, ...) {
   reorder_obs(out, old_order, sort = sort)
 }
 
+# evaluate log_lik in a pointwise manner
+# cannot be an S3 method since 'i' must be the first argument
 log_lik_pointwise <- function(data_i, draws, ...) {
-  # for use in pointwise evaluation only
-  # cannot be made an S3 methods since i must be the first argument
   i <- data_i$i
   if (is.mvbrmsdraws(draws) && !length(draws$mvpars$rescor)) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
@@ -55,14 +55,12 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 }
 
 # All log_lik_<family> functions have the same arguments structure
-# Args:
-#  i: the column of draws to use i.e. the ith obervation 
-#     in the initial data.frame 
-#  draws: A named list returned by extract_draws containing 
-#         all required data and samples
-#  data: ignored; included for compatibility with loo::loo.function      
-# Returns:
-#   A vector of length draws$nsamples containing the pointwise 
+# @param i the column of draws to use the the ith obervation 
+#   in the initial data.frame 
+# @param draws A named list returned by extract_draws containing 
+#   all required data and samples
+# @param data (ignored) included for compatibility with loo::loo.function      
+# @return a vector of length draws$nsamples containing the pointwise 
 #   log-likelihood fo the ith observation 
 log_lik_gaussian <- function(i, draws, data = data.frame()) {
   args <- list(
@@ -175,12 +173,12 @@ log_lik_student_cov <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
-  # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   Y <- as.numeric(draws$data$Y)
   I <- diag(draws$nobs)
   stopifnot(i == 1)
+  # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
     IB <- I - with(draws$ac, lagsar[s, ] * W)
     Cinv <- t(IB) %*% IB / sigma[s]^2
@@ -691,16 +689,13 @@ log_lik_mixture <- function(i, draws, data = data.frame()) {
 }
 
 # ----------- log_lik helper-functions -----------
-
+# compute (possibly censored) log_lik values
+# @param dist name of a distribution for which the functions
+#   d<dist> (pdf) and p<dist> (cdf) are available
+# @param args additional arguments passed to pdf and cdf
+# @param data data initially passed to Stan
+# @return vector of log_lik values
 log_lik_censor <- function(dist, args, i, data) {
-  # compute (possibly censored) log_lik values
-  # Args:
-  #   dist: name of a distribution for which the functions
-  #         d<dist> (pdf) and p<dist> (cdf) are available
-  #   args: additional arguments passed to pdf and cdf
-  #   data: data initially passed to Stan
-  # Returns:
-  #   vector of log_lik values
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
   if (is.null(data$cens) || data$cens[i] == 0) {
@@ -715,16 +710,14 @@ log_lik_censor <- function(dist, args, i, data) {
   }
 }
 
+# adjust log_lik in truncated models
+# @param x vector of log_lik values
+# @param cdf a cumulative distribution function 
+# @param args arguments passed to cdf
+# @param i observation number
+# @param data data initally passed to Stan
+# @return vector of log_lik values
 log_lik_truncate <- function(x, cdf, args, i, data) {
-  # adjust log_lik in truncated models
-  # Args:
-  #   x: vector of log_lik values
-  #   cdf: a cumulative distribution function 
-  #   args: arguments passed to cdf
-  #   i: observation number
-  #   data: data initally passed to Stan
-  # Returns:
-  #   vector of log_lik values
   if (!(is.null(data$lb) && is.null(data$ub))) {
     lb <- if (is.null(data$lb)) -Inf else data$lb[i]
     ub <- if (is.null(data$ub)) -Inf else data$ub[i]
@@ -734,24 +727,22 @@ log_lik_truncate <- function(x, cdf, args, i, data) {
   }
 }
 
+# weight log_lik values according to defined weights
+# @param x vector of log_lik values
+# @param i observation number
+# @param weights vector of weights
+# @return vector of log_lik values
 log_lik_weight <- function(x, i, weights) {
-  # weight log_lik values according to defined weights
-  # Args:
-  #   x: vector of log_lik values
-  #   i: observation number
-  #   weights: vector of weights
-  # Returns:
-  #   vector of log_lik values
   if (!is.null(weights)) {
     x <- x * weights[i]
   }
   x
 }
 
+# after some discussion with Aki Vehtari and Daniel Simpson,
+# I disallowed computation of log-likelihood values for some models
+# until pointwise solutions are implemented
 stop_no_pw <- function() {
-  # after some discussion with Aki Vehtari and Daniel Simpson,
-  # I disallowed computation of log-likelihood values for some models
-  # until pointwise solutions are implemented
   stop2("Cannot yet compute pointwise log-likelihood for this model ",
         "because the observations are not conditionally independent.")
 }

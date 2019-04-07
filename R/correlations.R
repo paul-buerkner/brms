@@ -243,8 +243,8 @@ cor_errorsar <- function(W) {
   out
 }
 
+# helper function to prepare spatial weights matrices
 sar_weights <- function(W) {
-  # helper function to prepare spatial weights matrices
   require_package("spdep")
   if (is(W, "listw")) {
     W <- spdep::listw2mat(W)
@@ -502,32 +502,31 @@ print.cov_fixed <- function(x, ...) {
   print.cor_fixed(x)
 }
 
+# checks if any ARMA effects are present
 has_arma <- function(x) {
-  # checks if any autocorrelation effects are present
   stop_not_cor_brms(x)
   isTRUE(sum(x$p, x$q, x$r) > 0)
 }
 
+# get AR (autoregressive effects of residuals) order
 get_ar <- function(x) {
-  # get AR (autoregressive effects of residuals) order 
-  # for which AR effects were not implemented in the present form
   stop_not_cor_brms(x)
   ifelse(is.null(x$p), 0, x$p)
 }
 
+# get MA (moving-average) order
 get_ma <- function(x) {
-  # get MA (moving-average) order
   stop_not_cor_brms(x)
   ifelse(is.null(x$q), 0, x$q)
 }
 
+# get ARR (autoregressive effects of the response) order 
 get_arr <- function(x) {
-  # get ARR (autoregressive effects of the response) order 
-  # for which ARR was labled as AR
   stop_not_cor_brms(x)
   ifelse(is.null(x$r), 0, x$r)
 }
 
+# use the covariance parameterization of ARMA models?
 use_cov <- function(x) {
   stop_not_cor_brms(x)
   if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
@@ -544,8 +543,8 @@ stop_not_cor_brms <- function(x) {
   TRUE
 }
 
+# empty 'cor_brms' object
 cor_empty <- function() {
-  # empty 'cor_brms' object
   structure(list(), class = c("cor_empty", "cor_brms"))
 }
 
@@ -553,8 +552,8 @@ is.cor_empty <- function(x) {
   inherits(x, "cor_empty")
 }
 
+# check validity of the autocor argument
 check_autocor <- function(autocor) {
-  # check validity of autocor argument
   if (is.null(autocor))  {
     autocor <- cor_empty()
   }
@@ -562,9 +561,9 @@ check_autocor <- function(autocor) {
   autocor
 }
 
+# convenience function to ignore autocorrelation terms
+# currently excludes ARMA, SAR, and CAR structures
 remove_autocor <- function(x) {
-  # convenience function to ignore autocorrelation terms
-  # currently excludes ARMA, SAR, and CAR structures
   if (is_mv(x)) {
     for (r in names(x$formula$forms)) {
       ac <- x$formula$forms[[r]]$autocor
@@ -583,15 +582,13 @@ remove_autocor <- function(x) {
   x
 }
 
+# subset matrices stored in 'cor_brms' objects
+# @param x a brmsfit object to be updated
+# @param subset indices of observations to keep
+# @param autocor optional (list of) 'cor_brms' objects
+#   from which to take matrices
+# @return an updated brmsfit object
 subset_autocor <- function(x, subset, autocor = NULL) {
-  # subset matrices stored in cor_brms objects
-  # Args:
-  #   x: a brmsfit object to be updated
-  #   subset: indices of observations to keep
-  #   autocor: optional (list of) cor_brms objects
-  #     from which to take matrices
-  # Returns:
-  #   an updated brmsfit object
   .subset_autocor <- function(autocor) {
     if (is.cor_sar(autocor)) {
       autocor$W <- autocor$W[subset, subset, drop = FALSE]
@@ -615,9 +612,8 @@ subset_autocor <- function(x, subset, autocor = NULL) {
   structure(x, autocor_updated = TRUE)
 }
 
+# regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  # regex to extract all pars of cor structures
-  # used in summary.brmsfit
   p <- c("ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", "sigmaLL")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")

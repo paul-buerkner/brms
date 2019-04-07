@@ -158,17 +158,15 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' @seealso \code{\link[brms:hypothesis]{hypothesis}}
 NULL
 
+# internal function to evaluate hypotheses
+# @param x the primary object passed to the hypothesis method;
+#   needs to be a brmsfit object or coercible to a data.frame
+# @param hypothesis Vector of character strings containing the hypotheses
+# @param class prefix of the parameters in the hypotheses
+# @param alpha the 'alpha-level' as understood by frequentist statistics
+# @return a 'brmshypothesis' object
 hypothesis_internal <- function(x, hypothesis, class, alpha,
                                 combine = TRUE, ...) {
-  # internal function to evaluate hypotheses
-  # Args:
-  #   x: the primary object passed to the hypothesis method;
-  #     Needs to be a brmsfit object or coercible to a data.frame
-  #   hypothesis: Vector of character strings containing the hypotheses
-  #   class: prefix of the parameters in the hypotheses
-  #   alpha: alpha-level
-  # Returns:
-  #   an object of class 'brmshypothesis'
   if (!is.character(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
@@ -189,9 +187,9 @@ hypothesis_internal <- function(x, hypothesis, class, alpha,
   out
 }
 
+# evaluate hypotheses for an arrary of ranefs or coefs
+# seperaly for each grouping-factor level
 hypothesis_coef <- function(x, hypothesis, alpha, ...) {
-  # evaluate hypotheses for an arrary of ranefs or coefs
-  # seperaly for each grouping-factor level
   stopifnot(is.array(x), length(dim(x)) == 3L)
   levels <- dimnames(x)[[2]]
   coefs <- dimnames(x)[[3]]
@@ -215,9 +213,10 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out
 }
 
+# combine list of outputs of eval_hypothesis
+# @param hlist list of evaluate hypothesis
+# @return a 'brmshypothesis' object
 combine_hlist <- function(hlist, class, alpha) {
-  # combine list of outputs of eval_hypothesis
-  # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
   hs <- do_call(rbind, lapply(hlist, function(h) h$summary))
   rownames(hs) <- NULL
@@ -231,6 +230,7 @@ combine_hlist <- function(hlist, class, alpha) {
   structure(out, class = "brmshypothesis")
 }
 
+# evaluate a hypothesis based on the posterior samples
 eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
@@ -301,17 +301,14 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   nlist(summary = sm, samples, prior_samples)
 }
 
+# find all valid variable names in a string 
+# @param x a character string
+# @param dot are dots allowed in variable names?
+# @param brackets allow brackets at the end of variable names?
+# @return all valid variable names within the string
+# @note does not use the R parser itself to allow for double points, 
+#   square brackets, and commas at the end of names
 find_vars <- function(x, dot = TRUE, brackets = TRUE) {
-  # find all valid variable names in a string 
-  # Args:
-  #   x: a character string
-  #   dot: are dots allowed in variable names?
-  #   brackets: allow brackets at the end of variable names?
-  # Notes:
-  #   Does not use the R parser itself to allow for double points, 
-  #   square brackets and commas at the end of names.
-  # Returns:
-  #   all valid variable names within the string
   x <- gsub("[[:space:]]", "", as_one_character(x))
   dot <- as_one_logical(dot)
   brackets <- as_one_logical(brackets)
@@ -396,17 +393,15 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
   out
 }
 
+# compute the evidence ratio between two disjunct hypotheses
+# @param x posterior samples 
+# @param cut the cut point between the two hypotheses
+# @param wsign direction of the hypothesis
+# @param prior_samples optional prior samples for undirected hypothesis
+# @param ... optional arguments passed to density_ratio
+# @return the evidence ratio of the two hypothesis
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
                            prior_samples = NULL, ...) {
-  # compute the evidence ratio between two disjunct hypotheses
-  # Args:
-  #   x: posterior samples 
-  #   cut: the cut point between the two hypotheses
-  #   wsign: direction of the hypothesis
-  #   prior_samples: optional prior samples for undirected hypothesis
-  #   ...: optional arguments passed to density_ratio
-  # Returns:
-  #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
   if (wsign == "equal") {
     if (is.null(prior_samples)) {
@@ -424,8 +419,8 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out
 }
 
+# round all numeric elements of a list-like object
 round_numeric <- function(x, digits = 2) {
-  # round all numeric elements of a list like object
   stopifnot(is.list(x))
   for (i in seq_along(x)) {
     if (is.numeric(x[[i]])) {

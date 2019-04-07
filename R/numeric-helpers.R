@@ -2,22 +2,18 @@
 # necessary to evaluate non-linear formulas containing these functions.
 
 logit <- function(p) {
-  # logit link
   log(p / (1 - p))
 }
 
 inv_logit <- function(x) { 
-  # inverse of logit link
   1 / (1 + exp(-x))
 }
 
 cloglog <- function(x) {
-  # cloglog link
   log(-log(1 - x))
 }
 
 inv_cloglog <- function(x) {
-  # inverse of the cloglog link
   1 - exp(-exp(x))
 }
 
@@ -25,8 +21,8 @@ Phi <- function(x) {
   pnorm(x)
 }
 
+# incomplete gamma funcion
 incgamma <- function(a, x) {
-  # incomplete gamma funcion
   pgamma(x, shape = a) * gamma(a)
 }
 
@@ -149,7 +145,6 @@ log_sum_exp <- function(x, y) {
 }
 
 log_mean_exp <- function(x) {
-  # just log_sum_exp(x) - log(length(x))
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x))) - log(length(x))
 }

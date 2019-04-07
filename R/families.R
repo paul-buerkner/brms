@@ -203,20 +203,17 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   )
 }
 
+# helper function to prepare brmsfamily objects
+# @param family character string naming the model family
+# @param link character string naming the link function
+# @param slink can be used with substitute(link) for 
+#   non-standard evaluation of the link function
+# @param threshold threshold type for ordinal models
+# @param ... link functions (as character strings) of parameters
+# @return an object of 'brmsfamily' which inherits from 'family'
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = c("flexible", "equidistant"),
                         refcat = NULL, ...) {
-  # helper function to prepare brmsfamily objects
-  # Args:
-  #   family: character string naming the model family
-  #   link: character string naming the link function
-  #   slink: can be used with substitute(link) for 
-  #          non-standard evaluation of the link function
-  #   threshold: threshold type for ordinal models
-  #   ...: link functions (as character strings) of parameters
-  # Returns:
-  #   An object of class = c('brmsfamily', 'family') to be used
-  #   only inside the brms package
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
   pattern <- c("^normal$", "^zi_", "^hu_")
@@ -286,15 +283,14 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   out
 }
 
+# checks and corrects validity of the model family
+# @param family Either a function, an object of class 'family' 
+#   or a character string of length one or two
+# @param link an optional character string naming the link function
+#   ignored if family is a function or a family object
+# @param threshold optional character string specifying the threshold
+#   type in ordinal models
 check_family <- function(family, link = NULL, threshold = NULL) {
-  # checks and corrects validity of the model family
-  # Args:
-  #   family: Either a function, an object of class 'family' 
-  #           or a character string of length one or two
-  #   link: an optional character string naming the link function
-  #         ignored if family is a function or a family object
-  #   threshold: optional character string specifying the threshold
-  #              type in ordinal models
   if (is.function(family)) {
     family <- family()   
   }
@@ -320,11 +316,10 @@ check_family <- function(family, link = NULL, threshold = NULL) {
   family
 }
 
+# extract special information of families
+# @param x object from which to extract
+# @param y name of the component to extract
 family_info <- function(x, y, ...) {
-  # extract special information of families
-  # Args: 
-  #   x: object from which to extract
-  #   y: name of the component to extract
   UseMethod("family_info")
 }
 
@@ -416,9 +411,9 @@ family_info.brmsfit <- function(x, y, ...) {
   family_info(x$formula, y = y, ...)
 }
 
+# combine information from multiple families
+# provides special handling for certain elements
 combine_family_info <- function(x, y, ...) {
-  # combine information from multiple families
-  # provides special handling for certain elements
   y <- as_one_character(y)
   unite <- c("dpars", "type", "specials", "include", "const", "cats")
   if (y %in% c("family", "link")) {
@@ -1058,8 +1053,8 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   out
 }
 
+# get valid distributional parameters for a family
 valid_dpars <- function(family, ...) {
-  # get valid distributional parameters for a family
   UseMethod("valid_dpars")
 }
 
@@ -1106,19 +1101,19 @@ valid_dpars.brmsfit <- function(family, ...) {
   valid_dpars(family$formula, ...)
 }
 
+# class of a distributional parameter
 dpar_class <- function(dpar) {
-  # class of a distributional parameter
   sub("[[:digit:]]*$", "", dpar)
 }
 
+# id of a distributional parameter
 dpar_id <- function(dpar) {
-  # id of a distributional parameter
   out <- get_matches("[[:digit:]]+$", dpar, simplify = FALSE)
   ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
+# link functions for distributional parameters
 links_dpars <- function(dpar) {
-  # link functions for distributional parameters
   if (!length(dpar)) dpar <- ""
   switch(dpar,
     character(0),
@@ -1144,8 +1139,8 @@ links_dpars <- function(dpar) {
   )
 }
 
+# generate a family object of a distributional parameter
 dpar_family <- function(family, dpar, ...) {
-  # generate a family object of a distributional parameter
   UseMethod("dpar_family")
 }
 
@@ -1170,11 +1165,10 @@ dpar_family.mixfamily <- function(family, dpar, ...) {
   out
 }
 
+# set up special family objects for distributional parameters
+# @param dpar name of the distributional parameter
+# @param link optional link function of the parameter
 .dpar_family <- function(dpar = NULL, link = NULL) {
-  # set up special family objects for distributional parameters
-  # Args:
-  #   dpar: name of the distributional parameter
-  #   link: optional link function of the parameter
   links <- links_dpars(dpar_class(dpar))
   if (!length(link)) {
     if (!length(links)) {
@@ -1339,13 +1333,13 @@ family_names <- function(x) {
   family_info(x, "family")
 }
 
+# indicate if family uses real responses
 use_real <- function(family) {
-  # indicate if family uses real responses
   "real" %in% family_info(family, "type")
 }
 
+# indicate if family uses integer responses
 use_int <- function(family) {
-  # indicate if family uses integer responses
   "int" %in% family_info(family, "type")
 }
 
@@ -1374,76 +1368,76 @@ allow_factors <- function(family) {
   any(specials %in% family_info(family, "specials"))
 }
 
+# checks if autocorrelation structures are allowed
 allow_autocor <- function(family) {
-  # checks if autocorrelation structures are allowed
   "autocor" %in% family_info(family, "specials")
 }
 
+# checks if category specific effects are allowed
 allow_cs <- function(family) {
-  # checks if category specific effects are allowed
   "cs" %in% family_info(family, "specials")
 }
 
+# choose dpar names based on categories?
 conv_cats_dpars <- function(family) {
-  # choose dpar names based on categories?
   is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
 }
 
+# check if mixtures of the given families are allowed
 no_mixture <- function(family) {
-  # families not allowed in mixture models
   is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
 }
 
+# indicate if the response should consist of multiple columns
 has_multicol <- function(family) {
-  # indicate if the response should consist of multiple columns
   is_multinomial(family) || is_dirichlet(family)
 }
 
+# indicate if the response is modeled on the log-scale
+# even if formally the link function is not 'log'
 has_logscale <- function(family) {
-  # indicate if the response is modeled on the log-scale
-  # even if formally the link function is not 'log'
   "logscale" %in% family_info(family, "specials")
 }
 
+# indicate if family makes use of argument trials
 has_trials <- function(family) {
-  # indicate if family makes use of argument trials
   "trials" %in% family_info(family, "ad") &&
     !"custom" %in% family_names(family)
 }
 
+# indicate if family has more than two response categories
 has_cat <- function(family) {
-  # indicate if family has more than two response categories
   is_categorical(family) || is_ordinal(family) || 
     is_multinomial(family) || is_dirichlet(family)
 }
 
+# indicate if family has equidistant thresholds
 has_equidistant_thres <- function(family) {
-  # indicate if family has equidistant thresholds
   isTRUE(family_info(family, "threshold") == "equidistant")
 }
 
+# indicate if family has ordered thresholds
 has_ordered_thres <- function(family) {
-  # indicate if family has ordered thresholds
   "ordered_thres" %in% family_info(family, "specials")
 }
 
+# compute threshold - eta in the likelihood
 has_thres_minus_eta <- function(family) {
-  # compute threshold - eta in the likelihood
   "thres_minus_eta" %in% family_info(family, "specials")
 }
 
+# compute eta - threshold in the likelihood
 has_eta_minus_thres <- function(family) {
-  # compute eta - threshold in the likelihood
   "eta_minus_thres" %in% family_info(family, "specials")
 }
 
+# get names of response categories
 get_cats <- function(family) {
-  # get names of response categories
   family_info(family, "cats")
 }
 
+# get names of ordinal thresholds for prior specification
 get_thres <- function(family) {
-  # get names of ordinal thresholds for prior specification
   if (!is_ordinal(family)) {
     return(NULL)
   }
@@ -1459,8 +1453,8 @@ has_sigma <- function(family) {
   "sigma" %in% dpar_class(family_info(family, "dpars"))
 }
 
+# check if sigma should be explicitely set to 0
 no_sigma <- function(bterms) {
-  # check if sigma should be explicitely set to 0
   stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$se)) {
     # call resp_se without evaluating the x argument
@@ -1477,41 +1471,42 @@ no_sigma <- function(bterms) {
   se_only || is.cor_fixed(bterms$autocor)
 }
 
+# has the model a non-predicted but estimated sigma parameter?
 simple_sigma <- function(bterms) {
-  # has the model a non-predicted but estimated sigma parameter?
   stopifnot(is.brmsterms(bterms))
   has_sigma(bterms) && !no_sigma(bterms) && !pred_sigma(bterms)
 }
 
+# has the model a predicted sigma parameter?
 pred_sigma <- function(bterms) {
-  # has the model a predicted sigma parameter?
   stopifnot(is.brmsterms(bterms))
   "sigma" %in% dpar_class(names(bterms$dpars))
 }
 
+# do not include a 'nu' parameter in a univariate model?
 no_nu <- function(bterms) {
   # the multi_student_t family only has a single 'nu' parameter
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
 }
 
+# order intercepts to help identifying mixture components?
+# does not work in ordinal models as they have vectors of intercepts
 order_intercepts <- function(bterms) {
-  # order intercepts to help identifying mixture components?
-  # does not work in ordinal models as they have vectors of intercepts
   dpar <- dpar_class(bterms[["dpar"]])
   if (!length(dpar)) dpar <- "mu"
   isTRUE(!is_ordinal(bterms) && dpar %in% bterms$family[["order"]])
 }
 
+# fix intercepts to help identifying mixture components?
+# currently enabled only in ordinal models
 fix_intercepts <- function(bterms) {
-  # fix intercepts to help identifying mixture components?
-  # currently enabled only in ordinal models
   dpar <- dpar_class(bterms[["dpar"]])
   if (!length(dpar)) dpar <- "mu"
   isTRUE(is_ordinal(bterms) && dpar %in% bterms$family[["order"]])
 }
 
+# does the mixture have a joint parameter vector 'theta'
 has_joint_theta <- function(bterms) {
-  # does the mixture have a joint parameter vector 'theta'
   stopifnot(is.brmsterms(bterms))
   is.mixfamily(bterms$family) && 
     !"theta" %in% dpar_class(names(c(bterms$dpars, bterms$fdpars)))

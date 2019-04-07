@@ -64,14 +64,12 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
 }
 
 # All predict_<family> functions have the same arguments structure
-# Args:
-#  i: the column of draws to use i.e. the ith obervation 
-#     in the initial data.frame 
-#  draws: A named list returned by extract_draws containing 
-#         all required data and samples
-#  ...: ignored arguments
-# Returns:
-#   A vector of length draws$nsamples containing samples
+# @param i the column of draws to use that is the ith obervation 
+#   in the initial data.frame 
+# @param draws A named list returned by extract_draws containing 
+#   all required data and samples
+# @param ... ignored arguments
+# @param A vector of length draws$nsamples containing samples
 #   from the posterior predictive distribution
 predict_gaussian <- function(i, draws, ...) {
   args <- list(
@@ -254,7 +252,6 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
 }
 
 predict_bernoulli <- function(i, draws, ...) {
-  # truncation not useful
   mu <- get_dpar(draws, "mu", i = i)
   rbinom(length(mu), size = 1, prob = mu)
 }
@@ -626,17 +623,14 @@ predict_mixture <- function(i, draws, ...) {
   out
 }
 
-#---------------predict helper-functions----------------------------
-
+# ------------ predict helper-functions ----------------------
+# random numbers from (possibly truncated) continuous distributions
+# @param nrng number of random values to generate
+# @param dist name of a distribution for which the functions
+#   p<dist>, q<dist>, and r<dist> are available
+# @param args additional arguments passed to the distribution functions
+# @return vector of random values draws from the distribution
 rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
-  # random numbers from (possibly truncated) continuous distributions
-  # Args:
-  #   nrng: number of random values to generate
-  #   dist: name of a distribution for which the functions
-  #         p<dist>, q<dist>, and r<dist> are available
-  #   args: dditional arguments passed to the distribution functions
-  # Returns:
-  #   a vector of random values draws from the distribution
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     rdist <- paste0("r", dist)
@@ -657,19 +651,17 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
   out
 }
 
+# random numbers from (possibly truncated) discrete distributions
+# currently rejection sampling is used for truncated distributions
+# @param nrng number of random values to generate
+# @param dist name of a distribution for which the functions
+#   p<dist>, q<dist>, and r<dist> are available
+# @param args dditional arguments passed to the distribution functions
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param ntrys number of trys in rejection sampling for truncated models
+# @return a vector of random values draws from the distribution
 rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
-  # random numbers from (possibly truncated) discrete distributions
-  # currently rejection sampling is used for truncated distributions
-  # Args:
-  #   nrng: number of random values to generate
-  #   dist: name of a distribution for which the functions
-  #         p<dist>, q<dist>, and r<dist> are available
-  #   args: dditional arguments passed to the distribution functions
-  #   lb: optional lower truncation bound
-  #   ub: optional upper truncation bound
-  #   ntrys: number of trys in rejection sampling for truncated models
-  # Returns:
-  #   a vector of random values draws from the distribution
   rdist <- get(paste0("r", dist), mode = "function")
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
@@ -683,8 +675,8 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
   }
 }
 
+# sample the ID of the mixture component
 rng_mix <- function(theta) {
-  # sample the ID of the mixture component
   stopifnot(is.matrix(theta))
   mix_comp <- seq_cols(theta)
   ulapply(seq_rows(theta), function(s)
@@ -692,15 +684,12 @@ rng_mix <- function(theta) {
   )
 }
 
+# extract the first valid predicted value per Stan sample per observation 
+# @param rng draws to be check against truncation boundaries
+# @param lb vector of lower bounds
+# @param ub vector of upper bound
+# @return a valid truncated sample or else the closest boundary
 extract_valid_sample <- function(rng, lb, ub) {
-  # extract the first valid predicted value 
-  # per Stan sample per observation 
-  # Args:
-  #   rng: draws to be check against truncation boundaries
-  #   lb: lower bound
-  #   ub: upper bound
-  # Returns:
-  #   a valid truncated sample or else the closest boundary
   valid_rng <- match(TRUE, rng >= lb & rng <= ub)
   if (is.na(valid_rng)) {
     # no valid truncated value found
@@ -713,21 +702,21 @@ extract_valid_sample <- function(rng, lb, ub) {
   out
 }
 
-check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, 
-                                        thres = 0.01) {
-  # check for invalid predictions of truncated discrete models
-  # Args:
-  #   x: matrix of predicted values
-  #   lb: optional lower truncation bound
-  #   ub: optional upper truncation bound
-  #   thres: threshold (in %) of invalid values at which to warn the user
+# check for invalid predictions of truncated discrete models
+# @param x matrix of predicted values
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param thres threshold (in %) of invalid values at which to warn the user
+# @return rounded values of 'x'
+check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
   if (is.null(lb)) lb <- -Inf
   if (is.null(ub)) ub <- Inf
   thres <- as_one_numeric(thres)
-  y <- as.vector(t(x))  # ensures correct comparison with vector bounds
+  # ensure correct comparison with vector bounds
+  y <- as.vector(t(x))
   pct_invalid <- mean(y < lb | y > ub, na.rm = TRUE)
   if (pct_invalid >= thres) {
     warning2(

@@ -47,21 +47,20 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
   out
 }
 
+# prepare data for all types of effects for use in Stan
+# @param data the data passed by the user
+# @param ranef object retuend by 'tidy_ranef'
+# @param prior an object of class brmsprior
+# @param knots optional knot values for smoothing terms
+# @param not4stan is the data for use in S3 methods only?
+# @param old_sdata see 'extract_old_standata'
+# @param ... currently ignored
+# @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), knots = NULL, 
                                not4stan = FALSE, old_sdata = NULL, ...) {
-  # prepare data for all types of effects for use in Stan
-  # Args:
-  #   data: the data passed by the user
-  #   ranef: object retuend by 'tidy_ranef'
-  #   prior: an object of class brmsprior
-  #   knots: optional knot values for smoothing terms
-  #   not4stan: is the data for use in S3 methods only?
-  #   old_sdata: see 'extract_old_standata'
-  # Returns:
-  #   A named list of data to be passed to Stan
-  c(data_fe(x, data, not4stan = not4stan),
+  c(data_fe(x, data, not4stan = not4stan, ...),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
@@ -72,10 +71,9 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
   )
 }
 
+# prepare data for non-linear parameters for use in Stan
 #' @export 
 data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
-  # prepare data for non-linear parameters for use in Stan
-  # matrix of covariates appearing in the non-linear formula
   out <- list()
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != ncol(C)) {
@@ -96,10 +94,8 @@ data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
   out
 }
 
+# prepare data of fixed effects
 data_fe <- function(bterms, data, not4stan = FALSE) {
-  # prepare data of fixed effects and smooth terms for use in Stan
-  # handle smooth terms here as they also affect the FE design matrix 
-  # Args: see data_predictor
   out <- list()
   p <- usc(combine_prefix(bterms))
   is_ordinal <- is_ordinal(bterms$family)
@@ -113,8 +109,8 @@ data_fe <- function(bterms, data, not4stan = FALSE) {
   out
 }
 
+# data preparation for splines
 data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
-  # data preparation for splines
   out <- list()
   smterms <- all_terms(bterms[["sm"]])
   if (!length(smterms)) {
@@ -169,9 +165,8 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
   out
 }
 
+# prepare data for group-level effects for use in Stan
 data_re <- function(bterms, data, ranef) {
-  # prepare data for group-level effects for use in Stan
-  # Args: see data_predictor
   out <- list()
   px <- check_prefix(bterms)
   take <- find_rows(ranef, ls = px) & !find_rows(ranef, type = "sp")
@@ -231,10 +226,8 @@ data_re <- function(bterms, data, ranef) {
   out
 }
 
+# compute data for each group-level-ID per univariate model
 data_gr_local <- function(bterms, data, ranef) {
-  # compute data for each group-level-ID per univariate model
-  # Args:
-  #   ranef: data.frame returned by tidy_ranef
   stopifnot(is.brmsterms(bterms))
   out <- list()
   ranef <- subset2(ranef, resp = bterms$resp)
@@ -292,11 +285,8 @@ data_gr_local <- function(bterms, data, ranef) {
   out
 }
 
+# prepare global data for each group-level-ID
 data_gr_global <- function(ranef, cov_ranef = NULL) {
-  # prepare global data for each group-level-ID
-  # Args:
-  #   ranef: data.frame returned by tidy_ranef
-  #   cov_ranef: name list of user-defined covariance matrices
   out <- list()
   for (id in unique(ranef$id)) {
     id_ranef <- subset2(ranef, id = id)
@@ -342,9 +332,8 @@ data_gr_global <- function(ranef, cov_ranef = NULL) {
   out
 }
 
+# prepare data for special effects for use in Stan
 data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
-  # prepare data for special effects for use in Stan
-  # Args: see data_predictor
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -394,9 +383,8 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   out
 }
 
+# prepare data for category specific effects
 data_cs <- function(bterms, data) {
-  # prepare data for category specific effects
-  # Args: see data_predictor
   out <- list()
   if (length(all_terms(bterms[["cs"]]))) {
     p <- usc(combine_prefix(bterms))
@@ -408,8 +396,8 @@ data_cs <- function(bterms, data) {
   out
 }
 
+# prepare global data for noise free variables
 data_Xme <- function(meef, data) {
-  # prepare global data for noise free variables
   stopifnot(is.meef_frame(meef))
   out <- list()
   groups <- unique(meef$grname)
@@ -464,11 +452,10 @@ data_Xme <- function(meef, data) {
   out
 }
 
+# prepare data for Gaussian process terms
+# @param raw store certain intermediate data for further processing?
+# @param ... passed to '.data_gp'
 data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
-  # prepare data for Gaussian process terms
-  # Args: see data_predictor
-  #   raw: store certain intermediate data for further processing?
-  #   ...: passed to '.data_gp'
   out <- list()
   raw <- as_one_logical(raw)
   px <- check_prefix(bterms)
@@ -551,16 +538,15 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
   out
 }
 
+# helper function to preparae GP related data
+# @inheritParams data_gp
+# @param Xgp matrix of covariate values
+# @param k, gr, c see 'tidy_gpef'
+# @param sfx suffix to put at the end of data names
+# @param Cgp optional vector of values belonging to
+#   a certain contrast of a factor 'by' variable
 .data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
                      raw = FALSE, gps = NULL) {
-  # helper function to preparae GP related data
-  # Args:
-  #   Xgp: matrix of covariate values
-  #   k, gr, c: see tidy_gpef
-  #   sfx: suffix to put at the end of data names
-  #   Cgp: optional vector of values belonging to
-  #     a certain contrast of a factor 'by' variable
-  #   raw, gps: see 'data_gp'
   out <- list()
   if (!is.null(Cgp)) {
     Cgp <- unname(Cgp)
@@ -616,9 +602,8 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
   out
 }
 
+# prepare data of offsets for use in Stan
 data_offset <- function(bterms, data) {
-  # prepare data of offsets for use in Stan
-  # Args: see data_predictor
   out <- list()
   px <- check_prefix(bterms)
   if (is.formula(bterms$offset)) {
@@ -634,14 +619,12 @@ data_offset <- function(bterms, data) {
   out
 }
 
+# data for autocorrelation variables
+# @param Y vector of response values; only required in cor_arr
+# @param new: does 'data' contain new data?
+# @param old_locations: optional old locations for CAR models
 data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
                          old_locations = NULL) {
-  # data for autocorrelation variables
-  # Args:
-  #   Y: vector of response values; only required in cor_arr
-  #   new: does 'data' contain new data?
-  #   old_locations: optional locations for CAR models 
-  #     used when fitting the model
   stopifnot(is.brmsterms(bterms))
   autocor <- bterms$autocor
   N <- nrow(data)
@@ -1032,8 +1015,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   out
 }
 
+# data specific for mixture models
 data_mixture <- function(bterms, prior = brmsprior()) {
-  # data specific for mixture models
   stopifnot(is.brmsterms(bterms))
   out <- list()
   if (is.mixfamily(bterms$family)) {
@@ -1060,8 +1043,8 @@ data_mixture <- function(bterms, prior = brmsprior()) {
   out
 }
 
+# data for special priors such as horseshoe and lasso
 data_prior <- function(bterms, data, prior) {
-  # data for special priors such as horseshoe and lasso
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))

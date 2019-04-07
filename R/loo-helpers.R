@@ -14,20 +14,18 @@ loo_R2 <- function(object, ...) {
   UseMethod("loo_R2")
 }
 
+# helper function used to create (lists of) 'loo' objects
+# @param models list of brmsfit objects
+# @param criterion name of the criterion to compute
+# @param use_stored use precomputed criterion objects if possible?
+# @param compare compare models using 'loo_compare'?
+# @param ... more arguments passed to compute_loo
+# @return If length(models) > 1 an object of class 'loolist'
+#   If length(models) == 1 an object of class 'loo'
 compute_loos <- function(
   models, criterion = c("loo", "waic", "psis", "psislw", "kfold"),
   use_stored = TRUE, compare = TRUE, ...
 ) {
-  # helper function used to create (lists of) 'loo' objects
-  # Args:
-  #   models: list of brmsfit objects
-  #   criterion: name of the criterion to compute
-  #   use_stored: use precomputed criterion objects if possible?
-  #   compare: compare models using 'loo_compare'?
-  #   ...: more arguments passed to compute_loo
-  # Returns:
-  #   If length(models) > 1 an object of class 'loolist'
-  #   If length(models) == 1 an object of class 'loo'
   criterion <- match.arg(criterion)
   args <- nlist(criterion, ...)
   if (length(models) > 1L) {
@@ -64,23 +62,21 @@ compute_loos <- function(
   out
 }
 
+# compute information criteria using the 'loo' package
+# @param x an object of class brmsfit
+# @param criterion the criterion to be computed
+# @param model_name original variable name of object 'x'
+# @param use_stored use precomputed criterion objects if possible?
+# @param newdata optional data.frame of new data
+# @param reloo call 'reloo' after computing 'loo'?
+# @param reloo_args list of arguments passed to 'reloo'
+# @param pointwise compute log-likelihood point-by-point?
+# @param ... passed to other post-processing methods
+# @return an object of class 'loo'
 compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
                         pointwise = FALSE, newdata = NULL, resp = NULL, 
                         model_name = "", use_stored = TRUE, ...) {
-  # compute information criteria using the 'loo' package
-  # Args:
-  #   x: an object of class brmsfit
-  #   criterion: the criterion to be computed
-  #   model_name: original variable name of object 'x'
-  #   use_stored: use precomputed criterion objects if possible?
-  #   newdata: optional data.frame of new data
-  #   reloo: call 'reloo' after computing 'loo'?
-  #   reloo_args: list of arguments passed to 'reloo'
-  #   pointwise: compute log-likelihood point-by-point?
-  #   ...: passed to other post-processing methods
-  # Returns:
-  #   an object of class 'loo'
   criterion <- match.arg(criterion)
   model_name <- as_one_character(model_name)
   use_stored <- as_one_logical(use_stored)
@@ -301,8 +297,8 @@ add_waic <- function(x, model_name = NULL, ...) {
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
+# create a hash based on the response of a model
 hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
-  # create a hash based on the response of a model
   require_package("digest")
   stopifnot(is.brmsfit(x))
   sdata <- standata(
@@ -320,13 +316,11 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   digest::sha1(x = out, ...)
 }
 
+# compare the response parts of multiple brmsfit objects
+# @param models A list of brmsfit objects
+# @param ... passed to hash_response
+# @return TRUE if the response parts of all models match and FALSE otherwise
 match_response <- function(models, ...) {
-  # compare the response parts of multiple brmsfit objects
-  # Args:
-  #   models: A list of brmsfit objects
-  #   ...: passed to hash_response
-  # Returns:
-  #   TRUE if the response parts of all models match and FALSE otherwise
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
@@ -341,12 +335,11 @@ match_response <- function(models, ...) {
   out
 }
 
+# compare number of observations of multipe models
+# @param models A list of brmsfit objects
+# @param ... currently ignored
+# @return TRUE if the number of rows match
 match_nobs <- function(models, ...) {
-  # compare number of observations of multipe models
-  # Args:
-  #   models: A list of brmsfit objects
-  # Returns:
-  #   TRUE if the number of rows match
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
@@ -361,12 +354,11 @@ match_nobs <- function(models, ...) {
   out
 }
 
+# validate models passed to loo and related methods
+# @param models list of fitted model objects
+# @param model_names names specified by the user
+# @param sub_names names inferred by substitute()
 validate_models <- function(models, model_names, sub_names) {
-  # validate models passed to loo and related methods
-  # Args:
-  #   models: list of fitted model objects
-  #   model_names: names specified by the user
-  #   sub_names: names inferred by substitute()
   stopifnot(is.list(models))
   model_names <- as.character(model_names)
   if (!length(model_names)) {
@@ -514,11 +506,11 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
   x
 }
 
+# helper function to perform k-fold cross-validation
+# @inheritParams kfold.brmsfit
 kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL, 
                            group = NULL, newdata = NULL, resp = NULL,
                            save_fits = FALSE, ...) {
-  # helper function to perform k-fold cross-validation
-  # Args: see kfold.brmsfit
   stopifnot(is.brmsfit(x))
   if (is.null(newdata)) {
     mf <- model.frame(x) 
@@ -590,8 +582,8 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
     Ksub <- sort(Ksub)
   }
   
+  # function to be run inside future::future
   .kfold <- function(k) {
-    # function to run inside future::future
     if (fold_type == "loo" && !is.null(group)) {
       omitted <- which(folds == folds[k])
       predicted <- k
@@ -725,6 +717,7 @@ kfold_predict <- function(x, method = c("predict", "fitted"),
   nlist(y, yrep)
 }
 
+# recommend options if approximate loo fails for some observations
 recommend_loo_options <- function(n, k_threshold, model_name = "") {
   model_name <- if (isTRUE(nzchar(model_name))) {
     paste0(" in model '", model_name, "'")
@@ -752,17 +745,17 @@ recommend_loo_options <- function(n, k_threshold, model_name = "") {
   invisible(out)
 }
 
+# helper function to compute relative efficiences
 r_eff_helper <- function(log_lik, fit) {
-  # helper function to compute relative efficiences
   stopifnot(is.matrix(log_lik), is.brmsfit(fit))
   chains <- fit$fit@sim$chains
   chain_id <- rep(seq_len(chains), each = nrow(log_lik) / chains)
   loo::relative_eff(log_lik, chain_id = chain_id)
 }
 
+# print the output of loo and waic with multiple models
 #' @export
 print.loolist <- function(x, digits = 1, ...) {
-  # print the output of loo and waic with multiple models
   model_names <- loo::find_model_names(x$loos)
   for (i in seq_along(x$loos)) {
     cat(paste0("Output of model '", model_names[i], "':\n"))
@@ -917,10 +910,10 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic", "kfold")) {
   x
 }
 
+# print the output of LOO and WAIC with multiple models
+# deprecated as of brms > 2.5.0 and will be removed in brms 3.0
 #' @export
 print.iclist <- function(x, digits = 2, ...) {
-  # deprecated as of brms > 2.5.0 and will be removed in brms 3.0
-  # print the output of LOO and WAIC with multiple models
   m <- x
   m$ic_diffs__ <- NULL
   if (length(m)) {

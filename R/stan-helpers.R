@@ -1,5 +1,8 @@
+# unless otherwise specifiedm functions return a named list 
+# of Stan code snippets to be pasted together later on
+
+# Stan code for the response variables
 stan_response <- function(bterms, data) {
-  # Stan code for the response variables
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
@@ -132,10 +135,8 @@ stan_response <- function(bterms, data) {
   out
 }
 
+# Stan code related to autocorrelation structures
 stan_autocor <- function(bterms, prior) {
-  # Stan code related to autocorrelation structures
-  # Returns: 
-  #   list containing Stan code snippets
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   autocor <- bterms$autocor
@@ -464,10 +465,8 @@ stan_autocor <- function(bterms, prior) {
   out
 }
 
+# define Stan functions or globally used transformed data
 stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
-  # define Stan functions or globally used transformed data
-  # Returns:
-  #   a list of character strings
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -557,8 +556,8 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   out
 }
 
+# ordinal log-probability densitiy functions in Stan language
 stan_ordinal_lpmf <- function(family, link) {
-  # ordinal log-probability densitiy functions in Stan language
   stopifnot(is.character(family), is.character(link))
   ilink <- stan_ilink(link)
   th <- function(k) {
@@ -647,10 +646,9 @@ stan_ordinal_lpmf <- function(family, link) {
   out
 }
 
+# global Stan definitions for noise-free variables
+# @param meef output of tidy_meef
 stan_Xme <- function(meef, prior) {
-  # global Stan definitions for noise-free variables
-  # Args:
-  #   meef: tidy data.frame as returned by tidy_meef()
   stopifnot(is.meef_frame(meef))
   if (!nrow(meef)) {
     return(list())
@@ -732,10 +730,9 @@ stan_Xme <- function(meef, prior) {
   out
 }
 
+# link function in Stan language
+# @param link name of the link function
 stan_link <- function(link) {
-  # find the link in Stan language
-  # Args:
-  #   link: the link function
   switch(link, 
     identity = "",
     log = "log", 
@@ -754,10 +751,9 @@ stan_link <- function(link) {
   )
 }
 
+# inverse link in Stan language
+# @param link name of the link function
 stan_ilink <- function(link) {
-  # find the inverse link in Stan language
-  # Args:
-  #   link: the link function
   switch(link, 
     identity = "",
     log = "exp", 
@@ -776,16 +772,15 @@ stan_ilink <- function(link) {
   )
 }
 
+# define a vector in Stan language
 stan_vector <- function(...) {
-  # define a vector in Stan language
   paste0("[", paste0(c(...), collapse = ", "), "]'")
 }
 
+# prepare Stan code for correlations in the generated quantities block
+# @param cor name of the correlation vector
+# @param ncol number of columns of the correlation matrix
 stan_cor_genC <- function(cor, ncol) {
-  # prepare Stan code for correlations in the generated quantities block
-  # Args:
-  #   cor: name of the correlation vector
-  #   ncol: number of columns of the correlation matrix
   Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
   glue(
     "  // extract upper diagonal of correlation matrix\n", 
@@ -797,11 +792,10 @@ stan_cor_genC <- function(cor, ncol) {
   )
 }
 
+# indicates if a family-link combination has a built in 
+# function in Stan (such as binomial_logit)
+# @param family a list with elements 'family' and 'link'
 stan_has_built_in_fun <- function(family) {
-  # indicates if a family-link combination has a built in 
-  # function in Stan (such as binomial_logit)
-  # Args:
-  #   family: a list with elements 'family' and 'link'
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
   dpar <- family$dpar
@@ -822,18 +816,17 @@ stan_has_built_in_fun <- function(family) {
   )
 }
 
+# get all variable names accepted in Stan
 stan_all_vars <- function(x) {
-  # get all variable names accepted in Stan
   x <- gsub("\\.", "+", x)
   all_vars(x)
 }
 
+# checks if a model needs the kronecker product
+# @param ranef output of tidy_ranef
+# @param names_cov_ranef: names 'cov_ranef'
+# @return a single logical value
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
-  # checks if a model needs the kronecker product
-  # Args: 
-  #   ranef: named list returned by tidy_ranef
-  #   names_cov_ranef: names of the grouping factors that
-  #                    have a cov.ranef matrix 
   ids <- unique(ranef$id)
   out <- FALSE
   for (id in ids) {

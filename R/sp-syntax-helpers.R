@@ -1,8 +1,8 @@
 # This file contains functions dealing with the extended 
 # formula syntax to specify special effects terms
 
+# find variable names for which to keep NAs
 vars_keep_na <- function(x, ...) {
-  # find variable names for which to keep NAs
   UseMethod("vars_keep_na")
 }
 
@@ -49,8 +49,8 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   out
 }
 
+# extract unique names of noise-free terms 
 get_uni_me <- function(x) {
-  # extract unique names of noise-free terms 
   uni_me <- ulapply(get_effect(x, "sp"), attr, "uni_me")
   if (!length(uni_me)) {
     return(NULL)
@@ -71,8 +71,8 @@ get_uni_me <- function(x) {
   unique(uni_me)
 }
 
+# save all me-terms within a tidy data.frame
 tidy_meef <- function(bterms, data, old_levels = NULL) {
-  # save all me-terms within a tidy data.frame
   uni_me <- get_uni_me(bterms)
   if (length(uni_me)) {
     if (has_subset(bterms)) {
@@ -118,22 +118,22 @@ is.meef_frame <- function(x) {
   inherits(x, "meef_frame")
 }
 
+# handle default of correlations between 'me' terms
 default_mecor <- function(mecor = NULL) {
-  # handle default of correlations between 'me' terms
   if (is.null(mecor)) TRUE else as_one_logical(mecor)
 }
 
+# find names of all variables used in a special effects type
 get_sp_vars <- function(x, type) {
-  # find names of all variables used in a special effects type
   sp_terms <- ulapply(get_effect(x, "sp"), all_terms)
   all.vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
 }
 
+# gather information of special effects terms
+# @param x either a formula or a list containing an element "sp"
+# @param data data frame containing the monotonic variables
+# @return a data.frame with one row per special term
 tidy_spef <- function(x, data) {
-  # get labels of special effects terms
-  # Args:
-  #   x: either a formula or a list containing an element "sp"
-  #   data: data frame containing the monotonic variables
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
@@ -192,10 +192,9 @@ tidy_spef <- function(x, data) {
   out
 }
 
+# extract names of monotonic simplex parameters 
+# @param spef output of tidy_spef
 get_simo_labels <- function(spef) {
-  # extract names of monotonic simplex parameters 
-  # Args:
-  #   spef: output of tidy_spef
   fun <- function(i) paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
   ulapply(which(lengths(spef$Imo) > 0), fun)
 }
@@ -211,24 +210,23 @@ get_sdy <- function(x, data = NULL) {
   sdy
 }
 
+# get names of grouping variables used in measurement error terms
 get_me_groups <- function(x) {
-  # get names of me grouping variables
   uni_me <- get_uni_me(x)
   out <- lapply(uni_me, eval_NA) 
   out <- ulapply(out, attr, "grname")
   out[nzchar(out)]
 }
 
+# get the design matrix of special effects terms
+# @param formula a formula containing special effects terms
+# @param data data.frame passed by the user
+# @param types types of special terms to consider
+# @param ... passed to get_model_matrix
+# @details special terms will be evaluated to 1 so that columns 
+#   containing not only ones are those with covariates
+# @return design matrix of special effects terms and their covariates
 sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
-  # get the design matrix of special effects terms
-  # Args:
-  #   formula: a formula containing special effects terms
-  #   data: data.frame passed by the user
-  #   types: types of special terms to consider
-  #   ...: passed to get_model_matrix
-  # Details: 
-  #   special terms will be evaluated to 1 so that columns 
-  #   containing not only ones are those with covariates
   attributes(data)$terms <- NULL
   terms_split <- strsplit(all_terms(formula), split = ":")
   terms_unique <- unique(unlist(terms_split))

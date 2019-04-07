@@ -246,12 +246,10 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out
 }
 
+# parse linear/additive formulas
+# @param formula an ordinary model formula
+# @return a 'btl' object
 parse_lf <- function(formula) {
-  # parse linear formulas
-  # Args:
-  #   formula: an ordinary R formula
-  # Returns:
-  #   object of class 'btl'
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
   types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
@@ -272,13 +270,12 @@ parse_lf <- function(formula) {
   structure(y, class = "btl")
 }
 
+# parse non-linear formulas
+# @param formula non-linear model formula
+# @param nlpars names of all non-linear parameters
+# @param resp optional name of a response variable
+# @return a 'btnl' object
 parse_nlf <- function(formula, nlpars, resp = "") {
-  # parse non-linear formulas
-  # Args:
-  #   formula: formula of the non-linear model
-  #   nlpars: names of all non-linear parameters
-  # Returns:
-  #   object of class 'btnl'
   if (!length(nlpars)) {
     stop2("No non-linear parameters specified.")
   }
@@ -295,12 +292,9 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   structure(y, class = "btnl")
 }
 
+# extract addition arguments out of formula
+# @return a list of formulas each containg a single addition term
 parse_ad <- function(formula, family = NULL, check_response = TRUE) {
-  # extract addition arguments out of formula
-  # Args:
-  #   see parse_bf
-  # Returns:
-  #   A list of formulas each containg a single addition term
   x <- list()
   ad_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   ad_funs <- sub("^resp_", "", ad_funs)
@@ -341,8 +335,8 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   x
 }
 
+# extract fixed effects terms
 parse_fe <- function(formula) {
-  # extract fixed effects terms
   all_terms <- all_terms(formula)
   sp_terms <- find_terms(all_terms, "all", complete = FALSE)
   re_terms <- all_terms[grepl("\\|", all_terms)]
@@ -365,8 +359,9 @@ parse_fe <- function(formula) {
   out
 }
 
+# gather information of group-level terms
+# @return a data.frame with one row per group-level term
 parse_re <- function(formula) {
-  # generate a data.frame with information of group-level terms
   re_terms <- get_re_terms(formula, brackets = FALSE)
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
@@ -405,8 +400,8 @@ parse_re <- function(formula) {
   out
 }
 
+# extract category specific terms for ordinal models
 parse_cs <- function(formula) {
-  # category specific terms for ordinal models
   out <- find_terms(formula, "cs")
   if (length(out)) {
     out <- ulapply(out, eval2)
@@ -418,8 +413,8 @@ parse_cs <- function(formula) {
   out
 }
 
+# extract special effects terms 
 parse_sp <- function(formula) {
-  # extract special effects terms 
   types <- c("mo", "me", "mi")
   out <- find_terms(formula, types, complete = FALSE)
   if (length(out)) {
@@ -435,8 +430,8 @@ parse_sp <- function(formula) {
   out
 }
 
+# extract spline terms
 parse_sm <- function(formula) {
-  # extract spline terms
   out <- find_terms(formula, "sm")
   if (length(out)) {
     if (any(grepl("^(te|ti)\\(", out))) {
@@ -451,8 +446,8 @@ parse_sm <- function(formula) {
   structure(out, allvars = allvars)
 }
 
+# extract gaussian process terms
 parse_gp <- function(formula) {
-  # extract gaussian process terms
   out <- find_terms(formula, "gp")
   if (length(out)) {
     eterms <- lapply(out, eval2)
@@ -470,13 +465,13 @@ parse_gp <- function(formula) {
   structure(out, allvars = allvars)
 }
 
+# extract offset terms
 parse_offset <- function(formula) {
-  # extract offset terms
   terms <- terms(as.formula(formula))
   pos <- attr(terms, "offset")
   if (!is.null(pos)) {
     vars <- attr(terms, "variables")
-    out <- ulapply(pos, function(i) deparse(vars[[i+1]]))
+    out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
     out <- str2formula(out)
   } else {
     out <- character(0)
@@ -484,8 +479,8 @@ parse_offset <- function(formula) {
   out
 }
 
+# extract multiple covariates in multi-membership terms
 parse_mmc <- function(formula) {
-  # extract multiple covariates in multi-membership terms
   out <- find_terms(formula, "mmc")
   if (length(out)) {
     out <- str2formula(out)
@@ -494,9 +489,9 @@ parse_mmc <- function(formula) {
   out
 }
 
+# extract response variable names
+# assumes multiple response variables to be combined via mvbind
 parse_resp <- function(formula, check_names = TRUE) {
-  # extract response variable names
-  # assumes multiple response variables to be combined via mvbind
   formula <- lhs(as.formula(formula))
   if (is.null(formula)) {
     return(NULL)
@@ -526,13 +521,11 @@ parse_resp <- function(formula, check_names = TRUE) {
   out
 }
 
+# extract time and grouping variables for autocorrelation structures
+# @param autocor object of class 'cor_brms'
+# @return a list with elements 'time', 'group', and 'all'
+#   'all' contains a formula of all included variables
 parse_time <- function(autocor) {
-  # extract time and grouping variables for autocorrelation structures
-  # Args:
-  #   autocor: object of class 'cor_brms'
-  # Returns: 
-  #   a list with elements time, group, and all, where all contains a 
-  #   formula with all variables in formula
   out <- list()
   formula <- autocor$formula
   if (is.null(formula)) {
@@ -593,8 +586,8 @@ is.btnl <- function(x) {
   inherits(x, "btnl")
 }
 
+# transform mvbrmsterms objects for use in stan_llh.brmsterms
 as.brmsterms <- function(x) {
-  # transform mvbrmsterms objects for use in stan_llh.brmsterms
   stopifnot(is.mvbrmsterms(x), x$rescor)
   families <- ulapply(x$terms, function(y) y$family$family)
   stopifnot(all(families == families[1]))
@@ -624,11 +617,10 @@ as.brmsterms <- function(x) {
   out
 }
 
+# avoid ambiguous parameter names
+# @param names names to check for ambiguity
+# @param bterms a brmsterms object
 avoid_dpars <- function(names, bterms) {
-  # avoid ambiguous parameter names
-  # Args:
-  #   names: names to check for ambiguity
-  #   bterms: object of class brmsterms
   dpars <- c(names(bterms$dpars), "sp", "cs")
   if (length(dpars)) {
     dpars_prefix <- paste0("^", dpars, "_")
@@ -646,6 +638,7 @@ vars_prefix <- function() {
   c("dpar", "resp", "nlpar") 
 }
 
+# check and tidy parameter prefixes
 check_prefix <- function(x, keep_mu = FALSE) {
   vpx <- vars_prefix()
   if (is.data.frame(x) && nrow(x) == 0) {
@@ -671,6 +664,10 @@ check_prefix <- function(x, keep_mu = FALSE) {
   x
 }
 
+# combined parameter prefixes
+# @param prefix object from which to extract prefixes
+# @param keep_mu keep the 'mu' prefix if available or remove it?
+# @param nlp include the 'nlp' prefix for non-linear parameters?
 combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
   prefix <- check_prefix(prefix, keep_mu = keep_mu)
   if (is_nlpar(prefix) && nlp) {
@@ -680,8 +677,8 @@ combine_prefix <- function(prefix, keep_mu = FALSE, nlp = FALSE) {
   sub("^_", "", do_call(paste0, prefix))
 }
 
+# check validity of fixed distributional parameters
 check_fdpars <- function(x) {
-  # check validity of fixed distributional parameters
   stopifnot(is.null(x) || is.list(x))
   pos_pars <- c(
     "sigma", "shape", "nu", "phi", "kappa", 
@@ -701,10 +698,10 @@ check_fdpars <- function(x) {
   invisible(TRUE)
 }
 
+# combine all variables in one formuula
+# @param x (list of) formulas or character strings
+# @return a formula with all variables in 'x' on the right-hand side
 allvars_formula <- function(x) {
-  # combine all variables in one formuula
-  # Args:
-  #   x: (list of) formulas or character strings
   if (!is.list(x)) {
     x <- list(x)
   }
@@ -713,8 +710,8 @@ allvars_formula <- function(x) {
   update(out, ~ .)
 }
 
+# add 'x' to the right-hand side of a formula
 plus_rhs <- function(x) {
-  # take the right hand side of a formula and add a +
   if (is.formula(x)) {
     x <- Reduce(paste, deparse(rhs(x)[[2]]))
   }
@@ -726,32 +723,33 @@ plus_rhs <- function(x) {
   out
 }
 
+# indicate if the predictor term belongs to a non-linear parameter
 is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))
 }
 
+# indicate if the intercept should be removed
 no_int <- function(x) {
-  # indicates if the intercept should be removed
   isFALSE(attr(x, "int", exact = TRUE))
 }
 
+# indicate if cell mean coding should be disabled
 no_cmc <- function(x) {
-  # indicates if cell mean coding should be disabled
   isFALSE(attr(x, "cmc", exact = TRUE))
 }
 
+# indicate if centering of the design matrix should be disabled
 no_center <- function(x) {
-  # indicate if centering of the design matrix should be disabled
   isFALSE(attr(x, "center", exact = TRUE))
 }
 
+# indicate if the design matrix should be handled as sparse
 is_sparse <- function(x) {
-  # indicate if the design matrix should be handled as sparse
   isTRUE(attr(x, "sparse", exact = TRUE))
 }
 
+# extract different types of effects
 get_effect <- function(x, ...) {
-  # extract various kind of effects
   UseMethod("get_effect")
 }
 
@@ -765,12 +763,12 @@ get_effect.mvbrmsterms <- function(x, ...) {
   unlist(lapply(x$terms, get_effect, ...), recursive = FALSE)
 }
 
+# extract formulas of a certain effect type
+# @param target effect type to return
+# @param all logical; include effects of nlpars and dpars?
+# @return a list of formulas
 #' @export
 get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
-  # get formulas of certain effects in a list
-  # Args:
-  #   target: type of effects to return
-  #   all: logical; include effects of nlpars and dpars?
   if (all) {
     out <- named_list(c(names(x$dpars), names(x$nlpars)))
     for (dp in names(x$dpars)) {
@@ -795,8 +793,8 @@ get_effect.btnl <- function(x, target = "fe", ...) {
   NULL
 }
 
+# extract variable names used in addition terms
 get_advars <- function(x, ...) {
-  # extract variable names used in addition terms
   UseMethod("get_advars")
 }
 
@@ -811,11 +809,10 @@ get_advars.mvbrmsterms <- function(x, ad, ...) {
   unique(ulapply(x$terms, get_advars, ad = ad, ...))
 }
 
+# extract information about smooth terms
+# @param x either a formula or a list containing an element "sm"
+# @param data data.frame containing the covariates
 tidy_smef <- function(x, data) {
-  # extract information about smooth terms
-  # Args:
-  #   x: either a formula or a list containing an element "sm"
-  #   data: data frame containing the covariates
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
@@ -872,10 +869,9 @@ all_terms <- function(x) {
   rm_wsp(attr(x, "term.labels"))
 }
 
+# generate a regular expression to extract special terms
+# @param type one or more special term types to be extracted 
 regex_sp <- function(type = "all") {
-  # generate a regular expression to extract special terms
-  # Args:
-  #   type: one or more special terms types to be extracted 
   choices <- c("all", "sm", "gp", "cs", "mo", "me", "mi", "mmc")
   type <- match.arg(type, choices, several.ok = TRUE)
   out <- c(
@@ -890,13 +886,13 @@ regex_sp <- function(type = "all") {
   paste0("^(", out, ")\\([^:]*\\)$")
 }
 
+# find special terms of a certain type
+# @param x formula object of character vector from which to extract terms
+# @param type special terms type to be extracted. see regex_sp()
+# @param complete check if terms consist completely of single special terms?
+# @param ranef include group-level terms?
+# @return a character vector of matching terms
 find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
-  # find special terms of a certain type
-  # Args:
-  #   x: formula object of character vector from which to extract terms
-  #   type: special terms type to be extracted. see regex_sp()
-  #   complete: check if terms consist completely of single special terms?
-  #   ranef: include group-level terms?
   if (is.formula(x)) {
     x <- all_terms(x)
   } else {
@@ -925,13 +921,12 @@ find_terms <- function(x, type, complete = TRUE, ranef = FALSE) {
   out
 }
 
+# validate a terms object (or one that can be coerced to it)
+# for use primarily in 'get_model_matrix'
+# @param x any R object
+# @return a (possibly amended) terms object or NULL 
+#   if 'x' could not be coerced to a terms object
 validate_terms <- function(x) {
-  # validate a terms object (or one that can be coerced to it)
-  # to be used in get_model_matrix
-  # Args:
-  #   x: any R object; if not a formula or terms, NULL is returned
-  # Returns:
-  #   a (possibly amended) terms object or NULL
   no_int <- no_int(x)
   no_cmc <- no_cmc(x)
   if (is.formula(x) && !inherits(x, "terms")) {
@@ -948,9 +943,8 @@ validate_terms <- function(x) {
   x
 }
  
+# checks if the formula contains an intercept
 has_intercept <- function(formula) {
-  # checks if the formula contains an intercept
-  # can handle non-linear formulas
   formula <- as.formula(formula)
   try_terms <- try(terms(formula), silent = TRUE)
   if (is(try_terms, "try-error")) {
@@ -961,10 +955,8 @@ has_intercept <- function(formula) {
   out
 }
 
+# check if model makes use of the reserved intercept variables
 has_rsv_intercept <- function(formula) {
-  # check if model makes use of the reserved 
-  # variables 'intercept' or 'Intercept'
-  # can handle non-linear formulas
   formula <- try(as.formula(formula), silent = TRUE)
   if (is(formula, "try-error")) {
     out <- FALSE
@@ -981,10 +973,8 @@ has_rsv_intercept <- function(formula) {
   out
 }
 
+# names of reserved variables
 rsv_vars <- function(bterms) {
-  # returns names of reserved variables
-  # Args:
-  #   bterms: object of class brmsterms
   stopifnot(is.brmsterms(bterms) || is.mvbrmsterms(bterms))
   .rsv_vars <- function(x) {
     rsv_int <- any(ulapply(x$dpars, has_rsv_intercept))
@@ -998,19 +988,21 @@ rsv_vars <- function(bterms) {
   out
 }
 
+# check if smooths are present in the model
 has_smooths <- function(bterms) {
-  # check if smooths are present in the model
   length(get_effect(bterms, target = "sm")) > 0L
 }
 
+# check if category specific effects are present in the model
 has_cs <- function(bterms) {
-  # check if category specific effects are present in the model
   length(get_effect(bterms, target = "cs")) > 0L ||
     any(get_re(bterms)$type %in% "cs")
 }
 
+# extract elements from objects
+# @param x object from which to extract elements
+# @param name name of the element to be extracted
 get_element <- function(x, name, ...) {
-  # helper function to extract elements from objects
   UseMethod("get_element")
 }
 
@@ -1029,8 +1021,8 @@ get_element.mvbrmsterms <- function(x, name, ...) {
   lapply(x$terms, get_element, name = name, ...)
 }
 
+# extract variable names used in autocor structures
 get_autocor_vars <- function(x, ...) {
-  # extract variable names used in autocor structures
   UseMethod("get_autocor_vars")
 }
 
@@ -1064,17 +1056,16 @@ get_autocor_vars.brmsfit <- function(x, ...) {
   get_autocor_vars(x$formula, ...)
 }
 
+# convenient wrapper around 'get_autocor_vars'
 get_ac_groups <- function(x, ...) {
-  # convenient wrapper around get_autocor_vars()
   get_autocor_vars(x, var = "group", ...)
 }
 
+# extract truncation boundaries
+# @param incl_family include the family in the derivation of the bounds?
+# @param stan return bounds in form of Stan syntax?
 get_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
                        stan = FALSE) {
-  # extract truncation boundaries
-  # Returns:
-  #   incl_family: include the family in the derivation of bounds?
-  #   stan: return bounds in form of Stan syntax?
   stopifnot(is.brmsterms(bterms))
   formula <- bterms$adforms$trunc
   if (is.formula(formula)) {
@@ -1103,8 +1094,8 @@ get_bounds <- function(bterms, data = NULL, incl_family = FALSE,
   out
 }
 
+# get boundaries of response distributions
 get_family_bounds <- function(bterms) {
-  # get boundaries of response distributions
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family$family
   if (is.null(family)) {
@@ -1138,8 +1129,8 @@ get_family_bounds <- function(bterms) {
   out
 }
 
+# indicate if the model is censored
 has_cens <- function(bterms, data = NULL) {
-  # indicate if the model is (possibly interval) censored
   stopifnot(is.brmsterms(bterms))
   formula <- bterms$adforms$cens
   if (is.formula(formula)) {
@@ -1153,8 +1144,8 @@ has_cens <- function(bterms, data = NULL) {
   out
 }
 
+# check if addition argument 'subset' ist used in the model
 has_subset <- function(bterms) {
-  # check if addition argument 'subset' ist used in the model
   .has_subset <- function(x) {
     is.formula(x$adforms$subset)
   }

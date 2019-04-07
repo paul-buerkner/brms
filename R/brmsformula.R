@@ -681,11 +681,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   split_bf(out)
 }
 
+# alias of brmsformula
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
                nl = NULL, loop = NULL, center = NULL, cmc = NULL,
                sparse = NULL) {
-  # alias of brmsformula
   brmsformula(
     formula, ..., flist = flist, family = family, autocor = autocor, 
     nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse
@@ -880,9 +880,9 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
   mvbrmsformula(..., flist = flist, rescor = rescor)
 }
 
+# build a mvbrmsformula object based on a brmsformula object
+# which uses mvbind on the left-hand side to specify MV models
 split_bf <- function(x) {
-  # build a mvbrmsformula object based on a brmsformula object
-  # which uses mvbind on the left-hand side to specify MV models
   stopifnot(is.brmsformula(x))
   resp <- parse_resp(x$formula, check_names = FALSE)
   str_adform <- get_matches(
@@ -953,7 +953,8 @@ set_mecor <- function(mecor = TRUE) {
   }
   out
 }
-  
+
+# internal helper function of '+.bform'
 plus_brmsformula <- function(e1, e2) {
   if (is.function(e2)) {
     e2 <- try(e2(), silent = TRUE)
@@ -988,6 +989,7 @@ plus_brmsformula <- function(e1, e2) {
   e1
 }
 
+# internal helper function of '+.bform'
 plus_mvbrmsformula <- function(e1, e2) {
   if (is.function(e2)) {
     e2 <- try(e2(), silent = TRUE)
@@ -1020,15 +1022,14 @@ plus_mvbrmsformula <- function(e1, e2) {
   e1
 }
 
+# extract the 'nl' attribute from a brmsformula object
+# @param x object to extract 'nl' from
+# @param dpar optional name of a distributional parameter
+#   for which 'nl' should be extracted
+# @param resp: optional name of a response variable
+#   for which 'nl' should be extracted
+# @param aol: (as one logical) apply isTRUE to the result?
 get_nl <- function(x, dpar = NULL, resp = NULL, aol = TRUE) {
-  # extract the 'nl' attribute from a (brms)formula object
-  # Args:
-  #   x: object to extract 'nl' from
-  #   dpar: optional name of a distributional parameter
-  #     for which 'nl' should be extracted
-  #   resp: optional name of a response variable
-  #     for which 'nl' should be extracted
-  #   aol: (as one logical) apply isTRUE to the result?
   if (is.mvbrmsformula(x)) {
     resp <- as_one_character(resp)
     x <- x$forms[[resp]]
@@ -1048,13 +1049,13 @@ get_nl <- function(x, dpar = NULL, resp = NULL, aol = TRUE) {
   nl
 }
 
+# validate and prepare a formula of a distributional parameter
+# @param formula: an formula object
+# @param par optional name of the parameter; if not specified
+#   the parameter name will be inferred from the formula
+# @param rsv_pars optional character vector of reserved parameter names
+# @return a named list of length one containing the formula
 prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
-  # validate and prepare a formula of an distributional parameter
-  # Args:
-  #   formula: an object of class formula
-  #   par: optional name of the parameter; if not specified
-  #        the parameter name will be inferred from the formula
-  #   rsv_pars: optional character vector of reserved parameter names
   stopifnot(length(par) <= 1L)
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
@@ -1096,8 +1097,8 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   out
 }
 
+# incorporate additional arguments into the model formula
 validate_formula <- function(formula, ...) {
-  # incorporate additional arguments into the model formula
   UseMethod("validate_formula")
 }
 
@@ -1106,20 +1107,18 @@ validate_formula.default <- function(formula, ...) {
   validate_formula(bf(formula), ...)
 }
 
+# incorporate additional arguments into the model formula
+# @param formula object of class 'formula' of 'brmsformula'
+# @param data optional data.frame to validate data related arguments
+# @param family optional 'family' object
+# @param autocor optional 'cor_brms' object
+# @param threshold (deprecated) threshold type for ordinal models
+# @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
   formula, family = gaussian(), autocor = cor_empty(), 
   data = NULL, threshold = NULL, sparse = NULL, ...
 ) {
-  # incorporate additional arguments into the model formula
-  # Args:
-  #   formula: object of class 'formula' of 'brmsformula'
-  #   data: optional data.frame
-  #   family: optional object of class 'family'
-  #   autocor: optional object of class 'cor_brms'
-  #   threshold: (deprecated); threshold type for ordinal models
-  # Returns:
-  #   a brmsformula object compatible with the current version of brms
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
     out$family <- check_family(family)
@@ -1201,12 +1200,12 @@ validate_formula.brmsformula <- function(
   bf(out)
 }
 
+# incorporate additional arguments into MV model formulas
+# allow passing lists of families or autocors
 #' @export
 validate_formula.mvbrmsformula <- function(
   formula, family = NULL, autocor = NULL, ...
 ) {
-  # incorporate additional arguments into the MV model formula
-  # allow passing lists of families or autocors
   nresp <- length(formula$forms)
   if (!is(family, "list")) {
     family <- replicate(nresp, family, simplify = FALSE)
@@ -1253,21 +1252,20 @@ validate_formula.mvbrmsformula <- function(
   formula
 }
 
+# update a brmsformula and / or its attributes
+# @param brmsformula object 
+# @param formula.: formula to update 'object'
+# @param mode supports the following options:
+#   "update": apply update.formula
+#   "replace": replace old formula
+#   "keep": keep old formula
+#   attributes are always updated
+# @param ... currently unused
+# @return a brmsformula object
 #' @export
 update.brmsformula <- function(object, formula., 
                                mode = c("update", "replace", "keep"), 
                                ...) {
-  # update a brmsformula and / or its attributes
-  # Args:
-  #   object: an object of class 'brmsformula'
-  #   formula.: formula to update object
-  #   mode: "update": apply update.formula
-  #         "replace": replace old formula
-  #         "keep": keep old formula
-  #         attributes are always updated
-  #   ...: currently unused
-  # Returns:
-  #   a brmsformula object
   mode <- match.arg(mode)
   object <- bf(object)
   up_family <- formula.[["family"]]
@@ -1416,7 +1414,7 @@ is_nonlinear <- function(x) {
 }
 
 warn_dpar <- function(dpar) {
-  # deprecated as of version 2.3.7
+  # argument 'dpar' in formula helper functions is deprecated as of 2.3.7
   if (!is.null(dpar)) {
     warning2("Argument 'dpar' is no longer necessary and ignored.")
   }

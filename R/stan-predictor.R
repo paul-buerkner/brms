@@ -1,15 +1,17 @@
+# unless otherwise specified, functions return a named list 
+# of Stan code snippets to be pasted together later on
+
+# generate stan code for predictor terms
 stan_predictor <- function(x, ...) {
-  # generate stan code for predictor terms
   UseMethod("stan_predictor")
 }
 
+# combine effects for the predictors of a single (non-linear) parameter
+# @param ranef output of tidy_ranef
+# @param ilink character vector of length 2 defining the link to be applied
+# @param ... arguments passed to the underlying effect-specific functions
 #' @export
 stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
-  # combine effects for the predictors of a single (non-linear) parameter
-  # Args:
-  #   ranef: output of tidy_ranef()
-  #   ilink: character vector of length 2 defining the link to be applied
-  #   ...: arguements passed to the underlying effect-specific functions
   stopifnot(length(ilink) == 2L)
   out <- collapse_lists(
     text_fe <- stan_fe(x, ...),
@@ -49,12 +51,11 @@ stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
   out
 }
 
+# prepare Stan code for non-linear models
+# @param names of the non-linear parameters
+# @param ilink character vector of length 2 defining the link to be applied
 #' @export
 stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
-  # prepare Stan code for non-linear models
-  # Args:
-  #   ilink: character vector of length 2 containing
-  #     Stan code for the link function
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -105,11 +106,10 @@ stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
   out
 }
 
+# Stan code for distributional parameters
+# @param rescor is this predictor part of a MV model estimating rescor?
 #' @export
 stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
-  # Stan code for distributional parameters
-  # Args:
-  #   rescor: indicate if this is part of an MV model estimating rescor
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   data <- subset_data(data, x)
@@ -279,10 +279,8 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
   out
 }
 
+# Stan code for population-level effects
 stan_fe <- function(bterms, data, prior, stanvars, ...) {
-  # Stan code for population-level effects
-  # Returns:
-  #   a list containing Stan code related to population-level effects
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
@@ -408,10 +406,11 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
   out
 }
 
+# Stan code for ordinal thresholds
+# intercepts in ordinal models require special treatment
+# and must be present even when using non-linear predictors
+# thus the relevant Stan code cannot be part of 'stan_fe'
 stan_thres <- function(bterms, prior, ...) {
-  # intercepts in ordinal models require special treatment
-  # and must be present even when using non-linear predictors
-  # thus the relevant Stan code cannot be part of 'stan_fe'
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   family <- bterms$family
@@ -480,9 +479,8 @@ stan_thres <- function(bterms, prior, ...) {
   out
 }
 
+# Stan code for group-level effects
 stan_re <- function(ranef, prior, ...) {
-  # Stan code for group-level effects
-  # the ID syntax requires group-level effects to be evaluated separately
   IDs <- unique(ranef$id)
   out <- list()
   # special handling of student-t group effects
@@ -508,20 +506,18 @@ stan_re <- function(ranef, prior, ...) {
       )
     }
   }
+  # the ID syntax requires group-level effects to be evaluated separately
   tmp <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
   out <- collapse_lists(ls = c(list(out), tmp))
   out
 }
 
+# Stan code for group-level effects per ID
+# @param id the ID of the grouping factor
+# @param ranef output of tidy_ranef
+# @param prior object of class brmsprior
+# @param cov_ranef optional list of custom covariance matrices 
 .stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
-  # Stan code for group-level effects per ID
-  # Args:
-  #   id: the ID of the grouping factor
-  #   ranef: a data.frame returned by tidy_ranef
-  #   prior: object of class brmsprior
-  #   cov_ranef: a list of custom covariance matrices 
-  # Returns:
-  #   A list of strings containing Stan code
   out <- list()
   r <- subset2(ranef, id = id)
   has_ccov <- r$group[1] %in% names(cov_ranef)
@@ -702,8 +698,8 @@ stan_re <- function(ranef, prior, ...) {
   out
 }
 
+# Stan code of smooth terms
 stan_sm <- function(bterms, data, prior, ...) {
-  # Stan code of smooth terms
   out <- list()
   smef <- tidy_smef(bterms, data)
   if (!NROW(smef)) {
@@ -765,9 +761,9 @@ stan_sm <- function(bterms, data, prior, ...) {
   out
 }
 
+# Stan code for category specific effects
+# @note not implemented for non-linear models
 stan_cs <- function(bterms, data, prior, ranef, ...) {
-  # Stan code for category specific effects
-  # (!) Not implemented for non-linear models
   out <- list()
   csef <- colnames(get_model_matrix(bterms$cs, data))
   px <- check_prefix(bterms)
@@ -825,8 +821,8 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
   out
 }
 
+# Stan code for special effects
 stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
-  # Stan code for special effects
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -924,8 +920,8 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   out
 }
 
+# Stan code for latent gaussian processes
 stan_gp <- function(bterms, data, prior, ...) {
-  # Stan code for latent gaussian processes
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -1082,8 +1078,8 @@ stan_gp <- function(bterms, data, prior, ...) {
   out
 }
 
+# Stan code for the linear predictor of autocorrelation terms 
 stan_ac <- function(bterms, ...) {
-  # Stan code for the linear predictor of certain autocorrelation terms 
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -1108,8 +1104,8 @@ stan_ac <- function(bterms, ...) {
   out
 }
 
+# stan code for offsets
 stan_offset <- function(bterms, ...) {
-  # stan code for offsets
   out <- list()
   if (is.formula(bterms$offset)) {
     p <- usc(combine_prefix(bterms))
@@ -1120,8 +1116,8 @@ stan_offset <- function(bterms, ...) {
   out
 }
 
+# Stan code specific to mixture families
 stan_mixture <- function(bterms, prior) {
-  # Stan code specific for mixture families
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
@@ -1197,12 +1193,12 @@ stan_mixture <- function(bterms, prior) {
   out
 }
 
+# define Stan code to compute the fixef part of eta
+# @param fixef names of the population-level effects
+# @param center_X use the centered design matrix?
+# @param sparse use sparse matrix multiplication?
+# @return a single character string
 stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
-  # define Stan code to compute the fixef part of eta
-  # Args:
-  #   fixef: names of the population-level effects
-  #   center_X: use the centered design matrix?
-  #   sparse: use sparse matrix multiplication?
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   if (length(fixef)) {
@@ -1222,11 +1218,9 @@ stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
   glue(" + {eta_fe}")
 }
 
+# write the group-level part of the linear predictor
+# @return a single character string
 stan_eta_re <- function(ranef, px = list()) {
-  # write the group-level part of the linear predictor
-  # Args:
-  #   ranef: a named list returned by tidy_ranef
-  #   nlpar: optional name of a non-linear parameter
   eta_re <- ""
   ranef <- subset2(ranef, type = c("", "mmc"), ls = px)
   for (id in unique(ranef$id)) {
@@ -1252,12 +1246,10 @@ stan_eta_re <- function(ranef, px = list()) {
   eta_re
 }
 
+# Stan code for group-level parameters in special predictor terms
+# @param r data.frame created by tidy_ranef
+# @return a character vector: one element per row of 'r' 
 stan_eta_rsp <- function(r) {
-  # Stan code for r parameters in special predictor terms
-  # Args:
-  #   r: data.frame created by tidy_ranef
-  # Returns:
-  #   A character vector, one element per row of 'r' 
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))
@@ -1277,23 +1269,22 @@ stan_eta_rsp <- function(r) {
   out
 }
 
+# does eta need to be transformed manually using the link functions
+# @param family the model family
+# @param llh_adj is the model censored or truncated?
 stan_eta_transform <- function(family, llh_adj = FALSE) {
-  # indicate whether eta needs to be transformed
-  # manually using the link functions
-  # Args:
-  #   llh_adj: is the model censored or truncated?
   transeta <- "transeta" %in% family_info(family, "specials")
   !(family$link == "identity" && !transeta || 
     has_cat(family) && !is.customfamily(family)) &&
     (llh_adj || !stan_has_built_in_fun(family))
 }
 
+# correctly apply inverse link to eta
+# @param dpar name of the parameter for which to define the link
+# @param bterms object of class 'brmsterms'
+# @param resp name of the response variable
+# @return a single character string
 stan_eta_ilink <- function(dpar, bterms, resp = "") {
-  # correctly apply inverse link to eta
-  # Args:
-  #   dpar: name of the parameter for which to define the link
-  #   bterms: object of class brmsterms
-  #   resp: name of the response variable
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
@@ -1328,21 +1319,20 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   out
 }
 
+# indicate if the population-level design matrix should be centered
+# implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
-  # indicates if the population-level design matrix should be centered
-  # implies a temporary shift in the intercept of the model
   is.btl(x) && !no_center(x$fe) && 
     has_intercept(x$fe) && !is_sparse(x$fe) &&
     !fix_intercepts(x) && !is.cor_bsts(x$autocor)
 }
 
+# default Stan definitions for distributional parameters
+# @param dpar name of a distributional parameter
+# @param suffix optional suffix of the parameter name
+# @param family optional brmsfamily object
+# @param fixed should the parameter be fixed to a certain value?
 stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
-  # default Stan definitions for distributional parameters
-  # Args:
-  #   dpar: name of a distributional parameter
-  #   suffix: optional suffix of the parameter name
-  #   family: optional brmsfamily object
-  #   fixed: should the parameter be fixed to a certain value?
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   fixed <- as_one_logical(fixed)
@@ -1447,8 +1437,8 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   def
 }
 
+# default Stan definitions for temporary distributional parameters
 stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
-  # default Stan definitions for temporary distributional parameters
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   if (is.mixfamily(family)) {
@@ -1472,8 +1462,8 @@ stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
   def
 }
 
+# Stan code for transformations of distributional parameters
 stan_dpar_transform <- function(bterms) {
-  # Stan code for transformations of distributional parameters
   stopifnot(is.brmsterms(bterms))
   out <- list()
   families <- family_names(bterms)
@@ -1552,8 +1542,8 @@ stan_dpar_transform <- function(bterms) {
   out
 }
 
+# Stan code for sigma to incorporate addition argument 'se'
 stan_sigma_transform <- function(bterms, id = "") {
-  # Stan code for sigma to incorporate addition argument 'se'
   if (nzchar(id)) {
     family <- family_names(bterms)[as.integer(id)]
   } else {

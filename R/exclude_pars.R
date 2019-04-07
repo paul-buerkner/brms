@@ -1,15 +1,14 @@
+# list parameters NOT to be saved by Stan
+# @param bterms object of class brmsterms
+# @param data data passed by the user
+# @param ranef output of tidy_ranef
+# @param save_ranef save varying effects per level?
+# @param save_mevars save noise-free variables?
+# @param save_all_pars save all variables from the 'parameters' block?
+# @return a vector of parameters to be excluded
 exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE, save_mevars = FALSE,
                          save_all_pars = FALSE) {
-  # list parameters NOT to be saved by Stan
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: data passed by the user
-  #   ranef: output of tidy_ranef
-  #   save_ranef: should group-level effects be saved?
-  #   save_mevars: should samples of noise-free variables be saved?
-  # Returns:
-  #   a vector of parameters to be excluded
   save_ranef <- as_one_logical(save_ranef)
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)

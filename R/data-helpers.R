@@ -1,21 +1,18 @@
+# update data for use in brms functions
+# @param data the original data.frame
+# @param bterms object of class brmsterms
+# @param na.action function defining how to treat NAs
+# @param drop.unused.levels should unused factor levels be removed?
+# @param terms_attr a list of attributes of the terms object of 
+#   the original model.frame; only used with newdata;
+#   this ensures that (1) calls to 'poly' work correctly
+#   and (2) that the number of variables matches the number 
+#   of variable names; fixes issue #73
+# @param knots: a list of knot values for GAMMs
+# @return model.frame for use in brms functions
 update_data <- function(data, bterms, na.action = na.omit2,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
-  # Update data for use in brms functions
-  # Args:
-  #   data: the original data.frame
-  #   bterms: object of class brmsterms
-  #   na.action: function defining how to treat NAs
-  #   drop.unused.levels: indicates if unused factor levels
-  #     should be removed
-  #   terms_attr: a list of attributes of the terms object of 
-  #     the original model.frame; only used with newdata;
-  #     this ensures that (1) calls to 'poly' work correctly
-  #     and (2) that the number of variables matches the number 
-  #     of variable names; fixes issue #73
-  #   knots: a list of knot values for GAMMs
-  # Returns:
-  #   model.frame for use in brms functions
   if (missing(data)) {
     stop2("Argument 'data' is missing.")
   }
@@ -59,11 +56,8 @@ update_data <- function(data, bterms, na.action = na.omit2,
   data
 }
 
+# add the resevered intercept variables to the data
 data_rsv_intercept <- function(data, bterms) {
-  # add the resevered intercept variables to the data
-  # Args:
-  #   data: data.frame or list
-  #   bterms: object of class brmsterms
   fe_forms <- get_effect(bterms, "fe")
   if (any(ulapply(fe_forms, no_int))) {
     if (any(data[["intercept"]] != 1)) {
@@ -79,14 +73,11 @@ data_rsv_intercept <- function(data, bterms) {
   data
 }
 
+# combine grouping factors to form new variables
+# @param data data.frame to be updated
+# @param ... the grouping factors to be combined
+# @return 'data' including the new combined grouping factors
 combine_groups <- function(data, ...) {
-  # combine grouping factors
-  # Args:
-  #   data: a data.frame
-  #   ...: the grouping factors to be combined. 
-  # Returns:
-  #   a data.frame containing all old variables and 
-  #   the new combined grouping factors
   group <- c(...)
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
@@ -101,16 +92,12 @@ combine_groups <- function(data, ...) {
   data
 }
 
+# hard code factor contrasts to be independent of the global "contrasts" option
+# @param data data.frame to be updated
+# @param optdata: optional data.frame from which contrasts are taken if present
+# @param ignore: names of variables for which not to fix contrasts
+# @return 'data' with amended contrasts attributes
 fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
-  # hard code factor contrasts to be independent
-  # of the global "contrasts" option
-  # Args:
-  #   data: a data.frame
-  #   optdata: optional data.frame from which contrasts
-  #     are taken if present
-  #   ignore: names of variables for which not to fix contrasts
-  # Returns:
-  #   a data.frame with amended contrasts attributes
   stopifnot(is(data, "data.frame"))
   stopifnot(is.null(optdata) || is.list(optdata))
   optdata <- as.data.frame(optdata)  # fixes issue #105
@@ -131,13 +118,11 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   data
 }
 
+# order data for use in time-series models
+# @param data data.frame to be ordered
+# @param bterms brmsterms of mvbrmsterms object
+# @return 'data' potentially ordered differently
 order_data <- function(data, bterms) {
-  # order data for use in time-series models
-  # Args:
-  #   data: data.frame to be ordered
-  #   bterms: brmsterms of mvbrmsterms object
-  # Returns:
-  #   potentially ordered data
   time <- get_autocor_vars(bterms, "time")
   # ordering does not matter for the CAR structure
   group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
@@ -167,8 +152,8 @@ order_data <- function(data, bterms) {
   data
 }
 
+# subset data according to addition argument 'subset'
 subset_data <- function(data, bterms) {
-  # subset data according to addition argument 'subset'
   if (is.formula(bterms$adforms$subset)) {
     # only evaluate a subset of the data
     subset <- eval_rhs(bterms$adforms$subset, data = data)
@@ -377,19 +362,17 @@ validate_newdata <- function(
   structure(newdata, valid = TRUE)
 }
 
+# allows for updating of objects containing new data
+# which cannot be passed via argument 'newdata'
+# @param x object of class 'brmsfit'
+# @param new_objects: optional named list of new objects
+# @return a possibly updated 'brmsfit' object
 add_new_objects <- function(x, newdata, new_objects = list()) {
-  # allows for updating of objects containing new data
-  # which cannot be passed via argument 'newdata'
-  # Args:
-  #   x: object of class 'brmsfit'
-  #   new_objects: optional list of new objects
-  # Return:
-  #   a possibly updated 'brmsfit' object
   stopifnot(is.brmsfit(x), is.data.frame(newdata))
+  # update autocor variables with new objects
+  # do not include 'cor_car' here as the adjacency matrix
+  # (or subsets of it) should be the same for newdata
   .update_autocor <- function(autocor, resp = "") {
-    # update autocor variables with new objects
-    # do not include cor_car here as the adjacency matrix
-    # (or subsets of it) should be the same for newdata
     resp <- usc(resp)
     if (is.cor_sar(autocor)) {
       if (paste0("W", resp) %in% names(new_objects)) {
@@ -431,20 +414,19 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   x
 }
 
+# Construct design matrices for brms models
+# @param formula a formula object
+# @param data A data frame created with model.frame.
+#   If another sort of object, model.frame is called first.
+# @param cols2remove names of the columns to remove from 
+#   the model matrix; mainly used for intercepts
+# @param rename rename column names via rename()?
+# @param ... currently ignored
+# @return
+#   The design matrix for the given formula and data.
+#   For details see ?stats::model.matrix
 get_model_matrix <- function(formula, data = environment(formula),
                              cols2remove = NULL, rename = TRUE, ...) {
-  # Construct design matrices for brms models
-  # Args:
-  #   formula: An object of class formula
-  #   data: A data frame created with model.frame. 
-  #     If another sort of object, model.frame is called first.
-  #   cols2remove: names of the columns to remove from 
-  #     the model matrix (mainly used for intercepts)
-  #   rename: rename column names via brms:::rename()?
-  #   ...: currently ignored
-  # Returns:
-  #   The design matrix for the given formula and data.
-  #   For details see ?stats::model.matrix
   stopifnot(is.atomic(cols2remove))
   terms <- validate_terms(formula)
   if (is.null(terms)) {
@@ -464,8 +446,8 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
+# convenient wrapper around mgcv::PredictMat
 PredictMat <- function(object, data, ...) {
-  # convenient wrapper around mgcv::PredictMat
   data <- rm_attr(data, "terms")
   out <- mgcv::PredictMat(object, data = data, ...)
   if (length(dim(out)) < 2L) {
@@ -475,8 +457,8 @@ PredictMat <- function(object, data, ...) {
   out
 }
 
+# convenient wrapper around mgcv::smoothCon
 smoothCon <- function(object, data, ...) {
-  # convenient wrapper around mgcv::smoothCon
   data <- rm_attr(data, "terms")
   vars <- setdiff(c(object$term, object$by), "NA")
   for (v in vars) {
@@ -488,12 +470,12 @@ smoothCon <- function(object, data, ...) {
   mgcv::smoothCon(object, data = data, ...)
 }
 
+# Aid prediction from smooths represented as 'type = 2'
+# originally provided by Simon Wood 
+# @param sm output of mgcv::smoothCon
+# @param data new data supplied for prediction
+# @return A list of the same structure as returned by mgcv::smoothCon
 s2rPred <- function(sm, data) {
-  # Aid prediction from smooths represented as type == 2
-  # originally provided by Simon Wood 
-  # Params:
-  #   sm: output of mgcv::smoothCon
-  #   data: new data supplied for prediction
   re <- mgcv::smooth2random(sm, names(data), type = 2)
   # prediction matrix for new data
   X <- PredictMat(sm, data)   
@@ -508,7 +490,7 @@ s2rPred <- function(sm, data) {
   pen.ind <- re$pen.ind
   pen.ind[re$rind] <- pen.ind[pen.ind > 0]
   # start returning the object
-  Xf <-  X[, which(re$pen.ind == 0), drop = FALSE]
+  Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
   out <- list(rand = list(), Xf = Xf)
   for (i in seq_along(re$rand)) { 
     # loop over random effect matrices
@@ -519,16 +501,13 @@ s2rPred <- function(sm, data) {
   out
 }
 
+# compute the design matrix for ARR effects
+# @param Y: a vector containing the response variable
+# @param r: ARR order
+# @param group: vector containing the grouping variable
+# @note expects Y to be sorted after group already
+# @return the design matrix for ARR effects
 arr_design_matrix <- function(Y, r, group)  { 
-  # compute the design matrix for ARR effects
-  # Args:
-  #   Y: a vector containing the response variable
-  #   r: ARR order
-  #   group: vector containing the grouping variable
-  # Notes: 
-  #   expects Y to be sorted after group already
-  # Returns:
-  #   the design matrix for ARR effects
   stopifnot(length(Y) == length(group))
   if (r > 0) {
     U_group <- unique(group)
@@ -590,9 +569,9 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   structure(out, old_order = attr(sdata, "old_order"))
 }
 
+# helper function for validate_newdata to extract
+# old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
-  # helper function for validate_newdata to extract
-  # old standata required for the computation of new standata
   UseMethod("extract_old_standata")
 }
 
@@ -654,9 +633,9 @@ extract_old_standata.btl <- function(x, data, ...) {
   )
 }
 
+# extract data related to smooth terms
+# for use in extract_old_standata
 make_sm_list <- function(x, data, ...) {
-  # extract data related to smooth terms
-  # for use in extract_old_standata
   stopifnot(is.btl(x))
   smterms <- all_terms(x[["sm"]])
   out <- named_list(smterms)
@@ -675,18 +654,18 @@ make_sm_list <- function(x, data, ...) {
   out
 }
 
+# extract data related to gaussian processes
+# for use in extract_old_standata
 make_gp_list <- function(x, data, ...) {
-  # extract data related to gaussian processes
-  # for use in extract_old_standata
   stopifnot(is.btl(x))
   out <- data_gp(x, data, raw = TRUE)
   out <- out[grepl("^(dmax)|(cmeans)", names(out))]
   out
 }
 
+# extract data related to monotonic effects
+# for use in extract_old_standata
 make_Jmo_list <- function(x, data, ...) {
-  # extract data related to monotonic effects
-  # for use in extract_old_standata
   stopifnot(is.btl(x))
   out <- NULL
   if (length(attr(x$sp, "uni_mo"))) {

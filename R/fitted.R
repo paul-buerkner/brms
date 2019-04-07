@@ -105,11 +105,9 @@ fitted_internal.brmsdraws <- function(
 }
 
 # All fitted_<family> functions have the same arguments structure
-# Args:
-#   draws: A named list returned by extract_draws containing 
-#          all required data and samples
-# Returns:
-#   transformed linear predictor representing the mean
+# @param draws A named list returned by extract_draws containing 
+#   all required data and samples
+# @return transformed linear predictor representing the mean
 #   of the response distribution
 fitted_gaussian <- function(draws) {
   if (!is.null(draws$ac$lagsar)) {
@@ -338,7 +336,7 @@ fitted_mixture <- function(draws) {
 }
 
 # ------ fitted helper functions ------
-
+# compute 'fitted' for ordinal models
 fitted_ordinal <- function(draws) {
   dens <- get(paste0("d", draws$family$family), mode = "function")
   args <- list(
@@ -359,6 +357,7 @@ fitted_ordinal <- function(draws) {
   out
 }
 
+# compute 'fitted' for lagsar models
 fitted_lagsar <- function(draws) {
   stopifnot(!is.null(draws$ac$lagsar))
   .fitted <- function(s) {
@@ -368,25 +367,27 @@ fitted_lagsar <- function(draws) {
   do_call(rbind, lapply(1:draws$nsamples, .fitted))
 }
 
+# expand data to dimension appropriate for
+# vectorized multiplication with posterior samples
 as_draws_matrix <- function(x, dim) {
-  # expand data to dimension appropriate for
-  # vectorized multiplication with posterior samples
   stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
   matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
 }
 
+# expected dimension of the main parameter 'mu'
 dim_mu <- function(draws) {
   c(draws$nsamples, draws$nobs)
 }
 
+# is the model truncated?
 is_trunc <- function(draws) {
   stopifnot(is.brmsdraws(draws))
   any(draws$data[["lb"]] > -Inf) || any(draws$data[["ub"]] < Inf)
 }
 
+# prepares data required for truncation and calles the 
+# family specific truncation function for fitted values
 fitted_trunc <- function(draws) {
-  # prepares data required for truncation and calles the 
-  # family specific truncation function for fitted values
   stopifnot(is_trunc(draws))
   lb <- as_draws_matrix(draws$data[["lb"]], dim_mu(draws))
   ub <- as_draws_matrix(draws$data[["ub"]], dim_mu(draws))
@@ -404,12 +405,10 @@ fitted_trunc <- function(draws) {
 }
 
 # ----- family specific truncation functions -----
-# Args:
-#   draws: output of extract_draws
-#   lb: lower truncation bound
-#   ub: upper truncation bound
-# Returns:
-#   samples of the truncated mean parameter
+# @param draws output of 'extract_draws'
+# @param lb lower truncation bound
+# @param ub upper truncation bound
+# @return samples of the truncated mean parameter
 fitted_trunc_gaussian <- function(draws, lb, ub) {
   zlb <- (lb - draws$dpars$mu) / draws$dpars$sigma
   zub <- (ub - draws$dpars$mu) / draws$dpars$sigma
@@ -446,9 +445,9 @@ fitted_trunc_lognormal <- function(draws, lb, ub) {
 }
 
 fitted_trunc_gamma <- function(draws, lb, ub) {
-  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   lb <- ifelse(lb < 0, 0, lb)
   draws$dpars$scale <- draws$dpars$mu / draws$dpars$shape
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, 
     scale / gamma(shape) * 
       (incgamma(1 + shape, ub / scale) - 
@@ -461,18 +460,18 @@ fitted_trunc_gamma <- function(draws, lb, ub) {
 }
 
 fitted_trunc_exponential <- function(draws, lb, ub) {
-  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   lb <- ifelse(lb < 0, 0, lb)
   inv_mu <- 1 / draws$dpars$mu
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
 fitted_trunc_weibull <- function(draws, lb, ub) {
-  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   lb <- ifelse(lb < 0, 0, lb)
   draws$dpars$a <- 1 + 1 / draws$dpars$shape
   draws$dpars$scale <- with(draws$dpars, mu / gamma(a))
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars,
     scale * (incgamma(a, (ub / scale)^shape) - 
              incgamma(a, (lb / scale)^shape))
@@ -519,6 +518,7 @@ fitted_trunc_geometric <- function(draws, lb, ub) {
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
+# fitted values for truncated discrete distributions
 fitted_trunc_discrete <- function(dist, args, lb, ub) {
   stopifnot(is.matrix(lb), is.matrix(ub))
   message(

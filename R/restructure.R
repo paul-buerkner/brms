@@ -92,8 +92,8 @@ restructure_v2 <- function(x) {
   x
 }
 
+# restructure models fitted with brms 1.x
 restructure_v1 <- function(x) {
-  # restructure models fitted with brms 1.x
   version <- x$version$brms
   if (version < "1.0.0") {
     warning2(
@@ -166,8 +166,8 @@ restructure_v1 <- function(x) {
   x
 }
 
+# convert old model formulas to brmsformula objects
 restructure_formula <- function(formula, nonlinear = NULL) {
-  # convert old model formulas to brmsformula objects
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
@@ -191,22 +191,20 @@ restructure_formula <- function(formula, nonlinear = NULL) {
   bf(out, nl = nl)
 }
 
+# parameters to be restructured in old brmsformula objects
 old_dpars <- function() {
-  # only used when restructuring old models
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
     "quantile", "alpha", "theta")
 }
 
+# interchanges group and nlpar in names of group-level parameters
+# required for brms <= 0.10.0.9000
+# @param ranef output of tidy_ranef
+# @param pars names of all parameters in the model
+# @param dims dimension of parameters
+# @return a list whose elements can be interpreted by do_renaming
 change_old_re <- function(ranef, pars, dims) {
-  # interchanges group and nlpar in names of group-level parameters
-  # for brms <= 0.10.0.9000 only
-  # Args:
-  #   ranef: output of tidy_ranef
-  #   pars: names of all parameters in the model
-  #   dims: dimension of parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -249,16 +247,14 @@ change_old_re <- function(ranef, pars, dims) {
   out
 }
 
+# add double underscore in group-level parameters
+# required for brms < 1.0.0
+# @note assumes that group and nlpar are correctly ordered already
+# @param ranef output of tidy_ranef
+# @param pars names of all parameters in the model
+# @param dims dimension of parameters
+# @return a list whose elements can be interpreted by do_renaming
 change_old_re2 <- function(ranef, pars, dims) {
-  # add double underscore in group-level parameters
-  # for brms < 1.0.0 only
-  # assumes that group and nlpar are correctly ordered already
-  # Args:
-  #   ranef: output of tidy_ranef
-  #   pars: names of all parameters in the model
-  #   dims: dimension of parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -299,9 +295,9 @@ change_old_re2 <- function(ranef, pars, dims) {
   out
 }
 
+# change names of spline parameters fitted with brms <= 1.0.1
+# this became necessary after allowing smooths with multiple covariates
 change_old_sm <- function(bterms, data, pars, dims) {
-  # change names of spline parameters fitted with brms <= 1.0.1
-  # this became necessary after allowing smooths with multiple covariates
   .change_old_sm <- function(bt) {
     out <- list()
     smef <- tidy_smef(bt, data)
@@ -348,9 +344,9 @@ change_old_sm <- function(bterms, data, pars, dims) {
   out
 }
 
+# change names of monotonic effects fitted with brms <= 1.9.0
+# this became necessary after implementing monotonic interactions
 change_old_mo <- function(bterms, data, pars) {
-  # change names of monotonic effects fitted with brms <= 1.9.0
-  # this became necessary after implementing monotonic interactions
   .change_old_mo <- function(bt) {
     out <- list()
     spef <- tidy_spef(bt, data)
@@ -408,9 +404,9 @@ change_old_mo <- function(bterms, data, pars) {
   out
 }
 
+# between version 1.0 and 2.0 categorical models used
+# the internal multivariate interface
 change_old_categorical <- function(bterms, data, pars) {
-  # between version 1.0 and 2.0 categorical models used
-  # the internal multivariate interface
   stopifnot(is.brmsterms(bterms))
   if (!is_categorical(bterms$family)) {
     return(list())
@@ -434,17 +430,16 @@ change_old_categorical <- function(bterms, data, pars) {
   list(nlist(pos, fnames = new_pars[pos]))
 }
 
-change_old_bsp <- function(pars) {
-  # as of brms 2.2 'mo' and 'me' terms are handled together
+# as of brms 2.2 'mo' and 'me' terms are handled together
+change_old_bsp <- function(pars) {r
   pos <- grepl("^(bmo|bme)_", pars)
   if (!any(pos)) return(list()) 
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
   list(nlist(pos, fnames))
 }
 
+# prepare for renaming of parameters in old models
 change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
-  # helper function for very simple renaming
-  # only used in renaming of old models
   pos <- grepl(paste0("^", oldname), pars)
   if (any(pos)) {
     out <- nlist(pos, oldname, pnames, fnames, dims = dims[[oldname]])
@@ -455,9 +450,9 @@ change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
   out
 }
 
+# rescale old 'b' coefficients of monotonic effects 
+# to represent average instead of total differences
 rescale_old_mo <- function(x, ...) {
-  # rescale old 'b' coefficients of monotonic effects 
-  # to represent average instead of total differences
   UseMethod("rescale_old_mo")
 }
 
