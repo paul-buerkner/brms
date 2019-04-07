@@ -431,7 +431,7 @@ change_old_categorical <- function(bterms, data, pars) {
 }
 
 # as of brms 2.2 'mo' and 'me' terms are handled together
-change_old_bsp <- function(pars) {r
+change_old_bsp <- function(pars) {
   pos <- grepl("^(bmo|bme)_", pars)
   if (!any(pos)) return(list()) 
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
