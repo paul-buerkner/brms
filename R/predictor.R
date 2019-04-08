@@ -419,7 +419,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   }
   if (any(c("ar", "ma") %in% names(draws$ac))) {
     if (!is.null(i)) {
-      stop2("Pointwise evaluation is not yet implemented for ARMA models.")
+      stop2("Pointwise evaluation is not possible for ARMA models.")
     }
     eta <- .predictor_arma(
       eta, ar = draws$ac$ar, ma = draws$ac$ma, 
@@ -442,9 +442,8 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
 # @param ma optional moving average samples
 # @param Y vector of response values
 # @param J_lag autocorrelation lag for each observation
-# @param linear predictor matrix updated by ARMA effects
-.predictor_arma <- function(eta, ar = NULL, ma = NULL, 
-                            Y = NULL, J_lag = NULL,
+# @return linear predictor matrix updated by ARMA effects
+.predictor_arma <- function(eta, ar = NULL, ma = NULL, Y = NULL, J_lag = NULL,
                             fdraws = NULL) {
   if (is.null(ar) && is.null(ma)) {
     return(eta)
@@ -456,45 +455,40 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     predict_fun <- get(predict_fun, asNamespace("brms"))
   }
   S <- nrow(eta)
+  N <- length(Y)
+  max_lag <- max(J_lag, 1)
   Kar <- ifelse(is.null(ar), 0, ncol(ar))
   Kma <- ifelse(is.null(ma), 0, ncol(ma))
-  K <- max(J_lag, 1)
-  Ks <- 1:K
-  N <- length(Y)
   # relevant if time-series are shorter than the ARMA orders
-  sel_ar <- seq_len(min(Kar, K))
-  ar <- ar[, sel_ar, drop = FALSE]
-  sel_ma <- seq_len(min(Kma, K))
-  ma <- ma[, sel_ma, drop = FALSE]
-  E <- array(0, dim = c(S, K, K + 1))
-  e <- matrix(0, nrow = S, ncol = K)
-  zero_mat <- e
+  take_ar <- seq_len(min(Kar, max_lag))
+  take_ma <- seq_len(min(Kma, max_lag))
+  ar <- ar[, take_ar, drop = FALSE]
+  ma <- ma[, take_ma, drop = FALSE]
+  E <- array(0, dim = c(S, max_lag, max_lag + 1))
+  e <- zero_mat <- matrix(0, nrow = S, ncol = max_lag)
   zero_vec <- rep(0, S)
   for (n in seq_len(N)) {
     if (Kma) {
-      # add MA correlations
-      eta[, n] <- eta[, n] + rowSums(ma * E[, sel_ma, K])
+      eta[, n] <- eta[, n] + rowSums(ma * E[, take_ma, max_lag])
     }
     y <- Y[n]
     if (is.na(y)) {
-      # the response value was not observed
+      # y was not observed and has to be predicted
       fdraws$dpars$mu <- eta
       y <- predict_fun(n, fdraws)
     }
-    e[, K] <- y - eta[, n]
-    I <- seq_len(J_lag[n])
-    if (length(I)) {
-      E[, I, K + 1] <- e[, K + 1 - I]
+    e[, max_lag] <- y - eta[, n]
+    if (J_lag[n] > 0) {
+      # store residuals of former observations
+      I <- seq_len(J_lag[n])
+      E[, I, max_lag + 1] <- e[, max_lag + 1 - I]
     }
     if (Kar) {
-      # add AR correlations
-      eta[, n] <- eta[, n] + rowSums(ar * E[, sel_ar, K])
+      eta[, n] <- eta[, n] + rowSums(ar * E[, take_ar, max_lag])
     }
-    # allows to keep the object size of e and E small
-    E <- abind(E[, , 2:(K + 1), drop = FALSE], zero_mat)
-    if (K > 1) {
-      e <- cbind(e[, 2:K, drop = FALSE], zero_vec)
-    }
+    # keep the size of 'e' and 'E' as small as possible
+    E <- abind(E[, , -1, drop = FALSE], zero_mat)
+    e <- cbind(e[, -1, drop = FALSE], zero_vec)
   }
   eta
 }

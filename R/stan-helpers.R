@@ -186,9 +186,9 @@ stan_autocor <- function(bterms, prior) {
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      err_msg <- "ARMA covariance matrices are not implemented"
+      err_msg <- "Cannot use ARMA covariance matrices"
       if (isTRUE(bterms$rescor)) {
-        stop2(err_msg, " when 'rescor' is estimated.")
+        stop2(err_msg, " when estimating 'rescor'.")
       }
       if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
         stop2(err_msg, " when predicting 'sigma' or 'nu'.")
@@ -224,9 +224,9 @@ stan_autocor <- function(bterms, prior) {
         "({cov_mat_args}, sigma{p}, max(nobs_tg{p}));\n"
       )
     } else {
-      err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
+      err_msg <- "Please set cov = TRUE in ARMA correlation structures"
       if (is.formula(bterms$adforms$se)) {
-        stop2(err_msg, " when specifying 'se'.")
+        stop2(err_msg, " when including known standard errors.")
       }
       if (is.btnl(bterms$dpars[["mu"]])) {
         stop2(err_msg, " in non-linear models.")

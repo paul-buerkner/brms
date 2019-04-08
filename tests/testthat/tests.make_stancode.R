@@ -421,11 +421,11 @@ test_that("invalid combinations of modeling options are detected", {
   )
   expect_error(
     make_stancode(mvbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
-    "ARMA covariance matrices are not implemented when 'rescor' is estimated."
+    "Cannot use ARMA covariance matrices when estimating 'rescor'"
   )
   expect_error(
     make_stancode(y1 | resp_se(wi) ~ y2, data = data, autocor = cor_ma()),
-    "Please set cov = TRUE"
+    "Please set cov = TRUE in ARMA correlation structures"
   )
 })
 
