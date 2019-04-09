@@ -210,8 +210,8 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   lhsvars <- if (resp_rhs_all) all.vars(y$respform)
   lformula <- c(
     lhsvars, advars, 
-    lapply(y$dpars, "[[", "allvars"), 
-    lapply(y$nlpars, "[[", "allvars"), 
+    lapply(y$dpars, get_allvars), 
+    lapply(y$nlpars, get_allvars), 
     y$time$allvars
   )
   y$allvars <- allvars_formula(lformula)
@@ -235,7 +235,7 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
     x$forms[[i]]$mecor <- x$mecor
     out$terms[[i]] <- parse_bf(x$forms[[i]], mv = TRUE, ...)
   }
-  out$allvars <- allvars_formula(lapply(out$terms, "[[", "allvars"))
+  out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
@@ -260,10 +260,10 @@ parse_lf <- function(formula) {
     }
   }
   lformula <- c(
-    attr(y$fe, "allvars"), attr(y$re, "allvars"),
-    attr(y$cs, "allvars"), attr(y$sp, "allvars"),
-    attr(y$sm, "allvars"), attr(y$gp, "allvars"),
-    attr(y$offset, "allvars")
+    get_allvars(y$fe), get_allvars(y$re),
+    get_allvars(y$cs), get_allvars(y$sp),
+    get_allvars(y$sm), get_allvars(y$gp),
+    get_allvars(y$offset)
   )
   y$allvars <- allvars_formula(lformula)
   environment(y$allvars) <- environment(formula)
@@ -372,6 +372,7 @@ parse_re <- function(formula) {
     id <- gsub("\\|", "", re_parts$mid[i])
     if (!nzchar(id)) id <- NA
     gcall <- eval2(re_parts$rhs[i])
+    form <- str2formula(re_parts$lhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(
       group = group, gtype = gcall$type, 
@@ -380,25 +381,20 @@ parse_re <- function(formula) {
       stringsAsFactors = FALSE
     )
     out[[i]]$gcall <- list(gcall)
-    out[[i]]$form <- list(formula(paste("~", re_parts$lhs[i])))
+    out[[i]]$form <- list(form) 
+    # gather all variables used in the group-level term
+    # at this point 'cs' terms are no longer recognized as such
+    ftype <- str_if(type[i] %in% "cs", "", type[i])
+    lformula <- list(get_allvars(form, type = ftype), gcall$allvars)
+    out[[i]]$allvars <- list(allvars_formula(lformula))
   }
   if (length(out)) {
     out <- do_call(rbind, out)
     out <- out[order(out$group), ]
-    allvars <- list()
-    for (i in seq_rows(out)) {
-      # gather all variables used in the RE terms
-      lc(allvars) <- out$gcall[[i]]$allvars
-      if (out$type[i] == "sp") {
-        # cannot evaluate special terms functions in 'model.frame'
-        lc(allvars) <- attr(parse_sp(out$form[[i]]), "allvars")
-      } else {
-        lc(allvars) <- allvars_formula(out$form[[i]])
-      }
-    }
-    attr(out, "allvars") <- allvars_formula(allvars)
+    attr(out, "allvars") <- allvars_formula(out$allvars)
     if (no_cmc(formula)) {
-      # disable cell-mean coding in all RE terms
+      # disable cell-mean coding in all group-level terms
+      # has to come last to avoid remocal of attributes
       for (i in seq_rows(out)) {
         attr(out$form[[i]], "cmc") <- FALSE
       }
@@ -497,6 +493,7 @@ parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (length(out)) {
     out <- str2formula(out)
+    attr(out, "allvars") <- allvars_formula(out)
     attr(out, "int") <- FALSE
   }
   out
@@ -713,7 +710,7 @@ check_fdpars <- function(x) {
 
 # combine all variables in one formuula
 # @param x (list of) formulas or character strings
-# @return a formula with all variables in 'x' on the right-hand side
+# @return a formula with all variables on the right-hand side
 allvars_formula <- function(x) {
   if (!is.list(x)) {
     x <- list(x)
@@ -721,6 +718,25 @@ allvars_formula <- function(x) {
   out <- collapse(ulapply(rmNULL(x), plus_rhs))
   out <- str2formula(c(out, all_vars(out)))
   update(out, ~ .)
+}
+
+# conveniently extract all relevant variables
+# @param x any object from which to extract 'allvars'
+# @param type predictor type; requires a 'parse_<type>' function
+# @return a formula with all variables on the right-hand side
+get_allvars <- function(x, type = "") {
+  if ("allvars" %in% names(x)) {
+    out <- x[["allvars"]]
+  } else {
+    out <- attr(x, "allvars", TRUE)
+  }
+  if (is.null(out) && is.formula(x)) {
+    type <- as_one_character(type)
+    type <- str_if(nzchar(type), type, "fe")
+    parse_fun <- get(paste0("parse_", type), mode = "function")
+    out <- attr(parse_fun(x), "allvars")
+  }
+  out
 }
 
 # add 'x' to the right-hand side of a formula
