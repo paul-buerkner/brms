@@ -208,13 +208,10 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all.vars(y$respform)
-  lformula <- c(
-    lhsvars, advars, 
-    lapply(y$dpars, get_allvars), 
-    lapply(y$nlpars, get_allvars), 
-    y$time$allvars
+  y$allvars <- allvars_formula(
+    lhsvars, advars, lapply(y$dpars, get_allvars), 
+    lapply(y$nlpars, get_allvars), y$time$allvars
   )
-  y$allvars <- allvars_formula(lformula)
   if (check_response) {
     y$allvars <- update(y$respform, y$allvars) 
   }
@@ -259,13 +256,12 @@ parse_lf <- function(formula) {
       y[[t]] <- tmp 
     }
   }
-  lformula <- c(
+  y$allvars <- allvars_formula(
     get_allvars(y$fe), get_allvars(y$re),
     get_allvars(y$cs), get_allvars(y$sp),
     get_allvars(y$sm), get_allvars(y$gp),
     get_allvars(y$offset)
   )
-  y$allvars <- allvars_formula(lformula)
   environment(y$allvars) <- environment(formula)
   structure(y, class = "btl")
 }
@@ -385,8 +381,9 @@ parse_re <- function(formula) {
     # gather all variables used in the group-level term
     # at this point 'cs' terms are no longer recognized as such
     ftype <- str_if(type[i] %in% "cs", "", type[i])
-    lformula <- list(get_allvars(form, type = ftype), gcall$allvars)
-    out[[i]]$allvars <- list(allvars_formula(lformula))
+    out[[i]]$allvars <- list(allvars_formula(
+      get_allvars(form, type = ftype), gcall$allvars
+    ))
   }
   if (length(out)) {
     out <- do_call(rbind, out)
@@ -711,11 +708,9 @@ check_fdpars <- function(x) {
 # combine all variables in one formuula
 # @param x (list of) formulas or character strings
 # @return a formula with all variables on the right-hand side
-allvars_formula <- function(x) {
-  if (!is.list(x)) {
-    x <- list(x)
-  }
-  out <- collapse(ulapply(rmNULL(x), plus_rhs))
+allvars_formula <- function(...) {
+  out <- rmNULL(c(...))
+  out <- collapse(ulapply(out, plus_rhs))
   out <- str2formula(c(out, all_vars(out)))
   update(out, ~ .)
 }

@@ -13,9 +13,12 @@
 improve their interpretability. (#578)
 * No longer support the `cor_arr` correlation structure 
 after a year of deprecation.
+* Refactor internal evaluation of special predictor terms.
 
 ### Bug Fixes
 
+* Fix a problem when applying `marginal_effects` to
+measurement error models thanks to Jonathan A. Nations. (#636)
 * Fix computation of log-likelihood values for weighted 
 mixture models.
 * Fix computation of fitted values for truncated lognormal 
