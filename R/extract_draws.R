@@ -632,7 +632,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
   autocor <- bterms$autocor
   p <- usc(combine_prefix(bterms))
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
-  if (get_ar(autocor) || get_ma(autocor)) {
+  if (is.cor_arma(autocor)) {
     draws$Y <- sdata[[paste0("Y", p)]]
     if (!is.null(oos)) {
       if (any(oos > length(draws$Y))) {
@@ -652,10 +652,6 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
       draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
       draws$nobs_tg <- sdata[[paste0("nobs_tg", p)]]
     }
-  }
-  if (get_arr(autocor)) {
-    draws$arr <- get_samples(samples, paste0("^arr", p, "\\["))
-    draws$Yarr <- sdata[[paste0("Yarr", p)]]
   }
   if (is.cor_sar(autocor)) {
     draws$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))

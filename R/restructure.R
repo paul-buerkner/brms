@@ -89,6 +89,11 @@ restructure_v2 <- function(x) {
   if (version <= "2.8.3") {
     x <- rescale_old_mo(x)
   }
+  if (version <= "2.8.4") {
+    if (any(grepl("^arr(\\[|_|$)", parnames(x)))) {
+      warning2("ARR correlations are no longer supported.")
+    }
+  }
   x
 }
 

@@ -51,10 +51,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # don't test for now as it requires calling Stan's C++ code
   
   # bridge_sampler
-  # only test error messages for now
-  expect_error(bridge_sampler(fit1), 
-    "the compiled object from C\\+\\+ code for this model is invalid"
-  )
+  # don't test for now as it requires calling Stan's C++ code
   
   # coef
   coef1 <- SM(coef(fit1))

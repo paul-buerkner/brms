@@ -71,9 +71,8 @@ test_that("specified priors appear in the Stan code", {
   
   prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
              prior(normal(0, 0.5), ma),
-             prior(double_exponential(0, 1), arr),
              prior(normal(0, 5)))
-  autocor <- cor_arma(p = 1, q = 2, r = 3)
+  autocor <- cor_arma(p = 1, q = 2)
   expect_warning(
     scode <- make_stancode(y ~ mo(g), dat, autocor = autocor,
                            prior = prior, sample_prior = TRUE),
@@ -85,7 +84,6 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, 
     "- 1 * log_diff_exp(normal_lcdf(1 | 0, 0.5), normal_lcdf(-1 | 0, 0.5))"
   )
-  expect_match2(scode, "target += double_exponential_lpdf(arr | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(bsp | 0, 5)")
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
   expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
@@ -564,12 +562,6 @@ test_that("Stan code for ARMA models is correct", {
   scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_ma(~time, q = 2))
   expect_match2(scode, "mu[n] += head(E[n], Kma) * ma;")
-  
-  scode <- expect_warning(
-    make_stancode(y ~ x, dat, student(), autocor = cor_arr(~time, r = 2)),
-    "The 'arr' correlation structure has been deprecated"
-  )
-  expect_match2(scode, "mu = temp_Intercept + Xc * b + Yarr * arr;")
   
   scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(),
                          autocor = cor_ar())

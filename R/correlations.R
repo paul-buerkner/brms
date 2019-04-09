@@ -14,7 +14,6 @@
 #'   average components}
 #'   \item{cor_ar}{autoregressive (AR) structure of arbitrary order}
 #'   \item{cor_ma}{moving average (MA) structure of arbitrary order} 
-#'   \item{cor_arr}{response autoregressive (ARR) structure}
 #'   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
 #'   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
 #'   \item{cor_bsts}{Bayesian structural time series (BSTS) structure}
@@ -22,7 +21,7 @@
 #' }
 #' 
 #' @seealso 
-#' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, \link{cor_arr}, 
+#' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, 
 #'       \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
 #' 
 NULL
@@ -34,21 +33,20 @@ NULL
 #' 
 #' @aliases cor_arma-class
 #' 
-#' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-#'   specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
-#'   A covariate for this correlation structure must be integer valued. 
-#'   When a grouping factor is present in \code{formula}, the correlation structure 
-#'   is assumed to apply only to observations within the same grouping level; 
-#'   observations with different grouping levels are assumed to be uncorrelated. 
-#'   Defaults to \code{~ 1}, which corresponds to using the order of the observations 
-#'   in the data as a covariate, and no groups.
+#' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g},
+#'   specifying a time covariate \code{t} and, optionally, a grouping factor
+#'   \code{g}. A covariate for this correlation structure must be integer
+#'   valued. When a grouping factor is present in \code{formula}, the
+#'   correlation structure is assumed to apply only to observations within the
+#'   same grouping level; observations with different grouping levels are
+#'   assumed to be uncorrelated. Defaults to \code{~ 1}, which corresponds to
+#'   using the order of the observations in the data as a covariate, and no
+#'   groups.
 #' @param p A non-negative integer specifying the autoregressive (AR) 
 #'   order of the ARMA structure. Default is 0.  
 #' @param q A non-negative integer specifying the moving average (MA) 
-#'   order of the ARMA structure. Default is 0. 
-#' @param r A non-negative integer specifying the autoregressive 
-#'   response (ARR) order. See 'Details' for differences of AR and ARR 
-#'   effects. Default is 0. 
+#'   order of the ARMA structure. Default is 0.
+#' @param r No longer supported. 
 #' @param cov A flag indicating whether ARMA effects should be estimated 
 #'   by means of residual covariance matrices
 #'   (currently only possible for stationary ARMA effects of order 1). 
@@ -59,38 +57,35 @@ NULL
 #' @return An object of class \code{cor_arma}, representing an 
 #'   autoregression-moving-average correlation structure.
 #' 
-#' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typically understood as autoregressive effects.
-#'   However, one may also model autoregressive effects of the response
-#'   variable, which is called ARR in \pkg{brms}.
-#' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @seealso \code{\link{cor_ar}, \link{cor_ma}, \link{cor_arr}}
+#' @seealso \code{\link{cor_ar}}, \code{\link{cor_ma}}
 #' 
 #' @examples
-#' cor_arma(~visit|patient, p = 2, q = 2)
+#' cor_arma(~ visit | patient, p = 2, q = 2)
 #' 
 #' @export
 cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
-  if (!(p >= 0 && (p == round(p)))) {
+  p <- as_one_numeric(p)
+  q <- as_one_numeric(q)
+  if (!(p >= 0 && p == round(p))) {
     stop2("Autoregressive order must be a non-negative integer.")
   }
-  if (!(q >= 0 && (q == round(q)))) {
+  if (!(q >= 0 && q == round(q))) {
     stop2("Moving-average order must be a non-negative integer.")
   }
-  if (!(r >= 0 && (r == round(r)))) {
-    stop2("Response autoregressive order must be a non-negative integer.")
-  }
-  if (!sum(p, q, r)) {
-    stop2("At least one of 'p', 'q', and 'r' should be greater zero.")
+  if (!sum(p, q)) {
+    stop2("At least one of 'p' and 'q' should be greater zero.")
   }
   if (cov && (p > 1 || q > 1)) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
-  x <- nlist(formula, p, q, r, cov = as.logical(cov))
+  if ("r" %in% names(match.call())) {
+    warning2("ARR correlations are no longer supported and ignored.")
+  }
+  x <- nlist(formula, p, q, cov = as.logical(cov))
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
@@ -120,7 +115,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' 
 #' @export
 cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
-  cor_arma(formula = formula, p = p, q = 0, r = 0, cov = cov)
+  cor_arma(formula = formula, p = p, q = 0, cov = cov)
 }
   
 #' MA(q) correlation structure
@@ -143,33 +138,16 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' 
 #' @export
 cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
-  cor_arma(formula = formula, p = 0, q = q, r = 0, cov = cov)
+  cor_arma(formula = formula, p = 0, q = q, cov = cov)
 }
 
-#' ARR(r) correlation structure
+#' (Defunct) ARR correlation structure
 #' 
-#' This function is a constructor for the \code{cor_arma} class 
-#' allowing for autoregressive effects of the response only.
+#' The ARR correlation structure is no longer supported.
 #' 
 #' @inheritParams cor_arma
-#' @param r A non-negative integer specifying the autoregressive
-#'   response (ARR) order of the ARMA structure. Default is 1.  
 #' 
-#' @return An object of class \code{cor_arma} containing solely
-#'   autoregressive response terms.
-#'   
-#' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typically understood as autoregressive effects.
-#'   However, one may also model autoregressive effects of the response
-#'   variable, which is called ARR in \pkg{brms}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @seealso \code{\link{cor_arma}}
-#' 
-#' @examples
-#' cor_arr(~visit|patient, r = 2)
-#' 
+#' @keywords internal
 #' @export
 cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
@@ -465,7 +443,7 @@ print.cor_empty <- function(x, ...) {
 #' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
-             get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
+             get_ar(x), ", ", get_ma(x), ")"))
   invisible(x)
 }
 
@@ -502,12 +480,6 @@ print.cov_fixed <- function(x, ...) {
   print.cor_fixed(x)
 }
 
-# checks if any ARMA effects are present
-has_arma <- function(x) {
-  stop_not_cor_brms(x)
-  isTRUE(sum(x$p, x$q, x$r) > 0)
-}
-
 # get AR (autoregressive effects of residuals) order
 get_ar <- function(x) {
   stop_not_cor_brms(x)
@@ -520,20 +492,15 @@ get_ma <- function(x) {
   ifelse(is.null(x$q), 0, x$q)
 }
 
-# get ARR (autoregressive effects of the response) order 
-get_arr <- function(x) {
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$r), 0, x$r)
-}
-
 # use the covariance parameterization of ARMA models?
 use_cov <- function(x) {
   stop_not_cor_brms(x)
   if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
-    x$cov
+    out <- x$cov
   } else {
-    FALSE
+    out <- FALSE
   }
+  out
 }
 
 stop_not_cor_brms <- function(x) {

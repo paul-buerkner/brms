@@ -903,14 +903,13 @@ prior_autocor <- function(bterms, def_scale_prior) {
   resp <- bterms$resp
   cbound <- "<lower=-1,upper=1>"
   prior <- empty_brmsprior()
-  if (get_ar(autocor)) {
-    prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
-  }
-  if (get_ma(autocor)) {
-    prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
-  }
-  if (get_arr(autocor)) {
-    prior <- prior + brmsprior(class = "arr", resp = resp)
+  if (is.cor_arma(autocor)) {
+    if (get_ar(autocor)) {
+      prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
+    }
+    if (get_ma(autocor)) {
+      prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
+    }
   }
   if (is.cor_sar(autocor)) {
     if (identical(autocor$type, "lag")) {

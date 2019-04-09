@@ -1,13 +1,5 @@
 context("Tests for data helper functions")
 
-test_that("arr_design_matrix works correctly", {
-  expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
-  expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
-               matrix(c(0,1:4.5,0,6:9.5)))
-  expect_equal(arr_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
-               cbind(c(0, 1:4.5, 0, 6:9), c(0, 0, 1:3, 0 ,0, 6:8)))
-})
-
 test_that("validate_newdata handles factors correctly", {
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
   fit$data$fac <- factor(sample(1:3, nrow(fit$data), TRUE))

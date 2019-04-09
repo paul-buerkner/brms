@@ -1092,9 +1092,6 @@ stan_ac <- function(bterms, ...) {
   if (get_ma(autocor) && !use_cov(autocor)) {
     str_add(out$loopeta) <- glue(" + head(E{p}[n], Kma{p}) * ma{p}")
   }
-  if (get_arr(autocor)) {
-    str_add(out$eta) <- glue(" + Yarr{p} * arr{p}")
-  }
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
   }

@@ -636,37 +636,27 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       tgroup <- rep(1, N) 
     }
   }
-  if (has_arma(autocor)) {
-    Kar <- get_ar(autocor)
-    Kma <- get_ma(autocor)
-    Karr <- get_arr(autocor)
-    if (Kar || Kma) {
-      # ARMA correlations (of residuals)
-      out$Kar <- Kar
-      out$Kma <- Kma
-      if (use_cov(autocor)) {
-        # data for the 'covariance' version of ARMA 
-        out$N_tg <- length(unique(tgroup))
-        out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-        out$nobs_tg <- as.array(with(out, 
-          c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
-        ))
-        out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-      } else {
-        # data for the 'predictor' version of ARMA
-        max_lag <- max(Kar, Kma)
-        out$J_lag <- as.array(rep(0, N))
-        for (n in seq_len(N)[-N]) {
-          ind <- n:max(1, n + 1 - max_lag)
-          # indexes errors to be used in the n+1th prediction
-          out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
-        }
+  if (is.cor_arma(autocor)) {
+    # ARMA correlations
+    out$Kar <- get_ar(autocor)
+    out$Kma <- get_ma(autocor)
+    if (use_cov(autocor)) {
+      # data for the 'covariance' version of ARMA 
+      out$N_tg <- length(unique(tgroup))
+      out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+      out$nobs_tg <- as.array(with(out, 
+        c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+      ))
+      out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+    } else {
+      # data for the 'predictor' version of ARMA
+      max_lag <- max(out$Kar, out$Kma)
+      out$J_lag <- as.array(rep(0, N))
+      for (n in seq_len(N)[-N]) {
+        ind <- n:max(1, n + 1 - max_lag)
+        # indexes errors to be used in the n+1th prediction
+        out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
       }
-    }
-    if (Karr) {
-      # ARR effects (autoregressive effects of the response)
-      out$Yarr <- arr_design_matrix(Y, Karr, tgroup)
-      out$Karr <- Karr
     }
   } else if (is.cor_sar(autocor)) {
     if (!identical(dim(autocor$W), rep(N, 2))) {

@@ -11,6 +11,8 @@
 
 * Change the parameterization of monotonic effects to 
 improve their interpretability. (#578)
+* No longer support the `cor_arr` correlation structure 
+after a year of deprecation.
 
 ### Bug Fixes
 

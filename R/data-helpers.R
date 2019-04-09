@@ -501,34 +501,6 @@ s2rPred <- function(sm, data) {
   out
 }
 
-# compute the design matrix for ARR effects
-# @param Y: a vector containing the response variable
-# @param r: ARR order
-# @param group: vector containing the grouping variable
-# @note expects Y to be sorted after group already
-# @return the design matrix for ARR effects
-arr_design_matrix <- function(Y, r, group)  { 
-  stopifnot(length(Y) == length(group))
-  if (r > 0) {
-    U_group <- unique(group)
-    N_group <- length(U_group)
-    out <- matrix(0, nrow = length(Y), ncol = r)
-    ptsum <- rep(0, N_group + 1)
-    for (j in seq_len(N_group)) {
-      ptsum[j + 1] <- ptsum[j] + sum(group == U_group[j])
-      for (i in seq_len(r)) {
-        if (ptsum[j] + i + 1 <= ptsum[j + 1]) {
-          out[(ptsum[j] + i + 1):ptsum[j + 1], i] <- 
-            Y[(ptsum[j] + 1):(ptsum[j + 1] - i)]
-        }
-      }
-    }
-  } else {
-    out <- NULL
-  } 
-  out
-}
-
 #' Extract response values
 #' 
 #' Extract response values from a \code{\link{brmsfit}} object.

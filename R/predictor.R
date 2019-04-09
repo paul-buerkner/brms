@@ -412,11 +412,6 @@ predictor_offset <- function(draws, i, nobs) {
 # @note eta has to be passed to this function in 
 #   order for ARMA structures to work correctly
 predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
-  if (!is.null(draws$ac$arr)) {
-    eta <- eta + .predictor_fe(
-      X = p(draws$ac$Yarr, i), b = draws$ac$arr
-    )
-  }
   if (any(c("ar", "ma") %in% names(draws$ac))) {
     if (!is.null(i)) {
       stop2("Pointwise evaluation is not possible for ARMA models.")

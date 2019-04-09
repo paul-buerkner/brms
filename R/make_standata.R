@@ -60,7 +60,7 @@ make_standata <- function(formula, data, family = gaussian(),
     drop.unused.levels = !new, knots = knots,
     terms_attr = control$terms_attr
   )
-  if (has_arma(autocor) || is.cor_bsts(autocor)) {
+  if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
     # order data in case of autocorrelation models
     data <- order_data(data, bterms = bterms)
   }

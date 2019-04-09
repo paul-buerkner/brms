@@ -129,11 +129,6 @@ test_that("ARMA models work correctly", {
   expect_range(waic(fit_arma)$estimates[3, 1], 200, 280)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
-
-  fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
-                 prior = prior(normal(0, 5), class = "arr"),
-                 chains = 2)
-  print(fit_arr)
 })
 
 test_that("Models from hypothesis doc work correctly", {

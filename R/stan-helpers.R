@@ -145,9 +145,7 @@ stan_autocor <- function(bterms, prior) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   out <- list()
-  Kar <- get_ar(autocor)
-  Kma <- get_ma(autocor)
-  if (Kar || Kma) {
+  if (is.cor_arma(autocor)) {
     err_msg <- "ARMA models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
@@ -163,8 +161,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$tdataD) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    # restrict ARMA effects to be in [-1,1] when using covariance
-    # formulation as they cannot be outside this interval anyway
+    Kar <- get_ar(autocor)
     if (Kar) {
       ar_bound <- subset2(prior, class = "ar", ls = px)$bound
       str_add(out$par) <- glue( 
@@ -174,6 +171,7 @@ stan_autocor <- function(bterms, prior) {
         prior, class = "ar", px = px, suffix = p
       )
     }
+    Kma <- get_ma(autocor)
     if (Kma) {
       ma_bound <- subset2(prior, class = "ma", ls = px)$bound
       str_add(out$par) <- glue( 
@@ -252,34 +250,6 @@ stan_autocor <- function(bterms, prior) {
         "    }}\n"
       )
     } 
-  }
-  Karr <- get_arr(autocor)
-  if (Karr) {
-    # autoregressive effects of the response
-    warning2(
-      "The 'arr' correlation structure has been deprecated and ",
-      "will be removed from the package at some point. Consider ", 
-      "using lagged response values as ordinary predictors instead."
-    )
-    err_msg <- "ARR models are not implemented"
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " for non-linear models.")
-    }
-    if (is.mixfamily(family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
-    str_add(out$data) <- glue(
-      "  // data needed for ARR correlations\n",
-      "  int<lower=1> Karr{p};\n",
-      "  matrix[N{p}, Karr{p}] Yarr{p};  // ARR design matrix\n"
-    )
-    bound <- subset2(prior, class = "arr", ls = px)$bound
-    str_add(out$par) <- glue(
-      "  vector{bound}[Karr{p}] arr{p};  // autoregressive response effects\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "arr", px = px, suffix = p
-    )
   }
   if (is.cor_sar(autocor)) {
     err_msg <- "SAR models are not implemented"
