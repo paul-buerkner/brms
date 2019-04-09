@@ -725,10 +725,9 @@ allvars_formula <- function(x) {
 # @param type predictor type; requires a 'parse_<type>' function
 # @return a formula with all variables on the right-hand side
 get_allvars <- function(x, type = "") {
-  if ("allvars" %in% names(x)) {
+  out <- attr(x, "allvars", TRUE)
+  if (is.null(out) && "allvars" %in% names(x)) {
     out <- x[["allvars"]]
-  } else {
-    out <- attr(x, "allvars", TRUE)
   }
   if (is.null(out) && is.formula(x)) {
     type <- as_one_character(type)
