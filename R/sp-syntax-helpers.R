@@ -35,7 +35,7 @@ vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   }
   uni_mi <- ulapply(get_effect(x, "sp"), attr, "uni_mi")
   if (length(uni_mi)) {
-    vars_mi <- all.vars(str2formula(uni_mi))
+    vars_mi <- ulapply(uni_mi, function(term) eval2(term)$term)
     miss_mi <- setdiff(vars_mi, responses)
     if (length(miss_mi)) {
       stop2(
@@ -55,9 +55,7 @@ get_uni_me <- function(x) {
   if (!length(uni_me)) {
     return(NULL)
   }
-  all_vars <- all.vars(parse(text = uni_me))
-  elist <- named_list(all_vars, values = NA_real_)
-  xname <- ulapply(uni_me, function(x) attr(eval2(x, elist), "xname"))
+  xname <- ulapply(uni_me, function(term) eval2(term)$term)
   df <- data.frame(xname, uni_me)
   df <- df[!duplicated(df), ]
   xdupl <- df$xname[duplicated(df$xname)]
@@ -85,14 +83,14 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
     )
     levels <- vector("list", nrow(out))
     for (i in seq_rows(out)) {
-      att <- attributes(eval2(out$term[i], data))
-      out$xname[i] <- att$xname
-      if (isTRUE(nzchar(att$grname))) {
-        out$grname[i] <- att$grname
+      tmp <- eval2(out$term[i])
+      out$xname[i] <- tmp$term
+      if (isTRUE(nzchar(tmp$gr))) {
+        out$grname[i] <- tmp$gr
         if (length(old_levels)) {
-          levels[[i]] <- old_levels[[att$grname]]
+          levels[[i]] <- old_levels[[tmp$gr]]
         } else {
-          levels[[i]] <- levels(factor(att$gr))
+          levels[[i]] <- levels(factor(get(tmp$gr, data)))
         } 
       }
     }
@@ -106,7 +104,7 @@ tidy_meef <- function(bterms, data, old_levels = NULL) {
     }
   } else {
     out <- data.frame(
-      terms = character(0), xname = character(0),
+      term = character(0), xname = character(0),
       grname = character(0), cor = logical(0),
       stringsAsFactors = FALSE
     )
@@ -199,6 +197,7 @@ get_simo_labels <- function(spef) {
   ulapply(which(lengths(spef$Imo) > 0), fun)
 }
 
+# standard errors of variables with missing values
 get_sdy <- function(x, data = NULL) {
   stopifnot(is.brmsterms(x))
   miform <- x$adforms[["mi"]]
@@ -210,11 +209,11 @@ get_sdy <- function(x, data = NULL) {
   sdy
 }
 
-# get names of grouping variables used in measurement error terms
+# names of grouping variables used in measurement error terms
 get_me_groups <- function(x) {
   uni_me <- get_uni_me(x)
-  out <- lapply(uni_me, eval_NA) 
-  out <- ulapply(out, attr, "grname")
+  out <- lapply(uni_me, eval2) 
+  out <- ulapply(out, "[[", "gr")
   out[nzchar(out)]
 }
 
@@ -251,6 +250,103 @@ sp_model_matrix <- function(formula, data, types = all_sp_types(), ...) {
   out
 }
 
+# formula of variables used in special effects terms
+sp_fake_formula <- function(...) {
+  dots <- c(...)
+  out <- vector("list", length(dots))
+  for (i in seq_along(dots)) {
+    tmp <- eval2(dots[[i]])
+    out[[i]] <- all_vars(c(tmp$term, tmp$sdx, tmp$gr))
+  }
+  str2formula(unique(unlist(out)))
+}
+
+# extract an me variable
+get_me_values <- function(term, data) {
+  term <- get_sp_term(term)
+  stopifnot(is.me_term(term))
+  x <- as.vector(eval2(term$term, data))
+  if (!is.numeric(x)) {
+    stop2("Noisy variables should be numeric.")
+  }
+  as.array(x)
+}
+
+# extract the measurement error of an me term
+get_me_noise <- function(term, data) {
+  term <- get_sp_term(term)
+  stopifnot(is.me_term(term))
+  sdx <- as.vector(eval2(term$sdx, data))
+  if (length(sdx) == 0L) {
+    stop2("Argument 'sdx' is missing in function 'me'.")
+  } else if (length(sdx) == 1L) {
+    sdx <- rep(sdx, nrow(data))
+  }
+  if (!is.numeric(sdx)) {
+    stop2("Measurement error should be numeric.")
+  }
+  if (isTRUE(any(sdx <= 0))) {
+    stop2("Measurement error should be positive.")
+  }
+  as.array(sdx)
+}
+
+# extract the grouping variable of an me term
+get_me_group <- function(term, data) {
+  term <- get_sp_term(term)
+  stopifnot(is.me_term(term))
+  as.array(eval2(term$gr, data))
+}
+
+# extract mo variables
+get_mo_values <- function(term, data) {
+  term <- get_sp_term(term)
+  stopifnot(is.mo_term(term))
+  x <- eval2(term$term, data)
+  if (is.ordered(x)) {
+    # counting starts at zero
+    x <- as.numeric(x) - 1
+  } else if (all(is_wholenumber(x))) {
+    min_value <- attr(x, "min")
+    if (is.null(min_value)) {
+      min_value <- min(x)
+    }
+    x <- x - min_value
+  } else {
+    stop2(
+      "Monotonic predictors must be integers or ordered ",
+      "factors. Error occured for variable '", term$term, "'."
+    )
+  }
+  as.array(x)
+}
+
+# prepare 'sp_term' objects
+get_sp_term <- function(term) {
+  if (!is.sp_term(term)) {
+    term <- eval2(as_one_character(term))
+  }
+  term
+}
+
+# all effects which fall under the 'sp' category of brms
 all_sp_types <- function() {
   c("mo", "me", "mi")
+}
+
+# classes used to set up special effects terms
+is.sp_term <- function(x) {
+  inherits(x, "sp_term")
+}
+
+is.mo_term <- function(x) {
+  inherits(x, "mo_term")
+}
+
+is.me_term <- function(x) {
+  inherits(x, "me_term")
+}
+
+is.mi_term <- function(x) {
+  inherits(x, "mi_term")
 }

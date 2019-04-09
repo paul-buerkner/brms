@@ -677,12 +677,12 @@ test_that("monotonic effects appear in the Stan code", {
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
   expect_match2(scode, "target += dirichlet_lpdf(simo_8 | con_simo_8);")
   
-  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2), dat)
+  scode <- make_stancode(y ~ mo(x1) + (mo(x1) | x2), dat)
   expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * mo(simo_1, Xmo_1[n])")
   expect_true(!grepl("Z_1_w", scode))
   
   expect_error(
-    make_stancode(y ~ mono(x1) + (mono(x2)|x2), dat),
+    make_stancode(y ~ mo(x1) + (mo(x2) | x2), dat),
     "Special group-level terms require"
   )
   
@@ -1038,7 +1038,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "corme_1[choose(k - 1, 2) + j] = Corme_1[j, k];")
   
   scode <- make_stancode(
-    y ~ me(x, xsd)*z + (me(x, xsd)*z|ID), data = dat
+    y ~ me(x, xsd)*z + (me(x, xsd)*z | ID), data = dat
   )
   expect_match2(scode, "(bsp[1] + r_1_3[J_1[n]]) * Xme_1[n]")
   expect_match2(scode, "(bsp[2] + r_1_4[J_1[n]]) * Xme_1[n] * Csp_1[n]")

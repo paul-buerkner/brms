@@ -4,7 +4,7 @@
 \alias{me}
 \title{Predictors with Measurement Error in \pkg{brms} Models}
 \usage{
-me(x, sdx = NULL, gr = NULL)
+me(x, sdx, gr = NULL)
 }
 \arguments{
 \item{x}{The variable measured with error.}
@@ -18,9 +18,8 @@ latent variable. If \code{NULL} (the default) each
 observation will have its own value of the latent variable.}
 }
 \description{
-Specify predictors with measurement error.
-This function is almost solely useful when
-called in formulas passed to the \pkg{brms} package.
+Specify predictors with measurement error. The function does not evaluate its
+arguments -- it exists purely to help set up a model.
 }
 \details{
 For detailed documentation see \code{help(brmsformula)}. 

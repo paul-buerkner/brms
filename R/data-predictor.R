@@ -352,10 +352,9 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
   if (any(lengths(spef$Imo) > 0)) {
     # prepare data specific to monotonic effects
     out[[paste0("Imo", p)]] <- max(unlist(spef$Imo))
-    Xmo_fun <- function(x) as.array(attr(eval2(x, data), "var"))
-    Xmo <- lapply(unlist(spef$calls_mo), Xmo_fun)
+    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
-    out <- c(out, setNames(Xmo, Xmo_names))
+    c(out) <- setNames(Xmo, Xmo_names)
     compute_Jmo <- is.null(Jmo)
     if (!length(Jmo)) {
       Jmo <- as.array(ulapply(Xmo, max))
@@ -409,7 +408,7 @@ data_Xme <- function(meef, data) {
     out[[paste0("NCme_", i)]] <- Mme * (Mme - 1) / 2
     if (nzchar(g)) {
       levels <- get_levels(meef)[[g]]
-      gr <- attributes(eval2(meef$term[K[1]], data))[["gr"]]
+      gr <- get_me_group(meef$term[K[1]], data)
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
         # occurs for new levels only
@@ -424,9 +423,8 @@ data_Xme <- function(meef, data) {
       out[[paste0("Jme_", i)]] <- Jme
     }
     for (k in K) {
-      att <- attributes(eval2(meef$term[k], data))
-      Xn <- as.array(att$var)
-      noise <- as.array(att$sdx)
+      Xn <- get_me_values(meef$term[k], data)
+      noise <- get_me_noise(meef$term[k], data)
       if (nzchar(g)) {
         for (l in ilevels) {
           # validate values of the same level

@@ -260,10 +260,10 @@ parse_lf <- function(formula) {
     }
   }
   lformula <- c(
-    y[c("fe", "sp", "cs")],
+    attr(y$fe, "allvars"), attr(y$re, "allvars"),
+    attr(y$cs, "allvars"), attr(y$sp, "allvars"),
     attr(y$sm, "allvars"), attr(y$gp, "allvars"),
-    y$re$form, lapply(y$re$gcall, "[[", "allvars"),
-    str2formula(all.vars(y$offset))
+    attr(y$offset, "allvars")
   )
   y$allvars <- allvars_formula(lformula)
   environment(y$allvars) <- environment(formula)
@@ -344,6 +344,7 @@ parse_fe <- function(formula) {
   out <- setdiff(all_terms, c(sp_terms, re_terms))
   out <- paste(c(int_term, out), collapse = "+")
   out <- str2formula(out)
+  attr(out, "allvars") <- allvars_formula(out)
   if (has_rsv_intercept(out)) {
     attr(out, "int") <- FALSE
   }
@@ -384,6 +385,18 @@ parse_re <- function(formula) {
   if (length(out)) {
     out <- do_call(rbind, out)
     out <- out[order(out$group), ]
+    allvars <- list()
+    for (i in seq_rows(out)) {
+      # gather all variables used in the RE terms
+      lc(allvars) <- out$gcall[[i]]$allvars
+      if (out$type[i] == "sp") {
+        # cannot evaluate special terms functions in 'model.frame'
+        lc(allvars) <- attr(parse_sp(out$form[[i]]), "allvars")
+      } else {
+        lc(allvars) <- allvars_formula(out$form[[i]])
+      }
+    }
+    attr(out, "allvars") <- allvars_formula(allvars)
     if (no_cmc(formula)) {
       # disable cell-mean coding in all RE terms
       for (i in seq_rows(out)) {
@@ -406,6 +419,7 @@ parse_cs <- function(formula) {
   if (length(out)) {
     out <- ulapply(out, eval2)
     out <- str2formula(out)
+    attr(out, "allvars") <- allvars_formula(out)
     # do not test whether variables were supplied to 'cs'
     # to allow category specific group-level intercepts
     attr(out, "int") <- FALSE
@@ -426,6 +440,8 @@ parse_sp <- function(formula) {
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
     attr(out, "uni_mi") <- uni_mi
+    uni_terms <- c(uni_mo, uni_me, uni_mi)
+    attr(out, "allvars") <- sp_fake_formula(uni_terms)
   }
   out
 }
@@ -439,11 +455,9 @@ parse_sm <- function(formula) {
             "implemented in brms. Consider using 't2' instead.")
     }
     out <- str2formula(out)
-    allvars <- mgcv::interpret.gam(out)$fake.formula
-  } else {
-    allvars <- ~ 1
+    attr(out, "allvars") <- mgcv::interpret.gam(out)$fake.formula
   }
-  structure(out, allvars = allvars)
+  out
 }
 
 # extract gaussian process terms
@@ -459,22 +473,21 @@ parse_gp <- function(formula) {
       stop2("No variable supplied to function 'gp'.")
     }
     out <- str2formula(out)
-  } else {
-    allvars <- ~ 1
+    attr(out, "allvars") <- allvars
   }
-  structure(out, allvars = allvars)
+  out
 }
 
 # extract offset terms
 parse_offset <- function(formula) {
+  out <- character(0)
   terms <- terms(as.formula(formula))
   pos <- attr(terms, "offset")
   if (!is.null(pos)) {
     vars <- attr(terms, "variables")
     out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
     out <- str2formula(out)
-  } else {
-    out <- character(0)
+    attr(out, "allvars") <- str2formula(all.vars(out))
   }
   out
 }

@@ -291,7 +291,7 @@ test_that("make_standata handles covariance matrices correctly", {
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {
-  flist <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
+  flist <- list(a ~ x + (1|1|g), b ~ mo(z) + (1|1|g))
   dat <- data.frame(
     y = rnorm(9), x = rnorm(9), z = sample(1:9, 9), g = rep(1:3, 3)
   )

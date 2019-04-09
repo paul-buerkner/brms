@@ -690,15 +690,6 @@ eval_silent <- function(expr, type = "output", try = FALSE,
   out
 }
 
-# evaluate an expression for all variables set to NA
-eval_NA <- function(expr, ...) {
-  if (is.character(expr)) {
-    expr <- parse(text = expr)
-  }
-  data <- named_list(all.vars(expr), NA_real_)
-  eval(expr, envir = data, ...)
-}
-
 # find the name that 'x' had in a specific environment
 substitute_name <- function(x, envir = parent.frame(), nchar = 50) {
   out <- substitute(x)

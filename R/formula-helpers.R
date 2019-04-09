@@ -263,11 +263,46 @@ t2 <- function(...) {
   mgcv::t2(...)
 }
 
-#' Predictors with Measurement Error in \pkg{brms} Models
+#' Category Specific Predictors in \pkg{brms} Models
 #' 
-#' Specify predictors with measurement error.
+#' @aliases cse
+#' 
+#' @param expr Expression containing predictors,
+#'  for which category specific effects should be estimated. 
+#'  For evaluation, \R formula syntax is applied.
+#'  
+#' @details For detailed documentation see \code{help(brmsformula)}
+#'   as well as \code{vignette("brms_overview")}.
+#' 
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso \code{\link{brmsformula}}
+#'   
+#' @examples   
+#' \dontrun{
+#' fit <- brm(rating ~ period + carry + cs(treat), 
+#'            data = inhaler, family = sratio("cloglog"), 
+#'            prior = set_prior("normal(0,5)"), chains = 2)
+#' summary(fit)
+#' plot(fit, ask = FALSE)
+#' } 
+#'  
+#' @export
+cs <- function(expr) {
+  deparse_no_string(substitute(expr))
+}
+
+# alias of function 'cs' used in the JSS paper of brms
+#' @export
+cse <- function(expr) {
+  deparse_no_string(substitute(expr))
+}
+
+#' Predictors with Measurement Error in \pkg{brms} Models
+#' 
+#' Specify predictors with measurement error. The function does not evaluate its
+#' arguments -- it exists purely to help set up a model.
 #' 
 #' @param x The variable measured with error.
 #' @param sdx Known measurement error of \code{x}
@@ -307,48 +342,31 @@ t2 <- function(...) {
 #' } 
 #' 
 #' @export
-me <- function(x, sdx = NULL, gr = NULL) {
-  xname <- deparse(substitute(x))
-  x <- as.vector(x)
-  sdx <- as.vector(sdx)
-  if (length(sdx) == 0L) {
-    stop2("Argument 'sdx' is missing in function 'me'.")
-  } else if (length(sdx) == 1L) {
-    sdx <- rep(sdx, length(x))
-  }
-  if (!is.numeric(x)) {
-    stop2("Noisy variables should be numeric.")
-  }
-  if (!is.numeric(sdx)) {
-    stop2("Measurement error should be numeric.")
-  }
-  if (isTRUE(any(sdx <= 0))) {
-    stop2("Measurement error should be positive.")
-  }
-  grname <- substitute(gr)
-  if (!is.null(grname)) {
-    grname <- deparse_combine(grname, max_char = NULL)
-    stopif_illegal_group(grname)
-    gr <- as.vector(gr)
+me <- function(x, sdx, gr = NULL) {
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  sdx <- deparse(substitute(sdx))
+  gr <- substitute(gr)
+  if (!is.null(gr)) {
+    gr <- deparse_combine(gr)
+    stopif_illegal_group(gr)
   } else {
-    grname <- ""
-    gr <- character(0)
+    gr <- ""
   }
-  out <- rep(1, length(x))
-  structure(out, 
-    var = x, sdx = sdx, gr = gr, 
-    xname = xname, grname = grname
-  )
+  label <- deparse(match.call())
+  out <- nlist(term, sdx, gr, label)
+  class(out) <- c("me_term", "sp_term")
+  out
 }
 
 #' Predictors with Missing Values in \pkg{brms} Models
 #' 
+#' Specify predictor term with missing values in \pkg{brms}. The function does
+#' not evaluate its arguments -- it exists purely to help set up a model.
+#' 
 #' @param x The variable containing missings.
 #' 
 #' @details For detailed documentation see \code{help(brmsformula)}. 
-#' 
-#' This function is almost solely useful when
-#' called in formulas passed to the \pkg{brms} package.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #'   
@@ -365,70 +383,35 @@ me <- function(x, sdx = NULL, gr = NULL) {
 #' 
 #' @export
 mi <- function(x) {
-  xname <- substitute(x)
-  vars <- all.vars(xname)
-  xname <- deparse(xname)
-  if (!is_equal(xname, vars)) {
-    stop2("Function 'mi' can only handle single untransformed variables.")
+  # use 'term' for consistency with other special terms
+  term <- substitute(x)
+  vars <- all.vars(term)
+  term <- deparse(term)
+  if (!is_equal(term, vars)) {
+    stop2("'mi' only accepts single untransformed variables.")
   }
-  x <- as.vector(x)
-  if (!is.numeric(x)) {
-    stop2("Noisy variables should be numeric.")
-  }
-  out <- rep(1, length(x))
-  structure(out, var = x, xname = xname)
-}
-
-#' Category Specific Predictors in \pkg{brms} Models
-#' 
-#' @aliases cse
-#' 
-#' @param expr Expression containing predictors,
-#'  for which category specific effects should be estimated. 
-#'  For evaluation, \R formula syntax is applied.
-#'  
-#' @details For detailed documentation see \code{help(brmsformula)}
-#'   as well as \code{vignette("brms_overview")}.
-#' 
-#' This function is almost solely useful when
-#' called in formulas passed to the \pkg{brms} package.
-#' 
-#' @seealso \code{\link{brmsformula}}
-#'   
-#' @examples   
-#' \dontrun{
-#' fit <- brm(rating ~ period + carry + cs(treat), 
-#'            data = inhaler, family = sratio("cloglog"), 
-#'            prior = set_prior("normal(0,5)"), chains = 2)
-#' summary(fit)
-#' plot(fit, ask = FALSE)
-#' } 
-#'  
-#' @export
-cs <- function(expr) {
-  deparse_no_string(substitute(expr))
-}
-
-# alias of function 'cs'
-#' @export
-cse <- function(expr) {
-  deparse_no_string(substitute(expr))
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mi_term", "sp_term")
+  out
 }
 
 #' Monotonic Predictors in \pkg{brms} Models
 #' 
-#' @aliases mono monotonic
+#' Specify a monotonic predictor term in \pkg{brms}. The function does not
+#' evaluate its arguments -- it exists purely to help set up a model.
 #' 
-#' @param x An integer variable or an ordered factor
-#'   to be modeled as monotonic.
+#' @param x An integer variable or an ordered factor to be modeled as monotonic.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
 #'   as well as \code{vignette("brms_monotonic")}.
 #' 
-#' This function is almost solely useful when
-#' called in formulas passed to the \pkg{brms} package.
-#' 
 #' @seealso \code{\link{brmsformula}}
+#' 
+#' @references 
+#' Bürkner P. C. & Charpentier, E. (in review). Monotonic Effects: A Principled 
+#' Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
+#' preprint.
 #'   
 #' @examples   
 #' \dontrun{
@@ -459,39 +442,12 @@ cse <- function(expr) {
 #'  
 #' @export
 mo <- function(x) {
-  x_name <- attr(x, "x_name")
-  if (is.null(x_name)) {
-    x_name <- deparse_combine(substitute(x))  
-  }
-  if (is.ordered(x)) {
-    # counting starts at zero
-    x <- as.numeric(x) - 1 
-  } else if (all(is_wholenumber(x))) {
-    min_value <- attr(x, "min")
-    if (is.null(min_value)) {
-      min_value <- min(x)
-    }
-    x <- x - min_value
-  } else {
-    stop2(
-      "Monotonic predictors must be integers or ordered ", 
-      "factors. Error occured for variable '", x_name, "'."
-    )
-  }
-  out <- rep(1, length(x))
-  structure(out, var = x) 
-}
-
-#' @export
-mono <- function(x) {
-  attr(x, "x_name") <- deparse_combine(substitute(x)) 
-  mo(x)
-}
-
-#' @export
-monotonic <- function(x) {
-  attr(x, "x_name") <- deparse_combine(substitute(x))
-  mo(x)
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mo_term", "sp_term")
+  out
 }
 
 #' Set up Gaussian process terms in \pkg{brms}

@@ -285,7 +285,8 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  c(get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]]), 
+  c(get_var_combs(x[["fe"]], x[["cs"]]), 
+    get_all_effects_type(x, "sp"),
     get_all_effects_type(x, "sm"), 
     get_all_effects_type(x, "gp"))
 }
@@ -297,8 +298,8 @@ get_all_effects_type <- function(x, type) {
   terms <- all_terms(x[[type]])
   out <- named_list(terms)
   for (i in seq_along(terms)) {
-    sm <- eval2(terms[i])
-    vars <- setdiff(union(sm$term, sm$by), "NA")
+    tmp <- eval2(terms[i])
+    vars <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA")
     out[[i]] <- str2formula(vars, collapse = "*")
   }
   get_var_combs(alist = out)

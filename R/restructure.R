@@ -94,6 +94,12 @@ restructure_v2 <- function(x) {
       warning2("ARR correlations are no longer supported.")
     }
   }
+  if (version <= "2.8.5") {
+    # internal handling of special effects terms has changed
+    # this requires updating the 'terms' attribute of the data
+    x$data <- rm_attr(x$data, c("brmsframe", "terms"))
+    x$data <- update_data(x$data, bterms) 
+  }
   x
 }
 
