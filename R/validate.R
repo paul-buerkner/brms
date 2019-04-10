@@ -362,7 +362,7 @@ parse_re <- function(formula) {
   re_terms <- get_re_terms(formula, brackets = FALSE)
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
-  out <- vector("list", length(re_terms))
+  out <- allvars <- vector("list", length(re_terms))
   type <- attr(re_terms, "type")
   for (i in seq_along(re_terms)) {
     id <- gsub("\\|", "", re_parts$mid[i])
@@ -381,17 +381,16 @@ parse_re <- function(formula) {
     # gather all variables used in the group-level term
     # at this point 'cs' terms are no longer recognized as such
     ftype <- str_if(type[i] %in% "cs", "", type[i])
-    out[[i]]$allvars <- list(allvars_formula(
-      get_allvars(form, type = ftype), gcall$allvars
-    ))
+    re_allvars <- get_allvars(form, type = ftype)
+    allvars[[i]] <- allvars_formula(re_allvars, gcall$allvars)
   }
   if (length(out)) {
     out <- do_call(rbind, out)
     out <- out[order(out$group), ]
-    attr(out, "allvars") <- allvars_formula(out$allvars)
+    attr(out, "allvars") <- allvars_formula(allvars)
     if (no_cmc(formula)) {
-      # disable cell-mean coding in all group-level terms
-      # has to come last to avoid remocal of attributes
+      # disabling cell-mean coding in all group-level terms
+      # has to come last to avoid removal of attributes
       for (i in seq_rows(out)) {
         attr(out$form[[i]], "cmc") <- FALSE
       }
@@ -530,8 +529,7 @@ parse_resp <- function(formula, check_names = TRUE) {
 
 # extract time and grouping variables for autocorrelation structures
 # @param autocor object of class 'cor_brms'
-# @return a list with elements 'time', 'group', and 'all'
-#   'all' contains a formula of all included variables
+# @return a list with elements 'time', 'group', and 'allvars'
 parse_time <- function(autocor) {
   out <- list()
   formula <- autocor$formula
@@ -715,10 +713,11 @@ allvars_formula <- function(...) {
   update(out, ~ .)
 }
 
-# conveniently extract all relevant variables
+# conveniently extract a formula of all relevant variables
 # @param x any object from which to extract 'allvars'
 # @param type predictor type; requires a 'parse_<type>' function
 # @return a formula with all variables on the right-hand side
+#   or NULL if 'allvars' cannot be found
 get_allvars <- function(x, type = "") {
   out <- attr(x, "allvars", TRUE)
   if (is.null(out) && "allvars" %in% names(x)) {
@@ -730,6 +729,7 @@ get_allvars <- function(x, type = "") {
     parse_fun <- get(paste0("parse_", type), mode = "function")
     out <- attr(parse_fun(x), "allvars")
   }
+  stopifnot(is.null(out) || is.formula(out))
   out
 }
 
