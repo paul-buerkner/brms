@@ -1022,6 +1022,26 @@ has_cs <- function(bterms) {
     any(get_re(bterms)$type %in% "cs")
 }
 
+# extract names of response categories
+extract_cat_names <- function(x, data) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  respform <- formula2str(lhs(x$formula))
+  respform <- formula(gsub("\\|+[^~]*~", "~", respform))
+  mr <- model.response(model.frame(respform, data))
+  if (is_ordinal(x) && is.numeric(mr)) {
+    out <- as.character(seq_len(max(mr)))
+  } else if (has_multicol(x)) {
+    mr <- as.matrix(mr)
+    out <- as.character(colnames(mr))
+    if (!length(out)) {
+      out <- as.character(seq_cols(mr))
+    }
+  } else {
+    out <- levels(factor(mr))
+  }
+  out
+}
+
 # extract elements from objects
 # @param x object from which to extract elements
 # @param name name of the element to be extracted

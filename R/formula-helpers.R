@@ -843,23 +843,3 @@ expand_dot_formula <- function(formula, data = NULL) {
   }
   formula
 }
-
-# extract names of response categories
-extract_cat_names <- function(x, data) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  respform <- formula2str(lhs(x$formula))
-  respform <- formula(gsub("\\|+[^~]*~", "~", respform))
-  mr <- model.response(model.frame(respform, data))
-  if (is_ordinal(x) && is.numeric(mr)) {
-    out <- as.character(seq_len(max(mr)))
-  } else if (has_multicol(x)) {
-    mr <- as.matrix(mr)
-    out <- as.character(colnames(mr))
-    if (!length(out)) {
-      out <- as.character(seq_cols(mr))
-    }
-  } else {
-    out <- levels(factor(mr))
-  }
-  out
-}
