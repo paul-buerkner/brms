@@ -168,7 +168,7 @@ NULL
 # @return a 'brmshypothesis' object
 hypothesis_internal <- function(x, hypothesis, class, alpha,
                                 combine = TRUE, ...) {
-  if (!is.character(hypothesis)) {
+  if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
   if (length(alpha) != 1L || alpha < 0 || alpha > 1) {
