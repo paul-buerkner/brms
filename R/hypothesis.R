@@ -28,14 +28,14 @@
 #' @param ... Currently ignored.
 #' 
 #' @details Among others, \code{hypothesis} computes an evidence ratio
-#'   (\code{Evid.Ratio}) for each hypothesis. For a directed hypothesis, this is
+#'   (\code{Evid.Ratio}) for each hypothesis. For a one-sided hypothesis, this is
 #'   just the posterior probability (\code{Post.Prob}) under the hypothesis
 #'   against its alternative. That is, when the hypothesis is of the form
 #'   \code{a > b}, the evidence ratio is the ratio of the posterior probability
 #'   of \code{a > b} and the posterior probability of \code{a < b}. In this
 #'   example, values greater than one indicate that the evidence in favor of
 #'   \code{a > b} is larger than evidence in favor of \code{a < b}. For an
-#'   undirected (point) hypothesis, the evidence ratio is a Bayes factor between
+#'   two-sided (point) hypothesis, the evidence ratio is a Bayes factor between
 #'   the hypothesis and its alternative computed via the Savage-Dickey density
 #'   ratio method. That is the posterior density at the point of interest
 #'   divided by the prior density at that point. Values greater than one
@@ -49,7 +49,7 @@
 #'   
 #'   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
-#'   For directional hypotheses pairs, this basically means that all posterior
+#'   For one-sided hypotheses pairs, this basically means that all posterior
 #'   samples are on the same side of the value dividing the two hypotheses. In
 #'   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
 #'   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
@@ -57,10 +57,11 @@
 #'   computations.
 #'  
 #'   The argument \code{alpha} specifies the size of the credible interval
-#'   (i.e., Bayesian confidence interval). For instance, if \code{alpha = 0.05}
-#'   (5\%), the credible interval will contain \code{1 - alpha = 0.95} (95\%) of
-#'   the posterior values. Hence, \code{alpha * 100}\% of the posterior values
-#'   will lie outside of the credible interval. Although this allows testing of
+#'   (i.e., Bayesian confidence interval). For instance, if we tested a
+#'   two-sided hypothesis and set \code{alpha = 0.05} (5\%) an, the credible
+#'   interval will contain \code{1 - alpha = 0.95} (95\%) of the posterior
+#'   values. Hence, \code{alpha * 100}\% of the posterior values will
+#'   lie outside of the credible interval. Although this allows testing of
 #'   hypotheses in a similar manner as in the frequentist null-hypothesis
 #'   testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
 #'   \code{p < .05}) to determine the 'existence' of an effect.
@@ -230,7 +231,7 @@ combine_hlist <- function(hlist, class, alpha) {
   structure(out, class = "brmshypothesis")
 }
 
-# evaluate a hypothesis based on the posterior samples
+# evaluate a single hypothesis based on the posterior samples
 eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
@@ -269,9 +270,9 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   }
   # summarize hypothesis
   wsign <- switch(sign, "=" = "equal", "<" = "less", ">" = "greater")
-  probs <- switch(sign, 
-    "=" = c(alpha / 2, 1 - alpha / 2), 
-    "<" = c(0, 1 - alpha), ">" = c(alpha, 1)
+  probs <- switch(sign,
+    "=" = c(alpha / 2, 1 - alpha / 2),
+    "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
   )
   sm <- lapply(
     c("mean", "sd", "quantile", "evidence_ratio"), 
@@ -280,16 +281,15 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
   names(sm) <- c("Estimate", "Est.Error", "CI.Lower", "CI.Upper", "Evid.Ratio")
-  if (sign == "<") {
-    sm[1, 3] <- -Inf
-  } else if (sign == ">") {
-    sm[1, 4] <- Inf
+  sm$Post.Prob <- sm$Evid.Ratio / (1 + sm$Evid.Ratio)
+  if (is.infinite(sm$Evid.Ratio)) {
+    sm$Post.Prob <- 1
   }
-  sm$Post.Prob <- ifelse(
-    is.infinite(sm$Evid.Ratio), 1, 
-    sm$Evid.Ratio / (1 + sm$Evid.Ratio)
-  )
-  sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
+  if (sign == "=") {
+    sm$Star <- str_if(!(sm$CI.Lower <= 0 && 0 <= sm$CI.Upper), "*")
+  } else {
+    sm$Star <- str_if(sm$Post.Prob > 1 - alpha, "*")
+  }
   if (!length(name) || !nzchar(name)) {
     name <- paste(h, sign, "0")
   }
@@ -397,7 +397,7 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
 # @param x posterior samples 
 # @param cut the cut point between the two hypotheses
 # @param wsign direction of the hypothesis
-# @param prior_samples optional prior samples for undirected hypothesis
+# @param prior_samples optional prior samples for two-sided hypothesis
 # @param ... optional arguments passed to density_ratio
 # @return the evidence ratio of the two hypothesis
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
@@ -440,11 +440,13 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
   print(x$hypothesis, quote = FALSE)
-  cat(paste0(
-    "---\n'*': The expected value under the hypothesis ", 
-    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n",
-    "Posterior probabilities of point hypotheses assume ",
-    "equal prior probabilities.\n"
+  pone <- (1 - x$alpha * 2) * 100
+  ptwo <- (1 - x$alpha) * 100
+  cat(glue(
+    "---\n'CI': {pone}%-CI for one-sided and {ptwo}%-CI for two-sided hypotheses.\n",
+    "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n", 
+    "for two-sided hypotheses, the value tested against lies outside the {ptwo}%-CI.\n",
+    "Posterior probabilities of point hypotheses assume equal prior probabilities.\n"
   ))
   invisible(x)
 }
