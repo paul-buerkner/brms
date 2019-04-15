@@ -313,6 +313,8 @@ hash_response <- function(x, newdata = NULL, resp = NULL, ...) {
   out <- sdata[grepl(regex, names(sdata))]
   out <- as.matrix(as.data.frame(rmNULL(out)))
   out <- p(out, attr(sdata, "old_order"))
+  # see issue #642
+  attributes(out) <- NULL  
   digest::sha1(x = out, ...)
 }
 
