@@ -365,7 +365,7 @@ make_conditions <- function(x, vars, ...) {
   for (v in vars) {
     tmp <- get(v, x)
     if (is_like_factor(tmp)) {
-      tmp <- levels(tmp)
+      tmp <- levels(as.factor(tmp))
     } else {
       tmp <- mean(tmp, na.rm = TRUE) + (-1:1) * sd(tmp, na.rm = TRUE)
     }
