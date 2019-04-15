@@ -892,16 +892,16 @@ getCall.brmsfit <- function(x, ...) {
 
 #' @export
 family.brmsfit <- function(object, resp = NULL, ...) {
-  if (!is_mv(object)) {
-    resp <- NULL
-  }
+  resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
-    stopifnot(is_mv(object))
-    resp <- as_one_character(resp)
-    resp <- validate_resp(resp, object$formula$responses)
-    family <- object$formula$forms[[resp]]$family
+    # multivariate model
+    family <- lapply(object$formula$forms[resp], "[[", "family")
+    if (length(resp) == 1L) {
+      family <- family[[1]]
+    }
   } else {
-    family <- get_element(object$formula, "family")
+    # univariate model
+    family <- object$formula$family
     if (is.null(family)) {
       family <- object$family
     }
@@ -911,13 +911,16 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 
 #' @export
 autocor.brmsfit <- function(object, resp = NULL, ...) {
+  resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
-    stopifnot(is_mv(object))
-    resp <- as_one_character(resp)
-    resp <- validate_resp(resp, object$formula$responses)
-    autocor <- object$formula$forms[[resp]]$autocor
+    # multivariate model
+    autocor <- lapply(object$formula$forms[resp], "[[", "autocor")
+    if (length(resp) == 1L) {
+      autocor <- autocor[[1]]
+    }
   } else {
-    autocor <- get_element(object$formula, "autocor")
+    # univariate model
+    autocor <- object$formula$autocor
     if (is.null(autocor)) {
       autocor <- object$autocor
     }
@@ -1847,8 +1850,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
+  if (has_cat(family(object, resp = resp))) {
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
   subset <- subset_samples(object, subset, nsamples)
@@ -2146,14 +2148,22 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
-    stop2("'bayes_R2' is not defined for ordinal or categorical models.")
-  }
   if (is.matrix(object[["R2"]])) {
     R2 <- object[["R2"]]
+    # assumes unsummarized 'R2' as ensured by 'add_criterion'
+    take <- colnames(R2) %in% paste0("R2", resp)
+    R2 <- R2[, take, drop = FALSE]
   } else {
-    ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
+    family <- family(object, resp = resp)
+    if (conv_cats_dpars(family)) {
+      stop2("'bayes_R2' is not defined for unordered categorical models.")
+    }
+    if (is_ordinal(family)) {
+      warning2(
+        "Predictions are treated as continuous variables in ",
+        "'bayes_R2' which is likely invalid for ordinal families."
+      )
+    }
     # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     .bayes_R2 <- function(y, ypred, ...) {
       e <- -1 * sweep(ypred, 2, y)
@@ -2161,18 +2171,20 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       var_e <- matrixStats::rowVars(e)
       return(as.matrix(var_ypred / (var_ypred + var_e)))
     }
-    y <- get_y(object, resp, warn = TRUE, ...)
-    if (is.matrix(ypred)) {
-      # only one response variable
-      R2 <- .bayes_R2(y, ypred)
-    } else {
-      # multiple response variables
-      R2 <- named_list(resp)
-      for (i in seq_along(R2)) {
-        R2[[i]] <- .bayes_R2(y[, i], ypred[, , i])
+    args_y <- list(object, warn = TRUE, ...)
+    args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+    R2 <- named_list(paste0("R2", resp))
+    for (i in seq_along(R2)) {
+      # assumes expectations of different responses to be independent
+      args_ypred$resp <- args_y$resp <- resp[i]
+      y <- do_call(get_y, args_y)
+      ypred <- do.call(fitted, args_ypred)
+      if (is_ordinal(family(object, resp = resp[i]))) {
+        ypred <- ordinal_probs_continuous(ypred)
       }
-      R2 <- do_call(cbind, R2)
+      R2[[i]] <- .bayes_R2(y, ypred)
     }
+    R2 <- do_call(cbind, R2)
     colnames(R2) <- paste0("R2", resp)
   }
   if (summary) {

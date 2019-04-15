@@ -751,6 +751,19 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   eta
 }
 
+# transform posterior draws of ordinal probabilities to a 
+# continuous scale assuming equidistance between adjacent categories 
+# @param x an ndraws x nobs x ncat array of posterior draws
+# @return an ndraws x nobs matrix of posterior draws
+ordinal_probs_continuous <- function(x) {
+  stopifnot(length(dim(x)) == 3)
+  for (k in seq_dim(x, 3)) {
+    x[, , k] <- x[, , k] * k
+  }
+  x <- lapply(seq_dim(x, 2), function(s) rowSums(x[, s, ]))
+  do_call(cbind, x)
+}
+
 # regex to extract population-level coefficients
 fixef_pars <- function() {
   types <- c("", "s", "cs", "sp", "mo", "me", "mi", "m")

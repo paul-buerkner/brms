@@ -649,15 +649,11 @@ marginal_effects_internal.brmsterms <- function(
     if (is_ordinal(x$family) && is.null(dpar)) {
       warning2(
         "Predictions are treated as continuous variables in ",
-        "'marginal_effects' by default, which is likely invalid ", 
+        "'marginal_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
       if (method == "fitted") {
-        for (k in seq_dim(out, 3)) {
-          out[, , k] <- out[, , k] * k
-        }
-        out <- lapply(seq_dim(out, 2), function(s) rowSums(out[, s, ]))
-        out <- do_call(cbind, out)
+        out <- ordinal_probs_continuous(out)
       }
     }
   }

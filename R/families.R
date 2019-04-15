@@ -353,6 +353,11 @@ family_info.NULL <- function(x, y, ...) {
 }
 
 #' @export
+family_info.list <- function(x, y, ...) {
+  ulapply(x, family_info, y = y, ...)
+}
+
+#' @export
 family_info.family <- function(x, y, ...) {
   family_info(x$family, y = y, ...)
 }

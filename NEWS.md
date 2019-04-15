@@ -6,6 +6,7 @@
 * Allow to fix thresholds in ordinal mixture models (#626)
 * Use the `softplus` link function in various families. (#622)
 * Define argument `sparse` separately for each model formula.
+* Allow using `bayes_R2` with ordinal models. (#639)
 
 ### Other Changes
 
