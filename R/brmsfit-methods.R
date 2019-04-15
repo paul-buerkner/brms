@@ -2223,13 +2223,16 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
-    stop2("'loo_R2' is not defined for ordinal or categorical models.")
+  family <- family(object, resp = resp)
+  if (conv_cats_dpars(family)) {
+    stop2("'loo_R2' is not defined for unordered categorical models.")
   }
-  ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
-  ll <- log_lik(object, resp = resp, sort = TRUE, combine = FALSE, ...)
-  chains <- object$fit@sim$chains
+  if (is_ordinal(family)) {
+    warning2(
+      "Predictions are treated as continuous variables in ",
+      "'loo_R2' which is likely invalid for ordinal families."
+    )
+  }
   # see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
   .loo_R2 <- function(y, ypred, ll, chains) {
     chain_id <- rep(seq_len(chains), each = nrow(ll) / chains)
@@ -2239,18 +2242,22 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     eloo <- ypredloo - y
     return(1 - var(eloo) / var(y))
   }
-  y <- get_y(object, resp, warn = TRUE, ...)
-  if (is.matrix(ypred)) {
-    # only one response variable
-    R2 <- .loo_R2(y, ypred, ll, chains)
-  } else {
-    # multiple response variables
-    R2 <- named_list(resp)
-    for (i in seq_along(R2)) {
-      R2[[i]] <- .loo_R2(y[, i], ypred[, , i], ll[, , i], chains)
+  chains <- object$fit@sim$chains
+  args_y <- list(object, warn = TRUE, ...)
+  args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+  R2 <- named_list(paste0("R2", resp))
+  for (i in seq_along(R2)) {
+    # assumes expectations of different responses to be independent
+    args_ypred$resp <- args_y$resp <- resp[i]
+    y <- do_call(get_y, args_y)
+    ypred <- do.call(fitted, args_ypred)
+    ll <- do_call(log_lik, args_ypred)
+    if (is_ordinal(family(object, resp = resp[i]))) {
+      ypred <- ordinal_probs_continuous(ypred)
     }
-    R2 <- unlist(R2)
+    R2[[i]] <- .loo_R2(y, ypred, ll, chains)
   }
+  R2 <- unlist(R2)
   names(R2) <- paste0("R2", resp)
   R2
 }
