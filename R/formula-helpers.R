@@ -508,7 +508,7 @@ mo <- function(x) {
 #'  Below, we describe the currently supported covariance kernels:
 #'  \itemize{
 #'    \item{"exp_quad": }{The exponentiated-quadratic kernel is defined as
-#'    \eqn{k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j || / (2 lscale^2))},
+#'    \eqn{k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j ||^2 / (2 lscale^2))},
 #'    where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a 
 #'    standard deviation parameter, and \eqn{lscale} is characteristic 
 #'    length-scale parameter. The latter practically measures how close two 
