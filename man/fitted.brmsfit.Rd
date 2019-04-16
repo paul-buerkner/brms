@@ -90,14 +90,13 @@ Fitted values extracted from \code{object}.
  where the third dimension indicates the response variables.
 }
 \description{
-Predict mean values of the response distribution (i.e., the 'regression line')
-for a fitted model. Can be performed for the data used to fit the model 
-(posterior predictive checks) or for new data.
-By definition, these predictions have smaller variance
-than the response predictions performed by
-the \code{\link[brms:predict.brmsfit]{predict}} method. 
-This is because the measurement error is not incorporated.
-The estimated means of both methods should, however, be very similar.
+Predict expected values of the response distribution (i.e., predict the
+'regression line') for a fitted model. Can be performed for the data used to
+fit the model (posterior predictive checks) or for new data. By definition,
+these predictions have smaller variance than the response predictions
+performed by the \code{\link[brms:predict.brmsfit]{predict}} method. This is
+because the residual error is not incorporated. The estimated means of both
+methods should, however, be very similar.
 }
 \details{
 \code{NA} values within factors in \code{newdata}, 
