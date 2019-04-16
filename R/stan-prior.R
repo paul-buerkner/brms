@@ -118,28 +118,34 @@ stan_prior <- function(prior, class, coef = "", group = "",
   out
 }
 
-# get base (highest level) prior of all priors
+# get the base prior for all coefficients
+# this is the lowest level non-coefficient prior
+# @param prior a brmsprior object
+# @return a character string defining the base prior
 stan_base_prior <- function(prior) {
-  stopifnot(length(unique(prior$class)) <= 1L) 
-  prior <- prior[with(prior, !nzchar(coef) & nzchar(prior)), ]
-  vars <- c("group", "nlpar", "dpar", "resp", "class")
-  i <- 1
-  found <- FALSE
-  base_prior <- ""
-  take <- rep(FALSE, nrow(prior))
-  while (!found && i <= length(vars)) {
-    take <- nzchar(prior[[vars[i]]]) & !take
-    if (any(take)) {
-      base_prior <- prior[take, "prior"]
-      found <- TRUE
-    }
-    i <- i + 1
+  stopifnot(length(unique(prior$class)) <= 1)
+  take <- with(prior, !nzchar(coef) & nzchar(prior))
+  prior <- prior[take, ]
+  if (!NROW(prior)) {
+    return("")
   }
-  stopifnot(length(base_prior) == 1L)
-  base_prior
+  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  for (v in vars) {
+    take <- nzchar(prior[[v]])
+    if (any(take)) {
+      prior <- prior[take, ]
+    }
+  }
+  stopifnot(NROW(prior) == 1)
+  prior$prior
 }
 
 # Stan prior in target += notation
+# @param prior character string defining the prior
+# @param par name of the parameter on which to set the prior
+# @param ncoef number of coefficients in the parameter
+# @param bound bounds of the parameter in Stan language
+# @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
@@ -233,6 +239,11 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
 
 # Stan code for local parameters of special priors
 # currently implemented are horseshoe
+# @param class name of the parameter class
+# @param prior a brmsprior object
+# @param ncoef number of coefficients in the parameter
+# @param px named list to subset 'prior'
+# @param center_X is the design matrix centered?
 stan_special_prior_local <- function(class, prior, ncoef, px,
                                      center_X = FALSE)  {
   class <- as_one_character(class)
