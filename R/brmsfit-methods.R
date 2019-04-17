@@ -967,7 +967,9 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     old_terms <- attr(object$data, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    control$old_sdata <- extract_old_standata(bterms, object$data)
+    control$old_sdata <- extract_old_standata(
+      bterms, data = object$data, version = object$version$brms
+    )
     control$old_levels <- get_levels(
       tidy_ranef(bterms, object$data),
       tidy_meef(bterms, object$data)
