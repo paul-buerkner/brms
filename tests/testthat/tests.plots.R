@@ -22,8 +22,8 @@ test_that("plotting functions don't throw unexpected errors", {
   expect_silent(p <- stanplot(fit1, type = "scatter",
                               pars = parnames(fit1)[2:3], 
                               exact_match = TRUE))
-  expect_silent(p <- stanplot(fit3, type = "rhat", pars = "^b_"))
-  expect_silent(p <- stanplot(fit3, type = "neff"))
+  expect_silent(p <- stanplot(fit1, type = "rhat", pars = "^b_"))
+  expect_silent(p <- stanplot(fit1, type = "neff"))
   expect_silent(p <- stanplot(fit1, type = "acf"))
   expect_silent(p <- stanplot(fit1, type = "nuts_divergence"))
   expect_error(stanplot(fit1, type = "density"), "Invalid plot type")

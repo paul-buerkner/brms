@@ -782,8 +782,23 @@ get_effect.default <- function(x, ...) {
 }
 
 #' @export
+get_effect.brmsfit <- function(x, ...) {
+  get_effect(x$formula, ...)
+}
+
+#' @export
+get_effect.brmsformula <- function(x, ...) {
+  get_effect(parse_bf(x), ...)
+}
+
+#' @export
+get_effect.mvbrmsformula <- function(x, ...) {
+  get_effect(parse_bf(x), ...)
+}
+
+#' @export
 get_effect.mvbrmsterms <- function(x, ...) {
-  unlist(lapply(x$terms, get_effect, ...), recursive = FALSE)
+  ulapply(x$terms, get_effect, recursive = FALSE, ...)
 }
 
 # extract formulas of a certain effect type

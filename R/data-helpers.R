@@ -1,5 +1,5 @@
 # update data for use in brms functions
-# @param data the original data.frame
+# @param data the data passed by the user
 # @param bterms object of class brmsterms
 # @param na.action function defining how to treat NAs
 # @param drop.unused.levels should unused factor levels be removed?
@@ -196,7 +196,7 @@ validate_newdata <- function(
   all_group_vars = NULL, ...
 ) {
   if (is.null(newdata)) {
-    newdata <- structure(object$data, valid = TRUE, original = TRUE)
+    newdata <- structure(object$data, valid = TRUE, old = TRUE)
   }
   if (isTRUE(attr(newdata, "valid"))) {
     return(newdata)
@@ -615,8 +615,7 @@ make_sm_list <- function(x, data, version = NULL, ...) {
   if (length(smterms)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
-    # the penality was changed in version 2.8.7
-    # see thread #8403 on discourse
+    # the spline penality has changed in 2.8.7 (#646)
     diagonal.penalty <- !isTRUE(version <= "2.8.6")
     gam_args <- list(
       data = data, knots = knots, 

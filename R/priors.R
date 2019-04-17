@@ -1396,6 +1396,9 @@ check_prior_special.btl <- function(x, prior, data,
 # validate argument 'sample_prior'
 check_sample_prior <- function(sample_prior) {
   options <- c("no", "yes", "only")
+  if (is.null(sample_prior)) {
+    sample_prior <- "no"
+  }
   if (!is.character(sample_prior)) {
     sample_prior <- as_one_logical(sample_prior)
     sample_prior <- if (sample_prior) "yes" else "no"
