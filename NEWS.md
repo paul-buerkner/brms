@@ -15,6 +15,8 @@ improve their interpretability. (#578)
 * No longer support the `cor_arr` correlation structure 
 after a year of deprecation.
 * Refactor internal evaluation of special predictor terms.
+* Improve penality of splines thanks to Ben Goodrich
+and Ruben Arslan.
 
 ### Bug Fixes
 
