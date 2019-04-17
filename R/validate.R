@@ -897,16 +897,17 @@ all_terms <- function(x) {
 regex_sp <- function(type = "all") {
   choices <- c("all", "sm", "gp", "cs", "mo", "me", "mi", "mmc")
   type <- match.arg(type, choices, several.ok = TRUE)
-  out <- c(
+  prefixes <- c(
     sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?",
-    mo = "mo((no)?|(notonic)?)", me = "me", mi = "mi",
-    mmc = "mmc"
+    mo = "mo", me = "me", mi = "mi", mmc = "mmc"
   )
   if (!any(type %in% "all")) {
-    out <- out[type]
+    prefixes <- prefixes[type]
   }
-  out <- paste0("(", out, ")", collapse = "|")
-  paste0("^(", out, ")\\([^:]*\\)$")
+  allow_colon <- c("cs", "mmc")
+  inner <- ifelse(names(prefixes) %in% allow_colon, ".*", "[^:]*")
+  out <- paste0("^(", prefixes, ")\\(", inner, "\\)$")
+  paste0("(", out, ")", collapse = "|")
 }
 
 # find special terms of a certain type
