@@ -17,18 +17,17 @@ is_mv <- function(x) {
 }
 
 stopifnot_resp <- function(x, resp = NULL) {
-  if (is_mv(x) && is.null(resp)) {
-    stop2("Argument 'resp' is required when applying ", 
-          "this method to a multivariate model.")
+  if (is_mv(x) && length(resp) != 1L) {
+    stop2("Argument 'resp' must be a single variable name ", 
+          "when applying this method to a multivariate model.")
   }
   invisible(NULL)
 }
 
+# apply a link function 
+# @param x an arrary of arbitrary dimension
+# @param link character string defining the link
 link <- function(x, link) {
-  # apply a link function on x
-  # Args:
-  #   x: An arrary of arbitrary dimension
-  #   link: a character string defining the link
   switch(link, 
     "identity" = x, 
     "log" = log(x), 
@@ -43,15 +42,15 @@ link <- function(x, link) {
     "cauchit" = qcauchy(x),
     "cloglog" = cloglog(x), 
     "probit_approx" = qnorm(x),
+    "softplus" = log_expm1(x),
     stop2("Link '", link, "' not supported.")
   )
 }
 
+# apply an inverse link function
+# @param x an arrary of arbitrary dimension
+# @param link a character string defining the link
 ilink <- function(x, link) {
-  # apply the inverse link function on x
-  # Args:
-  #   x: An arrary of arbitrary dimension
-  #   link: a character string defining the link
   switch(link, 
     "identity" = x, 
     "log" = exp(x),
@@ -66,12 +65,13 @@ ilink <- function(x, link) {
     "cauchit" = pcauchy(x),
     "cloglog" = inv_cloglog(x), 
     "probit_approx" = pnorm(x),
+    "softplus" = log1p_exp(x),
     stop2("Link '", link, "' not supported.")
   )
 }
 
+# generate integers indicating subsets of the posterior samples
 subset_samples <- function(x, subset = NULL, nsamples = NULL) {
-  # generate integers indicating subsets of the posterior samples
   stopifnot(is.brmsfit(x))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
@@ -79,14 +79,14 @@ subset_samples <- function(x, subset = NULL, nsamples = NULL) {
   subset
 }
 
+# extract names of group-level effects
+# @param ranef output of tidy_ranef()
+# @param group optinal name of a grouping factor for
+#   which to extract effect names
+# @param bylevels optional names of 'by' levels for 
+#    which to extract effect names
+# @return a vector of character strings
 get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
-  # extract names of group-level effects
-  # Args:
-  #  ranef: output of tidy_ranef()
-  #  group: optinal name of a grouping factor for
-  #    which to extract effect names
-  #  bylevels: optional names of 'by' levels for 
-  #    which to extract effect names
   stopifnot(is.data.frame(ranef))
   if (!is.null(group)) {
     group <- as_one_character(group)
@@ -106,22 +106,18 @@ get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
   out
 }
 
+# get correlation names as combinations of variable names
+# @param names the variable names 
+# @param type character string to be put in front of the returned strings
+# @param brackets should the correlation names contain brackets 
+#   or underscores as seperators
+# @param sep character string to separate names; only used if !brackets
+# @return a vector of character strings
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
-  # get correlation names as combinations of variable names
-  # Args:
-  #   names: the variable names 
-  #   type: character string to be put in front of the returned strings
-  #   brackets: should the correlation names contain brackets 
-  #            or underscores as seperators
-  #   sep: character string to separate names;
-  #        only used if brackets == FALSE
-  # Returns: 
-  #   correlation names based on the variable names 
-  #   passed to the names argument
   cornames <- NULL
   if (length(names) > 1) {
-    for (i in 2:length(names)) {
-      for (j in 1:(i-1)) {
+    for (i in seq_along(names)[-1]) {
+      for (j in seq_len(i - 1)) {
         if (brackets) {
           cornames <- c(cornames, 
             paste0(type, "(", names[j], "," , names[i], ")")
@@ -137,8 +133,8 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
+# extract names of categorical variables in the model
 get_cat_vars <- function(x) {
-  # extract names of categorical variables in the model
   stopifnot(is.brmsfit(x))
   like_factor <- sapply(model.frame(x), is_like_factor)
   valid_groups <- c(
@@ -148,10 +144,9 @@ get_cat_vars <- function(x) {
   unique(valid_groups[nzchar(valid_groups)])
 }
 
+# extract list of levels with one element per grouping factor
+# @param ... objects with a level attribute
 get_levels <- function(...) {
-  # extract list of levels with one element per grouping factor
-  # Args:
-  #   ...: object with a level attribute
   dots <- list(...)
   out <- vector("list", length(dots))
   for (i in seq_along(out)) {
@@ -168,24 +163,20 @@ get_levels <- function(...) {
   out[!duplicated(names(out))]
 }
 
+# calculate estimates over posterior samples 
+# @param coef coefficient to be applied on the samples (e.g., "mean")
+# @param samples the samples over which to apply coef
+# @param margin see 'apply'
+# @param ... additional arguments passed to get(coef)
+# @return typically a matrix with colnames(samples) as colnames
 get_estimate <- function(coef, samples, margin = 2, ...) {
-  # calculate estimates over posterior samples 
-  # Args:
-  #   coef: coefficient to be applied on the samples (e.g., "mean")
-  #   samples: the samples over which to apply coef
-  #   margin: see apply
-  #   to.array: logical; should the result be transformed 
-  #             into an array of increased dimension?
-  #   ...: additional arguments passed to get(coef)
-  # Returns: 
-  #   typically a matrix with colnames(samples) as colnames
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun_args <- names(formals(coef))
   if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
   }
-  x <- do.call(apply, c(args, dots))
+  x <- do_call(apply, c(args, dots))
   if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
   } else if (coef == "quantile") {
@@ -223,22 +214,25 @@ posterior_table <- function(x, levels = NULL) {
   if (is.null(levels)) {
     levels <- sort(unique(as.vector(x)))
   }
+  xlevels <- attr(x, "levels")
+  if (length(xlevels) != length(levels)) {
+    xlevels <- levels
+  }
   out <- lapply(seq_len(ncol(x)), 
     function(n) table(factor(x[, n], levels = levels))
   )
-  out <- do.call(rbind, out)
+  out <- do_call(rbind, out)
   # compute relative frequencies
   out <- out / sum(out[1, ])
   rownames(out) <- colnames(x)
-  colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
+  colnames(out) <- paste0("P(Y = ", xlevels, ")")
   out
 }
 
+# covariance matrices based on correlation and SD samples
+# @param sd matrix of samples of standard deviations
+# @param cor matrix of samples of correlations
 get_cov_matrix <- function(sd, cor = NULL) {
-  # compute covariance matrices based on correlation and sd samples
-  # Args:
-  #   sd: samples of standard deviations
-  #   cor: samples of correlations
   sd <- as.matrix(sd)
   stopifnot(all(sd >= 0))
   nsamples <- nrow(sd)
@@ -254,8 +248,8 @@ get_cov_matrix <- function(sd, cor = NULL) {
     stopifnot(min(cor) >= -1, max(cor) <= 1)
     stopifnot(ncol(cor) == size * (size - 1) / 2)
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
@@ -264,24 +258,26 @@ get_cov_matrix <- function(sd, cor = NULL) {
   out
 }
 
+# correlation matrices based on correlation samples
+# @param cor samples of correlations
+# @param size optional size of the desired correlation matrix
+#   ignored is cor is specified
 get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
-  # compute correlation matrices based on correlation samples
-  # Args:
-  #   cor: samples of correlations
-  #   size: optional size of the desired correlation matrix
-  #     ignored is cor is specified
   if (length(cor)) {
     cor <- as.matrix(cor)
-    size <- - 1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
+    size <- -1 / 2 + sqrt(1 / 4 + 2 * ncol(cor)) + 1
     nsamples <- nrow(cor)
   } 
-  stopifnot(is_wholenumber(size) && size > 1, nsamples > 0)
+  size <- as_one_numeric(size)
+  nsamples <- as_one_numeric(nsamples)
+  stopifnot(is_wholenumber(size) && size > 0)
+  stopifnot(is_wholenumber(nsamples) && nsamples > 0)
   out <- array(diag(1, size), dim = c(size, size, nsamples))
   out <- aperm(out, perm = c(3, 1, 2))
   if (length(cor)) {
     k <- 0 
-    for (i in 2:size) {
-      for (j in 1:(i-1)) {
+    for (i in seq_len(size)[-1]) {
+      for (j in seq_len(i - 1)) {
         k = k + 1
         out[, j, i] <- out[, i, j] <- cor[, k]
       }
@@ -290,12 +286,10 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   out
 }
 
+# compute ARMA1 covariance matrices
+# @param draws a brmsdraws object
+# @param obs observations for which to compute the covariance matrix
 get_cov_matrix_arma <- function(draws, obs) {
-  # helper function to compute ARMA covariance matrices
-  # currently, only ARMA1 processes are implemented
-  # Args:
-  #   draws: a brmsdraws object
-  #   obs: observations for which to compute the covariance matrix
   nobs <- length(obs)
   # make sure not to add 'se' twice
   se <- draws$data$se[obs]
@@ -315,15 +309,13 @@ get_cov_matrix_arma <- function(draws, obs) {
   out
 }
 
+# compute AR1 covariance matrices
+# @param ar AR1 autocorrelation samples
+# @param sigma standard deviation samples of the AR1 process
+# @param nrows number of rows of the covariance matrix
+# @param se optional user defined standard errors
+# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
 get_cov_matrix_ar1 <- function(ar, sigma, nrows, se = NULL) {
-  # compute the covariance matrix for an AR1 process
-  # Args: 
-  #   ar: AR1 autocorrelation samples
-  #   sigma: standard deviation samples of the AR1 process
-  #   se: optional user defined standard errors
-  #   nrows: number of rows of the covariance matrix
-  # Returns:
-  #   An nsamples x nrows x nrows AR1 covariance array (!)
   sigma <- as.matrix(sigma)
   se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
@@ -341,15 +333,13 @@ get_cov_matrix_ar1 <- function(ar, sigma, nrows, se = NULL) {
   mat
 }
 
+# compute MA1 covariance matrices
+# @param ma MA1 autocorrelation samples
+# @param sigma standard deviation samples of the AR1 process
+# @param nrows number of rows of the covariance matrix
+# @param se optional user defined standard errors
+# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
 get_cov_matrix_ma1 <- function(ma, sigma, nrows, se = NULL) {
-  # compute the covariance matrix for an MA1 process
-  # Args: 
-  #   ma: MA1 autocorrelation samples
-  #   sigma: standard deviation samples of the AR1 process
-  #   se: optional user defined standard errors
-  #   nrows: number of rows of the covariance matrix
-  # Returns:
-  #   An nsamples x nrows x nrows MA1 covariance array (!)
   sigma <- as.matrix(sigma)
   se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
@@ -369,16 +359,14 @@ get_cov_matrix_ma1 <- function(ma, sigma, nrows, se = NULL) {
   mat 
 }
 
+# compute ARMA1 covariance matrices
+# @param ar AR1 autocorrelation samples
+# @param ma MA1 autocorrelation samples
+# @param sigma standard deviation samples of the AR1 process
+# @param nrows number of rows of the covariance matrix
+# @param se optional user defined standard errors
+# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
 get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se = NULL) {
-  # compute the covariance matrix for an AR1 process
-  # Args: 
-  #   ar: AR1 autocorrelation sample
-  #   ma: MA1 autocorrelation sample
-  #   sigma: standard deviation samples of the AR1 process
-  #   se: optional user defined standard errors
-  #   nrows: number of rows of the covariance matrix
-  # Returns:
-  #   An nsamples x nrows x nrows ARMA1 covariance array (!)
   sigma <- as.matrix(sigma)
   se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
@@ -398,15 +386,13 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se = NULL) {
   mat 
 }
 
-get_cov_matrix_ident <- function(sigma, nrows, se = 0) {
-  # compute a variance matrix without including ARMA parameters
-  # only used for ARMA covariance models when incl_autocor = FALSE
-  # Args:
-  #   sigma: standard deviation samples
-  #   se: user defined standard errors (may be 0)
-  #   nrows: number of rows of the covariance matrix
-  # Returns:
-  #   An nsamples x nrows x nrows sigma array
+# compute a variance matrix without including ARMA parameters
+# only used for ARMA covariance models when !incl_autocor
+# @param sigma standard deviation samples
+# @param nrows number of rows of the covariance matrix
+# @param se optional user defined standard errors
+# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
+get_cov_matrix_ident <- function(sigma, nrows, se = NULL) {
   sigma <- as.matrix(sigma)
   se2 <- if (length(se)) se^2 else 0
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
@@ -418,18 +404,18 @@ get_cov_matrix_ident <- function(sigma, nrows, se = 0) {
   mat
 }
 
+# get samples of a distributional parameter
+# @param x object to extract posterior samples from
+# @param dpar name of the distributional parameter
+# @param i the current observation number
+# @param ilink should the inverse link function be applied?
+#   if NULL the value is chosen internally
+# @return 
+#   If the parameter is predicted and i is NULL or 
+#   length(i) > 1, an S x N matrix.
+#   If the parameter it not predicted or length(i) == 1,
+#   a vector of length S.
 get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
-  # get samples of an distributional parameter
-  # Args:
-  #   x: object to extract postarior samples from
-  #   i: the current observation number
-  #   ilink: should the inverse link function be applied?
-  #     if NULL the value is chosen internally
-  # Returns:
-  #   If the parameter is predicted and i is NULL or 
-  #   length(i) > 1, an S x N matrix.
-  #   If the parameter it not predicted or length(i) == 1,
-  #   a vector of length S.
   stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
   x <- draws$dpars[[dpar]]
   stopifnot(!is.null(x))
@@ -437,46 +423,63 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     # compute samples of a predicted parameter
     out <- predictor(x, i = i, fdraws = draws)
     if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = draws$f)
+      ilink <- apply_dpar_ilink(dpar, family = draws$family)
     }
     if (ilink) {
-      out <- ilink(out, x$f$link)
+      out <- ilink(out, x$family$link)
     }
     if (length(i) == 1L) {
-      out <- index_col(out, 1)
+      out <- extract_col(out, 1)
     }
   } else if (!is.null(i) && !is.null(dim(x))) {
-    out <- index_col(x, i)
+    out <- extract_col(x, i)
   } else {
     out <- x
   }
-  if (dpar == "sigma" && !isTRUE(grepl("_cov$", draws$f$fun))) {
-    # 'se' will be incorporated directly into 'sigma'
-    if (!isTRUE(attr(x, "se_added")) && "se" %in% names(draws$data)) {
-      out <- sqrt(get_se(draws, i = i)^2 + out^2)
-      # make sure not to add 'se' twice
-      attr(out, "se_added") <- TRUE
-    }
-  } else if (dpar == "disc" && is.null(i) && is.matrix(out)) {
-    # 'disc' will be multiplied by a 3D array
-    out <- array(out, dim = c(dim(out), draws$data$ncat - 1))
+  if (dpar == "sigma") {
+    out <- add_sigma_se(out, draws, i = i)
   }
   out
 }
 
+# get samples of a non-linear parameter
+# @param x object to extract posterior samples from
+# @param nlpar name of the non-linear parameter
+# @param i the current observation number
+# @return
+#   If i is NULL or length(i) > 1: an S x N matrix
+#   If length(i) == 1: a vector of length S
+get_nlpar <- function(draws, nlpar, i = NULL) {
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  x <- draws$nlpars[[nlpar]]
+  stopifnot(!is.null(x))
+  if (is.list(x)) {
+    # compute samples of a predicted parameter
+    out <- predictor(x, i = i, fdraws = draws)
+    if (length(i) == 1L) {
+      out <- extract_col(out, 1)
+    }
+  } else if (!is.null(i) && !is.null(dim(x))) {
+    out <- extract_col(x, i)
+  } else {
+    out <- x
+  }
+  out
+}
+
+# get the mixing proportions of mixture models
 get_theta <- function(draws, i = NULL) {
-  # get the mixing proportions of mixture models
   stopifnot(is.brmsdraws(draws))
   if ("theta" %in% names(draws$dpars)) {
     # theta was not predicted; no need to call get_dpar
     theta <- draws$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    mix_family <- draws$f
+    mix_family <- draws$family
     families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      draws$f <- mix_family$mix[[j]]
+      draws$family <- mix_family$mix[[j]]
       theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
     }
     theta <- abind(theta, along = 3)
@@ -490,25 +493,29 @@ get_theta <- function(draws, i = NULL) {
   theta
 }
 
+# get posterior samples of multivariate mean vectors
+# only used in multivariate models with 'rescor'
 get_Mu <- function(draws, i = NULL) {
   stopifnot(is.mvbrmsdraws(draws))
   Mu <- draws$mvpars$Mu
   if (is.null(Mu)) {
     Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
-      Mu <- do.call(cbind, Mu)
+      Mu <- do_call(cbind, Mu)
     } else {
       # keep correct dimension even if data has only 1 row
       Mu <- lapply(Mu, as.matrix)
-      Mu <- do.call(abind, c(Mu, along = 3))
+      Mu <- do_call(abind, c(Mu, along = 3))
     }
   } else {
     stopifnot(!is.null(i))
-    Mu <- index_col(Mu, i)
+    Mu <- extract_col(Mu, i)
   }
   Mu
 }
 
+# get posterior samples of residual covariance matrices
+# only used in multivariate models with 'rescor'
 get_Sigma <- function(draws, i = NULL) {
   stopifnot(is.mvbrmsdraws(draws))
   Sigma <- draws$mvpars$Sigma
@@ -518,7 +525,7 @@ get_Sigma <- function(draws, i = NULL) {
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
-      sigma <- do.call(cbind, sigma)
+      sigma <- do_call(cbind, sigma)
       Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
@@ -528,7 +535,7 @@ get_Sigma <- function(draws, i = NULL) {
         }
       }
       nsigma <- length(sigma)
-      sigma <- do.call(abind, c(sigma, along = 3))
+      sigma <- abind(sigma, along = 3)
       Sigma <- array(dim = c(dim_mu(draws), nsigma, nsigma))
       for (n in seq_len(ncol(Sigma))) {
         Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], draws$mvpars$rescor)
@@ -539,15 +546,14 @@ get_Sigma <- function(draws, i = NULL) {
     ldim <- length(dim(Sigma))
     stopifnot(ldim %in% 3:4)
     if (ldim == 4L) {
-      Sigma <- index_col(Sigma, i)
+      Sigma <- extract_col(Sigma, i)
     }
   }
   Sigma
 }
 
+# extract user-defined standard errors
 get_se <- function(draws, i = NULL) {
-  # extract user-defined standard errors
-  # Args: see get_dpar
   stopifnot(is.brmsdraws(draws))
   se <- as.vector(draws$data[["se"]])
   if (!is.null(se)) {
@@ -564,48 +570,55 @@ get_se <- function(draws, i = NULL) {
   se
 }
 
-index_col <- function(x, i) {
-  # savely index columns without dropping other dimensions
-  # Args:
-  #   x: an array
-  #   i: colum index
-  ldim <- length(dim(x))
-  stopifnot(ldim %in% 2:4)
-  if (ldim == 2L) {
-    out <- x[, i]
-  } else {
-    if (ldim == 3L) {
-      out <- x[, i, ]
-    } else {
-      out <- x[, i, , ]
-    }
-    if (length(i) == 1L && dim(out) != dim(x)[-2]) {
-      # some non-column dims were unintentionally dropped
-      dim(out) <- dim(x)[-2]
-    }
-  }
-  out
+# add user defined standard errors to 'sigma'
+add_sigma_se <- function(sigma, draws, i = NULL) {
+  needs_se <- "se" %in% names(draws$data) && 
+    !isTRUE(attr(sigma, "se_added")) &&
+    !isTRUE(grepl("_cov$", draws$family$fun))
+  if (needs_se) {
+    # 'se' will be incorporated directly into 'sigma'
+    sigma <- sqrt(get_se(draws, i = i)^2 + sigma^2)
+    # make sure not to add 'se' twice
+    attr(sigma, "se_added") <- TRUE
+  } 
+  sigma
 }
 
+# helper function of 'get_dpar' to decide if
+# the link function should be applied by default
 apply_dpar_ilink <- function(dpar, family) {
-  # helper function of get_dpar to decide if
-  # the link function should be applied by default
-  # Returns:
-  #   TRUE or FALSE
-  if (is.mixfamily(family)) {
-    dpar <- dpar_class(dpar) 
-  }
-  !(is_ordinal(family) && dpar == "mu" || is_categorical(family))
+  !(has_cat(family) && dpar_class(dpar) == "mu") || is.customfamily(family)
 }
 
+# insert zeros for the predictor term of the reference category
+# in categorical-like models using the softmax response function
+insert_refcat  <- function(eta, family) {
+  stopifnot(is.matrix(eta), is.brmsfamily(family))
+  if (!conv_cats_dpars(family) || isNA(family$refcat)) {
+    return(eta)
+  }
+  # need to add zeros for the reference category
+  zeros <- as.matrix(rep(0, nrow(eta)))
+  if (is.null(family$refcat) || is.null(family$cats)) {
+    # no information on the categories provided:
+    # use the first category as the reference
+    return(cbind(zeros, eta))
+  }
+  colnames(zeros) <- paste0("mu", family$refcat)
+  iref <- match(family$refcat, family$cats)
+  before <- seq_len(iref - 1)
+  after <- setdiff(seq_cols(eta), before)
+  cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
+}
+
+# choose N to be used in 'predict' and 'log_lik'
 choose_N <- function(draws) {
-  # choose N to be used in predict and log_lik
   stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
   if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
 }
 
+# prepare for calling family specific 'log_lik' and 'predict' functions
 prepare_family <- function(x) {
-  # prepare for calling family specific log_lik / predict functions
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
   if (use_cov(x$autocor)) {
@@ -624,35 +637,48 @@ prepare_family <- function(x) {
   family
 }
 
-validate_resp <- function(resp, valid_resps, multiple = TRUE) {
-  # validate the 'resp' argument of 'predict' and related methods
+# validate the 'resp' argument of 'predict' and related methods
+# @param resp response names to be validated
+# @param x valid response names or brmsfit object to extract names from
+# @param multiple allow multiple response variables?
+# @return names of validated response variables
+validate_resp <- function(resp, x, multiple = TRUE) {
+  if (is.brmsfit(x)) {
+    x <- parse_bf(x$formula)$responses
+  }
+  x <- as.character(x)
+  if (!length(x)) {
+    # resp is unused in univariate models
+    return(NULL)
+  }
   if (length(resp)) {
-    if (!all(resp %in% valid_resps)) {
+    resp <- as.character(resp)
+    if (!all(resp %in% x)) {
       stop2("Invalid argument 'resp'. Valid response ",
-            "variables are: ", collapse_comma(valid_resps))
+            "variables are: ", collapse_comma(x))
     }
     if (!multiple) {
       resp <- as_one_character(resp)
     }
   } else {
-    resp <- valid_resps
+    resp <- x
   }
   resp
 }
 
+# split '...' into a list of model objects and other arguments
+# takes its argument names from parent.frame() 
+# @param .... objects to split into model and non-model objects
+# @param x object treated in the same way as '...'. Adding it is
+#   necessary for substitute() to catch the name of the first 
+#   argument passed to S3 methods.
+# @param model_names optional names of the model objects  
+# @param other: allow non-model arguments in '...'?
+# @return
+#   A list of arguments. All brmsfit objects are stored 
+#   as a list in element 'models' unless 'other' is FALSE.
+#   In the latter case just returns a list of models
 split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
-  # split '...' into a list of model objects and other arguments
-  # takes its argument names from parent.frame() 
-  # Args:
-  #   ....: objects to split into model and non-model objects
-  #   x: object treated in the same way as '...'. Adding it is
-  #      necessary for substitute() to catch the name of the first 
-  #      argument passed to S3 methods.
-  #   model_names: optional names of the model objects  
-  #   other: allow non-model arguments in '...'?
-  # Returns
-  #   A list of arguments. All brmsfit objects are stored 
-  #   as a list in element 'models' unless 'other' is FALSE.
   other <- as_one_logical(other)
   dots <- list(x, ...)
   names <- substitute(list(x, ...), env = parent.frame())[-1]
@@ -684,13 +710,13 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
   out
 }
 
+# validate weights passed to model averaging functions
+# see pp_average.brmsfit for more documentation
 validate_weights <- function(weights, models, control = list()) {
-  # validate weights passed to model averaging functions
-  # Args: see pp_average.brmsfit
   if (!is.numeric(weights)) {
     weight_args <- c(unname(models), control)
     weight_args$weights <- weights
-    weights <- do.call(model_weights, weight_args)
+    weights <- do_call(model_weights, weight_args)
   } else {
     if (length(weights) != length(models)) {
       stop2("If numeric, 'weights' must have the same length ",
@@ -703,15 +729,13 @@ validate_weights <- function(weights, models, control = list()) {
   weights / sum(weights)
 }
 
+# reorder observations to be in the initial user-defined order
+# currently only relevant for autocorrelation models 
+# @param eta 'nsamples' x 'nobs' matrix
+# @param old_order optional vector to retrieve the initial data order
+# @param sort keep the new order as defined by the time-series?
+# @return the 'eta' matrix with possibly reordered columns
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
-  # reorder observations to be in the initial user-defined order
-  # currently only relevant for autocorrelation models 
-  # Args:
-  #   eta: Nsamples x Nobs matrix
-  #   old_order: optional vector to retrieve the initial data order
-  #   sort: keep the new order as defined by the time-series?
-  # Returns:
-  #   eta with possibly reordered columns
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
   if (!is.null(old_order) && !sort) {
     if (isTRUE(length(old_order) == ncol(eta))) {
@@ -727,30 +751,43 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   eta
 }
 
-fixef_pars <- function() {
-  # regex to extract population-level coefficients
-  "^b(|cs|sp|mo|me|mi|m)_"
+# transform posterior draws of ordinal probabilities to a 
+# continuous scale assuming equidistance between adjacent categories 
+# @param x an ndraws x nobs x ncat array of posterior draws
+# @return an ndraws x nobs matrix of posterior draws
+ordinal_probs_continuous <- function(x) {
+  stopifnot(length(dim(x)) == 3)
+  for (k in seq_dim(x, 3)) {
+    x[, , k] <- x[, , k] * k
+  }
+  x <- lapply(seq_dim(x, 2), function(s) rowSums(x[, s, ]))
+  do_call(cbind, x)
 }
 
-default_plot_pars <- function() {
-  # list all parameter classes to be included in plots by default
+# regex to extract population-level coefficients
+fixef_pars <- function() {
+  types <- c("", "s", "cs", "sp", "mo", "me", "mi", "m")
+  types <- paste0("(", types, ")", collapse = "|")
+  paste0("^b(", types, ")_")
+}
+
+# list all parameter classes to be included in plots by default
+default_plot_pars <- function(family) {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", dpars(), "[[:digit:]]*$"), "^delta$",
+    paste0("^", valid_dpars(family), "$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
     "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }
 
+# extract all valid parameter names that match pars
+# @param pars A character vector or regular expression
+# @param all_pars all parameter names of the fitted model
+# @param exact_match should parnames be matched exactly?
+# @param na_value: what should be returned if pars is NA? 
+# @param ... Further arguments to be passed to grepl
+# @return A character vector of parameter names
 extract_pars <- function(pars, all_pars, exact_match = FALSE,
                          na_value = all_pars, ...) {
-  # extract all valid parameter names that match pars
-  # Args:
-  #   pars: A character vector or regular expression
-  #   all_pars: all parameter names of the fitted model
-  #   exact_match: should parnames be matched exactly?
-  #   na_value: what should be returned if pars is NA? 
-  #   ...: Further arguments to be passed to grepl
-  # Returns:
-  #   A character vector of parameter names
   if (!(anyNA(pars) || is.character(pars))) {
     stop2("Argument 'pars' must be NA or a character vector.")
   }
@@ -770,21 +807,20 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   out
 }
 
+# add dummy samples to a brmsfit object for use in unit tests
+# @param x a brmsfit object
+# @param newpar name of the new parameter to add
+# @param dim dimension of the new parameter
+# @param dist name of the distribution from which to sample
+# @param ... further arguments passed to r<dist>
+# @return a brmsfit object including dummy samples of the new parameter
 add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
-  # add some random samples to a brmsfit object 
-  # currently only used within tests
-  # Args:
-  #   x: a brmsfit object
-  #   newpar: name of the new parameter to add; 
-  #           a single character vector
-  #   dim: dimension of the new parameter
-  # Returns:
-  #   a brmsfit object with samples of a new parameter
   stopifnot(is.brmsfit(x))
   stopifnot(identical(dim, numeric(0)))
+  newpar <- as_one_character(newpar)
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      do.call(paste0("r", dist), list(x$fit@sim$iter, ...))
+      do_call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

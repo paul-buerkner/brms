@@ -6,7 +6,7 @@
 \title{Extract Group-Level Estimates}
 \usage{
 \method{ranef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  probs = c(0.025, 0.975), pars = NULL, groups = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -23,6 +23,12 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{pars}{Optional names of coefficients to extract.
+By default, all coefficients are extracted.}
+
+\item{groups}{Optional names of grouping variables
+for which to extract effects.}
 
 \item{...}{Currently ignored.}
 }
@@ -41,7 +47,7 @@ from a \code{brmsfit} object.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
            data = epilepsy, family = gaussian(), chains = 2)
 ranef(fit)
 }

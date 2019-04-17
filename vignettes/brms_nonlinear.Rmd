@@ -5,15 +5,13 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Estimating Non-Linear Models with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Fit Non-Linear Models with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -31,7 +29,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 ```
 
 ## Introduction
@@ -115,8 +113,7 @@ $$\mu_{AY, dev} = ult_{AY} \left(1 - \exp\left(- \left( \frac{dev}{\theta} \righ
 The cumulative insurance payments $cum$ will grow over time, and we model this dependency using the variable $dev$. Further, $ult_{AY}$ is the (to be estimated) ultimate loss of accident each year. It constitutes a non-linear parameter in our framework along with the parameters $\theta$ and $\omega$, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data
 
 ```{r}
-url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"
-loss <- read.csv(url)
+loss <- read.csv("https://paul-buerkner.github.io/data/loss.csv")
 head(loss)
 ```
 

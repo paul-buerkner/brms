@@ -3,7 +3,6 @@
 \name{stancode.brmsfit}
 \alias{stancode.brmsfit}
 \alias{stancode}
-\alias{stancode.brmsfit}
 \title{Extract Stan model code}
 \usage{
 \method{stancode}{brmsfit}(object, version = TRUE, ...)

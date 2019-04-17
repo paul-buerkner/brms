@@ -8,9 +8,9 @@
 \method{loo_model_weights}{brmsfit}(x, ..., model_names = NULL)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 

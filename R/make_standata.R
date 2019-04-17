@@ -18,8 +18,7 @@
 #'                        data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- make_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'                        + (1|patient) + (1|visit), 
+#' data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
 #'                        data = epilepsy, family = "poisson")
 #' names(data2)
 #'          
@@ -61,34 +60,33 @@ make_standata <- function(formula, data, family = gaussian(),
     drop.unused.levels = !new, knots = knots,
     terms_attr = control$terms_attr
   )
-  if (has_arma(autocor) || is.cor_bsts(autocor)) {
+  if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
     # order data in case of autocorrelation models
     data <- order_data(data, bterms = bterms)
   }
   
-  out <- c(
-    list(N = nrow(data)), 
-    data_response(
-      bterms, data, check_response = check_response,
-      not4stan = not4stan, new = new, 
-      old_sdata = control$old_sdata
-    )
+  out <- data_response(
+    bterms, data, check_response = check_response,
+    not4stan = not4stan, new = new, 
+    old_sdata = control$old_sdata
   )
   if (!only_response) {
     ranef <- tidy_ranef(
       bterms, data, old_levels = control$old_levels,
       old_sdata = control$old_sdata  
     )
-    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
-    args_eff <- nlist(
-      x = bterms, data, prior, ranef, meef, cov_ranef, 
-      knots, not4stan, old_sdata = control$old_sdata
+    c(out) <- data_predictor(
+      bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
+      not4stan = not4stan, old_sdata = control$old_sdata
     )
-    out <- c(out, do.call(data_effects, args_eff))
+    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef)
+    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
+    c(out) <- data_Xme(meef, data = data)
   }
   out$prior_only <- as.integer(identical(sample_prior, "only"))
   stanvars <- validate_stanvars(stanvars)
   if (is.stanvars(stanvars)) {
+    stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))
     if (length(inv_names)) {
       stop2("Cannot overwrite existing variables: ", 

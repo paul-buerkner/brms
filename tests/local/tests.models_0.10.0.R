@@ -1,10 +1,10 @@
 rerun <- FALSE
 if (rerun) {
   packageurl <- "http://cran.r-project.org/src/contrib/Archive/brms/brms_0.10.0.tar.gz"
-  install.packages(packageurl, repos=NULL, type="source")
+  install.packages(packageurl, repos = NULL, type = "source")
 }
 
-source("tests/local/setup.R")
+source("setup.R")
 
 if (rerun) {
   # old MV linear model
@@ -16,12 +16,12 @@ if (rerun) {
   id <- sample(1:10, N, replace = TRUE)
   tim <- sample(1:100, N)
   data <- data.frame(y1 = y1, y2 = y2, y3 = y3, month = month, id = id, tim = tim)
-  fit_old_mv<- brm(cbind(y1,y2,y3) ~ -1 + trait*poly(month,3) + (-1+trait|id), 
-                   data = data, family = student(), 
-                   autocor = cor_ar(~tim|id:trait), 
-                   prior = c(set_prior("normal(0,5)"), 
-                             set_prior("lkj(2)", class = "rescor")),
-                   sample_prior = TRUE, chains = 2)
+  fit_old_mv <- brm(cbind(y1,y2,y3) ~ -1 + trait*poly(month,3) + (-1+trait|id), 
+                    data = data, family = student(), 
+                    autocor = cor_ar(~tim|id:trait), 
+                    prior = c(set_prior("normal(0,5)"), 
+                              set_prior("lkj(2)", class = "rescor")),
+                    sample_prior = TRUE, chains = 2)
   # old ZI / HU model
   fit_old_hu <- brm(count ~ 0 + main + spec + 
                       (main + spec):(log_Age_c + log_Base4_c * Trt_c) +

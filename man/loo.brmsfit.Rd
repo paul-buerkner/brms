@@ -5,24 +5,24 @@
 \alias{loo}
 \alias{LOO}
 \alias{LOO.brmsfit}
-\title{Compute the LOO information criterion}
+\title{Efficient approximate leave-one-out cross-validation (LOO)}
 \usage{
 \method{loo}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
   pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-  model_names = NULL)
+  reloo_args = list(), model_names = NULL)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
-via \code{\link{compare_ic}}.}
+via \code{\link{loo_compare}}.}
 
-\item{resp}{Optional names of response variables.
-If specified, fitted values of these response variables are returned.}
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
 
 \item{pointwise}{A flag indicating whether to compute the full
 log-likelihood matrix at once or separately for each observation. 
@@ -38,13 +38,16 @@ estimates are treated as problematic. Defaults to \code{0.7}.
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.}
 
+\item{reloo_args}{Optional \code{list} of additional arguments passed to
+\code{\link{reloo}}.}
+
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 
 values as model names.}
 }
 \value{
-If just one object is provided, an object of class \code{ic}. 
- If multiple objects are provided, an object of class \code{iclist}.
+If just one object is provided, an object of class \code{loo}. 
+ If multiple objects are provided, an object of class \code{loolist}.
 }
 \description{
 Perform approximate leave-one-out cross-validation based 
@@ -52,24 +55,25 @@ on the posterior likelihood using the \pkg{loo} package.
 For more details see \code{\link[loo:loo]{loo}}.
 }
 \details{
-When comparing models fitted to the same data, 
- the smaller the LOO, the better the fit. For \code{brmsfit} 
- objects, \code{LOO} is an alias of \code{loo}.
- Use method \code{\link{add_ic}} to store
+See \code{\link{loo_compare}} for details on model comparisons.
+ For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
+ Use method \code{\link{add_criterion}} to store
  information criteria in the fitted model object for later usage.
 }
 \examples{
 \dontrun{
 # model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
-            data = inhaler, family = "gaussian")
-loo(fit1)
+            data = inhaler)
+(loo1 <- loo(fit1))
 
 # model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-            data = inhaler, family = "gaussian")
+            data = inhaler)
+(loo2 <- loo(fit2))   
+
 # compare both models
-loo(fit1, fit2)                          
+loo_compare(loo1, loo2)                      
 }
 
 }

@@ -5,17 +5,17 @@
 \alias{pp_average}
 \title{Posterior predictive samples averaged across models}
 \usage{
-\method{pp_average}{brmsfit}(x, ..., weights = "loo2", method = c("predict",
-  "fitted", "residuals"), nsamples = NULL, summary = TRUE,
-  probs = c(0.025, 0.975), robust = FALSE, model_names = NULL,
-  control = list(), seed = NULL)
+\method{pp_average}{brmsfit}(x, ..., weights = "loo2",
+  method = c("predict", "fitted", "residuals"), nsamples = NULL,
+  summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
+  model_names = NULL, control = list(), seed = NULL)
 
 pp_average(x, ...)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{weights}{Name of the criterion to compute weights from. 

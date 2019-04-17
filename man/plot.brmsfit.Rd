@@ -4,9 +4,9 @@
 \alias{plot.brmsfit}
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
-\method{plot}{brmsfit}(x, pars = NA, combo = c("dens", "trace"), N = 5,
-  exact_match = FALSE, theme = NULL, plot = TRUE, ask = TRUE,
-  newpage = TRUE, ...)
+\method{plot}{brmsfit}(x, pars = NA, combo = c("dens", "trace"),
+  N = 5, exact_match = FALSE, theme = NULL, plot = TRUE,
+  ask = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -56,7 +56,7 @@ Trace and Density Plots for MCMC Samples
 }
 \examples{
 \dontrun{ 
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+fit <- brm(count ~ zAge + zBase * Trt 
            + (1|patient) + (1|visit), 
            data = epilepsy, family = "poisson")
 plot(fit)

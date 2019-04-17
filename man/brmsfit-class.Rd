@@ -41,10 +41,13 @@ the autocorrelation structure if specified}
 \item{\code{stan_funs}}{A character string of length one or \code{NULL}}
 
 \item{\code{loo}}{An empty slot for adding the \code{\link{loo}} 
-information criterion after model fitting}
+criterion after model fitting}
 
 \item{\code{waic}}{An empty slot for adding the \code{\link{waic}} 
-information criterion after model fitting}
+criterion after model fitting}
+
+\item{\code{kfold}}{An empty slot for adding the \code{\link{kfold}} 
+criterion after model fitting}
 
 \item{\code{R2}}{An empty slot for adding the \code{\link{bayes_R2}}
 (Bayesian R-squared) value after model fitting}
@@ -62,6 +65,9 @@ among others containing the posterior samples}
 
 \item{\code{version}}{The versions of \pkg{brms} and \pkg{rstan} with 
 which the model was fitted}
+
+\item{\code{file}}{Optional name of a file in which the model object was stored in
+or loaded from}
 }}
 
 \seealso{

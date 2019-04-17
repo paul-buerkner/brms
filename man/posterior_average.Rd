@@ -5,16 +5,16 @@
 \alias{posterior_average}
 \title{Posterior samples of parameters averaged across models}
 \usage{
-\method{posterior_average}{brmsfit}(x, ..., pars = NULL, weights = "loo2",
-  nsamples = NULL, missing = NULL, model_names = NULL, control = list(),
-  seed = NULL)
+\method{posterior_average}{brmsfit}(x, ..., pars = NULL,
+  weights = "loo2", nsamples = NULL, missing = NULL,
+  model_names = NULL, control = list(), seed = NULL)
 
 posterior_average(x, ...)
 }
 \arguments{
-\item{x}{A fitted model object.}
+\item{x}{A \code{brmsfit} object.}
 
-\item{...}{More fitted model objects or further arguments
+\item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.}
 
 \item{pars}{Names of parameters for which to average across models.

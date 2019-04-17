@@ -19,3 +19,5 @@ PackageBuildArgs: --no-build-vignettes
 PackageBuildBinaryArgs: --preclean
 PackageCheckArgs: --as-cran --ignore-vignettes
 PackageRoxygenize: rd,namespace
+
+QuitChildProcessesOnExit: Yes

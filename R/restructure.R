@@ -76,11 +76,35 @@ restructure_v2 <- function(x) {
     # added 'dist' argument to grouping terms
     x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
+  if (version <= "2.3.6") {
+    check_old_nl_dpars(bterms)
+  }
+  if (version <= "2.8.2") {
+    # argument 'sparse' is now specified within 'formula'
+    sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
+    x$formula <- SW(validate_formula(
+      formula(x), data = model.frame(x), sparse = sparse
+    ))
+  }
+  if (version <= "2.8.3") {
+    x <- rescale_old_mo(x)
+  }
+  if (version <= "2.8.4") {
+    if (any(grepl("^arr(\\[|_|$)", parnames(x)))) {
+      warning2("ARR correlations are no longer supported.")
+    }
+  }
+  if (version <= "2.8.5") {
+    # internal handling of special effects terms has changed
+    # this requires updating the 'terms' attribute of the data
+    x$data <- rm_attr(x$data, c("brmsframe", "terms"))
+    x$data <- update_data(x$data, bterms) 
+  }
   x
 }
 
+# restructure models fitted with brms 1.x
 restructure_v1 <- function(x) {
-  # restructure models fitted with brms 1.x
   version <- x$version$brms
   if (version < "1.0.0") {
     warning2(
@@ -153,8 +177,8 @@ restructure_v1 <- function(x) {
   x
 }
 
+# convert old model formulas to brmsformula objects
 restructure_formula <- function(formula, nonlinear = NULL) {
-  # convert old model formulas to brmsformula objects
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
@@ -172,21 +196,26 @@ restructure_formula <- function(formula, nonlinear = NULL) {
     nl <- TRUE
   }
   out <- structure(nlist(formula), class = "brmsformula")
-  old_forms <- rmNULL(attributes(formula)[dpars()])
+  old_forms <- rmNULL(attributes(formula)[old_dpars()])
   old_forms <- c(old_forms, nonlinear)
   out$pforms[names(old_forms)] <- old_forms
   bf(out, nl = nl)
 }
 
+# parameters to be restructured in old brmsformula objects
+old_dpars <- function() {
+  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
+    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
+    "quantile", "alpha", "theta")
+}
+
+# interchanges group and nlpar in names of group-level parameters
+# required for brms <= 0.10.0.9000
+# @param ranef output of tidy_ranef
+# @param pars names of all parameters in the model
+# @param dims dimension of parameters
+# @return a list whose elements can be interpreted by do_renaming
 change_old_re <- function(ranef, pars, dims) {
-  # interchanges group and nlpar in names of group-level parameters
-  # for brms <= 0.10.0.9000 only
-  # Args:
-  #   ranef: output of tidy_ranef
-  #   pars: names of all parameters in the model
-  #   dims: dimension of parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -229,16 +258,14 @@ change_old_re <- function(ranef, pars, dims) {
   out
 }
 
+# add double underscore in group-level parameters
+# required for brms < 1.0.0
+# @note assumes that group and nlpar are correctly ordered already
+# @param ranef output of tidy_ranef
+# @param pars names of all parameters in the model
+# @param dims dimension of parameters
+# @return a list whose elements can be interpreted by do_renaming
 change_old_re2 <- function(ranef, pars, dims) {
-  # add double underscore in group-level parameters
-  # for brms < 1.0.0 only
-  # assumes that group and nlpar are correctly ordered already
-  # Args:
-  #   ranef: output of tidy_ranef
-  #   pars: names of all parameters in the model
-  #   dims: dimension of parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   for (id in unique(ranef$id)) {
     r <- subset2(ranef, id = id)
@@ -279,9 +306,9 @@ change_old_re2 <- function(ranef, pars, dims) {
   out
 }
 
+# change names of spline parameters fitted with brms <= 1.0.1
+# this became necessary after allowing smooths with multiple covariates
 change_old_sm <- function(bterms, data, pars, dims) {
-  # change names of spline parameters fitted with brms <= 1.0.1
-  # this became necessary after allowing smooths with multiple covariates
   .change_old_sm <- function(bt) {
     out <- list()
     smef <- tidy_smef(bt, data)
@@ -328,13 +355,13 @@ change_old_sm <- function(bterms, data, pars, dims) {
   out
 }
 
+# change names of monotonic effects fitted with brms <= 1.9.0
+# this became necessary after implementing monotonic interactions
 change_old_mo <- function(bterms, data, pars) {
-  # change names of monotonic effects fitted with brms <= 1.9.0
-  # this became necessary after implementing monotonic interactions
   .change_old_mo <- function(bt) {
     out <- list()
     spef <- tidy_spef(bt, data)
-    has_mo <- lengths(spef$call_mo) > 0
+    has_mo <- lengths(spef$calls_mo) > 0
     if (!any(has_mo)) {
       return(out)
     }
@@ -388,9 +415,9 @@ change_old_mo <- function(bterms, data, pars) {
   out
 }
 
+# between version 1.0 and 2.0 categorical models used
+# the internal multivariate interface
 change_old_categorical <- function(bterms, data, pars) {
-  # between version 1.0 and 2.0 categorical models used
-  # the internal multivariate interface
   stopifnot(is.brmsterms(bterms))
   if (!is_categorical(bterms$family)) {
     return(list())
@@ -414,17 +441,16 @@ change_old_categorical <- function(bterms, data, pars) {
   list(nlist(pos, fnames = new_pars[pos]))
 }
 
+# as of brms 2.2 'mo' and 'me' terms are handled together
 change_old_bsp <- function(pars) {
-  # as of brms 2.2 'mo' and 'me' terms are handled together
   pos <- grepl("^(bmo|bme)_", pars)
   if (!any(pos)) return(list()) 
   fnames <- gsub("^(bmo|bme)_", "bsp_", pars[pos])
   list(nlist(pos, fnames))
 }
 
+# prepare for renaming of parameters in old models
 change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
-  # helper function for very simple renaming
-  # only used in renaming of old models
   pos <- grepl(paste0("^", oldname), pars)
   if (any(pos)) {
     out <- nlist(pos, oldname, pnames, fnames, dims = dims[[oldname]])
@@ -435,10 +461,98 @@ change_simple <- function(oldname, fnames, pars, dims, pnames = fnames) {
   out
 }
 
+# rescale old 'b' coefficients of monotonic effects 
+# to represent average instead of total differences
+rescale_old_mo <- function(x, ...) {
+  UseMethod("rescale_old_mo")
+}
+
+#' @export
+rescale_old_mo.brmsfit <- function(x, ...) {
+  bterms <- parse_bf(x$formula)
+  rescale_old_mo(bterms, fit = x, ...)
+}
+
+#' @export
+rescale_old_mo.mvbrmsterms <- function(x, fit, ...) {
+  for (resp in x$responses) {
+    fit <- rescale_old_mo(x$terms[[resp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+rescale_old_mo.brmsterms <- function(x, fit, ...) {
+  for (dp in names(x$dpars)) {
+    fit <- rescale_old_mo(x$dpars[[dp]], fit = fit, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    fit <- rescale_old_mo(x$nlpars[[nlp]], fit = fit, ...)
+  }
+  fit
+}
+
+#' @export
+rescale_old_mo.btnl <- function(x, fit, ...) {
+  fit
+}
+
+#' @export
+rescale_old_mo.btl <- function(x, fit, ...) {
+  spef <- tidy_spef(x, fit$data)
+  has_mo <- lengths(spef$Imo) > 0L
+  if (!any(has_mo)) {
+    return(fit)
+  }
+  warning2(
+    "The parameterization of monotonic effects has changed in brms 2.8.4 ",
+    "so that corresponding 'b' coefficients now represent average instead ",
+    "of total differences between categories. See vignette('brms_monotonic') ", 
+    "for more details. Parameters of old models are adjusted automatically."
+  )
+  p <- combine_prefix(x)
+  all_pars <- parnames(fit)
+  chains <- fit$fit@sim$chains
+  for (i in which(has_mo)) {
+    bsp_par <- paste0("bsp", p, "_", spef$coef[i])
+    simo_regex <- paste0(spef$coef[i], seq_along(spef$Imo[[i]]))
+    simo_regex <- paste0("simo", p, "_", simo_regex, "[")
+    simo_regex <- paste0("^", escape_all(simo_regex))
+    # scaling factor by which to divide the old 'b' coefficients
+    D <- prod(ulapply(simo_regex, function(r) sum(grepl(r, all_pars))))
+    for (j in seq_len(chains)) {
+      fit$fit@sim$samples[[j]][[bsp_par]] <- 
+        fit$fit@sim$samples[[j]][[bsp_par]] / D
+    }
+  }
+  fit
+}
+
 stop_parameterization_changed <- function(family, version) {
   stop2(
     "The parameterization of '", family, "' models has changed in brms ",
     version, " to be consistent with other model classes. ", 
     "Please refit your model with the current version of brms."
   )
+}
+
+check_old_nl_dpars <- function(bterms) {
+  .check_nl_dpars <- function(x) {
+    stopifnot(is.brmsterms(x))
+    non_mu_dpars <- x$dpars[names(x$dpars) != "mu"]
+    if (any(ulapply(non_mu_dpars, is.btnl))) {
+      stop2(
+        "Non-linear parameters are global within univariate models ",
+        "as of version 2.3.7. Please refit your model with the ",
+        "latest version of brms."
+      )
+    }
+    return(TRUE)
+  }
+  if (is.mvbrmsterms(bterms)) {
+    lapply(bterms$terms, .check_nl_dpars)
+  } else {
+    .check_nl_dpars(bterms)
+  }
+  TRUE
 }

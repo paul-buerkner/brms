@@ -4,16 +4,18 @@
 \alias{vcov.brmsfit}
 \title{Covariance and Correlation Matrix of Population-Level Effects}
 \usage{
-\method{vcov}{brmsfit}(object, correlation = FALSE, ...)
+\method{vcov}{brmsfit}(object, correlation = FALSE, pars = NULL, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
-\item{correlation}{logical; if \code{FALSE} (the default), 
-compute the covariance matrix,
-if \code{TRUE}, compute the correlation matrix}
+\item{correlation}{Logical; if \code{FALSE} (the default), compute 
+the covariance matrix, if \code{TRUE}, compute the correlation matrix.}
 
-\item{...}{Currently ignored}
+\item{pars}{Optional names of coefficients to extract.
+By default, all coefficients are extracted.}
+
+\item{...}{Currently ignored.}
 }
 \value{
 covariance or correlation matrix of population-level parameters
@@ -28,7 +30,7 @@ Estimates are obtained by calculating the maximum likelihood
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
            data = epilepsy, family = gaussian(), chains = 2)
 vcov(fit)
 }

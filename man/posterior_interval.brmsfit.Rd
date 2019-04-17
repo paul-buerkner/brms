@@ -5,7 +5,8 @@
 \alias{posterior_interval}
 \title{Compute posterior uncertainty intervals}
 \usage{
-\method{posterior_interval}{brmsfit}(object, pars = NA, prob = 0.95, ...)
+\method{posterior_interval}{brmsfit}(object, pars = NA, prob = 0.95,
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -29,7 +30,7 @@ Compute posterior uncertainty intervals for \code{brmsfit} objects.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c,
+fit <- brm(count ~ zAge + zBase * Trt,
            data = epilepsy, family = negbinomial())
 posterior_interval(fit)
 }

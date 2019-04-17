@@ -3,7 +3,6 @@
 \name{standata.brmsfit}
 \alias{standata.brmsfit}
 \alias{standata}
-\alias{standata.brmsfit}
 \title{Extract Data passed to Stan}
 \usage{
 \method{standata}{brmsfit}(object, newdata = NULL, re_formula = NULL,
@@ -15,25 +14,23 @@ standata(object, ...)
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{newdata}{An optional data.frame for which to evaluate predictions.
-If \code{NULL} (default), the original data of the model is used.}
+\item{newdata}{An optional data.frame for which to evaluate predictions. If
+\code{NULL} (default), the original data of the model is used.}
 
-\item{re_formula}{formula containing group-level effects 
-to be considered in the prediction. 
-If \code{NULL} (default), include all group-level effects; 
+\item{re_formula}{formula containing group-level effects to be considered in
+the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation
-parameters should be included in the predictions. Defaults to 
-\code{TRUE}. Setting it to \code{FALSE} will not affect other 
-correlation structures such as \code{\link[brms:cor_bsts]{cor_bsts}},
-or \code{\link[brms:cor_fixed]{cor_fixed}}.}
-
-\item{new_objects}{A named \code{list} of objects containing 
-new data, which cannot be passed via argument \code{newdata}.
-Currently, only required for objects passed to 
-\code{\link[brms:cor_sar]{cor_sar}} and 
+\item{incl_autocor}{A flag indicating if ARMA autocorrelation parameters
+should be included in the predictions. Defaults to \code{TRUE}. Setting it
+to \code{FALSE} will not affect other correlation structures such as
+\code{\link[brms:cor_bsts]{cor_bsts}}, or
 \code{\link[brms:cor_fixed]{cor_fixed}}.}
+
+\item{new_objects}{A named \code{list} of objects containing new data, which
+cannot be passed via argument \code{newdata}. Required for objects passed
+via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
+\code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.}
 
 \item{internal}{Logical, indicates if the data should be prepared 
 for internal use in other post-processing methods.}

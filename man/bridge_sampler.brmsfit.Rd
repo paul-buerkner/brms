@@ -26,15 +26,24 @@ Computing the marginal likelihood requires samples
   to be saved. Otherwise \code{bridge_sampler} cannot be computed.
   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
   if you are planning to apply \code{bridge_sampler} to your models.
+  
+  The computation of marginal likelihoods based on bridge sampling requires
+  a lot more posterior samples than usual. A good conservative 
+  rule of thump is perhaps 10-fold more samples (read: the default of 4000 
+  samples may not be enough in many cases). If not enough posterior
+  samples are provided, the bridge sampling algorithm tends to be 
+  unstable leading to considerably different results each time it is run. 
+  We thus recommend running \code{bridge_sampler}
+  multiple times to check the stability of the results.
 
   More details are provided under
-  \code{\link[bridgesampling:bridge_sampler]{bridge_sampler}}.
+  \code{\link[bridgesampling:bridge_sampler]{bridgesampling:bridge_sampler}}.
 }
 \examples{
 \dontrun{
 # model with the treatment effect
 fit1 <- brm(
-  count ~ log_Age_c + log_Base4_c + Trt_c,
+  count ~ zAge + zBase + Trt,
   data = epilepsy, family = negbinomial(), 
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE
@@ -44,7 +53,7 @@ bridge_sampler(fit1)
 
 # model without the treatment effect
 fit2 <- brm(
-  count ~ log_Age_c + log_Base4_c,
+  count ~ zAge + zBase,
   data = epilepsy, family = negbinomial(), 
   prior = prior(normal(0, 1), class = b),
   save_all_pars = TRUE

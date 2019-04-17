@@ -5,15 +5,14 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Handle Missing Values with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}  
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Handle missing values with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -31,7 +30,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 ```
 
 ## Introduction
@@ -83,7 +82,11 @@ The convergence of each of the submodels looks good. Accordingly, we can proceed
 marginal_effects(fit_imp1, "age:chl")
 ```
 
-To summarize, the advantages of multiple imputation are obvious: One can apply it to all kinds of models, since model fitting functions do not need to know that the data sets were imputed, beforehand. Also, we do not need to worry about pooling across submodels when using fully Bayesian methods. The only drawback is the amount of time required for model fitting. Estimating Bayesian models is already quite slow with just a single data set and it only gets worse when working with multiple imputation.  
+To summarize, the advantages of multiple imputation are obvious: One can apply it to all kinds of models, since model fitting functions do not need to know that the data sets were imputed, beforehand. Also, we do not need to worry about pooling across submodels when using fully Bayesian methods. The only drawback is the amount of time required for model fitting. Estimating Bayesian models is already quite slow with just a single data set and it only gets worse when working with multiple imputation. 
+
+### Compatibility with other multiple imputation packages
+
+**brms** offers built-in support for **mice** mainly because I use the latter in some of my own research projects. Nevertheless, `brm_multiple` supports all kinds of multiple imputation packages as it also accepts a *list* of data frames as input for its `data` argument. Thus, you just need to extract the imputed data frames in the form of a list, which can then be passed to `brm_multiple`. Most multiple imputation packages have some built-in functionality for this task. When using the **mi** package, for instance, you simply need to call the `mi::complete` function to get the desired output.
 
 ## Imputation during model fitting
 

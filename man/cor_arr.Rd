@@ -2,44 +2,24 @@
 % Please edit documentation in R/correlations.R
 \name{cor_arr}
 \alias{cor_arr}
-\title{ARR(r) correlation structure}
+\title{(Defunct) ARR correlation structure}
 \usage{
 cor_arr(formula = ~1, r = 1)
 }
 \arguments{
-\item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
-A covariate for this correlation structure must be integer valued. 
-When a grouping factor is present in \code{formula}, the correlation structure 
-is assumed to apply only to observations within the same grouping level; 
-observations with different grouping levels are assumed to be uncorrelated. 
-Defaults to \code{~ 1}, which corresponds to using the order of the observations 
-in the data as a covariate, and no groups.}
+\item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g},
+specifying a time covariate \code{t} and, optionally, a grouping factor
+\code{g}. A covariate for this correlation structure must be integer
+valued. When a grouping factor is present in \code{formula}, the
+correlation structure is assumed to apply only to observations within the
+same grouping level; observations with different grouping levels are
+assumed to be uncorrelated. Defaults to \code{~ 1}, which corresponds to
+using the order of the observations in the data as a covariate, and no
+groups.}
 
-\item{r}{A non-negative integer specifying the autoregressive
-response (ARR) order of the ARMA structure. Default is 1.}
-}
-\value{
-An object of class \code{cor_arma} containing solely
-  autoregressive response terms.
+\item{r}{No longer supported.}
 }
 \description{
-This function is a constructor for the \code{cor_arma} class 
-allowing for autoregressive effects of the response only.
+The ARR correlation structure is no longer supported.
 }
-\details{
-AR refers to autoregressive effects of residuals, which
-  is what is typically understood as autoregressive effects.
-  However, one may also model autoregressive effects of the response
-  variable, which is called ARR in \pkg{brms}.
-}
-\examples{
-cor_arr(~visit|patient, r = 2)
-
-}
-\seealso{
-\code{\link{cor_arma}}
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}
+\keyword{internal}

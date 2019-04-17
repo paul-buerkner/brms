@@ -1,27 +1,29 @@
+# unless otherwise specified, functions return a single character 
+# string defining the likelihood of the model in Stan language
+
+# Define priors for parameters in Stan language
+# @param prior an object of class 'brmsprior'
+# @param class the parameter class
+# @param coef the coefficients of this class
+# @param group the name of a grouping factor
+# @param nlpar the name of a non-linear parameter
+# @param prefix a prefix to put at the parameter class
+# @param suffix a suffix to put at the parameter class
+# @param matrix logical; corresponds the class to a parameter matrix?
+# @param wsp a non-negative integer defining the number of spaces 
+#   at the start of the output string
+# @return
+#   A character strings in stan language that defines priors 
+#   for a given class of parameters. If a parameter has has 
+#   no corresponding prior in prior, an empty string is returned.
 stan_prior <- function(prior, class, coef = "", group = "", 
                        px = list(), prefix = "", suffix = "", 
                        wsp = 2, matrix = FALSE) {
-  # Define priors for parameters in Stan language
-  # Args:
-  #   prior: an object of class 'brmsprior'
-  #   class: the parameter class
-  #   coef: the coefficients of this class
-  #   group: the name of a grouping factor
-  #   nlpar: the name of a non-linear parameter
-  #   prefix: a prefix to put at the parameter class
-  #   suffix: a suffix to put at the parameter class
-  #   matrix: logical; corresponds the class to a parameter matrix?
-  #   wsp: an integer >= 0 defining the number of spaces 
-  #        in front of the output string
-  # Returns:
-  #   A character strings in stan language that defines priors 
-  #   for a given class of parameters. If a parameter has has 
-  #   no corresponding prior in prior, an empty string is returned.
   tp <- tp(wsp)
   wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
   prior <- subset2(prior, 
-                   class = class, coef = c(coef, ""), group = c(group, "")
+    class = class, coef = c(coef, ""), group = c(group, "")
   )
   if (class %in% c("sd", "cor")) {
     # only sd and cor parameters have global priors
@@ -32,7 +34,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   }
   if (!nchar(class) && nrow(prior)) {
     # unchecked prior statements are directly passed to Stan
-    return(collapse(wsp, prior$prior, "; \n"))
+    return(collapse(wsp, prior$prior, ";\n"))
   } 
   
   px <- as.data.frame(px)
@@ -40,7 +42,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   if (nrow(upx) > 1L) {
     # can only happen for SD parameters of the same ID
     base_prior <- rep(NA, nrow(upx))
-    for (i in seq_len(nrow(upx))) {
+    for (i in seq_rows(upx)) {
       sub_upx <- lapply(upx[i, ], function(x) c(x, ""))
       sub_prior <- subset2(prior, ls = sub_upx) 
       base_prior[i] <- stan_base_prior(sub_prior)
@@ -61,10 +63,9 @@ stan_prior <- function(prior, class, coef = "", group = "",
   
   individual_prior <- function(i, prior, max_index) {
     # individual priors for each parameter of a class
+    index <- ""
     if (max_index > 1L || matrix) {
-      index <- paste0("[", i, "]")      
-    } else {
-      index <- ""
+      index <- glue("[{i}]")      
     }
     if (nrow(px) > 1L) {
       prior <- subset2(prior, ls = px[i, ])
@@ -81,7 +82,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
       # implies a proper prior
       pars <- paste0(class, index)
       out <- stan_target_prior(coef_prior, pars, bound = bound)
-      out <- paste0(tp, out, "; \n")
+      out <- paste0(tp, out, ";\n")
     } else {
       # implies an improper flat prior
       out <- ""
@@ -91,7 +92,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   
   # generate stan prior statements
   class <- paste0(prefix, class, suffix)
-  if (any(with(prior, nchar(coef) & nchar(prior)))) {
+  if (any(with(prior, nzchar(coef) & nzchar(prior)))) {
     # generate a prior for each coefficient
     out <- sapply(
       seq_along(coef), individual_prior, 
@@ -99,19 +100,16 @@ stan_prior <- function(prior, class, coef = "", group = "",
     )
   } else if (nchar(base_prior) > 0) {
     if (matrix) {
-      class <- paste0("to_vector(", class, ")")
+      class <- glue("to_vector({class})")
     }
     out <- stan_target_prior(
       base_prior, class, ncoef = length(coef), bound = bound
     )
-    out <- paste0(tp, out, "; \n")
+    out <- paste0(tp, out, ";\n")
   } else {
     out <- ""
   }
-  special_prior <- stan_special_prior(
-    class, prior, ncoef = length(coef), px = px
-  )
-  out <- collapse(c(out, special_prior))
+  out <- collapse(out)
   if (prior_only && nzchar(class) && !nchar(out)) {
     stop2("Sampling from priors is not possible as ", 
           "some parameters have no proper priors. ",
@@ -120,29 +118,34 @@ stan_prior <- function(prior, class, coef = "", group = "",
   out
 }
 
+# get the base prior for all coefficients
+# this is the lowest level non-coefficient prior
+# @param prior a brmsprior object
+# @return a character string defining the base prior
 stan_base_prior <- function(prior) {
-  # get base (highest level) prior of all priors
-  # Args:
-  #   prior: a prior.frame
-  stopifnot(length(unique(prior$class)) <= 1L) 
-  prior <- prior[with(prior, !nzchar(coef) & nzchar(prior)), ]
-  vars <- c("group", "nlpar", "dpar", "resp", "class")
-  i <- 1
-  found <- FALSE
-  base_prior <- ""
-  take <- rep(FALSE, nrow(prior))
-  while (!found && i <= length(vars)) {
-    take <- nzchar(prior[[vars[i]]]) & !take
-    if (any(take)) {
-      base_prior <- prior[take, "prior"]
-      found <- TRUE
-    }
-    i <- i + 1
+  stopifnot(length(unique(prior$class)) <= 1)
+  take <- with(prior, !nzchar(coef) & nzchar(prior))
+  prior <- prior[take, ]
+  if (!NROW(prior)) {
+    return("")
   }
-  stopifnot(length(base_prior) == 1L)
-  base_prior
+  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  for (v in vars) {
+    take <- nzchar(prior[[v]])
+    if (any(take)) {
+      prior <- prior[take, ]
+    }
+  }
+  stopifnot(NROW(prior) == 1)
+  prior$prior
 }
 
+# Stan prior in target += notation
+# @param prior character string defining the prior
+# @param par name of the parameter on which to set the prior
+# @param ncoef number of coefficients in the parameter
+# @param bound bounds of the parameter in Stan language
+# @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
@@ -156,11 +159,9 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   prior_name <- unlist(prior_name)
   prior_args <- rep(NA, length(prior))
   for (i in seq_along(prior)) {
-    prior_args[i] <- sub(
-      paste0("^", prior_name[i], "\\("), "", prior[i]
-    )
+    prior_args[i] <- sub(glue("^{prior_name[i]}\\("), "", prior[i])
   }
-  out <- paste0(prior_name, "_lpdf(", par, " | ", prior_args)
+  out <- glue("{prior_name}_lpdf({par} | {prior_args}")
   par_class <- unique(get_matches("^[^_]+", par))
   par_bound <- par_bounds(par_class, bound)
   prior_bound <- prior_bounds(prior_name)
@@ -169,189 +170,235 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   if (trunc_lb || trunc_ub) {
     wsp <- wsp(nsp = 4)
     if (trunc_lb && !trunc_ub) {
-      str_add(out) <- paste0(
-        "\n", wsp, "- ", ncoef, " * ", prior_name, "_lccdf(", 
-        par_bound$lb, " | ", prior_args
+      str_add(out) <- glue(
+        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb} | {prior_args}"
       )
     } else if (!trunc_lb && trunc_ub) {
-      str_add(out) <- paste0(
-        "\n", wsp, "- ", ncoef, " * ", prior_name, "_lcdf(", 
-        par_bound$ub, " | ", prior_args
+      str_add(out) <- glue(
+        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub} | {prior_args}"
       )
     } else if (trunc_lb && trunc_ub) {
-      str_add(out) <- paste0(
-        "\n", wsp, "- ", ncoef, " * log_diff_exp(", 
-        prior_name, "_lcdf(", par_bound$ub, " | ", prior_args, ", ",
-        prior_name, "_lcdf(", par_bound$lb, " | ", prior_args, ")"
+      str_add(out) <- glue(
+        "\n{wsp}- {ncoef} * log_diff_exp(", 
+        "{prior_name}_lcdf({par_bound$ub} | {prior_args}, ",
+        "{prior_name}_lcdf({par_bound$lb} | {prior_args})"
       )
     }
   }
   out
 }
 
-stan_special_prior <- function(class, prior, ncoef, px = list()) {
-  # add special priors such as horseshoe and lasso
-  out <- ""
+# Stan code for global parameters of special priors
+# currently implemented are horseshoe and lasso
+stan_special_prior_global <- function(bterms, data, prior, ...) {
+  out <- list()
+  tp <- tp()
+  px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (all(class == paste0("b", p))) {
-    stopifnot(length(p) == 1L)
-    tp <- tp()
-    # add horseshoe and lasso shrinkage priors
-    prefix <- combine_prefix(px, keep_mu = TRUE)
-    special <- attributes(prior)$special[[prefix]]
-    if (!is.null(special$hs_df)) {
-      local_args <- paste0("0.5 * hs_df", p)
-      local_args <- sargs(local_args, local_args)
-      global_args <- paste0("0.5 * hs_df_global", p)
-      global_args <- sargs(global_args, global_args)
-      c2_args <- paste0("0.5 * hs_df_slab", p)
-      c2_args <- sargs(c2_args, c2_args)
-      wsp <- wsp(nsp = 4)
-      str_add(out) <- paste0(
-        tp, "normal_lpdf(zb", p, " | 0, 1); \n",
-        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1)\n", 
-        wsp, "- ", ncoef, " * log(0.5); \n",
-        tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
-        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1)\n", 
-        wsp, "- 1 * log(0.5); \n",
-        tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
-        tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
-      )
-    }
-    if (!is.null(special$lasso_df)) {
-      str_add(out) <- paste0(
-        tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, "); \n"
-      )
-    }
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attributes(prior)$special[[prefix]]
+  if (!is.null(special[["hs_df"]])) {
+    str_add(out$data) <- glue(
+      "  real<lower=0> hs_df{p};\n",
+      "  real<lower=0> hs_df_global{p};\n",
+      "  real<lower=0> hs_df_slab{p};\n",
+      "  real<lower=0> hs_scale_global{p};\n",
+      "  real<lower=0> hs_scale_slab{p};\n"           
+    )
+    str_add(out$par) <- glue(
+      "  // horseshoe shrinkage parameters\n",
+      "  real<lower=0> hs_global{p}[2];\n",
+      "  real<lower=0> hs_c2{p};\n"
+    )
+    global_args <- glue("0.5 * hs_df_global{p}")
+    global_args <- sargs(global_args, global_args)
+    c2_args <- glue("0.5 * hs_df_slab{p}")
+    c2_args <- sargs(c2_args, c2_args)
+    str_add(out$prior) <- glue(
+      "{tp}normal_lpdf(hs_global{p}[1] | 0, 1)\n",
+      "    - 1 * log(0.5);\n",
+      "{tp}inv_gamma_lpdf(hs_global{p}[2] | {global_args});\n",
+      "{tp}inv_gamma_lpdf(hs_c2{p} | {c2_args});\n"
+    )
+  }
+  if (!is.null(special[["lasso_df"]])) {
+    str_add(out$data) <- glue(
+      "  real<lower=0> lasso_df{p};\n",
+      "  real<lower=0> lasso_scale{p};\n"
+    )
+    str_add(out$par) <- glue(
+      "  // lasso shrinkage parameter\n",
+      "  real<lower=0> lasso_inv_lambda{p};\n"
+    )
+    str_add(out$prior) <- glue(
+      "{tp}chi_square_lpdf(lasso_inv_lambda{p} | lasso_df{p});\n"
+    )
   }
   out
 }
 
+# Stan code for local parameters of special priors
+# currently implemented are horseshoe
+# @param class name of the parameter class
+# @param prior a brmsprior object
+# @param ncoef number of coefficients in the parameter
+# @param px named list to subset 'prior'
+# @param center_X is the design matrix centered?
+stan_special_prior_local <- function(class, prior, ncoef, px,
+                                     center_X = FALSE)  {
+  class <- as_one_character(class)
+  stopifnot(class %in% c("b", "bsp"))
+  out <- list()
+  p <- usc(combine_prefix(px))
+  sp <- paste0(sub("^b", "", class), p)
+  ct <- str_if(center_X, "c")
+  tp <- tp()
+  prefix <- combine_prefix(px, keep_mu = TRUE)
+  special <- attributes(prior)$special[[prefix]]
+  if (!is.null(special[["hs_df"]])) {
+    str_add(out$par) <- glue(
+      "  // local parameters for horseshoe prior\n",
+      "  vector[K{ct}{sp}] zb{sp};\n",
+      "  vector<lower=0>[K{ct}{sp}] hs_local{sp}[2];\n"
+    )
+    hs_scale_global <- glue("hs_scale_global{p}")
+    if (isTRUE(special[["hs_autoscale"]])) {
+      str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
+    }
+    hs_args <- sargs(
+      glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
+      hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
+    )
+    str_add(out$tparD) <- glue(
+      "  vector[K{ct}{sp}] b{sp} = horseshoe({hs_args});\n"
+    )
+    local_args <- glue("0.5 * hs_df{p}")
+    local_args <- sargs(local_args, local_args)
+    str_add(out$prior) <- glue(
+      "{tp}normal_lpdf(zb{sp} | 0, 1);\n",
+      "{tp}normal_lpdf(hs_local{sp}[1] | 0, 1)\n", 
+      "    - {ncoef} * log(0.5);\n",
+      "{tp}inv_gamma_lpdf(hs_local{sp}[2] | {local_args});\n"
+    )
+  }
+  out
+}
+
+# Stan code to sample separately from priors
+# @param sample_prior take samples from priors?
+# @param prior character string taken from stan_prior
+# @param par_declars the parameters block of the Stan code
+#     required to extract boundaries
+# @param gen_quantities Stan code from the generated quantities block
+# @param prior_special a list of values pertaining to special priors
+#   such as horseshoe or lasso
 stan_rngprior <- function(sample_prior, prior, par_declars,
                           gen_quantities, prior_special) {
-  # stan code to sample from priors seperately
-  # Args:
-  #   sample_prior: take samples from priors?
-  #   prior: character string taken from stan_prior
-  #   par_declars: the parameters block of the Stan code
-  #     required to extract boundaries
-  #   gen_quantities: Stan code from the generated quantities block
-  #   prior_special: a list of values pertaining to special priors
-  #     such as horseshoe or lasso
-  # Returns:
-  #   a character string containing the priors to be sampled from in stan code
-  out <- list()
   if (!sample_prior %in% "yes") {
-    return(out)
+    return(list())
   }
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
-  prior <- prior[nzchar(prior)]
+  # D will contain all relevant information about the priors
+  D <- data.frame(prior = prior[nzchar(prior)])
   pars_regex <- "(?<=_lpdf\\()[^|]+" 
-  pars <- get_matches(pars_regex, prior, perl = TRUE, first = TRUE)
-  pars <- gsub("to_vector\\(|\\)$", "", pars)
-  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs")
+  D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
+  # 'to_vector' should be removed from the parameter names
+  has_tv <- grepl("^to_vector\\(", D$par)
+  D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
+  # do not sample from some auxiliary parameters
+  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "temp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
-  take <- !grepl(excl_regex, pars)
-  prior <- prior[take]
-  pars <- pars[take]
-  pars <- sub("^L_", "cor_", pars)
-  pars <- sub("^Lrescor", "rescor", pars)
-  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
-  dis <- get_matches(dis_regex, prior, perl = TRUE, first = TRUE)
-  dis <- sub("corr_cholesky$", "corr", dis)
-  args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
-  args <- get_matches(args_regex, prior, perl = TRUE, first = TRUE)
-  args <- ifelse(grepl("^lkj_corr$", dis), paste0("2,", args), args)
-  type <- rep("real", length(pars))
+  D <- D[!grepl(excl_regex, D$par), ]
+  if (!NROW(D)) return(list())
   
   # rename parameters containing indices
-  has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
-  pars[has_ind] <- ulapply(pars[has_ind], function(par) {
+  has_ind <- grepl("\\[[[:digit:]]+\\]", D$par)
+  D$par[has_ind] <- ulapply(D$par[has_ind], function(par) {
     ind_regex <- "(?<=\\[)[[:digit:]]+(?=\\])"
     ind <- get_matches(ind_regex, par, perl = TRUE)
     gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
   })
+  # cannot handle priors on variable transformations
+  D <- D[D$par %in% stan_all_vars(D$par), ]
+  if (!NROW(D)) return(list())
+  
+  class_old <- c("^L_", "^Lrescor")
+  class_new <- c("cor_", "rescor")
+  D$par <- rename(D$par, class_old, class_new, fixed = FALSE)
+  dis_regex <- "(?<=target\\+=)[^\\(]+(?=_lpdf\\()"
+  D$dist <- get_matches(dis_regex, D$prior, perl = TRUE, first = TRUE)
+  D$dist <- sub("corr_cholesky$", "corr", D$dist)
+  args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
+  D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
   
   # extract information from the initial parameter definition
   par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
   par_declars <- gsub("^[[:blank:]]*", "", par_declars)
   par_declars <- par_declars[!grepl("^//", par_declars)]
   all_pars_regex <- "(?<= )[^[:blank:]]+(?=;)"
-  all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE) 
-  all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
-  all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
+  all_pars <- get_matches(all_pars_regex, par_declars, perl = TRUE)
+  all_pars <- rename(all_pars, class_old, class_new, fixed = FALSE)
+  all_bounds <- get_matches("<.+>", par_declars, first = TRUE)
   all_types <- get_matches("^[^[:blank:]]+", par_declars)
+  all_dims <- get_matches(
+    "(?<=\\[)[^\\]]*", par_declars, first = TRUE, perl = TRUE
+  )
   
   # define parameter types and boundaries
-  bounds <- rep("", length(pars))
-  types <- rep("real", length(pars))
+  D$dim <- D$bounds <- ""
+  D$type <- "real"
   for (i in seq_along(all_pars)) {
-    k <- which(grepl(paste0("^", all_pars[i]), pars))
-    bounds[k] <- all_bounds[i]
-    if (grepl("^simo", all_pars[i])) {
-      types[k] <- all_types[i]
+    k <- which(grepl(paste0("^", all_pars[i]), D$par))
+    D$dim[k] <- all_dims[i]
+    D$bounds[k] <- all_bounds[i]
+    if (grepl("^(simo_)|(theta)", all_pars[i])) {
+      D$type[k] <- all_types[i]
     }
   }
+
+  # exclude priors which depend on other priors
+  # TODO: enable sampling from these priors as well
+  found_vars <- lapply(D$args, find_vars, dot = FALSE, brackets = FALSE)
+  contains_other_pars <- ulapply(found_vars, function(x) any(x %in% all_pars))
+  D <- D[!contains_other_pars, ]
+  if (!NROW(D)) return(list())
   
-  # distinguish between bounded and unbounded parameters
-  has_bounds <- as.logical(nchar(bounds))
-  if (any(has_bounds)) {  
-    # bounded parameters have to be sampled in the model block
-    str_add(out$par) <- paste0(
-      "  // parameters to store prior samples\n",
-      collapse(
-        "  real", bounds[has_bounds], 
-        " prior_", pars[has_bounds], ";\n"
+  out <- list()
+  # sample priors in the generated quantities block
+  D$lkj <- grepl("^lkj_corr$", D$dist)
+  D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
+  D$lkj_index <- ifelse(D$lkj, "[1, 2]", "")
+  D$prior_par <- glue("prior_{D$par}")
+  str_add(out$genD) <- "  // additionally draw samples from priors\n"
+  str_add(out$genD) <- cglue(
+    "  {D$type} {D$prior_par} = {D$dist}_rng({D$args}){D$lkj_index};\n"
+  )
+  
+  # sample from truncated priors using rejection sampling
+  D$lb <- stan_extract_bounds(D$bounds, bound = "lower")
+  D$ub <- stan_extract_bounds(D$bounds, bound = "upper")
+  Ibounds <- which(nzchar(D$bounds))
+  if (length(Ibounds)) {
+    str_add(out$genC) <- "  // use rejection sampling for truncated priors\n"
+    for (i in Ibounds) {
+      wl <- if (nzchar(D$lb[i])) glue("{D$prior_par[i]} < {D$lb[i]}")
+      wu <- if (nzchar(D$ub[i])) glue("{D$prior_par[i]} > {D$ub[i]}")
+      prior_while <- paste0(c(wl, wu), collapse = " || ")
+      str_add(out$genC) <- glue(
+        "  while ({prior_while}) {{\n",
+        "    {D$prior_par[i]} = {D$dist[i]}_rng({D$args[i]}){D$lkj_index[i]};\n",
+        "  }}\n"
       )
-    )
-    str_add(out$model) <- paste0(
-      "  // additionally draw samples from priors\n",
-      collapse(
-        "  target += ", dis[has_bounds], "_lpdf(",
-        "prior_", pars[has_bounds], " | ", args[has_bounds], ");\n"
-      )
-    )
-  }
-  no_bounds <- !has_bounds
-  if (any(no_bounds)) {
-    # use parameters sampled from priors for use in other priors
-    spars <- character(0)
-    # cannot sample from the horseshoe prior anymore as of brms 1.5.0
-    lasso_prefix <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
-    lasso_prefix <- names(prior_special)[lasso_prefix]
-    lasso_prefix <- usc(sub("^mu(_|$)", "", lasso_prefix))
-    if (length(lasso_prefix)) {
-      spars <- c(spars, paste0("lasso_inv_lambda", lasso_prefix))
     }
-    if (length(spars)) {
-      bpars <- grepl("^(b|(bsp)|(bcs))(_|$)", pars)
-      args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
-    }
-    lkj_index <- ifelse(grepl("^lkj_corr$", dis[no_bounds]), "[1, 2]", "")
-    # unbounded parameters can be sampled in the generatated quantities block
-    str_add(out$genD) <- paste0(
-      "  // additionally draw samples from priors\n",
-      collapse(
-        "  ", types[no_bounds], " prior_", pars[no_bounds], 
-        " = ", dis[no_bounds], "_rng(", args[no_bounds], ")",
-        lkj_index, ";\n"
-      )
-    )
-  }
-  # compute priors for the actual population-level intercepts
-  is_temp_intercept <- grepl("^temp.*_Intercept", pars)
-  if (any(is_temp_intercept)) {
-    temp_intercepts <- pars[is_temp_intercept]
-    p <- gsub("^temp|_Intercept$", "", temp_intercepts)
-    intercepts <- paste0("b", p, "_Intercept")
-    regex <- paste0(" (\\+|-) dot_product\\(means_X", p, ", b", p, "\\)")
-    X_means <- lapply(regex, get_matches, gen_quantities)
-    X_means <- ulapply(X_means, function(x) if (length(x)) x[1] else "")
-    str_add(out$genD) <- collapse(
-      "  real prior_", intercepts,
-      " = prior_", temp_intercepts, X_means, ";\n"
-    )
   }
   out
+}
+
+# extract Stan boundaries expression from a string
+stan_extract_bounds <- function(x, bound = c("lower", "upper")) {
+  bound <- match.arg(bound)
+  x <- rm_wsp(x)
+  regex <- glue("(?<={bound}=)[^,>]*")
+  get_matches(regex, x, perl = TRUE, first = TRUE)
 }

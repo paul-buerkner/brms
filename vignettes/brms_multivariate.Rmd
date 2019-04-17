@@ -5,15 +5,13 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Estimating Multivariate Models with brms}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Fit multivariate models with brms}
-%\VignetteEncoding{UTF-8}
--->
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
@@ -31,7 +29,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 ```
 
 ## Introduction
@@ -47,14 +45,14 @@ head(BTdata)
 
 We begin with a relatively simple multivariate normal model.
 
-```{r fit1, message=FALSE, warning=FALSE}
+```{r fit1, message=FALSE, warning=FALSE, results='hide'}
 fit1 <- brm(
-  cbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
+  mvbind(tarsus, back) ~ sex + hatchdate + (1|p|fosternest) + (1|q|dam),
   data = BTdata, chains = 2, cores = 2
 )
 ```
 
-As can be seen in the model code, we have used `cbind` notation to tell **brms** that both `tarsus` and `back` are separate response variables. The term `(1|p|fosternest)` indicates a varying intercept over `fosternest`. By writing `|p|` in between we indicate that all varying effects of `fosternest` should be modeled as correlated. This makes sense since we actually have two model parts, one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of **brms**, see `help("brmsformula")` and `vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see `vignette("brms_phylogenetics")`). The model results are readily summarized via
+As can be seen in the model code, we have used `mvbind` notation to tell **brms** that both `tarsus` and `back` are separate response variables. The term `(1|p|fosternest)` indicates a varying intercept over `fosternest`. By writing `|p|` in between we indicate that all varying effects of `fosternest` should be modeled as correlated. This makes sense since we actually have two model parts, one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of **brms**, see `help("brmsformula")` and `vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see `vignette("brms_phylogenetics")`). The model results are readily summarized via
 
 ```{r summary1, warning=FALSE}
 add_ic(fit1) <- "loo"
@@ -78,9 +76,9 @@ Clearly, there is much variation in both animal characteristics that we can not 
 
 ## More Complex Multivariate Models
 
-Now, suppose we only want to control for `sex` in `tarsus` but not in `back` and vice versa for `hatchdate`. Not that this is particular reasonable for the present example, but it allows us to illustrate how to specify different formulas for different response variables. We can no longer use `cbind` syntax and so we have to use a more verbose approach: 
+Now, suppose we only want to control for `sex` in `tarsus` but not in `back` and vice versa for `hatchdate`. Not that this is particular reasonable for the present example, but it allows us to illustrate how to specify different formulas for different response variables. We can no longer use `mvbind` syntax and so we have to use a more verbose approach: 
 
-```{r fit2, message=FALSE, warning=FALSE}
+```{r fit2, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam))
 bf_back <- bf(back ~ hatchdate + (1|p|fosternest) + (1|q|dam))
 fit2 <- brm(bf_tarsus + bf_back, data = BTdata, chains = 2, cores = 2)
@@ -103,7 +101,7 @@ Apparently, there is no noteworthy difference in the model fit. Accordingly, we 
 
 To give you a glimpse of the capabilities of **brms**' multivariate syntax, we change our model in various directions at the same time. Remember the slight left skewness of `tarsus`, which we will now model by using the `skew_normal` family instead of the `gaussian` family. Since we do not have a multivariate normal (or student-t) model, anymore, estimating residual correlations is no longer possible. We make this explicit using the `set_rescor` function. Further, we investigate if the relationship of `back` and `hatchdate` is really linear as previously assumed by fitting a non-linear spline of `hatchdate`. On top of it, we model separate residual variances of `tarsus` for males and femals chicks.
 
-```{r fit3, message=FALSE, warning=FALSE}
+```{r fit3, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
 bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +

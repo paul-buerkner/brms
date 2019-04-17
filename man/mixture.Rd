@@ -18,11 +18,12 @@ same way as objects passed via the \code{...} argument.}
 
 \item{nmix}{Optional numeric vector specifying the number of times
 each family is repeated. If specified, it must have the same length 
-as the number of families passed via \code{...} or \code{flist}.}
+as the number of families passed via \code{...} and \code{flist}.}
 
 \item{order}{Ordering constraint to identify mixture components.
 If \code{'mu'} or \code{TRUE}, population-level intercepts
-of the mean parameters are ordered. 
+of the mean parameters are ordered in non-ordinal models
+and fixed to the same value in ordinal models (see details).
 If \code{'none'} or \code{FALSE}, no ordering constraint is applied.
 If \code{NULL} (the default), \code{order} is set to \code{'mu'}
 if all families are the same and \code{'none'} otherwise.
@@ -35,16 +36,22 @@ An object of class \code{mixfamily}.
 Set up a finite mixture family for use in \pkg{brms}.
 }
 \details{
-Most families supported by \pkg{brms} can be used to form 
-mixtures. The response variable has to be valid for all components
-of the mixture family. Currently, the number of mixture components 
-has to be specified by the user. It is not yet possible to estimate 
-the number of mixture components from the data.
+Most families supported by \pkg{brms} can be used to form mixtures. The
+response variable has to be valid for all components of the mixture family.
+Currently, the number of mixture components has to be specified by the user.
+It is not yet possible to estimate the number of mixture components from the
+data.
 
-For most mixture models, you may want to specify priors on the population-level
-intercepts via \code{\link{set_prior}} to improve convergence. 
-In addition, it is sometimes necessary to set \code{inits = 0} in the call to 
-\code{\link{brm}} to allow chains to initialize properly.
+Ordering intercepts in mixtures of ordinal families is not possible as each
+family has itself a set of vector of intercepts (i.e. ordinal thresholds).
+Instead, \pkg{brms} will fix the vector of intercepts across components in
+ordinal mixtures, if desired, so that users can try to identify the mixture
+model via selective inclusion of predictors.
+
+For most mixture models, you may want to specify priors on the
+population-level intercepts via \code{\link{set_prior}} to improve
+convergence. In addition, it is sometimes necessary to set \code{inits = 0}
+in the call to \code{\link{brm}} to allow chains to initialize properly.
 
 For more details on the specification of mixture
 models, see \code{\link{brmsformula}}.

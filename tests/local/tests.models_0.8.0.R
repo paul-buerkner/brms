@@ -1,10 +1,10 @@
 rerun <- FALSE
 if (rerun) {
   packageurl <- "http://cran.r-project.org/src/contrib/Archive/brms/brms_0.8.0.tar.gz"
-  install.packages(packageurl, repos=NULL, type="source")
+  install.packages(packageurl, repos = NULL, type = "source")
 }
 
-source("tests/local/setup.R")
+source("setup.R")
 
 if (rerun) {
   # old categorical models

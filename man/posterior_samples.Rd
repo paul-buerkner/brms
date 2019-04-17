@@ -7,15 +7,15 @@
 \alias{as.array.brmsfit}
 \alias{posterior_samples}
 \alias{posterior.samples}
-\alias{posterior_samples.brmsfit}
 \alias{posterior.samples.brmsfit}
 \title{Extract posterior samples}
 \usage{
 \method{posterior_samples}{brmsfit}(x, pars = NA, exact_match = FALSE,
-  add_chain = FALSE, subset = NULL, as.matrix = FALSE, as.array = FALSE,
-  ...)
+  add_chain = FALSE, subset = NULL, as.matrix = FALSE,
+  as.array = FALSE, ...)
 
-\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = FALSE, ...)
+\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = FALSE,
+  ...)
 
 \method{as.matrix}{brmsfit}(x, ...)
 

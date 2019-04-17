@@ -5,7 +5,7 @@ test_that("get_prior finds all classes for which priors can be specified", {
   expect_equal(
     sort(
       get_prior(
-        count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
+        count ~ zBase * Trt + (1|patient) + (1+Trt|visit),
         data = epilepsy, family = "poisson"
       )$class
     ),
@@ -18,8 +18,15 @@ test_that("get_prior finds all classes for which priors can be specified", {
         family = sratio(threshold = "equidistant")
       )$class
     ),
-    sort(c(rep("b", 4), "delta", "Intercept"))
+    sort(c(rep("b", 4), "delta", rep("Intercept", 2)))
   )
+})
+
+test_that("set_prior allows arguments to be vectors", {
+  bprior <- set_prior("normal(0, 2)", class = c("b", "sd"))
+  expect_is(bprior, "brmsprior")
+  expect_equal(bprior$prior, rep("normal(0, 2)", 2))
+  expect_equal(bprior$class, c("b", "sd"))
 })
 
 test_that("print for class brmsprior works correctly", {
@@ -69,7 +76,7 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
 test_that("get_prior returns correct priors for multivariate models", {
   dat <- data.frame(y1 = rnorm(10), y2 = c(1, rep(1:3, 3)), 
                     x = rnorm(10), g = rep(1:2, 5))
-  bform <- bf(cbind(y1, y2) ~ x + (x|ID1|g))
+  bform <- bf(mvbind(y1, y2) ~ x + (x|ID1|g))
   
   # check global priors
   prior <- get_prior(bform, dat, family = gaussian())

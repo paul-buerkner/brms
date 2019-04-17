@@ -5,8 +5,8 @@
 \alias{VarCorr}
 \title{Extract Variance and Correlation Components}
 \usage{
-\method{VarCorr}{brmsfit}(x, sigma = 1, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+\method{VarCorr}{brmsfit}(x, sigma = 1, summary = TRUE,
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -44,7 +44,7 @@ correlations and covariances are also returned.
 }
 \examples{
 \dontrun{
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
            data = epilepsy, family = gaussian(), chains = 2)
 VarCorr(fit)
 }

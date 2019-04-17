@@ -5,84 +5,76 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sparse = FALSE,
+  autocor = NULL, cov_ranef = NULL, sparse = NULL,
   sample_prior = c("no", "yes", "only"), stanvars = NULL,
   stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
 }
 \arguments{
-\item{formula}{An object of class 
-\code{\link[stats:formula]{formula}},
-\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}}
-(or one that can be coerced to that classes): 
-A symbolic description of the model to be fitted. 
-The details of model specification are explained in 
+\item{formula}{An object of class \code{\link[stats:formula]{formula}},
+\code{\link{brmsformula}}, or \code{\link{mvbrmsformula}} (or one that can
+be coerced to that classes): A symbolic description of the model to be
+fitted. The details of model specification are explained in
 \code{\link{brmsformula}}.}
 
-\item{data}{An object of class \code{data.frame} 
-(or one that can be coerced to that class) 
-containing data of all variables used in the model.}
+\item{data}{An object of class \code{data.frame} (or one that can be coerced
+to that class) containing data of all variables used in the model.}
 
-\item{family}{A description of the response distribution and link function 
-to be used in the model. This can be a family function, 
-a call to a family function or a character string naming the family.
-Every family function has a \code{link} argument allowing to specify
-the link function to be applied on the response variable.
-If not specified, default links are used.
-For details of supported families see 
-\code{\link{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.
-In multivariate models, \code{family} might also be a list of families.}
+\item{family}{A description of the response distribution and link function to
+be used in the model. This can be a family function, a call to a family
+function or a character string naming the family. Every family function has
+a \code{link} argument allowing to specify the link function to be applied
+on the response variable. If not specified, default links are used. For
+details of supported families see \code{\link{brmsfamily}}. By default, a
+linear \code{gaussian} model is applied. In multivariate models,
+\code{family} might also be a list of families.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
-\code{\link{set_prior}} or related functions 
-and combined using the \code{c} method or the \code{+} operator.
-See also  \code{\link{get_prior}} for more help.}
+\code{\link{set_prior}} or related functions and combined using the
+\code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
+for more help.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure within the response variable 
-(i.e., the 'autocorrelation'). 
-See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to \code{NULL}, 
-corresponding to no correlations.
-In multivariate models, \code{autocor} might also be a list 
-of autocorrelation structures.}
+\item{autocor}{An optional \code{\link{cor_brms}} object describing the
+correlation structure within the response variable (i.e., the
+'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
+description of the available correlation structures. Defaults to
+\code{NULL}, corresponding to no correlations. In multivariate models,
+\code{autocor} might also be a list of autocorrelation structures.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the 
-(within) covariance structure of the group-level effects. 
-The names of the matrices should correspond to columns 
-in \code{data} that are used as grouping factors. 
-All levels of the grouping factor should appear as rownames 
-of the corresponding matrix. This argument can be used,
-among others to model pedigrees and phylogenetic effects.
-See \code{vignette("brms_phylogenetics")} for more details.}
+\item{cov_ranef}{A list of matrices that are proportional to the (within)
+covariance structure of the group-level effects. The names of the matrices
+should correspond to columns in \code{data} that are used as grouping
+factors. All levels of the grouping factor should appear as rownames of the
+corresponding matrix. This argument can be used, among others to model
+pedigrees and phylogenetic effects. See
+\code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sparse}{Logical; indicates whether the population-level 
-design matrices should be treated as sparse (defaults to \code{FALSE}). 
-For design matrices with many zeros, this can considerably 
-reduce required memory. Sampling speed is currently not 
-improved or even slightly decreased.}
+\item{sparse}{(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to \code{FALSE}). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.}
 
-\item{sample_prior}{Indicate if samples from all specified 
-proper priors should be drawn additionally to the posterior samples
-(defaults to \code{"no"}). Among others, these samples can be used 
-to calculate Bayes factors for point hypotheses. 
-If set to \code{"only"}, samples are drawn solely from
-the priors ignoring the likelihood. In this case, 
-all parameters must have proper priors.}
+\item{sample_prior}{Indicate if samples from all specified proper priors
+should be drawn additionally to the posterior samples (defaults to
+\code{"no"}). Among others, these samples can be used to calculate Bayes
+factors for point hypotheses via \code{\link{hypothesis}}. If set to
+\code{"only"}, samples are drawn solely from the priors ignoring the
+likelihood, which allows among others to generate samples from the prior
+predictive distribution. In this case, all parameters must have proper
+priors.}
 
-\item{stanvars}{An optional \code{stanvars} object generated
-by function \code{\link{stanvar}} to define additional variables
-in the data block of \pkg{Stan}.}
+\item{stanvars}{An optional \code{stanvars} object generated by function
+\code{\link{stanvar}} to define additional variables for use in
+\pkg{Stan}'s program blocks.}
 
-\item{stan_funs}{An optional character string containing self-defined 
-\pkg{Stan} functions, which will be included in the functions block 
-of the generated \pkg{Stan} code.}
+\item{stan_funs}{(Deprecated) An optional character string containing
+self-defined  \pkg{Stan} functions, which will be included in the functions
+block of the generated \pkg{Stan} code. It is now recommended to use the
+\code{stanvars} argument for this purpose, instead.}
 
-\item{save_model}{Either \code{NULL} or a character string. 
-In the latter case, the model code is
-saved in a file named after the string supplied in \code{save_model}, 
-which may also contain the full path where to save the file.
-If only a name is given, the file is saved in the current working directory.}
+\item{save_model}{Either \code{NULL} or a character string. In the latter
+case, the model's Stan code is saved via \code{\link{cat}} in a text file
+named after the string supplied in \code{save_model}.}
 
 \item{silent}{logical; If \code{TRUE}, warnings of
 the Stan parser will be suppressed.}
@@ -100,8 +92,7 @@ Generate Stan code for \pkg{brms} models
 make_stancode(rating ~ treat + period + carry + (1|subject), 
               data = inhaler, family = "cumulative")
 
-make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
-              + (1|patient) + (1|visit), 
+make_stancode(count ~ zAge + zBase * Trt + (1|patient),
               data = epilepsy, family = "poisson")
 
 }

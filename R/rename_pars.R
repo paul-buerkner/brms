@@ -1,10 +1,8 @@
+# rename parameters (and possibly change their dimensions) 
+# within the stanfit object to ensure reasonable parameter names
+# @param x a brmsfit obejct
+# @return a brmfit object with adjusted parameter names and dimensions
 rename_pars <- function(x) {
-  # rename parameters (and possibly change their dimensions) 
-  # within the stanfit object to ensure reasonable parameter names
-  # Args:
-  #   x: a brmsfit obejct
-  # Returns:
-  #   a brmfit object with adjusted parameter names and dimensions
   if (!length(x$fit@sim)) {
     return(x) 
   }
@@ -26,8 +24,9 @@ rename_pars <- function(x) {
   x
 }
 
+# helps in renaming parameters after model fitting
+# @return a list whose elements can be interpreted by do_renaming
 change_effects <- function(x, ...) {
-  # helps in renaming parameters after model fitting
   UseMethod("change_effects")
 }
 
@@ -57,41 +56,29 @@ change_effects.brmsterms <- function(x, ...) {
   for (dp in names(x$dpars)) {
     c(out) <- change_effects(x$dpars[[dp]], ...)
   }
+  for (nlp in names(x$nlpars)) {
+    c(out) <- change_effects(x$nlpars[[nlp]], ...)
+  }
   if (is.formula(x$adforms$mi)) {
     c(out) <- change_Ymi(x, ...)
   }
   out
 }
 
+# helps in renaming parameters of additive predictor terms
+# @param pars vector of all parameter names
+# @param scode stan code of the model
 #' @export
 change_effects.btl <- function(x, data, pars, scode = "", ...) {
-  # helps in renaming various kinds of effects
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  c(
-    change_fe(x, data, pars, scode = scode),
+  c(change_fe(x, data, pars, scode = scode),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
-    change_gp(x, data, pars)
-  )
+    change_gp(x, data, pars))
 }
 
-change_effects.btnl <- function(x, data, pars, ...) {
-  # helps in renaming effects for non-linear parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
-  out <- list()
-  for (nlp in names(x$nlpars)) {
-    c(out) <- change_effects(x$nlpars[[nlp]], data, pars, ...)
-  }
-  out
-}
-
+# helps in renaming fixed effects parameters
 change_fe <- function(bterms, data, pars, scode = "") {
-  # helps in renaming fixed effects parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   px <- check_prefix(bterms)
   fixef <- colnames(data_fe(bterms, data)$X)
@@ -106,10 +93,8 @@ change_fe <- function(bterms, data, pars, scode = "") {
   out
 }
 
+# helps in renaming special effects parameters
 change_sp <- function(bterms, data, pars) {
-  # helps in renaming special effects parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -133,10 +118,8 @@ change_sp <- function(bterms, data, pars) {
   out
 }
 
+# helps in renaming category specific effects parameters
 change_cs <- function(bterms, data, pars) {
-  # helps in renaming category specific effects parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   csef <- colnames(data_cs(bterms, data)$Xcs)
   if (length(csef)) {
@@ -155,10 +138,9 @@ change_cs <- function(bterms, data, pars) {
   out
 }
 
+# helps in renaming global noise free variables
+# @param meef data.frame returned by 'tidy_meef'
 change_Xme <- function(meef, pars) {
-  # helps in renaming global noise free variables
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   stopifnot(is.meef_frame(meef))
   out <- list()
   levels <- attr(meef, "levels")
@@ -204,8 +186,8 @@ change_Xme <- function(meef, pars) {
   out
 }
 
+# helps in renaming estimated missing values
 change_Ymi <- function(bterms, data, pars, ...) {
-  # helps in renaming estimated missing values
   stopifnot(is.brmsterms(bterms))
   out <- list()
   if (is.formula(bterms$adforms$mi)) {
@@ -222,58 +204,73 @@ change_Ymi <- function(bterms, data, pars, ...) {
   out
 }
 
+# helps in renaming parameters of gaussian processes
 change_gp <- function(bterms, data, pars) {
-  # helps in renaming parameters of gaussian processes
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   p <- usc(combine_prefix(bterms), "prefix")
   gpef <- tidy_gpef(bterms, data)
-  for (i in seq_len(nrow(gpef))) {
+  for (i in seq_rows(gpef)) {
     # rename GP hyperparameters
-    gp_names <- paste0(gpef$label[i], usc(gpef$bylevels[[i]]))
+    sfx1 <- gpef$sfx1[[i]]
+    sfx2 <- as.vector(gpef$sfx2[[i]])
     sdgp <- paste0("sdgp", p)
     sdgp_old <- paste0(sdgp, "_", i)
     sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
-    sdgp_names <- paste0(sdgp, "_", gp_names)
+    sdgp_names <- paste0(sdgp, "_", sfx1)
+    lc(out) <- clist(sdgp_pos, sdgp_names)
+    c(out) <- change_prior(sdgp_old, pars, names = sfx1, new_class = sdgp)
+
     lscale <- paste0("lscale", p)
     lscale_old <- paste0(lscale, "_", i)
     lscale_pos <- grepl(paste0("^", lscale_old, "\\["), pars)
-    lscale_names <- paste0(lscale, "_", gp_names)
-    lc(out) <- clist(sdgp_pos, sdgp_names)
+    lscale_names <- paste0(lscale, "_", sfx2)
     lc(out) <- clist(lscale_pos, lscale_names)
-    c(out) <- change_prior(
-      sdgp_old, pars, names = gpef$label[i], new_class = sdgp
-    )
-    c(out) <- change_prior(
-      lscale_old, pars, names = gpef$label[i], new_class = lscale
-    )
+    c(out) <- change_prior(lscale_old, pars, names = sfx2, new_class = lscale)
+    
     zgp <- paste0("zgp", p)
     zgp_old <- paste0(zgp, "_", i)
-    zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
-    if (any(zgp_pos)) {
-      # users may choose not to save zgp
-      zgp_new <- paste0(zgp, "_", gpef$label[i])
-      fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
-      lc(out) <- clist(zgp_pos, fnames)
+    if (length(sfx1) > 1L) {
+      # categorical 'by' variable
+      for (j in seq_along(sfx1)) {
+        zgp_old_sub <- paste0(zgp_old, "_", j)
+        zgp_pos <- grepl(paste0("^", zgp_old_sub, "\\["), pars)
+        if (any(zgp_pos)) {
+          zgp_new <- paste0(zgp, "_", sfx1[j])
+          fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+          lc(out) <- clist(zgp_pos, fnames)
+        }
+      }
+    } else {
+      zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
+      if (any(zgp_pos)) {
+        zgp_new <- paste0(zgp, "_", sfx1)
+        fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+        lc(out) <- clist(zgp_pos, fnames)
+      }
     }
   }
   out
 }
 
+# helps in renaming smoothing term parameters
 change_sm <- function(bterms, data, pars) {
-  # helps in renaming smoothing term parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   smef <- tidy_smef(bterms, data)
-  if (nrow(smef)) {
+  if (NROW(smef)) {
     p <- usc(combine_prefix(bterms), "prefix")
+    Xs_names <- attr(smef, "Xs_names")
+    if (length(Xs_names)) {
+      bs <- paste0("bs", p)
+      pos <- grepl(paste0("^", bs, "\\["), pars)
+      bsnames <- paste0(bs, "_", Xs_names)
+      lc(out) <- clist(pos, bsnames)
+      c(out) <- change_prior(bs, pars, names = Xs_names)
+    }
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smef$label)
     s <- paste0("s", p)
     snames <- paste0(s, "_", smef$label)
-    for (i in seq_len(nrow(smef))) {
+    for (i in seq_rows(smef)) {
       for (j in seq_len(smef$nbases[i])) {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
@@ -291,13 +288,9 @@ change_sm <- function(bterms, data, pars) {
   out
 }
 
+# helps in renaming group-level parameters
+# @param ranef: data.frame returned by 'tidy_ranef'
 change_re <- function(ranef, pars) {
-  # helps in renaming group-level parameters
-  # Args:
-  #   ranef: list returned by tidy_ranef
-  #   pars: names of all model parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   if (has_rows(ranef)) {
     for (id in unique(ranef$id)) {
@@ -316,7 +309,7 @@ change_re <- function(ranef, pars) {
         type <- paste0("cor_", g)
         if (isTRUE(nzchar(r$by[1]))) {
           cor_names <- named_list(r$bylevels[[1]])
-          for (j in seq_len(nrow(rnames))) {
+          for (j in seq_along(cor_names)) {
             cor_names[[j]] <- get_cornames(
               rnames[, j], type, brackets = FALSE
             )
@@ -337,7 +330,7 @@ change_re <- function(ranef, pars) {
       c(out) <- change_re_levels(ranef, pars = pars)
     }
     tranef <- get_dist_groups(ranef, "student")
-    for (i in seq_len(nrow(tranef))) {
+    for (i in seq_rows(tranef)) {
       df_pos <- grepl(paste0("^df_", tranef$ggn[i], "$"), pars)
       df_name <- paste0("df_", tranef$group[i])
       lc(out) <- clist(df_pos, df_name)
@@ -346,15 +339,11 @@ change_re <- function(ranef, pars) {
   out
 } 
 
+# helps in renaming varying effects parameters per level
+# @param ranef: data.frame returned by 'tidy_ranef'
 change_re_levels <- function(ranef, pars)  {
-  # helps in renaming random effects 'r_.' parameters
-  # Args:
-  #   ranef: output of tidy_ranef
-  #   pars: names of all model parameters
-  # Returns:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
-  for (i in seq_len(nrow(ranef))) {
+  for (i in seq_rows(ranef)) {
     r <- ranef[i, ]
     p <- usc(combine_prefix(r))
     r_parnames <- paste0("r_", r$id, p, "_", r$cn)
@@ -369,8 +358,8 @@ change_re_levels <- function(ranef, pars)  {
   out
 }
 
+# helps in renaming autocor parameters
 change_autocor <- function(bterms, data, pars) {
-  # helps in renaming autocor parameters
   out <- list()
   if (is.cor_bsts(bterms$autocor)) {
     data <- order_data(data, bterms = bterms)
@@ -390,17 +379,14 @@ change_autocor <- function(bterms, data, pars) {
   out
 }
 
+# helps in renaming prior parameters
+# @param class the class of the parameters
+# @param pars names of all parameters in the model
+# @param names names to replace digits at the end of parameter names
+# @param new_class optional replacement of the orginal class name
+# @param is_vector indicate if the prior parameter is a vector
 change_prior <- function(class, pars, names = NULL, new_class = class,
                          is_vector = FALSE) {
-  # helps in renaming prior parameters
-  # Args: 
-  #   class: the class of the parameters for which prior names should be changed
-  #   pars: names of all parameters in the model
-  #   names: names to replace digits at the end of parameter names
-  #   new_class: replacement of the orginal class name
-  #   is_vector: indicate if the prior parameter is a vector
-  # Return:
-  #   a list whose elements can be interpreted by do_renaming
   out <- list()
   regex <- paste0("^prior_", class, "(_[[:digit:]]+|$|\\[)")
   pos_priors <- which(grepl(regex, pars))
@@ -430,8 +416,8 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
   out
 }
 
+# helper for change_* functions
 clist <- function(pos, fnames, ...) {
-  # helper for change_* functions
   structure(nlist(pos, fnames, ...), class = c("clist", "list"))
 }
 
@@ -439,9 +425,9 @@ is.clist <- function(x) {
   inherits(x, "clist")
 }
 
+# identify if the intercept has to be removed from fixef
+# @return adjusted fixef names
 rm_int_fe <- function(fixef, scode, px = NULL) {
-  # identifies if the intercept has to be removed from fixef
-  # and returns adjusted fixef names
   p <- usc(combine_prefix(px))
   regex <- paste0("(temp", p, "_Intercept)|(vector\\[N\\] loclev", p, ";)")
   if (grepl(regex, scode)) {
@@ -450,14 +436,12 @@ rm_int_fe <- function(fixef, scode, px = NULL) {
   fixef
 }
 
+# compute index names in square brackets for indexing stan parameters
+# @param rownames a vector of row names
+# @param colnames a vector of columns 
+# @param dim the number of output dimensions
+# @return all index pairs of rows and cols
 make_index_names <- function(rownames, colnames = NULL, dim = 1) {
-  # compute index names in square brackets for indexing stan parameters
-  # Args:
-  #   rownames: a vector of row names
-  #   colnames: a vector of columns 
-  #   dim: The number of dimensions of the output either 1 or 2
-  # Returns:
-  #   all index pairs of rows and cols
   if (!dim %in% c(1, 2))
     stop("dim must be 1 or 2")
   if (dim == 1) {
@@ -469,14 +453,12 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   index_names
 }
 
+# perform actual renaming of Stan parameters
+# @param x a brmsfit object
+# @param change a list of lists each element allowing
+#   to rename certain parameters
+# @return a brmsfit object with updated parameter names
 do_renaming <- function(x, change) {
-  # perform actual renaming of Stan parameters
-  # Args:
-  #   change: a list of lists each element allowing
-  #     to rename certain parameters
-  #   x: An object of class brmsfit
-  # Returns:
-  #   A brmsfit object with updated parameter names
   .do_renaming <- function(x, change) {
     stopifnot(is.clist(change))
     x$fit@sim$fnames_oi[change$pos] <- change$fnames
@@ -500,17 +482,16 @@ do_renaming <- function(x, change) {
   x
 }
 
+# order parameter samples after parameter class
+# @param x brmsfit object
 reorder_pars <- function(x) {
-  # order parameter samples after parameter class
-  # Args:
-  #   x: brmsfit object
-  all_classes <- c(
-    "b", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
+  all_classes <- unique(c(
+    "b", "bs", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
     "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
-    "sds", "sdgp", "lscale", dpars(), "temp", "rescor", "delta", 
-    "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
+    "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
+    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
-  )
+  ))
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(
@@ -531,27 +512,28 @@ reorder_pars <- function(x) {
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[new_order]
   chains <- length(x$fit@sim$samples)
   for (i in seq_len(chains)) {
-    # subset_attr ensures that attributes are not removed
-    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], new_order)
+    # attributes of samples must be kept
+    x$fit@sim$samples[[i]] <- 
+      subset_keep_attr(x$fit@sim$samples[[i]], new_order)
   }
   x
 }
 
+# wrapper function to compute and store quantities in the stanfit 
+# object which were not computed / stored by Stan itself
+# @param x a brmsfit object
+# @return a brmsfit object
 compute_quantities <- function(x) {
-  # wrapper function to compute and store quantities in the stanfit 
-  # object which were not computed / stored by Stan itself
-  # Args:
-  #   x: a brmsfit object
   stopifnot(is.brmsfit(x))
   x <- compute_xi(x)
   x
 }
 
+# helper function to compute parameter xi, which is currently
+# defined in the Stan model block and thus not being stored
+# @param x a brmsfit object
+# @return a brmsfit object
 compute_xi <- function(x, ...) {
-  # helper function to compute parameter xi, which is currently
-  # defined in the Stan model block and thus not being stored
-  # Returns:
-  #   All methods return a brmsfit object
   UseMethod("compute_xi")
 }
 
@@ -589,7 +571,7 @@ compute_xi.brmsdraws <- function(x, fit, ...) {
   mu <- get_dpar(x, "mu")
   sigma <- get_dpar(x, "sigma")
   y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
-  bs <- - 1 / matrixStats::rowRanges((y - mu) / sigma)
+  bs <- -1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
   temp_xi <- as.vector(as.matrix(fit, pars = temp_xi_name))
   xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]

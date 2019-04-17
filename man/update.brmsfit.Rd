@@ -4,8 +4,8 @@
 \alias{update.brmsfit}
 \title{Update \pkg{brms} models}
 \usage{
-\method{update}{brmsfit}(object, formula., newdata = NULL, recompile = NULL,
-  ...)
+\method{update}{brmsfit}(object, formula., newdata = NULL,
+  recompile = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -25,7 +25,7 @@ arguments to be ignored.}
 \item{...}{Other arguments passed to \code{\link{brm}}.}
 }
 \description{
-This method allows to update an existing \code{brmsfit} object
+This method allows to update an existing \code{brmsfit} object.
 }
 \details{
 Sometimes, when updating the model formula, 

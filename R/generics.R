@@ -25,9 +25,11 @@
 #' @slot stanvars A \code{\link{stanvars}} object or \code{NULL}
 #' @slot stan_funs A character string of length one or \code{NULL}
 #' @slot loo An empty slot for adding the \code{\link{loo}} 
-#'   information criterion after model fitting
+#'   criterion after model fitting
 #' @slot waic An empty slot for adding the \code{\link{waic}} 
-#'   information criterion after model fitting
+#'   criterion after model fitting
+#' @slot kfold An empty slot for adding the \code{\link{kfold}} 
+#'   criterion after model fitting  
 #' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
 #'   (Bayesian R-squared) value after model fitting 
 #' @slot marglik An empty slot for adding a \code{bridge} object 
@@ -39,6 +41,8 @@
 #' @slot algorithm The name of the algorithm used to fit the model
 #' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
 #'   which the model was fitted
+#' @slot file Optional name of a file in which the model object was stored in
+#'   or loaded from
 #' 
 #' @seealso 
 #'   \code{\link{brms}}, 
@@ -48,21 +52,22 @@
 #' 
 NULL
 
+# brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
-                    autocor = NULL, ranef = empty_ranef(), 
-                    cov_ranef = NULL, loo = NULL, waic = NULL, R2 = NULL,
+                    autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
+                    loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
-                    fit = NA, exclude = NULL, algorithm = "sampling") {
-  # brmsfit class
+                    fit = NA, exclude = NULL, algorithm = "sampling",
+                    file = NULL) {
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
     formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, loo, waic, R2, marglik,
-    stanvars, stan_funs, fit, exclude, algorithm, version
+    autocor, ranef, cov_ranef, loo, waic, kfold, R2, marglik,
+    stanvars, stan_funs, fit, exclude, algorithm, version, file
   )
   class(x) <- "brmsfit"
   x
@@ -77,37 +82,14 @@ is.brmsfit <- function(x) {
   inherits(x, "brmsfit")
 }
 
-#' Descriptions of \code{brmshypothesis} Objects
+#' Checks if argument is a \code{brmsfit_multiple} object
 #' 
-#' A \code{brmshypothesis} object contains posterior samples
-#' as well as summary statistics of non-linear hypotheses as 
-#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' @param x An \R object
 #' 
-#' @name brmshypothesis
-#' 
-#' @param ignore_prior A flag indicating if prior distributions 
-#'  should also be plotted. Only used if priors were specified on
-#'  the relevant parameters.
-#' @param digits Minimal number of significant digits, 
-#'   see \code{\link[base:print.default]{print.default}}.
-#' @param chars Maximum number of characters of each hypothesis
-#'  to print or plot. If \code{NULL}, print the full hypotheses.
-#'  Defaults to \code{20}.
-#' @param colors Two values specifying the colors of the posterior
-#'  and prior density respectively. If \code{NULL} (the default)
-#'  colors are taken from the current color scheme of 
-#'  the \pkg{bayesplot} package.
-#' @param ... Currently ignored.
-#' @inheritParams plot.brmsfit
-#' 
-#' @details 
-#' The two most important elements of a \code{brmshypothesis} object are
-#' \code{hypothesis}, which is a data.frame containing the summary estimates
-#' of the hypotheses, and \code{samples}, which is a data.frame containing 
-#' the corresponding posterior samples.
-#' 
-#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
-NULL
+#' @export
+is.brmsfit_multiple <- function(x) {
+  inherits(x, "brmsfit_multiple")
+}
 
 #' Extract posterior samples
 #' 
@@ -180,11 +162,15 @@ posterior_samples <- function(x, pars = NA, ...) {
 #'   By default, all prior samples are extracted
 #' @param ... Currently ignored
 #'   
-#' @details To make use of this function, 
-#'  the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{sample_prior = TRUE} 
-#'  in function \code{brm}.
-#'  Currently there are methods for \code{brmsfit} objects.
+#' @details To make use of this function, the model must contain samples of
+#'   prior distributions. This can be ensured by setting \code{sample_prior =
+#'   TRUE} in function \code{brm}. Priors of certain parameters cannot be saved
+#'   for technical reasons. For instance, this is the case for the
+#'   population-level intercept, which is only computed after fitting the model
+#'   by default. If you want to treat the intercept as part of all the other
+#'   regression coefficients, so that sampling from its prior becomes possible,
+#'   use \code{... ~ 0 + Intercept + ...} in the formulas.
+#'   
 #' @return A data frame containing the prior samples.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -201,7 +187,7 @@ posterior_samples <- function(x, pars = NA, ...) {
 #' head(samples1)
 #' 
 #' # extract prior samples for the population-level effects of 'treat'
-#' samples2 <- posterior_samples(fit, "b_treat")
+#' samples2 <- prior_samples(fit, "b_treat")
 #' head(samples2)
 #' }
 #' 
@@ -294,7 +280,7 @@ stancode <- function(object, ...) {
 #'   for internal use in other post-processing methods.
 #' @param control A named list currently for internal usage only.
 #' @param ... More arguments passed to \code{\link{make_standata}}.
-#' @inheritParams predict.brmsfit
+#' @inheritParams extract_draws
 #' 
 #' @return A named list containing the data originally passed to Stan.
 #' 
@@ -345,13 +331,12 @@ autocor <- function(object, ...) {
 #' 
 #' @details 
 #'   Also consider using the \pkg{shinystan} package available via 
-#'   method \code{\link{launch_shinystan}}. 
-#'   in \pkg{brms} for flexible and interactive visual analysis. 
+#'   method \code{\link{launch_shinystan}} in \pkg{brms} for flexible 
+#'   and interactive visual analysis. 
 #' 
 #' @examples
 #' \dontrun{
-#' model <- brm(count ~ log_Age_c + log_Base4_c * Trt 
-#'              + (1|patient) + (1|visit),
+#' model <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'              data = epilepsy, family = "poisson")
 #'              
 #' # plot posterior intervals
