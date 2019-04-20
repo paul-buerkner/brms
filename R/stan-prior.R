@@ -269,8 +269,8 @@ stan_special_prior_local <- function(class, prior, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tparD) <- glue(
-      "  vector[K{ct}{sp}] b{sp} = horseshoe({hs_args});\n"
+    str_add(out$tparC1) <- glue(
+      "  b{sp} = horseshoe({hs_args});\n"
     )
     local_args <- glue("0.5 * hs_df{p}")
     local_args <- sargs(local_args, local_args)
@@ -393,6 +393,13 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     }
   }
   out
+}
+
+# indicate if the horseshoe prior is used in the predictor term
+stan_use_horseshoe <- function(bterms, prior) {
+  prefix <- combine_prefix(bterms, keep_mu = TRUE)
+  special <- attr(prior, "special")[[prefix]]
+  !is.null(special[["hs_df"]])
 }
 
 # extract Stan boundaries expression from a string

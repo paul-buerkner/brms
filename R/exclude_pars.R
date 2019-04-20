@@ -94,11 +94,9 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
 #' @export
 exclude_pars_internal.btl <- function(x, data, ...) {
   p <- usc(combine_prefix(x))
-  out <- c(
-    paste0("temp", p, "_Intercept"),
-    paste0(c("hs_local", "hs_global", "zb"), p),
-    paste0(c("hs_localsp", "zbsp"), p)
-  )
+  out <- c("bQ", "hs_global", "hs_local", "zb", "hs_localsp", "zbsp")
+  out <- paste0(out, p)
+  c(out) <- paste0("temp", p, "_Intercept")
   smef <- tidy_smef(x, data)
   for (i in seq_rows(smef)) {
     nb <- seq_len(smef$nbases[i])

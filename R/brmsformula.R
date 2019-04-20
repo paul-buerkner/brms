@@ -63,6 +63,11 @@
 #'   should be treated as sparse (defaults to \code{FALSE}). For design matrices
 #'   with many zeros, this can considerably reduce required memory. Sampling
 #'   speed is currently not improved or even slightly decreased.
+#' @param decomp Optional name of the decomposition used for the 
+#'   population-level design matrix. Defaults to \code{NULL} that is
+#'   no decomposition. Other options currently available are
+#'   \code{"QR"} for the QR decomposition that helps in fitting models
+#'   with highly correlated predictors.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -578,7 +583,8 @@
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         autocor = NULL, nl = NULL, loop = NULL, 
-                        center = NULL, cmc = NULL, sparse = NULL) {
+                        center = NULL, cmc = NULL, sparse = NULL,
+                        decomp = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -659,6 +665,9 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(sparse)) {
     attr(out$formula, "sparse") <- as_one_logical(sparse)
   }
+  if (!is.null(decomp)) {
+    attr(out$formula, "decomp") <- match.arg(decomp, decomp_opts())
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -685,10 +694,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
                nl = NULL, loop = NULL, center = NULL, cmc = NULL,
-               sparse = NULL) {
+               sparse = NULL, decomp = NULL) {
   brmsformula(
     formula, ..., flist = flist, family = family, autocor = autocor, 
-    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse
+    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse,
+    decomp = decomp
   )
 }
 
@@ -777,7 +787,8 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 #' @rdname brmsformula-helpers
 #' @export
 lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, 
-               center = NULL, cmc = NULL, sparse = NULL) {
+               center = NULL, cmc = NULL, sparse = NULL, 
+               decomp = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
@@ -785,6 +796,7 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
   }
   cmc <- if (!is.null(cmc)) as_one_logical(cmc)
   center <- if (!is.null(center)) as_one_logical(center)
+  decomp <- if (!is.null(decomp)) match.arg(decomp, decomp_opts())
   for (i in seq_along(out)) {
     if (!is.null(cmc)) {
       attr(out[[i]], "cmc") <- cmc
@@ -794,6 +806,9 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
     }
     if (!is.null(sparse)) {
       attr(out[[i]], "sparse") <- sparse
+    }
+    if (!is.null(decomp)) {
+      attr(out[[i]], "decomp") <- decomp
     }
   }
   structure(out, resp = resp)
@@ -1047,6 +1062,11 @@ get_nl <- function(x, dpar = NULL, resp = NULL, aol = TRUE) {
     nl <- isTRUE(nl)
   }
   nl
+}
+
+# available options for the 'decomp' argument
+decomp_opts <- function() {
+  c("none", "QR")
 }
 
 # validate and prepare a formula of a distributional parameter

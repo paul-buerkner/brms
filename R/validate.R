@@ -341,6 +341,7 @@ parse_fe <- function(formula) {
   out <- paste(c(int_term, out), collapse = "+")
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
+  attr(out, "decomp") <- get_decomp(formula)
   if (has_rsv_intercept(out)) {
     attr(out, "int") <- FALSE
   }
@@ -769,6 +770,15 @@ no_center <- function(x) {
 # indicate if the design matrix should be handled as sparse
 is_sparse <- function(x) {
   isTRUE(attr(x, "sparse", exact = TRUE))
+}
+
+# get the decomposition type of the design matrix
+get_decomp <- function(x) {
+  out <- attr(x, "decomp", exact = TRUE)
+  if (is.null(out)) {
+    out <- "none"
+  }
+  as_one_character(out)
 }
 
 # extract different types of effects

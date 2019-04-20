@@ -7,7 +7,7 @@
 \usage{
 brmsformula(formula, ..., flist = NULL, family = NULL,
   autocor = NULL, nl = NULL, loop = NULL, center = NULL,
-  cmc = NULL, sparse = NULL)
+  cmc = NULL, sparse = NULL, decomp = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -82,6 +82,12 @@ mirror the behavior of standard \R formula parsing.}
 should be treated as sparse (defaults to \code{FALSE}). For design matrices
 with many zeros, this can considerably reduce required memory. Sampling
 speed is currently not improved or even slightly decreased.}
+
+\item{decomp}{Optional name of the decomposition used for the 
+population-level design matrix. Defaults to \code{NULL} that is
+no decomposition. Other options currently available are
+\code{"QR"} for the QR decomposition that helps in fitting models
+with highly correlated predictors.}
 }
 \value{
 An object of class \code{brmsformula}, which
