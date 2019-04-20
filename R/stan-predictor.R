@@ -419,7 +419,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       "  matrix[K{ct}{p}, K{ct}{p}] XR{p}_inv;\n"
     )
     str_add(out$tdataC) <- glue(
-      "  // Compute, thin, and scale QR decomposition\n",
+      "  // compute and scale QR decomposition\n",
       "  XQ{p} = qr_Q(X{ct}{p})[, 1:K{ct}{p}] * N{resp};\n",
       "  XR{p} = qr_R(X{ct}{p})[1:K{ct}{p}, ] / N{resp};\n",
       "  XR{p}_inv = inverse(XR{p});\n"

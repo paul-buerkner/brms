@@ -5,6 +5,8 @@
 * Specify non-linear ordinal models. (#623)
 * Allow to fix thresholds in ordinal mixture models (#626)
 * Use the `softplus` link function in various families. (#622)
+* Use QR decomposition of design matrices via argument 
+`decomp` of `brmsformula` thanks to the help of Ben Goodrich. (#640)
 * Define argument `sparse` separately for each model formula.
 * Allow using `bayes_R2` and `loo_R2` with ordinal models. (#639)
 
