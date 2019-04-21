@@ -117,7 +117,7 @@ test_that("log_lik for ARMA covariance models runs without errors", {
   draws$ac <- list(
     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
     ma = matrix(rbeta(ns, 0.2, 1), ncol = 1),
-    begin_tg = 2, nobs_tg = 4
+    begin_tg = 2, end_tg = 5
   )
   draws$data <- list(Y = rnorm(nobs), se = rgamma(ns, 10))
 

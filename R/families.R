@@ -1373,9 +1373,9 @@ allow_factors <- function(family) {
   any(specials %in% family_info(family, "specials"))
 }
 
-# checks if autocorrelation structures are allowed
-allow_autocor <- function(family) {
-  "autocor" %in% family_info(family, "specials")
+# check if the family has natural residuals
+has_natural_residuals <- function(family) {
+  "residuals" %in% family_info(family, "specials")
 }
 
 # checks if category specific effects are allowed
@@ -1486,6 +1486,17 @@ simple_sigma <- function(bterms) {
 pred_sigma <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   "sigma" %in% dpar_class(names(bterms$dpars))
+}
+
+# has the model latent residuals to be used in autocor structures
+has_latent_residuals <- function(bterms) {
+  !has_natural_residuals(bterms) && is.cor_arma(bterms$autocor)
+}
+
+# should natural residuals be modeled as correlated?
+has_cor_natural_residuals <- function(bterms) {
+  has_natural_residuals(bterms) &&
+    (use_cov(bterms$autocor) || is.cor_sar(bterms$autocor))
 }
 
 # do not include a 'nu' parameter in a univariate model?

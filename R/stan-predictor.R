@@ -1117,13 +1117,16 @@ stan_ac <- function(bterms, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   autocor <- bterms$autocor
+  if (has_latent_residuals(bterms)) {
+    str_add(out$eta) <- glue(" + err{p}")
+  }
   if (get_ar(autocor) && !use_cov(autocor)) {
     eta <- combine_prefix(px, keep_mu = TRUE)
-    eta_ar <- glue("head(E{p}[n], Kar{p}) * ar{p}")
+    eta_ar <- glue("head(Err{p}[n], Kar{p}) * ar{p}")
     str_add(out$modelC3) <- glue("    {eta}[n] += {eta_ar};\n")
   }
   if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out$loopeta) <- glue(" + head(E{p}[n], Kma{p}) * ma{p}")
+    str_add(out$loopeta) <- glue(" + head(Err{p}[n], Kma{p}) * ma{p}")
   }
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")

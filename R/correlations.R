@@ -47,12 +47,14 @@ NULL
 #' @param q A non-negative integer specifying the moving average (MA) 
 #'   order of the ARMA structure. Default is 0.
 #' @param r No longer supported. 
-#' @param cov A flag indicating whether ARMA effects should be estimated 
-#'   by means of residual covariance matrices
-#'   (currently only possible for stationary ARMA effects of order 1). 
-#'   If \code{FALSE} (the default) a regression formulation
-#'   is used that is considerably faster and allows for ARMA effects 
-#'   of order higher than 1 but cannot handle user defined standard errors.
+#' @param cov A flag indicating whether ARMA effects should be estimated by
+#'   means of residual covariance matrices. This is currently only possible for
+#'   stationary ARMA effects of order 1. If the model family does not have
+#'   natural residuals, latent residuals are added automatically. If
+#'   \code{FALSE} (the default) a regression formulation is used that is
+#'   considerably faster and allows for ARMA effects of order higher than 1 but
+#'   is only available for \code{gaussian} models and some of its 
+#'   generalizations.
 #'   
 #' @return An object of class \code{cor_arma}, representing an 
 #'   autoregression-moving-average correlation structure.
@@ -581,7 +583,8 @@ subset_autocor <- function(x, subset, autocor = NULL) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  p <- c("ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", "sigmaLL")
+  p <- c("ar", "ma", "arr", "sderr", "lagsar", "errorsar", 
+         "car", "sdcar", "sigmaLL")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

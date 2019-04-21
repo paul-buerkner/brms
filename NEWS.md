@@ -9,6 +9,7 @@
 `decomp` of `brmsformula` thanks to the help of Ben Goodrich. (#640)
 * Define argument `sparse` separately for each model formula.
 * Allow using `bayes_R2` and `loo_R2` with ordinal models. (#639)
+* Support `cor_arma` in non-normal models. (#648)
 
 ### Other Changes
 

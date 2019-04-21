@@ -80,7 +80,7 @@ test_that("predict for ARMA covariance models runs without errors", {
   draws$ac <- list(             
     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
     ma = matrix(rnorm(ns, 0.2, 1), ncol = 1),
-    begin_tg = c(1, 5, 12), nobs_tg = c(4, 7, 3)
+    begin_tg = c(1, 5, 12), end_tg = c(4, 11, 15)
   )
   draws$data <- list(se = rgamma(ns, 10))
   
