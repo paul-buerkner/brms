@@ -24,11 +24,16 @@ restructure <- function(x, rstr_summary = FALSE) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
+  if (x$version$brms >= utils::packageVersion("brms")) {
+    return(x)
+  } 
   if (!isTRUE(attr(x, "restructured"))) {
     if (x$version$brms < "2.0.0") {
       x <- restructure_v1(x)
     }
-    x <- restructure_v2(x)
+    if (x$version$brms < "3.0.0") {
+      x <- restructure_v2(x)
+    }
   }
   stan_env <- attributes(x$fit)$.MISC
   if (rstr_summary && exists("summary", stan_env)) {
@@ -47,7 +52,8 @@ restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   version <- x$version$brms
   pars <- parnames(x)
-  bterms <- parse_bf(formula(x))
+  x$formula <- update_old_family(x$formula)
+  bterms <- parse_bf(x$formula)
   if (version <= "2.1.1") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
@@ -526,6 +532,47 @@ rescale_old_mo.btl <- function(x, fit, ...) {
     }
   }
   fit
+}
+
+# update old families to work with the latest brms version
+update_old_family <- function(x, ...) {
+  UseMethod("update_old_family")
+}
+
+#' @export
+update_old_family.brmsfamily <- function(x, ...) {
+  family_info <- get(paste0(".family_", x$family))()
+  # new specials may have been added in new brms versions
+  x$specials <- family_info$specials
+  x
+}
+
+#' @export
+update_old_family.family <- function(x, ...) {
+  check_family(x, ...)
+}
+
+#' @export
+update_old_family.customfamily <- function(x, ...) {
+  x
+}
+
+#' @export
+update_old_family.mixfamily <- function(x, ...) {
+  x$mix <- lapply(x$mix, update_old_family, ...)
+  x
+}
+
+#' @export
+update_old_family.brmsformula <- function(x, ...) {
+  x$family <- update_old_family(x$family, ...)
+  x
+}
+
+#' @export
+update_old_family.mvbrmsformula <- function(x, ...) {
+  x$forms <- lapply(x$forms, update_old_family, ...)
+  x
 }
 
 stop_parameterization_changed <- function(family, version) {
