@@ -910,6 +910,10 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (get_ma(autocor)) {
       prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
     }
+    if (has_latent_residuals(bterms)) {
+      prior <- prior + 
+        brmsprior(def_scale_prior, class = "sderr", resp = resp)
+    }
   }
   if (is.cor_sar(autocor)) {
     if (identical(autocor$type, "lag")) {
@@ -925,10 +929,6 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (identical(autocor$type, "escar")) {
       prior <- prior + brmsprior(class = "car", resp = resp)
     }
-  }
-  if (is.cor_bsts(autocor)) {
-    prior <- prior +
-      brmsprior(class = "sigmaLL", prior = def_scale_prior, resp = resp)
   }
   prior
 }

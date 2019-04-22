@@ -9,13 +9,14 @@
 `decomp` of `brmsformula` thanks to the help of Ben Goodrich. (#640)
 * Define argument `sparse` separately for each model formula.
 * Allow using `bayes_R2` and `loo_R2` with ordinal models. (#639)
+* Support `cor_arma` in non-normal models. (#648)
 
 ### Other Changes
 
 * Change the parameterization of monotonic effects to 
 improve their interpretability. (#578)
-* No longer support the `cor_arr` correlation structure 
-after a year of deprecation.
+* No longer support the `cor_arr` and `cor_bsts` correlation 
+structures after a year of deprecation.
 * Refactor internal evaluation of special predictor terms.
 * Improve penality of splines thanks to Ben Goodrich
 and Ruben Arslan.

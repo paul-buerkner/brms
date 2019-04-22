@@ -13,8 +13,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)
   out <- exclude_pars_internal(
-    bterms, data = data, save_all_pars = save_all_pars,
-    save_mevars = save_mevars
+    bterms, data = data, save_ranef = save_ranef, 
+    save_all_pars = save_all_pars, save_mevars = save_mevars
   )
   meef <- tidy_meef(bterms, data)
   if (nrow(meef)) {
@@ -68,15 +68,16 @@ exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars, ...) {
 }
 
 #' @export
-exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) {
+exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars, 
+                                            save_mevars, ...) {
   p <- usc(combine_prefix(x))
-  out <- paste0(c("res_cov_matrix", names(x$dpars)), p)
+  out <- paste0(c("chol_cov", names(x$dpars)), p)
   if (!save_all_pars) {
     c(out) <- c(
       paste0("temp", p, "_Intercept1"), 
       paste0("ordered", p, "_Intercept"),
       paste0("fixed", p, "_Intercept"),
-      paste0(c("theta", "zcar"), p)
+      paste0(c("theta", "zcar", "zerr"), p)
     )
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
@@ -87,6 +88,10 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
   }
   if (!save_mevars && is.formula(x$adforms$mi)) {
     c(out) <- paste0("Yl", p)
+  }
+  if (!save_ranef) {
+    # latent residuals are like group-level effects
+    c(out) <- paste0("err", p)
   }
   out
 }

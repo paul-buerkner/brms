@@ -27,11 +27,9 @@ are performed only for the specified response variables.}
 \item{check_response}{Logical; Indicates if response variables should
 be checked as well. Defaults to \code{TRUE}.}
 
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation parameters
-should be included in the predictions. Defaults to \code{TRUE}. Setting it
-to \code{FALSE} will not affect other correlation structures such as
-\code{\link[brms:cor_bsts]{cor_bsts}}, or
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
+\item{incl_autocor}{A flag indicating if correlation structures originally
+specified via \code{autocor} should be included in the predictions.
+Defaults to \code{TRUE}.}
 
 \item{all_group_vars}{Optional names of grouping variables to be validated.
 Defaults to all grouping variables in the model.}

@@ -370,24 +370,6 @@ test_that("make_standata returns fixed residual covariance matrices", {
                "'V' must have the same number of rows as 'data'")
 })
 
-test_that("make_standata returns data for bsts models", {
-  dat <- data.frame(y = 1:5, g = c(1:3, sample(1:3, 2, TRUE)), t = 1:5)
-  expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
-               as.array(sort(dat$g)))
-  expect_equivalent(make_standata(bf(y~1, sigma ~ 1), data = dat, 
-                                  autocor = cor_bsts(~t|g))$X_sigma[, 1],
-                    rep(1, nrow(dat)))
-  
-  dat = data.frame(
-    y = rnorm(100), id = rep(1:10, each = 1),
-    day = rep(1:10, length.out = 100) 
-  )
-  expect_error(
-    make_standata(y~1, dat, autocor = cor_bsts(~day|id)),
-    "Time points within groups must be unique"
-  )
-})
-
 test_that("make_standata returns data for GAMMs", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10),
                     x3 = rnorm(10), z = rnorm(10), g = factor(rep(1:2, 5)))

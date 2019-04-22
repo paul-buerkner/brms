@@ -413,20 +413,23 @@ predictor_offset <- function(draws, i, nobs) {
 #   order for ARMA structures to work correctly
 predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   if (any(c("ar", "ma") %in% names(draws$ac))) {
-    if (!is.null(i)) {
-      stop2("Pointwise evaluation is not possible for ARMA models.")
+    if (!is.null(draws$ac$err)) {
+      # ARMA correlations via latent residuals
+      eta <- eta + p(draws$ac$err, i, row = FALSE)
+    } else {
+      # ARMA correlations via explicit natural residuals
+      if (!is.null(i)) {
+        stop2("Pointwise evaluation is not possible for ARMA models.")
+      }
+      eta <- .predictor_arma(
+        eta, ar = draws$ac$ar, ma = draws$ac$ma, 
+        Y = draws$ac$Y, J_lag = draws$ac$J_lag, 
+        fdraws = fdraws
+      ) 
     }
-    eta <- .predictor_arma(
-      eta, ar = draws$ac$ar, ma = draws$ac$ma, 
-      Y = draws$ac$Y, J_lag = draws$ac$J_lag, 
-      fdraws = fdraws
-    )
   }
   if (!is.null(draws$ac$rcar)) {
     eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
-  }
-  if (!is.null(draws$ac$loclev)) {
-    eta <- eta + p(draws$ac$loclev, i, row = FALSE)
   }
   eta
 }
@@ -459,12 +462,12 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   take_ma <- seq_len(min(Kma, max_lag))
   ar <- ar[, take_ar, drop = FALSE]
   ma <- ma[, take_ma, drop = FALSE]
-  E <- array(0, dim = c(S, max_lag, max_lag + 1))
-  e <- zero_mat <- matrix(0, nrow = S, ncol = max_lag)
+  Err <- array(0, dim = c(S, max_lag, max_lag + 1))
+  err <- zero_mat <- matrix(0, nrow = S, ncol = max_lag)
   zero_vec <- rep(0, S)
   for (n in seq_len(N)) {
     if (Kma) {
-      eta[, n] <- eta[, n] + rowSums(ma * E[, take_ma, max_lag])
+      eta[, n] <- eta[, n] + rowSums(ma * Err[, take_ma, max_lag])
     }
     y <- Y[n]
     if (is.na(y)) {
@@ -472,18 +475,18 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
       fdraws$dpars$mu <- eta
       y <- predict_fun(n, fdraws)
     }
-    e[, max_lag] <- y - eta[, n]
+    err[, max_lag] <- y - eta[, n]
     if (J_lag[n] > 0) {
       # store residuals of former observations
       I <- seq_len(J_lag[n])
-      E[, I, max_lag + 1] <- e[, max_lag + 1 - I]
+      Err[, I, max_lag + 1] <- err[, max_lag + 1 - I]
     }
     if (Kar) {
-      eta[, n] <- eta[, n] + rowSums(ar * E[, take_ar, max_lag])
+      eta[, n] <- eta[, n] + rowSums(ar * Err[, take_ar, max_lag])
     }
-    # keep the size of 'e' and 'E' as small as possible
-    E <- abind(E[, , -1, drop = FALSE], zero_mat)
-    e <- cbind(e[, -1, drop = FALSE], zero_vec)
+    # keep the size of 'err' and 'Err' as small as possible
+    Err <- abind(Err[, , -1, drop = FALSE], zero_mat)
+    err <- cbind(err[, -1, drop = FALSE], zero_vec)
   }
   eta
 }

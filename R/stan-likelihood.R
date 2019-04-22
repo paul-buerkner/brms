@@ -301,11 +301,11 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sdist("normal_cov", 
-    p$mu, p$se2, p$N_tg, p$begin_tg, 
-    p$end_tg, p$nobs_tg, p$res_cov_matrix
+    p$mu, p$chol_cov, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
@@ -355,11 +355,11 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sdist("student_t_cov", 
-    p$nu, p$mu, p$se2, p$N_tg, p$begin_tg,
-    p$end_tg, p$nobs_tg, p$res_cov_matrix
+    p$nu, p$mu, p$chol_cov, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 

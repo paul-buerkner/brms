@@ -179,6 +179,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
             "addition arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
+    stopifnot(family %in% c("gaussian", "student"))
     resp <- x$responses
     nresp <- length(resp)
     str_add(out$modelD) <- glue( 
@@ -1117,19 +1118,19 @@ stan_ac <- function(bterms, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   autocor <- bterms$autocor
+  if (has_latent_residuals(bterms)) {
+    str_add(out$eta) <- glue(" + err{p}")
+  }
   if (get_ar(autocor) && !use_cov(autocor)) {
     eta <- combine_prefix(px, keep_mu = TRUE)
-    eta_ar <- glue("head(E{p}[n], Kar{p}) * ar{p}")
+    eta_ar <- glue("head(Err{p}[n], Kar{p}) * ar{p}")
     str_add(out$modelC3) <- glue("    {eta}[n] += {eta_ar};\n")
   }
   if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out$loopeta) <- glue(" + head(E{p}[n], Kma{p}) * ma{p}")
+    str_add(out$loopeta) <- glue(" + head(Err{p}[n], Kma{p}) * ma{p}")
   }
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
-  }
-  if (is.cor_bsts(autocor)) {
-    str_add(out$loopeta) <- glue(" + loclev{p}[n]")
   }
   out
 }
@@ -1360,9 +1361,8 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 # indicate if the population-level design matrix should be centered
 # implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
-  is.btl(x) && !no_center(x$fe) && 
-    has_intercept(x$fe) && !is_sparse(x$fe) &&
-    !fix_intercepts(x) && !is.cor_bsts(x$autocor)
+  is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
+    !fix_intercepts(x) && !is_sparse(x$fe)
 }
 
 # default Stan definitions for distributional parameters

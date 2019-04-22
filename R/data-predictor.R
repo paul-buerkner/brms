@@ -98,10 +98,8 @@ data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
 data_fe <- function(bterms, data, not4stan = FALSE) {
   out <- list()
   p <- usc(combine_prefix(bterms))
-  is_ordinal <- is_ordinal(bterms$family)
-  is_bsts <- is.cor_bsts(bterms$autocor)
   # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal || is_bsts) "(Intercept)"
+  cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
   avoid_dpars(colnames(X), bterms = bterms)
   out[[paste0("K", p)]] <- ncol(X)
@@ -628,15 +626,13 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
   autocor <- bterms$autocor
   N <- nrow(data)
   out <- list()
-  if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
+  if (is.cor_arma(autocor)) {
+    # ARMA correlations
     if (length(bterms$time$group)) {
       tgroup <- as.numeric(factor(data[[bterms$time$group]]))
     } else {
       tgroup <- rep(1, N) 
     }
-  }
-  if (is.cor_arma(autocor)) {
-    # ARMA correlations
     out$Kar <- get_ar(autocor)
     out$Kma <- get_ma(autocor)
     if (use_cov(autocor)) {
@@ -724,8 +720,6 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenW)
     }
-  } else if (is.cor_bsts(autocor)) {
-    out$tg <- as.array(tgroup)
   } else if (is.cor_fixed(autocor)) {
     V <- autocor$V
     rmd_rows <- attr(data, "na.action")

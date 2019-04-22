@@ -286,15 +286,21 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   out
 }
 
-# compute ARMA1 covariance matrices
+# compute ARMA covariance matrices
 # @param draws a brmsdraws object
 # @param obs observations for which to compute the covariance matrix
-get_cov_matrix_arma <- function(draws, obs) {
+# @param latent compute covariance matrix for latent residuals?
+get_cov_matrix_arma <- function(draws, obs, latent = FALSE) {
   nobs <- length(obs)
-  # make sure not to add 'se' twice
-  se <- draws$data$se[obs]
-  draws$data$se <- NULL
-  sigma <- get_dpar(draws, "sigma", i = obs)
+  if (latent) {
+    se <- rep(0, nobs)
+    sigma <- draws$ac$sderr
+  } else {
+    se <- draws$data$se[obs]
+    # make sure not to add 'se' twice
+    draws$data$se <- NULL
+    sigma <- get_dpar(draws, "sigma", i = obs) 
+  }
   ar <- as.numeric(draws$ac$ar)
   ma <- as.numeric(draws$ac$ma)
   if (length(ar) && !length(ma)) {
@@ -621,7 +627,7 @@ choose_N <- function(draws) {
 prepare_family <- function(x) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
-  if (use_cov(x$autocor)) {
+  if (use_cov(x$autocor) && has_natural_residuals(x)) {
     family$fun <- paste0(family$family, "_cov")
   } else if (is.cor_sar(x$autocor)) {
     if (identical(x$autocor$type, "lag")) {
@@ -775,8 +781,8 @@ fixef_pars <- function() {
 default_plot_pars <- function(family) {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", valid_dpars(family), "$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
-    "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
+    "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
+    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
 }
 
 # extract all valid parameter names that match pars

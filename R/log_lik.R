@@ -32,7 +32,7 @@ log_lik_internal.brmsdraws <- function(draws, ...) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
   N <- choose_N(draws)
-  out <- do_call(cbind, lapply(seq_len(N), log_lik_fun, draws = draws))
+  out <- cblapply(seq_len(N), log_lik_fun, draws = draws)
   colnames(out) <- NULL
   old_order <- draws$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
@@ -151,7 +151,7 @@ log_lik_student_mv <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   Y <- as.numeric(draws$data$Y[obs])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_arma(draws, obs)
@@ -164,8 +164,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do_call(rbind, out)
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_student_cov <- function(i, draws, data = data.frame()) {
@@ -189,8 +188,7 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do_call(rbind, out)
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
@@ -213,8 +211,7 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do_call(rbind, out)
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
@@ -234,8 +231,7 @@ log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  out <- lapply(seq_len(draws$nsamples), .log_lik)
-  do_call(rbind, out)
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_student_fixed <- function(i, draws, data = data.frame()) {
@@ -408,7 +404,7 @@ log_lik_wiener <- function(i, draws, data = data.frame()) {
     beta = get_dpar(draws, "bias", i = i),
     resp = draws$data[["dec"]][i]
   )
-  out <- do_call("dwiener", c(draws$data$Y[i], args, log = TRUE))
+  out <- do_call(dwiener, c(draws$data$Y[i], args, log = TRUE))
   log_lik_weight(out, i = i, weights = draws$data$weights)
 }
 

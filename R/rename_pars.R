@@ -14,8 +14,7 @@ rename_pars <- function(x) {
   change <- c(
     change_effects(bterms, data = data, pars = pars, scode = stancode(x)),
     change_re(x$ranef, pars = pars),
-    change_Xme(meef, pars = pars),
-    change_autocor(bterms, data = data, pars = pars)
+    change_Xme(meef, pars = pars)
   )
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
@@ -354,27 +353,6 @@ change_re_levels <- function(ranef, pars)  {
     index_names <- make_index_names(levels, r$coef, dim = 2)
     fnames <- paste0(r_new_parname, index_names)
     lc(out) <- clist(grepl(r_regex, pars), fnames)
-  }
-  out
-}
-
-# helps in renaming autocor parameters
-change_autocor <- function(bterms, data, pars) {
-  out <- list()
-  if (is.cor_bsts(bterms$autocor)) {
-    data <- order_data(data, bterms = bterms)
-    if (!is.null(bterms$time$group)) {
-      group <- gsub("[ \t\r\n]", "", get(bterms$time$group, data))
-    } else {
-      group <- rep(1, nrow(data)) 
-    }
-    if (!is.null(bterms$time$time)) {
-      time <- gsub("[ \t\r\n]", "", get(bterms$time$time, data))
-    } else {
-      time <- ulapply(unique(group), function(g) seq_len(sum(group == g)))
-    }
-    loclev_pars <- paste0("loclev[", group, ",", time, "]")
-    lc(out) <- clist(grepl("^loclev\\[", pars), loclev_pars)
   }
   out
 }

@@ -141,17 +141,15 @@ stan_autocor <- function(bterms, prior) {
   family <- bterms$family
   autocor <- bterms$autocor
   resp <- bterms$response
-  allow_autocor <- allow_autocor(family)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  has_natural_residuals <- has_natural_residuals(bterms)
+  has_latent_residuals <- has_latent_residuals(bterms)
   out <- list()
   if (is.cor_arma(autocor)) {
     err_msg <- "ARMA models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
-    }
-    if (!allow_autocor) {
-      stop2(err_msg, " for family '", family$family, "'.") 
     }
     str_add(out$data) <- glue( 
       "  // data needed for ARMA correlations\n",
@@ -188,8 +186,8 @@ stan_autocor <- function(bterms, prior) {
       if (isTRUE(bterms$rescor)) {
         stop2(err_msg, " when estimating 'rescor'.")
       }
-      if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
-        stop2(err_msg, " when predicting 'sigma' or 'nu'.")
+      if (has_natural_residuals && length(names(bterms$dpars)) > 1L) {
+        stop2(err_msg, " when predicting distributional parameters.")
       }
       str_add(out$data) <- glue( 
         "  // see the functions block for details\n",
@@ -204,27 +202,48 @@ stan_autocor <- function(bterms, prior) {
         )
       }
       str_add(out$tparD) <- glue(
-        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] res_cov_matrix;\n"               
+        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cov;\n"               
       )
       if (Kar && !Kma) {
-        cov_mat_fun <- "ar1"
-        cov_mat_args <- glue("ar{p}[1]")
+        cov_fun <- "ar1"
+        cov_args <- glue("ar{p}[1]")
       } else if (!Kar && Kma) {
-        cov_mat_fun <- "ma1"
-        cov_mat_args <- glue("ma{p}[1]")
+        cov_fun <- "ma1"
+        cov_args <- glue("ma{p}[1]")
       } else {
-        cov_mat_fun <- "arma1"
-        cov_mat_args <- glue("ar{p}[1], ma{p}[1]")
+        cov_fun <- "arma1"
+        cov_args <- glue("ar{p}[1], ma{p}[1]")
       }
+      sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
       str_add(out$tparC1) <- glue(
         "  // compute residual covariance matrix\n",
-        "  res_cov_matrix = cov_matrix_{cov_mat_fun}", 
-        "({cov_mat_args}, sigma{p}, max(nobs_tg{p}));\n"
+        "  chol_cov{p} = cholesky_cov_{cov_fun}", 
+        "({cov_args}, {sdpar}{p}, max(nobs_tg{p}));\n"
       )
+      if (has_latent_residuals) {
+        str_add(out$par) <- glue(
+          "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+          "  real<lower=0> sderr;  // SD of residuals\n"
+        )
+        str_add(out$tparD) <- glue(
+          "  vector[N{p}] err{p};  // actual residuals\n"
+        )
+        str_add(out$tparC1) <- glue(
+          "  // compute correlated residuals\n",
+          "  err{p} = scale_cov_err(",
+          "zerr{p}, chol_cov{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        )
+        str_add(out$prior) <- glue(
+          "  target += normal_lpdf(zerr | 0, 1);\n"
+        )
+        str_add(out$prior) <- stan_prior(
+          prior, class = "sderr", px = px, suffix = p
+        )
+      }
     } else {
       err_msg <- "Please set cov = TRUE in ARMA correlation structures"
-      if (is.formula(bterms$adforms$se)) {
-        stop2(err_msg, " when including known standard errors.")
+      if (!has_natural_residuals) {
+        stop2(err_msg, " for family '", family$family, "'.")
       }
       if (is.btnl(bterms$dpars[["mu"]])) {
         stop2(err_msg, " in non-linear models.")
@@ -232,31 +251,34 @@ stan_autocor <- function(bterms, prior) {
       if (!identical(family$link, "identity")) {
         stop2(err_msg, " when using non-identity links.")
       }
+      if (is.formula(bterms$adforms$se)) {
+        stop2(err_msg, " when including known standard errors.")
+      }
       str_add(out$data) <- glue( 
         "  int<lower=0> J_lag{p}[N{p}];\n"                
       )
       str_add(out$modelD) <- glue(
         "  // objects storing residuals\n",
-        "  matrix[N{p}, max_lag{p}] E{p}",
+        "  matrix[N{p}, max_lag{p}] Err{p}",
         " = rep_matrix(0, N{p}, max_lag{p});\n",
-        "  vector[N{p}] e{p};\n"
+        "  vector[N{p}] err{p};\n"
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
       str_add(out$modelC2) <- glue(
         "    // computation of ARMA correlations\n",
-        "    e{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
+        "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
         "    for (i in 1:J_lag{p}[n]) {{\n",
-        "      E{p}[n + 1, i] = e{p}[n + 1 - i];\n",
+        "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
         "    }}\n"
       )
-    } 
+    }
   }
   if (is.cor_sar(autocor)) {
     err_msg <- "SAR models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!allow_autocor) {
+    if (!has_natural_residuals) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -368,56 +390,12 @@ stan_autocor <- function(bterms, prior) {
       )
     }
   }
-  if (is.cor_bsts(autocor)) {
-    warning2(
-      "The 'bsts' correlation structure has been deprecated and ",
-      "will be removed from the package at some point. Consider ", 
-      "using splines or Gaussian processes instead."
-    )
-    err_msg <- "BSTS models are not implemented"
-    if (is.mixfamily(family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
-    if (is_ordinal(family) || family$family %in% c("bernoulli", "categorical")) {
-      stop2(err_msg, " for family '", family$family, "'.")
-    }
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " in non-linear models.")
-    }
-    str_add(out$data) <- glue(
-      "  vector[N{p}] tg{p};  // indicates independent groups\n"
-    )
-    str_add(out$par) <- glue(
-      "  vector[N{p}] loclev{p};  // local level terms\n",
-      "  real<lower=0> sigmaLL{p};  // SD of local level terms\n"
-    )
-    if (allow_autocor) {
-      # ensures that the means of the loclev priors start close 
-      # to the response values; this often helps with convergence
-      link <- stan_link(family$link)
-      center <- c("1", "n")
-      center <- glue("{link}(Y{p}[{center}])")
-    } else {
-      center <- c("0", "0")
-    }
-    str_add(out$prior) <- glue(
-      stan_prior(prior, class = "sigmaLL", px = px, suffix = p),
-      "  target += normal_lpdf(loclev{p}[1] | {center[1]}, sigmaLL{p});\n",
-      "  for (n in 2:N{p}) {{\n",
-      "    if (tg{p}[n] == tg{p}[n - 1]) {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | loclev{p}[n - 1], sigmaLL{p});\n",
-      "    }} else {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | {center[2]}, sigmaLL{p});\n",
-      "    }}\n",
-      "  }}\n"
-    )
-  }
   if (is.cor_fixed(autocor)) {
     err_msg <- "Fixed residual covariance matrices are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!allow_autocor) {
+    if (!has_natural_residuals) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -495,12 +473,14 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     autocors <- lapply(bterms$terms, "[[", "autocor")
   }
   if (any(ulapply(autocors, use_cov))) {
+    # TODO: include functions selectively
     str_add(out$fun) <- glue(
       "  #include 'fun_normal_cov.stan'\n",
       "  #include 'fun_student_t_cov.stan'\n",
-      "  #include 'fun_cov_matrix_ar1.stan'\n",
-      "  #include 'fun_cov_matrix_ma1.stan'\n",
-      "  #include 'fun_cov_matrix_arma1.stan'\n"
+      "  #include 'fun_cholesky_cov_ar1.stan'\n",
+      "  #include 'fun_cholesky_cov_ma1.stan'\n",
+      "  #include 'fun_cholesky_cov_arma1.stan'\n",
+      "  #include 'fun_scale_cov_err.stan'\n"
     )
   }
   if (any(ulapply(autocors, is.cor_sar))) {

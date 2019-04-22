@@ -17,12 +17,12 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 
-  new <- !is.null(newdata)
   newdata <- validate_newdata(
     newdata, object = x, re_formula = re_formula, 
     resp = resp, allow_new_levels = allow_new_levels, 
     new_objects = new_objects, ...
   )
+  new <- !isTRUE(attr(newdata, "old"))
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula, 
     resp = resp, allow_new_levels = allow_new_levels, 
@@ -151,9 +151,9 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
       draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
     }
   }
-  if (use_cov(x$autocor) || is.cor_sar(x$autocor)) {
+  if (has_cor_natural_residuals(x)) {
     # only include autocor samples on the top-level of draws 
-    # when using the covariance formulation of ARMA / SAR structures
+    # when using the covariance formulation of autocorrelations
     draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
@@ -203,7 +203,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
   }
-  if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
+  if (!has_cor_natural_residuals(x)) {
     draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws
@@ -650,7 +650,25 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     }
     if (use_cov(autocor)) {
       draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
-      draws$nobs_tg <- sdata[[paste0("nobs_tg", p)]]
+      draws$end_tg <- sdata[[paste0("end_tg", p)]]
+      if (has_latent_residuals(bterms)) {
+        regex_err <- paste0("^err", p, "\\[")
+        has_err <- any(grepl(regex_err, colnames(samples)))
+        if (has_err && !new) {
+          draws$err <- get_samples(samples, regex_err)
+        } else {
+          # need to sample correlated residuals
+          draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
+          draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+          for (i in seq_len(draws$N_tg)) {
+            obs <- with(draws, begin_tg[i]:end_tg[i])
+            zeros <- rep(0, length(obs))
+            cov <- get_cov_matrix_arma(list(ac = draws), obs, latent = TRUE)
+            .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+            draws$err[, obs] <- rblapply(seq_rows(samples), .err)
+          }
+        }
+      }
     }
   }
   if (is.cor_sar(autocor)) {
@@ -671,16 +689,6 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     rcar <- get_samples(samples, paste0("^rcar", p, "\\["))
     rcar <- rcar[, unique(gcar), drop = FALSE]
     draws$rcar <- rcar
-  }
-  if (is.cor_bsts(autocor)) {
-    if (new) {
-      warning2(
-        "Local level terms are currently ignored ", 
-        "when 'newdata' is specified."
-      )
-    } else {
-      draws$loclev <- get_samples(samples, paste0("^loclev", p, "\\["))
-    }
   }
   draws
 }
@@ -965,11 +973,9 @@ is.bdrawsnl <- function(x) {
 #'   cannot be passed via argument \code{newdata}. Required for objects passed
 #'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
 #'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
-#' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
-#'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
-#'   to \code{FALSE} will not affect other correlation structures such as
-#'   \code{\link[brms:cor_bsts]{cor_bsts}}, or
-#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param incl_autocor A flag indicating if correlation structures originally
+#'   specified via \code{autocor} should be included in the predictions.
+#'   Defaults to \code{TRUE}.
 #' @param offset Logical; Indicates if offsets should be included in the
 #'   predictions. Defaults to \code{TRUE}.
 #' @param oos Optional indices of observations for which to compute
