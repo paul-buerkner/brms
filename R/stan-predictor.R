@@ -287,6 +287,9 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
   fixef <- colnames(data_fe(bterms, data)$X)
   sparse <- is_sparse(bterms$fe)
   decomp <- get_decomp(bterms$fe)
+  if (length(fixef) < 2L) {
+    decomp <- "none"
+  }
   center_X <- stan_center_X(bterms)
   ct <- str_if(center_X, "c")
   # remove the intercept from the design matrix?
@@ -318,20 +321,25 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       )
     }
     # prepare population-level coefficients
-    if (!glue("b{p}") %in% names(stanvars)) {
-      bound <- get_bound(prior, class = "b", px = px)
-      if (stan_use_horseshoe(bterms, prior) || decomp != "none") {
-        str_add(out$tparD) <- glue(
-          "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
-        )
-      } else {
-        str_add(out$par) <- glue(
-          "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
-        )
+    bound <- get_bound(prior, class = "b", px = px)
+    stan_def_b <- glue(
+      "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
+    )
+    if (stan_use_horseshoe(bterms, prior)) {
+      str_add(out$tparD) <- stan_def_b
+    } else if (decomp != "none") {
+      if (nzchar(bound)) {
+        stop2("Cannot impose bounds on decomposed coefficients.")
+      }
+      str_add(out$genD) <- stan_def_b
+    } else {
+      if (!glue("b{p}") %in% names(stanvars)) {
+        str_add(out$par) <- stan_def_b
       }
     }
     str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = fixef, px = px, suffix = p
+      prior, class = "b", coef = fixef, px = px, 
+      suffix = str_if(decomp != "none", glue("Q{p}"), p)
     )
     out <- collapse_lists(out,
       stan_special_prior_local(
@@ -409,7 +417,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       )
     }
   }
-  if (decomp == "QR" && length(fixef) > 1L) {
+  if (decomp == "QR") {
     if (stan_use_horseshoe(bterms, prior)) {
       stop2("Cannot use QR decomposition and horseshoe prior simultaneously.")
     }
@@ -421,14 +429,14 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     )
     str_add(out$tdataC) <- glue(
       "  // compute and scale QR decomposition\n",
-      "  XQ{p} = qr_Q(X{ct}{p})[, 1:K{ct}{p}] * N{resp};\n",
-      "  XR{p} = qr_R(X{ct}{p})[1:K{ct}{p}, ] / N{resp};\n",
+      "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
+      "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
       "  XR{p}_inv = inverse(XR{p});\n"
     )
     str_add(out$par) <- glue(
       "  vector[K{ct}{p}] bQ{p};  // regression coefficients at QR scale\n" 
     )
-    str_add(out$tparC1) <- glue(
+    str_add(out$genC) <- glue(
       "  b{p} = XR{p}_inv * bQ{p};  // obtain the actual coefficients\n"
     )
   }
