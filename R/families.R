@@ -1378,6 +1378,11 @@ has_natural_residuals <- function(family) {
   "residuals" %in% family_info(family, "specials")
 }
 
+# check if the family allows for residual correlations
+has_rescor <- function(family) {
+  "rescor" %in% family_info(family, "specials")
+}
+
 # checks if category specific effects are allowed
 allow_cs <- function(family) {
   "cs" %in% family_info(family, "specials")

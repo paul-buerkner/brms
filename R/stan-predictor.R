@@ -179,6 +179,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
             "addition arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
+    stopifnot(family %in% c("gaussian", "student"))
     resp <- x$responses
     nresp <- length(resp)
     str_add(out$modelD) <- glue( 

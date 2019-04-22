@@ -18,7 +18,7 @@
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
-    specials = "residuals"
+    specials = c("residuals", "rescor")
   )
 }
 
@@ -29,7 +29,7 @@
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
     include = "fun_logm1.stan",
-    specials = "residuals"
+    specials = c("residuals", "rescor")
   )
 }
 

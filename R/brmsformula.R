@@ -947,8 +947,10 @@ allow_rescor <- function(x) {
     return(FALSE)
   }
   parts <- if (is.mvbrmsformula(x)) x$forms else x$terms 
-  families <- ulapply(parts, function(f) f$family$family)
-  all(families == "gaussian") || all(families == "student")
+  families <- lapply(parts, "[[", "family")
+  has_rescor <- ulapply(families, has_rescor)
+  family_names <- ulapply(families, "[[", "family")
+  all(has_rescor) && length(unique(family_names)) == 1L
 }
 
 #' @rdname brmsformula-helpers
