@@ -93,7 +93,7 @@ fitted_internal.brmsdraws <- function(
   out <- reorder_obs(out, draws$old_order, sort = sort)
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (is_categorical(draws$family) || is_ordinal(draws$family)) {
+    if (has_cat(draws$family) && length(dim(out)) == 3L) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
