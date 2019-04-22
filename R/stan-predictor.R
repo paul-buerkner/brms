@@ -322,31 +322,39 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     }
     # prepare population-level coefficients
     bound <- get_bound(prior, class = "b", px = px)
-    stan_def_b <- glue(
-      "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
-    )
-    if (stan_use_horseshoe(bterms, prior)) {
-      str_add(out$tparD) <- stan_def_b
-    } else if (decomp != "none") {
+    comment_b <- "  // population-level effects"
+    stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
+    use_horseshoe <- stan_use_horseshoe(bterms, prior)
+    if (decomp == "none") {
+      bsuffix <- ""
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_b
+      } else if (!glue("b{p}") %in% names(stanvars)) {
+        str_add(out$par) <- stan_def_b
+      }
+    } else {
       if (nzchar(bound)) {
         stop2("Cannot impose bounds on decomposed coefficients.")
       }
-      str_add(out$genD) <- stan_def_b
-    } else {
-      if (!glue("b{p}") %in% names(stanvars)) {
-        str_add(out$par) <- stan_def_b
+      bsuffix <- "Q"
+      comment_bQ <- "  // regression coefficients at QR scale"
+      stan_def_bQ <- glue("  vector[K{ct}{p}] bQ{p};{comment_bQ}\n")
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_bQ
+      } else {
+        str_add(out$par) <- stan_def_bQ
       }
+      str_add(out$genD) <- stan_def_b
     }
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = fixef, px = px, 
-      suffix = str_if(decomp != "none", glue("Q{p}"), p)
+      suffix = glue("{bsuffix}{p}")
     )
-    out <- collapse_lists(out,
-      stan_special_prior_local(
-        "b", prior, ncoef = length(fixef), 
-        px = px, center_X = center_X  
-      )                      
+    stan_special_priors <- stan_special_prior_local(
+      prior, class = "b", ncoef = length(fixef), 
+      px = px, center_X = center_X, suffix = bsuffix
     )
+    out <- collapse_lists(out, stan_special_priors)
   }
   
   order_intercepts <- order_intercepts(bterms)
@@ -418,9 +426,6 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     }
   }
   if (decomp == "QR") {
-    if (stan_use_horseshoe(bterms, prior)) {
-      stop2("Cannot use QR decomposition and horseshoe prior simultaneously.")
-    }
     str_add(out$tdataD) <- glue(
       "  // matrices for QR decomposition\n",
       "  matrix[N{resp}, K{ct}{p}] XQ{p};\n",
@@ -432,9 +437,6 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
       "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
       "  XR{p}_inv = inverse(XR{p});\n"
-    )
-    str_add(out$par) <- glue(
-      "  vector[K{ct}{p}] bQ{p};  // regression coefficients at QR scale\n" 
     )
     str_add(out$genC) <- glue(
       "  b{p} = XR{p}_inv * bQ{p};  // obtain the actual coefficients\n"
@@ -953,12 +955,11 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       "simo{p}_{I} | con_simo{p}_{I});\n"
     )
   }
-  out <- collapse_lists(out,
-    stan_special_prior_local(
-      "bsp", prior, ncoef = nrow(spef), 
-      px = px, center_X = FALSE
-    )                      
-  )
+  stan_special_priors <- stan_special_prior_local(
+    prior, class = "bsp", ncoef = nrow(spef), 
+    px = px, center_X = FALSE
+  )  
+  out <- collapse_lists(out, stan_special_priors)
   out
 }
 

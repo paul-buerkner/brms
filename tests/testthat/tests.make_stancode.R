@@ -1352,12 +1352,19 @@ test_that("QR decomposition is included in the Stan code", {
   data <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10))
   bform <- bf(y ~ x1 + x2, decomp = "QR") + 
     lf(sigma ~ 0 + x1 + x2, decomp = "QR")
-  scode <- make_stancode(bform, data, prior = prior(normal(0, 1)))
+  
+  # simple priors
+  scode <- make_stancode(bform, data, prior = prior(normal(0, 2)))
   expect_match2(scode, "XQ = qr_thin_Q(Xc) * sqrt(N - 1);")
   expect_match2(scode, "b = XR_inv * bQ;")
-  expect_match2(scode, "target += normal_lpdf(bQ | 0, 1);")
+  expect_match2(scode, "target += normal_lpdf(bQ | 0, 2);")
   expect_match2(scode, "XQ * bQ")
   expect_match2(scode, "XR_sigma = qr_thin_R(X_sigma) / sqrt(N - 1);")
+  
+  # horseshoe prior
+  scode <- make_stancode(bform, data, prior = prior(horseshoe(1)))
+  expect_match2(scode, "target += normal_lpdf(zb | 0, 1);")
+  expect_match2(scode, "bQ = horseshoe(")
 })
 
 test_that("Stan code for Gaussian processes is correct", {
