@@ -545,16 +545,16 @@ update_old_family <- function(x, ...) {
 }
 
 #' @export
-update_old_family.brmsfamily <- function(x, ...) {
-  family_info <- get(paste0(".family_", x$family))()
-  # new specials may have been added in new brms versions
-  x$specials <- family_info$specials
-  x
+update_old_family.default <- function(x, ...) {
+  check_family(x)
 }
 
 #' @export
-update_old_family.family <- function(x, ...) {
-  check_family(x, ...)
+update_old_family.brmsfamily <- function(x, ...) {
+  # new specials may have been added in new brms versions
+  family_info <- get(paste0(".family_", x$family))()
+  x$specials <- family_info$specials
+  x
 }
 
 #' @export
