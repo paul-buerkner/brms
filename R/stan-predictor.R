@@ -1132,9 +1132,6 @@ stan_ac <- function(bterms, ...) {
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
   }
-  if (is.cor_bsts(autocor)) {
-    str_add(out$loopeta) <- glue(" + loclev{p}[n]")
-  }
   out
 }
 
@@ -1364,9 +1361,8 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 # indicate if the population-level design matrix should be centered
 # implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
-  is.btl(x) && !no_center(x$fe) && 
-    has_intercept(x$fe) && !is_sparse(x$fe) &&
-    !fix_intercepts(x) && !is.cor_bsts(x$autocor)
+  is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
+    !fix_intercepts(x) && !is_sparse(x$fe)
 }
 
 # default Stan definitions for distributional parameters

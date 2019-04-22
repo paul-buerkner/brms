@@ -38,11 +38,9 @@ correlations. This options may be useful for conducting Bayesian power
 analysis. If \code{"old_levels"}, directly sample new levels from the
 existing levels.}
 
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation parameters
-should be included in the predictions. Defaults to \code{TRUE}. Setting it
-to \code{FALSE} will not affect other correlation structures such as
-\code{\link[brms:cor_bsts]{cor_bsts}}, or
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
+\item{incl_autocor}{A flag indicating if correlation structures originally
+specified via \code{autocor} should be included in the predictions.
+Defaults to \code{TRUE}.}
 
 \item{oos}{Optional indices of observations for which to compute
 out-of-sample rather than in-sample predictions. Only required in models

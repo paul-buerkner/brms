@@ -390,50 +390,6 @@ stan_autocor <- function(bterms, prior) {
       )
     }
   }
-  if (is.cor_bsts(autocor)) {
-    warning2(
-      "The 'bsts' correlation structure has been deprecated and ",
-      "will be removed from the package at some point. Consider ", 
-      "using splines or Gaussian processes instead."
-    )
-    err_msg <- "BSTS models are not implemented"
-    if (is.mixfamily(family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
-    if (is_ordinal(family) || family$family %in% c("bernoulli", "categorical")) {
-      stop2(err_msg, " for family '", family$family, "'.")
-    }
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " in non-linear models.")
-    }
-    str_add(out$data) <- glue(
-      "  vector[N{p}] tg{p};  // indicates independent groups\n"
-    )
-    str_add(out$par) <- glue(
-      "  vector[N{p}] loclev{p};  // local level terms\n",
-      "  real<lower=0> sigmaLL{p};  // SD of local level terms\n"
-    )
-    if (has_natural_residuals) {
-      # ensures that the means of the loclev priors start close 
-      # to the response values; this often helps with convergence
-      link <- stan_link(family$link)
-      center <- c("1", "n")
-      center <- glue("{link}(Y{p}[{center}])")
-    } else {
-      center <- c("0", "0")
-    }
-    str_add(out$prior) <- glue(
-      stan_prior(prior, class = "sigmaLL", px = px, suffix = p),
-      "  target += normal_lpdf(loclev{p}[1] | {center[1]}, sigmaLL{p});\n",
-      "  for (n in 2:N{p}) {{\n",
-      "    if (tg{p}[n] == tg{p}[n - 1]) {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | loclev{p}[n - 1], sigmaLL{p});\n",
-      "    }} else {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | {center[2]}, sigmaLL{p});\n",
-      "    }}\n",
-      "  }}\n"
-    )
-  }
   if (is.cor_fixed(autocor)) {
     err_msg <- "Fixed residual covariance matrices are not implemented"
     if (is.mixfamily(family)) {

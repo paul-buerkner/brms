@@ -690,14 +690,6 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     rcar <- rcar[, unique(gcar), drop = FALSE]
     draws$rcar <- rcar
   }
-  if (is.cor_bsts(autocor)) {
-    if (new) {
-      warning2("Local level terms are currently ignored ", 
-               "when 'newdata' is specified.")
-    } else {
-      draws$loclev <- get_samples(samples, paste0("^loclev", p, "\\["))
-    }
-  }
   draws
 }
 
@@ -981,11 +973,9 @@ is.bdrawsnl <- function(x) {
 #'   cannot be passed via argument \code{newdata}. Required for objects passed
 #'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
 #'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
-#' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
-#'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
-#'   to \code{FALSE} will not affect other correlation structures such as
-#'   \code{\link[brms:cor_bsts]{cor_bsts}}, or
-#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param incl_autocor A flag indicating if correlation structures originally
+#'   specified via \code{autocor} should be included in the predictions.
+#'   Defaults to \code{TRUE}.
 #' @param offset Logical; Indicates if offsets should be included in the
 #'   predictions. Defaults to \code{TRUE}.
 #' @param oos Optional indices of observations for which to compute

@@ -16,13 +16,12 @@
 #'   \item{cor_ma}{moving average (MA) structure of arbitrary order} 
 #'   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
 #'   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
-#'   \item{cor_bsts}{Bayesian structural time series (BSTS) structure}
 #'   \item{cor_fixed}{fixed user-defined covariance structure}
 #' }
 #' 
 #' @seealso 
 #' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, 
-#'       \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
+#'       \link{cor_car}, \link{cor_sar}, \link{cor_fixed}}
 #' 
 NULL
 
@@ -72,7 +71,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
   if ("r" %in% names(match.call())) {
-    warning2("ARR correlations are no longer supported and ignored.")
+    warning2("The ARR structure is no longer supported and ignored.")
   }
   if (!(p >= 0 && p == round(p))) {
     stop2("Autoregressive order must be a non-negative integer.")
@@ -361,38 +360,16 @@ cor_fixed <- function(V) {
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
 
-#' Basic Bayesian Structural Time Series
+#' (Defunct) Basic Bayesian Structural Time Series
 #' 
-#' Add a basic Bayesian structural time series component to a brms model
-#' 
-#' @aliases cor_bsts-class
+#' The BSTS correlation structure is no longer supported.
 #' 
 #' @inheritParams cor_arma
 #' 
-#' @return An object of class \code{cor_bsts}.
-#' 
-#' @details Bayesian structural time series models offer an alternative 
-#'   to classical AR(I)MA models (they are in fact a generalization).
-#'   The basic version currently implemented in \pkg{brms} introduces
-#'   local level terms for each observation, whereas each local level term 
-#'   depends on the former local level term:
-#'   \deqn{LL_t ~ N(LL_{t-1}, sigmaLL)}
-#'   A simple introduction can be found in this blogpost: 
-#'   \url{http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/}.
-#'   More complicated Bayesian structural time series models may follow
-#'   in the future.
-#'   
-#' @examples 
-#' \dontrun{
-#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
-#' fit <- brm(y~x, data = dat, autocor = cor_bsts())
-#' }   
-#' 
+#' @keywords internal
 #' @export
 cor_bsts <- function(formula = ~1) {
-  x <- list(formula = as.formula(formula))
-  class(x) <- c("cor_bsts", "cor_brms")
-  x
+  stop2("The BSTS structure is no longer supported.")
 }
 
 #' Check if argument is a correlation structure
@@ -431,12 +408,6 @@ is.cor_fixed <- function(x) {
   inherits(x, "cor_fixed")
 }
 
-#' @rdname is.cor_brms
-#' @export
-is.cor_bsts <- function(x) {
-  inherits(x, "cor_bsts")
-}
-
 #' @export
 print.cor_empty <- function(x, ...) {
   cat("empty()")
@@ -460,12 +431,6 @@ print.cor_car <- function(x, ...) {
   cat(paste0(
     "car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"
   ))
-  invisible(x)
-}
-
-#' @export
-print.cor_bsts <- function(x, ...) {
-  cat(paste0("bsts(", formula2str(x$formula), ")"))
   invisible(x)
 }
 
@@ -530,23 +495,16 @@ check_autocor <- function(autocor) {
   autocor
 }
 
-# convenience function to ignore autocorrelation terms
-# currently excludes ARMA, SAR, and CAR structures
+# remove autocorrelation structures
+# @param x a brmsfit object
 remove_autocor <- function(x) {
+  stopifnot(is.brmsfit(x))
   if (is_mv(x)) {
     for (r in names(x$formula$forms)) {
-      ac <- x$formula$forms[[r]]$autocor
-      excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
-      if (excl_cor) {
-        x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
-      }
+      x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
     }
   } else {
-    ac <- x$formula$autocor
-    excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
-    if (excl_cor) {
-      x$autocor <- x$formula$autocor <- cor_empty()
-    }
+    x$autocor <- x$formula$autocor <- cor_empty()
   }
   x
 }
@@ -583,8 +541,7 @@ subset_autocor <- function(x, subset, autocor = NULL) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  p <- c("ar", "ma", "arr", "sderr", "lagsar", "errorsar", 
-         "car", "sdcar", "sigmaLL")
+  p <- c("ar", "ma", "sderr", "lagsar", "errorsar", "car", "sdcar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

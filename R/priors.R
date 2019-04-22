@@ -930,10 +930,6 @@ prior_autocor <- function(bterms, def_scale_prior) {
       prior <- prior + brmsprior(class = "car", resp = resp)
     }
   }
-  if (is.cor_bsts(autocor)) {
-    prior <- prior +
-      brmsprior(class = "sigmaLL", prior = def_scale_prior, resp = resp)
-  }
   prior
 }
 

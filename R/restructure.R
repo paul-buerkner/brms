@@ -50,10 +50,10 @@ restructure <- function(x, rstr_summary = FALSE) {
 
 restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
-  version <- x$version$brms
-  pars <- parnames(x)
   x$formula <- update_old_family(x$formula)
   bterms <- parse_bf(x$formula)
+  pars <- parnames(x)
+  version <- x$version$brms
   if (version <= "2.1.1") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
@@ -96,8 +96,8 @@ restructure_v2 <- function(x) {
     x <- rescale_old_mo(x)
   }
   if (version <= "2.8.4") {
-    if (any(grepl("^arr(\\[|_|$)", parnames(x)))) {
-      warning2("ARR correlations are no longer supported.")
+    if (any(grepl("^arr(\\[|_|$)", pars))) {
+      warning2("ARR structures are no longer supported.")
     }
   }
   if (version <= "2.8.5") {
@@ -105,6 +105,11 @@ restructure_v2 <- function(x) {
     # this requires updating the 'terms' attribute of the data
     x$data <- rm_attr(x$data, c("brmsframe", "terms"))
     x$data <- update_data(x$data, bterms) 
+  }
+  if (version <= "2.8.8") {
+    if (any(grepl("^loclev(\\[|_|$)", pars))) {
+      warning2("BSTS structures are no longer supported.")
+    }
   }
   x
 }

@@ -782,7 +782,7 @@ default_plot_pars <- function(family) {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", valid_dpars(family), "$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
-    "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
+    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
 }
 
 # extract all valid parameter names that match pars

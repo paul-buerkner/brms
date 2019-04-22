@@ -15,8 +15,8 @@
 
 * Change the parameterization of monotonic effects to 
 improve their interpretability. (#578)
-* No longer support the `cor_arr` correlation structure 
-after a year of deprecation.
+* No longer support the `cor_arr` and `cor_bsts` correlation 
+structures after a year of deprecation.
 * Refactor internal evaluation of special predictor terms.
 * Improve penality of splines thanks to Ben Goodrich
 and Ruben Arslan.
