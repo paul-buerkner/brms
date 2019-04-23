@@ -428,6 +428,10 @@ validate_models <- function(models, model_names, sub_names) {
 reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL, 
                   resp = NULL, check = TRUE, ...) {
   stopifnot(is.loo(x), is.brmsfit(fit))
+  if (is.brmsfit_multiple(fit)) {
+    warn_brmsfit_multiple(fit)
+    class(fit) <- "brmsfit"
+  }
   if (is.null(newdata)) {
     mf <- model.frame(fit) 
   } else {
@@ -514,6 +518,10 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
                            group = NULL, newdata = NULL, resp = NULL,
                            save_fits = FALSE, ...) {
   stopifnot(is.brmsfit(x))
+  if (is.brmsfit_multiple(x)) {
+    warn_brmsfit_multiple(x)
+    class(x) <- "brmsfit"
+  }
   if (is.null(newdata)) {
     mf <- model.frame(x) 
   } else {

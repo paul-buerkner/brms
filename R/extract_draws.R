@@ -9,6 +9,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   new_objects = list(), ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
+  warn_brmsfit_multiple(x)
   x <- restructure(x)
   if (!incl_autocor) {
     x <- remove_autocor(x) 

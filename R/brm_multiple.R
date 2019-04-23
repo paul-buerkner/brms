@@ -82,7 +82,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
     data <- lapply(seq_len(data$m), mice::complete, data = data)
-  } else if (!(is.list(data) && is.vector(data))) {
+  } else if (!is_data_list(data)) {
     stop2("'data' must be a list of data.frames.")
   }
   
@@ -251,4 +251,19 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   out <- do_call(brm_multiple, args)
   out$data.name <- data.name
   out
+}
+
+# validity check for data input of 'brm_multiple'
+is_data_list <- function(x) {
+  is.list(x) && is.vector(x)
+}
+
+warn_brmsfit_multiple <- function(x) {
+  if (is.brmsfit_multiple(x)) {
+    warning2(
+      "Using only the first imputed data set. Please interpret the results ", 
+      "with caution until a more principled approach has been implemented."
+    )
+  }
+  invisible(x)
 }
