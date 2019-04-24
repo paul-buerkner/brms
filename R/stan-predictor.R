@@ -288,6 +288,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
   sparse <- is_sparse(bterms$fe)
   decomp <- get_decomp(bterms$fe)
   if (length(fixef) < 2L) {
+    # decompositions require at least two predictors
     decomp <- "none"
   }
   center_X <- stan_center_X(bterms)
@@ -322,17 +323,18 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     }
     # prepare population-level coefficients
     bound <- get_bound(prior, class = "b", px = px)
-    comment_b <- "  // population-level effects"
-    stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
     use_horseshoe <- stan_use_horseshoe(bterms, prior)
     if (decomp == "none") {
       bsuffix <- ""
+      comment_b <- "  // population-level effects"
+      stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
       if (use_horseshoe) {
         str_add(out$tparD) <- stan_def_b
       } else if (!glue("b{p}") %in% names(stanvars)) {
         str_add(out$par) <- stan_def_b
       }
     } else {
+      stopifnot(decomp == "QR")
       if (nzchar(bound)) {
         stop2("Cannot impose bounds on decomposed coefficients.")
       }
@@ -344,7 +346,10 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       } else {
         str_add(out$par) <- stan_def_bQ
       }
-      str_add(out$genD) <- stan_def_b
+      str_add(out$genD) <- glue(
+        "  // obtain the actual coefficients\n",
+        "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
+      )
     }
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = fixef, px = px, 
@@ -437,9 +442,6 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
       "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
       "  XR{p}_inv = inverse(XR{p});\n"
-    )
-    str_add(out$genC) <- glue(
-      "  b{p} = XR{p}_inv * bQ{p};  // obtain the actual coefficients\n"
     )
   }
   str_add(out$eta) <- stan_eta_fe(fixef, bterms)
