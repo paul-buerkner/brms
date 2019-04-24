@@ -510,6 +510,13 @@ test_that("make_standata handles missing value terms", {
   bform <- bf(y ~ mi(x.2)*g) + bf(x.2 | mi() ~ g) + set_rescor(FALSE)
   sdata <- make_standata(bform, dat)
   expect_equal(sdata$Jmi_x, as.array(miss))
+  
+  dat$z <- rbeta(10, 1, 1)
+  dat$z[miss] <- NA
+  bform <- bf(y ~ mi(z)*g) + bf(z | mi() ~ g, family = Beta()) + 
+    set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jmi_z, as.array(miss))
 })
 
 test_that("make_standata handles overimputation", {

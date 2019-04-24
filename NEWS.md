@@ -29,6 +29,8 @@ measurement error models thanks to Jonathan A. Nations. (#636)
 mixture models.
 * Fix computation of fitted values for truncated lognormal 
 and weibull models.
+* Fix checking of response boundaries for models with
+missing values thanks to Lucas Deschamps.
 
 
 # brms 2.8.0

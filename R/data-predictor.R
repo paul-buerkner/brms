@@ -831,19 +831,21 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     ybounds <- family_info(x$family, "ybounds")
     closed <- family_info(x$family, "closed")
     if (is.finite(ybounds[1])) {
-      if (closed[1] && min(out$Y) < ybounds[1]) {
+      y_min <- min(out$Y, na.rm = TRUE)
+      if (closed[1] && y_min < ybounds[1]) {
         stop2("Family '", family4error, "' requires response greater ",
               "than or equal to ", ybounds[1], ".")
-      } else if (!closed[1] && min(out$Y) <= ybounds[1]) {
+      } else if (!closed[1] && y_min <= ybounds[1]) {
         stop2("Family '", family4error, "' requires response greater ",
               "than ", round(ybounds[1], 2), ".")
       }
     }
     if (is.finite(ybounds[2])) {
-      if (closed[2] && max(out$Y) > ybounds[2]) {
+      y_max <- max(out$Y, na.rm = TRUE)
+      if (closed[2] && y_max > ybounds[2]) {
         stop2("Family '", family4error, "' requires response smaller ",
               "than or equal to ", ybounds[2], ".")
-      } else if (!closed[2] && max(out$Y) >= ybounds[2]) {
+      } else if (!closed[2] && y_max >= ybounds[2]) {
         stop2("Family '", family4error, "' requires response smaller ",
               "than ", round(ybounds[2], 2), ".")
       }
@@ -981,11 +983,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
       out$noise <- as.array(sdy)
+      if (!not4stan) {
+        out$noise[which_mi] <- Inf
+      }
     }
     if (!not4stan) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected
-      out$Y[which_mi] <- out$noise[which_mi] <- Inf
+      out$Y[which_mi] <- Inf
     }
   } 
   resp <- usc(combine_prefix(x))
