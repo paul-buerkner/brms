@@ -155,6 +155,9 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @export
 posterior_summary.default <- function(x, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
+  if (!length(x)) {
+    stop2("No posterior samples supplied.")
+  }
   if (robust) {
     coefs <- c("median", "mad", "quantile")
   } else {
