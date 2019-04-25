@@ -915,6 +915,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   data to the generated \pkg{Stan} model.
 #' @param specials A character vector of special options to enable
 #'   for this custom family. Currently for internal use only.
+#' @param threshold Optional threshold type for custom ordinal families.
+#'   Ignored for non-ordinal families.
 #' @param log_lik Optional function to compute log-likelihood values of
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
@@ -986,6 +988,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, specials = NULL, 
+                          threshold = c("flexible", "equidistant"),
                           log_lik = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
@@ -1055,6 +1058,10 @@ custom_family <- function(name, dpars = "mu", links = "identity",
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
   }
   class(out) <- c("customfamily", "brmsfamily", "family")
+  if (is_ordinal(out)) {
+    threshold <- match.arg(threshold)
+    out$threshold <- threshold
+  }
   out
 }
 
