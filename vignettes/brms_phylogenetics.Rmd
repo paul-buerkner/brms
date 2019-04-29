@@ -52,12 +52,10 @@ head(data_simple)
 The `phylo` object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species (Hadfield & Nakagawa, 2010).
 
 ```{r}
-inv.phylo <- MCMCglmm::inverseA(phylo, nodes = "TIPS", scale = TRUE)
-A <- solve(inv.phylo$Ainv)
-rownames(A) <- rownames(inv.phylo$Ainv)
+A <- ape::vcv.phylo(phylo)
 ```
 
-In contrast to **MCMCglmm**, **brms** requires the covariance matrix and not its inverse. Now, we are ready to fit our first phylogenetic multilevel model:
+Now we are ready to fit our first phylogenetic multilevel model:
 
 ```{r, results='hide'}
 model_simple <- brm(
