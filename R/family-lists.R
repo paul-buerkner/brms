@@ -246,7 +246,7 @@
 
 .family_wiener <- function() {
   list(
-    links = "identity",
+    links = c("identity", "log"),
     dpars = c("mu", "bs", "ndt", "bias"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "dec"),
