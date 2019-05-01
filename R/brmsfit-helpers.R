@@ -701,10 +701,6 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
   models <- dots[is_brmsfit]
   models <- validate_models(models, model_names, names(models))
   out <- dots[!is_brmsfit]
-  if (is.null(out$subset) && !is.null(out$nsamples)) {
-    out$subset <- sample(nsamples(models[[1]]), out$nsamples)
-    out$nsamples <- NULL
-  }
   if (other) {
     out$models <- models
   } else {
@@ -810,6 +806,18 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   } else {
     out <- na_value
   }
+  out
+}
+
+# extract argument names of a post-processing method
+arg_names <- function(method) {
+  opts <- c("predict", "fitted", "log_lik")
+  method <- match.arg(method, opts)
+  out <- names(formals(paste0(method, ".brmsfit")))
+  c(out) <- names(formals(extract_draws.brmsfit))
+  c(out) <- names(formals(validate_newdata))
+  out <- unique(out)
+  out <- setdiff(out, c("object", "x", "..."))
   out
 }
 
