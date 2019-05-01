@@ -636,7 +636,8 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   center_X <- stan_center_X(bterms)
-  if (center_X) {
+  if (center_X && !is_ordinal(bterms)) {
+    # priors for ordinal thresholds are provided in 'prior_thres'
     prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
     fixef <- setdiff(fixef, "Intercept")
   }

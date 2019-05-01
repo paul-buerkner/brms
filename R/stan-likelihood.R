@@ -661,8 +661,11 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
   dpars <- paste0(family$dpars, mix)
-  thres <- if (is_ordinal(family)) "temp_Intercept"
-  sdist(family$name, p[dpars], thres, family$vars)
+  if (is_ordinal(family)) {
+    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
+  }
+  sdist(family$name, p[dpars], p$ord_intercept, family$vars)
 }
 
 # prepare distribution and arguments for use in Stan
