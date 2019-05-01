@@ -674,10 +674,8 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(autocor)) {
     out$autocor <- check_autocor(autocor)
   }
-  respform <- lhs(formula)
-  if (!is.null(respform)) {
-    respform <- validate_resp_formula(respform)
-    out$resp <- parse_resp(respform)
+  if (!is.null(lhs(formula))) {
+    out$resp <- parse_resp(formula)
   }
   # add default values for unspecified elements
   defs <- list(
