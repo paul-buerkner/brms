@@ -59,11 +59,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   
   if (check_response) {
     # extract response variables
-    y$respform <- lhs(formula)
-    if (is.null(y$respform)) {
-      stop2("Invalid formula: response variable is missing.")
-    }
-    y$respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(y$respform)))
+    y$respform <- validate_resp_formula(formula, empty_ok = FALSE)
     if (mv) {
       y$resp <- parse_resp(y$respform) 
     } else {
@@ -503,8 +499,7 @@ parse_resp <- function(formula, check_names = TRUE) {
   if (is.null(formula)) {
     return(NULL)
   }
-  str_formula <- gsub("\\|+[^~]*~", "~", formula2str(formula))
-  expr <- formula(str_formula)[[2]]
+  expr <- validate_resp_formula(formula)[[2]]
   if (length(expr) <= 1L) {
     out <- deparse_no_string(expr)
   } else {
@@ -1051,8 +1046,7 @@ has_cs <- function(bterms) {
 # extract names of response categories
 extract_cat_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  respform <- formula2str(lhs(x$formula))
-  respform <- formula(gsub("\\|+[^~]*~", "~", respform))
+  respform <- validate_resp_formula(x$formula)
   mr <- model.response(model.frame(respform, data))
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))

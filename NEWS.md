@@ -31,6 +31,8 @@ mixture models.
 and weibull models.
 * Fix checking of response boundaries for models with
 missing values thanks to Lucas Deschamps.
+* Fix Stan code of multivariate models with both residual 
+correlations and missing value terms thanks to Solomon Kurz.
 
 
 # brms 2.8.0

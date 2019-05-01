@@ -154,10 +154,10 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   str_add_list(out) <- stan_autocor(x, prior = prior)
   str_add_list(out) <- stan_mixture(x, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
-  out$model_loop <- paste0(out$modelC2, out$modelC3, out$modelC4)
-  if (isTRUE(nzchar(out$model_loop))) {
-    out$model_loop <- paste0(
-      "  for (n in 1:N", resp, ") {\n", out$model_loop, "  }\n"
+  out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+  if (isTRUE(nzchar(out$modelCL))) {
+    out$modelCL <- paste0(
+      "  for (n in 1:N", resp, ") {\n", out$modelCL, "  }\n"
     )
   }
   out
@@ -186,10 +186,8 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  // multivariate linear predictor matrix\n",
       "  vector[nresp] Mu[N];\n"
     )
-    str_add(out$model_loop) <- glue(
-      "  for (n in 1:N) {{\n",
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n",
-      "  }}\n"
+    str_add(out$modelC2) <- glue(
+      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
     )
     str_add(out$data) <- glue(
       "  int<lower=1> nresp;  // number of responses\n",   
@@ -276,6 +274,12 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
     str_add(out$genC) <- stan_cor_genC("rescor", "nresp")
+    out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+    if (isTRUE(nzchar(out$modelCL))) {
+      out$modelCL <- paste0(
+        "  for (n in 1:N) {\n", out$modelCL, "  }\n"
+      )
+    }
   }
   out
 }

@@ -7,7 +7,7 @@ test_that("brm produces expected errors", {
   
   # formula parsing
   expect_error(brm(~ x + (1|g), dat, file = "test"), 
-               "response variable is missing")
+               "Response variable is missing")
   expect_error(brm(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
   expect_error(brm(bf(y | se(sei) ~ x, sigma ~ x), dat),

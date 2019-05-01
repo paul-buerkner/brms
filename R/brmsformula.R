@@ -597,7 +597,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   dots <- unlist(dots, recursive = FALSE)
   forms <- list()
   for (i in seq_along(dots)) {
-    forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
+    c(forms) <- validate_par_formula(dots[[i]], par = names(dots)[i])
   }
   is_dupl_pars <- duplicated(names(forms), fromLast = TRUE)
   if (any(is_dupl_pars)) {
@@ -676,7 +676,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   }
   respform <- lhs(formula)
   if (!is.null(respform)) {
-    respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(respform)))
+    respform <- validate_resp_formula(respform)
     out$resp <- parse_resp(respform)
   }
   # add default values for unspecified elements
@@ -900,9 +900,8 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 split_bf <- function(x) {
   stopifnot(is.brmsformula(x))
   resp <- parse_resp(x$formula, check_names = FALSE)
-  str_adform <- get_matches(
-    "\\|[^~]*(?=~)", formula2str(x$formula), perl = TRUE
-  )
+  str_adform <- formula2str(x$formula)
+  str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
   if (length(resp) > 1L) {
     # mvbind syntax used to specify MV model
     flist <- named_list(resp)
@@ -1071,13 +1070,13 @@ decomp_opts <- function() {
   c("none", "QR")
 }
 
-# validate and prepare a formula of a distributional parameter
-# @param formula: an formula object
+# validate a formula of an additional parameter
+# @param formula an formula object
 # @param par optional name of the parameter; if not specified
 #   the parameter name will be inferred from the formula
 # @param rsv_pars optional character vector of reserved parameter names
 # @return a named list of length one containing the formula
-prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
+validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
   stopifnot(length(par) <= 1L)
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
@@ -1116,6 +1115,30 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
     stop2("The following parameter names are reserved",  
           "for this model:\n", collapse_comma(inv_pars))
   }
+  out
+}
+
+# validate formulas dedicated to response variables
+# @param x coerced to a formula object
+# @param empty_ok is an empty left-hand-side ok?
+# @return a formula of the form <response> ~ 1
+validate_resp_formula <- function(x, empty_ok = TRUE) {
+  out <- lhs(as.formula(x))
+  if (is.null(out)) {
+    if (empty_ok) {
+      out <- ~ 1
+    } else {
+      str_x <- formula2str(x, space = "trim")
+      stop2("Response variable is missing in formula ", str_x) 
+    }
+  }
+  out <- gsub("\\|+[^~]*~", "~", formula2str(out))
+  out <- try(formula(out), silent = TRUE)
+  if (is(out, "try-error")) {
+    str_x <- formula2str(x, space = "trim")
+    stop2("Incorrect use of '|' on the left-hand side of ", str_x)
+  }
+  environment(out) <- environment(x)
   out
 }
 
