@@ -570,7 +570,7 @@ test_that("by variables in grouping terms are handled correctly", {
   dat <- data.frame(
     y = rnorm(100), x = rnorm(100),
     g = rep(gvar, each = 10),
-    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20)),
+    z = factor(rep(c(0, 4.5, 3, 2, "x 1"), each = 20)),
     z2 = factor(1:2)
   )
   sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)
