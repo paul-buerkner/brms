@@ -266,7 +266,7 @@
 
 .family_von_mises <- function() {
   list(
-    links = "tan_half",
+    links = c("tan_half", "identity"),
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
