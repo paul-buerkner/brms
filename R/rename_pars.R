@@ -17,6 +17,7 @@ rename_pars <- function(x) {
     change_Xme(meef, pars = pars)
   )
   # perform the actual renaming in x$fit@sim
+  x <- save_old_par_order(x)
   x <- do_renaming(x, change)
   x <- compute_quantities(x)
   x <- reorder_pars(x)
@@ -429,6 +430,14 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
     index_names <- paste0("[", temp, "]")
   }
   index_names
+}
+
+# save original order of the parameters in the stanfit object
+save_old_par_order <- function(x) {
+  x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
+  x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
+  x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+  x
 }
 
 # perform actual renaming of Stan parameters
