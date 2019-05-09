@@ -42,8 +42,8 @@ If \code{summary = TRUE} a 1 x C matrix is returned
 Compute a Bayesian version of R-squared for regression models
 }
 \details{
-For an introduction to the approach, see
-  \url{https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf}.
+For an introduction to the approach, see Gelman et al. (2018)
+ and \url{https://github.com/jgabry/bayes_R2/}.
 }
 \examples{
 \dontrun{
@@ -56,4 +56,10 @@ nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
 bayes_R2(fit, newdata = nd)
 }
 
+}
+\references{
+Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
+  R-squared for Bayesian regression models, \emph{The American Statistician}.
+  \url{https://doi.org/10.1080/00031305.2018.1549100}. (Preprint available at
+  \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf}.)
 }
