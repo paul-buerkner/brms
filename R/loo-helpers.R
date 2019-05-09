@@ -428,6 +428,10 @@ validate_models <- function(models, model_names, sub_names) {
 reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL, 
                   resp = NULL, check = TRUE, ...) {
   stopifnot(is.loo(x), is.brmsfit(fit))
+  if (is.brmsfit_multiple(fit)) {
+    warn_brmsfit_multiple(fit)
+    class(fit) <- "brmsfit"
+  }
   if (is.null(newdata)) {
     mf <- model.frame(fit) 
   } else {
@@ -460,16 +464,27 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
     return(x)
   }
   
+  # split dots for use in log_lik and update
+  dots <- list(...)
+  ll_arg_names <- arg_names("log_lik")
+  ll_args <- dots[intersect(names(dots), ll_arg_names)]
+  ll_args$allow_new_levels <- TRUE
+  ll_args$resp <- resp
+  ll_args$combine <- TRUE
+  up_args <- dots[setdiff(names(dots), ll_arg_names)]
+  up_args$refresh <- 0
+  
   .reloo <- function(j) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_j <- subset_autocor(fit, -omitted)
-    fit_j <- SW(update(fit_j, newdata = mf_omitted, refresh = 0, ...))
+    up_args$object <- fit_j
+    up_args$newdata <- mf_omitted
+    fit_j <- SW(do_call(update, up_args))
     fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
-    log_lik(
-      fit_j, newdata = mf[omitted, , drop = FALSE],
-      allow_new_levels = TRUE, resp = resp, ...
-    )
+    ll_args$object <- fit_j
+    ll_args$newdata <- mf[omitted, , drop = FALSE]
+    return(do_call(log_lik, ll_args))
   }
   
   lls <- futures <- vector("list", J)
@@ -514,6 +529,10 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
                            group = NULL, newdata = NULL, resp = NULL,
                            save_fits = FALSE, ...) {
   stopifnot(is.brmsfit(x))
+  if (is.brmsfit_multiple(x)) {
+    warn_brmsfit_multiple(x)
+    class(x) <- "brmsfit"
+  }
   if (is.null(newdata)) {
     mf <- model.frame(x) 
   } else {
@@ -584,6 +603,16 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
     Ksub <- sort(Ksub)
   }
   
+  # split dots for use in log_lik and update
+  dots <- list(...)
+  ll_arg_names <- arg_names("log_lik")
+  ll_args <- dots[intersect(names(dots), ll_arg_names)]
+  ll_args$allow_new_levels <- TRUE
+  ll_args$resp <- resp
+  ll_args$combine <- TRUE
+  up_args <- dots[setdiff(names(dots), ll_arg_names)]
+  up_args$refresh <- 0
+  
   # function to be run inside future::future
   .kfold <- function(k) {
     if (fold_type == "loo" && !is.null(group)) {
@@ -594,13 +623,14 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit <- subset_autocor(x, -omitted)
-    fit <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
+    up_args$object <- fit
+    up_args$newdata <- mf_omitted
+    fit <- SW(do_call(update, up_args))
     # allow predictions for matrix based correlation structures
     fit <- subset_autocor(fit, predicted, autocor = x$autocor)
-    lppds <- log_lik(
-      fit, newdata = mf[predicted, , drop = FALSE], 
-      allow_new_levels = TRUE, resp = resp
-    )
+    ll_args$object <- fit
+    ll_args$newdata <- mf[predicted, , drop = FALSE]
+    lppds <- do_call(log_lik, ll_args)
     out <- nlist(lppds, omitted, predicted)
     if (save_fits) out$fit <- fit
     return(out)

@@ -14,10 +14,10 @@ rename_pars <- function(x) {
   change <- c(
     change_effects(bterms, data = data, pars = pars, scode = stancode(x)),
     change_re(x$ranef, pars = pars),
-    change_Xme(meef, pars = pars),
-    change_autocor(bterms, data = data, pars = pars)
+    change_Xme(meef, pars = pars)
   )
   # perform the actual renaming in x$fit@sim
+  x <- save_old_par_order(x)
   x <- do_renaming(x, change)
   x <- compute_quantities(x)
   x <- reorder_pars(x)
@@ -358,27 +358,6 @@ change_re_levels <- function(ranef, pars)  {
   out
 }
 
-# helps in renaming autocor parameters
-change_autocor <- function(bterms, data, pars) {
-  out <- list()
-  if (is.cor_bsts(bterms$autocor)) {
-    data <- order_data(data, bterms = bterms)
-    if (!is.null(bterms$time$group)) {
-      group <- gsub("[ \t\r\n]", "", get(bterms$time$group, data))
-    } else {
-      group <- rep(1, nrow(data)) 
-    }
-    if (!is.null(bterms$time$time)) {
-      time <- gsub("[ \t\r\n]", "", get(bterms$time$time, data))
-    } else {
-      time <- ulapply(unique(group), function(g) seq_len(sum(group == g)))
-    }
-    loclev_pars <- paste0("loclev[", group, ",", time, "]")
-    lc(out) <- clist(grepl("^loclev\\[", pars), loclev_pars)
-  }
-  out
-}
-
 # helps in renaming prior parameters
 # @param class the class of the parameters
 # @param pars names of all parameters in the model
@@ -451,6 +430,14 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
     index_names <- paste0("[", temp, "]")
   }
   index_names
+}
+
+# save original order of the parameters in the stanfit object
+save_old_par_order <- function(x) {
+  x$fit@sim$pars_oi_old <- x$fit@sim$pars_oi
+  x$fit@sim$dims_oi_old <- x$fit@sim$dims_oi
+  x$fit@sim$fnames_oi_old <- x$fit@sim$fnames_oi
+  x
 }
 
 # perform actual renaming of Stan parameters

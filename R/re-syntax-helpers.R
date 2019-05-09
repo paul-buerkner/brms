@@ -434,7 +434,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
           bylevels <- rsub$bylevels[[i]]
           g <- rsub$gcall[[i]]$groups
           J <- match(get(g, data), levels[[i]])
-          df <- unique(data.frame(J, by = get(by, data)))
+          df <- unique(data.frame(J, by = rm_wsp(get(by, data))))
           if (nrow(df) > length(unique(J))) {
             stop2("Some levels of '", g, "' correspond ", 
                   "to multiple levels of '", by, "'.")

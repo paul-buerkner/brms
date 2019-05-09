@@ -134,7 +134,7 @@ predict_gaussian_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_mv <- function(i, draws, ...) {
@@ -144,28 +144,28 @@ predict_student_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s], mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_cov <- function(i, draws, ...) {
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_arma(draws, obs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_cov <- function(i, draws, ...) {
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_arma(draws, obs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_lagsar <- function(i, draws, ...) {
@@ -178,7 +178,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_lagsar <- function(i, draws, ...) {
@@ -192,7 +192,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_errorsar <- function(i, draws, ...) {
@@ -204,7 +204,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_errorsar <- function(i, draws, ...) {
@@ -217,7 +217,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_fixed <- function(i, draws, ...) {
@@ -226,7 +226,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_fixed <- function(i, draws, ...) {
@@ -236,7 +236,7 @@ predict_student_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {

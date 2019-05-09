@@ -1,5 +1,5 @@
 # update data for use in brms functions
-# @param data the original data.frame
+# @param data the data passed by the user
 # @param bterms object of class brmsterms
 # @param na.action function defining how to treat NAs
 # @param drop.unused.levels should unused factor levels be removed?
@@ -196,7 +196,7 @@ validate_newdata <- function(
   all_group_vars = NULL, ...
 ) {
   if (is.null(newdata)) {
-    newdata <- structure(object$data, valid = TRUE, original = TRUE)
+    newdata <- structure(object$data, valid = TRUE, old = TRUE)
   }
   if (isTRUE(attr(newdata, "valid"))) {
     return(newdata)
@@ -607,16 +607,20 @@ extract_old_standata.btl <- function(x, data, ...) {
 
 # extract data related to smooth terms
 # for use in extract_old_standata
-make_sm_list <- function(x, data, ...) {
+# @param version optional brms version number
+make_sm_list <- function(x, data, version = NULL, ...) {
   stopifnot(is.btl(x))
   smterms <- all_terms(x[["sm"]])
   out <- named_list(smterms)
   if (length(smterms)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
+    # the spline penality has changed in 2.8.7 (#646)
+    diagonal.penalty <- !isTRUE(version <= "2.8.6")
     gam_args <- list(
       data = data, knots = knots, 
-      absorb.cons = TRUE, modCon = 3
+      absorb.cons = TRUE, modCon = 3,
+      diagonal.penalty = diagonal.penalty
     )
     for (i in seq_along(smterms)) {
       sc_args <- c(list(eval2(smterms[i])), gam_args)

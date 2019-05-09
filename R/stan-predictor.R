@@ -154,10 +154,10 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   str_add_list(out) <- stan_autocor(x, prior = prior)
   str_add_list(out) <- stan_mixture(x, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
-  out$model_loop <- paste0(out$modelC2, out$modelC3, out$modelC4)
-  if (isTRUE(nzchar(out$model_loop))) {
-    out$model_loop <- paste0(
-      "  for (n in 1:N", resp, ") {\n", out$model_loop, "  }\n"
+  out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+  if (isTRUE(nzchar(out$modelCL))) {
+    out$modelCL <- paste0(
+      "  for (n in 1:N", resp, ") {\n", out$modelCL, "  }\n"
     )
   }
   out
@@ -179,16 +179,15 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
             "addition arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
+    stopifnot(family %in% c("gaussian", "student"))
     resp <- x$responses
     nresp <- length(resp)
     str_add(out$modelD) <- glue( 
       "  // multivariate linear predictor matrix\n",
       "  vector[nresp] Mu[N];\n"
     )
-    str_add(out$model_loop) <- glue(
-      "  for (n in 1:N) {{\n",
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n",
-      "  }}\n"
+    str_add(out$modelC2) <- glue(
+      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
     )
     str_add(out$data) <- glue(
       "  int<lower=1> nresp;  // number of responses\n",   
@@ -275,6 +274,12 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
     str_add(out$genC) <- stan_cor_genC("rescor", "nresp")
+    out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+    if (isTRUE(nzchar(out$modelCL))) {
+      out$modelCL <- paste0(
+        "  for (n in 1:N) {\n", out$modelCL, "  }\n"
+      )
+    }
   }
   out
 }
@@ -285,7 +290,13 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
   sparse <- is_sparse(bterms$fe)
+  decomp <- get_decomp(bterms$fe)
+  if (length(fixef) < 2L) {
+    # decompositions require at least two predictors
+    decomp <- "none"
+  }
   center_X <- stan_center_X(bterms)
+  ct <- str_if(center_X, "c")
   # remove the intercept from the design matrix?
   if (center_X) {
     fixef <- setdiff(fixef, "Intercept")
@@ -301,6 +312,9 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       "  // population-level design matrix\n"
     )
     if (sparse) {
+      if (decomp != "none") {
+        stop2("Cannot use ", decomp, " decomposition for sparse matrices.")
+      }
       str_add(out$tdataD) <- glue(
         "  // sparse matrix representation of X{p}\n",
         "  vector[rows(csr_extract_w(X{p}))] wX{p}", 
@@ -312,26 +326,44 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       )
     }
     # prepare population-level coefficients
-    prefix <- combine_prefix(px, keep_mu = TRUE)
-    special <- attr(prior, "special")[[prefix]]
-    define_b_in_pars <- is.null(special[["hs_df"]]) &&
-      !glue("b{p}") %in% names(stanvars)
-    if (define_b_in_pars) {
-      ct <- str_if(center_X, "c")
-      bound <- get_bound(prior, class = "b", px = px)
-      str_add(out$par) <- glue(
-        "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
+    bound <- get_bound(prior, class = "b", px = px)
+    use_horseshoe <- stan_use_horseshoe(bterms, prior)
+    if (decomp == "none") {
+      bsuffix <- ""
+      comment_b <- "  // population-level effects"
+      stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_b
+      } else if (!glue("b{p}") %in% names(stanvars)) {
+        str_add(out$par) <- stan_def_b
+      }
+    } else {
+      stopifnot(decomp == "QR")
+      if (nzchar(bound)) {
+        stop2("Cannot impose bounds on decomposed coefficients.")
+      }
+      bsuffix <- "Q"
+      comment_bQ <- "  // regression coefficients at QR scale"
+      stan_def_bQ <- glue("  vector[K{ct}{p}] bQ{p};{comment_bQ}\n")
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_bQ
+      } else {
+        str_add(out$par) <- stan_def_bQ
+      }
+      str_add(out$genD) <- glue(
+        "  // obtain the actual coefficients\n",
+        "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
       )
     }
     str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = fixef, px = px, suffix = p
+      prior, class = "b", coef = fixef, px = px, 
+      suffix = glue("{bsuffix}{p}")
     )
-    out <- collapse_lists(out,
-      stan_special_prior_local(
-        "b", prior, ncoef = length(fixef), 
-        px = px, center_X = center_X  
-      )                      
+    stan_special_priors <- stan_special_prior_local(
+      prior, class = "b", ncoef = length(fixef), 
+      px = px, center_X = center_X, suffix = bsuffix
     )
+    out <- collapse_lists(out, stan_special_priors)
   }
   
   order_intercepts <- order_intercepts(bterms)
@@ -402,7 +434,21 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       )
     }
   }
-  str_add(out$eta) <- stan_eta_fe(fixef, center_X, sparse, px = px)
+  if (decomp == "QR") {
+    str_add(out$tdataD) <- glue(
+      "  // matrices for QR decomposition\n",
+      "  matrix[N{resp}, K{ct}{p}] XQ{p};\n",
+      "  matrix[K{ct}{p}, K{ct}{p}] XR{p};\n",
+      "  matrix[K{ct}{p}, K{ct}{p}] XR{p}_inv;\n"
+    )
+    str_add(out$tdataC) <- glue(
+      "  // compute and scale QR decomposition\n",
+      "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
+      "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
+      "  XR{p}_inv = inverse(XR{p});\n"
+    )
+  }
+  str_add(out$eta) <- stan_eta_fe(fixef, bterms)
   out
 }
 
@@ -875,16 +921,20 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       cglue("  vector[N{resp}] Csp{p}_{seq_len(ncovars)};\n")
     )
   }
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attr(prior, "special")[[prefix]]
-  define_bsp_in_pars <- is.null(special[["hs_df"]]) &&
-    !glue("bsp{p}") %in% names(stanvars)
-  if (define_bsp_in_pars) {
+  # prepare special effects coefficients
+  if (!glue("bsp{p}") %in% names(stanvars)) {
     bound <- get_bound(prior, class = "b", px = px)
-    str_add(out$par) <- glue(
-      "  // special effects coefficients\n", 
-      "  vector{bound}[Ksp{p}] bsp{p};\n"
-    )
+    if (stan_use_horseshoe(bterms, prior)) {
+      str_add(out$tparD) <- glue(
+        "  // special effects coefficients\n", 
+        "  vector{bound}[Ksp{p}] bsp{p};\n"
+      )
+    } else {
+      str_add(out$par) <- glue(
+        "  // special effects coefficients\n", 
+        "  vector{bound}[Ksp{p}] bsp{p};\n"
+      )
+    }
   }
   str_add(out$prior) <- stan_prior(
     prior, class = "b", coef = spef$coef, 
@@ -911,12 +961,11 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       "simo{p}_{I} | con_simo{p}_{I});\n"
     )
   }
-  out <- collapse_lists(out,
-    stan_special_prior_local(
-      "bsp", prior, ncoef = nrow(spef), 
-      px = px, center_X = FALSE
-    )                      
-  )
+  stan_special_priors <- stan_special_prior_local(
+    prior, class = "bsp", ncoef = nrow(spef), 
+    px = px, center_X = FALSE
+  )  
+  out <- collapse_lists(out, stan_special_priors)
   out
 }
 
@@ -1084,19 +1133,19 @@ stan_ac <- function(bterms, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   autocor <- bterms$autocor
+  if (has_latent_residuals(bterms)) {
+    str_add(out$eta) <- glue(" + err{p}")
+  }
   if (get_ar(autocor) && !use_cov(autocor)) {
     eta <- combine_prefix(px, keep_mu = TRUE)
-    eta_ar <- glue("head(E{p}[n], Kar{p}) * ar{p}")
+    eta_ar <- glue("head(Err{p}[n], Kar{p}) * ar{p}")
     str_add(out$modelC3) <- glue("    {eta}[n] += {eta_ar};\n")
   }
   if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out$loopeta) <- glue(" + head(E{p}[n], Kma{p}) * ma{p}")
+    str_add(out$loopeta) <- glue(" + head(Err{p}[n], Kma{p}) * ma{p}")
   }
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
-  }
-  if (is.cor_bsts(autocor)) {
-    str_add(out$loopeta) <- glue(" + loclev{p}[n]")
   }
   out
 }
@@ -1192,24 +1241,32 @@ stan_mixture <- function(bterms, prior) {
 
 # define Stan code to compute the fixef part of eta
 # @param fixef names of the population-level effects
-# @param center_X use the centered design matrix?
-# @param sparse use sparse matrix multiplication?
+# @param bterms object of class 'btl'
 # @return a single character string
-stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
-  p <- usc(combine_prefix(px))
-  resp <- usc(px$resp)
+stan_eta_fe <- function(fixef, bterms) {
   if (length(fixef)) {
+    p <- usc(combine_prefix(bterms))
+    center_X <- stan_center_X(bterms)
+    decomp <- get_decomp(bterms$fe)
+    sparse <- is_sparse(bterms$fe)
     if (sparse) {
-      stopifnot(!center_X)
+      stopifnot(!center_X && decomp == "none")
       csr_args <- sargs(
         paste0(c("rows", "cols"), "(X", p, ")"),
         paste0(c("wX", "vX", "uX", "b"), p)
       )
       eta_fe <- glue("csr_matrix_times_vector({csr_args})")
     } else {
-      eta_fe <- glue("X", str_if(center_X, "c"), "{p} * b{p}")
+      sfx_X <- sfx_b <- ""
+      if (decomp == "QR") {
+        sfx_X <- sfx_b <- "Q"
+      } else if (center_X) {
+        sfx_X <- "c"
+      }
+      eta_fe <- glue("X{sfx_X}{p} * b{sfx_b}{p}")
     }
   } else { 
+    resp <- usc(bterms$resp)
     eta_fe <- glue("rep_vector(0, N{resp})")
   }
   glue(" + {eta_fe}")
@@ -1319,9 +1376,8 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 # indicate if the population-level design matrix should be centered
 # implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
-  is.btl(x) && !no_center(x$fe) && 
-    has_intercept(x$fe) && !is_sparse(x$fe) &&
-    !fix_intercepts(x) && !is.cor_bsts(x$autocor)
+  is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
+    !fix_intercepts(x) && !is_sparse(x$fe)
 }
 
 # default Stan definitions for distributional parameters

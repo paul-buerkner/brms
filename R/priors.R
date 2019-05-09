@@ -636,7 +636,8 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   center_X <- stan_center_X(bterms)
-  if (center_X) {
+  if (center_X && !is_ordinal(bterms)) {
+    # priors for ordinal thresholds are provided in 'prior_thres'
     prior <- prior + brmsprior(def_dprior, class = "Intercept", ls = px)
     fixef <- setdiff(fixef, "Intercept")
   }
@@ -910,6 +911,10 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (get_ma(autocor)) {
       prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
     }
+    if (has_latent_residuals(bterms)) {
+      prior <- prior + 
+        brmsprior(def_scale_prior, class = "sderr", resp = resp)
+    }
   }
   if (is.cor_sar(autocor)) {
     if (identical(autocor$type, "lag")) {
@@ -925,10 +930,6 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (identical(autocor$type, "escar")) {
       prior <- prior + brmsprior(class = "car", resp = resp)
     }
-  }
-  if (is.cor_bsts(autocor)) {
-    prior <- prior +
-      brmsprior(class = "sigmaLL", prior = def_scale_prior, resp = resp)
   }
   prior
 }
@@ -1396,6 +1397,9 @@ check_prior_special.btl <- function(x, prior, data,
 # validate argument 'sample_prior'
 check_sample_prior <- function(sample_prior) {
   options <- c("no", "yes", "only")
+  if (is.null(sample_prior)) {
+    sample_prior <- "no"
+  }
   if (!is.character(sample_prior)) {
     sample_prior <- as_one_logical(sample_prior)
     sample_prior <- if (sample_prior) "yes" else "no"

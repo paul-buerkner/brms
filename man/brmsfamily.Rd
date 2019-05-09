@@ -292,9 +292,12 @@ Below, we list common use cases for the different families.
   \item{Family \code{inverse.gaussian} supports \code{1/mu^2}, 
   \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}
   
-  \item{Family \code{von_mises} supports \code{tan_half}.}
+  \item{Family \code{von_mises} supports \code{tan_half} and 
+  \code{identity}.}
   
-  \item{Family \code{wiener} supports \code{identity}.}
+  \item{Family \code{wiener} supports \code{identity}, \code{log}, 
+  and \code{softplus} for the main parameter which represents the
+  drift rate.}
   }
   
   Please note that when calling the \code{\link[stats:family]{Gamma}} family

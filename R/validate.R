@@ -59,11 +59,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   
   if (check_response) {
     # extract response variables
-    y$respform <- lhs(formula)
-    if (is.null(y$respform)) {
-      stop2("Invalid formula: response variable is missing.")
-    }
-    y$respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(y$respform)))
+    y$respform <- validate_resp_formula(formula, empty_ok = FALSE)
     if (mv) {
       y$resp <- parse_resp(y$respform) 
     } else {
@@ -341,6 +337,7 @@ parse_fe <- function(formula) {
   out <- paste(c(int_term, out), collapse = "+")
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
+  attr(out, "decomp") <- get_decomp(formula)
   if (has_rsv_intercept(out)) {
     attr(out, "int") <- FALSE
   }
@@ -502,8 +499,7 @@ parse_resp <- function(formula, check_names = TRUE) {
   if (is.null(formula)) {
     return(NULL)
   }
-  str_formula <- gsub("\\|+[^~]*~", "~", formula2str(formula))
-  expr <- formula(str_formula)[[2]]
+  expr <- validate_resp_formula(formula)[[2]]
   if (length(expr) <= 1L) {
     out <- deparse_no_string(expr)
   } else {
@@ -771,6 +767,15 @@ is_sparse <- function(x) {
   isTRUE(attr(x, "sparse", exact = TRUE))
 }
 
+# get the decomposition type of the design matrix
+get_decomp <- function(x) {
+  out <- attr(x, "decomp", exact = TRUE)
+  if (is.null(out)) {
+    out <- "none"
+  }
+  as_one_character(out)
+}
+
 # extract different types of effects
 get_effect <- function(x, ...) {
   UseMethod("get_effect")
@@ -782,8 +787,23 @@ get_effect.default <- function(x, ...) {
 }
 
 #' @export
+get_effect.brmsfit <- function(x, ...) {
+  get_effect(x$formula, ...)
+}
+
+#' @export
+get_effect.brmsformula <- function(x, ...) {
+  get_effect(parse_bf(x), ...)
+}
+
+#' @export
+get_effect.mvbrmsformula <- function(x, ...) {
+  get_effect(parse_bf(x), ...)
+}
+
+#' @export
 get_effect.mvbrmsterms <- function(x, ...) {
-  unlist(lapply(x$terms, get_effect, ...), recursive = FALSE)
+  ulapply(x$terms, get_effect, recursive = FALSE, ...)
 }
 
 # extract formulas of a certain effect type
@@ -897,16 +917,17 @@ all_terms <- function(x) {
 regex_sp <- function(type = "all") {
   choices <- c("all", "sm", "gp", "cs", "mo", "me", "mi", "mmc")
   type <- match.arg(type, choices, several.ok = TRUE)
-  out <- c(
+  prefixes <- c(
     sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?",
-    mo = "mo((no)?|(notonic)?)", me = "me", mi = "mi",
-    mmc = "mmc"
+    mo = "mo", me = "me", mi = "mi", mmc = "mmc"
   )
   if (!any(type %in% "all")) {
-    out <- out[type]
+    prefixes <- prefixes[type]
   }
-  out <- paste0("(", out, ")", collapse = "|")
-  paste0("^(", out, ")\\([^:]*\\)$")
+  allow_colon <- c("cs", "mmc")
+  inner <- ifelse(names(prefixes) %in% allow_colon, ".*", "[^:]*")
+  out <- paste0("^(", prefixes, ")\\(", inner, "\\)$")
+  paste0("(", out, ")", collapse = "|")
 }
 
 # find special terms of a certain type
@@ -1025,8 +1046,7 @@ has_cs <- function(bterms) {
 # extract names of response categories
 extract_cat_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  respform <- formula2str(lhs(x$formula))
-  respform <- formula(gsub("\\|+[^~]*~", "~", respform))
+  respform <- validate_resp_formula(x$formula)
   mr <- model.response(model.frame(respform, data))
   if (is_ordinal(x) && is.numeric(mr)) {
     out <- as.character(seq_len(max(mr)))

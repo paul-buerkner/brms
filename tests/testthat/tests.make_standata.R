@@ -370,24 +370,6 @@ test_that("make_standata returns fixed residual covariance matrices", {
                "'V' must have the same number of rows as 'data'")
 })
 
-test_that("make_standata returns data for bsts models", {
-  dat <- data.frame(y = 1:5, g = c(1:3, sample(1:3, 2, TRUE)), t = 1:5)
-  expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
-               as.array(sort(dat$g)))
-  expect_equivalent(make_standata(bf(y~1, sigma ~ 1), data = dat, 
-                                  autocor = cor_bsts(~t|g))$X_sigma[, 1],
-                    rep(1, nrow(dat)))
-  
-  dat = data.frame(
-    y = rnorm(100), id = rep(1:10, each = 1),
-    day = rep(1:10, length.out = 100) 
-  )
-  expect_error(
-    make_standata(y~1, dat, autocor = cor_bsts(~day|id)),
-    "Time points within groups must be unique"
-  )
-})
-
 test_that("make_standata returns data for GAMMs", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10),
                     x3 = rnorm(10), z = rnorm(10), g = factor(rep(1:2, 5)))
@@ -528,6 +510,13 @@ test_that("make_standata handles missing value terms", {
   bform <- bf(y ~ mi(x.2)*g) + bf(x.2 | mi() ~ g) + set_rescor(FALSE)
   sdata <- make_standata(bform, dat)
   expect_equal(sdata$Jmi_x, as.array(miss))
+  
+  dat$z <- rbeta(10, 1, 1)
+  dat$z[miss] <- NA
+  bform <- bf(y ~ mi(z)*g) + bf(z | mi() ~ g, family = Beta()) + 
+    set_rescor(FALSE)
+  sdata <- make_standata(bform, dat)
+  expect_equal(sdata$Jmi_z, as.array(miss))
 })
 
 test_that("make_standata handles overimputation", {
@@ -581,7 +570,7 @@ test_that("by variables in grouping terms are handled correctly", {
   dat <- data.frame(
     y = rnorm(100), x = rnorm(100),
     g = rep(gvar, each = 10),
-    z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20)),
+    z = factor(rep(c(0, 4.5, 3, 2, "x 1"), each = 20)),
     z2 = factor(1:2)
   )
   sdata <- make_standata(y ~ x + (x | gr(g, by = z)), dat)

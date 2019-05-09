@@ -63,6 +63,11 @@
 #'   should be treated as sparse (defaults to \code{FALSE}). For design matrices
 #'   with many zeros, this can considerably reduce required memory. Sampling
 #'   speed is currently not improved or even slightly decreased.
+#' @param decomp Optional name of the decomposition used for the 
+#'   population-level design matrix. Defaults to \code{NULL} that is
+#'   no decomposition. Other options currently available are
+#'   \code{"QR"} for the QR decomposition that helps in fitting models
+#'   with highly correlated predictors.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
 #'   overwrite the value specified in \code{\link{brm}}.
@@ -578,7 +583,8 @@
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         autocor = NULL, nl = NULL, loop = NULL, 
-                        center = NULL, cmc = NULL, sparse = NULL) {
+                        center = NULL, cmc = NULL, sparse = NULL,
+                        decomp = NULL) {
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
@@ -591,7 +597,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   dots <- unlist(dots, recursive = FALSE)
   forms <- list()
   for (i in seq_along(dots)) {
-    forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
+    c(forms) <- validate_par_formula(dots[[i]], par = names(dots)[i])
   }
   is_dupl_pars <- duplicated(names(forms), fromLast = TRUE)
   if (any(is_dupl_pars)) {
@@ -659,16 +665,17 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(sparse)) {
     attr(out$formula, "sparse") <- as_one_logical(sparse)
   }
+  if (!is.null(decomp)) {
+    attr(out$formula, "decomp") <- match.arg(decomp, decomp_opts())
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
   if (!is.null(autocor)) {
     out$autocor <- check_autocor(autocor)
   }
-  respform <- lhs(formula)
-  if (!is.null(respform)) {
-    respform <- formula(gsub("\\|+[^~]*~", "~", formula2str(respform)))
-    out$resp <- parse_resp(respform)
+  if (!is.null(lhs(formula))) {
+    out$resp <- parse_resp(formula)
   }
   # add default values for unspecified elements
   defs <- list(
@@ -685,10 +692,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
 #' @export
 bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
                nl = NULL, loop = NULL, center = NULL, cmc = NULL,
-               sparse = NULL) {
+               sparse = NULL, decomp = NULL) {
   brmsformula(
     formula, ..., flist = flist, family = family, autocor = autocor, 
-    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse
+    nl = nl, loop = loop, center = center, cmc = cmc, sparse = sparse,
+    decomp = decomp
   )
 }
 
@@ -777,7 +785,8 @@ nlf <- function(formula, ..., flist = NULL, dpar = NULL,
 #' @rdname brmsformula-helpers
 #' @export
 lf <- function(..., flist = NULL, dpar = NULL, resp = NULL, 
-               center = NULL, cmc = NULL, sparse = NULL) {
+               center = NULL, cmc = NULL, sparse = NULL, 
+               decomp = NULL) {
   out <- c(list(...), flist)
   warn_dpar(dpar)
   if (!is.null(resp)) {
@@ -785,6 +794,7 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
   }
   cmc <- if (!is.null(cmc)) as_one_logical(cmc)
   center <- if (!is.null(center)) as_one_logical(center)
+  decomp <- if (!is.null(decomp)) match.arg(decomp, decomp_opts())
   for (i in seq_along(out)) {
     if (!is.null(cmc)) {
       attr(out[[i]], "cmc") <- cmc
@@ -794,6 +804,9 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
     }
     if (!is.null(sparse)) {
       attr(out[[i]], "sparse") <- sparse
+    }
+    if (!is.null(decomp)) {
+      attr(out[[i]], "decomp") <- decomp
     }
   }
   structure(out, resp = resp)
@@ -885,9 +898,8 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 split_bf <- function(x) {
   stopifnot(is.brmsformula(x))
   resp <- parse_resp(x$formula, check_names = FALSE)
-  str_adform <- get_matches(
-    "\\|[^~]*(?=~)", formula2str(x$formula), perl = TRUE
-  )
+  str_adform <- formula2str(x$formula)
+  str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
   if (length(resp) > 1L) {
     # mvbind syntax used to specify MV model
     flist <- named_list(resp)
@@ -932,8 +944,10 @@ allow_rescor <- function(x) {
     return(FALSE)
   }
   parts <- if (is.mvbrmsformula(x)) x$forms else x$terms 
-  families <- ulapply(parts, function(f) f$family$family)
-  all(families == "gaussian") || all(families == "student")
+  families <- lapply(parts, "[[", "family")
+  has_rescor <- ulapply(families, has_rescor)
+  family_names <- ulapply(families, "[[", "family")
+  all(has_rescor) && length(unique(family_names)) == 1L
 }
 
 #' @rdname brmsformula-helpers
@@ -1049,13 +1063,18 @@ get_nl <- function(x, dpar = NULL, resp = NULL, aol = TRUE) {
   nl
 }
 
-# validate and prepare a formula of a distributional parameter
-# @param formula: an formula object
+# available options for the 'decomp' argument
+decomp_opts <- function() {
+  c("none", "QR")
+}
+
+# validate a formula of an additional parameter
+# @param formula an formula object
 # @param par optional name of the parameter; if not specified
 #   the parameter name will be inferred from the formula
 # @param rsv_pars optional character vector of reserved parameter names
 # @return a named list of length one containing the formula
-prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
+validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
   stopifnot(length(par) <= 1L)
   try_formula <- try(as.formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
@@ -1094,6 +1113,30 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
     stop2("The following parameter names are reserved",  
           "for this model:\n", collapse_comma(inv_pars))
   }
+  out
+}
+
+# validate formulas dedicated to response variables
+# @param x coerced to a formula object
+# @param empty_ok is an empty left-hand-side ok?
+# @return a formula of the form <response> ~ 1
+validate_resp_formula <- function(x, empty_ok = TRUE) {
+  out <- lhs(as.formula(x))
+  if (is.null(out)) {
+    if (empty_ok) {
+      out <- ~ 1
+    } else {
+      str_x <- formula2str(x, space = "trim")
+      stop2("Response variable is missing in formula ", str_x) 
+    }
+  }
+  out <- gsub("\\|+[^~]*~", "~", formula2str(out))
+  out <- try(formula(out), silent = TRUE)
+  if (is(out, "try-error")) {
+    str_x <- formula2str(x, space = "trim")
+    stop2("Incorrect use of '|' on the left-hand side of ", str_x)
+  }
+  environment(out) <- environment(x)
   out
 }
 

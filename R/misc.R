@@ -343,8 +343,19 @@ is_symmetric <- function(x, tol = sqrt(.Machine$double.eps)) {
   isSymmetric(x, tol = tol, check.attributes = FALSE)
 }
 
+# unlist lapply output
 ulapply <- function(X, FUN, ..., recursive = TRUE, use.names = TRUE) {
   unlist(lapply(X, FUN, ...), recursive, use.names)
+}
+
+# rbind lapply output
+rblapply <- function(X, FUN, ...) {
+  do_call(rbind, lapply(X, FUN, ...))
+}
+
+# cbind lapply output
+cblapply <- function(X, FUN, ...) {
+  do_call(cbind, lapply(X, FUN, ...))
 }
 
 # find variables in a character string or expression

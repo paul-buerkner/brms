@@ -147,9 +147,12 @@
 #'   \item{Family \code{inverse.gaussian} supports \code{1/mu^2}, 
 #'   \code{inverse}, \code{identity}, \code{log}, and \code{softplus}.}
 #'   
-#'   \item{Family \code{von_mises} supports \code{tan_half}.}
+#'   \item{Family \code{von_mises} supports \code{tan_half} and 
+#'   \code{identity}.}
 #'   
-#'   \item{Family \code{wiener} supports \code{identity}.}
+#'   \item{Family \code{wiener} supports \code{identity}, \code{log}, 
+#'   and \code{softplus} for the main parameter which represents the
+#'   drift rate.}
 #'   }
 #'   
 #'   Please note that when calling the \code{\link[stats:family]{Gamma}} family
@@ -915,6 +918,8 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #'   data to the generated \pkg{Stan} model.
 #' @param specials A character vector of special options to enable
 #'   for this custom family. Currently for internal use only.
+#' @param threshold Optional threshold type for custom ordinal families.
+#'   Ignored for non-ordinal families.
 #' @param log_lik Optional function to compute log-likelihood values of
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
@@ -986,6 +991,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, specials = NULL, 
+                          threshold = c("flexible", "equidistant"),
                           log_lik = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
@@ -1055,6 +1061,10 @@ custom_family <- function(name, dpars = "mu", links = "identity",
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
   }
   class(out) <- c("customfamily", "brmsfamily", "family")
+  if (is_ordinal(out)) {
+    threshold <- match.arg(threshold)
+    out$threshold <- threshold
+  }
   out
 }
 
@@ -1123,23 +1133,23 @@ links_dpars <- function(dpar) {
   switch(dpar,
     character(0),
     mu = "identity",  # not actually used
-    sigma = c("log", "identity"), 
-    shape = c("log", "identity"),
+    sigma = c("log", "identity", "softplus"), 
+    shape = c("log", "identity", "softplus"),
     nu = c("logm1", "identity"), 
-    phi = c("log", "identity"),
-    kappa = c("log", "identity"), 
-    beta = c("log", "identity"),
+    phi = c("log", "identity", "softplus"),
+    kappa = c("log", "identity", "softplus"), 
+    beta = c("log", "identity", "softplus"),
     zi = c("logit", "identity"), 
     hu = c("logit", "identity"),
     zoi = c("logit", "identity"), 
     coi = c("logit", "identity"), 
-    disc = c("log", "identity"),
-    bs = c("log", "identity"), 
-    ndt = c("log", "identity"),
+    disc = c("log", "identity", "softplus"),
+    bs = c("log", "identity", "softplus"), 
+    ndt = c("log", "identity", "softplus"),
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
-    alpha = c("identity", "log"),
+    alpha = c("identity", "log", "softplus"),
     theta = c("identity")
   )
 }
@@ -1373,9 +1383,14 @@ allow_factors <- function(family) {
   any(specials %in% family_info(family, "specials"))
 }
 
-# checks if autocorrelation structures are allowed
-allow_autocor <- function(family) {
-  "autocor" %in% family_info(family, "specials")
+# check if the family has natural residuals
+has_natural_residuals <- function(family) {
+  "residuals" %in% family_info(family, "specials")
+}
+
+# check if the family allows for residual correlations
+has_rescor <- function(family) {
+  "rescor" %in% family_info(family, "specials")
 }
 
 # checks if category specific effects are allowed
@@ -1486,6 +1501,17 @@ simple_sigma <- function(bterms) {
 pred_sigma <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   "sigma" %in% dpar_class(names(bterms$dpars))
+}
+
+# has the model latent residuals to be used in autocor structures
+has_latent_residuals <- function(bterms) {
+  !has_natural_residuals(bterms) && is.cor_arma(bterms$autocor)
+}
+
+# should natural residuals be modeled as correlated?
+has_cor_natural_residuals <- function(bterms) {
+  has_natural_residuals(bterms) &&
+    (use_cov(bterms$autocor) || is.cor_sar(bterms$autocor))
 }
 
 # do not include a 'nu' parameter in a univariate model?

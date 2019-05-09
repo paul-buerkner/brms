@@ -18,7 +18,7 @@
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
-    specials = "autocor"
+    specials = c("residuals", "rescor")
   )
 }
 
@@ -29,7 +29,7 @@
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
     include = "fun_logm1.stan",
-    specials = "autocor"
+    specials = c("residuals", "rescor")
   )
 }
 
@@ -246,7 +246,7 @@
 
 .family_wiener <- function() {
   list(
-    links = "identity",
+    links = c("identity", "log", "softplus"),
     dpars = c("mu", "bs", "ndt", "bias"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "dec"),
@@ -266,7 +266,7 @@
 
 .family_von_mises <- function() {
   list(
-    links = "tan_half",
+    links = c("tan_half", "identity"),
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi"),

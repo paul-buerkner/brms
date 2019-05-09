@@ -21,11 +21,9 @@ standata(object, ...)
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{incl_autocor}{A flag indicating if ARMA autocorrelation parameters
-should be included in the predictions. Defaults to \code{TRUE}. Setting it
-to \code{FALSE} will not affect other correlation structures such as
-\code{\link[brms:cor_bsts]{cor_bsts}}, or
-\code{\link[brms:cor_fixed]{cor_fixed}}.}
+\item{incl_autocor}{A flag indicating if correlation structures originally
+specified via \code{autocor} should be included in the predictions.
+Defaults to \code{TRUE}.}
 
 \item{new_objects}{A named \code{list} of objects containing new data, which
 cannot be passed via argument \code{newdata}. Required for objects passed

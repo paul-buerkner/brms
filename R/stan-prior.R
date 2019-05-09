@@ -238,14 +238,15 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
 }
 
 # Stan code for local parameters of special priors
-# currently implemented are horseshoe
+# currently implemented are 'horseshoe'
 # @param class name of the parameter class
 # @param prior a brmsprior object
 # @param ncoef number of coefficients in the parameter
 # @param px named list to subset 'prior'
 # @param center_X is the design matrix centered?
-stan_special_prior_local <- function(class, prior, ncoef, px,
-                                     center_X = FALSE)  {
+# @param suffix optional suffix of the 'b' coefficient vector
+stan_special_prior_local <- function(prior, class, ncoef, px, 
+                                     center_X = FALSE, suffix = "") {
   class <- as_one_character(class)
   stopifnot(class %in% c("b", "bsp"))
   out <- list()
@@ -269,8 +270,8 @@ stan_special_prior_local <- function(class, prior, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tparD) <- glue(
-      "  vector[K{ct}{sp}] b{sp} = horseshoe({hs_args});\n"
+    str_add(out$tparC1) <- glue(
+      "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
     local_args <- glue("0.5 * hs_df{p}")
     local_args <- sargs(local_args, local_args)
@@ -393,6 +394,13 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     }
   }
   out
+}
+
+# indicate if the horseshoe prior is used in the predictor term
+stan_use_horseshoe <- function(bterms, prior) {
+  prefix <- combine_prefix(bterms, keep_mu = TRUE)
+  special <- attr(prior, "special")[[prefix]]
+  !is.null(special[["hs_df"]])
 }
 
 # extract Stan boundaries expression from a string

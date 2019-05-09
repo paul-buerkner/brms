@@ -947,14 +947,22 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     object <- remove_autocor(object)
   }
-  if (internal) {
-    control[c("not4stan", "save_order")] <- TRUE
-  }
-  new_formula <- update_re_terms(object$formula, re_formula)
-  is_original_data <- isTRUE(attr(newdata, "original"))
+  is_old_data <- isTRUE(attr(newdata, "old"))
   if (is.null(newdata)) {
     newdata <- object$data
-  } else if (!is_original_data) {
+    is_old_data <- TRUE
+  }
+  new_formula <- update_re_terms(object$formula, re_formula)
+  bterms <- parse_bf(new_formula)
+  version <- object$version$brms
+  if (is_old_data) {
+    if (version <= "2.8.6" && has_smooths(bterms)) {
+      # the spline penality has changed in 2.8.7 (#646)
+      control$old_sdata <- extract_old_standata(
+        bterms, data = object$data, version = version
+      )
+    }
+  } else {
     if (!isTRUE(attr(newdata, "valid"))) {
       newdata <- validate_newdata(
         newdata, object, re_formula = re_formula, ...
@@ -963,23 +971,27 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     object <- add_new_objects(object, newdata, new_objects)
     control$new <- TRUE
     # ensure correct handling of functions like poly or scale
-    bterms <- parse_bf(new_formula)
     old_terms <- attr(object$data, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    control$old_sdata <- extract_old_standata(bterms, object$data)
+    control$old_sdata <- extract_old_standata(
+      bterms, data = object$data, version = version
+    )
     control$old_levels <- get_levels(
       tidy_ranef(bterms, object$data),
       tidy_meef(bterms, object$data)
     )
   }
+  if (internal) {
+    control[c("not4stan", "save_order")] <- TRUE
+  }
   sample_prior <- attr(object$prior, "sample_prior")
-  sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
+  knots <- attr(object$data, "knots")
   make_standata(
     formula = new_formula, data = newdata, 
     prior = object$prior, cov_ranef = object$cov_ranef, 
     sample_prior = sample_prior, stanvars = object$stanvars, 
-    knots = attr(object$data, "knots"), control = control, ...
+    knots = knots, control = control, ...
   )
 }
 

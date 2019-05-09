@@ -809,11 +809,9 @@ str2formula <- function(x, ..., collapse = "+") {
 #   should be removed at the beginning and end of the string respectively
 # @param space how should whitespaces be treated?
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+  formula <- as.formula(formula)
   space <- match.arg(space)
-  if (!is.formula(formula)) {
-    formula <- as.formula(formula)
-  }
-  if (is.na(rm[2])) rm[2] <- 0
+  if (anyNA(rm[2])) rm[2] <- 0
   x <- Reduce(paste, deparse(formula))
   x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
   if (space == "trim") {
