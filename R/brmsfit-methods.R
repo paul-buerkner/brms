@@ -2247,15 +2247,13 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     )
   }
   # see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
-  .loo_R2 <- function(y, ypred, ll, chains) {
-    chain_id <- rep(seq_len(chains), each = nrow(ll) / chains)
-    r_eff <- loo::relative_eff(exp(ll), chain_id = chain_id)
+  .loo_R2 <- function(y, ypred, ll) {
+    r_eff <- r_eff_log_lik(ll, object)
     psis_object <- loo::psis(log_ratios = -ll, r_eff = r_eff)
     ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
     eloo <- ypredloo - y
     return(1 - var(eloo) / var(y))
   }
-  chains <- object$fit@sim$chains
   args_y <- list(object, warn = TRUE, ...)
   args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
@@ -2268,7 +2266,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
     }
-    R2[[i]] <- .loo_R2(y, ypred, ll, chains)
+    R2[[i]] <- .loo_R2(y, ypred, ll)
   }
   R2 <- unlist(R2)
   names(R2) <- paste0("R2", resp)
@@ -2913,7 +2911,8 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   )
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
-    r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
+    r_eff_log_lik, log_lik = log_lik_list, 
+    fit = models, SIMPLIFY = FALSE
   )
   out <- do_call(loo::loo_model_weights, args)
   names(out) <- names(models)

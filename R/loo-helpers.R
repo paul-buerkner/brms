@@ -97,6 +97,9 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
       if (pointwise) {
         loo_args$draws <- attr(loo_args$x, "draws")
         loo_args$data <- attr(loo_args$x, "data")
+        # TODO: how to include r_eff here?
+      } else {
+        loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
       }
       if (criterion == "psis") {
         if (pointwise) {
@@ -778,11 +781,26 @@ recommend_loo_options <- function(n, k_threshold, model_name = "") {
 }
 
 # helper function to compute relative efficiences
-r_eff_helper <- function(log_lik, fit) {
-  stopifnot(is.matrix(log_lik), is.brmsfit(fit))
+# @params x matrix of posterior draws
+# @params fit a brmsfit object to extract meta data from
+# @return a numeric vector of length NCOL(x)
+r_eff_helper <- function(x, fit) {
+  if (is.brmsfit_multiple(fit)) {
+    # due to stacking of chains from multiple models
+    # efficiency computations will likely be incorrect
+    # assume relative efficiency of 1 for now
+    return(rep(1, NCOL(x)))
+  }
+  stopifnot(is.matrix(x), is.brmsfit(fit))
   chains <- fit$fit@sim$chains
-  chain_id <- rep(seq_len(chains), each = nrow(log_lik) / chains)
-  loo::relative_eff(log_lik, chain_id = chain_id)
+  chain_id <- rep(seq_len(chains), each = nrow(x) / chains)
+  loo::relative_eff(x, chain_id = chain_id)
+}
+
+# wrapper around r_eff_helper to compute efficiency 
+# of likelihood draws based on log-likelihood draws
+r_eff_log_lik <- function(log_lik, fit) {
+  r_eff_helper(exp(log_lik), fit)
 }
 
 # print the output of loo and waic with multiple models
