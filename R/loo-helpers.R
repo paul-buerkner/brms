@@ -781,8 +781,8 @@ recommend_loo_options <- function(n, k_threshold, model_name = "") {
 }
 
 # helper function to compute relative efficiences
-# @params x matrix of posterior draws
-# @params fit a brmsfit object to extract meta data from
+# @param x matrix of posterior draws
+# @param fit a brmsfit object to extract metadata from
 # @return a numeric vector of length NCOL(x)
 r_eff_helper <- function(x, fit) {
   if (is.brmsfit_multiple(fit)) {
@@ -803,7 +803,7 @@ r_eff_log_lik <- function(log_lik, fit) {
   r_eff_helper(exp(log_lik), fit)
 }
 
-# print the output of loo and waic with multiple models
+# print the output of a list of loo objects
 #' @export
 print.loolist <- function(x, digits = 1, ...) {
   model_names <- loo::find_model_names(x$loos)
