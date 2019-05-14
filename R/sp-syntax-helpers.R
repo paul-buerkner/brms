@@ -28,7 +28,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
     mi_respvars <- parse_resp(x$respform, check_names = FALSE)
-    mi_advars <- all.vars(x$adforms$mi)
+    mi_advars <- all_vars(x$adforms$mi)
     out <- unique(c(mi_respvars, mi_advars))
   } else {
     out <- character(0)
@@ -124,7 +124,7 @@ default_mecor <- function(mecor = NULL) {
 # find names of all variables used in a special effects type
 get_sp_vars <- function(x, type) {
   sp_terms <- ulapply(get_effect(x, "sp"), all_terms)
-  all.vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
+  all_vars(str2formula(get_matches_expr(regex_sp(type), sp_terms)))
 }
 
 # gather information of special effects terms
@@ -177,7 +177,7 @@ tidy_spef <- function(x, data) {
     if (sum(take_mi)) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
-      out$vars_mi[[i]] <- all.vars(str2formula(out$calls_mi[[i]]))
+      out$vars_mi[[i]] <- all_vars(str2formula(out$calls_mi[[i]]))
       # do it like parse_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }

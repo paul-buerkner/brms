@@ -235,7 +235,7 @@ get_var_combs <- function(..., alist = list()) {
     if (is.formula(dots[[i]])) {
       dots[[i]] <- attr(terms(dots[[i]]), "term.labels")
     }
-    dots[[i]] <- lapply(dots[[i]], function(y) all.vars(parse(text = y)))
+    dots[[i]] <- lapply(dots[[i]], all_vars)
   }
   unique(unlist(dots, recursive = FALSE))
 }
@@ -292,15 +292,29 @@ get_all_effects.btl <- function(x, ...) {
     get_all_effects_type(x, "gp"))
 }
 
-# extract combinations of covars and byvars from splines and GPs
+# extract variable combinations from special terms
 get_all_effects_type <- function(x, type) {
   stopifnot(is.btl(x))
   type <- as_one_character(type)
+  regex_type <- regex_sp(type)
   terms <- all_terms(x[[type]])
   out <- named_list(terms)
   for (i in seq_along(terms)) {
-    tmp <- eval2(terms[i])
-    vars <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA")
+    # some special terms can appear within interactions
+    # we did not allow ":" within these terms so we can use it for splitting
+    term_parts <- unlist(strsplit(terms[i], split = ":"))
+    vars <- vector("list", length(term_parts))
+    for (j in seq_along(term_parts)) {
+      if (grepl_expr(regex_type, term_parts[j])) {
+        # evaluate a special term to extract variables
+        tmp <- eval2(term_parts[j])
+        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA") 
+      } else {
+        # extract all variables from an ordinary term
+        vars[[j]] <- all_vars(term_parts[j])
+      }
+    }
+    vars <- unique(unlist(vars))
     out[[i]] <- str2formula(vars, collapse = "*")
   }
   get_var_combs(alist = out)
@@ -308,7 +322,7 @@ get_all_effects_type <- function(x, type) {
 
 #' @export
 get_all_effects.btnl <- function(x, ...) {
-  covars <- all.vars(rhs(x$covars))
+  covars <- all_vars(rhs(x$covars))
   out <- as.list(covars)
   if (length(covars) > 1L) {
     c(out) <- utils::combn(covars, 2, simplify = FALSE)
@@ -328,7 +342,7 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
-  advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all.vars)
+  advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all_vars)
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
@@ -445,7 +459,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "Please convert your variables to factors beforehand."
     )
   }
-  req_vars <- all.vars(rhs(bterms$allvars))
+  req_vars <- all_vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
@@ -461,7 +475,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
-  trial_vars <- all.vars(bterms$adforms$trials)
+  trial_vars <- all_vars(bterms$adforms$trials)
   if (length(trial_vars)) {
     write_msg <- any(ulapply(trial_vars, function(x) 
       !isTRUE(x %in% names(conditions)) || anyNA(conditions[[x]])
@@ -491,7 +505,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       )
     }
   }
-  all_vars <- c(all.vars(bterms$allvars), "cond__")
+  all_vars <- c(all_vars(bterms$allvars), "cond__")
   unused_vars <- setdiff(names(conditions), all_vars)
   if (length(unused_vars)) {
     warning2(

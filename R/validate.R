@@ -69,7 +69,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   
   # extract addition arguments
   adforms <- parse_ad(formula, family, check_response)
-  advars <- str2formula(ulapply(adforms, all.vars))
+  advars <- str2formula(ulapply(adforms, all_vars))
   y$adforms[names(adforms)] <- adforms
   
   # copy stuff from the formula to parameter 'mu'
@@ -203,7 +203,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   }
   
   # make a formula containing all required variables
-  lhsvars <- if (resp_rhs_all) all.vars(y$respform)
+  lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars), 
     lapply(y$nlpars, get_allvars), y$time$allvars
@@ -274,7 +274,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   loop <- !isFALSE(attr(formula, "loop"))
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
-  all_vars <- all.vars(formula)
+  all_vars <- all_vars(formula)
   y$used_nlpars <- intersect(all_vars, nlpars)
   covars <- setdiff(all_vars, nlpars)
   y$covars <- structure(str2formula(covars), int = FALSE)
@@ -457,8 +457,8 @@ parse_gp <- function(formula) {
     covars <- lapply(eterms, "[[", "term")
     byvars <- lapply(eterms, "[[", "by")
     allvars <- str2formula(unlist(c(covars, byvars)))
-    allvars <- str2formula(all.vars(allvars))
-    if (!length(all.vars(allvars))) {
+    allvars <- str2formula(all_vars(allvars))
+    if (!length(all_vars(allvars))) {
       stop2("No variable supplied to function 'gp'.")
     }
     out <- str2formula(out)
@@ -476,7 +476,7 @@ parse_offset <- function(formula) {
     vars <- attr(terms, "variables")
     out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
     out <- str2formula(out)
-    attr(out, "allvars") <- str2formula(all.vars(out))
+    attr(out, "allvars") <- str2formula(all_vars(out))
   }
   out
 }
@@ -537,7 +537,7 @@ parse_time <- function(autocor) {
   }
   formula <- formula2str(formula)
   time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
-  time_vars <- all.vars(time)
+  time_vars <- all_vars(time)
   if (is.cor_car(autocor) && length(time_vars) > 0L) {
     stop2("The CAR structure should not contain a 'time' variable.")
   }
@@ -844,7 +844,7 @@ get_advars <- function(x, ...) {
 #' @export
 get_advars.brmsterms <- function(x, ad, ...) {
   ad <- as_one_character(ad)
-  all.vars(x$adforms[[ad]])
+  all_vars(x$adforms[[ad]])
 }
 
 #' @export
@@ -915,18 +915,23 @@ all_terms <- function(x) {
 # generate a regular expression to extract special terms
 # @param type one or more special term types to be extracted 
 regex_sp <- function(type = "all") {
-  choices <- c("all", "sm", "gp", "cs", "mo", "me", "mi", "mmc")
-  type <- match.arg(type, choices, several.ok = TRUE)
-  prefixes <- c(
-    sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?",
-    mo = "mo", me = "me", mi = "mi", mmc = "mmc"
-  )
-  if (!any(type %in% "all")) {
-    prefixes <- prefixes[type]
+  choices <- c("all", "sp", "sm", "gp", "cs", "mmc", all_sp_types())
+  type <- unique(match.arg(type, choices, several.ok = TRUE))
+  funs <- c(sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?", mmc = "mmc")
+  funs[all_sp_types()] <- all_sp_types()
+  if ("sp" %in% type) {
+    # allows extracting all 'sp' terms at once
+    type <- setdiff(type, "sp")
+    type <- union(type, all_sp_types())
   }
+  if ("all" %in% type) {
+    # allows extracting all special terms at once
+    type <- names(funs)
+  }
+  funs <- funs[type]
   allow_colon <- c("cs", "mmc")
-  inner <- ifelse(names(prefixes) %in% allow_colon, ".*", "[^:]*")
-  out <- paste0("^(", prefixes, ")\\(", inner, "\\)$")
+  inner <- ifelse(names(funs) %in% allow_colon, ".*", "[^:]*")
+  out <- paste0("^(", funs, ")\\(", inner, "\\)$")
   paste0("(", out, ")", collapse = "|")
 }
 
@@ -1011,7 +1016,7 @@ has_rsv_intercept <- function(formula) {
     } else {
       has_intercept <- attr(try_terms, "intercept")
       intercepts <- c("intercept", "Intercept")
-      out <- !has_intercept && any(intercepts %in% all.vars(rhs(formula)))
+      out <- !has_intercept && any(intercepts %in% all_vars(rhs(formula)))
     }
   }
   out

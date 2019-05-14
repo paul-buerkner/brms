@@ -33,6 +33,8 @@ and weibull models.
 missing values thanks to Lucas Deschamps.
 * Fix Stan code of multivariate models with both residual 
 correlations and missing value terms thanks to Solomon Kurz.
+* Fix problems with interactions of special terms
+when extracting variable names in `marginal_effects`.
 
 
 # brms 2.8.0
