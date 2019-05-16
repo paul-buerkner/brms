@@ -1730,8 +1730,8 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1,
   }
   if (!is.null(par_ratio)) {
     par_ratio <- as.numeric(par_ratio)
-    if (!isTRUE(par_ratio > 0 && par_ratio <= 1)) {
-      stop2("Argument 'par_ratio' must be within [0, 1].")
+    if (!isTRUE(par_ratio > 0)) {
+      stop2("Argument 'par_ratio' must be greater 0.")
     }
   }
   autoscale <- as_one_logical(autoscale)
