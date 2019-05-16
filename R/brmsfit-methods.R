@@ -2971,7 +2971,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
         "some of your responses contain NAs. If you use 'mi' terms, try ", 
-        "setting 'resp' to those response variables without missing values."
+        "setting 'resp' to those response variables without missing values. ",
+        "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
   }

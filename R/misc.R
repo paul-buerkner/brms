@@ -159,7 +159,7 @@ subset2 <- function(x, ..., ls = list(), fun = '%in%') {
 # @return a list of arrays of dimension d-1
 array2list <- function(x) {
   if (is.null(dim(x))) {
-    stop("Argument 'x' has no dimension.")
+    return(as.list(x))
   }
   ndim <- length(dim(x))
   out <- list(length = dim(x)[ndim])
