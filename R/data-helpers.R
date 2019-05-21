@@ -139,7 +139,7 @@ order_data <- function(data, bterms) {
     if (length(time)) {
       tv <- data[[time]]
     } else {
-      tv <- ulapply(unique(gv), function(g) seq_len(sum(gv == g)))
+      tv <- seq_rows(data)
     }
     if (any(duplicated(data.frame(gv, tv)))) {
       stop2("Time points within groups must be unique.")
