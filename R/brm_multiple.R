@@ -98,6 +98,13 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     fit <- do_call(brm, args)
   }
   
+  dots <- list(...)
+  # allow compiling the model without sampling (#671)
+  if (isTRUE(dots$chains == 0) || isTRUE(dots$iter == 0)) {
+    class(fit) <- c("brmsfit_multiple", class(fit))
+    return(fit)
+  }
+  
   fits <- futures <- rhats <- vector("list", length(data))
   for (i in seq_along(data)) {
     futures[[i]] <- future::future(
@@ -223,6 +230,9 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   }
   
   # update the template model using all arguments
+  if (missing(formula.)) {
+    formula. <- NULL
+  }
   args <- c(nlist(object, formula., newdata = newdata[[1]]), dots)
   args$file <- NULL
   args$chains <- 0

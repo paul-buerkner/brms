@@ -35,6 +35,8 @@ missing values thanks to Lucas Deschamps.
 correlations and missing value terms thanks to Solomon Kurz.
 * Fix problems with interactions of special terms
 when extracting variable names in `marginal_effects`.
+* Allow compiling a model in `brm_multiple` without
+sampling thanks to Will Petry. (#671)
 
 
 # brms 2.8.0

@@ -2340,7 +2340,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     data.name <- object$data.name
   }
 
-  if (missing(formula.)) {
+  if (missing(formula.) || is.null(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
       dots$formula <- dots$formula + check_family(dots$family)
