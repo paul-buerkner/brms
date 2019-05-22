@@ -7,7 +7,7 @@ Date: 2019-05-21
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
-    R (>= 3.2.0),
+    R (>= 3.5.0),
     Rcpp (>= 0.12.0),
     methods
 Imports: 
