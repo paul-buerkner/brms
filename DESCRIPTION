@@ -39,6 +39,7 @@ Suggests:
     spdep,
     mnormt,
     lme4,
+    MCMCglmm,
     ape,
     arm,
     statmod,
