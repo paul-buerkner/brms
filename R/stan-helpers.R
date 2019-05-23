@@ -772,6 +772,11 @@ stan_all_vars <- function(x) {
   all_vars(x)
 }
 
+# transform names to be used as variable names in Stan
+make_stan_names <- function(x) {
+  gsub("\\.|_", "", make.names(x, unique = TRUE))
+}
+
 # checks if a model needs the kronecker product
 # @param ranef output of tidy_ranef
 # @param names_cov_ranef: names 'cov_ranef'

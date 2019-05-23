@@ -518,7 +518,7 @@ parse_resp <- function(formula, check_names = TRUE) {
     }
   }
   if (check_names) {
-    out <- gsub("\\.|_", "", make.names(out, unique = TRUE))
+    out <- make_stan_names(out)
   }
   out
 }

@@ -1527,7 +1527,8 @@ stan_dpar_transform <- function(bterms) {
       "  // linear predictor matrix\n",
       "  vector[ncat{p}] mu{p}[N{resp}];\n"
     )
-    mu_dpars <- glue("mu{bterms$family$cats}{p}[n]")
+    mu_dpars <- make_stan_names(glue("mu{bterms$family$cats}"))
+    mu_dpars <- glue("{mu_dpars}{p}[n]")
     iref <- match(bterms$family$refcat, bterms$family$cats)
     mu_dpars[iref] <- "0" 
     str_add(out$modelC4) <- glue(

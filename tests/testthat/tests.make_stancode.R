@@ -486,7 +486,7 @@ test_that("Stan code for multivariate models is correct", {
 })
 
 test_that("Stan code for categorical models is correct", {
-  dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
+  dat <- data.frame(y = rep(c(1, 2, 3, "a_b"), 2), x = 1:8, g = 1:8)
   prior <- prior(normal(0, 5), "b") +
     prior(normal(0, 10), "b", dpar = mu2) +
     prior(cauchy(0, 1), "Intercept") +
@@ -495,17 +495,17 @@ test_that("Stan code for categorical models is correct", {
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
-  expect_match2(scode, "mu[n] = [0, mu2[n], mu3[n], mu4[n]]';")
+  expect_match2(scode, "mu[n] = [0, mu2[n], mu3[n], muab[n]]';")
   expect_match2(scode, "mu2 = temp_mu2_Intercept + Xc_mu2 * b_mu2;")
-  expect_match2(scode, "mu4[n] += r_1_mu4_3[J_1[n]] * Z_1_mu4_3[n];")
+  expect_match2(scode, "muab[n] += r_1_muab_3[J_1[n]] * Z_1_muab_3[n];")
   expect_match2(scode, "target += normal_lpdf(b_mu2 | 0, 10);")
-  expect_match2(scode, "target += normal_lpdf(b_mu4 | 0, 5);")
+  expect_match2(scode, "target += normal_lpdf(b_muab | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(temp_mu2_Intercept | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(temp_mu3_Intercept | 0, 2);")
   
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(refcat = NA))
-  expect_match2(scode, "mu[n] = [mu1[n], mu2[n], mu3[n], mu4[n]]';")
+  expect_match2(scode, "mu[n] = [mu1[n], mu2[n], mu3[n], muab[n]]';")
 })
 
 test_that("Stan code for multinomial models is correct", {

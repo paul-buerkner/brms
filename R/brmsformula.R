@@ -1232,8 +1232,7 @@ validate_formula.brmsformula <- function(
       }
       predcats <- setdiff(out$family$cats, out$family$refcat)
     }
-    mu_dpars <- make.names(paste0("mu", predcats), unique = TRUE)
-    mu_dpars <- gsub("\\.|_", "", mu_dpars)
+    mu_dpars <- make_stan_names(paste0("mu", predcats))
     if (any(duplicated(mu_dpars))) {
       stop2("Invalid response category names. Please avoid ",
             "using any special characters in the names.")
