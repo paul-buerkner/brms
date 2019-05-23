@@ -67,7 +67,7 @@ GP terms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -253,7 +253,7 @@ but we are still working on providing better recommendations.</p></td>
  see <a href='https://en.wikipedia.org/wiki/Gaussian_process'>https://en.wikipedia.org/wiki/Gaussian_process</a>.</p> 
 <p>Below, we describe the currently supported covariance kernels:</p><ul>
 <li><p>"exp_quad": The exponentiated-quadratic kernel is defined as
-   \(k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j || / (2 lscale^2))\),
+   \(k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j ||^2 / (2 lscale^2))\),
    where \(|| . ||\) is the Euclidean norm, \(sdgp\) is a 
    standard deviation parameter, and \(lscale\) is characteristic 
    length-scale parameter. The latter practically measures how close two 
@@ -327,7 +327,7 @@ but we are still working on providing better recommendations.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

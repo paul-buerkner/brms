@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -227,37 +227,38 @@ to make results reproducible.</p></td>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>Among others, <code>hypothesis</code> computes an evidence ratio
-  (<code>Evid.Ratio</code>) for each hypothesis. For a directed hypothesis, this is
+  (<code>Evid.Ratio</code>) for each hypothesis. For a one-sided hypothesis, this is
   just the posterior probability (<code>Post.Prob</code>) under the hypothesis
   against its alternative. That is, when the hypothesis is of the form
   <code>a &gt; b</code>, the evidence ratio is the ratio of the posterior probability
   of <code>a &gt; b</code> and the posterior probability of <code>a &lt; b</code>. In this
   example, values greater than one indicate that the evidence in favor of
   <code>a &gt; b</code> is larger than evidence in favor of <code>a &lt; b</code>. For an
-  undirected (point) hypothesis, the evidence ratio is a Bayes factor between
+  two-sided (point) hypothesis, the evidence ratio is a Bayes factor between
   the hypothesis and its alternative computed via the Savage-Dickey density
   ratio method. That is the posterior density at the point of interest
   divided by the prior density at that point. Values greater than one
   indicate that evidence in favor of the point hypothesis has increased after
   seeing the data. In order to calculate this Bayes factor, all parameters
   related to the hypothesis must have proper priors and argument
-  <code>sample_prior</code> of function <code>brm</code> must be set to <code>TRUE</code>. When
+  <code>sample_prior</code> of function <code>brm</code> must be set to <code>"yes"</code>. When
   interpreting Bayes factors, make sure that your priors are reasonable and
   carefully chosen, as the result will depend heavily on the priors. In
   particular, avoid using default priors.</p>  
 <p>The <code>Evid.Ratio</code> may sometimes be <code>0</code> or <code>Inf</code> implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
-  For directional hypotheses pairs, this basically means that all posterior
+  For one-sided hypotheses pairs, this basically means that all posterior
   samples are on the same side of the value dividing the two hypotheses. In
   that sense, instead of <code>0</code> or <code>Inf,</code> you may rather read it as
   <code>Evid.Ratio</code> smaller <code>1 / S</code> or greater <code>S</code>, respectively,
   where <code>S</code> denotes the number of posterior samples used in the
   computations.</p> 
 <p>The argument <code>alpha</code> specifies the size of the credible interval
-  (i.e., Bayesian confidence interval). For instance, if <code>alpha = 0.05</code>
-  (5%), the credible interval will contain <code>1 - alpha = 0.95</code> (95%) of
-  the posterior values. Hence, <code>alpha * 100</code>% of the posterior values
-  will lie outside of the credible interval. Although this allows testing of
+  (i.e., Bayesian confidence interval). For instance, if we tested a
+  two-sided hypothesis and set <code>alpha = 0.05</code> (5%) an, the credible
+  interval will contain <code>1 - alpha = 0.95</code> (95%) of the posterior
+  values. Hence, <code>alpha * 100</code>% of the posterior values will
+  lie outside of the credible interval. Although this allows testing of
   hypotheses in a similar manner as in the frequentist null-hypothesis
   testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
   <code>p &lt; .05</code>) to determine the 'existence' of an effect.</p>
@@ -277,7 +278,7 @@ to make results reproducible.</p></td>
 <span class='co'>## fit a linear mixed effects models</span>
 <span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>time</span> ~ <span class='no'>age</span> + <span class='no'>sex</span> + <span class='no'>disease</span> + (<span class='fl'>1</span> + <span class='no'>age</span><span class='kw'>|</span><span class='no'>patient</span>),
            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span>(),
-           <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>, <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+           <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>, <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='st'>"yes"</span>,
            <span class='kw'>control</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>adapt_delta</span> <span class='kw'>=</span> <span class='fl'>0.95</span>))
 
 <span class='co'>## perform two-sided hypothesis testing</span>
@@ -336,7 +337,7 @@ to make results reproducible.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

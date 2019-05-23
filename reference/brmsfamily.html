@@ -72,7 +72,7 @@ the custom_family function." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -373,78 +373,88 @@ specified predictor terms in order to lead to an identified model.</p></td>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Family <code>gaussian</code> with <code>identity</code> link leads to linear regression. 
-  Family <code>student</code> with <code>identity</code> link leads to 
-  robust linear regression that is less influenced by outliers. 
-  Family <code>skew_normal</code> can handle skewed responses in linear regression.
-  Families <code>poisson</code>, <code>negbinomial</code>, and <code>geometric</code> 
-  with <code>log</code> link lead to regression models for count data. 
-  Families <code>binomial</code> and <code>bernoulli</code> with <code>logit</code> link leads to 
-  logistic regression and family <code>categorical</code> to multi-logistic regression 
-  when there are more than two possible outcomes.
-  Families <code>cumulative</code>, <code>cratio</code> ('continuation ratio'), 
+    <p>Below, we list common use cases for the different families.
+  This list is not ment to be exhaustive.</p><ul>
+<li><p>Family <code>gaussian</code> can be used for linear regression.</p></li>
+<li><p>Family <code>student</code> can be used for robust linear regression 
+  that is less influenced by outliers.</p></li>
+<li><p>Family <code>skew_normal</code> can handle skewed responses in linear 
+  regression.</p></li>
+<li><p>Families <code>poisson</code>, <code>negbinomial</code>, and <code>geometric</code> 
+  can be used for regression of unbounded count data.</p></li>
+<li><p>Families <code>bernoulli</code> and <code>binomial</code> can be used for 
+  binary regression (i.e., most commonly logistic regression).</p></li>
+<li><p>Families <code>categorical</code> and <code>multinomial</code> can be used for 
+  multi-logistic regression when there are more than two possible outcomes.</p></li>
+<li><p>Families <code>cumulative</code>, <code>cratio</code> ('continuation ratio'), 
   <code>sratio</code> ('stopping ratio'), and <code>acat</code> ('adjacent category') 
-  leads to ordinal regression. Families <code>Gamma</code>, <code>weibull</code>, 
-  <code>exponential</code>, <code>lognormal</code>, <code>frechet</code>, and 
-  <code>inverse.gaussian</code> can be used (among others) for survival regression.
-  Families <code>weibull</code>, <code>frechet</code>, and <code>gen_extreme_value</code>
-  ('generalized extreme value') allow for modeling extremes.
-  Family <code>asym_laplace</code> allows for quantile regression when fixing
-  the auxiliary <code>quantile</code> parameter to the quantile of interest.
-  Family <code>exgaussian</code> ('exponentially modified Gaussian') and 
-  <code>shifted_lognormal</code> are especially suited to model reaction times.
-  The <code>wiener</code> family provides an implementation of the Wiener 
+  leads to ordinal regression.</p></li>
+<li><p>Families <code>Gamma</code>, <code>weibull</code>, <code>exponential</code>, 
+  <code>lognormal</code>, <code>frechet</code>, and <code>inverse.gaussian</code> can be 
+  used (among others) for survival regression.</p></li>
+<li><p>Families <code>weibull</code>, <code>frechet</code>, and <code>gen_extreme_value</code>
+  ('generalized extreme value') allow for modeling extremes.</p></li>
+<li><p>Families <code>beta</code> and <code>dirichlet</code> can be used to model 
+  responses representing rates or propabilities.</p></li>
+<li><p>Family <code>asym_laplace</code> allows for quantile regression when fixing
+  the auxiliary <code>quantile</code> parameter to the quantile of interest.</p></li>
+<li><p>Family <code>exgaussian</code> ('exponentially modified Gaussian') and 
+  <code>shifted_lognormal</code> are especially suited to model reaction times.</p></li>
+<li><p>Family <code>wiener</code> provides an implementation of the Wiener 
   diffusion model. For this family, the main formula predicts the drift 
   parameter 'delta' and all other parameters are modeled as auxiliary parameters 
-  (see <code><a href='brmsformula.html'>brmsformula</a></code> for details).
-  Families <code>hurdle_poisson</code>, <code>hurdle_negbinomial</code>, 
+  (see <code><a href='brmsformula.html'>brmsformula</a></code> for details).</p></li>
+<li><p>Families <code>hurdle_poisson</code>, <code>hurdle_negbinomial</code>, 
   <code>hurdle_gamma</code>, <code>hurdle_lognormal</code>, <code>zero_inflated_poisson</code>,
   <code>zero_inflated_negbinomial</code>, <code>zero_inflated_binomial</code>,
   <code>zero_inflated_beta</code>, and <code>zero_one_inflated_beta</code> 
-  allow to estimate zero-inflated and hurdle models. 
+  allow to estimate zero-inflated and hurdle models.
   These models can be very helpful when there are many zeros in the data 
   (or ones in case of one-inflated models)
-  that cannot be explained by the primary distribution of the response. 
-  Families <code>hurdle_lognormal</code> and <code>hurdle_gamma</code> are 
-  especially useful, as traditional <code>lognormal</code> or <code>Gamma</code>
-  models cannot be reasonably fitted for data containing zeros in the response.</p>  
-<p>In the following, we list all possible links for each family.
-  The families <code>gaussian</code>, <code>student</code>, <code>skew_normal</code>,
+  that cannot be explained by the primary distribution of the response.</p></li>
+</ul>
+    <p>Below, we list all possible links for each family.
+  The first link mentioned for each family is the default.</p><ul>
+<li><p>Families <code>gaussian</code>, <code>student</code>, <code>skew_normal</code>,
   <code>exgaussian</code>, <code>asym_laplace</code>, and <code>gen_extreme_value</code> 
-  accept the links (as names) <code>identity</code>, <code>log</code>, and <code>inverse</code>;
-  families <code>poisson</code>, <code>negbinomial</code>, <code>geometric</code>,
+  support the links (as names) <code>identity</code>, <code>log</code>, <code>inverse</code>,
+  and <code>softplus</code>.</p></li>
+<li><p>Families <code>poisson</code>, <code>negbinomial</code>, <code>geometric</code>,
   <code>zero_inflated_poisson</code>, <code>zero_inflated_negbinomial</code>,
-  <code>hurdle_poisson</code>, and <code>hurdle_negbinomial</code> the links 
-  <code>log</code>, <code>identity</code>, and <code>sqrt</code>; 
-  families <code>binomial</code>, <code>bernoulli</code>, <code>Beta</code>, 
+  <code>hurdle_poisson</code>, and <code>hurdle_negbinomial</code> support
+  <code>log</code>, <code>identity</code>, <code>sqrt</code>, and <code>softplus</code>.</p></li>
+<li><p>Families <code>binomial</code>, <code>bernoulli</code>, <code>Beta</code>, 
   <code>zero_inflated_binomial</code>, <code>zero_inflated_beta</code>, 
-  and <code>zero_one_inflated_beta</code> the links <code>logit</code>, 
+  and <code>zero_one_inflated_beta</code> support <code>logit</code>, 
   <code>probit</code>, <code>probit_approx</code>, <code>cloglog</code>, 
-  <code>cauchit</code>, and <code>identity</code>; 
-  families <code>cumulative</code>, <code>cratio</code>, <code>sratio</code>, 
-  and <code>acat</code> the links <code>logit</code>, <code>probit</code>, 
-  <code>probit_approx</code>, <code>cloglog</code>, and <code>cauchit</code>; 
-  family <code>categorical</code> the link <code>logit</code>;
-  families <code>Gamma</code>, <code>weibull</code>, <code>exponential</code>, 
-  <code>frechet</code>, and <code>hurdle_gamma</code> the links 
-  <code>log</code>, <code>identity</code>, and <code>inverse</code>;
-  families <code>lognormal</code> and <code>hurdle_lognormal</code> 
-  the links <code>identity</code> and <code>inverse</code>;
-  family <code>inverse.gaussian</code> the links <code>1/mu^2</code>, 
-  <code>inverse</code>, <code>identity</code> and <code>log</code>;
-  family <code>von_mises</code> the link <code>tan_half</code>;
-  family <code>wiener</code> the link <code>identity</code>.
-  The first link mentioned for each family is the default.</p>  
-<p>Please note that when calling the <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>Gamma</a></code> 
-  family function, the default link will be <code>inverse</code> instead of 
-  <code>log</code> although the latter is the default in <span class="pkg">brms</span>. 
-  Also, the <code>probit_approx</code> link cannot be used when calling the
-  <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>binomial</a></code> family function.</p>  
-<p>The current implementation of <code>inverse.gaussian</code> models has some 
-  convergence problems and requires carefully chosen prior distributions 
-  to work efficiently. For this reason, we currently do not recommend
-  to use the <code>inverse.gaussian</code> family, unless you really feel
-  that your data requires exactly this type of model.</p>
+  <code>cauchit</code>, and <code>identity</code>.</p></li>
+<li><p>Families <code>cumulative</code>, <code>cratio</code>, <code>sratio</code>, 
+  and <code>acat</code> support <code>logit</code>, <code>probit</code>, 
+  <code>probit_approx</code>, <code>cloglog</code>, and <code>cauchit</code>.</p></li>
+<li><p>Families <code>categorical</code>, <code>multinomial</code>, and <code>dirichlet</code>
+  support <code>logit</code>.</p></li>
+<li><p>Families <code>Gamma</code>, <code>weibull</code>, <code>exponential</code>, 
+  <code>frechet</code>, and <code>hurdle_gamma</code> support
+  <code>log</code>, <code>identity</code>, <code>inverse</code>, and <code>softplus</code>.</p></li>
+<li><p>Families <code>lognormal</code> and <code>hurdle_lognormal</code> 
+  support <code>identity</code> and <code>inverse</code>.</p></li>
+<li><p>Family <code>inverse.gaussian</code> supports <code>1/mu^2</code>, 
+  <code>inverse</code>, <code>identity</code>, <code>log</code>, and <code>softplus</code>.</p></li>
+<li><p>Family <code>von_mises</code> supports <code>tan_half</code> and 
+  <code>identity</code>.</p></li>
+<li><p>Family <code>wiener</code> supports <code>identity</code>, <code>log</code>, 
+  and <code>softplus</code> for the main parameter which represents the
+  drift rate.</p></li>
+</ul>
+    <p>Please note that when calling the <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>Gamma</a></code> family
+  function of the <span class="pkg">stats</span> package, the default link will be
+  <code>inverse</code> instead of <code>log</code> although the latter is the default in
+  <span class="pkg">brms</span>. Also, when using the family functions <code>gaussian</code>,
+  <code>binomial</code>, <code>poisson</code>, and <code>Gamma</code> of the <span class="pkg">stats</span>
+  package (see <code><a href='https://www.rdocumentation.org/packages/stats/topics/family'>family</a></code>), special link functions
+  such as <code>softplus</code> or <code>cauchit</code> won't work. In this case, you
+  have to use <code>brmsfamily</code> to specify the family with corresponding link
+  function.</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
@@ -487,7 +497,7 @@ specified predictor terms in order to lead to an identified model.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

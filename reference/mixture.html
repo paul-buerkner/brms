@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -185,7 +185,8 @@ as the number of families passed via <code>...</code> and <code>flist</code>.</p
       <th>order</th>
       <td><p>Ordering constraint to identify mixture components.
 If <code>'mu'</code> or <code>TRUE</code>, population-level intercepts
-of the mean parameters are ordered. 
+of the mean parameters are ordered in non-ordinal models
+and fixed to the same value in ordinal models (see details).
 If <code>'none'</code> or <code>FALSE</code>, no ordering constraint is applied.
 If <code>NULL</code> (the default), <code>order</code> is set to <code>'mu'</code>
 if all families are the same and <code>'none'</code> otherwise.
@@ -199,15 +200,20 @@ Other ordering constraints may be implemented in the future.</p></td>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Most families supported by <span class="pkg">brms</span> can be used to form 
-mixtures. The response variable has to be valid for all components
-of the mixture family. Currently, the number of mixture components 
-has to be specified by the user. It is not yet possible to estimate 
-the number of mixture components from the data.</p>
-<p>For most mixture models, you may want to specify priors on the population-level
-intercepts via <code><a href='set_prior.html'>set_prior</a></code> to improve convergence. 
-In addition, it is sometimes necessary to set <code>inits = 0</code> in the call to 
-<code><a href='brm.html'>brm</a></code> to allow chains to initialize properly.</p>
+    <p>Most families supported by <span class="pkg">brms</span> can be used to form mixtures. The
+response variable has to be valid for all components of the mixture family.
+Currently, the number of mixture components has to be specified by the user.
+It is not yet possible to estimate the number of mixture components from the
+data.</p>
+<p>Ordering intercepts in mixtures of ordinal families is not possible as each
+family has itself a set of vector of intercepts (i.e. ordinal thresholds).
+Instead, <span class="pkg">brms</span> will fix the vector of intercepts across components in
+ordinal mixtures, if desired, so that users can try to identify the mixture
+model via selective inclusion of predictors.</p>
+<p>For most mixture models, you may want to specify priors on the
+population-level intercepts via <code><a href='set_prior.html'>set_prior</a></code> to improve
+convergence. In addition, it is sometimes necessary to set <code>inits = 0</code>
+in the call to <code><a href='brm.html'>brm</a></code> to allow chains to initialize properly.</p>
 <p>For more details on the specification of mixture
 models, see <code><a href='brmsformula.html'>brmsformula</a></code>.</p>
     
@@ -278,7 +284,7 @@ models, see <code><a href='brmsformula.html'>brmsformula</a></code>.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

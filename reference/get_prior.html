@@ -66,7 +66,7 @@ may be specified including default priors." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -160,7 +160,7 @@ may be specified including default priors.</p>
     </div>
 
     <pre class="usage"><span class='fu'>get_prior</span>(<span class='no'>formula</span>, <span class='no'>data</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>gaussian</a></span>(), <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>internal</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>internal</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -200,23 +200,30 @@ description of the available correlation structures. Defaults to
     </tr>
     <tr>
       <th>sparse</th>
-      <td><p>Logical; indicates whether the population-level design matrices
-should be treated as sparse (defaults to <code>FALSE</code>). For design matrices
-with many zeros, this can considerably reduce required memory. Sampling
-speed is currently not improved or even slightly decreased.</p></td>
+      <td><p>(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to <code>FALSE</code>). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.</p></td>
     </tr>
     <tr>
       <th>internal</th>
-      <td><p>A flag indicating if the names of additional internal parameters 
-should be displayed. Setting priors on these parameters is not recommended</p></td>
+      <td><p>A flag indicating if the names of additional internal
+parameters should be displayed. Setting priors on these parameters is not
+recommended</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Currently ignored.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data.frame with columns <code>prior</code>, <code>class</code>, <code>coef</code>, and <code>group</code>
-  and several rows, each providing information on a parameter (or parameter class) on which
-  priors can be specified. The prior column is empty except for internal default priors.</p>
+    <p>A data.frame with columns <code>prior</code>, <code>class</code>, <code>coef</code>,
+  and <code>group</code> and several rows, each providing information on a
+  parameter (or parameter class) on which priors can be specified. The prior
+  column is empty except for internal default priors.</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
@@ -247,7 +254,7 @@ should be displayed. Setting priors on these parameters is not recommended</p></
 <span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.8.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -269,8 +276,8 @@ should be displayed. Setting priors on these parameters is not recommended</p></
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, K - 1] Xc;  // centered version of X
-#&gt;   vector[K - 1] means_X;  // column means of X before centering
+#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
 #&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
@@ -339,7 +346,7 @@ should be displayed. Setting priors on these parameters is not recommended</p></
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

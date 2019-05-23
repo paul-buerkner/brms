@@ -77,7 +77,7 @@ posterior predictive checks and leave-one-out cross-validation." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -183,7 +183,7 @@ posterior predictive checks and leave-one-out cross-validation.</p>
 
     <pre class="usage"><span class='fu'>brm</span>(<span class='no'>formula</span>, <span class='no'>data</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>gaussian</a></span>(), <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"no"</span>, <span class='st'>"yes"</span>, <span class='st'>"only"</span>),
-  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>fit</span> <span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>save_ranef</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>save_mevars</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>save_all_pars</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>inits</span> <span class='kw'>=</span> <span class='st'>"random"</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>4</span>, <span class='kw'>iter</span> <span class='kw'>=</span> <span class='fl'>2000</span>,
   <span class='kw'>warmup</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/Round'>floor</a></span>(<span class='no'>iter</span>/<span class='fl'>2</span>), <span class='kw'>thin</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/options'>getOption</a></span>(<span class='st'>"mc.cores"</span>,
@@ -258,10 +258,11 @@ priors.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
-      <td><p>Logical; indicates whether the population-level design matrices
-should be treated as sparse (defaults to <code>FALSE</code>). For design matrices
-with many zeros, this can considerably reduce required memory. Sampling
-speed is currently not improved or even slightly decreased.</p></td>
+      <td><p>(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to <code>FALSE</code>). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.</p></td>
     </tr>
     <tr>
       <th>knots</th>
@@ -624,7 +625,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

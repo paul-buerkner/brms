@@ -66,7 +66,7 @@ allowing for autoregression terms only." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -166,14 +166,15 @@ allowing for autoregression terms only.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>formula</th>
-      <td><p>A one sided formula of the form <code>~ t</code>, or <code>~ t | g</code>, 
-specifying a time covariate <code>t</code> and, optionally, a grouping factor <code>g</code>. 
-A covariate for this correlation structure must be integer valued. 
-When a grouping factor is present in <code>formula</code>, the correlation structure 
-is assumed to apply only to observations within the same grouping level; 
-observations with different grouping levels are assumed to be uncorrelated. 
-Defaults to <code>~ 1</code>, which corresponds to using the order of the observations 
-in the data as a covariate, and no groups.</p></td>
+      <td><p>A one sided formula of the form <code>~ t</code>, or <code>~ t | g</code>,
+specifying a time covariate <code>t</code> and, optionally, a grouping factor
+<code>g</code>. A covariate for this correlation structure must be integer
+valued. When a grouping factor is present in <code>formula</code>, the
+correlation structure is assumed to apply only to observations within the
+same grouping level; observations with different grouping levels are
+assumed to be uncorrelated. Defaults to <code>~ 1</code>, which corresponds to
+using the order of the observations in the data as a covariate, and no
+groups.</p></td>
     </tr>
     <tr>
       <th>p</th>
@@ -182,12 +183,14 @@ order of the ARMA structure. Default is 1.</p></td>
     </tr>
     <tr>
       <th>cov</th>
-      <td><p>A flag indicating whether ARMA effects should be estimated 
-by means of residual covariance matrices
-(currently only possible for stationary ARMA effects of order 1). 
-If <code>FALSE</code> (the default) a regression formulation
-is used that is considerably faster and allows for ARMA effects 
-of order higher than 1 but cannot handle user defined standard errors.</p></td>
+      <td><p>A flag indicating whether ARMA effects should be estimated by
+means of residual covariance matrices. This is currently only possible for
+stationary ARMA effects of order 1. If the model family does not have
+natural residuals, latent residuals are added automatically. If
+<code>FALSE</code> (the default) a regression formulation is used that is
+considerably faster and allows for ARMA effects of order higher than 1 but
+is only available for <code>gaussian</code> models and some of its 
+generalizations.</p></td>
     </tr>
     </table>
     
@@ -208,7 +211,7 @@ of order higher than 1 but cannot handle user defined standard errors.</p></td>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>cor_ar</span>(~<span class='no'>visit</span><span class='kw'>|</span><span class='no'>patient</span>, <span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>2</span>)</div><div class='output co'>#&gt; arma(~visit|patient, 2, 0, 0)</div><div class='input'>
+    <pre class="examples"><div class='input'><span class='fu'>cor_ar</span>(~<span class='no'>visit</span><span class='kw'>|</span><span class='no'>patient</span>, <span class='kw'>p</span> <span class='kw'>=</span> <span class='fl'>2</span>)</div><div class='output co'>#&gt; arma(~visit|patient, 2, 0)</div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
@@ -236,7 +239,7 @@ of order higher than 1 but cannot handle user defined standard errors.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

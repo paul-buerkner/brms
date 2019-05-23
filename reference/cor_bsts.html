@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Basic Bayesian Structural Time Series — cor_bsts • brms</title>
+<title>(Defunct) Basic Bayesian Structural Time Series — cor_bsts • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Basic Bayesian Structural Time Series — cor_bsts" />
+<meta property="og:title" content="(Defunct) Basic Bayesian Structural Time Series — cor_bsts" />
 
-<meta property="og:description" content="Add a basic Bayesian structural time series component to a brms model" />
+<meta property="og:description" content="The BSTS correlation structure is no longer supported." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -146,14 +146,14 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Basic Bayesian Structural Time Series</h1>
+    <h1>(Defunct) Basic Bayesian Structural Time Series</h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/correlations.R'><code>R/correlations.R</code></a></small>
     <div class="hidden name"><code>cor_bsts.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Add a basic Bayesian structural time series component to a brms model</p>
+    <p>The BSTS correlation structure is no longer supported.</p>
     
     </div>
 
@@ -164,53 +164,25 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>formula</th>
-      <td><p>A one sided formula of the form <code>~ t</code>, or <code>~ t | g</code>, 
-specifying a time covariate <code>t</code> and, optionally, a grouping factor <code>g</code>. 
-A covariate for this correlation structure must be integer valued. 
-When a grouping factor is present in <code>formula</code>, the correlation structure 
-is assumed to apply only to observations within the same grouping level; 
-observations with different grouping levels are assumed to be uncorrelated. 
-Defaults to <code>~ 1</code>, which corresponds to using the order of the observations 
-in the data as a covariate, and no groups.</p></td>
+      <td><p>A one sided formula of the form <code>~ t</code>, or <code>~ t | g</code>,
+specifying a time covariate <code>t</code> and, optionally, a grouping factor
+<code>g</code>. A covariate for this correlation structure must be integer
+valued. When a grouping factor is present in <code>formula</code>, the
+correlation structure is assumed to apply only to observations within the
+same grouping level; observations with different grouping levels are
+assumed to be uncorrelated. Defaults to <code>~ 1</code>, which corresponds to
+using the order of the observations in the data as a covariate, and no
+groups.</p></td>
     </tr>
     </table>
     
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>An object of class <code>cor_bsts</code>.</p>
-    
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
-
-    <p>Bayesian structural time series models offer an alternative 
-  to classical AR(I)MA models (they are in fact a generalization).
-  The basic version currently implemented in <span class="pkg">brms</span> introduces
-  local level terms for each observation, whereas each local level term 
-  depends on the former local level term:
-  $$LL_t ~ N(LL_{t-1}, sigmaLL)$$
-  A simple introduction can be found in this blogpost: 
-  <a href='http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/'>http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/</a>.
-  More complicated Bayesian structural time series models may follow
-  in the future.</p>
-    
-
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/data.frame'>data.frame</a></span>(<span class='kw'>y</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/Normal'>rnorm</a></span>(<span class='fl'>100</span>), <span class='kw'>x</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/Normal'>rnorm</a></span>(<span class='fl'>100</span>))
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span>~<span class='no'>x</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>, <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='fu'>cor_bsts</span>())
-<span class='co'># }</span><div class='input'>
-</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-
-      <li><a href="#details">Details</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+                </ul>
 
   </div>
 </div>
@@ -221,7 +193,7 @@ in the data as a covariate, and no groups.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>

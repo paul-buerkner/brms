@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
       </span>
     </div>
 
@@ -512,7 +512,7 @@ specify arguments as strings.</p></li>
 <span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.8.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -536,30 +536,6 @@ specify arguments as strings.</p></li>
 #&gt;      }
 #&gt;      return log(p);
 #&gt;    }
-#&gt;   /* cumulative-logit log-PDF for a single response
-#&gt;    * including category specific effects
-#&gt;    * Args:
-#&gt;    *   y: response category
-#&gt;    *   mu: linear predictor
-#&gt;    *   mucs: predictor for category specific effects
-#&gt;    *   thres: ordinal thresholds
-#&gt;    *   disc: discrimination parameter
-#&gt;    * Returns:
-#&gt;    *   a scalar to be added to the log posterior
-#&gt;    */
-#&gt;    real cumulative_logit_cs_lpmf(int y, real mu, row_vector mucs, vector thres, real disc) {
-#&gt;      int ncat = num_elements(thres) + 1;
-#&gt;      real p;
-#&gt;      if (y == 1) {
-#&gt;        p = inv_logit(disc * (thres[1] - mucs[1] - mu));
-#&gt;      } else if (y == ncat) {
-#&gt;        p = 1 - inv_logit(disc * (thres[ncat - 1] - mucs[ncat - 1] - mu));
-#&gt;      } else {
-#&gt;        p = inv_logit(disc * (thres[y] - mucs[y] - mu)) -
-#&gt;            inv_logit(disc * (thres[y - 1] - mucs[y - 1] - mu));
-#&gt;      }
-#&gt;      return log(p);
-#&gt;    }
 #&gt; }
 #&gt; data {
 #&gt;   int&lt;lower=1&gt; N;  // number of observations
@@ -576,17 +552,17 @@ specify arguments as strings.</p></li>
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
 #&gt; transformed data {
-#&gt;   int Kc = K - 1;
-#&gt;   matrix[N, K - 1] Xc;  // centered version of X
-#&gt;   vector[K - 1] means_X;  // column means of X before centering
-#&gt;   for (i in 2:K) {
-#&gt;     means_X[i - 1] = mean(X[, i]);
-#&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
+#&gt;   int Kc = K;
+#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   vector[Kc] means_X;  // column means of X before centering
+#&gt;   for (i in 1:K) {
+#&gt;     means_X[i] = mean(X[, i]);
+#&gt;     Xc[, i] = X[, i] - means_X[i];
 #&gt;   }
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   ordered[ncat-1] temp_Intercept;  // temporary thresholds
+#&gt;   ordered[ncat - 1] temp_Intercept;  // temporary thresholds
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
 #&gt;   vector[N_1] z_1[M_1];  // unscaled group-level effects
 #&gt; }
@@ -621,7 +597,7 @@ specify arguments as strings.</p></li>
 <span class='co'>## use the horseshoe prior to model sparsity in population-level effects</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.8.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.9.0
 #&gt; functions {
 #&gt; 
 #&gt;   /* Efficient computation of the horseshoe prior
@@ -658,8 +634,8 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, K - 1] Xc;  // centered version of X
-#&gt;   vector[K - 1] means_X;  // column means of X before centering
+#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
 #&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
@@ -675,7 +651,8 @@ specify arguments as strings.</p></li>
 #&gt;   real&lt;lower=0&gt; hs_c2;
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   vector[Kc] b = horseshoe(zb, hs_local, hs_global, hs_scale_global, hs_scale_slab^2 * hs_c2);
+#&gt;   vector[Kc] b;  // population-level effects
+#&gt;   b = horseshoe(zb, hs_local, hs_global, hs_scale_global, hs_scale_slab^2 * hs_c2);
 #&gt; }
 #&gt; model {
 #&gt;   vector[N] mu = temp_Intercept + Xc * b;
@@ -701,7 +678,7 @@ specify arguments as strings.</p></li>
 <span class='co'>## alternatively use the lasso prior</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"lasso(1)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.8.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"lasso(1)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.9.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -715,8 +692,8 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, K - 1] Xc;  // centered version of X
-#&gt;   vector[K - 1] means_X;  // column means of X before centering
+#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
 #&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
@@ -747,7 +724,7 @@ specify arguments as strings.</p></li>
 #&gt; }</div><div class='input'>
 <span class='co'>## pass priors to Stan without checking</span>
 <span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'>prior_string</span>(<span class='st'>"target += normal_lpdf(b[1] | 0, 1)"</span>, <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.8.0
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -759,8 +736,8 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, K - 1] Xc;  // centered version of X
-#&gt;   vector[K - 1] means_X;  // column means of X before centering
+#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
 #&gt;     Xc[, i - 1] = X[, i] - means_X[i - 1];
@@ -818,7 +795,7 @@ specify arguments as strings.</p></li>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
 </div>
       </footer>
    </div>
