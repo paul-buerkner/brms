@@ -190,7 +190,7 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
 # @param short use the T[, ] syntax?
 stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
   stopifnot(is.sdist(llh))
-  bounds <- get_bounds(bterms, data = data)
+  bounds <- trunc_bounds(bterms, data = data)
   if (!any(bounds$lb > -Inf | bounds$ub < Inf)) {
     return("")
   }

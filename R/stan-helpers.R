@@ -83,7 +83,7 @@ stan_response <- function(bterms, data) {
       )
     }
   }
-  bounds <- get_bounds(bterms, data = data)
+  bounds <- trunc_bounds(bterms, data = data)
   if (any(bounds$lb > -Inf)) {
     str_add(out$data) <- glue(
       "  {rtype} lb{resp}[N{resp}];  // lower truncation bounds;\n"
@@ -95,7 +95,7 @@ stan_response <- function(bterms, data) {
     )
   }
   if (is.formula(bterms$adforms$mi)) {
-    Ybounds <- get_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
+    Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
     sdy <- get_sdy(bterms, data)
     if (is.null(sdy)) {
       # response is modeled without measurement error

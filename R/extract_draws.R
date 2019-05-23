@@ -33,7 +33,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  old_sdata <- NULL
+  old_sdata <- trunc_bounds <- NULL
   if (new) {
     # extract_draws_re() also requires the levels from newdata
     # original level names are already passed via old_ranef
@@ -43,13 +43,18 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       # GPs for new data require the original data as well
       old_sdata <- standata(x, internal = TRUE, ...)
     }
+    if (length(get_effect(bterms, "sp"))) {
+      # truncation bounds for imputing missing values in new data
+      trunc_bounds <- trunc_bounds(bterms, data = newdata, incl_family = TRUE)
+    }
   }
   extract_draws(
     bterms, samples = samples, sdata = sdata, data = x$data, 
     ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
     smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
-    stanvars = names(x$stanvars), old_sdata = old_sdata
+    stanvars = names(x$stanvars), old_sdata = old_sdata,
+    trunc_bounds = trunc_bounds
   )
 }
 
@@ -225,8 +230,8 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
 }
 
 # extract draws of special effects terms
-extract_draws_sp <- function(bterms, samples, sdata, data, 
-                             meef, new = FALSE, ...) {
+extract_draws_sp <- function(bterms, samples, sdata, data, meef, 
+                             new = FALSE, trunc_bounds = NULL, ...) {
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(draws)
@@ -312,31 +317,38 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   dim <- c(nrow(draws$bsp), sdata[[paste0("N", resp)]])
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
-    resps <- usc(vars_mi)
-    Yl_names <- paste0("Yl", resps)
+    # we know at this point that the model multivariate
+    Yl_names <- paste0("Yl_", vars_mi)
     draws$Yl <- named_list(Yl_names)
     for (i in seq_along(draws$Yl)) {
-      Y <- as_draws_matrix(sdata[[paste0("Y", resps[i])]], dim)
-      sdy <- sdata[[paste0("noise", resps[i])]]
+      vmi <- vars_mi[i]
+      Y <- as_draws_matrix(sdata[[paste0("Y_", vmi)]], dim)
+      sdy <- sdata[[paste0("noise_", vmi)]]
       if (is.null(sdy)) {
         # missings only
         draws$Yl[[i]] <- Y
         if (!new) {
-          Ymi_pars <- paste0("Ymi", resps[i], "\\[")
+          Ymi_pars <- paste0("Ymi_", vmi, "\\[")
           Ymi <- get_samples(samples, Ymi_pars)
-          Jmi <- sdata[[paste0("Jmi", resps[i])]]
+          Jmi <- sdata[[paste0("Jmi_", vmi)]]
           draws$Yl[[i]][, Jmi] <- Ymi
         }
       } else {
         # measurement-error in the response
         save_mevars <- any(grepl("^Yl_", colnames(samples)))
         if (save_mevars && !new) {
-          Yl_pars <- paste0("Yl", resps[i], "\\[")
+          Yl_pars <- paste0("Yl_", vmi, "\\[")
           draws$Yl[[i]] <- get_samples(samples, Yl_pars)
         } else {
           warn_me <- warn_me || !new
           sdy <- as_draws_matrix(sdy, dim)
-          draws$Yl[[i]] <- array(rnorm(prod(dim), Y, sdy), dim)
+          draws$Yl[[i]] <- rcontinuous(
+            n = prod(dim), dist = "norm", 
+            mean = Y, sd = sdy,
+            lb = trunc_bounds[[vmi]]$lb,
+            ub = trunc_bounds[[vmi]]$ub
+          )
+          draws$Yl[[i]] <- array(draws$Yl[[i]], dim)
         }
       }
     }

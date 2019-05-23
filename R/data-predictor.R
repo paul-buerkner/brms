@@ -948,7 +948,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$cens <- as.array(out$cens)
   }
   if (is.formula(x$adforms$trunc)) {
-    out <- c(out, eval_rhs(x$adforms$trunc, data = data))
+    c(out) <- eval_rhs(x$adforms$trunc, data = data)
     if (length(out$lb) == 1L) {
       out$lb <- rep(out$lb, N)
     }
