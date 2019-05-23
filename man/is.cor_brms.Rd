@@ -6,7 +6,6 @@
 \alias{is.cor_sar}
 \alias{is.cor_car}
 \alias{is.cor_fixed}
-\alias{is.cor_bsts}
 \title{Check if argument is a correlation structure}
 \usage{
 is.cor_brms(x)
@@ -18,8 +17,6 @@ is.cor_sar(x)
 is.cor_car(x)
 
 is.cor_fixed(x)
-
-is.cor_bsts(x)
 }
 \arguments{
 \item{x}{An \R object.}

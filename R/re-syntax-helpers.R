@@ -1,10 +1,9 @@
 # This file contains functions dealing with the extended 
 # lme4-like formula syntax to specify group-level terms
 
+# check if the group part of a group-level term is invalid
+# @param group the group part of a group-level term
 illegal_group_expr <- function(group) {
-  # check if the group part of a group-level term is invalid
-  # Args:
-  #   group: the group part of a group-level term
   group <- as_one_character(group)
   valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
   rsv_signs <- c("+", "-", "*", "/", "|", "::")
@@ -34,10 +33,10 @@ re_rhs <- function(re_terms) {
   sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
 }
 
+# extract the three parts of group-level terms
+# @param re_terms character vector of RE terms in lme4 syntax
+# @return a data.frame with one row per group-level term
 re_parts <- function(re_terms) {
-  # extract the three parts of group-level terms
-  # Returns:
-  #   A data.frame with one row per group-level term
   lhs <- re_lhs(re_terms)
   mid <- re_mid(re_terms)
   rhs <- re_rhs(re_terms)
@@ -48,11 +47,9 @@ re_parts <- function(re_terms) {
   as.data.frame(out, stringsAsFactors = FALSE)
 }
 
+# split nested group-level terms and check for special effects terms
+# @param re_terms character vector of RE terms in lme4 syntax
 split_re_terms <- function(re_terms) {
-  # split nested group-level terms 
-  # and check for special effects terms
-  # Args:
-  #   re_terms: group-level terms in extended lme4 syntax
   if (!length(re_terms)) {
     return(re_terms)
   }
@@ -125,12 +122,11 @@ split_re_terms <- function(re_terms) {
   structure(re_terms, type = unlist(type))
 }
 
+# extract group-level terms from a formula of character vector
+# @param x formula or character vector
+# @param formula return a formula rather than a character string?
+# @param brackets include group-level terms in brackets?
 get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
-  # extract group-level terms from a formula of character vector
-  # Args:
-  #   x: formula or character vector
-  #   formula: return a formula rather than a character string?
-  #   brackets: include group-level terms in brackets?
   if (is.formula(x)) {
     x <- all_terms(x)
   }
@@ -149,13 +145,11 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
   out
 }
 
+# validate the re_formula argument
+# @inheritParams extract_draws.brmsfit
+# @param formula: formula to match re_formula with
+# @return updated re_formula containing only terms existent in formula
 check_re_formula <- function(re_formula, formula) {
-  # validate the re_formula argument
-  # Args:
-  #   re_formula: see predict.brmsfit for documentation
-  #   formula: formula to match re_formula with
-  # Returns:
-  #   updated re_formula containing only terms existent in formula
   old_re_formula <- get_re_terms(formula, formula = TRUE)
   if (is.null(re_formula)) {
     re_formula <- old_re_formula
@@ -198,9 +192,9 @@ check_re_formula <- function(re_formula, formula) {
   re_formula
 }
 
+# remove existing group-level terms in formula and
+# add valid group-level terms of re_formula
 update_re_terms <- function(formula, re_formula) {
-  # remove existing group-level terms in formula and
-  # add valid group-level terms of re_formula
   UseMethod("update_re_terms")
 }
 
@@ -246,8 +240,8 @@ update_re_terms.formula <- function(formula, re_formula = NULL) {
   new_formula
 }
 
+# extract group-level terms
 get_re <- function(x, ...) {
-  # extract group-level terms
   UseMethod("get_re")
 }
 
@@ -256,12 +250,11 @@ get_re.default <- function(x, ...) {
   NULL
 }
 
+# get group-level information in a data.frame
+# @param bterms object of class 'brmsterms'
+# @param all logical; include ranefs of additional parameters?
 #' @export
 get_re.brmsterms <- function(x, all = TRUE, ...) {
-  # get group-level information in a data.frame
-  # Args:
-  #   bterms: object of class brmsterms
-  #   all: logical; include ranefs of nl and aux parameters?
   if (all) {
     re <- named_list(c(names(x$dpars), names(x$nlpars)))
     for (dp in names(x$dpars)) {
@@ -294,31 +287,29 @@ get_re.btl <- function(x, ...) {
   re
 }
 
+# gather information on group-level effects
+# @param bterms object of class brmsterms
+# @param data data.frame containing all model variables
+# @param all include REs of all parameters?
+# @param old_levels optional original levels of the grouping factors
+# @param old_sdata optional; see 'extract_old_standata'
+#   only used for category specific group-level effects
+# @return a tidy data.frame with the following columns:
+#   id: ID of the group-level effect 
+#   group: name of the grouping factor
+#   gn: number of the grouping term within the respective formula
+#   coef: name of the group-level effect
+#   cn: number of the effect within the ID
+#   resp: name of the response variable
+#   dpar: name of the distributional parameter
+#   nlpar: name of the non-linear parameter
+#   cor: are correlations modeled for this effect?
+#   ggn: global number of the grouping factor
+#   type: special effects type; can be 'sp' or 'cs'
+#   gcall: output of functions 'gr' or 'mm'
+#   form: formula used to compute the effects
 tidy_ranef <- function(bterms, data, all = TRUE, 
                        old_levels = NULL, old_sdata = NULL) {
-  # combines helpful information on the group-level effects
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: data.frame containing all model variables
-  #   all: include REs of all parameters?
-  #   old_levels: optional original levels of the grouping factors
-  #   old_sdata: optional; see 'extract_old_standata'
-  #     only used for category specific group-level effects
-  # Returns: 
-  #   A tidy data.frame with the following columns:
-  #     id: ID of the group-level effect 
-  #     group: name of the grouping factor
-  #     gn: number of the grouping term within the respective formula
-  #     coef: name of the group-level effect
-  #     cn: number of the effect within the ID
-  #     resp: name of the response variable
-  #     dpar: name of the distributional parameter
-  #     nlpar: name of the non-linear parameter
-  #     cor: are correlations modeled for this effect?
-  #     ggn: global number of the grouping factor
-  #     type: special effects type; can be 'sp' or 'cs'
-  #     gcall: output of functions 'gr' or 'mm'
-  #     form: formula used to compute the effects
   data <- combine_groups(data, get_group_vars(bterms))
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
@@ -443,7 +434,7 @@ tidy_ranef <- function(bterms, data, all = TRUE,
           bylevels <- rsub$bylevels[[i]]
           g <- rsub$gcall[[i]]$groups
           J <- match(get(g, data), levels[[i]])
-          df <- unique(data.frame(J, by = get(by, data)))
+          df <- unique(data.frame(J, by = rm_wsp(get(by, data))))
           if (nrow(df) > length(unique(J))) {
             stop2("Some levels of '", g, "' correspond ", 
                   "to multiple levels of '", by, "'.")
@@ -479,8 +470,8 @@ is.ranef_frame <- function(x) {
   inherits(x, "ranef_frame")
 }
 
+# extract names of all grouping variables
 get_group_vars <- function(x, ...) {
-  # extract names of all grouping variables
   UseMethod("get_group_vars") 
 }
 
@@ -514,13 +505,13 @@ get_group_vars.mvbrmsterms <- function(x, ...) {
   out
 }
 
+# get names of grouping variables of re terms
 get_re_groups <- function(x, ...) {
-  # get names of grouping variables of re terms
   ulapply(get_re(x)$gcall, "[[", "groups")
 }
 
+# extract information about groups with a certain distribution
 get_dist_groups <- function(ranef, dist) {
-  # extract information about groups with a certain distribution
   out <- subset2(ranef, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
 }

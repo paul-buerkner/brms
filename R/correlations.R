@@ -14,16 +14,14 @@
 #'   average components}
 #'   \item{cor_ar}{autoregressive (AR) structure of arbitrary order}
 #'   \item{cor_ma}{moving average (MA) structure of arbitrary order} 
-#'   \item{cor_arr}{response autoregressive (ARR) structure}
 #'   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
 #'   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
-#'   \item{cor_bsts}{Bayesian structural time series (BSTS) structure}
 #'   \item{cor_fixed}{fixed user-defined covariance structure}
 #' }
 #' 
 #' @seealso 
-#' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, \link{cor_arr}, 
-#'       \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
+#' \code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, 
+#'       \link{cor_car}, \link{cor_sar}, \link{cor_fixed}}
 #' 
 NULL
 
@@ -34,63 +32,61 @@ NULL
 #' 
 #' @aliases cor_arma-class
 #' 
-#' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-#'   specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
-#'   A covariate for this correlation structure must be integer valued. 
-#'   When a grouping factor is present in \code{formula}, the correlation structure 
-#'   is assumed to apply only to observations within the same grouping level; 
-#'   observations with different grouping levels are assumed to be uncorrelated. 
-#'   Defaults to \code{~ 1}, which corresponds to using the order of the observations 
-#'   in the data as a covariate, and no groups.
+#' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g},
+#'   specifying a time covariate \code{t} and, optionally, a grouping factor
+#'   \code{g}. A covariate for this correlation structure must be integer
+#'   valued. When a grouping factor is present in \code{formula}, the
+#'   correlation structure is assumed to apply only to observations within the
+#'   same grouping level; observations with different grouping levels are
+#'   assumed to be uncorrelated. Defaults to \code{~ 1}, which corresponds to
+#'   using the order of the observations in the data as a covariate, and no
+#'   groups.
 #' @param p A non-negative integer specifying the autoregressive (AR) 
 #'   order of the ARMA structure. Default is 0.  
 #' @param q A non-negative integer specifying the moving average (MA) 
-#'   order of the ARMA structure. Default is 0. 
-#' @param r A non-negative integer specifying the autoregressive 
-#'   response (ARR) order. See 'Details' for differences of AR and ARR 
-#'   effects. Default is 0. 
-#' @param cov A flag indicating whether ARMA effects should be estimated 
-#'   by means of residual covariance matrices
-#'   (currently only possible for stationary ARMA effects of order 1). 
-#'   If \code{FALSE} (the default) a regression formulation
-#'   is used that is considerably faster and allows for ARMA effects 
-#'   of order higher than 1 but cannot handle user defined standard errors.
+#'   order of the ARMA structure. Default is 0.
+#' @param r No longer supported. 
+#' @param cov A flag indicating whether ARMA effects should be estimated by
+#'   means of residual covariance matrices. This is currently only possible for
+#'   stationary ARMA effects of order 1. If the model family does not have
+#'   natural residuals, latent residuals are added automatically. If
+#'   \code{FALSE} (the default) a regression formulation is used that is
+#'   considerably faster and allows for ARMA effects of order higher than 1 but
+#'   is only available for \code{gaussian} models and some of its 
+#'   generalizations.
 #'   
 #' @return An object of class \code{cor_arma}, representing an 
 #'   autoregression-moving-average correlation structure.
 #' 
-#' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typically understood as autoregressive effects.
-#'   However, one may also model autoregressive effects of the response
-#'   variable, which is called ARR in \pkg{brms}.
-#' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @seealso \code{\link{cor_ar}, \link{cor_ma}, \link{cor_arr}}
+#' @seealso \code{\link{cor_ar}}, \code{\link{cor_ma}}
 #' 
 #' @examples
-#' cor_arma(~visit|patient, p = 2, q = 2)
+#' cor_arma(~ visit | patient, p = 2, q = 2)
 #' 
 #' @export
 cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
-  if (!(p >= 0 && (p == round(p)))) {
+  p <- as_one_numeric(p)
+  q <- as_one_numeric(q)
+  if ("r" %in% names(match.call())) {
+    warning2("The ARR structure is no longer supported and ignored.")
+  }
+  if (!(p >= 0 && p == round(p))) {
     stop2("Autoregressive order must be a non-negative integer.")
   }
-  if (!(q >= 0 && (q == round(q)))) {
+  if (!(q >= 0 && q == round(q))) {
     stop2("Moving-average order must be a non-negative integer.")
   }
-  if (!(r >= 0 && (r == round(r)))) {
-    stop2("Response autoregressive order must be a non-negative integer.")
-  }
-  if (!sum(p, q, r)) {
-    stop2("At least one of 'p', 'q', and 'r' should be greater zero.")
+  if (!sum(p, q)) {
+    stop2("At least one of 'p' and 'q' should be greater zero.")
   }
   if (cov && (p > 1 || q > 1)) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
-  x <- nlist(formula, p, q, r, cov = as.logical(cov))
+  x <- nlist(formula, p, q, cov = as.logical(cov))
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
@@ -120,7 +116,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' 
 #' @export
 cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
-  cor_arma(formula = formula, p = p, q = 0, r = 0, cov = cov)
+  cor_arma(formula = formula, p = p, q = 0, cov = cov)
 }
   
 #' MA(q) correlation structure
@@ -143,33 +139,16 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' 
 #' @export
 cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
-  cor_arma(formula = formula, p = 0, q = q, r = 0, cov = cov)
+  cor_arma(formula = formula, p = 0, q = q, cov = cov)
 }
 
-#' ARR(r) correlation structure
+#' (Defunct) ARR correlation structure
 #' 
-#' This function is a constructor for the \code{cor_arma} class 
-#' allowing for autoregressive effects of the response only.
+#' The ARR correlation structure is no longer supported.
 #' 
 #' @inheritParams cor_arma
-#' @param r A non-negative integer specifying the autoregressive
-#'   response (ARR) order of the ARMA structure. Default is 1.  
 #' 
-#' @return An object of class \code{cor_arma} containing solely
-#'   autoregressive response terms.
-#'   
-#' @details AR refers to autoregressive effects of residuals, which
-#'   is what is typically understood as autoregressive effects.
-#'   However, one may also model autoregressive effects of the response
-#'   variable, which is called ARR in \pkg{brms}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @seealso \code{\link{cor_arma}}
-#' 
-#' @examples
-#' cor_arr(~visit|patient, r = 2)
-#' 
+#' @keywords internal
 #' @export
 cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
@@ -243,8 +222,8 @@ cor_errorsar <- function(W) {
   out
 }
 
+# helper function to prepare spatial weights matrices
 sar_weights <- function(W) {
-  # helper function to prepare spatial weights matrices
   require_package("spdep")
   if (is(W, "listw")) {
     W <- spdep::listw2mat(W)
@@ -381,38 +360,16 @@ cor_fixed <- function(V) {
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
 
-#' Basic Bayesian Structural Time Series
+#' (Defunct) Basic Bayesian Structural Time Series
 #' 
-#' Add a basic Bayesian structural time series component to a brms model
-#' 
-#' @aliases cor_bsts-class
+#' The BSTS correlation structure is no longer supported.
 #' 
 #' @inheritParams cor_arma
 #' 
-#' @return An object of class \code{cor_bsts}.
-#' 
-#' @details Bayesian structural time series models offer an alternative 
-#'   to classical AR(I)MA models (they are in fact a generalization).
-#'   The basic version currently implemented in \pkg{brms} introduces
-#'   local level terms for each observation, whereas each local level term 
-#'   depends on the former local level term:
-#'   \deqn{LL_t ~ N(LL_{t-1}, sigmaLL)}
-#'   A simple introduction can be found in this blogpost: 
-#'   \url{http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/}.
-#'   More complicated Bayesian structural time series models may follow
-#'   in the future.
-#'   
-#' @examples 
-#' \dontrun{
-#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
-#' fit <- brm(y~x, data = dat, autocor = cor_bsts())
-#' }   
-#' 
+#' @keywords internal
 #' @export
 cor_bsts <- function(formula = ~1) {
-  x <- list(formula = as.formula(formula))
-  class(x) <- c("cor_bsts", "cor_brms")
-  x
+  stop2("The BSTS structure is no longer supported.")
 }
 
 #' Check if argument is a correlation structure
@@ -451,12 +408,6 @@ is.cor_fixed <- function(x) {
   inherits(x, "cor_fixed")
 }
 
-#' @rdname is.cor_brms
-#' @export
-is.cor_bsts <- function(x) {
-  inherits(x, "cor_bsts")
-}
-
 #' @export
 print.cor_empty <- function(x, ...) {
   cat("empty()")
@@ -465,7 +416,7 @@ print.cor_empty <- function(x, ...) {
 #' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
-             get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
+             get_ar(x), ", ", get_ma(x), ")"))
   invisible(x)
 }
 
@@ -484,12 +435,6 @@ print.cor_car <- function(x, ...) {
 }
 
 #' @export
-print.cor_bsts <- function(x, ...) {
-  cat(paste0("bsts(", formula2str(x$formula), ")"))
-  invisible(x)
-}
-
-#' @export
 print.cor_fixed <- function(x, ...) {
   cat("Fixed covariance matrix: \n")
   print(x$V)
@@ -502,39 +447,27 @@ print.cov_fixed <- function(x, ...) {
   print.cor_fixed(x)
 }
 
-has_arma <- function(x) {
-  # checks if any autocorrelation effects are present
-  stop_not_cor_brms(x)
-  isTRUE(sum(x$p, x$q, x$r) > 0)
-}
-
+# get AR (autoregressive effects of residuals) order
 get_ar <- function(x) {
-  # get AR (autoregressive effects of residuals) order 
-  # for which AR effects were not implemented in the present form
   stop_not_cor_brms(x)
   ifelse(is.null(x$p), 0, x$p)
 }
 
+# get MA (moving-average) order
 get_ma <- function(x) {
-  # get MA (moving-average) order
   stop_not_cor_brms(x)
   ifelse(is.null(x$q), 0, x$q)
 }
 
-get_arr <- function(x) {
-  # get ARR (autoregressive effects of the response) order 
-  # for which ARR was labled as AR
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$r), 0, x$r)
-}
-
+# use the covariance parameterization of ARMA models?
 use_cov <- function(x) {
   stop_not_cor_brms(x)
   if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
-    x$cov
+    out <- x$cov
   } else {
-    FALSE
+    out <- FALSE
   }
+  out
 }
 
 stop_not_cor_brms <- function(x) {
@@ -544,8 +477,8 @@ stop_not_cor_brms <- function(x) {
   TRUE
 }
 
+# empty 'cor_brms' object
 cor_empty <- function() {
-  # empty 'cor_brms' object
   structure(list(), class = c("cor_empty", "cor_brms"))
 }
 
@@ -553,8 +486,8 @@ is.cor_empty <- function(x) {
   inherits(x, "cor_empty")
 }
 
+# check validity of the autocor argument
 check_autocor <- function(autocor) {
-  # check validity of autocor argument
   if (is.null(autocor))  {
     autocor <- cor_empty()
   }
@@ -562,36 +495,27 @@ check_autocor <- function(autocor) {
   autocor
 }
 
+# remove autocorrelation structures
+# @param x a brmsfit object
 remove_autocor <- function(x) {
-  # convenience function to ignore autocorrelation terms
-  # currently excludes ARMA, SAR, and CAR structures
+  stopifnot(is.brmsfit(x))
   if (is_mv(x)) {
     for (r in names(x$formula$forms)) {
-      ac <- x$formula$forms[[r]]$autocor
-      excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
-      if (excl_cor) {
-        x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
-      }
+      x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
     }
   } else {
-    ac <- x$formula$autocor
-    excl_cor <- is.cor_arma(ac) || is.cor_sar(ac) || is.cor_car(ac)
-    if (excl_cor) {
-      x$autocor <- x$formula$autocor <- cor_empty()
-    }
+    x$autocor <- x$formula$autocor <- cor_empty()
   }
   x
 }
 
+# subset matrices stored in 'cor_brms' objects
+# @param x a brmsfit object to be updated
+# @param subset indices of observations to keep
+# @param autocor optional (list of) 'cor_brms' objects
+#   from which to take matrices
+# @return an updated brmsfit object
 subset_autocor <- function(x, subset, autocor = NULL) {
-  # subset matrices stored in cor_brms objects
-  # Args:
-  #   x: a brmsfit object to be updated
-  #   subset: indices of observations to keep
-  #   autocor: optional (list of) cor_brms objects
-  #     from which to take matrices
-  # Returns:
-  #   an updated brmsfit object
   .subset_autocor <- function(autocor) {
     if (is.cor_sar(autocor)) {
       autocor$W <- autocor$W[subset, subset, drop = FALSE]
@@ -615,10 +539,9 @@ subset_autocor <- function(x, subset, autocor = NULL) {
   structure(x, autocor_updated = TRUE)
 }
 
+# regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  # regex to extract all pars of cor structures
-  # used in summary.brmsfit
-  p <- c("ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", "sigmaLL")
+  p <- c("ar", "ma", "sderr", "lagsar", "errorsar", "car", "sdcar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

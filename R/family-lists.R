@@ -14,28 +14,28 @@
 
 .family_gaussian <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
-    specials = "autocor"
+    specials = c("residuals", "rescor")
   )
 }
 
 .family_student <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "nu"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
     include = "fun_logm1.stan",
-    specials = "autocor"
+    specials = c("residuals", "rescor")
   )
 }
 
 .family_skew_normal <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "alpha"), type = "real", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "se", "cens", "trunc", "mi"),
@@ -116,7 +116,7 @@
 
 .family_poisson <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc")
@@ -125,7 +125,7 @@
 
 .family_negbinomial <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc")
@@ -134,7 +134,7 @@
  
 .family_geometric <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc")
@@ -156,7 +156,7 @@
 
 .family_com_poisson <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
@@ -166,7 +166,7 @@
 
 .family_gamma <- function() {
   list(
-    links = c("log", "identity", "inverse"),
+    links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -176,7 +176,7 @@
 
 .family_weibull <- function() {
   list(
-    links = c("log", "identity", "inverse"),
+    links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -186,7 +186,7 @@
 
 .family_exponential <- function() {
   list(
-    links = c("log", "identity", "inverse"),
+    links = c("log", "identity", "inverse", "softplus"),
     dpars = "mu", type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -196,7 +196,7 @@
 
 .family_frechet <- function() {
   list(
-    links = c("log", "identity", "inverse"),
+    links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "nu"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -207,7 +207,7 @@
 
 .family_inverse.gaussian <- function() {
   list(
-    links = c("1/mu^2", "inverse", "identity", "log"),
+    links = c("1/mu^2", "inverse", "identity", "log", "softplus"),
     dpars = c("mu", "shape"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -237,7 +237,7 @@
 
 .family_exgaussian <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "beta"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi")
@@ -246,7 +246,7 @@
 
 .family_wiener <- function() {
   list(
-    links = "identity",
+    links = c("identity", "log", "softplus"),
     dpars = c("mu", "bs", "ndt", "bias"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
     ad = c("weights", "subset", "dec"),
@@ -256,7 +256,7 @@
 
 .family_gen_extreme_value <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "xi"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -266,7 +266,7 @@
 
 .family_von_mises <- function() {
   list(
-    links = "tan_half",
+    links = c("tan_half", "identity"),
     dpars = c("mu", "kappa"), type = "real",
     ybounds = c(-pi, pi), closed = c(TRUE, TRUE),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -276,7 +276,7 @@
 
 .family_asym_laplace <- function() {
   list(
-    links = c("identity", "log", "inverse"),
+    links = c("identity", "log", "inverse", "softplus"),
     dpars = c("mu", "sigma", "quantile"),
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
@@ -293,7 +293,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = "ordinal"
+    specials = c("ordinal", "ordered_thres", "thres_minus_eta")
   )
 }
 
@@ -306,7 +306,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "thres_minus_eta")
   )
 }
 
@@ -319,7 +319,7 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
 
@@ -332,13 +332,13 @@
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cat"), 
-    specials = c("ordinal", "cs")
+    specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
 
 .family_hurdle_poisson <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
@@ -348,7 +348,7 @@
 
 .family_hurdle_negbinomial <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "shape", "hu"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
@@ -358,7 +358,7 @@
 
 .family_hurdle_gamma <- function() {
   list(
-    links = c("log", "identity", "inverse"),
+    links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape", "hu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
@@ -379,7 +379,7 @@
 
 .family_zero_inflated_poisson <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
@@ -389,7 +389,7 @@
 
 .family_zero_inflated_negbinomial <- function() {
   list(
-    links = c("log", "identity", "sqrt"),
+    links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "shape", "zi"), type = "int",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),

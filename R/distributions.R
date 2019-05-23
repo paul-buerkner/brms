@@ -110,14 +110,6 @@ dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
 #' @rdname MultiNormal
 #' @export
 rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
-  # random values of the multivariate normal distribution 
-  # Args:
-  #   n: number of random values
-  #   mu: mean vector
-  #   sigma: covariance matrix
-  #   check: check arguments for validity?
-  # Returns:
-  #   n samples of multi_normal distribution of dimension length(mu) 
   p <- length(mu)
   if (check) {
     if (!(is_wholenumber(n) && n > 0)) {
@@ -359,11 +351,10 @@ rskew_normal <- function(n, mu = 0, sigma = 1, alpha = 0,
   })
 }
 
+# convert skew-normal mixed-CP to DP parameterization
+# @return a data.frame containing all relevant parameters 
 cp2dp <- function(mu = 0, sigma = 1, alpha = 0, 
                   xi = NULL, omega = NULL, ...) {
-  # convert skew-normal mixed-CP to DP parameterization
-  # Returns:
-  #   A data.frame containing all relevant parameters 
   delta <- alpha / sqrt(1 + alpha^2)
   if (is.null(omega)) {
     omega <- sigma / sqrt(1 - 2 / pi * delta^2)
@@ -374,10 +365,10 @@ cp2dp <- function(mu = 0, sigma = 1, alpha = 0,
   expand(dots = nlist(mu, sigma, alpha, xi, omega, delta, ...))
 }
 
+# helper function for qskew_normal 
+# code basis taken from sn::sn.cumulants
+# uses xi and omega rather than mu and sigma
 skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
-  # helper function for qskew_normal 
-  # code basis taken from sn::sn.cumulants
-  # this function uses xi and omega rather than mu and sigma!
   cumulants_half_norm <- function(n) {
     n <- max(n, 2)
     n <- as.integer(2 * ceiling(n/2))
@@ -414,8 +405,8 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   })
 }
 
+# CDF of the inverse gamma function
 pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
-  # CDF of the inverse gamma function
   pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
 }
 
@@ -436,11 +427,10 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' 
 #' @export
 dvon_mises <- function(x, mu, kappa, log = FALSE) {
-  # CircStats::dvm has support within [0, 2*pi], 
-  # but in brms we use [-pi, pi]
   if (any(kappa < 0)) {
     stop2("kappa must be non-negative")
   }
+  # expects x in [-pi, pi] rather than [0, 2*pi] as CircStats::dvm
   be <- besselI(kappa, nu = 0, expon.scaled = TRUE)
   out <- -log(2 * pi * be) + kappa * (cos(x - mu) - 1)
   if (!log) {
@@ -453,8 +443,6 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
 #' @export
 pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
                        log.p = FALSE, acc = 1e-20) {
-  # code basis taken from CircStats::pvm but improved 
-  # considerably with respect to speed and stability
   if (any(kappa < 0)) {
     stop2("kappa must be non-negative")
   }
@@ -468,6 +456,8 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   kappa <- args$kappa
   rm(args)
   
+  # code basis taken from CircStats::pvm but improved 
+  # considerably with respect to speed and stability
   rec_sum <- function(q, kappa, acc, sum = 0, i = 1) {
     # compute the sum of of besselI functions recursively
     term <- (besselI(kappa, nu = i) * sin(i * q)) / i
@@ -520,8 +510,6 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
 #' @rdname VonMises
 #' @export
 rvon_mises <- function(n, mu, kappa) {
-  # code basis taken from CircStats::rvm but improved 
-  # considerably with respect to speed and stability
   if (any(kappa < 0)) {
     stop2("kappa must be non-negative")
   }
@@ -532,6 +520,8 @@ rvon_mises <- function(n, mu, kappa) {
   pi <- base::pi
   mu <- mu + pi
   
+  # code basis taken from CircStats::rvm but improved 
+  # considerably with respect to speed and stability
   rvon_mises_outer <- function(r, mu, kappa) {
     n <- length(r)
     U1 <- runif(n, 0, 1)
@@ -677,7 +667,7 @@ rexgaussian <- function(n, mu, sigma, beta) {
 #' on the parameterization.
 #' 
 #' @export
-dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
+dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
   }
@@ -719,8 +709,8 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
 
 #' @rdname Frechet
 #' @export
-qfrechet <- function (p, loc = 0, scale = 1, shape = 1, 
-                      lower.tail = TRUE, log.p = FALSE) {
+qfrechet <- function(p, loc = 0, scale = 1, shape = 1, 
+                     lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
     stop("'p' must contain probabilities in (0,1)")
   }
@@ -847,7 +837,7 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   args <- do_call(expand, args)
   out <- with(args,
     pnorm(sqrt(shape / q) * (q / mu - 1)) + 
-      exp(2 * shape / mu) * pnorm(- sqrt(shape / q) * (q / mu + 1))
+      exp(2 * shape / mu) * pnorm(-sqrt(shape / q) * (q / mu + 1))
   )
   if (!lower.tail) {
     out <- 1 - out
@@ -911,8 +901,8 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
   args$t <- with(args, 1 + xi * x)
   out <- with(args, ifelse(
     xi == 0, 
-    - log(sigma) - x - exp(-x),
-    - log(sigma) - (1 + 1 / xi) * log(t) - t^(-1 / xi)
+    -log(sigma) - x - exp(-x),
+    -log(sigma) - (1 + 1 / xi) * log(t) - t^(-1 / xi)
   ))
   if (!log) {
     out <- exp(out)
@@ -1115,13 +1105,12 @@ rdiscrete_weibull <- function(n, mu, shape) {
   qdiscrete_weibull(u, mu, shape)
 }
 
+# mean of the discrete weibull distribution
+# @param mu location parameter
+# @param shape shape parameter
+# @param M maximal evaluated element of the series
+# @param thres threshold for new elements at which to stop evaluation
 mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
-  # mean of the discrete weibull distribution
-  # Args:
-  #   mu: location parameter
-  #   shape: shape parameter
-  #   M: maximal evaluated element of the series
-  #   thres: threshold for new elements at which to stop evaluation
   opt_M <- ceiling(max((log(thres) / log(mu))^(1 / shape)))
   if (opt_M <= M) {
     M <- opt_M
@@ -1141,6 +1130,8 @@ mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
   out
 }
 
+# PDF of the COM-Poisson distribution
+# com_poisson in brms uses the mode parameterization
 dcom_poisson <- function(x, mu, shape, log = FALSE) {
   x <- round(x)
   log_mu <- log(mu)
@@ -1152,6 +1143,7 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
   out
 }
 
+# random numbers from the COM-Poisson distribution
 rcom_poisson <- function(n, mu, shape, M = 10000) {
   n <- check_n_rdist(n, mu, shape)
   M <- as.integer(as_one_numeric(M))
@@ -1182,6 +1174,7 @@ rcom_poisson <- function(n, mu, shape, M = 10000) {
   out
 }
 
+# CDF of the COM-Poisson distribution
 pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   x <- round(x)
   args <- expand(x = x, mu = mu, shape = shape)
@@ -1213,15 +1206,14 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   out
 }
 
+# log normalizing constant of the COM Poisson distribution
+# @param log_mu log location parameter
+# @param shape shape parameter
+# @param M maximal evaluated element of the series
+# @param thres threshold for new elements at which to stop evaluation
+# @param approx use a closed form approximation of the mean if appropriate? 
 log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
                               approx = TRUE) {
-  # log normalizing constant of the COM Poisson distribution
-  # Args:
-  #   log_mu: log location parameter
-  #   shape: shape parameter
-  #   M: maximal evaluated element of the series
-  #   thres: threshold for new elements at which to stop evaluation
-  #   approx: use a closed form approximation of the mean if appropriate? 
   if (any(shape <= 0)) {
     stop2("'shape' must be positive.")
   }
@@ -1280,8 +1272,9 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
   out
 }
 
+# approximate the log normalizing constant of the COM Poisson distribution
+# based on doi:10.1007/s10463-017-0629-6
 log_Z_com_poisson_approx <- function(log_mu, shape) {
-  # approximation based on doi:10.1007/s10463-017-0629-6
   shape_mu <- shape * exp(log_mu)
   shape2 <- shape^2
   # first 4 terms of the residual series
@@ -1295,15 +1288,14 @@ log_Z_com_poisson_approx <- function(log_mu, shape) {
     ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
 }
 
+# compute the log mean of the COM Poisson distribution
+# @param mu location parameter
+# @param shape shape parameter
+# @param M maximal evaluated element of the series
+# @param thres threshold for new elements at which to stop evaluation
+# @param approx use a closed form approximation of the mean if appropriate? 
 mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
                              approx = TRUE) {
-  # compute the log mean of the COM Poisson distribution
-  # Args:
-  #   mu: location parameter
-  #   shape: shape parameter
-  #   M: maximal evaluated element of the series
-  #   thres: threshold for new elements at which to stop evaluation
-  #   approx: use a closed form approximation of the mean if appropriate? 
   if (any(shape <= 0)) {
     stop2("'shape' must be positive.")
   }
@@ -1366,8 +1358,9 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
   out
 }
 
+# approximate the mean of COM-Poisson distribution
+# based on doi:10.1007/s10463-017-0629-6
 mean_com_poisson_approx <- function(mu, shape) {
-  # approximation based on doi:10.1007/s10463-017-0629-6
   term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) - 
     (shape^2 - 1) / (24 * shape^2) * mu^(-2) - 
     (shape^2 - 1) / (24 * shape^3) * mu^(-3)
@@ -1523,9 +1516,9 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
   do_call(.rwiener, args)
 }
 
+# helper function to return a numeric vector instead
+# of a data.frame with two columns as for RWiener::rwiener
 rwiener_num <- function(n, alpha, tau, beta, delta, types) {
-  # helper function to return a numeric vector instead
-  # of a data.frame with two columns as for RWiener::rwiener
   out <- RWiener::rwiener(n, alpha, tau, beta, delta)
   out[["resp"]] <- ifelse(out[["resp"]] == "upper", 1, 0)
   if (length(types) == 1L) {
@@ -1616,12 +1609,11 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   .phurdle(q, "beta", zi, pars, lower.tail, log.p, type = "real")
 }
 
+# density of a zero-inflated distribution
+# @param dist name of the distribution
+# @param zi bernoulli zero-inflated parameter
+# @param pars list of parameters passed to pdf
 .dzero_inflated <- function(x, dist, zi, pars, log) {
-  # density function of zero-inflated models
-  # Args:
-  #   dist: name of the distribution
-  #   zi: bernoulli zero-inflated parameter
-  #   pars: list of parameters passed to pdf
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   log <- as_one_logical(log)
@@ -1640,12 +1632,11 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   out
 }
 
+# CDF of a zero-inflated distribution
+# @param dist name of the distribution
+# @param zi bernoulli zero-inflated parameter
+# @param pars list of parameters passed to pdf
 .pzero_inflated <- function(q, dist, zi, pars, lower.tail, log.p) {
-  # distribution function of zero-inflated models
-  # Args:
-  #   dist: name of the distribution
-  #   zi: bernoulli zero-inflated parameter
-  #   pars: list of parameters passed to pdf
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   lower.tail <- as_one_logical(lower.tail)
@@ -1750,13 +1741,12 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   .phurdle(q, "lnorm", hu, pars, lower.tail, log.p, type = "real")
 }
 
+# density of a hurdle distribution
+# @param dist name of the distribution
+# @param hu bernoulli hurdle parameter
+# @param pars list of parameters passed to pdf
+# @param type support of distribution (int or real)
 .dhurdle <- function(x, dist, hu, pars, log, type) {
-  # density function of hurdle models
-  # Args:
-  #   dist: name of the distribution
-  #   hu: bernoulli hurdle parameter
-  #   pars: list of parameters passed to pdf
-  #   type: support of distribution (int or real)
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   log <- as_one_logical(log)
@@ -1781,13 +1771,12 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   out
 }
 
+# CDF of a hurdle distribution
+# @param dist name of the distribution
+# @param hu bernoulli hurdle parameter
+# @param pars list of parameters passed to pdf
+# @param type support of distribution (int or real)
 .phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type) {
-  # distribution function of hurdle models
-  # Args:
-  #   dist: name of the distribution
-  #   hu: bernoulli hurdle parameter
-  #   pars: list of parameters passed to pdf
-  #   type: support of distribution (int or real)
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   lower.tail <- as_one_logical(lower.tail)
@@ -1817,13 +1806,11 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
   out
 }
 
+# density of the categorical distribution with the softmax transform
+# @param x positive integers not greater than ncat
+# @param eta the linear predictor (of length or ncol ncat-1)
+# @param log return values on the log scale?
 dcategorical <- function(x, eta, log = FALSE) {
-  # density of the categorical distribution
-  # with the softmax response function
-  # Args:
-  #   x: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)
-  #   log: return values on the log scale?
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
@@ -1838,28 +1825,24 @@ dcategorical <- function(x, eta, log = FALSE) {
   out[, x]
 }
 
-pcategorical <- function(q, eta, log = FALSE) {
-  # distribution function of the categorical distribution
-  # with the softmax response function
-  # Args:
-  #   q: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   log: return values on the log scale?
+# CDF of the categorical distribution with the softmax transform
+# @param q positive integers not greater than ncat
+# @param eta the linear predictor (of length or ncol ncat-1)  
+# @param log.p return values on the log scale?
+pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
   out <- do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
-  if (log) {
+  if (log.p) {
     out <- log(out)
   }
   out
 }
 
+# density of the multinomial distribution with the softmax transform
+# @param x positive integers not greater than ncat
+# @param eta the linear predictor (of length or ncol ncat-1)
+# @param log return values on the log scale?
 dmultinomial <- function(x, eta, log = FALSE) {
-  # density of the multinomial distribution
-  # with the softmax response function
-  # Args:
-  #   x: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)
-  #   log: return values on the log scale?
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
@@ -1876,97 +1859,64 @@ dmultinomial <- function(x, eta, log = FALSE) {
   out
 }
 
-dcumulative <- function(x, eta, ncat, link = "logit") {
-  # density of the cumulative distribution
-  # Args: same as dcategorical
-  if (is.null(dim(eta))) {
-    eta <- matrix(eta, nrow = 1)
-  }
-  if (length(dim(eta)) != 2) {
-    stop2("eta must be a numeric vector or matrix.")
-  }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
-  mu <- ilink(eta, link)
-  rows <- list(mu[, 1])
+# density of the cumulative distribution
+dcumulative <- function(x, eta, thres, disc = 1, link = "logit") {
+  eta <- ilink(disc * (thres - eta), link)
+  ncat <- ncol(eta) + 1
+  rows <- list(eta[, 1])
   if (ncat > 2) {
     .fun <- function(k) {
-      mu[, k] - mu[, k - 1]
+      eta[, k] - eta[, k - 1]
     }
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
-  rows <- c(rows, list(1 - mu[, ncat - 1]))
+  rows <- c(rows, list(1 - eta[, ncat - 1]))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dsratio <- function(x, eta, ncat, link = "logit") {
-  # density of the sratio distribution
-  # Args: same as dcategorical
-  if (is.null(dim(eta))) {
-    eta <- matrix(eta, nrow = 1)
-  }
-  if (length(dim(eta)) != 2) {
-    stop2("eta must be a numeric vector or matrix.")
-  }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
-  mu <- ilink(eta, link)
-  rows <- list(mu[, 1])
+# density of the sratio distribution
+dsratio <- function(x, eta, thres, disc = 1, link = "logit") {
+  eta <- ilink(disc * (thres - eta), link)
+  ncat <- ncol(eta) + 1
+  rows <- list(eta[, 1])
   if (ncat > 2) {
     .fun <- function(k) {
-      (mu[, k]) * apply(as.matrix(1 - mu[, 1:(k - 1)]), 1, prod)
+      (eta[, k]) * apply(as.matrix(1 - eta[, 1:(k - 1)]), 1, prod)
     }
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
-  rows <- c(rows, list(apply(1 - mu, 1, prod)))
+  rows <- c(rows, list(apply(1 - eta, 1, prod)))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dcratio <- function(x, eta, ncat, link = "logit") {
-  # density of the cratio distribution
-  # Args: same as dcategorical
-  if (is.null(dim(eta))) {
-    eta <- matrix(eta, nrow = 1)
-  }
-  if (length(dim(eta)) != 2) {
-    stop2("eta must be a numeric vector or matrix.")
-  }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
-  mu <- ilink(eta, link)
-  rows <- list(1 - mu[, 1])
+# density of the cratio distribution
+dcratio <- function(x, eta, thres, disc = 1, link = "logit") {
+  eta <- ilink(disc * (eta - thres), link)
+  ncat <- ncol(eta) + 1
+  rows <- list(1 - eta[, 1])
   if (ncat > 2) {
     .fun <- function(k) {
-      (1 - mu[, k]) * apply(as.matrix(mu[, 1:(k - 1)]), 1, prod)
+      (1 - eta[, k]) * apply(as.matrix(eta[, 1:(k - 1)]), 1, prod)
     }
     rows <- c(rows, lapply(2:(ncat - 1), .fun))
   }
-  rows <- c(rows, list(apply(mu, 1, prod)))
+  rows <- c(rows, list(apply(eta, 1, prod)))
   p <- do_call(cbind, rows)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-dacat <- function(x, eta, ncat, link = "logit") {
-  # density of the acat distribution
-  # Args: same as dcategorical
-  if (is.null(dim(eta))) {
-    eta <- matrix(eta, nrow = 1)
-  }
-  if (length(dim(eta)) != 2) {
-    stop2("eta must be a numeric vector or matrix.")
-  }
-  if (missing(ncat)) {
-    ncat <- ncol(eta) + 1
-  }
+# density of the acat distribution
+dacat <- function(x, eta, thres, disc = 1, link = "logit") {
+  eta <- disc * (eta - thres)
+  ncat <- ncol(eta) + 1
   if (link == "logit") { 
     # faster evaluation in this case
-    p <- cbind(rep(1, nrow(eta)), exp(eta[,1]), 
-               matrix(NA, nrow = nrow(eta), ncol = ncat - 2))
+    p <- cbind(
+      rep(1, nrow(eta)), exp(eta[, 1]), 
+      matrix(NA, nrow = nrow(eta), ncol = ncat - 2)
+    )
     if (ncat > 2) {
       .fun <- function(k) {
         rowSums(eta[, 1:(k - 1)])
@@ -1974,37 +1924,38 @@ dacat <- function(x, eta, ncat, link = "logit") {
       p[, 3:ncat] <- exp(sapply(3:ncat, .fun))
     }
   } else {
-    mu <- ilink(eta, link)
-    p <- cbind(apply(1 - mu[, 1:(ncat - 1)], 1, prod), 
-               matrix(0, nrow = nrow(eta), ncol = ncat - 1))
+    eta <- ilink(eta, link)
+    p <- cbind(
+      apply(1 - eta[, 1:(ncat - 1)], 1, prod), 
+      matrix(0, nrow = nrow(eta), ncol = ncat - 1)
+    )
     if (ncat > 2) {
       .fun <- function(k) {
-        apply(as.matrix(mu[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - mu[, k:(ncat - 1)]), 1, prod)
+        apply(as.matrix(eta[, 1:(k - 1)]), 1, prod) * 
+          apply(as.matrix(1 - eta[, k:(ncat - 1)]), 1, prod)
       }
       p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), .fun)
     }
-    p[, ncat] <- apply(mu[, 1:(ncat - 1)], 1, prod)
+    p[, ncat] <- apply(eta[, 1:(ncat - 1)], 1, prod)
   }
   p <- p / rowSums(p)
-  p[, x]
+  p[, x, drop = FALSE]
 }
 
-pordinal <- function(q, eta, ncat, family, link = "logit") {
-  # distribution functions for ordinal families
-  # Args:
-  #   q: positive integers not greater than ncat
-  #   eta: the linear predictor (of length or ncol ncat-1)  
-  #   ncat: the number of categories
-  #   family: a character string naming the family
-  #   link: a character string naming the link
-  # Returns: 
-  #   probabilites P(x <= q)
-  args <- list(1:max(q), eta = eta, ncat = ncat, link = link)
+# CDF for ordinal distributions
+# @param q positive integers not greater than ncat
+# @param eta samples of the linear predictor
+# @param thres samples of threshold parameters
+# @param disc samples of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @return a matrix of probabilites P(x <= q)
+pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  args <- nlist(x = seq_len(max(q)), eta, thres, disc, link)
   p <- do_call(paste0("d", family), args)
-  .fun <- function(j) {
-    rowSums(as.matrix(p[, 1:j]))
-  }
+  .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
   do_call(cbind, lapply(q, .fun))
 }
 
@@ -2025,11 +1976,11 @@ rshifted <- function(dist, n, shift = 0, ...) {
   do_call(paste0("r", dist), list(n, ...)) + shift
 }
 
+# check if 'n' in r<dist> functions is valid
+# @param n number of desired random draws
+# @param .. parameter vectors
+# @return validated 'n'
 check_n_rdist <- function(n, ...) {
-  # check if 'n' in r<dist> functions is valid
-  # Args:
-  #   n: number of desired random draws
-  #   ...: parameter vectors
   n <- as.integer(as_one_numeric(n))
   max_len <- max(lengths(list(...)))
   if (max_len > 1L) {

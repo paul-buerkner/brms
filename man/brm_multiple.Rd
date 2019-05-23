@@ -6,7 +6,7 @@
 \usage{
 brm_multiple(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes",
-  "only"), sparse = FALSE, knots = NULL, stanvars = NULL,
+  "only"), sparse = NULL, knots = NULL, stanvars = NULL,
   stan_funs = NULL, combine = TRUE, fit = NA, seed = NA,
   file = NULL, ...)
 }
@@ -59,10 +59,11 @@ likelihood, which allows among others to generate samples from the prior
 predictive distribution. In this case, all parameters must have proper
 priors.}
 
-\item{sparse}{Logical; indicates whether the population-level design matrices
-should be treated as sparse (defaults to \code{FALSE}). For design matrices
-with many zeros, this can considerably reduce required memory. Sampling
-speed is currently not improved or even slightly decreased.}
+\item{sparse}{(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to \code{FALSE}). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

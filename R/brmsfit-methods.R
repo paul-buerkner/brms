@@ -264,12 +264,12 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
         # correct the sign of thresholds in ordinal models
         resp <- if (is_mv(object)) get_matches("^[^_]+", nm)
         family <- family(object, resp = resp)$family
-        if (family %in% c("cumulative", "sratio")) {
-          # threshold - mu
+        if (has_thres_minus_eta(family)) {
           coef[[g]][, , nm] <- fixef[, nm] - coef[[g]][, , nm] 
-        } else {
-          # mu - threshold
+        } else if (has_eta_minus_thres(family)) {
           coef[[g]][, , nm] <- coef[[g]][, , nm] - fixef[, nm]
+        } else {
+          coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
         }
       } else {
         coef[[g]][, , nm] <- fixef[, nm] + coef[[g]][, , nm] 
@@ -892,16 +892,16 @@ getCall.brmsfit <- function(x, ...) {
 
 #' @export
 family.brmsfit <- function(object, resp = NULL, ...) {
-  if (!is_mv(object)) {
-    resp <- NULL
-  }
+  resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
-    stopifnot(is_mv(object))
-    resp <- as_one_character(resp)
-    resp <- validate_resp(resp, object$formula$responses)
-    family <- object$formula$forms[[resp]]$family
+    # multivariate model
+    family <- lapply(object$formula$forms[resp], "[[", "family")
+    if (length(resp) == 1L) {
+      family <- family[[1]]
+    }
   } else {
-    family <- get_element(object$formula, "family")
+    # univariate model
+    family <- object$formula$family
     if (is.null(family)) {
       family <- object$family
     }
@@ -911,13 +911,16 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 
 #' @export
 autocor.brmsfit <- function(object, resp = NULL, ...) {
+  resp <- validate_resp(resp, object)
   if (!is.null(resp)) {
-    stopifnot(is_mv(object))
-    resp <- as_one_character(resp)
-    resp <- validate_resp(resp, object$formula$responses)
-    autocor <- object$formula$forms[[resp]]$autocor
+    # multivariate model
+    autocor <- lapply(object$formula$forms[resp], "[[", "autocor")
+    if (length(resp) == 1L) {
+      autocor <- autocor[[1]]
+    }
   } else {
-    autocor <- get_element(object$formula, "autocor")
+    # univariate model
+    autocor <- object$formula$autocor
     if (is.null(autocor)) {
       autocor <- object$autocor
     }
@@ -944,14 +947,22 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!incl_autocor) {
     object <- remove_autocor(object)
   }
-  if (internal) {
-    control[c("not4stan", "save_order")] <- TRUE
-  }
-  new_formula <- update_re_terms(object$formula, re_formula)
-  is_original_data <- isTRUE(attr(newdata, "original"))
+  is_old_data <- isTRUE(attr(newdata, "old"))
   if (is.null(newdata)) {
     newdata <- object$data
-  } else if (!is_original_data) {
+    is_old_data <- TRUE
+  }
+  new_formula <- update_re_terms(object$formula, re_formula)
+  bterms <- parse_bf(new_formula)
+  version <- object$version$brms
+  if (is_old_data) {
+    if (version <= "2.8.6" && has_smooths(bterms)) {
+      # the spline penality has changed in 2.8.7 (#646)
+      control$old_sdata <- extract_old_standata(
+        bterms, data = object$data, version = version
+      )
+    }
+  } else {
     if (!isTRUE(attr(newdata, "valid"))) {
       newdata <- validate_newdata(
         newdata, object, re_formula = re_formula, ...
@@ -960,23 +971,27 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     object <- add_new_objects(object, newdata, new_objects)
     control$new <- TRUE
     # ensure correct handling of functions like poly or scale
-    bterms <- parse_bf(new_formula)
     old_terms <- attr(object$data, "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
-    control$old_sdata <- extract_old_standata(bterms, object$data)
+    control$old_sdata <- extract_old_standata(
+      bterms, data = object$data, version = version
+    )
     control$old_levels <- get_levels(
       tidy_ranef(bterms, object$data),
       tidy_meef(bterms, object$data)
     )
   }
+  if (internal) {
+    control[c("not4stan", "save_order")] <- TRUE
+  }
   sample_prior <- attr(object$prior, "sample_prior")
-  sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
+  knots <- attr(object$data, "knots")
   make_standata(
     formula = new_formula, data = newdata, 
     prior = object$prior, cov_ranef = object$cov_ranef, 
     sample_prior = sample_prior, stanvars = object$stanvars, 
-    knots = attr(object$data, "knots"), control = control, ...
+    knots = knots, control = control, ...
   )
 }
 
@@ -1550,14 +1565,13 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 
 #' Model Predictions of \code{brmsfit} Objects
 #' 
-#' Predict responses based on the fitted model.
-#' Can be performed for the data used to fit the model 
-#' (posterior predictive checks) or for new data.
-#' By definition, these predictions have higher variance than 
-#' predictions of the fitted values (i.e., the 'regression line')
-#' performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
-#' method. This is because the measurement error is incorporated.
-#' The estimated means of both methods should, however, be very similar.
+#' Predict responses based on the fitted model. Can be performed for the data
+#' used to fit the model (posterior predictive checks) or for new data. By
+#' definition, these predictions have higher variance than predictions of the
+#' expected values of the response distribution (i.e., predictions of the
+#' 'regression line') performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
+#' method. This is because the residual error is incorporated. The estimated
+#' means of both methods should, however, be very similar.
 #' 
 #' @inheritParams extract_draws
 #' @param object An object of class \code{brmsfit}.
@@ -1610,18 +1624,16 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   Method \code{posterior_predict.brmsfit} is an alias of 
 #'   \code{predict.brmsfit} with \code{summary = FALSE}. 
 #' 
-#'   For truncated discrete models only:
-#'   In the absence of any general algorithm to sample 
-#'   from truncated discrete distributions,
-#'   rejection sampling is applied in this special case. 
-#'   This means that values are sampled until 
-#'   a value lies within the defined truncation boundaries. 
-#'   In practice, this procedure may be rather slow (especially in \R). 
-#'   Thus, we try to do approximate rejection sampling 
-#'   by sampling each value \code{ntrys} times and then select a valid value. 
-#'   If all values are invalid, the closest boundary is used, instead. 
-#'   If there are more than a few of these pathological cases, 
-#'   a warning will occur suggesting to increase argument \code{ntrys}.
+#'   For truncated discrete models only: In the absence of any general algorithm
+#'   to sample from truncated discrete distributions, rejection sampling is
+#'   applied in this special case. This means that values are sampled until a
+#'   value lies within the defined truncation boundaries. In practice, this
+#'   procedure may be rather slow (especially in \R). Thus, we try to do
+#'   approximate rejection sampling by sampling each value \code{ntrys} times
+#'   and then select a valid value. If all values are invalid, the closest
+#'   boundary is used, instead. If there are more than a few of these
+#'   pathological cases, a warning will occur suggesting to increase argument
+#'   \code{ntrys}.
 #' 
 #' @examples 
 #' \dontrun{
@@ -1686,14 +1698,13 @@ posterior_predict.brmsfit <- function(
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
-#' Predict mean values of the response distribution (i.e., the 'regression line')
-#' for a fitted model. Can be performed for the data used to fit the model 
-#' (posterior predictive checks) or for new data.
-#' By definition, these predictions have smaller variance
-#' than the response predictions performed by
-#' the \code{\link[brms:predict.brmsfit]{predict}} method. 
-#' This is because the measurement error is not incorporated.
-#' The estimated means of both methods should, however, be very similar.
+#' Predict expected values of the response distribution (i.e., predict the
+#' 'regression line') for a fitted model. Can be performed for the data used to
+#' fit the model (posterior predictive checks) or for new data. By definition,
+#' these predictions have smaller variance than the response predictions
+#' performed by the \code{\link[brms:predict.brmsfit]{predict}} method. This is
+#' because the residual error is not incorporated. The estimated means of both
+#' methods should, however, be very similar.
 #' 
 #' @inheritParams predict.brmsfit
 #' @param scale Either \code{"response"} or \code{"linear"}. 
@@ -1847,8 +1858,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
+  if (has_cat(family(object, resp = resp))) {
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
   subset <- subset_samples(object, subset, nsamples)
@@ -2123,8 +2133,13 @@ pp_average.brmsfit <- function(
 #'  If \code{summary = FALSE} the posterior samples of the R-squared values
 #'  are returned in a S x 1 matrix (S is the number of samples).
 #'  
-#' @details For an introduction to the approach, see
-#'   \url{https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf}.
+#' @details For an introduction to the approach, see Gelman et al. (2018)
+#'  and \url{https://github.com/jgabry/bayes_R2/}.
+#'   
+#' @references Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2018).
+#'   R-squared for Bayesian regression models, \emph{The American Statistician}.
+#'   \url{https://doi.org/10.1080/00031305.2018.1549100}. (Preprint available at
+#'   \url{https://stat.columbia.edu/~gelman/research/published/bayes_R2_v3.pdf}.)
 #'  
 #' @examples 
 #' \dontrun{
@@ -2146,14 +2161,22 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
-    stop2("'bayes_R2' is not defined for ordinal or categorical models.")
-  }
   if (is.matrix(object[["R2"]])) {
     R2 <- object[["R2"]]
+    # assumes unsummarized 'R2' as ensured by 'add_criterion'
+    take <- colnames(R2) %in% paste0("R2", resp)
+    R2 <- R2[, take, drop = FALSE]
   } else {
-    ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
+    family <- family(object, resp = resp)
+    if (conv_cats_dpars(family)) {
+      stop2("'bayes_R2' is not defined for unordered categorical models.")
+    }
+    if (is_ordinal(family)) {
+      warning2(
+        "Predictions are treated as continuous variables in ",
+        "'bayes_R2' which is likely invalid for ordinal families."
+      )
+    }
     # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
     .bayes_R2 <- function(y, ypred, ...) {
       e <- -1 * sweep(ypred, 2, y)
@@ -2161,18 +2184,20 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
       var_e <- matrixStats::rowVars(e)
       return(as.matrix(var_ypred / (var_ypred + var_e)))
     }
-    y <- get_y(object, resp, warn = TRUE, ...)
-    if (is.matrix(ypred)) {
-      # only one response variable
-      R2 <- .bayes_R2(y, ypred)
-    } else {
-      # multiple response variables
-      R2 <- named_list(resp)
-      for (i in seq_along(R2)) {
-        R2[[i]] <- .bayes_R2(y[, i], ypred[, , i])
+    args_y <- list(object, warn = TRUE, ...)
+    args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+    R2 <- named_list(paste0("R2", resp))
+    for (i in seq_along(R2)) {
+      # assumes expectations of different responses to be independent
+      args_ypred$resp <- args_y$resp <- resp[i]
+      y <- do_call(get_y, args_y)
+      ypred <- do.call(fitted, args_ypred)
+      if (is_ordinal(family(object, resp = resp[i]))) {
+        ypred <- ordinal_probs_continuous(ypred)
       }
-      R2 <- do_call(cbind, R2)
+      R2[[i]] <- .bayes_R2(y, ypred)
     }
+    R2 <- do_call(cbind, R2)
     colnames(R2) <- paste0("R2", resp)
   }
   if (summary) {
@@ -2211,34 +2236,39 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  family_names <- family_names(object)
-  if (is_ordinal(family_names) || is_categorical(family_names)) {
-    stop2("'loo_R2' is not defined for ordinal or categorical models.")
+  family <- family(object, resp = resp)
+  if (conv_cats_dpars(family)) {
+    stop2("'loo_R2' is not defined for unordered categorical models.")
   }
-  ypred <- fitted(object, resp = resp, summary = FALSE, sort = TRUE, ...)
-  ll <- log_lik(object, resp = resp, sort = TRUE, combine = FALSE, ...)
-  chains <- object$fit@sim$chains
+  if (is_ordinal(family)) {
+    warning2(
+      "Predictions are treated as continuous variables in ",
+      "'loo_R2' which is likely invalid for ordinal families."
+    )
+  }
   # see http://discourse.mc-stan.org/t/stan-summary-r2-or-adjusted-r2/4308/4
-  .loo_R2 <- function(y, ypred, ll, chains) {
-    chain_id <- rep(seq_len(chains), each = nrow(ll) / chains)
-    r_eff <- loo::relative_eff(exp(ll), chain_id = chain_id)
+  .loo_R2 <- function(y, ypred, ll) {
+    r_eff <- r_eff_log_lik(ll, object)
     psis_object <- loo::psis(log_ratios = -ll, r_eff = r_eff)
     ypredloo <- loo::E_loo(ypred, psis_object, log_ratios = -ll)$value
     eloo <- ypredloo - y
     return(1 - var(eloo) / var(y))
   }
-  y <- get_y(object, resp, warn = TRUE, ...)
-  if (is.matrix(ypred)) {
-    # only one response variable
-    R2 <- .loo_R2(y, ypred, ll, chains)
-  } else {
-    # multiple response variables
-    R2 <- named_list(resp)
-    for (i in seq_along(R2)) {
-      R2[[i]] <- .loo_R2(y[, i], ypred[, , i], ll[, , i], chains)
+  args_y <- list(object, warn = TRUE, ...)
+  args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+  R2 <- named_list(paste0("R2", resp))
+  for (i in seq_along(R2)) {
+    # assumes expectations of different responses to be independent
+    args_ypred$resp <- args_y$resp <- resp[i]
+    y <- do_call(get_y, args_y)
+    ypred <- do.call(fitted, args_ypred)
+    ll <- do_call(log_lik, args_ypred)
+    if (is_ordinal(family(object, resp = resp[i]))) {
+      ypred <- ordinal_probs_continuous(ypred)
     }
-    R2 <- unlist(R2)
+    R2[[i]] <- .loo_R2(y, ypred, ll)
   }
+  R2 <- unlist(R2)
   names(R2) <- paste0("R2", resp)
   R2
 }
@@ -2310,7 +2340,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     data.name <- object$data.name
   }
 
-  if (missing(formula.)) {
+  if (missing(formula.) || is.null(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
       dots$formula <- dots$formula + check_family(dots$family)
@@ -2378,9 +2408,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   if (is.null(dots$save_all_pars)) {
     dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
-  }
-  if (is.null(dots$sparse)) {
-    dots$sparse <- grepl("sparse matrix", stancode(object))
   }
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
@@ -2884,7 +2911,8 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   )
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
-    r_eff_helper, log_lik_list, models, SIMPLIFY = FALSE
+    r_eff_log_lik, log_lik = log_lik_list, 
+    fit = models, SIMPLIFY = FALSE
   )
   out <- do_call(loo::loo_model_weights, args)
   names(out) <- names(models)
@@ -2942,8 +2970,9 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (anyNA(log_lik)) {
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
-        "some of your predictors contain NAs. If you use 'mi' terms, try ", 
-        "setting 'resp' to those response variables without missing values."
+        "some of your responses contain NAs. If you use 'mi' terms, try ", 
+        "setting 'resp' to those response variables without missing values. ",
+        "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
   }
@@ -3185,10 +3214,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   }
   # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
-  out <- try(
-    bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...),
-    silent = TRUE
-  )
+  out <- try(bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...))
   if (is(out, "try-error")) {
     stop2(
       "Bridgesampling failed. Did you set 'save_all_pars' ",

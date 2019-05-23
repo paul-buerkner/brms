@@ -10,13 +10,11 @@ mi(x)
 \item{x}{The variable containing missings.}
 }
 \description{
-Predictors with Missing Values in \pkg{brms} Models
+Specify predictor term with missing values in \pkg{brms}. The function does
+not evaluate its arguments -- it exists purely to help set up a model.
 }
 \details{
-For detailed documentation see \code{help(brmsformula)}. 
-
-This function is almost solely useful when
-called in formulas passed to the \pkg{brms} package.
+For detailed documentation see \code{help(brmsformula)}.
 }
 \examples{
 \dontrun{

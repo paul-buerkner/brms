@@ -59,7 +59,7 @@
 brm_multiple <- function(formula, data, family = gaussian(), prior = NULL, 
                          autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
-                         sparse = FALSE, knots = NULL, stanvars = NULL,
+                         sparse = NULL, knots = NULL, stanvars = NULL,
                          stan_funs = NULL, combine = TRUE, fit = NA,
                          seed = NA, file = NULL, ...) {
   combine <- as_one_logical(combine)
@@ -82,7 +82,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
     data <- lapply(seq_len(data$m), mice::complete, data = data)
-  } else if (!(is.list(data) && is.vector(data))) {
+  } else if (!is_data_list(data)) {
     stop2("'data' must be a list of data.frames.")
   }
   
@@ -96,6 +96,13 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     )
     args$chains <- 0
     fit <- do_call(brm, args)
+  }
+  
+  dots <- list(...)
+  # allow compiling the model without sampling (#671)
+  if (isTRUE(dots$chains == 0) || isTRUE(dots$iter == 0)) {
+    class(fit) <- c("brmsfit_multiple", class(fit))
+    return(fit)
   }
   
   fits <- futures <- rhats <- vector("list", length(data))
@@ -223,6 +230,9 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   }
   
   # update the template model using all arguments
+  if (missing(formula.)) {
+    formula. <- NULL
+  }
   args <- c(nlist(object, formula., newdata = newdata[[1]]), dots)
   args$file <- NULL
   args$chains <- 0
@@ -251,4 +261,19 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   out <- do_call(brm_multiple, args)
   out$data.name <- data.name
   out
+}
+
+# validity check for data input of 'brm_multiple'
+is_data_list <- function(x) {
+  is.list(x) && is.vector(x)
+}
+
+warn_brmsfit_multiple <- function(x) {
+  if (is.brmsfit_multiple(x)) {
+    warning2(
+      "Using only the first imputed data set. Please interpret the results ", 
+      "with caution until a more principled approach has been implemented."
+    )
+  }
+  invisible(x)
 }

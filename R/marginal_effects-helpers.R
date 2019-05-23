@@ -180,6 +180,7 @@
 #' plot(marginal_effects(fit), ask = FALSE)
 #' 
 #' ## change colours to grey scale
+#' library(ggplot2)
 #' me <- marginal_effects(fit, "zBase:Trt")
 #' plot(me, plot = FALSE)[[1]] + 
 #'   scale_color_grey() +
@@ -225,23 +226,22 @@ marginal_effects <- function(x, ...) {
   UseMethod("marginal_effects")
 }
 
+# get combinations of variables used in predictor terms
+# @param ... character vectors or formulas
+# @param alist a list of character vectors or formulas
 get_var_combs <- function(..., alist = list()) {
-  # get all variable combinations occuring in elements of ...
-  # Args:
-  #   ...: character vectors or formulas
-  #   alist: a list of character vectors or formulas
   dots <- c(list(...), alist)
   for (i in seq_along(dots)) {
     if (is.formula(dots[[i]])) {
       dots[[i]] <- attr(terms(dots[[i]]), "term.labels")
     }
-    dots[[i]] <- lapply(dots[[i]], function(y) all.vars(parse(text = y)))
+    dots[[i]] <- lapply(dots[[i]], all_vars)
   }
   unique(unlist(dots, recursive = FALSE))
 }
 
+# extract combinations of predictor variables
 get_all_effects <- function(x, ...) {
-  # extract combinations of predictor variables
   UseMethod("get_all_effects")
 }
 
@@ -256,16 +256,14 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
   unique(unlist(out, recursive = FALSE))
 }
 
+# get all effects for use in marginal_effects
+# @param bterms object of class brmsterms
+# @param rsv_vars character vector of reserved variables
+# @param comb_all include all main effects and two-way interactions?
+# @return a list with one element per valid effect / effects combination
+#   excludes all 3-way or higher interactions
 #' @export
 get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
-  # get all effects for use in marginal_effects
-  # Args:
-  #   bterms: object of class brmsterms
-  #   rsv_vars: character vector of reserved variables
-  #   comb_all: include all main effects and two-way interactions?
-  # Returns:
-  #   a list with one element per valid effect / effects combination
-  #   excludes all 3-way or higher interactions
   stopifnot(is.atomic(rsv_vars))
   out <- list()
   for (dp in names(x$dpars)) {
@@ -288,20 +286,35 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
 
 #' @export
 get_all_effects.btl <- function(x, ...) {
-  c(get_var_combs(x[["fe"]], x[["sp"]], x[["cs"]]), 
+  c(get_var_combs(x[["fe"]], x[["cs"]]), 
+    get_all_effects_type(x, "sp"),
     get_all_effects_type(x, "sm"), 
     get_all_effects_type(x, "gp"))
 }
 
+# extract variable combinations from special terms
 get_all_effects_type <- function(x, type) {
-  # extract combinations of covars and byvars from splines and GPs
   stopifnot(is.btl(x))
   type <- as_one_character(type)
+  regex_type <- regex_sp(type)
   terms <- all_terms(x[[type]])
   out <- named_list(terms)
   for (i in seq_along(terms)) {
-    sm <- eval2(terms[i])
-    vars <- setdiff(union(sm$term, sm$by), "NA")
+    # some special terms can appear within interactions
+    # we did not allow ":" within these terms so we can use it for splitting
+    term_parts <- unlist(strsplit(terms[i], split = ":"))
+    vars <- vector("list", length(term_parts))
+    for (j in seq_along(term_parts)) {
+      if (grepl_expr(regex_type, term_parts[j])) {
+        # evaluate a special term to extract variables
+        tmp <- eval2(term_parts[j])
+        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA") 
+      } else {
+        # extract all variables from an ordinary term
+        vars[[j]] <- all_vars(term_parts[j])
+      }
+    }
+    vars <- unique(unlist(vars))
     out[[i]] <- str2formula(vars, collapse = "*")
   }
   get_var_combs(alist = out)
@@ -309,7 +322,7 @@ get_all_effects_type <- function(x, type) {
 
 #' @export
 get_all_effects.btnl <- function(x, ...) {
-  covars <- all.vars(rhs(x$covars))
+  covars <- all_vars(rhs(x$covars))
   out <- as.list(covars)
   if (length(covars) > 1L) {
     c(out) <- utils::combn(covars, 2, simplify = FALSE)
@@ -317,8 +330,8 @@ get_all_effects.btnl <- function(x, ...) {
   unique(out)
 }
 
+# extract names of variables treated as integers
 get_int_vars <- function(x, ...) {
-  # extract names of variables treated as integers
   UseMethod("get_int_vars")
 }
 
@@ -329,7 +342,7 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
-  advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all.vars)
+  advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all_vars)
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
@@ -367,7 +380,7 @@ make_conditions <- function(x, vars, ...) {
   for (v in vars) {
     tmp <- get(v, x)
     if (is_like_factor(tmp)) {
-      tmp <- levels(tmp)
+      tmp <- levels(as.factor(tmp))
     } else {
       tmp <- mean(tmp, na.rm = TRUE) + (-1:1) * sd(tmp, na.rm = TRUE)
     }
@@ -378,8 +391,8 @@ make_conditions <- function(x, vars, ...) {
   out
 }
 
+# extract the cond__ variable used for faceting
 get_cond__ <- function(x) {
-  # extract the cond__ variable used for faceting
   out <- x[["cond__"]]
   if (is.null(out)) {
     out <- rownames(x)
@@ -424,17 +437,15 @@ rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
   Reduce(paste_sep, out)
 }
 
+# prepare conditions for use in marginal_effects
+# @param fit an object of class 'brmsfit'
+# @param conditions optional data.frame containing user defined conditions
+# @param effects see marginal_effects
+# @param re_formula see marginal_effects
+# @param rsv_vars names of reserved variables
+# @return a data.frame with (possibly updated) conditions
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
-  # prepare conditions for use in marginal_effects
-  # Args:
-  #   fit: an object of class 'brmsfit'
-  #   conditions: optional data.frame containing user defined conditions
-  #   effects: see marginal_effects
-  #   re_formula: see marginal_effects
-  #   rsv_vars: names of reserved variables
-  # Returns:
-  #   A data.frame with (possibly updated) conditions
   mf <- model.frame(fit)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula)
@@ -448,7 +459,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "Please convert your variables to factors beforehand."
     )
   }
-  req_vars <- all.vars(rhs(bterms$allvars))
+  req_vars <- all_vars(rhs(bterms$allvars))
   req_vars <- setdiff(req_vars, rsv_vars)
   if (is.null(conditions)) {
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
@@ -464,7 +475,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
-  trial_vars <- all.vars(bterms$adforms$trials)
+  trial_vars <- all_vars(bterms$adforms$trials)
   if (length(trial_vars)) {
     write_msg <- any(ulapply(trial_vars, function(x) 
       !isTRUE(x %in% names(conditions)) || anyNA(conditions[[x]])
@@ -494,7 +505,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       )
     }
   }
-  all_vars <- c(all.vars(bterms$allvars), "cond__")
+  all_vars <- c(all_vars(bterms$allvars), "cond__")
   unused_vars <- setdiff(names(conditions), all_vars)
   if (length(unused_vars)) {
     warning2(
@@ -509,19 +520,18 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   )
 }
 
+# prepare data to be used in marginal_effects
+# @param data data.frame containing only data of the predictors of interest
+# @param conditions see argument 'conditions' of marginal_effects
+# @param int_conditions see argument 'int_conditions' of marginal_effects
+# @param int_vars names of variables being treated as integers
+# @param surface generate surface plots later on?
+# @param resolution number of distinct points at which to evaluate
+#   the predictors of interest
+# @param reorder reorder predictors so that numeric ones come first?
 prepare_marg_data <- function(data, conditions, int_conditions = NULL,
                               int_vars = NULL, surface = FALSE, 
                               resolution = 100, reorder = TRUE) {
-  # prepare data to be used in marginal_effects
-  # Args:
-  #  data: data.frame containing only data of the predictors of interest
-  #  conditions: see argument 'conditions' of marginal_effects
-  #  int_conditions: see argument 'int_conditions' of marginal_effects
-  #  int_vars: names of variables being treated as integers
-  #  surface: generate surface plots later on?
-  #  resolution: number of distinct points at which to evaluate
-  #              the predictors of interest
-  #  reorder: reorder predictors so that numeric ones come first?
   effects <- names(data)
   stopifnot(length(effects) %in% c(1L, 2L))
   pred_types <- ifelse(ulapply(data, is_like_factor), "factor", "numeric")
@@ -593,28 +603,30 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
+# compute fitted values for use in marginal_effects
 marginal_effects_internal <- function(x, ...) {
-  # compute fitted values for use in marginal_effects
   UseMethod("marginal_effects_internal")
 }
 
+# compute fitted values of MV models for use in marginal_effects
+# @return a list of summarized prediction matrices
 #' @export
 marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
-  # Returns: a list of summarized prediction matrices
   resp <- validate_resp(resp, x$responses)
   x$terms <- x$terms[resp]
   out <- lapply(x$terms, marginal_effects_internal, ...)
   unlist(out, recursive = FALSE)
 }
 
+# compute fitted values of a univariate model for use in marginal_effects
+# @return a list with the summarized prediction matrix as the only element
+# @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
 marginal_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
   dpar = NULL, resp = NULL, ...
 ) {
-  # Returns: a list with the summarized prediction matrix as the only element
-  # argument 'resp' exists only to be excluded from ... (#589)
   stopifnot(is.brmsfit(fit))
   effects <- attr(marg_data, "effects")
   types <- attr(marg_data, "types")
@@ -652,15 +664,11 @@ marginal_effects_internal.brmsterms <- function(
     if (is_ordinal(x$family) && is.null(dpar)) {
       warning2(
         "Predictions are treated as continuous variables in ",
-        "'marginal_effects' by default, which is likely invalid ", 
+        "'marginal_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
       if (method == "fitted") {
-        for (k in seq_dim(out, 3)) {
-          out[, , k] <- out[, , k] * k
-        }
-        out <- lapply(seq_dim(out, 2), function(s) rowSums(out[, s, ]))
-        out <- do_call(cbind, out)
+        out <- ordinal_probs_continuous(out)
       }
     }
   }
@@ -718,12 +726,11 @@ marginal_effects_internal.brmsterms <- function(
   setNames(list(out), name)
 }
 
+# prepare data points based on the provided conditions
+# allows to add data points to marginal effects plots
+# @return a data.frame containing the data points to be plotted
 make_point_frame <- function(bterms, mf, effects, conditions, 
                              select_points = 0, transform = NULL, ...) {
-  # helper function for marginal_effects
-  # allowing add data points to the marginal effects plots
-  # Returns:
-  #   a data.frame containing the data points to be plotted
   stopifnot(is.brmsterms(bterms), is.data.frame(mf))
   effects <- intersect(effects, names(mf))
   points <- mf[, effects, drop = FALSE]
@@ -801,8 +808,8 @@ make_point_frame <- function(bterms, mf, effects, conditions,
   points
 }
 
+# add effect<i>__ variables to the data
 add_effects__ <- function(data, effects) {
-  # add effect<i>__ variables to the data
   for (i in seq_along(effects)) {
     data[[paste0("effect", i, "__")]] <- eval2(effects[i], data)
   }

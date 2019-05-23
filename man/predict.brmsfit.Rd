@@ -87,14 +87,13 @@ Predicted values of the response variable.
   where the third dimension indicates the response variables.
 }
 \description{
-Predict responses based on the fitted model.
-Can be performed for the data used to fit the model 
-(posterior predictive checks) or for new data.
-By definition, these predictions have higher variance than 
-predictions of the fitted values (i.e., the 'regression line')
-performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
-method. This is because the measurement error is incorporated.
-The estimated means of both methods should, however, be very similar.
+Predict responses based on the fitted model. Can be performed for the data
+used to fit the model (posterior predictive checks) or for new data. By
+definition, these predictions have higher variance than predictions of the
+expected values of the response distribution (i.e., predictions of the
+'regression line') performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
+method. This is because the residual error is incorporated. The estimated
+means of both methods should, however, be very similar.
 }
 \details{
 \code{NA} values within factors in \code{newdata}, 
@@ -105,18 +104,16 @@ The estimated means of both methods should, however, be very similar.
   Method \code{posterior_predict.brmsfit} is an alias of 
   \code{predict.brmsfit} with \code{summary = FALSE}. 
 
-  For truncated discrete models only:
-  In the absence of any general algorithm to sample 
-  from truncated discrete distributions,
-  rejection sampling is applied in this special case. 
-  This means that values are sampled until 
-  a value lies within the defined truncation boundaries. 
-  In practice, this procedure may be rather slow (especially in \R). 
-  Thus, we try to do approximate rejection sampling 
-  by sampling each value \code{ntrys} times and then select a valid value. 
-  If all values are invalid, the closest boundary is used, instead. 
-  If there are more than a few of these pathological cases, 
-  a warning will occur suggesting to increase argument \code{ntrys}.
+  For truncated discrete models only: In the absence of any general algorithm
+  to sample from truncated discrete distributions, rejection sampling is
+  applied in this special case. This means that values are sampled until a
+  value lies within the defined truncation boundaries. In practice, this
+  procedure may be rather slow (especially in \R). Thus, we try to do
+  approximate rejection sampling by sampling each value \code{ntrys} times
+  and then select a valid value. If all values are invalid, the closest
+  boundary is used, instead. If there are more than a few of these
+  pathological cases, a warning will occur suggesting to increase argument
+  \code{ntrys}.
 }
 \examples{
 \dontrun{

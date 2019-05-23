@@ -1,5 +1,8 @@
+# unless otherwise specifiedm functions return a named list 
+# of Stan code snippets to be pasted together later on
+
+# Stan code for the response variables
 stan_response <- function(bterms, data) {
-  # Stan code for the response variables
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   rtype <- str_if(use_int(family), "int", "real")
@@ -132,27 +135,21 @@ stan_response <- function(bterms, data) {
   out
 }
 
+# Stan code related to autocorrelation structures
 stan_autocor <- function(bterms, prior) {
-  # Stan code related to autocorrelation structures
-  # Returns: 
-  #   list containing Stan code snippets
   stopifnot(is.brmsterms(bterms))
   family <- bterms$family
   autocor <- bterms$autocor
   resp <- bterms$response
-  allow_autocor <- allow_autocor(family)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  has_natural_residuals <- has_natural_residuals(bterms)
+  has_latent_residuals <- has_latent_residuals(bterms)
   out <- list()
-  Kar <- get_ar(autocor)
-  Kma <- get_ma(autocor)
-  if (Kar || Kma) {
+  if (is.cor_arma(autocor)) {
     err_msg <- "ARMA models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
-    }
-    if (!allow_autocor) {
-      stop2(err_msg, " for family '", family$family, "'.") 
     }
     str_add(out$data) <- glue( 
       "  // data needed for ARMA correlations\n",
@@ -162,8 +159,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$tdataD) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    # restrict ARMA effects to be in [-1,1] when using covariance
-    # formulation as they cannot be outside this interval anyway
+    Kar <- get_ar(autocor)
     if (Kar) {
       ar_bound <- subset2(prior, class = "ar", ls = px)$bound
       str_add(out$par) <- glue( 
@@ -173,6 +169,7 @@ stan_autocor <- function(bterms, prior) {
         prior, class = "ar", px = px, suffix = p
       )
     }
+    Kma <- get_ma(autocor)
     if (Kma) {
       ma_bound <- subset2(prior, class = "ma", ls = px)$bound
       str_add(out$par) <- glue( 
@@ -185,12 +182,12 @@ stan_autocor <- function(bterms, prior) {
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      err_msg <- "ARMA covariance matrices are not implemented"
+      err_msg <- "Cannot use ARMA covariance matrices"
       if (isTRUE(bterms$rescor)) {
-        stop2(err_msg, " when 'rescor' is estimated.")
+        stop2(err_msg, " when estimating 'rescor'.")
       }
-      if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
-        stop2(err_msg, " when predicting 'sigma' or 'nu'.")
+      if (has_natural_residuals && length(names(bterms$dpars)) > 1L) {
+        stop2(err_msg, " when predicting distributional parameters.")
       }
       str_add(out$data) <- glue( 
         "  // see the functions block for details\n",
@@ -205,27 +202,48 @@ stan_autocor <- function(bterms, prior) {
         )
       }
       str_add(out$tparD) <- glue(
-        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] res_cov_matrix;\n"               
+        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cov;\n"               
       )
       if (Kar && !Kma) {
-        cov_mat_fun <- "ar1"
-        cov_mat_args <- glue("ar{p}[1]")
+        cov_fun <- "ar1"
+        cov_args <- glue("ar{p}[1]")
       } else if (!Kar && Kma) {
-        cov_mat_fun <- "ma1"
-        cov_mat_args <- glue("ma{p}[1]")
+        cov_fun <- "ma1"
+        cov_args <- glue("ma{p}[1]")
       } else {
-        cov_mat_fun <- "arma1"
-        cov_mat_args <- glue("ar{p}[1], ma{p}[1]")
+        cov_fun <- "arma1"
+        cov_args <- glue("ar{p}[1], ma{p}[1]")
       }
+      sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
       str_add(out$tparC1) <- glue(
         "  // compute residual covariance matrix\n",
-        "  res_cov_matrix = cov_matrix_{cov_mat_fun}", 
-        "({cov_mat_args}, sigma{p}, max(nobs_tg{p}));\n"
+        "  chol_cov{p} = cholesky_cov_{cov_fun}", 
+        "({cov_args}, {sdpar}{p}, max(nobs_tg{p}));\n"
       )
+      if (has_latent_residuals) {
+        str_add(out$par) <- glue(
+          "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+          "  real<lower=0> sderr;  // SD of residuals\n"
+        )
+        str_add(out$tparD) <- glue(
+          "  vector[N{p}] err{p};  // actual residuals\n"
+        )
+        str_add(out$tparC1) <- glue(
+          "  // compute correlated residuals\n",
+          "  err{p} = scale_cov_err(",
+          "zerr{p}, chol_cov{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        )
+        str_add(out$prior) <- glue(
+          "  target += normal_lpdf(zerr | 0, 1);\n"
+        )
+        str_add(out$prior) <- stan_prior(
+          prior, class = "sderr", px = px, suffix = p
+        )
+      }
     } else {
-      err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
-      if (is.formula(bterms$adforms$se)) {
-        stop2(err_msg, " when specifying 'se'.")
+      err_msg <- "Please set cov = TRUE in ARMA correlation structures"
+      if (!has_natural_residuals) {
+        stop2(err_msg, " for family '", family$family, "'.")
       }
       if (is.btnl(bterms$dpars[["mu"]])) {
         stop2(err_msg, " in non-linear models.")
@@ -233,59 +251,34 @@ stan_autocor <- function(bterms, prior) {
       if (!identical(family$link, "identity")) {
         stop2(err_msg, " when using non-identity links.")
       }
+      if (is.formula(bterms$adforms$se)) {
+        stop2(err_msg, " when including known standard errors.")
+      }
       str_add(out$data) <- glue( 
         "  int<lower=0> J_lag{p}[N{p}];\n"                
       )
       str_add(out$modelD) <- glue(
         "  // objects storing residuals\n",
-        "  matrix[N{p}, max_lag{p}] E{p}",
+        "  matrix[N{p}, max_lag{p}] Err{p}",
         " = rep_matrix(0, N{p}, max_lag{p});\n",
-        "  vector[N{p}] e{p};\n"
+        "  vector[N{p}] err{p};\n"
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
       str_add(out$modelC2) <- glue(
         "    // computation of ARMA correlations\n",
-        "    e{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
+        "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
         "    for (i in 1:J_lag{p}[n]) {{\n",
-        "      E{p}[n + 1, i] = e{p}[n + 1 - i];\n",
+        "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
         "    }}\n"
       )
-    } 
-  }
-  Karr <- get_arr(autocor)
-  if (Karr) {
-    # autoregressive effects of the response
-    warning2(
-      "The 'arr' correlation structure has been deprecated and ",
-      "will be removed from the package at some point. Consider ", 
-      "using lagged response values as ordinary predictors instead."
-    )
-    err_msg <- "ARR models are not implemented"
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " for non-linear models.")
     }
-    if (is.mixfamily(family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
-    str_add(out$data) <- glue(
-      "  // data needed for ARR correlations\n",
-      "  int<lower=1> Karr{p};\n",
-      "  matrix[N{p}, Karr{p}] Yarr{p};  // ARR design matrix\n"
-    )
-    bound <- subset2(prior, class = "arr", ls = px)$bound
-    str_add(out$par) <- glue(
-      "  vector{bound}[Karr{p}] arr{p};  // autoregressive response effects\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "arr", px = px, suffix = p
-    )
   }
   if (is.cor_sar(autocor)) {
     err_msg <- "SAR models are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!allow_autocor) {
+    if (!has_natural_residuals) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -397,56 +390,12 @@ stan_autocor <- function(bterms, prior) {
       )
     }
   }
-  if (is.cor_bsts(autocor)) {
-    warning2(
-      "The 'bsts' correlation structure has been deprecated and ",
-      "will be removed from the package at some point. Consider ", 
-      "using splines or Gaussian processes instead."
-    )
-    err_msg <- "BSTS models are not implemented"
-    if (is.mixfamily(family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
-    if (is_ordinal(family) || family$family %in% c("bernoulli", "categorical")) {
-      stop2(err_msg, " for family '", family$family, "'.")
-    }
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " in non-linear models.")
-    }
-    str_add(out$data) <- glue(
-      "  vector[N{p}] tg{p};  // indicates independent groups\n"
-    )
-    str_add(out$par) <- glue(
-      "  vector[N{p}] loclev{p};  // local level terms\n",
-      "  real<lower=0> sigmaLL{p};  // SD of local level terms\n"
-    )
-    if (allow_autocor) {
-      # ensures that the means of the loclev priors start close 
-      # to the response values; this often helps with convergence
-      link <- stan_link(family$link)
-      center <- c("1", "n")
-      center <- glue("{link}(Y{p}[{center}])")
-    } else {
-      center <- c("0", "0")
-    }
-    str_add(out$prior) <- glue(
-      stan_prior(prior, class = "sigmaLL", px = px, suffix = p),
-      "  target += normal_lpdf(loclev{p}[1] | {center[1]}, sigmaLL{p});\n",
-      "  for (n in 2:N{p}) {{\n",
-      "    if (tg{p}[n] == tg{p}[n - 1]) {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | loclev{p}[n - 1], sigmaLL{p});\n",
-      "    }} else {{\n",
-      "    {tp()}normal_lpdf(loclev{p}[n] | {center[2]}, sigmaLL{p});\n",
-      "    }}\n",
-      "  }}\n"
-    )
-  }
   if (is.cor_fixed(autocor)) {
     err_msg <- "Fixed residual covariance matrices are not implemented"
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (!allow_autocor) {
+    if (!has_natural_residuals) {
       stop2(err_msg, " for family '", family$family, "'.")
     }
     if (isTRUE(bterms$rescor)) {
@@ -464,10 +413,8 @@ stan_autocor <- function(bterms, prior) {
   out
 }
 
+# define Stan functions or globally used transformed data
 stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
-  # define Stan functions or globally used transformed data
-  # Returns:
-  #   a list of character strings
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -478,6 +425,8 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_cauchit.stan'\n"
   } else if (any(links == "cloglog")) {
     str_add(out$fun) <- "  #include 'fun_cloglog.stan'\n"
+  } else if (any(links == "softplus")) {
+    str_add(out$fun) <- "  #include 'fun_softplus.stan'\n"
   }
   hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
   if (any(nzchar(hs_dfs))) {
@@ -505,9 +454,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     ord_fams <- families[is_ordinal]
     ord_links <- links[is_ordinal]
     for (i in seq_along(ord_fams)) {
-      for (cs in 0:1) {
-        str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i], cs)
-      }
+      str_add(out$fun) <- stan_ordinal_lpmf(ord_fams[i], ord_links[i])
     }
   }
   uni_mo <- ulapply(get_effect(bterms, "sp"), attr, "uni_mo")
@@ -526,12 +473,14 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     autocors <- lapply(bterms$terms, "[[", "autocor")
   }
   if (any(ulapply(autocors, use_cov))) {
+    # TODO: include functions selectively
     str_add(out$fun) <- glue(
       "  #include 'fun_normal_cov.stan'\n",
       "  #include 'fun_student_t_cov.stan'\n",
-      "  #include 'fun_cov_matrix_ar1.stan'\n",
-      "  #include 'fun_cov_matrix_ma1.stan'\n",
-      "  #include 'fun_cov_matrix_arma1.stan'\n"
+      "  #include 'fun_cholesky_cov_ar1.stan'\n",
+      "  #include 'fun_cholesky_cov_ma1.stan'\n",
+      "  #include 'fun_cholesky_cov_arma1.stan'\n",
+      "  #include 'fun_scale_cov_err.stan'\n"
     )
   }
   if (any(ulapply(autocors, is.cor_sar))) {
@@ -557,39 +506,30 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   out
 }
 
-stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
-  # ordinal log-probability densitiy functions in Stan language
-  # Args:
-  #   cs: Logical; add category specific effects?
+# ordinal log-probability densitiy functions in Stan language
+stan_ordinal_lpmf <- function(family, link) {
   stopifnot(is.character(family), is.character(link))
-  cs <- as_one_logical(cs)
   ilink <- stan_ilink(link)
   th <- function(k) {
     # helper function generating stan code inside ilink(.)
-    sign <- str_if(family %in% c("cumulative", "sratio"), " - ", " + ")
-    ptl <- str_if(cs, glue("{sign}mucs[{k}]")) 
-    if (sign == " - ") {
-      out <- glue("thres[{k}]{ptl} - mu")
-    } else {
-      out <- glue("mu{ptl} - thres[{k}]")
+    if (family %in% c("cumulative", "sratio")) {
+      out <- glue("thres[{k}] - mu")
+    } else if (family %in% c("cratio", "acat")) {
+      out <- glue("mu - thres[{k}]")
     }
     glue("disc * ({out})")
   }
-  mucs <- str_if(cs, " row_vector mucs,")
   out <- glue(
     "  /* {family}-{link} log-PDF for a single response\n",
-    str_if(cs, "   * including category specific effects\n"),
     "   * Args:\n",
     "   *   y: response category\n",
     "   *   mu: linear predictor\n",
-    str_if(cs, "   *   mucs: predictor for category specific effects\n"),
     "   *   thres: ordinal thresholds\n",
     "   *   disc: discrimination parameter\n",
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}", str_if(cs, "_cs"), 
-    "_lpmf(int y, real mu,{mucs} vector thres, real disc) {{\n"
+    "   real {family}_{link}_lpmf(int y, real mu, vector thres, real disc) {{\n"
   )
   # define the function body
   if (family == "cumulative") {
@@ -656,72 +596,9 @@ stan_ordinal_lpmf <- function(family, link, cs = FALSE) {
   out
 }
 
-stan_mixture <- function(bterms, prior) {
-  # Stan code specific for mixture families
-  px <- check_prefix(bterms)
-  p <- usc(combine_prefix(px))
-  out <- list()
-  if (is.mixfamily(bterms$family)) {
-    nmix <- length(bterms$family$mix)
-    theta_pred <- grepl("^theta", names(bterms$dpars))
-    theta_pred <- bterms$dpars[theta_pred]
-    theta_fix <- grepl("^theta", names(bterms$fdpars))
-    theta_fix <- bterms$fdpars[theta_fix]
-    def_thetas <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
-    )
-    if (length(theta_pred)) {
-      if (length(theta_pred) != nmix - 1) {
-        stop2("Can only predict all but one mixing proportion.")
-      }
-      missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
-      str_add(out$modelD) <- glue(
-        "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
-        "  real log_sum_exp_theta;\n"      
-      )
-      sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
-      str_add(out$modelC3) <- glue(
-        "    log_sum_exp_theta = log({sum_exp_theta});\n"
-      )
-      str_add(out$modelC3) <- cglue(
-        "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
-      )
-    } else if (length(theta_fix)) {
-      if (length(theta_fix) != nmix) {
-        stop2("Can only fix no or all mixing proportions.")
-      }
-      str_add(out$data) <- "  // mixing proportions\n"
-      str_add(out$data) <- cglue(
-        "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
-      )
-    } else {
-      str_add(out$data) <- glue(
-        "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
-      )
-      str_add(out$par) <- glue(
-        "  simplex[{nmix}] theta{p};  // mixing proportions\n"
-      )
-      str_add(out$prior) <- glue(
-        "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
-      )
-      str_add(out$tparD) <- "  // mixing proportions\n"
-      str_add(out$tparD) <- cglue(
-        "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
-      )
-    }
-    if (bterms$family$order %in% "mu") {
-      str_add(out$par) <- glue( 
-        "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
-      )
-    }
-  }
-  out
-}
-
+# global Stan definitions for noise-free variables
+# @param meef output of tidy_meef
 stan_Xme <- function(meef, prior) {
-  # global Stan definitions for noise-free variables
-  # Args:
-  #   meef: tidy data.frame as returned by tidy_meef()
   stopifnot(is.meef_frame(meef))
   if (!nrow(meef)) {
     return(list())
@@ -803,10 +680,9 @@ stan_Xme <- function(meef, prior) {
   out
 }
 
+# link function in Stan language
+# @param link name of the link function
 stan_link <- function(link) {
-  # find the link in Stan language
-  # Args:
-  #   link: the link function
   switch(link, 
     identity = "",
     log = "log", 
@@ -820,14 +696,14 @@ stan_link <- function(link) {
     cloglog = "cloglog", 
     cauchit = "cauchit",
     tan_half = "tan_half",
-    log1p = "log1p"
+    log1p = "log1p",
+    softplus = "log_expm1"
   )
 }
 
+# inverse link in Stan language
+# @param link name of the link function
 stan_ilink <- function(link) {
-  # find the inverse link in Stan language
-  # Args:
-  #   link: the link function
   switch(link, 
     identity = "",
     log = "exp", 
@@ -841,20 +717,20 @@ stan_ilink <- function(link) {
     cloglog = "inv_cloglog",
     cauchit = "inv_cauchit",
     tan_half = "inv_tan_half",
-    log1p = "expm1"
+    log1p = "expm1",
+    softplus = "log1p_exp"
   )
 }
 
+# define a vector in Stan language
 stan_vector <- function(...) {
-  # define a vector in Stan language
   paste0("[", paste0(c(...), collapse = ", "), "]'")
 }
 
+# prepare Stan code for correlations in the generated quantities block
+# @param cor name of the correlation vector
+# @param ncol number of columns of the correlation matrix
 stan_cor_genC <- function(cor, ncol) {
-  # prepare Stan code for correlations in the generated quantities block
-  # Args:
-  #   cor: name of the correlation vector
-  #   ncol: number of columns of the correlation matrix
   Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
   glue(
     "  // extract upper diagonal of correlation matrix\n", 
@@ -866,11 +742,10 @@ stan_cor_genC <- function(cor, ncol) {
   )
 }
 
+# indicates if a family-link combination has a built in 
+# function in Stan (such as binomial_logit)
+# @param family a list with elements 'family' and 'link'
 stan_has_built_in_fun <- function(family) {
-  # indicates if a family-link combination has a built in 
-  # function in Stan (such as binomial_logit)
-  # Args:
-  #   family: a list with elements 'family' and 'link'
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
   dpar <- family$dpar
@@ -891,18 +766,22 @@ stan_has_built_in_fun <- function(family) {
   )
 }
 
+# get all variable names accepted in Stan
 stan_all_vars <- function(x) {
-  # get all variable names accepted in Stan
   x <- gsub("\\.", "+", x)
   all_vars(x)
 }
 
+# transform names to be used as variable names in Stan
+make_stan_names <- function(x) {
+  gsub("\\.|_", "", make.names(x, unique = TRUE))
+}
+
+# checks if a model needs the kronecker product
+# @param ranef output of tidy_ranef
+# @param names_cov_ranef: names 'cov_ranef'
+# @return a single logical value
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
-  # checks if a model needs the kronecker product
-  # Args: 
-  #   ranef: named list returned by tidy_ranef
-  #   names_cov_ranef: names of the grouping factors that
-  #                    have a cov.ranef matrix 
   ids <- unique(ranef$id)
   out <- FALSE
   for (id in ids) {

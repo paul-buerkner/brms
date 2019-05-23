@@ -1,13 +1,11 @@
+# find all namespace entries of a package, which are of
+# a particular type for instance all exported objects
 # retrieved from https://github.com/raredd/rawr
+# @param package the package name
+# @param what type of the objects to retrieve ("all" for all objects)
+# @param pattern regex that must be matches by the object names
+# @return a character vector of object names
 lsp <- function(package, what = "all", pattern = ".*") {
-  # find all namespace entries of a package, which are of
-  # a particular type for instance all exported objects
-  # Args:
-  #   package: the package name
-  #   what: type of the objects to retrieve ("all" for all objects)
-  #   pattern: regex that must be matches by the object names
-  # Returns:
-  #   a character vector of object names
   if (!is.character(substitute(package)))
     package <- deparse(substitute(package))
   ns <- asNamespace(package)

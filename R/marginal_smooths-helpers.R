@@ -46,8 +46,8 @@ marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
 }
 
+# compute predictions based on the smooths terms only
 marginal_smooths_internal <- function(x, ...) {
-  # compute predictions based on the smooths terms only
   UseMethod("marginal_smooths_internal")
 }
 
@@ -77,18 +77,19 @@ marginal_smooths_internal.brmsterms <- function(x, ...) {
   out
 }
 
+# Marginal smooths for a single predicted parameter
+# @param fit brmsfit object
+# @param samples extract posterior samples
+# @param smooths optional names of smooth terms to plot
+# @param conditions output of prepare_conditions
+# @param int_conditions values of by-vars at which to evalute smooths
+# @param ...: currently ignored
+# @return a named list with one element per smooth term
 #' @export
 marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
                                           conditions, int_conditions, 
                                           probs, resolution, too_far,
                                           spaghetti, ...) {
-  # Args:
-  #   fit: brmsfit object
-  #   samples: extract posterior samples
-  #   smooths: optional names of smooth terms to plot
-  #   conditions: output of prepare_conditions
-  #   int_conditions: values of by-vars at which to evalute smooths
-  #   ...: currently ignored
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)

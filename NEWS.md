@@ -1,3 +1,44 @@
+# brms 2.9.0
+
+### New Features
+
+* Specify non-linear ordinal models. (#623)
+* Allow to fix thresholds in ordinal mixture models (#626)
+* Use the `softplus` link function in various families. (#622)
+* Use QR decomposition of design matrices via argument 
+`decomp` of `brmsformula` thanks to the help of Ben Goodrich. (#640)
+* Define argument `sparse` separately for each model formula.
+* Allow using `bayes_R2` and `loo_R2` with ordinal models. (#639)
+* Support `cor_arma` in non-normal models. (#648)
+
+### Other Changes
+
+* Change the parameterization of monotonic effects to 
+improve their interpretability. (#578)
+* No longer support the `cor_arr` and `cor_bsts` correlation 
+structures after a year of deprecation.
+* Refactor internal evaluation of special predictor terms.
+* Improve penality of splines thanks to Ben Goodrich
+and Ruben Arslan.
+
+### Bug Fixes
+
+* Fix a problem when applying `marginal_effects` to
+measurement error models thanks to Jonathan A. Nations. (#636)
+* Fix computation of log-likelihood values for weighted 
+mixture models.
+* Fix computation of fitted values for truncated lognormal 
+and weibull models.
+* Fix checking of response boundaries for models with
+missing values thanks to Lucas Deschamps.
+* Fix Stan code of multivariate models with both residual 
+correlations and missing value terms thanks to Solomon Kurz.
+* Fix problems with interactions of special terms
+when extracting variable names in `marginal_effects`.
+* Allow compiling a model in `brm_multiple` without
+sampling thanks to Will Petry. (#671)
+
+
 # brms 2.8.0
 
 ### New Features

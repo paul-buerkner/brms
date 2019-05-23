@@ -1,25 +1,28 @@
+# unless otherwise specified, functions return a named list 
+# of Stan code snippets to be pasted together later on
+
+# generate stan code for predictor terms
 stan_predictor <- function(x, ...) {
-  # generate stan code for predictor terms
   UseMethod("stan_predictor")
 }
 
+# combine effects for the predictors of a single (non-linear) parameter
+# @param ranef output of tidy_ranef
+# @param ilink character vector of length 2 defining the link to be applied
+# @param ... arguments passed to the underlying effect-specific functions
 #' @export
-stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
-  # combine effects for the predictors of a single (non-linear) parameter
-  # Args:
-  #   ranef: output of tidy_ranef()
-  #   ilink: character vector of length 2 defining the link to be applied
-  #   ...: arguements passed to the underlying effect-specific functions
+stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
   stopifnot(length(ilink) == 2L)
   out <- collapse_lists(
-    text_fe <- stan_fe(x, data, prior, ...),
-    text_sp <- stan_sp(x, data, prior, ranef = ranef, ...),
-    text_cs <- stan_cs(x, data, prior, ranef = ranef, ...),
-    text_sm <- stan_sm(x, data, prior, ...),
-    text_gp <- stan_gp(x, data, prior, ...),
+    text_fe <- stan_fe(x, ...),
+    text_thres <- stan_thres(x, ...),
+    text_sp <- stan_sp(x, ranef = ranef, ...),
+    text_cs <- stan_cs(x, ranef = ranef, ...),
+    text_sm <- stan_sm(x, ...),
+    text_gp <- stan_gp(x, ...),
     text_ac <- stan_ac(x, ...),
     text_offset <- stan_offset(x, ...),
-    stan_special_prior_global(x, data, prior, ...)
+    stan_special_prior_global(x, ...)
   )
   
   # initialize and compute eta
@@ -48,14 +51,11 @@ stan_predictor.btl <- function(x, data, prior, ranef, ilink = rep("", 2), ...) {
   out
 }
 
+# prepare Stan code for non-linear models
+# @param names of the non-linear parameters
+# @param ilink character vector of length 2 defining the link to be applied
 #' @export
-stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
-  # prepare Stan code for non-linear models
-  # Args:
-  #   data: data.frame supplied by the user
-  #   ilink: character vector of length 2 containing
-  #     Stan code for the link function
-  #   ...: passed to stan_predictor.btl
+stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -101,24 +101,21 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = rep("", 2), ...) {
       "  {par} = {ilink[1]}{trimws(nlmodel)}{ilink[2]};\n"
     )
   }
+  # ordinal thresholds need to be present also in non-linear models
+  str_add_list(out) <- stan_thres(x, ...)
   out
 }
 
+# Stan code for distributional parameters
+# @param rescor is this predictor part of a MV model estimating rescor?
 #' @export
-stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE, 
-                                     rescor = FALSE, ...) {
-  # Stan code for distributional parameters
-  # Args:
-  #   rescor: indicate if this is part of an MV model estimating rescor
+stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   data <- subset_data(data, x)
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
-  args <- nlist(
-    data, prior, sparse, nlpars = names(x$nlpars),
-    order_mixture = x$family$order, ...
-  )
+  args <- nlist(data, prior, nlpars = names(x$nlpars), ...)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
     out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
@@ -153,16 +150,14 @@ stan_predictor.brmsterms <- function(x, data, prior, sparse = FALSE,
       }
     }
   }
-  out <- lc(out,
-    stan_autocor(x, prior = prior),
-    stan_mixture(x, prior = prior),
-    stan_dpar_transform(x)
-  )
   out <- collapse_lists(ls = out)
-  out$model_loop <- paste0(out$modelC2, out$modelC3, out$modelC4)
-  if (isTRUE(nzchar(out$model_loop))) {
-    out$model_loop <- paste0(
-      "  for (n in 1:N", resp, ") {\n", out$model_loop, "  }\n"
+  str_add_list(out) <- stan_autocor(x, prior = prior)
+  str_add_list(out) <- stan_mixture(x, prior = prior)
+  str_add_list(out) <- stan_dpar_transform(x)
+  out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+  if (isTRUE(nzchar(out$modelCL))) {
+    out$modelCL <- paste0(
+      "  for (n in 1:N", resp, ") {\n", out$modelCL, "  }\n"
     )
   }
   out
@@ -184,16 +179,15 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
             "addition arguments when 'rescor' is estimated.")
     }
     family <- family_names(x)[1]
+    stopifnot(family %in% c("gaussian", "student"))
     resp <- x$responses
     nresp <- length(resp)
     str_add(out$modelD) <- glue( 
       "  // multivariate linear predictor matrix\n",
       "  vector[nresp] Mu[N];\n"
     )
-    str_add(out$model_loop) <- glue(
-      "  for (n in 1:N) {{\n",
-      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n",
-      "  }}\n"
+    str_add(out$modelC2) <- glue(
+      "    Mu[n] = {stan_vector(glue('mu_{resp}[n]'))};\n"
     )
     str_add(out$data) <- glue(
       "  int<lower=1> nresp;  // number of responses\n",   
@@ -280,28 +274,31 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       "  vector<lower=-1,upper=1>[nrescor] rescor;\n"
     )
     str_add(out$genC) <- stan_cor_genC("rescor", "nresp")
+    out$modelCL <- paste0(out$modelC2, out$modelC3, out$modelC4)
+    if (isTRUE(nzchar(out$modelCL))) {
+      out$modelCL <- paste0(
+        "  for (n in 1:N) {\n", out$modelCL, "  }\n"
+      )
+    }
   }
   out
 }
 
-stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE, 
-                    order_mixture = 'none', ...) {
-  # Stan code for population-level effects
-  # Args:
-  #   sparse: should the design matrix be treated as sparse?
-  #   order_mixture: order intercepts to identify mixture models?
-  # Returns:
-  #   a list containing Stan code related to population-level effects
+# Stan code for population-level effects
+stan_fe <- function(bterms, data, prior, stanvars, ...) {
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
-  # center the design matrix?
-  center_X <- !no_center(bterms$fe) && has_intercept(bterms$fe) && 
-    !is.cor_bsts(bterms$autocor) && !sparse
+  sparse <- is_sparse(bterms$fe)
+  decomp <- get_decomp(bterms$fe)
+  if (length(fixef) < 2L) {
+    # decompositions require at least two predictors
+    decomp <- "none"
+  }
+  center_X <- stan_center_X(bterms)
+  ct <- str_if(center_X, "c")
   # remove the intercept from the design matrix?
-  rm_intercept <- center_X || is_ordinal(family) || 
-    is.cor_bsts(bterms$autocor)
-  if (rm_intercept) {
+  if (center_X) {
     fixef <- setdiff(fixef, "Intercept")
   }
   px <- check_prefix(bterms)
@@ -315,7 +312,9 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
       "  // population-level design matrix\n"
     )
     if (sparse) {
-      stopifnot(!center_X)
+      if (decomp != "none") {
+        stop2("Cannot use ", decomp, " decomposition for sparse matrices.")
+      }
       str_add(out$tdataD) <- glue(
         "  // sparse matrix representation of X{p}\n",
         "  vector[rows(csr_extract_w(X{p}))] wX{p}", 
@@ -327,89 +326,99 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
       )
     }
     # prepare population-level coefficients
-    prefix <- combine_prefix(px, keep_mu = TRUE)
-    special <- attr(prior, "special")[[prefix]]
-    define_b_in_pars <- is.null(special[["hs_df"]]) &&
-      !glue("b{p}") %in% names(stanvars)
-    if (define_b_in_pars) {
-      ct <- str_if(center_X, "c")
-      bound <- get_bound(prior, class = "b", px = px)
-      str_add(out$par) <- glue(
-        "  vector{bound}[K{ct}{p}] b{p};  // population-level effects\n"
+    bound <- get_bound(prior, class = "b", px = px)
+    use_horseshoe <- stan_use_horseshoe(bterms, prior)
+    if (decomp == "none") {
+      bsuffix <- ""
+      comment_b <- "  // population-level effects"
+      stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_b
+      } else if (!glue("b{p}") %in% names(stanvars)) {
+        str_add(out$par) <- stan_def_b
+      }
+    } else {
+      stopifnot(decomp == "QR")
+      if (nzchar(bound)) {
+        stop2("Cannot impose bounds on decomposed coefficients.")
+      }
+      bsuffix <- "Q"
+      comment_bQ <- "  // regression coefficients at QR scale"
+      stan_def_bQ <- glue("  vector[K{ct}{p}] bQ{p};{comment_bQ}\n")
+      if (use_horseshoe) {
+        str_add(out$tparD) <- stan_def_bQ
+      } else {
+        str_add(out$par) <- stan_def_bQ
+      }
+      str_add(out$genD) <- glue(
+        "  // obtain the actual coefficients\n",
+        "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
       )
     }
     str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = fixef, px = px, suffix = p
+      prior, class = "b", coef = fixef, px = px, 
+      suffix = glue("{bsuffix}{p}")
     )
-    out <- collapse_lists(out,
-      stan_special_prior_local(
-        "b", prior, ncoef = length(fixef), 
-        px = px, center_X = center_X  
-      )                      
+    stan_special_priors <- stan_special_prior_local(
+      prior, class = "b", ncoef = length(fixef), 
+      px = px, center_X = center_X, suffix = bsuffix
     )
+    out <- collapse_lists(out, stan_special_priors)
   }
   
+  order_intercepts <- order_intercepts(bterms)
+  if (order_intercepts && !center_X) {
+    stop2(
+      "Identifying mixture components via ordering requires ",
+      "population-level intercepts to be present.\n",
+      "Try setting order = 'none' in function 'mixture'."
+    )
+  }
   if (center_X) {
-    # centering of the fixed effects design matrix improves convergence
+    # centering the design matrix improves convergence
+    sub_X_means <- ""
     if (length(fixef)) {
-      str_add(out$tdataD) <- glue(
-        "  int Kc{p} = K{p} - 1;\n",
-        "  matrix[N{resp}, K{p} - 1] Xc{p};", 
-        "  // centered version of X{p}\n",
-        "  vector[K{p} - 1] means_X{p};",
-        "  // column means of X{p} before centering\n"
-      )
-      str_add(out$tdataC) <- glue(
-        "  for (i in 2:K{p}) {{\n",
-        "    means_X{p}[i - 1] = mean(X{p}[, i]);\n",
-        "    Xc{p}[, i - 1] = X{p}[, i] - means_X{p}[i - 1];\n",
-        "  }}\n"
-      )
-      # ordinal families either use thres - mu or mu - thres
-      # both implies adding <mean_X, b> to the temporary intercept
-      sign <- str_if(is_ordinal(family), " + ", " - ")
-      sub_X_means <- glue("{sign}dot_product(means_X{p}, b{p})")
-    } else {
-      sub_X_means <- ""
-    }
-    if (is_ordinal(family)) {
-      # intercepts in ordinal models require special treatment
-      type <- str_if(family$family == "cumulative", "ordered", "vector")
-      intercept <- glue(
-        "  {type}[ncat{resp}-1] temp{p}_Intercept;",
-        "  // temporary thresholds\n"
-      )
-      if (family$threshold == "equidistant") {
-        bound <- subset2(prior, class = "delta", ls = px)$bound
-        str_add(out$par) <- glue(
-          "  real temp{p}_Intercept1;  // first threshold\n",
-          "  real{bound} delta{p};  // distance between thresholds\n"
+      sub_X_means <- glue(" - dot_product(means_X{p}, b{p})")
+      if (is_ordinal(family)) {
+        # the intercept was already removed during the data preparation
+        str_add(out$tdataD) <- glue(
+          "  int Kc{p} = K{p};\n",
+          "  matrix[N{resp}, Kc{p}] Xc{p};", 
+          "  // centered version of X{p}\n",
+          "  vector[Kc{p}] means_X{p};",
+          "  // column means of X{p} before centering\n"
         )
-        str_add(out$tparD) <- intercept
-        str_add(out$tparC1) <- glue(
-          "  // compute equidistant thresholds\n",
-          "  for (k in 1:(ncat{resp} - 1)) {{\n",
-          "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
-          " + (k - 1.0) * delta{p};\n",
+        str_add(out$tdataC) <- glue(
+          "  for (i in 1:K{p}) {{\n",
+          "    means_X{p}[i] = mean(X{p}[, i]);\n",
+          "    Xc{p}[, i] = X{p}[, i] - means_X{p}[i];\n",
           "  }}\n"
         )
-        str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
       } else {
-        str_add(out$par) <- intercept
+        str_add(out$tdataD) <- glue(
+          "  int Kc{p} = K{p} - 1;\n",
+          "  matrix[N{resp}, Kc{p}] Xc{p};", 
+          "  // centered version of X{p}\n",
+          "  vector[Kc{p}] means_X{p};",
+          "  // column means of X{p} before centering\n"
+        )
+        str_add(out$tdataC) <- glue(
+          "  for (i in 2:K{p}) {{\n",
+          "    means_X{p}[i - 1] = mean(X{p}[, i]);\n",
+          "    Xc{p}[, i - 1] = X{p}[, i] - means_X{p}[i - 1];\n",
+          "  }}\n"
+        )
       }
-      str_add(out$genD) <- glue(
-        "  // compute actual thresholds\n",
-        "  vector[ncat{resp} - 1] b{p}_Intercept",  
-        " = temp{p}_Intercept{sub_X_means};\n" 
-      )
-    } else {
-       if (identical(dpar_class(px$dpar), order_mixture)) {
-         # identify mixtures via ordering of the intercepts
-         dp_id <- dpar_id(px$dpar)
-         str_add(out$tparD) <- glue(
-           "  // identify mixtures via ordering of the intercepts\n",                   
-           "  real temp{p}_Intercept = ordered_Intercept{resp}[{dp_id}];\n"
-         )
+    }
+    if (!is_ordinal(family)) {
+      # intercepts of ordinal models are handled in 'stan_thres'
+      if (order_intercepts) {
+        # identify mixtures via ordering of the intercepts
+        dp_id <- dpar_id(px$dpar)
+        str_add(out$tparD) <- glue(
+          "  // identify mixtures via ordering of the intercepts\n",                   
+          "  real temp{p}_Intercept = ordered{resp}_Intercept[{dp_id}];\n"
+        )
       } else {
         str_add(out$par) <- glue(
           "  real temp{p}_Intercept;  // temporary intercept\n"
@@ -420,35 +429,104 @@ stan_fe <- function(bterms, data, prior, stanvars, sparse = FALSE,
         "  // actual population-level intercept\n",
         "  real b{p}_Intercept = temp{p}_Intercept{sub_X_means};\n"
       )
-    }
-    # for equidistant thresholds only temp_Intercept1 is a parameter
-    prefix <- glue("temp{p}_")
-    Icoefs <- suffix <- ""
-    if (is_ordinal(family)) {
-      Icoefs <- subset2(prior, class = "Intercept", ls = px)$coef
-      Icoefs <- Icoefs[nzchar(Icoefs)]
-      if (family$threshold == "equidistant") suffix <- "1"
-    }
-    str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", coef = Icoefs, 
-      px = px, prefix = prefix, suffix = suffix
-    )
-  } else {
-    if (identical(dpar_class(px$dpar), order_mixture)) {
-      stop2(
-        "Identifying mixture components via ordering requires ",
-        "population-level intercepts to be present.\n",
-        "Try setting order = 'none' in function 'mixture'."
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", px = px, prefix = glue("temp{p}_")
       )
     }
   }
-  str_add(out$eta) <- stan_eta_fe(fixef, center_X, sparse, px = px)
+  if (decomp == "QR") {
+    str_add(out$tdataD) <- glue(
+      "  // matrices for QR decomposition\n",
+      "  matrix[N{resp}, K{ct}{p}] XQ{p};\n",
+      "  matrix[K{ct}{p}, K{ct}{p}] XR{p};\n",
+      "  matrix[K{ct}{p}, K{ct}{p}] XR{p}_inv;\n"
+    )
+    str_add(out$tdataC) <- glue(
+      "  // compute and scale QR decomposition\n",
+      "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
+      "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
+      "  XR{p}_inv = inverse(XR{p});\n"
+    )
+  }
+  str_add(out$eta) <- stan_eta_fe(fixef, bterms)
   out
 }
 
+# Stan code for ordinal thresholds
+# intercepts in ordinal models require special treatment
+# and must be present even when using non-linear predictors
+# thus the relevant Stan code cannot be part of 'stan_fe'
+stan_thres <- function(bterms, prior, ...) {
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  out <- list()
+  family <- bterms$family
+  if (!is_ordinal(family)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
+  type <- str_if(has_ordered_thres(family), "ordered", "vector")
+  if (fix_intercepts(bterms)) {
+    # identify ordinal mixtures by fixing their thresholds to the same values
+    if (has_equidistant_thres(family)) {
+      stop2("Cannot use equidistant and fixed thresholds at the same time.")
+    }
+    str_add(out$tparD) <- glue(
+      "  {type}[ncat{resp} - 1] temp{p}_Intercept = fixed{resp}_Intercept;\n"
+    )
+  } else {
+    thres <- get_thres(bterms)
+    if (has_equidistant_thres(family)) {
+      bound <- subset2(prior, class = "delta", ls = px)$bound
+      str_add(out$par) <- glue(
+        "  real temp{p}_Intercept1;  // first threshold\n",
+        "  real{bound} delta{p};  // distance between thresholds\n"
+      )
+      str_add(out$tparD) <- glue(
+        "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
+        "  // temporary thresholds\n"
+      )
+      str_add(out$tparC1) <- glue(
+        "  // compute equidistant thresholds\n",
+        "  for (k in 1:(ncat{resp} - 1)) {{\n",
+        "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
+        " + (k - 1.0) * delta{p};\n",
+        "  }}\n"
+      )
+      str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", coef = thres[1], 
+        px = px, prefix = glue("temp{p}_"), suffix = "1"
+      )
+    } else {
+      str_add(out$par) <- glue(
+        "  {type}[ncat{resp} - 1] temp{p}_Intercept;",
+        "  // temporary thresholds\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", coef = thres, 
+        px = px, prefix = glue("temp{p}_")
+      )
+    }
+  }
+  sub_X_means <- ""
+  if (stan_center_X(bterms) && length(all_terms(bterms$fe))) {
+    # centering of the design matrix improves convergence
+    # ordinal families either use thres - mu or mu - thres
+    # both implies adding <mean_X, b> to the temporary intercept
+    sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
+  }
+  str_add(out$genD) <- glue(
+    "  // compute actual thresholds\n",
+    "  vector[ncat{resp} - 1] b{p}_Intercept",  
+    " = temp{p}_Intercept{sub_X_means};\n" 
+  )
+  out
+}
+
+# Stan code for group-level effects
 stan_re <- function(ranef, prior, ...) {
-  # Stan code for group-level effects
-  # the ID syntax requires group-level effects to be evaluated separately
   IDs <- unique(ranef$id)
   out <- list()
   # special handling of student-t group effects
@@ -474,20 +552,18 @@ stan_re <- function(ranef, prior, ...) {
       )
     }
   }
+  # the ID syntax requires group-level effects to be evaluated separately
   tmp <- lapply(IDs, .stan_re, ranef = ranef, prior = prior, ...)
   out <- collapse_lists(ls = c(list(out), tmp))
   out
 }
 
+# Stan code for group-level effects per ID
+# @param id the ID of the grouping factor
+# @param ranef output of tidy_ranef
+# @param prior object of class brmsprior
+# @param cov_ranef optional list of custom covariance matrices 
 .stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
-  # Stan code for group-level effects per ID
-  # Args:
-  #   id: the ID of the grouping factor
-  #   ranef: a data.frame returned by tidy_ranef
-  #   prior: object of class brmsprior
-  #   cov_ranef: a list of custom covariance matrices 
-  # Returns:
-  #   A list of strings containing Stan code
   out <- list()
   r <- subset2(ranef, id = id)
   has_ccov <- r$group[1] %in% names(cov_ranef)
@@ -668,8 +744,8 @@ stan_re <- function(ranef, prior, ...) {
   out
 }
 
+# Stan code of smooth terms
 stan_sm <- function(bterms, data, prior, ...) {
-  # Stan code of smooth terms
   out <- list()
   smef <- tidy_smef(bterms, data)
   if (!NROW(smef)) {
@@ -731,9 +807,9 @@ stan_sm <- function(bterms, data, prior, ...) {
   out
 }
 
+# Stan code for category specific effects
+# @note not implemented for non-linear models
 stan_cs <- function(bterms, data, prior, ranef, ...) {
-  # Stan code for category specific effects
-  # (!) Not implemented for non-linear models
   out <- list()
   csef <- colnames(get_model_matrix(bterms$cs, data))
   px <- check_prefix(bterms)
@@ -791,8 +867,8 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
   out
 }
 
+# Stan code for special effects
 stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
-  # Stan code for special effects
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -845,16 +921,20 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       cglue("  vector[N{resp}] Csp{p}_{seq_len(ncovars)};\n")
     )
   }
-  prefix <- combine_prefix(px, keep_mu = TRUE)
-  special <- attr(prior, "special")[[prefix]]
-  define_bsp_in_pars <- is.null(special[["hs_df"]]) &&
-    !glue("bsp{p}") %in% names(stanvars)
-  if (define_bsp_in_pars) {
+  # prepare special effects coefficients
+  if (!glue("bsp{p}") %in% names(stanvars)) {
     bound <- get_bound(prior, class = "b", px = px)
-    str_add(out$par) <- glue(
-      "  // special effects coefficients\n", 
-      "  vector{bound}[Ksp{p}] bsp{p};\n"
-    )
+    if (stan_use_horseshoe(bterms, prior)) {
+      str_add(out$tparD) <- glue(
+        "  // special effects coefficients\n", 
+        "  vector{bound}[Ksp{p}] bsp{p};\n"
+      )
+    } else {
+      str_add(out$par) <- glue(
+        "  // special effects coefficients\n", 
+        "  vector{bound}[Ksp{p}] bsp{p};\n"
+      )
+    }
   }
   str_add(out$prior) <- stan_prior(
     prior, class = "b", coef = spef$coef, 
@@ -881,17 +961,16 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       "simo{p}_{I} | con_simo{p}_{I});\n"
     )
   }
-  out <- collapse_lists(out,
-    stan_special_prior_local(
-      "bsp", prior, ncoef = nrow(spef), 
-      px = px, center_X = FALSE
-    )                      
-  )
+  stan_special_priors <- stan_special_prior_local(
+    prior, class = "bsp", ncoef = nrow(spef), 
+    px = px, center_X = FALSE
+  )  
+  out <- collapse_lists(out, stan_special_priors)
   out
 }
 
+# Stan code for latent gaussian processes
 stan_gp <- function(bterms, data, prior, ...) {
-  # Stan code for latent gaussian processes
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
@@ -1048,34 +1127,31 @@ stan_gp <- function(bterms, data, prior, ...) {
   out
 }
 
+# Stan code for the linear predictor of autocorrelation terms 
 stan_ac <- function(bterms, ...) {
-  # Stan code for the linear predictor of certain autocorrelation terms 
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   autocor <- bterms$autocor
+  if (has_latent_residuals(bterms)) {
+    str_add(out$eta) <- glue(" + err{p}")
+  }
   if (get_ar(autocor) && !use_cov(autocor)) {
     eta <- combine_prefix(px, keep_mu = TRUE)
-    eta_ar <- glue("head(E{p}[n], Kar{p}) * ar{p}")
+    eta_ar <- glue("head(Err{p}[n], Kar{p}) * ar{p}")
     str_add(out$modelC3) <- glue("    {eta}[n] += {eta_ar};\n")
   }
   if (get_ma(autocor) && !use_cov(autocor)) {
-    str_add(out$loopeta) <- glue(" + head(E{p}[n], Kma{p}) * ma{p}")
-  }
-  if (get_arr(autocor)) {
-    str_add(out$eta) <- glue(" + Yarr{p} * arr{p}")
+    str_add(out$loopeta) <- glue(" + head(Err{p}[n], Kma{p}) * ma{p}")
   }
   if (is.cor_car(autocor)) {
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
   }
-  if (is.cor_bsts(autocor)) {
-    str_add(out$loopeta) <- glue(" + loclev{p}[n]")
-  }
   out
 }
 
+# stan code for offsets
 stan_offset <- function(bterms, ...) {
-  # stan code for offsets
   out <- list()
   if (is.formula(bterms$offset)) {
     p <- usc(combine_prefix(bterms))
@@ -1086,36 +1162,119 @@ stan_offset <- function(bterms, ...) {
   out
 }
 
-stan_eta_fe <- function(fixef, center_X = TRUE, sparse = FALSE, px = list()) {
-  # define Stan code to compute the fixef part of eta
-  # Args:
-  #   fixef: names of the population-level effects
-  #   center_X: use the centered design matrix?
-  #   sparse: use sparse matrix multiplication?
+# Stan code specific to mixture families
+stan_mixture <- function(bterms, prior) {
+  out <- list()
+  if (!is.mixfamily(bterms$family)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  resp <- usc(px$resp)
+  nmix <- length(bterms$family$mix)
+  theta_pred <- grepl("^theta", names(bterms$dpars))
+  theta_pred <- bterms$dpars[theta_pred]
+  theta_fix <- grepl("^theta", names(bterms$fdpars))
+  theta_fix <- bterms$fdpars[theta_fix]
+  def_thetas <- cglue(
+    "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
+  )
+  if (length(theta_pred)) {
+    if (length(theta_pred) != nmix - 1) {
+      stop2("Can only predict all but one mixing proportion.")
+    }
+    missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
+    str_add(out$modelD) <- glue(
+      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
+      "  real log_sum_exp_theta;\n"      
+    )
+    sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
+    str_add(out$modelC3) <- glue(
+      "    log_sum_exp_theta = log({sum_exp_theta});\n"
+    )
+    str_add(out$modelC3) <- cglue(
+      "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
+    )
+  } else if (length(theta_fix)) {
+    if (length(theta_fix) != nmix) {
+      stop2("Can only fix no or all mixing proportions.")
+    }
+    str_add(out$data) <- "  // mixing proportions\n"
+    str_add(out$data) <- cglue(
+      "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
+    )
+  } else {
+    str_add(out$data) <- glue(
+      "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
+    )
+    str_add(out$par) <- glue(
+      "  simplex[{nmix}] theta{p};  // mixing proportions\n"
+    )
+    str_add(out$prior) <- glue(
+      "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
+    )
+    str_add(out$tparD) <- "  // mixing proportions\n"
+    str_add(out$tparD) <- cglue(
+      "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
+    )
+  }
+  if (order_intercepts(bterms)) {
+    # identify mixtures by ordering the intercepts of their components
+    str_add(out$par) <- glue( 
+      "  ordered[{nmix}] ordered{p}_Intercept;  // to identify mixtures\n"
+    )
+  }
+  if (fix_intercepts(bterms)) {
+    # identify ordinal mixtures by fixing their thresholds to the same values
+    stopifnot(is_ordinal(bterms))
+    type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
+    str_add(out$par) <- glue( 
+      "  // thresholds fixed over mixture components\n",
+      "  {type}[ncat{p} - 1] fixed{p}_Intercept;\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "Intercept", coef = get_thres(bterms), 
+      px = px, prefix = "fixed_", suffix = p
+    )
+  }
+  out
+}
+
+# define Stan code to compute the fixef part of eta
+# @param fixef names of the population-level effects
+# @param bterms object of class 'btl'
+# @return a single character string
+stan_eta_fe <- function(fixef, bterms) {
   if (length(fixef)) {
+    p <- usc(combine_prefix(bterms))
+    center_X <- stan_center_X(bterms)
+    decomp <- get_decomp(bterms$fe)
+    sparse <- is_sparse(bterms$fe)
     if (sparse) {
-      stopifnot(!center_X)
+      stopifnot(!center_X && decomp == "none")
       csr_args <- sargs(
         paste0(c("rows", "cols"), "(X", p, ")"),
         paste0(c("wX", "vX", "uX", "b"), p)
       )
       eta_fe <- glue("csr_matrix_times_vector({csr_args})")
     } else {
-      eta_fe <- glue("X", str_if(center_X, "c"), "{p} * b{p}")
+      sfx_X <- sfx_b <- ""
+      if (decomp == "QR") {
+        sfx_X <- sfx_b <- "Q"
+      } else if (center_X) {
+        sfx_X <- "c"
+      }
+      eta_fe <- glue("X{sfx_X}{p} * b{sfx_b}{p}")
     }
   } else { 
+    resp <- usc(bterms$resp)
     eta_fe <- glue("rep_vector(0, N{resp})")
   }
   glue(" + {eta_fe}")
 }
 
+# write the group-level part of the linear predictor
+# @return a single character string
 stan_eta_re <- function(ranef, px = list()) {
-  # write the group-level part of the linear predictor
-  # Args:
-  #   ranef: a named list returned by tidy_ranef
-  #   nlpar: optional name of a non-linear parameter
   eta_re <- ""
   ranef <- subset2(ranef, type = c("", "mmc"), ls = px)
   for (id in unique(ranef$id)) {
@@ -1141,12 +1300,10 @@ stan_eta_re <- function(ranef, px = list()) {
   eta_re
 }
 
+# Stan code for group-level parameters in special predictor terms
+# @param r data.frame created by tidy_ranef
+# @return a character vector: one element per row of 'r' 
 stan_eta_rsp <- function(r) {
-  # Stan code for r parameters in special predictor terms
-  # Args:
-  #   r: data.frame created by tidy_ranef
-  # Returns:
-  #   A character vector, one element per row of 'r' 
   stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
   rpx <- check_prefix(r)
   idp <- paste0(r$id, usc(combine_prefix(rpx)))
@@ -1166,22 +1323,22 @@ stan_eta_rsp <- function(r) {
   out
 }
 
+# does eta need to be transformed manually using the link functions
+# @param family the model family
+# @param llh_adj is the model censored or truncated?
 stan_eta_transform <- function(family, llh_adj = FALSE) {
-  # indicate whether eta needs to be transformed
-  # manually using the link functions
-  # Args:
-  #   llh_adj: is the model censored or truncated?
   transeta <- "transeta" %in% family_info(family, "specials")
-  !(family$link == "identity" && !transeta || has_cat(family)) &&
+  !(family$link == "identity" && !transeta || 
+    has_cat(family) && !is.customfamily(family)) &&
     (llh_adj || !stan_has_built_in_fun(family))
 }
 
+# correctly apply inverse link to eta
+# @param dpar name of the parameter for which to define the link
+# @param bterms object of class 'brmsterms'
+# @param resp name of the response variable
+# @return a single character string
 stan_eta_ilink <- function(dpar, bterms, resp = "") {
-  # correctly apply inverse link to eta
-  # Args:
-  #   dpar: name of the parameter for which to define the link
-  #   bterms: object of class brmsterms
-  #   resp: name of the response variable
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
@@ -1216,13 +1373,19 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   out
 }
 
+# indicate if the population-level design matrix should be centered
+# implies a temporary shift in the intercept of the model
+stan_center_X <- function(x) {
+  is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
+    !fix_intercepts(x) && !is_sparse(x$fe)
+}
+
+# default Stan definitions for distributional parameters
+# @param dpar name of a distributional parameter
+# @param suffix optional suffix of the parameter name
+# @param family optional brmsfamily object
+# @param fixed should the parameter be fixed to a certain value?
 stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
-  # default Stan definitions for distributional parameters
-  # Args:
-  #   dpar: name of a distributional parameter
-  #   suffix: optional suffix of the parameter name
-  #   family: optional brmsfamily object
-  #   fixed: should the parameter be fixed to a certain value?
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   fixed <- as_one_logical(fixed)
@@ -1327,8 +1490,8 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   def
 }
 
+# default Stan definitions for temporary distributional parameters
 stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
-  # default Stan definitions for temporary distributional parameters
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   if (is.mixfamily(family)) {
@@ -1352,8 +1515,8 @@ stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
   def
 }
 
+# Stan code for transformations of distributional parameters
 stan_dpar_transform <- function(bterms) {
-  # Stan code for transformations of distributional parameters
   stopifnot(is.brmsterms(bterms))
   out <- list()
   families <- family_names(bterms)
@@ -1364,7 +1527,8 @@ stan_dpar_transform <- function(bterms) {
       "  // linear predictor matrix\n",
       "  vector[ncat{p}] mu{p}[N{resp}];\n"
     )
-    mu_dpars <- glue("mu{bterms$family$cats}{p}[n]")
+    mu_dpars <- make_stan_names(glue("mu{bterms$family$cats}"))
+    mu_dpars <- glue("{mu_dpars}{p}[n]")
     iref <- match(bterms$family$refcat, bterms$family$cats)
     mu_dpars[iref] <- "0" 
     str_add(out$modelC4) <- glue(
@@ -1432,8 +1596,8 @@ stan_dpar_transform <- function(bterms) {
   out
 }
 
+# Stan code for sigma to incorporate addition argument 'se'
 stan_sigma_transform <- function(bterms, id = "") {
-  # Stan code for sigma to incorporate addition argument 'se'
   if (nzchar(id)) {
     family <- family_names(bterms)[as.integer(id)]
   } else {

@@ -93,7 +93,7 @@ fitted_internal.brmsdraws <- function(
   out <- reorder_obs(out, draws$old_order, sort = sort)
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (is_categorical(draws$family) || is_ordinal(draws$family)) {
+    if (has_cat(draws$family) && length(dim(out)) == 3L) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
@@ -105,11 +105,9 @@ fitted_internal.brmsdraws <- function(
 }
 
 # All fitted_<family> functions have the same arguments structure
-# Args:
-#   draws: A named list returned by extract_draws containing 
-#          all required data and samples
-# Returns:
-#   transformed linear predictor representing the mean
+# @param draws A named list returned by extract_draws containing 
+#   all required data and samples
+# @return transformed linear predictor representing the mean
 #   of the response distribution
 fitted_gaussian <- function(draws) {
   if (!is.null(draws$ac$lagsar)) {
@@ -338,21 +336,28 @@ fitted_mixture <- function(draws) {
 }
 
 # ------ fitted helper functions ------
-
+# compute 'fitted' for ordinal models
 fitted_ordinal <- function(draws) {
-  get_probs <- function(i) {
-    do_call(dens, c(args, list(eta = extract_col(eta, i))))
-  }
-  eta <- draws$dpars$disc * draws$dpars$mu
-  ncat <- draws$data$ncat
-  args <- list(seq_len(ncat), ncat = ncat, link = draws$family$link)
   dens <- get(paste0("d", draws$family$family), mode = "function")
-  out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
+  args <- list(
+    seq_len(draws$data$ncat), 
+    thres = draws$thres,
+    link = draws$family$link
+  )
+  out <- vector("list", draws$nobs)
+  for (i in seq_along(out)) {
+    args_i <- args
+    args_i$eta <- extract_col(draws$dpars$mu, i)
+    args_i$disc <- extract_col(draws$dpars$disc, i)
+    out[[i]] <- do_call(dens, args_i)
+  }
+  out <- abind(out, along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
   dimnames(out)[[3]] <- draws$data$cats
   out
 }
 
+# compute 'fitted' for lagsar models
 fitted_lagsar <- function(draws) {
   stopifnot(!is.null(draws$ac$lagsar))
   .fitted <- function(s) {
@@ -362,25 +367,27 @@ fitted_lagsar <- function(draws) {
   do_call(rbind, lapply(1:draws$nsamples, .fitted))
 }
 
+# expand data to dimension appropriate for
+# vectorized multiplication with posterior samples
 as_draws_matrix <- function(x, dim) {
-  # expand data to dimension appropriate for
-  # vectorized multiplication with posterior samples
   stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
   matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
 }
 
+# expected dimension of the main parameter 'mu'
 dim_mu <- function(draws) {
   c(draws$nsamples, draws$nobs)
 }
 
+# is the model truncated?
 is_trunc <- function(draws) {
   stopifnot(is.brmsdraws(draws))
   any(draws$data[["lb"]] > -Inf) || any(draws$data[["ub"]] < Inf)
 }
 
+# prepares data required for truncation and calles the 
+# family specific truncation function for fitted values
 fitted_trunc <- function(draws) {
-  # prepares data required for truncation and calles the 
-  # family specific truncation function for fitted values
   stopifnot(is_trunc(draws))
   lb <- as_draws_matrix(draws$data[["lb"]], dim_mu(draws))
   ub <- as_draws_matrix(draws$data[["ub"]], dim_mu(draws))
@@ -398,12 +405,10 @@ fitted_trunc <- function(draws) {
 }
 
 # ----- family specific truncation functions -----
-# Args:
-#   draws: output of extract_draws
-#   lb: lower truncation bound
-#   ub: upper truncation bound
-# Returns:
-#   samples of the truncated mean parameter
+# @param draws output of 'extract_draws'
+# @param lb lower truncation bound
+# @param ub upper truncation bound
+# @return samples of the truncated mean parameter
 fitted_trunc_gaussian <- function(draws, lb, ub) {
   zlb <- (lb - draws$dpars$mu) / draws$dpars$sigma
   zub <- (ub - draws$dpars$mu) / draws$dpars$sigma
@@ -427,7 +432,7 @@ fitted_trunc_student <- function(draws, lb, ub) {
 }
 
 fitted_trunc_lognormal <- function(draws, lb, ub) {
-  # mu has to be on the linear scale
+  lb <- ifelse(lb < 0, 0, lb)
   m1 <- with(draws$dpars, 
     exp(mu + sigma^2 / 2) * 
       (pnorm((log(ub) - mu) / sigma - sigma) - 
@@ -440,36 +445,40 @@ fitted_trunc_lognormal <- function(draws, lb, ub) {
 }
 
 fitted_trunc_gamma <- function(draws, lb, ub) {
-  # mu becomes the scale parameter
-  draws$dpars$mu <- draws$dpars$mu / draws$dpars$shape
+  lb <- ifelse(lb < 0, 0, lb)
+  draws$dpars$scale <- draws$dpars$mu / draws$dpars$shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, 
-    mu / gamma(shape) * 
-      (incgamma(1 + shape, ub / mu) - incgamma(1 + shape, lb / mu))
+    scale / gamma(shape) * 
+      (incgamma(1 + shape, ub / scale) - 
+       incgamma(1 + shape, lb / scale))
   )
   with(draws$dpars, 
-    m1 / (pgamma(ub, shape, scale = mu) - pgamma(lb, shape, scale = mu))
+    m1 / (pgamma(ub, shape, scale = scale) - 
+          pgamma(lb, shape, scale = scale))
   )
 }
 
 fitted_trunc_exponential <- function(draws, lb, ub) {
-  # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  # mu is already the scale parameter
+  lb <- ifelse(lb < 0, 0, lb)
   inv_mu <- 1 / draws$dpars$mu
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
 fitted_trunc_weibull <- function(draws, lb, ub) {
+  lb <- ifelse(lb < 0, 0, lb)
+  draws$dpars$a <- 1 + 1 / draws$dpars$shape
+  draws$dpars$scale <- with(draws$dpars, mu / gamma(a))
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  # mu becomes the scale parameter
-  draws$dpars$mu <- with(draws, ilink(dpars$mu / dpars$shape, family$link))
-  a <- 1 + 1 / draws$dpars$shape
   m1 <- with(draws$dpars,
-    mu * (incgamma(a, (ub / mu)^shape) - incgamma(a, (lb / mu)^shape))
+    scale * (incgamma(a, (ub / scale)^shape) - 
+             incgamma(a, (lb / scale)^shape))
   )
   with(draws$dpars,
-    m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
+    m1 / (pweibull(ub, shape, scale = scale) - 
+          pweibull(lb, shape, scale = scale))
   )
 }
 
@@ -509,6 +518,7 @@ fitted_trunc_geometric <- function(draws, lb, ub) {
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
+# fitted values for truncated discrete distributions
 fitted_trunc_discrete <- function(dist, args, lb, ub) {
   stopifnot(is.matrix(lb), is.matrix(ub))
   message(

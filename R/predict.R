@@ -64,14 +64,12 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
 }
 
 # All predict_<family> functions have the same arguments structure
-# Args:
-#  i: the column of draws to use i.e. the ith obervation 
-#     in the initial data.frame 
-#  draws: A named list returned by extract_draws containing 
-#         all required data and samples
-#  ...: ignored arguments
-# Returns:
-#   A vector of length draws$nsamples containing samples
+# @param i the column of draws to use that is the ith obervation 
+#   in the initial data.frame 
+# @param draws A named list returned by extract_draws containing 
+#   all required data and samples
+# @param ... ignored arguments
+# @param A vector of length draws$nsamples containing samples
 #   from the posterior predictive distribution
 predict_gaussian <- function(i, draws, ...) {
   args <- list(
@@ -136,7 +134,7 @@ predict_gaussian_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_mv <- function(i, draws, ...) {
@@ -146,28 +144,28 @@ predict_student_mv <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s], mu = Mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_cov <- function(i, draws, ...) {
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_arma(draws, obs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_cov <- function(i, draws, ...) {
-  obs <- with(draws$ac, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_arma(draws, obs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_lagsar <- function(i, draws, ...) {
@@ -180,7 +178,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_lagsar <- function(i, draws, ...) {
@@ -194,7 +192,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_errorsar <- function(i, draws, ...) {
@@ -206,7 +204,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
   }
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_errorsar <- function(i, draws, ...) {
@@ -219,7 +217,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu")
   sigma <- get_dpar(draws, "sigma")
   nu <- get_dpar(draws, "nu")
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_gaussian_fixed <- function(i, draws, ...) {
@@ -228,7 +226,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_student_fixed <- function(i, draws, ...) {
@@ -238,7 +236,7 @@ predict_student_fixed <- function(i, draws, ...) {
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
   }
-  do_call(rbind, lapply(seq_len(draws$nsamples), .predict))
+  rblapply(seq_len(draws$nsamples), .predict)
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
@@ -254,7 +252,6 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
 }
 
 predict_bernoulli <- function(i, draws, ...) {
-  # truncation not useful
   mu <- get_dpar(draws, "mu", i = i)
   rbinom(length(mu), size = 1, prob = mu)
 }
@@ -573,28 +570,29 @@ predict_dirichlet <- function(i, draws, ...) {
 }
 
 predict_cumulative <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "cumulative")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_sratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "sratio")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_cratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "cratio")
+  predict_ordinal(i = i, draws = draws)
 }
 
 predict_acat <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws, family = "acat")
+  predict_ordinal(i = i, draws = draws)
 }  
 
-predict_ordinal <- function(i, draws, family, ...) {
-  ncat <- draws$data$ncat
-  disc <- get_dpar(draws, "disc", i = i)
-  eta <- (disc * get_dpar(draws, "mu", i = i))
+predict_ordinal <- function(i, draws, ...) {
   p <- pordinal(
-    seq_len(ncat), eta = eta, ncat = ncat, 
-    family = family, link = draws$family$link
+    seq_len(draws$data$ncat), 
+    eta = get_dpar(draws, "mu", i = i), 
+    disc = get_dpar(draws, "disc", i = i),
+    thres = draws$thres, 
+    family = draws$family$family, 
+    link = draws$family$link
   )
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
@@ -625,17 +623,14 @@ predict_mixture <- function(i, draws, ...) {
   out
 }
 
-#---------------predict helper-functions----------------------------
-
+# ------------ predict helper-functions ----------------------
+# random numbers from (possibly truncated) continuous distributions
+# @param nrng number of random values to generate
+# @param dist name of a distribution for which the functions
+#   p<dist>, q<dist>, and r<dist> are available
+# @param args additional arguments passed to the distribution functions
+# @return vector of random values draws from the distribution
 rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
-  # random numbers from (possibly truncated) continuous distributions
-  # Args:
-  #   nrng: number of random values to generate
-  #   dist: name of a distribution for which the functions
-  #         p<dist>, q<dist>, and r<dist> are available
-  #   args: dditional arguments passed to the distribution functions
-  # Returns:
-  #   a vector of random values draws from the distribution
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     rdist <- paste0("r", dist)
@@ -656,19 +651,17 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
   out
 }
 
+# random numbers from (possibly truncated) discrete distributions
+# currently rejection sampling is used for truncated distributions
+# @param nrng number of random values to generate
+# @param dist name of a distribution for which the functions
+#   p<dist>, q<dist>, and r<dist> are available
+# @param args dditional arguments passed to the distribution functions
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param ntrys number of trys in rejection sampling for truncated models
+# @return a vector of random values draws from the distribution
 rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
-  # random numbers from (possibly truncated) discrete distributions
-  # currently rejection sampling is used for truncated distributions
-  # Args:
-  #   nrng: number of random values to generate
-  #   dist: name of a distribution for which the functions
-  #         p<dist>, q<dist>, and r<dist> are available
-  #   args: dditional arguments passed to the distribution functions
-  #   lb: optional lower truncation bound
-  #   ub: optional upper truncation bound
-  #   ntrys: number of trys in rejection sampling for truncated models
-  # Returns:
-  #   a vector of random values draws from the distribution
   rdist <- get(paste0("r", dist), mode = "function")
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
@@ -682,8 +675,8 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
   }
 }
 
+# sample the ID of the mixture component
 rng_mix <- function(theta) {
-  # sample the ID of the mixture component
   stopifnot(is.matrix(theta))
   mix_comp <- seq_cols(theta)
   ulapply(seq_rows(theta), function(s)
@@ -691,15 +684,12 @@ rng_mix <- function(theta) {
   )
 }
 
+# extract the first valid predicted value per Stan sample per observation 
+# @param rng draws to be check against truncation boundaries
+# @param lb vector of lower bounds
+# @param ub vector of upper bound
+# @return a valid truncated sample or else the closest boundary
 extract_valid_sample <- function(rng, lb, ub) {
-  # extract the first valid predicted value 
-  # per Stan sample per observation 
-  # Args:
-  #   rng: draws to be check against truncation boundaries
-  #   lb: lower bound
-  #   ub: upper bound
-  # Returns:
-  #   a valid truncated sample or else the closest boundary
   valid_rng <- match(TRUE, rng >= lb & rng <= ub)
   if (is.na(valid_rng)) {
     # no valid truncated value found
@@ -712,21 +702,21 @@ extract_valid_sample <- function(rng, lb, ub) {
   out
 }
 
-check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, 
-                                        thres = 0.01) {
-  # check for invalid predictions of truncated discrete models
-  # Args:
-  #   x: matrix of predicted values
-  #   lb: optional lower truncation bound
-  #   ub: optional upper truncation bound
-  #   thres: threshold (in %) of invalid values at which to warn the user
+# check for invalid predictions of truncated discrete models
+# @param x matrix of predicted values
+# @param lb optional lower truncation bound
+# @param ub optional upper truncation bound
+# @param thres threshold (in %) of invalid values at which to warn the user
+# @return rounded values of 'x'
+check_discrete_trunc_bounds <- function(x, lb = NULL, ub = NULL, thres = 0.01) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
   if (is.null(lb)) lb <- -Inf
   if (is.null(ub)) ub <- Inf
   thres <- as_one_numeric(thres)
-  y <- as.vector(t(x))  # ensures correct comparison with vector bounds
+  # ensure correct comparison with vector bounds
+  y <- as.vector(t(x))
   pct_invalid <- mean(y < lb | y > ub, na.rm = TRUE)
   if (pct_invalid >= thres) {
     warning2(

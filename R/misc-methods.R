@@ -84,13 +84,12 @@ print.brmssummary <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
+# helper function to print summary matrices in nice format
+# also displays -0.00 as a result of round negative values to zero (#263)
+# @param x object to be printed; coerced to matrix
+# @param digits number of digits to show
+# @param no_digits names of columns for which no digits should be shown
 print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
-  # helper function to print summary matrices
-  # in nice format, also showing -0.00 (#263)
-  # Args:
-  #   x: object to be printed; coerced to matrix
-  #   digits: number of digits to show
-  #   no_digits: names of columns for which no digits should be shown
   x <- as.matrix(x)
   digits <- as.numeric(digits)
   if (length(digits) != 1L) {
@@ -156,6 +155,9 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @export
 posterior_summary.default <- function(x, probs = c(0.025, 0.975), 
                                       robust = FALSE, ...) {
+  if (!length(x)) {
+    stop2("No posterior samples supplied.")
+  }
   if (robust) {
     coefs <- c("median", "mad", "quantile")
   } else {

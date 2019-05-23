@@ -7,13 +7,9 @@ test_that("brm produces expected errors", {
   
   # formula parsing
   expect_error(brm(~ x + (1|g), dat, file = "test"), 
-               "response variable is missing")
+               "Response variable is missing")
   expect_error(brm(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
-  expect_error(brm(bf(g ~ a, a ~ 1, nl = TRUE), dat, family = acat()),
-               "Non-linear formulas are not yet allowed in ordinal models")
-  expect_error(brm(bf(g ~ 0 + a), dat, family = cumulative()),
-               "Cannot remove the intercept in an ordinal model")
   expect_error(brm(bf(y | se(sei) ~ x, sigma ~ x), dat),
                "Cannot predict or fix 'sigma' in this model")
   expect_error(brm(y | se(sei) ~ x, dat, family = weibull()),
@@ -46,7 +42,7 @@ test_that("brm produces expected errors", {
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~1|g1/g2)), 
                paste("Illegal grouping term 'g1/g2'"))
   expect_error(brm(y ~ 1, dat, poisson(), autocor = cor_ma(~x)),
-               "not implemented for family 'poisson'")
+               "Please set cov = TRUE")
   
   # ordinal models
   expect_error(brm(rating ~ treat + (cs(period)|subject),

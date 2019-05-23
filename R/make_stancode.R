@@ -20,7 +20,7 @@
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL,
-                          cov_ranef = NULL, sparse = FALSE, 
+                          cov_ranef = NULL, sparse = NULL, 
                           sample_prior = c("no", "yes", "only"), 
                           stanvars = NULL, stan_funs = NULL, 
                           save_model = NULL, silent = FALSE, ...) {
@@ -36,12 +36,13 @@ make_stancode <- function(formula, data, family = gaussian(),
     stan_funs <- as_one_character(stan_funs) 
   }
   formula <- validate_formula(
-    formula, data = data, family = family, autocor = autocor
+    formula, data = data, family = family, 
+    autocor = autocor, sparse = sparse
   )
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
-    prior, formula, data = data, sparse = sparse, 
+    prior, formula = formula, data = data, 
     sample_prior = sample_prior, warn = TRUE
   )
   data <- update_data(data, bterms = bterms)
@@ -51,7 +52,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   
   scode_predictor <- stan_predictor(
     bterms, data = data, prior = prior, 
-    ranef = ranef, meef = meef, sparse = sparse,
+    ranef = ranef, meef = meef,
     stanvars = stanvars
   )
   scode_ranef <- stan_re(ranef, prior = prior, cov_ranef = cov_ranef)
@@ -134,7 +135,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       collapse_stanvars(stanvars, block = "model"),
       scode_predictor$modelC1,
       scode_predictor$modelCgp1,
-      scode_predictor$model_loop,
+      scode_predictor$modelCL,
       scode_predictor$modelC5,
       "  // priors including all constants\n", 
       scode_prior, 

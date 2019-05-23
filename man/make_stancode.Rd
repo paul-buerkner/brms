@@ -5,7 +5,7 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sparse = FALSE,
+  autocor = NULL, cov_ranef = NULL, sparse = NULL,
   sample_prior = c("no", "yes", "only"), stanvars = NULL,
   stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
 }
@@ -48,10 +48,11 @@ corresponding matrix. This argument can be used, among others to model
 pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sparse}{Logical; indicates whether the population-level design matrices
-should be treated as sparse (defaults to \code{FALSE}). For design matrices
-with many zeros, this can considerably reduce required memory. Sampling
-speed is currently not improved or even slightly decreased.}
+\item{sparse}{(Deprecated) Logical; indicates whether the population-level
+design matrices should be treated as sparse (defaults to \code{FALSE}). For
+design matrices with many zeros, this can considerably reduce required
+memory. Sampling speed is currently not improved or even slightly
+decreased.}
 
 \item{sample_prior}{Indicate if samples from all specified proper priors
 should be drawn additionally to the posterior samples (defaults to

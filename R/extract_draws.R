@@ -9,6 +9,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   new_objects = list(), ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
+  warn_brmsfit_multiple(x)
   x <- restructure(x)
   if (!incl_autocor) {
     x <- remove_autocor(x) 
@@ -17,12 +18,12 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
   # prepare (new) data and stan data 
-  new <- !is.null(newdata)
   newdata <- validate_newdata(
     newdata, object = x, re_formula = re_formula, 
     resp = resp, allow_new_levels = allow_new_levels, 
     new_objects = new_objects, ...
   )
+  new <- !isTRUE(attr(newdata, "old"))
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula, 
     resp = resp, allow_new_levels = allow_new_levels, 
@@ -138,10 +139,22 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
         draws$dpars$theta <- as_draws_matrix(draws$dpars$theta, dim = dim)
       }
     }
+  } 
+  if (is_ordinal(x$family)) {
+    # it is better to handle ordinal thresholds outside the
+    # main predictor term in particular for use in custom families
+    if (is.mixfamily(x$family)) {
+      mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
+      for (mu in mu_pars) {
+        draws$thres[[mu]] <- extract_draws_thres(x$dpars[[mu]], samples, ...)
+      }
+    } else {
+      draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
+    }
   }
-  if (use_cov(x$autocor) || is.cor_sar(x$autocor)) {
+  if (has_cor_natural_residuals(x)) {
     # only include autocor samples on the top-level of draws 
-    # when using the covariance formulation of ARMA / SAR structures
+    # when using the covariance formulation of autocorrelations
     draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
@@ -191,14 +204,14 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
   }
-  if (!(use_cov(x$autocor) || is.cor_sar(x$autocor))) {
+  if (!has_cor_natural_residuals(x)) {
     draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws
 }
 
+# extract draws of ordinary population-level effects
 extract_draws_fe <- function(bterms, samples, sdata, ...) {
-  # extract draws of ordinary population-level effects
   draws <- list()
   p <- usc(combine_prefix(bterms))
   X <- sdata[[paste0("X", p)]]
@@ -211,9 +224,9 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   draws
 }
 
+# extract draws of special effects terms
 extract_draws_sp <- function(bterms, samples, sdata, data, 
                              meef, new = FALSE, ...) {
-  # extract draws of special effects terms
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(draws)
@@ -344,18 +357,15 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   draws
 }
 
+# extract draws of category specific effects
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
-  # extract draws of category specific effects
   draws <- list()
-  p <- usc(combine_prefix(bterms))
-  resp <- usc(bterms$resp)
-  int_regex <- paste0("^b", p, "_Intercept\\[")
-  is_ordinal <- any(grepl(int_regex, colnames(samples))) 
-  if (is_ordinal) {
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
-    draws$Intercept <- get_samples(samples, int_regex)
+  if (is_ordinal(bterms$family)) {
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
+      p <- usc(combine_prefix(bterms))
+      resp <- usc(bterms$resp)
+      draws$ncat <- sdata[[paste0("ncat", resp)]]
       cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
@@ -364,8 +374,8 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws
 }
 
+# extract draws of smooth terms
 extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
-  # extract draws of smooth terms
   draws <- list()
   smef <- tidy_smef(bterms, data)
   if (!NROW(smef)) {
@@ -392,14 +402,12 @@ extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
   draws
 }
 
+# extract draws for Gaussian processes
+# @param new is new data used?
+# @param nug small numeric value to avoid numerical problems in GPs
 extract_draws_gp <- function(bterms, samples, sdata, data,
                              new = FALSE, nug = NULL,
                              old_sdata = NULL, ...) {
-  # extract draws for Gaussian processes
-  # Args:
-  #   new: Is new data used?
-  #   nug: small numeric value to avoid numerical problems in GPs
-  #   old_sdata: standata object based on the original data
   gpef <- tidy_gpef(bterms, data)
   if (!nrow(gpef)) {
     return(list())
@@ -436,16 +444,14 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   draws
 }
 
+# extract draws for Gaussian processes
+# @param gpef output of tidy_gpef
+# @param p prefix created by combine_prefix()
+# @param i indiex of the Gaussian process
+# @param byj index for the contrast of a categorical 'by' variable
+# @return a list to be evaluated by .predictor_gp()
 .extract_draws_gp <- function(gpef, samples, sdata, old_sdata,
                               nug, new, p, i, byj = NULL) {
-  # extract draws for Gaussian processes
-  # Args:
-  #   gpef: output of tidy_gpef
-  #   p: prefix created by combine_prefix()
-  #   i: indiex of the Gaussian process
-  #   byj: index for the contrast of a categorical 'by' variable
-  # Return:
-  #   a list to be evaluated by .predictor_gp()
   sfx1 <- escape_all(gpef$sfx1[[i]])
   sfx2 <- escape_all(gpef$sfx2[[i]])
   if (is.null(byj)) {
@@ -489,13 +495,12 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   gp
 }
 
+# extract draws of group-level effects
+# @param ranef: output of 'tidy_ranef' based on the new formula 
+#   and old data but storing levels obtained from new data
+# @param old_ranef same as 'ranef' but based on the original formula
 extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef, 
                              sample_new_levels = "uncertainty", ...) {
-  # extract draws of group-level effects
-  # Args:,
-  #   ranef: output of 'tidy_ranef' based on the new formula and old data
-  #          but storing levels obtained from new data
-  #   old_ranef: same as 'ranef' but based on the original formula
   draws <- list()
   px <- check_prefix(bterms)
   ranef <- subset2(ranef, ls = px)
@@ -611,14 +616,24 @@ extract_draws_offset <- function(bterms, sdata, ...) {
   sdata[[paste0("offset", p)]]
 }
 
+# extract draws of ordinal thresholds
+extract_draws_thres <- function(bterms, samples, ...) {
+  if (!is_ordinal(bterms$family)) {
+    return(NULL)
+  }
+  p <- usc(combine_prefix(bterms))
+  int_regex <- paste0("^b", p, "_Intercept\\[")
+  get_samples(samples, int_regex)
+}
+
+# extract draws of autocorrelation parameters
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
                                   new = FALSE, ...) {
-  # extract draws of autocorrelation parameters
   draws <- list()
   autocor <- bterms$autocor
   p <- usc(combine_prefix(bterms))
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
-  if (get_ar(autocor) || get_ma(autocor)) {
+  if (is.cor_arma(autocor)) {
     draws$Y <- sdata[[paste0("Y", p)]]
     if (!is.null(oos)) {
       if (any(oos > length(draws$Y))) {
@@ -636,12 +651,26 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     }
     if (use_cov(autocor)) {
       draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
-      draws$nobs_tg <- sdata[[paste0("nobs_tg", p)]]
+      draws$end_tg <- sdata[[paste0("end_tg", p)]]
+      if (has_latent_residuals(bterms)) {
+        regex_err <- paste0("^err", p, "\\[")
+        has_err <- any(grepl(regex_err, colnames(samples)))
+        if (has_err && !new) {
+          draws$err <- get_samples(samples, regex_err)
+        } else {
+          # need to sample correlated residuals
+          draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
+          draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+          for (i in seq_len(draws$N_tg)) {
+            obs <- with(draws, begin_tg[i]:end_tg[i])
+            zeros <- rep(0, length(obs))
+            cov <- get_cov_matrix_arma(list(ac = draws), obs, latent = TRUE)
+            .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+            draws$err[, obs] <- rblapply(seq_rows(samples), .err)
+          }
+        }
+      }
     }
-  }
-  if (get_arr(autocor)) {
-    draws$arr <- get_samples(samples, paste0("^arr", p, "\\["))
-    draws$Yarr <- sdata[[paste0("Yarr", p)]]
   }
   if (is.cor_sar(autocor)) {
     draws$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))
@@ -662,23 +691,12 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     rcar <- rcar[, unique(gcar), drop = FALSE]
     draws$rcar <- rcar
   }
-  if (is.cor_bsts(autocor)) {
-    if (new) {
-      warning2(
-        "Local level terms are currently ignored ", 
-        "when 'newdata' is specified."
-      )
-    } else {
-      draws$loclev <- get_samples(samples, paste0("^loclev", p, "\\["))
-    }
-  }
   draws
 }
 
+# extract data mainly related to the response variable
+# @param stanvars: *names* of variables stored in slot 'stanvars'
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
-  # extract data mainly related to the response variable
-  # Args
-  #   stanvars: *names* of variables stored in slot 'stanvars'
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
@@ -690,16 +708,15 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     draws[stanvars] <- sdata[stanvars]
   }
   if (has_cat(bterms)) {
-    draws$cats <- extract_cat_names(bterms, data)
+    draws$cats <- get_cats(bterms)
   }
   draws
 }
 
+# create pseudo brmsdraws objects for components of mixture models
+# @param comp the mixture component number
+# @param sample_ids see predict_mixture
 pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
-  # create pseudo brmsdraws objects for components of mixture models
-  # Args:
-  #   comp: the mixture component number
-  #   sample_ids: see predict_mixture
   stopifnot(is.brmsdraws(draws), is.mixfamily(draws$family))
   if (!is.null(sample_ids)) {
     nsamples <- length(sample_ids)
@@ -717,29 +734,32 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
       out$dpars[[dp]] <- p(out$dpars[[dp]], sample_ids, row = TRUE)
     }
   }
+  if (is_ordinal(out$family)) {
+    out$thres <- draws$thres[[paste0("mu", comp)]]
+  }
+  # weighting should happen after computing the mixture
+  out$data$weights <- NULL
   structure(out, class = "brmsdraws")
 }
 
+# take relevant cols of a matrix of group-level terms
+# if only a subset of levels is provided (for newdata)
+# @param x a matrix typically samples of r or Z design matrices
+#   samples need to be stored in row major order
+# @param levels grouping factor levels to keep
+# @param nranef number of group-level effects
 subset_levels <- function(x, levels, nranef) {
-  # take relevant cols of a matrix of group-level terms
-  # if only a subset of levels is provided (for newdata)
-  # requires x to be in row major order
-  # Args:
-  #   x: a matrix typically samples of r or Z design matrices
-  #   levels: grouping factor levels to keep
-  #   nranef: number of group-level effects
   take_levels <- ulapply(levels, 
     function(l) ((l - 1) * nranef + 1):(l * nranef)
   )
   x[, take_levels, drop = FALSE]
 }
 
+# transform x from column to row major order
+# rows represent levels and columns represent effects
+# @param x a matrix of samples of group-level parameters
+# @param nranef number of group-level effects
 column_to_row_major_order <- function(x, nranef) {
-  # transform x from column to row major order
-  # rows represent levels and columns represent effects
-  # Args:
-  #   x: a matrix of samples of group-level parameters
-  #   nranef: number of group-level effects
   nlevels <- ncol(x) / nranef
   sort_levels <- ulapply(seq_len(nlevels),
     function(l) seq(l, ncol(x), by = nlevels)
@@ -747,15 +767,13 @@ column_to_row_major_order <- function(x, nranef) {
   x[, sort_levels, drop = FALSE]
 }
 
+# prepare group-level design matrices for use in 'predictor'
+# @param Z (list of) matrices to be prepared
+# @param gf (list of) vectors containing grouping factor values
+# @param weights optional (list of) weights of the same length as gf
+# @param max_level maximal level of 'gf'
+# @return a sparse matrix representation of Z
 prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
-  # prepare group-level design matrices for use in 'predictor'
-  # Args:
-  #   Z: (list of) matrices to be prepared
-  #   gf: (list of) vectors containing grouping factor values
-  #   weights: optional (list of) weights of the same length as gf
-  #   max_level: maximal level of gf
-  # Returns:
-  #   a sparse matrix representation of Z
   if (!is.list(Z)) {
     Z <- list(Z)
   }
@@ -781,15 +799,13 @@ prepare_Z <- function(Z, gf, max_level = NULL, weights = NULL) {
   subset_levels(Z, levels, nranef)
 }
 
+# expand a matrix into a sparse matrix of higher dimension
+# @param A matrix to be expanded
+# @param x levels to expand the matrix
+# @param max_level maximal number of levels that x can take on
+# @param weights weights to apply to rows of A before expanding
+# @param a sparse matrix of dimension nrow(A) x (ncol(A) * max_level)
 expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
-  # expand a matrix into a sparse matrix of higher dimension
-  # Args:
-  #   A: matrix to be expanded
-  #   x: levels to expand the matrix
-  #   max_level: maximal number of levels that x can take on
-  #   weights: weights to apply to rows of A before expanding
-  # Returns:
-  #   A sparse matrix of dimension nrow(A) x (ncol(A) * max_level)
   stopifnot(is.matrix(A))
   stopifnot(length(x) == nrow(A))
   stopifnot(all(is_wholenumber(x) & x > 0))
@@ -805,19 +821,17 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   )
 }
 
+# generate samples for new group levels
+# @param ranef 'ranef_frame' object of only a single grouping variable
+# @param gf list of vectors of level indices in the current data
+# @param rsamples matrix of group-level samples in row major order
+# @param used_levels names of levels used in the current data
+# @param old_levels names of levels used in the original data
+# @param sample_new_levels specifies the way in which new samples are generated
+# @param samples optional matrix of samples from all model parameters
+# @return a matrix of samples for new group levels
 get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
                              sample_new_levels, samples = NULL) {
-  # generate samples for new group levels
-  # Args:
-  #   ranef: 'ranef_frame' object of only a single grouping variable
-  #   gf: list of vectors of level indices in the current data
-  #   rsamples: matrix of group-level samples in row major order
-  #   used_levels: names of levels used in the current data
-  #   old_levels: names of levels used in the original data
-  #   sample_new_levels: specifies the way in which new samples are generated
-  #   samples: optional matrix of samples from all model parameters
-  # Returns:
-  #   a matrix of samples for new group levels
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   g <- unique(ranef$group)
@@ -960,11 +974,9 @@ is.bdrawsnl <- function(x) {
 #'   cannot be passed via argument \code{newdata}. Required for objects passed
 #'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
 #'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
-#' @param incl_autocor A flag indicating if ARMA autocorrelation parameters
-#'   should be included in the predictions. Defaults to \code{TRUE}. Setting it
-#'   to \code{FALSE} will not affect other correlation structures such as
-#'   \code{\link[brms:cor_bsts]{cor_bsts}}, or
-#'   \code{\link[brms:cor_fixed]{cor_fixed}}.
+#' @param incl_autocor A flag indicating if correlation structures originally
+#'   specified via \code{autocor} should be included in the predictions.
+#'   Defaults to \code{TRUE}.
 #' @param offset Logical; Indicates if offsets should be included in the
 #'   predictions. Defaults to \code{TRUE}.
 #' @param oos Optional indices of observations for which to compute

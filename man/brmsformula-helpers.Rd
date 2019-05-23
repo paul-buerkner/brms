@@ -14,7 +14,7 @@ nlf(formula, ..., flist = NULL, dpar = NULL, resp = NULL,
   loop = NULL)
 
 lf(..., flist = NULL, dpar = NULL, resp = NULL, center = NULL,
-  cmc = NULL)
+  cmc = NULL, sparse = NULL, decomp = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -85,6 +85,17 @@ and to \code{FALSE} for non-linear parameters.}
 should be enabled when removing the intercept by adding \code{0} 
 to the right-hand of model formulas. Defaults to \code{TRUE} to 
 mirror the behavior of standard \R formula parsing.}
+
+\item{sparse}{Logical; indicates whether the population-level design matrices
+should be treated as sparse (defaults to \code{FALSE}). For design matrices
+with many zeros, this can considerably reduce required memory. Sampling
+speed is currently not improved or even slightly decreased.}
+
+\item{decomp}{Optional name of the decomposition used for the 
+population-level design matrix. Defaults to \code{NULL} that is
+no decomposition. Other options currently available are
+\code{"QR"} for the QR decomposition that helps in fitting models
+with highly correlated predictors.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 

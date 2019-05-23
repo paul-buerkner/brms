@@ -2,25 +2,20 @@
 % Please edit documentation in R/formula-helpers.R
 \name{mo}
 \alias{mo}
-\alias{mono}
-\alias{monotonic}
 \title{Monotonic Predictors in \pkg{brms} Models}
 \usage{
 mo(x)
 }
 \arguments{
-\item{x}{An integer variable or an ordered factor
-to be modeled as monotonic.}
+\item{x}{An integer variable or an ordered factor to be modeled as monotonic.}
 }
 \description{
-Monotonic Predictors in \pkg{brms} Models
+Specify a monotonic predictor term in \pkg{brms}. The function does not
+evaluate its arguments -- it exists purely to help set up a model.
 }
 \details{
 For detailed documentation see \code{help(brmsformula)}
   as well as \code{vignette("brms_monotonic")}.
-
-This function is almost solely useful when
-called in formulas passed to the \pkg{brms} package.
 }
 \examples{
   
@@ -50,6 +45,11 @@ summary(fit2)
 plot(marginal_effects(fit2), points = TRUE)
 } 
  
+}
+\references{
+Bürkner P. C. & Charpentier, E. (in review). Monotonic Effects: A Principled 
+Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
+preprint.
 }
 \seealso{
 \code{\link{brmsformula}}

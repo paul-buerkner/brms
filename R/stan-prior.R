@@ -1,22 +1,24 @@
+# unless otherwise specified, functions return a single character 
+# string defining the likelihood of the model in Stan language
+
+# Define priors for parameters in Stan language
+# @param prior an object of class 'brmsprior'
+# @param class the parameter class
+# @param coef the coefficients of this class
+# @param group the name of a grouping factor
+# @param nlpar the name of a non-linear parameter
+# @param prefix a prefix to put at the parameter class
+# @param suffix a suffix to put at the parameter class
+# @param matrix logical; corresponds the class to a parameter matrix?
+# @param wsp a non-negative integer defining the number of spaces 
+#   at the start of the output string
+# @return
+#   A character strings in stan language that defines priors 
+#   for a given class of parameters. If a parameter has has 
+#   no corresponding prior in prior, an empty string is returned.
 stan_prior <- function(prior, class, coef = "", group = "", 
                        px = list(), prefix = "", suffix = "", 
                        wsp = 2, matrix = FALSE) {
-  # Define priors for parameters in Stan language
-  # Args:
-  #   prior: an object of class 'brmsprior'
-  #   class: the parameter class
-  #   coef: the coefficients of this class
-  #   group: the name of a grouping factor
-  #   nlpar: the name of a non-linear parameter
-  #   prefix: a prefix to put at the parameter class
-  #   suffix: a suffix to put at the parameter class
-  #   matrix: logical; corresponds the class to a parameter matrix?
-  #   wsp: an integer >= 0 defining the number of spaces 
-  #        in front of the output string
-  # Returns:
-  #   A character strings in stan language that defines priors 
-  #   for a given class of parameters. If a parameter has has 
-  #   no corresponding prior in prior, an empty string is returned.
   tp <- tp(wsp)
   wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
@@ -116,29 +118,34 @@ stan_prior <- function(prior, class, coef = "", group = "",
   out
 }
 
+# get the base prior for all coefficients
+# this is the lowest level non-coefficient prior
+# @param prior a brmsprior object
+# @return a character string defining the base prior
 stan_base_prior <- function(prior) {
-  # get base (highest level) prior of all priors
-  # Args:
-  #   prior: a prior.frame
-  stopifnot(length(unique(prior$class)) <= 1L) 
-  prior <- prior[with(prior, !nzchar(coef) & nzchar(prior)), ]
-  vars <- c("group", "nlpar", "dpar", "resp", "class")
-  i <- 1
-  found <- FALSE
-  base_prior <- ""
-  take <- rep(FALSE, nrow(prior))
-  while (!found && i <= length(vars)) {
-    take <- nzchar(prior[[vars[i]]]) & !take
-    if (any(take)) {
-      base_prior <- prior[take, "prior"]
-      found <- TRUE
-    }
-    i <- i + 1
+  stopifnot(length(unique(prior$class)) <= 1)
+  take <- with(prior, !nzchar(coef) & nzchar(prior))
+  prior <- prior[take, ]
+  if (!NROW(prior)) {
+    return("")
   }
-  stopifnot(length(base_prior) == 1L)
-  base_prior
+  vars <- c("group", "nlpar", "dpar", "resp", "class")
+  for (v in vars) {
+    take <- nzchar(prior[[v]])
+    if (any(take)) {
+      prior <- prior[take, ]
+    }
+  }
+  stopifnot(NROW(prior) == 1)
+  prior$prior
 }
 
+# Stan prior in target += notation
+# @param prior character string defining the prior
+# @param par name of the parameter on which to set the prior
+# @param ncoef number of coefficients in the parameter
+# @param bound bounds of the parameter in Stan language
+# @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
@@ -181,9 +188,9 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   out
 }
 
+# Stan code for global parameters of special priors
+# currently implemented are horseshoe and lasso
 stan_special_prior_global <- function(bterms, data, prior, ...) {
-  # Stan code for global parameters of special priors
-  # currently implemented are horseshoe and lasso
   out <- list()
   tp <- tp()
   px <- check_prefix(bterms)
@@ -230,10 +237,16 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
   out
 }
 
-stan_special_prior_local <- function(class, prior, ncoef, px,
-                                     center_X = FALSE)  {
-  # Stan code for local parameters of special priors
-  # currently implemented are horseshoe
+# Stan code for local parameters of special priors
+# currently implemented are 'horseshoe'
+# @param class name of the parameter class
+# @param prior a brmsprior object
+# @param ncoef number of coefficients in the parameter
+# @param px named list to subset 'prior'
+# @param center_X is the design matrix centered?
+# @param suffix optional suffix of the 'b' coefficient vector
+stan_special_prior_local <- function(prior, class, ncoef, px, 
+                                     center_X = FALSE, suffix = "") {
   class <- as_one_character(class)
   stopifnot(class %in% c("b", "bsp"))
   out <- list()
@@ -257,8 +270,8 @@ stan_special_prior_local <- function(class, prior, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tparD) <- glue(
-      "  vector[K{ct}{sp}] b{sp} = horseshoe({hs_args});\n"
+    str_add(out$tparC1) <- glue(
+      "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
     local_args <- glue("0.5 * hs_df{p}")
     local_args <- sargs(local_args, local_args)
@@ -272,19 +285,16 @@ stan_special_prior_local <- function(class, prior, ncoef, px,
   out
 }
 
+# Stan code to sample separately from priors
+# @param sample_prior take samples from priors?
+# @param prior character string taken from stan_prior
+# @param par_declars the parameters block of the Stan code
+#     required to extract boundaries
+# @param gen_quantities Stan code from the generated quantities block
+# @param prior_special a list of values pertaining to special priors
+#   such as horseshoe or lasso
 stan_rngprior <- function(sample_prior, prior, par_declars,
                           gen_quantities, prior_special) {
-  # stan code to sample from priors seperately
-  # Args:
-  #   sample_prior: take samples from priors?
-  #   prior: character string taken from stan_prior
-  #   par_declars: the parameters block of the Stan code
-  #     required to extract boundaries
-  #   gen_quantities: Stan code from the generated quantities block
-  #   prior_special: a list of values pertaining to special priors
-  #     such as horseshoe or lasso
-  # Returns:
-  #   a character string containing the priors to be sampled from in stan code
   if (!sample_prior %in% "yes") {
     return(list())
   }
@@ -386,6 +396,14 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   out
 }
 
+# indicate if the horseshoe prior is used in the predictor term
+stan_use_horseshoe <- function(bterms, prior) {
+  prefix <- combine_prefix(bterms, keep_mu = TRUE)
+  special <- attr(prior, "special")[[prefix]]
+  !is.null(special[["hs_df"]])
+}
+
+# extract Stan boundaries expression from a string
 stan_extract_bounds <- function(x, bound = c("lower", "upper")) {
   bound <- match.arg(bound)
   x <- rm_wsp(x)

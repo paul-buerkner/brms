@@ -7,7 +7,8 @@
 \usage{
 custom_family(name, dpars = "mu", links = "identity",
   type = c("real", "int"), lb = NA, ub = NA, vars = NULL,
-  specials = NULL, log_lik = NULL, predict = NULL, fitted = NULL,
+  specials = NULL, threshold = c("flexible", "equidistant"),
+  log_lik = NULL, predict = NULL, fitted = NULL,
   env = parent.frame())
 }
 \arguments{
@@ -38,6 +39,9 @@ data to the generated \pkg{Stan} model.}
 
 \item{specials}{A character vector of special options to enable
 for this custom family. Currently for internal use only.}
+
+\item{threshold}{Optional threshold type for custom ordinal families.
+Ignored for non-ordinal families.}
 
 \item{log_lik}{Optional function to compute log-likelihood values of
 the model in \R. This is only relevant if one wants to ensure 

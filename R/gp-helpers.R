@@ -1,10 +1,10 @@
 # R helper functions for Gaussian Processes 
 
+# get labels of gaussian process terms
+# @param x either a formula or a list containing an element "gp"
+# @param data data frame containing the covariates
+# @return a data.frame with one row per GP term
 tidy_gpef <- function(x, data) {
-  # get labels of gaussian process terms
-  # Args:
-  #   x: either a formula or a list containing an element "gp"
-  #   data: data frame containing the covariates
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)$dpars$mu
   }
@@ -49,9 +49,9 @@ tidy_gpef <- function(x, data) {
   out
 }
 
+# exponential-quadratic covariance matrix
+# not vectorized over parameter values
 cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
-  # exponential-quadratic covariance matrix
-  # not vectorized over parameter values
   Dls <- length(lscale)
   if (Dls == 1L) {
     # one dimensional or isotropic GP
@@ -69,15 +69,12 @@ cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
   out
 }
 
+# compute squared differences
+# @param x vector or matrix
+# @param x_new optional vector of matrix with the same ncol as x
+# @return an nrow(x) times nrow(x_new) matrix
+# @details if matrices are passed results are summed over the columns
 diff_quad <- function(x, x_new = NULL) {
-  # compute squared differences
-  # Args:
-  #   x: vector or matrix
-  #   x_new: optional vector of matrix with the same ncol as x
-  # Returns:
-  #   An nrow(x) times nrow(x_new) matrix
-  # Details:
-  #   If matrices are passed results are summed over the columns
   x <- as.matrix(x)
   if (is.null(x_new)) {
     x_new <- x
@@ -92,9 +89,9 @@ diff_quad <- function(x, x_new = NULL) {
   out
 }
 
+# spectral density function
+# vectorized over parameter values
 spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
-  # spectral density function
-  # vectorized over parameter values
   NB <- NROW(x)
   D <- NCOL(x)
   Dls <- NCOL(lscale)
@@ -118,13 +115,13 @@ spd_cov_exp_quad <- function(x, sdgp = 1, lscale = 1) {
   out
 }
 
+# compute the mth eigen value of an approximate GP
 eigen_val_cov_exp_quad <- function(m, L) {
-  # compute the mth eigen value of an approximate GP
   ((m * pi) / (2 * L))^2
 }
 
+# compute the mth eigen function of an approximate GP
 eigen_fun_cov_exp_quad <- function(x, m, L) {
-  # compute the mth eigen function of an approximate GP
   x <- as.matrix(x)
   D <- ncol(x)
   stopifnot(length(m) == D, length(L) == D)
@@ -136,8 +133,8 @@ eigen_fun_cov_exp_quad <- function(x, m, L) {
   Reduce("*", out)
 }
 
+# extended range of input data for which predictions should be made
 choose_L <- function(x, c) {
-  # extended range of input data for which predictions should be made
   if (!length(x)) {
     range <- 1
   } else {
@@ -146,9 +143,9 @@ choose_L <- function(x, c) {
   c * range
 }
 
+# try to evaluate a GP term and 
+# return an informative error message if it fails
 try_nug <- function(expr, nug) {
-  # try to evaluate a GP term and 
-  # return an informative error message if it fails
   out <- try(expr, silent = TRUE)
   if (is(out, "try-error")) {
     stop2("The Gaussian process covariance matrix is not positive ", 

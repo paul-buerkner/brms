@@ -247,6 +247,7 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 plot(marginal_effects(fit), ask = FALSE)
 
 ## change colours to grey scale
+library(ggplot2)
 me <- marginal_effects(fit, "zBase:Trt")
 plot(me, plot = FALSE)[[1]] + 
   scale_color_grey() +

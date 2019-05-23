@@ -1,21 +1,20 @@
+# list parameters NOT to be saved by Stan
+# @param bterms object of class brmsterms
+# @param data data passed by the user
+# @param ranef output of tidy_ranef
+# @param save_ranef save varying effects per level?
+# @param save_mevars save noise-free variables?
+# @param save_all_pars save all variables from the 'parameters' block?
+# @return a vector of parameters to be excluded
 exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE, save_mevars = FALSE,
                          save_all_pars = FALSE) {
-  # list parameters NOT to be saved by Stan
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: data passed by the user
-  #   ranef: output of tidy_ranef
-  #   save_ranef: should group-level effects be saved?
-  #   save_mevars: should samples of noise-free variables be saved?
-  # Returns:
-  #   a vector of parameters to be excluded
   save_ranef <- as_one_logical(save_ranef)
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)
   out <- exclude_pars_internal(
-    bterms, data = data, save_all_pars = save_all_pars,
-    save_mevars = save_mevars
+    bterms, data = data, save_ranef = save_ranef, 
+    save_all_pars = save_all_pars, save_mevars = save_mevars
   )
   meef <- tidy_meef(bterms, data)
   if (nrow(meef)) {
@@ -69,14 +68,16 @@ exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars, ...) {
 }
 
 #' @export
-exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) {
+exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars, 
+                                            save_mevars, ...) {
   p <- usc(combine_prefix(x))
-  out <- paste0(c("res_cov_matrix", names(x$dpars)), p)
+  out <- paste0(c("chol_cov", names(x$dpars)), p)
   if (!save_all_pars) {
     c(out) <- c(
       paste0("temp", p, "_Intercept1"), 
       paste0("ordered", p, "_Intercept"),
-      paste0(c("theta", "zcar"), p)
+      paste0("fixed", p, "_Intercept"),
+      paste0(c("theta", "zcar", "zerr"), p)
     )
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
@@ -88,17 +89,19 @@ exclude_pars_internal.brmsterms <- function(x, save_all_pars, save_mevars, ...) 
   if (!save_mevars && is.formula(x$adforms$mi)) {
     c(out) <- paste0("Yl", p)
   }
+  if (!save_ranef) {
+    # latent residuals are like group-level effects
+    c(out) <- paste0("err", p)
+  }
   out
 }
 
 #' @export
 exclude_pars_internal.btl <- function(x, data, ...) {
   p <- usc(combine_prefix(x))
-  out <- c(
-    paste0("temp", p, "_Intercept"),
-    paste0(c("hs_local", "hs_global", "zb"), p),
-    paste0(c("hs_localsp", "zbsp"), p)
-  )
+  out <- c("bQ", "hs_global", "hs_local", "zb", "hs_localsp", "zbsp")
+  out <- paste0(out, p)
+  c(out) <- paste0("temp", p, "_Intercept")
   smef <- tidy_smef(x, data)
   for (i in seq_rows(smef)) {
     nb <- seq_len(smef$nbases[i])

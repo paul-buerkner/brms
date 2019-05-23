@@ -1,19 +1,19 @@
+# unless otherwise specified, functions return a single character 
+# string defining the likelihood of the model in Stan language
+
 stan_llh <- function(family, ...) {
-  # Stan code for the model likelihood 
   UseMethod("stan_llh")
 }
 
+# Stan code for the model likelihood 
+# @param family the model family
+# @param bterms object of class brmsterms
+# @param data data passed by the user
+# @param mix optional mixture component ID
+# @param ptheta are mixing proportions predicted?
 #' @export
 stan_llh.default <- function(family, bterms, data, mix = "", 
                              ptheta = FALSE, ...) {
-  # Likelihood in Stan language
-  # Args:
-  #   family: the model family
-  #   bterms: object of class brmsterms
-  #   data: data passed by the user
-  #   autocor: object of classe cor_brms
-  #   mix: optional mixture component ID
-  #   ptheta: are mixing proportions predicted?
   stopifnot(is.family(family))
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
@@ -86,8 +86,8 @@ stan_llh.mvbrmsterms <- function(family, ...) {
   out
 }
 
+# default likelihood in Stan language
 stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
-  # default likelihood in Stan language
   stopifnot(is.sdist(llh))
   n <- str_if(grepl("\\[n\\]", llh$args), "[n]")
   lpdf <- stan_llh_lpdf_name(bterms)
@@ -96,8 +96,8 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
   glue("{tp()}{llh$dist}_{lpdf}({Y}{resp}{n}{llh$shift} | {llh$args}){tr};\n")
 }
 
+# censored likelihood in Stan language
 stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
-  # censored likelihood in Stan language
   stopifnot(is.sdist(llh))
   s <- wsp(nsp = 6)
   cens <- has_cens(bterms, data = data)
@@ -129,8 +129,8 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   out
 }
 
+# weighted likelihood in Stan language
 stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
-  # weighted likelihood in Stan language
   stopifnot(is.sdist(llh))
   tr <- stan_llh_trunc(llh, bterms, data, resp = resp)
   lpdf <- stan_llh_lpdf_name(bterms)
@@ -141,8 +141,8 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   )
 }
 
+# likelihood of a single mixture component
 stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
-  # likelihood of a single mixture component
   stopifnot(is.sdist(llh))
   theta <- str_if(ptheta,
     glue("theta{mix}{resp}[n]"), 
@@ -186,10 +186,9 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
   out
 }
 
+# truncated part of the likelihood
+# @param short use the T[, ] syntax?
 stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
-  # truncated part of the likelihood
-  # Args:
-  #   short: use the T[, ] syntax?
   stopifnot(is.sdist(llh))
   bounds <- get_bounds(bterms, data = data)
   if (!any(bounds$lb > -Inf | bounds$ub < Inf)) {
@@ -225,11 +224,11 @@ stan_llh_Y_name <- function(bterms) {
   ifelse(is.formula(bterms$adforms$mi), "Yl", "Y")
 }
 
+# prepare names of distributional parameters
+# @param reqn will the likelihood be wrapped in a loop over n?
+# @param dpars optional names of distributional parameters to be prepared
+#   if not specified will prepare all distributional parameters
 stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
-  # prepare names of distributional parameters
-  # Args:
-  #   reqn: will the likelihood be wrapped in a loop over n?
-  #   dpars: optional names of distributional parameters to be prepared
   if (is.null(dpars)) {
     dpars <- paste0(valid_dpars(bterms), mix)
   }
@@ -238,9 +237,9 @@ stan_llh_dpars <- function(bterms, reqn, resp = "", mix = "", dpars = NULL) {
   named_list(dpars, out)
 }
 
+# adjust lpdf name if a more efficient version is available
+# for a specific link. For instance 'poisson_log'
 stan_llh_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
-  # adjust lpdf name if a more efficient version is available
-  # for a specific link. For instance poisson_log
   stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_llh_adj(bterms, c("cens", "trunc"))
   if (bterms$family$link == link && !cens_or_trunc) {
@@ -249,9 +248,9 @@ stan_llh_simple_lpdf <- function(lpdf, link, bterms, sep = "_") {
   lpdf
 }
 
+# prepare _logit suffix for distributional parameters
+# used in zero-inflated and hurdle models
 stan_llh_dpar_usc_logit <- function(dpar, bterms) {
-  # prepare _logit suffix for distributional parameters
-  # currently only used in zero-inflated and hurdle models
   stopifnot(dpar %in% c("zi", "hu"))
   stopifnot(is.brmsterms(bterms))
   cens_or_trunc <- stan_llh_adj(bterms, c("cens", "trunc"))
@@ -259,8 +258,8 @@ stan_llh_dpar_usc_logit <- function(dpar, bterms) {
   str_if(usc_logit && !cens_or_trunc, "_logit")
 }
 
+# prepare the code for 'sigma' in the likelihood statement
 stan_llh_add_se <- function(sigma, bterms, reqn, resp = "") {
-  # prepare the code for 'sigma' in the likelihood statement
   if (is.formula(bterms$adforms$se)) {
     nse <- str_if(reqn, "[n]")
     if (no_sigma(bterms)) {
@@ -272,11 +271,11 @@ stan_llh_add_se <- function(sigma, bterms, reqn, resp = "") {
   sigma
 }
 
+# check if the log-liklihood needs to be adjused
+# @param x named list of formulas or brmsterms object
+# @param adds vector of addition argument names
+# @return a single logical value
 stan_llh_adj <- function(x, adds = c("weights", "cens", "trunc")) {
-  # checks if certain 'adds' are present so that the LL has to be adjusted
-  # Args:
-  #   x: named list of formulas or brmsterms object
-  #   adds: vector of addition argument names
   stopifnot(all(adds %in% c("weights", "cens", "trunc")))
   if (is.brmsterms(x)) x <- x$adforms
   any(ulapply(x[adds], is.formula))
@@ -302,11 +301,11 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sdist("normal_cov", 
-    p$mu, p$se2, p$N_tg, p$begin_tg, 
-    p$end_tg, p$nobs_tg, p$res_cov_matrix
+    p$mu, p$chol_cov, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
@@ -356,11 +355,11 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("se2", "N_tg", "begin_tg", "end_tg", "nobs_tg", "res_cov_matrix")
+  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sdist("student_t_cov", 
-    p$nu, p$mu, p$se2, p$N_tg, p$begin_tg,
-    p$end_tg, p$nobs_tg, p$res_cov_matrix
+    p$nu, p$mu, p$chol_cov, p$se2,
+    p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
@@ -585,15 +584,14 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
-  # helper function for ordinal families
-  has_cs <- has_cs(bterms)
-  prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+  prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$ord_intercept <- paste0("temp", prefix, "_Intercept")
-  p$cs <- str_if(has_cs, paste0("mucs", prefix, "[n]"))
-  lpdf <- bterms$family$family
-  lpdf <- paste0(lpdf, "_", bterms$family$link, if (has_cs) "_cs")
-  sdist(lpdf, p$mu, p$cs, p$ord_intercept, p$disc)
+  p$thres <- paste0("temp", prefix, "_Intercept")
+  if (has_cs(bterms)) {
+    str_add(p$thres) <- paste0(" - mucs", prefix, "[n]'")
+  }
+  lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
+  sdist(lpdf, p$mu, p$thres, p$disc)
 }
 
 stan_llh_hurdle_poisson <- function(bterms, resp = "", mix = "") {
@@ -663,17 +661,21 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
   dpars <- paste0(family$dpars, mix)
-  sdist(family$name, p[dpars], family$vars)
+  if (is_ordinal(family)) {
+    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
+    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
+  }
+  sdist(family$name, p[dpars], p$ord_intercept, family$vars)
 }
 
+# prepare distribution and arguments for use in Stan
 sdist <- function(dist, ..., shift = "") {
-  # prepare distribution and arguments for use in Stan
   args <- sargs(...)
   structure(nlist(dist, args, shift), class = "sdist")
 }
 
+# prepare arguments for Stan likelihood statements
 sargs <- function(...) {
-  # prepare arguments for Stan likelihood statements
   dots <- as.character(c(...))
   dots <- dots[nzchar(dots)]
   paste0(dots, collapse = ", ")

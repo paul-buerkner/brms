@@ -28,28 +28,28 @@
 #' @param ... Currently ignored.
 #' 
 #' @details Among others, \code{hypothesis} computes an evidence ratio
-#'   (\code{Evid.Ratio}) for each hypothesis. For a directed hypothesis, this is
+#'   (\code{Evid.Ratio}) for each hypothesis. For a one-sided hypothesis, this is
 #'   just the posterior probability (\code{Post.Prob}) under the hypothesis
 #'   against its alternative. That is, when the hypothesis is of the form
 #'   \code{a > b}, the evidence ratio is the ratio of the posterior probability
 #'   of \code{a > b} and the posterior probability of \code{a < b}. In this
 #'   example, values greater than one indicate that the evidence in favor of
 #'   \code{a > b} is larger than evidence in favor of \code{a < b}. For an
-#'   undirected (point) hypothesis, the evidence ratio is a Bayes factor between
+#'   two-sided (point) hypothesis, the evidence ratio is a Bayes factor between
 #'   the hypothesis and its alternative computed via the Savage-Dickey density
 #'   ratio method. That is the posterior density at the point of interest
 #'   divided by the prior density at that point. Values greater than one
 #'   indicate that evidence in favor of the point hypothesis has increased after
 #'   seeing the data. In order to calculate this Bayes factor, all parameters
 #'   related to the hypothesis must have proper priors and argument
-#'   \code{sample_prior} of function \code{brm} must be set to \code{TRUE}. When
+#'   \code{sample_prior} of function \code{brm} must be set to \code{"yes"}. When
 #'   interpreting Bayes factors, make sure that your priors are reasonable and
 #'   carefully chosen, as the result will depend heavily on the priors. In
 #'   particular, avoid using default priors.
 #'   
 #'   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
 #'   small or large evidence, respectively, in favor of the tested hypothesis.
-#'   For directional hypotheses pairs, this basically means that all posterior
+#'   For one-sided hypotheses pairs, this basically means that all posterior
 #'   samples are on the same side of the value dividing the two hypotheses. In
 #'   that sense, instead of \code{0} or \code{Inf,} you may rather read it as
 #'   \code{Evid.Ratio} smaller \code{1 / S} or greater \code{S}, respectively,
@@ -57,10 +57,11 @@
 #'   computations.
 #'  
 #'   The argument \code{alpha} specifies the size of the credible interval
-#'   (i.e., Bayesian confidence interval). For instance, if \code{alpha = 0.05}
-#'   (5\%), the credible interval will contain \code{1 - alpha = 0.95} (95\%) of
-#'   the posterior values. Hence, \code{alpha * 100}\% of the posterior values
-#'   will lie outside of the credible interval. Although this allows testing of
+#'   (i.e., Bayesian confidence interval). For instance, if we tested a
+#'   two-sided hypothesis and set \code{alpha = 0.05} (5\%) an, the credible
+#'   interval will contain \code{1 - alpha = 0.95} (95\%) of the posterior
+#'   values. Hence, \code{alpha * 100}\% of the posterior values will
+#'   lie outside of the credible interval. Although this allows testing of
 #'   hypotheses in a similar manner as in the frequentist null-hypothesis
 #'   testing framework, we strongly argue against using arbitrary cutoffs (e.g.,
 #'   \code{p < .05}) to determine the 'existence' of an effect.
@@ -81,7 +82,7 @@
 #' ## fit a linear mixed effects models
 #' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #'            data = kidney, family = lognormal(),
-#'            prior = prior, sample_prior = TRUE, 
+#'            prior = prior, sample_prior = "yes", 
 #'            control = list(adapt_delta = 0.95))
 #' 
 #' ## perform two-sided hypothesis testing
@@ -126,18 +127,48 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
   hypothesis_internal(x, hypothesis, class = "", alpha = alpha, ...)
 }
 
+#' Descriptions of \code{brmshypothesis} Objects
+#' 
+#' A \code{brmshypothesis} object contains posterior samples
+#' as well as summary statistics of non-linear hypotheses as 
+#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' 
+#' @name brmshypothesis
+#' 
+#' @param ignore_prior A flag indicating if prior distributions 
+#'  should also be plotted. Only used if priors were specified on
+#'  the relevant parameters.
+#' @param digits Minimal number of significant digits, 
+#'   see \code{\link[base:print.default]{print.default}}.
+#' @param chars Maximum number of characters of each hypothesis
+#'  to print or plot. If \code{NULL}, print the full hypotheses.
+#'  Defaults to \code{20}.
+#' @param colors Two values specifying the colors of the posterior
+#'  and prior density respectively. If \code{NULL} (the default)
+#'  colors are taken from the current color scheme of 
+#'  the \pkg{bayesplot} package.
+#' @param ... Currently ignored.
+#' @inheritParams plot.brmsfit
+#' 
+#' @details 
+#' The two most important elements of a \code{brmshypothesis} object are
+#' \code{hypothesis}, which is a data.frame containing the summary estimates
+#' of the hypotheses, and \code{samples}, which is a data.frame containing 
+#' the corresponding posterior samples.
+#' 
+#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
+NULL
+
+# internal function to evaluate hypotheses
+# @param x the primary object passed to the hypothesis method;
+#   needs to be a brmsfit object or coercible to a data.frame
+# @param hypothesis Vector of character strings containing the hypotheses
+# @param class prefix of the parameters in the hypotheses
+# @param alpha the 'alpha-level' as understood by frequentist statistics
+# @return a 'brmshypothesis' object
 hypothesis_internal <- function(x, hypothesis, class, alpha,
                                 combine = TRUE, ...) {
-  # internal function to evaluate hypotheses
-  # Args:
-  #   x: the primary object passed to the hypothesis method;
-  #     Needs to be a brmsfit object or coercible to a data.frame
-  #   hypothesis: Vector of character strings containing the hypotheses
-  #   class: prefix of the parameters in the hypotheses
-  #   alpha: alpha-level
-  # Returns:
-  #   an object of class 'brmshypothesis'
-  if (!is.character(hypothesis)) {
+  if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
   if (length(alpha) != 1L || alpha < 0 || alpha > 1) {
@@ -157,9 +188,9 @@ hypothesis_internal <- function(x, hypothesis, class, alpha,
   out
 }
 
+# evaluate hypotheses for an arrary of ranefs or coefs
+# seperaly for each grouping-factor level
 hypothesis_coef <- function(x, hypothesis, alpha, ...) {
-  # evaluate hypotheses for an arrary of ranefs or coefs
-  # seperaly for each grouping-factor level
   stopifnot(is.array(x), length(dim(x)) == 3L)
   levels <- dimnames(x)[[2]]
   coefs <- dimnames(x)[[3]]
@@ -183,9 +214,10 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out
 }
 
+# combine list of outputs of eval_hypothesis
+# @param hlist list of evaluate hypothesis
+# @return a 'brmshypothesis' object
 combine_hlist <- function(hlist, class, alpha) {
-  # combine list of outputs of eval_hypothesis
-  # Returns: a brmshypothesis object
   stopifnot(is.list(hlist))
   hs <- do_call(rbind, lapply(hlist, function(h) h$summary))
   rownames(hs) <- NULL
@@ -199,6 +231,7 @@ combine_hlist <- function(hlist, class, alpha) {
   structure(out, class = "brmshypothesis")
 }
 
+# evaluate a single hypothesis based on the posterior samples
 eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   stopifnot(length(h) == 1L && is.character(h))
   pars <- parnames(x)[grepl(paste0("^", class), parnames(x))]
@@ -237,9 +270,9 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   }
   # summarize hypothesis
   wsign <- switch(sign, "=" = "equal", "<" = "less", ">" = "greater")
-  probs <- switch(sign, 
-    "=" = c(alpha / 2, 1 - alpha / 2), 
-    "<" = c(0, 1 - alpha), ">" = c(alpha, 1)
+  probs <- switch(sign,
+    "=" = c(alpha / 2, 1 - alpha / 2),
+    "<" = c(alpha, 1 - alpha), ">" = c(alpha, 1 - alpha)
   )
   sm <- lapply(
     c("mean", "sd", "quantile", "evidence_ratio"), 
@@ -248,16 +281,15 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   )
   sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
   names(sm) <- c("Estimate", "Est.Error", "CI.Lower", "CI.Upper", "Evid.Ratio")
-  if (sign == "<") {
-    sm[1, 3] <- -Inf
-  } else if (sign == ">") {
-    sm[1, 4] <- Inf
+  sm$Post.Prob <- sm$Evid.Ratio / (1 + sm$Evid.Ratio)
+  if (is.infinite(sm$Evid.Ratio)) {
+    sm$Post.Prob <- 1
   }
-  sm$Post.Prob <- ifelse(
-    is.infinite(sm$Evid.Ratio), 1, 
-    sm$Evid.Ratio / (1 + sm$Evid.Ratio)
-  )
-  sm$Star <- ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', '')
+  if (sign == "=") {
+    sm$Star <- str_if(!(sm$CI.Lower <= 0 && 0 <= sm$CI.Upper), "*")
+  } else {
+    sm$Star <- str_if(sm$Post.Prob > 1 - alpha, "*")
+  }
   if (!length(name) || !nzchar(name)) {
     name <- paste(h, sign, "0")
   }
@@ -269,17 +301,14 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   nlist(summary = sm, samples, prior_samples)
 }
 
+# find all valid variable names in a string 
+# @param x a character string
+# @param dot are dots allowed in variable names?
+# @param brackets allow brackets at the end of variable names?
+# @return all valid variable names within the string
+# @note does not use the R parser itself to allow for double points, 
+#   square brackets, and commas at the end of names
 find_vars <- function(x, dot = TRUE, brackets = TRUE) {
-  # find all valid variable names in a string 
-  # Args:
-  #   x: a character string
-  #   dot: are dots allowed in variable names?
-  #   brackets: allow brackets at the end of variable names?
-  # Notes:
-  #   Does not use the R parser itself to allow for double points, 
-  #   square brackets and commas at the end of names.
-  # Returns:
-  #   all valid variable names within the string
   x <- gsub("[[:space:]]", "", as_one_character(x))
   dot <- as_one_logical(dot)
   brackets <- as_one_logical(brackets)
@@ -364,17 +393,15 @@ density_ratio <- function(x, y = NULL, point = 0, n = 4096, ...) {
   out
 }
 
+# compute the evidence ratio between two disjunct hypotheses
+# @param x posterior samples 
+# @param cut the cut point between the two hypotheses
+# @param wsign direction of the hypothesis
+# @param prior_samples optional prior samples for two-sided hypothesis
+# @param ... optional arguments passed to density_ratio
+# @return the evidence ratio of the two hypothesis
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
                            prior_samples = NULL, ...) {
-  # compute the evidence ratio between two disjunct hypotheses
-  # Args:
-  #   x: posterior samples 
-  #   cut: the cut point between the two hypotheses
-  #   wsign: direction of the hypothesis
-  #   prior_samples: optional prior samples for undirected hypothesis
-  #   ...: optional arguments passed to density_ratio
-  # Returns:
-  #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
   if (wsign == "equal") {
     if (is.null(prior_samples)) {
@@ -392,8 +419,8 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out
 }
 
+# round all numeric elements of a list-like object
 round_numeric <- function(x, digits = 2) {
-  # round all numeric elements of a list like object
   stopifnot(is.list(x))
   for (i in seq_along(x)) {
     if (is.numeric(x[[i]])) {
@@ -413,11 +440,13 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis <- round_numeric(x$hypothesis, digits = digits)
   print(x$hypothesis, quote = FALSE)
-  cat(paste0(
-    "---\n'*': The expected value under the hypothesis ", 
-    "lies outside the ", (1 - x$alpha) * 100, "%-CI.\n",
-    "Posterior probabilities of point hypotheses assume ",
-    "equal prior probabilities.\n"
+  pone <- (1 - x$alpha * 2) * 100
+  ptwo <- (1 - x$alpha) * 100
+  cat(glue(
+    "---\n'CI': {pone}%-CI for one-sided and {ptwo}%-CI for two-sided hypotheses.\n",
+    "'*': For one-sided hypotheses, the posterior probability exceeds {ptwo}%;\n", 
+    "for two-sided hypotheses, the value tested against lies outside the {ptwo}%-CI.\n",
+    "Posterior probabilities of point hypotheses assume equal prior probabilities.\n"
   ))
   invisible(x)
 }

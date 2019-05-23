@@ -2,43 +2,22 @@
 % Please edit documentation in R/correlations.R
 \name{cor_bsts}
 \alias{cor_bsts}
-\alias{cor_bsts-class}
-\title{Basic Bayesian Structural Time Series}
+\title{(Defunct) Basic Bayesian Structural Time Series}
 \usage{
 cor_bsts(formula = ~1)
 }
 \arguments{
-\item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
-A covariate for this correlation structure must be integer valued. 
-When a grouping factor is present in \code{formula}, the correlation structure 
-is assumed to apply only to observations within the same grouping level; 
-observations with different grouping levels are assumed to be uncorrelated. 
-Defaults to \code{~ 1}, which corresponds to using the order of the observations 
-in the data as a covariate, and no groups.}
-}
-\value{
-An object of class \code{cor_bsts}.
+\item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g},
+specifying a time covariate \code{t} and, optionally, a grouping factor
+\code{g}. A covariate for this correlation structure must be integer
+valued. When a grouping factor is present in \code{formula}, the
+correlation structure is assumed to apply only to observations within the
+same grouping level; observations with different grouping levels are
+assumed to be uncorrelated. Defaults to \code{~ 1}, which corresponds to
+using the order of the observations in the data as a covariate, and no
+groups.}
 }
 \description{
-Add a basic Bayesian structural time series component to a brms model
+The BSTS correlation structure is no longer supported.
 }
-\details{
-Bayesian structural time series models offer an alternative 
-  to classical AR(I)MA models (they are in fact a generalization).
-  The basic version currently implemented in \pkg{brms} introduces
-  local level terms for each observation, whereas each local level term 
-  depends on the former local level term:
-  \deqn{LL_t ~ N(LL_{t-1}, sigmaLL)}
-  A simple introduction can be found in this blogpost: 
-  \url{http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/}.
-  More complicated Bayesian structural time series models may follow
-  in the future.
-}
-\examples{
-\dontrun{
-dat <- data.frame(y = rnorm(100), x = rnorm(100))
-fit <- brm(y~x, data = dat, autocor = cor_bsts())
-}   
-
-}
+\keyword{internal}

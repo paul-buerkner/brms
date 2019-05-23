@@ -17,15 +17,13 @@ but the class common to all correlation structures implemented in \pkg{brms}.
   average components}
   \item{cor_ar}{autoregressive (AR) structure of arbitrary order}
   \item{cor_ma}{moving average (MA) structure of arbitrary order} 
-  \item{cor_arr}{response autoregressive (ARR) structure}
   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
-  \item{cor_bsts}{Bayesian structural time series (BSTS) structure}
   \item{cor_fixed}{fixed user-defined covariance structure}
 }
 }
 
 \seealso{
-\code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, \link{cor_arr}, 
-      \link{cor_car}, \link{cor_sar}, \link{cor_bsts}, \link{cor_fixed}}
+\code{\link{cor_arma}, \link{cor_ar}, \link{cor_ma}, 
+      \link{cor_car}, \link{cor_sar}, \link{cor_fixed}}
 }

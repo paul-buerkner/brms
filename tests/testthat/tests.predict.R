@@ -80,7 +80,7 @@ test_that("predict for ARMA covariance models runs without errors", {
   draws$ac <- list(             
     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
     ma = matrix(rnorm(ns, 0.2, 1), ncol = 1),
-    begin_tg = c(1, 5, 12), nobs_tg = c(4, 7, 3)
+    begin_tg = c(1, 5, 12), end_tg = c(4, 11, 15)
   )
   draws$data <- list(se = rgamma(ns, 10))
   
@@ -259,21 +259,26 @@ test_that("predict for ordinal models runs without erros", {
   ncat <- 4
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
-    mu = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
+    mu = array(rnorm(ns * nobs), dim = c(ns, nobs)),
     disc = rexp(ns)
   )
+  draws$thres <- array(0, dim = c(ns, ncat - 1))
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$family$link <- "logit"
   
+  draws$family$family <- "cumulative"
   pred <- sapply(1:nobs, brms:::predict_cumulative, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "sratio"
   pred <- sapply(1:nobs, brms:::predict_sratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "cratio"
   pred <- sapply(1:nobs, brms:::predict_cratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
+  draws$family$family <- "acat"
   pred <- sapply(1:nobs, brms:::predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
@@ -288,8 +293,8 @@ test_that("predict for categorical and related models runs without erros", {
   ncat <- 3
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
-    mu1 = array(rnorm(ns*nobs), dim = c(ns, nobs)),
-    mu2 = array(rnorm(ns*nobs), dim = c(ns, nobs))
+    mu1 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs)),
+    mu2 = array(rnorm(ns*nobs, 0, 0.1), dim = c(ns, nobs))
   )
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$family <- categorical()

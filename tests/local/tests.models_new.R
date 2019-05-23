@@ -105,9 +105,11 @@ test_that("ARMA models work correctly", {
   y <- arima.sim(list(ar = c(0.7, -0.5, 0.04, 0.2, -0.4)), N)
   dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
 
-  fit_ar <- brm(y ~ x, data = dat, autocor = cor_ar(p = 5),
-                prior = prior(normal(0, 5), class = "ar"),
-                chains = 2)
+  fit_ar <- brm(
+    y ~ x, data = dat, autocor = cor_ar(p = 5),
+    prior = prior(normal(0, 5), class = "ar"),
+    chains = 2
+  )
   print(fit_ar)
   ar <- colMeans(as.matrix(fit_ar, "^ar"))
   expect_range(ar[1], 0.5, 0.9)
@@ -120,20 +122,27 @@ test_that("ARMA models work correctly", {
   print(fit_ma)
   expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
 
-  fit_arma <- brm(y ~ x + (1|g), data = dat,
-                  autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
-                  prior = c(prior(normal(0, 5), class = "ar"),
-                            prior(normal(0, 6), class = "ma")),
-                  chains = 2)
+  fit_arma <- brm(
+    y ~ x + (1|g), data = dat,
+    autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
+    prior = prior(normal(0, 5), class = "ar") +
+      prior(normal(0, 6), class = "ma"),
+    chains = 2
+  )
   print(fit_arma)
   expect_range(waic(fit_arma)$estimates[3, 1], 200, 280)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(marginal_effects(fit_arma), plot = FALSE)[[1]])
-
-  fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
-                 prior = prior(normal(0, 5), class = "arr"),
-                 chains = 2)
-  print(fit_arr)
+  
+  fit_arma_pois <- brm(
+    count ~ Trt + (1 | patient), data = epilepsy, family = poisson(),
+    autocor = cor_arma(~ visit | patient, p = 1, q = 1, cov = TRUE),
+    chains = 2
+  )
+  print(fit_arma_pois)
+  expect_range(waic(fit_arma_pois)$estimates[3, 1], 1130, 1170)
+  expect_equal(dim(predict(fit_arma_pois)), c(nobs(fit_arma_pois), 4))
+  expect_ggplot(plot(marginal_effects(fit_arma_pois), plot = FALSE)[[1]])
 })
 
 test_that("Models from hypothesis doc work correctly", {
