@@ -317,7 +317,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   dim <- c(nrow(draws$bsp), sdata[[paste0("N", resp)]])
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
-    # we know at this point that the model multivariate
+    # we know at this point that the model is multivariate
     Yl_names <- paste0("Yl_", vars_mi)
     draws$Yl <- named_list(Yl_names)
     for (i in seq_along(draws$Yl)) {
