@@ -1433,38 +1433,41 @@ test_that("Stan code for Gaussian processes is correct", {
 })
 
 test_that("Stan code for SAR models is correct", {
-  data(oldcol, package = "spdep")
-  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         autocor = cor_lagsar(COL.nb),
-                         prior = prior(normal(0.5, 1), lagsar))
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
+  W <- matrix(0, nrow = 10, ncol = 10)
+  
+  scode <- make_stancode(
+    y ~ x, data = dat, autocor = cor_lagsar(W),
+    prior = prior(normal(0.5, 1), lagsar)
+  )
   expect_match2(scode, 
     "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, W)"
   )
   expect_match2(scode, "target += normal_lpdf(lagsar | 0.5, 1)")
   
-  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         family = student(), autocor = cor_lagsar(COL.nb))
+  scode <- make_stancode(
+    y ~ x, data = dat, family = student(), autocor = cor_lagsar(W)
+  )
   expect_match2(scode, 
     "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, W)"
   )
   
-  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         autocor = cor_errorsar(COL.nb))
+  scode <- make_stancode(y ~ x, data = dat, autocor = cor_errorsar(W))
   expect_match2(scode, 
     "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, W)"
   )
   
-  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         family = student(), autocor = cor_errorsar(COL.nb),
-                         prior = prior(beta(2, 3), errorsar))
+  scode <- make_stancode(
+    y ~ x, data = dat, family = student(), 
+    autocor = cor_errorsar(W), prior = prior(beta(2, 3), errorsar)
+  )
   expect_match2(scode, 
     "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, W)"
   )
   expect_match2(scode, "target += beta_lpdf(errorsar | 2, 3)")
   
   expect_error(
-    make_stancode(bf(CRIME ~ INC + HOVAL, sigma ~ INC),
-                  data = COL.OLD, autocor = cor_lagsar(COL.nb)),
+    make_stancode(bf(y ~ x, sigma ~ x), data = dat, autocor = cor_lagsar(W)),
     "SAR models are not implemented when predicting 'sigma'" 
   )
 })

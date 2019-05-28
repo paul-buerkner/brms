@@ -6,14 +6,6 @@ cache:
   - packages
   - ccache
 
-addons:
-  apt:
-    packages:
-      - libudunits2-dev
-      - libgdal-dev
-      - libproj-dev 
-      - libgeos-dev
-
 warnings_are_errors: TRUE
 
 r_build_args: '--no-build-vignettes'

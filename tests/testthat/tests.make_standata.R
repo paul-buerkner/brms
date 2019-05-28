@@ -673,14 +673,14 @@ test_that("make_standata includes data for approximate Gaussian processes", {
 })
 
 test_that("make_standata includes data for SAR models", {
-  data(oldcol, package = "spdep")
-  sdata <- make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         autocor = cor_lagsar(COL.nb))
-  expect_equal(dim(sdata$W), rep(nrow(COL.OLD), 2))
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
+  W <- matrix(0, nrow = 10, ncol = 10)
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_lagsar(W))
+  expect_equal(dim(sdata$W), rep(nrow(W), 2))
   
   expect_error(
-    make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                  autocor = cor_lagsar(matrix(1:4, 2, 2))),
+    make_standata(y ~ x, data = dat, autocor = cor_lagsar(matrix(1:4, 2, 2))),
     "Dimensions of 'W' must be equal to the number of observations"
   )
 })
