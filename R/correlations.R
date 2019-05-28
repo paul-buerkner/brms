@@ -224,12 +224,14 @@ cor_errorsar <- function(W) {
 
 # helper function to prepare spatial weights matrices
 sar_weights <- function(W) {
-  require_package("spdep")
   if (is(W, "listw")) {
+    require_package("spdep")
     W <- spdep::listw2mat(W)
   } else if (is(W, "nb")) {
+    require_package("spdep")
     W <- spdep::nb2mat(W)
-  } else if (!is.matrix(W)) {
+  }
+  if (!is.matrix(W)) {
     stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
   }
   W
