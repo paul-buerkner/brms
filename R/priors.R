@@ -107,10 +107,10 @@
 #'   population-level effect and avoid the centering parameterization, 
 #'   use \code{0 + intercept} on the right-hand side of the model formula.
 #'   
-#'   A special shrinkage prior to be applied on population-level effects 
-#'   is the horseshoe prior. See \code{\link{horseshoe}}
-#'   for details. Another shrinkage prior is the so-called lasso prior.
-#'   See \code{\link{lasso}} for details.
+#'   A special shrinkage prior to be applied on population-level effects is the
+#'   (regularized) horseshoe prior and related priors. See
+#'   \code{\link{horseshoe}} for details. Another shrinkage prior is the
+#'   so-called lasso prior. See \code{\link{lasso}} for details.
 #'   
 #'   In non-linear models, population-level effects are defined separately 
 #'   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -1610,11 +1610,12 @@ eval_dirichlet <- function(prior) {
   eval2(prior)
 }
 
-#' Set up a horseshoe prior in \pkg{brms}
+#' Regularized horseshoe priors in \pkg{brms}
 #' 
-#' Function used to set up a horseshoe prior for population-level effects 
-#' in \pkg{brms}. The function does not evaluate its arguments --
-#' it exists purely to help set up the model.
+#' Function used to set up regularized horseshoe priors and related
+#' hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
+#' function does not evaluate its arguments -- it exists purely to help set up
+#' the model.
 #' 
 #' @param df Degrees of freedom of student-t prior of the 
 #'   local shrinkage parameters. Defaults to \code{1}.
@@ -1623,9 +1624,14 @@ eval_dirichlet <- function(prior) {
 #'   In linear models, \code{scale_global} will internally be 
 #'   multiplied by the residual standard deviation parameter \code{sigma}.
 #' @param df_global Degrees of freedom of student-t prior of the 
-#'   global shrinkage parameter. Defaults to \code{1}.
+#'   global shrinkage parameter. Defaults to \code{1}. If \code{df_global}
+#'   is greater \code{1}, the shape of the prior will no longer resemble
+#'   a horseshoe and it may be more appropriately called an hierarchical
+#'   shrinkage prior in this case.
 #' @param scale_slab Scale of the student-t prior of the regularization
-#'   parameter. Defaults to \code{2}. 
+#'   parameter. Defaults to \code{2}. The original unregularized horseshoe 
+#'   prior is obtained by setting \code{scale_slab} to infinite, which
+#'   we can approximate in practice by setting it to a very large real value. 
 #' @param df_slab Degrees of freedom of the student-t prior of 
 #'   the regularization parameter. Defaults to \code{4}. 
 #' @param par_ratio Ratio of the expected number of non-zero coefficients 
