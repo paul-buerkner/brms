@@ -349,7 +349,7 @@ predictor_gp <- function(draws, i) {
 predictor_cs <- function(eta, draws, i) {
   cs <- draws[["cs"]]
   re <- draws[["re"]]
-  if (!length(cs) && !length(re[["rcs"]])) {
+  if (!length(cs[["bcs"]]) && !length(re[["rcs"]])) {
     return(eta)
   }
   ncat <- cs[["ncat"]]

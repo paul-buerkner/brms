@@ -373,11 +373,11 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   if (is_ordinal(bterms$family)) {
+    resp <- usc(bterms$resp)
+    draws$ncat <- sdata[[paste0("ncat", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       p <- usc(combine_prefix(bterms))
-      resp <- usc(bterms$resp)
-      draws$ncat <- sdata[[paste0("ncat", resp)]]
       cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
