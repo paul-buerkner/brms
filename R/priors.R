@@ -1249,20 +1249,6 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
-  simple_sigma <- simple_sigma(x)
-  for (dp in names(x$dpars)) {
-    allow_as <- simple_sigma && identical(dp, "mu") 
-    prior <- check_prior_special(
-      x$dpars[[dp]], prior = prior, data = data,
-      allow_autoscale = allow_as, ...
-    )
-  }
-  for (nlp in names(x$nlpars)) {
-    prior <- check_prior_special(
-      x$nlpars[[nlp]], prior = prior, data = data,
-      allow_autoscale = simple_sigma, ...
-    )
-  }
   # copy over the global population-level prior in categorical models
   if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
@@ -1281,6 +1267,20 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         }
       }
     }
+  }
+  simple_sigma <- simple_sigma(x)
+  for (dp in names(x$dpars)) {
+    allow_autoscale <- dp == "mu" && simple_sigma
+    prior <- check_prior_special(
+      x$dpars[[dp]], prior = prior, data = data,
+      allow_autoscale = allow_autoscale, ...
+    )
+  }
+  for (nlp in names(x$nlpars)) {
+    prior <- check_prior_special(
+      x$nlpars[[nlp]], prior = prior, data = data,
+      allow_autoscale = simple_sigma, ...
+    )
   }
   # prepare priors for mixture probabilities
   if (is.mixfamily(x$family)) {
