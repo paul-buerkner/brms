@@ -5,7 +5,7 @@
 # @param group the group part of a group-level term
 illegal_group_expr <- function(group) {
   group <- as_one_character(group)
-  valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
+  valid_expr <- ":|([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*"
   rsv_signs <- c("+", "-", "*", "/", "|", "::")
   nzchar(gsub(valid_expr, "", group)) ||
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))

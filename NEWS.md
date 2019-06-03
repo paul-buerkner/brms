@@ -1,3 +1,15 @@
+# brms 2.9.0++
+
+### Bug Fixes
+
+* Allow grouping variables to start with a dot
+thanks to Bruno Nicenboim. (#679)
+* Allow the `horseshoe` prior in categorical and
+related models thanks to the Github user tatters. (#678)
+* Allow underscores to be used in category names
+of categorical responses thanks to Emmanuel Charpentier. (#672)
+
+
 # brms 2.9.0
 
 ### New Features
