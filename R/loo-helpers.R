@@ -100,6 +100,14 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         # TODO: how to include r_eff here?
       } else {
         loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
+        if (anyNA(loo_args$r_eff)) {
+          # avoid error in LOO if some but not all r_effs are NA
+          loo_args$r_eff <- NA
+          warning2(
+            "Ignoring relative efficiencies as some were NA. ",
+            "See argument 'r_eff' in ?loo::loo for more details."
+          )
+        }
       }
       if (criterion == "psis") {
         if (pointwise) {
