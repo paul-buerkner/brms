@@ -8,6 +8,8 @@ thanks to Bruno Nicenboim. (#679)
 related models thanks to the Github user tatters. (#678)
 * Allow underscores to be used in category names
 of categorical responses thanks to Emmanuel Charpentier. (#672)
+* Fix Stan code of multivariate models with multi-membership
+terms thanks to the Stan discourse user Pia.
 
 
 # brms 2.9.0

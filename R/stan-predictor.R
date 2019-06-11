@@ -1286,7 +1286,7 @@ stan_eta_re <- function(ranef, px = list()) {
       ng <- seq_along(r$gcall[[1]]$groups)
       for (i in seq_rows(r)) {
         str_add(eta_re) <- cglue(
-          " + W_{r$id[i]}_{ng}[n]", 
+          " + W_{idresp[i]}_{ng}[n]", 
           " * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
           " * Z_{idp[i]}_{r$cn[i]}_{ng}[n]"
         ) 
