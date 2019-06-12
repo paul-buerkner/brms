@@ -642,7 +642,7 @@ extract_draws_thres <- function(bterms, samples, ...) {
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
                                   new = FALSE, ...) {
   draws <- list()
-  autocor <- bterms$autocor
+  autocor <- draws$autocor <- bterms$autocor
   p <- usc(combine_prefix(bterms))
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
   if (is.cor_arma(autocor)) {
@@ -661,25 +661,29 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     if (get_ma(autocor)) {
       draws$ma <- get_samples(samples, paste0("^ma", p, "\\["))
     }
-    if (use_cov(autocor)) {
-      draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
-      draws$end_tg <- sdata[[paste0("end_tg", p)]]
-      if (has_latent_residuals(bterms)) {
-        regex_err <- paste0("^err", p, "\\[")
-        has_err <- any(grepl(regex_err, colnames(samples)))
-        if (has_err && !new) {
-          draws$err <- get_samples(samples, regex_err)
-        } else {
-          # need to sample correlated residuals
-          draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
-          draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
-          for (i in seq_len(draws$N_tg)) {
-            obs <- with(draws, begin_tg[i]:end_tg[i])
-            zeros <- rep(0, length(obs))
-            cov <- get_cov_matrix_arma(list(ac = draws), obs, latent = TRUE)
-            .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-            draws$err[, obs] <- rblapply(seq_rows(samples), .err)
-          }
+  }
+  if (is.cor_cosy(autocor)) {
+    draws$cosy <-  get_samples(samples, paste0("^cosy", p, "$"))
+  }
+  if (use_cov(autocor)) {
+    # draws for the 'covariance' versions of ARMA and COSY structures
+    draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
+    draws$end_tg <- sdata[[paste0("end_tg", p)]]
+    if (has_latent_residuals(bterms)) {
+      regex_err <- paste0("^err", p, "\\[")
+      has_err <- any(grepl(regex_err, colnames(samples)))
+      if (has_err && !new) {
+        draws$err <- get_samples(samples, regex_err)
+      } else {
+        # need to sample correlated residuals
+        draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
+        draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+        for (i in seq_len(draws$N_tg)) {
+          obs <- with(draws, begin_tg[i]:end_tg[i])
+          zeros <- rep(0, length(obs))
+          cov <- get_cov_matrix_autocor(list(ac = draws), obs, latent = TRUE)
+          .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+          draws$err[, obs] <- rblapply(seq_rows(samples), .err)
         }
       }
     }

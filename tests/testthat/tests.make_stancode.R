@@ -419,7 +419,7 @@ test_that("invalid combinations of modeling options are detected", {
   )
   expect_error(
     make_stancode(mvbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
-    "Cannot use ARMA covariance matrices when estimating 'rescor'"
+    "Cannot model residual covariance matrices via 'autocor' when estimating 'rescor'"
   )
   expect_error(
     make_stancode(y1 | resp_se(wi) ~ y2, data = data, autocor = cor_ma()),
@@ -573,6 +573,21 @@ test_that("Stan code for ARMA models is correct", {
   expect_match2(scode, "err = scale_cov_err(zerr, chol_cov, nobs_tg, begin_tg, end_tg);")
   expect_match2(scode, "vector[N] mu = temp_Intercept + Xc * b + err;")
   expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
+})
+
+test_that("Stan code for compound symmetry models is correct", {
+  dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
+  scode <- make_stancode(
+    y ~ x, dat, autocor = cor_cosy(~time),
+    prior = prior(normal(0, 2), cosy)
+  )
+  expect_match2(scode, "chol_cov = cholesky_cov_cosy(cosy, sigma, max(nobs_tg));")
+  expect_match2(scode, "target += normal_lpdf(cosy | 0, 2);")
+  
+  scode <- make_stancode(
+    y ~ x, dat, family = poisson, autocor = cor_cosy(~time)
+  )
+  expect_match2(scode, "chol_cov = cholesky_cov_cosy(cosy, sderr, max(nobs_tg));")
 })
 
 test_that("Stan code for intercept only models is correct", {

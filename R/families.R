@@ -1505,7 +1505,8 @@ pred_sigma <- function(bterms) {
 
 # has the model latent residuals to be used in autocor structures
 has_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) && is.cor_arma(bterms$autocor)
+  !has_natural_residuals(bterms) && 
+    (is.cor_arma(bterms$autocor) || is.cor_cosy(bterms$autocor))
 }
 
 # should natural residuals be modeled as correlated?

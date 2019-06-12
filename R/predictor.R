@@ -420,7 +420,7 @@ predictor_offset <- function(draws, i, nobs) {
 # @note eta has to be passed to this function in 
 #   order for ARMA structures to work correctly
 predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
-  if (any(c("ar", "ma") %in% names(draws$ac))) {
+  if (is.cor_arma(draws$ac$autocor)) {
     if (!is.null(draws$ac$err)) {
       # ARMA correlations via latent residuals
       eta <- eta + p(draws$ac$err, i, row = FALSE)
@@ -436,7 +436,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
       ) 
     }
   }
-  if (!is.null(draws$ac$rcar)) {
+  if (is.cor_car(draws$ac$autocor)) {
     eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
   }
   eta

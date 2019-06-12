@@ -70,6 +70,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
+  cov <- as_one_logical(cov)
   if ("r" %in% names(match.call())) {
     warning2("The ARR structure is no longer supported and ignored.")
   }
@@ -86,7 +87,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
-  x <- nlist(formula, p, q, cov = as.logical(cov))
+  x <- nlist(formula, p, q, cov)
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
@@ -152,6 +153,29 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #' @export
 cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
+}
+
+#' Compound Symmetry (COSY) Correlation Structure
+#' 
+#' This functions is a constructor for the \code{cor_cosy} class, representing 
+#' a compound symmetry structure corresponding to uniform correlation.
+#' 
+#' @aliases cor_cosy-class
+#' 
+#' @inheritParams cor_arma
+#' 
+#' @return An object of class \code{cor_cosy}, representing a compound symmetry
+#'   correlation structure.
+#'   
+#' @examples
+#' cor_cosy(~ visit | patient)
+#' 
+#' @export 
+cor_cosy <- function(formula = ~ 1) {
+  formula <- as.formula(formula)
+  x <- nlist(formula)
+  class(x) <- c("cor_cosy", "cor_brms")
+  x
 }
 
 #' Spatial simultaneous autoregressive (SAR) structures
@@ -394,6 +418,12 @@ is.cor_arma <- function(x) {
 
 #' @rdname is.cor_brms
 #' @export
+is.cor_cosy <- function(x) {
+  inherits(x, "cor_cosy")
+}
+
+#' @rdname is.cor_brms
+#' @export
 is.cor_sar <- function(x) {
   inherits(x, "cor_sar")
 }
@@ -419,6 +449,12 @@ print.cor_empty <- function(x, ...) {
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
              get_ar(x), ", ", get_ma(x), ")"))
+  invisible(x)
+}
+
+#' @export
+print.cor_cosy <- function(x, ...) {
+  cat(paste0("cosy(", formula2str(x$formula), ")"))
   invisible(x)
 }
 
@@ -461,13 +497,24 @@ get_ma <- function(x) {
   ifelse(is.null(x$q), 0, x$q)
 }
 
-# use the covariance parameterization of ARMA models?
+# has only AR correlations?
+has_ar_only <- function(x) {
+  get_ar(x) && !get_ma(x)
+} 
+
+# has only MA correlations?
+has_ma_only <- function(x) {
+  get_ma(x) && !get_ar(x)
+} 
+
+# use the covariance parameterization of a correlation structure?
 use_cov <- function(x) {
   stop_not_cor_brms(x)
-  if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
-    out <- x$cov
-  } else {
-    out <- FALSE
+  out <- FALSE
+  if (is.cor_arma(x)) {
+    out <- isTRUE(x$cov)
+  } else if (is.cor_cosy(x)) {
+    out <- TRUE
   }
   out
 }
@@ -543,7 +590,7 @@ subset_autocor <- function(x, subset, autocor = NULL) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  p <- c("ar", "ma", "sderr", "lagsar", "errorsar", "car", "sdcar")
+  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

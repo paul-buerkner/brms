@@ -626,24 +626,18 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
   autocor <- bterms$autocor
   N <- nrow(data)
   out <- list()
-  if (is.cor_arma(autocor)) {
-    # ARMA correlations
+  if (is.cor_arma(autocor) || is.cor_cosy(autocor)) {
     if (length(bterms$time$group)) {
       tgroup <- as.numeric(factor(data[[bterms$time$group]]))
     } else {
       tgroup <- rep(1, N) 
     }
+  }
+  if (is.cor_arma(autocor)) {
+    # ARMA correlations
     out$Kar <- get_ar(autocor)
     out$Kma <- get_ma(autocor)
-    if (use_cov(autocor)) {
-      # data for the 'covariance' version of ARMA 
-      out$N_tg <- length(unique(tgroup))
-      out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-      out$nobs_tg <- as.array(with(out, 
-        c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
-      ))
-      out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-    } else {
+    if (!use_cov(autocor)) {
       # data for the 'predictor' version of ARMA
       max_lag <- max(out$Kar, out$Kma)
       out$J_lag <- as.array(rep(0, N))
@@ -653,14 +647,25 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
         out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
       }
     }
-  } else if (is.cor_sar(autocor)) {
+  }
+  if (use_cov(autocor)) {
+    # data for the 'covariance' versions of ARMA and COSY structures
+    out$N_tg <- length(unique(tgroup))
+    out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+    out$nobs_tg <- as.array(with(out, 
+      c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+    ))
+    out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+  }
+  if (is.cor_sar(autocor)) {
     if (!identical(dim(autocor$W), rep(N, 2))) {
       stop2("Dimensions of 'W' must be equal to the number of observations.")
     }
     out$W <- autocor$W
     # simplifies code of choose_N
     out$N_tg <- 1
-  } else if (is.cor_car(autocor)) {
+  }
+  if (is.cor_car(autocor)) {
     if (isTRUE(nzchar(bterms$time$group))) {
       loc_data <- get(bterms$time$group, data)
       locations <- levels(factor(loc_data))
@@ -720,7 +725,8 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenW)
     }
-  } else if (is.cor_fixed(autocor)) {
+  }
+  if (is.cor_fixed(autocor)) {
     V <- autocor$V
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {

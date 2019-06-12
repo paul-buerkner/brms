@@ -154,7 +154,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   Y <- as.numeric(draws$data$Y[obs])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     g <- solve(C, Y - mu[s, ])

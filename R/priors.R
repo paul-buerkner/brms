@@ -911,10 +911,13 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (get_ma(autocor)) {
       prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
     }
-    if (has_latent_residuals(bterms)) {
-      prior <- prior + 
-        brmsprior(def_scale_prior, class = "sderr", resp = resp)
-    }
+  }
+  if (is.cor_cosy(autocor)) {
+    prior <- prior + brmsprior(class = "cosy", resp = resp)
+  }
+  if (has_latent_residuals(bterms)) {
+    prior <- prior + 
+      brmsprior(def_scale_prior, class = "sderr", resp = resp)
   }
   if (is.cor_sar(autocor)) {
     if (identical(autocor$type, "lag")) {

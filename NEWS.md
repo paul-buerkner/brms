@@ -1,5 +1,9 @@
 # brms 2.9.0++
 
+### New Features
+
+* Model compound symmetry correlations via `cor_cosy`. (#403)
+
 ### Bug Fixes
 
 * Allow grouping variables to start with a dot

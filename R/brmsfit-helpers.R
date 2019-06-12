@@ -290,7 +290,7 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
 # @param draws a brmsdraws object
 # @param obs observations for which to compute the covariance matrix
 # @param latent compute covariance matrix for latent residuals?
-get_cov_matrix_arma <- function(draws, obs, latent = FALSE) {
+get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
   nobs <- length(obs)
   if (latent) {
     se <- rep(0, nobs)
@@ -301,14 +301,22 @@ get_cov_matrix_arma <- function(draws, obs, latent = FALSE) {
     draws$data$se <- NULL
     sigma <- get_dpar(draws, "sigma", i = obs) 
   }
-  ar <- as.numeric(draws$ac$ar)
-  ma <- as.numeric(draws$ac$ma)
-  if (length(ar) && !length(ma)) {
-    out <- get_cov_matrix_ar1(ar, sigma, nobs, se)
-  } else if (!length(ar) && length(ma)) {
-    out <- get_cov_matrix_ma1(ma, sigma, nobs, se)
-  } else if (length(ar) && length(ma)) {
-    out <- get_cov_matrix_arma1(ar, ma, sigma, nobs, se)
+  autocor <- draws$ac$autocor
+  if (is.cor_arma(draws$ac$autocor)) {
+    ar <- as.numeric(draws$ac$ar)
+    ma <- as.numeric(draws$ac$ma)
+    if (length(ar) && !length(ma)) {
+      out <- get_cov_matrix_ar1(ar, sigma, nobs, se)
+    } else if (!length(ar) && length(ma)) {
+      out <- get_cov_matrix_ma1(ma, sigma, nobs, se)
+    } else if (length(ar) && length(ma)) {
+      out <- get_cov_matrix_arma1(ar, ma, sigma, nobs, se)
+    } else {
+      stop("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
+    }
+  } else if (is.cor_cosy(draws$ac$autocor)) {
+    cosy <- as.numeric(draws$ac$cosy)
+    out <- get_cov_matrix_cosy(cosy, sigma, nobs, se)
   } else {
     out <- get_cov_matrix_ident(sigma, nobs, se)
   }
@@ -390,6 +398,28 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se = NULL) {
     } 
   } 
   mat 
+}
+
+# compute compound symmetry covariance matrices
+# @param cosy compund symmetry correlation samples
+# @param sigma standard deviation samples of the AR1 process
+# @param nrows number of rows of the covariance matrix
+# @param se optional user defined standard errors
+# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
+get_cov_matrix_cosy <- function(cosy, sigma, nrows, se = NULL) {
+  sigma2 <- as.matrix(sigma)^2
+  sigma2_cosy <- sigma2 * cosy
+  se2 <- if (length(se)) se^2 else 0
+  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma2)))
+  mat <- aperm(mat, perm = c(3, 1, 2))
+  for (i in seq_len(nrows)) {
+    mat[, i, i] <- mat[, i, i] + sigma2
+    for (j in seq_len(i - 1)) { 
+      mat[, i, j] <- sigma2_cosy
+      mat[, j, i] <- mat[, i, j]
+    } 
+  } 
+  mat
 }
 
 # compute a variance matrix without including ARMA parameters

@@ -141,7 +141,7 @@ predict_student_mv <- function(i, draws, ...) {
 predict_gaussian_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
@@ -152,7 +152,7 @@ predict_student_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }

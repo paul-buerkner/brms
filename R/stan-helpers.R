@@ -159,8 +159,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$tdataD) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    Kar <- get_ar(autocor)
-    if (Kar) {
+    if (get_ar(autocor)) {
       ar_bound <- subset2(prior, class = "ar", ls = px)$bound
       str_add(out$par) <- glue( 
         "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
@@ -169,8 +168,7 @@ stan_autocor <- function(bterms, prior) {
         prior, class = "ar", px = px, suffix = p
       )
     }
-    Kma <- get_ma(autocor)
-    if (Kma) {
+    if (get_ma(autocor)) {
       ma_bound <- subset2(prior, class = "ma", ls = px)$bound
       str_add(out$par) <- glue( 
         "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
@@ -179,68 +177,7 @@ stan_autocor <- function(bterms, prior) {
         prior, class = "ma", px = px, suffix = p
       )
     }
-    if (use_cov(autocor)) {
-      # if the user wants ARMA effects to be estimated using
-      # a covariance matrix for residuals
-      err_msg <- "Cannot use ARMA covariance matrices"
-      if (isTRUE(bterms$rescor)) {
-        stop2(err_msg, " when estimating 'rescor'.")
-      }
-      if (has_natural_residuals && length(names(bterms$dpars)) > 1L) {
-        stop2(err_msg, " when predicting distributional parameters.")
-      }
-      str_add(out$data) <- glue( 
-        "  // see the functions block for details\n",
-        "  int<lower=1> N_tg{p};\n",
-        "  int<lower=1> begin_tg{p}[N_tg{p}];\n", 
-        "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
-        "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
-      )
-      if (!is.formula(bterms$adforms$se)) {
-        str_add(out$tdataD) <- glue(
-          "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
-        )
-      }
-      str_add(out$tparD) <- glue(
-        "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cov;\n"               
-      )
-      if (Kar && !Kma) {
-        cov_fun <- "ar1"
-        cov_args <- glue("ar{p}[1]")
-      } else if (!Kar && Kma) {
-        cov_fun <- "ma1"
-        cov_args <- glue("ma{p}[1]")
-      } else {
-        cov_fun <- "arma1"
-        cov_args <- glue("ar{p}[1], ma{p}[1]")
-      }
-      sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
-      str_add(out$tparC1) <- glue(
-        "  // compute residual covariance matrix\n",
-        "  chol_cov{p} = cholesky_cov_{cov_fun}", 
-        "({cov_args}, {sdpar}{p}, max(nobs_tg{p}));\n"
-      )
-      if (has_latent_residuals) {
-        str_add(out$par) <- glue(
-          "  vector[N{p}] zerr{p};  // unscaled residuals\n",
-          "  real<lower=0> sderr;  // SD of residuals\n"
-        )
-        str_add(out$tparD) <- glue(
-          "  vector[N{p}] err{p};  // actual residuals\n"
-        )
-        str_add(out$tparC1) <- glue(
-          "  // compute correlated residuals\n",
-          "  err{p} = scale_cov_err(",
-          "zerr{p}, chol_cov{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
-        )
-        str_add(out$prior) <- glue(
-          "  target += normal_lpdf(zerr | 0, 1);\n"
-        )
-        str_add(out$prior) <- stan_prior(
-          prior, class = "sderr", px = px, suffix = p
-        )
-      }
-    } else {
+    if (!use_cov(autocor)) {
       err_msg <- "Please set cov = TRUE in ARMA correlation structures"
       if (!has_natural_residuals) {
         stop2(err_msg, " for family '", family$family, "'.")
@@ -270,6 +207,88 @@ stan_autocor <- function(bterms, prior) {
         "    for (i in 1:J_lag{p}[n]) {{\n",
         "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
         "    }}\n"
+      )
+    }
+  }
+  if (is.cor_cosy(autocor)) {
+    # compound symmetry correlation structure
+    err_msg <- "Compound symmetry models are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    # most code is shared with ARMA covariance models
+    str_add(out$par) <- glue(
+      "  real<lower=0,upper=1> cosy{p};  // compound symmetry correlation\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "cosy", px = px, suffix = p
+    )
+  }
+  if (use_cov(autocor)) {
+    # use correlation structures in covariance matrix parameterization
+    # optional for ARMA models and obligatory for compound symmetry models
+    err_msg <- "Cannot model residual covariance matrices via 'autocor'"
+    if (isTRUE(bterms$rescor)) {
+      stop2(err_msg, " when estimating 'rescor'.")
+    }
+    if (has_natural_residuals && length(names(bterms$dpars)) > 1L) {
+      stop2(err_msg, " when predicting distributional parameters.")
+    }
+    str_add(out$data) <- glue( 
+      "  // see the functions block for details\n",
+      "  int<lower=1> N_tg{p};\n",
+      "  int<lower=1> begin_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
+    )
+    if (!is.formula(bterms$adforms$se)) {
+      str_add(out$tdataD) <- glue(
+        "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
+      )
+    }
+    str_add(out$tparD) <- glue(
+      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cov;\n"               
+    )
+    if (is.cor_arma(autocor)) {
+      if (has_ar_only(autocor)) {
+        cov_fun <- "ar1"
+        cov_args <- glue("ar{p}[1]")
+      } else if (has_ma_only(autocor)) {
+        cov_fun <- "ma1"
+        cov_args <- glue("ma{p}[1]")
+      } else {
+        cov_fun <- "arma1"
+        cov_args <- glue("ar{p}[1], ma{p}[1]")
+      }
+    }
+    if (is.cor_cosy(autocor)) {
+      cov_fun <- "cosy"
+      cov_args <- glue("cosy{p}")
+    }
+    sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
+    str_add(out$tparC1) <- glue(
+      "  // compute residual covariance matrix\n",
+      "  chol_cov{p} = cholesky_cov_{cov_fun}", 
+      "({cov_args}, {sdpar}{p}, max(nobs_tg{p}));\n"
+    )
+    if (has_latent_residuals) {
+      str_add(out$par) <- glue(
+        "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+        "  real<lower=0> sderr;  // SD of residuals\n"
+      )
+      str_add(out$tparD) <- glue(
+        "  vector[N{p}] err{p};  // actual residuals\n"
+      )
+      str_add(out$tparC1) <- glue(
+        "  // compute correlated residuals\n",
+        "  err{p} = scale_cov_err(",
+        "zerr{p}, chol_cov{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+      )
+      str_add(out$prior) <- glue(
+        "  target += normal_lpdf(zerr | 0, 1);\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "sderr", px = px, suffix = p
       )
     }
   }
@@ -480,6 +499,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       "  #include 'fun_cholesky_cov_ar1.stan'\n",
       "  #include 'fun_cholesky_cov_ma1.stan'\n",
       "  #include 'fun_cholesky_cov_arma1.stan'\n",
+      "  #include 'fun_cholesky_cov_cosy.stan'\n",
       "  #include 'fun_scale_cov_err.stan'\n"
     )
   }
