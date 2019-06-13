@@ -327,12 +327,15 @@ get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
   if (latent) {
     sigma2 <- as.numeric(draws$ac$sderr)^2
   } else {
-    sigma2 <- get_dpar(draws, "sigma", i = obs)^2
-    if (NCOL(sigma2) > 1L) {
+    sigma <- get_dpar(draws, "sigma", i = obs)
+    if (NCOL(sigma) > 1L) {
       # sigma varies across observations
-      sigma2 <- array(sigma2, dim = c(dim(sigma2), NCOL(sigma2)))
+      sigma2 <- array(dim = c(nsamples, nobs, nobs))
+      for (s in seq_rows(sigma2)) {
+        sigma2[s, , ] <- outer(sigma[s, ], sigma[s, ])
+      }
     } else {
-      sigma2 <- as.numeric(sigma2)
+      sigma2 <- as.numeric(sigma)^2
     }
   }
   sigma2 * cor + se2
