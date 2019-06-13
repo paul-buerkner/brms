@@ -1,12 +1,11 @@
-  /* compute the cholesky factor of a MA1 covariance matrix
+  /* compute the cholesky factor of a MA1 correlation matrix
    * Args: 
    *   ma: MA1 autocorrelation 
-   *   sigma: standard deviation of the MA1 process 
    *   nrows: number of rows of the covariance matrix 
    * Returns: 
    *   A nrows x nrows MA1 covariance matrix 
    */ 
-   matrix cholesky_cov_ma1(real ma, real sigma, int nrows) { 
+   matrix cholesky_cor_ma1(real ma, int nrows) { 
      matrix[nrows, nrows] mat; 
      mat = diag_matrix(rep_vector(1 + ma^2, nrows)); 
      if (nrows > 1) { 
@@ -17,5 +16,5 @@
        } 
        mat[nrows, nrows - 1] = ma; 
      } 
-     return cholesky_decompose(sigma^2 * mat); 
+     return cholesky_decompose(mat); 
    }

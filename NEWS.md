@@ -3,6 +3,8 @@
 ### New Features
 
 * Model compound symmetry correlations via `cor_cosy`. (#403)
+* Predict `sigma` in combination with several 
+autocorrelation structures. (#403)
 
 ### Bug Fixes
 

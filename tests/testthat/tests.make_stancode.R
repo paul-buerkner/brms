@@ -388,21 +388,21 @@ test_that("self-defined functions appear in the Stan code", {
   # linear models with special covariance structures
   expect_match2(make_stancode(rating ~ treat, data = inhaler, 
                               autocor = cor_ma(cov = TRUE)),
-               "real normal_cov_lpdf(vector y")
+               "real normal_cov_hom_lpdf(vector y")
   expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_ar(cov = TRUE)),
-               "real student_t_cov_lpdf(vector y")
+               "real student_t_cov_hom_lpdf(vector y")
   
   # ARMA covariance matrices
   expect_match2(make_stancode(rating ~ treat, data = inhaler, 
                              autocor = cor_ar(cov = TRUE)),
-               "matrix cholesky_cov_ar1(real ar")
+               "matrix cholesky_cor_ar1(real ar")
   expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_ma(cov = TRUE)),
-               "matrix cholesky_cov_ma1(real ma")
+               "matrix cholesky_cor_ma1(real ma")
   expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_arma(p = 1, q = 1, cov = TRUE)),
-               "matrix cholesky_cov_arma1(real ar, real ma")
+               "matrix cholesky_cor_arma1(real ar, real ma")
   
   # kronecker products
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
@@ -564,13 +564,17 @@ test_that("Stan code for ARMA models is correct", {
   scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(), autocor = cor_ar())
   expect_match2(scode, "err_y[n] = Y_y[n] - mu_y[n];")
   
+  scode <- make_stancode(bf(y ~ x, sigma ~ x), dat, family = student,
+                         autocor = cor_arma(~time, p = 1, q = 1, cov = TRUE))
+  expect_match2(scode, "student_t_cov_het_lpdf(Y | nu, mu, sigma, chol_cor")
+  
   # correlations of latent residuals
   scode <- make_stancode(
     y ~ x, dat, family = poisson, autocor = cor_ar(~time, cov = TRUE),
     prior = prior(cauchy(0, 10), class = sderr)
   )
-  expect_match2(scode, "chol_cov = cholesky_cov_ar1(ar[1], sderr, max(nobs_tg));")
-  expect_match2(scode, "err = scale_cov_err(zerr, chol_cov, nobs_tg, begin_tg, end_tg);")
+  expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max(nobs_tg));")
+  expect_match2(scode, "err = scale_cov_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);")
   expect_match2(scode, "vector[N] mu = temp_Intercept + Xc * b + err;")
   expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
 })
@@ -581,13 +585,16 @@ test_that("Stan code for compound symmetry models is correct", {
     y ~ x, dat, autocor = cor_cosy(~time),
     prior = prior(normal(0, 2), cosy)
   )
-  expect_match2(scode, "chol_cov = cholesky_cov_cosy(cosy, sigma, max(nobs_tg));")
+  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
   expect_match2(scode, "target += normal_lpdf(cosy | 0, 2);")
+  
+  scode <- make_stancode(bf(y ~ x, sigma ~ x), dat, autocor = cor_cosy(~time))
+  expect_match2(scode, "normal_cov_het_lpdf(Y | mu, sigma, chol_cor")
   
   scode <- make_stancode(
     y ~ x, dat, family = poisson, autocor = cor_cosy(~time)
   )
-  expect_match2(scode, "chol_cov = cholesky_cov_cosy(cosy, sderr, max(nobs_tg));")
+  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
 })
 
 test_that("Stan code for intercept only models is correct", {

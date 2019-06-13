@@ -231,8 +231,9 @@ stan_autocor <- function(bterms, prior) {
     if (isTRUE(bterms$rescor)) {
       stop2(err_msg, " when estimating 'rescor'.")
     }
-    if (has_natural_residuals && length(names(bterms$dpars)) > 1L) {
-      stop2(err_msg, " when predicting distributional parameters.")
+    pred_other_pars <- any(!names(bterms$dpars) %in% c("mu", "sigma"))
+    if (has_natural_residuals && pred_other_pars) {
+      stop2(err_msg, " when predicting parameters other than 'mu' and 'sigma'.")
     }
     str_add(out$data) <- glue( 
       "  // see the functions block for details\n",
@@ -247,29 +248,27 @@ stan_autocor <- function(bterms, prior) {
       )
     }
     str_add(out$tparD) <- glue(
-      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cov;\n"               
+      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor;\n"               
     )
     if (is.cor_arma(autocor)) {
       if (has_ar_only(autocor)) {
-        cov_fun <- "ar1"
-        cov_args <- glue("ar{p}[1]")
+        cor_fun <- "ar1"
+        cor_args <- glue("ar{p}[1]")
       } else if (has_ma_only(autocor)) {
-        cov_fun <- "ma1"
-        cov_args <- glue("ma{p}[1]")
+        cor_fun <- "ma1"
+        cor_args <- glue("ma{p}[1]")
       } else {
-        cov_fun <- "arma1"
-        cov_args <- glue("ar{p}[1], ma{p}[1]")
+        cor_fun <- "arma1"
+        cor_args <- glue("ar{p}[1], ma{p}[1]")
       }
     }
     if (is.cor_cosy(autocor)) {
-      cov_fun <- "cosy"
-      cov_args <- glue("cosy{p}")
+      cor_fun <- "cosy"
+      cor_args <- glue("cosy{p}")
     }
-    sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
     str_add(out$tparC1) <- glue(
       "  // compute residual covariance matrix\n",
-      "  chol_cov{p} = cholesky_cov_{cov_fun}", 
-      "({cov_args}, {sdpar}{p}, max(nobs_tg{p}));\n"
+      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
     )
     if (has_latent_residuals) {
       str_add(out$par) <- glue(
@@ -279,10 +278,11 @@ stan_autocor <- function(bterms, prior) {
       str_add(out$tparD) <- glue(
         "  vector[N{p}] err{p};  // actual residuals\n"
       )
+      # sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
       str_add(out$tparC1) <- glue(
         "  // compute correlated residuals\n",
         "  err{p} = scale_cov_err(",
-        "zerr{p}, chol_cov{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+        "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
       str_add(out$prior) <- glue(
         "  target += normal_lpdf(zerr | 0, 1);\n"
@@ -496,11 +496,11 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- glue(
       "  #include 'fun_normal_cov.stan'\n",
       "  #include 'fun_student_t_cov.stan'\n",
-      "  #include 'fun_cholesky_cov_ar1.stan'\n",
-      "  #include 'fun_cholesky_cov_ma1.stan'\n",
-      "  #include 'fun_cholesky_cov_arma1.stan'\n",
-      "  #include 'fun_cholesky_cov_cosy.stan'\n",
-      "  #include 'fun_scale_cov_err.stan'\n"
+      "  #include 'fun_scale_cov_err.stan'\n",
+      "  #include 'fun_cholesky_cor_ar1.stan'\n",
+      "  #include 'fun_cholesky_cor_ma1.stan'\n",
+      "  #include 'fun_cholesky_cor_arma1.stan'\n",
+      "  #include 'fun_cholesky_cor_cosy.stan'\n"
     )
   }
   if (any(ulapply(autocors, is.cor_sar))) {
