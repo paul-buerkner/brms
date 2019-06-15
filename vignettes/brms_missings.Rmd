@@ -52,7 +52,7 @@ library(mice)
 imp <- mice(nhanes, m = 5, print = FALSE)
 ```
 
-Now, we have `m = 5` imputed data sets stored within the `imp` object. We could either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** to the multiple imputed data sets is straightforward.
+Now, we have `m = 5` imputed data sets stored within the `imp` object. In practice, we will likely need more than `5` of those to accurately account for the uncertainty induced by the missingness, perhaps even in the area of `100` imputed data sets (Zhou & Reiter, 2010). Of course, this increases the computational burden by a lot and so we stick to `m = 5` for the purpose of this vignette. Regardless of the value of `m`, we can either extract those data sets and then pass them to the actual model fitting function as a list of data frames, or pass `imp` directly. The latter works because **brms** offers special support for data imputed by **mice**. We will go with the latter approach, since it is less typing. Fitting our model of interest with **brms** to the multiple imputed data sets is straightforward.
 
 ```{r, results = 'hide', message = FALSE}
 fit_imp1 <- brm_multiple(bmi ~ age*chl, data = imp, chains = 2)
@@ -113,4 +113,6 @@ The results look pretty similar to those obtained from multiple imputation, but 
 
 ## References
 
-Buuren, S. V., & Groothuis-Oudshoorn, K. (2010). mice: Multivariate imputation by chained equations in R. *Journal of Statistical Software*, 1-68.
+Buuren, S. V. & Groothuis-Oudshoorn, K. (2010). mice: Multivariate imputation by chained equations in R. *Journal of Statistical Software*, 1-68. doi:10.18637/jss.v045.i03
+
+Zhou, X. & Reiter, J. P. (2010). A Note on Bayesian Inference After Multiple Imputation. *The American Statistician*, 64(2), 159-163. doi:10.1198/tast.2010.09109
