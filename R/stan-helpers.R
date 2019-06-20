@@ -109,6 +109,7 @@ stan_response <- function(bterms, data) {
         "  // positions of missings\n"
       )
       str_add(out$modelD) <- glue(
+        "  // vector combining observed and missing responses\n",
         "  vector[N{resp}] Yl{resp} = Y{resp};\n" 
       )
       str_add(out$modelC1) <- glue(
@@ -192,6 +193,7 @@ stan_autocor <- function(bterms, prior) {
         stop2(err_msg, " when including known standard errors.")
       }
       str_add(out$data) <- glue( 
+        "  // number of lags per observation\n",
         "  int<lower=0> J_lag{p}[N{p}];\n"                
       )
       str_add(out$modelD) <- glue(
@@ -244,10 +246,12 @@ stan_autocor <- function(bterms, prior) {
     )
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdataD) <- glue(
+        "  // no known standard errors specified by the user\n",
         "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
       )
     }
     str_add(out$tparD) <- glue(
+      "  // cholesky factor of the autocorrelation matrix\n",
       "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor;\n"               
     )
     if (is.cor_arma(autocor)) {
@@ -634,22 +638,22 @@ stan_Xme <- function(meef, prior) {
     if (nzchar(g)) {
       Nme <- glue("Nme_{i}")
       str_add(out$data) <- glue(
-        "  int<lower=0> Nme_{i};\n",
-        "  int<lower=1> Jme_{i}[N];\n"
+        "  int<lower=0> Nme_{i};  // number of latent values\n",
+        "  int<lower=1> Jme_{i}[N];  // group index per observation\n"
       )
     } else {
       Nme <- "N"
     }
     str_add(out$data) <- glue(
-      "  int<lower=1> Mme_{i};\n"
+      "  int<lower=1> Mme_{i};  // number of groups\n"
     )
     str_add(out$data) <- cglue(
-      "  vector[{Nme}] Xn_{K};\n",
-      "  vector<lower=0>[{Nme}] noise_{K};\n"
+      "  vector[{Nme}] Xn_{K};  // noisy values\n",
+      "  vector<lower=0>[{Nme}] noise_{K};  // measurement noise\n"
     )
     str_add(out$par) <- cglue(
-      "  vector[Mme_{i}] meanme_{i};\n",
-      "  vector<lower=0>[Mme_{i}] sdme_{i};\n"
+      "  vector[Mme_{i}] meanme_{i};  // latent means\n",
+      "  vector<lower=0>[Mme_{i}] sdme_{i};  // latent SDs\n"
     )
     str_add(out$prior) <- glue(
       stan_prior(prior, "meanme", coef = coefs[K], suffix = usc(i)),
@@ -660,18 +664,21 @@ stan_Xme <- function(meef, prior) {
     )
     if (meef$cor[K[1]] && length(K) > 1L) {
       str_add(out$data) <- glue(
-        "  int<lower=1> NCme_{i};\n"
+        "  int<lower=1> NCme_{i};  // number of latent correlations\n"
       )
       str_add(out$par) <- glue(
-        "  matrix[Mme_{i}, {Nme}] zme_{i};\n",
+        "  matrix[Mme_{i}, {Nme}] zme_{i};  // standardized latent values\n",
+        "  // cholesky factor of the latent correlation matrix\n",
         "  cholesky_factor_corr[Mme_{i}] Lme_{i};\n"
       )
       str_add(out$tparD) <- glue(
+        "  // obtain the actual latent values\n",
         "  matrix[{Nme}, Mme_{i}] Xme{i}", 
         " = rep_matrix(meanme_{i}', {Nme}) ", 
         " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
       )
       str_add(out$tparD) <- cglue(
+        "  // using separate vectors increases efficiency\n",
         "  vector[{Nme}] Xme_{K} = Xme{i}[, {K}];\n"
       )
       str_add(out$prior) <- glue(
@@ -679,6 +686,7 @@ stan_Xme <- function(meef, prior) {
         stan_prior(prior, "Lme", group = g, suffix = usc(i))
       )
       str_add(out$genD) <- cglue(
+        "  // obtain latent correlation matrix\n",
         "  corr_matrix[Mme_{i}] Corme_{i}", 
         " = multiply_lower_tri_self_transpose(Lme_{i});\n",
         "  vector<lower=-1,upper=1>[NCme_{i}] corme_{i};\n"
@@ -686,9 +694,10 @@ stan_Xme <- function(meef, prior) {
       str_add(out$genC) <- stan_cor_genC(glue("corme_{i}"), glue("Mme_{i}"))
     } else {
       str_add(out$par) <- cglue(
-        "  vector[{Nme}] zme_{K};\n"
+        "  vector[{Nme}] zme_{K};  // standardized latent values\n"
       )
       str_add(out$tparD) <- cglue(
+        "  // obtain the actual latent values\n",
         "  vector[{Nme}] Xme_{K} = ",
         "meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
       )
