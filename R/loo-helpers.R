@@ -397,7 +397,9 @@ validate_models <- function(models, model_names, sub_names) {
 #' \pkg{future} package.
 #' 
 #' @inheritParams predict.brmsfit
-#' @param x An \R object of class \code{loo}.
+#' @param x An \R object of class \code{brmsfit} or \code{loo} depending
+#'   on the method.
+#' @param loo An \R object of class \code{loo}.
 #' @param fit An \R object of class \code{brmsfit}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
@@ -429,50 +431,50 @@ validate_models <- function(models, model_names, sub_names) {
 #' @examples 
 #' \dontrun{
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
+#'             data = epilepsy, family = poisson())
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
-#' (reloo1 <- reloo(loo1, fit1, chains = 1))
+#' (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
 #' }
 #' 
 #' @export
-reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL, 
-                  resp = NULL, check = TRUE, ...) {
-  stopifnot(is.loo(x), is.brmsfit(fit))
-  if (is.brmsfit_multiple(fit)) {
-    warn_brmsfit_multiple(fit)
-    class(fit) <- "brmsfit"
+reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
+                          resp = NULL, check = TRUE, ...) {
+  stopifnot(is.loo(loo), is.brmsfit(x))
+  if (is.brmsfit_multiple(x)) {
+    warn_brmsfit_multiple(x)
+    class(x) <- "brmsfit"
   }
   if (is.null(newdata)) {
-    mf <- model.frame(fit) 
+    mf <- model.frame(x) 
   } else {
     mf <- as.data.frame(newdata)
   }
   mf <- rm_attr(mf, c("terms", "brmsframe"))
-  if (NROW(mf) != NROW(x$pointwise)) {
-    stop2("Number of observations in 'x' and 'fit' do not match.")
+  if (NROW(mf) != NROW(loo$pointwise)) {
+    stop2("Number of observations in 'loo' and 'x' do not match.")
   }
   if (check) {
-    yhash_loo <- attr(x, "yhash")
-    yhash_fit <- hash_response(fit, newdata = newdata)
+    yhash_loo <- attr(loo, "yhash")
+    yhash_fit <- hash_response(x, newdata = newdata)
     if (!is_equal(yhash_loo, yhash_fit)) {
       stop2(
-        "Response values used in 'x' and 'fit' do not match. ",
+        "Response values used in 'loo' and 'x' do not match. ",
         "If this is a false positive, please set 'check' to FALSE."
       )
     }
   }
-  if (is.null(x$diagnostics$pareto_k)) {
+  if (is.null(loo$diagnostics$pareto_k)) {
     stop2("No Pareto k estimates found in the 'loo' object.")
   }
-  obs <- loo::pareto_k_ids(x, k_threshold)
+  obs <- loo::pareto_k_ids(loo, k_threshold)
   J <- length(obs)
   if (J == 0L) {
     message(
       "No problematic observations found. ",
       "Returning the original 'loo' object."
     )
-    return(x)
+    return(loo)
   }
   
   # split dots for use in log_lik and update
@@ -488,11 +490,11 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
   .reloo <- function(j) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- subset_autocor(fit, -omitted)
+    fit_j <- subset_autocor(x, -omitted)
     up_args$object <- fit_j
     up_args$newdata <- mf_omitted
     fit_j <- SW(do_call(update, up_args))
-    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
+    fit_j <- subset_autocor(fit_j, omitted, autocor = loo$autocor)
     ll_args$object <- fit_j
     ll_args$newdata <- mf[omitted, , drop = FALSE]
     return(do_call(log_lik, ll_args))
@@ -518,20 +520,33 @@ reloo <- function(x, fit, k_threshold = 0.7, newdata = NULL,
   elpd_loo <- ulapply(lls, log_mean_exp)
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
-  fit <- subset_autocor(fit, obs)
-  ll_x <- log_lik(fit, newdata = mf[obs, , drop = FALSE])
+  x <- subset_autocor(x, obs)
+  ll_x <- log_lik(x, newdata = mf[obs, , drop = FALSE])
   hat_lpd <- apply(ll_x, 2, log_mean_exp)
   # compute effective number of parameters
   p_loo <- hat_lpd - elpd_loo
   # replace parts of the loo object with these computed quantities
   sel <- c("elpd_loo", "p_loo", "looic")
-  x$pointwise[obs, sel] <- cbind(elpd_loo, p_loo, -2 * elpd_loo)
-  new_pw <- x$pointwise[, sel, drop = FALSE]
-  x$estimates[, 1] <- colSums(new_pw)
-  x$estimates[, 2] <- sqrt(nrow(x$pointwise) * apply(new_pw, 2, var))
+  loo$pointwise[obs, sel] <- cbind(elpd_loo, p_loo, -2 * elpd_loo)
+  new_pw <- loo$pointwise[, sel, drop = FALSE]
+  loo$estimates[, 1] <- colSums(new_pw)
+  loo$estimates[, 2] <- sqrt(nrow(loo$pointwise) * apply(new_pw, 2, var))
   # what should we do about pareto-k? for now setting them to 0
-  x$diagnostics$pareto_k[obs] <- 0
-  x
+  loo$diagnostics$pareto_k[obs] <- 0
+  loo
+}
+
+#' @rdname reloo.brmsfit
+#' @export
+reloo.loo <- function(x, fit, ...) {
+  reloo(fit, loo = x, ...)
+}
+
+# the generic will eventually be moved to 'loo'
+#' @rdname reloo.brmsfit
+#' @export
+reloo <- function(x, ...) {
+  UseMethod("reloo")
 }
 
 # helper function to perform k-fold cross-validation
