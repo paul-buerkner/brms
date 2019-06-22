@@ -1341,13 +1341,24 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     newdata, object = object, resp = resp, 
     re_formula = NA, check_response = TRUE, ...
   )
-  y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
+  y <- get_y(object, resp = resp, newdata = newdata, ...)
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
     object, newdata = newdata, resp = resp, subset = subset, 
     sort = FALSE, summary = FALSE, ...
   )
   yrep <- do_call(method, pred_args)
+  # censored responses are misleading when displayed in pp_check
+  cens <- get_cens(object, resp = resp, newdata = newdata)
+  if (!is.null(cens)) {
+    warning2("Censored responses are not shown in 'pp_check'.")
+    take <- !cens
+    if (!any(take)) {
+      stop2("No non-censored responses found.")
+    }
+    y <- y[take]
+    yrep <- yrep[, take, drop = FALSE]
+  }
   # most ... arguments are ment for the prediction function
   for_pred <- names(dots) %in% names(formals(extract_draws.brmsfit))
   ppc_args <- c(list(y, yrep), dots[!for_pred])

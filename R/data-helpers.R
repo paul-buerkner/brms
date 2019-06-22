@@ -585,6 +585,28 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   structure(out, old_order = attr(sdata, "old_order"))
 }
 
+# extract information on censoring of the response variable
+# @param x a brmsfit object
+# @param resp optional names of response variables for which to extract values
+# @return vector of censoring indicators or NULL in case of no censoring
+get_cens <- function(x, resp = NULL, newdata = NULL) {
+  stopifnot(is.brmsfit(x))
+  resp <- validate_resp(resp, x, multiple = FALSE)
+  bterms <- parse_bf(x$formula)
+  if (!is.null(resp)) {
+    bterms <- bterms$terms[[resp]]
+  }
+  if (is.null(newdata)) {
+    newdata <- model.frame(x)
+  }
+  if (is.formula(bterms$adforms$cens)) {
+    out <- eval_rhs(bterms$adforms$cens, data = newdata)
+  } else {
+    out <- NULL
+  }
+  out
+}
+
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
