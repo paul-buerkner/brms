@@ -434,13 +434,28 @@ log_lik_von_mises <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_asym_laplace <- function(i, draws, ...) {
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               sigma = get_dpar(draws, "sigma", i = i),
-               quantile = get_dpar(draws, "quantile", i = i))
-  out <- log_lik_censor(dist = "asym_laplace", args = args, 
-                       i = i, draws = draws)
-  out <- log_lik_truncate(out, cdf = pvon_mises, args = args,
-                         i = i, draws = draws)
+  args <- list(
+    mu = get_dpar(draws, "mu", i), 
+    sigma = get_dpar(draws, "sigma", i = i),
+    quantile = get_dpar(draws, "quantile", i = i)
+  )
+  out <- log_lik_censor(
+    dist = "asym_laplace", args = args, i = i, draws = draws
+  )
+  out <- log_lik_truncate(
+    out, cdf = pvon_mises, args = args, i = i, draws = draws
+  )
+  log_lik_weight(out, i = i, draws = draws)
+}
+
+log_lik_cox <- function(i, draws, ...) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i),
+    bhaz = draws$bhaz$bhaz[, i], 
+    cbhaz = draws$bhaz$cbhaz[, i]
+  )
+  out <- log_lik_censor(dist = "cox", args = args, i = i, draws = draws)
+  out <- log_lik_truncate(out, cdf = pcox, args = args, i = i, draws = draws)
   log_lik_weight(out, i = i, draws = draws)
 }
 

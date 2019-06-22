@@ -22,6 +22,7 @@ stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
     text_gp <- stan_gp(x, ...),
     text_ac <- stan_ac(x, ...),
     text_offset <- stan_offset(x, ...),
+    text_bhaz <- stan_bhaz(x, ...),
     stan_special_prior_global(x, ...)
   )
   
@@ -101,8 +102,8 @@ stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
       "  {par} = {ilink[1]}{trimws(nlmodel)}{ilink[2]};\n"
     )
   }
-  # ordinal thresholds need to be present also in non-linear models
   str_add_list(out) <- stan_thres(x, ...)
+  str_add_list(out) <- stan_bhaz(x, ...)
   out
 }
 
@@ -522,6 +523,37 @@ stan_thres <- function(bterms, prior, ...) {
     "  vector[ncat{resp} - 1] b{p}_Intercept",  
     " = temp{p}_Intercept{sub_X_means};\n" 
   )
+  out
+}
+
+# Stan code for the baseline functions of the Cox model
+stan_bhaz <- function(bterms, prior, ...) {
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  out <- list()
+  if (!is_cox(bterms$family)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
+  str_add(out$data) <- glue(
+    "  // data for flexible baseline functions\n",
+    "  int Kbhaz{resp};  // number of basis functions\n",
+    "  // design matrix of the baseline function\n",
+    "  matrix[N{resp}, Kbhaz{resp}] Zbhaz{resp};\n",
+    "  // design matrix of the cumulative baseline function\n",
+    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
+  )
+  str_add(out$par) <- glue(
+    "  vector<lower=0>[Kbhaz{resp}] sbhaz; // baseline coefficients\n"
+  )
+  str_add(out$modelD) <- glue(
+    "  // compute values of baseline function\n",
+    "  vector[N{resp}] bhaz{resp} = Zbhaz{resp} * sbhaz{resp};\n",
+    "  // compute values of cumulative baseline function\n",
+    "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp} * sbhaz{resp};\n"
+  )
+  str_add(out$prior) <- stan_prior(prior, class = "sbhaz", px = px)
   out
 }
 
@@ -1325,12 +1357,12 @@ stan_eta_rsp <- function(r) {
 
 # does eta need to be transformed manually using the link functions
 # @param family the model family
-# @param llh_adj is the model censored or truncated?
-stan_eta_transform <- function(family, llh_adj = FALSE) {
+# @param cens_or_trunc is the model censored or truncated?
+stan_eta_transform <- function(family, cens_or_trunc = FALSE) {
   transeta <- "transeta" %in% family_info(family, "specials")
-  !(family$link == "identity" && !transeta || 
-    has_cat(family) && !is.customfamily(family)) &&
-    (llh_adj || !stan_has_built_in_fun(family))
+  no_transform <- family$link == "identity" && !transeta || 
+    has_cat(family) && !is.customfamily(family)
+  !no_transform && !stan_has_built_in_fun(family, cens_or_trunc)
 }
 
 # correctly apply inverse link to eta
@@ -1342,8 +1374,8 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   stopifnot(is.brmsterms(bterms))
   out <- rep("", 2)
   family <- bterms$dpars[[dpar]]$family
-  llh_adj <- stan_llh_adj(bterms$adforms, c("cens", "trunc"))
-  if (stan_eta_transform(family, llh_adj = llh_adj)) {
+  cens_or_trunc <- stan_llh_adj(bterms$adforms, c("cens", "trunc"))
+  if (stan_eta_transform(family, cens_or_trunc = cens_or_trunc)) {
     dpar_id <- dpar_id(dpar)
     pred_dpars <- names(bterms$dpars)
     shape <- glue("shape{dpar_id}{resp}")

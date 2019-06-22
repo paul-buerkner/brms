@@ -277,10 +277,21 @@
 .family_asym_laplace <- function() {
   list(
     links = c("identity", "log", "inverse", "softplus"),
-    dpars = c("mu", "sigma", "quantile"),
+    dpars = c("mu", "sigma", "quantile"), type = "real",
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
     ad = c("weights", "subset", "cens", "trunc", "mi"),
     include = "fun_asym_laplace.stan"
+  )
+}
+
+.family_cox <- function() {
+  list(
+    links = c("log", "identity"),
+    dpars = c("mu"), type = "real",
+    ybounds = c(0, Inf), closed = c(FALSE, NA),
+    ad = c("weights", "subset", "cens", "trunc"),
+    include = "fun_cox.stan",
+    specials = c("cox")
   )
 }
 

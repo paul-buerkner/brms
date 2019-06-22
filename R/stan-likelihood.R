@@ -536,6 +536,17 @@ stan_llh_von_mises <- function(bterms, resp = "", mix = "") {
   sdist(lpdf, p$mu, p$kappa)
 }
 
+stan_llh_cox <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  p$bhaz <- paste0("bhaz", resp, "[n]")
+  p$cbhaz <- paste0("cbhaz", resp, "[n]")
+  lpdf <- "cox"
+  if (bterms$family$link == "log") {
+    str_add(lpdf) <- "_log"
+  }
+  sdist(lpdf, p$mu, p$bhaz, p$cbhaz)
+}
+
 stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
   simplify <- bterms$family$link == "logit" && 
     !"disc" %in% names(bterms$dpars) && !has_cs(bterms)

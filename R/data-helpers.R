@@ -501,6 +501,50 @@ s2rPred <- function(sm, data) {
   out
 }
 
+# Basis matrices for baseline hazard functions of the Cox model
+# @param y vector of response values
+# @param args arguments passed to the spline generating functions
+# @param integrate compute the I-spline instead of the M-spline basis?
+# @param basis optional precomputed basis matrix
+# @return the design matrix of the baseline hazard function
+bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE, 
+                              basis = NULL) {
+  require_package("splines2")
+  if (!is.null(basis)) {
+    # perform predictions based on an existing basis matrix
+    stopifnot(inherits(basis, "mSpline"))
+    if (integrate) {
+      # for predictions just the attibutes are required
+      # which are the same of M-Splines and I-Splines
+      class(basis) <- c("matrix", "iSpline")
+    }
+    return(predict(basis, y))
+  }
+  stopifnot(is.list(args))
+  args$x <- y
+  if (!is.null(args$intercept)) {
+    args$intercept <- as_one_logical(args$intercept) 
+  }
+  if (is.null(args$Boundary.knots)) {
+    if (isTRUE(args$intercept)) {
+      lower_knot <- min(y)
+      upper_knot <- max(y)
+    } else {
+      # we need a smaller lower boundary knot to avoid lp = -Inf 
+      # the below choices are ad-hoc and may need further thought
+      lower_knot <- max(min(y) - mad(y, na.rm = TRUE) / 10, 0)
+      upper_knot <- max(y) + mad(y, na.rm = TRUE) / 10
+    }
+    args$Boundary.knots <- c(lower_knot, upper_knot)
+  }
+  if (integrate) {
+    out <- do_call(splines2::iSpline, args)
+  } else {
+    out <- do_call(splines2::mSpline, args)
+  }
+  out
+}
+
 #' Extract response values
 #' 
 #' Extract response values from a \code{\link{brmsfit}} object.
@@ -587,6 +631,15 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     if (isTRUE(nzchar(x$time$group))) {
       out$locations <- levels(factor(get(x$time$group, data)))
     }
+  }
+  if (is_cox(x$family)) {
+    # compute basis matrix of the baseline hazard for the Cox model
+    data_response <- data_response(
+      x, data, check_response = FALSE, not4stan = TRUE
+    )
+    out$bhaz_basis <- bhaz_basis_matrix(
+      data_response$y, args = x$family$baseline
+    )
   }
   out
 }

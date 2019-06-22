@@ -67,6 +67,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
     data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
     data_offset(x, data),
+    data_bhaz(x, data, basis = old_sdata$base_basis),
     data_prior(x, data, prior = prior)
   )
 }
@@ -1034,6 +1035,20 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       names(out) <- paste0(names(out), p)
     }
   }
+  out
+}
+
+# data for the baseline functions of Cox models
+data_bhaz <- function(bterms, data, basis = NULL) {
+  out <- list()
+  if (!is_cox(bterms$family)) {
+    return(out) 
+  }
+  y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
+  args <- bterms$family$bhaz 
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = basis)
+  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = basis)
+  out$Kbhaz <- NCOL(out$Zbhaz)
   out
 }
 

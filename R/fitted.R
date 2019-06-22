@@ -214,6 +214,11 @@ fitted_asym_laplace <- function(draws) {
   )
 }
 
+fitted_cox <- function(draws) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'cox'.")
+}
+
 fitted_hurdle_poisson <- function(draws) {
   with(draws$dpars, mu / (1 - exp(-mu)) * (1 - hu))
 }
