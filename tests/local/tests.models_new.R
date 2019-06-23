@@ -851,3 +851,17 @@ test_that("Addition argument 'subset' works correctly", {
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
 })
+
+test_that("Cox models work correctly", {
+  set.seed(1234)
+  covs <- data.frame(id  = 1:200, trt = stats::rbinom(200, 1L, 0.5))
+  d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
+                         x = covs, maxt  = 5)
+  d1 <- merge(d1, covs)
+  
+  fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt, 
+              data = d1, family = brmsfamily("cox"))
+  print(summary(fit1))
+  expect_range(posterior_summary(fit1)["b_trt", "Estimate"], 0.45, 0.55)
+  expect_range(waic(fit1)$estimates[3, 1], 620, 670)
+})
