@@ -40,6 +40,7 @@ Suggests:
     mnormt,
     lme4,
     MCMCglmm,
+    splines2
     ape,
     arm,
     statmod,
