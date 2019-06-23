@@ -60,6 +60,7 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   has_weights <- is.formula(bterms$adforms$weights)  
   weights <- str_if(has_weights, glue("weights{resp}[n] * "))
   out <- glue(
+    "  // likelihood of the mixture model\n",
     "  for (n in 1:N{resp}) {{\n",
     "      real ps[{length(llh)}];\n"
   )
