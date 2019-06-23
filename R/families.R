@@ -54,6 +54,7 @@
 #'   default), the first category is used as the reference. If \code{NA}, all
 #'   categories will be predicted, which requires strong priors or carefully
 #'   specified predictor terms in order to lead to an identified model.
+#' @param bhaz Currently for experimental purposes only.
 #' 
 #' @details 
 #'   Below, we list common use cases for the different families.
@@ -189,7 +190,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_alpha = "identity", 
                        link_quantile = "logit",
                        threshold = c("flexible", "equidistant"),
-                       refcat = NULL) {
+                       refcat = NULL, bhaz = NULL) {
   slink <- substitute(link)
   .brmsfamily(
     family, link = link, slink = slink,
@@ -202,7 +203,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     link_ndt = link_ndt, link_bias = link_bias,
     link_alpha = link_alpha, link_xi = link_xi,
     link_quantile = link_quantile,
-    threshold = threshold, refcat = refcat
+    threshold = threshold, refcat = refcat,
+    bhaz = bhaz
   )
 }
 
@@ -216,7 +218,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 # @return an object of 'brmsfamily' which inherits from 'family'
 .brmsfamily <- function(family, link = NULL, slink = link,
                         threshold = c("flexible", "equidistant"),
-                        refcat = NULL, ...) {
+                        refcat = NULL, bhaz = NULL, ...) {
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
   pattern <- c("^normal$", "^zi_", "^hu_")
@@ -281,6 +283,23 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   if (conv_cats_dpars(out$family)) {
     if (!is.null(refcat)) {
       out$refcat <- as_one_character(refcat, allow_na = TRUE) 
+    }
+  }
+  if (is_cox(out$family)) {
+    if (!is.null(bhaz)) {
+      if (!is.list(bhaz)) {
+        stop2("'bhaz' should be a list.")
+      }
+      out$bhaz <- bhaz
+    } else {
+      out$bhaz <- list()
+    }
+    # set default arguments
+    if (is.null(out$bhaz$df)) {
+      out$bhaz$df <- 4L
+    }
+    if (is.null(out$bhaz$intercept)) {
+      out$bhaz$intercept <- FALSE
     }
   }
   out
@@ -599,6 +618,14 @@ asym_laplace <- function(link = "identity", link_sigma = "log",
   slink <- substitute(link)
   .brmsfamily("asym_laplace", link = link, slink = slink,
               link_sigma = link_sigma, link_quantile = link_quantile)
+}
+
+# do not export yet!
+# @rdname brmsfamily
+# @export
+cox <- function(link = "log", bhaz = NULL) {
+  slink <- substitute(link)
+  .brmsfamily("cox", link = link, bhaz = bhaz)
 }
 
 #' @rdname brmsfamily
@@ -1376,6 +1403,10 @@ is_multinomial <- function(family) {
 
 is_dirichlet <- function(family) {
   "dirichlet" %in% family_info(family, "specials")
+}
+
+is_cox <- function(family) {
+  "cox" %in% family_info(family, "specials")
 }
 
 allow_factors <- function(family) {

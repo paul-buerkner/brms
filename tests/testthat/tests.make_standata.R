@@ -721,7 +721,7 @@ test_that("make_standata includes data for CAR models", {
                "all locations should have at least one neighbor")
 })
 
-test_that("make_standata incldudes data of special priors", {
+test_that("make_standata includes data of special priors", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
   
   # horseshoe prior
@@ -817,4 +817,16 @@ test_that("data for multinomial and dirichlet models is correct", {
   )
   expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
                "Response values in dirichlet models must sum to 1")
+})
+
+test_that("make_stadata handles cox models correctly", {
+  data <- data.frame(y = rexp(100), x = rnorm(100))
+  bform <- bf(y ~ x)
+  sdata <- make_standata(bform, data, brmsfamily("cox"))
+  expect_equal(dim(sdata$Zbhaz), c(100, 4))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 4))
+  
+  sdata <- make_standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
+  expect_equal(dim(sdata$Zbhaz), c(100, 6))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 6))
 })

@@ -620,7 +620,8 @@ prior_predictor.btl <- function(x, ...) {
     prior_sp(x, ...) +
     prior_cs(x, ...) +
     prior_sm(x, ...) + 
-    prior_gp(x, ...)
+    prior_gp(x, ...) +
+    prior_bhaz(x, ...)
 }
 
 # priors for non-linear predictor terms
@@ -670,6 +671,19 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
     prior = c(def_scale_prior, rep("", length(thres))), 
     class = "Intercept", coef = c("", thres), ls = px
   )
+  prior
+}
+
+# priors for coefficients of baseline hazards in the Cox model
+prior_bhaz <- function(bterms, ...) {
+  prior <- empty_brmsprior()
+  if (!is_cox(bterms$family)) {
+    return(prior)
+  }
+  px <- check_prefix(bterms)
+  # the scale of sbhaz is not identified when an intercept is part of mu
+  # thus a prior on sbhaz is necessary to define its scale
+  prior <- prior + brmsprior("normal(0, 1)", class = "sbhaz", ls = px)
   prior
 }
 

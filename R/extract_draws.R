@@ -157,6 +157,19 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
       draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
     }
   }
+  if (is_cox(x$family)) {
+    # prepare baseline hazard functions for the Cox model
+    if (is.mixfamily(x$family)) {
+      mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
+      for (mu in mu_pars) {
+        draws$bhaz[[mu]] <- extract_draws_bhaz(
+          x$dpars[[mu]], samples, sdata, ...
+        )
+      }
+    } else {
+      draws$bhaz <- extract_draws_bhaz(x$dpars$mu, samples, sdata, ...)
+    }
+  }
   if (has_cor_natural_residuals(x)) {
     # only include autocor samples on the top-level of draws 
     # when using the covariance formulation of autocorrelations
@@ -638,6 +651,21 @@ extract_draws_thres <- function(bterms, samples, ...) {
   get_samples(samples, int_regex)
 }
 
+# extract draws of baseline functions for the cox model
+extract_draws_bhaz <- function(bterms, samples, sdata, ...) {
+  if (!is_cox(bterms$family)) {
+    return(NULL)
+  }
+  out <- list()
+  p <- usc(combine_prefix(bterms))
+  sbhaz <- get_samples(samples, paste0("^sbhaz", p))
+  Zbhaz <- sdata[[paste0("Zbhaz", p)]]
+  out$bhaz <- tcrossprod(sbhaz, Zbhaz) 
+  Zcbhaz <- sdata[[paste0("Zcbhaz", p)]]
+  out$cbhaz <- tcrossprod(sbhaz, Zcbhaz)
+  out
+}
+
 # extract draws of autocorrelation parameters
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
                                   new = FALSE, ...) {
@@ -752,6 +780,9 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   }
   if (is_ordinal(out$family)) {
     out$thres <- draws$thres[[paste0("mu", comp)]]
+  }
+  if (is_cox(out$family)) {
+    out$bhaz <- draws$bhaz[[paste0("mu", comp)]]
   }
   # weighting should happen after computing the mixture
   out$data$weights <- NULL

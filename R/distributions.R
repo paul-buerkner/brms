@@ -1527,6 +1527,50 @@ rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   out
 }
 
+# density of the cox proportional hazards model
+# @param x currently ignored as the information is passed
+#   via 'bhaz' and 'cbhaz'. Before exporting the cox distribution 
+#   functions, this needs to be refactored so that x is actually used
+# @param mu positive location parameter
+# @param bhaz baseline hazard
+# @param cbhaz cumulative baseline hazard
+dcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+  out <- hcox(x, mu, bhaz, cbhaz, log = TRUE) +
+    pcox(x, mu, bhaz, cbhaz, lower.tail = FALSE, log.p = TRUE)
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+# hazard function of the cox model
+hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+  out <- log(bhaz) - log(mu)
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+# distribution function of the cox model
+pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
+  log_surv <- -cbhaz / mu
+  if (lower.tail) {
+    if (log.p) {
+      out <- log1m_exp(log_surv)
+    } else {
+      out <- 1 - exp(log_surv)
+    }
+  } else {
+    if (log.p) {
+      out <- log_surv
+    } else {
+      out <- exp(log_surv)
+    }
+  }
+  out
+}
+
 #' Zero-Inflated Distributions
 #' 
 #' Density and distribution functions for zero-inflated distributions.

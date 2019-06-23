@@ -406,6 +406,11 @@ predict_asym_laplace <- function(i, draws, ...) {
   )
 }
 
+predict_cox <- function(i, draws, ...) {
+  stop2("Cannot sample from the posterior predictive ",
+        "distribution for family 'cox'.")
+}
+
 predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "hu", i = i) 

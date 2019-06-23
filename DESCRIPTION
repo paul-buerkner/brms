@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.9.2
-Date: 2019-06-12
+Version: 2.9.3
+Date: 2019-06-22
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -40,6 +40,7 @@ Suggests:
     mnormt,
     lme4,
     MCMCglmm,
+    splines2,
     ape,
     arm,
     statmod,

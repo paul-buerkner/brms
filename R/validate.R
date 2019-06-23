@@ -126,6 +126,9 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
     y$dpars[[dp]]$resp <- resp
+    if (dpar_class(dp) == "mu") {
+      y$dpars[[dp]]$respform <- y$respform
+    }
   }
   
   y$nlpars <- named_list(nlpars)

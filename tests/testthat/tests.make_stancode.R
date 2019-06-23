@@ -288,17 +288,6 @@ test_that("truncation appears in the Stan code", {
   )
 })
 
-test_that("make_stancode combines strings of multiple grouping factors", {
-  expect_match2(make_stancode(count ~ (1|patient) + (1 + Trt | visit), 
-                             data = epilepsy, family = "poisson"), 
-               paste0("  vector[N] Z_1_1;\n",
-                      "  // data for group-level effects of ID 2"))
-  expect_match2(make_stancode(count ~ (1|visit) + (1+Trt|patient), 
-                             data = epilepsy, family = skew_normal()), 
-               paste0("  int<lower=1> NC_1;\n",
-                      "  // data for group-level effects of ID 2"))
-})
-
 test_that("make_stancode handles models without fixed effects", {
   expect_match2(make_stancode(count ~ 0 + (1|patient) + (1+Trt|visit), 
                              data = epilepsy, family = "poisson"), 
@@ -1231,6 +1220,21 @@ test_that("Stan code of GEV models is correct", {
   
   scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value())
   expect_match2(scode, "target += gen_extreme_value_lccdf(Y[n] | mu[n], sigma, xi)")
+})
+
+test_that("Stan code of Cox models is correct", {
+  data <- data.frame(y = rexp(100), ce = sample(0:1, 100, TRUE), x = rnorm(100))
+  bform <- bf(y | cens(ce) ~ x)
+  bprior <- prior(normal(0, 2), sbhaz)
+  scode <- make_stancode(bform, data, brmsfamily("cox"), prior = bprior)
+  expect_match2(scode, "target += cox_log_lpdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+  expect_match2(scode, "vector[N] cbhaz = Zcbhaz * sbhaz;")
+  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 2);")
+  expect_match2(scode, "vector<lower=0>[Kbhaz] sbhaz;")
+  
+  scode <- make_stancode(bform, data, brmsfamily("cox", "identity"))
+  expect_match2(scode, "target += cox_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
+  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 1);")
 })
 
 test_that("offsets appear in the Stan code", {

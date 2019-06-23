@@ -774,24 +774,33 @@ stan_cor_genC <- function(cor, ncol) {
 # indicates if a family-link combination has a built in 
 # function in Stan (such as binomial_logit)
 # @param family a list with elements 'family' and 'link'
-stan_has_built_in_fun <- function(family) {
+# @param cens_or_trunc is the model censored or truncated?
+stan_has_built_in_fun <- function(family, cens_or_trunc = FALSE) {
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
   dpar <- family$dpar
   family <- family$family
-  log_families <- c(
-    "poisson", "negbinomial", "geometric", "com_poisson",
-    "zero_inflated_poisson", "zero_inflated_negbinomial",
-    "hurdle_poisson", "hurdle_negbinomial"
-  )
-  logit_families <- c(
-    "binomial", "bernoulli", "cumulative", "categorical",
-    "zero_inflated_binomial"
-  )
+  if (cens_or_trunc) {
+    # only few families have special lcdf and lccdf functions
+    log_families <- c("cox")
+    logit_families <- character(0)
+    logit_dpars <- character(0)
+  } else {
+    log_families <- c(
+      "poisson", "negbinomial", "geometric", "com_poisson",
+      "zero_inflated_poisson", "zero_inflated_negbinomial",
+      "hurdle_poisson", "hurdle_negbinomial", "cox"
+    )
+    logit_families <- c(
+      "binomial", "bernoulli", "cumulative", "categorical",
+      "zero_inflated_binomial"
+    )
+    logit_dpars <- c("zi", "hu")
+  }
   isTRUE(
     family %in% log_families && link == "log" ||
     family %in% logit_families && link == "logit" ||
-    isTRUE(dpar %in% c("zi", "hu")) && link == "logit"
+    isTRUE(dpar %in% logit_dpars) && link == "logit"
   )
 }
 

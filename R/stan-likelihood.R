@@ -60,6 +60,7 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   has_weights <- is.formula(bterms$adforms$weights)  
   weights <- str_if(has_weights, glue("weights{resp}[n] * "))
   out <- glue(
+    "  // likelihood of the mixture model\n",
     "  for (n in 1:N{resp}) {{\n",
     "      real ps[{length(llh)}];\n"
   )
@@ -534,6 +535,17 @@ stan_llh_von_mises <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   lpdf <- paste0("von_mises_", str_if(reqn, "real", "vector"))
   sdist(lpdf, p$mu, p$kappa)
+}
+
+stan_llh_cox <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  p$bhaz <- paste0("bhaz", resp, "[n]")
+  p$cbhaz <- paste0("cbhaz", resp, "[n]")
+  lpdf <- "cox"
+  if (bterms$family$link == "log") {
+    str_add(lpdf) <- "_log"
+  }
+  sdist(lpdf, p$mu, p$bhaz, p$cbhaz)
 }
 
 stan_llh_cumulative <- function(bterms, resp = "", mix = "") {

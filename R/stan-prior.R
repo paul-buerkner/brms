@@ -199,16 +199,17 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
   special <- attributes(prior)$special[[prefix]]
   if (!is.null(special[["hs_df"]])) {
     str_add(out$data) <- glue(
-      "  real<lower=0> hs_df{p};\n",
-      "  real<lower=0> hs_df_global{p};\n",
-      "  real<lower=0> hs_df_slab{p};\n",
-      "  real<lower=0> hs_scale_global{p};\n",
-      "  real<lower=0> hs_scale_slab{p};\n"           
+      "  // data for the horseshoe prior\n",
+      "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
+      "  real<lower=0> hs_df_global{p};  // global degrees of freedom\n",
+      "  real<lower=0> hs_df_slab{p};  // slab degrees of freedom\n",
+      "  real<lower=0> hs_scale_global{p};  // global prior scale\n",
+      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n"           
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
-      "  real<lower=0> hs_global{p}[2];\n",
-      "  real<lower=0> hs_c2{p};\n"
+      "  real<lower=0> hs_global{p}[2];  // global shrinkage parameters\n",
+      "  real<lower=0> hs_c2{p};  // slab regularization parameter\n"
     )
     global_args <- glue("0.5 * hs_df_global{p}")
     global_args <- sargs(global_args, global_args)
@@ -223,8 +224,9 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
   }
   if (!is.null(special[["lasso_df"]])) {
     str_add(out$data) <- glue(
-      "  real<lower=0> lasso_df{p};\n",
-      "  real<lower=0> lasso_scale{p};\n"
+      "  // data for the lasso prior\n",
+      "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
+      "  real<lower=0> lasso_scale{p};  // prior scale\n"
     )
     str_add(out$par) <- glue(
       "  // lasso shrinkage parameter\n",
@@ -271,6 +273,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
     str_add(out$tparC1) <- glue(
+      "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
     local_args <- glue("0.5 * hs_df{p}")
