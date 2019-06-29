@@ -1545,7 +1545,7 @@ dcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
 
 # hazard function of the cox model
 hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
-  out <- log(bhaz) - log(mu)
+  out <- log(bhaz) + log(mu)
   if (!log) {
     out <- exp(out)
   }
@@ -1554,7 +1554,7 @@ hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
 
 # distribution function of the cox model
 pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
-  log_surv <- -cbhaz / mu
+  log_surv <- -cbhaz * mu
   if (lower.tail) {
     if (log.p) {
       out <- log1m_exp(log_surv)
