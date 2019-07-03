@@ -210,6 +210,9 @@ resp_mi <- function(sdy = NULL) {
   if (!is.null(sdy) && !is.numeric(sdy)) {
     stop2("Measurement error should be numeric.")
   }
+  if (isTRUE(any(sdy <= 0))) {
+    stop2("Measurement error should be positive.")
+  }
   sdy
 }
 
