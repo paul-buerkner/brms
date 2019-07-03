@@ -1270,12 +1270,14 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       gi <- which(find_rows(
-        prior, class = cl, coef = "", dpar = "", resp = x$resp
+        prior, class = cl, coef = "", 
+        dpar = "", nlpar = "", resp = x$resp
       ))
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
         rows <- which(find_rows(
-          prior, class = cl, coef = "", dpar = dp, resp = x$resp
+          prior, class = cl, coef = "", 
+          dpar = dp, nlpar = "", resp = x$resp
         ))
         for (dpi in rows) {
           if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
