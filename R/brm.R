@@ -65,17 +65,18 @@
 #'   in Stan's \code{parameters} block should be saved (default is
 #'   \code{FALSE}). Saving these samples is required in order to apply the
 #'   methods \code{bridge_sampler}, \code{bayes_factor}, and \code{post_prob}.
-#' @param sample_prior Indicate if samples from all specified proper priors
-#'   should be drawn additionally to the posterior samples (defaults to
-#'   \code{"no"}). Among others, these samples can be used to calculate Bayes
-#'   factors for point hypotheses via \code{\link{hypothesis}}. Please note
-#'   that, for technical reasons, prior samples for the overall intercept cannot
-#'   be obtained by default. If such samples are of interest, the intercept
-#'   needs to be explicitely modeled as a predictor as explained in
-#'   \code{\link{brmsformula}}. If \code{sample_prior} is set to \code{"only"},
-#'   samples are drawn solely from the priors ignoring the likelihood, which
-#'   allows among others to generate samples from the prior predictive
-#'   distribution. In this case, all parameters must have proper priors.
+#' @param sample_prior Indicate if samples from priors should be drawn 
+#'   additionally to the posterior samples (defaults to \code{"no"}). Among 
+#'   others, these samples can be used to calculate Bayes factors for point 
+#'   hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
+#'   are not sampled, including the default improper priors used by \code{brm}. 
+#'   See \code{\link{set_prior}} on how to set (proper) priors. Please also note
+#'   that prior samples for the overall intercept are not obtained by default for 
+#'   technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
+#'   for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
+#'   are drawn solely from the priors ignoring the likelihood, which allows among 
+#'   others to generate samples from the prior predictive distribution. In this 
+#'   case, all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be used
 #'   for basis construction of smoothing terms. See
 #'   \code{\link[mgcv:gamm]{gamm}} for more details.
