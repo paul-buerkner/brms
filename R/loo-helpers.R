@@ -100,14 +100,6 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         # TODO: how to include r_eff here?
       } else {
         loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
-        if (anyNA(loo_args$r_eff)) {
-          # avoid error in LOO if some but not all r_effs are NA
-          loo_args$r_eff <- NA
-          warning2(
-            "Ignoring relative efficiencies as some were NA. ",
-            "See argument 'r_eff' in ?loo::loo for more details."
-          )
-        }
       }
       if (criterion == "psis") {
         if (pointwise) {
@@ -806,8 +798,9 @@ recommend_loo_options <- function(n, k_threshold, model_name = "") {
 # helper function to compute relative efficiences
 # @param x matrix of posterior draws
 # @param fit a brmsfit object to extract metadata from
+# @param allow_na allow NA values in the output?
 # @return a numeric vector of length NCOL(x)
-r_eff_helper <- function(x, fit) {
+r_eff_helper <- function(x, fit, allow_na = TRUE) {
   if (is.brmsfit_multiple(fit)) {
     # due to stacking of chains from multiple models
     # efficiency computations will likely be incorrect
@@ -817,13 +810,22 @@ r_eff_helper <- function(x, fit) {
   stopifnot(is.matrix(x), is.brmsfit(fit))
   chains <- fit$fit@sim$chains
   chain_id <- rep(seq_len(chains), each = nrow(x) / chains)
-  loo::relative_eff(x, chain_id = chain_id)
+  out <- loo::relative_eff(x, chain_id = chain_id)
+  if (!allow_na && anyNA(out)) {
+    # avoid error in loo if some but not all r_effs are NA
+    out <- rep(1, NCOL(x))
+    warning2(
+      "Ignoring relative efficiencies as some were NA. ",
+      "See argument 'r_eff' in ?loo::loo for more details."
+    )
+  }
+  out
 }
 
 # wrapper around r_eff_helper to compute efficiency 
 # of likelihood draws based on log-likelihood draws
-r_eff_log_lik <- function(log_lik, fit) {
-  r_eff_helper(exp(log_lik), fit)
+r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
+  r_eff_helper(exp(log_lik), fit = fit, allow_na = allow_na)
 }
 
 # print the output of a list of loo objects
