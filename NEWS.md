@@ -12,6 +12,8 @@ autocorrelation structures. (#403)
 thanks to Bruno Nicenboim. (#679)
 * Allow the `horseshoe` prior in categorical and
 related models thanks to the Github user tatters. (#678)
+* Fix extraction of prior samples for overall intercepts in
+`prior_samples` thanks to Jonas Kristoffer Lindelov. (#696)
 * Allow underscores to be used in category names
 of categorical responses thanks to Emmanuel Charpentier. (#672)
 * Fix Stan code of multivariate models with multi-membership
