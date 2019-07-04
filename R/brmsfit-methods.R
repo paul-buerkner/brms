@@ -628,7 +628,7 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
         matches <- paste0("^", escape_all(names(samples)))
         matches <- lapply(matches, regexpr, text = par)
         matches <- ulapply(matches, attr, which = "match.length")
-        if (max(matches) == -1) {
+        if (max(matches) == -1 || ignore_prior(x, par)) {
           out <- NULL
         } else {
           take <- match(max(matches), matches)

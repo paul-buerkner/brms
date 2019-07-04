@@ -840,6 +840,38 @@ arg_names <- function(method) {
   out
 }
 
+# ignore priors of certain parameters from whom we cannot obtain prior samples
+# currently applies only to overall intercepts of centered design matrices
+# fixes issue #696
+# @param x a brmsfit object
+# @param par name of the parameter
+# @return TRUE (if the prior should be ignored) or FALSE
+ignore_prior <- function(x, par) {
+  stopifnot(is.brmsfit(x))
+  par <- as_one_character(par)
+  out <- FALSE
+  if (grepl("^b_.*Intercept($|\\[)", par)) {
+    # cannot sample from intercepts if 'center' was TRUE
+    intercept_priors <- subset2(x$prior, class = "Intercept")
+    if (NROW(intercept_priors)) {
+      # prefixes of the model intercepts
+      p_intercepts <- usc(combine_prefix(intercept_priors))
+      # prefix of the parameter under question
+      p_par <- sub("^b", "", par)
+      p_par <- sub("_Intercept($|\\[)", "", p_par)
+      out <- p_par %in% p_intercepts
+      if (out) {
+        warning2(
+          "Sampling from the prior of an overall intercept is not ", 
+          "possible by default. See the documentation of the ", 
+          "'sample_prior' argument in help('brm')."
+        )
+      }
+    }
+  }
+  out
+}
+
 # add dummy samples to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add
