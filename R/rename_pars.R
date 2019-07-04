@@ -12,7 +12,7 @@ rename_pars <- function(x) {
   pars <- parnames(x)
   # find positions of parameters and define new names
   change <- c(
-    change_effects(bterms, data = data, pars = pars, scode = stancode(x)),
+    change_effects(bterms, data = data, pars = pars),
     change_re(x$ranef, pars = pars),
     change_Xme(meef, pars = pars)
   )
@@ -67,10 +67,9 @@ change_effects.brmsterms <- function(x, ...) {
 
 # helps in renaming parameters of additive predictor terms
 # @param pars vector of all parameter names
-# @param scode stan code of the model
 #' @export
-change_effects.btl <- function(x, data, pars, scode = "", ...) {
-  c(change_fe(x, data, pars, scode = scode),
+change_effects.btl <- function(x, data, pars, ...) {
+  c(change_fe(x, data, pars),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
@@ -78,11 +77,13 @@ change_effects.btl <- function(x, data, pars, scode = "", ...) {
 }
 
 # helps in renaming fixed effects parameters
-change_fe <- function(bterms, data, pars, scode = "") {
+change_fe <- function(bterms, data, pars) {
   out <- list()
   px <- check_prefix(bterms)
   fixef <- colnames(data_fe(bterms, data)$X)
-  fixef <- rm_int_fe(fixef, scode, px = px)
+  if (stan_center_X(bterms)) {
+    fixef <- setdiff(fixef, "Intercept")
+  }
   if (length(fixef)) {
     b <- paste0("b", usc(combine_prefix(px), "prefix"))
     pos <- grepl(paste0("^", b, "\\["), pars)
@@ -402,17 +403,6 @@ clist <- function(pos, fnames, ...) {
 
 is.clist <- function(x) {
   inherits(x, "clist")
-}
-
-# identify if the intercept has to be removed from fixef
-# @return adjusted fixef names
-rm_int_fe <- function(fixef, scode, px = NULL) {
-  p <- usc(combine_prefix(px))
-  regex <- paste0("(temp", p, "_Intercept)|(vector\\[N\\] loclev", p, ";)")
-  if (grepl(regex, scode)) {
-    fixef <- setdiff(fixef, "Intercept")
-  } 
-  fixef
 }
 
 # compute index names in square brackets for indexing stan parameters
