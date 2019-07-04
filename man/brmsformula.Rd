@@ -355,9 +355,9 @@ models for all parameters of the assumed response distribution.
   \code{\link{set_prior}}.
   
   This behavior can be avoided by using the reserved 
-  (and internally generated) variable \code{intercept}. 
+  (and internally generated) variable \code{Intercept}. 
   Instead of \code{y ~ x}, you may write
-  \code{y ~ 0 + intercept + x}. This way, priors can be
+  \code{y ~ 0 + Intercept + x}. This way, priors can be
   defined on the real intercept, directly. In addition,
   the intercept is just treated as an ordinary population-level effect
   and thus priors defined on \code{b} will also apply to it. 
