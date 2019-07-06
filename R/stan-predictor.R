@@ -1392,7 +1392,7 @@ stan_eta_rsp <- function(r) {
     out <- rep("", nrow(r))
     for (i in seq_along(out)) {
       out[i] <- glue(
-        "W_{r$id[i]}_{ng}[n] * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
+        "W_{idresp[i]}_{ng}[n] * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}[n]]",
         collapse = " + "
       ) 
     }
