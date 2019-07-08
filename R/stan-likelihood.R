@@ -324,9 +324,9 @@ stan_llh_gaussian_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W")
+  v <- c("lagsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W)
+  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
 }
 
 stan_llh_gaussian_errorsar <- function(bterms, resp = "", mix = "") {

@@ -311,7 +311,8 @@ stan_autocor <- function(bterms, prior) {
       stop2(err_msg, " when predicting 'sigma' or 'nu'.")
     }
     str_add(out$data) <- glue(
-      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n"                  
+      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
+      "  vector[N{p}] eigenW{p};  // eigen values of W{p}\n"
     )
     if (identical(autocor$type, "lag")) {
       str_add(out$par) <- glue( 
