@@ -14,6 +14,11 @@ loo_R2 <- function(object, ...) {
   UseMethod("loo_R2")
 }
 
+# possible criteria to evaluate via the loo package
+loo_criteria <- function() {
+  c("loo", "waic", "psis", "kfold", "loo_subsample")
+}
+
 # helper function used to create (lists of) 'loo' objects
 # @param models list of brmsfit objects
 # @param criterion name of the criterion to compute
@@ -22,10 +27,8 @@ loo_R2 <- function(object, ...) {
 # @param ... more arguments passed to compute_loo
 # @return If length(models) > 1 an object of class 'loolist'
 #   If length(models) == 1 an object of class 'loo'
-compute_loos <- function(
-  models, criterion = c("loo", "waic", "psis", "psislw", "kfold"),
-  use_stored = TRUE, compare = TRUE, ...
-) {
+compute_loos <- function(models, criterion = loo_criteria(),
+                         use_stored = TRUE, compare = TRUE, ...) {
   criterion <- match.arg(criterion)
   args <- nlist(criterion, ...)
   if (length(models) > 1L) {
@@ -73,7 +76,7 @@ compute_loos <- function(
 # @param pointwise compute log-likelihood point-by-point?
 # @param ... passed to other post-processing methods
 # @return an object of class 'loo'
-compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
+compute_loo <- function(x, criterion = loo_criteria(),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
                         pointwise = FALSE, newdata = NULL, resp = NULL, 
                         model_name = "", use_stored = TRUE, ...) {
@@ -107,6 +110,11 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         }
         loo_args$log_ratios <- -loo_args$x
         loo_args$x <- NULL
+      }
+      if (criterion == "loo_subsample") {
+        if (!pointwise) {
+          stop2("Can only use pointwise evaluation in 'loo_subsample'.")
+        }
       }
       out <- SW(do_call(criterion, loo_args, pkg = "loo"))
     }
@@ -826,6 +834,38 @@ r_eff_helper <- function(x, fit, allow_na = TRUE) {
 # of likelihood draws based on log-likelihood draws
 r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
   r_eff_helper(exp(log_lik), fit = fit, allow_na = allow_na)
+}
+
+# methods required in loo_subsample
+#' @export
+nparameters.brmsdraws <- function(x, ...) {
+  1L  # temporary
+}
+
+#' @export
+nparameters.mvbrmsdraws <- function(x, ...) {
+  1L
+}
+
+#' @export
+ndraws.brmsdraws <- function(x, ...) {
+  x$nsamples
+}
+
+#' @export
+ndraws.mvbrmsdraws <- function(x, ...) {
+  x$nsamples
+}
+
+#' @export
+thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
+  # brmsdraws objects are too complex to implement a post-hoc subsetting method
+  draws
+}
+
+#' @export
+thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
+  draws
 }
 
 # print the output of a list of loo objects

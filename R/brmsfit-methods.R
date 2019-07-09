@@ -2655,6 +2655,22 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
   do_call(compute_loos, args)
 }
 
+#' Efficient approximate leave-one-out cross-validation (LOO) using subsampling
+#' 
+#' @importFrom loo loo_subsample
+#' @export loo_subsample
+#' @export
+loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                                  reloo = FALSE, k_threshold = 0.7,
+                                  reloo_args = list(), model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  c(args) <- nlist(
+    criterion = "loo_subsample", pointwise = TRUE, 
+    compare, resp, k_threshold, reloo, reloo_args
+  )
+  do_call(compute_loos, args)
+}
+
 #' K-Fold Cross-Validation
 #' 
 #' Perform exact K-fold cross-validation by refitting the model \eqn{K}
