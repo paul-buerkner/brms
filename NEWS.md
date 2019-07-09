@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Use primitive Stan GLM functions whenever possible. (#703)
 * Model compound symmetry correlations via `cor_cosy`. (#403)
 * Predict `sigma` in combination with several 
 autocorrelation structures. (#403)

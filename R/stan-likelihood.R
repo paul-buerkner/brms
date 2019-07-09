@@ -284,10 +284,17 @@ stan_llh_adj <- function(x, adds = c("weights", "cens", "trunc")) {
 
 # one function per family
 stan_llh_gaussian <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  p$sigma <- stan_llh_add_se(p$sigma, bterms, reqn, resp)
-  sdist("normal", p$mu, p$sigma)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    p$sigma <- paste0("sigma", resp)
+    out <- sdist("normal_id_glm", p$x, p$alpha, p$beta, p$sigma)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    p$sigma <- stan_llh_add_se(p$sigma, bterms, reqn, resp)
+    out <- sdist("normal", p$mu, p$sigma) 
+  }
+  out
 }
 
 stan_llh_gaussian_mv <- function(bterms, resp = "", mix = "") {
@@ -421,17 +428,30 @@ stan_llh_skew_normal <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_llh_poisson <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("poisson", "log", bterms)
-  sdist(lpdf, p$mu)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    out <- sdist("poisson_log_glm", p$x, p$alpha, p$beta)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("poisson", "log", bterms)
+    out <- sdist(lpdf, p$mu)
+  }
+  out
 }
 
 stan_llh_negbinomial <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
-  sdist(lpdf, p$mu, p$shape)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    p$shape <- paste0("shape", resp)
+    out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
+    out <- sdist(lpdf, p$mu, p$shape)
+  }
+  out
 }
 
 stan_llh_geometric <- function(bterms, resp = "", mix = "") {
@@ -450,10 +470,16 @@ stan_llh_binomial <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_bernoulli <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("bernoulli", "logit", bterms)
-  sdist(lpdf, p$mu)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    out <- sdist("bernoulli_logit_glm", p$x, p$alpha, p$beta)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("bernoulli", "logit", bterms)
+    out <- sdist(lpdf, p$mu)
+  }
+  out
 }
 
 stan_llh_discrete_weibull <- function(bterms, resp = "", mix = "") {
@@ -680,6 +706,59 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
     p$ord_intercept <- paste0("temp", prefix, "_Intercept")
   }
   sdist(family$name, p[dpars], p$ord_intercept, family$vars)
+}
+
+# use Stan GLM primitive functions?
+# @param bterms a brmsterms object
+# @return TRUE or FALSE
+use_glm_primitive <- function(bterms) {
+  stopifnot(is.brmsterms(bterms))
+  # the model can only have a single predicted parameter
+  # and no additional residual or autocorrelation structure
+  mu <- bterms$dpars[["mu"]]
+  if (!is.btl(mu) || length(bterms$dpars) > 1L ||
+      isTRUE(bterms$rescor) || length(bterms$adforms) ||
+      !is.cor_empty(bterms$autocor)) {
+    return(FALSE)
+  }
+  # supported families and link functions
+  glm_links <- list(
+    gaussian = "identity", bernoulli = "logit",
+    poisson = "log", negbinomial = "log"
+  )
+  if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
+    return(FALSE)
+  }
+  # can only use GLM primitives if solely 'fixed effects' are present
+  special_term_names <- c("sp", "cs", "sm", "gp", "offset")
+  length(all_terms(mu$fe)) && !is_sparse(mu$fe) &&
+    !NROW(mu$re) && !any(lengths(mu[special_term_names]))
+}
+
+# standard arguments for primitive Stan GLM functions
+# @param bterms a btl object
+# @param resp optional name of the response variable
+# @return a named list of Stan code snippets
+args_glm_primitive <- function(bterms, resp = "") {
+  stopifnot(is.btl(bterms))
+  decomp <- get_decomp(bterms$fe)
+  center_X <- stan_center_X(bterms)
+  sfx_X <- sfx_b <- ""
+  if (decomp == "QR") {
+    sfx_X <- sfx_b <- "Q"
+  } else if (center_X) {
+    sfx_X <- "c"
+  }
+  if (center_X) {
+    intercept <- paste0("temp", resp, "_Intercept")
+  } else {
+    intercept <- "0"
+  }
+  list(
+    x = paste0("X", sfx_X, resp),
+    alpha = intercept,
+    beta = paste0("b", sfx_b, resp)
+  )
 }
 
 # prepare distribution and arguments for use in Stan

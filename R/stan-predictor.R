@@ -7,53 +7,25 @@ stan_predictor <- function(x, ...) {
 }
 
 # combine effects for the predictors of a single (non-linear) parameter
-# @param ranef output of tidy_ranef
-# @param ilink character vector of length 2 defining the link to be applied
+# @param primitive set to TRUE only if primitive Stan GLM functions should 
+#   be used which compute the predictor term internally
 # @param ... arguments passed to the underlying effect-specific functions
 #' @export
-stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
-  stopifnot(length(ilink) == 2L)
+stan_predictor.btl <- function(x, primitive = FALSE, ...) {
   out <- collapse_lists(
-    text_fe <- stan_fe(x, ...),
-    text_thres <- stan_thres(x, ...),
-    text_sp <- stan_sp(x, ranef = ranef, ...),
-    text_cs <- stan_cs(x, ranef = ranef, ...),
-    text_sm <- stan_sm(x, ...),
-    text_gp <- stan_gp(x, ...),
-    text_ac <- stan_ac(x, ...),
-    text_offset <- stan_offset(x, ...),
-    text_bhaz <- stan_bhaz(x, ...),
+    stan_fe(x, ...),
+    stan_thres(x, ...),
+    stan_sp(x, ...),
+    stan_cs(x, ...),
+    stan_sm(x, ...),
+    stan_gp(x, ...),
+    stan_ac(x, ...),
+    stan_offset(x, ...),
+    stan_bhaz(x, ...),
     stan_special_prior_global(x, ...)
   )
-  
-  # initialize and compute eta
-  px <- check_prefix(x)
-  resp <- usc(x$resp)
-  eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-  out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
-  str_add(out$modelD) <- glue(
-    "  // initialize linear predictor term\n",
-    "  vector[N{resp}] {eta} ={out$eta};\n"
-  )
-  str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
-  if (nzchar(out$loopeta)) {
-    # parts of eta are computed in a loop over observations
-    out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
-    str_add(out$modelC2) <- glue(
-      "    // add more terms to the linear predictor\n",
-      "    {eta}[n] +={out$loopeta};\n"
-    )
-  }
-  out$eta <- out$loopeta <- NULL
-  
-  # possibly transform eta before it is passed to the likelihood
-  if (sum(nzchar(ilink))) {
-    # make sure mu comes last as it might depend on other parameters
-    not_mu <- nzchar(x$dpar) && dpar_class(x$dpar) != "mu"
-    position <- str_if(not_mu, "modelC3", "modelC4")
-    str_add(out[[position]]) <- glue(
-      "    {eta}[n] = {ilink[1]}{eta}[n]{ilink[2]};\n"
-    )
+  if (!primitive) {
+    out <- stan_eta_combine(out, bterms = x, ...) 
   }
   out
 }
@@ -62,7 +34,7 @@ stan_predictor.btl <- function(x, ranef, ilink = rep("", 2), ...) {
 # @param names of the non-linear parameters
 # @param ilink character vector of length 2 defining the link to be applied
 #' @export
-stan_predictor.btnl <- function(x, nlpars, ilink = rep("", 2), ...) {
+stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -123,8 +95,9 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   out <- list(stan_response(x, data = data))
   valid_dpars <- valid_dpars(x)
   args <- nlist(data, prior, nlpars = names(x$nlpars), ...)
+  args$primitive <- use_glm_primitive(x)
   for (nlp in names(x$nlpars)) {
-    nlp_args <- list(x$nlpars[[nlp]], center_X = FALSE)
+    nlp_args <- list(x$nlpars[[nlp]])
     out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
   }
   for (dp in valid_dpars) {
@@ -1313,6 +1286,45 @@ stan_mixture <- function(bterms, prior) {
     str_add(out$prior) <- stan_prior(
       prior, class = "Intercept", coef = get_thres(bterms), 
       px = px, prefix = "fixed_", suffix = p
+    )
+  }
+  out
+}
+
+# initialize and compute a linear predictor term in Stan language
+# @param out list of character strings containing Stan code
+# @param bterms btl object
+# @param ranef output of tidy_ranef
+# @param ilink character vector of length 2 defining the link to be applied
+# @param ... currently unused
+# @return list of character strings containing Stan code
+stan_eta_combine <- function(out, bterms, ranef, ilink = c("", ""), ...) {
+  stopifnot(is.list(out), is.btl(bterms), length(ilink) == 2L)
+  px <- check_prefix(bterms)
+  resp <- usc(bterms$resp)
+  eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
+  out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
+  str_add(out$modelD) <- glue(
+    "  // initialize linear predictor term\n",
+    "  vector[N{resp}] {eta} ={out$eta};\n"
+  )
+  str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
+  if (nzchar(out$loopeta)) {
+    # parts of eta are computed in a loop over observations
+    out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
+    str_add(out$modelC2) <- glue(
+      "    // add more terms to the linear predictor\n",
+      "    {eta}[n] +={out$loopeta};\n"
+    )
+  }
+  out$eta <- out$loopeta <- NULL
+  # possibly transform eta before it is passed to the likelihood
+  if (sum(nzchar(ilink))) {
+    # make sure mu comes last as it might depend on other parameters
+    not_mu <- nzchar(bterms$dpar) && dpar_class(bterms$dpar) != "mu"
+    position <- str_if(not_mu, "modelC3", "modelC4")
+    str_add(out[[position]]) <- glue(
+      "    {eta}[n] = {ilink[1]}{eta}[n]{ilink[2]};\n"
     )
   }
   out

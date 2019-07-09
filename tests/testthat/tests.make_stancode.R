@@ -234,7 +234,7 @@ test_that("special shrinkage priors appear in the Stan code", {
 
 test_that("link functions appear in the Stan code", {
   dat <- data.frame(y = 1:10, x = rnorm(10))
-  expect_match2(make_stancode(y ~ x, dat, family = poisson()), 
+  expect_match2(make_stancode(y ~ s(x), dat, family = poisson()), 
                "target += poisson_log_lpmf(Y | mu);")
   expect_match2(make_stancode(mvbind(y, y + 1) ~ x, dat, family = gaussian("log")), 
                "mu_y[n] = exp(mu_y[n]);")
@@ -246,8 +246,38 @@ test_that("link functions appear in the Stan code", {
                "mu[n] = inv(mu[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = poisson("sqrt")),
                "mu[n] = square(mu[n]);")
-  expect_match2(make_stancode(y ~ x, dat, family = bernoulli()),
+  expect_match2(make_stancode(y ~ s(x), dat, family = bernoulli()),
                 "target += bernoulli_logit_lpmf(Y | mu);")
+})
+
+test_that("Stan GLM primitives are applied correctly", {
+  dat <- data.frame(x = rnorm(10), y = 1:10)
+  
+  scode <- make_stancode(y ~ x, dat, family = gaussian)
+  expect_match2(scode, "normal_id_glm_lpdf(Y | Xc, temp_Intercept, b, sigma)")
+  
+  scode <- make_stancode(y ~ x, dat, family = bernoulli)
+  expect_match2(scode, "bernoulli_logit_glm_lpmf(Y | Xc, temp_Intercept, b)")
+  
+  scode <- make_stancode(y ~ x, dat, family = poisson)
+  expect_match2(scode, "poisson_log_glm_lpmf(Y | Xc, temp_Intercept, b)")
+  
+  scode <- make_stancode(y ~ x, dat, family = negbinomial)
+  expect_match2(scode, 
+    "neg_binomial_2_log_glm_lpmf(Y | Xc, temp_Intercept, b, shape)"
+  )
+  
+  scode <- make_stancode(y ~ 0 + x, dat, family = gaussian)
+  expect_match2(scode, "normal_id_glm_lpdf(Y | X, 0, b, sigma)")
+  
+  bform <- bf(y ~ x) + bf(x ~ 1, family = negbinomial()) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat, family = gaussian)
+  expect_match2(scode, 
+    "normal_id_glm_lpdf(Y_y | Xc_y, temp_y_Intercept, b_y, sigma_y)"
+  )
+  
+  scode <- make_stancode(bf(y ~ x, decomp = "QR"), dat, family = gaussian)
+  expect_match2(scode, "normal_id_glm_lpdf(Y | XQ, temp_Intercept, bQ, sigma);")
 })
 
 test_that("customized covariances appear in the Stan code", {
@@ -1342,6 +1372,7 @@ test_that("Stan code of mixture model is correct", {
 
 test_that("sparse matrix multiplication is applied correctly", {
   data <- data.frame(y = rnorm(10), x = rnorm(10))
+  
   # linear model
   scode <- make_stancode(
     bf(y ~ x, sparse = TRUE) + lf(sigma ~ x, sparse = TRUE), 
@@ -1361,6 +1392,8 @@ test_that("sparse matrix multiplication is applied correctly", {
     )
   )
   expect_match2(scode, "target += normal_lpdf(b[1] | 0, 5);")
+  expect_match2(scode, "target += normal_lpdf(Y | mu, sigma);")
+  
   # non-linear model
   scode <- make_stancode(
     bf(y ~ a, lf(a ~ x, sparse = TRUE), nl = TRUE), 
@@ -1772,7 +1805,7 @@ test_that("student-t group-level effects work without errors", {
 test_that("centering design matrices can be changed correctly", {
   dat <- data.frame(y = 1:10, x = 1:10)
   scode <- make_stancode(
-    bf(y ~ x, center = FALSE), data = dat,
+    bf(y ~ x, center = FALSE), data = dat, family = weibull(),
     prior = prior(normal(0,1), coef = Intercept)
   )
   expect_match2(scode, "mu = X * b;")
