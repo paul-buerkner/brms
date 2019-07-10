@@ -379,9 +379,9 @@ stan_llh_student_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W")
+  v <- c("lagsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W)
+  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
 }
 
 stan_llh_student_errorsar <- function(bterms, resp = "", mix = "") {

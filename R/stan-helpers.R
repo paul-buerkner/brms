@@ -312,11 +312,17 @@ stan_autocor <- function(bterms, prior) {
     }
     str_add(out$data) <- glue(
       "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
-      "  vector[N{p}] eigenW{p};  // eigen values of W{p}\n"
+      "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
+    )
+    str_add(out$tdataD) <- glue(
+      "  // the eigenvalues define the boundaries of the SAR correlation\n",
+      "  real min_eigenW{p} = min(eigenW{p});\n",
+      "  real max_eigenW{p} = max(eigenW{p});\n"
     )
     if (identical(autocor$type, "lag")) {
       str_add(out$par) <- glue( 
-        "  real<lower=0,upper=1> lagsar{p};  // SAR parameter\n"
+        "  // SAR correlation parameter\n",
+        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> lagsar{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p

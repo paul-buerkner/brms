@@ -5,7 +5,7 @@
    *   sigma: residual standard deviation
    *   rho: positive autoregressive parameter
    *   W: spatial weight matrix
-   *   lambda: precomputed eigen values of W
+   *   lambda: precomputed eigenvalues of W
    * Returns:  
    *   a scalar to be added to the log posterior 
    */ 
@@ -19,6 +19,6 @@
     for (n in 1:N) W_tilde[n, n] += 1;
     half_pred = W_tilde * y - mu;
     log_det = sum(log1m(rho * lambda));
-    return  0.5 * N * log(inv_sigma2) - 
-      0.5 * dot_self(half_pred) * inv_sigma2 + log_det;
+    return  0.5 * N * log(inv_sigma2) + log_det - 
+      0.5 * dot_self(half_pred) * inv_sigma2;
   }
