@@ -663,6 +663,7 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       stop2("Dimensions of 'W' must be equal to the number of observations.")
     }
     out$W <- autocor$W
+    out$eigenW <- eigen(out$W)$values
     # simplifies code of choose_N
     out$N_tg <- 1
   }

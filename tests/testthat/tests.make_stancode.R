@@ -1500,7 +1500,7 @@ test_that("Stan code for SAR models is correct", {
     prior = prior(normal(0.5, 1), lagsar)
   )
   expect_match2(scode, 
-    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, W)"
+    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, W, eigenW)"
   )
   expect_match2(scode, "target += normal_lpdf(lagsar | 0.5, 1)")
   
@@ -1508,12 +1508,12 @@ test_that("Stan code for SAR models is correct", {
     y ~ x, data = dat, family = student(), autocor = cor_lagsar(W)
   )
   expect_match2(scode, 
-    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, W)"
+    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, W, eigenW)"
   )
   
   scode <- make_stancode(y ~ x, data = dat, autocor = cor_errorsar(W))
   expect_match2(scode, 
-    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, W)"
+    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, W, eigenW)"
   )
   
   scode <- make_stancode(
@@ -1521,7 +1521,7 @@ test_that("Stan code for SAR models is correct", {
     autocor = cor_errorsar(W), prior = prior(beta(2, 3), errorsar)
   )
   expect_match2(scode, 
-    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, W)"
+    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, W, eigenW)"
   )
   expect_match2(scode, "target += beta_lpdf(errorsar | 2, 3)")
   

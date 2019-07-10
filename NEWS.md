@@ -7,6 +7,11 @@
 * Predict `sigma` in combination with several 
 autocorrelation structures. (#403)
 
+### Other Changes
+
+* Substantially improve the sampling efficiency of SAR models
+thanks to the GitHub user aslez. (#680)
+
 ### Bug Fixes
 
 * Allow grouping variables to start with a dot
