@@ -160,24 +160,7 @@ stan_autocor <- function(bterms, prior) {
     str_add(out$tdataD) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    if (get_ar(autocor)) {
-      ar_bound <- subset2(prior, class = "ar", ls = px)$bound
-      str_add(out$par) <- glue( 
-        "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "ar", px = px, suffix = p
-      )
-    }
-    if (get_ma(autocor)) {
-      ma_bound <- subset2(prior, class = "ma", ls = px)$bound
-      str_add(out$par) <- glue( 
-        "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "ma", px = px, suffix = p
-      )
-    }
+    ar_bound <- ma_bound <- "<lower=-1,upper=1>"
     if (!use_cov(autocor)) {
       err_msg <- "Please set cov = TRUE in ARMA correlation structures"
       if (!has_natural_residuals) {
@@ -209,6 +192,24 @@ stan_autocor <- function(bterms, prior) {
         "    for (i in 1:J_lag{p}[n]) {{\n",
         "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
         "    }}\n"
+      )
+      # in the conditional formulation no boundaries are required
+      ar_bound <- ma_bound <- ""
+    }
+    if (get_ar(autocor)) {
+      str_add(out$par) <- glue( 
+        "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ar", px = px, suffix = p
+      )
+    }
+    if (get_ma(autocor)) {
+      str_add(out$par) <- glue( 
+        "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ma", px = px, suffix = p
       )
     }
   }

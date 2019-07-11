@@ -69,16 +69,14 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
   expect_match2(scode, "prior_rescor = lkj_corr_rng(nresp,2)[1, 2]")
   
-  prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
+  prior <- c(prior(uniform(-1, 1), ar),
              prior(normal(0, 0.5), ma),
              prior(normal(0, 5)))
-  autocor <- cor_arma(p = 1, q = 2)
-  expect_warning(
-    scode <- make_stancode(y ~ mo(g), dat, autocor = autocor,
-                           prior = prior, sample_prior = TRUE),
-    "Changing the boundaries of autocorrelation parameters"
-  )
-  expect_match2(scode, "vector<lower=-0.7,upper=0.5>[Kar] ar;")
+  autocor <- cor_arma(p = 1, q = 1, cov = TRUE)
+  scode <- make_stancode(y ~ mo(g), dat, autocor = autocor,
+                         prior = prior, sample_prior = TRUE)
+  expect_match2(scode, "vector<lower=-1,upper=1>[Kar] ar;")
+  expect_match2(scode, "vector<lower=-1,upper=1>[Kma] ma;")
   expect_match2(scode, "target += uniform_lpdf(ar | -1, 1)")
   expect_match2(scode, "target += normal_lpdf(ma | 0, 0.5)")
   expect_match2(scode, 
@@ -88,7 +86,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1)")
   expect_match2(scode, "prior_simo_1 = dirichlet_rng(con_simo_1)")
   expect_match2(scode, "prior_ar = uniform_rng(-1,1)")
-  expect_match2(scode, "while (prior_ar < -0.7 || prior_ar > 0.5)")
+  expect_match2(scode, "while (prior_ar < -1 || prior_ar > 1)")
   
   # test for problem described in #213
   prior <- c(prior(normal(0, 1), coef = x1),

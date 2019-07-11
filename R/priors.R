@@ -363,20 +363,24 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   # validate boundaries
   bound <- ""
-  is_arma <- class %in% c("ar", "ma")
-  if (!is.na(lb) || !is.na(ub) || is_arma) {
-    if (!(class %in% c("b", "ar", "ma", "arr"))) {
+  if (class %in% c("ar", "ma") && (!is.na(lb) || !is.na(ub))) {
+    # changed in version 2.9.5 
+    lb <- ub <- NA
+    warning2(
+      "Changing the boundaries of autocorrelation parameters ", 
+      "is deprecated and will be ignored."
+    )
+  }
+  if (!is.na(lb) || !is.na(ub)) {
+    # TODO: extend the boundary interface to more parameter classes
+    if (!class %in% c("b")) {
       stop2(
         "Currently boundaries are only allowed for ", 
-        "population-level and autocorrelation parameters."
+        "population-level coefficients."
       ) 
     }
     if (nzchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
-    }
-    if (is_arma) {
-      lb <- ifelse(!is.na(lb), lb, -1)
-      ub <- ifelse(!is.na(ub), ub, 1)
     }
     # don't put spaces in boundary declarations
     lb <- if (!is.na(lb)) paste0("lower=", lb)
@@ -1140,10 +1144,8 @@ check_prior_content <- function(prior, warn = TRUE) {
       "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
       "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale" 
     )
-    cor_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
-    autocor_pars <- c("ar", "ma")
+    cormat_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
     lb_warning <- ub_warning <- ""
-    autocor_warning <- FALSE
     for (i in seq_rows(prior)) {
       msg_prior <- .print_prior(prior[i, , drop = FALSE])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
@@ -1167,16 +1169,12 @@ check_prior_content <- function(prior, warn = TRUE) {
         if (has_ulb_prior && !has_ub) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
-      } else if (prior$class[i] %in% cor_pars) {
+      } else if (prior$class[i] %in% cormat_pars) {
         if (nzchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
           stop2(
             "The only supported prior for correlation matrices is ", 
             "the 'lkj' prior. See help(set_prior) for more details."
           )
-        }
-      } else if (prior$class[i] %in% autocor_pars) {
-        if (prior$bound[i] != "<lower=-1,upper=1>") {
-          autocor_warning <- TRUE
         }
       } else if (prior$class[i] %in% c("simo", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
@@ -1203,12 +1201,6 @@ check_prior_content <- function(prior, warn = TRUE) {
         "\nIf this is really what you want, please specify ",
         "argument 'ub' of 'set_prior' appropriately.",
         "\nWarning occurred for prior \n", ub_warning
-      )
-    }
-    if (autocor_warning && warn) {
-      warning2(
-        "Changing the boundaries of autocorrelation ", 
-        "parameters is not recommended."
       )
     }
   }

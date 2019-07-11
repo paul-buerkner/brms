@@ -11,6 +11,8 @@ autocorrelation structures. (#403)
 
 * Substantially improve the sampling efficiency of SAR models
 thanks to the GitHub user aslez. (#680)
+* No longer allow changing the boundaries
+of autocorrelation parameters.
 
 ### Bug Fixes
 
