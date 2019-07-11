@@ -308,7 +308,7 @@ get_all_effects_type <- function(x, type) {
       if (grepl_expr(regex_type, term_parts[j])) {
         # evaluate a special term to extract variables
         tmp <- eval2(term_parts[j])
-        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA") 
+        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by)), "NA") 
       } else {
         # extract all variables from an ordinary term
         vars[[j]] <- all_vars(term_parts[j])

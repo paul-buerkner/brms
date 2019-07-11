@@ -301,9 +301,6 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
       K <- which(meef$grname %in% g)
       if (nzchar(g)) {
         Jme <- sdata[[paste0("Jme_", i)]]
-        me_dim <- c(nrow(draws$bsp), length(unique(Jme)))
-      } else {
-        me_dim <- c(nrow(draws$bsp), sdata$N)
       }
       if (!new && save_mevars) {
         # extract original samples of latent variables
@@ -312,6 +309,13 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
         }
       } else {
         # sample new values of latent variables
+        if (nzchar(g)) {
+          # represent all indices between 1 and length(unique(Jme))
+          Jme <- as.numeric(factor(Jme))
+          me_dim <- c(nrow(draws$bsp), max(Jme))
+        } else {
+          me_dim <- c(nrow(draws$bsp), sdata$N)
+        }
         for (k in K) {
           dXn <- as_draws_matrix(Xn[[k]], me_dim)
           dnoise <- as_draws_matrix(noise[[k]], me_dim)
@@ -321,7 +325,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
       }
       if (nzchar(g)) {
         for (k in K) {
-          draws$Xme[[k]] <- draws$Xme[[k]][, Jme]
+          draws$Xme[[k]] <- draws$Xme[[k]][, Jme, drop = FALSE]
         }
       }
     }

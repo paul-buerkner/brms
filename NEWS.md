@@ -16,6 +16,8 @@ of autocorrelation parameters.
 
 ### Bug Fixes
 
+* Fix problems in the post-processing of `me` terms with
+grouping factors thanks to the GitHub user tatters. (#706)
 * Allow grouping variables to start with a dot
 thanks to Bruno Nicenboim. (#679)
 * Allow the `horseshoe` prior in categorical and

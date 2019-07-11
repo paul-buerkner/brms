@@ -412,11 +412,11 @@ data_Xme <- function(meef, data) {
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
         # occurs for new levels only
+        # replace NAs with unique values; fixes issue #706
+        gr[is.na(gr)] <- paste0("new_", seq_len(sum(is.na(gr))), "__")
         new_gr <- gr[!gr %in% levels]
         new_levels <- unique(new_gr)
-        Jme[is.na(Jme)] <- match(new_gr, new_levels) + length(levels)
-        # represent all indices between 1 and length(unique(Jme))
-        Jme <- as.numeric(factor(Jme))
+        Jme[is.na(Jme)] <- length(levels) + match(new_gr, new_levels)
       }
       ilevels <- unique(Jme)
       out[[paste0("Nme_", i)]] <- length(ilevels)
