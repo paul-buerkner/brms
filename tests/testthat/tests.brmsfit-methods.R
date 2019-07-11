@@ -95,9 +95,9 @@ test_that("all S3 methods have reasonable ouputs", {
     count ~ Trt * Age + mo(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
   
   # hypothesis
-  hyp <- hypothesis(fit1, c("Intercept > Trt1", "Trt1:Age = -1"))
+  hyp <- hypothesis(fit1, c("Age > Trt1", "Trt1:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 8))
-  expect_output(print(hyp), "(Intercept)-(Trt1) > 0", fixed = TRUE)
+  expect_output(print(hyp), "(Age)-(Trt1) > 0", fixed = TRUE)
   expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))
   
   hyp <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
