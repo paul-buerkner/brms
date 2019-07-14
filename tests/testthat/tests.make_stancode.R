@@ -585,6 +585,12 @@ test_that("Stan code for ARMA models is correct", {
                          autocor = cor_arma(~time, p = 1, q = 1, cov = TRUE))
   expect_match2(scode, "student_t_cov_het_lpdf(Y | nu, mu, sigma, chol_cor")
   
+  bform <- bf(y ~ exp(eta) - 1, eta ~ x, nl = TRUE)
+  scode <- make_stancode(bform, dat, family = student,
+                         prior = prior(normal(0, 1), nlpar = eta),
+                         autocor = cor_ar(~time))
+  expect_match2(scode, "mu[n] += head(Err[n], Kar) * ar;")
+  
   # correlations of latent residuals
   scode <- make_stancode(
     y ~ x, dat, family = poisson, autocor = cor_ar(~time, cov = TRUE),
@@ -968,9 +974,10 @@ test_that("distributional gamma models are handled correctly", {
        shape ~ age + (1|patient)), 
     data = kidney, family = Gamma("log")
   )
-  expect_match2(scode, paste0(
-    "    shape[n] = exp(shape[n]);\n", 
-    "    mu[n] = shape[n] * exp(-(mu[n]));"))
+  expect_match(scode, paste0(
+    brms:::escape_all("shape[n] = exp(shape[n]);"), ".+",
+    brms:::escape_all("mu[n] = shape[n] * exp(-(mu[n]));")
+  ))
   
   scode <- make_stancode(
     bf(time ~ inv_logit(a) * exp(b * age),
@@ -980,22 +987,9 @@ test_that("distributional gamma models are handled correctly", {
     prior = c(set_prior("normal(2,2)", nlpar = "a"),
               set_prior("normal(0,3)", nlpar = "b"))
   )
-  expect_match2(scode, paste0(
-    "    shape[n] = exp(shape[n]);\n", 
-    "    // compute non-linear predictor\n",
-    "    mu[n] = shape[n] / (inv_logit(nlp_a[n]) * exp(nlp_b[n] * C_1[n]));"
-  ))
-  
-  scode <- make_stancode(
-    bf(time ~ age, shape ~ age), 
-    data = kidney,
-    family = brmsfamily("gamma", link_shape = "identity")
-  )
-  # test that no link function is applied on 'shape'
-  expect_match2(scode, paste0(
-    "  for (n in 1:N) {\n",
-    "    mu[n] = shape[n] * exp(-(mu[n]));\n",
-    "  }\n"
+  expect_match(scode, paste0(
+    brms:::escape_all("shape[n] = exp(shape[n]);"), ".+", 
+    brms:::escape_all("mu[n] = shape[n] / (inv_logit(nlp_a[n]) * exp(nlp_b[n] * C_1[n]));")
   ))
 })
 
@@ -1306,7 +1300,6 @@ test_that("Stan code of mixture model is correct", {
                          data = data, mixture(Gamma("log"), weibull))
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta1;")
   expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta2;")
-  expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\);\\\n    mu1\\[n\\] = ")
   expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
   expect_match2(scode, "target += weights[n] * log_sum_exp(ps);")
   

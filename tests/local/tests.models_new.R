@@ -140,7 +140,7 @@ test_that("ARMA models work correctly", {
     chains = 2
   )
   print(fit_arma_pois)
-  expect_range(waic(fit_arma_pois)$estimates[3, 1], 1130, 1170)
+  expect_range(waic(fit_arma_pois)$estimates[3, 1], 1100, 1200)
   expect_equal(dim(predict(fit_arma_pois)), c(nobs(fit_arma_pois), 4))
   expect_ggplot(plot(marginal_effects(fit_arma_pois), plot = FALSE)[[1]])
 })
@@ -645,13 +645,13 @@ test_that("Approximate Gaussian processes work correctly", {
     data = dat, chains = 2, cores = 2
   )
   print(fit1)
-  expect_range(bayes_R2(fit1)[1, 1], 0.60, 0.75) 
+  expect_range(bayes_R2(fit1)[1, 1], 0.50, 0.75) 
   me <- marginal_effects(
     fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(me, ask = FALSE)[[1]])
-  expect_range(WAIC(fit1)$estimates[3, 1], 390, 430)
+  expect_range(WAIC(fit1)$estimates[3, 1], 390, 450)
   
   # non isotropic approximate GP
   fit2 <- brm(
@@ -846,14 +846,14 @@ test_that("Addition argument 'subset' works correctly", {
   pred <- fitted(fit, resp = "back")
   expect_equal(nrow(pred), sum(BTdata$sub2))
   waic <- waic(fit, resp = "back")
-  expect_range(waic$estimates[3, 1], 1100, 1130)
+  expect_range(waic$estimates[3, 1], 1100, 1200)
   me <- marginal_effects(fit)
   expect_ggplot(plot(me, ask = FALSE)[[1]])
   expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
 })
 
 test_that("Cox models work correctly", {
-  set.seed(1234)
+  set.seed(12345)
   covs <- data.frame(id  = 1:200, trt = stats::rbinom(200, 1L, 0.5))
   d1 <- simsurv::simsurv(lambdas = 0.1, gammas  = 1.5, betas = c(trt = -0.5),
                          x = covs, maxt  = 5)
@@ -862,6 +862,6 @@ test_that("Cox models work correctly", {
   fit1 <- brm(eventtime | cens(1 - status) ~ 1 + trt, 
               data = d1, family = brmsfamily("cox"))
   print(summary(fit1))
-  expect_range(posterior_summary(fit1)["b_trt", "Estimate"], 0.45, 0.55)
+  expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
   expect_range(waic(fit1)$estimates[3, 1], 620, 670)
 })

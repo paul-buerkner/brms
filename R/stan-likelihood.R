@@ -61,13 +61,13 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   weights <- str_if(has_weights, glue("weights{resp}[n] * "))
   out <- glue(
     "  // likelihood of the mixture model\n",
-    "  for (n in 1:N{resp}) {{\n",
+    "    for (n in 1:N{resp}) {{\n",
     "      real ps[{length(llh)}];\n"
   )
   str_add(out) <- collapse("    ", llh)
   str_add(out) <- glue(
     "    {tp()}{weights}log_sum_exp(ps);\n",
-    "  }}\n"
+    "    }}\n"
   )
   out
 }

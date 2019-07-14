@@ -41,7 +41,7 @@ stan_response <- function(bterms, data) {
     }
   }
   if (has_ndt(family)) {
-    str_add(out$tdataD) <- glue(
+    str_add(out$tdata_def) <- glue(
       "  real min_Y{resp} = min(Y{resp});\n"
     )
   }
@@ -59,7 +59,7 @@ stan_response <- function(bterms, data) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] se{resp};  // known sampling error\n"
     )
-    str_add(out$tdataD) <- glue(
+    str_add(out$tdata_def) <- glue(
       "  vector<lower=0>[N{resp}] se2{resp} = square(se{resp});\n"
     )
   }
@@ -108,11 +108,11 @@ stan_response <- function(bterms, data) {
         "  int<lower=1> Jmi{resp}[Nmi{resp}];",  
         "  // positions of missings\n"
       )
-      str_add(out$modelD) <- glue(
+      str_add(out$model_def) <- glue(
         "  // vector combining observed and missing responses\n",
         "  vector[N{resp}] Yl{resp} = Y{resp};\n" 
       )
-      str_add(out$modelC1) <- glue(
+      str_add(out$model_comp_basic) <- glue(
         "  Yl{resp}[Jmi{resp}] = Ymi{resp};\n"
       )
     } else {
@@ -157,7 +157,7 @@ stan_autocor <- function(bterms, prior) {
       "  int<lower=0> Kar{p};  // AR order\n",
       "  int<lower=0> Kma{p};  // MA order\n"
     )
-    str_add(out$tdataD) <- glue( 
+    str_add(out$tdata_def) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
     ar_bound <- ma_bound <- "<lower=-1,upper=1>"
@@ -166,12 +166,6 @@ stan_autocor <- function(bterms, prior) {
       if (!has_natural_residuals) {
         stop2(err_msg, " for family '", family$family, "'.")
       }
-      if (is.btnl(bterms$dpars[["mu"]])) {
-        stop2(err_msg, " in non-linear models.")
-      }
-      if (!identical(family$link, "identity")) {
-        stop2(err_msg, " when using non-identity links.")
-      }
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when including known standard errors.")
       }
@@ -179,19 +173,29 @@ stan_autocor <- function(bterms, prior) {
         "  // number of lags per observation\n",
         "  int<lower=0> J_lag{p}[N{p}];\n"                
       )
-      str_add(out$modelD) <- glue(
+      str_add(out$model_def) <- glue(
         "  // objects storing residuals\n",
         "  matrix[N{p}, max_lag{p}] Err{p}",
         " = rep_matrix(0, N{p}, max_lag{p});\n",
         "  vector[N{p}] err{p};\n"
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
-      str_add(out$modelC2) <- glue(
-        "    // computation of ARMA correlations\n",
+      add_ar <- str_if(get_ar(autocor),
+        glue("    mu{p}[n] += head(Err{p}[n], Kar{p}) * ar{p};\n")             
+      )
+      add_ma <- str_if(get_ma(autocor),
+        glue("    mu{p}[n] += head(Err{p}[n], Kma{p}) * ma{p};\n")             
+      )
+      str_add(out$model_comp_arma) <- glue(
+        "  // include ARMA terms\n",
+        "  for (n in 1:N{p}) {{\n",
+             add_ma,
         "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
         "    for (i in 1:J_lag{p}[n]) {{\n",
         "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
-        "    }}\n"
+        "    }}\n",
+             add_ar,
+        "  }}\n"
       )
       # in the conditional formulation no boundaries are required
       ar_bound <- ma_bound <- ""
@@ -246,12 +250,12 @@ stan_autocor <- function(bterms, prior) {
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
     if (!is.formula(bterms$adforms$se)) {
-      str_add(out$tdataD) <- glue(
+      str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
         "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
       )
     }
-    str_add(out$tparD) <- glue(
+    str_add(out$tpar_def) <- glue(
       "  // cholesky factor of the autocorrelation matrix\n",
       "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor;\n"               
     )
@@ -271,20 +275,23 @@ stan_autocor <- function(bterms, prior) {
       cor_fun <- "cosy"
       cor_args <- glue("cosy{p}")
     }
-    str_add(out$tparC1) <- glue(
+    str_add(out$tpar_comp) <- glue(
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
     )
     if (has_latent_residuals) {
+      err_msg <- "Latent residuals are not implemented"
+      if (is.btnl(bterms$dpars[["mu"]])) {
+        stop2(err_msg, " for non-linear models.")
+      }
       str_add(out$par) <- glue(
         "  vector[N{p}] zerr{p};  // unscaled residuals\n",
         "  real<lower=0> sderr;  // SD of residuals\n"
       )
-      str_add(out$tparD) <- glue(
+      str_add(out$tpar_def) <- glue(
         "  vector[N{p}] err{p};  // actual residuals\n"
       )
-      # sdpar <- str_if(has_natural_residuals, "sigma", "sderr")
-      str_add(out$tparC1) <- glue(
+      str_add(out$tpar_comp) <- glue(
         "  // compute correlated residuals\n",
         "  err{p} = scale_cov_err(",
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
@@ -315,7 +322,7 @@ stan_autocor <- function(bterms, prior) {
       "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
       "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
     )
-    str_add(out$tdataD) <- glue(
+    str_add(out$tdata_def) <- glue(
       "  // the eigenvalues define the boundaries of the SAR correlation\n",
       "  real min_eigenW{p} = min(eigenW{p});\n",
       "  real max_eigenW{p} = max(eigenW{p});\n"
@@ -343,8 +350,8 @@ stan_autocor <- function(bterms, prior) {
     if (is.mixfamily(family)) {
       stop2(err_msg, " for mixture models.") 
     }
-    if (length(bterms$dpars[["mu"]]$nlpars)) {
-      stop2(err_msg, " in non-linear models.")
+    if (is.btnl(bterms$dpars[["mu"]])) {
+      stop2(err_msg, " for non-linear models.")
     }
     str_add(out$data) <- glue(
       "  // data for the CAR structure\n",
@@ -389,10 +396,10 @@ stan_autocor <- function(bterms, prior) {
       str_add(out$par) <- glue(
         "  vector[Nloc{p} - 1] zcar{p};\n"
       )
-      str_add(out$tparD) <- glue(
+      str_add(out$tpar_def) <- glue(
         "  vector[Nloc{p}] rcar{p};\n"                
       )
-      str_add(out$tparC1) <- glue(
+      str_add(out$tpar_comp) <- glue(
         "  // sum-to-zero constraint\n",
         "  rcar[1:(Nloc{p} - 1)] = zcar{p};\n",
         "  rcar[Nloc{p}] = - sum(zcar{p});\n"
@@ -437,7 +444,7 @@ stan_autocor <- function(bterms, prior) {
       "  matrix[N{p}, N{p}] V{p};  // known residual covariance matrix\n"
     )
     if (family$family %in% "gaussian") {
-      str_add(out$tdataD) <- glue(
+      str_add(out$tdata_def) <- glue(
         "  matrix[N{p}, N{p}] LV{p} = cholesky_decompose(V{p});\n"
       )
     }
@@ -479,7 +486,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   }
   const <- family_info(bterms, "const")
   if (length(const)) {
-    str_add(out$tdataD) <- cglue("  {const};\n")
+    str_add(out$tdata_def) <- cglue("  {const};\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
   if (any(is_ordinal)) {
@@ -680,13 +687,13 @@ stan_Xme <- function(meef, prior) {
         "  // cholesky factor of the latent correlation matrix\n",
         "  cholesky_factor_corr[Mme_{i}] Lme_{i};\n"
       )
-      str_add(out$tparD) <- glue(
+      str_add(out$tpar_def) <- glue(
         "  // obtain the actual latent values\n",
         "  matrix[{Nme}, Mme_{i}] Xme{i}", 
         " = rep_matrix(meanme_{i}', {Nme}) ", 
         " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
       )
-      str_add(out$tparD) <- cglue(
+      str_add(out$tpar_def) <- cglue(
         "  // using separate vectors increases efficiency\n",
         "  vector[{Nme}] Xme_{K} = Xme{i}[, {K}];\n"
       )
@@ -694,18 +701,20 @@ stan_Xme <- function(meef, prior) {
         "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n",
         stan_prior(prior, "Lme", group = g, suffix = usc(i))
       )
-      str_add(out$genD) <- cglue(
+      str_add(out$gen_def) <- cglue(
         "  // obtain latent correlation matrix\n",
         "  corr_matrix[Mme_{i}] Corme_{i}", 
         " = multiply_lower_tri_self_transpose(Lme_{i});\n",
         "  vector<lower=-1,upper=1>[NCme_{i}] corme_{i};\n"
       )
-      str_add(out$genC) <- stan_cor_genC(glue("corme_{i}"), glue("Mme_{i}"))
+      str_add(out$gen_comp) <- stan_cor_gen_comp(
+        cor = glue("corme_{i}"), ncol = glue("Mme_{i}")
+      )
     } else {
       str_add(out$par) <- cglue(
         "  vector[{Nme}] zme_{K};  // standardized latent values\n"
       )
-      str_add(out$tparD) <- cglue(
+      str_add(out$tpar_def) <- cglue(
         "  // obtain the actual latent values\n",
         "  vector[{Nme}] Xme_{K} = ",
         "meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
@@ -768,7 +777,7 @@ stan_vector <- function(...) {
 # prepare Stan code for correlations in the generated quantities block
 # @param cor name of the correlation vector
 # @param ncol number of columns of the correlation matrix
-stan_cor_genC <- function(cor, ncol) {
+stan_cor_gen_comp <- function(cor, ncol) {
   Cor <- paste0(toupper(substring(cor, 1, 1)), substring(cor, 2))
   glue(
     "  // extract upper diagonal of correlation matrix\n", 

@@ -272,7 +272,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tparC1) <- glue(
+    str_add(out$tpar_comp) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
@@ -374,8 +374,8 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
   D$lkj_index <- ifelse(D$lkj, "[1, 2]", "")
   D$prior_par <- glue("prior_{D$par}")
-  str_add(out$genD) <- "  // additionally draw samples from priors\n"
-  str_add(out$genD) <- cglue(
+  str_add(out$gen_def) <- "  // additionally draw samples from priors\n"
+  str_add(out$gen_def) <- cglue(
     "  {D$type} {D$prior_par} = {D$dist}_rng({D$args}){D$lkj_index};\n"
   )
   
@@ -384,12 +384,12 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$ub <- stan_extract_bounds(D$bounds, bound = "upper")
   Ibounds <- which(nzchar(D$bounds))
   if (length(Ibounds)) {
-    str_add(out$genC) <- "  // use rejection sampling for truncated priors\n"
+    str_add(out$gen_comp) <- "  // use rejection sampling for truncated priors\n"
     for (i in Ibounds) {
       wl <- if (nzchar(D$lb[i])) glue("{D$prior_par[i]} < {D$lb[i]}")
       wu <- if (nzchar(D$ub[i])) glue("{D$prior_par[i]} > {D$ub[i]}")
       prior_while <- paste0(c(wl, wu), collapse = " || ")
-      str_add(out$genC) <- glue(
+      str_add(out$gen_comp) <- glue(
         "  while ({prior_while}) {{\n",
         "    {D$prior_par[i]} = {D$dist[i]}_rng({D$args[i]}){D$lkj_index[i]};\n",
         "  }}\n"
