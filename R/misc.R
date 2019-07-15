@@ -107,7 +107,7 @@ match_rows <- function(x, y, ...) {
   match(x, y, ...)
 }
 
-# find elements of x matching subelements passed via ls and ...
+# find elements of 'x' matching sub-elements passed via 'ls' and '...'
 find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   x <- as.list(x)
   if (!length(x)) {
@@ -128,7 +128,7 @@ find_elements <- function(x, ..., ls = list(), fun = '%in%') {
   out
 }
 
-# find rows of x matching columns passed via ls and ...
+# find rows of 'x' matching columns passed via 'ls' and '...'
 # similar to 'find_elements' but for matrix like objects
 find_rows <- function(x, ..., ls = list(), fun = '%in%') {
   x <- as.data.frame(x)
@@ -149,7 +149,7 @@ find_rows <- function(x, ..., ls = list(), fun = '%in%') {
   out
 }
 
-# subset x using arguments passed via ls and ...
+# subset 'x' using arguments passed via 'ls' and '...'
 subset2 <- function(x, ..., ls = list(), fun = '%in%') {
   x[find_rows(x, ..., ls = ls, fun = fun), , drop = FALSE]
 }
@@ -231,7 +231,7 @@ is_equal <- function(x, y, ...) {
   isTRUE(all.equal(x, y, ...))
 }
 
-# check if x behaves like a factor in design matrices
+# check if 'x' will behave like a factor in design matrices
 is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
@@ -318,7 +318,7 @@ rm_attr <- function(x, attr) {
   x
 }
 
-# unidemnsional subsetting while keeping attributes
+# unidimensional subsetting while keeping attributes
 subset_keep_attr <- function(x, y) {
   att <- attributes(x)
   x <- x[y]
@@ -327,7 +327,7 @@ subset_keep_attr <- function(x, y) {
   x
 }
 
-# check if x is a whole number (integer)
+# check if 'x' is a whole number (integer)
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   if (is.numeric(x)) {
     out <- abs(x - round(x)) < tol
@@ -418,8 +418,8 @@ glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(),
   dots <- dots[lengths(dots) > 0L]
   args <- list(
     .x = NULL, .sep = sep, .envir = envir, .open = open, 
-    .close = close, .na = na, .transformer = zero_length_transformer,
-    .trim = FALSE
+    .close = close, .na = na, .trim = FALSE,
+    .transformer = zero_length_transformer
   )
   out <- do_call(glue::glue_data, c(dots, args))
   if (!is.null(collapse)) {
@@ -429,6 +429,7 @@ glue <- function(..., sep = "", collapse = NULL, envir = parent.frame(),
   out
 }
 
+# used in 'glue' to handle zero-length inputs
 zero_length_transformer <- function(text, envir) {
   out <- glue::identity_transformer(text, envir)
   if (!length(out)) {
@@ -475,6 +476,9 @@ na.omit2 <- function(object, ...) {
   out
 }
 
+# check if a certain package is installed
+# @param package package name
+# @param version optional minimal version number to require
 require_package <- function(package, version = NULL) {
   if (!requireNamespace(package, quietly = TRUE)) {
     stop2("Please install the '", package, "' package.")
@@ -807,8 +811,8 @@ grepl_expr <- function(pattern, expr, ...) {
 }
 
 # combine character vectors into a joint regular 'or' expression
-# @param x character vector
-# @param excape excape all special characters in 'x'?
+# @param x a character vector
+# @param escape escape all special characters in 'x'?
 regex_or <- function(x, escape = FALSE) {
   if (escape) {
     x <- escape_all(x)
@@ -823,8 +827,8 @@ escape_dot <- function(x) {
 
 # escape all special characters in character strings
 escape_all <- function(x) {
-  special <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")
-  for (s in special) {
+  specials <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")
+  for (s in specials) {
     x <- gsub(s, paste0("\\", s), x, fixed = TRUE)
   }
   x
@@ -897,8 +901,7 @@ limit_chars <- function(x, chars = NULL, lsuffix = 4) {
 # @param alias input to the deprecated argument
 # @param default the default value of alias
 # @param warn should a warning be printed if alias is specified?
-use_alias <- function(arg, alias = NULL, default = NULL,
-                      warn = TRUE) {
+use_alias <- function(arg, alias = NULL, default = NULL, warn = TRUE) {
   arg_name <- Reduce(paste, deparse(substitute(arg)))
   alias_name <- Reduce(paste, deparse(substitute(alias)))
   if (!is_equal(alias, default)) {

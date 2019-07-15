@@ -756,7 +756,7 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   vl_vars <- c("vreal", "vint")
   vl_vars <- regex_or(vl_vars)
   vl_vars <- paste0("^", vl_vars, "[[:digit:]]+", escape_all(resp), "$")
-  vl_vars <- names(sdata)[grepl(vl_vars, names(sdata))]
+  vl_vars <- str_subset(names(sdata), vl_vars)
   vars <- union(vars, vl_vars)
   draws <- sdata[vars]
   if (length(stanvars)) {
