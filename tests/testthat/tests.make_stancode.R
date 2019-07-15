@@ -1701,68 +1701,76 @@ test_that("custom families are handled correctly", {
   log_lik_beta_binomial2 <- function(i, draws) {
     mu <- draws$dpars$mu[, i]
     tau <- draws$dpars$tau
-    trials <- draws$data$trials[i]
+    trials <- draws$data$vint1[i]
     y <- draws$data$Y[i]
     beta_binomial2_lpmf(y, mu, tau, trials)
   }
   predict_beta_binomial2 <- function(i, draws, ...) {
     mu <- draws$dpars$mu[, i]
     tau <- draws$dpars$tau
-    trials <- draws$data$trials[i]
+    trials <- draws$data$vint1[i]
     beta_binomial2_rng(mu, tau, trials)
   }
   fitted_beta_binomial2 <- function(draws) {
     mu <- draws$dpars$mu
-    trials <- draws$data$trials
+    trials <- draws$data$vint1
     trials <- matrix(
       trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE
     )
     mu * trials
   }
   beta_binomial2 <- custom_family(
-    "beta_binomial2", dpars = c("mu", "tau"),
-    links = c("logit", "log"), lb = c(NA, 0),
-    type = "int", vars = "trials[n]",
+    "beta_binomial2",
+    dpars = c("mu", "tau"),
+    links = c("logit", "log"), 
+    lb = c(NA, 0),
+    type = "int", 
+    vars = c("vint1[n]", "vreal1[n]"),
     log_lik = log_lik_beta_binomial2,
     fitted = fitted_beta_binomial2,
     predict = predict_beta_binomial2
   )
   # define custom stan functions
+  # real R is just to also test the vreal addition argument
   stan_funs <- "
-    real beta_binomial2_lpmf(int y, real mu, real phi, int N) {
+    real beta_binomial2_lpmf(int y, real mu, real phi, int N, real R) {
       return beta_binomial_lpmf(y | N, mu * phi, (1 - mu) * phi);
     }
-    int beta_binomial2_rng(real mu, real phi, int N) {
+    int beta_binomial2_rng(real mu, real phi, int N, real R) {
       return beta_binomial_rng(N, mu * phi, (1 - mu) * phi);
     }
   "
-  stanvars <- stanvar(as.integer(dat$size), "trials") +
-    stanvar(scode = stan_funs, block = "functions")
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
   scode <- make_stancode(
-    y ~ x, data = dat, family = beta_binomial2, 
+    y | vint(size) + vreal(size) ~ x, data = dat, family = beta_binomial2, 
     prior = prior(gamma(0.1, 0.1), class = "tau"),
     stanvars = stanvars
   )
-  expect_match2(scode, "int trials[20];")
+  expect_match2(scode, "int vint1[N];")
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "mu[n] = inv_logit(mu[n]);")
   expect_match2(scode, "target += gamma_lpdf(tau | 0.1, 0.1);")
-  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, trials[n]);")
+  expect_match2(scode, 
+    "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);"
+  )
   
   scode <- make_stancode(
-    bf(y ~ x, tau ~ x), data = dat, family = beta_binomial2, 
-    stanvars = stanvars
+    bf(y | vint(size) + vreal(size) ~ x, tau ~ x), 
+    data = dat, family = beta_binomial2, stanvars = stanvars
   )
   expect_match2(scode, "tau[n] = exp(tau[n]);")
-  expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], trials[n]);")
+  expect_match2(scode, 
+    "target += beta_binomial2_lpmf(Y[n] | mu[n], tau[n], vint1[n], vreal1[n]);"
+  )
   
   # check custom families in mixture models
   scode <- make_stancode(
-    y ~ x, data = dat, family = mixture(binomial, beta_binomial2), 
+    y | vint(size) + vreal(size) + trials(size) ~ x, data = dat, 
+    family = mixture(binomial, beta_binomial2), 
     stanvars = stanvars
   )
   expect_match2(scode, 
-    "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, trials[n]);"
+    "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, vint1[n], vreal1[n]);"
   )
 })
 

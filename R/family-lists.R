@@ -449,7 +449,8 @@
 
 .family_custom <- function() {
   list(
-    ad = c("weights", "subset", "se", "cens", "trunc", "trials", "cat", "dec", "mi"),
+    ad = c("weights", "subset", "se", "cens", "trunc",
+           "trials", "cat", "dec", "mi", "vreal", "vint"),
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }

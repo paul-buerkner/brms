@@ -745,12 +745,20 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
 # extract data mainly related to the response variable
 # @param stanvars: *names* of variables stored in slot 'stanvars'
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
+  resp <- usc(combine_prefix(bterms))
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
-  resp <- usc(combine_prefix(bterms))
-  draws <- rmNULL(sdata[paste0(vars, resp)], recursive = FALSE)
+  vars <- paste0(vars, resp)
+  vars <- intersect(vars, names(sdata))
+  # variables of variable length need to be handled via regular expression
+  vl_vars <- c("vreal", "vint")
+  vl_vars <- regex_or(vl_vars)
+  vl_vars <- paste0("^", vl_vars, "[[:digit:]]+", escape_all(resp), "$")
+  vl_vars <- names(sdata)[grepl(vl_vars, names(sdata))]
+  vars <- union(vars, vl_vars)
+  draws <- sdata[vars]
   if (length(stanvars)) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]

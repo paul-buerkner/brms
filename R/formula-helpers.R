@@ -32,6 +32,8 @@
 #'   treated as standard deviation. If specified, handles
 #'   measurement error and (completely) missing values
 #'   at the same time using the plausible-values-technique.
+#' @param ... For \code{resp_vreal}, vectors of real values. 
+#'   For \code{resp_vint}, vectors of integer values.  
 #'
 #' @return A vector containing additional information on the response
 #'   variable in an appropriate format.
@@ -220,6 +222,29 @@ resp_mi <- function(sdy = NULL) {
 #' @export
 resp_subset <- function(x) {
   as.logical(x)
+}
+
+
+#' @rdname addition-terms
+#' @export
+resp_vreal <- function(...) {
+  out <- list(...)
+  for (i in seq_along(out)) {
+    out[[i]] <- as.numeric(out[[i]])
+  }
+  out
+}
+
+#' @rdname addition-terms
+#' @export
+resp_vint <- function(...) {
+  out <- list(...)
+  for (i in seq_along(out)) {
+    if (!all(is_wholenumber(out[[i]]))) {
+      stop2("'vint' requires whole numbers as input.")
+    }
+  }
+  out
 }
 
 #' Defining smooths in \pkg{brms} formulas

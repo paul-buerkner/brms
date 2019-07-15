@@ -11,6 +11,8 @@
 \alias{resp_trunc}
 \alias{resp_mi}
 \alias{resp_subset}
+\alias{resp_vreal}
+\alias{resp_vint}
 \title{Additional Response Information}
 \usage{
 resp_se(x, sigma = FALSE)
@@ -30,6 +32,10 @@ resp_trunc(lb = -Inf, ub = Inf)
 resp_mi(sdy = NULL)
 
 resp_subset(x)
+
+resp_vreal(...)
+
+resp_vint(...)
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the
@@ -64,6 +70,9 @@ the upper truncation bound.}
 treated as standard deviation. If specified, handles
 measurement error and (completely) missing values
 at the same time using the plausible-values-technique.}
+
+\item{...}{For \code{resp_vreal}, vectors of real values. 
+For \code{resp_vint}, vectors of integer values.}
 }
 \value{
 A vector containing additional information on the response

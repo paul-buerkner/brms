@@ -17,7 +17,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 
 ## ----cbpp-------------------------------------------------------------------------------
 data("cbpp", package = "lme4")
@@ -34,7 +34,7 @@ summary(fit1)
 beta_binomial2 <- custom_family(
   "beta_binomial2", dpars = c("mu", "phi"),
   links = c("logit", "log"), lb = c(NA, 0),
-  type = "int", vars = "trials[n]"
+  type = "int", vars = "vint1[n]"
 )
 
 ## ----stan_funs--------------------------------------------------------------------------
@@ -48,12 +48,11 @@ stan_funs <- "
 "
 
 ## ----stanvars---------------------------------------------------------------------------
-stanvars <- stanvar(scode = stan_funs, block = "functions") +
-  stanvar(as.integer(cbpp$size), name = "trials")
+stanvars <- stanvar(scode = stan_funs, block = "functions")
 
 ## ----fit2, results='hide'---------------------------------------------------------------
 fit2 <- brm(
-  incidence ~ period + (1|herd), data = cbpp, 
+  incidence | vint(size) ~ period + (1|herd), data = cbpp, 
   family = beta_binomial2, stanvars = stanvars
 )
 
@@ -67,9 +66,9 @@ expose_functions(fit2, vectorize = TRUE)
 log_lik_beta_binomial2 <- function(i, draws) {
   mu <- draws$dpars$mu[, i]
   phi <- draws$dpars$phi
-  N <- draws$data$trials[i]
+  trials <- draws$data$vint1[i]
   y <- draws$data$Y[i]
-  beta_binomial2_lpmf(y, mu, phi, N)
+  beta_binomial2_lpmf(y, mu, phi, trials)
 }
 
 ## ----loo--------------------------------------------------------------------------------
@@ -79,8 +78,8 @@ loo(fit1, fit2)
 predict_beta_binomial2 <- function(i, draws, ...) {
   mu <- draws$dpars$mu[, i]
   phi <- draws$dpars$phi
-  N <- draws$data$trials[i]
-  beta_binomial2_rng(mu, phi, N)
+  trials <- draws$data$vint1[i]
+  beta_binomial2_rng(mu, phi, trials)
 }
 
 ## ----pp_check---------------------------------------------------------------------------
@@ -89,11 +88,11 @@ pp_check(fit2)
 ## ----fitted-----------------------------------------------------------------------------
 fitted_beta_binomial2 <- function(draws) {
   mu <- draws$dpars$mu
-  trials <- draws$data$trials
+  trials <- draws$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
 }
 
 ## ----marginal_effects-------------------------------------------------------------------
-marginal_effects(fit2, new_objects = list(trials = 1))
+marginal_effects(fit2, conditions = data.frame(size = 1))
 

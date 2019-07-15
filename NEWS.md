@@ -3,6 +3,8 @@
 ### New Features
 
 * Use primitive Stan GLM functions whenever possible. (#703)
+* Pass real and integer data vectors to custom families via
+the addition arguments `vreal` and `vint`. (#707)
 * Model compound symmetry correlations via `cor_cosy`. (#403)
 * Predict `sigma` in combination with several 
 autocorrelation structures. (#403)

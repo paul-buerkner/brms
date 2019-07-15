@@ -133,6 +133,22 @@ stan_response <- function(bterms, data) {
       )
     }
   }
+  if (is.formula(bterms$adforms$vreal)) {
+    # vectors of real values for use in custom families
+    k <- length(eval_rhs(bterms$adforms$vreal, data = data))
+    str_add(out$data) <- cglue(
+      "  // data for custom real vectors\n",
+      "  vector[N{resp}] vreal{seq_len(k)}{resp};\n"
+    )
+  }
+  if (is.formula(bterms$adforms$vint)) {
+    # vectors of integer values for use in custom families
+    k <- length(eval_rhs(bterms$adforms$vint, data = data))
+    str_add(out$data) <- cglue(
+      "  // data for custom integer vectors\n",
+      "  int vint{seq_len(k)}{resp}[N{resp}];\n"
+    )
+  }
   out
 }
 

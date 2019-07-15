@@ -442,13 +442,11 @@ family_info.brmsfit <- function(x, y, ...) {
 # provides special handling for certain elements
 combine_family_info <- function(x, y, ...) {
   y <- as_one_character(y)
-  unite <- c("dpars", "type", "specials", "include", "const", "cats")
+  unite <- c("dpars", "type", "specials", "include", "const", "cats", "ad")
   if (y %in% c("family", "link")) {
     x <- unlist(x)
   } else if (y %in% unite) {
     x <- Reduce("union", x)
-  } else if (y == "ad") {
-    x <- Reduce("intersect", x)
   } else if (y == "ybounds") {
     x <- do_call(rbind, x)
     x <- c(max(x[, 1]), min(x[, 2]))

@@ -782,6 +782,25 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_equal(sdata$V, diag(2))
 })
 
+test_that("addition arguments 'vint' and 'vreal' work correctly", {
+  dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
+  beta_binomial2 <- custom_family(
+    "beta_binomial2",
+    dpars = c("mu", "tau"),
+    links = c("logit", "log"), 
+    lb = c(NA, 0),
+    type = "int", 
+    vars = c("vint1[n]", "vreal1[n]")
+  )
+  sdata <- make_standata(
+    y | vint(size) + vreal(x, size) ~ 1, 
+    data = dat, family = beta_binomial2, 
+  )
+  expect_equal(sdata$vint1, as.array(rep(10, 20)))
+  expect_equal(sdata$vreal1, as.array(dat$x))
+  expect_equal(sdata$vreal2, as.array(rep(10, 20)))
+})
+
 test_that("reserved variables 'Intercept' is handled correctly", {
   dat <- data.frame(y = 1:10)
   sdata <- make_standata(y ~ 0 + intercept, dat)
@@ -819,7 +838,7 @@ test_that("data for multinomial and dirichlet models is correct", {
                "Response values in dirichlet models must sum to 1")
 })
 
-test_that("make_stadata handles cox models correctly", {
+test_that("make_standata handles cox models correctly", {
   data <- data.frame(y = rexp(100), x = rnorm(100))
   bform <- bf(y ~ x)
   sdata <- make_standata(bform, data, brmsfamily("cox"))

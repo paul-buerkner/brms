@@ -806,6 +806,16 @@ grepl_expr <- function(pattern, expr, ...) {
     length(get_matches_expr(pattern, e, ...)) > 0L))
 }
 
+# combine character vectors into a joint regular 'or' expression
+# @param x character vector
+# @param excape excape all special characters in 'x'?
+regex_or <- function(x, escape = FALSE) {
+  if (escape) {
+    x <- escape_all(x)
+  }
+  paste0("(", paste0("(", x, ")", collapse = "|"), ")")
+}
+
 # escape dots in character strings
 escape_dot <- function(x) {
   gsub(".", "\\.", x, fixed = TRUE)

@@ -1000,7 +1000,31 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       # use Inf to that min(Y) is not affected
       out$Y[which_mi] <- Inf
     }
-  } 
+  }
+  if (is.formula(x$adforms$vreal)) {
+    # vectors of real values for use in custom families
+    vreal <- eval_rhs(x$adforms$vreal, data = data)
+    names(vreal) <- paste0("vreal", seq_along(vreal))
+    for (i in seq_along(vreal)) {
+      if (length(vreal[[i]]) == 1L) {
+        vreal[[i]] <- rep(vreal[[i]], N)
+      }
+      vreal[[i]] <- as.array(vreal[[i]])
+    }
+    c(out) <- vreal
+  }
+  if (is.formula(x$adforms$vint)) {
+    # vectors of integer values for use in custom families
+    vint <- eval_rhs(x$adforms$vint, data = data)
+    names(vint) <- paste0("vint", seq_along(vint))
+    for (i in seq_along(vint)) {
+      if (length(vint[[i]]) == 1L) {
+        vint[[i]] <- rep(vint[[i]], N)
+      }
+      vint[[i]] <- as.array(vint[[i]])
+    }
+    c(out) <- vint
+  }
   resp <- usc(combine_prefix(x))
   out <- setNames(out, paste0(names(out), resp))
   # specify data for autocors here in order to pass Y

@@ -326,10 +326,15 @@ models for all parameters of the assumed response distribution.
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
 
-  Multiple addition terms may be specified at the same time using 
-  the \code{+} operator, for instance \cr
-  \code{formula = yi | se(sei) + cens(censored) ~ 1} 
-  for a censored meta-analytic model. 
+  For custom families, it is possible to pass an abitrary number of real and
+  integer vectors via the addition terms \code{vreal} and \code{vint},
+  respectively. An example is provided in
+  \code{vignette('brms_customfamilies')}.
+
+  Multiple addition terms may be specified at the same time using the
+  \code{+} operator. For example, the formula
+  \code{formula = yi | se(sei) + cens(censored) ~ 1} implies a censored 
+  meta-analytic model.
   
   The addition argument \code{disp} (short for dispersion) 
   has been removed in version 2.0. You may instead use the 
