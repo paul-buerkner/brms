@@ -427,7 +427,8 @@ parse_sp <- function(formula) {
     uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
     uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
     uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
-    out <- str2formula(out)
+    # remove the intercept as it is handled separately
+    out <- str2formula(c("0", out))
     attr(out, "int") <- FALSE
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
@@ -488,7 +489,8 @@ parse_offset <- function(formula) {
 parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (length(out)) {
-    out <- str2formula(out)
+    # remove the intercept as it is handled separately
+    out <- str2formula(c("0", out))
     attr(out, "allvars") <- allvars_formula(out)
     attr(out, "int") <- FALSE
   }
