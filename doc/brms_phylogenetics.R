@@ -17,7 +17,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 phylo <- ape::read.nexus("https://paul-buerkner.github.io/data/phylo.nex")
@@ -28,9 +28,7 @@ data_simple <- read.table(
 head(data_simple)
 
 ## ---------------------------------------------------------------------------------------
-inv.phylo <- MCMCglmm::inverseA(phylo, nodes = "TIPS", scale = TRUE)
-A <- solve(inv.phylo$Ainv)
-rownames(A) <- rownames(inv.phylo$Ainv)
+A <- ape::vcv.phylo(phylo)
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_simple <- brm(
