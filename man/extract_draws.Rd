@@ -9,7 +9,7 @@
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   incl_autocor = TRUE, oos = NULL, resp = NULL, nsamples = NULL,
   subset = NULL, nug = NULL, smooths_only = FALSE, offset = TRUE,
-  new_objects = list(), ...)
+  new_objects = list(), point = NULL, ...)
 
 extract_draws(x, ...)
 }
@@ -73,6 +73,12 @@ predictions. Defaults to \code{TRUE}.}
 cannot be passed via argument \code{newdata}. Required for objects passed
 via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
 \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.}
+
+\item{point}{Shall the returned object contain only point estimates of the
+parameters instead of their posterior samples? Defaults to \code{NULL} in
+which case no point estimate is computed. Alternatively, may be set to
+\code{"mean"} or \code{"median"}. This argument is primarily implemented to
+ensure compatibility with the \code{\link{loo_subsample}} method.}
 
 \item{...}{Further arguments passed to \code{\link{validate_newdata}}.}
 }

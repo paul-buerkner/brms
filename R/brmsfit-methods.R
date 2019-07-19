@@ -2666,7 +2666,8 @@ loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo_subsample", pointwise = TRUE, 
-    compare, resp, k_threshold, reloo, reloo_args
+    compare, resp, k_threshold, reloo, reloo_args,
+    add_point_draws = TRUE
   )
   do_call(compute_loos, args)
 }
@@ -2963,6 +2964,8 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #'   observation. The latter option is rarely useful when
 #'   calling \code{log_lik} directly, but rather when computing
 #'   \code{\link{waic}} or \code{\link{loo}}.
+#' @param add_point_draws For internal use only. Ensures compatibility with the
+#'   \code{\link{loo_subsample}} method.
 #' 
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood
 #'  samples, where S is the number of samples and N is the number 
@@ -2980,13 +2983,28 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #' @importFrom rstantools log_lik
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             resp = NULL, nsamples = NULL, subset = NULL, 
-                            pointwise = FALSE, combine = TRUE, ...) {
+                            pointwise = FALSE, combine = TRUE,
+                            add_point_draws = FALSE, ...) {
+  pointwise <- as_one_logical(pointwise)
+  combine <- as_one_logical(combine)
+  add_point_draws <- as_one_logical(add_point_draws)
   contains_samples(object)
   object <- restructure(object)
   draws <- extract_draws(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     subset = subset, nsamples = nsamples, check_response = TRUE, ...
   )
+  if (add_point_draws) {
+    # required for the loo_subsample method
+    # Computing a point estimate based on the full draws object is too
+    # difficult due to its highly nested structure. As an alternative, a second
+    # draws object is created from the point estimates of the samples directly.
+    attr(draws, "point_draws") <- extract_draws(
+      object, newdata = newdata, re_formula = re_formula, resp = resp, 
+      subset = subset, nsamples = nsamples, check_response = TRUE, 
+      point = "median", ...
+    )
+  }
   if (pointwise) {
     stopifnot(combine)
     log_lik <- log_lik_pointwise

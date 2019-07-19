@@ -6,7 +6,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   incl_autocor = TRUE, oos = NULL, resp = NULL,
                                   nsamples = NULL, subset = NULL, nug = NULL, 
                                   smooths_only = FALSE, offset = TRUE, 
-                                  new_objects = list(), ...) {
+                                  new_objects = list(), point = NULL, ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   warn_brmsfit_multiple(x)
@@ -17,6 +17,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
+  samples <- point_samples(samples, point = point)
+  
   # prepare (new) data and stan data 
   newdata <- validate_newdata(
     newdata, object = x, re_formula = re_formula, 
@@ -968,9 +970,30 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
   structure(out, gf = gf, max_level = max_level)
 }
 
+# extract samples of selected parameters
 get_samples <- function(x, pars, ...) {
   pars <- extract_pars(pars, all_pars = colnames(x), ...)
   x[, pars, drop = FALSE]
+}
+
+# compute point estimates of posterior samples
+# currently used primarily for 'loo_subsample'
+# @param samples matrix of posterior samples
+# @param point optional name of the point estimate to be computed
+# @return a matrix with one row and as many columns as parameters
+point_samples <- function(samples, point = NULL) {
+  if (!is.null(point)) {
+    point <- match.arg(point, c("mean", "median"))
+    parnames <- colnames(samples)
+    if (point == "mean") {
+      samples <- matrixStats::colMeans2(samples)
+    } else if (point == "median") {
+      samples <- matrixStats::colMedians(samples)
+    }
+    samples <- t(samples)
+    colnames(samples) <- parnames
+  }
+  samples
 }
 
 is.brmsdraws <- function(x) {
@@ -1044,6 +1067,11 @@ is.bdrawsnl <- function(x) {
 #'   positive definite. Adding a very small number to the matrix's diagonal
 #'   often solves this problem. If \code{NULL} (the default), \code{nug} is
 #'   chosen internally.
+#' @param point Shall the returned object contain only point estimates of the
+#'   parameters instead of their posterior samples? Defaults to \code{NULL} in
+#'   which case no point estimate is computed. Alternatively, may be set to
+#'   \code{"mean"} or \code{"median"}. This argument is primarily implemented to
+#'   ensure compatibility with the \code{\link{loo_subsample}} method.
 #' @param ... Further arguments passed to \code{\link{validate_newdata}}.
 #'
 #' @return An object of class \code{'brmsdraws'} or \code{'mvbrmsdraws'},

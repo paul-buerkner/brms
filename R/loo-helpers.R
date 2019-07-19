@@ -837,9 +837,11 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
 }
 
 # methods required in loo_subsample
+# TODO: register all of the generics once the latter are exported by loo
 #' @export
 nparameters.brmsdraws <- function(x, ...) {
-  1L  # temporary
+  # temporary as 'nparamaters' will be replaced before release anyway
+  1L 
 }
 
 #' @export
@@ -860,12 +862,28 @@ ndraws.mvbrmsdraws <- function(x, ...) {
 #' @export
 thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
   # brmsdraws objects are too complex to implement a post-hoc subsetting method
+  if (length(loo_approximation_draws)) {
+    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
+  }
   draws
 }
 
 #' @export
 thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
+  if (length(loo_approximation_draws)) {
+    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
+  }
   draws
+}
+
+#' @export
+compute_point_estimate.brmsdraws <- function(x, ...) {
+  attr(x, "point_draws")
+}
+
+#' @export
+compute_point_estimate.mvbrmsdraws <- function(x, ...) {
+  attr(x, "point_draws")
 }
 
 # print the output of a list of loo objects

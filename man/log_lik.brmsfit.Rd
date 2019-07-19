@@ -8,7 +8,7 @@
 \usage{
 \method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   resp = NULL, nsamples = NULL, subset = NULL, pointwise = FALSE,
-  combine = TRUE, ...)
+  combine = TRUE, add_point_draws = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
@@ -42,6 +42,9 @@ calling \code{log_lik} directly, but rather when computing
 Indicates if the log-likelihoods of the submodels should
 be combined per observation (i.e. added together; the default) 
 or if the log-likelihoods should be returned separately.}
+
+\item{add_point_draws}{For internal use only. Ensures compatibility with the
+\code{\link{loo_subsample}} method.}
 
 \item{...}{Further arguments passed to \code{\link{extract_draws}}
 that control several aspects of data validation and prediction.}
