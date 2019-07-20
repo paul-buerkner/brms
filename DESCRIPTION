@@ -8,10 +8,10 @@ Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com
   role = c("aut", "cre"))
 Depends: 
     R (>= 3.5.0),
+    Rcpp (>= 0.12.0),
     methods
 Imports: 
     rstan (>= 2.19.2),
-    Rcpp (>= 0.12.0),
     ggplot2 (>= 2.0.0),
     loo (>= 2.1.0),
     Matrix (>= 1.1.1),
