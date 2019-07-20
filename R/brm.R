@@ -331,10 +331,11 @@
 #' fit7 <- update(fit7, future = TRUE)
 #' }
 #'
-#' @import Rcpp
 #' @import parallel
 #' @import methods
 #' @import stats
+#' @importFrom Rcpp cpp_object_initializer
+#' @export cpp_object_initializer
 #' @export
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, cov_ranef = NULL, 
