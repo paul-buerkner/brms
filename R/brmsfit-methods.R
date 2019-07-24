@@ -675,12 +675,6 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   to be covered by the uncertainty intervals. The default is 0.95.
 #' @param mc_se Logical; Indicating if the uncertainty caused by the 
 #'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
-#' @param use_cache Logical; Indicating if summary results should
-#'   be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
-#'   For models fitted with earlier versions of \pkg{brms},
-#'   it may be necessary to set \code{use_cache} to
-#'   \code{FALSE} in order to get the \code{summary} 
-#'   method working correctly.
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
@@ -689,8 +683,19 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @importMethodsFrom rstan summary
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
-                            mc_se = FALSE, use_cache = TRUE, ...) {
-  object <- restructure(object, rstr_summary = use_cache)
+                            mc_se = FALSE, ...) {
+  priors <- as_one_logical(priors)
+  prob <- as_one_numeric(prob)
+  if (prob < 0 || prob > 1) {
+    stop2("'prob' must be a single numeric value in [0, 1].")
+  }
+  mc_se <- as_one_logical(mc_se)
+  if (mc_se) {
+    warning2("Argument 'mc_se' is currently deactivated but ", 
+             "will be working again in the future. Sorry!")
+  }
+  
+  object <- restructure(object)
   bterms <- parse_bf(object$formula)
   out <- list(
     formula = object$formula,
@@ -713,54 +718,65 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   out$thin <- object$fit@sim$thin
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-  if (length(prob) != 1L || prob < 0 || prob > 1) {
-    stop2("'prob' must be a single numeric value in [0, 1].")
-  }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
   }
   
-  pars <- parnames(object)
-  meta_pars <- object$fit@sim$pars_oi
-  meta_pars <- meta_pars[!grepl("^(r|s|zgp|Xme|prior|lp)_", meta_pars)]
-  probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
-  fit_summary <- summary(
-    object$fit, pars = meta_pars, 
-    probs = probs, use_cache = use_cache
-  )
-  fit_summary <- fit_summary$summary
-  if (!mc_se) {
-    fit_summary <- fit_summary[, -2, drop = FALSE] 
+  # compute a summary for given set of parameters
+  .summary <- function(object, pars, prob) {
+    # TODO: use rstan::monitor instead once it is clean and stable
+    sims <- as.array(object, pars = pars, exact_match = TRUE)
+    parnames <- dimnames(sims)[[3]]
+    probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+    valid <- rep(NA, length(parnames))
+    out <- named_list(parnames)
+    for (i in seq_along(out)) {
+      sims_i <- sims[, , i]
+      valid[i] <- all(is.finite(sims_i))
+      quan <- unname(quantile(sims_i, probs = probs))
+      mean <- mean(sims_i)
+      sd <- sd(sims_i)
+      rhat <- rstan::Rhat(sims_i)
+      ess_bulk <- round(rstan::ess_bulk(sims_i))
+      ess_tail <- round(rstan::ess_tail(sims_i))
+      out[[i]] <- c(mean, sd, quan, rhat, ess_bulk, ess_tail)
+    }
+    out <- do_call(rbind, out)
+    CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
+    # TODO: align column names with summary outputs of other methods
+    colnames(out) <- c(
+      "Estimate", "Est.Error", CIs, "Rhat", "Bulk_ESS", "Tail_ESS"
+    )
+    rownames(out) <- parnames
+    S <- prod(dim(sims)[1:2])
+    out[valid & !is.finite(out[, "Rhat"]), "Rhat"] <- 1
+    out[valid & !is.finite(out[, "Bulk_ESS"]), "Bulk_ESS"] <- S
+    out[valid & !is.finite(out[, "Tail_ESS"]), "Tail_ESS"] <- S
+    return(out)
   }
-  CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
-  colnames(fit_summary) <- c(
-    "Estimate", if (mc_se) "MC.Error", 
-    "Est.Error", CIs, "Eff.Sample", "Rhat"
-  )
+  
+  pars <- parnames(object)
+  # TODO: exclude more parameters?
+  excl_regex <- "^(r|s|zgp|Xme|prior|lp)_"
+  pars <- pars[!grepl(excl_regex, pars)]
+  fit_summary <- .summary(object, pars = pars, prob = prob)
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
-    if (any(Rhats > 1.1, na.rm = TRUE)) {
+    if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
         "The model has not converged (some Rhats are > 1.1). ",
         "Do not analyse the results! \nWe recommend running ", 
         "more iterations and/or setting stronger priors."
       )
     }
-    # nuts_params may not work for some models fitted with brms < 1.0.0
-    div_trans <- try(
-      sum(nuts_params(object, pars = "divergent__")$Value), silent = TRUE
-    )
-    if (is(div_trans, "try-error")) {
-      warning2("Could not extract information about divergent transitions.")
-    } else {
-      adapt_delta <- control_params(object)$adapt_delta
-      if (div_trans > 0) {
-        warning2(
-          "There were ", div_trans, " divergent transitions after warmup. ", 
-          "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
-          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
-        )
-      }
+    div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+    adapt_delta <- control_params(object)$adapt_delta
+    if (div_trans > 0) {
+      warning2(
+        "There were ", div_trans, " divergent transitions after warmup. ", 
+        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
+        "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+      )
     }
   }
   

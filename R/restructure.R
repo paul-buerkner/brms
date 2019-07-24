@@ -37,6 +37,7 @@ restructure <- function(x, rstr_summary = FALSE) {
   }
   stan_env <- attributes(x$fit)$.MISC
   if (rstr_summary && exists("summary", stan_env)) {
+    # TODO: remove at some point as summary.brmsfit no longer requires it
     stan_summary <- get("summary", stan_env)
     old_parnames <- rownames(stan_summary$msd)
     if (!identical(old_parnames, parnames(x))) {
