@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Improve convergence diagnostics in the `summary` output. (#712)
 * Use primitive Stan GLM functions whenever possible. (#703)
 * Pass real and integer data vectors to custom families via
 the addition arguments `vreal` and `vint`. (#707)
