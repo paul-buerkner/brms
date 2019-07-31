@@ -216,25 +216,6 @@ parnames <- function(x, ...) {
   UseMethod("parnames")
 }
 
-#' Number of Posterior Samples
-#' 
-#' Extract the number of posterior samples 
-#' stored in a fitted Bayesian model.
-#' 
-#' @param x An \R object
-#' @param ... Further arguments passed to or from other methods.
-#' @param subset An optional integer vector defining a 
-#'   subset of samples to be considered.
-#' @param incl_warmup A flag indicating whether to also 
-#'   count warmup / burn-in samples.
-#' 
-#' @details Currently there are methods for \code{brmsfit} objects.
-#' 
-#' @export
-nsamples <- function(x, ...) {
-  UseMethod("nsamples")
-}
-
 #' Number of levels
 #' 
 #' Extract the number of levels of one or more grouping factors.

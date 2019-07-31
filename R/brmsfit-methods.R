@@ -848,18 +848,33 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   out
 }
 
-#' @rdname nsamples
+#' Number of Posterior Samples
+#'
+#' Extract the number of posterior samples stored in a fitted Bayesian model.
+#'
+#' @aliases nsamples
+#'
+#' @param object An object of class \code{brmsfit}.
+#' @param subset An optional integer vector defining a subset of samples
+#'   to be considered.
+#' @param incl_warmup A flag indicating whether to also count warmup / burn-in
+#'   samples.
+#' @param ... Currently ignored.
+#'
+#' @method nsamples brmsfit
 #' @export
-nsamples.brmsfit <- function(x, subset = NULL, 
+#' @export nsamples
+#' @importFrom rstantools nsamples
+nsamples.brmsfit <- function(object, subset = NULL,
                              incl_warmup = FALSE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) {
     out <- 0
   } else {
-    ntsamples <- x$fit@sim$n_save[1]
+    ntsamples <- object$fit@sim$n_save[1]
     if (!incl_warmup) {
-      ntsamples <- ntsamples - x$fit@sim$warmup2[1]
+      ntsamples <- ntsamples - object$fit@sim$warmup2[1]
     }
-    ntsamples <- ntsamples * x$fit@sim$chains
+    ntsamples <- ntsamples * object$fit@sim$chains
     if (length(subset)) {
       out <- length(subset)
       if (out > ntsamples || max(subset) > ntsamples) {
