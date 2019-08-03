@@ -1087,14 +1087,12 @@ check_prior <- function(prior, formula, data,
     prior$class, c("^cor$", "^rescor$", "^corme$"), 
     c("L", "Lrescor", "Lme"), fixed = FALSE
   )
-  rcols <- rcols_prior()
-  duplicated_input <- duplicated(prior[, rcols])
-  if (any(duplicated_input)) {
+  if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
   }
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors[, rcols], prior[, rcols])))
+    valid <- which(duplicated(rbind(all_priors, prior)))
     invalid <- which(!seq_rows(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
@@ -1111,8 +1109,7 @@ check_prior <- function(prior, formula, data,
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
-  prior <- prior + all_priors
-  prior <- prior[!duplicated(prior[, rcols]), ]
+  prior <- c(all_priors, prior, replace = TRUE)
   prior <- check_prior_special(prior, bterms = bterms, data = data)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   prior <- prior + prior_no_checks
@@ -1594,18 +1591,37 @@ print.brmsprior <- function(x, show_df, ...) {
 
 # combine multiple brmsprior objects into one brmsprior
 #' @export
-c.brmsprior <- function(x, ...) {
-  if (all(sapply(list(...), is.brmsprior))) {
+c.brmsprior <- function(x, ..., replace = FALSE) {
+  dots <- list(...)
+  if (all(sapply(dots, is.brmsprior))) {
+    replace <- as_one_logical(replace)
+    # don't use 'c()' here to avoid creating a recursion
     out <- do_call(rbind, list(x, ...)) 
+    if (replace) {
+      # update duplicated priors
+      out <- unique(out, fromLast = TRUE) 
+    }
   } else {
-    out <- c(as.data.frame(x), ...)
+    if (length(dots)) {
+      stop2("Cannot add '", class(dots[[1]])[1], "' objects to the prior.")
+    }
+    out <- c(as.data.frame(x))
   }
   out
 }
 
 #' @export
 "+.brmsprior" <- function(e1, e2) {
+  if (!is.brmsprior(e2)) {
+    stop2("Cannot add '", class(e2)[1], "' objects to the prior.")
+  }
   c(e1, e2)
+}
+
+#' @export
+duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
+  # compare only specific columns of the brmsprior object
+  duplicated.data.frame(x[, rcols_prior()], incomparables, ...)
 }
 
 # evaluate the dirichlet prior of simplex parameters
