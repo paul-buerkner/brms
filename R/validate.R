@@ -710,7 +710,13 @@ check_fdpars <- function(x) {
 allvars_formula <- function(...) {
   out <- rmNULL(c(...))
   out <- collapse(ulapply(out, plus_rhs))
-  out <- str2formula(c(out, all_vars(out)))
+  all_vars <- all_vars(out)
+  invalid_vars <- setdiff(all_vars, make.names(all_vars))
+  if (length(invalid_vars)) {
+    stop2("The following variable names are invalid: ",
+          collapse_comma(invalid_vars)) 
+  }
+  out <- str2formula(c(out, all_vars))
   update(out, ~ .)
 }
 
@@ -737,7 +743,7 @@ get_allvars <- function(x, type = "") {
 # add 'x' to the right-hand side of a formula
 plus_rhs <- function(x) {
   if (is.formula(x)) {
-    x <- Reduce(paste, deparse(rhs(x)[[2]]))
+    x <- sub("^[^~]*~", "", formula2str(x))
   }
   if (length(x) && all(nzchar(x))) {
     out <- paste0(" + ", paste(x, collapse = "+"))

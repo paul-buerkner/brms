@@ -33,6 +33,8 @@ related models thanks to the Github user tatters. (#678)
 of categorical responses thanks to Emmanuel Charpentier. (#672)
 * Fix Stan code of multivariate models with multi-membership
 terms thanks to the Stan discourse user Pia.
+* Improve checks for non-standard variable names 
+thanks to Ryan Holbrook. (#721) 
 
 
 # brms 2.9.0
