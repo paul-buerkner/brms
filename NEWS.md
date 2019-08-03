@@ -16,6 +16,8 @@ autocorrelation structures. (#403)
 thanks to the GitHub user aslez. (#680)
 * No longer allow changing the boundaries
 of autocorrelation parameters.
+* Set the number of trials to 1 by default in 
+`marginal_effects` if not specified otherwise. (#718)
 
 ### Bug Fixes
 

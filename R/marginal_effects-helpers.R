@@ -475,14 +475,15 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
+  # special treatment for 'trials' addition variables
   trial_vars <- all_vars(bterms$adforms$trials)
+  trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
   if (length(trial_vars)) {
-    write_msg <- any(ulapply(trial_vars, function(x) 
-      !isTRUE(x %in% names(conditions)) || anyNA(conditions[[x]])
-    ))
-    if (write_msg) {
-      message("Using the median number of trials by ", 
-              "default if not specified otherwise.")
+    message("Setting the number of trials to 1 by ", 
+            "default if not specified otherwise.")
+    req_vars <- setdiff(req_vars, trial_vars)
+    for (v in trial_vars) {
+      conditions[[v]] <- 1L
     }
   }
   # use default values for unspecified variables
@@ -493,7 +494,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
       if (v %in% int_vars) {
-        conditions[[v]] <- round(median(mf[[v]]))
+        conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))
       } else {
         conditions[[v]] <- mean(mf[[v]], na.rm = TRUE)
       }
@@ -601,6 +602,12 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- do_call(rbind, data)
   data$cond__ <- factor(data$cond__, cond__)
   structure(data, effects = effects, types = pred_types, mono = mono)
+}
+
+# which variables in 'vars' are specified in 'data'?
+vars_specified <- function(vars, data) {
+  .fun <- function(v) isTRUE(v %in% names(data)) && any(!is.na(data[[v]]))
+  as.logical(ulapply(vars, .fun))
 }
 
 # compute fitted values for use in marginal_effects
