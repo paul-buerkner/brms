@@ -491,7 +491,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
   # initialize output
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   # priors for distributional parameters
   prior <- prior + prior_predictor(
     bterms, data = data, internal = internal
@@ -519,11 +519,11 @@ prior_predictor <- function(x, ...) {
 
 #' @export
 prior_predictor.default <- function(x, ...) {
-  empty_brmsprior()
+  empty_prior()
 }
 
 prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   for (i in seq_along(x$terms)) {
     prior <- prior + prior_predictor(x$terms[[i]], ...) 
   }
@@ -552,7 +552,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x)
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   # priors for mixture models
   if (is.mixfamily(x$family)) {
     if (has_joint_theta(x)) {
@@ -580,7 +580,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
-      dp_prior <- empty_brmsprior()
+      dp_prior <- empty_prior()
     } else {
       # parameter is estimated
       dp_prior <- brmsprior(def_dprior, class = dp, resp = x$resp)
@@ -637,7 +637,7 @@ prior_predictor.btnl <- function(x, ...) {
 
 # priors for population-level parameters
 prior_fe <- function(bterms, data, def_dprior = "", ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   center_X <- stan_center_X(bterms)
@@ -654,7 +654,7 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
 
 # priors for thresholds of ordinal models
 prior_thres <- function(bterms, def_scale_prior = "", ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (!is_ordinal(bterms)) {
     # thresholds only exist in ordinal models
     return(prior)
@@ -680,7 +680,7 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
 
 # priors for coefficients of baseline hazards in the Cox model
 prior_bhaz <- function(bterms, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (!is_cox(bterms$family)) {
     return(prior)
   }
@@ -693,7 +693,7 @@ prior_bhaz <- function(bterms, ...) {
 
 # priors for special effects parameters
 prior_sp <- function(bterms, data, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   spef <- tidy_spef(bterms, data)
   if (nrow(spef)) {
     px <- check_prefix(bterms)
@@ -712,7 +712,7 @@ prior_sp <- function(bterms, data, ...) {
 
 # priors for category spcific effects parameters
 prior_cs <- function(bterms, data, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   csef <- colnames(get_model_matrix(bterms$cs, data = data))
   if (length(csef)) {
     px <- check_prefix(bterms)
@@ -725,7 +725,7 @@ prior_cs <- function(bterms, data, ...) {
 # default priors for hyper-parameters of noise-free variables
 prior_Xme <- function(meef, internal = FALSE, ...) {
   stopifnot(is.meef_frame(meef))
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (nrow(meef)) {
     prior <- prior + 
       brmsprior(class = "meanme", coef = c("", meef$coef)) +
@@ -757,7 +757,7 @@ prior_Xme <- function(meef, internal = FALSE, ...) {
 # @param def_scale_prior: a character string defining 
 #   the default prior SD parameters
 prior_gp <- function(bterms, data, def_scale_prior, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   gpef <- tidy_gpef(bterms, data)
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
@@ -837,7 +837,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
 #   the default prior for SD parameters
 # @param internal: see 'get_prior'
 prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (!nrow(ranef)) {
     return(prior)
   }
@@ -893,7 +893,7 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
 
 # priors for smooth terms
 prior_sm <- function(bterms, data, def_scale_prior, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   smef <- tidy_smef(bterms, data)
   if (NROW(smef)) {
     px <- check_prefix(bterms)
@@ -921,7 +921,7 @@ prior_autocor <- function(bterms, def_scale_prior) {
   autocor <- bterms$autocor
   resp <- bterms$resp
   cbound <- "<lower=-1,upper=1>"
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (is.cor_arma(autocor)) {
     if (get_ar(autocor)) {
       prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
@@ -1211,7 +1211,7 @@ check_prior_special <- function(x, ...) {
 }
 
 #' @export
-check_prior_special.default <- function(x, prior = empty_brmsprior(), ...) {
+check_prior_special.default <- function(x, prior = empty_prior(), ...) {
   prior
 }
 
@@ -1253,7 +1253,7 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
 check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
-    prior <- empty_brmsprior()
+    prior <- empty_prior()
   }
   # copy over the global population-level prior in categorical models
   if (conv_cats_dpars(x$family)) {
@@ -1459,8 +1459,9 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   out
 }
 
-# brmsprior object with zero rows
-empty_brmsprior <- function() {
+#' @describeIn set_prior Create an empty \code{brmsprior} object.
+#' @export 
+empty_prior <- function() {
   char0 <- character(0)
   brmsprior(
     prior = char0, class = char0, coef = char0, 

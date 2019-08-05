@@ -7,6 +7,7 @@
 \alias{prior}
 \alias{prior_}
 \alias{prior_string}
+\alias{empty_prior}
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "", resp = "",
@@ -17,6 +18,8 @@ prior(prior, ...)
 prior_(prior, ...)
 
 prior_string(prior, ...)
+
+empty_prior()
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
@@ -327,6 +330,8 @@ arguments as as one-sided formulas or wrapped in \code{quote}.
 
 \item \code{prior_string}: Alias of \code{set_prior} allowing to
 specify arguments as strings.
+
+\item \code{empty_prior}: Create an empty \code{brmsprior} object.
 }}
 
 \examples{

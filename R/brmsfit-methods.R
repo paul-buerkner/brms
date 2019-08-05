@@ -704,7 +704,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     nobs = nobs(object), 
     ngrps = ngrps(object), 
     autocor = object$autocor,
-    prior = empty_brmsprior(),
+    prior = empty_prior(),
     algorithm = algorithm(object)
   )
   class(out) <- "brmssummary"
