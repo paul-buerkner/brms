@@ -837,30 +837,20 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
 }
 
 # methods required in loo_subsample
-# TODO: register all of the generics once the latter are exported by loo
+#' @importFrom loo .ndraws
 #' @export
-nparameters.brmsdraws <- function(x, ...) {
-  # temporary as 'nparamaters' will be replaced before release anyway
-  1L 
-}
-
-#' @export
-nparameters.mvbrmsdraws <- function(x, ...) {
-  1L
-}
-
-#' @export
-ndraws.brmsdraws <- function(x, ...) {
+.ndraws.brmsdraws <- function(x, ...) {
   x$nsamples
 }
 
 #' @export
-ndraws.mvbrmsdraws <- function(x, ...) {
+.ndraws.mvbrmsdraws <- function(x, ...) {
   x$nsamples
 }
 
+#' @importFrom loo .thin_draws
 #' @export
-thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
+.thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
   # brmsdraws objects are too complex to implement a post-hoc subsetting method
   if (length(loo_approximation_draws)) {
     stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
@@ -869,20 +859,23 @@ thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
 }
 
 #' @export
-thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
+.thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
   if (length(loo_approximation_draws)) {
     stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
   }
   draws
 }
 
+#' @importFrom loo .compute_point_estimate
 #' @export
-compute_point_estimate.brmsdraws <- function(x, ...) {
+.compute_point_estimate.brmsdraws <- function(x, ...) {
+  # point estimates are stored in the form of an attribute rather 
+  # than computed on the fly due to the complexity of brmsdraws objects
   attr(x, "point_draws")
 }
 
 #' @export
-compute_point_estimate.mvbrmsdraws <- function(x, ...) {
+.compute_point_estimate.mvbrmsdraws <- function(x, ...) {
   attr(x, "point_draws")
 }
 

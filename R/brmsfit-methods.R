@@ -2657,6 +2657,29 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 
 #' Efficient approximate leave-one-out cross-validation (LOO) using subsampling
 #' 
+#' @aliases loo_subsample
+#' 
+#' @inheritParams loo.brmsfit
+#' 
+#' @details More details can be found on
+#' \code{\link[loo:loo_subsample]{loo_subsample}}.
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' (loo1 <- loo_subsample(fit1))
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' (loo2 <- loo_subsample(fit2))   
+#' 
+#' # compare both models
+#' loo_compare(loo1, loo2)                      
+#' }
+#' 
 #' @importFrom loo loo_subsample
 #' @export loo_subsample
 #' @export

@@ -2,12 +2,62 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{loo_subsample.brmsfit}
 \alias{loo_subsample.brmsfit}
+\alias{loo_subsample}
 \title{Efficient approximate leave-one-out cross-validation (LOO) using subsampling}
 \usage{
 \method{loo_subsample}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
   reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
   model_names = NULL)
 }
+\arguments{
+\item{x}{A \code{brmsfit} object.}
+
+\item{...}{More \code{brmsfit} objects or further arguments
+passed to the underlying post-processing functions.}
+
+\item{compare}{A flag indicating if the information criteria
+of the models should be compared to each other
+via \code{\link{loo_compare}}.}
+
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
+
+\item{reloo}{Logical; Indicate whether \code{\link{reloo}} 
+should be applied on problematic observations. Defaults to \code{FALSE}.}
+
+\item{k_threshold}{The threshold at which pareto \eqn{k} 
+estimates are treated as problematic. Defaults to \code{0.7}. 
+Only used if argument \code{reloo} is \code{TRUE}.
+See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.}
+
+\item{reloo_args}{Optional \code{list} of additional arguments passed to
+\code{\link{reloo}}.}
+
+\item{model_names}{If \code{NULL} (the default) will use model names 
+derived from deparsing the call. Otherwise will use the passed 
+values as model names.}
+}
 \description{
 Efficient approximate leave-one-out cross-validation (LOO) using subsampling
+}
+\details{
+More details can be found on
+\code{\link[loo:loo_subsample]{loo_subsample}}.
+}
+\examples{
+\dontrun{
+# model with population-level effects only
+fit1 <- brm(rating ~ treat + period + carry,
+            data = inhaler)
+(loo1 <- loo_subsample(fit1))
+
+# model with an additional varying intercept for subjects
+fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+            data = inhaler)
+(loo2 <- loo_subsample(fit2))   
+
+# compare both models
+loo_compare(loo1, loo2)                      
+}
+
 }
