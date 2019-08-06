@@ -2684,13 +2684,11 @@ loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
 #' @export loo_subsample
 #' @export
 loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                                  reloo = FALSE, k_threshold = 0.7,
-                                  reloo_args = list(), model_names = NULL) {
+                                  model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
-    criterion = "loo_subsample", pointwise = TRUE, 
-    compare, resp, k_threshold, reloo, reloo_args,
-    add_point_draws = TRUE
+    criterion = "loo_subsample", compare, resp, 
+    pointwise = TRUE, add_point_draws = TRUE
   )
   do_call(compute_loos, args)
 }
