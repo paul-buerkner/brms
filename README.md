@@ -200,7 +200,7 @@ loo(fit1, fit2)
 #> fit1 - fit2  160.48 57.69
 ```
 
-Since higher `LOOIC` values indicate better fit, we see that the model
+Since lower `LOOIC` values indicate better fit, we see that the model
 accounting for overdispersion fits substantially better. The
 post-processing methods we have shown so far are just the tip of the
 iceberg. For a full list of methods to apply on fitted model objects,
