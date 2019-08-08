@@ -1319,7 +1319,7 @@ check_prior_special.btl <- function(x, prior, data,
     nlp_prior <- subset2(prior, ls = px)
     if (!any(nzchar(nlp_prior$prior))) {
       stop2(
-        "Priors on population-level effects are required in ",
+        "Priors on population-level coefficients are required in ",
         "non-linear models, but none were found for parameter ", 
         "'", px$nlpar, "'. See help(set_prior) for more details."
       )
@@ -1344,14 +1344,14 @@ check_prior_special.btl <- function(x, prior, data,
   stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
     b_prior <- prior$prior[b_index]
-    if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
+    if (any(is_special_prior(b_prior))) {
       # horseshoe prior for population-level parameters
       if (any(nzchar(prior[b_index, "bound"]))) {
-        stop2("Boundaries for population-level effects are not ", 
-              "allowed when using the horseshoe or lasso priors.")
+        stop2("Setting boundaries on coefficients is not ", 
+              "allowed when using the special priors.")
       }
       if (is.formula(x[["cs"]])) {
-        stop2("Horseshoe or lasso priors are not yet allowed ",
+        stop2("Special priors are not yet allowed ",
               "in models with category-specific effects.")
       }
       b_coef_indices <- which(
@@ -1360,12 +1360,12 @@ check_prior_special.btl <- function(x, prior, data,
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop2(
-          "Defining priors for single population-level parameters ",
-          "is not allowed when using horseshoe or lasso priors ",
-          "(except for the Intercept)."
+          "Defining separate priors for single coefficients is not ", 
+          "allowed when using special priors for the whole ", 
+          "set of coefficients (except for the Intercept)."
         )
       }
-      if (grepl("^horseshoe\\(", b_prior)) {
+      if (is_special_prior(b_prior, "horseshoe")) {
         hs <- eval2(b_prior)
         prior$prior[b_index] <- ""
         hs_obj_names <- c(
@@ -1377,7 +1377,7 @@ check_prior_special.btl <- function(x, prior, data,
         prior_special <- c(prior_special, hs_att)
         prior_special$hs_autoscale <- 
           isTRUE(prior_special$hs_autoscale) && allow_autoscale
-      } else if (grepl("^lasso\\(", b_prior)) {
+      } else if (is_special_prior(b_prior, "lasso")) {
         lasso <- eval2(b_prior)
         # the parameterization via double_exponential appears to be more
         # efficient than an indirect parameterization via normal and 
@@ -1833,4 +1833,18 @@ lasso <- function(df = 1, scale = 1) {
   att <- nlist(df, scale)
   attributes(out)[names(att)] <- att
   out
+}
+
+# check for the usage of special priors 
+# @param prior a character vector of priors
+# @param target optional special priors to search for
+#   if NULL search for all special priors
+# @return a logical vector equal to the length of 'prior'
+is_special_prior <- function(prior, target = NULL) {
+  stopifnot(is.character(prior))
+  if (is.null(target)) {
+    target <- c("horseshoe", "lasso") 
+  }
+  regex <- paste0("^", regex_or(target), "\\(")
+  grepl(regex, prior)
 }

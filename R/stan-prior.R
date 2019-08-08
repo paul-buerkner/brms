@@ -35,7 +35,14 @@ stan_prior <- function(prior, class, coef = "", group = "",
   if (!nchar(class) && nrow(prior)) {
     # unchecked prior statements are directly passed to Stan
     return(collapse(wsp, prior$prior, ";\n"))
-  } 
+  }
+  # special priors cannot be passed literally to Stan
+  is_special_prior <- is_special_prior(prior$prior)
+  if (any(is_special_prior)) {
+    special_prior <- prior$prior[is_special_prior]
+    stop2("Prior ", collapse_comma(special_prior), " is used in an invalid ", 
+          "context. See ?set_prior for details on how to use special priors.")
+  }
   
   px <- as.data.frame(px)
   upx <- unique(px)

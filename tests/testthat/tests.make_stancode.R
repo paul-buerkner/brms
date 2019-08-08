@@ -222,12 +222,12 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_error(make_stancode(y ~ x1*x2, data = dat, prior = prior(lasso(-1))),
                "Degrees of freedom of the shrinkage parameter prior")
   expect_error(make_stancode(y ~ cs(x1), dat, acat(), prior = prior(lasso())),
-               "Horseshoe or lasso priors are not yet allowed")
+               "Special priors are not yet allowed")
   bprior <- prior(horseshoe()) + prior(normal(0, 1), coef = "y")
   expect_error(make_stancode(x1 ~ y, dat, prior = bprior),
-               "Defining priors for single population-level parameters is not")
+               "Defining separate priors for single coefficients")
   expect_error(make_stancode(x1 ~ y, dat, prior = prior(lasso(), lb = 0)),
-               "Boundaries for population-level effects are not allowed")
+               "Setting boundaries on coefficients is not allowed")
 })
 
 test_that("link functions appear in the Stan code", {
@@ -799,7 +799,7 @@ test_that("Stan code for non-linear models is correct", {
   expect_match2(scode, "target += normal_lpdf(b_a2 | 0, 5)")
   
   expect_error(make_stancode(bform, data, family = skew_normal()),
-               "Priors on population-level effects are required")
+               "Priors on population-level coefficients are required")
 })
 
 test_that("Stan code for nested non-linear parameters is correct", {
