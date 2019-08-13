@@ -47,6 +47,11 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
+  # pseudo zero_inflated_asym_laplace model
+  fit$family <- fit$formula$family <- brmsfamily("zero_inflated_asym_laplace")
+  expect_equal(dim(fitted(fit, summary = FALSE)), 
+               c(nsamples, nobs))
+  
   # pseudo gen_extreme_value model
   fit$family <- fit$formula$family <- gen_extreme_value()
   expect_equal(dim(fitted(fit, summary = FALSE)), 

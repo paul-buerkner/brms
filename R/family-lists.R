@@ -284,6 +284,16 @@
   )
 }
 
+.family_zero_inflated_asym_laplace <- function() {
+  list(
+    links = c("identity", "log", "inverse", "softplus"),
+    dpars = c("mu", "sigma", "quantile", "zi"), type = "real",
+    ybounds = c(-Inf, Inf), closed = c(NA, NA),
+    ad = c("weights", "subset", "cens", "trunc"),
+    include = c("fun_asym_laplace.stan", "fun_zero_inflated_asym_laplace.stan")
+  )
+}
+
 .family_cox <- function() {
   list(
     links = c("log", "identity"),

@@ -697,6 +697,13 @@ stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
   sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
 }
 
+stan_llh_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
+  lpdf <- paste0("zero_inflated_asym_laplace", usc_logit)
+  sdist(lpdf, p$mu, p$sigma, p$quantile, p$zi)
+}
+
 stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family

@@ -436,15 +436,23 @@ log_lik_von_mises <- function(i, draws, data = data.frame()) {
 log_lik_asym_laplace <- function(i, draws, ...) {
   args <- list(
     mu = get_dpar(draws, "mu", i), 
-    sigma = get_dpar(draws, "sigma", i = i),
-    quantile = get_dpar(draws, "quantile", i = i)
+    sigma = get_dpar(draws, "sigma", i),
+    quantile = get_dpar(draws, "quantile", i)
   )
-  out <- log_lik_censor(
-    dist = "asym_laplace", args = args, i = i, draws = draws
+  out <- log_lik_censor(dist = "asym_laplace", args, i, draws)
+  out <- log_lik_truncate(out, pasym_laplace, args, i, draws)
+  log_lik_weight(out, i = i, draws = draws)
+}
+
+log_lik_zero_inflated_asym_laplace <- function(i, draws, ...) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i), 
+    sigma = get_dpar(draws, "sigma", i),
+    quantile = get_dpar(draws, "quantile", i),
+    zi = get_dpar(draws, "zi", i)
   )
-  out <- log_lik_truncate(
-    out, cdf = pvon_mises, args = args, i = i, draws = draws
-  )
+  out <- log_lik_censor(dist = "zero_inflated_asym_laplace", args, i, draws)
+  out <- log_lik_truncate(out, pzero_inflated_asym_laplace, args, i, draws)
   log_lik_weight(out, i = i, draws = draws)
 }
 

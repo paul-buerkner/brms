@@ -214,6 +214,10 @@ fitted_asym_laplace <- function(draws) {
   )
 }
 
+fitted_zero_inflated_asym_laplace <- function(draws) {
+  fitted_asym_laplace(draws) * (1 - draws$dpars$zi)
+}
+
 fitted_cox <- function(draws) {
   stop2("Cannot compute expected values of the posterior predictive ",
         "distribution for family 'cox'.")

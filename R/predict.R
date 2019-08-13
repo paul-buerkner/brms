@@ -406,6 +406,21 @@ predict_asym_laplace <- function(i, draws, ...) {
   )
 }
 
+predict_zero_inflated_asym_laplace <- function(i, draws, ...) {
+  zi <- get_dpar(draws, "zi", i = i)
+  tmp <- runif(draws$nsamples, 0, 1)
+  ifelse(
+    tmp < zi, 0, 
+    rcontinuous(
+      n = draws$nsamples, dist = "asym_laplace",
+      mu = get_dpar(draws, "mu", i = i), 
+      sigma = get_dpar(draws, "sigma", i = i),
+      quantile = get_dpar(draws, "quantile", i = i),
+      lb = draws$data$lb[i], ub = draws$data$ub[i]
+    )
+  )
+}
+
 predict_cox <- function(i, draws, ...) {
   stop2("Cannot sample from the posterior predictive ",
         "distribution for family 'cox'.")

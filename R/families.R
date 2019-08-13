@@ -621,6 +621,18 @@ asym_laplace <- function(link = "identity", link_sigma = "log",
 # do not export yet!
 # @rdname brmsfamily
 # @export
+zero_inflated_asym_laplace <- function(link = "identity", link_sigma = "log",
+                                       link_quantile = "logit",
+                                       link_zi = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_asym_laplace", link = link, slink = slink,
+              link_sigma = link_sigma, link_quantile = link_quantile,
+              link_zi = link_zi)
+}
+
+# do not export yet!
+# @rdname brmsfamily
+# @export
 cox <- function(link = "log", bhaz = NULL) {
   slink <- substitute(link)
   .brmsfamily("cox", link = link, bhaz = bhaz)
