@@ -1225,8 +1225,10 @@ test_that("Stan code of quantile regression models is correct", {
   expect_match2(scode, "target += asym_laplace_lpdf(Y[n] | mu[n], sigma[n], quantile)")
   
   scode <- make_stancode(bf(y ~ x, quantile = 0.75), data, 
-                         family = zero_inflated_asym_laplace())
-  expect_match2(scode, "target += zero_inflated_asym_laplace_lpdf(Y[n] | mu[n], sigma, quantile)")
+                         family = brmsfamily("zero_inflated_asym_laplace"))
+  expect_match2(scode, 
+    "target += zero_inflated_asym_laplace_lpdf(Y[n] | mu[n], sigma, quantile, zi)"
+  )
 })
 
 test_that("Stan code of GEV models is correct", {
