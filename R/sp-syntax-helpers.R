@@ -201,10 +201,9 @@ get_simo_labels <- function(spef) {
 get_sdy <- function(x, data = NULL) {
   stopifnot(is.brmsterms(x))
   miform <- x$adforms[["mi"]]
+  sdy <- NULL
   if (is.formula(miform)) {
-    sdy <- eval_rhs(miform, data = data)
-  } else {
-    sdy <- NULL
+    sdy <- eval_rhs(miform, data = data)$sdy
   }
   sdy
 }

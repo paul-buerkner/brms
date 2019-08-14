@@ -1237,10 +1237,9 @@ has_cens <- function(bterms, data = NULL) {
   stopifnot(is.brmsterms(bterms))
   cens <- bterms$adforms$cens
   if (is.formula(cens)) {
-    term <- attr(terms(cens), "term.labels")
-    stopifnot(length(term) == 1L && grepl("resp_cens\\(", term))
-    out <- eval_rhs(cens, data = data)
-    out <- structure(TRUE, interval = !is.null(attr(out, "y2")))
+    out <- TRUE
+    cens <- eval_rhs(cens, data = data)
+    attr(out, "interval") <- !is.null(cens$y2)
   } else {
     out <- FALSE
   }

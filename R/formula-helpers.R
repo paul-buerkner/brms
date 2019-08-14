@@ -37,8 +37,8 @@
 #' @param ... For \code{resp_vreal}, vectors of real values. 
 #'   For \code{resp_vint}, vectors of integer values.  
 #'
-#' @return A vector containing additional information on the response
-#'   variable in an appropriate format.
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
 #'
 #' @details 
 #'   These functions are almost solely useful when
@@ -97,7 +97,7 @@ resp_se <- function(x, sigma = FALSE) {
     stop2("Standard errors must be non-negative.")
   }
   sigma <- as_one_logical(sigma)
-  structure(x, sigma = sigma)  
+  list(se = x, sigma = sigma)
 }
 
 # only evaluate the sigma argument of 'resp_se'
@@ -118,7 +118,7 @@ resp_weights <- function(x, scale = FALSE) {
   if (scale) {
     x <- x / sum(x) * length(x)
   }
-  x
+  list(weights = x, scale = scale)
 }
 
 #' @rdname addition-terms
@@ -130,7 +130,7 @@ resp_trials <- function(x) {
   if (any(!is_wholenumber(x) | x < 1)) {
     stop2("Number of trials must be positive integers.")
   }
-  x
+  list(trials = x)
 }
 
 #' @rdname addition-terms
@@ -140,7 +140,7 @@ resp_cat <- function(x) {
   if (!is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
   }
-  x
+  list(cat = x)
 }
 
 #' @rdname addition-terms
@@ -155,7 +155,7 @@ resp_dec <- function(x) {
   } else {
     x <- as.numeric(as.logical(x))
   }
-  x
+  list(dec = x)
 }
 
 #' @rdname addition-terms
@@ -188,13 +188,14 @@ resp_cens <- function(x, y2 = NULL) {
       "and refer to 'right' and 'none' respectively."
     )
   }
+  out <- nlist(cens)
   if (any(cens %in% 2)) {
     if (!length(y2)) {
       stop2("Argument 'y2' is required for interval censored data.")
     }
-    attr(cens, "y2") <- unname(y2)
+    out$y2 <- unname(y2)
   }
-  cens
+  out
 }
 
 #' @rdname addition-terms
@@ -217,7 +218,7 @@ resp_mi <- function(sdy = NULL) {
   if (isTRUE(any(sdy <= 0))) {
     stop2("Measurement error should be positive.")
   }
-  sdy
+  nlist(sdy)
 }
 
 #' @rdname addition-terms
@@ -229,13 +230,13 @@ resp_rate <- function(denom) {
   if (isTRUE(any(denom <= 0))) {
     stop2("Rate denomiators should be positive.")
   }
-  denom
+  nlist(denom)
 }
 
 #' @rdname addition-terms
 #' @export
 resp_subset <- function(x) {
-  as.logical(x)
+  list(subset = as.logical(x))
 }
 
 

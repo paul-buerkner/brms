@@ -1521,7 +1521,7 @@ no_sigma <- function(bterms) {
     # call resp_se without evaluating the x argument
     cl <- rhs(bterms$adforms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
-    se_only <- isFALSE(attr(eval(cl), "sigma"))
+    se_only <- isFALSE(eval(cl)$sigma)
     if (se_only && use_cov(bterms$autocor)) {
       stop2("Please set argument 'sigma' of function 'se' ",
             "to TRUE when modeling ARMA covariance matrices.")

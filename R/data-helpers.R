@@ -156,7 +156,7 @@ order_data <- function(data, bterms) {
 subset_data <- function(data, bterms) {
   if (is.formula(bterms$adforms$subset)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset, data = data)
+    subset <- eval_rhs(bterms$adforms$subset, data = data)$subset
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }

@@ -879,7 +879,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
-      out$trials <- eval_rhs(x$adforms$trials, data = data)
+      out$trials <- eval_rhs(x$adforms$trials, data = data)$trials
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -913,7 +913,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         out$ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
-      out$ncat <- eval_rhs(x$adforms$cat, data = data)
+      out$ncat <- eval_rhs(x$adforms$cat, data = data)$cat
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
@@ -932,23 +932,27 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   }
   if (is.formula(x$adforms$se)) {
-    out$se <- as.array(eval_rhs(x$adforms$se, data = data))
+    se <- eval_rhs(x$adforms$se, data = data)
+    out$se <- as.array(se$se)
   }
   if (is.formula(x$adforms$weights)) {
-    out$weights <- as.array(eval_rhs(x$adforms$weights, data = data))
+    weights <- eval_rhs(x$adforms$weights, data = data)
+    out$weights <- as.array(weights$weights)
   }
   if (is.formula(x$adforms$dec)) {
-    out$dec <- as.array(eval_rhs(x$adforms$dec, data = data))
+    dec <- eval_rhs(x$adforms$dec, data = data)
+    out$dec <- as.array(dec$dec)
   }
   if (is.formula(x$adforms$rate)) {
-    out$denom <- as.array(eval_rhs(x$adforms$rate, data = data))
+    rate <- eval_rhs(x$adforms$rate, data = data)
+    out$denom <- as.array(rate$denom)
   }
   if (is.formula(x$adforms$cens) && check_response) {
     cens <- eval_rhs(x$adforms$cens, data = data)
-    out$cens <- rm_attr(cens, "y2")
-    y2 <- attr(cens, "y2")
+    out$cens <- cens$cens
+    y2 <- cens$y2
     if (!is.null(y2)) {
-      icens <- cens %in% 2
+      icens <- out$cens %in% 2
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
               "censor points for interval censored data.")

@@ -81,8 +81,8 @@ the denominator values from which the response rates are computed.}
 For \code{resp_vint}, vectors of integer values.}
 }
 \value{
-A vector containing additional information on the response
-  variable in an appropriate format.
+A list of additional response information to be processed further
+  by \pkg{brms}.
 }
 \description{
 Provide additional information on the response variable 
