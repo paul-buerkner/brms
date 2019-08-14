@@ -78,12 +78,13 @@ stan_response <- function(bterms, data) {
       "  vector[N{resp}] log_denom{resp} = log(denom{resp});\n"
     )
   }
-  has_cens <- has_cens(bterms, data = data)
-  if (has_cens) {
+  if (is.formula(bterms$adforms$cens)) {
+    cens <- eval_rhs(bterms$adforms$cens)
     str_add(out$data) <- glue(
       "  int<lower=-1,upper=2> cens{resp}[N{resp}];  // indicates censoring\n"
     )
-    if (isTRUE(attr(has_cens, "interval"))) {
+    if (cens$vars$y2 != "NA") {
+      # interval censoring is required
       rcens <- str_if(rtype == "int", 
         glue("  int rcens{resp}[N{resp}];"), 
         glue("  vector[N{resp}] rcens{resp};")

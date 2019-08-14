@@ -156,7 +156,8 @@ order_data <- function(data, bterms) {
 subset_data <- function(data, bterms) {
   if (is.formula(bterms$adforms$subset)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset, data = data)$subset
+    subset <- eval_rhs(bterms$adforms$subset)
+    subset <- as.logical(eval2(subset$vars$subset, data))
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }
@@ -170,6 +171,22 @@ subset_data <- function(data, bterms) {
     )
   }
   data
+}
+
+# coerce censored values into the right format
+prepare_cens <- function(x) {
+  stopifnot(length(x) == 1L)
+  regx <- paste0("^", x)
+  if (grepl(regx, "left")) {
+    x <- -1
+  } else if (grepl(regx, "none") || isFALSE(x)) {
+    x <- 0
+  } else if (grepl(regx, "right") || isTRUE(x)) {
+    x <- 1
+  } else if (grepl(regx, "interval")) {
+    x <- 2
+  }
+  x
 }
 
 #' Validate New Data

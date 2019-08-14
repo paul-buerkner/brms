@@ -1518,10 +1518,8 @@ has_sigma <- function(family) {
 no_sigma <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   if (is.formula(bterms$adforms$se)) {
-    # call resp_se without evaluating the x argument
-    cl <- rhs(bterms$adforms$se)[[2]]
-    cl[[1]] <- quote(resp_se_no_data)
-    se_only <- isFALSE(eval(cl)$sigma)
+    se <- eval_rhs(bterms$adforms$se)
+    se_only <- isFALSE(se$flags$sigma)
     if (se_only && use_cov(bterms$autocor)) {
       stop2("Please set argument 'sigma' of function 'se' ",
             "to TRUE when modeling ARMA covariance matrices.")

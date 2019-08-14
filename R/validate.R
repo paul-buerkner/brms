@@ -1159,14 +1159,15 @@ trunc_bounds.mvbrmsterms <- function(x, ...) {
 #' @export
 trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE, 
                                    stan = FALSE, ...) {
-  trunc <- x$adforms$trunc
-  if (is.formula(trunc)) {
-    term <- attr(terms(trunc), "term.labels")
-    stopifnot(length(term) == 1L && grepl("resp_trunc\\(", term))
-    out <- eval_rhs(trunc, data = data)
+  if (is.formula(x$adforms$trunc)) {
+    trunc <- eval_rhs(x$adforms$trunc)
   } else {
-    out <- resp_trunc()
+    trunc <- resp_trunc()
   }
+  out <- list(
+    lb = eval2(trunc$vars$lb, data),
+    ub = eval2(trunc$vars$ub, data)
+  )
   if (incl_family) {
     family_bounds <- family_bounds(x)
     out$lb <- max(out$lb, family_bounds$lb)
@@ -1228,20 +1229,6 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = paste("min_Y", resp), ub = Inf)
   } else {
     out <- list(lb = -Inf, ub = Inf)
-  }
-  out
-}
-
-# indicate if the model is censored
-has_cens <- function(bterms, data = NULL) {
-  stopifnot(is.brmsterms(bterms))
-  cens <- bterms$adforms$cens
-  if (is.formula(cens)) {
-    out <- TRUE
-    cens <- eval_rhs(cens, data = data)
-    attr(out, "interval") <- !is.null(cens$y2)
-  } else {
-    out <- FALSE
   }
   out
 }

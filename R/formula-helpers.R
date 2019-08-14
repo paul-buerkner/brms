@@ -89,176 +89,100 @@ NULL
 #' @rdname addition-terms
 #' @export
 resp_se <- function(x, sigma = FALSE) {
-  # standard errors for meta-analysis
-  if (!is.numeric(x)) {
-    stop2("Standard errors must be numeric.")
-  }
-  if (min(x) < 0) {
-    stop2("Standard errors must be non-negative.")
-  }
+  se <- deparse(substitute(x))
   sigma <- as_one_logical(sigma)
-  list(se = x, sigma = sigma)
-}
-
-# only evaluate the sigma argument of 'resp_se'
-resp_se_no_data <- function(x, sigma = FALSE) {
-  resp_se(1, sigma = sigma)
+  class_resp_special("se", vars = nlist(se), flags = nlist(sigma))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_weights <- function(x, scale = FALSE) {
-  if (!is.numeric(x)) {
-    stop2("Weights must be numeric.")
-  }
-  if (min(x) < 0) {
-    stop2("Weights must be non-negative.")
-  }
+  weights <- deparse(substitute(x))
   scale <- as_one_logical(scale)
-  if (scale) {
-    x <- x / sum(x) * length(x)
-  }
-  list(weights = x, scale = scale)
+  class_resp_special("weights", vars = nlist(weights), flags = nlist(scale))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trials <- function(x) {
-  if (!is.numeric(x)) {
-    stop2("Number of trials must be numeric.")
-  }
-  if (any(!is_wholenumber(x) | x < 1)) {
-    stop2("Number of trials must be positive integers.")
-  }
-  list(trials = x)
+  trials <- deparse(substitute(x))
+  class_resp_special("trials", vars = nlist(trials))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_cat <- function(x) {
-  x <- as_one_numeric(x)
-  if (!is_wholenumber(x) || x < 1) {
-    stop2("Number of categories must be a positive integer.")
-  }
-  list(cat = x)
+  cat <- deparse(substitute(x))
+  class_resp_special("cat", vars = nlist(cat))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_dec <- function(x) {
-  if (is.character(x) || is.factor(x)) {
-    if (!all(unique(x) %in% c("lower", "upper"))) {
-      stop2("Decisions should be 'lower' or 'upper' ", 
-            "when supplied as characters or factors.")
-    }
-    x <- ifelse(x == "lower", 0, 1)
-  } else {
-    x <- as.numeric(as.logical(x))
-  }
-  list(dec = x)
+  dec <- deparse(substitute(x))
+  class_resp_special("dec", vars = nlist(dec))
 }
 
 #' @rdname addition-terms
 #' @export
-resp_cens <- function(x, y2 = NULL) {
-  if (is.factor(x)) {
-    x <- as.character(x)
-  }
-  prepare_cens <- function(x) {
-    stopifnot(length(x) == 1L)
-    regx <- paste0("^", x)
-    if (grepl(regx, "left")) {
-      x <- -1
-    } else if (grepl(regx, "none") || isFALSE(x)) {
-      x <- 0
-    } else if (grepl(regx, "right") || isTRUE(x)) {
-      x <- 1
-    } else if (grepl(regx, "interval")) {
-      x <- 2
-    }
-    x
-  }
-  cens <- unname(ulapply(x, prepare_cens))
-  if (!all(is_wholenumber(cens) & cens %in% -1:2)) {
-    stop2(
-      "Invalid censoring data. Accepted values are ", 
-      "'left', 'none', 'right', and 'interval'\n",
-      "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
-      "TRUE and FALSE are also accepted ",
-      "and refer to 'right' and 'none' respectively."
-    )
-  }
-  out <- nlist(cens)
-  if (any(cens %in% 2)) {
-    if (!length(y2)) {
-      stop2("Argument 'y2' is required for interval censored data.")
-    }
-    out$y2 <- unname(y2)
-  }
-  out
+resp_cens <- function(x, y2 = NA) {
+  cens <- deparse(substitute(x))
+  y2 <- deparse(substitute(y2))
+  class_resp_special("cens", vars = nlist(cens, y2))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trunc <- function(lb = -Inf, ub = Inf) {
-  lb <- as.numeric(lb)
-  ub <- as.numeric(ub)
-  if (any(lb >= ub)) {
-    stop2("Truncation bounds are invalid: lb >= ub")
-  }
-  nlist(lb, ub)
+  lb <- deparse(substitute(lb))
+  ub <- deparse(substitute(ub))
+  class_resp_special("trunc", vars = nlist(lb, ub))
 }
 
 #' @rdname addition-terms
 #' @export
-resp_mi <- function(sdy = NULL) {
-  if (!is.null(sdy) && !is.numeric(sdy)) {
-    stop2("Measurement error should be numeric.")
-  }
-  if (isTRUE(any(sdy <= 0))) {
-    stop2("Measurement error should be positive.")
-  }
-  nlist(sdy)
+resp_mi <- function(sdy = NA) {
+  sdy <- deparse(substitute(sdy))
+  class_resp_special("mi", vars = nlist(sdy))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_rate <- function(denom) {
-  if (!is.numeric(denom)) {
-    stop2("Rate denomiators should be numeric.")
-  }
-  if (isTRUE(any(denom <= 0))) {
-    stop2("Rate denomiators should be positive.")
-  }
-  nlist(denom)
+  denom <- deparse(substitute(denom))
+  class_resp_special("rate", vars = nlist(denom))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_subset <- function(x) {
-  list(subset = as.logical(x))
+  subset <- deparse(substitute(x))
+  class_resp_special("subset", vars = nlist(subset))
 }
-
 
 #' @rdname addition-terms
 #' @export
 resp_vreal <- function(...) {
-  out <- list(...)
-  for (i in seq_along(out)) {
-    out[[i]] <- as.numeric(out[[i]])
-  }
-  out
+  vars <- as.list(substitute(list(...)))[-1]
+  class_resp_special("vreal", vars = vars)
 }
 
 #' @rdname addition-terms
 #' @export
 resp_vint <- function(...) {
-  out <- list(...)
-  for (i in seq_along(out)) {
-    if (!all(is_wholenumber(out[[i]]))) {
-      stop2("'vint' requires whole numbers as input.")
-    }
-  }
+  vars <- as.list(substitute(list(...)))[-1]
+  class_resp_special("vint", vars = vars)
+}
+
+# class underlying response addition terms
+# @param type type of the addition term
+# @param vars named list of unevaluated variables
+# @param flags named list of (evaluated) logical indicators
+class_resp_special <- function(type, vars = list(), flags = list()) {
+  type <- as_one_character(type)
+  stopifnot(is.list(vars), is.list(flags))
+  out <- nlist(type, vars, flags)
+  class(out) <- c("resp_special")
   out
 }
 

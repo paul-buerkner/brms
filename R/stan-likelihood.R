@@ -101,7 +101,7 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
 stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   stopifnot(is.sdist(llh))
   s <- wsp(nsp = 6)
-  cens <- has_cens(bterms, data = data)
+  cens <- eval_rhs(bterms$adforms$cens)
   lpdf <- stan_llh_lpdf_name(bterms)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_llh_Y_name(bterms)
@@ -117,7 +117,8 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
     s, "}} else if (cens{resp}[n] == -1) {{\n",
     s, "{tp}{w}{llh$dist}_lcdf({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
   )
-  if (isTRUE(attr(cens, "interval"))) {
+  if (cens$vars$y2 != "NA") {
+    # interval censoring is required
     str_add(out) <- glue(
       s, "}} else if (cens{resp}[n] == 2) {{\n",
       s, "{tp}{w}log_diff_exp(\n", 
@@ -154,7 +155,7 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
   Y <- stan_llh_Y_name(bterms)
   if (is.formula(bterms$adforms$cens)) {
     # mostly copied over from stan_llh_cens
-    cens <- has_cens(bterms, data = data)
+    cens <- eval_rhs(bterms$adforms$cens)
     s <- wsp(nsp = 6)
     out <- glue(
       "  // special treatment of censored data\n",
@@ -168,7 +169,8 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
       s, "  ps[{mix}] = {theta} + ",
       "{llh$dist}_lcdf({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
     )
-    if (isTRUE(attr(cens, "interval"))) {
+    if (cens$vars$y2 != "NA") {
+      # interval censoring is required
       str_add(out) <- glue(
         s, "}} else if (cens{resp}[n] == 2) {{\n",
         s, "  ps[{mix}] = {theta} + log_diff_exp(\n", 

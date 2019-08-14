@@ -203,7 +203,16 @@ get_sdy <- function(x, data = NULL) {
   miform <- x$adforms[["mi"]]
   sdy <- NULL
   if (is.formula(miform)) {
-    sdy <- eval_rhs(miform, data = data)$sdy
+    mi <- eval_rhs(miform)
+    if (mi$vars$sdy != "NA") {
+      sdy <- eval2(mi$vars$sdy, data)
+      if (!is.null(sdy) && !is.numeric(sdy)) {
+        stop2("Measurement error should be numeric.")
+      }
+      if (isTRUE(any(sdy <= 0))) {
+        stop2("Measurement error should be positive.")
+      }
+    }
   }
   sdy
 }

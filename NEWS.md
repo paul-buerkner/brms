@@ -20,6 +20,7 @@ thanks to the GitHub user aslez. (#680)
 of autocorrelation parameters.
 * Set the number of trials to 1 by default in 
 `marginal_effects` if not specified otherwise. (#718)
+* Use non-standard evaluation for addition terms.
 
 ### Bug Fixes
 

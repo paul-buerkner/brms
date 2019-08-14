@@ -40,8 +40,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
-test_that(paste("make_standata returns correct data names", 
-                "for addition and cs variables"), {
+test_that("make_standata returns correct data names for addition terms", {
   dat <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, dat, gaussian())), 

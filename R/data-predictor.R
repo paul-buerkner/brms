@@ -879,7 +879,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
-      out$trials <- eval_rhs(x$adforms$trials, data = data)$trials
+      trials <- eval_rhs(x$adforms$trials)
+      out$trials <- eval2(trials$vars$trials, data)
+      if (!is.numeric(out$trials)) {
+        stop2("Number of trials must be numeric.")
+      }
+      if (any(!is_wholenumber(out$trials) | out$trials < 1)) {
+        stop2("Number of trials must be positive integers.")
+      }
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -913,7 +920,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         out$ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
-      out$ncat <- eval_rhs(x$adforms$cat, data = data)$cat
+      cat <- eval_rhs(x$adforms$cat)
+      out$ncat <- as_one_numeric(eval2(cat$vars$cat, data))
+      if (!is_wholenumber(out$ncat) || out$ncat < 1) {
+        stop2("Number of categories must be a positive integer.")
+      }
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
@@ -932,27 +943,77 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   }
   if (is.formula(x$adforms$se)) {
-    se <- eval_rhs(x$adforms$se, data = data)
-    out$se <- as.array(se$se)
+    se <- eval_rhs(x$adforms$se)
+    out$se <- eval2(se$vars$se, data) 
+    if (!is.numeric(out$se)) {
+      stop2("Standard errors must be numeric.")
+    }
+    if (min(out$se) < 0) {
+      stop2("Standard errors must be non-negative.")
+    }
+    out$se <- as.array(out$se)
   }
   if (is.formula(x$adforms$weights)) {
-    weights <- eval_rhs(x$adforms$weights, data = data)
-    out$weights <- as.array(weights$weights)
+    weights <- eval_rhs(x$adforms$weights)
+    out$weights <- eval2(weights$vars$weights, data)  
+    if (!is.numeric(out$weights)) {
+      stop2("Weights must be numeric.")
+    }
+    if (min(out$weights) < 0) {
+      stop2("Weights must be non-negative.")
+    }
+    if (weights$flags$scale) {
+      out$weights <- out$weights / sum(out$weights) * length(out$weights)
+    }
+    out$weights <- as.array(out$weights)
   }
   if (is.formula(x$adforms$dec)) {
-    dec <- eval_rhs(x$adforms$dec, data = data)
-    out$dec <- as.array(dec$dec)
+    dec <- eval_rhs(x$adforms$dec)
+    out$dec <- eval2(dec$vars$dec, data)
+    if (is.character(out$dec) || is.factor(out$dec)) {
+      if (!all(unique(out$dec) %in% c("lower", "upper"))) {
+        stop2("Decisions should be 'lower' or 'upper' ",
+              "when supplied as characters or factors.")
+      }
+      out$dec <- ifelse(out$dec == "lower", 0, 1)
+    } else {
+      out$dec <- as.numeric(as.logical(out$dec))
+    }
+    out$dec <- as.array(out$dec)
   }
   if (is.formula(x$adforms$rate)) {
-    rate <- eval_rhs(x$adforms$rate, data = data)
-    out$denom <- as.array(rate$denom)
+    rate <- eval_rhs(x$adforms$rate)
+    out$denom <- eval2(rate$vars$denom, data)
+    if (!is.numeric(out$denom)) {
+      stop2("Rate denomiators should be numeric.")
+    }
+    if (isTRUE(any(out$denom <= 0))) {
+      stop2("Rate denomiators should be positive.")
+    }
+    out$denom <- as.array(out$denom)
   }
   if (is.formula(x$adforms$cens) && check_response) {
-    cens <- eval_rhs(x$adforms$cens, data = data)
-    out$cens <- cens$cens
-    y2 <- cens$y2
-    if (!is.null(y2)) {
-      icens <- out$cens %in% 2
+    cens <- eval_rhs(x$adforms$cens)
+    out$cens <- unname(eval2(cens$vars$cens, data))
+    if (is.factor(out$cens)) {
+      out$cens <- as.character(out$cens)
+    }
+    out$cens <- ulapply(out$cens, prepare_cens)
+    if (!all(is_wholenumber(out$cens) & out$cens %in% -1:2)) {
+      stop2(
+        "Invalid censoring data. Accepted values are ",
+        "'left', 'none', 'right', and 'interval'\n",
+        "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
+        "TRUE and FALSE are also accepted ",
+        "and refer to 'right' and 'none' respectively."
+      )
+    }
+    icens <- out$cens %in% 2
+    if (any(icens)) {
+      if (cens$vars$y2 == "NA") {
+        stop2("Argument 'y2' is required for interval censored data.")
+      }
+      y2 <- unname(eval2(cens$vars$y2, data))
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
               "censor points for interval censored data.")
@@ -963,7 +1024,12 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$cens <- as.array(out$cens)
   }
   if (is.formula(x$adforms$trunc)) {
-    c(out) <- eval_rhs(x$adforms$trunc, data = data)
+    trunc <- eval_rhs(x$adforms$trunc)
+    out$lb <- as.numeric(eval2(trunc$vars$lb, data))
+    out$ub <- as.numeric(eval2(trunc$vars$ub, data))
+    if (any(out$lb >= out$ub)) {
+      stop2("Truncation bounds are invalid: lb >= ub")
+    }
     if (length(out$lb) == 1L) {
       out$lb <- rep(out$lb, N)
     }
@@ -1010,23 +1076,28 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
   if (is.formula(x$adforms$vreal)) {
     # vectors of real values for use in custom families
-    vreal <- eval_rhs(x$adforms$vreal, data = data)
+    vreal <- eval_rhs(x$adforms$vreal)
+    vreal <- lapply(vreal$vars, eval2, data)
     names(vreal) <- paste0("vreal", seq_along(vreal))
     for (i in seq_along(vreal)) {
       if (length(vreal[[i]]) == 1L) {
         vreal[[i]] <- rep(vreal[[i]], N)
       }
-      vreal[[i]] <- as.array(vreal[[i]])
+      vreal[[i]] <- as.array(as.numeric(vreal[[i]]))
     }
     c(out) <- vreal
   }
   if (is.formula(x$adforms$vint)) {
     # vectors of integer values for use in custom families
-    vint <- eval_rhs(x$adforms$vint, data = data)
+    vint <- eval_rhs(x$adforms$vint)
+    vint <- lapply(vint$vars, eval2, data)
     names(vint) <- paste0("vint", seq_along(vint))
     for (i in seq_along(vint)) {
       if (length(vint[[i]]) == 1L) {
         vint[[i]] <- rep(vint[[i]], N)
+      }
+      if (!all(is_wholenumber(vint[[i]]))) {
+        stop2("'vint' requires whole numbers as input.")
       }
       vint[[i]] <- as.array(vint[[i]])
     }

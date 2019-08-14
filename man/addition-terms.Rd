@@ -26,11 +26,11 @@ resp_cat(x)
 
 resp_dec(x)
 
-resp_cens(x, y2 = NULL)
+resp_cens(x, y2 = NA)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi(sdy = NULL)
+resp_mi(sdy = NA)
 
 resp_rate(denom)
 
