@@ -1231,6 +1231,26 @@ test_that("Stan code of quantile regression models is correct", {
   )
 })
 
+test_that("Stan code of addition term 'rate' is correct", {
+  data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
+  scode <- make_stancode(y | rate(time) ~ x, data, poisson())
+  expect_match2(scode, "mu = temp_Intercept + Xc * b + log_denom;")
+  
+  scode <- make_stancode(
+    bf(y | rate(time) ~ a, a ~ x, nl = TRUE), 
+    data = data, family = poisson(),
+    prior = prior(normal(0, 1), nlpar = "a")
+  )
+  expect_match2(scode, "mu[n] = nlp_a[n]  + log_denom[n];")
+  
+  scode <- make_stancode(
+    bf(y | rate(time) ~ a, a ~ x, nl = TRUE, loop = FALSE), 
+    data = data, family = poisson(),
+    prior = prior(normal(0, 1), nlpar = "a")
+  )
+  expect_match2(scode, "mu = nlp_a  + log_denom;")
+})
+
 test_that("Stan code of GEV models is correct", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   scode <- make_stancode(y ~ x, data, gen_extreme_value())

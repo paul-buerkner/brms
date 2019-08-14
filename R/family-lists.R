@@ -119,7 +119,7 @@
     links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc")
+    ad = c("weights", "subset", "cens", "trunc", "rate")
   )
 }
 
@@ -128,7 +128,7 @@
     links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu", "shape"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc")
+    ad = c("weights", "subset", "cens", "trunc", "rate")
   )
 }
  
@@ -137,7 +137,7 @@
     links = c("log", "identity", "sqrt", "softplus"),
     dpars = c("mu"), type = "int", 
     ybounds = c(0, Inf), closed = c(TRUE, NA),
-    ad = c("weights", "subset", "cens", "trunc")
+    ad = c("weights", "subset", "cens", "trunc", "rate")
   )
 }
 
@@ -169,7 +169,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -179,7 +179,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -189,7 +189,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = "mu", type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -199,7 +199,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "nu"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
     include = "fun_logm1.stan",
     specials = "transeta"  # see stan_eta_ilink()
   )
@@ -220,7 +220,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi"),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
     specials = "logscale"
   )
 }

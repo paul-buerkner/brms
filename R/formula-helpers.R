@@ -11,9 +11,9 @@
 #'  \code{resp_se} and \code{resp_weights} require positive numeric values.
 #'  \code{resp_trials} and \code{resp_cat} require positive integers.
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-#'  \code{'lower'} and \code{'upper'}; 
+#'  \code{'lower'} and \code{'upper'}.
 #'  \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-#'  \code{FALSE} and \code{TRUE};
+#'  \code{FALSE} and \code{TRUE}.
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 #'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 #'  and \code{2}) to indicate left, no, right, or interval censoring.
@@ -32,6 +32,8 @@
 #'   treated as standard deviation. If specified, handles
 #'   measurement error and (completely) missing values
 #'   at the same time using the plausible-values-technique.
+#' @param denom A vector of positive numeric values specifying
+#'   the denominator values from which the response rates are computed.
 #' @param ... For \code{resp_vreal}, vectors of real values. 
 #'   For \code{resp_vint}, vectors of integer values.  
 #'
@@ -216,6 +218,18 @@ resp_mi <- function(sdy = NULL) {
     stop2("Measurement error should be positive.")
   }
   sdy
+}
+
+#' @rdname addition-terms
+#' @export
+resp_rate <- function(denom) {
+  if (!is.numeric(denom)) {
+    stop2("Rate denomiators should be numeric.")
+  }
+  if (isTRUE(any(denom <= 0))) {
+    stop2("Rate denomiators should be positive.")
+  }
+  denom
 }
 
 #' @rdname addition-terms

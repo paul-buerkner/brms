@@ -849,3 +849,9 @@ test_that("make_standata handles cox models correctly", {
   expect_equal(dim(sdata$Zbhaz), c(100, 6))
   expect_equal(dim(sdata$Zcbhaz), c(100, 6))
 })
+
+test_that("make_standata handles addition term 'rate' is correctly", {
+  data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
+  sdata <- make_standata(y | rate(time) ~ x, data, poisson())
+  expect_equal(sdata$denom, as.array(data$time))
+})

@@ -54,7 +54,7 @@ NULL
 
 # brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
-                    data.name = "", model = "", prior = empty_brmsprior(), 
+                    data.name = "", model = "", prior = empty_prior(), 
                     autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
                     loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 

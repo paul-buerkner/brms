@@ -238,7 +238,8 @@ models for all parameters of the assumed response distribution.
   \code{fun(<variable>)} separated by \code{+} each providing special 
   information on the response variable. \code{fun} can be replaced with 
   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
-  \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
+  \code{trials}, \code{cat}, \code{dec}, \code{rate}, \code{vreal}, or
+  \code{vint}. Their meanings are explained below.
   (see also \code{\link{addition-terms}}). 
   
   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is 
@@ -274,6 +275,14 @@ models for all parameters of the assumed response distribution.
   write \code{y | subset(sub) ~ predictors} so that \code{y} is
   predicted only for those observations for which \code{sub} evaluates
   to \code{TRUE}.
+  
+  For log-linear models such as poisson models, \code{rate} may be used
+  in the \code{aterms} part to specify the denomintor of a response that
+  is expressed as a rate. The numerator is given by the actual response
+  variable and has a distribution according to the family as usual. Using
+  \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
+  the linear predictor of the main parameter but the former is arguably
+  more convenient and explicit.
   
   With the exception of categorical, ordinal, and mixture families, 
   left, right, and interval censoring can be modeled through 

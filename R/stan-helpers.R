@@ -68,6 +68,16 @@ stan_response <- function(bterms, data) {
       "  int<lower=0,upper=1> dec{resp}[N{resp}];  // decisions\n"
     )
   }
+  if (is.formula(bterms$adforms$rate)) {
+    str_add(out$data) <- glue(
+      "  vector<lower=0>[N{resp}] denom{resp};",
+      "  // response denominator\n"
+    )
+    str_add(out$tdata_def) <- glue(
+      "  // log response denominator\n",
+      "  vector[N{resp}] log_denom{resp} = log(denom{resp});\n"
+    )
+  }
   has_cens <- has_cens(bterms, data = data)
   if (has_cens) {
     str_add(out$data) <- glue(

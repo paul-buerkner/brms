@@ -9,6 +9,8 @@ the addition arguments `vreal` and `vint`. (#707)
 * Model compound symmetry correlations via `cor_cosy`. (#403)
 * Predict `sigma` in combination with several 
 autocorrelation structures. (#403)
+* Use addition term `rate` to conveniently handle
+denominators of rate responses in log-linear models.
 
 ### Other Changes
 

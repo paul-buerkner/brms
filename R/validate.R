@@ -128,6 +128,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$resp <- resp
     if (dpar_class(dp) == "mu") {
       y$dpars[[dp]]$respform <- y$respform
+      y$dpars[[dp]]$adforms <- y$adforms
     }
   }
   

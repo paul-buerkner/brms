@@ -940,6 +940,9 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   if (is.formula(x$adforms$dec)) {
     out$dec <- as.array(eval_rhs(x$adforms$dec, data = data))
   }
+  if (is.formula(x$adforms$rate)) {
+    out$denom <- as.array(eval_rhs(x$adforms$rate, data = data))
+  }
   if (is.formula(x$adforms$cens) && check_response) {
     cens <- eval_rhs(x$adforms$cens, data = data)
     out$cens <- rm_attr(cens, "y2")
