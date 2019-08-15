@@ -91,7 +91,10 @@ NULL
 resp_se <- function(x, sigma = FALSE) {
   se <- deparse(substitute(x))
   sigma <- as_one_logical(sigma)
-  class_resp_special("se", vars = nlist(se), flags = nlist(sigma))
+  class_resp_special(
+    "se", call = match.call(),
+    vars = nlist(se), flags = nlist(sigma)
+  )
 }
 
 #' @rdname addition-terms
@@ -99,28 +102,31 @@ resp_se <- function(x, sigma = FALSE) {
 resp_weights <- function(x, scale = FALSE) {
   weights <- deparse(substitute(x))
   scale <- as_one_logical(scale)
-  class_resp_special("weights", vars = nlist(weights), flags = nlist(scale))
+  class_resp_special(
+    "weights", call = match.call(),
+    vars = nlist(weights), flags = nlist(scale)
+  )
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trials <- function(x) {
   trials <- deparse(substitute(x))
-  class_resp_special("trials", vars = nlist(trials))
+  class_resp_special("trials", call = match.call(), vars = nlist(trials))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_cat <- function(x) {
   cat <- deparse(substitute(x))
-  class_resp_special("cat", vars = nlist(cat))
+  class_resp_special("cat", call = match.call(), vars = nlist(cat))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_dec <- function(x) {
   dec <- deparse(substitute(x))
-  class_resp_special("dec", vars = nlist(dec))
+  class_resp_special("dec", call = match.call(), vars = nlist(dec))
 }
 
 #' @rdname addition-terms
@@ -128,7 +134,7 @@ resp_dec <- function(x) {
 resp_cens <- function(x, y2 = NA) {
   cens <- deparse(substitute(x))
   y2 <- deparse(substitute(y2))
-  class_resp_special("cens", vars = nlist(cens, y2))
+  class_resp_special("cens", call = match.call(), vars = nlist(cens, y2))
 }
 
 #' @rdname addition-terms
@@ -136,52 +142,54 @@ resp_cens <- function(x, y2 = NA) {
 resp_trunc <- function(lb = -Inf, ub = Inf) {
   lb <- deparse(substitute(lb))
   ub <- deparse(substitute(ub))
-  class_resp_special("trunc", vars = nlist(lb, ub))
+  class_resp_special("trunc", call = match.call(), vars = nlist(lb, ub))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_mi <- function(sdy = NA) {
   sdy <- deparse(substitute(sdy))
-  class_resp_special("mi", vars = nlist(sdy))
+  class_resp_special("mi", call = match.call(), vars = nlist(sdy))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_rate <- function(denom) {
   denom <- deparse(substitute(denom))
-  class_resp_special("rate", vars = nlist(denom))
+  class_resp_special("rate", call = match.call(), vars = nlist(denom))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_subset <- function(x) {
   subset <- deparse(substitute(x))
-  class_resp_special("subset", vars = nlist(subset))
+  class_resp_special("subset", call = match.call(), vars = nlist(subset))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_vreal <- function(...) {
   vars <- as.list(substitute(list(...)))[-1]
-  class_resp_special("vreal", vars = vars)
+  class_resp_special("vreal", call = match.call(), vars = vars)
 }
 
 #' @rdname addition-terms
 #' @export
 resp_vint <- function(...) {
   vars <- as.list(substitute(list(...)))[-1]
-  class_resp_special("vint", vars = vars)
+  class_resp_special("vint", call = match.call(), vars = vars)
 }
 
 # class underlying response addition terms
 # @param type type of the addition term
+# @param call the call to the original addition term function
 # @param vars named list of unevaluated variables
 # @param flags named list of (evaluated) logical indicators
-class_resp_special <- function(type, vars = list(), flags = list()) {
+class_resp_special <- function(type, call, vars = list(), flags = list()) {
   type <- as_one_character(type)
-  stopifnot(is.list(vars), is.list(flags))
-  out <- nlist(type, vars, flags)
+  stopifnot(is.call(call), is.list(vars), is.list(flags))
+  label <- deparse(call)
+  out <- nlist(type, call, label, vars, flags)
   class(out) <- c("resp_special")
   out
 }
