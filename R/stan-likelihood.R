@@ -582,8 +582,8 @@ stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
   if (simplify) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
     p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
-    out <- sdist("ordered_logistic", p$mu, p$ord_intercept)
+    p$thres <- paste0("Intercept", prefix)
+    out <- sdist("ordered_logistic", p$mu, p$thres)
   } else {
     out <- stan_llh_ordinal(bterms, resp, mix)
   }
@@ -628,7 +628,7 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$thres <- paste0("temp", prefix, "_Intercept")
+  p$thres <- paste0("Intercept", prefix)
   if (has_cs(bterms)) {
     str_add(p$thres) <- paste0(" - mucs", prefix, "[n]'")
   }
@@ -712,9 +712,9 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
-    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
+    p$thres <- paste0("Intercept", prefix)
   }
-  sdist(family$name, p[dpars], p$ord_intercept, family$vars)
+  sdist(family$name, p[dpars], p$thres, family$vars)
 }
 
 # use Stan GLM primitive functions?
@@ -759,7 +759,7 @@ args_glm_primitive <- function(bterms, resp = "") {
     sfx_X <- "c"
   }
   if (center_X) {
-    intercept <- paste0("temp", resp, "_Intercept")
+    intercept <- paste0("Intercept", resp)
   } else {
     intercept <- "0"
   }

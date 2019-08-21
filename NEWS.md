@@ -21,6 +21,8 @@ of autocorrelation parameters.
 * Set the number of trials to 1 by default in 
 `marginal_effects` if not specified otherwise. (#718)
 * Use non-standard evaluation for addition terms.
+* Name temporary intercept parameters more consistently 
+in the Stan code.
 
 ### Bug Fixes
 

@@ -416,8 +416,8 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   if (dim == 1) {
     index_names <- paste0("[", rownames, "]")
   } else {
-    temp <- outer(rownames, colnames, FUN = paste, sep = ",")
-    index_names <- paste0("[", temp, "]")
+    tmp <- outer(rownames, colnames, FUN = paste, sep = ",")
+    index_names <- paste0("[", tmp, "]")
   }
   index_names
 }
@@ -463,9 +463,9 @@ do_renaming <- function(x, change) {
 # @param x brmsfit object
 reorder_pars <- function(x) {
   all_classes <- unique(c(
-    "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar",
-    "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
-    "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
+    "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar", "errorsar", 
+    "car", "sdcar", "sigmaLL", "sd", "cor", "df", "sds", "sdgp", 
+    "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
   ))
@@ -516,7 +516,7 @@ compute_xi <- function(x, ...) {
 
 #' @export
 compute_xi.brmsfit <- function(x, ...) {
-  if (!any(grepl("^temp_xi(_|$)", parnames(x)))) {
+  if (!any(grepl("^tmp_xi(_|$)", parnames(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -541,8 +541,8 @@ compute_xi.mvbrmsdraws <- function(x, fit, ...) {
 compute_xi.brmsdraws <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
-  temp_xi_name <- paste0("temp_xi", resp)
-  if (!temp_xi_name %in% parnames(fit)) {
+  tmp_xi_name <- paste0("tmp_xi", resp)
+  if (!tmp_xi_name %in% parnames(fit)) {
     return(fit)
   }
   mu <- get_dpar(x, "mu")
@@ -550,8 +550,8 @@ compute_xi.brmsdraws <- function(x, fit, ...) {
   y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
   bs <- -1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
-  temp_xi <- as.vector(as.matrix(fit, pars = temp_xi_name))
-  xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
+  tmp_xi <- as.vector(as.matrix(fit, pars = tmp_xi_name))
+  xi <- inv_logit(tmp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
   # write xi into stanfit object
   xi_name <- paste0("xi", resp)
   samp_chain <- length(xi) / fit$fit@sim$chains

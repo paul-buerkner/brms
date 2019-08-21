@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.9.6
-Date: 2019-07-15
+Version: 2.9.7
+Date: 2019-08-21
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -61,7 +61,8 @@ Description: Fit Bayesian generalized (non-)linear multivariate multilevel model
     users to apply prior distributions that actually reflect their beliefs.
     Model fit can easily be assessed and compared with posterior predictive 
     checks and leave-one-out cross-validation. References: Bürkner (2017)
-    <doi:10.18637/jss.v080.i01>; Carpenter et al. (2017) <doi:10.18637/jss.v076.i01>.
+    <doi:10.18637/jss.v080.i01>; Bürkner (2018) <doi:10.32614/RJ-2018-017>;
+    Carpenter et al. (2017) <doi:10.18637/jss.v076.i01>.
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 3)

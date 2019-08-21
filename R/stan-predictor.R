@@ -129,12 +129,12 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       out[[dp]] <- list(tpar_def = dp_def, tpar_comp = dp_co)
     } else {
       dp_def <- stan_dpar_defs(dp, resp, family = x$family)
-      dp_def_temp <- stan_dpar_defs_temp(dp, resp, family = x$family)
-      if (nzchar(dp_def_temp)) {
+      dp_def_tmp <- stan_dpar_defs_tmp(dp, resp, family = x$family)
+      if (nzchar(dp_def_tmp)) {
         dp_prior <- stan_prior(
-          prior, dp, prefix = "temp_", suffix = resp, px = px
+          prior, dp, prefix = "tmp_", suffix = resp, px = px
         )
-        out[[dp]] <- list(par = dp_def_temp, prior = dp_prior)
+        out[[dp]] <- list(par = dp_def_tmp, prior = dp_prior)
       } else if (nzchar(dp_def)) {
         dp_prior <- stan_prior(prior, dp, suffix = resp, px = px)
         out[[dp]] <- list(par = dp_def, prior = dp_prior)
@@ -402,21 +402,21 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
         dp_id <- dpar_id(px$dpar)
         str_add(out$tpar_def) <- glue(
           "  // identify mixtures via ordering of the intercepts\n",                   
-          "  real temp{p}_Intercept = ordered{resp}_Intercept[{dp_id}];\n"
+          "  real Intercept{p} = ordered_Intercept{resp}[{dp_id}];\n"
         )
       } else {
         str_add(out$par) <- glue(
           "  // temporary intercept for centered predictors\n",
-          "  real temp{p}_Intercept;\n"
+          "  real Intercept{p};\n"
         )
       }
-      str_add(out$eta) <- glue(" + temp{p}_Intercept")
+      str_add(out$eta) <- glue(" + Intercept{p}")
       str_add(out$gen_def) <- glue(
         "  // actual population-level intercept\n",
-        "  real b{p}_Intercept = temp{p}_Intercept{sub_X_means};\n"
+        "  real b{p}_Intercept = Intercept{p}{sub_X_means};\n"
       )
       str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", px = px, prefix = glue("temp{p}_")
+        prior, class = "Intercept", px = px, suffix = p
       )
     }
   }
@@ -460,40 +460,40 @@ stan_thres <- function(bterms, prior, ...) {
     }
     str_add(out$tpar_def) <- glue(
       "  // fix thresholds across ordinal mixture components\n",
-      "  {type}[ncat{resp} - 1] temp{p}_Intercept = fixed{resp}_Intercept;\n"
+      "  {type}[ncat{resp} - 1] Intercept{p} = fixed_Intercept{resp};\n"
     )
   } else {
     thres <- get_thres(bterms)
     if (has_equidistant_thres(family)) {
       bound <- subset2(prior, class = "delta", ls = px)$bound
       str_add(out$par) <- glue(
-        "  real temp{p}_Intercept1;  // first threshold\n",
+        "  real Intercept1{p};  // first threshold\n",
         "  real{bound} delta{p};  // distance between thresholds\n"
       )
       str_add(out$tpar_def) <- glue(
         "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp} - 1] temp{p}_Intercept;\n"
+        "  {type}[ncat{resp} - 1] Intercept{p};\n"
       )
       str_add(out$tpar_comp) <- glue(
         "  // compute equidistant thresholds\n",
         "  for (k in 1:(ncat{resp} - 1)) {{\n",
-        "    temp{p}_Intercept[k] = temp{p}_Intercept1", 
+        "    Intercept{p}[k] = Intercept1{p}", 
         " + (k - 1.0) * delta{p};\n",
         "  }}\n"
       )
       str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
       str_add(out$prior) <- stan_prior(
         prior, class = "Intercept", coef = thres[1], 
-        px = px, prefix = glue("temp{p}_"), suffix = "1"
+        px = px, suffix = glue("1{p}")
       )
     } else {
       str_add(out$par) <- glue(
         "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp} - 1] temp{p}_Intercept;\n"
+        "  {type}[ncat{resp} - 1] Intercept{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "Intercept", coef = thres, 
-        px = px, prefix = glue("temp{p}_")
+        px = px, suffix = p
       )
     }
   }
@@ -507,7 +507,7 @@ stan_thres <- function(bterms, prior, ...) {
   str_add(out$gen_def) <- glue(
     "  // compute actual thresholds\n",
     "  vector[ncat{resp} - 1] b{p}_Intercept",  
-    " = temp{p}_Intercept{sub_X_means};\n" 
+    " = Intercept{p}{sub_X_means};\n" 
   )
   out
 }
@@ -1293,7 +1293,7 @@ stan_mixture <- function(bterms, prior) {
   if (order_intercepts(bterms)) {
     # identify mixtures by ordering the intercepts of their components
     str_add(out$par) <- glue( 
-      "  ordered[{nmix}] ordered{p}_Intercept;  // to identify mixtures\n"
+      "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
     )
   }
   if (fix_intercepts(bterms)) {
@@ -1302,7 +1302,7 @@ stan_mixture <- function(bterms, prior) {
     type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
     str_add(out$par) <- glue( 
       "  // thresholds fixed over mixture components\n",
-      "  {type}[ncat{p} - 1] fixed{p}_Intercept;\n"
+      "  {type}[ncat{p} - 1] fixed_Intercept{p};\n"
     )
     str_add(out$prior) <- stan_prior(
       prior, class = "Intercept", coef = get_thres(bterms), 
@@ -1609,7 +1609,7 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
 }
 
 # default Stan definitions for temporary distributional parameters
-stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
+stan_dpar_defs_tmp <- function(dpar, suffix = "", family = NULL) {
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   if (is.mixfamily(family)) {
@@ -1620,7 +1620,7 @@ stan_dpar_defs_temp <- function(dpar, suffix = "", family = NULL) {
   }
   default_defs <- list(
     xi = c(
-      "  real temp_", 
+      "  real tmp_", 
       ";  // unscaled shape parameter\n"
     )
   )
@@ -1706,7 +1706,7 @@ stan_dpar_transform <- function(bterms) {
         sigma <- glue("sigma{id}")
         v <- str_if(sigma %in% names(bterms$dpars), "_vector")
         args <- sargs(
-          glue("temp_{xi}"), glue("Y{p}"), 
+          glue("tmp_{xi}"), glue("Y{p}"), 
           glue("mu{id}{p}"), glue("{sigma}{p}")
         )
         str_add(out$model_comp_dpar_trans) <- glue(

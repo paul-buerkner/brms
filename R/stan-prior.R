@@ -317,7 +317,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   has_tv <- grepl("^to_vector\\(", D$par)
   D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
   # do not sample from some auxiliary parameters
-  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "temp")
+  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "tmp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
