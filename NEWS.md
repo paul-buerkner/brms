@@ -11,6 +11,8 @@ the addition arguments `vreal` and `vint`. (#707)
 autocorrelation structures. (#403)
 * Use addition term `rate` to conveniently handle
 denominators of rate responses in log-linear models.
+* Fit BYM2 CAR models via `cor_car` thanks to the case study 
+and help of Mitzi Morris.
 
 ### Other Changes
 

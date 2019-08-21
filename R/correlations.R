@@ -278,14 +278,14 @@ sar_weights <- function(W) {
 #'   It is recommended to always specify a grouping factor
 #'   to allow for handling of new data in post-processing methods.
 #' @param type Type of the CAR structure. Currently implemented
-#'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
-#'   (exact sparse intrinsic CAR) and \code{"icar"} (intrinsic CAR). 
-#'   More information is provided in the 'Details' section.
+#'   are \code{"escar"} (exact sparse CAR), \code{"esicar"}
+#'   (exact sparse intrinsic CAR), \code{"icar"} (intrinsic CAR),
+#'   and \code{"bym2"}. More information is provided in the 'Details' section.
 #' 
 #' @details The \code{escar} and \code{esicar} types are 
 #'   implemented based on the case study of Max Joseph
-#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar}
-#'   type is implemented based on the case study of Mitzi Morris
+#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+#'   \code{bym2} type is implemented based on the case study of Mitzi Morris
 #'   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 #'   
 #' @examples
@@ -320,8 +320,9 @@ sar_weights <- function(W) {
 #' }
 #' 
 #' @export
-cor_car <- function(W, formula = ~1, type = c("escar", "esicar", "icar")) {
-  type <- match.arg(type)
+cor_car <- function(W, formula = ~1, type = "escar") {
+  options <- c("escar", "esicar", "icar", "bym2")
+  type <- match.arg(type, options)
   W_name <- deparse(substitute(W))
   W <- Matrix::Matrix(W, sparse = TRUE)
   if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {

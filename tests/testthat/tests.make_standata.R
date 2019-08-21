@@ -705,6 +705,9 @@ test_that("make_standata includes data for CAR models", {
   expect_equal(sdata$edges1, as.array(2))
   expect_equal(sdata$edges2, as.array(1))
   
+  sdata <- make_standata(y ~ x, dat, autocor = cor_car(W, type = "bym2"))
+  expect_equal(length(sdata$car_scale), 1L)
+  
   # test error messages
   rownames(W) <- c(1:9, "a")
   expect_error(make_standata(y ~ x, dat, autocor = cor_car(W, ~1|group)), 

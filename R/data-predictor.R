@@ -726,6 +726,8 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenW)
+    } else if (autocor$type %in% "bym2") {
+      c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
   }
   if (is.cor_fixed(autocor)) {
@@ -749,6 +751,37 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
     out <- setNames(out, paste0(names(out), resp))
   }
   out
+}
+
+# compute the spatial scaling factor of CAR models
+# @param edges matrix with two columns defining the adjacency of the locations
+# @param Nloc number of locations
+# @return a scalar scaling factor
+.car_scale <- function(edges, Nloc) {
+  # amended from Imad Ali's code of CAR models in rstanarm
+  stopifnot(is.matrix(edges), NCOL(edges) == 2)
+  # Build the adjacency matrix
+  adj_matrix <- Matrix::sparseMatrix(
+    i = edges[, 1], j = edges[, 2], x = 1, 
+    symmetric = TRUE
+  )
+  # The ICAR precision matrix (which is singular)
+  Q <- Matrix::Diagonal(Nloc, Matrix::rowSums(adj_matrix)) - adj_matrix
+  # Add a small jitter to the diagonal for numerical stability
+  Q_pert <- Q + Matrix::Diagonal(Nloc) * 
+    max(Matrix::diag(Q)) * sqrt(.Machine$double.eps)
+  # Compute the diagonal elements of the covariance matrix subject to the 
+  # constraint that the entries of the ICAR sum to zero.
+  .Q_inv <- function(Q) {
+    Sigma <- Matrix::solve(Q)
+    A <- matrix(1, 1, NROW(Sigma))
+    W <- Sigma %*% t(A)
+    Sigma <- Sigma - W %*% solve(A %*% W) %*% Matrix::t(W)
+    return(Sigma)
+  }
+  Q_inv <- .Q_inv(Q_pert)
+  # Compute the geometric mean of the variances (diagonal of Q_inv)
+  exp(mean(log(Matrix::diag(Q_inv))))
 }
 
 #' Prepare Response Data

@@ -388,17 +388,16 @@ stan_autocor <- function(bterms, prior) {
       "  int<lower=1> edges1{p}[Nedges{p}];\n",
       "  int<lower=1> edges2{p}[Nedges{p}];\n"
     )
+    str_add(out$par) <- glue(
+      "  real<lower=0> sdcar{p};  // SD of the CAR structure\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "sdcar", px = px, suffix = p
+    )
     if (autocor$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
         "  vector[Nloc{p}] Nneigh{p};\n",
         "  vector[Nloc{p}] eigenW{p};\n"
-      )
-      str_add(out$par) <- glue(
-        "  // parameters for the CAR structure\n",
-        "  real<lower=0> sdcar{p};\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "sdcar", px = px, suffix = p
       )
     }
     if (autocor$type %in% "escar") {
@@ -446,13 +445,47 @@ stan_autocor <- function(bterms, prior) {
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$par) <- glue(
         "  // parameters for the ICAR structure\n",
-        "  vector[Nloc{p}] rcar{p};\n"
+        "  vector[Nloc{p}] zcar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // scaled parameters for the ICAR structure\n",
+        "  vector[Nloc{p}] rcar{p} = zcar{p} * sdcar{p};\n"
       )
       str_add(out$prior) <- glue(
-        "  target += -0.5 * dot_self(rcar{p}[edges1{p}]", 
-        " - rcar{p}[edges2{p}]);\n",
+        "  // improper prior on the spatial CAR component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
         "  // soft sum-to-zero constraint\n",
-        "  target += normal_lpdf(sum(rcar{p}) | 0, 0.001 * Nloc{p});\n"
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
+      )
+    } else if (autocor$type %in% "bym2") {
+      # BYM2 car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$data) <- glue(
+        "  // scaling factor of the spatial CAR component\n",
+        "  real<lower=0> car_scale{p};\n"
+      )
+      str_add(out$par) <- glue(
+        "  // parameters for the BYM2 structure\n",
+        "  vector[Nloc{p}] zcar{p};  // spatial part\n",
+        "  vector[Nloc{p}] nszcar{p};  // non-spatial part\n",
+        "  // proportion of variance in the spatial part\n",
+        "  real<lower=0,upper=1> rhocar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // join the spatial and the non-spatial CAR component\n",
+        "  vector[Nloc{p}] rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
+        " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "rhocar", px = px, suffix = p
+      )
+      str_add(out$prior) <- glue(
+        "  // improper prior on the spatial BYM2 component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
+        "  // proper prior on the non-spatial BYM2 component\n",
+        "  target += normal_lpdf(nszcar | 0, 1);\n"
       )
     }
   }

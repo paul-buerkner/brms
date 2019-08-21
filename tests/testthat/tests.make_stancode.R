@@ -1568,9 +1568,20 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
   
   scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
-  expect_match2(scode, "target += -0.5 * dot_self(rcar[edges1] - rcar[edges2])")
-  expect_match2(scode, "target += normal_lpdf(sum(rcar) | 0, 0.001 * Nloc)")
+  expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
+  expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
+  expect_match2(scode, "vector[Nloc] rcar = zcar * sdcar")
+  
+  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W, type = "bym2"))
+  expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
+  expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
+  expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
+  expect_match2(scode, "target += beta_lpdf(rhocar | 1, 1)")
+  expect_match2(scode, paste0(
+    "vector[Nloc] rcar = (sqrt(1 - rhocar) * nszcar + ", 
+    "sqrt(rhocar * inv(car_scale)) * zcar) * sdcar"
+  ))
 })
 
 test_that("Stan code for skew_normal models is correct", {

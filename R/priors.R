@@ -948,8 +948,11 @@ prior_autocor <- function(bterms, def_scale_prior) {
   if (is.cor_car(autocor)) {
     prior <- prior +  
       brmsprior(def_scale_prior, class = "sdcar", resp = resp)
-    if (identical(autocor$type, "escar")) {
+    if (autocor$type %in% "escar") {
       prior <- prior + brmsprior(class = "car", resp = resp)
+    } else if (autocor$type %in% "bym2") {
+      prior <- prior + 
+        brmsprior("beta(1, 1)", class = "rhocar", resp = resp)
     }
   }
   prior
@@ -1524,6 +1527,7 @@ par_bounds <- function(par, bound = "") {
     errorsar = list(lb = 0, ub = 1),
     car = list(lb = 0, ub = 1),
     sdcar = list(lb = 0, ub = Inf),
+    rhocar = list(lb = 0, ub = 1),
     sigmaLL = list(lb = 0, ub = Inf),
     sd = list(lb = 0, ub = Inf),
     sds = list(lb = 0, ub = Inf),
