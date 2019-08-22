@@ -12,7 +12,9 @@
 \item{x}{A \code{brmsfit} object.}
 
 \item{...}{More \code{brmsfit} objects or further arguments
-passed to the underlying post-processing functions.}
+passed to the underlying post-processing functions.
+In particular, see \code{\link{extract_draws}} for further
+supported arguments.}
 
 \item{prior_prob}{Numeric vector with prior model probabilities. 
 If omitted, a uniform prior is used (i.e., all models are equally 

@@ -15,7 +15,9 @@ posterior_average(x, ...)
 \item{x}{A \code{brmsfit} object.}
 
 \item{...}{More \code{brmsfit} objects or further arguments
-passed to the underlying post-processing functions.}
+passed to the underlying post-processing functions.
+In particular, see \code{\link{extract_draws}} for further
+supported arguments.}
 
 \item{pars}{Names of parameters for which to average across models.
 Only those parameters can be averaged that appear in every model.

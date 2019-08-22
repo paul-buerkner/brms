@@ -2612,6 +2612,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @param x A \code{brmsfit} object.
 #' @param ... More \code{brmsfit} objects or further arguments
 #'   passed to the underlying post-processing functions.
+#'   In particular, see \code{\link{extract_draws}} for further
+#'   supported arguments.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
 #'  via \code{\link{loo_compare}}.

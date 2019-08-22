@@ -15,7 +15,9 @@
 \item{x}{A \code{brmsfit} object.}
 
 \item{...}{More \code{brmsfit} objects or further arguments
-passed to the underlying post-processing functions.}
+passed to the underlying post-processing functions.
+In particular, see \code{\link{extract_draws}} for further
+supported arguments.}
 
 \item{compare}{A flag indicating if the information criteria
 of the models should be compared to each other
