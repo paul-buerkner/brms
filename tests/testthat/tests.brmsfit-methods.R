@@ -249,7 +249,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(fit1, incl_warmup = TRUE), 200)
   
   # parnames 
-  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 46, 47, 48)],
+  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 19, 29, 37, 50, 51, 52)],
                c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
                  "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
                  "prior_sd_visit", "prior_cor_visit", "lp__"))
@@ -415,8 +415,9 @@ test_that("all S3 methods have reasonable ouputs", {
   # prior_samples
   prs1 <- prior_samples(fit1)
   prior_names <- c(
-    "b", "bsp", paste0("simo_moExp1[", 1:4, "]"), "bs",
-    "sds_sAge_1", "b_sigma", "nu", "sd_visit", "cor_visit"
+    "Intercept", "b", "bsp", paste0("simo_moExp1[", 1:4, "]"), 
+    "bs", "sds_sAge_1", "b_sigma", "Intercept_sigma", "nu", 
+    "sd_visit", "cor_visit"
   )
   expect_equal(colnames(prs1), prior_names)
   
