@@ -29,10 +29,6 @@ compute_loos <- function(
   criterion <- match.arg(criterion)
   args <- nlist(criterion, ...)
   if (length(models) > 1L) {
-    warning2(
-      "Passing multiple brmsfit objects to 'loo' and related methods is ",
-      "deprecated. Please see ?loo.brmsfit for the recommended workflow."
-    )
     if (!match_nobs(models)) {
       stop2("Models have different number of observations.")
     }

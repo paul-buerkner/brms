@@ -146,7 +146,8 @@ stan_response <- function(bterms, data) {
   }
   if (is.formula(bterms$adforms$vreal)) {
     # vectors of real values for use in custom families
-    k <- length(eval_rhs(bterms$adforms$vreal, data = data))
+    vreal <- eval_rhs(bterms$adforms$vreal)
+    k <- length(vreal$vars)
     str_add(out$data) <- cglue(
       "  // data for custom real vectors\n",
       "  vector[N{resp}] vreal{seq_len(k)}{resp};\n"
@@ -154,7 +155,8 @@ stan_response <- function(bterms, data) {
   }
   if (is.formula(bterms$adforms$vint)) {
     # vectors of integer values for use in custom families
-    k <- length(eval_rhs(bterms$adforms$vint, data = data))
+    vint <- eval_rhs(bterms$adforms$vint)
+    k <- length(vint$vars)
     str_add(out$data) <- cglue(
       "  // data for custom integer vectors\n",
       "  int vint{seq_len(k)}{resp}[N{resp}];\n"
