@@ -42,6 +42,8 @@ of categorical responses thanks to Emmanuel Charpentier. (#672)
 terms thanks to the Stan discourse user Pia.
 * Improve checks for non-standard variable names 
 thanks to Ryan Holbrook. (#721) 
+* Fix problems when plotting facetted spaghetti plots
+via `marginal_smooths` thanks to Gavin Simpson. (#740)
 
 
 # brms 2.9.0
