@@ -249,15 +249,19 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nsamples(fit1, incl_warmup = TRUE), 200)
   
   # parnames 
-  expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 19, 29, 37, 50, 51, 52)],
-               c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
-                 "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
-                 "prior_sd_visit", "prior_cor_visit", "lp__"))
-  expect_equal(parnames(fit2)[c(1, 4, 6, 7, 9, 71, 127)],
-               c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
-                 "cor_patient__a_Intercept__b_Intercept", 
-                 "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
-                 "prior_b_a"))
+  expect_true(all(
+    c("b_Intercept", "bsp_moExp", "ar[1]", "cor_visit__Intercept__Trt1", 
+      "nu", "simo_moExp1[2]", "r_visit[4,Trt1]", "s_sAge_1[8]", 
+      "prior_sd_visit", "prior_cor_visit", "lp__") %in%
+      parnames(fit1)  
+  ))
+  expect_true(all(
+    c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
+      "cor_patient__a_Intercept__b_Intercept", 
+      "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
+      "prior_b_a") %in%
+      parnames(fit2)  
+  ))
   expect_true(all(
     c("lscale_volume_gpAgeTrt0", "lscale_volume_gpAgeTrt1") %in% 
       parnames(fit6)
