@@ -207,8 +207,8 @@ prediction.
 
 Buuren, S. V. & Groothuis-Oudshoorn, K. (2010). mice: Multivariate imputation by
 chained equations in R. *Journal of Statistical Software*, 1-68.
-doi:10.18637/jss.v045.i03
+doi.org/10.18637/jss.v045.i03
 
 Zhou, X. & Reiter, J. P. (2010). A Note on Bayesian Inference After Multiple
 Imputation. *The American Statistician*, 64(2), 159-163.
-doi:10.1198/tast.2010.09109
+doi.org/10.1198/tast.2010.09109
