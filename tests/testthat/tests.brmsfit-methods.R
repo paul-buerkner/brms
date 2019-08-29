@@ -138,8 +138,8 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # log_lik
   expect_equal(dim(log_lik(fit1)), c(nsamples(fit1), nobs(fit1)))
+  expect_equal(dim(logLik(fit1)), c(nsamples(fit1), nobs(fit1)))
   expect_equal(dim(log_lik(fit2)), c(nsamples(fit2), nobs(fit2)))
-  expect_equal(log_lik(fit1), logLik(fit1))
   
   # marginal_effects
   me <- marginal_effects(fit1, resp = "count")
