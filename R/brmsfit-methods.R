@@ -764,7 +764,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
-        "The model has not converged (some Rhats are > 1.1). ",
+        "The model has not converged (some Rhats are > 1.05). ",
         "Do not analyse the results! \nWe recommend running ", 
         "more iterations and/or setting stronger priors."
       )
