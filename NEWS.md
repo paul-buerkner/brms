@@ -1,3 +1,11 @@
+# brms 2.10.0++
+
+### Bug Fixes
+
+* Fix problems when using `pp_check` on
+censored models thanks to Andrew Milne. (#744)
+
+
 # brms 2.10.0
 
 ### New Features

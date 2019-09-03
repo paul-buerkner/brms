@@ -617,7 +617,8 @@ get_cens <- function(x, resp = NULL, newdata = NULL) {
     newdata <- model.frame(x)
   }
   if (is.formula(bterms$adforms$cens)) {
-    out <- eval_rhs(bterms$adforms$cens, data = newdata)
+    cens <- eval_rhs(bterms$adforms$cens)
+    out <- unname(eval2(cens$vars$cens, newdata))
   } else {
     out <- NULL
   }
