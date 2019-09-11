@@ -801,6 +801,17 @@ is.formula <- function(x) {
   inherits(x, "formula")
 }
 
+# wrapper around as.formula with additional checks
+as_formula <- function(x) {
+  x <- as.formula(x)
+  # fixes issue #749
+  rhs <- rhs(x)[[2]]
+  if (isTRUE(is.call(rhs) && rhs[[1]] == "~")) {
+    stop2("Nested formulas are not allowed. Did you use '~~' somewhere?")
+  }
+  x
+}
+
 # expand the '.' variable in formula using stats::terms
 expand_dot_formula <- function(formula, data = NULL) {
   if (isTRUE("." %in% all.vars(formula))) {

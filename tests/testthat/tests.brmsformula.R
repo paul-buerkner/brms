@@ -14,6 +14,11 @@ test_that("brmsformula validates formulas of auxiliary parameters", {
                "Additional formulas must be named")
 })
 
+test_that("brmsformula detects use if '~~'", {
+  # checks fix of issue #749
+  expect_error(bf(y~~x), "~~")
+})
+
 test_that("brmsformula does not change a 'brmsformula' object", {
   form <- bf(y ~ a, sigma ~ 1)
   expect_identical(form, bf(form))

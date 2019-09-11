@@ -602,7 +602,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
-    out <- list(formula = as.formula(formula))
+    out <- list(formula = as_formula(formula))
     class(out) <- "brmsformula"
   }
   # parse and validate dots arguments
@@ -769,7 +769,7 @@ NULL
 #' @export
 nlf <- function(formula, ..., flist = NULL, dpar = NULL, 
                 resp = NULL, loop = NULL) {
-  formula <- as.formula(formula)
+  formula <- as_formula(formula)
   if (is.null(lhs(formula))) {
     stop2("Argument 'formula' must be two-sided.")
   }
@@ -1090,7 +1090,7 @@ decomp_opts <- function() {
 # @return a named list of length one containing the formula
 validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
   stopifnot(length(par) <= 1L)
-  try_formula <- try(as.formula(formula), silent = TRUE)
+  try_formula <- try(as_formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
       stop2("Expecting a single value when fixing parameter '", par, "'.")
@@ -1135,7 +1135,7 @@ validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
 # @param empty_ok is an empty left-hand-side ok?
 # @return a formula of the form <response> ~ 1
 validate_resp_formula <- function(x, empty_ok = TRUE) {
-  out <- lhs(as.formula(x))
+  out <- lhs(as_formula(x))
   if (is.null(out)) {
     if (empty_ok) {
       out <- ~ 1
@@ -1385,8 +1385,8 @@ update.mvbrmsformula <- function(object, formula., ...) {
 #'
 #' @export
 update_adterms <- function(formula, adform, action = c("update", "replace")) {
-  formula <- as.formula(formula)
-  adform <- as.formula(adform)
+  formula <- as_formula(formula)
+  adform <- as_formula(adform)
   action <- match.arg(action)
   if (is.null(lhs(formula))) {
     stop2("Can't update a ond-sided formula.")
