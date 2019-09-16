@@ -161,13 +161,18 @@ subset_data <- function(data, bterms) {
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
     }
+    if (anyNA(subset)) {
+      stop2("Subset variables may not contain NAs.")
+    }
     data <- data[subset, , drop = FALSE]
   }
   if (!NROW(data)) {
     stop2(
       "All rows of 'data' were removed via 'subset'. ",
       "Please make sure that variables do not contain NAs ",
-      "even in rows unused by the subsetted model."
+      "even in rows unused by the subsetted model. ",
+      "Please also make sure that each subset variable is ",
+      "TRUE for at least one observation."
     )
   }
   data

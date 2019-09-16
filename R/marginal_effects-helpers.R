@@ -486,12 +486,16 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       conditions[[v]] <- 1L
     }
   }
-  # use default values for unspecified variables
+  # use sensible default values for unspecified variables
+  subset_vars <- get_advars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
-    if (!is_like_factor(mf[[v]])) {
+    if (v %in% subset_vars) {
+      # avoid unintentional subsetting of newdata (#755)
+      conditions[[v]] <- TRUE
+    } else if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
       if (v %in% int_vars) {
         conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))
