@@ -4,7 +4,8 @@
 
 * Fix problems when using `pp_check` on
 censored models thanks to Andrew Milne. (#744)
-
+* Fix error in the generated Stan code of multivariate
+`zero_inflated_binomial` models thanks to Raoul Wolf. (#756)
 
 # brms 2.10.0
 

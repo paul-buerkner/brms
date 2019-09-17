@@ -680,7 +680,7 @@ stan_llh_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "") {
 
 stan_llh_zero_inflated_binomial <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$trials <- "trials[n]"
+  p$trials <- paste0("trials", resp, "[n]")
   lpdf <- "zero_inflated_binomial"
   lpdf <- stan_llh_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
   lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("zi", bterms))
