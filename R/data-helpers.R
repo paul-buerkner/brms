@@ -653,6 +653,7 @@ extract_old_standata.mvbrmsterms <- function(x, data, ...) {
 #' @export
 extract_old_standata.brmsterms <- function(x, data, ...) {
   out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  data <- subset_data(data, x)
   for (dp in names(x$dpars)) {
     out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
   }

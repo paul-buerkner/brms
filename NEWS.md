@@ -6,6 +6,8 @@
 censored models thanks to Andrew Milne. (#744)
 * Fix error in the generated Stan code of multivariate
 `zero_inflated_binomial` models thanks to Raoul Wolf. (#756)
+* Fix predictions of spline models when using addition
+argument `subset` thanks to Ruben Arslan.
 
 # brms 2.10.0
 
