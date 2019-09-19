@@ -3417,3 +3417,30 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL, model_names = NULL) {
   model_names <- names(models)
   do_call(post_prob, c(bs, nlist(prior_prob, model_names)))
 }
+
+#' @export
+get_refmodel_poc.brmsfit <- function(fit, formula = NULL, newdata = NULL, 
+                                     default_data_points = NULL, ...) {
+  # TODO: add more input checks
+  # TODO: where to pass '...' to?
+  family <- family(fit)
+  if (family$family == "bernoulli") {
+    family$family <- "binomial"
+  }
+  family <- get(family$family, mode = "function")(log = family$log)
+  family <- projpred::kl_helpers(family)
+  if (is.null(formula)) {
+    formula <- as.formula(formula(fit))
+  }
+  if (is.null(newdata)) {
+    newdata <- model.frame(fit)
+    y <- get_y(fit)
+  } else {
+    newdata <- validate_newdata(newdata, fit, check_response = TRUE)
+    y <- get_y(fit, newdata = newdata)
+  }
+  # TODO: add proper predfun, mle, proj_predfun?
+  args <- nlist(fit, data = newdata, y, formula, family, default_data_points,
+                predfun = NULL, proj_predfun = NULL, mle = NULL)
+  do_call(projpred::init_refmodel_poc, args)
+}
