@@ -8,6 +8,8 @@ censored models thanks to Andrew Milne. (#744)
 `zero_inflated_binomial` models thanks to Raoul Wolf. (#756)
 * Fix predictions of spline models when using addition
 argument `subset` thanks to Ruben Arslan.
+* Fix out-of-sample predictions of AR models when predicting
+more than one step ahead.
 
 # brms 2.10.0
 

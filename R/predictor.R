@@ -477,20 +477,24 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     if (Kma) {
       eta[, n] <- eta[, n] + rowSums(ma * Err[, take_ma, max_lag])
     }
+    eta_before_ar <- eta[, n]
+    if (Kar) {
+      eta[, n] <- eta[, n] + rowSums(ar * Err[, take_ar, max_lag])
+    }
+    # AR terms need to be included in the predictions of y if missing
+    # the prediction code thus differs from the structure of the Stan code
     y <- Y[n]
     if (is.na(y)) {
       # y was not observed and has to be predicted
       fdraws$dpars$mu <- eta
       y <- predict_fun(n, fdraws)
     }
-    err[, max_lag] <- y - eta[, n]
+    # errors in AR models need to be computed before adding AR terms
+    err[, max_lag] <- y - eta_before_ar
     if (J_lag[n] > 0) {
       # store residuals of former observations
       I <- seq_len(J_lag[n])
       Err[, I, max_lag + 1] <- err[, max_lag + 1 - I]
-    }
-    if (Kar) {
-      eta[, n] <- eta[, n] + rowSums(ar * Err[, take_ar, max_lag])
     }
     # keep the size of 'err' and 'Err' as small as possible
     Err <- abind(Err[, , -1, drop = FALSE], zero_mat)
