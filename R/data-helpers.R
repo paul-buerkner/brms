@@ -178,22 +178,6 @@ subset_data <- function(data, bterms) {
   data
 }
 
-# coerce censored values into the right format
-prepare_cens <- function(x) {
-  stopifnot(length(x) == 1L)
-  regx <- paste0("^", x)
-  if (grepl(regx, "left")) {
-    x <- -1
-  } else if (grepl(regx, "none") || isFALSE(x)) {
-    x <- 0
-  } else if (grepl(regx, "right") || isTRUE(x)) {
-    x <- 1
-  } else if (grepl(regx, "interval")) {
-    x <- 2
-  }
-  x
-}
-
 #' Validate New Data
 #' 
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
@@ -607,6 +591,31 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   structure(out, old_order = attr(sdata, "old_order"))
 }
 
+# coerce censored values into the right format
+# @param x vector of censoring indicators
+# @return transformed vector of censoring indicators
+prepare_cens <- function(x) {
+  .prepare_cens <- function(x) {  
+    stopifnot(length(x) == 1L)
+    regx <- paste0("^", x)
+    if (grepl(regx, "left")) {
+      x <- -1
+    } else if (grepl(regx, "none") || isFALSE(x)) {
+      x <- 0
+    } else if (grepl(regx, "right") || isTRUE(x)) {
+      x <- 1
+    } else if (grepl(regx, "interval")) {
+      x <- 2
+    }
+    return(x)
+  }
+  x <- unname(x)
+  if (is.factor(x)) {
+    x <- as.character(x)
+  }
+  ulapply(x, .prepare_cens)
+}
+
 # extract information on censoring of the response variable
 # @param x a brmsfit object
 # @param resp optional names of response variables for which to extract values
@@ -621,11 +630,11 @@ get_cens <- function(x, resp = NULL, newdata = NULL) {
   if (is.null(newdata)) {
     newdata <- model.frame(x)
   }
+  out <- NULL
   if (is.formula(bterms$adforms$cens)) {
     cens <- eval_rhs(bterms$adforms$cens)
-    out <- unname(eval2(cens$vars$cens, newdata))
-  } else {
-    out <- NULL
+    out <- eval2(cens$vars$cens, newdata)
+    out <- prepare_cens(out)
   }
   out
 }

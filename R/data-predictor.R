@@ -1027,11 +1027,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
   if (is.formula(x$adforms$cens) && check_response) {
     cens <- eval_rhs(x$adforms$cens)
-    out$cens <- unname(eval2(cens$vars$cens, data))
-    if (is.factor(out$cens)) {
-      out$cens <- as.character(out$cens)
-    }
-    out$cens <- ulapply(out$cens, prepare_cens)
+    out$cens <- eval2(cens$vars$cens, data)
+    out$cens <- as.array(prepare_cens(out$cens))
     if (!all(is_wholenumber(out$cens) & out$cens %in% -1:2)) {
       stop2(
         "Invalid censoring data. Accepted values are ",
@@ -1054,7 +1051,6 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       y2[!icens] <- 0  # not used in Stan
       out$rcens <- as.array(y2)
     }
-    out$cens <- as.array(out$cens)
   }
   if (is.formula(x$adforms$trunc)) {
     trunc <- eval_rhs(x$adforms$trunc)
