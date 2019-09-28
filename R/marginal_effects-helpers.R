@@ -18,8 +18,11 @@
 #'   is not given, the row names will be used for this purpose instead.
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
-#'   If \code{NULL} (the default), numeric variables will be marginalized
-#'   by using their means and factors will get their reference level assigned.
+#'   If \code{NULL} (the default), numeric variables will be marginalized by
+#'   using their means and factors will get their reference level assigned.
+#'   \code{NA} values within factors are interpreted as if all dummy
+#'   variables of this factor are zero. This allows, for instance, to make
+#'   predictions of the grand mean when using sum coding.
 #' @param int_conditions An optional named \code{list} whose elements are numeric
 #'   vectors of values of the second variables in two-way interactions. 
 #'   At these values, predictions are evaluated. The names of 
@@ -159,11 +162,6 @@
 #'   Since we condition on rather than actually marginalizing variables, 
 #'   the name  \code{marginal_effects} is possibly not ideally chosen in 
 #'   retrospect. 
-#' 
-#'   \code{NA} values within factors in \code{conditions}, 
-#'   are interpreted as if all dummy variables of this factor are 
-#'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding. 
 #'   
 #'   To fully change colors of the created plots, 
 #'   one has to amend both \code{scale_colour} and \code{scale_fill}.

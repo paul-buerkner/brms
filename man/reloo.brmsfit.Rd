@@ -25,7 +25,10 @@ See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
-\code{NULL} (default), the original data of the model is used.}
+\code{NULL} (default), the original data of the model is used.
+\code{NA} values within factors are interpreted as if all dummy
+variables of this factor are zero. This allows, for instance, to make
+predictions of the grand mean when using sum coding.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

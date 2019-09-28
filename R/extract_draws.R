@@ -1013,6 +1013,9 @@ is.bdrawsnl <- function(x) {
 #' @param x An \R object typically of class \code{'brmsfit'}.
 #' @param newdata An optional data.frame for which to evaluate predictions. If
 #'   \code{NULL} (default), the original data of the model is used.
+#'   \code{NA} values within factors are interpreted as if all dummy
+#'   variables of this factor are zero. This allows, for instance, to make
+#'   predictions of the grand mean when using sum coding.
 #' @param re_formula formula containing group-level effects to be considered in
 #'   the prediction. If \code{NULL} (default), include all group-level effects;
 #'   if \code{NA}, include no group-level effects.
