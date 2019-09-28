@@ -11,6 +11,11 @@ argument `subset` thanks to Ruben Arslan.
 * Fix out-of-sample predictions of AR models when predicting
 more than one step ahead.
 
+### Other Changes
+
+* Rename `marginal_effects` to `conditional_effects` and
+`marginal_smooths` to `conditional_smooths`. (#735)
+
 # brms 2.10.0
 
 ### New Features

@@ -288,8 +288,8 @@ plot(fit1, ask = FALSE)
 # predict responses based on the fitted model
 head(predict(fit1))
 
-# plot marginal effects for each predictor
-plot(marginal_effects(fit1), ask = FALSE)
+# plot conditional effects for each predictor
+plot(conditional_effects(fit1), ask = FALSE)
 
 # investigate model fit
 loo(fit1)
@@ -312,7 +312,7 @@ fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal())
 summary(fit3)
 plot(fit3, ask = FALSE)
-plot(marginal_effects(fit3), ask = FALSE)
+plot(conditional_effects(fit3), ask = FALSE)
 
 
 # Probit regression using the binomial family
@@ -334,7 +334,7 @@ bprior5 <- prior(normal(0, 2), nlpar = a1) +
 fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),
             data = data5, prior = bprior5)
 summary(fit5)
-plot(marginal_effects(fit5), ask = FALSE)
+plot(conditional_effects(fit5), ask = FALSE)
 
 
 # Normal model with heterogeneous variances
@@ -345,7 +345,7 @@ data_het <- data.frame(
 fit6 <- brm(bf(y ~ x, sigma ~ 0 + x), data = data_het)
 summary(fit6)
 plot(fit6)
-marginal_effects(fit6)
+conditional_effects(fit6)
 
 # extract estimated residual SDs of both groups
 sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
@@ -357,7 +357,7 @@ ggplot(stack(sigmas), aes(values)) +
 fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
-marginal_effects(fit7)
+conditional_effects(fit7)
 
 
 # use the future package for more flexible parallelization

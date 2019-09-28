@@ -1453,16 +1453,16 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   bayesplot::mcmc_pairs(samples, ...)
 }
 
-#' @rdname marginal_effects
+#' @rdname conditional_effects
 #' @export
-marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     int_conditions = NULL, re_formula = NA, 
-                                     robust = TRUE, probs = c(0.025, 0.975),
-                                     method = c("fitted", "predict"), 
-                                     spaghetti = FALSE, surface = FALSE,
-                                     categorical = FALSE, ordinal = FALSE,
-                                     transform = NULL, resolution = 100, 
-                                     select_points = 0, too_far = 0, ...) {
+conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
+                                        int_conditions = NULL, re_formula = NA, 
+                                        robust = TRUE, probs = c(0.025, 0.975),
+                                        method = c("fitted", "predict"), 
+                                        spaghetti = FALSE, surface = FALSE,
+                                        categorical = FALSE, ordinal = FALSE,
+                                        transform = NULL, resolution = 100, 
+                                        select_points = 0, too_far = 0, ...) {
   method <- match.arg(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
@@ -1562,7 +1562,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         dist = too_far)
       marg_data <- marg_data[!ex_too_far, ]  
     }
-    c(out) <- marginal_effects_internal(
+    c(out) <- conditional_effects_internal(
       bterms, fit = x, marg_data = marg_data, method = method, 
       surface = surface, spaghetti = spaghetti, categorical = categorical, 
       ordinal = ordinal, re_formula = re_formula, transform = transform, 
@@ -1571,12 +1571,19 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       ...
     )
   }
-  structure(out, class = "brmsMarginalEffects")
+  structure(out, class = "brms_conditional_effects")
 }
 
-#' @rdname marginal_smooths
 #' @export
-marginal_smooths.brmsfit <- function(x, smooths = NULL,
+marginal_effects.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_effects' is deprecated. ",
+           "Please use 'conditional_effects' instead.")
+  conditional_effects(x, ...)
+}
+
+#' @rdname conditional_smooths
+#' @export
+conditional_smooths.brmsfit <- function(x, smooths = NULL,
                                      int_conditions = NULL,
                                      probs = c(0.025, 0.975),
                                      spaghetti = FALSE,
@@ -1593,7 +1600,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   subset <- subset_samples(x, subset, nsamples)
   # call as.matrix only once to save time and memory
   samples <- as.matrix(x, subset = subset)
-  out <- marginal_smooths_internal(
+  out <- conditional_smooths_internal(
     bterms, fit = x, samples = samples, smooths = smooths, 
     conditions = conditions, int_conditions = int_conditions, 
     too_far = too_far, resolution = resolution, probs = probs, 
@@ -1602,7 +1609,14 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
-  structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
+  structure(out, class = "brms_conditional_effects", smooths_only = TRUE)
+}
+
+#' @export
+marginal_smooths.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_smooths' is deprecated. ",
+           "Please use 'conditional_smooths' instead.")
+  conditional_smooths(x, ...)
 }
 
 #' Model Predictions of \code{brmsfit} Objects

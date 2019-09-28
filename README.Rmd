@@ -121,10 +121,10 @@ plot(fit1, pars = c("Trt", "zBase"))
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
-predictors with the response, I recommend the `marginal_effects` method:
+predictors with the response, I recommend the `conditional_effects` method:
 
-```{r marginal_effects}
-plot(marginal_effects(fit1, effects = "zBase:Trt"))
+```{r conditional_effects}
+plot(conditional_effects(fit1, effects = "zBase:Trt"))
 ```
 
 This method uses some prediction functionality behind the scenes, which can also

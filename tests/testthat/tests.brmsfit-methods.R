@@ -141,29 +141,29 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(logLik(fit1)), c(nsamples(fit1), nobs(fit1)))
   expect_equal(dim(log_lik(fit2)), c(nsamples(fit2), nobs(fit2)))
   
-  # marginal_effects
-  me <- marginal_effects(fit1, resp = "count")
+  # conditional_effects
+  me <- conditional_effects(fit1, resp = "count")
   expect_equal(nrow(me[[2]]), 100)
   meplot <- plot(me, points = TRUE, rug = TRUE, 
                  ask = FALSE, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
-  me <- marginal_effects(fit1, "Trt", select_points = 0.1)
+  me <- conditional_effects(fit1, "Trt", select_points = 0.1)
   expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
   
-  me <- marginal_effects(fit1, "Exp:Age", surface = TRUE, 
-                         resolution = 15, too_far = 0.2)
+  me <- conditional_effects(fit1, "Exp:Age", surface = TRUE, 
+                            resolution = 15, too_far = 0.2)
   meplot <- plot(me, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   meplot <- plot(me, stype = "raster", plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
-  me <- marginal_effects(fit1, "Age", spaghetti = TRUE, nsamples = 10)
+  me <- conditional_effects(fit1, "Age", spaghetti = TRUE, nsamples = 10)
   expect_equal(nrow(attr(me$Age, "spaghetti")), 1000)
   meplot <- plot(me, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   expect_error(
-    marginal_effects(fit1, "Age", spaghetti = TRUE, surface = TRUE),
+    conditional_effects(fit1, "Age", spaghetti = TRUE, surface = TRUE),
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
   
@@ -173,60 +173,60 @@ test_that("all S3 methods have reasonable ouputs", {
     Exp = c(1, 3, 5)
   )
   exp_nrow <- nrow(mdata) * 100
-  me <- marginal_effects(fit1, effects = "Age", conditions = mdata)
+  me <- conditional_effects(fit1, effects = "Age", conditions = mdata)
   expect_equal(nrow(me[[1]]), exp_nrow)
   
   mdata$visit <- 1:3
-  me <- marginal_effects(fit1, re_formula = NULL, conditions = mdata)
+  me <- conditional_effects(fit1, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me$Age), exp_nrow)
   
-  me <- marginal_effects(
+  me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = rnorm(5))
   )
   expect_equal(nrow(me[[1]]), 200)
-  me <- marginal_effects(
+  me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = quantile)
   )
   expect_equal(nrow(me[[1]]), 200)
   
-  expect_error(marginal_effects(fit1, effects = "Trtc"), 
+  expect_error(conditional_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
-  expect_warning(marginal_effects(fit1, effects = c("Trtc", "Trt")), 
+  expect_warning(conditional_effects(fit1, effects = c("Trtc", "Trt")), 
                  "Some specified effects are invalid for this model")
-  expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
+  expect_error(conditional_effects(fit1, effects = "Trtc:a:b"), 
                "please use the 'conditions' argument")
   
   mdata$visit <- NULL
   mdata$patient <- 1
-  expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
-  me <- marginal_effects(fit2, re_formula = NULL, conditions = mdata)
+  expect_equal(nrow(conditional_effects(fit2)[[2]]), 100)
+  me <- conditional_effects(fit2, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me$Age), exp_nrow)
   
   expect_warning(
-    me4 <- marginal_effects(fit4),
+    me4 <- conditional_effects(fit4),
     "Predictions are treated as continuous variables"
   )
-  expect_true(is(me4, "brmsMarginalEffects"))
-  me4 <- marginal_effects(fit4, "x2", categorical = TRUE)
-  expect_true(is(me4, "brmsMarginalEffects"))
+  expect_true(is(me4, "brms_conditional_effects"))
+  me4 <- conditional_effects(fit4, "x2", categorical = TRUE)
+  expect_true(is(me4, "brms_conditional_effects"))
   
-  me5 <- marginal_effects(fit5)
-  expect_true(is(me5, "brmsMarginalEffects"))
+  me5 <- conditional_effects(fit5)
+  expect_true(is(me5, "brms_conditional_effects"))
   
-  me6 <- marginal_effects(fit6, nsamples = 40)
-  expect_true(is(me6, "brmsMarginalEffects"))
+  me6 <- conditional_effects(fit6, nsamples = 40)
+  expect_true(is(me6, "brms_conditional_effects"))
   
-  # marginal_smooths
-  ms <- marginal_smooths(fit1)
+  # conditional_smooths
+  ms <- conditional_smooths(fit1)
   expect_equal(nrow(ms[[1]]), 100)
-  expect_true(is(ms, "brmsMarginalEffects"))
+  expect_true(is(ms, "brms_conditional_effects"))
   
-  ms <- marginal_smooths(fit1, spaghetti = TRUE, nsamples = 10)
+  ms <- conditional_smooths(fit1, spaghetti = TRUE, nsamples = 10)
   expect_equal(nrow(attr(ms[[1]], "spaghetti")), 1000)
   
-  expect_error(marginal_smooths(fit1, smooths = "s3"),
+  expect_error(conditional_smooths(fit1, smooths = "s3"),
                "No valid smooth terms found in the model")
-  expect_error(marginal_smooths(fit2),
+  expect_error(conditional_smooths(fit2),
                "No valid smooth terms found in the model")
   
   # model.frame

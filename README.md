@@ -1,4 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <img src="man/figures/brms.png" width = 120 alt="brms Logo"/>[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width=120 alt="Stan Logo"/>](http://mc-stan.org)
 
 brms
@@ -10,7 +11,7 @@ Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://tra
 Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
 Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
-[![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://cran.r-project.org/package=brms)
+[![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://cran.rstudio.com/package=brms)
 
 Overview
 --------
@@ -18,21 +19,22 @@ Overview
 The **brms** package provides an interface to fit Bayesian generalized
 (non-)linear multivariate multilevel models using Stan, which is a C++
 package for performing full Bayesian inference (see
-<http://mc-stan.org/>). The formula syntax is very similar to that of
-the package lme4 to provide a familiar and simple interface for
-performing regression analyses. A wide range of response distributions
-are supported, allowing users to fit – among others – linear, robust
-linear, count data, survival, response times, ordinal, zero-inflated,
-and even self-defined mixture models all in a multilevel context.
-Further modeling options include non-linear and smooth terms,
-auto-correlation structures, censored data, missing value imputation,
-and quite a few more. In addition, all parameters of the response
-distribution can be predicted in order to perform distributional
-regression. Multivariate models (i.e., models with multiple response
-variables) can be fit, as well. Prior specifications are flexible and
-explicitly encourage users to apply prior distributions that actually
-reflect their beliefs. Model fit can easily be assessed and compared
-with posterior predictive checks, cross-validation, and Bayes factors.
+<a href="http://mc-stan.org/" class="uri">http://mc-stan.org/</a>). The
+formula syntax is very similar to that of the package lme4 to provide a
+familiar and simple interface for performing regression analyses. A wide
+range of response distributions are supported, allowing users to fit –
+among others – linear, robust linear, count data, survival, response
+times, ordinal, zero-inflated, and even self-defined mixture models all
+in a multilevel context. Further modeling options include non-linear and
+smooth terms, auto-correlation structures, censored data, missing value
+imputation, and quite a few more. In addition, all parameters of the
+response distribution can be predicted in order to perform
+distributional regression. Multivariate models (i.e., models with
+multiple response variables) can be fit, as well. Prior specifications
+are flexible and explicitly encourage users to apply prior distributions
+that actually reflect their beliefs. Model fit can easily be assessed
+and compared with posterior predictive checks, cross-validation, and
+Bayes factors.
 
 Resources
 ---------
@@ -86,16 +88,16 @@ summary(fit1)
 #> 
 #> Group-Level Effects: 
 #> ~patient (Number of levels: 59) 
-#>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.59      0.07     0.47     0.74        786 1.00
+#>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> sd(Intercept)     0.58      0.07     0.46     0.73 1.01      757     1812
 #> 
 #> Population-Level Effects: 
-#>            Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept      1.78      0.12     1.53     2.02        691 1.01
-#> zAge           0.09      0.09    -0.08     0.27        758 1.00
-#> zBase          0.70      0.12     0.47     0.96        496 1.01
-#> Trt1          -0.27      0.17    -0.62     0.06        650 1.01
-#> zBase:Trt1     0.06      0.17    -0.27     0.38        557 1.01
+#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> Intercept      1.77      0.12     1.54     2.01 1.01      719      946
+#> zAge           0.10      0.08    -0.07     0.27 1.00      778     1318
+#> zBase          0.71      0.12     0.47     0.95 1.01      593     1323
+#> Trt1          -0.27      0.17    -0.61     0.05 1.01      756     1270
+#> zBase:Trt1     0.05      0.16    -0.26     0.37 1.01      764     1131
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -139,13 +141,14 @@ plot(fit1, pars = c("Trt", "zBase"))
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
-predictors with the response, I recommend the `marginal_effects` method:
+predictors with the response, I recommend the `conditional_effects`
+method:
 
 ``` r
-plot(marginal_effects(fit1, effects = "zBase:Trt"))
+plot(conditional_effects(fit1, effects = "zBase:Trt"))
 ```
 
-<img src="man/figures/README-marginal_effects-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="man/figures/README-conditional_effects-1.png" width="60%" style="display: block; margin: auto;" />
 
 This method uses some prediction functionality behind the scenes, which
 can also be called directly. Suppose that we want to predict responses
@@ -157,8 +160,8 @@ previous seizures. Than we can use
 newdata <- data.frame(Trt = c(0, 1), zAge = 0, zBase = 0)
 predict(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error Q2.5 Q97.5
-#> [1,]    5.973  2.567181    2    12
-#> [2,]    4.548  2.129984    1     9
+#> [1,]  5.92175  2.487403    2    11
+#> [2,]  4.57475  2.168084    1     9
 ```
 
 We need to set `re_formula = NA` in order not to condition of the
@@ -169,8 +172,8 @@ line.
 ``` r
 fitted(fit1, newdata = newdata, re_formula = NA)
 #>      Estimate Est.Error     Q2.5    Q97.5
-#> [1,] 5.946417 0.7422929 4.637616 7.540027
-#> [2,] 4.535893 0.5274356 3.588178 5.640799
+#> [1,] 5.932893 0.6985409 4.663774 7.447649
+#> [2,] 4.545819 0.5293890 3.574081 5.647261
 ```
 
 Both methods return the same estimate (up to random error), while the
@@ -194,10 +197,48 @@ leave-one-out cross-validation.
 
 ``` r
 loo(fit1, fit2)
-#>               LOOIC    SE
-#> fit1        1344.40 75.20
-#> fit2        1183.91 27.21
-#> fit1 - fit2  160.48 57.69
+#> Output of model 'fit1':
+#> 
+#> Computed from 4000 by 236 log-likelihood matrix
+#> 
+#>          Estimate   SE
+#> elpd_loo   -672.1 36.5
+#> p_loo        94.5 14.2
+#> looic      1344.2 73.1
+#> ------
+#> Monte Carlo SE of elpd_loo is NA.
+#> 
+#> Pareto k diagnostic values:
+#>                          Count Pct.    Min. n_eff
+#> (-Inf, 0.5]   (good)     209   88.6%   368       
+#>  (0.5, 0.7]   (ok)        19    8.1%   128       
+#>    (0.7, 1]   (bad)        6    2.5%   35        
+#>    (1, Inf)   (very bad)   2    0.8%   5         
+#> See help('pareto-k-diagnostic') for details.
+#> 
+#> Output of model 'fit2':
+#> 
+#> Computed from 4000 by 236 log-likelihood matrix
+#> 
+#>          Estimate   SE
+#> elpd_loo   -594.9 13.8
+#> p_loo       107.5  6.9
+#> looic      1189.8 27.5
+#> ------
+#> Monte Carlo SE of elpd_loo is NA.
+#> 
+#> Pareto k diagnostic values:
+#>                          Count Pct.    Min. n_eff
+#> (-Inf, 0.5]   (good)      84   35.6%   675       
+#>  (0.5, 0.7]   (ok)       100   42.4%   209       
+#>    (0.7, 1]   (bad)       45   19.1%   42        
+#>    (1, Inf)   (very bad)   7    3.0%   11        
+#> See help('pareto-k-diagnostic') for details.
+#> 
+#> Model comparisons:
+#>      elpd_diff se_diff
+#> fit2   0.0       0.0  
+#> fit1 -77.2      27.1
 ```
 
 Since lower `LOOIC` values indicate better fit, we see that the model
@@ -242,7 +283,7 @@ Approximate leave-one-out cross-validation using `loo` and related
 methods is done via the **loo** package. Marginal likelihood based
 methods such as `bayes_factor` are realized by means of the
 **bridgesampling** package. Splines specified via the `s` and `t2`
-functions rely on **mgcv**. If you use some of these features, please 
+functions rely on **mgcv**. If you use some of these features, please
 also consider citing the related packages.
 
 FAQ
@@ -266,11 +307,12 @@ remotes::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program
-Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>)
+Rtools (available on
+<a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>)
 comes with a C++ compiler for Windows. On Mac, you should install Xcode.
 For further instructions on how to get the compilers running, see the
 prerequisites section on
-<https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+<a href="https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started" class="uri">https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started</a>.
 
 ### I am new to brms. Where can I start?
 
