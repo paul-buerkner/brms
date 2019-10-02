@@ -562,12 +562,14 @@ remove_autocor <- function(x) {
 # subset matrices stored in 'cor_brms' objects
 # @param x a brmsfit object to be updated
 # @param subset indices of observations to keep
-# @param autocor optional (list of) 'cor_brms' objects
+# @param autocor optional (list of) 'cor_brms' objects 
 #   from which to take matrices
+# @param incl_car also subset adjacency matrices of CAR models?
+#   see 'add_new_objects' for why we often need to ignore CAR models
 # @return an updated brmsfit object
-subset_autocor <- function(x, subset, autocor = NULL) {
+subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
   .subset_autocor <- function(autocor) {
-    if (is.cor_sar(autocor)) {
+    if (is.cor_sar(autocor) || is.cor_car(autocor)) {
       autocor$W <- autocor$W[subset, subset, drop = FALSE]
     } else if (is.cor_fixed(autocor)) {
       autocor$V <- autocor$V[subset, subset, drop = FALSE]
@@ -579,11 +581,17 @@ subset_autocor <- function(x, subset, autocor = NULL) {
   }
   if (is_mv(x)) {
     for (i in seq_along(x$formula$forms)) {
-      new_autocor <- .subset_autocor(autocor[[i]])
-      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+      dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
+      if (!dont_subset) {
+        new_autocor <- .subset_autocor(autocor[[i]])
+        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+      }
     }
   } else {
-    x$formula$autocor <- x$autocor <- .subset_autocor(autocor)
+    dont_subset <- is.cor_car(autocor) && !incl_car
+    if (!dont_subset) {
+      x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
+    }
   }
   # prevents double updating in add_new_objects()
   structure(x, autocor_updated = TRUE)

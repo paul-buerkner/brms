@@ -10,6 +10,7 @@ censored models thanks to Andrew Milne. (#744)
 argument `subset` thanks to Ruben Arslan.
 * Fix out-of-sample predictions of AR models when predicting
 more than one step ahead.
+* Fix problems when using `reloo` or `kfold` with CAR models.
 
 ### Other Changes
 

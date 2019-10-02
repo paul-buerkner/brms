@@ -381,15 +381,17 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   .update_autocor <- function(autocor, resp = "") {
     resp <- usc(resp)
     if (is.cor_sar(autocor)) {
-      if (paste0("W", resp) %in% names(new_objects)) {
-        autocor <- cor_sar(new_objects$W, type = autocor$type)
+      W_name <- paste0("W", resp)
+      if (W_name %in% names(new_objects)) {
+        autocor$W <- cor_sar(new_objects[[W_name]])$W
       } else {
         message("Using the identity matrix as weighting matrix by default")
         autocor$W <- diag(nrow(newdata))
       }
     } else if (is.cor_fixed(autocor)) {
-      if (paste0("V", resp) %in% names(new_objects)) {
-        autocor <- cor_fixed(new_objects$V)
+      V_name <- paste0("V", resp)
+      if (V_name %in% names(new_objects)) {
+        autocor$V <- cor_fixed(new_objects[[V_name]])$V
       } else {
         message("Using the median variance by default")
         median_V <- median(diag(autocor$V), na.rm = TRUE)

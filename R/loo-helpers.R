@@ -478,11 +478,11 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   .reloo <- function(j) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- subset_autocor(x, -omitted)
+    fit_j <- subset_autocor(x, -omitted, incl_car = TRUE)
     up_args$object <- fit_j
     up_args$newdata <- mf_omitted
     fit_j <- SW(do_call(update, up_args))
-    fit_j <- subset_autocor(fit_j, omitted, autocor = loo$autocor)
+    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
     ll_args$object <- fit_j
     ll_args$newdata <- mf[omitted, , drop = FALSE]
     return(do_call(log_lik, ll_args))
@@ -636,7 +636,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
       omitted <- predicted <- which(folds == k)
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit <- subset_autocor(x, -omitted)
+    fit <- subset_autocor(x, -omitted, incl_car = TRUE)
     up_args$object <- fit
     up_args$newdata <- mf_omitted
     fit <- SW(do_call(update, up_args))
