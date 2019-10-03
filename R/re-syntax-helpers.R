@@ -227,8 +227,9 @@ update_re_terms.formula <- function(formula, re_formula = NULL) {
       old_re_terms
     )
     new_formula <- rename(new_formula, rm_terms, "")
-    if (grepl("~$", new_formula)) {
-      # lhs only formulas are not allowed
+    if (grepl("~\\+*$", new_formula)) {
+      # lhs only formulas are syntactically invalid
+      # also check for trailing '+' signs (#769)
       new_formula <- paste(new_formula, "1")
     }
   }
