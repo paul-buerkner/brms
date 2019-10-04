@@ -76,7 +76,11 @@ fitted_internal.brmsdraws <- function(
         out <- fitted_fun(draws)
       }
     } else {
-      mus <- dpars[dpar_class(dpars) %in% "mu"]
+      if (conv_cats_dpars(draws$family)) {
+        mus <- dpars[grepl("^mu", dpars)] 
+      } else {
+        mus <- dpars[dpar_class(dpars) %in% "mu"]
+      }
       if (length(mus) == 1L) {
         out <- get_dpar(draws, dpar = mus, ilink = FALSE)
       } else {
