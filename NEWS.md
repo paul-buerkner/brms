@@ -11,6 +11,8 @@ argument `subset` thanks to Ruben Arslan.
 * Fix out-of-sample predictions of AR models when predicting
 more than one step ahead.
 * Fix problems when using `reloo` or `kfold` with CAR models.
+* Fix problems when using `fitted(..., scale = "linear")` with 
+multinomial models thanks to Santiago Olivella. (#770)
 
 ### Other Changes
 
