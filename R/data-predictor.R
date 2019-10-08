@@ -180,6 +180,7 @@ data_re <- function(bterms, data, ranef) {
     Z <- get_model_matrix(r$form[[1]], data = data, rename = FALSE)
     idp <- paste0(r$id[1], usc(combine_prefix(px)))
     Znames <- paste0("Z_", idp, "_", r$cn)
+    Zname <- paste0("Z_", idp)
     if (r$gtype[1] == "mm") {
       ng <- length(r$gcall[[1]]$groups)
       if (r$type[1] == "cs") {
@@ -218,9 +219,10 @@ data_re <- function(bterms, data, ranef) {
       if (r$type[1] == "mmc") {
         stop2("'mmc' is only supported in multi-membership terms.")
       }
-      for (j in seq_cols(Z)) {
-        out[[Znames[j]]] <- as.array(Z[, j])
-      }
+      # for (j in seq_cols(Z)) {
+      #   out[[Znames[j]]] <- as.array(Z[, j])
+      # }
+      out[[Zname]] <- Z
     }
   }
   out

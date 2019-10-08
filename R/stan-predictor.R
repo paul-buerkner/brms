@@ -605,8 +605,14 @@ stan_re <- function(ranef, prior, ...) {
         )
       }
     } else {
-      str_add(out$data) <- cglue(
-        "  vector[N{usc(r$resp[reqZ])}] Z_{idp[reqZ]}_{r$cn[reqZ]};\n"
+      # str_add(out$data) <- cglue(
+      #   "  vector[N{usc(r$resp[reqZ])}] Z_{idp[reqZ]}_{r$cn[reqZ]};\n"
+      # )
+      # ur <- unique(r)
+      # uidp <- paste0(ur$id, p)
+      
+      str_add(out$data) <- glue(
+        "  matrix[N, M_{id}] Z_{id};\n"
       )
     }
   }
@@ -709,11 +715,11 @@ stan_re <- function(ranef, prior, ...) {
         cor = glue("cor_{id}"), ncol = glue("M_{id}")
       )
     }
-    str_add(out$tpar_def) <- 
-      "  // using vectors speeds up indexing in loops\n"
-    str_add(out$tpar_def) <- cglue(
-      "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
-    )
+    # str_add(out$tpar_def) <- 
+    #   "  // using vectors speeds up indexing in loops\n"
+    # str_add(out$tpar_def) <- cglue(
+    #   "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
+    # )
   } else {
     # single or uncorrelated group-level effects
     str_add(out$par) <- glue(
@@ -1324,14 +1330,15 @@ stan_eta_combine <- function(out, bterms, ranef, ilink = c("", ""), ...) {
   px <- check_prefix(bterms)
   resp <- usc(bterms$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
+  str_add(out$eta) <- stan_eta_re(ranef, px = px)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
   str_add(out$model_def) <- glue(
     "  // initialize linear predictor term\n",
     "  vector[N{resp}] {eta} ={out$eta};\n"
   )
   out$eta <- NULL
-  str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
-  if (nzchar(out$loopeta)) {
+  #str_add(out$loopeta) <- stan_eta_re(ranef, px = px)
+  if (!is.null(out$loopeta) && nzchar(out$loopeta)) {
     # parts of eta are computed in a loop over observations
     out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
     str_add(out$model_comp_eta_loop) <- glue(
@@ -1410,8 +1417,11 @@ stan_eta_re <- function(ranef, px = list()) {
         ) 
       }
     } else {
-      str_add(eta_re) <- cglue(
-        " + r_{idp}_{r$cn}[J_{idresp}[n]] * Z_{idp}_{r$cn}[n]"
+      # str_add(eta_re) <- cglue(
+      #   " + r_{idp}_{r$cn}[J_{idresp}[n]] * Z_{idp}_{r$cn}[n]"
+      # )
+      str_add(eta_re) <- glue(
+        " + rows_dot_product(Z_{id}, r_{id}[J_{id}])"
       )
     }
   }
