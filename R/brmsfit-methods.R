@@ -459,7 +459,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 
 #' @rdname posterior_samples
 #' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = FALSE, ...) {
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, ...) {
   out <- posterior_samples(x, ..., as.matrix = FALSE)
   data.frame(out, row.names = row.names, check.names = !optional)
 }
