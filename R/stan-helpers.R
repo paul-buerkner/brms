@@ -286,7 +286,7 @@ stan_autocor <- function(bterms, prior) {
     }
     str_add(out$tpar_def) <- glue(
       "  // cholesky factor of the autocorrelation matrix\n",
-      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor;\n"               
+      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"               
     )
     if (is.cor_arma(autocor)) {
       if (has_ar_only(autocor)) {
@@ -326,7 +326,7 @@ stan_autocor <- function(bterms, prior) {
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(zerr | 0, 1);\n"
+        "  target += normal_lpdf(zerr{p} | 0, 1);\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "sderr", px = px, suffix = p
