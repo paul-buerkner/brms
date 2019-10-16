@@ -315,7 +315,7 @@ stan_autocor <- function(bterms, prior) {
       }
       str_add(out$par) <- glue(
         "  vector[N{p}] zerr{p};  // unscaled residuals\n",
-        "  real<lower=0> sderr;  // SD of residuals\n"
+        "  real<lower=0> sderr{p};  // SD of residuals\n"
       )
       str_add(out$tpar_def) <- glue(
         "  vector[N{p}] err{p};  // actual residuals\n"
