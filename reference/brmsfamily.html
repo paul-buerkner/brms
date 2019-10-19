@@ -72,7 +72,7 @@ the custom_family function." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -178,7 +178,7 @@ the <code><a href='custom_family.html'>custom_family</a></code> function.</p>
   <span class='kw'>link_disc</span> <span class='kw'>=</span> <span class='st'>"log"</span>, <span class='kw'>link_bs</span> <span class='kw'>=</span> <span class='st'>"log"</span>, <span class='kw'>link_ndt</span> <span class='kw'>=</span> <span class='st'>"log"</span>,
   <span class='kw'>link_bias</span> <span class='kw'>=</span> <span class='st'>"logit"</span>, <span class='kw'>link_xi</span> <span class='kw'>=</span> <span class='st'>"log1p"</span>, <span class='kw'>link_alpha</span> <span class='kw'>=</span> <span class='st'>"identity"</span>,
   <span class='kw'>link_quantile</span> <span class='kw'>=</span> <span class='st'>"logit"</span>, <span class='kw'>threshold</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"flexible"</span>, <span class='st'>"equidistant"</span>),
-  <span class='kw'>refcat</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+  <span class='kw'>refcat</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>bhaz</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
 
 <span class='fu'>student</span>(<span class='kw'>link</span> <span class='kw'>=</span> <span class='st'>"identity"</span>, <span class='kw'>link_sigma</span> <span class='kw'>=</span> <span class='st'>"log"</span>, <span class='kw'>link_nu</span> <span class='kw'>=</span> <span class='st'>"logm1"</span>)
 
@@ -368,6 +368,10 @@ categorical, multinomial, and dirichlet models. If <code>NULL</code> (the
 default), the first category is used as the reference. If <code>NA</code>, all
 categories will be predicted, which requires strong priors or carefully
 specified predictor terms in order to lead to an identified model.</p></td>
+    </tr>
+    <tr>
+      <th>bhaz</th>
+      <td><p>Currently for experimental purposes only.</p></td>
     </tr>
     </table>
     

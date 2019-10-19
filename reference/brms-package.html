@@ -72,7 +72,7 @@ performing regression analyses." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -184,12 +184,12 @@ on the fly via <code><a href='make_stancode.html'>make_stancode</a></code>, prep
 <p>Subsequently, a large number of post-processing methods can be applied: 
 To get an overview on the estimated parameters, 
 <code><a href='summary.brmsfit.html'>summary</a></code> or 
-<code><a href='marginal_effects.html'>marginal_effects</a></code> 
+<code><a href='conditional_effects.html'>conditional_effects</a></code> 
 are perfectly suited. Detailed visual analyses can be performed by applying 
 the <code><a href='pp_check.brmsfit.html'>pp_check</a></code> and <code><a href='stanplot.html'>stanplot</a></code> methods, which both
-rely on the <span class="pkg"><a href='https://www.rdocumentation.org/packages/bayesplot/topics/bayesplot-package'>bayesplot</a></span> package.
+rely on the <span class="pkg"><a href='https://mc-stan.org/bayesplot/reference/bayesplot-package.html'>bayesplot</a></span> package.
 Model comparsions can be done via <code><a href='loo.brmsfit.html'>loo</a></code> and <code><a href='waic.brmsfit.html'>waic</a></code>, 
-which make use of the <span class="pkg"><a href='https://www.rdocumentation.org/packages/loo/topics/loo-package'>loo</a></span> package as well as
+which make use of the <span class="pkg"><a href='https://mc-stan.org/loo/reference/loo-package.html'>loo</a></span> package as well as
 via <code><a href='bayes_factor.brmsfit.html'>bayes_factor</a></code> which relies on the <span class="pkg">bridgesampling</span> package. 
 For a full list of methods to apply, type <code><a href='https://www.rdocumentation.org/packages/utils/topics/methods'>methods(class = "brmsfit")</a></code>.</p>
 <p>Because <span class="pkg">brms</span> is based on <span class="pkg">Stan</span>, a C++ compiler is required. 

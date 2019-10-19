@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -165,7 +165,7 @@
       <tr>
         
         <td>
-          <p><code><a href="addition-terms.html">resp_se()</a></code> <code><a href="addition-terms.html">resp_weights()</a></code> <code><a href="addition-terms.html">resp_trials()</a></code> <code><a href="addition-terms.html">resp_cat()</a></code> <code><a href="addition-terms.html">resp_dec()</a></code> <code><a href="addition-terms.html">resp_cens()</a></code> <code><a href="addition-terms.html">resp_trunc()</a></code> <code><a href="addition-terms.html">resp_mi()</a></code> <code><a href="addition-terms.html">resp_subset()</a></code> </p>
+          <p><code><a href="addition-terms.html">resp_se()</a></code> <code><a href="addition-terms.html">resp_weights()</a></code> <code><a href="addition-terms.html">resp_trials()</a></code> <code><a href="addition-terms.html">resp_cat()</a></code> <code><a href="addition-terms.html">resp_dec()</a></code> <code><a href="addition-terms.html">resp_cens()</a></code> <code><a href="addition-terms.html">resp_trunc()</a></code> <code><a href="addition-terms.html">resp_mi()</a></code> <code><a href="addition-terms.html">resp_rate()</a></code> <code><a href="addition-terms.html">resp_subset()</a></code> <code><a href="addition-terms.html">resp_vreal()</a></code> <code><a href="addition-terms.html">resp_vint()</a></code> </p>
         </td>
         <td><p>Additional Response Information</p></td>
       </tr><tr>
@@ -285,6 +285,18 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="conditional_effects.html">conditional_effects()</a></code> <code><a href="conditional_effects.html">plot(<i>&lt;brms_conditional_effects&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Display Conditional Effects of Predictors</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="conditional_smooths.html">conditional_smooths()</a></code> </p>
+        </td>
+        <td><p>Display Smooth Terms</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="control_params.html">control_params()</a></code> </p>
         </td>
         <td><p>Extract Control Parameters of the NUTS Sampler</p></td>
@@ -312,6 +324,12 @@
           <p><code><a href="cor_car.html">cor_car()</a></code> <code><a href="cor_car.html">cor_icar()</a></code> </p>
         </td>
         <td><p>Spatial conditional autoregressive (CAR) structures</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="cor_cosy.html">cor_cosy()</a></code> </p>
+        </td>
+        <td><p>Compound Symmetry (COSY) Correlation Structure</p></td>
       </tr><tr>
         
         <td>
@@ -437,7 +455,7 @@
         <td>
           <p><code><a href="horseshoe.html">horseshoe()</a></code> </p>
         </td>
-        <td><p>Set up a horseshoe prior in <span class="pkg">brms</span></p></td>
+        <td><p>Regularized horseshoe priors in <span class="pkg">brms</span></p></td>
       </tr><tr>
         
         <td>
@@ -501,7 +519,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="is.cor_brms.html">is.cor_brms()</a></code> <code><a href="is.cor_brms.html">is.cor_arma()</a></code> <code><a href="is.cor_brms.html">is.cor_sar()</a></code> <code><a href="is.cor_brms.html">is.cor_car()</a></code> <code><a href="is.cor_brms.html">is.cor_fixed()</a></code> </p>
+          <p><code><a href="is.cor_brms.html">is.cor_brms()</a></code> <code><a href="is.cor_brms.html">is.cor_arma()</a></code> <code><a href="is.cor_brms.html">is.cor_cosy()</a></code> <code><a href="is.cor_brms.html">is.cor_sar()</a></code> <code><a href="is.cor_brms.html">is.cor_car()</a></code> <code><a href="is.cor_brms.html">is.cor_fixed()</a></code> </p>
         </td>
         <td><p>Check if argument is a correlation structure</p></td>
       </tr><tr>
@@ -615,18 +633,6 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="marginal_effects.html">marginal_effects()</a></code> <code><a href="marginal_effects.html">plot(<i>&lt;brmsMarginalEffects&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Display Marginal Effects of Predictors</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="marginal_smooths.html">marginal_smooths()</a></code> </p>
-        </td>
-        <td><p>Display Smooth Terms</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="me.html">me()</a></code> </p>
         </td>
         <td><p>Predictors with Measurement Error in <span class="pkg">brms</span> Models</p></td>
@@ -699,7 +705,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="nsamples.html">nsamples()</a></code> </p>
+          <p><code><a href="nsamples.brmsfit.html">nsamples(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Number of Posterior Samples</p></td>
       </tr><tr>
@@ -825,7 +831,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="reloo.html">reloo()</a></code> </p>
+          <p><code><a href="reloo.brmsfit.html">reloo()</a></code> </p>
         </td>
         <td><p>Compute exact cross-validation for problematic observations</p></td>
       </tr><tr>
@@ -855,7 +861,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="set_prior.html">set_prior()</a></code> <code><a href="set_prior.html">prior()</a></code> <code><a href="set_prior.html">prior_()</a></code> <code><a href="set_prior.html">prior_string()</a></code> </p>
+          <p><code><a href="set_prior.html">set_prior()</a></code> <code><a href="set_prior.html">prior()</a></code> <code><a href="set_prior.html">prior_()</a></code> <code><a href="set_prior.html">prior_string()</a></code> <code><a href="set_prior.html">empty_prior()</a></code> </p>
         </td>
         <td><p>Prior Definitions for <span class="pkg">brms</span> Models</p></td>
       </tr><tr>

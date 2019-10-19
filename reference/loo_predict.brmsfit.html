@@ -66,7 +66,7 @@ function of the loo package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -154,7 +154,7 @@ function of the loo package." />
 
     <div class="ref-description">
     
-    <p>These functions are wrappers around the <code><a href='https://www.rdocumentation.org/packages/loo/topics/E_loo'>E_loo</a></code> 
+    <p>These functions are wrappers around the <code><a href='https://mc-stan.org/loo/reference/E_loo.html'>E_loo</a></code> 
 function of the <span class="pkg">loo</span> package.</p>
     
     </div>
@@ -192,8 +192,8 @@ Only used if <code>type = quantile</code>.</p></td>
     </tr>
     <tr>
       <th>psis_object</th>
-      <td><p>An optional object returend by <code><a href='https://www.rdocumentation.org/packages/loo/topics/psis'>psis</a></code>. 
-If <code>psis_object</code> is missing then <code><a href='https://www.rdocumentation.org/packages/loo/topics/psis'>psis</a></code> is executed 
+      <td><p>An optional object returend by <code><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></code>. 
+If <code>psis_object</code> is missing then <code><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></code> is executed 
 internally, which may be time consuming for models fit to very large datasets.</p></td>
     </tr>
     <tr>
@@ -248,7 +248,7 @@ default is <code>prob = 0.9</code> (\(90\)% intervals).</p></td>
 <span class='fu'>loo_predictive_interval</span>(<span class='no'>fit</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.8</span>)
 
 <span class='co'>## optionally log-weights can be pre-computed and reused</span>
-<span class='no'>psis</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>loo</span><span class='kw ns'>::</span><span class='fu'><a href='https://www.rdocumentation.org/packages/loo/topics/psis'>psis</a></span>(-<span class='fu'><a href='log_lik.brmsfit.html'>log_lik</a></span>(<span class='no'>fit</span>), <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fl'>2</span>)
+<span class='no'>psis</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>loo</span><span class='kw ns'>::</span><span class='fu'><a href='https://mc-stan.org/loo/reference/psis.html'>psis</a></span>(-<span class='fu'><a href='log_lik.brmsfit.html'>log_lik</a></span>(<span class='no'>fit</span>), <span class='kw'>cores</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'>loo_predictive_interval</span>(<span class='no'>fit</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.8</span>, <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='no'>psis</span>)
 <span class='fu'>loo_predict</span>(<span class='no'>fit</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"var"</span>, <span class='kw'>psis_object</span> <span class='kw'>=</span> <span class='no'>psis</span>)
 <span class='co'># }</span><div class='input'>

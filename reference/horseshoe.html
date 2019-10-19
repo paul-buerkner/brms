@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Set up a horseshoe prior in <span class="pkg">brms</span> — horseshoe • brms</title>
+<title>Regularized horseshoe priors in <span class="pkg">brms</span> — horseshoe • brms</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,11 +30,12 @@
 
 
 
-<meta property="og:title" content="Set up a horseshoe prior in <span class="pkg">brms</span> — horseshoe" />
+<meta property="og:title" content="Regularized horseshoe priors in <span class="pkg">brms</span> — horseshoe" />
 
-<meta property="og:description" content="Function used to set up a horseshoe prior for population-level effects 
-in brms. The function does not evaluate its arguments --
-it exists purely to help set up the model." />
+<meta property="og:description" content="Function used to set up regularized horseshoe priors and related
+hierarchical shrinkage priors for population-level effects in brms. The
+function does not evaluate its arguments -- it exists purely to help set up
+the model." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -67,7 +68,7 @@ it exists purely to help set up the model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -148,16 +149,17 @@ it exists purely to help set up the model." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Set up a horseshoe prior in <span class="pkg">brms</span></h1>
+    <h1>Regularized horseshoe priors in <span class="pkg">brms</span></h1>
     <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/priors.R'><code>R/priors.R</code></a></small>
     <div class="hidden name"><code>horseshoe.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Function used to set up a horseshoe prior for population-level effects 
-in <span class="pkg">brms</span>. The function does not evaluate its arguments --
-it exists purely to help set up the model.</p>
+    <p>Function used to set up regularized horseshoe priors and related
+hierarchical shrinkage priors for population-level effects in <span class="pkg">brms</span>. The
+function does not evaluate its arguments -- it exists purely to help set up
+the model.</p>
     
     </div>
 
@@ -182,12 +184,17 @@ multiplied by the residual standard deviation parameter <code>sigma</code>.</p><
     <tr>
       <th>df_global</th>
       <td><p>Degrees of freedom of student-t prior of the 
-global shrinkage parameter. Defaults to <code>1</code>.</p></td>
+global shrinkage parameter. Defaults to <code>1</code>. If <code>df_global</code>
+is greater <code>1</code>, the shape of the prior will no longer resemble
+a horseshoe and it may be more appropriately called an hierarchical
+shrinkage prior in this case.</p></td>
     </tr>
     <tr>
       <th>scale_slab</th>
       <td><p>Scale of the student-t prior of the regularization
-parameter. Defaults to <code>2</code>.</p></td>
+parameter. Defaults to <code>2</code>. The original unregularized horseshoe 
+prior is obtained by setting <code>scale_slab</code> to infinite, which
+we can approximate in practice by setting it to a very large real value.</p></td>
     </tr>
     <tr>
       <th>df_slab</th>

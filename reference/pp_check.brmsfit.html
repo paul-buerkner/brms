@@ -66,7 +66,7 @@ of the bayesplot package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -173,7 +173,7 @@ of the <span class="pkg">bayesplot</span> package.</p>
     <tr>
       <th>type</th>
       <td><p>Type of the ppc plot as given by a character string.
-See <code><a href='https://www.rdocumentation.org/packages/bayesplot/topics/PPC-overview'>PPC</a></code> for an overview
+See <code><a href='https://mc-stan.org/bayesplot/reference/PPC-overview.html'>PPC</a></code> for an overview
 of currently supported types. You may also use an invalid
 type (e.g. <code>type = "xyz"</code>) to get a list of supported 
 types in the resulting error message.</p></td>
@@ -201,7 +201,10 @@ and ignored otherwise.</p></td>
     <tr>
       <th>newdata</th>
       <td><p>An optional data.frame for which to evaluate predictions. If
-<code>NULL</code> (default), the original data of the model is used.</p></td>
+<code>NULL</code> (default), the original data of the model is used.
+<code>NA</code> values within factors are interpreted as if all dummy
+variables of this factor are zero. This allows, for instance, to make
+predictions of the grand mean when using sum coding.</p></td>
     </tr>
     <tr>
       <th>resp</th>
@@ -228,8 +231,8 @@ as well as to the PPC function specified in <code>type</code>.</p></td>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>For a detailed explanation of each of the ppc functions, 
-see the <code><a href='https://www.rdocumentation.org/packages/bayesplot/topics/PPC-overview'>PPC</a></code> 
-documentation of the <span class="pkg"><a href='https://www.rdocumentation.org/packages/bayesplot/topics/bayesplot-package'>bayesplot</a></span> 
+see the <code><a href='https://mc-stan.org/bayesplot/reference/PPC-overview.html'>PPC</a></code> 
+documentation of the <span class="pkg"><a href='https://mc-stan.org/bayesplot/reference/bayesplot-package.html'>bayesplot</a></span> 
 package.</p>
     
 

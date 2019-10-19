@@ -67,7 +67,7 @@ models for all parameters of the assumed response distribution." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -401,7 +401,8 @@ with highly correlated predictors.</p></td>
   <code>fun(&lt;variable&gt;)</code> separated by <code>+</code> each providing special 
   information on the response variable. <code>fun</code> can be replaced with 
   either <code>se</code>, <code>weights</code>, <code>subset</code>, <code>cens</code>, <code>trunc</code>, 
-  <code>trials</code>, <code>cat</code>, or <code>dec</code>. Their meanings are explained below.
+  <code>trials</code>, <code>cat</code>, <code>dec</code>, <code>rate</code>, <code>vreal</code>, or
+  <code>vint</code>. Their meanings are explained below.
   (see also <code><a href='addition-terms.html'>addition-terms</a></code>).</p>  
 <p>For families <code>gaussian</code>, <code>student</code> and <code>skew_normal</code>, it is 
   possible to specify standard errors of the observations, thus allowing 
@@ -434,6 +435,13 @@ with highly correlated predictors.</p></td>
   write <code>y | subset(sub) ~ predictors</code> so that <code>y</code> is
   predicted only for those observations for which <code>sub</code> evaluates
   to <code>TRUE</code>.</p>  
+<p>For log-linear models such as poisson models, <code>rate</code> may be used
+  in the <code>aterms</code> part to specify the denomintor of a response that
+  is expressed as a rate. The numerator is given by the actual response
+  variable and has a distribution according to the family as usual. Using
+  <code>rate(denom)</code> is equivalent to adding <code><a href='https://www.rdocumentation.org/packages/stats/topics/offset'>offset(log(denom))</a></code> to
+  the linear predictor of the main parameter but the former is arguably
+  more convenient and explicit.</p>  
 <p>With the exception of categorical, ordinal, and mixture families, 
   left, right, and interval censoring can be modeled through 
   <code>y | cens(censored) ~ predictors</code>. The censoring variable 
@@ -479,10 +487,14 @@ with highly correlated predictors.</p></td>
   will be treated as a response on the lower boundary. Alternatively,
   the variable passed to <code>dec</code> might also be a character vector 
   consisting of <code>'lower'</code> and <code>'upper'</code>.</p>
-<p>Multiple addition terms may be specified at the same time using 
-  the <code>+</code> operator, for instance <br />
-  <code>formula = yi | se(sei) + cens(censored) ~ 1</code> 
-  for a censored meta-analytic model.</p>  
+<p>For custom families, it is possible to pass an abitrary number of real and
+  integer vectors via the addition terms <code>vreal</code> and <code>vint</code>,
+  respectively. An example is provided in
+  <code><a href='../articles/brms_customfamilies.html'>vignette('brms_customfamilies')</a></code>.</p>
+<p>Multiple addition terms may be specified at the same time using the
+  <code>+</code> operator. For example, the formula
+  <code>formula = yi | se(sei) + cens(censored) ~ 1</code> implies a censored 
+  meta-analytic model.</p>  
 <p>The addition argument <code>disp</code> (short for dispersion) 
   has been removed in version 2.0. You may instead use the 
   distributional regression approach by specifying
@@ -504,9 +516,9 @@ with highly correlated predictors.</p></td>
   details on setting priors on population-level intercepts, see
   <code><a href='set_prior.html'>set_prior</a></code>.</p>  
 <p>This behavior can be avoided by using the reserved 
-  (and internally generated) variable <code>intercept</code>. 
+  (and internally generated) variable <code>Intercept</code>. 
   Instead of <code>y ~ x</code>, you may write
-  <code>y ~ 0 + intercept + x</code>. This way, priors can be
+  <code>y ~ 0 + Intercept + x</code>. This way, priors can be
   defined on the real intercept, directly. In addition,
   the intercept is just treated as an ordinary population-level effect
   and thus priors defined on <code>b</code> will also apply to it. 

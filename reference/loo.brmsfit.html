@@ -67,7 +67,7 @@ For more details see loo." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -157,7 +157,7 @@ For more details see loo." />
     
     <p>Perform approximate leave-one-out cross-validation based 
 on the posterior likelihood using the <span class="pkg">loo</span> package.
-For more details see <code><a href='https://www.rdocumentation.org/packages/loo/topics/loo'>loo</a></code>.</p>
+For more details see <code><a href='https://mc-stan.org/loo/reference/loo.html'>loo</a></code>.</p>
     
     </div>
 
@@ -176,7 +176,9 @@ For more details see <code><a href='https://www.rdocumentation.org/packages/loo/
     <tr>
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
-passed to the underlying post-processing functions.</p></td>
+passed to the underlying post-processing functions.
+In particular, see <code><a href='extract_draws.html'>extract_draws</a></code> for further
+supported arguments.</p></td>
     </tr>
     <tr>
       <th>compare</th>
@@ -199,7 +201,7 @@ into memory issues, <code>pointwise = TRUE</code> is the way to go.</p></td>
     </tr>
     <tr>
       <th>reloo</th>
-      <td><p>Logical; Indicate whether <code><a href='reloo.html'>reloo</a></code> 
+      <td><p>Logical; Indicate whether <code><a href='reloo.brmsfit.html'>reloo</a></code> 
 should be applied on problematic observations. Defaults to <code>FALSE</code>.</p></td>
     </tr>
     <tr>
@@ -207,12 +209,12 @@ should be applied on problematic observations. Defaults to <code>FALSE</code>.</
       <td><p>The threshold at which pareto \(k\) 
 estimates are treated as problematic. Defaults to <code>0.7</code>. 
 Only used if argument <code>reloo</code> is <code>TRUE</code>.
-See <code><a href='https://www.rdocumentation.org/packages/loo/topics/pareto-k-diagnostic'>pareto_k_ids</a></code> for more details.</p></td>
+See <code><a href='https://mc-stan.org/loo/reference/pareto-k-diagnostic.html'>pareto_k_ids</a></code> for more details.</p></td>
     </tr>
     <tr>
       <th>reloo_args</th>
       <td><p>Optional <code>list</code> of additional arguments passed to
-<code><a href='reloo.html'>reloo</a></code>.</p></td>
+<code><a href='reloo.brmsfit.html'>reloo</a></code>.</p></td>
     </tr>
     <tr>
       <th>model_names</th>

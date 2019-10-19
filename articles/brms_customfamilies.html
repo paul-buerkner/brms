@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -114,7 +114,7 @@
       <h1>Define Custom Response Distributions with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-05-23</h4>
+            <h4 class="date">2019-10-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_customfamilies.Rmd"><code>vignettes/brms_customfamilies.Rmd</code></a></small>
       <div class="hidden name"><code>brms_customfamilies.Rmd</code></div>
@@ -163,15 +163,15 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.77      0.23     0.40     1.31       1231 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.77      0.23     0.41     1.30 1.00     1220     1977
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    -1.41      0.27    -1.96    -0.90       2143 1.00
-period2      -1.00      0.31    -1.61    -0.42       4621 1.00
-period3      -1.14      0.34    -1.82    -0.49       5018 1.00
-period4      -1.63      0.43    -2.52    -0.81       4947 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -1.42      0.27    -1.97    -0.89 1.00     1991     2221
+period2      -1.00      0.31    -1.63    -0.41 1.00     4261     3074
+period3      -1.14      0.33    -1.82    -0.49 1.00     5843     2796
+period4      -1.62      0.44    -2.51    -0.83 1.00     5791     3018
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -181,7 +181,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div id="the-beta-binomial-distribution" class="section level2">
 <h2 class="hasAnchor">
 <a href="#the-beta-binomial-distribution" class="anchor"></a>The Beta-Binomial Distribution</h2>
-<p>The so called <em>beta-binomial</em> model is a generalization of the <em>binomial</em> model with an additional parameter to account for overdispersion. In the beta-binomial model, we do not predict the binomial probability <span class="math inline">\(p_i\)</span> directly, but assume it to be beta distributed with hyperparameters <span class="math inline">\(\alpha &gt; 0\)</span> and <span class="math inline">\(\beta &gt; 0\)</span>:</p>
+<p>The <em>beta-binomial</em> model is a generalization of the <em>binomial</em> model with an additional parameter to account for overdispersion. In the beta-binomial model, we do not predict the binomial probability <span class="math inline">\(p_i\)</span> directly, but assume it to be beta distributed with hyperparameters <span class="math inline">\(\alpha &gt; 0\)</span> and <span class="math inline">\(\beta &gt; 0\)</span>:</p>
 <p><span class="math display">\[
 p_i \sim \text{Beta}(\alpha_i, \beta_i)
 \]</span></p>
@@ -202,9 +202,9 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">beta_binomial2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/custom_family.html">custom_family</a></span>(</a>
 <a class="sourceLine" id="cb6-2" title="2">  <span class="st">"beta_binomial2"</span>, <span class="dt">dpars =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"mu"</span>, <span class="st">"phi"</span>),</a>
 <a class="sourceLine" id="cb6-3" title="3">  <span class="dt">links =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"logit"</span>, <span class="st">"log"</span>), <span class="dt">lb =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="ot">NA</span>, <span class="dv">0</span>),</a>
-<a class="sourceLine" id="cb6-4" title="4">  <span class="dt">type =</span> <span class="st">"int"</span>, <span class="dt">vars =</span> <span class="st">"trials[n]"</span></a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="dt">type =</span> <span class="st">"int"</span>, <span class="dt">vars =</span> <span class="st">"vint1[n]"</span></a>
 <a class="sourceLine" id="cb6-5" title="5">)</a></code></pre></div>
-<p>Next, we have to provide the relevant <strong>Stan</strong> functions if the distribution is not defined in <strong>Stan</strong> itself. For the <code>beta_binomial2</code> distribution, this is straight forward since the ordinal <code>beta_binomial</code> distribution is already implemented.</p>
+<p>The name <code>vint1</code> for the variable containing the number of trials is not chosen arbitrarily as we will see below. Next, we have to provide the relevant <strong>Stan</strong> functions if the distribution is not defined in <strong>Stan</strong> itself. For the <code>beta_binomial2</code> distribution, this is straight forward since the ordinal <code>beta_binomial</code> distribution is already implemented.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">stan_funs &lt;-<span class="st"> "</span></a>
 <a class="sourceLine" id="cb7-2" title="2"><span class="st">  real beta_binomial2_lpmf(int y, real mu, real phi, int T) {</span></a>
 <a class="sourceLine" id="cb7-3" title="3"><span class="st">    return beta_binomial_lpmf(y | T, mu * phi, (1 - mu) * phi);</span></a>
@@ -213,39 +213,38 @@ p_i \sim \text{Beta}(\alpha_i, \beta_i)
 <a class="sourceLine" id="cb7-6" title="6"><span class="st">    return beta_binomial_rng(T, mu * phi, (1 - mu) * phi);</span></a>
 <a class="sourceLine" id="cb7-7" title="7"><span class="st">  }</span></a>
 <a class="sourceLine" id="cb7-8" title="8"><span class="st">"</span></a></code></pre></div>
-<p>For the model fitting, we will only need <code>beta_binomial2_lpmf</code>, but <code>beta_binomial2_rng</code> will come in handy when it comes to post-processing. If additional data needs to be passed to the distribution, we need it to prepared as well. In our running example, this is the case for the <code>size</code> of the herd and so we define:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">stanvars &lt;-<span class="st"> </span><span class="kw"><a href="../reference/stanvar.html">stanvar</a></span>(<span class="dt">scode =</span> stan_funs, <span class="dt">block =</span> <span class="st">"functions"</span>) <span class="op">+</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="st">  </span><span class="kw"><a href="../reference/stanvar.html">stanvar</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/integer">as.integer</a></span>(cbpp<span class="op">$</span>size), <span class="dt">name =</span> <span class="st">"trials"</span>)</a></code></pre></div>
-<p>Actually, for this particular example, we could more elegantly apply the addition argument <code>trials()</code> as in the basic binomial model. However, since the present vignette is ment to give a general overview of the topic, we will go with the more general method of specifying custom data via <code>stanvar</code>.</p>
+<p>For the model fitting, we will only need <code>beta_binomial2_lpmf</code>, but <code>beta_binomial2_rng</code> will come in handy when it comes to post-processing. We define:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">stanvars &lt;-<span class="st"> </span><span class="kw"><a href="../reference/stanvar.html">stanvar</a></span>(<span class="dt">scode =</span> stan_funs, <span class="dt">block =</span> <span class="st">"functions"</span>)</a></code></pre></div>
+<p>To provide information about the number of trials (an integer variable), we are going to use the addition argument <code>vint()</code>, which can only be used in custom families. Simiarily, if we needed to include additional vectors of real data, we would use <code>vreal()</code>. Actually, for this particular example, we could more elegantly apply the addition argument <code>trials()</code> instead of <code>vint()</code>as in the basic binomial model. However, since the present vignette is ment to give a general overview of the topic, we will go with the more general method.</p>
 <p>We now have all components together to fit our custom beta-binomial model:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
-<a class="sourceLine" id="cb9-2" title="2">  incidence <span class="op">~</span><span class="st"> </span>period <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>herd), <span class="dt">data =</span> cbpp, </a>
+<a class="sourceLine" id="cb9-2" title="2">  incidence <span class="op">|</span><span class="st"> </span><span class="kw">vint</span>(size) <span class="op">~</span><span class="st"> </span>period <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>herd), <span class="dt">data =</span> cbpp, </a>
 <a class="sourceLine" id="cb9-3" title="3">  <span class="dt">family =</span> beta_binomial2, <span class="dt">stanvars =</span> stanvars</a>
 <a class="sourceLine" id="cb9-4" title="4">)</a></code></pre></div>
 <p>The summary output reveals that the uncertainty in the coefficients of <code>period</code> is somewhat larger than in the basic binomial model, which is the result of including the overdispersion parameter <code>phi</code> in the model. Aparat from that, the results looks pretty similar.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit2)</a></code></pre></div>
 <pre><code> Family: beta_binomial2 
   Links: mu = logit; phi = identity 
-Formula: incidence ~ period + (1 | herd) 
+Formula: incidence | vint(size) ~ period + (1 | herd) 
    Data: cbpp (Number of observations: 56) 
 Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Group-Level Effects: 
 ~herd (Number of levels: 15) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.39      0.27     0.01     0.99        908 1.01
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.39      0.27     0.02     0.99 1.01      768     1335
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    -1.36      0.25    -1.85    -0.88       3777 1.00
-period2      -1.00      0.41    -1.82    -0.20       3776 1.00
-period3      -1.27      0.46    -2.21    -0.42       3969 1.00
-period4      -1.55      0.52    -2.66    -0.58       3240 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -1.36      0.26    -1.89    -0.86 1.00     2945     1404
+period2      -1.00      0.41    -1.86    -0.21 1.00     3748     2809
+period3      -1.27      0.46    -2.23    -0.41 1.00     3840     2635
+period4      -1.55      0.52    -2.64    -0.58 1.00     3335     2711
 
 Family Specific Parameters: 
-    Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-phi    17.99     17.37     5.57    58.77        674 1.00
+    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+phi    17.78     15.47     5.34    60.94 1.00     1261     1341
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -262,9 +261,9 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">log_lik_beta_binomial2 &lt;-<span class="st"> </span><span class="cf">function</span>(i, draws) {</a>
 <a class="sourceLine" id="cb13-2" title="2">  mu &lt;-<span class="st"> </span>draws<span class="op">$</span>dpars<span class="op">$</span>mu[, i]</a>
 <a class="sourceLine" id="cb13-3" title="3">  phi &lt;-<span class="st"> </span>draws<span class="op">$</span>dpars<span class="op">$</span>phi</a>
-<a class="sourceLine" id="cb13-4" title="4">  N &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>trials[i]</a>
+<a class="sourceLine" id="cb13-4" title="4">  trials &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>vint1[i]</a>
 <a class="sourceLine" id="cb13-5" title="5">  y &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>Y[i]</a>
-<a class="sourceLine" id="cb13-6" title="6">  <span class="kw">beta_binomial2_lpmf</span>(y, mu, phi, N)</a>
+<a class="sourceLine" id="cb13-6" title="6">  <span class="kw">beta_binomial2_lpmf</span>(y, mu, phi, trials)</a>
 <a class="sourceLine" id="cb13-7" title="7">}</a></code></pre></div>
 <p>With that being done, all of the post-processing methods requiring <code>log_lik</code> will work as well. For instance, model comparison can simply be performed via</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</a></code></pre></div>
@@ -273,18 +272,18 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -99.5 10.1
-p_loo        21.7  4.2
-looic       199.0 20.1
+elpd_loo   -100.0 10.2
+p_loo        22.3  4.3
+looic       200.0 20.4
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     44    78.6%   691       
- (0.5, 0.7]   (ok)        9    16.1%   244       
-   (0.7, 1]   (bad)       3     5.4%   55        
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     43    76.8%   623       
+ (0.5, 0.7]   (ok)        8    14.3%   375       
+   (0.7, 1]   (bad)       4     7.1%   51        
+   (1, Inf)   (very bad)  1     1.8%   55        
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -292,31 +291,31 @@ Output of model 'fit2':
 Computed from 4000 by 56 log-likelihood matrix
 
          Estimate   SE
-elpd_loo    -94.5  8.2
-p_loo        10.4  1.8
-looic       188.9 16.4
+elpd_loo    -95.2  8.4
+p_loo        11.1  2.2
+looic       190.4 16.8
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     49    87.5%   355       
- (0.5, 0.7]   (ok)        6    10.7%   780       
-   (0.7, 1]   (bad)       1     1.8%   300       
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+(-Inf, 0.5]   (good)     52    92.9%   627       
+ (0.5, 0.7]   (ok)        3     5.4%   301       
+   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
+   (1, Inf)   (very bad)  1     1.8%   23        
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit2  0.0       0.0   
-fit1 -5.0       4.4   </code></pre>
-<p>Since smaller <code>LOOIC</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
+fit1 -4.8       4.2   </code></pre>
+<p>Since larger <code>ELPD</code> values indicate better fit, we see that the beta-binomial model fits somewhat better, although the corresponding standard error reveals that the difference is not that substantial.</p>
 <p>Next, we will define the function necessary for the <code>predict</code> method:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">predict_beta_binomial2 &lt;-<span class="st"> </span><span class="cf">function</span>(i, draws, ...) {</a>
 <a class="sourceLine" id="cb16-2" title="2">  mu &lt;-<span class="st"> </span>draws<span class="op">$</span>dpars<span class="op">$</span>mu[, i]</a>
 <a class="sourceLine" id="cb16-3" title="3">  phi &lt;-<span class="st"> </span>draws<span class="op">$</span>dpars<span class="op">$</span>phi</a>
-<a class="sourceLine" id="cb16-4" title="4">  N &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>trials[i]</a>
-<a class="sourceLine" id="cb16-5" title="5">  <span class="kw">beta_binomial2_rng</span>(mu, phi, N)</a>
+<a class="sourceLine" id="cb16-4" title="4">  trials &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>vint1[i]</a>
+<a class="sourceLine" id="cb16-5" title="5">  <span class="kw">beta_binomial2_rng</span>(mu, phi, trials)</a>
 <a class="sourceLine" id="cb16-6" title="6">}</a></code></pre></div>
 <p>The <code>predict</code> function looks pretty similar to the corresponding <code>log_lik</code> function, except that we are now creating random samples of the response instead of log-liklihood values. Again, we are using an exposed <strong>Stan</strong> function for convenience. Make sure to add a <code>...</code> argument to your `<code>predict</code> function even if you are not using it, since some families require additional arguments. With <code>predict</code> to be working, we can engage for instance in posterior-predictive checking:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="kw"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(fit2)</a></code></pre></div>
@@ -324,14 +323,14 @@ fit1 -5.0       4.4   </code></pre>
 <p>When defining the <code>fitted</code> function, you have to keep in mind that it has only a <code>draws</code> argument and should compute the mean response values for all observations at once. Since the mean of the beta-binomial distribution is <span class="math inline">\(\text{E}(y) = \mu T\)</span> definition of the corresponding <code>fitted</code> function is not too complicated, but we need to get the dimension of parameters and data in line.</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1">fitted_beta_binomial2 &lt;-<span class="st"> </span><span class="cf">function</span>(draws) {</a>
 <a class="sourceLine" id="cb18-2" title="2">  mu &lt;-<span class="st"> </span>draws<span class="op">$</span>dpars<span class="op">$</span>mu</a>
-<a class="sourceLine" id="cb18-3" title="3">  trials &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>trials</a>
+<a class="sourceLine" id="cb18-3" title="3">  trials &lt;-<span class="st"> </span>draws<span class="op">$</span>data<span class="op">$</span>vint1</a>
 <a class="sourceLine" id="cb18-4" title="4">  trials &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/matrix">matrix</a></span>(trials, <span class="dt">nrow =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(mu), <span class="dt">ncol =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">ncol</a></span>(mu), <span class="dt">byrow =</span> <span class="ot">TRUE</span>)</a>
 <a class="sourceLine" id="cb18-5" title="5">  mu <span class="op">*</span><span class="st"> </span>trials</a>
 <a class="sourceLine" id="cb18-6" title="6">}</a></code></pre></div>
 <p>A post-processing method relying directly on <code>fitted</code> is <code>marginal_effects</code>, which allows to visualize effects of predictors.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit2, <span class="dt">new_objects =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>(<span class="dt">trials =</span> <span class="dv">1</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit2, <span class="dt">conditions =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">size =</span> <span class="dv">1</span>))</a></code></pre></div>
 <p><img src="brms_customfamilies_files/figure-html/marginal_effects-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>For ease of interpretation we have set <code>trials</code> to 1 so that the y-axis of the above plot indicates probabilities.</p>
+<p>For ease of interpretation we have set <code>size</code> to 1 so that the y-axis of the above plot indicates probabilities.</p>
 </div>
 <div id="turning-a-custom-family-into-a-native-family" class="section level2">
 <h2 class="hasAnchor">

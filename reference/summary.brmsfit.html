@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -159,7 +159,7 @@
 
     <pre class="usage"><span class='co'># S3 method for brmsfit</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>object</span>, <span class='kw'>priors</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>prob</span> <span class='kw'>=</span> <span class='fl'>0.95</span>,
-  <span class='kw'>mc_se</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>use_cache</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
+  <span class='kw'>mc_se</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -182,15 +182,6 @@ to be covered by the uncertainty intervals. The default is 0.95.</p></td>
       <th>mc_se</th>
       <td><p>Logical; Indicating if the uncertainty caused by the 
 MCMC sampling should be shown in the summary. Defaults to <code>FALSE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>use_cache</th>
-      <td><p>Logical; Indicating if summary results should
-be cached for future use by <span class="pkg">rstan</span>. Defaults to <code>TRUE</code>.
-For models fitted with earlier versions of <span class="pkg">brms</span>,
-it may be necessary to set <code>use_cache</code> to
-<code>FALSE</code> in order to get the <code>summary</code> 
-method working correctly.</p></td>
     </tr>
     <tr>
       <th>...</th>

@@ -67,7 +67,7 @@ Folds can be run in parallel using the future package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -176,7 +176,9 @@ Folds can be run in parallel using the <span class="pkg">future</span> package.<
     <tr>
       <th>...</th>
       <td><p>More <code>brmsfit</code> objects or further arguments
-passed to the underlying post-processing functions.</p></td>
+passed to the underlying post-processing functions.
+In particular, see <code><a href='extract_draws.html'>extract_draws</a></code> for further
+supported arguments.</p></td>
     </tr>
     <tr>
       <th>K</th>
@@ -268,9 +270,9 @@ Defaults to <code>FALSE</code>.</p></td>
   data is split up into subsets, each time omitting all observations of one 
   of the factor levels, while ignoring argument <code>K</code>.</p></li>
 <li><p>If <code>folds = "stratified"</code> the subsets are stratified after 
-  <code>group</code> using <code><a href='https://www.rdocumentation.org/packages/loo/topics/kfold-helpers'>loo::kfold_split_stratified</a></code>.</p></li>
+  <code>group</code> using <code><a href='https://mc-stan.org/loo/reference/kfold-helpers.html'>loo::kfold_split_stratified</a></code>.</p></li>
 <li><p>If <code>folds = "grouped"</code> the subsets are split by
-  <code>group</code> using <code><a href='https://www.rdocumentation.org/packages/loo/topics/kfold-helpers'>loo::kfold_split_grouped</a></code>.</p></li>
+  <code>group</code> using <code><a href='https://mc-stan.org/loo/reference/kfold-helpers.html'>loo::kfold_split_grouped</a></code>.</p></li>
 <li><p>If <code>folds = "loo"</code> exact leave-one-out cross-validation
   will be performed and <code>K</code> will be ignored. Further, if <code>group</code>
   is specified, all observations corresponding to the factor level of the 
@@ -282,12 +284,12 @@ Defaults to <code>FALSE</code>.</p></td>
   observation belongs. There are some convenience functions available in 
   the <span class="pkg">loo</span> package that create integer vectors to use for this purpose 
   (see the Examples section below and also the 
-  <a href='https://www.rdocumentation.org/packages/loo/topics/kfold-helpers'>kfold-helpers</a> page).</p></li>
+  <a href='https://mc-stan.org/loo/reference/kfold-helpers.html'>kfold-helpers</a> page).</p></li>
 </ul>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>, <code><a href='reloo.html'>reloo</a></code></p></div>
+    <div class='dont-index'><p><code><a href='loo.brmsfit.html'>loo</a></code>, <code><a href='reloo.brmsfit.html'>reloo</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

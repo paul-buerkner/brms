@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -227,8 +227,8 @@ to make results reproducible.</p></td>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>Among others, <code>hypothesis</code> computes an evidence ratio
-  (<code>Evid.Ratio</code>) for each hypothesis. For a one-sided hypothesis, this is
-  just the posterior probability (<code>Post.Prob</code>) under the hypothesis
+  (<code>Evid.Ratio</code>) for each hypothesis. For a one-sided hypothesis, this
+  is just the posterior probability (<code>Post.Prob</code>) under the hypothesis
   against its alternative. That is, when the hypothesis is of the form
   <code>a &gt; b</code>, the evidence ratio is the ratio of the posterior probability
   of <code>a &gt; b</code> and the posterior probability of <code>a &lt; b</code>. In this
@@ -241,10 +241,14 @@ to make results reproducible.</p></td>
   indicate that evidence in favor of the point hypothesis has increased after
   seeing the data. In order to calculate this Bayes factor, all parameters
   related to the hypothesis must have proper priors and argument
-  <code>sample_prior</code> of function <code>brm</code> must be set to <code>"yes"</code>. When
-  interpreting Bayes factors, make sure that your priors are reasonable and
-  carefully chosen, as the result will depend heavily on the priors. In
-  particular, avoid using default priors.</p>  
+  <code>sample_prior</code> of function <code>brm</code> must be set to <code>"yes"</code>.
+  Otherwise <code>Evid.Ratio</code> (and <code>Post.Prob</code>) will be <code>NA</code>.
+  Please note that, for technical reasons, we cannot sample from priors of
+  certain parameters classes. Most notably, these include overall intercept
+  parameters (prior class <code>"Intercept"</code>) as well as group-level
+  coefficients. When interpreting Bayes factors, make sure that your priors
+  are reasonable and carefully chosen, as the result will depend heavily on
+  the priors. In particular, avoid using default priors.</p>  
 <p>The <code>Evid.Ratio</code> may sometimes be <code>0</code> or <code>Inf</code> implying very
   small or large evidence, respectively, in favor of the tested hypothesis.
   For one-sided hypotheses pairs, this basically means that all posterior

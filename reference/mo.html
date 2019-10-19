@@ -66,7 +66,7 @@ evaluate its arguments -- it exists purely to help set up a model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -203,7 +203,7 @@ preprint.</p>
 <span class='co'># summarise the model</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit1</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>fit1</span>, <span class='kw'>N</span> <span class='kw'>=</span> <span class='fl'>6</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 
 <span class='co'># model interaction with other variables</span>
 <span class='no'>dat</span>$<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/sample'>sample</a></span>(<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"a"</span>, <span class='st'>"b"</span>, <span class='st'>"c"</span>), <span class='fl'>100</span>, <span class='fl'>TRUE</span>)
@@ -211,7 +211,7 @@ preprint.</p>
 
 <span class='co'># summarise the model</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit2</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit2</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='co'># }</span><div class='input'> 
 </div></pre>
   </div>

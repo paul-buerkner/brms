@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -114,7 +114,7 @@
       <h1>Estimating Phylogenetic Multilevel Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-05-23</h4>
+            <h4 class="date">2019-10-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_phylogenetics.Rmd"><code>vignettes/brms_phylogenetics.Rmd</code></a></small>
       <div class="hidden name"><code>brms_phylogenetics.Rmd</code></div>
@@ -169,31 +169,31 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)    14.50      2.13    10.47    18.79        992 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)    14.53      2.19    10.41    19.08 1.00      760     1680
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    38.15      7.07    23.73    51.85       2211 1.00
-cofactor      5.17      0.14     4.90     5.44       6903 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    38.04      7.21    23.83    52.76 1.00     1927     2496
+cofactor      5.17      0.14     4.90     5.44 1.00     6303     3489
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     9.22      0.72     7.89    10.65       1262 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     9.20      0.72     7.85    10.68 1.01     1130     2372
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(model_simple, <span class="dt">N =</span> <span class="dv">2</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-2.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(model_simple), <span class="dt">points =</span> <span class="ot">TRUE</span>) </a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(model_simple), <span class="dt">points =</span> <span class="ot">TRUE</span>) </a></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-4-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The so called phylogenetic signal (often symbolize by <span class="math inline">\(\lambda\)</span>) can be computed with the <code>hypothesis</code> method and is roughly <span class="math inline">\(\lambda = 0.7\)</span> for this example.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">hyp &lt;-<span class="st"> "sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"</span></a>
 <a class="sourceLine" id="cb9-2" title="2">(hyp &lt;-<span class="st"> </span><span class="kw"><a href="../reference/hypothesis.html">hypothesis</a></span>(model_simple, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))</a></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (sd_phylo__Interc... = 0      0.7      0.08     0.52     0.84         NA        NA    *
+1 (sd_phylo__Interc... = 0      0.7      0.08     0.51     0.84         NA        NA    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -246,21 +246,21 @@ Samples: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)    16.37      1.89    12.82    20.20       1593 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)    16.41      1.88    12.97    20.22 1.00     1512     3367
 
 ~species (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     5.01      0.85     3.28     6.61       1149 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     4.98      0.85     3.29     6.62 1.00     1269     1775
 
 Population-Level Effects: 
-             Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept       36.12      7.74    20.47    51.10       3785 1.00
-spec_mean_cf     5.10      0.10     4.90     5.30       7963 1.00
+             Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept       36.32      7.87    20.53    51.62 1.00     3896     3677
+spec_mean_cf     5.10      0.10     4.89     5.30 1.00     9203     4556
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     8.10      0.21     7.72     8.51       6109 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     8.11      0.20     7.73     8.50 1.00     5904     4898
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -272,7 +272,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <a class="sourceLine" id="cb17-5" title="5">(hyp &lt;-<span class="st"> </span><span class="kw"><a href="../reference/hypothesis.html">hypothesis</a></span>(model_repeat1, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))</a></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (sd_phylo__Interc... = 0     0.74      0.06     0.61     0.84          0         0    *
+1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.84          0         0    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -299,22 +299,22 @@ Samples: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)    16.44      1.88    13.00    20.32       1638 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)    16.38      1.88    12.89    20.21 1.00     1334     2555
 
 ~species (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     4.97      0.85     3.29     6.56       1076 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     5.01      0.84     3.36     6.62 1.00      933     1702
 
 Population-Level Effects: 
-               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept         36.16      7.88    20.45    51.63       4353 1.00
-spec_mean_cf       5.10      0.11     4.89     5.31      10048 1.00
-within_spec_cf    -0.06      0.18    -0.41     0.30      10168 1.00
+               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept         35.88      7.71    20.90    51.05 1.00     3094     3164
+spec_mean_cf       5.10      0.10     4.90     5.30 1.00     6310     4992
+within_spec_cf    -0.06      0.19    -0.43     0.32 1.00     9921     4228
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     8.11      0.20     7.73     8.52       4813 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     8.11      0.20     7.74     8.51 1.00     5848     5050
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -327,7 +327,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <a class="sourceLine" id="cb24-5" title="5">(hyp &lt;-<span class="st"> </span><span class="kw"><a href="../reference/hypothesis.html">hypothesis</a></span>(model_repeat2, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))</a></code></pre></div>
 <pre><code>Hypothesis Tests for class :
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.84          0         0    *
+1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.83          0         0    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -374,16 +374,16 @@ Samples: 2 chains, each with iter = 4000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~obs (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.05      0.03     0.00     0.10        752 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.05      0.03     0.00     0.10 1.00      762     1696
 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.07      0.04     0.00     0.15        865 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.07      0.04     0.00     0.15 1.00      707     1161
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept     0.16      0.04     0.08     0.24       2306 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.16      0.04     0.08     0.24 1.00     1699     1939
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -428,22 +428,22 @@ Samples: 2 chains, each with iter = 4000; warmup = 2000; thin = 1;
 
 Group-Level Effects: 
 ~obs (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.18      0.09     0.01     0.35        449 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.18      0.09     0.02     0.34 1.00      556     1077
 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.18      0.10     0.02     0.42        643 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.19      0.10     0.03     0.41 1.00      792     1117
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    -2.08      0.21    -2.49    -1.68       2006 1.00
-cofactor      0.25      0.01     0.23     0.27       3063 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -2.09      0.21    -2.51    -1.68 1.00     2385     2380
+cofactor      0.25      0.01     0.23     0.27 1.00     4115     2950
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(model_pois), <span class="dt">points =</span> <span class="ot">TRUE</span>) </a></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(model_pois), <span class="dt">points =</span> <span class="ot">TRUE</span>) </a></code></pre></div>
 <p><img src="brms_phylogenetics_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Now, assume we ignore the fact that the phenotype is count data and fit a linear normal model instead.</p>
 <div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" title="1">model_normal &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
@@ -463,17 +463,17 @@ Samples: 2 chains, each with iter = 4000; warmup = 2000; thin = 1;
 
 Group-Level Effects: 
 ~phylo (Number of levels: 200) 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)     0.75      0.54     0.03     2.06        902 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.75      0.56     0.04     2.18 1.00      940     1149
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    -2.99      0.67    -4.33    -1.63       3251 1.00
-cofactor      0.68      0.04     0.59     0.77      10087 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -3.00      0.67    -4.32    -1.72 1.00     2458     1690
+cofactor      0.68      0.04     0.60     0.76 1.00     7162     2636
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     3.45      0.18     3.11     3.81       4485 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     3.44      0.18     3.11     3.82 1.00     4003     2596
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -490,18 +490,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 200 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -348.5 17.0
-p_loo        30.2  3.5
-looic       697.0 34.0
+elpd_loo   -348.1 17.0
+p_loo        30.3  3.5
+looic       696.3 34.0
 ------
-Monte Carlo SE of elpd_loo is NA.
+Monte Carlo SE of elpd_loo is 0.2.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     172   86.0%   385       
- (0.5, 0.7]   (ok)        24   12.0%   135       
-   (0.7, 1]   (bad)        4    2.0%   75        
+(-Inf, 0.5]   (good)     164   82.0%   363       
+ (0.5, 0.7]   (ok)        36   18.0%   181       
+   (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;      
    (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
+
+All Pareto k estimates are ok (k &lt; 0.7).
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'model_normal':
@@ -509,16 +511,16 @@ Output of model 'model_normal':
 Computed from 4000 by 200 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -536.0 15.6
-p_loo        10.6  2.2
-looic      1071.9 31.3
+elpd_loo   -536.0 15.7
+p_loo        10.6  2.3
+looic      1071.9 31.4
 ------
 Monte Carlo SE of elpd_loo is 0.1.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     198   99.0%   662       
- (0.5, 0.7]   (ok)         2    1.0%   3671      
+(-Inf, 0.5]   (good)     196   98.0%   362       
+ (0.5, 0.7]   (ok)         4    2.0%   3230      
    (0.7, 1]   (bad)        0    0.0%   &lt;NA&gt;      
    (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
 
@@ -528,7 +530,7 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
              elpd_diff se_diff
 model_pois      0.0       0.0 
-model_normal -187.4      17.9 </code></pre>
+model_normal -187.8      18.0 </code></pre>
 <p>Since smaller values of loo indicate better fit, it is again evident that the Poisson model fits the data better than the normal model. Of course, the Poisson model is not the only reasonable option here. For instance, you could use a negative binomial model (via family <code>negative_binomial</code>), which already contains an overdispersion parameter so that modeling a varying intercept of <code>obs</code> becomes obsolete.</p>
 </div>
 <div id="phylogenetic-models-with-multiple-group-level-effects" class="section level2">
@@ -539,7 +541,7 @@ model_normal -187.4      17.9 </code></pre>
 <div id="references" class="section level2">
 <h2 class="hasAnchor">
 <a href="#references" class="anchor"></a>References</h2>
-<p>de Villemeruil P. &amp; Nakagawa, S. (2014) General quantitative genetic methods for comparative biology In: <em>Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice</em> (ed. Garamszegi L.) Springer, New York. pp. 287-303.</p>
+<p>de Villemeruil P. &amp; Nakagawa, S. (2014) General quantitative genetic methods for comparative biology. In: <em>Modern phylogenetic comparative methods and their application in evolutionary biology: concepts and practice</em> (ed. Garamszegi L.) Springer, New York. pp. 287-303.</p>
 <p>Hadfield, J. D. &amp; Nakagawa, S. (2010) General quantitative genetic methods for comparative biology: phylogenies, taxonomies, and multi-trait models for continuous and categorical characters. <em>Journal of Evolutionary Biology</em>. 23. 494-508.</p>
 <p>Lawless, J. F. (1987). Negative binomial and mixed Poisson regression. <em>Canadian Journal of Statistics</em>, 15(3), 209-225.</p>
 </div>

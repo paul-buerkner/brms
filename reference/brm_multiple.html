@@ -69,7 +69,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -227,14 +227,18 @@ pedigrees and phylogenetic effects. See
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from all specified proper priors
-should be drawn additionally to the posterior samples (defaults to
-<code>"no"</code>). Among others, these samples can be used to calculate Bayes
-factors for point hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. If set to
-<code>"only"</code>, samples are drawn solely from the priors ignoring the
-likelihood, which allows among others to generate samples from the prior
-predictive distribution. In this case, all parameters must have proper
-priors.</p></td>
+      <td><p>Indicate if samples from priors should be drawn 
+additionally to the posterior samples (defaults to <code>"no"</code>). Among 
+others, these samples can be used to calculate Bayes factors for point 
+hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. Please note that improper priors 
+are not sampled, including the default improper priors used by <code>brm</code>. 
+See <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default for 
+technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior samples 
+for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>, samples 
+are drawn solely from the priors ignoring the likelihood, which allows among 
+others to generate samples from the prior predictive distribution. In this 
+case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -242,7 +246,8 @@ priors.</p></td>
 design matrices should be treated as sparse (defaults to <code>FALSE</code>). For
 design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
-decreased.</p></td>
+decreased. It is now recommended to use the <code>sparse</code> argument of
+<code><a href='brmsformula.html'>brmsformula</a></code> and related functions.</p></td>
     </tr>
     <tr>
       <th>knots</th>

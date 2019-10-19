@@ -66,7 +66,7 @@ not evaluate its arguments -- it exists purely to help set up a model." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -186,7 +186,7 @@ not evaluate its arguments -- it exists purely to help set up a model.</p>
   <span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>chl</span> <span class='kw'>|</span> <span class='fu'>mi</span>() ~ <span class='no'>age</span>) + <span class='fu'><a href='brmsformula-helpers.html'>set_rescor</a></span>(<span class='fl'>FALSE</span>)
 <span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>bform</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>nhanes</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='st'>"bmi"</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit</span>, <span class='kw'>resp</span> <span class='kw'>=</span> <span class='st'>"bmi"</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 <span class='fu'><a href='loo.brmsfit.html'>LOO</a></span>(<span class='no'>fit</span>, <span class='kw'>newdata</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/na.fail'>na.omit</a></span>(<span class='no'>fit</span>$<span class='no'>data</span>))
 <span class='co'># }</span><div class='input'>
 </div></pre>

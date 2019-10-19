@@ -66,7 +66,7 @@ implementing spatial conditional autoregressive structures." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -159,7 +159,7 @@ implementing spatial conditional autoregressive structures.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>cor_car</span>(<span class='no'>W</span>, <span class='kw'>formula</span> <span class='kw'>=</span> ~<span class='fl'>1</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"escar"</span>, <span class='st'>"esicar"</span>, <span class='st'>"icar"</span>))
+    <pre class="usage"><span class='fu'>cor_car</span>(<span class='no'>W</span>, <span class='kw'>formula</span> <span class='kw'>=</span> ~<span class='fl'>1</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='st'>"escar"</span>)
 
 <span class='fu'>cor_icar</span>(<span class='no'>W</span>, <span class='kw'>formula</span> <span class='kw'>=</span> ~<span class='fl'>1</span>)</pre>
     
@@ -186,9 +186,9 @@ to allow for handling of new data in post-processing methods.</p></td>
     <tr>
       <th>type</th>
       <td><p>Type of the CAR structure. Currently implemented
-are <code>"escar"</code> (exact sparse CAR) and <code>"esicar"</code>
-(exact sparse intrinsic CAR) and <code>"icar"</code> (intrinsic CAR). 
-More information is provided in the 'Details' section.</p></td>
+are <code>"escar"</code> (exact sparse CAR), <code>"esicar"</code>
+(exact sparse intrinsic CAR), <code>"icar"</code> (intrinsic CAR),
+and <code>"bym2"</code>. More information is provided in the 'Details' section.</p></td>
     </tr>
     </table>
     
@@ -196,8 +196,8 @@ More information is provided in the 'Details' section.</p></td>
 
     <p>The <code>escar</code> and <code>esicar</code> types are 
   implemented based on the case study of Max Joseph
-  (<a href='https://github.com/mbjoseph/CARstan'>https://github.com/mbjoseph/CARstan</a>). The <code>icar</code>
-  type is implemented based on the case study of Mitzi Morris
+  (<a href='https://github.com/mbjoseph/CARstan'>https://github.com/mbjoseph/CARstan</a>). The <code>icar</code> and 
+  <code>bym2</code> type is implemented based on the case study of Mitzi Morris
   (<a href='http://mc-stan.org/users/documentation/case-studies/icar_stan.html'>http://mc-stan.org/users/documentation/case-studies/icar_stan.html</a>).</p>
     
 

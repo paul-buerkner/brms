@@ -77,7 +77,7 @@ posterior predictive checks and leave-one-out cross-validation." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -247,14 +247,18 @@ pedigrees and phylogenetic effects. See
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from all specified proper priors
-should be drawn additionally to the posterior samples (defaults to
-<code>"no"</code>). Among others, these samples can be used to calculate Bayes
-factors for point hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. If set to
-<code>"only"</code>, samples are drawn solely from the priors ignoring the
-likelihood, which allows among others to generate samples from the prior
-predictive distribution. In this case, all parameters must have proper
-priors.</p></td>
+      <td><p>Indicate if samples from priors should be drawn 
+additionally to the posterior samples (defaults to <code>"no"</code>). Among 
+others, these samples can be used to calculate Bayes factors for point 
+hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. Please note that improper priors 
+are not sampled, including the default improper priors used by <code>brm</code>. 
+See <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default for 
+technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior samples 
+for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>, samples 
+are drawn solely from the priors ignoring the likelihood, which allows among 
+others to generate samples from the prior predictive distribution. In this 
+case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -262,7 +266,8 @@ priors.</p></td>
 design matrices should be treated as sparse (defaults to <code>FALSE</code>). For
 design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
-decreased.</p></td>
+decreased. It is now recommended to use the <code>sparse</code> argument of
+<code><a href='brmsformula.html'>brmsformula</a></code> and related functions.</p></td>
     </tr>
     <tr>
       <th>knots</th>
@@ -519,8 +524,8 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='co'># predict responses based on the fitted model</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/utils/topics/head'>head</a></span>(<span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/predict'>predict</a></span>(<span class='no'>fit1</span>))
 
-<span class='co'># plot marginal effects for each predictor</span>
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='co'># plot conditional effects for each predictor</span>
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>conditional_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 <span class='co'># investigate model fit</span>
 <span class='fu'><a href='loo.brmsfit.html'>loo</a></span>(<span class='no'>fit1</span>)
@@ -543,7 +548,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span>())
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit3</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>fit3</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit3</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>conditional_effects</a></span>(<span class='no'>fit3</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 
 <span class='co'># Probit regression using the binomial family</span>
@@ -565,7 +570,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='no'>fit5</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> + <span class='no'>a2</span> ~ <span class='fl'>1</span>, <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data5</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior5</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit5</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit5</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>conditional_effects</a></span>(<span class='no'>fit5</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 
 <span class='co'># Normal model with heterogeneous variances</span>
@@ -576,7 +581,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='no'>fit6</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='no'>sigma</span> ~ <span class='fl'>0</span> + <span class='no'>x</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data_het</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit6</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>fit6</span>)
-<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit6</span>)
+<span class='fu'><a href='conditional_effects.html'>conditional_effects</a></span>(<span class='no'>fit6</span>)
 
 <span class='co'># extract estimated residual SDs of both groups</span>
 <span class='no'>sigmas</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/Log'>exp</a></span>(<span class='fu'><a href='posterior_samples.html'>posterior_samples</a></span>(<span class='no'>fit6</span>, <span class='st'>"^b_sigma_"</span>))
@@ -588,7 +593,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='no'>fit7</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='kw'>quantile</span> <span class='kw'>=</span> <span class='fl'>0.25</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data_het</span>,
             <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>asym_laplace</a></span>())
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit7</span>)
-<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit7</span>)
+<span class='fu'><a href='conditional_effects.html'>conditional_effects</a></span>(<span class='no'>fit7</span>)
 
 
 <span class='co'># use the future package for more flexible parallelization</span>

@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -164,7 +164,9 @@
 
 <span class='fu'>prior_</span>(<span class='no'>prior</span>, <span class='no'>...</span>)
 
-<span class='fu'>prior_string</span>(<span class='no'>prior</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>prior_string</span>(<span class='no'>prior</span>, <span class='no'>...</span>)
+
+<span class='fu'>empty_prior</span>()</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -302,10 +304,10 @@ to the Stan code as is, and all other arguments are ignored.</p></td>
   are at their means. To treat the intercept as an ordinary 
   population-level effect and avoid the centering parameterization, 
   use <code>0 + intercept</code> on the right-hand side of the model formula.</p>  
-<p>A special shrinkage prior to be applied on population-level effects 
-  is the horseshoe prior. See <code><a href='horseshoe.html'>horseshoe</a></code>
-  for details. Another shrinkage prior is the so-called lasso prior.
-  See <code><a href='lasso.html'>lasso</a></code> for details.</p>  
+<p>A special shrinkage prior to be applied on population-level effects is the
+  (regularized) horseshoe prior and related priors. See
+  <code><a href='horseshoe.html'>horseshoe</a></code> for details. Another shrinkage prior is the
+  so-called lasso prior. See <code><a href='lasso.html'>lasso</a></code> for details.</p>  
 <p>In non-linear models, population-level effects are defined separately 
   for each non-linear parameter. Accordingly, it is necessary to specify
   the non-linear parameter in <code>set_prior</code> so that priors
@@ -474,6 +476,7 @@ specify arguments as expressions without quotation marks.</p></li>
 arguments as as one-sided formulas or wrapped in <code>quote</code>.</p></li>
 <li><p><code>prior_string</code>: Alias of <code>set_prior</code> allowing to
 specify arguments as strings.</p></li>
+<li><p><code>empty_prior</code>: Create an empty <code>brmsprior</code> object.</p></li>
 </ul>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
@@ -512,7 +515,7 @@ specify arguments as strings.</p></li>
 <span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -545,9 +548,10 @@ specify arguments as strings.</p></li>
 #&gt;   matrix[N, K] X;  // population-level design matrix
 #&gt;   real&lt;lower=0&gt; disc;  // discrimination parameters
 #&gt;   // data for group-level effects of ID 1
-#&gt;   int&lt;lower=1&gt; N_1;
-#&gt;   int&lt;lower=1&gt; M_1;
-#&gt;   int&lt;lower=1&gt; J_1[N];
+#&gt;   int&lt;lower=1&gt; N_1;  // number of grouping levels
+#&gt;   int&lt;lower=1&gt; M_1;  // number of coefficients per level
+#&gt;   int&lt;lower=1&gt; J_1[N];  // grouping indicator per observation
+#&gt;   // group-level predictor values
 #&gt;   vector[N] Z_1_1;
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
@@ -562,42 +566,46 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   ordered[ncat - 1] temp_Intercept;  // temporary thresholds
+#&gt;   // temporary thresholds for centered predictors
+#&gt;   ordered[ncat - 1] Intercept;
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
-#&gt;   vector[N_1] z_1[M_1];  // unscaled group-level effects
+#&gt;   // standardized group-level effects
+#&gt;   vector[N_1] z_1[M_1];
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   // group-level effects
+#&gt;   // actual group-level effects
 #&gt;   vector[N_1] r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
+#&gt;   // initialize linear predictor term
 #&gt;   vector[N] mu = Xc * b;
 #&gt;   for (n in 1:N) {
+#&gt;     // add more terms to the linear predictor
 #&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
 #&gt;   }
 #&gt;   // priors including all constants
 #&gt;   target += normal_lpdf(b[1] | 1, 2);
 #&gt;   target += normal_lpdf(b[2] | 0,10);
 #&gt;   target += normal_lpdf(b[3] | 0,10);
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 0, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 0, 10);
 #&gt;   target += cauchy_lpdf(sd_1 | 0, 2)
 #&gt;     - 1 * cauchy_lccdf(0 | 0, 2);
 #&gt;   target += normal_lpdf(z_1[1] | 0, 1);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
 #&gt;     for (n in 1:N) {
-#&gt;       target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);
+#&gt;       target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);
 #&gt;     }
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // compute actual thresholds
-#&gt;   vector[ncat - 1] b_Intercept = temp_Intercept + dot_product(means_X, b);
+#&gt;   vector[ncat - 1] b_Intercept = Intercept + dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 <span class='co'>## use the horseshoe prior to model sparsity in population-level effects</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.9.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt; 
 #&gt;   /* Efficient computation of the horseshoe prior
@@ -625,16 +633,17 @@ specify arguments as strings.</p></li>
 #&gt;   int Y[N];  // response variable
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
-#&gt;   real&lt;lower=0&gt; hs_df;
-#&gt;   real&lt;lower=0&gt; hs_df_global;
-#&gt;   real&lt;lower=0&gt; hs_df_slab;
-#&gt;   real&lt;lower=0&gt; hs_scale_global;
-#&gt;   real&lt;lower=0&gt; hs_scale_slab;
+#&gt;   // data for the horseshoe prior
+#&gt;   real&lt;lower=0&gt; hs_df;  // local degrees of freedom
+#&gt;   real&lt;lower=0&gt; hs_df_global;  // global degrees of freedom
+#&gt;   real&lt;lower=0&gt; hs_df_slab;  // slab degrees of freedom
+#&gt;   real&lt;lower=0&gt; hs_scale_global;  // global prior scale
+#&gt;   real&lt;lower=0&gt; hs_scale_slab;  // slab prior scale
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   matrix[N, Kc] Xc;  // centered version of X without an intercept
 #&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
@@ -645,40 +654,41 @@ specify arguments as strings.</p></li>
 #&gt;   // local parameters for horseshoe prior
 #&gt;   vector[Kc] zb;
 #&gt;   vector&lt;lower=0&gt;[Kc] hs_local[2];
-#&gt;   real temp_Intercept;  // temporary intercept
+#&gt;   // temporary intercept for centered predictors
+#&gt;   real Intercept;
 #&gt;   // horseshoe shrinkage parameters
-#&gt;   real&lt;lower=0&gt; hs_global[2];
-#&gt;   real&lt;lower=0&gt; hs_c2;
+#&gt;   real&lt;lower=0&gt; hs_global[2];  // global shrinkage parameters
+#&gt;   real&lt;lower=0&gt; hs_c2;  // slab regularization parameter
 #&gt; }
 #&gt; transformed parameters {
 #&gt;   vector[Kc] b;  // population-level effects
+#&gt;   // compute actual regression coefficients
 #&gt;   b = horseshoe(zb, hs_local, hs_global, hs_scale_global, hs_scale_slab^2 * hs_c2);
 #&gt; }
 #&gt; model {
-#&gt;   vector[N] mu = temp_Intercept + Xc * b;
 #&gt;   // priors including all constants
 #&gt;   target += normal_lpdf(zb | 0, 1);
 #&gt;   target += normal_lpdf(hs_local[1] | 0, 1)
 #&gt;     - 4 * log(0.5);
 #&gt;   target += inv_gamma_lpdf(hs_local[2] | 0.5 * hs_df, 0.5 * hs_df);
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 1, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
 #&gt;   target += normal_lpdf(hs_global[1] | 0, 1)
 #&gt;     - 1 * log(0.5);
 #&gt;   target += inv_gamma_lpdf(hs_global[2] | 0.5 * hs_df_global, 0.5 * hs_df_global);
 #&gt;   target += inv_gamma_lpdf(hs_c2 | 0.5 * hs_df_slab, 0.5 * hs_df_slab);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
-#&gt;     target += poisson_log_lpmf(Y | mu);
+#&gt;     target += poisson_log_glm_lpmf(Y | Xc, Intercept, b);
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
-#&gt;   real b_Intercept = temp_Intercept - dot_product(means_X, b);
+#&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 <span class='co'>## alternatively use the lasso prior</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/family'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"lasso(1)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.9.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"lasso(1)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -686,13 +696,14 @@ specify arguments as strings.</p></li>
 #&gt;   int Y[N];  // response variable
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
-#&gt;   real&lt;lower=0&gt; lasso_df;
-#&gt;   real&lt;lower=0&gt; lasso_scale;
+#&gt;   // data for the lasso prior
+#&gt;   real&lt;lower=0&gt; lasso_df;  // prior degrees of freedom
+#&gt;   real&lt;lower=0&gt; lasso_scale;  // prior scale
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   matrix[N, Kc] Xc;  // centered version of X without an intercept
 #&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
@@ -701,30 +712,30 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   real temp_Intercept;  // temporary intercept
+#&gt;   // temporary intercept for centered predictors
+#&gt;   real Intercept;
 #&gt;   // lasso shrinkage parameter
 #&gt;   real&lt;lower=0&gt; lasso_inv_lambda;
 #&gt; }
 #&gt; transformed parameters {
 #&gt; }
 #&gt; model {
-#&gt;   vector[N] mu = temp_Intercept + Xc * b;
 #&gt;   // priors including all constants
 #&gt;   target += double_exponential_lpdf(b | 0, lasso_scale * lasso_inv_lambda);
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 1, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
 #&gt;   target += chi_square_lpdf(lasso_inv_lambda | lasso_df);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
-#&gt;     target += poisson_log_lpmf(Y | mu);
+#&gt;     target += poisson_log_glm_lpmf(Y | Xc, Intercept, b);
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
-#&gt;   real b_Intercept = temp_Intercept - dot_product(means_X, b);
+#&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 <span class='co'>## pass priors to Stan without checking</span>
 <span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'>prior_string</span>(<span class='st'>"target += normal_lpdf(b[1] | 0, 1)"</span>, <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -736,7 +747,7 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   matrix[N, Kc] Xc;  // centered version of X without an intercept
 #&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
@@ -745,26 +756,26 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   real temp_Intercept;  // temporary intercept
+#&gt;   // temporary intercept for centered predictors
+#&gt;   real Intercept;
 #&gt;   real&lt;lower=0&gt; sigma;  // residual SD
 #&gt; }
 #&gt; transformed parameters {
 #&gt; }
 #&gt; model {
-#&gt;   vector[N] mu = temp_Intercept + Xc * b;
 #&gt;   // priors including all constants
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 4, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 4, 10);
 #&gt;   target += student_t_lpdf(sigma | 3, 0, 10)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
 #&gt;   target += normal_lpdf(b[1] | 0, 1);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
-#&gt;     target += normal_lpdf(Y | mu, sigma);
+#&gt;     target += normal_id_glm_lpdf(Y | Xc, Intercept, b, sigma);
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
-#&gt;   real b_Intercept = temp_Intercept - dot_product(means_X, b);
+#&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 </div></pre>
   </div>

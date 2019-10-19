@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -114,7 +114,7 @@
       <h1>Estimating Distributional Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-05-23</h4>
+            <h4 class="date">2019-10-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_distreg.Rmd"><code>vignettes/brms_distreg.Rmd</code></a></small>
       <div class="hidden name"><code>brms_distreg.Rmd</code></div>
@@ -140,12 +140,12 @@
 <a class="sourceLine" id="cb1-3" title="3">dat1 &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(group, symptom_post)</a>
 <a class="sourceLine" id="cb1-4" title="4"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(dat1)</a></code></pre></div>
 <pre><code>  group symptom_post
-1 treat    2.0404923
-2 treat    3.9691941
-3 treat    1.8116539
-4 treat   -0.5155884
-5 treat   -0.1128128
-6 treat    0.4166023</code></pre>
+1 treat    1.6384177
+2 treat    2.3745309
+3 treat    1.3639081
+4 treat    0.1593502
+5 treat    1.0573379
+6 treat   -2.2940116</code></pre>
 <p>The following model estimates the effect of <code>group</code> on both the mean and the residual standard deviation of the normal response distribution.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(<span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(symptom_post <span class="op">~</span><span class="st"> </span>group, sigma <span class="op">~</span><span class="st"> </span>group), </a>
 <a class="sourceLine" id="cb3-2" title="2">            <span class="dt">data =</span> dat1, <span class="dt">family =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">gaussian</a></span>())</a></code></pre></div>
@@ -153,7 +153,7 @@
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit1)</a>
 <a class="sourceLine" id="cb4-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit1, <span class="dt">N =</span> <span class="dv">2</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-3-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The population-level effect <code>sigma_grouptreat</code>, which is the contrast of the two residual standard deviations on the log-scale, reveals that the variances of both groups are indeed different. This impression is confirmed when looking at the <code>marginal_effects</code> of <code>group</code>. Going one step further, we can compute the residual standard deviations on the original scale using the <code>hypothesis</code> method.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">hyp &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"exp(sigma_Intercept) = 0"</span>,</a>
@@ -161,8 +161,8 @@
 <a class="sourceLine" id="cb6-3" title="3"><span class="kw"><a href="../reference/hypothesis.html">hypothesis</a></span>(fit1, hyp)</a></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... = 0     1.11      0.15     0.86     1.45         NA        NA    *
-2 (exp(sigma_Interc... = 0     1.55      0.21     1.21     2.03         NA        NA    *
+1 (exp(sigma_Interc... = 0     0.85      0.12     0.66     1.12         NA        NA    *
+2 (exp(sigma_Interc... = 0     2.30      0.30     1.80     3.00         NA        NA    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -173,7 +173,7 @@ Posterior probabilities of point hypotheses assume equal prior probabilities.</c
 <a class="sourceLine" id="cb8-2" title="2">(hyp &lt;-<span class="st"> </span><span class="kw"><a href="../reference/hypothesis.html">hypothesis</a></span>(fit1, hyp))</a></code></pre></div>
 <pre><code>Hypothesis Tests for class b:
                 Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-1 (exp(sigma_Interc... &gt; 0     0.44      0.26     0.03     0.88      24.97      0.96    *
+1 (exp(sigma_Interc... &gt; 0     1.45      0.33     0.96     2.02        Inf         1    *
 ---
 'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
 '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -209,20 +209,20 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept    -1.01      0.17    -1.36    -0.69       2694 1.00
-persons       0.87      0.04     0.79     0.96       2875 1.00
-child        -1.36      0.10    -1.56    -1.18       2545 1.00
-camper        0.80      0.09     0.62     0.99       2976 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -1.01      0.18    -1.37    -0.65 1.00     2795     2675
+persons       0.87      0.05     0.78     0.97 1.00     3100     2909
+child        -1.36      0.10    -1.55    -1.18 1.00     2427     2199
+camper        0.80      0.10     0.62     0.99 1.00     3062     2341
 
 Family Specific Parameters: 
-   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-zi     0.41      0.04     0.32     0.49       3103 1.00
+   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+zi     0.41      0.05     0.32     0.50 1.00     2846     2764
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_zinb1), <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_zinb1), <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-8-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-8-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-8-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability <code>zi</code> is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-<em>inflation</em>). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead (not shown here).</p>
 <p>Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to not even try catching fish. Most children are just terribly bad at waiting for hours until something happens. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to make full use of the data.</p>
@@ -238,18 +238,18 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-             Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept       -1.08      0.18    -1.44    -0.72       2886 1.00
-zi_Intercept    -0.96      0.27    -1.53    -0.48       3800 1.00
-persons          0.89      0.05     0.80     0.98       2998 1.00
-child           -1.17      0.09    -1.36    -0.99       3288 1.00
-camper           0.78      0.10     0.60     0.97       3994 1.00
-zi_child         1.23      0.28     0.70     1.82       4242 1.00
+             Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept       -1.08      0.18    -1.43    -0.73 1.00     2879     2462
+zi_Intercept    -0.96      0.26    -1.51    -0.48 1.00     3944     2413
+persons          0.89      0.05     0.80     0.99 1.00     2990     2761
+child           -1.17      0.09    -1.36    -0.99 1.00     3344     2959
+camper           0.78      0.09     0.59     0.96 1.00     3887     2468
+zi_child         1.22      0.28     0.69     1.83 1.00     3789     2449
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_zinb2), <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_zinb2), <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-10-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-10-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>To transform the linear predictor of <code>zi</code> into a probability, <strong>brms</strong> applies the logit-link:</p>
 <p><span class="math display">\[logit(zi) = \log\left(\frac{zi}{1-zi}\right) = \eta_{zi}\]</span></p>
@@ -263,13 +263,13 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">dat_smooth &lt;-<span class="st"> </span>mgcv<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/mgcv/topics/gamSim">gamSim</a></span>(<span class="dt">eg =</span> <span class="dv">6</span>, <span class="dt">n =</span> <span class="dv">200</span>, <span class="dt">scale =</span> <span class="dv">2</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <pre><code>Gu &amp; Wahba 4 term additive model</code></pre>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(dat_smooth[, <span class="dv">1</span><span class="op">:</span><span class="dv">6</span>])</a></code></pre></div>
-<pre><code>          y         x0        x1          x2        x3         f
-1  7.706370 0.32578022 0.5288832 0.008256061 0.9660808  7.592947
-2 12.924289 0.91738427 0.3959033 0.562308564 0.9545614 11.678406
-3 18.245344 0.15608866 0.3298476 0.400071596 0.1376028 16.135267
-4 25.121104 0.07791775 0.2626614 0.208186505 0.5560876 22.918786
-5  5.604587 0.11800936 0.1816051 0.108107468 0.7683950  9.186865
-6 24.653002 0.65978361 0.9966563 0.177276255 0.7079248 23.009162</code></pre>
+<pre><code>          y        x0         x1         x2        x3         f
+1 16.184454 0.1328020 0.04295508 0.23176098 0.3736418 13.818636
+2 12.018294 0.7625161 0.27596552 0.13746816 0.5359203 15.014649
+3 13.221821 0.9365253 0.34520392 0.41173548 0.9341651 15.332566
+4 13.294628 0.8998223 0.01468887 0.80947192 0.8589632 14.584657
+5  9.497355 0.1099941 0.17172626 0.09916878 0.3593274  8.519343
+6  8.740446 0.9334722 0.50265367 0.87055633 0.9679158  9.352502</code></pre>
 <p>The data contains the predictors <code>x0</code> to <code>x3</code> as well as the grouping factor <code>fac</code> indicating the nested structure of the data. We predict the response variable <code>y</code> using smooth terms of <code>x1</code> and <code>x2</code> and a varying intercept of <code>fac</code>. In addition, we assume the residual standard deviation <code>sigma</code> to vary by a smoothing term of <code>x0</code> and a varying intercept of <code>fac</code>.</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">fit_smooth1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
 <a class="sourceLine" id="cb25-2" title="2">  <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(y <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/s.html">s</a></span>(x1) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="../reference/s.html">s</a></span>(x2) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>fac), sigma <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/s.html">s</a></span>(x0) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>fac)),</a>
@@ -286,29 +286,29 @@ Samples: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 2000
 
 Smooth Terms: 
-                 Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sds(sx1_1)           3.23      2.06     0.82     8.39       1086 1.00
-sds(sx2_1)          20.61      6.61    11.15    36.78        752 1.00
-sds(sigma_sx0_1)     0.71      0.78     0.02     2.83        761 1.00
+                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sds(sx1_1)           3.16      2.40     0.30     9.82 1.00      632      847
+sds(sx2_1)          23.10      6.44    13.43    38.58 1.00      666     1195
+sds(sigma_sx0_1)     0.68      0.72     0.02     2.67 1.01      674      809
 
 Group-Level Effects: 
 ~fac (Number of levels: 4) 
-                    Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(Intercept)           5.64      2.98     2.43    12.93        997 1.00
-sd(sigma_Intercept)     0.11      0.16     0.00     0.45        497 1.00
+                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)           5.51      3.01     2.19    13.32 1.00      620     1189
+sd(sigma_Intercept)     0.17      0.29     0.01     0.72 1.01      578      860
 
 Population-Level Effects: 
-                Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept          15.66      2.79     9.89    21.14        960 1.00
-sigma_Intercept     0.81      0.11     0.63     0.99        609 1.00
-sx1_1              10.01      6.22    -2.50    23.25       1578 1.00
-sx2_1              25.30     17.62    -9.83    58.67       1480 1.00
-sigma_sx0_1         0.22      1.51    -2.14     4.38       1120 1.00
+                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept          15.87      3.00     9.67    22.20 1.00      664      820
+sigma_Intercept     0.78      0.12     0.51     1.02 1.00     1111      913
+sx1_1              16.09      7.29     6.03    35.06 1.00      875     1185
+sx2_1              25.12     16.61    -7.78    56.80 1.00     1021     1173
+sigma_sx0_1         0.93      1.88    -2.00     6.07 1.00      870      642
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_smooth1), <span class="dt">points =</span> <span class="ot">TRUE</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_smooth1), <span class="dt">points =</span> <span class="ot">TRUE</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_distreg_files/figure-html/unnamed-chunk-13-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-13-2.png" width="60%" style="display: block; margin: auto;"><img src="brms_distreg_files/figure-html/unnamed-chunk-13-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>This model is likely an overkill for the data at hand, but nicely demonstrates the ease with which one can specify complex models with <strong>brms</strong> and to fit them using <strong>Stan</strong> on the backend.</p>
 </div>

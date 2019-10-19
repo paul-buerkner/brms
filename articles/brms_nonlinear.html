@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -114,7 +114,7 @@
       <h1>Estimating Non-Linear Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-05-23</h4>
+            <h4 class="date">2019-10-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_nonlinear.Rmd"><code>vignettes/brms_nonlinear.Rmd</code></a></small>
       <div class="hidden name"><code>brms_nonlinear.Rmd</code></div>
@@ -159,20 +159,20 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-             Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-b1_Intercept     2.04      0.10     1.83     2.23       1783 1.00
-b2_Intercept     0.75      0.02     0.71     0.80       1793 1.00
+             Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+b1_Intercept     1.99      0.10     1.79     2.18 1.00     1333     1747
+b2_Intercept     0.77      0.02     0.72     0.82 1.00     1342     1739
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     1.02      0.07     0.89     1.18       2023 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     1.01      0.07     0.88     1.16 1.00     2354     2382
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit1)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The <code>summary</code> method reveals that we were able to recover the true parameter values pretty nicely. According to the <code>plot</code> method, our MCMC chains have converged well and to the same posterior. The <code>marginal_effects</code> method visualizes the model-implied (non-linear) regression line.</p>
 <p>We might be also interested in comparing our non-linear model to a classical linear model.</p>
@@ -186,13 +186,13 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept     2.87      0.18     2.50     3.24       3779 1.00
-x             2.55      0.17     2.21     2.87       4015 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     2.76      0.19     2.38     3.11 1.00     3672     2623
+x             2.16      0.19     1.80     2.53 1.00     3513     2757
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma     1.82      0.13     1.59     2.10       4039 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     1.84      0.13     1.60     2.13 1.00     3191     2708
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -209,13 +209,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -145.0  6.9
+elpd_loo   -143.9  7.5
 p_loo         2.7  0.6
-looic       289.9 13.7
+looic       287.9 15.1
 ------
-Monte Carlo SE of elpd_loo is 0.0.
+Monte Carlo SE of elpd_loo is 0.1.
 
-All Pareto k estimates are good (k &lt; 0.5).
+Pareto k diagnostic values:
+                         Count Pct.    Min. n_eff
+(-Inf, 0.5]   (good)     99    99.0%   1277      
+ (0.5, 0.7]   (ok)        1     1.0%   349       
+   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+
+All Pareto k estimates are ok (k &lt; 0.7).
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -223,26 +230,24 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -204.8 12.9
-p_loo         6.7  2.9
-looic       409.6 25.8
+elpd_loo   -210.0 26.1
+p_loo        13.2 11.2
+looic       420.0 52.2
 ------
-Monte Carlo SE of elpd_loo is 0.1.
+Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     99    99.0%   1018      
- (0.5, 0.7]   (ok)        1     1.0%   101       
+(-Inf, 0.5]   (good)     99    99.0%   2046      
+ (0.5, 0.7]   (ok)        0     0.0%   &lt;NA&gt;      
    (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
-   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
-
-All Pareto k estimates are ok (k &lt; 0.7).
+   (1, Inf)   (very bad)  1     1.0%   7         
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit1   0.0       0.0  
-fit2 -59.8      12.4  </code></pre>
+fit2 -66.1      26.3  </code></pre>
 <p>Since smaller <code>LOOIC</code> values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surpirsing since we simulated the data from exactly that model.</p>
 </div>
 <div id="a-real-world-non-linear-model" class="section level2">
@@ -287,30 +292,30 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Group-Level Effects: 
 ~AY (Number of levels: 10) 
-                  Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sd(ult_Intercept)   745.61    232.69   428.98  1358.18       1309 1.00
+                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(ult_Intercept)   745.45    228.66   422.84  1303.32 1.00     1201     1803
 
 Population-Level Effects: 
-                Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-ult_Intercept    5300.33    285.32  4739.12  5868.48       1227 1.00
-omega_Intercept     1.33      0.05     1.24     1.43       2484 1.00
-theta_Intercept    46.25      2.22    42.55    51.26       2144 1.00
+                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+ult_Intercept    5285.92    286.70  4722.67  5864.83 1.00     1195     1677
+omega_Intercept     1.33      0.05     1.24     1.43 1.00     2492     2420
+theta_Intercept    46.26      2.13    42.53    50.91 1.00     2321     2278
 
 Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-sigma   139.94     15.69   113.98   174.15       3081 1.00
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma   140.04     15.30   113.59   174.34 1.00     2912     2378
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit_loss, <span class="dt">N =</span> <span class="dv">3</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-2.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_loss)</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_loss)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Next, we show marginal effects separately for each year.</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">conditions &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">AY =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(loss<span class="op">$</span>AY))</a>
 <a class="sourceLine" id="cb21-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/colnames">rownames</a></span>(conditions) &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/unique">unique</a></span>(loss<span class="op">$</span>AY)</a>
-<a class="sourceLine" id="cb21-3" title="3">me_loss &lt;-<span class="st"> </span><span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(</a>
+<a class="sourceLine" id="cb21-3" title="3">me_loss &lt;-<span class="st"> </span><span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(</a>
 <a class="sourceLine" id="cb21-4" title="4">  fit_loss, <span class="dt">conditions =</span> conditions, </a>
 <a class="sourceLine" id="cb21-5" title="5">  <span class="dt">re_formula =</span> <span class="ot">NULL</span>, <span class="dt">method =</span> <span class="st">"predict"</span></a>
 <a class="sourceLine" id="cb21-6" title="6">)</a>
@@ -339,14 +344,14 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-Intercept     0.80      0.13     0.54     1.05       2515 1.00
-ability       0.85      0.16     0.54     1.17       2815 1.00
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.90      0.13     0.64     1.17 1.00     3332     2452
+ability       0.58      0.14     0.33     0.86 1.00     2939     2665
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_ir1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_ir1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-14-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>A more sophisticated approach incorporating the guessing probability looks as follows:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">fit_ir2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
@@ -366,14 +371,14 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-eta_Intercept    -0.01      0.21    -0.43     0.37       2415 1.00
-eta_ability       1.29      0.28     0.81     1.89       2270 1.00
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+eta_Intercept     0.20      0.18    -0.15     0.53 1.00     3224     2497
+eta_ability       0.79      0.21     0.42     1.25 1.00     2838     2231
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_ir2), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_ir2), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-16-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Comparing model fit via leave-one-out cross-validation</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit_ir1, fit_ir2)</a></code></pre></div>
@@ -382,9 +387,9 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -173.1  7.6
-p_loo         1.9  0.2
-looic       346.1 15.2
+elpd_loo   -177.6  7.6
+p_loo         2.1  0.2
+looic       355.3 15.1
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -396,9 +401,9 @@ Output of model 'fit_ir2':
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -172.3  7.7
-p_loo         2.1  0.3
-looic       344.7 15.3
+elpd_loo   -177.9  7.7
+p_loo         2.4  0.4
+looic       355.8 15.3
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -407,8 +412,8 @@ See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
         elpd_diff se_diff
-fit_ir2  0.0       0.0   
-fit_ir1 -0.7       1.2   </code></pre>
+fit_ir1  0.0       0.0   
+fit_ir2 -0.3       0.7   </code></pre>
 <p>shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don’t know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.</p>
 <div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" title="1">fit_ir3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
 <a class="sourceLine" id="cb33-2" title="2">  <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(answer <span class="op">~</span><span class="st"> </span>guess <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>guess) <span class="op">*</span><span class="st"> </span><span class="kw">inv_logit</span>(eta), </a>
@@ -431,16 +436,16 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
          total post-warmup samples = 4000
 
 Population-Level Effects: 
-                Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-eta_ability         1.27      0.26     0.81     1.84       2616 1.00
-guess_Intercept     0.34      0.05     0.24     0.44       2876 1.00
+                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+eta_ability         0.85      0.22     0.45     1.32 1.00     2855     2534
+guess_Intercept     0.39      0.05     0.28     0.48 1.00     2780     2267
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit_ir3)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/marginal_effects.html">marginal_effects</a></span>(fit_ir3), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit_ir3), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-19-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The results show that we are able to recover the simulated model parameters with this non-linear model. Of course, real item-response data have multiple items so that accounting for item and person variability (e.g., using a multilevel model with varying intercepts) becomes necessary as we have multiple observations per item and person. Luckily, this can all be done within the non-linear framework of <strong>brms</strong> and I hope that this vignette serves as a good starting point.</p>
 </div>

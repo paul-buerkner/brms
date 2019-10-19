@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -221,18 +221,23 @@ pedigrees and phylogenetic effects. See
 design matrices should be treated as sparse (defaults to <code>FALSE</code>). For
 design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
-decreased.</p></td>
+decreased. It is now recommended to use the <code>sparse</code> argument of
+<code><a href='brmsformula.html'>brmsformula</a></code> and related functions.</p></td>
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from all specified proper priors
-should be drawn additionally to the posterior samples (defaults to
-<code>"no"</code>). Among others, these samples can be used to calculate Bayes
-factors for point hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. If set to
-<code>"only"</code>, samples are drawn solely from the priors ignoring the
-likelihood, which allows among others to generate samples from the prior
-predictive distribution. In this case, all parameters must have proper
-priors.</p></td>
+      <td><p>Indicate if samples from priors should be drawn 
+additionally to the posterior samples (defaults to <code>"no"</code>). Among 
+others, these samples can be used to calculate Bayes factors for point 
+hypotheses via <code><a href='hypothesis.html'>hypothesis</a></code>. Please note that improper priors 
+are not sampled, including the default improper priors used by <code>brm</code>. 
+See <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default for 
+technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior samples 
+for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>, samples 
+are drawn solely from the priors ignoring the likelihood, which allows among 
+others to generate samples from the prior predictive distribution. In this 
+case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
       <th>stanvars</th>
@@ -272,7 +277,7 @@ the Stan parser will be suppressed.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='fu'>make_stancode</span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
+              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"cumulative"</span>)</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -305,9 +310,10 @@ the Stan parser will be suppressed.</p></td>
 #&gt;   matrix[N, K] X;  // population-level design matrix
 #&gt;   real&lt;lower=0&gt; disc;  // discrimination parameters
 #&gt;   // data for group-level effects of ID 1
-#&gt;   int&lt;lower=1&gt; N_1;
-#&gt;   int&lt;lower=1&gt; M_1;
-#&gt;   int&lt;lower=1&gt; J_1[N];
+#&gt;   int&lt;lower=1&gt; N_1;  // number of grouping levels
+#&gt;   int&lt;lower=1&gt; M_1;  // number of coefficients per level
+#&gt;   int&lt;lower=1&gt; J_1[N];  // grouping indicator per observation
+#&gt;   // group-level predictor values
 #&gt;   vector[N] Z_1_1;
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
@@ -322,37 +328,41 @@ the Stan parser will be suppressed.</p></td>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   ordered[ncat - 1] temp_Intercept;  // temporary thresholds
+#&gt;   // temporary thresholds for centered predictors
+#&gt;   ordered[ncat - 1] Intercept;
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
-#&gt;   vector[N_1] z_1[M_1];  // unscaled group-level effects
+#&gt;   // standardized group-level effects
+#&gt;   vector[N_1] z_1[M_1];
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   // group-level effects
+#&gt;   // actual group-level effects
 #&gt;   vector[N_1] r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
+#&gt;   // initialize linear predictor term
 #&gt;   vector[N] mu = Xc * b;
 #&gt;   for (n in 1:N) {
+#&gt;     // add more terms to the linear predictor
 #&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
 #&gt;   }
 #&gt;   // priors including all constants
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 0, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 0, 10);
 #&gt;   target += student_t_lpdf(sd_1 | 3, 0, 10)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
 #&gt;   target += normal_lpdf(z_1[1] | 0, 1);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
 #&gt;     for (n in 1:N) {
-#&gt;       target += ordered_logistic_lpmf(Y[n] | mu[n], temp_Intercept);
+#&gt;       target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);
 #&gt;     }
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // compute actual thresholds
-#&gt;   vector[ncat - 1] b_Intercept = temp_Intercept + dot_product(means_X, b);
+#&gt;   vector[ncat - 1] b_Intercept = Intercept + dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 <span class='fu'>make_stancode</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)</div><div class='output co'>#&gt; // generated with brms 2.9.0
+              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>)</div><div class='output co'>#&gt; // generated with brms 2.10.3
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -361,15 +371,16 @@ the Stan parser will be suppressed.</p></td>
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
 #&gt;   // data for group-level effects of ID 1
-#&gt;   int&lt;lower=1&gt; N_1;
-#&gt;   int&lt;lower=1&gt; M_1;
-#&gt;   int&lt;lower=1&gt; J_1[N];
+#&gt;   int&lt;lower=1&gt; N_1;  // number of grouping levels
+#&gt;   int&lt;lower=1&gt; M_1;  // number of coefficients per level
+#&gt;   int&lt;lower=1&gt; J_1[N];  // grouping indicator per observation
+#&gt;   // group-level predictor values
 #&gt;   vector[N] Z_1_1;
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
 #&gt; transformed data {
 #&gt;   int Kc = K - 1;
-#&gt;   matrix[N, Kc] Xc;  // centered version of X
+#&gt;   matrix[N, Kc] Xc;  // centered version of X without an intercept
 #&gt;   vector[Kc] means_X;  // column means of X before centering
 #&gt;   for (i in 2:K) {
 #&gt;     means_X[i - 1] = mean(X[, i]);
@@ -378,21 +389,25 @@ the Stan parser will be suppressed.</p></td>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   real temp_Intercept;  // temporary intercept
+#&gt;   // temporary intercept for centered predictors
+#&gt;   real Intercept;
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
-#&gt;   vector[N_1] z_1[M_1];  // unscaled group-level effects
+#&gt;   // standardized group-level effects
+#&gt;   vector[N_1] z_1[M_1];
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   // group-level effects
+#&gt;   // actual group-level effects
 #&gt;   vector[N_1] r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
-#&gt;   vector[N] mu = temp_Intercept + Xc * b;
+#&gt;   // initialize linear predictor term
+#&gt;   vector[N] mu = Intercept + Xc * b;
 #&gt;   for (n in 1:N) {
+#&gt;     // add more terms to the linear predictor
 #&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
 #&gt;   }
 #&gt;   // priors including all constants
-#&gt;   target += student_t_lpdf(temp_Intercept | 3, 1, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
 #&gt;   target += student_t_lpdf(sd_1 | 3, 0, 10)
 #&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
 #&gt;   target += normal_lpdf(z_1[1] | 0, 1);
@@ -403,7 +418,7 @@ the Stan parser will be suppressed.</p></td>
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
-#&gt;   real b_Intercept = temp_Intercept - dot_product(means_X, b);
+#&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
 </div></pre>
   </div>

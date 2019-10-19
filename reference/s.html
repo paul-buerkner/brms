@@ -67,7 +67,7 @@ to help set up a model using spline based smooths." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -195,13 +195,13 @@ to help set up a model using spline based smooths.</p>
 <span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>s</span>(<span class='no'>x0</span>) + <span class='fu'>s</span>(<span class='no'>x1</span>) + <span class='fu'>s</span>(<span class='no'>x2</span>) + <span class='fu'>s</span>(<span class='no'>x3</span>),
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_smooths.html'>marginal_smooths</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_smooths.html'>marginal_smooths</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 <span class='co'># fit a more complicated smooth model</span>
 <span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>t2</span>(<span class='no'>x0</span>, <span class='no'>x1</span>) + <span class='fu'>s</span>(<span class='no'>x2</span>, <span class='kw'>by</span> <span class='kw'>=</span> <span class='no'>x3</span>),
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>dat</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_smooths.html'>marginal_smooths</a></span>(<span class='no'>fit2</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_smooths.html'>marginal_smooths</a></span>(<span class='no'>fit2</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>

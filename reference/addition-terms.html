@@ -67,7 +67,7 @@ known measurement error." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -171,13 +171,19 @@ known measurement error.</p>
 
 <span class='fu'>resp_dec</span>(<span class='no'>x</span>)
 
-<span class='fu'>resp_cens</span>(<span class='no'>x</span>, <span class='kw'>y2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+<span class='fu'>resp_cens</span>(<span class='no'>x</span>, <span class='kw'>y2</span> <span class='kw'>=</span> <span class='fl'>NA</span>)
 
 <span class='fu'>resp_trunc</span>(<span class='kw'>lb</span> <span class='kw'>=</span> -<span class='fl'>Inf</span>, <span class='kw'>ub</span> <span class='kw'>=</span> <span class='fl'>Inf</span>)
 
-<span class='fu'>resp_mi</span>(<span class='kw'>sdy</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+<span class='fu'>resp_mi</span>(<span class='kw'>sdy</span> <span class='kw'>=</span> <span class='fl'>NA</span>)
 
-<span class='fu'>resp_subset</span>(<span class='no'>x</span>)</pre>
+<span class='fu'>resp_rate</span>(<span class='no'>denom</span>)
+
+<span class='fu'>resp_subset</span>(<span class='no'>x</span>)
+
+<span class='fu'>resp_vreal</span>(<span class='no'>...</span>)
+
+<span class='fu'>resp_vint</span>(<span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -189,9 +195,9 @@ data. Allowed values depend on the function:
 <code>resp_se</code> and <code>resp_weights</code> require positive numeric values.
 <code>resp_trials</code> and <code>resp_cat</code> require positive integers.
 <code>resp_dec</code> requires <code>0</code> and <code>1</code>, or alternatively
-<code>'lower'</code> and <code>'upper'</code>; 
+<code>'lower'</code> and <code>'upper'</code>.
 <code>resp_subset</code> requires <code>0</code> and <code>1</code>, or alternatively
-<code>FALSE</code> and <code>TRUE</code>;
+<code>FALSE</code> and <code>TRUE</code>.
 <code>resp_cens</code> requires <code>'left'</code>, <code>'none'</code>, <code>'right'</code>,
 and <code>'interval'</code> (or equivalently <code>-1</code>, <code>0</code>, <code>1</code>,
 and <code>2</code>) to indicate left, no, right, or interval censoring.</p></td>
@@ -229,12 +235,22 @@ treated as standard deviation. If specified, handles
 measurement error and (completely) missing values
 at the same time using the plausible-values-technique.</p></td>
     </tr>
+    <tr>
+      <th>denom</th>
+      <td><p>A vector of positive numeric values specifying
+the denominator values from which the response rates are computed.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>For <code>resp_vreal</code>, vectors of real values. 
+For <code>resp_vint</code>, vectors of integer values.</p></td>
+    </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A vector containing additional information on the response
-  variable in an appropriate format.</p>
+    <p>A list of additional response information to be processed further
+  by <span class="pkg">brms</span>.</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 

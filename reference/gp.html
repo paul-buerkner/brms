@@ -67,7 +67,7 @@ GP terms." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.9.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
       </span>
     </div>
 
@@ -276,19 +276,19 @@ but we are still working on providing better recommendations.</p></td>
 <span class='co'># fit a simple GP model</span>
 <span class='no'>fit1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>gp</span>(<span class='no'>x2</span>), <span class='no'>dat</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit1</span>)
-<span class='no'>me1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit1</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>me1</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit1</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>me1</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 
 <span class='co'># fit a more complicated GP model</span>
 <span class='no'>fit2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>gp</span>(<span class='no'>x0</span>) + <span class='no'>x1</span> + <span class='fu'>gp</span>(<span class='no'>x2</span>) + <span class='no'>x3</span>, <span class='no'>dat</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='no'>me2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit2</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>me2</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit2</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>me2</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 
 <span class='co'># fit a multivariate GP model</span>
 <span class='no'>fit3</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>gp</span>(<span class='no'>x1</span>, <span class='no'>x2</span>), <span class='no'>dat</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit3</span>)
-<span class='no'>me3</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit3</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>me3</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit3</span>, <span class='kw'>nsamples</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>spaghetti</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='no'>me3</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 
 <span class='co'># compare model fit</span>
@@ -300,7 +300,7 @@ but we are still working on providing better recommendations.</p></td>
 <span class='co'># fit separate gaussian processes for different levels of 'fac'</span>
 <span class='no'>fit4</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>y</span> ~ <span class='fu'>gp</span>(<span class='no'>x2</span>, <span class='kw'>by</span> <span class='kw'>=</span> <span class='no'>fac</span>), <span class='no'>dat2</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/summary'>summary</a></span>(<span class='no'>fit4</span>)
-<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='marginal_effects.html'>marginal_effects</a></span>(<span class='no'>fit4</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/plot'>plot</a></span>(<span class='fu'><a href='conditional_effects.html'>marginal_effects</a></span>(<span class='no'>fit4</span>), <span class='kw'>points</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='co'># }</span><div class='input'>
 </div></pre>
   </div>
