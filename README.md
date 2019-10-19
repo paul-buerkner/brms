@@ -118,8 +118,10 @@ In general, every parameter is summarized using the mean (‘Estimate’)
 and the standard deviation (‘Est.Error’) of the posterior distribution
 as well as two-sided 95% credible intervals (‘l-95% CI’ and ‘u-95% CI’)
 based on quantiles. We see that the coefficient of `Trt` is negative
-with a completely negative 95%-CI indicating that, on average, the
-treatment reduces seizure counts by some amount. Further, we find little
+with a zero overlapping 95%-CI. This indicates that, on average, the
+treatment may reduce seizure counts by some amount but the evidence
+based on the data and applied model is not very strong and still
+insufficient by standard decision rules. Further, we find little
 evidence that the treatment effect varies with the baseline number of
 seizures.
 
