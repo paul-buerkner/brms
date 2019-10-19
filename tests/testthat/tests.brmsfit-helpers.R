@@ -19,52 +19,45 @@ test_that("probit and probit_approx produce similar results", {
                tolerance = 1e-3)
 })
 
-test_that("ARMA covariance matrices are computed correctly", {
+test_that("autocorrelation matrices are computed correctly", {
   ar <- 0.5
   ma <- 0.3
-  sigma <- 2
-  se <- sqrt(1:4)
   
-  # test for AR1 cov matrix
-  ar_mat <- get_cov_matrix_ar1(ar = matrix(ar), sigma = matrix(sigma), 
-                               se = se, nrows = length(se))
-  expected_ar_mat <- sigma^2 / (1 - ar^2) * 
+  ar_mat <- brms:::get_cor_matrix_ar1(ar = matrix(ar), nobs = 4)
+  expected_ar_mat <- 1 / (1 - ar^2) * 
                      cbind(c(1, ar, ar^2, ar^3),
                            c(ar, 1, ar, ar^2),
                            c(ar^2, ar, 1, ar),
                            c(ar^3, ar^2, ar, 1))
-  expected_ar_mat <- expected_ar_mat + diag(se^2)
   expect_equal(ar_mat[1, , ], expected_ar_mat)
   
-  # test for MA1 cov matrix
-  ma_mat <- get_cov_matrix_ma1(ma = matrix(ma), sigma = matrix(sigma), 
-                               se = se, nrows = length(se))
-  expected_ma_mat <- sigma^2 * 
-                     cbind(c(1+ma^2, ma, 0, 0),
+  ma_mat <- brms:::get_cor_matrix_ma1(ma = matrix(ma), nobs = 4)
+  expected_ma_mat <- cbind(c(1+ma^2, ma, 0, 0),
                            c(ma, 1+ma^2, ma, 0),
                            c(0, ma, 1+ma^2, ma),
                            c(0, 0, ma, 1+ma^2))
-  expected_ma_mat <- expected_ma_mat + diag(se^2)
   expect_equal(ma_mat[1, , ], expected_ma_mat)
   
-  # test for ARMA1 cov matrix
-  arma_mat <- get_cov_matrix_arma1(ar = matrix(ar), ma = matrix(ma), 
-                                 sigma = matrix(sigma), 
-                                 se = se, nrows = length(se))
+  arma_mat <- brms:::get_cor_matrix_arma1(
+    ar = matrix(ar), ma = matrix(ma), nobs = 4
+  )
   g0 <- 1 + ma^2 + 2 * ar * ma
   g1 <- (1 + ar * ma) * (ar + ma)
-  expected_arma_mat <- sigma^2 / (1 - ar^2) * 
+  expected_arma_mat <- 1 / (1 - ar^2) * 
                        cbind(c(g0, g1, g1 * ar, g1 * ar^2),
                              c(g1, g0, g1, g1 * ar),
                              c(g1 * ar, g1, g0, g1),
                              c(g1 * ar^2, g1 * ar, g1, g0))
-  expected_arma_mat <- expected_arma_mat + diag(se^2)
   expect_equal(arma_mat[1, , ], expected_arma_mat)
   
-  # test for identity matrix
-  ident_mat <- get_cov_matrix_ident(sigma = matrix(sigma), 
-                                    se = se, nrows = length(se))
-  expected_ident_mat <- diag(sigma^2 + se^2)
+  cosy <- 0.6
+  cosy_mat <- brms:::get_cor_matrix_cosy(cosy = as.matrix(cosy), nobs = 4)
+  expected_cosy_mat <- matrix(cosy, 4, 4)
+  diag(expected_cosy_mat) <- 1
+  expect_equal(cosy_mat[1, , ], expected_cosy_mat)
+  
+  ident_mat <- brms:::get_cor_matrix_ident(nsamples = 10, nobs = 4)
+  expected_ident_mat <- diag(1, 4)
   expect_equal(ident_mat[1, , ], expected_ident_mat)
 })
 

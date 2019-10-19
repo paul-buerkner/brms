@@ -3,6 +3,7 @@
 \name{is.cor_brms}
 \alias{is.cor_brms}
 \alias{is.cor_arma}
+\alias{is.cor_cosy}
 \alias{is.cor_sar}
 \alias{is.cor_car}
 \alias{is.cor_fixed}
@@ -11,6 +12,8 @@
 is.cor_brms(x)
 
 is.cor_arma(x)
+
+is.cor_cosy(x)
 
 is.cor_sar(x)
 

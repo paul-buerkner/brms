@@ -221,7 +221,8 @@
 #'   \code{fun(<variable>)} separated by \code{+} each providing special 
 #'   information on the response variable. \code{fun} can be replaced with 
 #'   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
-#'   \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
+#'   \code{trials}, \code{cat}, \code{dec}, \code{rate}, \code{vreal}, or
+#'   \code{vint}. Their meanings are explained below.
 #'   (see also \code{\link{addition-terms}}). 
 #'   
 #'   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is 
@@ -257,6 +258,14 @@
 #'   write \code{y | subset(sub) ~ predictors} so that \code{y} is
 #'   predicted only for those observations for which \code{sub} evaluates
 #'   to \code{TRUE}.
+#'   
+#'   For log-linear models such as poisson models, \code{rate} may be used
+#'   in the \code{aterms} part to specify the denomintor of a response that
+#'   is expressed as a rate. The numerator is given by the actual response
+#'   variable and has a distribution according to the family as usual. Using
+#'   \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
+#'   the linear predictor of the main parameter but the former is arguably
+#'   more convenient and explicit.
 #'   
 #'   With the exception of categorical, ordinal, and mixture families, 
 #'   left, right, and interval censoring can be modeled through 
@@ -308,11 +317,16 @@
 #'   will be treated as a response on the lower boundary. Alternatively,
 #'   the variable passed to \code{dec} might also be a character vector 
 #'   consisting of \code{'lower'} and \code{'upper'}.
+#'
+#'   For custom families, it is possible to pass an abitrary number of real and
+#'   integer vectors via the addition terms \code{vreal} and \code{vint},
+#'   respectively. An example is provided in
+#'   \code{vignette('brms_customfamilies')}.
 #' 
-#'   Multiple addition terms may be specified at the same time using 
-#'   the \code{+} operator, for instance \cr
-#'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
-#'   for a censored meta-analytic model. 
+#'   Multiple addition terms may be specified at the same time using the
+#'   \code{+} operator. For example, the formula
+#'   \code{formula = yi | se(sei) + cens(censored) ~ 1} implies a censored 
+#'   meta-analytic model.
 #'   
 #'   The addition argument \code{disp} (short for dispersion) 
 #'   has been removed in version 2.0. You may instead use the 
@@ -338,9 +352,9 @@
 #'   \code{\link{set_prior}}.
 #'   
 #'   This behavior can be avoided by using the reserved 
-#'   (and internally generated) variable \code{intercept}. 
+#'   (and internally generated) variable \code{Intercept}. 
 #'   Instead of \code{y ~ x}, you may write
-#'   \code{y ~ 0 + intercept + x}. This way, priors can be
+#'   \code{y ~ 0 + Intercept + x}. This way, priors can be
 #'   defined on the real intercept, directly. In addition,
 #'   the intercept is just treated as an ordinary population-level effect
 #'   and thus priors defined on \code{b} will also apply to it. 
@@ -588,7 +602,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (is.brmsformula(formula)) {
     out <- formula
   } else {
-    out <- list(formula = as.formula(formula))
+    out <- list(formula = as_formula(formula))
     class(out) <- "brmsformula"
   }
   # parse and validate dots arguments
@@ -755,7 +769,7 @@ NULL
 #' @export
 nlf <- function(formula, ..., flist = NULL, dpar = NULL, 
                 resp = NULL, loop = NULL) {
-  formula <- as.formula(formula)
+  formula <- as_formula(formula)
   if (is.null(lhs(formula))) {
     stop2("Argument 'formula' must be two-sided.")
   }
@@ -1076,7 +1090,7 @@ decomp_opts <- function() {
 # @return a named list of length one containing the formula
 validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
   stopifnot(length(par) <= 1L)
-  try_formula <- try(as.formula(formula), silent = TRUE)
+  try_formula <- try(as_formula(formula), silent = TRUE)
   if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
       stop2("Expecting a single value when fixing parameter '", par, "'.")
@@ -1121,7 +1135,7 @@ validate_par_formula <- function(formula, par = NULL, rsv_pars = NULL) {
 # @param empty_ok is an empty left-hand-side ok?
 # @return a formula of the form <response> ~ 1
 validate_resp_formula <- function(x, empty_ok = TRUE) {
-  out <- lhs(as.formula(x))
+  out <- lhs(as_formula(x))
   if (is.null(out)) {
     if (empty_ok) {
       out <- ~ 1
@@ -1371,8 +1385,8 @@ update.mvbrmsformula <- function(object, formula., ...) {
 #'
 #' @export
 update_adterms <- function(formula, adform, action = c("update", "replace")) {
-  formula <- as.formula(formula)
-  adform <- as.formula(adform)
+  formula <- as_formula(formula)
+  adform <- as_formula(adform)
   action <- match.arg(action)
   if (is.null(lhs(formula))) {
     stop2("Can't update a ond-sided formula.")

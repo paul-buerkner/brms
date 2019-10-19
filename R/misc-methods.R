@@ -89,7 +89,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
 # @param x object to be printed; coerced to matrix
 # @param digits number of digits to show
 # @param no_digits names of columns for which no digits should be shown
-print_format <- function(x, digits = 2, no_digits = "Eff.Sample") {
+print_format <- function(x, digits = 2, no_digits = c("Bulk_ESS", "Tail_ESS")) {
   x <- as.matrix(x)
   digits <- as.numeric(digits)
   if (length(digits) != 1L) {

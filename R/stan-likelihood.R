@@ -60,13 +60,14 @@ stan_llh.mixfamily <- function(family, bterms, ...) {
   has_weights <- is.formula(bterms$adforms$weights)  
   weights <- str_if(has_weights, glue("weights{resp}[n] * "))
   out <- glue(
-    "  for (n in 1:N{resp}) {{\n",
+    "  // likelihood of the mixture model\n",
+    "    for (n in 1:N{resp}) {{\n",
     "      real ps[{length(llh)}];\n"
   )
   str_add(out) <- collapse("    ", llh)
   str_add(out) <- glue(
     "    {tp()}{weights}log_sum_exp(ps);\n",
-    "  }}\n"
+    "    }}\n"
   )
   out
 }
@@ -100,7 +101,7 @@ stan_llh_general <- function(llh, bterms, data, resp = "", ...) {
 stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
   stopifnot(is.sdist(llh))
   s <- wsp(nsp = 6)
-  cens <- has_cens(bterms, data = data)
+  cens <- eval_rhs(bterms$adforms$cens)
   lpdf <- stan_llh_lpdf_name(bterms)
   has_weights <- is.formula(bterms$adforms$weights)
   Y <- stan_llh_Y_name(bterms)
@@ -116,7 +117,8 @@ stan_llh_cens <- function(llh, bterms, data, resp = "", ...) {
     s, "}} else if (cens{resp}[n] == -1) {{\n",
     s, "{tp}{w}{llh$dist}_lcdf({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
   )
-  if (isTRUE(attr(cens, "interval"))) {
+  if (cens$vars$y2 != "NA") {
+    # interval censoring is required
     str_add(out) <- glue(
       s, "}} else if (cens{resp}[n] == 2) {{\n",
       s, "{tp}{w}log_diff_exp(\n", 
@@ -153,7 +155,7 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
   Y <- stan_llh_Y_name(bterms)
   if (is.formula(bterms$adforms$cens)) {
     # mostly copied over from stan_llh_cens
-    cens <- has_cens(bterms, data = data)
+    cens <- eval_rhs(bterms$adforms$cens)
     s <- wsp(nsp = 6)
     out <- glue(
       "  // special treatment of censored data\n",
@@ -167,7 +169,8 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
       s, "  ps[{mix}] = {theta} + ",
       "{llh$dist}_lcdf({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
     )
-    if (isTRUE(attr(cens, "interval"))) {
+    if (cens$vars$y2 != "NA") {
+      # interval censoring is required
       str_add(out) <- glue(
         s, "}} else if (cens{resp}[n] == 2) {{\n",
         s, "  ps[{mix}] = {theta} + log_diff_exp(\n", 
@@ -190,7 +193,7 @@ stan_llh_mix <- function(llh, bterms, data, mix, ptheta, resp = "", ...) {
 # @param short use the T[, ] syntax?
 stan_llh_trunc <- function(llh, bterms, data, resp = "", short = FALSE) {
   stopifnot(is.sdist(llh))
-  bounds <- get_bounds(bterms, data = data)
+  bounds <- trunc_bounds(bterms, data = data)
   if (!any(bounds$lb > -Inf | bounds$ub < Inf)) {
     return("")
   }
@@ -283,10 +286,17 @@ stan_llh_adj <- function(x, adds = c("weights", "cens", "trunc")) {
 
 # one function per family
 stan_llh_gaussian <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  p$sigma <- stan_llh_add_se(p$sigma, bterms, reqn, resp)
-  sdist("normal", p$mu, p$sigma)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    p$sigma <- paste0("sigma", resp)
+    out <- sdist("normal_id_glm", p$x, p$alpha, p$beta, p$sigma)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    p$sigma <- stan_llh_add_se(p$sigma, bterms, reqn, resp)
+    out <- sdist("normal", p$mu, p$sigma) 
+  }
+  out
 }
 
 stan_llh_gaussian_mv <- function(bterms, resp = "", mix = "") {
@@ -301,10 +311,11 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_cov", 
-    p$mu, p$chol_cov, p$se2,
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("normal_cov_{sfx}"), 
+    p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
@@ -322,17 +333,17 @@ stan_llh_gaussian_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W")
+  v <- c("lagsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W)
+  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
 }
 
 stan_llh_gaussian_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W")
+  v <- c("errorsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$W)
+  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
 }
 
 stan_llh_student <- function(bterms, resp = "", mix = "") {
@@ -355,10 +366,11 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  v <- c("chol_cov", "se2", "nobs_tg", "begin_tg", "end_tg")
+  v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_cov", 
-    p$nu, p$mu, p$chol_cov, p$se2,
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("student_t_cov_{sfx}"), 
+    p$nu, p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
@@ -376,17 +388,17 @@ stan_llh_student_fixed <- function(bterms, resp = "", mix = "") {
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W")
+  v <- c("lagsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W)
+  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
 }
 
 stan_llh_student_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W")
+  v <- c("errorsar", "W", "eigenW")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, p$errorsar, p$W)
+  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
 }
 
 stan_llh_lognormal <- function(bterms, resp = "", mix = "") {
@@ -418,17 +430,30 @@ stan_llh_skew_normal <- function(bterms, resp = "", mix = "", ...) {
 }
 
 stan_llh_poisson <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("poisson", "log", bterms)
-  sdist(lpdf, p$mu)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    out <- sdist("poisson_log_glm", p$x, p$alpha, p$beta)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("poisson", "log", bterms)
+    out <- sdist(lpdf, p$mu)
+  }
+  out
 }
 
 stan_llh_negbinomial <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
-  sdist(lpdf, p$mu, p$shape)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    p$shape <- paste0("shape", resp)
+    out <- sdist("neg_binomial_2_log_glm", p$x, p$alpha, p$beta, p$shape)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
+    out <- sdist(lpdf, p$mu, p$shape)
+  }
+  out
 }
 
 stan_llh_geometric <- function(bterms, resp = "", mix = "") {
@@ -447,10 +472,16 @@ stan_llh_binomial <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_bernoulli <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
-  p <- stan_llh_dpars(bterms, reqn, resp, mix)
-  lpdf <- stan_llh_simple_lpdf("bernoulli", "logit", bterms)
-  sdist(lpdf, p$mu)
+  if (use_glm_primitive(bterms)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp)
+    out <- sdist("bernoulli_logit_glm", p$x, p$alpha, p$beta)
+  } else {
+    reqn <- stan_llh_adj(bterms) || nzchar(mix)
+    p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    lpdf <- stan_llh_simple_lpdf("bernoulli", "logit", bterms)
+    out <- sdist(lpdf, p$mu)
+  }
+  out
 }
 
 stan_llh_discrete_weibull <- function(bterms, resp = "", mix = "") {
@@ -534,14 +565,25 @@ stan_llh_von_mises <- function(bterms, resp = "", mix = "") {
   sdist(lpdf, p$mu, p$kappa)
 }
 
+stan_llh_cox <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  p$bhaz <- paste0("bhaz", resp, "[n]")
+  p$cbhaz <- paste0("cbhaz", resp, "[n]")
+  lpdf <- "cox"
+  if (bterms$family$link == "log") {
+    str_add(lpdf) <- "_log"
+  }
+  sdist(lpdf, p$mu, p$bhaz, p$cbhaz)
+}
+
 stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
   simplify <- bterms$family$link == "logit" && 
     !"disc" %in% names(bterms$dpars) && !has_cs(bterms)
   if (simplify) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
     p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
-    out <- sdist("ordered_logistic", p$mu, p$ord_intercept)
+    p$thres <- paste0("Intercept", prefix)
+    out <- sdist("ordered_logistic", p$mu, p$thres)
   } else {
     out <- stan_llh_ordinal(bterms, resp, mix)
   }
@@ -586,7 +628,7 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$thres <- paste0("temp", prefix, "_Intercept")
+  p$thres <- paste0("Intercept", prefix)
   if (has_cs(bterms)) {
     str_add(p$thres) <- paste0(" - mucs", prefix, "[n]'")
   }
@@ -638,7 +680,7 @@ stan_llh_zero_inflated_negbinomial <- function(bterms, resp = "", mix = "") {
 
 stan_llh_zero_inflated_binomial <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  p$trials <- "trials[n]"
+  p$trials <- paste0("trials", resp, "[n]")
   lpdf <- "zero_inflated_binomial"
   lpdf <- stan_llh_simple_lpdf(lpdf, "logit", bterms, sep = "_b")
   lpdf <- paste0(lpdf, stan_llh_dpar_usc_logit("zi", bterms))
@@ -657,15 +699,75 @@ stan_llh_zero_one_inflated_beta <- function(bterms, resp = "", mix = "") {
   sdist("zero_one_inflated_beta", p$mu, p$phi, p$zoi, p$coi)
 }
 
+stan_llh_zero_inflated_asym_laplace <- function(bterms, resp = "", mix = "") {
+  p <- stan_llh_dpars(bterms, TRUE, resp, mix)
+  usc_logit <- stan_llh_dpar_usc_logit("zi", bterms)
+  lpdf <- paste0("zero_inflated_asym_laplace", usc_logit)
+  sdist(lpdf, p$mu, p$sigma, p$quantile, p$zi)
+}
+
 stan_llh_custom <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   family <- bterms$family
   dpars <- paste0(family$dpars, mix)
   if (is_ordinal(family)) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
-    p$ord_intercept <- paste0("temp", prefix, "_Intercept")
+    p$thres <- paste0("Intercept", prefix)
   }
-  sdist(family$name, p[dpars], p$ord_intercept, family$vars)
+  sdist(family$name, p[dpars], p$thres, family$vars)
+}
+
+# use Stan GLM primitive functions?
+# @param bterms a brmsterms object
+# @return TRUE or FALSE
+use_glm_primitive <- function(bterms) {
+  stopifnot(is.brmsterms(bterms))
+  # the model can only have a single predicted parameter
+  # and no additional residual or autocorrelation structure
+  mu <- bterms$dpars[["mu"]]
+  if (!is.btl(mu) || length(bterms$dpars) > 1L ||
+      isTRUE(bterms$rescor) || length(bterms$adforms) ||
+      !is.cor_empty(bterms$autocor)) {
+    return(FALSE)
+  }
+  # supported families and link functions
+  glm_links <- list(
+    gaussian = "identity", bernoulli = "logit",
+    poisson = "log", negbinomial = "log"
+  )
+  if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
+    return(FALSE)
+  }
+  # can only use GLM primitives if solely 'fixed effects' are present
+  special_term_names <- c("sp", "cs", "sm", "gp", "offset")
+  length(all_terms(mu$fe)) && !is_sparse(mu$fe) &&
+    !NROW(mu$re) && !any(lengths(mu[special_term_names]))
+}
+
+# standard arguments for primitive Stan GLM functions
+# @param bterms a btl object
+# @param resp optional name of the response variable
+# @return a named list of Stan code snippets
+args_glm_primitive <- function(bterms, resp = "") {
+  stopifnot(is.btl(bterms))
+  decomp <- get_decomp(bterms$fe)
+  center_X <- stan_center_X(bterms)
+  sfx_X <- sfx_b <- ""
+  if (decomp == "QR") {
+    sfx_X <- sfx_b <- "Q"
+  } else if (center_X) {
+    sfx_X <- "c"
+  }
+  if (center_X) {
+    intercept <- paste0("Intercept", resp)
+  } else {
+    intercept <- "0"
+  }
+  list(
+    x = paste0("X", sfx_X, resp),
+    alpha = intercept,
+    beta = paste0("b", sfx_b, resp)
+  )
 }
 
 # prepare distribution and arguments for use in Stan

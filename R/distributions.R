@@ -1527,6 +1527,50 @@ rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   out
 }
 
+# density of the cox proportional hazards model
+# @param x currently ignored as the information is passed
+#   via 'bhaz' and 'cbhaz'. Before exporting the cox distribution 
+#   functions, this needs to be refactored so that x is actually used
+# @param mu positive location parameter
+# @param bhaz baseline hazard
+# @param cbhaz cumulative baseline hazard
+dcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+  out <- hcox(x, mu, bhaz, cbhaz, log = TRUE) +
+    pcox(x, mu, bhaz, cbhaz, lower.tail = FALSE, log.p = TRUE)
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+# hazard function of the cox model
+hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+  out <- log(bhaz) + log(mu)
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+# distribution function of the cox model
+pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
+  log_surv <- -cbhaz * mu
+  if (lower.tail) {
+    if (log.p) {
+      out <- log1m_exp(log_surv)
+    } else {
+      out <- 1 - exp(log_surv)
+    }
+  } else {
+    if (log.p) {
+      out <- log_surv
+    } else {
+      out <- exp(log_surv)
+    }
+  }
+  out
+}
+
 #' Zero-Inflated Distributions
 #' 
 #' Density and distribution functions for zero-inflated distributions.
@@ -1609,6 +1653,25 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   .phurdle(q, "beta", zi, pars, lower.tail, log.p, type = "real")
 }
 
+# @rdname ZeroInflated
+# @export
+dzero_inflated_asym_laplace <- function(x, mu, sigma, quantile, zi, 
+                                        log = FALSE) {
+  pars <- nlist(mu, sigma, quantile)
+  # zi_asym_laplace is technically a hurdle model
+  .dhurdle(x, "asym_laplace", zi, pars, log, type = "real")
+}
+
+# @rdname ZeroInflated
+# @export
+pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi, 
+                                        lower.tail = TRUE, log.p = FALSE) {
+  pars <- nlist(mu, sigma, quantile)
+  # zi_asym_laplace is technically a hurdle model
+  .phurdle(q, "asym_laplace", zi, pars, lower.tail, log.p, 
+           type = "real", lb = -Inf, ub = Inf)
+}
+
 # density of a zero-inflated distribution
 # @param dist name of the distribution
 # @param zi bernoulli zero-inflated parameter
@@ -1636,18 +1699,27 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
 # @param dist name of the distribution
 # @param zi bernoulli zero-inflated parameter
 # @param pars list of parameters passed to pdf
-.pzero_inflated <- function(q, dist, zi, pars, lower.tail, log.p) {
+# @param lb lower bound of the conditional distribution
+# @param ub upper bound of the conditional distribution
+.pzero_inflated <- function(q, dist, zi, pars, lower.tail, log.p,
+                            lb = 0, ub = Inf) {
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   lower.tail <- as_one_logical(lower.tail)
   log.p <- as_one_logical(log.p)
+  lb <- as_one_numeric(lb)
+  ub <- as_one_numeric(ub)
   args <- expand(dots = c(nlist(q, zi), pars))
   q <- args$q
   zi <- args$zi
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
+  # compute log CCDF values
   out <- log(1 - zi) +
-    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log.p = TRUE))
+  # take the limits of the distribution into account
+  out <- ifelse(q < lb, 0, out)
+  out <- ifelse(q > ub, -Inf, out)
   if (lower.tail) {
     out <- 1 - exp(out)
     if (log.p) {
@@ -1776,23 +1848,33 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
 # @param hu bernoulli hurdle parameter
 # @param pars list of parameters passed to pdf
 # @param type support of distribution (int or real)
-.phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type) {
+# @param lb lower bound of the conditional distribution
+# @param ub upper bound of the conditional distribution
+.phurdle <- function(q, dist, hu, pars, lower.tail, log.p, type, 
+                     lb = 0, ub = Inf) {
   stopifnot(is.list(pars))
   dist <- as_one_character(dist)
   lower.tail <- as_one_logical(lower.tail)
   log.p <- as_one_logical(log.p)
   type <- match.arg(type, c("int", "real"))
+  lb <- as_one_numeric(lb)
+  ub <- as_one_numeric(ub)
   args <- expand(dots = c(nlist(q, hu), pars))
   q <- args$q
   hu <- args$hu
   pars <- args[names(pars)]
   cdf <- paste0("p", dist)
+  # compute log CCDF values
   out <- log(1 - hu) +
-    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log = TRUE))
+    do_call(cdf, c(list(q), pars, lower.tail = FALSE, log.p = TRUE))
   if (type == "int") {
     pdf <- paste0("d", dist)
     out <- out - log(1 - do_call(pdf, c(0, pars)))
   }
+  out <- ifelse(q < 0, log_sum_exp(out, log(hu)), out)
+  # take the limits of the distribution into account
+  out <- ifelse(q < lb, 0, out)
+  out <- ifelse(q > ub, -Inf, out)
   if (lower.tail) {
     out <- 1 - exp(out)
     if (log.p) {

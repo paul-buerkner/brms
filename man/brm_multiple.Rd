@@ -50,20 +50,25 @@ corresponding matrix. This argument can be used, among others to model
 pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from all specified proper priors
-should be drawn additionally to the posterior samples (defaults to
-\code{"no"}). Among others, these samples can be used to calculate Bayes
-factors for point hypotheses via \code{\link{hypothesis}}. If set to
-\code{"only"}, samples are drawn solely from the priors ignoring the
-likelihood, which allows among others to generate samples from the prior
-predictive distribution. In this case, all parameters must have proper
-priors.}
+\item{sample_prior}{Indicate if samples from priors should be drawn 
+additionally to the posterior samples (defaults to \code{"no"}). Among 
+others, these samples can be used to calculate Bayes factors for point 
+hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
+are not sampled, including the default improper priors used by \code{brm}. 
+See \code{\link{set_prior}} on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default for 
+technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
+for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
+are drawn solely from the priors ignoring the likelihood, which allows among 
+others to generate samples from the prior predictive distribution. In this 
+case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
 design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
-decreased.}
+decreased. It is now recommended to use the \code{sparse} argument of
+\code{\link{brmsformula}} and related functions.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

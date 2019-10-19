@@ -238,7 +238,8 @@ models for all parameters of the assumed response distribution.
   \code{fun(<variable>)} separated by \code{+} each providing special 
   information on the response variable. \code{fun} can be replaced with 
   either \code{se}, \code{weights}, \code{subset}, \code{cens}, \code{trunc}, 
-  \code{trials}, \code{cat}, or \code{dec}. Their meanings are explained below.
+  \code{trials}, \code{cat}, \code{dec}, \code{rate}, \code{vreal}, or
+  \code{vint}. Their meanings are explained below.
   (see also \code{\link{addition-terms}}). 
   
   For families \code{gaussian}, \code{student} and \code{skew_normal}, it is 
@@ -274,6 +275,14 @@ models for all parameters of the assumed response distribution.
   write \code{y | subset(sub) ~ predictors} so that \code{y} is
   predicted only for those observations for which \code{sub} evaluates
   to \code{TRUE}.
+  
+  For log-linear models such as poisson models, \code{rate} may be used
+  in the \code{aterms} part to specify the denomintor of a response that
+  is expressed as a rate. The numerator is given by the actual response
+  variable and has a distribution according to the family as usual. Using
+  \code{rate(denom)} is equivalent to adding \code{offset(log(denom))} to
+  the linear predictor of the main parameter but the former is arguably
+  more convenient and explicit.
   
   With the exception of categorical, ordinal, and mixture families, 
   left, right, and interval censoring can be modeled through 
@@ -326,10 +335,15 @@ models for all parameters of the assumed response distribution.
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
 
-  Multiple addition terms may be specified at the same time using 
-  the \code{+} operator, for instance \cr
-  \code{formula = yi | se(sei) + cens(censored) ~ 1} 
-  for a censored meta-analytic model. 
+  For custom families, it is possible to pass an abitrary number of real and
+  integer vectors via the addition terms \code{vreal} and \code{vint},
+  respectively. An example is provided in
+  \code{vignette('brms_customfamilies')}.
+
+  Multiple addition terms may be specified at the same time using the
+  \code{+} operator. For example, the formula
+  \code{formula = yi | se(sei) + cens(censored) ~ 1} implies a censored 
+  meta-analytic model.
   
   The addition argument \code{disp} (short for dispersion) 
   has been removed in version 2.0. You may instead use the 
@@ -355,9 +369,9 @@ models for all parameters of the assumed response distribution.
   \code{\link{set_prior}}.
   
   This behavior can be avoided by using the reserved 
-  (and internally generated) variable \code{intercept}. 
+  (and internally generated) variable \code{Intercept}. 
   Instead of \code{y ~ x}, you may write
-  \code{y ~ 0 + intercept + x}. This way, priors can be
+  \code{y ~ 0 + Intercept + x}. This way, priors can be
   defined on the real intercept, directly. In addition,
   the intercept is just treated as an ordinary population-level effect
   and thus priors defined on \code{b} will also apply to it. 

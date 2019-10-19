@@ -52,31 +52,63 @@ fit1 <- brm(
 )
 ```
 
-As can be seen in the model code, we have used `mvbind` notation to tell **brms** that both `tarsus` and `back` are separate response variables. The term `(1|p|fosternest)` indicates a varying intercept over `fosternest`. By writing `|p|` in between we indicate that all varying effects of `fosternest` should be modeled as correlated. This makes sense since we actually have two model parts, one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of **brms**, see `help("brmsformula")` and `vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see `vignette("brms_phylogenetics")`). The model results are readily summarized via
+As can be seen in the model code, we have used `mvbind` notation to tell
+**brms** that both `tarsus` and `back` are separate response variables. The term
+`(1|p|fosternest)` indicates a varying intercept over `fosternest`. By writing
+`|p|` in between we indicate that all varying effects of `fosternest` should be
+modeled as correlated. This makes sense since we actually have two model parts,
+one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be
+replaced by other symbols that comes into your mind (for details about the
+multilevel syntax of **brms**, see `help("brmsformula")` and
+`vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates
+correlated varying effects of the genetic mother of the chicks. Alternatively,
+we could have also modeled the genetic similarities through pedigrees and
+corresponding relatedness matrices, but this is not the focus of this vignette
+(please see `vignette("brms_phylogenetics")`). The model results are readily
+summarized via
 
 ```{r summary1, warning=FALSE}
 add_ic(fit1) <- "loo"
 summary(fit1)
 ```
 
-The summary output of multivariate models closely resembles those of univariate models, except that the parameters now have the corresponding response variable as prefix. Within dams, tarsus length and back color seem to be negatively correlated, while within fosternests the opposite is true. This indicates differential effects of genetic and environmental factors on these two characteristics. Further, the small residual correlation `rescor(tarsus, back)` on the bottom of the output indicates that there is little unmodeled dependency between tarsus length and back color. Although not necessary at this point, we have already computed and stored the LOO information criterion of `fit1`, which we will use for model comparions. Next, let's take a look at some posterior-predictive checks, which give us a first impression of the model fit.
+The summary output of multivariate models closely resembles those of univariate
+models, except that the parameters now have the corresponding response variable
+as prefix. Within dams, tarsus length and back color seem to be negatively
+correlated, while within fosternests the opposite is true. This indicates
+differential effects of genetic and environmental factors on these two
+characteristics. Further, the small residual correlation `rescor(tarsus, back)`
+on the bottom of the output indicates that there is little unmodeled dependency
+between tarsus length and back color. Although not necessary at this point, we
+have already computed and stored the LOO information criterion of `fit1`, which
+we will use for model comparions. Next, let's take a look at some
+posterior-predictive checks, which give us a first impression of the model fit.
 
 ```{r pp_check1, message=FALSE}
 pp_check(fit1, resp = "tarsus")
 pp_check(fit1, resp = "back")
 ```
 
-This looks pretty solid, but we notice a slight unmodeled left skewness in the distribution of `tarsus`. We will come back to this later on. Next, we want to investigate how much variation in the response variables can be explained by our model and we use a Bayesian generalization of the $R^2$ coefficient.
+This looks pretty solid, but we notice a slight unmodeled left skewness in the
+distribution of `tarsus`. We will come back to this later on. Next, we want to
+investigate how much variation in the response variables can be explained by our
+model and we use a Bayesian generalization of the $R^2$ coefficient.
 
 ```{r R2_1}
 bayes_R2(fit1)
 ```
 
-Clearly, there is much variation in both animal characteristics that we can not explain, but apparently we can explain more of the variation in tarsus length than in back color.
+Clearly, there is much variation in both animal characteristics that we can not
+explain, but apparently we can explain more of the variation in tarsus length
+than in back color.
 
 ## More Complex Multivariate Models
 
-Now, suppose we only want to control for `sex` in `tarsus` but not in `back` and vice versa for `hatchdate`. Not that this is particular reasonable for the present example, but it allows us to illustrate how to specify different formulas for different response variables. We can no longer use `mvbind` syntax and so we have to use a more verbose approach: 
+Now, suppose we only want to control for `sex` in `tarsus` but not in `back` and
+vice versa for `hatchdate`. Not that this is particular reasonable for the
+present example, but it allows us to illustrate how to specify different
+formulas for different response variables. We can no longer use `mvbind` syntax
+and so we have to use a more verbose approach:
 
 ```{r fit2, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam))
@@ -84,22 +116,37 @@ bf_back <- bf(back ~ hatchdate + (1|p|fosternest) + (1|q|dam))
 fit2 <- brm(bf_tarsus + bf_back, data = BTdata, chains = 2, cores = 2)
 ```
 
-Note that we have literally *added* the two model parts via the `+` operator, which is in this case equivalent to writing `mvbf(bf_tarsus, bf_back)`. See `help("brmsformula")` and `help("mvbrmsformula")` for more details about this syntax. Again, we summarize the model first.
+Note that we have literally *added* the two model parts via the `+` operator,
+which is in this case equivalent to writing `mvbf(bf_tarsus, bf_back)`. See
+`help("brmsformula")` and `help("mvbrmsformula")` for more details about this
+syntax. Again, we summarize the model first.
 
 ```{r summary2, warning=FALSE}
 add_ic(fit2) <- "loo"
 summary(fit2)
 ```
 
-Let's find out, how model fit changed due to excluding certain effects from the initial model:
+Let's find out, how model fit changed due to excluding certain effects from the
+initial model:
 
 ```{r loo12}
 loo(fit1, fit2)
 ```
 
-Apparently, there is no noteworthy difference in the model fit. Accordingly, we do not really need to model `sex` and `hatchdate` for both response variables, but there is also no harm in including them (so I would probably just include them).  
+Apparently, there is no noteworthy difference in the model fit. Accordingly, we
+do not really need to model `sex` and `hatchdate` for both response variables,
+but there is also no harm in including them (so I would probably just include
+them).
 
-To give you a glimpse of the capabilities of **brms**' multivariate syntax, we change our model in various directions at the same time. Remember the slight left skewness of `tarsus`, which we will now model by using the `skew_normal` family instead of the `gaussian` family. Since we do not have a multivariate normal (or student-t) model, anymore, estimating residual correlations is no longer possible. We make this explicit using the `set_rescor` function. Further, we investigate if the relationship of `back` and `hatchdate` is really linear as previously assumed by fitting a non-linear spline of `hatchdate`. On top of it, we model separate residual variances of `tarsus` for males and femals chicks.
+To give you a glimpse of the capabilities of **brms**' multivariate syntax, we
+change our model in various directions at the same time. Remember the slight
+left skewness of `tarsus`, which we will now model by using the `skew_normal`
+family instead of the `gaussian` family. Since we do not have a multivariate
+normal (or student-t) model, anymore, estimating residual correlations is no
+longer possible. We make this explicit using the `set_rescor` function. Further,
+we investigate if the relationship of `back` and `hatchdate` is really linear as
+previously assumed by fitting a non-linear spline of `hatchdate`. On top of it,
+we model separate residual variances of `tarsus` for males and femals chicks.
 
 ```{r fit3, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
@@ -120,16 +167,26 @@ add_ic(fit3) <- "loo"
 summary(fit3)
 ```
 
-We see that the (log) residual standard deviation of `tarsus` is somewhat larger for chicks whose sex could not be identified as compared to male or female chicks. Further, we see from the negative `alpha` (skewness) parameter of `tarsus` that the residuals are indeed slightly left-skewed. Lastly, running
+We see that the (log) residual standard deviation of `tarsus` is somewhat larger
+for chicks whose sex could not be identified as compared to male or female
+chicks. Further, we see from the negative `alpha` (skewness) parameter of
+`tarsus` that the residuals are indeed slightly left-skewed. Lastly, running
 
 ```{r me3}
 marginal_effects(fit3, "hatchdate", resp = "back")
 ```
 
-reveals a non-linear relationship of `hatchdate` on the `back` color, which seems to change in waves over the course of the hatch dates.
+reveals a non-linear relationship of `hatchdate` on the `back` color, which
+seems to change in waves over the course of the hatch dates.
 
-There are many more modeling options for multivariate models, which are not discussed in this vignette. Examples include autocorrelation structures, Gaussian processes, or explicit non-linear predictors (e.g., see `help("brmsformula")` or `vignette("brms_multilevel")`). In fact, nearly all the flexibility of univariate models is retained in multivariate models. 
+There are many more modeling options for multivariate models, which are not
+discussed in this vignette. Examples include autocorrelation structures,
+Gaussian processes, or explicit non-linear predictors (e.g., see
+`help("brmsformula")` or `vignette("brms_multilevel")`). In fact, nearly all the
+flexibility of univariate models is retained in multivariate models.
 
 ## References
 
-Hadfield JD, Nutall A, Osorio D, Owens IPF (2007). Testing the phenotypic gambit: phenotypic, genetic and environmental correlations of colour. *Journal of Evolutionary Biology*, 20(2), 549-557.
+Hadfield JD, Nutall A, Osorio D, Owens IPF (2007). Testing the phenotypic
+gambit: phenotypic, genetic and environmental correlations of colour. 
+*Journal of Evolutionary Biology*, 20(2), 549-557.

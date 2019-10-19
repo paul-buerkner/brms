@@ -14,7 +14,7 @@
   add_chain = FALSE, subset = NULL, as.matrix = FALSE,
   as.array = FALSE, ...)
 
-\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = FALSE,
+\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = TRUE,
   ...)
 
 \method{as.matrix}{brmsfit}(x, ...)

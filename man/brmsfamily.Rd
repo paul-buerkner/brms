@@ -43,7 +43,7 @@ brmsfamily(family, link = NULL, link_sigma = "log",
   link_disc = "log", link_bs = "log", link_ndt = "log",
   link_bias = "logit", link_xi = "log1p", link_alpha = "identity",
   link_quantile = "logit", threshold = c("flexible", "equidistant"),
-  refcat = NULL)
+  refcat = NULL, bhaz = NULL)
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -189,6 +189,8 @@ categorical, multinomial, and dirichlet models. If \code{NULL} (the
 default), the first category is used as the reference. If \code{NA}, all
 categories will be predicted, which requires strong priors or carefully
 specified predictor terms in order to lead to an identified model.}
+
+\item{bhaz}{Currently for experimental purposes only.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 

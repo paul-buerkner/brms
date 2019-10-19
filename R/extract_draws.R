@@ -9,7 +9,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   new_objects = list(), ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
-  warn_brmsfit_multiple(x)
+  warn_brmsfit_multiple(x, newdata = newdata)
   x <- restructure(x)
   if (!incl_autocor) {
     x <- remove_autocor(x) 
@@ -33,7 +33,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   bterms <- parse_bf(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  old_sdata <- NULL
+  old_sdata <- trunc_bounds <- NULL
   if (new) {
     # extract_draws_re() also requires the levels from newdata
     # original level names are already passed via old_ranef
@@ -43,13 +43,18 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       # GPs for new data require the original data as well
       old_sdata <- standata(x, internal = TRUE, ...)
     }
+    if (length(get_effect(bterms, "sp"))) {
+      # truncation bounds for imputing missing values in new data
+      trunc_bounds <- trunc_bounds(bterms, data = newdata, incl_family = TRUE)
+    }
   }
   extract_draws(
     bterms, samples = samples, sdata = sdata, data = x$data, 
     ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
     smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
-    stanvars = names(x$stanvars), old_sdata = old_sdata
+    stanvars = names(x$stanvars), old_sdata = old_sdata,
+    trunc_bounds = trunc_bounds
   )
 }
 
@@ -152,6 +157,19 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
       draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
     }
   }
+  if (is_cox(x$family)) {
+    # prepare baseline hazard functions for the Cox model
+    if (is.mixfamily(x$family)) {
+      mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
+      for (mu in mu_pars) {
+        draws$bhaz[[mu]] <- extract_draws_bhaz(
+          x$dpars[[mu]], samples, sdata, ...
+        )
+      }
+    } else {
+      draws$bhaz <- extract_draws_bhaz(x$dpars$mu, samples, sdata, ...)
+    }
+  }
   if (has_cor_natural_residuals(x)) {
     # only include autocor samples on the top-level of draws 
     # when using the covariance formulation of autocorrelations
@@ -225,8 +243,8 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
 }
 
 # extract draws of special effects terms
-extract_draws_sp <- function(bterms, samples, sdata, data, 
-                             meef, new = FALSE, ...) {
+extract_draws_sp <- function(bterms, samples, sdata, data, meef, 
+                             new = FALSE, trunc_bounds = NULL, ...) {
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(draws)
@@ -283,9 +301,6 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
       K <- which(meef$grname %in% g)
       if (nzchar(g)) {
         Jme <- sdata[[paste0("Jme_", i)]]
-        me_dim <- c(nrow(draws$bsp), length(unique(Jme)))
-      } else {
-        me_dim <- c(nrow(draws$bsp), sdata$N)
       }
       if (!new && save_mevars) {
         # extract original samples of latent variables
@@ -294,6 +309,13 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
         }
       } else {
         # sample new values of latent variables
+        if (nzchar(g)) {
+          # represent all indices between 1 and length(unique(Jme))
+          Jme <- as.numeric(factor(Jme))
+          me_dim <- c(nrow(draws$bsp), max(Jme))
+        } else {
+          me_dim <- c(nrow(draws$bsp), sdata$N)
+        }
         for (k in K) {
           dXn <- as_draws_matrix(Xn[[k]], me_dim)
           dnoise <- as_draws_matrix(noise[[k]], me_dim)
@@ -303,7 +325,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
       }
       if (nzchar(g)) {
         for (k in K) {
-          draws$Xme[[k]] <- draws$Xme[[k]][, Jme]
+          draws$Xme[[k]] <- draws$Xme[[k]][, Jme, drop = FALSE]
         }
       }
     }
@@ -312,31 +334,38 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   dim <- c(nrow(draws$bsp), sdata[[paste0("N", resp)]])
   vars_mi <- unique(unlist(spef$vars_mi))
   if (length(vars_mi)) {
-    resps <- usc(vars_mi)
-    Yl_names <- paste0("Yl", resps)
+    # we know at this point that the model is multivariate
+    Yl_names <- paste0("Yl_", vars_mi)
     draws$Yl <- named_list(Yl_names)
     for (i in seq_along(draws$Yl)) {
-      Y <- as_draws_matrix(sdata[[paste0("Y", resps[i])]], dim)
-      sdy <- sdata[[paste0("noise", resps[i])]]
+      vmi <- vars_mi[i]
+      Y <- as_draws_matrix(sdata[[paste0("Y_", vmi)]], dim)
+      sdy <- sdata[[paste0("noise_", vmi)]]
       if (is.null(sdy)) {
         # missings only
         draws$Yl[[i]] <- Y
         if (!new) {
-          Ymi_pars <- paste0("Ymi", resps[i], "\\[")
+          Ymi_pars <- paste0("Ymi_", vmi, "\\[")
           Ymi <- get_samples(samples, Ymi_pars)
-          Jmi <- sdata[[paste0("Jmi", resps[i])]]
+          Jmi <- sdata[[paste0("Jmi_", vmi)]]
           draws$Yl[[i]][, Jmi] <- Ymi
         }
       } else {
         # measurement-error in the response
         save_mevars <- any(grepl("^Yl_", colnames(samples)))
         if (save_mevars && !new) {
-          Yl_pars <- paste0("Yl", resps[i], "\\[")
+          Yl_pars <- paste0("Yl_", vmi, "\\[")
           draws$Yl[[i]] <- get_samples(samples, Yl_pars)
         } else {
           warn_me <- warn_me || !new
           sdy <- as_draws_matrix(sdy, dim)
-          draws$Yl[[i]] <- array(rnorm(prod(dim), Y, sdy), dim)
+          draws$Yl[[i]] <- rcontinuous(
+            n = prod(dim), dist = "norm", 
+            mean = Y, sd = sdy,
+            lb = trunc_bounds[[vmi]]$lb,
+            ub = trunc_bounds[[vmi]]$ub
+          )
+          draws$Yl[[i]] <- array(draws$Yl[[i]], dim)
         }
       }
     }
@@ -361,11 +390,11 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   if (is_ordinal(bterms$family)) {
+    resp <- usc(bterms$resp)
+    draws$ncat <- sdata[[paste0("ncat", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       p <- usc(combine_prefix(bterms))
-      resp <- usc(bterms$resp)
-      draws$ncat <- sdata[[paste0("ncat", resp)]]
       cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
       draws$bcs <- get_samples(samples, cs_pars)
       draws$Xcs <- sdata[[paste0("Xcs", p)]]
@@ -626,11 +655,26 @@ extract_draws_thres <- function(bterms, samples, ...) {
   get_samples(samples, int_regex)
 }
 
+# extract draws of baseline functions for the cox model
+extract_draws_bhaz <- function(bterms, samples, sdata, ...) {
+  if (!is_cox(bterms$family)) {
+    return(NULL)
+  }
+  out <- list()
+  p <- usc(combine_prefix(bterms))
+  sbhaz <- get_samples(samples, paste0("^sbhaz", p))
+  Zbhaz <- sdata[[paste0("Zbhaz", p)]]
+  out$bhaz <- tcrossprod(sbhaz, Zbhaz) 
+  Zcbhaz <- sdata[[paste0("Zcbhaz", p)]]
+  out$cbhaz <- tcrossprod(sbhaz, Zcbhaz)
+  out
+}
+
 # extract draws of autocorrelation parameters
 extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL, 
                                   new = FALSE, ...) {
   draws <- list()
-  autocor <- bterms$autocor
+  autocor <- draws$autocor <- bterms$autocor
   p <- usc(combine_prefix(bterms))
   draws$N_tg <- sdata[[paste0("N_tg", p)]]
   if (is.cor_arma(autocor)) {
@@ -649,25 +693,29 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
     if (get_ma(autocor)) {
       draws$ma <- get_samples(samples, paste0("^ma", p, "\\["))
     }
-    if (use_cov(autocor)) {
-      draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
-      draws$end_tg <- sdata[[paste0("end_tg", p)]]
-      if (has_latent_residuals(bterms)) {
-        regex_err <- paste0("^err", p, "\\[")
-        has_err <- any(grepl(regex_err, colnames(samples)))
-        if (has_err && !new) {
-          draws$err <- get_samples(samples, regex_err)
-        } else {
-          # need to sample correlated residuals
-          draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
-          draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
-          for (i in seq_len(draws$N_tg)) {
-            obs <- with(draws, begin_tg[i]:end_tg[i])
-            zeros <- rep(0, length(obs))
-            cov <- get_cov_matrix_arma(list(ac = draws), obs, latent = TRUE)
-            .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
-            draws$err[, obs] <- rblapply(seq_rows(samples), .err)
-          }
+  }
+  if (is.cor_cosy(autocor)) {
+    draws$cosy <-  get_samples(samples, paste0("^cosy", p, "$"))
+  }
+  if (use_cov(autocor)) {
+    # draws for the 'covariance' versions of ARMA and COSY structures
+    draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
+    draws$end_tg <- sdata[[paste0("end_tg", p)]]
+    if (has_latent_residuals(bterms)) {
+      regex_err <- paste0("^err", p, "\\[")
+      has_err <- any(grepl(regex_err, colnames(samples)))
+      if (has_err && !new) {
+        draws$err <- get_samples(samples, regex_err)
+      } else {
+        # need to sample correlated residuals
+        draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
+        draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+        for (i in seq_len(draws$N_tg)) {
+          obs <- with(draws, begin_tg[i]:end_tg[i])
+          zeros <- rep(0, length(obs))
+          cov <- get_cov_matrix_autocor(list(ac = draws), obs, latent = TRUE)
+          .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+          draws$err[, obs] <- rblapply(seq_rows(samples), .err)
         }
       }
     }
@@ -697,12 +745,20 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
 # extract data mainly related to the response variable
 # @param stanvars: *names* of variables stored in slot 'stanvars'
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
+  resp <- usc(combine_prefix(bterms))
   vars <- c(
     "Y", "trials", "ncat", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
-  resp <- usc(combine_prefix(bterms))
-  draws <- rmNULL(sdata[paste0(vars, resp)], recursive = FALSE)
+  vars <- paste0(vars, resp)
+  vars <- intersect(vars, names(sdata))
+  # variables of variable length need to be handled via regular expression
+  vl_vars <- c("vreal", "vint")
+  vl_vars <- regex_or(vl_vars)
+  vl_vars <- paste0("^", vl_vars, "[[:digit:]]+", escape_all(resp), "$")
+  vl_vars <- str_subset(names(sdata), vl_vars)
+  vars <- union(vars, vl_vars)
+  draws <- sdata[vars]
   if (length(stanvars)) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]
@@ -736,6 +792,9 @@ pseudo_draws_for_mixture <- function(draws, comp, sample_ids = NULL) {
   }
   if (is_ordinal(out$family)) {
     out$thres <- draws$thres[[paste0("mu", comp)]]
+  }
+  if (is_cox(out$family)) {
+    out$bhaz <- draws$bhaz[[paste0("mu", comp)]]
   }
   # weighting should happen after computing the mixture
   out$data$weights <- NULL
@@ -954,6 +1013,9 @@ is.bdrawsnl <- function(x) {
 #' @param x An \R object typically of class \code{'brmsfit'}.
 #' @param newdata An optional data.frame for which to evaluate predictions. If
 #'   \code{NULL} (default), the original data of the model is used.
+#'   \code{NA} values within factors are interpreted as if all dummy
+#'   variables of this factor are zero. This allows, for instance, to make
+#'   predictions of the grand mean when using sum coding.
 #' @param re_formula formula containing group-level effects to be considered in
 #'   the prediction. If \code{NULL} (default), include all group-level effects;
 #'   if \code{NA}, include no group-level effects.

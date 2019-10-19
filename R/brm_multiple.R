@@ -268,8 +268,8 @@ is_data_list <- function(x) {
   is.list(x) && is.vector(x)
 }
 
-warn_brmsfit_multiple <- function(x) {
-  if (is.brmsfit_multiple(x)) {
+warn_brmsfit_multiple <- function(x, newdata = NULL) {
+  if (is.brmsfit_multiple(x) && is.null(newdata)) {
     warning2(
       "Using only the first imputed data set. Please interpret the results ", 
       "with caution until a more principled approach has been implemented."

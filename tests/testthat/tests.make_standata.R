@@ -40,8 +40,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
-test_that(paste("make_standata returns correct data names", 
-                "for addition and cs variables"), {
+test_that("make_standata returns correct data names for addition terms", {
   dat <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, dat, gaussian())), 
@@ -673,14 +672,14 @@ test_that("make_standata includes data for approximate Gaussian processes", {
 })
 
 test_that("make_standata includes data for SAR models", {
-  data(oldcol, package = "spdep")
-  sdata <- make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                         autocor = cor_lagsar(COL.nb))
-  expect_equal(dim(sdata$W), rep(nrow(COL.OLD), 2))
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
+  W <- matrix(0, nrow = 10, ncol = 10)
+  
+  sdata <- make_standata(y ~ x, data = dat, autocor = cor_lagsar(W))
+  expect_equal(dim(sdata$W), rep(nrow(W), 2))
   
   expect_error(
-    make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                  autocor = cor_lagsar(matrix(1:4, 2, 2))),
+    make_standata(y ~ x, data = dat, autocor = cor_lagsar(matrix(1:4, 2, 2))),
     "Dimensions of 'W' must be equal to the number of observations"
   )
 })
@@ -706,6 +705,9 @@ test_that("make_standata includes data for CAR models", {
   expect_equal(sdata$edges1, as.array(2))
   expect_equal(sdata$edges2, as.array(1))
   
+  sdata <- make_standata(y ~ x, dat, autocor = cor_car(W, type = "bym2"))
+  expect_equal(length(sdata$car_scale), 1L)
+  
   # test error messages
   rownames(W) <- c(1:9, "a")
   expect_error(make_standata(y ~ x, dat, autocor = cor_car(W, ~1|group)), 
@@ -721,7 +723,7 @@ test_that("make_standata includes data for CAR models", {
                "all locations should have at least one neighbor")
 })
 
-test_that("make_standata incldudes data of special priors", {
+test_that("make_standata includes data of special priors", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
   
   # horseshoe prior
@@ -782,6 +784,25 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_equal(sdata$V, diag(2))
 })
 
+test_that("addition arguments 'vint' and 'vreal' work correctly", {
+  dat <- data.frame(size = 10, y = sample(0:10, 20, TRUE), x = rnorm(20))
+  beta_binomial2 <- custom_family(
+    "beta_binomial2",
+    dpars = c("mu", "tau"),
+    links = c("logit", "log"), 
+    lb = c(NA, 0),
+    type = "int", 
+    vars = c("vint1[n]", "vreal1[n]")
+  )
+  sdata <- make_standata(
+    y | vint(size) + vreal(x, size) ~ 1, 
+    data = dat, family = beta_binomial2, 
+  )
+  expect_equal(sdata$vint1, as.array(rep(10, 20)))
+  expect_equal(sdata$vreal1, as.array(dat$x))
+  expect_equal(sdata$vreal2, as.array(rep(10, 20)))
+})
+
 test_that("reserved variables 'Intercept' is handled correctly", {
   dat <- data.frame(y = 1:10)
   sdata <- make_standata(y ~ 0 + intercept, dat)
@@ -817,4 +838,22 @@ test_that("data for multinomial and dirichlet models is correct", {
   )
   expect_error(make_standata(t ~ x, data = dat, family = dirichlet()),
                "Response values in dirichlet models must sum to 1")
+})
+
+test_that("make_standata handles cox models correctly", {
+  data <- data.frame(y = rexp(100), x = rnorm(100))
+  bform <- bf(y ~ x)
+  sdata <- make_standata(bform, data, brmsfamily("cox"))
+  expect_equal(dim(sdata$Zbhaz), c(100, 4))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 4))
+  
+  sdata <- make_standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
+  expect_equal(dim(sdata$Zbhaz), c(100, 6))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 6))
+})
+
+test_that("make_standata handles addition term 'rate' is correctly", {
+  data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
+  sdata <- make_standata(y | rate(time) ~ x, data, poisson())
+  expect_equal(sdata$denom, as.array(data$time))
 })

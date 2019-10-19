@@ -10,7 +10,10 @@
 \alias{resp_cens}
 \alias{resp_trunc}
 \alias{resp_mi}
+\alias{resp_rate}
 \alias{resp_subset}
+\alias{resp_vreal}
+\alias{resp_vint}
 \title{Additional Response Information}
 \usage{
 resp_se(x, sigma = FALSE)
@@ -23,13 +26,19 @@ resp_cat(x)
 
 resp_dec(x)
 
-resp_cens(x, y2 = NULL)
+resp_cens(x, y2 = NA)
 
 resp_trunc(lb = -Inf, ub = Inf)
 
-resp_mi(sdy = NULL)
+resp_mi(sdy = NA)
+
+resp_rate(denom)
 
 resp_subset(x)
+
+resp_vreal(...)
+
+resp_vint(...)
 }
 \arguments{
 \item{x}{A vector; usually a variable defined in the
@@ -37,9 +46,9 @@ data. Allowed values depend on the function:
 \code{resp_se} and \code{resp_weights} require positive numeric values.
 \code{resp_trials} and \code{resp_cat} require positive integers.
 \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-\code{'lower'} and \code{'upper'}; 
+\code{'lower'} and \code{'upper'}.
 \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-\code{FALSE} and \code{TRUE};
+\code{FALSE} and \code{TRUE}.
 \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 and \code{2}) to indicate left, no, right, or interval censoring.}
@@ -64,10 +73,16 @@ the upper truncation bound.}
 treated as standard deviation. If specified, handles
 measurement error and (completely) missing values
 at the same time using the plausible-values-technique.}
+
+\item{denom}{A vector of positive numeric values specifying
+the denominator values from which the response rates are computed.}
+
+\item{...}{For \code{resp_vreal}, vectors of real values. 
+For \code{resp_vint}, vectors of integer values.}
 }
 \value{
-A vector containing additional information on the response
-  variable in an appropriate format.
+A list of additional response information to be processed further
+  by \pkg{brms}.
 }
 \description{
 Provide additional information on the response variable 

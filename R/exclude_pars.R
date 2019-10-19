@@ -74,10 +74,10 @@ exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars,
   out <- paste0(c("chol_cov", names(x$dpars)), p)
   if (!save_all_pars) {
     c(out) <- c(
-      paste0("temp", p, "_Intercept1"), 
-      paste0("ordered", p, "_Intercept"),
-      paste0("fixed", p, "_Intercept"),
-      paste0(c("theta", "zcar", "zerr"), p)
+      paste0("Intercept1", p), 
+      paste0("ordered_Intercept", p),
+      paste0("fixed_Intercept", p),
+      paste0(c("theta", "zcar", "nszcar", "zerr"), p)
     )
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
@@ -101,7 +101,7 @@ exclude_pars_internal.btl <- function(x, data, ...) {
   p <- usc(combine_prefix(x))
   out <- c("bQ", "hs_global", "hs_local", "zb", "hs_localsp", "zbsp")
   out <- paste0(out, p)
-  c(out) <- paste0("temp", p, "_Intercept")
+  c(out) <- paste0("Intercept", p)
   smef <- tidy_smef(x, data)
   for (i in seq_rows(smef)) {
     nb <- seq_len(smef$nbases[i])

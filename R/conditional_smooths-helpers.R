@@ -3,7 +3,9 @@
 #' Display smooth \code{s} and \code{t2} terms of models
 #' fitted with \pkg{brms}.
 #' 
-#' @inheritParams marginal_effects
+#' @aliases marginal_smooths marginal_smooths.brmsfit
+#' 
+#' @inheritParams conditional_effects
 #' @param smooths Optional character vector of smooth terms
 #'   to display. If \code{NULL} (the default) all smooth terms
 #'   are shown.
@@ -17,8 +19,8 @@
 #' @param ... Currently ignored.
 #'   
 #' @return For the \code{brmsfit} method, 
-#' an object of class \code{brmsMarginalEffects}. See
-#' \code{\link{marginal_effects}} for 
+#' an object of class \code{brms_conditional_effects}. See
+#' \code{\link{conditional_effects}} for 
 #' more details and documentation of the related plotting function.
 #' 
 #' @details Two-dimensional smooth terms will be visualized using
@@ -30,54 +32,54 @@
 #' dat <- mgcv::gamSim(1, n = 200, scale = 2)
 #' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #' # show all smooth terms
-#' plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
+#' plot(conditional_smooths(fit), rug = TRUE, ask = FALSE)
 #' # show only the smooth term s(x2)
-#' plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
+#' plot(conditional_smooths(fit, smooths = "s(x2)"), ask = FALSE)
 #' 
 #' # fit and plot a two-dimensional smooth term
 #' fit2 <- brm(y ~ t2(x0, x2), data = dat)
-#' ms <- marginal_smooths(fit2)
+#' ms <- conditional_smooths(fit2)
 #' plot(ms, stype = "contour")
 #' plot(ms, stype = "raster")
 #' }
 #' 
 #' @export
-marginal_smooths <- function(x, ...) {
-  UseMethod("marginal_smooths")
+conditional_smooths <- function(x, ...) {
+  UseMethod("conditional_smooths")
 }
 
 # compute predictions based on the smooths terms only
-marginal_smooths_internal <- function(x, ...) {
-  UseMethod("marginal_smooths_internal")
+conditional_smooths_internal <- function(x, ...) {
+  UseMethod("conditional_smooths_internal")
 }
 
 #' @export
-marginal_smooths_internal.default <- function(x, ...) {
+conditional_smooths_internal.default <- function(x, ...) {
   NULL
 }
 
 #' @export
-marginal_smooths_internal.mvbrmsterms <- function(x, ...) {
+conditional_smooths_internal.mvbrmsterms <- function(x, ...) {
   out <- list()
   for (r in names(x$terms)) {
-    c(out) <- marginal_smooths_internal(x$terms[[r]], ...)
+    c(out) <- conditional_smooths_internal(x$terms[[r]], ...)
   }
   out
 }
 
 #' @export
-marginal_smooths_internal.brmsterms <- function(x, ...) {
+conditional_smooths_internal.brmsterms <- function(x, ...) {
   out <- list()
   for (dp in names(x$dpars)) {
-    c(out) <- marginal_smooths_internal(x$dpars[[dp]], ...)
+    c(out) <- conditional_smooths_internal(x$dpars[[dp]], ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- marginal_smooths_internal(x$nlpars[[nlp]], ...)
+    c(out) <- conditional_smooths_internal(x$nlpars[[nlp]], ...)
   }
   out
 }
 
-# Marginal smooths for a single predicted parameter
+# conditional smooths for a single predicted parameter
 # @param fit brmsfit object
 # @param samples extract posterior samples
 # @param smooths optional names of smooth terms to plot
@@ -86,7 +88,7 @@ marginal_smooths_internal.brmsterms <- function(x, ...) {
 # @param ...: currently ignored
 # @return a named list with one element per smooth term
 #' @export
-marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
+conditional_smooths_internal.btl <- function(x, fit, samples, smooths,
                                           conditions, int_conditions, 
                                           probs, resolution, too_far,
                                           spaghetti, ...) {
@@ -167,6 +169,12 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     eta <- predictor(draws, i = NULL)
     effects <- na.omit(sub_smef$covars[[1]][1:2])
     marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
+    if (length(byvars)) {
+      # byvars will be plotted as facets
+      marg_data$cond__ <- rows2labels(marg_data[, byvars, drop = FALSE]) 
+    } else {
+      marg_data$cond__ <- factor(1)
+    }
     spa_data <- NULL
     if (spaghetti && ncovars == 1L && is_numeric[1]) {
       sample <- rep(seq_rows(eta), each = ncol(eta))
@@ -177,12 +185,6 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     eta <- posterior_summary(eta, robust = TRUE, probs = probs)
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
     eta <- cbind(marg_data, eta)
-    if (length(byvars)) {
-      # byvars will be plotted as facets
-      eta$cond__ <- rows2labels(eta[, byvars, drop = FALSE]) 
-    } else {
-      eta$cond__ <- factor(1)
-    }
     response <- combine_prefix(x, keep_mu = TRUE)
     response <- paste0(response, ": ", term)
     points <- mf[, vars, drop = FALSE]
@@ -195,4 +197,11 @@ marginal_smooths_internal.btl <- function(x, fit, samples, smooths,
     out[[response]] <- eta
   }
   out
+}
+
+# the name 'marginal_smooths' is deprecated as of brms 2.10.3
+# do not remove it eventually as it has been used in the brms papers
+#' @export
+marginal_smooths <- function(x, ...) {
+  UseMethod("marginal_smooths")
 }

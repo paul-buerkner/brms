@@ -2,7 +2,7 @@
 % Please edit documentation in R/priors.R
 \name{horseshoe}
 \alias{horseshoe}
-\title{Set up a horseshoe prior in \pkg{brms}}
+\title{Regularized horseshoe priors in \pkg{brms}}
 \usage{
 horseshoe(df = 1, scale_global = 1, df_global = 1, scale_slab = 2,
   df_slab = 4, par_ratio = NULL, autoscale = TRUE)
@@ -17,10 +17,15 @@ In linear models, \code{scale_global} will internally be
 multiplied by the residual standard deviation parameter \code{sigma}.}
 
 \item{df_global}{Degrees of freedom of student-t prior of the 
-global shrinkage parameter. Defaults to \code{1}.}
+global shrinkage parameter. Defaults to \code{1}. If \code{df_global}
+is greater \code{1}, the shape of the prior will no longer resemble
+a horseshoe and it may be more appropriately called an hierarchical
+shrinkage prior in this case.}
 
 \item{scale_slab}{Scale of the student-t prior of the regularization
-parameter. Defaults to \code{2}.}
+parameter. Defaults to \code{2}. The original unregularized horseshoe 
+prior is obtained by setting \code{scale_slab} to infinite, which
+we can approximate in practice by setting it to a very large real value.}
 
 \item{df_slab}{Degrees of freedom of the student-t prior of 
 the regularization parameter. Defaults to \code{4}.}
@@ -42,9 +47,10 @@ A character string obtained by \code{match.call()} with
   additional arguments.
 }
 \description{
-Function used to set up a horseshoe prior for population-level effects 
-in \pkg{brms}. The function does not evaluate its arguments --
-it exists purely to help set up the model.
+Function used to set up regularized horseshoe priors and related
+hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
+function does not evaluate its arguments -- it exists purely to help set up
+the model.
 }
 \details{
 The horseshoe prior is a special shrinkage prior initially proposed by

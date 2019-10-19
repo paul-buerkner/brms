@@ -17,7 +17,7 @@ opts_chunk$set(
   fig.align = "center"
 )
 library(brms)
-theme_set(theme_default())
+ggplot2::theme_set(theme_default())
 
 ## ---------------------------------------------------------------------------------------
 group <- rep(c("treat", "placebo"), each = 30)

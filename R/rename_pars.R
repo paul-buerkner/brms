@@ -12,7 +12,7 @@ rename_pars <- function(x) {
   pars <- parnames(x)
   # find positions of parameters and define new names
   change <- c(
-    change_effects(bterms, data = data, pars = pars, scode = stancode(x)),
+    change_effects(bterms, data = data, pars = pars),
     change_re(x$ranef, pars = pars),
     change_Xme(meef, pars = pars)
   )
@@ -67,10 +67,9 @@ change_effects.brmsterms <- function(x, ...) {
 
 # helps in renaming parameters of additive predictor terms
 # @param pars vector of all parameter names
-# @param scode stan code of the model
 #' @export
-change_effects.btl <- function(x, data, pars, scode = "", ...) {
-  c(change_fe(x, data, pars, scode = scode),
+change_effects.btl <- function(x, data, pars, ...) {
+  c(change_fe(x, data, pars),
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
@@ -78,11 +77,13 @@ change_effects.btl <- function(x, data, pars, scode = "", ...) {
 }
 
 # helps in renaming fixed effects parameters
-change_fe <- function(bterms, data, pars, scode = "") {
+change_fe <- function(bterms, data, pars) {
   out <- list()
   px <- check_prefix(bterms)
   fixef <- colnames(data_fe(bterms, data)$X)
-  fixef <- rm_int_fe(fixef, scode, px = px)
+  if (stan_center_X(bterms)) {
+    fixef <- setdiff(fixef, "Intercept")
+  }
   if (length(fixef)) {
     b <- paste0("b", usc(combine_prefix(px), "prefix"))
     pos <- grepl(paste0("^", b, "\\["), pars)
@@ -404,17 +405,6 @@ is.clist <- function(x) {
   inherits(x, "clist")
 }
 
-# identify if the intercept has to be removed from fixef
-# @return adjusted fixef names
-rm_int_fe <- function(fixef, scode, px = NULL) {
-  p <- usc(combine_prefix(px))
-  regex <- paste0("(temp", p, "_Intercept)|(vector\\[N\\] loclev", p, ";)")
-  if (grepl(regex, scode)) {
-    fixef <- setdiff(fixef, "Intercept")
-  } 
-  fixef
-}
-
 # compute index names in square brackets for indexing stan parameters
 # @param rownames a vector of row names
 # @param colnames a vector of columns 
@@ -426,8 +416,8 @@ make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   if (dim == 1) {
     index_names <- paste0("[", rownames, "]")
   } else {
-    temp <- outer(rownames, colnames, FUN = paste, sep = ",")
-    index_names <- paste0("[", temp, "]")
+    tmp <- outer(rownames, colnames, FUN = paste, sep = ",")
+    index_names <- paste0("[", tmp, "]")
   }
   index_names
 }
@@ -473,10 +463,10 @@ do_renaming <- function(x, change) {
 # @param x brmsfit object
 reorder_pars <- function(x) {
   all_classes <- unique(c(
-    "b", "bs", "bsp", "bcs", "ar", "ma", "arr", "lagsar",
-    "errorsar", "car", "sdcar", "sigmaLL", "sd", "cor", "df",
-    "sds", "sdgp", "lscale", valid_dpars(x), "temp", "rescor", 
-    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "loclev", 
+    "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar", "errorsar", 
+    "car", "sdcar", "sigmaLL", "sd", "cor", "df", "sds", "sdgp", 
+    "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
+    "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
   ))
   # reorder parameter classes
@@ -526,7 +516,7 @@ compute_xi <- function(x, ...) {
 
 #' @export
 compute_xi.brmsfit <- function(x, ...) {
-  if (!any(grepl("^temp_xi(_|$)", parnames(x)))) {
+  if (!any(grepl("^tmp_xi(_|$)", parnames(x)))) {
     return(x)
   }
   draws <- try(extract_draws(x))
@@ -551,8 +541,8 @@ compute_xi.mvbrmsdraws <- function(x, fit, ...) {
 compute_xi.brmsdraws <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
-  temp_xi_name <- paste0("temp_xi", resp)
-  if (!temp_xi_name %in% parnames(fit)) {
+  tmp_xi_name <- paste0("tmp_xi", resp)
+  if (!tmp_xi_name %in% parnames(fit)) {
     return(fit)
   }
   mu <- get_dpar(x, "mu")
@@ -560,8 +550,8 @@ compute_xi.brmsdraws <- function(x, fit, ...) {
   y <- matrix(x$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
   bs <- -1 / matrixStats::rowRanges((y - mu) / sigma)
   bs <- matrixStats::rowRanges(bs)
-  temp_xi <- as.vector(as.matrix(fit, pars = temp_xi_name))
-  xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
+  tmp_xi <- as.vector(as.matrix(fit, pars = tmp_xi_name))
+  xi <- inv_logit(tmp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
   # write xi into stanfit object
   xi_name <- paste0("xi", resp)
   samp_chain <- length(xi) / fit$fit@sim$chains

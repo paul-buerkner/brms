@@ -156,9 +156,13 @@ order_data <- function(data, bterms) {
 subset_data <- function(data, bterms) {
   if (is.formula(bterms$adforms$subset)) {
     # only evaluate a subset of the data
-    subset <- eval_rhs(bterms$adforms$subset, data = data)
+    subset <- eval_rhs(bterms$adforms$subset)
+    subset <- as.logical(eval2(subset$vars$subset, data))
     if (length(subset) != nrow(data)) {
       stop2("Length of 'subset' does not match the rows of 'data'.")
+    }
+    if (anyNA(subset)) {
+      stop2("Subset variables may not contain NAs.")
     }
     data <- data[subset, , drop = FALSE]
   }
@@ -166,7 +170,9 @@ subset_data <- function(data, bterms) {
     stop2(
       "All rows of 'data' were removed via 'subset'. ",
       "Please make sure that variables do not contain NAs ",
-      "even in rows unused by the subsetted model."
+      "even in rows unused by the subsetted model. ",
+      "Please also make sure that each subset variable is ",
+      "TRUE for at least one observation."
     )
   }
   data
@@ -375,15 +381,17 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   .update_autocor <- function(autocor, resp = "") {
     resp <- usc(resp)
     if (is.cor_sar(autocor)) {
-      if (paste0("W", resp) %in% names(new_objects)) {
-        autocor <- cor_sar(new_objects$W, type = autocor$type)
+      W_name <- paste0("W", resp)
+      if (W_name %in% names(new_objects)) {
+        autocor$W <- cor_sar(new_objects[[W_name]])$W
       } else {
         message("Using the identity matrix as weighting matrix by default")
         autocor$W <- diag(nrow(newdata))
       }
     } else if (is.cor_fixed(autocor)) {
-      if (paste0("V", resp) %in% names(new_objects)) {
-        autocor <- cor_fixed(new_objects$V)
+      V_name <- paste0("V", resp)
+      if (V_name %in% names(new_objects)) {
+        autocor$V <- cor_fixed(new_objects[[V_name]])$V
       } else {
         message("Using the median variance by default")
         median_V <- median(diag(autocor$V), na.rm = TRUE)
@@ -501,6 +509,50 @@ s2rPred <- function(sm, data) {
   out
 }
 
+# Basis matrices for baseline hazard functions of the Cox model
+# @param y vector of response values
+# @param args arguments passed to the spline generating functions
+# @param integrate compute the I-spline instead of the M-spline basis?
+# @param basis optional precomputed basis matrix
+# @return the design matrix of the baseline hazard function
+bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE, 
+                              basis = NULL) {
+  require_package("splines2")
+  if (!is.null(basis)) {
+    # perform predictions based on an existing basis matrix
+    stopifnot(inherits(basis, "mSpline"))
+    if (integrate) {
+      # for predictions just the attibutes are required
+      # which are the same of M-Splines and I-Splines
+      class(basis) <- c("matrix", "iSpline")
+    }
+    return(predict(basis, y))
+  }
+  stopifnot(is.list(args))
+  args$x <- y
+  if (!is.null(args$intercept)) {
+    args$intercept <- as_one_logical(args$intercept) 
+  }
+  if (is.null(args$Boundary.knots)) {
+    if (isTRUE(args$intercept)) {
+      lower_knot <- min(y)
+      upper_knot <- max(y)
+    } else {
+      # we need a smaller lower boundary knot to avoid lp = -Inf 
+      # the below choices are ad-hoc and may need further thought
+      lower_knot <- max(min(y) - mad(y, na.rm = TRUE) / 10, 0)
+      upper_knot <- max(y) + mad(y, na.rm = TRUE) / 10
+    }
+    args$Boundary.knots <- c(lower_knot, upper_knot)
+  }
+  if (integrate) {
+    out <- do_call(splines2::iSpline, args)
+  } else {
+    out <- do_call(splines2::mSpline, args)
+  }
+  out
+}
+
 #' Extract response values
 #' 
 #' Extract response values from a \code{\link{brmsfit}} object.
@@ -541,6 +593,54 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   structure(out, old_order = attr(sdata, "old_order"))
 }
 
+# coerce censored values into the right format
+# @param x vector of censoring indicators
+# @return transformed vector of censoring indicators
+prepare_cens <- function(x) {
+  .prepare_cens <- function(x) {  
+    stopifnot(length(x) == 1L)
+    regx <- paste0("^", x)
+    if (grepl(regx, "left")) {
+      x <- -1
+    } else if (grepl(regx, "none") || isFALSE(x)) {
+      x <- 0
+    } else if (grepl(regx, "right") || isTRUE(x)) {
+      x <- 1
+    } else if (grepl(regx, "interval")) {
+      x <- 2
+    }
+    return(x)
+  }
+  x <- unname(x)
+  if (is.factor(x)) {
+    x <- as.character(x)
+  }
+  ulapply(x, .prepare_cens)
+}
+
+# extract information on censoring of the response variable
+# @param x a brmsfit object
+# @param resp optional names of response variables for which to extract values
+# @return vector of censoring indicators or NULL in case of no censoring
+get_cens <- function(x, resp = NULL, newdata = NULL) {
+  stopifnot(is.brmsfit(x))
+  resp <- validate_resp(resp, x, multiple = FALSE)
+  bterms <- parse_bf(x$formula)
+  if (!is.null(resp)) {
+    bterms <- bterms$terms[[resp]]
+  }
+  if (is.null(newdata)) {
+    newdata <- model.frame(x)
+  }
+  out <- NULL
+  if (is.formula(bterms$adforms$cens)) {
+    cens <- eval_rhs(bterms$adforms$cens)
+    out <- eval2(cens$vars$cens, newdata)
+    out <- prepare_cens(out)
+  }
+  out
+}
+
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
@@ -564,6 +664,7 @@ extract_old_standata.mvbrmsterms <- function(x, data, ...) {
 #' @export
 extract_old_standata.brmsterms <- function(x, data, ...) {
   out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  data <- subset_data(data, x)
   for (dp in names(x$dpars)) {
     out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
   }
@@ -587,6 +688,15 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     if (isTRUE(nzchar(x$time$group))) {
       out$locations <- levels(factor(get(x$time$group, data)))
     }
+  }
+  if (is_cox(x$family)) {
+    # compute basis matrix of the baseline hazard for the Cox model
+    data_response <- data_response(
+      x, data, check_response = FALSE, not4stan = TRUE
+    )
+    out$bhaz_basis <- bhaz_basis_matrix(
+      data_response$y, args = x$family$baseline
+    )
   }
   out
 }

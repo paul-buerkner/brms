@@ -1,11 +1,13 @@
-#' Display Marginal Effects of Predictors
+#' Display Conditional Effects of Predictors
 #' 
-#' Display marginal effects of one or more numeric and/or categorical 
+#' Display conditional effects of one or more numeric and/or categorical 
 #' predictors including two-way interaction effects.
+#' 
+#' @aliases marginal_effects marginal_effects.brmsfit
 #' 
 #' @param x An \R object usually of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects
-#'   (main effects or interactions) for which to compute marginal plots.
+#'   (main effects or interactions) for which to compute conditional plots.
 #'   Interactions are specified by a \code{:} between variable names.
 #'   If \code{NULL} (the default), plots are generated for all main effects
 #'   and two-way interactions estimated in the model. When specifying
@@ -18,8 +20,11 @@
 #'   is not given, the row names will be used for this purpose instead.
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
-#'   If \code{NULL} (the default), numeric variables will be marginalized
-#'   by using their means and factors will get their reference level assigned.
+#'   If \code{NULL} (the default), numeric variables will be conditionalized by
+#'   using their means and factors will get their reference level assigned.
+#'   \code{NA} values within factors are interpreted as if all dummy
+#'   variables of this factor are zero. This allows, for instance, to make
+#'   predictions of the grand mean when using sum coding.
 #' @param int_conditions An optional named \code{list} whose elements are numeric
 #'   vectors of values of the second variables in two-way interactions. 
 #'   At these values, predictions are evaluated. The names of 
@@ -31,15 +36,15 @@
 #'   If \code{NULL} (the default), predictions are evaluated at the 
 #'   \eqn{mean} and at \eqn{mean +/- sd}. 
 #' @param re_formula A formula containing random effects to be considered 
-#'   in the marginal predictions. If \code{NULL}, include all random effects; 
+#'   in the conditional predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
 #' @param robust If \code{TRUE} (the default) the median is used as the 
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
 #' @param method Either \code{"fitted"} or \code{"predict"}. 
-#'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
-#'   If \code{"predict"}, plot marginal predictions of the responses.
+#'   If \code{"fitted"}, plot conditional predictions of the regression curve. 
+#'   If \code{"predict"}, plot conditional predictions of the responses.
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
@@ -132,20 +137,21 @@
 #'   A named list of arguments passed to 
 #'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #' 
-#' @return An object of class \code{brmsMarginalEffects}, which is a named list
-#'   with one data.frame per effect containing all information required 
-#'   to generate marginal effects plots. Among others, these data.frames
-#'   contain some special variables, namely \code{estimate__} (predicted values
-#'   of the response), \code{se__} (standard error of the predicted response),
-#'   \code{lower__} and \code{upper__} (lower and upper bounds of the uncertainty
-#'   interval of the response), as well as \code{cond__} (used in faceting when 
-#'   \code{conditions} contains multiple rows).
+#' @return An object of class \code{'brms_conditional_effects'}, which is a
+#'   named list with one data.frame per effect containing all information
+#'   required to generate conditional effects plots. Among others, these
+#'   data.frames contain some special variables, namely \code{estimate__}
+#'   (predicted values of the response), \code{se__} (standard error of the
+#'   predicted response), \code{lower__} and \code{upper__} (lower and upper
+#'   bounds of the uncertainty interval of the response), as well as
+#'   \code{cond__} (used in faceting when \code{conditions} contains multiple
+#'   rows).
 #'   
 #'   The corresponding \code{plot} method returns a named 
 #'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
-#' @details When creating \code{marginal_effects} for a particular predictor 
+#' @details When creating \code{conditional_effects} for a particular predictor 
 #'   (or interaction of two predictors), one has to choose the values of all 
 #'   other predictors to condition on. 
 #'   By default, the mean is used for continuous variables
@@ -156,14 +162,6 @@
 #'   to the factor levels actually used in the conditioning, in order not 
 #'   to create the false impression of bad model fit, where it is just 
 #'   due to conditioning on certain factor levels.
-#'   Since we condition on rather than actually marginalizing variables, 
-#'   the name  \code{marginal_effects} is possibly not ideally chosen in 
-#'   retrospect. 
-#' 
-#'   \code{NA} values within factors in \code{conditions}, 
-#'   are interpreted as if all dummy variables of this factor are 
-#'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding. 
 #'   
 #'   To fully change colors of the created plots, 
 #'   one has to amend both \code{scale_colour} and \code{scale_fill}.
@@ -176,54 +174,52 @@
 #' fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #'            data = epilepsy, family = poisson()) 
 #'            
-#' ## plot all marginal effects
-#' plot(marginal_effects(fit), ask = FALSE)
+#' ## plot all conditional effects
+#' plot(conditional_effects(fit), ask = FALSE)
 #' 
 #' ## change colours to grey scale
 #' library(ggplot2)
-#' me <- marginal_effects(fit, "zBase:Trt")
+#' me <- conditional_effects(fit, "zBase:Trt")
 #' plot(me, plot = FALSE)[[1]] + 
 #'   scale_color_grey() +
 #'   scale_fill_grey()
 #' 
-#' ## only plot the marginal interaction effect of 'zBase:Trt'
+#' ## only plot the conditional interaction effect of 'zBase:Trt'
 #' ## for different values for 'zAge'
 #' conditions <- data.frame(zAge = c(-1, 0, 1))
-#' plot(marginal_effects(fit, effects = "zBase:Trt", 
-#'                       conditions = conditions))
+#' plot(conditional_effects(fit, effects = "zBase:Trt", 
+#'                          conditions = conditions))
 #'                       
 #' ## also incorporate random effects variance over patients
 #' ## also add data points and a rug representation of predictor values
-#' plot(marginal_effects(fit, effects = "zBase:Trt", 
-#'                       conditions = conditions, re_formula = NULL), 
+#' plot(conditional_effects(fit, effects = "zBase:Trt", 
+#'                          conditions = conditions, re_formula = NULL), 
 #'      points = TRUE, rug = TRUE)
 #'  
 #' ## change handling of two-way interactions
 #' int_conditions <- list(
 #'   zBase = setNames(c(-2, 1, 0), c("b", "c", "a"))
 #' )
-#' marginal_effects(fit, effects = "Trt:zBase",
-#'                  int_conditions = int_conditions)
-#' marginal_effects(fit, effects = "Trt:zBase",
-#'                  int_conditions = list(zBase = quantile))        
+#' conditional_effects(fit, effects = "Trt:zBase",
+#'                     int_conditions = int_conditions)
+#' conditional_effects(fit, effects = "Trt:zBase",
+#'                     int_conditions = list(zBase = quantile))        
 #'      
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #' conditions <- make_conditions(fit3way, "zAge")
-#' marginal_effects(
-#'   fit3way, "zBase:Trt", conditions = conditions
-#' )
+#' conditional_effects(fit3way, "zBase:Trt", conditions = conditions)
 #' ## only include points close to the specified values of zAge
-#' me <- marginal_effects(
-#'  fit3way, "zBase:Trt", conditions = conditions, 
-#'  select_points = 0.1
+#' me <- conditional_effects(
+#'   fit3way, "zBase:Trt", conditions = conditions, 
+#'   select_points = 0.1
 #' )
 #' plot(me, points = TRUE)
 #' }
 #' 
 #' @export
-marginal_effects <- function(x, ...) {
-  UseMethod("marginal_effects")
+conditional_effects <- function(x, ...) {
+  UseMethod("conditional_effects")
 }
 
 # get combinations of variables used in predictor terms
@@ -256,7 +252,7 @@ get_all_effects.mvbrmsterms <- function(x, ...) {
   unique(unlist(out, recursive = FALSE))
 }
 
-# get all effects for use in marginal_effects
+# get all effects for use in conditional_effects
 # @param bterms object of class brmsterms
 # @param rsv_vars character vector of reserved variables
 # @param comb_all include all main effects and two-way interactions?
@@ -308,7 +304,7 @@ get_all_effects_type <- function(x, type) {
       if (grepl_expr(regex_type, term_parts[j])) {
         # evaluate a special term to extract variables
         tmp <- eval2(term_parts[j])
-        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by, tmp$gr)), "NA") 
+        vars[[j]] <- setdiff(unique(c(tmp$term, tmp$by)), "NA") 
       } else {
         # extract all variables from an ordinary term
         vars[[j]] <- all_vars(term_parts[j])
@@ -349,7 +345,7 @@ get_int_vars.brmsterms <- function(x, ...) {
 #' Prepare Fully Crossed Conditions
 #' 
 #' This is a helper function to prepare fully crossed conditions primarily 
-#' for use with the \code{conditions} argument of \code{\link{marginal_effects}}.
+#' for use with the \code{conditions} argument of \code{\link{conditional_effects}}.
 #' Automatically creates labels for each row in the \code{cond__} column.
 #' 
 #' @param x An \R object from which to extract the variables
@@ -362,7 +358,7 @@ get_int_vars.brmsterms <- function(x, ...) {
 #' @details For factor like variables, all levels are used as conditions.
 #'   For numeric variables, \code{mean + (-1:1) * SD} are used as conditions.
 #'   
-#' @seealso \code{\link{marginal_effects}}, \code{\link{rows2labels}}
+#' @seealso \code{\link{conditional_effects}}, \code{\link{rows2labels}}
 #'   
 #' @examples
 #' df <- data.frame(x = c("a", "b"), y = rnorm(10))
@@ -416,7 +412,7 @@ get_cond__ <- function(x) {
 #' @return A character vector of the same length as the number
 #'   of rows of \code{x}.
 #'   
-#' @seealso \code{\link{make_conditions}}, \code{\link{marginal_effects}}
+#' @seealso \code{\link{make_conditions}}, \code{\link{conditional_effects}}
 #' 
 #' @export
 rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
@@ -437,11 +433,11 @@ rows2labels <- function(x, digits = 2, sep = " & ", incl_vars = TRUE, ...) {
   Reduce(paste_sep, out)
 }
 
-# prepare conditions for use in marginal_effects
+# prepare conditions for use in conditional_effects
 # @param fit an object of class 'brmsfit'
 # @param conditions optional data.frame containing user defined conditions
-# @param effects see marginal_effects
-# @param re_formula see marginal_effects
+# @param effects see conditional_effects
+# @param re_formula see conditional_effects
 # @param rsv_vars names of reserved variables
 # @return a data.frame with (possibly updated) conditions
 prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
@@ -455,7 +451,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     # to factors happening inside the model formula
     warning2(
       "Using 'factor' or 'as.factor' in the model formula ",
-      "might lead to problems in 'marginal_effects'.",
+      "might lead to problems in 'conditional_effects'.",
       "Please convert your variables to factors beforehand."
     )
   }
@@ -475,25 +471,30 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
     req_vars <- setdiff(req_vars, names(conditions))
   }
+  # special treatment for 'trials' addition variables
   trial_vars <- all_vars(bterms$adforms$trials)
+  trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
   if (length(trial_vars)) {
-    write_msg <- any(ulapply(trial_vars, function(x) 
-      !isTRUE(x %in% names(conditions)) || anyNA(conditions[[x]])
-    ))
-    if (write_msg) {
-      message("Using the median number of trials by ", 
-              "default if not specified otherwise.")
+    message("Setting the number of trials to 1 by ", 
+            "default if not specified otherwise.")
+    req_vars <- setdiff(req_vars, trial_vars)
+    for (v in trial_vars) {
+      conditions[[v]] <- 1L
     }
   }
-  # use default values for unspecified variables
+  # use sensible default values for unspecified variables
+  subset_vars <- get_advars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
-    if (!is_like_factor(mf[[v]])) {
+    if (v %in% subset_vars) {
+      # avoid unintentional subsetting of newdata (#755)
+      conditions[[v]] <- TRUE
+    } else if (!is_like_factor(mf[[v]])) {
       # treat variable as numeric
       if (v %in% int_vars) {
-        conditions[[v]] <- round(median(mf[[v]]))
+        conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))
       } else {
         conditions[[v]] <- mean(mf[[v]], na.rm = TRUE)
       }
@@ -520,10 +521,10 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   )
 }
 
-# prepare data to be used in marginal_effects
+# prepare data to be used in conditional_effects
 # @param data data.frame containing only data of the predictors of interest
-# @param conditions see argument 'conditions' of marginal_effects
-# @param int_conditions see argument 'int_conditions' of marginal_effects
+# @param conditions see argument 'conditions' of conditional_effects
+# @param int_conditions see argument 'int_conditions' of conditional_effects
 # @param int_vars names of variables being treated as integers
 # @param surface generate surface plots later on?
 # @param resolution number of distinct points at which to evaluate
@@ -603,26 +604,32 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
-# compute fitted values for use in marginal_effects
-marginal_effects_internal <- function(x, ...) {
-  UseMethod("marginal_effects_internal")
+# which variables in 'vars' are specified in 'data'?
+vars_specified <- function(vars, data) {
+  .fun <- function(v) isTRUE(v %in% names(data)) && any(!is.na(data[[v]]))
+  as.logical(ulapply(vars, .fun))
 }
 
-# compute fitted values of MV models for use in marginal_effects
+# compute fitted values for use in conditional_effects
+conditional_effects_internal <- function(x, ...) {
+  UseMethod("conditional_effects_internal")
+}
+
+# compute fitted values of MV models for use in conditional_effects
 # @return a list of summarized prediction matrices
 #' @export
-marginal_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
+conditional_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
   resp <- validate_resp(resp, x$responses)
   x$terms <- x$terms[resp]
-  out <- lapply(x$terms, marginal_effects_internal, ...)
+  out <- lapply(x$terms, conditional_effects_internal, ...)
   unlist(out, recursive = FALSE)
 }
 
-# compute fitted values of a univariate model for use in marginal_effects
+# compute fitted values of a univariate model for use in conditional_effects
 # @return a list with the summarized prediction matrix as the only element
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
-marginal_effects_internal.brmsterms <- function(
+conditional_effects_internal.brmsterms <- function(
   x, fit, marg_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
   dpar = NULL, resp = NULL, ...
@@ -664,7 +671,7 @@ marginal_effects_internal.brmsterms <- function(
     if (is_ordinal(x$family) && is.null(dpar)) {
       warning2(
         "Predictions are treated as continuous variables in ",
-        "'marginal_effects' by default which is likely invalid ", 
+        "'conditional_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
       if (method == "fitted") {
@@ -727,7 +734,7 @@ marginal_effects_internal.brmsterms <- function(
 }
 
 # prepare data points based on the provided conditions
-# allows to add data points to marginal effects plots
+# allows to add data points to conditional effects plots
 # @return a data.frame containing the data points to be plotted
 make_point_frame <- function(bterms, mf, effects, conditions, 
                              select_points = 0, transform = NULL, ...) {
@@ -817,14 +824,14 @@ add_effects__ <- function(data, effects) {
 }
 
 #' @export
-print.brmsMarginalEffects <- function(x, ...) {
+print.brms_conditional_effects <- function(x, ...) {
   plot(x, ...)
 }
 
-#' @rdname marginal_effects
-#' @method plot brmsMarginalEffects
+#' @rdname conditional_effects
+#' @method plot brms_conditional_effects
 #' @export 
-plot.brmsMarginalEffects <- function(
+plot.brms_conditional_effects <- function(
   x, ncol = NULL, points = FALSE, rug = FALSE, mean = TRUE, 
   jitter_width = 0, stype = c("contour", "raster"),
   line_args = list(), cat_args = list(), errorbar_args = list(), 
@@ -837,7 +844,7 @@ plot.brmsMarginalEffects <- function(
   smooths_only <- isTRUE(attr(x, "smooths_only"))
   if (points && smooths_only) {
     stop2("Argument 'points' is invalid for objects ", 
-          "returned by 'marginal_smooths'.")
+          "returned by 'conditional_smooths'.")
   }
   if (!is_equal(jitter_width, 0)) {
     warning2("'jitter_width' is deprecated. Please use ",
@@ -1019,4 +1026,23 @@ plot.brmsMarginalEffects <- function(
     }
   }
   invisible(plots)
+}
+
+# the name 'marginal_effects' is deprecated as of brms 2.10.3
+# do not remove it eventually as it has been used in the brms papers
+#' @export
+marginal_effects <- function(x, ...) {
+  UseMethod("marginal_effects")
+}
+
+#' @export
+print.brmsMarginalEffects <- function(x, ...) {
+  class(x) <- "brms_conditional_effects"
+  print(x, ...)
+}
+
+#' @export
+plot.brmsMarginalEffects <- function(x, ...) {
+  class(x) <- "brms_conditional_effects"
+  plot(x, ...)
 }

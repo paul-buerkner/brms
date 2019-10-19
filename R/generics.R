@@ -54,7 +54,7 @@ NULL
 
 # brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
-                    data.name = "", model = "", prior = empty_brmsprior(), 
+                    data.name = "", model = "", prior = empty_prior(), 
                     autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
                     loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
                     marglik = NULL, stanvars = NULL, stan_funs = NULL, 
@@ -214,25 +214,6 @@ prior_samples <- function(x, pars = NA, ...) {
 #' @export
 parnames <- function(x, ...) {
   UseMethod("parnames")
-}
-
-#' Number of Posterior Samples
-#' 
-#' Extract the number of posterior samples 
-#' stored in a fitted Bayesian model.
-#' 
-#' @param x An \R object
-#' @param ... Further arguments passed to or from other methods.
-#' @param subset An optional integer vector defining a 
-#'   subset of samples to be considered.
-#' @param incl_warmup A flag indicating whether to also 
-#'   count warmup / burn-in samples.
-#' 
-#' @details Currently there are methods for \code{brmsfit} objects.
-#' 
-#' @export
-nsamples <- function(x, ...) {
-  UseMethod("nsamples")
 }
 
 #' Number of levels

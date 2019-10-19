@@ -70,6 +70,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
+  cov <- as_one_logical(cov)
   if ("r" %in% names(match.call())) {
     warning2("The ARR structure is no longer supported and ignored.")
   }
@@ -86,7 +87,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
-  x <- nlist(formula, p, q, cov = as.logical(cov))
+  x <- nlist(formula, p, q, cov)
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
@@ -152,6 +153,29 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #' @export
 cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
+}
+
+#' Compound Symmetry (COSY) Correlation Structure
+#' 
+#' This functions is a constructor for the \code{cor_cosy} class, representing 
+#' a compound symmetry structure corresponding to uniform correlation.
+#' 
+#' @aliases cor_cosy-class
+#' 
+#' @inheritParams cor_arma
+#' 
+#' @return An object of class \code{cor_cosy}, representing a compound symmetry
+#'   correlation structure.
+#'   
+#' @examples
+#' cor_cosy(~ visit | patient)
+#' 
+#' @export 
+cor_cosy <- function(formula = ~ 1) {
+  formula <- as.formula(formula)
+  x <- nlist(formula)
+  class(x) <- c("cor_cosy", "cor_brms")
+  x
 }
 
 #' Spatial simultaneous autoregressive (SAR) structures
@@ -224,12 +248,14 @@ cor_errorsar <- function(W) {
 
 # helper function to prepare spatial weights matrices
 sar_weights <- function(W) {
-  require_package("spdep")
   if (is(W, "listw")) {
+    require_package("spdep")
     W <- spdep::listw2mat(W)
   } else if (is(W, "nb")) {
+    require_package("spdep")
     W <- spdep::nb2mat(W)
-  } else if (!is.matrix(W)) {
+  }
+  if (!is.matrix(W)) {
     stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
   }
   W
@@ -252,14 +278,14 @@ sar_weights <- function(W) {
 #'   It is recommended to always specify a grouping factor
 #'   to allow for handling of new data in post-processing methods.
 #' @param type Type of the CAR structure. Currently implemented
-#'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
-#'   (exact sparse intrinsic CAR) and \code{"icar"} (intrinsic CAR). 
-#'   More information is provided in the 'Details' section.
+#'   are \code{"escar"} (exact sparse CAR), \code{"esicar"}
+#'   (exact sparse intrinsic CAR), \code{"icar"} (intrinsic CAR),
+#'   and \code{"bym2"}. More information is provided in the 'Details' section.
 #' 
 #' @details The \code{escar} and \code{esicar} types are 
 #'   implemented based on the case study of Max Joseph
-#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar}
-#'   type is implemented based on the case study of Mitzi Morris
+#'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+#'   \code{bym2} type is implemented based on the case study of Mitzi Morris
 #'   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 #'   
 #' @examples
@@ -294,8 +320,9 @@ sar_weights <- function(W) {
 #' }
 #' 
 #' @export
-cor_car <- function(W, formula = ~1, type = c("escar", "esicar", "icar")) {
-  type <- match.arg(type)
+cor_car <- function(W, formula = ~1, type = "escar") {
+  options <- c("escar", "esicar", "icar", "bym2")
+  type <- match.arg(type, options)
   W_name <- deparse(substitute(W))
   W <- Matrix::Matrix(W, sparse = TRUE)
   if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {
@@ -392,6 +419,12 @@ is.cor_arma <- function(x) {
 
 #' @rdname is.cor_brms
 #' @export
+is.cor_cosy <- function(x) {
+  inherits(x, "cor_cosy")
+}
+
+#' @rdname is.cor_brms
+#' @export
 is.cor_sar <- function(x) {
   inherits(x, "cor_sar")
 }
@@ -417,6 +450,12 @@ print.cor_empty <- function(x, ...) {
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
              get_ar(x), ", ", get_ma(x), ")"))
+  invisible(x)
+}
+
+#' @export
+print.cor_cosy <- function(x, ...) {
+  cat(paste0("cosy(", formula2str(x$formula), ")"))
   invisible(x)
 }
 
@@ -459,13 +498,24 @@ get_ma <- function(x) {
   ifelse(is.null(x$q), 0, x$q)
 }
 
-# use the covariance parameterization of ARMA models?
+# has only AR correlations?
+has_ar_only <- function(x) {
+  get_ar(x) && !get_ma(x)
+} 
+
+# has only MA correlations?
+has_ma_only <- function(x) {
+  get_ma(x) && !get_ar(x)
+} 
+
+# use the covariance parameterization of a correlation structure?
 use_cov <- function(x) {
   stop_not_cor_brms(x)
-  if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
-    out <- x$cov
-  } else {
-    out <- FALSE
+  out <- FALSE
+  if (is.cor_arma(x)) {
+    out <- isTRUE(x$cov)
+  } else if (is.cor_cosy(x)) {
+    out <- TRUE
   }
   out
 }
@@ -512,12 +562,14 @@ remove_autocor <- function(x) {
 # subset matrices stored in 'cor_brms' objects
 # @param x a brmsfit object to be updated
 # @param subset indices of observations to keep
-# @param autocor optional (list of) 'cor_brms' objects
+# @param autocor optional (list of) 'cor_brms' objects 
 #   from which to take matrices
+# @param incl_car also subset adjacency matrices of CAR models?
+#   see 'add_new_objects' for why we often need to ignore CAR models
 # @return an updated brmsfit object
-subset_autocor <- function(x, subset, autocor = NULL) {
+subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
   .subset_autocor <- function(autocor) {
-    if (is.cor_sar(autocor)) {
+    if (is.cor_sar(autocor) || is.cor_car(autocor)) {
       autocor$W <- autocor$W[subset, subset, drop = FALSE]
     } else if (is.cor_fixed(autocor)) {
       autocor$V <- autocor$V[subset, subset, drop = FALSE]
@@ -529,11 +581,17 @@ subset_autocor <- function(x, subset, autocor = NULL) {
   }
   if (is_mv(x)) {
     for (i in seq_along(x$formula$forms)) {
-      new_autocor <- .subset_autocor(autocor[[i]])
-      x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+      dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
+      if (!dont_subset) {
+        new_autocor <- .subset_autocor(autocor[[i]])
+        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+      }
     }
   } else {
-    x$formula$autocor <- x$autocor <- .subset_autocor(autocor)
+    dont_subset <- is.cor_car(autocor) && !incl_car
+    if (!dont_subset) {
+      x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
+    }
   }
   # prevents double updating in add_new_objects()
   structure(x, autocor_updated = TRUE)
@@ -541,7 +599,7 @@ subset_autocor <- function(x, subset, autocor = NULL) {
 
 # regex to extract all parameter names of autocorrelation structures
 regex_cor_pars <- function() {
-  p <- c("ar", "ma", "sderr", "lagsar", "errorsar", "car", "sdcar")
+  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")
 }

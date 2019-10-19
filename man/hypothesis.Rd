@@ -55,8 +55,8 @@ Perform non-linear hypothesis testing for all model parameters.
 }
 \details{
 Among others, \code{hypothesis} computes an evidence ratio
-  (\code{Evid.Ratio}) for each hypothesis. For a one-sided hypothesis, this is
-  just the posterior probability (\code{Post.Prob}) under the hypothesis
+  (\code{Evid.Ratio}) for each hypothesis. For a one-sided hypothesis, this
+  is just the posterior probability (\code{Post.Prob}) under the hypothesis
   against its alternative. That is, when the hypothesis is of the form
   \code{a > b}, the evidence ratio is the ratio of the posterior probability
   of \code{a > b} and the posterior probability of \code{a < b}. In this
@@ -69,10 +69,14 @@ Among others, \code{hypothesis} computes an evidence ratio
   indicate that evidence in favor of the point hypothesis has increased after
   seeing the data. In order to calculate this Bayes factor, all parameters
   related to the hypothesis must have proper priors and argument
-  \code{sample_prior} of function \code{brm} must be set to \code{"yes"}. When
-  interpreting Bayes factors, make sure that your priors are reasonable and
-  carefully chosen, as the result will depend heavily on the priors. In
-  particular, avoid using default priors.
+  \code{sample_prior} of function \code{brm} must be set to \code{"yes"}.
+  Otherwise \code{Evid.Ratio} (and \code{Post.Prob}) will be \code{NA}.
+  Please note that, for technical reasons, we cannot sample from priors of
+  certain parameters classes. Most notably, these include overall intercept
+  parameters (prior class \code{"Intercept"}) as well as group-level
+  coefficients. When interpreting Bayes factors, make sure that your priors
+  are reasonable and carefully chosen, as the result will depend heavily on
+  the priors. In particular, avoid using default priors.
   
   The \code{Evid.Ratio} may sometimes be \code{0} or \code{Inf} implying very
   small or large evidence, respectively, in favor of the tested hypothesis.

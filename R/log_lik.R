@@ -154,7 +154,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   Y <- as.numeric(draws$data$Y[obs])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     g <- solve(C, Y - mu[s, ])
@@ -434,13 +434,36 @@ log_lik_von_mises <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_asym_laplace <- function(i, draws, ...) {
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               sigma = get_dpar(draws, "sigma", i = i),
-               quantile = get_dpar(draws, "quantile", i = i))
-  out <- log_lik_censor(dist = "asym_laplace", args = args, 
-                       i = i, draws = draws)
-  out <- log_lik_truncate(out, cdf = pvon_mises, args = args,
-                         i = i, draws = draws)
+  args <- list(
+    mu = get_dpar(draws, "mu", i), 
+    sigma = get_dpar(draws, "sigma", i),
+    quantile = get_dpar(draws, "quantile", i)
+  )
+  out <- log_lik_censor(dist = "asym_laplace", args, i, draws)
+  out <- log_lik_truncate(out, pasym_laplace, args, i, draws)
+  log_lik_weight(out, i = i, draws = draws)
+}
+
+log_lik_zero_inflated_asym_laplace <- function(i, draws, ...) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i), 
+    sigma = get_dpar(draws, "sigma", i),
+    quantile = get_dpar(draws, "quantile", i),
+    zi = get_dpar(draws, "zi", i)
+  )
+  out <- log_lik_censor(dist = "zero_inflated_asym_laplace", args, i, draws)
+  out <- log_lik_truncate(out, pzero_inflated_asym_laplace, args, i, draws)
+  log_lik_weight(out, i = i, draws = draws)
+}
+
+log_lik_cox <- function(i, draws, ...) {
+  args <- list(
+    mu = get_dpar(draws, "mu", i),
+    bhaz = draws$bhaz$bhaz[, i], 
+    cbhaz = draws$bhaz$cbhaz[, i]
+  )
+  out <- log_lik_censor(dist = "cox", args = args, i = i, draws = draws)
+  out <- log_lik_truncate(out, cdf = pcox, args = args, i = i, draws = draws)
   log_lik_weight(out, i = i, draws = draws)
 }
 

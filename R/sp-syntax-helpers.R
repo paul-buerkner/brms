@@ -201,10 +201,18 @@ get_simo_labels <- function(spef) {
 get_sdy <- function(x, data = NULL) {
   stopifnot(is.brmsterms(x))
   miform <- x$adforms[["mi"]]
+  sdy <- NULL
   if (is.formula(miform)) {
-    sdy <- eval_rhs(miform, data = data)
-  } else {
-    sdy <- NULL
+    mi <- eval_rhs(miform)
+    if (mi$vars$sdy != "NA") {
+      sdy <- eval2(mi$vars$sdy, data)
+      if (!is.null(sdy) && !is.numeric(sdy)) {
+        stop2("Measurement error should be numeric.")
+      }
+      if (isTRUE(any(sdy <= 0))) {
+        stop2("Measurement error should be positive.")
+      }
+    }
   }
   sdy
 }

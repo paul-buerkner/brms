@@ -76,7 +76,11 @@ fitted_internal.brmsdraws <- function(
         out <- fitted_fun(draws)
       }
     } else {
-      mus <- dpars[dpar_class(dpars) %in% "mu"]
+      if (conv_cats_dpars(draws$family)) {
+        mus <- dpars[grepl("^mu", dpars)] 
+      } else {
+        mus <- dpars[dpar_class(dpars) %in% "mu"]
+      }
       if (length(mus) == 1L) {
         out <- get_dpar(draws, dpar = mus, ilink = FALSE)
       } else {
@@ -212,6 +216,15 @@ fitted_asym_laplace <- function(draws) {
   with(draws$dpars, 
     mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
   )
+}
+
+fitted_zero_inflated_asym_laplace <- function(draws) {
+  fitted_asym_laplace(draws) * (1 - draws$dpars$zi)
+}
+
+fitted_cox <- function(draws) {
+  stop2("Cannot compute expected values of the posterior predictive ",
+        "distribution for family 'cox'.")
 }
 
 fitted_hurdle_poisson <- function(draws) {

@@ -126,6 +126,10 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
     y$dpars[[dp]]$resp <- resp
+    if (dpar_class(dp) == "mu") {
+      y$dpars[[dp]]$respform <- y$respform
+      y$dpars[[dp]]$adforms <- y$adforms
+    }
   }
   
   y$nlpars <- named_list(nlpars)
@@ -424,7 +428,8 @@ parse_sp <- function(formula) {
     uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
     uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
     uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
-    out <- str2formula(out)
+    # remove the intercept as it is handled separately
+    out <- str2formula(c("0", out))
     attr(out, "int") <- FALSE
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
@@ -485,7 +490,8 @@ parse_offset <- function(formula) {
 parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (length(out)) {
-    out <- str2formula(out)
+    # remove the intercept as it is handled separately
+    out <- str2formula(c("0", out))
     attr(out, "allvars") <- allvars_formula(out)
     attr(out, "int") <- FALSE
   }
@@ -705,7 +711,13 @@ check_fdpars <- function(x) {
 allvars_formula <- function(...) {
   out <- rmNULL(c(...))
   out <- collapse(ulapply(out, plus_rhs))
-  out <- str2formula(c(out, all_vars(out)))
+  all_vars <- all_vars(out)
+  invalid_vars <- setdiff(all_vars, make.names(all_vars))
+  if (length(invalid_vars)) {
+    stop2("The following variable names are invalid: ",
+          collapse_comma(invalid_vars)) 
+  }
+  out <- str2formula(c(out, all_vars))
   update(out, ~ .)
 }
 
@@ -732,7 +744,7 @@ get_allvars <- function(x, type = "") {
 # add 'x' to the right-hand side of a formula
 plus_rhs <- function(x) {
   if (is.formula(x)) {
-    x <- Reduce(paste, deparse(rhs(x)[[2]]))
+    x <- sub("^[^~]*~", "", formula2str(x))
   }
   if (length(x) && all(nzchar(x))) {
     out <- paste0(" + ", paste(x, collapse = "+"))
@@ -1130,21 +1142,34 @@ get_ac_groups <- function(x, ...) {
 }
 
 # extract truncation boundaries
+trunc_bounds <- function(x, ...) {
+  UseMethod("trunc_bounds")
+}
+
+# @return a named list with one element per response variable
+#' @export
+trunc_bounds.mvbrmsterms <- function(x, ...) {
+  lapply(x$terms, trunc_bounds, ...)
+}
+
+# @param data data.frame containing the truncation variables
 # @param incl_family include the family in the derivation of the bounds?
 # @param stan return bounds in form of Stan syntax?
-get_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
-                       stan = FALSE) {
-  stopifnot(is.brmsterms(bterms))
-  formula <- bterms$adforms$trunc
-  if (is.formula(formula)) {
-    term <- attr(terms(formula), "term.labels")
-    stopifnot(length(term) == 1L && grepl("resp_trunc\\(", term))
-    out <- eval_rhs(formula, data = data)
+# @return a list with elements 'lb' and 'ub'
+#' @export
+trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE, 
+                                   stan = FALSE, ...) {
+  if (is.formula(x$adforms$trunc)) {
+    trunc <- eval_rhs(x$adforms$trunc)
   } else {
-    out <- resp_trunc()
+    trunc <- resp_trunc()
   }
+  out <- list(
+    lb = eval2(trunc$vars$lb, data),
+    ub = eval2(trunc$vars$ub, data)
+  )
   if (incl_family) {
-    family_bounds <- get_family_bounds(bterms)
+    family_bounds <- family_bounds(x)
     out$lb <- max(out$lb, family_bounds$lb)
     out$ub <- min(out$ub, family_bounds$ub)
   }
@@ -1162,14 +1187,25 @@ get_bounds <- function(bterms, data = NULL, incl_family = FALSE,
   out
 }
 
-# get boundaries of response distributions
-get_family_bounds <- function(bterms) {
-  stopifnot(is.brmsterms(bterms))
-  family <- bterms$family$family
+# extract family boundaries
+family_bounds <- function(x, ...) {
+  UseMethod("family_bounds")
+}
+
+# @return a named list with one element per response variable
+#' @export
+family_bounds.mvbrmsterms <- function(x, ...) {
+  lapply(x$terms, family_bounds, ...)
+}
+
+# @return a list with elements 'lb' and 'ub'
+#' @export
+family_bounds.brmsterms <- function(x, ...) {
+  family <- x$family$family
   if (is.null(family)) {
     return(list(lb = -Inf, ub = Inf))
   }
-  resp <- usc(bterms$resp)
+  resp <- usc(x$resp)
   pos_families <- c(
     "poisson", "negbinomial", "geometric", "gamma", "weibull", 
     "exponential", "lognormal", "frechet", "inverse.gaussian", 
@@ -1193,21 +1229,6 @@ get_family_bounds <- function(bterms) {
     out <- list(lb = paste("min_Y", resp), ub = Inf)
   } else {
     out <- list(lb = -Inf, ub = Inf)
-  }
-  out
-}
-
-# indicate if the model is censored
-has_cens <- function(bterms, data = NULL) {
-  stopifnot(is.brmsterms(bterms))
-  formula <- bterms$adforms$cens
-  if (is.formula(formula)) {
-    term <- attr(terms(formula), "term.labels")
-    stopifnot(length(term) == 1L && grepl("resp_cens\\(", term))
-    out <- eval_rhs(formula, data = data)
-    out <- structure(TRUE, interval = !is.null(attr(out, "y2")))
-  } else {
-    out <- FALSE
   }
   out
 }

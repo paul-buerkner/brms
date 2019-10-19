@@ -5,7 +5,7 @@
 # @param group the group part of a group-level term
 illegal_group_expr <- function(group) {
   group <- as_one_character(group)
-  valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
+  valid_expr <- ":|([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*"
   rsv_signs <- c("+", "-", "*", "/", "|", "::")
   nzchar(gsub(valid_expr, "", group)) ||
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
@@ -227,8 +227,9 @@ update_re_terms.formula <- function(formula, re_formula = NULL) {
       old_re_terms
     )
     new_formula <- rename(new_formula, rm_terms, "")
-    if (grepl("~$", new_formula)) {
-      # lhs only formulas are not allowed
+    if (grepl("~\\+*$", new_formula)) {
+      # lhs only formulas are syntactically invalid
+      # also check for trailing '+' signs (#769)
       new_formula <- paste(new_formula, "1")
     }
   }

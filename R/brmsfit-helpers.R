@@ -286,128 +286,147 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   out
 }
 
-# compute ARMA covariance matrices
+# compute covariance matrices of autocor structures
 # @param draws a brmsdraws object
 # @param obs observations for which to compute the covariance matrix
 # @param latent compute covariance matrix for latent residuals?
-get_cov_matrix_arma <- function(draws, obs, latent = FALSE) {
+get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
   nobs <- length(obs)
-  if (latent) {
-    se <- rep(0, nobs)
-    sigma <- draws$ac$sderr
+  nsamples <- draws$nsamples
+  autocor <- draws$ac$autocor
+  # prepare correlations
+  if (is.cor_arma(draws$ac$autocor)) {
+    ar <- as.numeric(draws$ac$ar)
+    ma <- as.numeric(draws$ac$ma)
+    if (length(ar) && !length(ma)) {
+      cor <- get_cor_matrix_ar1(ar, nobs)
+    } else if (!length(ar) && length(ma)) {
+      cor <- get_cor_matrix_ma1(ma, nobs)
+    } else if (length(ar) && length(ma)) {
+      cor <- get_cor_matrix_arma1(ar, ma, nobs)
+    } else {
+      stop("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
+    }
+  } else if (is.cor_cosy(draws$ac$autocor)) {
+    cosy <- as.numeric(draws$ac$cosy)
+    cor <- get_cor_matrix_cosy(cosy, nobs)
   } else {
-    se <- draws$data$se[obs]
+    cor <- get_cor_matrix_ident(nsamples, nobs)
+  }
+  # prepare known standard errors
+  if (!is.null(draws$data$se)) {
+    se2 <- draws$data$se[obs]^2
+    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, nsamples))
+    se2 <- aperm(se2, perm = c(3, 1, 2))
     # make sure not to add 'se' twice
     draws$data$se <- NULL
-    sigma <- get_dpar(draws, "sigma", i = obs) 
-  }
-  ar <- as.numeric(draws$ac$ar)
-  ma <- as.numeric(draws$ac$ma)
-  if (length(ar) && !length(ma)) {
-    out <- get_cov_matrix_ar1(ar, sigma, nobs, se)
-  } else if (!length(ar) && length(ma)) {
-    out <- get_cov_matrix_ma1(ma, sigma, nobs, se)
-  } else if (length(ar) && length(ma)) {
-    out <- get_cov_matrix_arma1(ar, ma, sigma, nobs, se)
   } else {
-    out <- get_cov_matrix_ident(sigma, nobs, se)
+    se2 <- rep(0, nobs)
   }
+  # prepare residual standard deviations
+  if (latent) {
+    sigma2 <- as.numeric(draws$ac$sderr)^2
+  } else {
+    sigma <- get_dpar(draws, "sigma", i = obs)
+    if (NCOL(sigma) > 1L) {
+      # sigma varies across observations
+      sigma2 <- array(dim = c(nsamples, nobs, nobs))
+      for (s in seq_rows(sigma2)) {
+        sigma2[s, , ] <- outer(sigma[s, ], sigma[s, ])
+      }
+    } else {
+      sigma2 <- as.numeric(sigma)^2
+    }
+  }
+  sigma2 * cor + se2
+}
+
+# compute AR1 correlation matrices
+# @param ar AR1 autocorrelation samples
+# @param nobs number of rows of the covariance matrix
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_ar1 <- function(ar, nobs) {
+  out <- array(0, dim = c(NROW(ar), nobs, nobs))
+  fac <- 1 / (1 - ar^2)
+  pow_ar <- as.list(rep(1, nobs + 1))
+  for (i in seq_len(nobs)) {
+    pow_ar[[i + 1]] <- ar^i
+    out[, i, i] <- fac
+    for (j in seq_len(i - 1)) { 
+      out[, i, j] <- fac * pow_ar[[i - j + 1]]
+      out[, j, i] <- out[, i, j]
+    } 
+  } 
   out
 }
 
-# compute AR1 covariance matrices
-# @param ar AR1 autocorrelation samples
-# @param sigma standard deviation samples of the AR1 process
-# @param nrows number of rows of the covariance matrix
-# @param se optional user defined standard errors
-# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
-get_cov_matrix_ar1 <- function(ar, sigma, nrows, se = NULL) {
-  sigma <- as.matrix(sigma)
-  se2 <- if (length(se)) se^2 else 0
-  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
-  mat <- aperm(mat, perm = c(3, 1, 2))
-  sigma2_adjusted <- sigma^2 / (1 - ar^2)
-  pow_ar <- as.list(rep(1, nrows + 1))
-  for (i in seq_len(nrows)) {
-    pow_ar[[i + 1]] <- ar^i
-    mat[, i, i] <- mat[, i, i] + sigma2_adjusted
-    for (j in seq_len(i - 1)) { 
-      mat[, i, j] <- sigma2_adjusted * pow_ar[[i - j + 1]]
-      mat[, j, i] <- mat[, i, j]
-    } 
-  } 
-  mat
-}
-
-# compute MA1 covariance matrices
+# compute MA1 correlation matrices
 # @param ma MA1 autocorrelation samples
-# @param sigma standard deviation samples of the AR1 process
-# @param nrows number of rows of the covariance matrix
-# @param se optional user defined standard errors
-# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
-get_cov_matrix_ma1 <- function(ma, sigma, nrows, se = NULL) {
-  sigma <- as.matrix(sigma)
-  se2 <- if (length(se)) se^2 else 0
-  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
-  mat <- aperm(mat, perm = c(3, 1, 2))
-  sigma2 <- sigma^2
-  sigma2_adjusted <- sigma2 * (1 + ma^2)
-  sigma2_times_ma <- sigma2 * ma
-  for (i in seq_len(nrows)) { 
-    mat[, i, i] <- mat[, i, i] + sigma2_adjusted
+# @param nobs number of rows of the covariance matrix
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_ma1 <- function(ma, nobs) {
+  out <- array(0, dim = c(NROW(ma), nobs, nobs))
+  gamma0 <- 1 + ma^2
+  for (i in seq_len(nobs)) { 
+    out[, i, i] <- gamma0
     if (i > 1) {
-      mat[, i, i - 1] <- sigma2_times_ma
+      out[, i, i - 1] <- ma
     }
-    if (i < nrows) {
-      mat[, i, i + 1] <- sigma2_times_ma
+    if (i < nobs) {
+      out[, i, i + 1] <- ma
     }
   } 
-  mat 
+  out 
 }
 
-# compute ARMA1 covariance matrices
+# compute ARMA1 correlation matrices
 # @param ar AR1 autocorrelation samples
 # @param ma MA1 autocorrelation samples
-# @param sigma standard deviation samples of the AR1 process
-# @param nrows number of rows of the covariance matrix
-# @param se optional user defined standard errors
-# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
-get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se = NULL) {
-  sigma <- as.matrix(sigma)
-  se2 <- if (length(se)) se^2 else 0
-  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
-  mat <- aperm(mat, perm = c(3, 1, 2))
-  sigma2_adjusted <- sigma^2 / (1 - ar^2)
+# @param nobs number of rows of the covariance matrix
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_arma1 <- function(ar, ma, nobs) {
+  out <- array(0, dim = c(NROW(ar), nobs, nobs))
+  fac <- 1 / (1 - ar^2)
   gamma0 <- 1 + ma^2 + 2 * ar * ma
-  gamma <- as.list(rep(NA, nrows))
+  gamma <- as.list(rep(NA, nobs))
   gamma[[1]] <- (1 + ar * ma) * (ar + ma)
-  for (i in seq_len(nrows)) {
-    mat[, i, i] <- mat[, i, i] + sigma2_adjusted * gamma0
+  for (i in seq_len(nobs)) {
+    out[, i, i] <- fac * gamma0
     gamma[[i]] <- gamma[[1]] * ar^(i - 1)
     for (j in seq_len(i - 1)) { 
-      mat[, i, j] <- sigma2_adjusted * gamma[[i - j]]
-      mat[, j, i] <- mat[, i, j]
+      out[, i, j] <- fac * gamma[[i - j]]
+      out[, j, i] <- out[, i, j]
     } 
   } 
-  mat 
+  out 
 }
 
-# compute a variance matrix without including ARMA parameters
-# only used for ARMA covariance models when !incl_autocor
-# @param sigma standard deviation samples
-# @param nrows number of rows of the covariance matrix
-# @param se optional user defined standard errors
-# @return a numeric 'nsamples' x 'nrows' x 'nrows' array
-get_cov_matrix_ident <- function(sigma, nrows, se = NULL) {
-  sigma <- as.matrix(sigma)
-  se2 <- if (length(se)) se^2 else 0
-  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
-  mat <- aperm(mat, perm = c(3, 1, 2))
-  sigma2 <- sigma^2
-  for (i in seq_len(nrows)) {
-    mat[, i, i] <- mat[, i, i] + sigma2
+# compute compound symmetry correlation matrices
+# @param cosy compund symmetry correlation samples
+# @param nobs number of rows of the covariance matrix
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_cosy <- function(cosy, nobs) {
+  out <- array(0, dim = c(NROW(cosy), nobs, nobs))
+  for (i in seq_len(nobs)) {
+    out[, i, i] <- 1
+    for (j in seq_len(i - 1)) { 
+      out[, i, j] <- cosy
+      out[, j, i] <- out[, i, j]
+    } 
+  } 
+  out
+}
+
+# compute an identity correlation matrix
+# @param nsamples number of posterior samples
+# @param nobs number of rows of the covariance matrix
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_ident <- function(nsamples, nobs) {
+  out <- array(0, dim = c(nsamples, nobs, nobs))
+  for (i in seq_len(nobs)) {
+    out[, i, i] <- 1
   }
-  mat
+  out
 }
 
 # get samples of a distributional parameter
@@ -818,6 +837,38 @@ arg_names <- function(method) {
   c(out) <- names(formals(validate_newdata))
   out <- unique(out)
   out <- setdiff(out, c("object", "x", "..."))
+  out
+}
+
+# ignore priors of certain parameters from whom we cannot obtain prior samples
+# currently applies only to overall intercepts of centered design matrices
+# fixes issue #696
+# @param x a brmsfit object
+# @param par name of the parameter
+# @return TRUE (if the prior should be ignored) or FALSE
+ignore_prior <- function(x, par) {
+  stopifnot(is.brmsfit(x))
+  par <- as_one_character(par)
+  out <- FALSE
+  if (grepl("^b_.*Intercept($|\\[)", par)) {
+    # cannot sample from intercepts if 'center' was TRUE
+    intercept_priors <- subset2(x$prior, class = "Intercept")
+    if (NROW(intercept_priors)) {
+      # prefixes of the model intercepts
+      p_intercepts <- usc(combine_prefix(intercept_priors))
+      # prefix of the parameter under question
+      p_par <- sub("^b", "", par)
+      p_par <- sub("_Intercept($|\\[)", "", p_par)
+      out <- p_par %in% p_intercepts
+      if (out) {
+        warning2(
+          "Sampling from the prior of an overall intercept is not ", 
+          "possible by default. See the documentation of the ", 
+          "'sample_prior' argument in help('brm')."
+        )
+      }
+    }
+  }
   out
 }
 

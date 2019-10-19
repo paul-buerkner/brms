@@ -37,7 +37,8 @@ description of the available correlation structures. Defaults to
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
 design matrices with many zeros, this can considerably reduce required
 memory. Sampling speed is currently not improved or even slightly
-decreased.}
+decreased. It is now recommended to use the \code{sparse} argument of
+\code{\link{brmsformula}} and related functions.}
 
 \item{internal}{A flag indicating if the names of additional internal
 parameters should be displayed. Setting priors on these parameters is not

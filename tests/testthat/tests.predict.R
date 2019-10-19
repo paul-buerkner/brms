@@ -40,10 +40,14 @@ test_that("predict for aysm_laplace models runs without errors", {
   ns <- 50
   draws <- structure(list(nsamples = ns), class = "brmsdraws")
   draws$dpars <- list(
-    sigma = rchisq(ns, 3), quantile = rbeta(ns, 2, 1),
-    mu = matrix(rnorm(ns*2), ncol = 2)
+    sigma = rchisq(ns, 3), 
+    quantile = rbeta(ns, 2, 1),
+    mu = matrix(rnorm(ns*2), ncol = 2),
+    zi = rbeta(ns, 10, 10)
   )
   pred <- brms:::predict_asym_laplace(1, draws = draws)
+  expect_equal(length(pred), ns)
+  pred <- brms:::predict_zero_inflated_asym_laplace(1, draws = draws)
   expect_equal(length(pred), ns)
 })
 

@@ -5,7 +5,7 @@
 \alias{cor_icar}
 \title{Spatial conditional autoregressive (CAR) structures}
 \usage{
-cor_car(W, formula = ~1, type = c("escar", "esicar", "icar"))
+cor_car(W, formula = ~1, type = "escar")
 
 cor_icar(W, formula = ~1)
 }
@@ -24,9 +24,9 @@ It is recommended to always specify a grouping factor
 to allow for handling of new data in post-processing methods.}
 
 \item{type}{Type of the CAR structure. Currently implemented
-are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
-(exact sparse intrinsic CAR) and \code{"icar"} (intrinsic CAR). 
-More information is provided in the 'Details' section.}
+are \code{"escar"} (exact sparse CAR), \code{"esicar"}
+(exact sparse intrinsic CAR), \code{"icar"} (intrinsic CAR),
+and \code{"bym2"}. More information is provided in the 'Details' section.}
 }
 \description{
 These functions are constructors for the \code{cor_car} class
@@ -35,8 +35,8 @@ implementing spatial conditional autoregressive structures.
 \details{
 The \code{escar} and \code{esicar} types are 
   implemented based on the case study of Max Joseph
-  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar}
-  type is implemented based on the case study of Mitzi Morris
+  (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
+  \code{bym2} type is implemented based on the case study of Mitzi Morris
   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 }
 \examples{

@@ -459,7 +459,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 
 #' @rdname posterior_samples
 #' @export
-as.data.frame.brmsfit <- function(x, row.names = NULL, optional = FALSE, ...) {
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = TRUE, ...) {
   out <- posterior_samples(x, ..., as.matrix = FALSE)
   data.frame(out, row.names = row.names, check.names = !optional)
 }
@@ -628,7 +628,7 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
         matches <- paste0("^", escape_all(names(samples)))
         matches <- lapply(matches, regexpr, text = par)
         matches <- ulapply(matches, attr, which = "match.length")
-        if (max(matches) == -1) {
+        if (max(matches) == -1 || ignore_prior(x, par)) {
           out <- NULL
         } else {
           take <- match(max(matches), matches)
@@ -675,12 +675,6 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   to be covered by the uncertainty intervals. The default is 0.95.
 #' @param mc_se Logical; Indicating if the uncertainty caused by the 
 #'   MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.
-#' @param use_cache Logical; Indicating if summary results should
-#'   be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
-#'   For models fitted with earlier versions of \pkg{brms},
-#'   it may be necessary to set \code{use_cache} to
-#'   \code{FALSE} in order to get the \code{summary} 
-#'   method working correctly.
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
@@ -689,8 +683,19 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @importMethodsFrom rstan summary
 #' @export
 summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
-                            mc_se = FALSE, use_cache = TRUE, ...) {
-  object <- restructure(object, rstr_summary = use_cache)
+                            mc_se = FALSE, ...) {
+  priors <- as_one_logical(priors)
+  prob <- as_one_numeric(prob)
+  if (prob < 0 || prob > 1) {
+    stop2("'prob' must be a single numeric value in [0, 1].")
+  }
+  mc_se <- as_one_logical(mc_se)
+  if (mc_se) {
+    warning2("Argument 'mc_se' is currently deactivated but ", 
+             "will be working again in the future. Sorry!")
+  }
+  
+  object <- restructure(object)
   bterms <- parse_bf(object$formula)
   out <- list(
     formula = object$formula,
@@ -699,7 +704,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     nobs = nobs(object), 
     ngrps = ngrps(object), 
     autocor = object$autocor,
-    prior = empty_brmsprior(),
+    prior = empty_prior(),
     algorithm = algorithm(object)
   )
   class(out) <- "brmssummary"
@@ -713,54 +718,65 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   out$thin <- object$fit@sim$thin
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-  if (length(prob) != 1L || prob < 0 || prob > 1) {
-    stop2("'prob' must be a single numeric value in [0, 1].")
-  }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
   }
   
-  pars <- parnames(object)
-  meta_pars <- object$fit@sim$pars_oi
-  meta_pars <- meta_pars[!grepl("^(r|s|zgp|Xme|prior|lp)_", meta_pars)]
-  probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
-  fit_summary <- summary(
-    object$fit, pars = meta_pars, 
-    probs = probs, use_cache = use_cache
-  )
-  fit_summary <- fit_summary$summary
-  if (!mc_se) {
-    fit_summary <- fit_summary[, -2, drop = FALSE] 
+  # compute a summary for given set of parameters
+  .summary <- function(object, pars, prob) {
+    # TODO: use rstan::monitor instead once it is clean and stable
+    sims <- as.array(object, pars = pars, exact_match = TRUE)
+    parnames <- dimnames(sims)[[3]]
+    probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+    valid <- rep(NA, length(parnames))
+    out <- named_list(parnames)
+    for (i in seq_along(out)) {
+      sims_i <- sims[, , i]
+      valid[i] <- all(is.finite(sims_i))
+      quan <- unname(quantile(sims_i, probs = probs))
+      mean <- mean(sims_i)
+      sd <- sd(sims_i)
+      rhat <- rstan::Rhat(sims_i)
+      ess_bulk <- round(rstan::ess_bulk(sims_i))
+      ess_tail <- round(rstan::ess_tail(sims_i))
+      out[[i]] <- c(mean, sd, quan, rhat, ess_bulk, ess_tail)
+    }
+    out <- do_call(rbind, out)
+    CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
+    # TODO: align column names with summary outputs of other methods
+    colnames(out) <- c(
+      "Estimate", "Est.Error", CIs, "Rhat", "Bulk_ESS", "Tail_ESS"
+    )
+    rownames(out) <- parnames
+    S <- prod(dim(sims)[1:2])
+    out[valid & !is.finite(out[, "Rhat"]), "Rhat"] <- 1
+    out[valid & !is.finite(out[, "Bulk_ESS"]), "Bulk_ESS"] <- S
+    out[valid & !is.finite(out[, "Tail_ESS"]), "Tail_ESS"] <- S
+    return(out)
   }
-  CIs <- paste0(c("l-", "u-"), prob * 100, "% CI")
-  colnames(fit_summary) <- c(
-    "Estimate", if (mc_se) "MC.Error", 
-    "Est.Error", CIs, "Eff.Sample", "Rhat"
-  )
+  
+  pars <- parnames(object)
+  # TODO: exclude more parameters?
+  excl_regex <- "^(r|s|zgp|Xme|prior|lp)_"
+  pars <- pars[!grepl(excl_regex, pars)]
+  fit_summary <- .summary(object, pars = pars, prob = prob)
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
-    if (any(Rhats > 1.1, na.rm = TRUE)) {
+    if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
-        "The model has not converged (some Rhats are > 1.1). ",
+        "The model has not converged (some Rhats are > 1.05). ",
         "Do not analyse the results! \nWe recommend running ", 
         "more iterations and/or setting stronger priors."
       )
     }
-    # nuts_params may not work for some models fitted with brms < 1.0.0
-    div_trans <- try(
-      sum(nuts_params(object, pars = "divergent__")$Value), silent = TRUE
-    )
-    if (is(div_trans, "try-error")) {
-      warning2("Could not extract information about divergent transitions.")
-    } else {
-      adapt_delta <- control_params(object)$adapt_delta
-      if (div_trans > 0) {
-        warning2(
-          "There were ", div_trans, " divergent transitions after warmup. ", 
-          "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
-          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
-        )
-      }
+    div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+    adapt_delta <- control_params(object)$adapt_delta
+    if (div_trans > 0) {
+      warning2(
+        "There were ", div_trans, " divergent transitions after warmup. ", 
+        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
+        "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+      )
     }
   }
   
@@ -832,18 +848,33 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   out
 }
 
-#' @rdname nsamples
+#' Number of Posterior Samples
+#'
+#' Extract the number of posterior samples stored in a fitted Bayesian model.
+#'
+#' @aliases nsamples
+#'
+#' @param object An object of class \code{brmsfit}.
+#' @param subset An optional integer vector defining a subset of samples
+#'   to be considered.
+#' @param incl_warmup A flag indicating whether to also count warmup / burn-in
+#'   samples.
+#' @param ... Currently ignored.
+#'
+#' @method nsamples brmsfit
 #' @export
-nsamples.brmsfit <- function(x, subset = NULL, 
+#' @export nsamples
+#' @importFrom rstantools nsamples
+nsamples.brmsfit <- function(object, subset = NULL,
                              incl_warmup = FALSE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) {
     out <- 0
   } else {
-    ntsamples <- x$fit@sim$n_save[1]
+    ntsamples <- object$fit@sim$n_save[1]
     if (!incl_warmup) {
-      ntsamples <- ntsamples - x$fit@sim$warmup2[1]
+      ntsamples <- ntsamples - object$fit@sim$warmup2[1]
     }
-    ntsamples <- ntsamples * x$fit@sim$chains
+    ntsamples <- ntsamples * object$fit@sim$chains
     if (length(subset)) {
       out <- length(subset)
       if (out > ntsamples || max(subset) > ntsamples) {
@@ -1341,13 +1372,24 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     newdata, object = object, resp = resp, 
     re_formula = NA, check_response = TRUE, ...
   )
-  y <- get_y(object, resp, newdata = newdata, warn = TRUE, ...)
+  y <- get_y(object, resp = resp, newdata = newdata, ...)
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
     object, newdata = newdata, resp = resp, subset = subset, 
     sort = FALSE, summary = FALSE, ...
   )
   yrep <- do_call(method, pred_args)
+  # censored responses are misleading when displayed in pp_check
+  cens <- get_cens(object, resp = resp, newdata = newdata)
+  if (!is.null(cens)) {
+    warning2("Censored responses are not shown in 'pp_check'.")
+    take <- !cens
+    if (!any(take)) {
+      stop2("No non-censored responses found.")
+    }
+    y <- y[take]
+    yrep <- yrep[, take, drop = FALSE]
+  }
   # most ... arguments are ment for the prediction function
   for_pred <- names(dots) %in% names(formals(extract_draws.brmsfit))
   ppc_args <- c(list(y, yrep), dots[!for_pred])
@@ -1411,16 +1453,16 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   bayesplot::mcmc_pairs(samples, ...)
 }
 
-#' @rdname marginal_effects
+#' @rdname conditional_effects
 #' @export
-marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     int_conditions = NULL, re_formula = NA, 
-                                     robust = TRUE, probs = c(0.025, 0.975),
-                                     method = c("fitted", "predict"), 
-                                     spaghetti = FALSE, surface = FALSE,
-                                     categorical = FALSE, ordinal = FALSE,
-                                     transform = NULL, resolution = 100, 
-                                     select_points = 0, too_far = 0, ...) {
+conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
+                                        int_conditions = NULL, re_formula = NA, 
+                                        robust = TRUE, probs = c(0.025, 0.975),
+                                        method = c("fitted", "predict"), 
+                                        spaghetti = FALSE, surface = FALSE,
+                                        categorical = FALSE, ordinal = FALSE,
+                                        transform = NULL, resolution = 100, 
+                                        select_points = 0, too_far = 0, ...) {
   method <- match.arg(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
@@ -1520,7 +1562,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         dist = too_far)
       marg_data <- marg_data[!ex_too_far, ]  
     }
-    c(out) <- marginal_effects_internal(
+    c(out) <- conditional_effects_internal(
       bterms, fit = x, marg_data = marg_data, method = method, 
       surface = surface, spaghetti = spaghetti, categorical = categorical, 
       ordinal = ordinal, re_formula = re_formula, transform = transform, 
@@ -1529,12 +1571,19 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       ...
     )
   }
-  structure(out, class = "brmsMarginalEffects")
+  structure(out, class = "brms_conditional_effects")
 }
 
-#' @rdname marginal_smooths
 #' @export
-marginal_smooths.brmsfit <- function(x, smooths = NULL,
+marginal_effects.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_effects' is deprecated. ",
+           "Please use 'conditional_effects' instead.")
+  conditional_effects(x, ...)
+}
+
+#' @rdname conditional_smooths
+#' @export
+conditional_smooths.brmsfit <- function(x, smooths = NULL,
                                      int_conditions = NULL,
                                      probs = c(0.025, 0.975),
                                      spaghetti = FALSE,
@@ -1551,7 +1600,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   subset <- subset_samples(x, subset, nsamples)
   # call as.matrix only once to save time and memory
   samples <- as.matrix(x, subset = subset)
-  out <- marginal_smooths_internal(
+  out <- conditional_smooths_internal(
     bterms, fit = x, samples = samples, smooths = smooths, 
     conditions = conditions, int_conditions = int_conditions, 
     too_far = too_far, resolution = resolution, probs = probs, 
@@ -1560,7 +1609,14 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
   }
-  structure(out, class = "brmsMarginalEffects", smooths_only = TRUE)
+  structure(out, class = "brms_conditional_effects", smooths_only = TRUE)
+}
+
+#' @export
+marginal_smooths.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_smooths' is deprecated. ",
+           "Please use 'conditional_smooths' instead.")
+  conditional_smooths(x, ...)
 }
 
 #' Model Predictions of \code{brmsfit} Objects
@@ -2570,6 +2626,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
 #' @param x A \code{brmsfit} object.
 #' @param ... More \code{brmsfit} objects or further arguments
 #'   passed to the underlying post-processing functions.
+#'   In particular, see \code{\link{extract_draws}} for further
+#'   supported arguments.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
 #'  via \code{\link{loo_compare}}.

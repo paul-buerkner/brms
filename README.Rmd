@@ -101,10 +101,12 @@ also given.
 In general, every parameter is summarized using the mean ('Estimate') and the
 standard deviation ('Est.Error') of the posterior distribution as well as
 two-sided 95% credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles.
-We see that the coefficient of `Trt` is negative with a completely negative
-95\%-CI indicating that, on average, the treatment reduces seizure counts by
-some amount. Further, we find little evidence that the treatment effect varies
-with the baseline number of seizures.
+We see that the coefficient of `Trt` is negative with a zero overlapping
+95\%-CI. This indicates that, on average, the treatment may reduce seizure
+counts by some amount but the evidence based on the data and applied model is
+not very strong and still insufficient by standard decision rules. Further, we
+find little evidence that the treatment effect varies with the baseline number
+of seizures.
 
 The last two values ('Eff.Sample' and 'Rhat') provide information on how well
 the algorithm could estimate the posterior distribution of this parameter. If
@@ -121,10 +123,10 @@ plot(fit1, pars = c("Trt", "zBase"))
 
 A more detailed investigation can be performed by running
 `launch_shinystan(fit1)`. To better understand the relationship of the
-predictors with the response, I recommend the `marginal_effects` method:
+predictors with the response, I recommend the `conditional_effects` method:
 
-```{r marginal_effects}
-plot(marginal_effects(fit1, effects = "zBase:Trt"))
+```{r conditional_effects}
+plot(conditional_effects(fit1, effects = "zBase:Trt"))
 ```
 
 This method uses some prediction functionality behind the scenes, which can also
@@ -168,7 +170,7 @@ cross-validation.
 loo(fit1, fit2)
 ```
 
-Since higher `LOOIC` values indicate better fit, we see that the model
+Since lower `LOOIC` values indicate better fit, we see that the model
 accounting for overdispersion fits substantially better. The post-processing
 methods we have shown so far are just the tip of the iceberg. For a full list of
 methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
@@ -219,10 +221,10 @@ install.packages("brms")
 The current developmental version can be downloaded from github via
 
 ```{r install_brms2, eval=FALSE}
-if (!requireNamespace("devtools")) {
-  install.packages("devtools")
+if (!requireNamespace("remotes")) {
+  install.packages("remotes")
 }
-devtools::install_github("paul-buerkner/brms")
+remotes::install_github("paul-buerkner/brms")
 ```
 
 Because brms is based on Stan, a C++ compiler is required. The program Rtools

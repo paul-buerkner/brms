@@ -35,7 +35,14 @@ stan_prior <- function(prior, class, coef = "", group = "",
   if (!nchar(class) && nrow(prior)) {
     # unchecked prior statements are directly passed to Stan
     return(collapse(wsp, prior$prior, ";\n"))
-  } 
+  }
+  # special priors cannot be passed literally to Stan
+  is_special_prior <- is_special_prior(prior$prior)
+  if (any(is_special_prior)) {
+    special_prior <- prior$prior[is_special_prior]
+    stop2("Prior ", collapse_comma(special_prior), " is used in an invalid ", 
+          "context. See ?set_prior for details on how to use special priors.")
+  }
   
   px <- as.data.frame(px)
   upx <- unique(px)
@@ -199,16 +206,17 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
   special <- attributes(prior)$special[[prefix]]
   if (!is.null(special[["hs_df"]])) {
     str_add(out$data) <- glue(
-      "  real<lower=0> hs_df{p};\n",
-      "  real<lower=0> hs_df_global{p};\n",
-      "  real<lower=0> hs_df_slab{p};\n",
-      "  real<lower=0> hs_scale_global{p};\n",
-      "  real<lower=0> hs_scale_slab{p};\n"           
+      "  // data for the horseshoe prior\n",
+      "  real<lower=0> hs_df{p};  // local degrees of freedom\n",
+      "  real<lower=0> hs_df_global{p};  // global degrees of freedom\n",
+      "  real<lower=0> hs_df_slab{p};  // slab degrees of freedom\n",
+      "  real<lower=0> hs_scale_global{p};  // global prior scale\n",
+      "  real<lower=0> hs_scale_slab{p};  // slab prior scale\n"           
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
-      "  real<lower=0> hs_global{p}[2];\n",
-      "  real<lower=0> hs_c2{p};\n"
+      "  real<lower=0> hs_global{p}[2];  // global shrinkage parameters\n",
+      "  real<lower=0> hs_c2{p};  // slab regularization parameter\n"
     )
     global_args <- glue("0.5 * hs_df_global{p}")
     global_args <- sargs(global_args, global_args)
@@ -223,8 +231,9 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
   }
   if (!is.null(special[["lasso_df"]])) {
     str_add(out$data) <- glue(
-      "  real<lower=0> lasso_df{p};\n",
-      "  real<lower=0> lasso_scale{p};\n"
+      "  // data for the lasso prior\n",
+      "  real<lower=0> lasso_df{p};  // prior degrees of freedom\n",
+      "  real<lower=0> lasso_scale{p};  // prior scale\n"
     )
     str_add(out$par) <- glue(
       "  // lasso shrinkage parameter\n",
@@ -270,7 +279,8 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tparC1) <- glue(
+    str_add(out$tpar_comp) <- glue(
+      "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
     local_args <- glue("0.5 * hs_df{p}")
@@ -307,7 +317,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   has_tv <- grepl("^to_vector\\(", D$par)
   D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
   # do not sample from some auxiliary parameters
-  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "temp")
+  excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "tmp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")
   excl_regex <- paste0("^(", excl_regex, ")(_|$)")
   D <- D[!grepl(excl_regex, D$par), ]
@@ -353,7 +363,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     k <- which(grepl(paste0("^", all_pars[i]), D$par))
     D$dim[k] <- all_dims[i]
     D$bounds[k] <- all_bounds[i]
-    if (grepl("^(simo_)|(theta)", all_pars[i])) {
+    if (grepl("^((simo_)|(theta))", all_pars[i])) {
       D$type[k] <- all_types[i]
     }
   }
@@ -371,8 +381,8 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$args <- paste0(ifelse(D$lkj, paste0(D$dim, ","), ""), D$args)
   D$lkj_index <- ifelse(D$lkj, "[1, 2]", "")
   D$prior_par <- glue("prior_{D$par}")
-  str_add(out$genD) <- "  // additionally draw samples from priors\n"
-  str_add(out$genD) <- cglue(
+  str_add(out$gen_def) <- "  // additionally draw samples from priors\n"
+  str_add(out$gen_def) <- cglue(
     "  {D$type} {D$prior_par} = {D$dist}_rng({D$args}){D$lkj_index};\n"
   )
   
@@ -381,12 +391,12 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$ub <- stan_extract_bounds(D$bounds, bound = "upper")
   Ibounds <- which(nzchar(D$bounds))
   if (length(Ibounds)) {
-    str_add(out$genC) <- "  // use rejection sampling for truncated priors\n"
+    str_add(out$gen_comp) <- "  // use rejection sampling for truncated priors\n"
     for (i in Ibounds) {
       wl <- if (nzchar(D$lb[i])) glue("{D$prior_par[i]} < {D$lb[i]}")
       wu <- if (nzchar(D$ub[i])) glue("{D$prior_par[i]} > {D$ub[i]}")
       prior_while <- paste0(c(wl, wu), collapse = " || ")
-      str_add(out$genC) <- glue(
+      str_add(out$gen_comp) <- glue(
         "  while ({prior_while}) {{\n",
         "    {D$prior_par[i]} = {D$dist[i]}_rng({D$args[i]}){D$lkj_index[i]};\n",
         "  }}\n"

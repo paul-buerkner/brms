@@ -30,7 +30,7 @@ on the fly via \code{\link{make_stancode}}, prepares the data via
 Subsequently, a large number of post-processing methods can be applied: 
 To get an overview on the estimated parameters, 
 \code{\link[brms:summary.brmsfit]{summary}} or 
-\code{\link[brms:marginal_effects.brmsfit]{marginal_effects}} 
+\code{\link[brms:conditional_effects.brmsfit]{conditional_effects}} 
 are perfectly suited. Detailed visual analyses can be performed by applying 
 the \code{\link{pp_check}} and \code{\link{stanplot}} methods, which both
 rely on the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} package.

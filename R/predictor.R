@@ -107,11 +107,19 @@ predictor_re <- function(draws, i) {
   re <- draws[["re"]]
   group <- names(re[["r"]])
   for (g in group) {
-    eta <- eta + 
-      .predictor_re(
-        Z = p(re[["Z"]][[g]], i),
-        r = re[["r"]][[g]]
+    eta_g <- try(.predictor_re(Z = p(re[["Z"]][[g]], i), r = re[["r"]][[g]]))
+    if (is(eta_g, "try-error")) {
+      stop2(
+        "Something went wrong (see the error message above). ", 
+        "Perhaps you transformed numeric variables ", 
+        "to factors or vice versa within the model formula? ",
+        "If yes, please convert your variables beforehand. ",
+        "Or did you use a grouping factor also for a different purpose? ",
+        "If yes, please make sure that its factor levels are correct ",
+        "also in the new data you may have provided."
       )
+    }  
+    eta <- eta + eta_g
   }
   eta
 }
@@ -341,7 +349,7 @@ predictor_gp <- function(draws, i) {
 predictor_cs <- function(eta, draws, i) {
   cs <- draws[["cs"]]
   re <- draws[["re"]]
-  if (!length(cs) && !length(re[["rcs"]])) {
+  if (!length(cs[["bcs"]]) && !length(re[["rcs"]])) {
     return(eta)
   }
   ncat <- cs[["ncat"]]
@@ -412,7 +420,7 @@ predictor_offset <- function(draws, i, nobs) {
 # @note eta has to be passed to this function in 
 #   order for ARMA structures to work correctly
 predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
-  if (any(c("ar", "ma") %in% names(draws$ac))) {
+  if (is.cor_arma(draws$ac$autocor)) {
     if (!is.null(draws$ac$err)) {
       # ARMA correlations via latent residuals
       eta <- eta + p(draws$ac$err, i, row = FALSE)
@@ -428,7 +436,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
       ) 
     }
   }
-  if (!is.null(draws$ac$rcar)) {
+  if (is.cor_car(draws$ac$autocor)) {
     eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
   }
   eta
@@ -469,20 +477,24 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     if (Kma) {
       eta[, n] <- eta[, n] + rowSums(ma * Err[, take_ma, max_lag])
     }
+    eta_before_ar <- eta[, n]
+    if (Kar) {
+      eta[, n] <- eta[, n] + rowSums(ar * Err[, take_ar, max_lag])
+    }
+    # AR terms need to be included in the predictions of y if missing
+    # the prediction code thus differs from the structure of the Stan code
     y <- Y[n]
     if (is.na(y)) {
       # y was not observed and has to be predicted
       fdraws$dpars$mu <- eta
       y <- predict_fun(n, fdraws)
     }
-    err[, max_lag] <- y - eta[, n]
+    # errors in AR models need to be computed before adding AR terms
+    err[, max_lag] <- y - eta_before_ar
     if (J_lag[n] > 0) {
       # store residuals of former observations
       I <- seq_len(J_lag[n])
       Err[, I, max_lag + 1] <- err[, max_lag + 1 - I]
-    }
-    if (Kar) {
-      eta[, n] <- eta[, n] + rowSums(ar * Err[, take_ar, max_lag])
     }
     # keep the size of 'err' and 'Err' as small as possible
     Err <- abind(Err[, , -1, drop = FALSE], zero_mat)

@@ -11,7 +11,9 @@
 \item{x}{A \code{brmsfit} object.}
 
 \item{...}{More \code{brmsfit} objects or further arguments
-passed to the underlying post-processing functions.}
+passed to the underlying post-processing functions.
+In particular, see \code{\link{extract_draws}} for further
+supported arguments.}
 
 \item{model_names}{If \code{NULL} (the default) will use model names 
 derived from deparsing the call. Otherwise will use the passed 

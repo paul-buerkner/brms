@@ -77,10 +77,14 @@ test_that("log_lik of aysm_laplace models runs without errors", {
   draws$dpars <- list(
     sigma = rchisq(ns, 3), 
     quantile = rbeta(ns, 2, 1),
-    mu = matrix(rnorm(ns*2), ncol = 2)
+    mu = matrix(rnorm(ns*2), ncol = 2),
+    zi = rbeta(ns, 10, 10)
   )
   draws$data <- list(Y = brms:::rasym_laplace(ns))
   ll <- brms:::log_lik_asym_laplace(1, draws = draws)
+  expect_equal(length(ll), ns)
+  
+  ll <- brms:::log_lik_zero_inflated_asym_laplace(1, draws = draws)
   expect_equal(length(ll), ns)
 })
 

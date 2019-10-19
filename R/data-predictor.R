@@ -67,6 +67,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
     data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
     data_offset(x, data),
+    data_bhaz(x, data, basis = old_sdata$base_basis),
     data_prior(x, data, prior = prior)
   )
 }
@@ -411,11 +412,11 @@ data_Xme <- function(meef, data) {
       Jme <- match(gr, levels)
       if (anyNA(Jme)) {
         # occurs for new levels only
+        # replace NAs with unique values; fixes issue #706
+        gr[is.na(gr)] <- paste0("new_", seq_len(sum(is.na(gr))), "__")
         new_gr <- gr[!gr %in% levels]
         new_levels <- unique(new_gr)
-        Jme[is.na(Jme)] <- match(new_gr, new_levels) + length(levels)
-        # represent all indices between 1 and length(unique(Jme))
-        Jme <- as.numeric(factor(Jme))
+        Jme[is.na(Jme)] <- length(levels) + match(new_gr, new_levels)
       }
       ilevels <- unique(Jme)
       out[[paste0("Nme_", i)]] <- length(ilevels)
@@ -626,24 +627,18 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
   autocor <- bterms$autocor
   N <- nrow(data)
   out <- list()
-  if (is.cor_arma(autocor)) {
-    # ARMA correlations
+  if (is.cor_arma(autocor) || is.cor_cosy(autocor)) {
     if (length(bterms$time$group)) {
       tgroup <- as.numeric(factor(data[[bterms$time$group]]))
     } else {
       tgroup <- rep(1, N) 
     }
+  }
+  if (is.cor_arma(autocor)) {
+    # ARMA correlations
     out$Kar <- get_ar(autocor)
     out$Kma <- get_ma(autocor)
-    if (use_cov(autocor)) {
-      # data for the 'covariance' version of ARMA 
-      out$N_tg <- length(unique(tgroup))
-      out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-      out$nobs_tg <- as.array(with(out, 
-        c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
-      ))
-      out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-    } else {
+    if (!use_cov(autocor)) {
       # data for the 'predictor' version of ARMA
       max_lag <- max(out$Kar, out$Kma)
       out$J_lag <- as.array(rep(0, N))
@@ -653,14 +648,26 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
         out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
       }
     }
-  } else if (is.cor_sar(autocor)) {
+  }
+  if (use_cov(autocor)) {
+    # data for the 'covariance' versions of ARMA and COSY structures
+    out$N_tg <- length(unique(tgroup))
+    out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+    out$nobs_tg <- as.array(with(out, 
+      c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+    ))
+    out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+  }
+  if (is.cor_sar(autocor)) {
     if (!identical(dim(autocor$W), rep(N, 2))) {
       stop2("Dimensions of 'W' must be equal to the number of observations.")
     }
     out$W <- autocor$W
+    out$eigenW <- eigen(out$W)$values
     # simplifies code of choose_N
     out$N_tg <- 1
-  } else if (is.cor_car(autocor)) {
+  }
+  if (is.cor_car(autocor)) {
     if (isTRUE(nzchar(bterms$time$group))) {
       loc_data <- get(bterms$time$group, data)
       locations <- levels(factor(loc_data))
@@ -719,8 +726,11 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
       eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenW)
+    } else if (autocor$type %in% "bym2") {
+      c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
-  } else if (is.cor_fixed(autocor)) {
+  }
+  if (is.cor_fixed(autocor)) {
     V <- autocor$V
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
@@ -741,6 +751,37 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
     out <- setNames(out, paste0(names(out), resp))
   }
   out
+}
+
+# compute the spatial scaling factor of CAR models
+# @param edges matrix with two columns defining the adjacency of the locations
+# @param Nloc number of locations
+# @return a scalar scaling factor
+.car_scale <- function(edges, Nloc) {
+  # amended from Imad Ali's code of CAR models in rstanarm
+  stopifnot(is.matrix(edges), NCOL(edges) == 2)
+  # Build the adjacency matrix
+  adj_matrix <- Matrix::sparseMatrix(
+    i = edges[, 1], j = edges[, 2], x = 1, 
+    symmetric = TRUE
+  )
+  # The ICAR precision matrix (which is singular)
+  Q <- Matrix::Diagonal(Nloc, Matrix::rowSums(adj_matrix)) - adj_matrix
+  # Add a small jitter to the diagonal for numerical stability
+  Q_pert <- Q + Matrix::Diagonal(Nloc) * 
+    max(Matrix::diag(Q)) * sqrt(.Machine$double.eps)
+  # Compute the diagonal elements of the covariance matrix subject to the 
+  # constraint that the entries of the ICAR sum to zero.
+  .Q_inv <- function(Q) {
+    Sigma <- Matrix::solve(Q)
+    A <- matrix(1, 1, NROW(Sigma))
+    W <- Sigma %*% t(A)
+    Sigma <- Sigma - W %*% solve(A %*% W) %*% Matrix::t(W)
+    return(Sigma)
+  }
+  Q_inv <- .Q_inv(Q_pert)
+  # Compute the geometric mean of the variances (diagonal of Q_inv)
+  exp(mean(log(Matrix::diag(Q_inv))))
 }
 
 #' Prepare Response Data
@@ -871,7 +912,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
-      out$trials <- eval_rhs(x$adforms$trials, data = data)
+      trials <- eval_rhs(x$adforms$trials)
+      out$trials <- eval2(trials$vars$trials, data)
+      if (!is.numeric(out$trials)) {
+        stop2("Number of trials must be numeric.")
+      }
+      if (any(!is_wholenumber(out$trials) | out$trials < 1)) {
+        stop2("Number of trials must be positive integers.")
+      }
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -905,7 +953,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         out$ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
-      out$ncat <- eval_rhs(x$adforms$cat, data = data)
+      cat <- eval_rhs(x$adforms$cat)
+      out$ncat <- as_one_numeric(eval2(cat$vars$cat, data))
+      if (!is_wholenumber(out$ncat) || out$ncat < 1) {
+        stop2("Number of categories must be a positive integer.")
+      }
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
@@ -924,20 +976,74 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   }
   if (is.formula(x$adforms$se)) {
-    out$se <- as.array(eval_rhs(x$adforms$se, data = data))
+    se <- eval_rhs(x$adforms$se)
+    out$se <- eval2(se$vars$se, data) 
+    if (!is.numeric(out$se)) {
+      stop2("Standard errors must be numeric.")
+    }
+    if (min(out$se) < 0) {
+      stop2("Standard errors must be non-negative.")
+    }
+    out$se <- as.array(out$se)
   }
   if (is.formula(x$adforms$weights)) {
-    out$weights <- as.array(eval_rhs(x$adforms$weights, data = data))
+    weights <- eval_rhs(x$adforms$weights)
+    out$weights <- eval2(weights$vars$weights, data)  
+    if (!is.numeric(out$weights)) {
+      stop2("Weights must be numeric.")
+    }
+    if (min(out$weights) < 0) {
+      stop2("Weights must be non-negative.")
+    }
+    if (weights$flags$scale) {
+      out$weights <- out$weights / sum(out$weights) * length(out$weights)
+    }
+    out$weights <- as.array(out$weights)
   }
   if (is.formula(x$adforms$dec)) {
-    out$dec <- as.array(eval_rhs(x$adforms$dec, data = data))
+    dec <- eval_rhs(x$adforms$dec)
+    out$dec <- eval2(dec$vars$dec, data)
+    if (is.character(out$dec) || is.factor(out$dec)) {
+      if (!all(unique(out$dec) %in% c("lower", "upper"))) {
+        stop2("Decisions should be 'lower' or 'upper' ",
+              "when supplied as characters or factors.")
+      }
+      out$dec <- ifelse(out$dec == "lower", 0, 1)
+    } else {
+      out$dec <- as.numeric(as.logical(out$dec))
+    }
+    out$dec <- as.array(out$dec)
+  }
+  if (is.formula(x$adforms$rate)) {
+    rate <- eval_rhs(x$adforms$rate)
+    out$denom <- eval2(rate$vars$denom, data)
+    if (!is.numeric(out$denom)) {
+      stop2("Rate denomiators should be numeric.")
+    }
+    if (isTRUE(any(out$denom <= 0))) {
+      stop2("Rate denomiators should be positive.")
+    }
+    out$denom <- as.array(out$denom)
   }
   if (is.formula(x$adforms$cens) && check_response) {
-    cens <- eval_rhs(x$adforms$cens, data = data)
-    out$cens <- rm_attr(cens, "y2")
-    y2 <- attr(cens, "y2")
-    if (!is.null(y2)) {
-      icens <- cens %in% 2
+    cens <- eval_rhs(x$adforms$cens)
+    out$cens <- eval2(cens$vars$cens, data)
+    out$cens <- as.array(prepare_cens(out$cens))
+    if (!all(is_wholenumber(out$cens) & out$cens %in% -1:2)) {
+      stop2(
+        "Invalid censoring data. Accepted values are ",
+        "'left', 'none', 'right', and 'interval'\n",
+        "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
+        "TRUE and FALSE are also accepted ",
+        "and refer to 'right' and 'none' respectively."
+      )
+    }
+    icens <- out$cens %in% 2
+    if (any(icens)) {
+      if (cens$vars$y2 == "NA") {
+        stop2("Argument 'y2' is required for interval censored data.")
+      }
+      y2 <- unname(eval2(cens$vars$y2, data))
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
               "censor points for interval censored data.")
@@ -945,10 +1051,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       y2[!icens] <- 0  # not used in Stan
       out$rcens <- as.array(y2)
     }
-    out$cens <- as.array(out$cens)
   }
   if (is.formula(x$adforms$trunc)) {
-    out <- c(out, eval_rhs(x$adforms$trunc, data = data))
+    trunc <- eval_rhs(x$adforms$trunc)
+    out$lb <- as.numeric(eval2(trunc$vars$lb, data))
+    out$ub <- as.numeric(eval2(trunc$vars$ub, data))
+    if (any(out$lb >= out$ub)) {
+      stop2("Truncation bounds are invalid: lb >= ub")
+    }
     if (length(out$lb) == 1L) {
       out$lb <- rep(out$lb, N)
     }
@@ -992,7 +1102,36 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       # use Inf to that min(Y) is not affected
       out$Y[which_mi] <- Inf
     }
-  } 
+  }
+  if (is.formula(x$adforms$vreal)) {
+    # vectors of real values for use in custom families
+    vreal <- eval_rhs(x$adforms$vreal)
+    vreal <- lapply(vreal$vars, eval2, data)
+    names(vreal) <- paste0("vreal", seq_along(vreal))
+    for (i in seq_along(vreal)) {
+      if (length(vreal[[i]]) == 1L) {
+        vreal[[i]] <- rep(vreal[[i]], N)
+      }
+      vreal[[i]] <- as.array(as.numeric(vreal[[i]]))
+    }
+    c(out) <- vreal
+  }
+  if (is.formula(x$adforms$vint)) {
+    # vectors of integer values for use in custom families
+    vint <- eval_rhs(x$adforms$vint)
+    vint <- lapply(vint$vars, eval2, data)
+    names(vint) <- paste0("vint", seq_along(vint))
+    for (i in seq_along(vint)) {
+      if (length(vint[[i]]) == 1L) {
+        vint[[i]] <- rep(vint[[i]], N)
+      }
+      if (!all(is_wholenumber(vint[[i]]))) {
+        stop2("'vint' requires whole numbers as input.")
+      }
+      vint[[i]] <- as.array(vint[[i]])
+    }
+    c(out) <- vint
+  }
   resp <- usc(combine_prefix(x))
   out <- setNames(out, paste0(names(out), resp))
   # specify data for autocors here in order to pass Y
@@ -1028,6 +1167,20 @@ data_mixture <- function(bterms, prior = brmsprior()) {
       names(out) <- paste0(names(out), p)
     }
   }
+  out
+}
+
+# data for the baseline functions of Cox models
+data_bhaz <- function(bterms, data, basis = NULL) {
+  out <- list()
+  if (!is_cox(bterms$family)) {
+    return(out) 
+  }
+  y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
+  args <- bterms$family$bhaz 
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = basis)
+  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = basis)
+  out$Kbhaz <- NCOL(out$Zbhaz)
   out
 }
 

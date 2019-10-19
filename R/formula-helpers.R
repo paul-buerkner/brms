@@ -11,9 +11,9 @@
 #'  \code{resp_se} and \code{resp_weights} require positive numeric values.
 #'  \code{resp_trials} and \code{resp_cat} require positive integers.
 #'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-#'  \code{'lower'} and \code{'upper'}; 
+#'  \code{'lower'} and \code{'upper'}.
 #'  \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-#'  \code{FALSE} and \code{TRUE};
+#'  \code{FALSE} and \code{TRUE}.
 #'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
 #'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
 #'  and \code{2}) to indicate left, no, right, or interval censoring.
@@ -32,9 +32,13 @@
 #'   treated as standard deviation. If specified, handles
 #'   measurement error and (completely) missing values
 #'   at the same time using the plausible-values-technique.
+#' @param denom A vector of positive numeric values specifying
+#'   the denominator values from which the response rates are computed.
+#' @param ... For \code{resp_vreal}, vectors of real values. 
+#'   For \code{resp_vint}, vectors of integer values.  
 #'
-#' @return A vector containing additional information on the response
-#'   variable in an appropriate format.
+#' @return A list of additional response information to be processed further
+#'   by \pkg{brms}.
 #'
 #' @details 
 #'   These functions are almost solely useful when
@@ -85,138 +89,109 @@ NULL
 #' @rdname addition-terms
 #' @export
 resp_se <- function(x, sigma = FALSE) {
-  # standard errors for meta-analysis
-  if (!is.numeric(x)) {
-    stop2("Standard errors must be numeric.")
-  }
-  if (min(x) < 0) {
-    stop2("Standard errors must be non-negative.")
-  }
+  se <- deparse(substitute(x))
   sigma <- as_one_logical(sigma)
-  structure(x, sigma = sigma)  
-}
-
-# only evaluate the sigma argument of 'resp_se'
-resp_se_no_data <- function(x, sigma = FALSE) {
-  resp_se(1, sigma = sigma)
+  class_resp_special(
+    "se", call = match.call(),
+    vars = nlist(se), flags = nlist(sigma)
+  )
 }
 
 #' @rdname addition-terms
 #' @export
 resp_weights <- function(x, scale = FALSE) {
-  if (!is.numeric(x)) {
-    stop2("Weights must be numeric.")
-  }
-  if (min(x) < 0) {
-    stop2("Weights must be non-negative.")
-  }
+  weights <- deparse(substitute(x))
   scale <- as_one_logical(scale)
-  if (scale) {
-    x <- x / sum(x) * length(x)
-  }
-  x
+  class_resp_special(
+    "weights", call = match.call(),
+    vars = nlist(weights), flags = nlist(scale)
+  )
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trials <- function(x) {
-  if (!is.numeric(x)) {
-    stop2("Number of trials must be numeric.")
-  }
-  if (any(!is_wholenumber(x) | x < 1)) {
-    stop2("Number of trials must be positive integers.")
-  }
-  x
+  trials <- deparse(substitute(x))
+  class_resp_special("trials", call = match.call(), vars = nlist(trials))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_cat <- function(x) {
-  x <- as_one_numeric(x)
-  if (!is_wholenumber(x) || x < 1) {
-    stop2("Number of categories must be a positive integer.")
-  }
-  x
+  cat <- deparse(substitute(x))
+  class_resp_special("cat", call = match.call(), vars = nlist(cat))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_dec <- function(x) {
-  if (is.character(x) || is.factor(x)) {
-    if (!all(unique(x) %in% c("lower", "upper"))) {
-      stop2("Decisions should be 'lower' or 'upper' ", 
-            "when supplied as characters or factors.")
-    }
-    x <- ifelse(x == "lower", 0, 1)
-  } else {
-    x <- as.numeric(as.logical(x))
-  }
-  x
+  dec <- deparse(substitute(x))
+  class_resp_special("dec", call = match.call(), vars = nlist(dec))
 }
 
 #' @rdname addition-terms
 #' @export
-resp_cens <- function(x, y2 = NULL) {
-  if (is.factor(x)) {
-    x <- as.character(x)
-  }
-  prepare_cens <- function(x) {
-    stopifnot(length(x) == 1L)
-    regx <- paste0("^", x)
-    if (grepl(regx, "left")) {
-      x <- -1
-    } else if (grepl(regx, "none") || isFALSE(x)) {
-      x <- 0
-    } else if (grepl(regx, "right") || isTRUE(x)) {
-      x <- 1
-    } else if (grepl(regx, "interval")) {
-      x <- 2
-    }
-    x
-  }
-  cens <- unname(ulapply(x, prepare_cens))
-  if (!all(is_wholenumber(cens) & cens %in% -1:2)) {
-    stop2(
-      "Invalid censoring data. Accepted values are ", 
-      "'left', 'none', 'right', and 'interval'\n",
-      "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
-      "TRUE and FALSE are also accepted ",
-      "and refer to 'right' and 'none' respectively."
-    )
-  }
-  if (any(cens %in% 2)) {
-    if (!length(y2)) {
-      stop2("Argument 'y2' is required for interval censored data.")
-    }
-    attr(cens, "y2") <- unname(y2)
-  }
-  cens
+resp_cens <- function(x, y2 = NA) {
+  cens <- deparse(substitute(x))
+  y2 <- deparse(substitute(y2))
+  class_resp_special("cens", call = match.call(), vars = nlist(cens, y2))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_trunc <- function(lb = -Inf, ub = Inf) {
-  lb <- as.numeric(lb)
-  ub <- as.numeric(ub)
-  if (any(lb >= ub)) {
-    stop2("Truncation bounds are invalid: lb >= ub")
-  }
-  nlist(lb, ub)
+  lb <- deparse(substitute(lb))
+  ub <- deparse(substitute(ub))
+  class_resp_special("trunc", call = match.call(), vars = nlist(lb, ub))
 }
 
 #' @rdname addition-terms
 #' @export
-resp_mi <- function(sdy = NULL) {
-  if (!is.null(sdy) && !is.numeric(sdy)) {
-    stop2("Measurement error should be numeric.")
-  }
-  sdy
+resp_mi <- function(sdy = NA) {
+  sdy <- deparse(substitute(sdy))
+  class_resp_special("mi", call = match.call(), vars = nlist(sdy))
+}
+
+#' @rdname addition-terms
+#' @export
+resp_rate <- function(denom) {
+  denom <- deparse(substitute(denom))
+  class_resp_special("rate", call = match.call(), vars = nlist(denom))
 }
 
 #' @rdname addition-terms
 #' @export
 resp_subset <- function(x) {
-  as.logical(x)
+  subset <- deparse(substitute(x))
+  class_resp_special("subset", call = match.call(), vars = nlist(subset))
+}
+
+#' @rdname addition-terms
+#' @export
+resp_vreal <- function(...) {
+  vars <- as.list(substitute(list(...)))[-1]
+  class_resp_special("vreal", call = match.call(), vars = vars)
+}
+
+#' @rdname addition-terms
+#' @export
+resp_vint <- function(...) {
+  vars <- as.list(substitute(list(...)))[-1]
+  class_resp_special("vint", call = match.call(), vars = vars)
+}
+
+# class underlying response addition terms
+# @param type type of the addition term
+# @param call the call to the original addition term function
+# @param vars named list of unevaluated variables
+# @param flags named list of (evaluated) logical indicators
+class_resp_special <- function(type, call, vars = list(), flags = list()) {
+  type <- as_one_character(type)
+  stopifnot(is.call(call), is.list(vars), is.list(flags))
+  label <- deparse(call)
+  out <- nlist(type, call, label, vars, flags)
+  class(out) <- c("resp_special")
+  out
 }
 
 #' Defining smooths in \pkg{brms} formulas
@@ -824,6 +799,17 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
 
 is.formula <- function(x) {
   inherits(x, "formula")
+}
+
+# wrapper around as.formula with additional checks
+as_formula <- function(x) {
+  x <- as.formula(x)
+  # fixes issue #749
+  rhs <- rhs(x)[[2]]
+  if (isTRUE(is.call(rhs) && rhs[[1]] == "~")) {
+    stop2("Nested formulas are not allowed. Did you use '~~' somewhere?")
+  }
+  x
 }
 
 # expand the '.' variable in formula using stats::terms

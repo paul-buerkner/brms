@@ -72,58 +72,49 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
 # @param A vector of length draws$nsamples containing samples
 #   from the posterior predictive distribution
 predict_gaussian <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "norm",
     mean = get_dpar(draws, "mu", i = i), 
-    sd = get_dpar(draws, "sigma", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "norm", args = args, 
+    sd = get_dpar(draws, "sigma", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_student <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "student_t", 
     df = get_dpar(draws, "nu", i = i), 
     mu = get_dpar(draws, "mu", i = i), 
-    sigma = get_dpar(draws, "sigma", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "student_t", args = args, 
+    sigma = get_dpar(draws, "sigma", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_lognormal <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "lnorm",
     meanlog = get_dpar(draws, "mu", i = i), 
-    sdlog = get_dpar(draws, "sigma", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "lnorm", args = args, 
+    sdlog = get_dpar(draws, "sigma", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_shifted_lognormal <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "shifted_lnorm",
     meanlog = get_dpar(draws, "mu", i = i), 
     sdlog = get_dpar(draws, "sigma", i = i),
-    shift = get_dpar(draws, "ndt", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "shifted_lnorm", args = args, 
+    shift = get_dpar(draws, "ndt", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_skew_normal <- function(i, draws, ...) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  alpha <- get_dpar(draws, "alpha", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  args <- nlist(mu, sigma, alpha)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "skew_normal", args = args, 
+  rcontinuous(
+    n = draws$nsamples, dist = "skew_normal",
+    mu = get_dpar(draws, "mu", i = i),
+    sigma = get_dpar(draws, "sigma", i = i),
+    alpha = get_dpar(draws, "alpha", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
@@ -150,7 +141,7 @@ predict_student_mv <- function(i, draws, ...) {
 predict_gaussian_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
@@ -161,7 +152,7 @@ predict_student_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_arma(draws, obs)
+  Sigma <- get_cov_matrix_autocor(draws, obs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
@@ -240,12 +231,10 @@ predict_student_fixed <- function(i, draws, ...) {
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
-  args <- list(
+  rdiscrete(
+    n = draws$nsamples, dist = "binom", 
     size = draws$data$trials[i], 
-    prob = get_dpar(draws, "mu", i = i)
-  )
-  rng_discrete(
-    nrng = draws$nsamples, dist = "binom", args = args, 
+    prob = get_dpar(draws, "mu", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i], 
     ntrys = ntrys
   )
@@ -257,75 +246,67 @@ predict_bernoulli <- function(i, draws, ...) {
 }
 
 predict_poisson <- function(i, draws, ntrys = 5, ...) {
-  args <- list(lambda = get_dpar(draws, "mu", i = i))
-  rng_discrete(
-    nrng = draws$nsamples, dist = "pois", args = args, 
+  rdiscrete(
+    n = draws$nsamples, dist = "pois",
+    lambda = get_dpar(draws, "mu", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i],
     ntrys = ntrys
   )
 }
 
 predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
-  args <- list(
+  rdiscrete(
+    n = draws$nsamples, dist = "nbinom",
     mu = get_dpar(draws, "mu", i = i), 
-    size = get_dpar(draws, "shape", i = i)
-  )
-  rng_discrete(
-    nrng = draws$nsamples, dist = "nbinom", args = args, 
+    size = get_dpar(draws, "shape", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i],
     ntrys = ntrys
   )
 }
 
 predict_geometric <- function(i, draws, ntrys = 5, ...) {
-  args <- list(
-    mu = get_dpar(draws, "mu", i = i), 
-    size = 1
-  )
-  rng_discrete(
-    nrng = draws$nsamples, dist = "nbinom", args = args, 
+  rdiscrete(
+    n = draws$nsamples, dist = "nbinom",
+    mu = get_dpar(draws, "mu", i = i), size = 1,
     lb = draws$data$lb[i], ub = draws$data$ub[i], 
     ntrys = ntrys
   )
 }
 
 predict_discrete_weibull <- function(i, draws, ntrys = 5, ...) {
-  args <- list(
+  rdiscrete(
+    n = draws$nsamples, dist = "discrete_weibull",
     mu = get_dpar(draws, "mu", i = i), 
-    shape = get_dpar(draws, "shape", i = i)
-  )
-  rng_discrete(
-    nrng = draws$nsamples, dist = "discrete_weibull", args = args, 
+    shape = get_dpar(draws, "shape", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i],
     ntrys = ntrys
   )
 }
 
 predict_com_poisson <- function(i, draws, ntrys = 5, ...) {
-  args <- list(
+  rdiscrete(
+    n = draws$nsamples, dist = "com_poisson",
     mu = get_dpar(draws, "mu", i = i), 
-    shape = get_dpar(draws, "shape", i = i)
-  )
-  rng_discrete(
-    nrng = draws$nsamples, dist = "com_poisson", args = args, 
+    shape = get_dpar(draws, "shape", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i],
     ntrys = ntrys
   )
 }
 
 predict_exponential <- function(i, draws, ...) {
-  args <- list(rate = 1 / get_dpar(draws, "mu", i = i))
-  rng_continuous(
-    nrng = draws$nsamples, dist = "exp", args = args, 
+  rcontinuous(
+    n = draws$nsamples, dist = "exp",
+    rate = 1 / get_dpar(draws, "mu", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_gamma <- function(i, draws, ...) {
   shape <- get_dpar(draws, "shape", i = i)
-  args <- nlist(shape, scale = get_dpar(draws, "mu", i = i) / shape)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "gamma", args = args, 
+  scale <- get_dpar(draws, "mu", i = i) / shape
+  rcontinuous(
+    n = draws$nsamples, dist = "gamma",
+    shape = shape, scale = scale,
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
@@ -333,9 +314,9 @@ predict_gamma <- function(i, draws, ...) {
 predict_weibull <- function(i, draws, ...) {
   shape <- get_dpar(draws, "shape", i = i)
   scale <- get_dpar(draws, "mu", i = i) / gamma(1 + 1 / shape) 
-  args <- list(shape = shape, scale = scale)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "weibull", args = args, 
+  rcontinuous(
+    n = draws$nsamples, dist = "weibull",
+    shape = shape, scale = scale,
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
@@ -343,57 +324,50 @@ predict_weibull <- function(i, draws, ...) {
 predict_frechet <- function(i, draws, ...) {
   nu <- get_dpar(draws, "nu", i = i)
   scale <- get_dpar(draws, "mu", i = i) / gamma(1 - 1 / nu)
-  args <- list(scale = scale, shape = nu)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "frechet", args = args, 
+  rcontinuous(
+    n = draws$nsamples, dist = "frechet",
+    scale = scale, shape = nu,
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_gen_extreme_value <- function(i, draws, ...) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  xi <- get_dpar(draws, "xi", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  args <- nlist(mu, sigma, xi)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "gen_extreme_value", 
-    args = args, lb = draws$data$lb[i], ub = draws$data$ub[i]
+  rcontinuous(
+    n = draws$nsamples, dist = "gen_extreme_value", 
+    sigma = get_dpar(draws, "sigma", i = i),
+    xi = get_dpar(draws, "xi", i = i),
+    mu = get_dpar(draws, "mu", i = i),
+    lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_inverse.gaussian <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "inv_gaussian",
     mu = get_dpar(draws, "mu", i = i), 
-    shape = get_dpar(draws, "shape", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "inv_gaussian", args = args, 
+    shape = get_dpar(draws, "shape", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_exgaussian <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "exgaussian",
     mu = get_dpar(draws, "mu", i = i), 
     sigma = get_dpar(draws, "sigma", i = i),
-    beta = get_dpar(draws, "beta", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "exgaussian", args = args, 
+    beta = get_dpar(draws, "beta", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
-  args <- list(
+  out <- rcontinuous(
+    n = 1, dist = "wiener", 
     delta = get_dpar(draws, "mu", i = i), 
     alpha = get_dpar(draws, "bs", i = i),
     tau = get_dpar(draws, "ndt", i = i),
     beta = get_dpar(draws, "bias", i = i),
-    types = if (negative_rt) c("q", "resp") else "q"
-  )
-  out <- rng_continuous(
-    nrng = 1, dist = "wiener", args = args, 
+    types = if (negative_rt) c("q", "resp") else "q",
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
   if (negative_rt) {
@@ -406,34 +380,50 @@ predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
 predict_beta <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu", i = i)
   phi <- get_dpar(draws, "phi", i = i)
-  args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  rng_continuous(
-    nrng = draws$nsamples, dist = "beta", args = args, 
+  rcontinuous(
+    n = draws$nsamples, dist = "beta", 
+    shape1 = mu * phi, shape2 = (1 - mu) * phi,
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_von_mises <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "von_mises",
     mu = get_dpar(draws, "mu", i = i), 
-    kappa = get_dpar(draws, "kappa", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "von_mises", args = args,
+    kappa = get_dpar(draws, "kappa", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
 }
 
 predict_asym_laplace <- function(i, draws, ...) {
-  args <- list(
+  rcontinuous(
+    n = draws$nsamples, dist = "asym_laplace",
     mu = get_dpar(draws, "mu", i = i), 
     sigma = get_dpar(draws, "sigma", i = i),
-    quantile = get_dpar(draws, "quantile", i = i)
-  )
-  rng_continuous(
-    nrng = draws$nsamples, dist = "asym_laplace", args = args, 
+    quantile = get_dpar(draws, "quantile", i = i),
     lb = draws$data$lb[i], ub = draws$data$ub[i]
   )
+}
+
+predict_zero_inflated_asym_laplace <- function(i, draws, ...) {
+  zi <- get_dpar(draws, "zi", i = i)
+  tmp <- runif(draws$nsamples, 0, 1)
+  ifelse(
+    tmp < zi, 0, 
+    rcontinuous(
+      n = draws$nsamples, dist = "asym_laplace",
+      mu = get_dpar(draws, "mu", i = i), 
+      sigma = get_dpar(draws, "sigma", i = i),
+      quantile = get_dpar(draws, "quantile", i = i),
+      lb = draws$data$lb[i], ub = draws$data$ub[i]
+    )
+  )
+}
+
+predict_cox <- function(i, draws, ...) {
+  stop2("Cannot sample from the posterior predictive ",
+        "distribution for family 'cox'.")
 }
 
 predict_hurdle_poisson <- function(i, draws, ...) {
@@ -609,7 +599,7 @@ predict_custom <- function(i, draws, ...) {
 predict_mixture <- function(i, draws, ...) {
   families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
-  smix <- rng_mix(theta)
+  smix <- sample_mixture_ids(theta)
   out <- rep(NA, draws$nsamples)
   for (j in seq_along(families)) {
     sample_ids <- which(smix == j)
@@ -625,16 +615,17 @@ predict_mixture <- function(i, draws, ...) {
 
 # ------------ predict helper-functions ----------------------
 # random numbers from (possibly truncated) continuous distributions
-# @param nrng number of random values to generate
+# @param n number of random values to generate
 # @param dist name of a distribution for which the functions
 #   p<dist>, q<dist>, and r<dist> are available
-# @param args additional arguments passed to the distribution functions
+# @param ... additional arguments passed to the distribution functions
 # @return vector of random values draws from the distribution
-rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
+rcontinuous <- function(n, dist, ..., lb = NULL, ub = NULL) {
+  args <- list(...)
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
     rdist <- paste0("r", dist)
-    out <- do_call(rdist, c(nrng, args))
+    out <- do_call(rdist, c(list(n), args))
   } else {
     # sample from truncated distribution
     if (is.null(lb)) lb <- -Inf
@@ -643,8 +634,8 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
     qdist <- paste0("q", dist)
     plb <- do_call(pdist, c(list(lb), args))
     pub <- do_call(pdist, c(list(ub), args))
-    rng <- list(runif(nrng, min = plb, max = pub))
-    out <- do_call(qdist, c(rng, args))
+    out <- runif(n, min = plb, max = pub)
+    out <- do_call(qdist, c(list(out), args))
     # remove infinte values caused by numerical imprecision
     out[out %in% c(-Inf, Inf)] <- NA
   }
@@ -653,30 +644,32 @@ rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
 
 # random numbers from (possibly truncated) discrete distributions
 # currently rejection sampling is used for truncated distributions
-# @param nrng number of random values to generate
+# @param n number of random values to generate
 # @param dist name of a distribution for which the functions
 #   p<dist>, q<dist>, and r<dist> are available
-# @param args dditional arguments passed to the distribution functions
+# @param ... additional arguments passed to the distribution functions
 # @param lb optional lower truncation bound
 # @param ub optional upper truncation bound
 # @param ntrys number of trys in rejection sampling for truncated models
 # @return a vector of random values draws from the distribution
-rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
-  rdist <- get(paste0("r", dist), mode = "function")
+rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
+  args <- list(...)
+  rdist <- paste0("r", dist)
   if (is.null(lb) && is.null(ub)) {
     # sample as usual
-    do_call(rdist, c(nrng, args))
+    out <- do_call(rdist, c(list(n), args))
   } else {
     # sample from truncated distribution via rejection sampling
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
-    rng <- matrix(do_call(rdist, c(nrng * ntrys, args)), ncol = ntrys)
-    apply(rng, 1, extract_valid_sample, lb = lb, ub = ub)
+    out <- matrix(do_call(rdist, c(list(n * ntrys), args)), ncol = ntrys)
+    out <- apply(out, 1, extract_valid_sample, lb = lb, ub = ub)
   }
+  out
 }
 
-# sample the ID of the mixture component
-rng_mix <- function(theta) {
+# sample from the IDs of the mixture components
+sample_mixture_ids <- function(theta) {
   stopifnot(is.matrix(theta))
   mix_comp <- seq_cols(theta)
   ulapply(seq_rows(theta), function(s)
@@ -685,19 +678,19 @@ rng_mix <- function(theta) {
 }
 
 # extract the first valid predicted value per Stan sample per observation 
-# @param rng draws to be check against truncation boundaries
+# @param x draws to be check against truncation boundaries
 # @param lb vector of lower bounds
 # @param ub vector of upper bound
 # @return a valid truncated sample or else the closest boundary
-extract_valid_sample <- function(rng, lb, ub) {
-  valid_rng <- match(TRUE, rng >= lb & rng <= ub)
-  if (is.na(valid_rng)) {
+extract_valid_sample <- function(x, lb, ub) {
+  valid <- match(TRUE, x >= lb & x <= ub)
+  if (is.na(valid)) {
     # no valid truncated value found
     # set sample to lb or ub
     # 1e-10 is only to identify the invalid draws later on
-    out <- ifelse(max(rng) < lb, lb - 1e-10, ub + 1e-10)
+    out <- ifelse(max(x) < lb, lb - 1e-10, ub + 1e-10)
   } else {
-    out <- rng[valid_rng]
+    out <- x[valid]
   }
   out
 }

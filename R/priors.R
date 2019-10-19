@@ -107,10 +107,10 @@
 #'   population-level effect and avoid the centering parameterization, 
 #'   use \code{0 + intercept} on the right-hand side of the model formula.
 #'   
-#'   A special shrinkage prior to be applied on population-level effects 
-#'   is the horseshoe prior. See \code{\link{horseshoe}}
-#'   for details. Another shrinkage prior is the so-called lasso prior.
-#'   See \code{\link{lasso}} for details.
+#'   A special shrinkage prior to be applied on population-level effects is the
+#'   (regularized) horseshoe prior and related priors. See
+#'   \code{\link{horseshoe}} for details. Another shrinkage prior is the
+#'   so-called lasso prior. See \code{\link{lasso}} for details.
 #'   
 #'   In non-linear models, population-level effects are defined separately 
 #'   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -363,20 +363,24 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   check <- as_one_logical(check)
   # validate boundaries
   bound <- ""
-  is_arma <- class %in% c("ar", "ma")
-  if (!is.na(lb) || !is.na(ub) || is_arma) {
-    if (!(class %in% c("b", "ar", "ma", "arr"))) {
+  if (class %in% c("ar", "ma") && (!is.na(lb) || !is.na(ub))) {
+    # changed in version 2.9.5 
+    lb <- ub <- NA
+    warning2(
+      "Changing the boundaries of autocorrelation parameters ", 
+      "is deprecated and will be ignored."
+    )
+  }
+  if (!is.na(lb) || !is.na(ub)) {
+    # TODO: extend the boundary interface to more parameter classes
+    if (!class %in% c("b")) {
       stop2(
         "Currently boundaries are only allowed for ", 
-        "population-level and autocorrelation parameters."
+        "population-level coefficients."
       ) 
     }
     if (nzchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
-    }
-    if (is_arma) {
-      lb <- ifelse(!is.na(lb), lb, -1)
-      ub <- ifelse(!is.na(ub), ub, 1)
     }
     # don't put spaces in boundary declarations
     lb <- if (!is.na(lb)) paste0("lower=", lb)
@@ -487,7 +491,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
   # initialize output
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   # priors for distributional parameters
   prior <- prior + prior_predictor(
     bterms, data = data, internal = internal
@@ -515,11 +519,11 @@ prior_predictor <- function(x, ...) {
 
 #' @export
 prior_predictor.default <- function(x, ...) {
-  empty_brmsprior()
+  empty_prior()
 }
 
 prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   for (i in seq_along(x$terms)) {
     prior <- prior + prior_predictor(x$terms[[i]], ...) 
   }
@@ -548,7 +552,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
   data <- subset_data(data, x)
   def_scale_prior <- def_scale_prior(x, data)
   valid_dpars <- valid_dpars(x)
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   # priors for mixture models
   if (is.mixfamily(x$family)) {
     if (has_joint_theta(x)) {
@@ -576,7 +580,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       )
     } else if (!is.null(x$fdpars[[dp]])) {
       # parameter is fixed
-      dp_prior <- empty_brmsprior()
+      dp_prior <- empty_prior()
     } else {
       # parameter is estimated
       dp_prior <- brmsprior(def_dprior, class = dp, resp = x$resp)
@@ -620,7 +624,8 @@ prior_predictor.btl <- function(x, ...) {
     prior_sp(x, ...) +
     prior_cs(x, ...) +
     prior_sm(x, ...) + 
-    prior_gp(x, ...)
+    prior_gp(x, ...) +
+    prior_bhaz(x, ...)
 }
 
 # priors for non-linear predictor terms
@@ -632,7 +637,7 @@ prior_predictor.btnl <- function(x, ...) {
 
 # priors for population-level parameters
 prior_fe <- function(bterms, data, def_dprior = "", ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   fixef <- colnames(data_fe(bterms, data)$X)
   px <- check_prefix(bterms)
   center_X <- stan_center_X(bterms)
@@ -649,7 +654,7 @@ prior_fe <- function(bterms, data, def_dprior = "", ...) {
 
 # priors for thresholds of ordinal models
 prior_thres <- function(bterms, def_scale_prior = "", ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (!is_ordinal(bterms)) {
     # thresholds only exist in ordinal models
     return(prior)
@@ -673,9 +678,22 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
   prior
 }
 
+# priors for coefficients of baseline hazards in the Cox model
+prior_bhaz <- function(bterms, ...) {
+  prior <- empty_prior()
+  if (!is_cox(bterms$family)) {
+    return(prior)
+  }
+  px <- check_prefix(bterms)
+  # the scale of sbhaz is not identified when an intercept is part of mu
+  # thus a prior on sbhaz is necessary to define its scale
+  prior <- prior + brmsprior("normal(0, 1)", class = "sbhaz", ls = px)
+  prior
+}
+
 # priors for special effects parameters
 prior_sp <- function(bterms, data, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   spef <- tidy_spef(bterms, data)
   if (nrow(spef)) {
     px <- check_prefix(bterms)
@@ -694,7 +712,7 @@ prior_sp <- function(bterms, data, ...) {
 
 # priors for category spcific effects parameters
 prior_cs <- function(bterms, data, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   csef <- colnames(get_model_matrix(bterms$cs, data = data))
   if (length(csef)) {
     px <- check_prefix(bterms)
@@ -707,7 +725,7 @@ prior_cs <- function(bterms, data, ...) {
 # default priors for hyper-parameters of noise-free variables
 prior_Xme <- function(meef, internal = FALSE, ...) {
   stopifnot(is.meef_frame(meef))
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (nrow(meef)) {
     prior <- prior + 
       brmsprior(class = "meanme", coef = c("", meef$coef)) +
@@ -739,7 +757,7 @@ prior_Xme <- function(meef, internal = FALSE, ...) {
 # @param def_scale_prior: a character string defining 
 #   the default prior SD parameters
 prior_gp <- function(bterms, data, def_scale_prior, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   gpef <- tidy_gpef(bterms, data)
   if (nrow(gpef)) {
     px <- check_prefix(bterms)
@@ -819,7 +837,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
 #   the default prior for SD parameters
 # @param internal: see 'get_prior'
 prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (!nrow(ranef)) {
     return(prior)
   }
@@ -875,7 +893,7 @@ prior_re <- function(ranef, def_scale_prior, internal = FALSE, ...) {
 
 # priors for smooth terms
 prior_sm <- function(bterms, data, def_scale_prior, ...) {
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   smef <- tidy_smef(bterms, data)
   if (NROW(smef)) {
     px <- check_prefix(bterms)
@@ -903,7 +921,7 @@ prior_autocor <- function(bterms, def_scale_prior) {
   autocor <- bterms$autocor
   resp <- bterms$resp
   cbound <- "<lower=-1,upper=1>"
-  prior <- empty_brmsprior()
+  prior <- empty_prior()
   if (is.cor_arma(autocor)) {
     if (get_ar(autocor)) {
       prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
@@ -911,10 +929,13 @@ prior_autocor <- function(bterms, def_scale_prior) {
     if (get_ma(autocor)) {
       prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
     }
-    if (has_latent_residuals(bterms)) {
-      prior <- prior + 
-        brmsprior(def_scale_prior, class = "sderr", resp = resp)
-    }
+  }
+  if (is.cor_cosy(autocor)) {
+    prior <- prior + brmsprior(class = "cosy", resp = resp)
+  }
+  if (has_latent_residuals(bterms)) {
+    prior <- prior + 
+      brmsprior(def_scale_prior, class = "sderr", resp = resp)
   }
   if (is.cor_sar(autocor)) {
     if (identical(autocor$type, "lag")) {
@@ -927,8 +948,11 @@ prior_autocor <- function(bterms, def_scale_prior) {
   if (is.cor_car(autocor)) {
     prior <- prior +  
       brmsprior(def_scale_prior, class = "sdcar", resp = resp)
-    if (identical(autocor$type, "escar")) {
+    if (autocor$type %in% "escar") {
       prior <- prior + brmsprior(class = "car", resp = resp)
+    } else if (autocor$type %in% "bym2") {
+      prior <- prior + 
+        brmsprior("beta(1, 1)", class = "rhocar", resp = resp)
     }
   }
   prior
@@ -1066,14 +1090,12 @@ check_prior <- function(prior, formula, data,
     prior$class, c("^cor$", "^rescor$", "^corme$"), 
     c("L", "Lrescor", "Lme"), fixed = FALSE
   )
-  rcols <- rcols_prior()
-  duplicated_input <- duplicated(prior[, rcols])
-  if (any(duplicated_input)) {
+  if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
   }
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors[, rcols], prior[, rcols])))
+    valid <- which(duplicated(rbind(all_priors, prior)))
     invalid <- which(!seq_rows(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
@@ -1090,8 +1112,7 @@ check_prior <- function(prior, formula, data,
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
-  prior <- prior + all_priors
-  prior <- prior[!duplicated(prior[, rcols]), ]
+  prior <- c(all_priors, prior, replace = TRUE)
   prior <- check_prior_special(prior, bterms = bterms, data = data)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   prior <- prior + prior_no_checks
@@ -1123,10 +1144,8 @@ check_prior_content <- function(prior, warn = TRUE) {
       "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
       "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale" 
     )
-    cor_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
-    autocor_pars <- c("ar", "ma")
+    cormat_pars <- c("cor", "rescor", "corme", "L", "Lrescor", "Lme")
     lb_warning <- ub_warning <- ""
-    autocor_warning <- FALSE
     for (i in seq_rows(prior)) {
       msg_prior <- .print_prior(prior[i, , drop = FALSE])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
@@ -1150,16 +1169,12 @@ check_prior_content <- function(prior, warn = TRUE) {
         if (has_ulb_prior && !has_ub) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
-      } else if (prior$class[i] %in% cor_pars) {
+      } else if (prior$class[i] %in% cormat_pars) {
         if (nzchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
           stop2(
             "The only supported prior for correlation matrices is ", 
             "the 'lkj' prior. See help(set_prior) for more details."
           )
-        }
-      } else if (prior$class[i] %in% autocor_pars) {
-        if (prior$bound[i] != "<lower=-1,upper=1>") {
-          autocor_warning <- TRUE
         }
       } else if (prior$class[i] %in% c("simo", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
@@ -1188,12 +1203,6 @@ check_prior_content <- function(prior, warn = TRUE) {
         "\nWarning occurred for prior \n", ub_warning
       )
     }
-    if (autocor_warning && warn) {
-      warning2(
-        "Changing the boundaries of autocorrelation ", 
-        "parameters is not recommended."
-      )
-    }
   }
   invisible(TRUE)
 }
@@ -1205,7 +1214,7 @@ check_prior_special <- function(x, ...) {
 }
 
 #' @export
-check_prior_special.default <- function(x, prior = empty_brmsprior(), ...) {
+check_prior_special.default <- function(x, prior = empty_prior(), ...) {
   prior
 }
 
@@ -1247,32 +1256,20 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
 check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
-    prior <- empty_brmsprior()
-  }
-  simple_sigma <- simple_sigma(x)
-  for (dp in names(x$dpars)) {
-    allow_as <- simple_sigma && identical(dp, "mu") 
-    prior <- check_prior_special(
-      x$dpars[[dp]], prior = prior, data = data,
-      allow_autoscale = allow_as, ...
-    )
-  }
-  for (nlp in names(x$nlpars)) {
-    prior <- check_prior_special(
-      x$nlpars[[nlp]], prior = prior, data = data,
-      allow_autoscale = simple_sigma, ...
-    )
+    prior <- empty_prior()
   }
   # copy over the global population-level prior in categorical models
   if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       gi <- which(find_rows(
-        prior, class = cl, coef = "", dpar = "", resp = x$resp
+        prior, class = cl, coef = "", 
+        dpar = "", nlpar = "", resp = x$resp
       ))
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
         rows <- which(find_rows(
-          prior, class = cl, coef = "", dpar = dp, resp = x$resp
+          prior, class = cl, coef = "", 
+          dpar = dp, nlpar = "", resp = x$resp
         ))
         for (dpi in rows) {
           if (isTRUE(!prior$new[dpi] || !nzchar(prior$prior[dpi]))) {
@@ -1281,6 +1278,20 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         }
       }
     }
+  }
+  simple_sigma <- simple_sigma(x)
+  for (dp in names(x$dpars)) {
+    allow_autoscale <- dp == "mu" && simple_sigma
+    prior <- check_prior_special(
+      x$dpars[[dp]], prior = prior, data = data,
+      allow_autoscale = allow_autoscale, ...
+    )
+  }
+  for (nlp in names(x$nlpars)) {
+    prior <- check_prior_special(
+      x$nlpars[[nlp]], prior = prior, data = data,
+      allow_autoscale = simple_sigma, ...
+    )
   }
   # prepare priors for mixture probabilities
   if (is.mixfamily(x$family)) {
@@ -1311,7 +1322,7 @@ check_prior_special.btl <- function(x, prior, data,
     nlp_prior <- subset2(prior, ls = px)
     if (!any(nzchar(nlp_prior$prior))) {
       stop2(
-        "Priors on population-level effects are required in ",
+        "Priors on population-level coefficients are required in ",
         "non-linear models, but none were found for parameter ", 
         "'", px$nlpar, "'. See help(set_prior) for more details."
       )
@@ -1336,14 +1347,14 @@ check_prior_special.btl <- function(x, prior, data,
   stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
     b_prior <- prior$prior[b_index]
-    if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
+    if (any(is_special_prior(b_prior))) {
       # horseshoe prior for population-level parameters
       if (any(nzchar(prior[b_index, "bound"]))) {
-        stop2("Boundaries for population-level effects are not ", 
-              "allowed when using the horseshoe or lasso priors.")
+        stop2("Setting boundaries on coefficients is not ", 
+              "allowed when using the special priors.")
       }
       if (is.formula(x[["cs"]])) {
-        stop2("Horseshoe or lasso priors are not yet allowed ",
+        stop2("Special priors are not yet allowed ",
               "in models with category-specific effects.")
       }
       b_coef_indices <- which(
@@ -1352,12 +1363,12 @@ check_prior_special.btl <- function(x, prior, data,
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop2(
-          "Defining priors for single population-level parameters ",
-          "is not allowed when using horseshoe or lasso priors ",
-          "(except for the Intercept)."
+          "Defining separate priors for single coefficients is not ", 
+          "allowed when using special priors for the whole ", 
+          "set of coefficients (except for the Intercept)."
         )
       }
-      if (grepl("^horseshoe\\(", b_prior)) {
+      if (is_special_prior(b_prior, "horseshoe")) {
         hs <- eval2(b_prior)
         prior$prior[b_index] <- ""
         hs_obj_names <- c(
@@ -1369,7 +1380,7 @@ check_prior_special.btl <- function(x, prior, data,
         prior_special <- c(prior_special, hs_att)
         prior_special$hs_autoscale <- 
           isTRUE(prior_special$hs_autoscale) && allow_autoscale
-      } else if (grepl("^lasso\\(", b_prior)) {
+      } else if (is_special_prior(b_prior, "lasso")) {
         lasso <- eval2(b_prior)
         # the parameterization via double_exponential appears to be more
         # efficient than an indirect parameterization via normal and 
@@ -1451,8 +1462,9 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
   out
 }
 
-# brmsprior object with zero rows
-empty_brmsprior <- function() {
+#' @describeIn set_prior Create an empty \code{brmsprior} object.
+#' @export 
+empty_prior <- function() {
   char0 <- character(0)
   brmsprior(
     prior = char0, class = char0, coef = char0, 
@@ -1515,6 +1527,7 @@ par_bounds <- function(par, bound = "") {
     errorsar = list(lb = 0, ub = 1),
     car = list(lb = 0, ub = 1),
     sdcar = list(lb = 0, ub = Inf),
+    rhocar = list(lb = 0, ub = 1),
     sigmaLL = list(lb = 0, ub = Inf),
     sd = list(lb = 0, ub = Inf),
     sds = list(lb = 0, ub = Inf),
@@ -1583,18 +1596,37 @@ print.brmsprior <- function(x, show_df, ...) {
 
 # combine multiple brmsprior objects into one brmsprior
 #' @export
-c.brmsprior <- function(x, ...) {
-  if (all(sapply(list(...), is.brmsprior))) {
+c.brmsprior <- function(x, ..., replace = FALSE) {
+  dots <- list(...)
+  if (all(sapply(dots, is.brmsprior))) {
+    replace <- as_one_logical(replace)
+    # don't use 'c()' here to avoid creating a recursion
     out <- do_call(rbind, list(x, ...)) 
+    if (replace) {
+      # update duplicated priors
+      out <- unique(out, fromLast = TRUE) 
+    }
   } else {
-    out <- c(as.data.frame(x), ...)
+    if (length(dots)) {
+      stop2("Cannot add '", class(dots[[1]])[1], "' objects to the prior.")
+    }
+    out <- c(as.data.frame(x))
   }
   out
 }
 
 #' @export
 "+.brmsprior" <- function(e1, e2) {
+  if (!is.brmsprior(e2)) {
+    stop2("Cannot add '", class(e2)[1], "' objects to the prior.")
+  }
   c(e1, e2)
+}
+
+#' @export
+duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
+  # compare only specific columns of the brmsprior object
+  duplicated.data.frame(x[, rcols_prior()], incomparables, ...)
 }
 
 # evaluate the dirichlet prior of simplex parameters
@@ -1610,11 +1642,12 @@ eval_dirichlet <- function(prior) {
   eval2(prior)
 }
 
-#' Set up a horseshoe prior in \pkg{brms}
+#' Regularized horseshoe priors in \pkg{brms}
 #' 
-#' Function used to set up a horseshoe prior for population-level effects 
-#' in \pkg{brms}. The function does not evaluate its arguments --
-#' it exists purely to help set up the model.
+#' Function used to set up regularized horseshoe priors and related
+#' hierarchical shrinkage priors for population-level effects in \pkg{brms}. The
+#' function does not evaluate its arguments -- it exists purely to help set up
+#' the model.
 #' 
 #' @param df Degrees of freedom of student-t prior of the 
 #'   local shrinkage parameters. Defaults to \code{1}.
@@ -1623,9 +1656,14 @@ eval_dirichlet <- function(prior) {
 #'   In linear models, \code{scale_global} will internally be 
 #'   multiplied by the residual standard deviation parameter \code{sigma}.
 #' @param df_global Degrees of freedom of student-t prior of the 
-#'   global shrinkage parameter. Defaults to \code{1}.
+#'   global shrinkage parameter. Defaults to \code{1}. If \code{df_global}
+#'   is greater \code{1}, the shape of the prior will no longer resemble
+#'   a horseshoe and it may be more appropriately called an hierarchical
+#'   shrinkage prior in this case.
 #' @param scale_slab Scale of the student-t prior of the regularization
-#'   parameter. Defaults to \code{2}. 
+#'   parameter. Defaults to \code{2}. The original unregularized horseshoe 
+#'   prior is obtained by setting \code{scale_slab} to infinite, which
+#'   we can approximate in practice by setting it to a very large real value. 
 #' @param df_slab Degrees of freedom of the student-t prior of 
 #'   the regularization parameter. Defaults to \code{4}. 
 #' @param par_ratio Ratio of the expected number of non-zero coefficients 
@@ -1799,4 +1837,18 @@ lasso <- function(df = 1, scale = 1) {
   att <- nlist(df, scale)
   attributes(out)[names(att)] <- att
   out
+}
+
+# check for the usage of special priors 
+# @param prior a character vector of priors
+# @param target optional special priors to search for
+#   if NULL search for all special priors
+# @return a logical vector equal to the length of 'prior'
+is_special_prior <- function(prior, target = NULL) {
+  stopifnot(is.character(prior))
+  if (is.null(target)) {
+    target <- c("horseshoe", "lasso") 
+  }
+  regex <- paste0("^", regex_or(target), "\\(")
+  grepl(regex, prior)
 }
