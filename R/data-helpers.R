@@ -695,7 +695,7 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
       x, data, check_response = FALSE, not4stan = TRUE
     )
     out$bhaz_basis <- bhaz_basis_matrix(
-      data_response$y, args = x$family$baseline
+      data_response$Y, args = x$family$bhaz
     )
   }
   out
