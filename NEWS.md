@@ -2,6 +2,8 @@
 
 ### Bug Fixes
 
+* Fix prediction uncertainties of new group levels for 
+`sample_new_levels = "uncertainty"` thanks to Dominic Magirr.
 * Fix problems when using `pp_check` on
 censored models thanks to Andrew Milne. (#744)
 * Fix error in the generated Stan code of multivariate

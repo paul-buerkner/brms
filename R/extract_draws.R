@@ -964,10 +964,15 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
         max_level <- max_level + length(new_indices)
       } else if (sample_new_levels == "uncertainty") {
         out[[i]] <- matrix(nrow = nrow(rsamples), ncol = nranef)
+        # selected levels need to be the same for all varying effects
+        # to correctly take their correlations into account
+        sel_levels <- sample(seq_len(nlevels), NROW(rsamples), TRUE)
         for (k in seq_len(nranef)) {
           indices <- seq(k, nlevels * nranef, by = nranef)
           tmp <- rsamples[, indices, drop = FALSE]
-          out[[i]][, k] <- apply(tmp, 1, sample, size = 1)
+          for (j in seq_rows(tmp)) {
+            out[[i]][j, k] <- tmp[j, sel_levels[j]]
+          }
         }
         max_level <- max_level + 1
         gf[[i]][gf[[i]] > nlevels] <- max_level
