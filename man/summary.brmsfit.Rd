@@ -24,6 +24,16 @@ MCMC sampling should be shown in the summary. Defaults to \code{FALSE}.}
 \description{
 Create a summary of a fitted model represented by a \code{brmsfit} object
 }
+\details{
+The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and 
+\code{Tail_ESS} are described in detail in Vehtari et al. (2019).
+}
+\references{
+Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+localization: An improved R-hat for assessing convergence of
+MCMC. *arXiv preprint* `arXiv:1903.08008`.
+}
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

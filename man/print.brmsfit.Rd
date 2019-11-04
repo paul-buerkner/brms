@@ -19,6 +19,9 @@ to method \code{summary} of \code{brmsfit}.}
 \description{
 Print a summary for a fitted model represented by a \code{brmsfit} object
 }
+\seealso{
+\code{\link{summary.brmsfit}}
+}
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

@@ -661,6 +661,8 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
 #'
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
+#' @seealso \code{\link{summary.brmsfit}}
+#' 
 #' @export
 print.brmsfit <- function(x, digits = 2, ...) {
   print(summary(x, ...), digits = digits, ...)
@@ -678,6 +680,15 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+#' 
+#' @details The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and 
+#' \code{Tail_ESS} are described in detail in Vehtari et al. (2019).
+#' 
+#' @references 
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. *arXiv preprint* `arXiv:1903.08008`.
 #' 
 #' @method summary brmsfit
 #' @importMethodsFrom rstan summary
