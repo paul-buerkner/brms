@@ -331,13 +331,13 @@ test_that("make_standata correctly prepares data for monotonic effects", {
     as.vector(unname(sdata$Jmo)), 
     rep(c(max(data$x1) - 1, length(unique(data$x2)) - 1), 4)
   )
-  expect_equal(sdata$con_simo_1, rep(1, 3))
+  expect_equal(sdata$con_simo_1, as.array(rep(1, 3)))
   
   prior <- set_prior("dirichlet(1:3)", coef = "mox11", 
                      class = "simo", dpar = "sigma")
   sdata <- make_standata(bf(y ~ 1, sigma ~ mo(x1)), 
                          data = data, prior = prior)
-  expect_equal(sdata$con_simo_sigma_1, 1:3)
+  expect_equal(sdata$con_simo_sigma_1, as.array(1:3))
   
   prior <- c(
     set_prior("normal(0,1)", class = "b", coef = "mox1"),
@@ -345,8 +345,8 @@ test_that("make_standata correctly prepares data for monotonic effects", {
     prior_(~dirichlet(c(1, 0.5, 2)), class = "simo", coef = "mox1:mox21")
   )
   sdata <- make_standata(y ~ mo(x1)*mo(x2), data = data, prior = prior)
-  expect_equal(sdata$con_simo_1, c(1, 0.5, 2))
-  expect_equal(sdata$con_simo_3, c(1, 0.5, 2))
+  expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
+  expect_equal(sdata$con_simo_3, as.array(c(1, 0.5, 2)))
   
   expect_error(
     make_standata(y ~ mo(z), data = data),
