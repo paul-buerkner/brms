@@ -955,7 +955,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
     I <- seq_len(max(I))
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
-      "  int<lower=2> Jmo{p}[Imo{p}];  // length of simplexes\n",
+      "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n",
       "  // monotonic variables\n",
       cglue("  int Xmo{p}_{I}[N{resp}];\n"),
       "  // prior concentration of monotonic simplexes\n",

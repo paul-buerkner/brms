@@ -376,7 +376,7 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
       } else {
         simo_prior <- rep(1, Jmo[i])
       }
-      out[[paste0("con_simo", p, "_", i)]] <- simo_prior
+      out[[paste0("con_simo", p, "_", i)]] <- as.array(simo_prior)
     }
   }
   out
