@@ -68,13 +68,9 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     if (!combine) {
       stop2("Cannot use 'file' if 'combine' is FALSE.")
     }
-    file <- paste0(as_one_character(file), ".rds")
-    x <- suppressWarnings(try(readRDS(file), silent = TRUE))
-    if (!is(x, "try-error")) {
-      if (!is.brmsfit_multiple(x)) {
-        stop2("Object loaded via 'file' is not of class 'brmsfit_multiple'.")
-      }
-      return(x)
+    fits <- read_brmsfit(file)
+    if (!is.null(fits)) {
+      return(fits)
     }
   }
   
@@ -127,7 +123,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     class(fits) <- c("brmsfit_multiple", class(fits))
   }
   if (!is.null(file)) {
-    saveRDS(fits, file = file)
+    write_brmsfit(fits, file)
   }
   fits
 }

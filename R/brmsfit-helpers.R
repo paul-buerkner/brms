@@ -872,6 +872,45 @@ ignore_prior <- function(x, par) {
   out
 }
 
+# read a brmsfit object from a file
+# @param file path to an rds file
+# @return a brmsfit object or NULL
+read_brmsfit <- function(file) {
+  file <- check_brmsfit_file(file)
+  x <- suppressWarnings(try(readRDS(file), silent = TRUE))
+  if (!is(x, "try-error")) {
+    if (!is.brmsfit(x)) {
+      stop2("Object loaded via 'file' is not of class 'brmsfit'.")
+    }
+    x$file <- file
+  } else {
+    x <- NULL
+  }
+  x
+}
+
+# write a brmsfit object to a file
+# @param x a brmsfit object
+# @param file path to an rds file
+# @return NULL
+write_brmsfit <- function(x, file) {
+  stopifnot(is.brmsfit(x))
+  file <- check_brmsfit_file(file)
+  x$file <- file
+  saveRDS(x, file = file)
+  invisible(NULL)
+}
+
+# check validity of file name to store a brmsfit object in
+check_brmsfit_file <- function(file) {
+  file <- as_one_character(file)
+  file_ending <- tolower(get_matches("\\.[^\\.]+$", file))
+  if (!isTRUE(file_ending == ".rds")) {
+    file <- paste0(file, ".rds")
+  }
+  file
+}
+
 # add dummy samples to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add
