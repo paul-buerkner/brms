@@ -313,6 +313,9 @@ stan_autocor <- function(bterms, prior) {
       if (is.btnl(bterms$dpars[["mu"]])) {
         stop2(err_msg, " for non-linear models.")
       }
+      if (conv_cats_dpars(bterms)) {
+        stop2(err_msg, " for this family.")
+      }
       str_add(out$par) <- glue(
         "  vector[N{p}] zerr{p};  // unscaled residuals\n",
         "  real<lower=0> sderr{p};  // SD of residuals\n"
