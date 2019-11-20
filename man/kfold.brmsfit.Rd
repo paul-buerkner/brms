@@ -5,9 +5,19 @@
 \alias{kfold}
 \title{K-Fold Cross-Validation}
 \usage{
-\method{kfold}{brmsfit}(x, ..., K = 10, Ksub = NULL, folds = NULL,
-  group = NULL, exact_loo = NULL, compare = TRUE, resp = NULL,
-  model_names = NULL, save_fits = FALSE)
+\method{kfold}{brmsfit}(
+  x,
+  ...,
+  K = 10,
+  Ksub = NULL,
+  folds = NULL,
+  group = NULL,
+  exact_loo = NULL,
+  compare = TRUE,
+  resp = NULL,
+  model_names = NULL,
+  save_fits = FALSE
+)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}

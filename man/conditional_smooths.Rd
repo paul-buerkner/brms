@@ -8,10 +8,18 @@
 \alias{marginal_smooths.brmsfit}
 \title{Display Smooth Terms}
 \usage{
-\method{conditional_smooths}{brmsfit}(x, smooths = NULL,
-  int_conditions = NULL, probs = c(0.025, 0.975), spaghetti = FALSE,
-  resolution = 100, too_far = 0, subset = NULL, nsamples = NULL,
-  ...)
+\method{conditional_smooths}{brmsfit}(
+  x,
+  smooths = NULL,
+  int_conditions = NULL,
+  probs = c(0.025, 0.975),
+  spaghetti = FALSE,
+  resolution = 100,
+  too_far = 0,
+  subset = NULL,
+  nsamples = NULL,
+  ...
+)
 
 conditional_smooths(x, ...)
 }

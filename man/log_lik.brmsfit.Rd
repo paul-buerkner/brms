@@ -6,9 +6,17 @@
 \alias{logLik.brmsfit}
 \title{Compute the Pointwise Log-Likelihood}
 \usage{
-\method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  resp = NULL, nsamples = NULL, subset = NULL, pointwise = FALSE,
-  combine = TRUE, ...)
+\method{log_lik}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  resp = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  pointwise = FALSE,
+  combine = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}

@@ -5,8 +5,15 @@
 \alias{ranef}
 \title{Extract Group-Level Estimates}
 \usage{
-\method{ranef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), pars = NULL, groups = NULL, ...)
+\method{ranef}{brmsfit}(
+  object,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  pars = NULL,
+  groups = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

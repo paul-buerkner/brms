@@ -5,9 +5,19 @@
 \alias{pp_mixture}
 \title{Posterior Probabilities of Mixture Component Memberships}
 \usage{
-\method{pp_mixture}{brmsfit}(x, newdata = NULL, re_formula = NULL,
-  resp = NULL, nsamples = NULL, subset = NULL, log = FALSE,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{pp_mixture}{brmsfit}(
+  x,
+  newdata = NULL,
+  re_formula = NULL,
+  resp = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  log = FALSE,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 
 pp_mixture(x, ...)
 }

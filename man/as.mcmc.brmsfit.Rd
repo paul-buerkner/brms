@@ -5,8 +5,14 @@
 \alias{as.mcmc}
 \title{Extract posterior samples for use with the \pkg{coda} package}
 \usage{
-\method{as.mcmc}{brmsfit}(x, pars = NA, exact_match = FALSE,
-  combine_chains = FALSE, inc_warmup = FALSE, ...)
+\method{as.mcmc}{brmsfit}(
+  x,
+  pars = NA,
+  exact_match = FALSE,
+  combine_chains = FALSE,
+  inc_warmup = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}

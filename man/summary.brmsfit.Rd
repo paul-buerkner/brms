@@ -4,8 +4,7 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, priors = FALSE, prob = 0.95,
-  mc_se = FALSE, ...)
+\method{summary}{brmsfit}(object, priors = FALSE, prob = 0.95, mc_se = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}

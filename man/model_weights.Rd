@@ -5,8 +5,7 @@
 \alias{model_weights}
 \title{Model Weighting Methods}
 \usage{
-\method{model_weights}{brmsfit}(x, ..., weights = "loo2",
-  model_names = NULL)
+\method{model_weights}{brmsfit}(x, ..., weights = "loo2", model_names = NULL)
 
 model_weights(x, ...)
 }

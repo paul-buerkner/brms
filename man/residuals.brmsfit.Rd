@@ -6,15 +6,35 @@
 \alias{predictive_error}
 \title{Extract Model Residuals from brmsfit Objects}
 \usage{
-\method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  type = c("ordinary", "pearson"), method = c("fitted", "predict"),
-  resp = NULL, nsamples = NULL, subset = NULL, sort = FALSE,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{residuals}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  type = c("ordinary", "pearson"),
+  method = c("fitted", "predict"),
+  resp = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 
-\method{predictive_error}{brmsfit}(object, newdata = NULL,
-  re_formula = NULL, re.form = NULL, resp = NULL, nsamples = NULL,
-  subset = NULL, sort = FALSE, robust = FALSE, probs = c(0.025,
-  0.975), ...)
+\method{predictive_error}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  re.form = NULL,
+  resp = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

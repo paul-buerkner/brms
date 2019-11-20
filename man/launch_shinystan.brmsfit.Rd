@@ -5,8 +5,7 @@
 \alias{launch_shinystan}
 \title{Interface to \pkg{shinystan}}
 \usage{
-\method{launch_shinystan}{brmsfit}(object,
-  rstudio = getOption("shinystan.rstudio"), ...)
+\method{launch_shinystan}{brmsfit}(object, rstudio = getOption("shinystan.rstudio"), ...)
 }
 \arguments{
 \item{object}{A fitted model object typically of class \code{brmsfit}.}

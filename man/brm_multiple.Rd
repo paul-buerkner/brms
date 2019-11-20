@@ -4,11 +4,24 @@
 \alias{brm_multiple}
 \title{Run the same \pkg{brms} model on multiple datasets}
 \usage{
-brm_multiple(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sample_prior = c("no", "yes",
-  "only"), sparse = NULL, knots = NULL, stanvars = NULL,
-  stan_funs = NULL, combine = TRUE, fit = NA, seed = NA,
-  file = NULL, ...)
+brm_multiple(
+  formula,
+  data,
+  family = gaussian(),
+  prior = NULL,
+  autocor = NULL,
+  cov_ranef = NULL,
+  sample_prior = c("no", "yes", "only"),
+  sparse = NULL,
+  knots = NULL,
+  stanvars = NULL,
+  stan_funs = NULL,
+  combine = TRUE,
+  fit = NA,
+  seed = NA,
+  file = NULL,
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},

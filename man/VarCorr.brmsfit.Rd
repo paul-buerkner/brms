@@ -5,8 +5,14 @@
 \alias{VarCorr}
 \title{Extract Variance and Correlation Components}
 \usage{
-\method{VarCorr}{brmsfit}(x, sigma = 1, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{VarCorr}{brmsfit}(
+  x,
+  sigma = 1,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}

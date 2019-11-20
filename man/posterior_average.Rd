@@ -5,9 +5,17 @@
 \alias{posterior_average}
 \title{Posterior samples of parameters averaged across models}
 \usage{
-\method{posterior_average}{brmsfit}(x, ..., pars = NULL,
-  weights = "loo2", nsamples = NULL, missing = NULL,
-  model_names = NULL, control = list(), seed = NULL)
+\method{posterior_average}{brmsfit}(
+  x,
+  ...,
+  pars = NULL,
+  weights = "loo2",
+  nsamples = NULL,
+  missing = NULL,
+  model_names = NULL,
+  control = list(),
+  seed = NULL
+)
 
 posterior_average(x, ...)
 }

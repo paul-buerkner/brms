@@ -9,21 +9,48 @@
 \alias{plot.brms_conditional_effects}
 \title{Display Conditional Effects of Predictors}
 \usage{
-\method{conditional_effects}{brmsfit}(x, effects = NULL,
-  conditions = NULL, int_conditions = NULL, re_formula = NA,
-  robust = TRUE, probs = c(0.025, 0.975), method = c("fitted",
-  "predict"), spaghetti = FALSE, surface = FALSE,
-  categorical = FALSE, ordinal = FALSE, transform = NULL,
-  resolution = 100, select_points = 0, too_far = 0, ...)
+\method{conditional_effects}{brmsfit}(
+  x,
+  effects = NULL,
+  conditions = NULL,
+  int_conditions = NULL,
+  re_formula = NA,
+  robust = TRUE,
+  probs = c(0.025, 0.975),
+  method = c("fitted", "predict"),
+  spaghetti = FALSE,
+  surface = FALSE,
+  categorical = FALSE,
+  ordinal = FALSE,
+  transform = NULL,
+  resolution = 100,
+  select_points = 0,
+  too_far = 0,
+  ...
+)
 
 conditional_effects(x, ...)
 
-\method{plot}{brms_conditional_effects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
-  "raster"), line_args = list(), cat_args = list(),
-  errorbar_args = list(), surface_args = list(),
-  spaghetti_args = list(), point_args = list(), rug_args = list(),
-  theme = NULL, ask = TRUE, plot = TRUE, ...)
+\method{plot}{brms_conditional_effects}(
+  x,
+  ncol = NULL,
+  points = FALSE,
+  rug = FALSE,
+  mean = TRUE,
+  jitter_width = 0,
+  stype = c("contour", "raster"),
+  line_args = list(),
+  cat_args = list(),
+  errorbar_args = list(),
+  surface_args = list(),
+  spaghetti_args = list(),
+  point_args = list(),
+  rug_args = list(),
+  theme = NULL,
+  ask = TRUE,
+  plot = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}

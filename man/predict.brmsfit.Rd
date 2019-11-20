@@ -6,15 +6,37 @@
 \alias{posterior_predict}
 \title{Model Predictions of \code{brmsfit} Objects}
 \usage{
-\method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  transform = NULL, resp = NULL, negative_rt = FALSE,
-  nsamples = NULL, subset = NULL, sort = FALSE, ntrys = 5,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{predict}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  transform = NULL,
+  resp = NULL,
+  negative_rt = FALSE,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  ntrys = 5,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 
-\method{posterior_predict}{brmsfit}(object, newdata = NULL,
-  re_formula = NULL, re.form = NULL, transform = NULL, resp = NULL,
-  negative_rt = FALSE, nsamples = NULL, subset = NULL,
-  sort = FALSE, ntrys = 5, ...)
+\method{posterior_predict}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  re.form = NULL,
+  transform = NULL,
+  resp = NULL,
+  negative_rt = FALSE,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  ntrys = 5,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

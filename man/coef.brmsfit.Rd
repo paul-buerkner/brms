@@ -4,8 +4,7 @@
 \alias{coef.brmsfit}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+\method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

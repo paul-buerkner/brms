@@ -9,8 +9,15 @@
 \usage{
 add_criterion(x, ...)
 
-\method{add_criterion}{brmsfit}(x, criterion, model_name = NULL,
-  overwrite = FALSE, file = NULL, force_save = FALSE, ...)
+\method{add_criterion}{brmsfit}(
+  x,
+  criterion,
+  model_name = NULL,
+  overwrite = FALSE,
+  file = NULL,
+  force_save = FALSE,
+  ...
+)
 
 add_loo(x, model_name = NULL, ...)
 

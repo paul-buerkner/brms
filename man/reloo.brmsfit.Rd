@@ -6,8 +6,15 @@
 \alias{reloo}
 \title{Compute exact cross-validation for problematic observations}
 \usage{
-\method{reloo}{brmsfit}(x, loo, k_threshold = 0.7, newdata = NULL,
-  resp = NULL, check = TRUE, ...)
+\method{reloo}{brmsfit}(
+  x,
+  loo,
+  k_threshold = 0.7,
+  newdata = NULL,
+  resp = NULL,
+  check = TRUE,
+  ...
+)
 
 \method{reloo}{loo}(x, fit, ...)
 

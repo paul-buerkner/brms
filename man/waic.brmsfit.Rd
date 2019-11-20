@@ -7,8 +7,14 @@
 \alias{WAIC.brmsfit}
 \title{Widely Applicable Information Criterion (WAIC)}
 \usage{
-\method{waic}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
-  pointwise = FALSE, model_names = NULL)
+\method{waic}{brmsfit}(
+  x,
+  ...,
+  compare = TRUE,
+  resp = NULL,
+  pointwise = FALSE,
+  model_names = NULL
+)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}

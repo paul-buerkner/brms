@@ -10,12 +10,18 @@
 \alias{posterior.samples.brmsfit}
 \title{Extract posterior samples}
 \usage{
-\method{posterior_samples}{brmsfit}(x, pars = NA, exact_match = FALSE,
-  add_chain = FALSE, subset = NULL, as.matrix = FALSE,
-  as.array = FALSE, ...)
+\method{posterior_samples}{brmsfit}(
+  x,
+  pars = NA,
+  exact_match = FALSE,
+  add_chain = FALSE,
+  subset = NULL,
+  as.matrix = FALSE,
+  as.array = FALSE,
+  ...
+)
 
-\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = TRUE,
-  ...)
+\method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = TRUE, ...)
 
 \method{as.matrix}{brmsfit}(x, ...)
 

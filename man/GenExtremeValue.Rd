@@ -9,8 +9,14 @@
 \usage{
 dgen_extreme_value(x, mu = 0, sigma = 1, xi = 0, log = FALSE)
 
-pgen_extreme_value(q, mu = 0, sigma = 1, xi = 0, lower.tail = TRUE,
-  log.p = FALSE)
+pgen_extreme_value(
+  q,
+  mu = 0,
+  sigma = 1,
+  xi = 0,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 
 rgen_extreme_value(n, mu = 0, sigma = 1, xi = 0)
 }

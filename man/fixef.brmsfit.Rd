@@ -5,8 +5,14 @@
 \alias{fixef}
 \title{Extract Population-Level Estimates}
 \usage{
-\method{fixef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), pars = NULL, ...)
+\method{fixef}{brmsfit}(
+  object,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  pars = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

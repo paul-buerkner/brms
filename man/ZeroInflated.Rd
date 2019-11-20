@@ -18,18 +18,15 @@ pzero_inflated_poisson(q, lambda, zi, lower.tail = TRUE, log.p = FALSE)
 
 dzero_inflated_negbinomial(x, mu, shape, zi, log = FALSE)
 
-pzero_inflated_negbinomial(q, mu, shape, zi, lower.tail = TRUE,
-  log.p = FALSE)
+pzero_inflated_negbinomial(q, mu, shape, zi, lower.tail = TRUE, log.p = FALSE)
 
 dzero_inflated_binomial(x, size, prob, zi, log = FALSE)
 
-pzero_inflated_binomial(q, size, prob, zi, lower.tail = TRUE,
-  log.p = FALSE)
+pzero_inflated_binomial(q, size, prob, zi, lower.tail = TRUE, log.p = FALSE)
 
 dzero_inflated_beta(x, shape1, shape2, zi, log = FALSE)
 
-pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE,
-  log.p = FALSE)
+pzero_inflated_beta(q, shape1, shape2, zi, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
 \item{x}{Vector of quantiles.}

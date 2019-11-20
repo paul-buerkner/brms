@@ -5,8 +5,7 @@
 \alias{loo_compare}
 \title{Model comparison with the \pkg{loo} package}
 \usage{
-\method{loo_compare}{brmsfit}(x, ..., criterion = c("loo", "waic",
-  "kfold"), model_names = NULL)
+\method{loo_compare}{brmsfit}(x, ..., criterion = c("loo", "waic", "kfold"), model_names = NULL)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}

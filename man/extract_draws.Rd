@@ -5,11 +5,23 @@
 \alias{extract_draws}
 \title{Extract Data and Posterior Draws}
 \usage{
-\method{extract_draws}{brmsfit}(x, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  incl_autocor = TRUE, oos = NULL, resp = NULL, nsamples = NULL,
-  subset = NULL, nug = NULL, smooths_only = FALSE, offset = TRUE,
-  new_objects = list(), ...)
+\method{extract_draws}{brmsfit}(
+  x,
+  newdata = NULL,
+  re_formula = NULL,
+  allow_new_levels = FALSE,
+  sample_new_levels = "uncertainty",
+  incl_autocor = TRUE,
+  oos = NULL,
+  resp = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  nug = NULL,
+  smooths_only = FALSE,
+  offset = TRUE,
+  new_objects = list(),
+  ...
+)
 
 extract_draws(x, ...)
 }

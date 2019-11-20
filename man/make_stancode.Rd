@@ -4,10 +4,21 @@
 \alias{make_stancode}
 \title{Stan Code for \pkg{brms} Models}
 \usage{
-make_stancode(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, cov_ranef = NULL, sparse = NULL,
-  sample_prior = c("no", "yes", "only"), stanvars = NULL,
-  stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
+make_stancode(
+  formula,
+  data,
+  family = gaussian(),
+  prior = NULL,
+  autocor = NULL,
+  cov_ranef = NULL,
+  sparse = NULL,
+  sample_prior = c("no", "yes", "only"),
+  stanvars = NULL,
+  stan_funs = NULL,
+  save_model = NULL,
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},

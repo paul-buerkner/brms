@@ -5,10 +5,19 @@
 \alias{pp_average}
 \title{Posterior predictive samples averaged across models}
 \usage{
-\method{pp_average}{brmsfit}(x, ..., weights = "loo2",
-  method = c("predict", "fitted", "residuals"), nsamples = NULL,
-  summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
-  model_names = NULL, control = list(), seed = NULL)
+\method{pp_average}{brmsfit}(
+  x,
+  ...,
+  weights = "loo2",
+  method = c("predict", "fitted", "residuals"),
+  nsamples = NULL,
+  summary = TRUE,
+  probs = c(0.025, 0.975),
+  robust = FALSE,
+  model_names = NULL,
+  control = list(),
+  seed = NULL
+)
 
 pp_average(x, ...)
 }

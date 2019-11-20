@@ -7,9 +7,17 @@
 \alias{LOO.brmsfit}
 \title{Efficient approximate leave-one-out cross-validation (LOO)}
 \usage{
-\method{loo}{brmsfit}(x, ..., compare = TRUE, resp = NULL,
-  pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-  reloo_args = list(), model_names = NULL)
+\method{loo}{brmsfit}(
+  x,
+  ...,
+  compare = TRUE,
+  resp = NULL,
+  pointwise = FALSE,
+  reloo = FALSE,
+  k_threshold = 0.7,
+  reloo_args = list(),
+  model_names = NULL
+)
 }
 \arguments{
 \item{x}{A \code{brmsfit} object.}

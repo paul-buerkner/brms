@@ -5,8 +5,14 @@
 \alias{bayes_R2}
 \title{Compute a Bayesian version of R-squared for regression models}
 \usage{
-\method{bayes_R2}{brmsfit}(object, resp = NULL, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{bayes_R2}{brmsfit}(
+  object,
+  resp = NULL,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

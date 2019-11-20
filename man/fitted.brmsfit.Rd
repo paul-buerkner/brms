@@ -6,15 +6,37 @@
 \alias{posterior_linpred}
 \title{Extract Model Fitted Values of \code{brmsfit} Objects}
 \usage{
-\method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  scale = c("response", "linear"), resp = NULL, dpar = NULL,
-  nlpar = NULL, nsamples = NULL, subset = NULL, sort = FALSE,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{fitted}{brmsfit}(
+  object,
+  newdata = NULL,
+  re_formula = NULL,
+  scale = c("response", "linear"),
+  resp = NULL,
+  dpar = NULL,
+  nlpar = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 
-\method{posterior_linpred}{brmsfit}(object, transform = FALSE,
-  newdata = NULL, re_formula = NULL, re.form = NULL, resp = NULL,
-  dpar = NULL, nlpar = NULL, nsamples = NULL, subset = NULL,
-  sort = FALSE, ...)
+\method{posterior_linpred}{brmsfit}(
+  object,
+  transform = FALSE,
+  newdata = NULL,
+  re_formula = NULL,
+  re.form = NULL,
+  resp = NULL,
+  dpar = NULL,
+  nlpar = NULL,
+  nsamples = NULL,
+  subset = NULL,
+  sort = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
