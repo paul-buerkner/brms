@@ -20,6 +20,8 @@ multinomial models thanks to Santiago Olivella. (#770)
 
 * Rename `marginal_effects` to `conditional_effects` and
 `marginal_smooths` to `conditional_smooths`. (#735)
+* Model fit criteria computed via `add_criterion` are now 
+stored in the `brmsfit$criteria` slot.
 
 # brms 2.10.0
 
