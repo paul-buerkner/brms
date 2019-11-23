@@ -2228,45 +2228,49 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  if (is.matrix(object[["R2"]])) {
-    R2 <- object[["R2"]]
+  summary <- as_one_logical(summary)
+  R2 <- get_criterion(object, "bayes_R2")
+  if (is.matrix(R2)) {
     # assumes unsummarized 'R2' as ensured by 'add_criterion'
     take <- colnames(R2) %in% paste0("R2", resp)
     R2 <- R2[, take, drop = FALSE]
-  } else {
-    family <- family(object, resp = resp)
-    if (conv_cats_dpars(family)) {
-      stop2("'bayes_R2' is not defined for unordered categorical models.")
+    if (summary) {
+      R2 <- posterior_summary(R2, probs = probs, robust = robust)
     }
-    if (is_ordinal(family)) {
-      warning2(
-        "Predictions are treated as continuous variables in ",
-        "'bayes_R2' which is likely invalid for ordinal families."
-      )
-    }
-    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
-    .bayes_R2 <- function(y, ypred, ...) {
-      e <- -1 * sweep(ypred, 2, y)
-      var_ypred <- matrixStats::rowVars(ypred)
-      var_e <- matrixStats::rowVars(e)
-      return(as.matrix(var_ypred / (var_ypred + var_e)))
-    }
-    args_y <- list(object, warn = TRUE, ...)
-    args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
-    R2 <- named_list(paste0("R2", resp))
-    for (i in seq_along(R2)) {
-      # assumes expectations of different responses to be independent
-      args_ypred$resp <- args_y$resp <- resp[i]
-      y <- do_call(get_y, args_y)
-      ypred <- do.call(fitted, args_ypred)
-      if (is_ordinal(family(object, resp = resp[i]))) {
-        ypred <- ordinal_probs_continuous(ypred)
-      }
-      R2[[i]] <- .bayes_R2(y, ypred)
-    }
-    R2 <- do_call(cbind, R2)
-    colnames(R2) <- paste0("R2", resp)
+    return(R2)
+  } 
+  family <- family(object, resp = resp)
+  if (conv_cats_dpars(family)) {
+    stop2("'bayes_R2' is not defined for unordered categorical models.")
   }
+  if (is_ordinal(family)) {
+    warning2(
+      "Predictions are treated as continuous variables in ",
+      "'bayes_R2' which is likely invalid for ordinal families."
+    )
+  }
+  # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+  .bayes_R2 <- function(y, ypred, ...) {
+    e <- -1 * sweep(ypred, 2, y)
+    var_ypred <- matrixStats::rowVars(ypred)
+    var_e <- matrixStats::rowVars(e)
+    return(as.matrix(var_ypred / (var_ypred + var_e)))
+  }
+  args_y <- list(object, warn = TRUE, ...)
+  args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+  R2 <- named_list(paste0("R2", resp))
+  for (i in seq_along(R2)) {
+    # assumes expectations of different responses to be independent
+    args_ypred$resp <- args_y$resp <- resp[i]
+    y <- do_call(get_y, args_y)
+    ypred <- do.call(fitted, args_ypred)
+    if (is_ordinal(family(object, resp = resp[i]))) {
+      ypred <- ordinal_probs_continuous(ypred)
+    }
+    R2[[i]] <- .bayes_R2(y, ypred)
+  }
+  R2 <- do_call(cbind, R2)
+  colnames(R2) <- paste0("R2", resp)
   if (summary) {
     R2 <- posterior_summary(R2, probs = probs, robust = robust)
   }
@@ -2303,6 +2307,12 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
+  R2 <- get_criterion(object, "loo_R2")
+  if (is.vector(R2)) {
+    take <- names(R2) %in% paste0("R2", resp)
+    R2 <- R2[take]
+    return(R2)
+  } 
   family <- family(object, resp = resp)
   if (conv_cats_dpars(family)) {
     stop2("'loo_R2' is not defined for unordered categorical models.")
@@ -3269,10 +3279,10 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @export bridge_sampler 
 #' @export
 bridge_sampler.brmsfit <- function(samples, ...) {
-  if (inherits(samples[["marglik"]], "bridge")) {
-    if (!is.na(samples[["marglik"]]$logml)) {
-      return(samples[["marglik"]]) 
-    }
+  out <- get_criterion(samples, "marglik")
+  if (inherits(out, "bridge") && !is.na(out$logml)) {
+    # return precomputed criterion
+    return(out) 
   }
   samples <- restructure(samples)
   if (samples$version$brms <= "1.8.0") {
@@ -3282,8 +3292,8 @@ bridge_sampler.brmsfit <- function(samples, ...) {
     )
   }
   # otherwise bridge_sampler might not work in a new R session
-  stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
-  out <- try(bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...))
+  samples$fit@.MISC <- suppressMessages(brm(fit = samples, chains = 0))$fit@.MISC
+  out <- try(bridge_sampler(samples$fit, ...))
   if (is(out, "try-error")) {
     stop2(
       "Bridgesampling failed. Did you set 'save_all_pars' ",

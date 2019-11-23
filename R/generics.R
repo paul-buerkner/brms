@@ -24,17 +24,8 @@
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices
 #' @slot stanvars A \code{\link{stanvars}} object or \code{NULL}
 #' @slot stan_funs A character string of length one or \code{NULL}
-#' @slot loo An empty slot for adding the \code{\link{loo}} 
-#'   criterion after model fitting
-#' @slot waic An empty slot for adding the \code{\link{waic}} 
-#'   criterion after model fitting
-#' @slot kfold An empty slot for adding the \code{\link{kfold}} 
-#'   criterion after model fitting  
-#' @slot R2 An empty slot for adding the \code{\link{bayes_R2}}
-#'   (Bayesian R-squared) value after model fitting 
-#' @slot marglik An empty slot for adding a \code{bridge} object 
-#'   after model fitting containing the log marginal likelihood 
-#'   (see \code{\link{bridge_sampler}} for details)
+#' @slot criteria An empty \code{list} for adding model fit criteria
+#'   after estimation of the model.
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples
 #' @slot exclude The names of the parameters for which samples are not saved
@@ -56,8 +47,7 @@ NULL
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_prior(), 
                     autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
-                    loo = NULL, waic = NULL, kfold = NULL, R2 = NULL,
-                    marglik = NULL, stanvars = NULL, stan_funs = NULL, 
+                    criteria = list(), stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
   version <- list(
@@ -66,8 +56,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   )
   x <- nlist(
     formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, loo, waic, kfold, R2, marglik,
-    stanvars, stan_funs, fit, exclude, algorithm, version, file
+    autocor, ranef, cov_ranef, stanvars, stan_funs, 
+    fit, exclude, algorithm, version, file
   )
   class(x) <- "brmsfit"
   x

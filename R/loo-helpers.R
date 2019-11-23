@@ -76,14 +76,12 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   criterion <- match.arg(criterion)
   model_name <- as_one_character(model_name)
   use_stored <- as_one_logical(use_stored)
-  if (use_stored && is.loo(x[[criterion]])) {
-    # extract the stored criterion
-    out <- x[[criterion]]
-  } else {
+  out <- get_criterion(x, criterion)
+  if (!(use_stored && is.loo(out))) {
     # compute the criterion
     if (criterion == "kfold") {
       kfold_args <- nlist(x, newdata, resp, ...)
-      out <- do_call(kfold_internal, kfold_args)
+      out <- do_call(.kfold, kfold_args)
     } else {
       contains_samples(x)
       pointwise <- as_one_logical(pointwise)
@@ -112,7 +110,8 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
   if (criterion == "loo") {
     if (reloo) {
       c(reloo_args) <- nlist(
-        x = out, fit = x, newdata, resp, k_threshold, check = FALSE, ...
+        x = out, fit = x, newdata, resp, 
+        k_threshold, check = FALSE, ...
       )
       out <- do_call("reloo", reloo_args)
     } else {
@@ -158,21 +157,19 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
 #' @importFrom loo loo_compare
 #' @export loo_compare
 #' @export
-loo_compare.brmsfit <- function(
-  x, ..., criterion = c("loo", "waic", "kfold"),
-  model_names = NULL
-) {
+loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
+                                model_names = NULL) {
   criterion <- match.arg(criterion)
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   loos <- named_list(names(models))
   for (i in seq_along(models)) {
-    if (is.null(models[[i]][[criterion]])) {
+    loos[[i]] <- get_criterion(models[[i]], criterion)
+    if (is.null(loos[[i]])) {
       stop2(
         "Model '", names(models)[i], "' does not contain a precomputed '",
         criterion, "' criterion. See ?loo_compare.brmsfit for help."
       )
     }
-    loos[[i]] <- models[[i]][[criterion]]
   }
   loo_compare(loos)
 }
@@ -182,7 +179,8 @@ loo_compare.brmsfit <- function(
 #' @param x An \R object typically of class \code{brmsfit}.
 #' @param criterion Names of model fit criteria
 #'   to compute. Currently supported are \code{"loo"}, 
-#'   \code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+#'   \code{"waic"}, \code{"kfold"}, \code{"bayes_R2"} (Bayesian R-squared), 
+#'   \code{"loo_R2"} (LOO-adjusted R-squard), and 
 #'   \code{"marglik"} (log marginal likelihood).
 #' @param model_name Optional name of the model. If \code{NULL}
 #'   (the default) the name is taken from the call to \code{x}.
@@ -213,8 +211,8 @@ loo_compare.brmsfit <- function(
 #' fit <- brm(count ~ Trt, data = epilepsy)
 #' # add both LOO and WAIC at once
 #' fit <- add_criterion(fit, c("loo", "waic"))
-#' print(fit$loo)
-#' print(fit$waic)
+#' print(fit$criteria$loo)
+#' print(fit$criteria$waic)
 #' }
 #' 
 #' @export
@@ -233,7 +231,12 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     model_name <- deparse_combine(substitute(x)) 
   }
   criterion <- unique(as.character(criterion))
-  options <- c("loo", "waic", "kfold", "R2", "marglik")
+  if (any(criterion == "R2")) {
+    # deprecated as of version 2.10.4
+    warning2("Criterion 'R2' is deprecated. Please use 'bayes_R2' instead.")
+    criterion[criterion == "R2"] <- "bayes_R2"
+  }
+  options <- c("loo", "waic", "kfold", "bayes_R2", "loo_R2", "marglik")
   if (!length(criterion) || !all(criterion %in% options)) {
     stop2("Argument 'criterion' should be a subset of ",
           collapse_comma(options))
@@ -249,20 +252,20 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   overwrite <- as_one_logical(overwrite)
   if (overwrite) {
     # remove previously stored criterion objects
-    x[criterion] <- list(NULL)
+    x$criteria[criterion] <- list(NULL)
   }
   new_criteria <- criterion[ulapply(x[criterion], is.null)]
   args <- list(x, ...)
-  for (fun in intersect(criterion, c("loo", "waic", "kfold"))) {
+  for (fun in intersect(criterion, c("loo", "waic", "kfold", "loo_R2"))) {
     args$model_names <- model_name
-    x[[fun]] <- do_call(fun, args)
+    x$criteria[[fun]] <- do_call(fun, args)
   }
-  if ("R2" %in% criterion) {
+  if ("bayes_R2" %in% criterion) {
     args$summary <- FALSE
-    x$R2 <- do_call(bayes_R2, args)
+    x$criteria$bayes_R2 <- do_call(bayes_R2, args)
   }
   if ("marglik" %in% criterion) {
-    x$marglik <- do_call(bridge_sampler, args)
+    x$criteria$marglik <- do_call(bridge_sampler, args)
   }
   if (!is.null(file) && (force_save || length(new_criteria))) {
     if (auto_save) {
@@ -294,6 +297,13 @@ add_waic <- function(x, model_name = NULL, ...) {
     model_name <- deparse_combine(substitute(x)) 
   }
   add_criterion(x, criterion = "waic", model_name = model_name, ...)
+}
+
+# extract a recomputed model fit criterion
+get_criterion <- function(x, criterion) {
+  stopifnot(is.brmsfit(x))
+  criterion <- as_one_character(criterion)
+  x$criteria[[criterion]]
 }
 
 # create a hash based on the response of a model
@@ -539,9 +549,9 @@ reloo <- function(x, ...) {
 
 # helper function to perform k-fold cross-validation
 # @inheritParams kfold.brmsfit
-kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL, 
-                           group = NULL, newdata = NULL, resp = NULL,
-                           save_fits = FALSE, ...) {
+.kfold <- function(x, K = 10, Ksub = NULL, folds = NULL, 
+                   group = NULL, newdata = NULL, resp = NULL,
+                   save_fits = FALSE, ...) {
   stopifnot(is.brmsfit(x))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
@@ -628,7 +638,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   up_args$refresh <- 0
   
   # function to be run inside future::future
-  .kfold <- function(k) {
+  .kfold_k <- function(k) {
     if (fold_type == "loo" && !is.null(group)) {
       omitted <- which(folds == folds[k])
       predicted <- k
@@ -659,7 +669,7 @@ kfold_internal <- function(x, K = 10, Ksub = NULL, folds = NULL,
   for (k in Ksub) {
     ks <- match(k, Ksub)
     message("Fitting model ", k, " out of ", K)
-    futures[[ks]] <- future::future(.kfold(k), packages = "brms")
+    futures[[ks]] <- future::future(.kfold_k(k), packages = "brms")
   }
   for (k in Ksub) {
     ks <- match(k, Ksub)

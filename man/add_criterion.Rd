@@ -31,7 +31,8 @@ functions computing the model fit criteria.}
 
 \item{criterion}{Names of model fit criteria
 to compute. Currently supported are \code{"loo"}, 
-\code{"waic"}, \code{"kfold"}, \code{"R2"} (R-squared), and 
+\code{"waic"}, \code{"kfold"}, \code{"bayes_R2"} (Bayesian R-squared), 
+\code{"loo_R2"} (LOO-adjusted R-squard), and 
 \code{"marglik"} (log marginal likelihood).}
 
 \item{model_name}{Optional name of the model. If \code{NULL}
@@ -69,8 +70,8 @@ Functions \code{add_loo} and \code{add_waic} are aliases of
 fit <- brm(count ~ Trt, data = epilepsy)
 # add both LOO and WAIC at once
 fit <- add_criterion(fit, c("loo", "waic"))
-print(fit$loo)
-print(fit$waic)
+print(fit$criteria$loo)
+print(fit$criteria$waic)
 }
 
 }

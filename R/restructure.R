@@ -112,6 +112,15 @@ restructure_v2 <- function(x) {
       warning2("BSTS structures are no longer supported.")
     }
   }
+  if (version <= "2.10.3") {
+    # model fit criteria have been moved to x$criteria 
+    criterion_names <- c("loo", "waic", "kfold", "R2", "marglik")
+    criteria <- x[intersect(criterion_names, names(x))]
+    x[criterion_names] <- NULL
+    # rename 'R2' to 'bayes_R2' according to #793
+    names(criteria)[names(criteria) == "R2"] <- "bayes_R2"
+    x$criteria <- criteria
+  }
   x
 }
 
