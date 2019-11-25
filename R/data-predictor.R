@@ -44,6 +44,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
   c(out) <- data_mixture(x, prior = prior)
+  c(out) <- data_autocor(x, data = data, old_locations = old_sdata$locations)
   out
 }
 
@@ -634,11 +635,8 @@ data_offset <- function(bterms, data) {
 }
 
 # data for autocorrelation variables
-# @param Y vector of response values; only required in cor_arr
-# @param new: does 'data' contain new data?
 # @param old_locations: optional old locations for CAR models
-data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
-                         old_locations = NULL) {
+data_autocor <- function(bterms, data, old_locations = NULL) {
   stopifnot(is.brmsterms(bterms))
   autocor <- bterms$autocor
   N <- nrow(data)
@@ -684,10 +682,11 @@ data_autocor <- function(bterms, data, Y = NULL, new = FALSE,
     out$N_tg <- 1
   }
   if (is.cor_car(autocor)) {
+    new <- !is.null(old_locations)
     if (isTRUE(nzchar(bterms$time$group))) {
       loc_data <- get(bterms$time$group, data)
       locations <- levels(factor(loc_data))
-      if (!is.null(old_locations)) {
+      if (new) {
         new_locations <- setdiff(locations, old_locations)
         if (length(new_locations)) {
           stop2("Cannot handle new locations in CAR models.")
@@ -832,8 +831,7 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    not4stan = FALSE, new = FALSE,
-                                    old_sdata = NULL, ...) {
+                                    not4stan = FALSE, old_sdata = NULL, ...) {
   # prepare data for the response variable
   data <- subset_data(data, x)
   N <- nrow(data)
@@ -1148,13 +1146,10 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     c(out) <- vint
   }
-  resp <- usc(combine_prefix(x))
-  out <- setNames(out, paste0(names(out), resp))
-  # specify data for autocors here in order to pass Y
-  c(out) <- data_autocor(
-    x, data = data, Y = out$Y, new = new,
-    old_locations = old_sdata$locations
-  )
+  if (length(out)) {
+    resp <- usc(combine_prefix(x))
+    out <- setNames(out, paste0(names(out), resp))
+  }
   out
 }
 

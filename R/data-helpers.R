@@ -687,6 +687,8 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   if (is.cor_car(x$autocor)) {
     if (isTRUE(nzchar(x$time$group))) {
       out$locations <- levels(factor(get(x$time$group, data)))
+    } else {
+      out$locations <- NA
     }
   }
   if (is_cox(x$family)) {

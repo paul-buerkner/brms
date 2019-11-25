@@ -65,8 +65,7 @@ make_standata <- function(formula, data, family = gaussian(),
   
   out <- data_response(
     bterms, data, check_response = check_response,
-    not4stan = not4stan, new = new, 
-    old_sdata = control$old_sdata
+    not4stan = not4stan, old_sdata = control$old_sdata
   )
   if (!only_response) {
     ranef <- tidy_ranef(

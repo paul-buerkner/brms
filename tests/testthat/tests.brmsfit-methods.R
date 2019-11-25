@@ -474,16 +474,16 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(stancode(fit1)), "generated quantities")
   
   # standata
-  expect_equal(names(standata(fit1)),
-    c("N", "Y",  "Kar", "Kma", "J_lag", "K", "X", "Ksp", "Imo", 
+  expect_equal(sort(names(standata(fit1))),
+    sort(c("N", "Y",  "Kar", "Kma", "J_lag", "K", "X", "Ksp", "Imo", 
       "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1", 
       "knots_1", "Zs_1_1", "Ks", "Xs", "offset", "K_sigma", 
-      "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only")
+      "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only"))
   )
-  expect_equal(names(standata(fit2)),
-    c("N", "Y", "weights", "C_1", "K_a", "X_a", "Z_1_a_1",
+  expect_equal(sort(names(standata(fit2))),
+    sort(c("N", "Y", "weights", "C_1", "K_a", "X_a", "Z_1_a_1",
       "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
-      "NC_1", "prior_only")
+      "NC_1", "prior_only"))
   )
   
   # stanplot tested in tests.plots.R
