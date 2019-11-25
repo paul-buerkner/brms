@@ -288,6 +288,22 @@ data_gr_local <- function(bterms, data, ranef) {
 # prepare global data for each group-level-ID
 data_gr_global <- function(ranef, cov_ranef = NULL) {
   out <- list()
+  if (!is.null(cov_ranef)) {
+    # check validity of cov_ranef
+    cr_names <- names(cov_ranef)
+    cr_is_named <- length(cr_names) && all(nzchar(cr_names))
+    if (!is.list(cov_ranef) || !cr_is_named) {
+      stop2("'cov_ranef' must be a named list.")
+    }
+    if (any(duplicated(cr_names))) {
+      stop2("Names of 'cov_ranef' must be unique.")
+    }
+    unused_cr_names <- setdiff(cr_names, ranef$group)
+    if (length(unused_cr_names)) {
+      stop2("The following elements of 'cov_ranef' are unused: ",
+            collapse_comma(unused_cr_names))
+    }
+  }
   for (id in unique(ranef$id)) {
     id_ranef <- subset2(ranef, id = id)
     nranef <- nrow(id_ranef)
