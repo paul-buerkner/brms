@@ -117,9 +117,10 @@ resp_trials <- function(x) {
 
 #' @rdname addition-terms
 #' @export
-resp_cat <- function(x) {
+resp_cat <- function(x, gr = NA) {
   cat <- deparse(substitute(x))
-  class_resp_special("cat", call = match.call(), vars = nlist(cat))
+  gr <- deparse(substitute(gr))
+  class_resp_special("cat", call = match.call(), vars = nlist(cat, gr))
 }
 
 #' @rdname addition-terms

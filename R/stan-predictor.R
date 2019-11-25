@@ -442,7 +442,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
 # intercepts in ordinal models require special treatment
 # and must be present even when using non-linear predictors
 # thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, prior, ...) {
+stan_thres <- function(bterms, data, prior, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
   family <- bterms$family
@@ -453,6 +453,13 @@ stan_thres <- function(bterms, prior, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
+  gr <- ""
+  grvar <- eval_rhs(x$adforms$cat)$vars$gr
+  if (grvar != "NA") {
+    # include one threshold vector per group
+    gr <- levels(get(gr, data))
+    # TODO: how to handle possibly ragged arrays of thresholds?
+  }
   if (fix_intercepts(bterms)) {
     # identify ordinal mixtures by fixing their thresholds to the same values
     if (has_equidistant_thres(family)) {

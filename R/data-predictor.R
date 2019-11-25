@@ -447,7 +447,7 @@ data_Xme <- function(meef, data) {
           # validate values of the same level
           take <- Jme %in% l
           if (length(unique(Xn[take])) > 1L ||
-              length(unique(noise[take])) > 1L ) {
+              length(unique(noise[take])) > 1L) {
             stop2(
               "Measured values and measurement error should be ", 
               "unique for each group. Occured for level '", 
@@ -960,34 +960,66 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   if (has_cat(x$family) || is.formula(x$adforms$cat)) {
     if (!length(x$adforms$cat)) {
       if (!is.null(old_sdata$ncat)) {
-        out$ncat <- old_sdata$ncat
+        ncat <- old_sdata$ncat
       } else if (has_multicol(x$family)) {
-        out$ncat <- NCOL(out$Y)
+        ncat <- NCOL(out$Y)
       } else {
-        out$ncat <- max(out$Y)
+        ncat <- max(out$Y)
       }
     } else if (is.formula(x$adforms$cat)) {
       cat <- eval_rhs(x$adforms$cat)
-      out$ncat <- as_one_numeric(eval2(cat$vars$cat, data))
-      if (!is_wholenumber(out$ncat) || out$ncat < 1) {
-        stop2("Number of categories must be a positive integer.")
+      ncat <- eval2(cat$vars$cat, data)
+      if (cat$vars$gr != "NA") {
+        # TODO: add variable to get_group_vars()
+        # TODO: handle new data
+        # TODO: expect ncat to be a variable or named vector? #675
+        grcat <- eval2(cat$vars$gr, data)
+        grcat_levels <- levels(factor(grcat))
+        Jcat <- match(grcat, grcat_levels)
+        if (length(ncat == 1L)) {
+          ncat <- rep(ncat, length(grcat))
+        }
+        if (length(ncat) != length(grcat)) {
+          stop2("Variables passed to 'resp_cat' need to be of the same length.")
+        }
+        for (l in grcat_levels) {
+          # validate values of the same level
+          take <- grcat %in% l
+          if (length(unique(ncat[take])) > 1L) {
+            stop2(
+              "Number of response categories should be ", 
+              "unique for each group. Occured for level '", 
+              grcat_levels[l], "' of group '", cat$vars$gr, "'."
+            )
+          }
+        }
+        not_dupl_Jcat <- !duplicated(Jcat)
+        to_order <- order(Jcat[not_dupl_Jcat])
+        ncat <- ncat[not_dupl_Jcat][to_order]
+        out$Jcat <- Jcat
+      } else {
+        ncat <- as_one_numeric(ncat)
+        if (!is_wholenumber(ncat) || ncat < 1L) {
+          stop2("Number of categories must be a positive integer.")
+        }
       }
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
-    if (out$ncat < 2L) {
+    if (ncat < 2L) {
       stop2("At least two response categories are required.")
     }
     if (!has_multicol(x$family)) {
-      if (out$ncat == 2L && !not4stan) {
+      if (ncat == 2L && !not4stan) {
         message("Only 2 levels detected so that family 'bernoulli' ",
                 "might be a more efficient choice.")
       }
-      if (check_response && any(out$Y > out$ncat)) {
+      if (check_response && any(out$Y > ncat)) {
         stop2("Number of categories is smaller than the response ",
               "variable would suggest.")
       }
     }
+    out$ncat <- ncat
   }
   if (is.formula(x$adforms$se)) {
     se <- eval_rhs(x$adforms$se)
