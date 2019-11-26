@@ -22,7 +22,7 @@ resp_weights(x, scale = FALSE)
 
 resp_trials(x)
 
-resp_cat(x)
+resp_cat(x, gr = NA)
 
 resp_dec(x)
 

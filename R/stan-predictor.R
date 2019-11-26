@@ -453,14 +453,16 @@ stan_thres <- function(bterms, data, prior, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
-  gr <- ""
-  grvar <- eval_rhs(x$adforms$cat)$vars$gr
-  if (grvar != "NA") {
+  gr <- gri <- ""
+  grcat <- extract_grcat(bterms, data)
+  if (!is.null(grcat)) {
     # include one threshold vector per group
-    gr <- levels(get(gr, data))
-    # TODO: how to handle possibly ragged arrays of thresholds?
+    gr <- seq_along(levels(grcat))
+    gri <- glue("[{gr}]")
+    gr <- usc(gr)
   }
   if (fix_intercepts(bterms)) {
+    # TODO: handle multiple groups?
     # identify ordinal mixtures by fixing their thresholds to the same values
     if (has_equidistant_thres(family)) {
       stop2("Cannot use equidistant and fixed thresholds at the same time.")
@@ -472,6 +474,7 @@ stan_thres <- function(bterms, data, prior, ...) {
   } else {
     thres <- get_thres(bterms)
     if (has_equidistant_thres(family)) {
+      # TODO: handle multiple groups?
       bound <- subset2(prior, class = "delta", ls = px)$bound
       str_add(out$par) <- glue(
         "  real Intercept1{p};  // first threshold\n",
@@ -494,15 +497,27 @@ stan_thres <- function(bterms, data, prior, ...) {
         px = px, suffix = glue("1{p}")
       )
     } else {
-      str_add(out$par) <- glue(
+      str_add(out$par) <- cglue(
         "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp} - 1] Intercept{p};\n"
+        "  {type}[ncat{resp}{gri} - 1] Intercept{p}{gr};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "Intercept", coef = thres, 
-        px = px, suffix = p
+        px = px, suffix = glue("{p}{gr}")
       )
     }
+  }
+  if (!is.null(grcat)) {
+    # merge all group specific thresholds into one vector
+    # merged_Intercept <- glue("Intercept{p}{gr}", collapse = " ")
+    str_add(out$model_def) <- glue(
+      "  vector[nmcat{resp}] merged_Intercept{p};  // merged thresholds\n"
+    )
+    grj <- seq_along(gr)
+    grj <- glue("Kthres_start{resp}[{grj}]:Kthres_end{resp}[{grj}]")
+    str_add(out$model_comp_basic) <- cglue(
+      "  merged_Intercept{p}[{grj}] = Intercept{p}{gr};\n"
+    )
   }
   sub_X_means <- ""
   if (stan_center_X(bterms) && length(all_terms(bterms$fe))) {
@@ -513,8 +528,8 @@ stan_thres <- function(bterms, data, prior, ...) {
   }
   str_add(out$gen_def) <- glue(
     "  // compute actual thresholds\n",
-    "  vector[ncat{resp} - 1] b{p}_Intercept",  
-    " = Intercept{p}{sub_X_means};\n" 
+    "  vector[ncat{resp}{gri} - 1] b{p}_Intercept{gr}",  
+    " = Intercept{p}{gr}{sub_X_means};\n" 
   )
   out
 }

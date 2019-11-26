@@ -969,14 +969,14 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     } else if (is.formula(x$adforms$cat)) {
       cat <- eval_rhs(x$adforms$cat)
       ncat <- eval2(cat$vars$cat, data)
-      if (cat$vars$gr != "NA") {
+      grcat <- extract_grcat(x, data)
+      if (!is.null(grcat)) {
         # TODO: add variable to get_group_vars()
         # TODO: handle new data
         # TODO: expect ncat to be a variable or named vector? #675
-        grcat <- eval2(cat$vars$gr, data)
-        grcat_levels <- levels(factor(grcat))
-        Jcat <- match(grcat, grcat_levels)
-        if (length(ncat == 1L)) {
+        grcat_levels <- levels(grcat)
+        out$ngrcat <- length(grcat_levels)
+        if (length(ncat) == 1L) {
           ncat <- rep(ncat, length(grcat))
         }
         if (length(ncat) != length(grcat)) {
@@ -993,10 +993,16 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
             )
           }
         }
-        not_dupl_Jcat <- !duplicated(Jcat)
-        to_order <- order(Jcat[not_dupl_Jcat])
-        ncat <- ncat[not_dupl_Jcat][to_order]
-        out$Jcat <- Jcat
+        # create an matrix of threshold indices per observation
+        Jgrcat <- match(grcat, grcat_levels)
+        not_dupl_Mcat <- !duplicated(Jgrcat)
+        to_order <- order(Jgrcat[not_dupl_Mcat])
+        ncat <- ncat[not_dupl_Mcat][to_order]
+        Kthres_cumsum <- cumsum(ncat - 1)
+        Kthres_start <- c(1, Kthres_cumsum[-length(ncat)] + 1)
+        Kthres_end <- Kthres_cumsum
+        Jthres <- cbind(Kthres_start, Kthres_end)[Jgrcat, ]
+        out$Jthres <- Jthres
       } else {
         ncat <- as_one_numeric(ncat)
         if (!is_wholenumber(ncat) || ncat < 1L) {
@@ -1006,7 +1012,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
-    if (ncat < 2L) {
+    if (min(ncat) < 2L) {
       stop2("At least two response categories are required.")
     }
     if (!has_multicol(x$family)) {

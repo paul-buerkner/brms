@@ -14,9 +14,34 @@ stan_response <- function(bterms, data) {
     "  int<lower=1> N{resp};  // number of observations\n"
   )
   if (has_cat(family) || is.formula(bterms$adforms$cat)) {
-    str_add(out$data) <- glue(
-      "  int<lower=2> ncat{resp};  // number of categories\n"
-    )
+    grcat <- extract_grcat(bterms, data)
+    if (!is.null(grcat)) {
+      str_add(out$data) <- glue(
+        "  int<lower=1> ngrcat{resp};  // number of threshold groups\n",
+        "  int<lower=2> ncat{resp}[ngrcat{resp}];  // number of categories\n",
+        "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
+      )
+      str_add(out$tdata_def) <- glue(
+        "  int<lower=2> nmcat{resp} = prod(ncat{resp});", 
+        "  // total number of thresholds\n",
+        "  int<lower=1> Kthres_start{resp}[ngrcat{resp}];", 
+        "  // start index per threshold group\n",
+        "  int<lower=1> Kthres_end{resp}[ngrcat{resp}];",
+        "  // end index per threshold group\n"
+      )
+      str_add(out$tdata_comp) <- glue(
+        "  Kthres_start{resp}[1] = 1;\n",
+        "  Kthres_end{resp}[1] = ncat{resp}[1] - 1;\n",
+        "  for (i in 2:ngrcat{resp}) {{\n",
+        "    Kthres_start{resp}[i] = Kthres_start{resp}[i-1] + ncat{resp}[i] - 1;\n",
+        "    Kthres_end{resp}[i] = Kthres_end{resp}[i-1] + ncat{resp}[i] - 1;\n",
+        "  }}\n"
+      )
+    } else {
+      str_add(out$data) <- glue(
+        "  int<lower=2> ncat{resp};  // number of categories\n"
+      )
+    }
   }
   if (has_multicol(family)) {
     if (rtype == "real") {
@@ -628,13 +653,13 @@ stan_ordinal_lpmf <- function(family, link) {
     "  /* {family}-{link} log-PDF for a single response\n",
     "   * Args:\n",
     "   *   y: response category\n",
-    "   *   mu: linear predictor\n",
-    "   *   thres: ordinal thresholds\n",
+    "   *   mu: latent mean parameter\n",
     "   *   disc: discrimination parameter\n",
+    "   *   thres: ordinal thresholds\n",
     "   * Returns:\n", 
     "   *   a scalar to be added to the log posterior\n",
     "   */\n",
-    "   real {family}_{link}_lpmf(int y, real mu, vector thres, real disc) {{\n"
+    "   real {family}_{link}_lpmf(int y, real mu, real disc, vector thres) {{\n"
   )
   # define the function body
   if (family == "cumulative") {
@@ -649,7 +674,8 @@ stan_ordinal_lpmf <- function(family, link) {
       "       p = {ilink}({th('y')}) -\n",
       "           {ilink}({th('y - 1')});\n",
       "     }}\n",
-      "     return log(p);\n"
+      "     return log(p);\n",
+      "   }}\n"
     )
   } else if (family %in% c("sratio", "cratio")) {
     sc <- str_if(family == "sratio", "1 - ")
@@ -667,7 +693,8 @@ stan_ordinal_lpmf <- function(family, link) {
       "     if (y == ncat) {{\n",
       "       p[ncat] = prod(q);\n",
       "     }}\n",
-      "     return log(p[y]);\n"
+      "     return log(p[y]);\n",
+      "   }}\n"
     )
   } else if (family == "acat") {
     if (ilink == "inv_logit") {
@@ -679,7 +706,8 @@ stan_ordinal_lpmf <- function(family, link) {
         "       p[k + 1] = p[k] + {th('k')};\n",
         "     }}\n",
         "     p = exp(p);\n",
-        "     return log(p[y] / sum(p));\n"
+        "     return log(p[y] / sum(p));\n",
+        "   }}\n"
       )
     } else {
       str_add(out) <- glue(   
@@ -693,11 +721,29 @@ stan_ordinal_lpmf <- function(family, link) {
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
         "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]);\n",   
         "     }}\n",
-        "     return log(p[y] / sum(p));\n"
+        "     return log(p[y] / sum(p));\n",
+        "   }}\n"
       )
     }
   }
-  str_add(out) <- "   }\n"
+  # lpdf function for multiple thresholds
+  str_add(out) <- glue(
+    # TODO: include order_logistic_mthres_lpdf
+    "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
+    "   * Args:\n",
+    "   *   y: response category\n",
+    "   *   mu: latent mean parameter\n",
+    "   *   disc: discrimination parameter\n",
+    "   *   thres: vector of merged ordinal thresholds\n",
+    "   *   j: start and end index for the applid threshold within 'thres'\n",
+    "   * Returns:\n", 
+    "   *   a scalar to be added to the log posterior\n",
+    "   */\n",
+    "   real {family}_{link}_merged_lpmf(", 
+    "int y, real mu, real disc, vector thres, int[] j) {{\n",
+    "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
+    "   }}\n"
+  )
   out
 }
 
