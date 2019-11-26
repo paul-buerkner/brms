@@ -438,102 +438,6 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
   out
 }
 
-# Stan code for ordinal thresholds
-# intercepts in ordinal models require special treatment
-# and must be present even when using non-linear predictors
-# thus the relevant Stan code cannot be part of 'stan_fe'
-stan_thres <- function(bterms, data, prior, ...) {
-  stopifnot(is.btl(bterms) || is.btnl(bterms))
-  out <- list()
-  family <- bterms$family
-  if (!is_ordinal(family)) {
-    return(out)
-  }
-  px <- check_prefix(bterms)
-  p <- usc(combine_prefix(px))
-  resp <- usc(px$resp)
-  type <- str_if(has_ordered_thres(family), "ordered", "vector")
-  gr <- gri <- ""
-  grcat <- extract_grcat(bterms, data)
-  if (!is.null(grcat)) {
-    # include one threshold vector per group
-    gr <- seq_along(levels(grcat))
-    gri <- glue("[{gr}]")
-    gr <- usc(gr)
-  }
-  if (fix_intercepts(bterms)) {
-    # TODO: handle multiple groups?
-    # identify ordinal mixtures by fixing their thresholds to the same values
-    if (has_equidistant_thres(family)) {
-      stop2("Cannot use equidistant and fixed thresholds at the same time.")
-    }
-    str_add(out$tpar_def) <- glue(
-      "  // fix thresholds across ordinal mixture components\n",
-      "  {type}[ncat{resp} - 1] Intercept{p} = fixed_Intercept{resp};\n"
-    )
-  } else {
-    thres <- get_thres(bterms)
-    if (has_equidistant_thres(family)) {
-      # TODO: handle multiple groups?
-      bound <- subset2(prior, class = "delta", ls = px)$bound
-      str_add(out$par) <- glue(
-        "  real Intercept1{p};  // first threshold\n",
-        "  real{bound} delta{p};  // distance between thresholds\n"
-      )
-      str_add(out$tpar_def) <- glue(
-        "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp} - 1] Intercept{p};\n"
-      )
-      str_add(out$tpar_comp) <- glue(
-        "  // compute equidistant thresholds\n",
-        "  for (k in 1:(ncat{resp} - 1)) {{\n",
-        "    Intercept{p}[k] = Intercept1{p}", 
-        " + (k - 1.0) * delta{p};\n",
-        "  }}\n"
-      )
-      str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", coef = thres[1], 
-        px = px, suffix = glue("1{p}")
-      )
-    } else {
-      str_add(out$par) <- cglue(
-        "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp}{gri} - 1] Intercept{p}{gr};\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", coef = thres, 
-        px = px, suffix = glue("{p}{gr}")
-      )
-    }
-  }
-  if (!is.null(grcat)) {
-    # merge all group specific thresholds into one vector
-    # merged_Intercept <- glue("Intercept{p}{gr}", collapse = " ")
-    str_add(out$model_def) <- glue(
-      "  vector[nmcat{resp}] merged_Intercept{p};  // merged thresholds\n"
-    )
-    grj <- seq_along(gr)
-    grj <- glue("Kthres_start{resp}[{grj}]:Kthres_end{resp}[{grj}]")
-    str_add(out$model_comp_basic) <- cglue(
-      "  merged_Intercept{p}[{grj}] = Intercept{p}{gr};\n"
-    )
-  }
-  sub_X_means <- ""
-  if (stan_center_X(bterms) && length(all_terms(bterms$fe))) {
-    # centering of the design matrix improves convergence
-    # ordinal families either use thres - mu or mu - thres
-    # both implies adding <mean_X, b> to the temporary intercept
-    sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
-  }
-  str_add(out$gen_def) <- glue(
-    "  // compute actual thresholds\n",
-    "  vector[ncat{resp}{gri} - 1] b{p}_Intercept{gr}",  
-    " = Intercept{p}{gr}{sub_X_means};\n" 
-  )
-  out
-}
-
 # Stan code for group-level effects
 stan_re <- function(ranef, prior, ...) {
   IDs <- unique(ranef$id)
@@ -1194,37 +1098,6 @@ stan_ac <- function(bterms, ...) {
   out
 }
 
-# Stan code for the baseline functions of the Cox model
-stan_bhaz <- function(bterms, prior, ...) {
-  stopifnot(is.btl(bterms) || is.btnl(bterms))
-  out <- list()
-  if (!is_cox(bterms$family)) {
-    return(out)
-  }
-  px <- check_prefix(bterms)
-  p <- usc(combine_prefix(px))
-  resp <- usc(px$resp)
-  str_add(out$data) <- glue(
-    "  // data for flexible baseline functions\n",
-    "  int Kbhaz{resp};  // number of basis functions\n",
-    "  // design matrix of the baseline function\n",
-    "  matrix[N{resp}, Kbhaz{resp}] Zbhaz{resp};\n",
-    "  // design matrix of the cumulative baseline function\n",
-    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
-  )
-  str_add(out$par) <- glue(
-    "  vector<lower=0>[Kbhaz{resp}] sbhaz; // baseline coefficients\n"
-  )
-  str_add(out$model_def) <- glue(
-    "  // compute values of baseline function\n",
-    "  vector[N{resp}] bhaz{resp} = Zbhaz{resp} * sbhaz{resp};\n",
-    "  // compute values of cumulative baseline function\n",
-    "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp} * sbhaz{resp};\n"
-  )
-  str_add(out$prior) <- stan_prior(prior, class = "sbhaz", px = px)
-  out
-}
-
 # stan code for offsets
 stan_offset <- function(bterms, ...) {
   out <- list()
@@ -1254,82 +1127,445 @@ stan_rate <- function(bterms, loop = FALSE, ...) {
   out
 }
 
-# Stan code specific to mixture families
-stan_mixture <- function(bterms, prior) {
-  out <- list()
-  if (!is.mixfamily(bterms$family)) {
-    return(out)
-  }
+# Stan code related to autocorrelation structures
+stan_autocor <- function(bterms, prior) {
+  stopifnot(is.brmsterms(bterms))
+  family <- bterms$family
+  autocor <- bterms$autocor
+  resp <- bterms$response
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  nmix <- length(bterms$family$mix)
-  theta_pred <- grepl("^theta", names(bterms$dpars))
-  theta_pred <- bterms$dpars[theta_pred]
-  theta_fix <- grepl("^theta", names(bterms$fdpars))
-  theta_fix <- bterms$fdpars[theta_fix]
-  def_thetas <- cglue(
-    "  real<lower=0,upper=1> theta{1:nmix}{p};  // mixing proportion\n"
-  )
-  if (length(theta_pred)) {
-    if (length(theta_pred) != nmix - 1) {
-      stop2("Can only predict all but one mixing proportion.")
+  has_natural_residuals <- has_natural_residuals(bterms)
+  has_latent_residuals <- has_latent_residuals(bterms)
+  out <- list()
+  if (is.cor_arma(autocor)) {
+    err_msg <- "ARMA models are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
     }
-    missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
-    str_add(out$model_def) <- glue(
-      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
-      "  real log_sum_exp_theta;\n"      
+    str_add(out$data) <- glue( 
+      "  // data needed for ARMA correlations\n",
+      "  int<lower=0> Kar{p};  // AR order\n",
+      "  int<lower=0> Kma{p};  // MA order\n"
     )
-    sum_exp_theta <- glue("exp(theta{1:nmix}{p}[n])", collapse = " + ")
-    str_add(out$model_comp_mix) <- glue(
-      "  for (n in 1:N{p}) {{\n",
-      "    // scale theta to become a probability vector\n",
-      "    log_sum_exp_theta = log({sum_exp_theta});\n"
+    str_add(out$tdata_def) <- glue( 
+      "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    str_add(out$model_comp_mix) <- cglue(
-      "    theta{1:nmix}{p}[n] = theta{1:nmix}{p}[n] - log_sum_exp_theta;\n"
-    )
-    str_add(out$model_comp_mix) <- "  }\n"
-  } else if (length(theta_fix)) {
-    if (length(theta_fix) != nmix) {
-      stop2("Can only fix no or all mixing proportions.")
+    ar_bound <- ma_bound <- "<lower=-1,upper=1>"
+    if (!use_cov(autocor)) {
+      err_msg <- "Please set cov = TRUE in ARMA correlation structures"
+      if (!has_natural_residuals) {
+        stop2(err_msg, " for family '", family$family, "'.")
+      }
+      if (is.formula(bterms$adforms$se)) {
+        stop2(err_msg, " when including known standard errors.")
+      }
+      str_add(out$data) <- glue( 
+        "  // number of lags per observation\n",
+        "  int<lower=0> J_lag{p}[N{p}];\n"                
+      )
+      str_add(out$model_def) <- glue(
+        "  // objects storing residuals\n",
+        "  matrix[N{p}, max_lag{p}] Err{p}",
+        " = rep_matrix(0, N{p}, max_lag{p});\n",
+        "  vector[N{p}] err{p};\n"
+      )
+      Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
+      add_ar <- str_if(get_ar(autocor),
+                       glue("    mu{p}[n] += head(Err{p}[n], Kar{p}) * ar{p};\n")             
+      )
+      add_ma <- str_if(get_ma(autocor),
+                       glue("    mu{p}[n] += head(Err{p}[n], Kma{p}) * ma{p};\n")             
+      )
+      str_add(out$model_comp_arma) <- glue(
+        "  // include ARMA terms\n",
+        "  for (n in 1:N{p}) {{\n",
+        add_ma,
+        "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
+        "    for (i in 1:J_lag{p}[n]) {{\n",
+        "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
+        "    }}\n",
+        add_ar,
+        "  }}\n"
+      )
+      # in the conditional formulation no boundaries are required
+      ar_bound <- ma_bound <- ""
     }
-    str_add(out$data) <- "  // mixing proportions\n"
-    str_add(out$data) <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
-    )
-  } else {
-    str_add(out$data) <- glue(
-      "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
-    )
+    if (get_ar(autocor)) {
+      str_add(out$par) <- glue( 
+        "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ar", px = px, suffix = p
+      )
+    }
+    if (get_ma(autocor)) {
+      str_add(out$par) <- glue( 
+        "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ma", px = px, suffix = p
+      )
+    }
+  }
+  if (is.cor_cosy(autocor)) {
+    # compound symmetry correlation structure
+    err_msg <- "Compound symmetry models are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    # most code is shared with ARMA covariance models
     str_add(out$par) <- glue(
-      "  simplex[{nmix}] theta{p};  // mixing proportions\n"
-    )
-    str_add(out$prior) <- glue(
-      "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
-    )
-    str_add(out$tpar_def) <- "  // mixing proportions\n"
-    str_add(out$tpar_def) <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
-    )
-  }
-  if (order_intercepts(bterms)) {
-    # identify mixtures by ordering the intercepts of their components
-    str_add(out$par) <- glue( 
-      "  ordered[{nmix}] ordered_Intercept{p};  // to identify mixtures\n"
-    )
-  }
-  if (fix_intercepts(bterms)) {
-    # identify ordinal mixtures by fixing their thresholds to the same values
-    stopifnot(is_ordinal(bterms))
-    type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
-    str_add(out$par) <- glue( 
-      "  // thresholds fixed over mixture components\n",
-      "  {type}[ncat{p} - 1] fixed_Intercept{p};\n"
+      "  real<lower=0,upper=1> cosy{p};  // compound symmetry correlation\n"
     )
     str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", coef = get_thres(bterms), 
-      px = px, prefix = "fixed_", suffix = p
+      prior, class = "cosy", px = px, suffix = p
     )
+  }
+  if (use_cov(autocor)) {
+    # use correlation structures in covariance matrix parameterization
+    # optional for ARMA models and obligatory for compound symmetry models
+    err_msg <- "Cannot model residual covariance matrices via 'autocor'"
+    if (isTRUE(bterms$rescor)) {
+      stop2(err_msg, " when estimating 'rescor'.")
+    }
+    pred_other_pars <- any(!names(bterms$dpars) %in% c("mu", "sigma"))
+    if (has_natural_residuals && pred_other_pars) {
+      stop2(err_msg, " when predicting parameters other than 'mu' and 'sigma'.")
+    }
+    str_add(out$data) <- glue( 
+      "  // see the functions block for details\n",
+      "  int<lower=1> N_tg{p};\n",
+      "  int<lower=1> begin_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
+    )
+    if (!is.formula(bterms$adforms$se)) {
+      str_add(out$tdata_def) <- glue(
+        "  // no known standard errors specified by the user\n",
+        "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
+      )
+    }
+    str_add(out$tpar_def) <- glue(
+      "  // cholesky factor of the autocorrelation matrix\n",
+      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"               
+    )
+    if (is.cor_arma(autocor)) {
+      if (has_ar_only(autocor)) {
+        cor_fun <- "ar1"
+        cor_args <- glue("ar{p}[1]")
+      } else if (has_ma_only(autocor)) {
+        cor_fun <- "ma1"
+        cor_args <- glue("ma{p}[1]")
+      } else {
+        cor_fun <- "arma1"
+        cor_args <- glue("ar{p}[1], ma{p}[1]")
+      }
+    }
+    if (is.cor_cosy(autocor)) {
+      cor_fun <- "cosy"
+      cor_args <- glue("cosy{p}")
+    }
+    str_add(out$tpar_comp) <- glue(
+      "  // compute residual covariance matrix\n",
+      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
+    )
+    if (has_latent_residuals) {
+      err_msg <- "Latent residuals are not implemented"
+      if (is.btnl(bterms$dpars[["mu"]])) {
+        stop2(err_msg, " for non-linear models.")
+      }
+      if (conv_cats_dpars(bterms)) {
+        stop2(err_msg, " for this family.")
+      }
+      str_add(out$par) <- glue(
+        "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+        "  real<lower=0> sderr{p};  // SD of residuals\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  vector[N{p}] err{p};  // actual residuals\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute correlated residuals\n",
+        "  err{p} = scale_cov_err(",
+        "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+      )
+      str_add(out$prior) <- glue(
+        "  target += normal_lpdf(zerr{p} | 0, 1);\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "sderr", px = px, suffix = p
+      )
+    }
+  }
+  if (is.cor_sar(autocor)) {
+    err_msg <- "SAR models are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (!has_natural_residuals) {
+      stop2(err_msg, " for family '", family$family, "'.")
+    }
+    if (isTRUE(bterms$rescor)) {
+      stop2(err_msg, " when 'rescor' is estimated.")
+    }
+    if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
+      stop2(err_msg, " when predicting 'sigma' or 'nu'.")
+    }
+    str_add(out$data) <- glue(
+      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
+      "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
+    )
+    str_add(out$tdata_def) <- glue(
+      "  // the eigenvalues define the boundaries of the SAR correlation\n",
+      "  real min_eigenW{p} = min(eigenW{p});\n",
+      "  real max_eigenW{p} = max(eigenW{p});\n"
+    )
+    if (identical(autocor$type, "lag")) {
+      str_add(out$par) <- glue( 
+        "  // lag-SAR correlation parameter\n",
+        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> lagsar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "lagsar", px = px, suffix = p
+      )
+    } else if (identical(autocor$type, "error")) {
+      str_add(out$par) <- glue( 
+        "  // error-SAR correlation parameter\n",
+        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> errorsar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "errorsar", px = px, suffix = p
+      )
+    }
+  }
+  if (is.cor_car(autocor)) {
+    err_msg <- "CAR models are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (is.btnl(bterms$dpars[["mu"]])) {
+      stop2(err_msg, " for non-linear models.")
+    }
+    str_add(out$data) <- glue(
+      "  // data for the CAR structure\n",
+      "  int<lower=1> Nloc{p};\n",
+      "  int<lower=1> Jloc{p}[N{p}];\n",
+      "  int<lower=0> Nedges{p};\n",
+      "  int<lower=1> edges1{p}[Nedges{p}];\n",
+      "  int<lower=1> edges2{p}[Nedges{p}];\n"
+    )
+    str_add(out$par) <- glue(
+      "  real<lower=0> sdcar{p};  // SD of the CAR structure\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "sdcar", px = px, suffix = p
+    )
+    if (autocor$type %in% c("escar", "esicar")) {
+      str_add(out$data) <- glue(
+        "  vector[Nloc{p}] Nneigh{p};\n",
+        "  vector[Nloc{p}] eigenW{p};\n"
+      )
+    }
+    if (autocor$type %in% "escar") {
+      str_add(out$par) <- glue(
+        "  real<lower=0, upper=1> car{p};\n",
+        "  vector[Nloc{p}] rcar{p};\n"
+      )
+      car_args <- c(
+        "car", "sdcar", "Nloc", "Nedges", 
+        "Nneigh", "eigenW", "edges1", "edges2"
+      )
+      car_args <- paste0(car_args, p, collapse = ", ")
+      str_add(out$prior) <- stan_prior(
+        prior, class = "car", px = px, suffix = p
+      )
+      str_add(out$prior) <- glue(
+        "  target += sparse_car_lpdf(\n", 
+        "    rcar{p} | {car_args}\n",
+        "  );\n"
+      )
+    } else if (autocor$type %in% "esicar") {
+      str_add(out$par) <- glue(
+        "  vector[Nloc{p} - 1] zcar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  vector[Nloc{p}] rcar{p};\n"                
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // sum-to-zero constraint\n",
+        "  rcar[1:(Nloc{p} - 1)] = zcar{p};\n",
+        "  rcar[Nloc{p}] = - sum(zcar{p});\n"
+      )
+      car_args <- c(
+        "sdcar", "Nloc", "Nedges", 
+        "Nneigh", "eigenW", "edges1", "edges2"
+      )
+      car_args <- paste0(car_args, p, collapse = ", ")
+      str_add(out$prior) <- glue(
+        "  target += sparse_icar_lpdf(\n", 
+        "    rcar{p} | {car_args}\n",
+        "  );\n"
+      )
+    } else if (autocor$type %in% "icar") {
+      # intrinsic car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$par) <- glue(
+        "  // parameters for the ICAR structure\n",
+        "  vector[Nloc{p}] zcar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // scaled parameters for the ICAR structure\n",
+        "  vector[Nloc{p}] rcar{p} = zcar{p} * sdcar{p};\n"
+      )
+      str_add(out$prior) <- glue(
+        "  // improper prior on the spatial CAR component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
+      )
+    } else if (autocor$type %in% "bym2") {
+      # BYM2 car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$data) <- glue(
+        "  // scaling factor of the spatial CAR component\n",
+        "  real<lower=0> car_scale{p};\n"
+      )
+      str_add(out$par) <- glue(
+        "  // parameters for the BYM2 structure\n",
+        "  vector[Nloc{p}] zcar{p};  // spatial part\n",
+        "  vector[Nloc{p}] nszcar{p};  // non-spatial part\n",
+        "  // proportion of variance in the spatial part\n",
+        "  real<lower=0,upper=1> rhocar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // join the spatial and the non-spatial CAR component\n",
+        "  vector[Nloc{p}] rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
+        " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "rhocar", px = px, suffix = p
+      )
+      str_add(out$prior) <- glue(
+        "  // improper prior on the spatial BYM2 component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
+        "  // proper prior on the non-spatial BYM2 component\n",
+        "  target += normal_lpdf(nszcar | 0, 1);\n"
+      )
+    }
+  }
+  if (is.cor_fixed(autocor)) {
+    err_msg <- "Fixed residual covariance matrices are not implemented"
+    if (is.mixfamily(family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (!has_natural_residuals) {
+      stop2(err_msg, " for family '", family$family, "'.")
+    }
+    if (isTRUE(bterms$rescor)) {
+      stop2(err_msg, " when 'rescor' is estimated.")
+    }
+    str_add(out$data) <- glue( 
+      "  matrix[N{p}, N{p}] V{p};  // known residual covariance matrix\n"
+    )
+    if (family$family %in% "gaussian") {
+      str_add(out$tdata_def) <- glue(
+        "  matrix[N{p}, N{p}] LV{p} = cholesky_decompose(V{p});\n"
+      )
+    }
+  }
+  out
+}
+
+# global Stan definitions for noise-free variables
+# @param meef output of tidy_meef
+stan_Xme <- function(meef, prior) {
+  stopifnot(is.meef_frame(meef))
+  if (!nrow(meef)) {
+    return(list())
+  }
+  out <- list()
+  coefs <- rename(paste0("me", meef$xname))
+  str_add(out$data) <- "  // data for noise-free variables\n"
+  str_add(out$par) <- "  // parameters for noise free variables\n"
+  groups <- unique(meef$grname)
+  for (i in seq_along(groups)) {
+    g <- groups[i]
+    K <- which(meef$grname %in% g)
+    if (nzchar(g)) {
+      Nme <- glue("Nme_{i}")
+      str_add(out$data) <- glue(
+        "  int<lower=0> Nme_{i};  // number of latent values\n",
+        "  int<lower=1> Jme_{i}[N];  // group index per observation\n"
+      )
+    } else {
+      Nme <- "N"
+    }
+    str_add(out$data) <- glue(
+      "  int<lower=1> Mme_{i};  // number of groups\n"
+    )
+    str_add(out$data) <- cglue(
+      "  vector[{Nme}] Xn_{K};  // noisy values\n",
+      "  vector<lower=0>[{Nme}] noise_{K};  // measurement noise\n"
+    )
+    str_add(out$par) <- cglue(
+      "  vector[Mme_{i}] meanme_{i};  // latent means\n",
+      "  vector<lower=0>[Mme_{i}] sdme_{i};  // latent SDs\n"
+    )
+    str_add(out$prior) <- glue(
+      stan_prior(prior, "meanme", coef = coefs[K], suffix = usc(i)),
+      stan_prior(prior, "sdme", coef = coefs[K], suffix = usc(i))
+    )
+    str_add(out$prior) <- cglue(
+      "  target += normal_lpdf(Xn_{K} | Xme_{K}, noise_{K});\n"
+    )
+    if (meef$cor[K[1]] && length(K) > 1L) {
+      str_add(out$data) <- glue(
+        "  int<lower=1> NCme_{i};  // number of latent correlations\n"
+      )
+      str_add(out$par) <- glue(
+        "  matrix[Mme_{i}, {Nme}] zme_{i};  // standardized latent values\n",
+        "  // cholesky factor of the latent correlation matrix\n",
+        "  cholesky_factor_corr[Mme_{i}] Lme_{i};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // obtain the actual latent values\n",
+        "  matrix[{Nme}, Mme_{i}] Xme{i}", 
+        " = rep_matrix(meanme_{i}', {Nme}) ", 
+        " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
+      )
+      str_add(out$tpar_def) <- cglue(
+        "  // using separate vectors increases efficiency\n",
+        "  vector[{Nme}] Xme_{K} = Xme{i}[, {K}];\n"
+      )
+      str_add(out$prior) <- glue(
+        "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n",
+        stan_prior(prior, "Lme", group = g, suffix = usc(i))
+      )
+      str_add(out$gen_def) <- cglue(
+        "  // obtain latent correlation matrix\n",
+        "  corr_matrix[Mme_{i}] Corme_{i}", 
+        " = multiply_lower_tri_self_transpose(Lme_{i});\n",
+        "  vector<lower=-1,upper=1>[NCme_{i}] corme_{i};\n"
+      )
+      str_add(out$gen_comp) <- stan_cor_gen_comp(
+        cor = glue("corme_{i}"), ncol = glue("Mme_{i}")
+      )
+    } else {
+      str_add(out$par) <- cglue(
+        "  vector[{Nme}] zme_{K};  // standardized latent values\n"
+      )
+      str_add(out$tpar_def) <- cglue(
+        "  // obtain the actual latent values\n",
+        "  vector[{Nme}] Xme_{K} = ",
+        "meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
+      )
+      str_add(out$prior) <- cglue(
+        "  target += normal_lpdf(zme_{K} | 0, 1);\n"
+      )
+    }
   }
   out
 }
