@@ -73,7 +73,8 @@ change_effects.btl <- function(x, data, pars, ...) {
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
-    change_gp(x, data, pars))
+    change_gp(x, data, pars),
+    change_thres(x, pars))
 }
 
 # helps in renaming fixed effects parameters
@@ -85,7 +86,7 @@ change_fe <- function(bterms, data, pars) {
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
-    b <- paste0("b", usc(combine_prefix(px), "prefix"))
+    b <- paste0("b", usc(combine_prefix(px)))
     pos <- grepl(paste0("^", b, "\\["), pars)
     bnames <- paste0(b, "_", fixef)
     lc(out) <- clist(pos, bnames)
@@ -135,6 +136,26 @@ change_cs <- function(bterms, data, pars) {
       grepl(paste0("^", bcsp, "\\["), pars), csenames, sort = sort_cse
     )
     c(out) <- change_prior(bcsp, pars, names = csef)
+  }
+  out
+}
+
+# rename threshold parameters in ordinal models
+change_thres <- function(bterms, pars) {
+  out <- list()
+  # renaming is only required if multiple threshold were estimated
+  if (!has_thres_groups(bterms)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  int <- paste0("b", p, "_Intercept")
+  groups <- get_thres_groups(bterms)
+  for (i in seq_along(groups)) {
+    thres <- get_thres(bterms, groups[i])
+    pos <- grepl(glue("^{int}_{i}\\["), pars)
+    int_names <- glue("{int}[{groups[i]},{thres}]")
+    lc(out) <- clist(pos, int_names)
   }
   out
 }
@@ -473,7 +494,7 @@ reorder_pars <- function(x) {
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(
     factor(class, levels = all_classes),
-    !grepl("_Intercept$", x$fit@sim$pars_oi)
+    !grepl("_Intercept(_[[:digit:]]+)?$", x$fit@sim$pars_oi)
   )
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[new_order]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
