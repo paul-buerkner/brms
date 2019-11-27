@@ -455,10 +455,8 @@ data_Xme <- function(meef, data) {
             )
           }
         }
-        not_dupl_Jme <- !duplicated(Jme)
-        to_order <- order(Jme[not_dupl_Jme])
-        Xn <- Xn[not_dupl_Jme][to_order]
-        noise <- noise[not_dupl_Jme][to_order]
+        Xn <- get_one_value_per_group(Xn, Jme)
+        noise <- get_one_value_per_group(noise, Jme)
       }
       out[[paste0("Xn_", k)]] <- as.array(Xn)
       out[[paste0("noise_", k)]] <- as.array(noise)

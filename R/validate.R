@@ -327,6 +327,10 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     if (check_response && "wiener" %in% families && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
+    if (is.formula(x$cat)) {
+      # 'cat' was replaced by 'thres' in brms 2.10.5
+      x$thres <- x$cat
+    }
   }
   x
 }

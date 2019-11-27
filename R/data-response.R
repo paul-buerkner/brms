@@ -196,61 +196,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$trials <- as.array(out$trials)
   }
-  if (has_cat(x$family) || is.formula(x$adforms$cat)) {
-    if (!length(x$adforms$cat)) {
-      if (!is.null(old_sdata$ncat)) {
-        ncat <- old_sdata$ncat
-      } else if (has_multicol(x$family)) {
-        ncat <- NCOL(out$Y)
-      } else {
-        ncat <- max(out$Y)
-      }
-    } else if (is.formula(x$adforms$cat)) {
-      cat <- eval_rhs(x$adforms$cat)
-      ncat <- eval2(cat$vars$cat, data)
-      grcat <- extract_grcat(x, data)
-      if (!is.null(grcat)) {
-        # TODO: add variable to get_group_vars()
-        # TODO: handle new data
-        # TODO: expect ncat to be a variable or named vector? #675
-        grcat_levels <- levels(grcat)
-        out$ngrcat <- length(grcat_levels)
-        if (length(ncat) == 1L) {
-          ncat <- rep(ncat, length(grcat))
-        }
-        if (length(ncat) != length(grcat)) {
-          stop2("Variables passed to 'resp_cat' need to be of the same length.")
-        }
-        for (l in grcat_levels) {
-          # validate values of the same level
-          take <- grcat %in% l
-          if (length(unique(ncat[take])) > 1L) {
-            stop2(
-              "Number of response categories should be ", 
-              "unique for each group. Occured for level '", 
-              grcat_levels[l], "' of group '", cat$vars$gr, "'."
-            )
-          }
-        }
-        # create an matrix of threshold indices per observation
-        Jgrcat <- match(grcat, grcat_levels)
-        not_dupl_Mcat <- !duplicated(Jgrcat)
-        to_order <- order(Jgrcat[not_dupl_Mcat])
-        ncat <- ncat[not_dupl_Mcat][to_order]
-        Kthres_cumsum <- cumsum(ncat - 1)
-        Kthres_start <- c(1, Kthres_cumsum[-length(ncat)] + 1)
-        Kthres_end <- Kthres_cumsum
-        Jthres <- cbind(Kthres_start, Kthres_end)[Jgrcat, ]
-        out$Jthres <- Jthres
-      } else {
-        ncat <- as_one_numeric(ncat)
-        if (!is_wholenumber(ncat) || ncat < 1L) {
-          stop2("Number of categories must be a positive integer.")
-        }
-      }
-    } else {
-      stop2("Argument 'cat' is misspecified.")
-    }
+  if (has_cat(x$family)) {
+    ncat <- length(get_cats(x$family))
     if (min(ncat) < 2L) {
       stop2("At least two response categories are required.")
     }
@@ -266,6 +213,69 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
     out$ncat <- ncat
   }
+  if (has_thres(x$family)) {
+    if (is.formula(x$adforms$thres)) {
+      nthres <- get_advalues(x, "thres", "thres", data)
+      groups <- get_thres_groups(x$family)
+      if (any(nzchar(groups))) {
+        # TODO: add variable to get_group_vars()
+        # TODO: handle new data
+        # TODO: expect nthres to be a variable or named vector? #675
+        grthres <- factor(get_advalues(x, "thres", "gr", data))
+        grthres_levels <- levels(grthres)
+        out$ngrthres <- length(grthres_levels)
+        if (length(nthres) == 1L) {
+          nthres <- rep(nthres, length(grthres))
+        }
+        if (length(nthres) != length(grthres)) {
+          stop2("Variables passed to 'thres' need to be of the same length.")
+        }
+        for (l in grthres_levels) {
+          # validate values of the same level
+          take <- grthres %in% l
+          if (length(unique(nthres[take])) > 1L) {
+            stop2(
+              "Number of response thresegories should be ", 
+              "unique for each group. Occured for level '", 
+              grthres_levels[l], "' of group '", thres$vars$gr, "'."
+            )
+          }
+        }
+        # create an matrix of threshold indices per observation
+        Jgrthres <- match(grthres, grthres_levels)
+        nthres <- unname(get_one_value_per_group(nthres, Jgrthres))
+        Kthres_cumsum <- cumsum(nthres)
+        Kthres_start <- c(1, Kthres_cumsum[-length(nthres)] + 1)
+        Kthres_end <- Kthres_cumsum
+        Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, ]
+        out$Jthres <- Jthres
+      } else {
+        nthres <- as_one_numeric(nthres)
+        if (!is_wholenumber(nthres) || nthres < 1L) {
+          stop2("Number of categories must be a positive integer.")
+        }
+      }
+    } else {
+      nthres <- NROW(get_thres(x$family))
+    }
+    if (min(nthres) < 1L) {
+      stop2("At least two response categories are required.")
+    }
+    if (nthres == 2L && !not4stan) {
+      message("Only 2 levels detected so that family 'bernoulli' ",
+              "might be a more efficient choice.")
+    }
+    if (check_response && any(out$Y > nthres + 1)) {
+      stop2("Number of categories is smaller than the response ",
+            "variable would suggest.")
+    }
+    out$nthres <- nthres
+  }
+  if (is.formula(x$adforms$cat)) {
+    warning2("Addition argument 'cat' is deprecated. Use 'thres' instead. ",
+             "See ?brmsformula for more details.")
+  }
+  
   if (is.formula(x$adforms$se)) {
     se <- eval_rhs(x$adforms$se)
     out$se <- eval2(se$vars$se, data) 
@@ -517,13 +527,14 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
 }
 
 # extract names of response categories
+# @param x a brmsterms object or one that can be coerced to it
+# @param data user specified data
+# @return a vector of category names
 extract_cat_names <- function(x, data) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  stopifnot(is.brmsformula(x) || is.brmsterms(x), has_cat(x))
   respform <- validate_resp_formula(x$formula)
   mr <- model.response(model.frame(respform, data))
-  if (is_ordinal(x) && is.numeric(mr)) {
-    out <- as.character(seq_len(max(mr)))
-  } else if (has_multicol(x)) {
+  if (has_multicol(x)) {
     mr <- as.matrix(mr)
     out <- as.character(colnames(mr))
     if (!length(out)) {
@@ -533,6 +544,42 @@ extract_cat_names <- function(x, data) {
     out <- levels(factor(mr))
   }
   out
+}
+
+# extract names of ordinal thresholds
+# @param x a brmsterms object or one that can be coerced to it
+# @param data user specified data
+# @return a data.frame with columns 'thres' and 'group'
+extract_thres_names <- function(x, data) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
+  if (is.null(x$adforms)) {
+    x$adforms <- parse_ad(x$formula, x$family)
+  }
+  nthres <- get_advalues(x, data, ad = "thres", var = "thres")
+  grthres <- get_advalues(x, data, ad = "thres", var = "gr")
+  if (!is.null(grthres)) {
+    # grouping variable was specified
+    thres <- get_one_value_per_group(nthres, grthres)
+    group <- rep(names(thres), thres)
+    thres <- ulapply(unname(thres), seq_len)
+  } else {
+    # no grouping variable was specified
+    group <- ""
+    if (!is.null(nthres)) {
+      thres <- seq_len(nthres)
+    } else {
+      respform <- validate_resp_formula(x$formula)
+      mr <- model.response(model.frame(respform, data))
+      if (is.numeric(mr)) {
+        thres <- seq_len(max(mr))
+      } else {
+        thres <- seq_along(levels(factor(mr)))
+      }
+      thes <- thres[-length(thres)]
+    }
+    thres <- as.character(thres)
+  }
+  data.frame(thres, group, stringsAsFactors = FALSE)
 }
 
 # coerce censored values into the right format
@@ -632,21 +679,45 @@ trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE,
 # check if the model has group specific ordinal thresholds
 # @param x list with potentail $adforms elements
 # @return TRUE or FALSE
-has_grcat <- function(x) {
-  cat <- x$adforms$cat
-  isTRUE(!is.null(cat) && eval_rhs(cat)$vars$gr != "NA")
+# has_grcat <- function(x) {
+#   cat <- x$adforms$cat
+#   isTRUE(!is.null(cat) && eval_rhs(cat)$vars$gr != "NA")
+# }
+
+has_advar <- function(x, ad, var) {
+  as <- as_one_character(ad)
+  var <- as_one_character(var)
+  ad <- x$adforms[[ad]]
+  isTRUE(!is.null(ad) && eval_rhs(ad)$vars[[var]] != "NA")
 }
 
 # extract variabe for group specific ordinal thresholds
 # @param x list with potentail $adforms elements
 # @param data data passed by the user
 # @return a vector of threshold groups or NULL
-extract_grcat <- function(x, data) {
-  if (!has_grcat(x)) {
+get_advalues <- function(x, ad, var, data) {
+  as <- as_one_character(ad)
+  var <- as_one_character(var)
+  if (!has_advar(x, ad, var)) {
     return(NULL)
   }
-  cat <- eval_rhs(x$adforms$cat)
-  factor(eval2(cat$vars$gr, data))
+  ad <- eval_rhs(x$adforms[[ad]])
+  eval2(ad$vars[[var]], data)
+}
+
+# get a single value per group 
+# @param x vector of values to extract one value per group
+# @param gr vector of grouping values
+# @return a vector of the same length as unique(group)
+get_one_value_per_group <- function(x, gr) {
+  stopifnot(length(x) == length(gr))
+  not_dupl_gr <- !duplicated(gr)
+  gr_unique <- gr[not_dupl_gr]
+  to_order <- order(gr_unique)
+  gr_unique <- gr_unique[to_order] 
+  out <- x[not_dupl_gr][to_order]
+  names(out) <- gr_unique
+  out
 }
 
 # check if addition argument 'subset' ist used in the model

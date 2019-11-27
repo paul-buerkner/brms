@@ -395,7 +395,7 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   if (is_ordinal(bterms$family)) {
     resp <- usc(bterms$resp)
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
+    draws$nthres <- sdata[[paste0("nthres", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       p <- usc(combine_prefix(bterms))
@@ -656,7 +656,7 @@ extract_draws_re <- function(bterms, sdata, draws_ranef,
       Znames <- paste0("Z_", ranef_g_px_cs_1$id, p, "_", ranef_g_px_cs_1$cn) 
       Z <- do_call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (i in seq_len(sdata$ncat - 1)) {
+      for (i in seq_len(sdata$nthres)) {
         index <- paste0("\\[", i, "\\]$")
         # select from all varying effects of that group
         select <- find_rows(ranef_g, ls = px) &
@@ -797,7 +797,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bterms))
   vars <- c(
-    "Y", "trials", "ncat", "se", "weights", 
+    "Y", "trials", "ncat", "nthres", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
   vars <- paste0(vars, resp)
@@ -815,6 +815,9 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   }
   if (has_cat(bterms)) {
     draws$cats <- get_cats(bterms)
+  }
+  if (has_thres(bterms)) {
+    draws$thres <- get_thres(bterms)
   }
   draws
 }

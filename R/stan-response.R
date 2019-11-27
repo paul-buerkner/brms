@@ -13,35 +13,11 @@ stan_response <- function(bterms, data) {
   str_add(out$data) <- glue(
     "  int<lower=1> N{resp};  // number of observations\n"
   )
-  if (has_cat(family) || is.formula(bterms$adforms$cat)) {
-    grcat <- extract_grcat(bterms, data)
-    if (!is.null(grcat)) {
-      str_add(out$data) <- glue(
-        "  int<lower=1> ngrcat{resp};  // number of threshold groups\n",
-        "  int<lower=2> ncat{resp}[ngrcat{resp}];  // number of categories\n",
-        "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
-      )
-      str_add(out$tdata_def) <- glue(
-        "  int<lower=2> nmcat{resp} = prod(ncat{resp});", 
-        "  // total number of thresholds\n",
-        "  int<lower=1> Kthres_start{resp}[ngrcat{resp}];", 
-        "  // start index per threshold group\n",
-        "  int<lower=1> Kthres_end{resp}[ngrcat{resp}];",
-        "  // end index per threshold group\n"
-      )
-      str_add(out$tdata_comp) <- glue(
-        "  Kthres_start{resp}[1] = 1;\n",
-        "  Kthres_end{resp}[1] = ncat{resp}[1] - 1;\n",
-        "  for (i in 2:ngrcat{resp}) {{\n",
-        "    Kthres_start{resp}[i] = Kthres_start{resp}[i-1] + ncat{resp}[i] - 1;\n",
-        "    Kthres_end{resp}[i] = Kthres_end{resp}[i-1] + ncat{resp}[i] - 1;\n",
-        "  }}\n"
-      )
-    } else {
-      str_add(out$data) <- glue(
-        "  int<lower=2> ncat{resp};  // number of categories\n"
-      )
-    }
+  
+  if (has_cat(family)) {
+    str_add(out$data) <- glue(
+      "  int<lower=2> ncat{resp};  // number of categories\n"
+    )
   }
   if (has_multicol(family)) {
     if (rtype == "real") {
@@ -79,6 +55,36 @@ stan_response <- function(bterms, data) {
     str_add(out$data) <- glue(
       "  vector<lower=0>[N{resp}] weights{resp};  // model weights\n" 
     )
+  }
+  if (has_thres(family)) {
+    groups <- get_thres_groups(family)
+    if (any(nzchar(groups))) {
+      str_add(out$data) <- glue(
+        "  int<lower=1> ngrthres{resp};  // number of threshold groups\n",
+        "  int<lower=2> nthres{resp}[ngrthres{resp}];  // number of thresholds\n",
+        "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
+      )
+      str_add(out$tdata_def) <- glue(
+        "  int<lower=2> nmthres{resp} = prod(nthres{resp});", 
+        "  // total number of thresholds\n",
+        "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];", 
+        "  // start index per threshold group\n",
+        "  int<lower=1> Kthres_end{resp}[ngrthres{resp}];",
+        "  // end index per threshold group\n"
+      )
+      str_add(out$tdata_comp) <- glue(
+        "  Kthres_start{resp}[1] = 1;\n",
+        "  Kthres_end{resp}[1] = nthres{resp}[1];\n",
+        "  for (i in 2:ngrthres{resp}) {{\n",
+        "    Kthres_start{resp}[i] = Kthres_end{resp}[i-1] + 1;\n",
+        "    Kthres_end{resp}[i] = Kthres_end{resp}[i-1] + nthres{resp}[i];\n",
+        "  }}\n"
+      )
+    } else {
+      str_add(out$data) <- glue(
+        "  int<lower=2> nthres{resp};  // number of thresholds\n"
+      )
+    }
   }
   if (is.formula(bterms$adforms$se)) {
     str_add(out$data) <- glue(
@@ -205,67 +211,70 @@ stan_thres <- function(bterms, data, prior, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
-  gr <- gri <- ""
-  grcat <- extract_grcat(bterms, data)
-  if (!is.null(grcat)) {
+  gr <- grb <- ""
+  groups <- get_thres_groups(bterms)
+  if (has_thres_groups(bterms)) {
     # include one threshold vector per group
-    gr <- seq_along(levels(grcat))
-    gri <- glue("[{gr}]")
-    gr <- usc(gr)
+    gr <- usc(seq_along(groups))
+    grb <- paste0("[", seq_along(groups), "]")
   }
   if (fix_intercepts(bterms)) {
-    # TODO: handle multiple groups?
     # identify ordinal mixtures by fixing their thresholds to the same values
     if (has_equidistant_thres(family)) {
       stop2("Cannot use equidistant and fixed thresholds at the same time.")
     }
-    str_add(out$tpar_def) <- glue(
+    str_add(out$tpar_def) <- cglue(
       "  // fix thresholds across ordinal mixture components\n",
-      "  {type}[ncat{resp} - 1] Intercept{p} = fixed_Intercept{resp};\n"
+      "  {type}[nthres{resp}{grb}] Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
     )
   } else {
-    thres <- get_thres(bterms)
     if (has_equidistant_thres(family)) {
-      # TODO: handle multiple groups?
       bound <- subset2(prior, class = "delta", ls = px)$bound
-      str_add(out$par) <- glue(
-        "  real Intercept1{p};  // first threshold\n",
-        "  real{bound} delta{p};  // distance between thresholds\n"
+      str_add(out$par) <- cglue(
+        "  real first_Intercept{p}{gr};  // first threshold\n",
+        "  real{bound} delta{p}{gr};  // distance between thresholds\n"
       )
-      str_add(out$tpar_def) <- glue(
+      str_add(out$tpar_def) <- cglue(
         "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp} - 1] Intercept{p};\n"
+        "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
       )
-      str_add(out$tpar_comp) <- glue(
+      str_add(out$tpar_comp) <- cglue(
         "  // compute equidistant thresholds\n",
-        "  for (k in 1:(ncat{resp} - 1)) {{\n",
-        "    Intercept{p}[k] = Intercept1{p}", 
-        " + (k - 1.0) * delta{p};\n",
+        "  for (k in 1:(nthres{resp}{grb})) {{\n",
+        "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}", 
+        " + (k - 1.0) * delta{p}{gr};\n",
         "  }}\n"
       )
-      str_add(out$prior) <- stan_prior(prior, class = "delta", px = px)
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", coef = thres[1], 
-        px = px, suffix = glue("1{p}")
-      )
+      for (i in seq_along(groups)) {
+        str_add(out$prior) <- stan_prior(
+          prior, class = "delta", group = groups[i], 
+          px = px, suffix = gr[i]
+        )
+        str_add(out$prior) <- stan_prior(
+          prior, class = "Intercept", group = groups[i], 
+          px = px, prefix = "first_", suffix = glue("{p}{gr[i]}")
+        )
+      }
     } else {
       str_add(out$par) <- cglue(
         "  // temporary thresholds for centered predictors\n",
-        "  {type}[ncat{resp}{gri} - 1] Intercept{p}{gr};\n"
+        "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", coef = thres, 
-        px = px, suffix = glue("{p}{gr}")
-      )
+      for (i in seq_along(groups)) {
+        str_add(out$prior) <- stan_prior(
+          prior, class = "Intercept", group = groups[i], 
+          coef = get_thres(bterms, group = groups[i]), 
+          px = px, suffix = glue("{p}{gr[i]}")
+        )
+      }
     }
   }
-  if (!is.null(grcat)) {
+  if (has_thres_groups(bterms)) {
     # merge all group specific thresholds into one vector
-    # merged_Intercept <- glue("Intercept{p}{gr}", collapse = " ")
     str_add(out$model_def) <- glue(
-      "  vector[nmcat{resp}] merged_Intercept{p};  // merged thresholds\n"
+      "  vector[nmthres{resp}] merged_Intercept{p};  // merged thresholds\n"
     )
-    grj <- seq_along(gr)
+    grj <- seq_along(groups)
     grj <- glue("Kthres_start{resp}[{grj}]:Kthres_end{resp}[{grj}]")
     str_add(out$model_comp_basic) <- cglue(
       "  merged_Intercept{p}[{grj}] = Intercept{p}{gr};\n"
@@ -280,7 +289,7 @@ stan_thres <- function(bterms, data, prior, ...) {
   }
   str_add(out$gen_def) <- glue(
     "  // compute actual thresholds\n",
-    "  vector[ncat{resp}{gri} - 1] b{p}_Intercept{gr}",  
+    "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",  
     " = Intercept{p}{gr}{sub_X_means};\n" 
   )
   out
@@ -318,7 +327,7 @@ stan_bhaz <- function(bterms, prior, ...) {
 }
 
 # Stan code specific to mixture families
-stan_mixture <- function(bterms, prior) {
+stan_mixture <- function(bterms, data, prior) {
   out <- list()
   if (!is.mixfamily(bterms$family)) {
     return(out)
@@ -384,15 +393,25 @@ stan_mixture <- function(bterms, prior) {
   if (fix_intercepts(bterms)) {
     # identify ordinal mixtures by fixing their thresholds to the same values
     stopifnot(is_ordinal(bterms))
+    gr <- grb <- ""
+    groups <- get_thres_groups(bterms)
+    if (has_thres_groups(bterms)) {
+      # include one threshold vector per group
+      gr <- usc(seq_along(groups))
+      grb <- paste0("[", seq_along(groups), "]")
+    }
     type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
-    str_add(out$par) <- glue( 
+    str_add(out$par) <- cglue( 
       "  // thresholds fixed over mixture components\n",
-      "  {type}[ncat{p} - 1] fixed_Intercept{p};\n"
+      "  {type}[nthres{p}{grb}] fixed_Intercept{p}{gr};\n"
     )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "Intercept", coef = get_thres(bterms), 
-      px = px, prefix = "fixed_", suffix = p
-    )
+    for (i in seq_along(groups)) {
+      str_add(out$prior) <- stan_prior(
+        prior, class = "Intercept", px = px,  
+        coef = get_thres(bterms, group = groups[i]), 
+        prefix = "fixed_", suffix = glue("{p}{gr[i]}")
+      )
+    }
   }
   out
 }
@@ -426,12 +445,12 @@ stan_ordinal_lpmf <- function(family, link) {
   # define the function body
   if (family == "cumulative") {
     str_add(out) <- glue(
-      "     int ncat = num_elements(thres) + 1;\n",
+      "     int nthres = num_elements(thres);\n",
       "     real p;\n",
       "     if (y == 1) {{\n",
       "       p = {ilink}({th(1)});\n",
-      "     }} else if (y == ncat) {{\n",
-      "       p = 1 - {ilink}({th('ncat - 1')});\n",
+      "     }} else if (y == nthres + 1) {{\n",
+      "       p = 1 - {ilink}({th('nthres')});\n",
       "     }} else {{\n",
       "       p = {ilink}({th('y')}) -\n",
       "           {ilink}({th('y - 1')});\n",
@@ -442,18 +461,18 @@ stan_ordinal_lpmf <- function(family, link) {
   } else if (family %in% c("sratio", "cratio")) {
     sc <- str_if(family == "sratio", "1 - ")
     str_add(out) <- glue(
-      "     int ncat = num_elements(thres) + 1;\n",
-      "     vector[ncat] p;\n",
-      "     vector[ncat - 1] q;\n",
+      "     int nthres = num_elements(thres);\n",
+      "     vector[nthres + 1] p;\n",
+      "     vector[nthres] q;\n",
       "     int k = 1;\n",
-      "     while (k <= min(y, ncat - 1)) {{\n",
+      "     while (k <= min(y, nthres)) {{\n",
       "       q[k] = {sc}{ilink}({th('k')});\n",
       "       p[k] = 1 - q[k];\n",
       "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n", 
       "       k += 1;\n",
       "     }}\n",
-      "     if (y == ncat) {{\n",
-      "       p[ncat] = prod(q);\n",
+      "     if (y == nthres + 1) {{\n",
+      "       p[nthres + 1] = prod(q);\n",
       "     }}\n",
       "     return log(p[y]);\n",
       "   }}\n"
@@ -461,10 +480,10 @@ stan_ordinal_lpmf <- function(family, link) {
   } else if (family == "acat") {
     if (ilink == "inv_logit") {
       str_add(out) <- glue(
-        "     int ncat = num_elements(thres) + 1;\n",
-        "     vector[ncat] p;\n",
+        "     int nthres = num_elements(thres);\n",
+        "     vector[nthres + 1] p;\n",
         "     p[1] = 0.0;\n",
-        "     for (k in 1:(ncat - 1)) {{\n",
+        "     for (k in 1:(nthres)) {{\n",
         "       p[k + 1] = p[k] + {th('k')};\n",
         "     }}\n",
         "     p = exp(p);\n",
@@ -473,15 +492,15 @@ stan_ordinal_lpmf <- function(family, link) {
       )
     } else {
       str_add(out) <- glue(   
-        "     int ncat = num_elements(thres) + 1;\n",
-        "     vector[ncat] p;\n",
-        "     vector[ncat - 1] q;\n",
-        "     for (k in 1:(ncat - 1))\n",
+        "     int nthres = num_elements(thres);\n",
+        "     vector[nthres + 1] p;\n",
+        "     vector[nthres] q;\n",
+        "     for (k in 1:(nthres))\n",
         "       q[k] = {ilink}({th('k')});\n",
-        "     for (k in 1:ncat) {{\n",     
+        "     for (k in 1:(nthres + 1)) {{\n",     
         "       p[k] = 1.0;\n",
         "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
-        "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]);\n",   
+        "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",   
         "     }}\n",
         "     return log(p[y] / sum(p));\n",
         "   }}\n"

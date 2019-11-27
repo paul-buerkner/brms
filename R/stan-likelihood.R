@@ -579,7 +579,7 @@ stan_llh_cox <- function(bterms, resp = "", mix = "") {
 stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
   simplify <- bterms$family$link == "logit" && 
     !"disc" %in% names(bterms$dpars) && 
-    !has_cs(bterms) && !has_grcat(bterms)
+    !has_cs(bterms) && !has_thres_groups(bterms)
   if (simplify) {
     prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
     p <- stan_llh_dpars(bterms, TRUE, resp, mix)
@@ -630,16 +630,16 @@ stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
   lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
-  if (has_grcat(bterms)) {
+  if (has_thres_groups(bterms)) {
     str_add(lpdf) <- "_merged"
-    p$Jthres <- "Jthres[n]"
+    p$Jthres <- paste0("Jthres", resp, "[n]")
     p$thres <- "merged_Intercept"
   } else {
     p$thres <- "Intercept"
   }
   p$thres <- paste0(p$thres, prefix)
   if (has_cs(bterms)) {
-    if (has_grcat(bterms)) {
+    if (has_thres_groups(bterms)) {
       stop2("Cannot use category specific effects ", 
             "in models with multiple thresholds.")
     }

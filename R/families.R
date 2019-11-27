@@ -456,6 +456,9 @@ combine_family_info <- function(x, y, ...) {
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)
+  } else if (y == "thres") {
+    # thresholds are the same across mixture components
+    x <- x[[1]]
   }
   x
 }
@@ -1468,8 +1471,12 @@ has_trials <- function(family) {
 
 # indicate if family has more than two response categories
 has_cat <- function(family) {
-  is_categorical(family) || is_ordinal(family) || 
-    is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+# indicate if family has thresholds
+has_thres <- function(family) {
+  is_ordinal(family)
 }
 
 # indicate if family has equidistant thresholds
@@ -1493,17 +1500,29 @@ has_eta_minus_thres <- function(family) {
 }
 
 # get names of response categories
+# @param group name of a group for which to extract categories
 get_cats <- function(family) {
   family_info(family, "cats")
 }
 
 # get names of ordinal thresholds for prior specification
-get_thres <- function(family) {
-  if (!is_ordinal(family)) {
-    return(NULL)
-  }
-  out <- seq_along(get_cats(family))
-  out[-length(out)]
+# @param group name of a group for which to extract categories
+get_thres <- function(family, group = "") {
+  group <- as_one_character(group)
+  thres <- family_info(family, "thres")
+  subset2(thres, group = group)$thres
+}
+
+# get group names of ordinal thresholds
+get_thres_groups <- function(family) {
+  thres <- family_info(family, "thres")
+  unique(thres$group)
+}
+
+# has the model group specific thresholds?
+has_thres_groups <- function(family) {
+  groups <- get_thres_groups(family)
+  any(nzchar(groups))
 }
 
 has_ndt <- function(family) {

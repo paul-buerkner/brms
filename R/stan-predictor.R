@@ -143,7 +143,7 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   }
   out <- collapse_lists(ls = out)
   str_add_list(out) <- stan_autocor(x, prior = prior)
-  str_add_list(out) <- stan_mixture(x, prior = prior)
+  str_add_list(out) <- stan_mixture(x, data = data, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
   out
 }
@@ -753,12 +753,12 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
     )
     bound <- get_bound(prior, class = "b", px = px)
     str_add(out$par) <- glue(
-      "  matrix{bound}[Kcs{p}, ncat{resp} - 1] bcs{p};",
+      "  matrix{bound}[Kcs{p}, nthres{resp}] bcs{p};",
       "  // category specific effects\n"
     )
     str_add(out$model_def) <- glue(
       "  // linear predictor for category specific effects\n",
-      "  matrix[N{resp}, ncat{resp} - 1] mucs{p} = Xcs{p} * bcs{p};\n"
+      "  matrix[N{resp}, nthres{resp}] mucs{p} = Xcs{p} * bcs{p};\n"
     ) 
     str_add(out$prior) <- stan_prior(
       prior, class = "b", coef = csef,
@@ -770,15 +770,15 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
       # only group-level category specific effects present
       str_add(out$model_def) <- glue(
         "  // linear predictor for category specific effects\n",               
-        "  matrix[N{resp}, ncat{resp} - 1] mucs{p}", 
-        " = rep_matrix(0, N{resp}, ncat{resp} - 1);\n"
+        "  matrix[N{resp}, nthres{resp}] mucs{p}", 
+        " = rep_matrix(0, N{resp}, nthres{resp});\n"
       )
     }
-    cats_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
-    cats <- get_matches(cats_regex, ranef$coef, perl = TRUE)
-    ncatM1 <- max(as.numeric(cats))
+    thres_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
+    thres <- get_matches(thres_regex, ranef$coef, perl = TRUE)
+    nthres <- max(as.numeric(thres))
     mucs_loop <- ""
-    for (i in seq_len(ncatM1)) {
+    for (i in seq_len(nthres)) {
       r_cat <- ranef[grepl(glue("\\[{i}\\]$"), ranef$coef), ]
       str_add(mucs_loop) <- glue(
         "    mucs{p}[n, {i}] = mucs{p}[n, {i}]"
@@ -1705,7 +1705,7 @@ stan_eta_rsp <- function(r) {
 stan_eta_transform <- function(family, cens_or_trunc = FALSE) {
   transeta <- "transeta" %in% family_info(family, "specials")
   no_transform <- family$link == "identity" && !transeta || 
-    has_cat(family) && !is.customfamily(family)
+    (has_cat(family) || has_thres(family)) && !is.customfamily(family)
   !no_transform && !stan_has_built_in_fun(family, cens_or_trunc)
 }
 

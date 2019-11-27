@@ -650,7 +650,7 @@ conditional_effects_internal.brmsterms <- function(
     if (method != "fitted") {
       stop2("Can only use 'categorical' with method = 'fitted'.")
     }
-    if (!has_cat(x)) {
+    if (!(has_cat(x) || is_ordinal(x))) {
       stop2("Argument 'categorical' may only be used ", 
             "for categorical or ordinal models.")
     }

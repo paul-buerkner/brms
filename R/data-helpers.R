@@ -452,14 +452,15 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   for (nlp in names(x$nlpars)) {
     out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
-  if (has_trials(x$family) || has_cat(x$family)) {
-    # trials and ncat should not be computed based on new data
+  if (has_trials(x$family) || has_cat(x$family) || has_thres(x$family)) {
+    # trials, ncat, and nthres should not be computed based on new data
     data_response <- data_response(
       x, data, check_response = FALSE, not4stan = TRUE
     )
     # partially match via $ to be independent of the response suffix
     out$trials <- data_response$trials
     out$ncat <- data_response$ncat
+    out$ncat <- data_response$nthres
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))

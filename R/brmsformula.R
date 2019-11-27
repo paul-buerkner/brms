@@ -1219,10 +1219,14 @@ validate_formula.brmsformula <- function(
     if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
       stop2("Cannot remove the intercept in an ordinal model.")
     }
+    if (is.null(get_thres(out)) && !is.null(data)) {
+      # for easy access of thresholds
+      out$family$thres <- extract_thres_names(out, data)  
+    }
     if (is.mixfamily(out$family)) {
       # every mixture family needs to know about response categories
       for (i in seq_along(out$family$mix)) {
-        out$family$mix[[i]]$cats <- out$family$cats
+        out$family$mix[[i]]$thres <- out$family$thres
       }
     }
   }

@@ -1925,7 +1925,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  if (has_cat(family(object, resp = resp))) {
+  family <- family(object, resp = resp)
+  if (has_cat(family) || is_ordinal(family)) {
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
   subset <- subset_samples(object, subset, nsamples)

@@ -61,14 +61,6 @@ test_that("nlist works correctly", {
   expect_equal(nlist(x = x, y), exlist)
 })
 
-test_that("convenience functions for model families work correctly", {
-  expect_true(use_real(gaussian()))
-  expect_true(!use_real("poisson"))
-  expect_true(use_int(binomial()))
-  expect_true(has_trials("zero_inflated_binomial"))
-  expect_true(has_cat("acat"))
-})
-
 test_that("use_alias works correctly", {
   a <- 2
   b <- 3

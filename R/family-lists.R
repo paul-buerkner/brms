@@ -313,7 +313,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "ordered_thres", "thres_minus_eta")
   )
 }
@@ -326,7 +326,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "thres_minus_eta")
   )
 }
@@ -339,7 +339,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
@@ -352,7 +352,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
@@ -459,8 +459,8 @@
 
 .family_custom <- function() {
   list(
-    ad = c("weights", "subset", "se", "cens", "trunc",
-           "trials", "cat", "dec", "mi", "vreal", "vint"),
+    ad = c("weights", "subset", "se", "cens", "trunc", "trials", 
+           "thres", "cat", "dec", "mi", "vreal", "vint"),
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }
