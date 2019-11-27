@@ -155,10 +155,11 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
     if (is.mixfamily(x$family)) {
       mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
       for (mu in mu_pars) {
-        draws$thres[[mu]] <- extract_draws_thres(x$dpars[[mu]], samples, ...)
+        draws$thres[[mu]] <- 
+          extract_draws_thres(x$dpars[[mu]], samples, sdata, ...)
       }
     } else {
-      draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
+      draws$thres <- extract_draws_thres(x$dpars$mu, samples, sdata, ...)
     }
   }
   if (is_cox(x$family)) {
@@ -696,13 +697,18 @@ extract_draws_offset <- function(bterms, sdata, ...) {
 }
 
 # extract draws of ordinal thresholds
-extract_draws_thres <- function(bterms, samples, ...) {
+extract_draws_thres <- function(bterms, samples, sdata, ...) {
+  draws <- list()
   if (!is_ordinal(bterms$family)) {
-    return(NULL)
+    return(draws)
   }
+  resp <- usc(bterms$resp)
+  draws$nthres <- sdata[[paste0("nthres", resp)]]
+  draws$Jthres <- sdata[[paste0("Jthres", resp)]]
   p <- usc(combine_prefix(bterms))
-  int_regex <- paste0("^b", p, "_Intercept\\[")
-  get_samples(samples, int_regex)
+  regex <- paste0("^b", p, "_Intercept\\[")
+  draws$thres <- get_samples(samples, regex)
+  draws
 }
 
 # extract draws of baseline functions for the cox model
@@ -815,9 +821,6 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   }
   if (has_cat(bterms)) {
     draws$cats <- get_cats(bterms)
-  }
-  if (has_thres(bterms)) {
-    draws$thres <- get_thres(bterms)
   }
   draws
 }

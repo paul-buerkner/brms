@@ -590,14 +590,15 @@ log_lik_dirichlet <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_cumulative <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (draws$thres - mu)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (thres - mu)
   y <- draws$data$Y[i]
   if (y == 1) { 
     out <- log(ilink(eta[, 1], draws$family$link))
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- log(1 - ilink(eta[, y - 1], draws$family$link)) 
   } else {
     out <- log(
@@ -609,19 +610,20 @@ log_lik_cumulative <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_sratio <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (draws$thres - mu)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (thres - mu)
   y <- draws$data$Y[i]
-  q <- sapply(seq_len(min(y, ncat - 1)), 
+  q <- sapply(seq_len(min(y, nthres)), 
     function(k) 1 - ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
   } else if (y == 2) {
     out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- rowSums(log(q))
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
@@ -630,19 +632,20 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_cratio <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (mu - draws$thres)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (mu - thres)
   y <- draws$data$Y[i]
-  q <- sapply(seq_len(min(y, ncat - 1)), 
+  q <- sapply(seq_len(min(y, nthres)), 
     function(k) ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1])
   }  else if (y == 2) {
     out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- rowSums(log(q))
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
@@ -651,30 +654,32 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_acat <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (mu - draws$thres)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (mu - thres)
   y <- draws$data$Y[i]
   if (draws$family$link == "logit") { # more efficient calculation 
-    q <- sapply(1:(ncat - 1), function(k) eta[, k])
+    q <- sapply(1:nthres, function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
-               matrix(0, nrow = nrow(eta), ncol = ncat - 2))
-    if (ncat > 2) {
-      p[, 3:ncat] <- sapply(3:ncat, function(k) rowSums(q[, 1:(k - 1)]))
+               matrix(0, nrow = nrow(eta), ncol = nthres - 1))
+    if (nthres > 1L) {
+      p[, 3:(nthres + 1)] <- 
+        sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
     }
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
-    q <- sapply(1:(ncat - 1), function(k) 
+    q <- sapply(1:nthres, function(k) 
       ilink(eta[, k], draws$family$link))
-    p <- cbind(apply(1 - q[, 1:(ncat - 1)], 1, prod), 
-               matrix(0, nrow = nrow(eta), ncol = ncat - 1))
-    if (ncat > 2) {
-      p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), function(k) 
+    p <- cbind(apply(1 - q[, 1:nthres], 1, prod), 
+               matrix(0, nrow = nrow(eta), ncol = nthres))
+    if (nthres > 1L) {
+      p[, 2:nthres] <- sapply(2:nthres, function(k) 
         apply(as.matrix(q[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - q[, k:(ncat - 1)]), 1, prod))
+          apply(as.matrix(1 - q[, k:nthres]), 1, prod))
     }
-    p[, ncat] <- apply(q[, 1:(ncat - 1)], 1, prod)
+    p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
   }
   log_lik_weight(out, i = i, draws = draws)

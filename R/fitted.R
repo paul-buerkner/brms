@@ -352,21 +352,27 @@ fitted_mixture <- function(draws) {
 # compute 'fitted' for ordinal models
 fitted_ordinal <- function(draws) {
   dens <- get(paste0("d", draws$family$family), mode = "function")
-  args <- list(
-    seq_len(draws$data$ncat), 
-    thres = draws$thres,
-    link = draws$family$link
-  )
+  ncat_max <- max(draws$data$nthres) + 1
+  nact_min <- min(draws$data$nthres) + 1
+  zero_mat <- matrix(0, nrow = draws$nsamples, ncol = ncat_max - nact_min)
+  args <- list(link = draws$family$link)
   out <- vector("list", draws$nobs)
   for (i in seq_along(out)) {
     args_i <- args
     args_i$eta <- extract_col(draws$dpars$mu, i)
     args_i$disc <- extract_col(draws$dpars$disc, i)
+    args_i$thres <- subset_thres(draws, i)
+    ncat_i <- NCOL(args_i$thres) + 1
+    args_i$x <- seq_len(ncat_i)
     out[[i]] <- do_call(dens, args_i)
+    if (ncat_i < ncat_max) {
+      sel <- seq_len(ncat_max - ncat_i)
+      out[[i]] <- cbind(out[[i]], zero_mat[, sel])
+    }
   }
   out <- abind(out, along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$data$cats
+  dimnames(out)[[3]] <- seq_len(ncat_max)
   out
 }
 

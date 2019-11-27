@@ -560,7 +560,8 @@ extract_thres_names <- function(x, data) {
   if (!is.null(grthres)) {
     # grouping variable was specified
     thres <- get_one_value_per_group(nthres, grthres)
-    group <- rep(names(thres), thres)
+    group <- rename(names(thres))
+    group <- rep(group, thres)
     thres <- ulapply(unname(thres), seq_len)
   } else {
     # no grouping variable was specified
