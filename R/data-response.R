@@ -152,49 +152,48 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       if (is_multinomial(x$family)) {
         stop2("Specifying 'trials' is required in multinomial models.")
       }
-      out$trials <- round(max(out$Y, na.rm = TRUE))
-      if (isTRUE(is.finite(out$trials))) {
+      trials <- round(max(out$Y, na.rm = TRUE))
+      if (isTRUE(is.finite(trials))) {
         message("Using the maximum response value as the number of trials.")
         warning2(
           "Using 'binomial' families without specifying 'trials' ", 
           "on the left-hand side of the model formula is deprecated."
         )
       } else if (!is.null(old_sdata$trials)) {
-        out$trials <- max(old_sdata$trials)
+        trials <- max(old_sdata$trials)
       } else {
         stop2("Could not compute the number of trials.")
       }
     } else if (is.formula(x$adforms$trials)) {
-      trials <- eval_rhs(x$adforms$trials)
-      out$trials <- eval2(trials$vars$trials, data)
-      if (!is.numeric(out$trials)) {
+      trials <- get_ad_values(x, "trials", "trials", data)
+      if (!is.numeric(trials)) {
         stop2("Number of trials must be numeric.")
       }
-      if (any(!is_wholenumber(out$trials) | out$trials < 1)) {
+      if (any(!is_wholenumber(trials) | trials < 1)) {
         stop2("Number of trials must be positive integers.")
       }
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
-    if (length(out$trials) == 1L) {
-      out$trials <- rep(out$trials, nrow(data))
+    if (length(trials) == 1L) {
+      trials <- rep(trials, nrow(data))
     }
     if (check_response) {
       if (is_multinomial(x$family)) {
-        if (!is_equal(rowSums(out$Y), out$trials)) {
+        if (!is_equal(rowSums(out$Y), trials)) {
           stop2("Number of trials does not match the number of events.")
         }
       } else if (has_trials(x$family)) {
-        if (max(out$trials) == 1L && !not4stan) {
+        if (max(trials) == 1L && !not4stan) {
           message("Only 2 levels detected so that family 'bernoulli' ",
                   "might be a more efficient choice.")
         }
-        if (any(out$Y > out$trials)) {
+        if (any(out$Y > trials)) {
           stop2("Number of trials is smaller than the number of events.")
         }
       }
     }
-    out$trials <- as.array(out$trials)
+    out$trials <- as.array(trials)
   }
   if (has_cat(x$family)) {
     ncat <- length(get_cats(x$family))
@@ -214,60 +213,35 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     out$ncat <- ncat
   }
   if (has_thres(x$family)) {
-    if (is.formula(x$adforms$thres)) {
-      nthres <- get_advalues(x, "thres", "thres", data)
-      groups <- get_thres_groups(x$family)
-      if (any(nzchar(groups))) {
-        # TODO: add variable to get_group_vars()
-        # TODO: handle new data
-        # TODO: expect nthres to be a variable or named vector? #675
-        grthres <- factor(get_advalues(x, "thres", "gr", data))
-        grthres_levels <- levels(grthres)
-        out$ngrthres <- length(grthres_levels)
-        if (length(nthres) == 1L) {
-          nthres <- rep(nthres, length(grthres))
-        }
-        if (length(nthres) != length(grthres)) {
-          stop2("Variables passed to 'thres' need to be of the same length.")
-        }
-        for (l in grthres_levels) {
-          # validate values of the same level
-          take <- grthres %in% l
-          if (length(unique(nthres[take])) > 1L) {
-            stop2(
-              "Number of response thresegories should be ", 
-              "unique for each group. Occured for level '", 
-              grthres_levels[l], "' of group '", thres$vars$gr, "'."
-            )
-          }
-        }
-        # create an matrix of threshold indices per observation
-        Jgrthres <- match(grthres, grthres_levels)
-        nthres <- unname(get_one_value_per_group(nthres, Jgrthres))
-        Kthres_cumsum <- cumsum(nthres)
-        Kthres_start <- c(1, Kthres_cumsum[-length(nthres)] + 1)
-        Kthres_end <- Kthres_cumsum
-        Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, ]
-        out$Jthres <- Jthres
-      } else {
-        nthres <- as_one_numeric(nthres)
-        if (!is_wholenumber(nthres) || nthres < 1L) {
-          stop2("Number of categories must be a positive integer.")
-        }
+    thres <- family_info(x, "thres")
+    if (has_thres_groups(x$family)) {
+      groups <- get_thres_groups(x)
+      out$ngrthres <- length(groups)
+      grthres <- get_ad_values(x, "thres", "gr", data)
+      grthres <- factor(grthres, levels = groups)
+      # create an matrix of threshold indices per observation
+      Jgrthres <- match(grthres, groups)
+      nthres <- as.array(rep(NA, length(groups)))
+      for (i in seq_along(groups)) {
+        nthres[i] <- max(subset2(thres, group = groups[i])$thres)
       }
+      if (check_response && any(out$Y > nthres[Jgrthres] + 1)) {
+        stop2("Number of thresholds is smaller than required by the response.")
+      }
+      Kthres_cumsum <- cumsum(nthres)
+      Kthres_start <- c(1, Kthres_cumsum[-length(nthres)] + 1)
+      Kthres_end <- Kthres_cumsum
+      Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, ]
+      out$Jthres <- Jthres
     } else {
-      nthres <- NROW(get_thres(x$family))
+      nthres <- max(thres$thres)
+      if (check_response && any(out$Y > nthres + 1)) {
+        stop2("Number of thresholds is smaller than required by the response.")
+      }
     }
-    if (min(nthres) < 1L) {
-      stop2("At least two response categories are required.")
-    }
-    if (nthres == 2L && !not4stan) {
+    if (max(nthres) == 1L && !not4stan) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
-    }
-    if (check_response && any(out$Y > nthres + 1)) {
-      stop2("Number of categories is smaller than the response ",
-            "variable would suggest.")
     }
     out$nthres <- nthres
   }
@@ -277,60 +251,55 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
   }
   
   if (is.formula(x$adforms$se)) {
-    se <- eval_rhs(x$adforms$se)
-    out$se <- eval2(se$vars$se, data) 
-    if (!is.numeric(out$se)) {
+    se <- get_ad_values(x, "se", "se", data)
+    if (!is.numeric(se)) {
       stop2("Standard errors must be numeric.")
     }
-    if (min(out$se) < 0) {
+    if (min(se) < 0) {
       stop2("Standard errors must be non-negative.")
     }
-    out$se <- as.array(out$se)
+    out$se <- as.array(se)
   }
   if (is.formula(x$adforms$weights)) {
-    weights <- eval_rhs(x$adforms$weights)
-    out$weights <- eval2(weights$vars$weights, data)  
-    if (!is.numeric(out$weights)) {
+    weights <- get_ad_values(x, "weights", "weights", data)
+    if (!is.numeric(weights)) {
       stop2("Weights must be numeric.")
     }
-    if (min(out$weights) < 0) {
+    if (min(weights) < 0) {
       stop2("Weights must be non-negative.")
     }
-    if (weights$flags$scale) {
-      out$weights <- out$weights / sum(out$weights) * length(out$weights)
+    if (get_ad_flag(x, "weights", "scale")) {
+      weights <- weights / sum(weights) * length(weights)
     }
-    out$weights <- as.array(out$weights)
+    out$weights <- as.array(weights)
   }
   if (is.formula(x$adforms$dec)) {
-    dec <- eval_rhs(x$adforms$dec)
-    out$dec <- eval2(dec$vars$dec, data)
-    if (is.character(out$dec) || is.factor(out$dec)) {
-      if (!all(unique(out$dec) %in% c("lower", "upper"))) {
+    dec <- get_ad_values(x, "dec", "dec", data)
+    if (is.character(dec) || is.factor(dec)) {
+      if (!all(unique(dec) %in% c("lower", "upper"))) {
         stop2("Decisions should be 'lower' or 'upper' ",
               "when supplied as characters or factors.")
       }
-      out$dec <- ifelse(out$dec == "lower", 0, 1)
+      dec <- ifelse(dec == "lower", 0, 1)
     } else {
-      out$dec <- as.numeric(as.logical(out$dec))
+      dec <- as.numeric(as.logical(dec))
     }
-    out$dec <- as.array(out$dec)
+    out$dec <- as.array(dec)
   }
   if (is.formula(x$adforms$rate)) {
-    rate <- eval_rhs(x$adforms$rate)
-    out$denom <- eval2(rate$vars$denom, data)
-    if (!is.numeric(out$denom)) {
+    denom <- get_ad_values(x, "rate", "denom", data)
+    if (!is.numeric(denom)) {
       stop2("Rate denomiators should be numeric.")
     }
-    if (isTRUE(any(out$denom <= 0))) {
+    if (isTRUE(any(denom <= 0))) {
       stop2("Rate denomiators should be positive.")
     }
-    out$denom <- as.array(out$denom)
+    out$denom <- as.array(denom)
   }
   if (is.formula(x$adforms$cens) && check_response) {
-    cens <- eval_rhs(x$adforms$cens)
-    out$cens <- eval2(cens$vars$cens, data)
-    out$cens <- as.array(prepare_cens(out$cens))
-    if (!all(is_wholenumber(out$cens) & out$cens %in% -1:2)) {
+    cens <- get_ad_values(x, "cens", "cens", data)
+    cens <- prepare_cens(cens)
+    if (!all(is_wholenumber(cens) & cens %in% -1:2)) {
       stop2(
         "Invalid censoring data. Accepted values are ",
         "'left', 'none', 'right', and 'interval'\n",
@@ -339,12 +308,13 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         "and refer to 'right' and 'none' respectively."
       )
     }
-    icens <- out$cens %in% 2
+    out$cens <- as.array(cens)
+    icens <- cens %in% 2
     if (any(icens)) {
-      if (cens$vars$y2 == "NA") {
+      y2 <- unname(get_ad_values(x, "cens", "y2", data))
+      if (is.null(y2)) {
         stop2("Argument 'y2' is required for interval censored data.")
       }
-      y2 <- unname(eval2(cens$vars$y2, data))
       if (any(out$Y[icens] >= y2[icens])) {
         stop2("Left censor points must be smaller than right ",
               "censor points for interval censored data.")
@@ -354,25 +324,26 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
     }
   }
   if (is.formula(x$adforms$trunc)) {
-    trunc <- eval_rhs(x$adforms$trunc)
-    out$lb <- as.numeric(eval2(trunc$vars$lb, data))
-    out$ub <- as.numeric(eval2(trunc$vars$ub, data))
-    if (any(out$lb >= out$ub)) {
+    lb <- as.numeric(get_ad_values(x, "trunc", "lb", data))
+    ub <- as.numeric(get_ad_values(x, "trunc", "ub", data))
+    if (any(lb >= ub)) {
       stop2("Truncation bounds are invalid: lb >= ub")
     }
-    if (length(out$lb) == 1L) {
-      out$lb <- rep(out$lb, N)
+    if (length(lb) == 1L) {
+      lb <- rep(lb, N)
     }
-    if (length(out$ub) == 1L) {
-      out$ub <- rep(out$ub, N)
+    if (length(ub) == 1L) {
+      ub <- rep(ub, N)
     }
-    if (length(out$lb) != N || length(out$ub) != N) {
+    if (length(lb) != N || length(ub) != N) {
       stop2("Invalid truncation bounds.")
     }
-    inv_bounds <- out$Y < out$lb | out$Y > out$ub
+    inv_bounds <- out$Y < lb | out$Y > ub
     if (check_response && isTRUE(any(inv_bounds))) {
       stop2("Some responses are outside of the truncation bounds.")
     }
+    out$lb <- lb
+    out$ub <- ub
   }
   if (is.formula(x$adforms$mi)) {
     sdy <- get_sdy(x, data)
@@ -555,13 +526,30 @@ extract_thres_names <- function(x, data) {
   if (is.null(x$adforms)) {
     x$adforms <- parse_ad(x$formula, x$family)
   }
-  nthres <- get_advalues(x, data, ad = "thres", var = "thres")
-  grthres <- get_advalues(x, data, ad = "thres", var = "gr")
+  nthres <- get_ad_values(x, "thres", "thres", data)
+  if (any(!is_wholenumber(nthres) | nthres < 1L)) {
+    stop2("Number of thresholds must be a positive integer.")
+  }  
+  grthres <- get_ad_values(x, "thres", "gr", data)
   if (!is.null(grthres)) {
     # grouping variable was specified
+    if (!is_like_factor(grthres)) {
+      stop2("Variable 'gr' in 'thres' needs to be factor-like.")
+    }
+    grthres <- factor(grthres)
+    group <- levels(grthres)
+    if (length(nthres) == 1L) {
+      nthres <- rep(nthres, NROW(data))
+    }
+    for (g in group) {
+      # validate values of the same level
+      take <- grthres %in% g
+      if (length(unique(nthres[take])) > 1L) {
+        stop2("Number of thresholds should be unique for each group.")
+      }
+    }
     thres <- get_one_value_per_group(nthres, grthres)
-    group <- rename(names(thres))
-    group <- rep(group, thres)
+    group <- rep(rename(group), thres)
     thres <- ulapply(unname(thres), seq_len)
   } else {
     # no grouping variable was specified
@@ -576,9 +564,8 @@ extract_thres_names <- function(x, data) {
       } else {
         thres <- seq_along(levels(factor(mr)))
       }
-      thes <- thres[-length(thres)]
+      thres <- thres[-length(thres)]
     }
-    thres <- as.character(thres)
   }
   data.frame(thres, group, stringsAsFactors = FALSE)
 }

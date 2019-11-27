@@ -68,10 +68,7 @@ make_standata <- function(formula, data, family = gaussian(),
     not4stan = not4stan, old_sdata = control$old_sdata
   )
   if (!only_response) {
-    ranef <- tidy_ranef(
-      bterms, data, old_levels = control$old_levels,
-      old_sdata = control$old_sdata  
-    )
+    ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
       not4stan = not4stan, old_sdata = control$old_sdata

@@ -248,7 +248,7 @@ validate_newdata <- function(
   only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
   # always require 'dec' variables to be specified
-  dec_vars <- get_advars(bterms, "dec")
+  dec_vars <- get_ad_vars(bterms, "dec")
   missing_resp <- setdiff(c(only_resp, dec_vars), names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
@@ -259,11 +259,11 @@ validate_newdata <- function(
     }
   }
   # censoring and weighting vars are unused in post-processing methods
-  cens_vars <- get_advars(bterms, "cens")
+  cens_vars <- get_ad_vars(bterms, "cens")
   for (v in setdiff(cens_vars, names(newdata))) {
     newdata[[v]] <- 0
   }
-  weights_vars <- get_advars(bterms, "weights")
+  weights_vars <- get_ad_vars(bterms, "weights")
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
@@ -474,8 +474,6 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     )
     # partially match via $ to be independent of the response suffix
     out$trials <- data_response$trials
-    out$ncat <- data_response$ncat
-    out$ncat <- data_response$nthres
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))

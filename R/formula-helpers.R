@@ -130,7 +130,10 @@ resp_cat <- function(x) {
   # number of thresholds = number of response categories - 1
   thres <- deparse(substitute(x))
   str_add(thres) <- " - 1"
-  class_resp_special("thres", call = match.call(), vars = nlist(thres, gr = NA))
+  class_resp_special(
+    "thres", call = match.call(), 
+    vars = nlist(thres, gr = "NA")
+  )
 }
 
 #' @rdname addition-terms

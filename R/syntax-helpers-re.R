@@ -293,8 +293,6 @@ get_re.btl <- function(x, ...) {
 # @param data data.frame containing all model variables
 # @param all include REs of all parameters?
 # @param old_levels optional original levels of the grouping factors
-# @param old_sdata optional; see 'extract_old_standata'
-#   only used for category specific group-level effects
 # @return a tidy data.frame with the following columns:
 #   id: ID of the group-level effect 
 #   group: name of the grouping factor
@@ -309,8 +307,7 @@ get_re.btl <- function(x, ...) {
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
 #   form: formula used to compute the effects
-tidy_ranef <- function(bterms, data, all = TRUE, 
-                       old_levels = NULL, old_sdata = NULL) {
+tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
   data <- combine_groups(data, get_group_vars(bterms))
   re <- get_re(bterms, all = all)
   ranef <- vector("list", nrow(re))
@@ -326,24 +323,14 @@ tidy_ranef <- function(bterms, data, all = TRUE,
       coef <- rename(all_terms(re$form[[i]]))
     } else if (re$type[i] == "cs") {
       resp <- re$resp[i]
-      if (!is.null(old_sdata)) {
-        # extract ncat from the original data
-        if (nzchar(resp)) {
-          ncat <- old_sdata[[resp]][["ncat"]]
-        } else {
-          ncat <- old_sdata[["ncat"]]
-        }
+      if (nzchar(resp)) {
+        stopifnot(is.mvbrmsterms(bterms))
+        nthres <- max(get_thres(bterms$terms[[resp]]))
       } else {
-        # infer ncat from the current data
-        if (nzchar(resp)) {
-          respform <- bterms$terms[[resp]]$respform
-        } else {
-          respform <- bterms$respform
-        }
-        Y <- as.numeric(model.response(model.frame(respform, data)))
-        ncat <- max(Y) - min(Y) + 1
+        stopifnot(is.brmsterms(bterms))
+        nthres <- max(get_thres(bterms))
       }
-      indices <- paste0("[", seq_len(ncat - 1), "]")
+      indices <- paste0("[", seq_len(nthres), "]")
       coef <- colnames(get_model_matrix(re$form[[i]], data = data))
       coef <- as.vector(t(outer(coef, indices, paste0)))
     }

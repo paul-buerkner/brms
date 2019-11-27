@@ -2411,6 +2411,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     stop2("Please use argument 'newdata' to update the data.")
   }
   if (!is.null(newdata)) {
+    # TODO: update info stored in the families such as 'cats' or 'thres'
     dots$data <- newdata
     data.name <- substitute_name(newdata)
   } else {

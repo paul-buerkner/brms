@@ -852,22 +852,6 @@ get_effect.btnl <- function(x, target = "fe", ...) {
   NULL
 }
 
-# extract variable names used in addition terms
-get_advars <- function(x, ...) {
-  UseMethod("get_advars")
-}
-
-#' @export
-get_advars.brmsterms <- function(x, ad, ...) {
-  ad <- as_one_character(ad)
-  all_vars(x$adforms[[ad]])
-}
-
-#' @export
-get_advars.mvbrmsterms <- function(x, ad, ...) {
-  unique(ulapply(x$terms, get_advars, ad = ad, ...))
-}
-
 all_terms <- function(x) {
   if (!length(x)) {
     return(character(0))

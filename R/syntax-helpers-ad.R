@@ -1,30 +1,51 @@
-# has a certain addition term a certain variable?
+# get expression for a variable of an addition term
 # @param x list with potentail $adforms elements
-# @param data data passed by the user
-# @return TRUE or FALSE
-has_advar <- function(x, ad, var) {
-  as <- as_one_character(ad)
-  var <- as_one_character(var)
-  ad <- x$adforms[[ad]]
-  if (is.null(ad)) {
-    return(FALSE)
+# @param ad name of the addition term
+# @param target name of the element to extract
+# @type type of the element to extract
+# @return a character string or NULL
+get_ad_expr <- function(x, ad, name, type = "vars") {
+  ad <- as_one_character(ad)
+  name <- as_one_character(name)
+  type <- as_one_character(type)
+  if (is.null(x$adforms[[ad]])) {
+    return(NULL)
   }
-  ad <- eval_rhs(ad)
-  isTRUE(!is.null(ad$vars[[var]]) && ad$vars[[var]] != "NA")
+  out <- eval_rhs(x$adforms[[ad]])[[type]][[name]]
+  if (type == "vars" && is_equal(out, "NA")) {
+    out <- NULL
+  }
+  out
 }
 
 # get values of a variable used in an addition term
-# @param x list with potentail $adforms elements
-# @param data data passed by the user
-# @return a vector of threshold groups or NULL
-get_advalues <- function(x, ad, var, data) {
-  as <- as_one_character(ad)
-  var <- as_one_character(var)
-  if (!has_advar(x, ad, var)) {
-    return(NULL)
-  }
-  ad <- eval_rhs(x$adforms[[ad]])
-  eval2(ad$vars[[var]], data)
+# @return a vector of values or NULL
+get_ad_values <- function(x, ad, name, data) {
+  expr <- get_ad_expr(x, ad, name, type = "vars")
+  eval2(expr, data)
+}
+
+# get a flag used in an addition term
+# @return TRUE or FALSE
+get_ad_flag <- function(x, ad, name) {
+  expr <- get_ad_expr(x, ad, name, type = "flags")
+  as_one_logical(eval2(expr))
+}
+
+# get variable names used in addition terms
+get_ad_vars <- function(x, ...) {
+  UseMethod("get_ad_vars")
+}
+
+#' @export
+get_ad_vars.brmsterms <- function(x, ad, ...) {
+  ad <- as_one_character(ad)
+  all_vars(x$adforms[[ad]])
+}
+
+#' @export
+get_ad_vars.mvbrmsterms <- function(x, ad, ...) {
+  unique(ulapply(x$terms, get_ad_vars, ad = ad, ...))
 }
 
 # coerce censored values into the right format
@@ -68,8 +89,7 @@ get_cens <- function(x, resp = NULL, newdata = NULL) {
   }
   out <- NULL
   if (is.formula(bterms$adforms$cens)) {
-    cens <- eval_rhs(bterms$adforms$cens)
-    out <- eval2(cens$vars$cens, newdata)
+    out <- get_ad_values(bterms, "cens", "cens", newdata)
     out <- prepare_cens(out)
   }
   out

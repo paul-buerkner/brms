@@ -384,7 +384,7 @@ predictor_cs <- function(eta, draws, i) {
 .predictor_cs <- function(eta, X, b, nthres, r = NULL) {
   stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
   nthres <- max(nthres)
-  eta <- predictor_expand(eta, nthres + 1)
+  eta <- predictor_expand(eta, nthres)
   if (!is.null(X)) {
     I <- seq(1, (nthres) * ncol(X), nthres) - 1
     X <- t(X)

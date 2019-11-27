@@ -483,7 +483,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
   }
   # use sensible default values for unspecified variables
-  subset_vars <- get_advars(bterms, "subset")
+  subset_vars <- get_ad_vars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
