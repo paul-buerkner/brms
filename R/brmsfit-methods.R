@@ -812,7 +812,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # summary of autocorrelation effects
-  cor_pars <- pars[grepl(regex_cor_pars(), pars)]
+  cor_pars <- pars[grepl(regex_autocor_pars(), pars)]
   out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
   

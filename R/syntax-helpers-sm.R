@@ -50,3 +50,8 @@ tidy_smef <- function(x, data) {
   rownames(out) <- NULL
   out
 }
+
+# check if smooths are present in the model
+has_smooths <- function(bterms) {
+  length(get_effect(bterms, target = "sm")) > 0L
+}

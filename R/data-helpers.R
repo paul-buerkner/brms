@@ -178,6 +178,21 @@ subset_data <- function(data, bterms) {
   data
 }
 
+# get a single value per group 
+# @param x vector of values to extract one value per group
+# @param gr vector of grouping values
+# @return a vector of the same length as unique(group)
+get_one_value_per_group <- function(x, gr) {
+  stopifnot(length(x) == length(gr))
+  not_dupl_gr <- !duplicated(gr)
+  gr_unique <- gr[not_dupl_gr]
+  to_order <- order(gr_unique)
+  gr_unique <- gr_unique[to_order] 
+  out <- x[not_dupl_gr][to_order]
+  names(out) <- gr_unique
+  out
+}
+
 #' Validate New Data
 #' 
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you

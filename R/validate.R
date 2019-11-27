@@ -1003,11 +1003,6 @@ rsv_vars <- function(bterms) {
   out
 }
 
-# check if smooths are present in the model
-has_smooths <- function(bterms) {
-  length(get_effect(bterms, target = "sm")) > 0L
-}
-
 # check if category specific effects are present in the model
 has_cs <- function(bterms) {
   length(get_effect(bterms, target = "cs")) > 0L ||
@@ -1034,90 +1029,4 @@ get_element.mvbrmsformula <- function(x, name, ...) {
 #' @export
 get_element.mvbrmsterms <- function(x, name, ...) {
   lapply(x$terms, get_element, name = name, ...)
-}
-
-# extract variable names used in autocor structures
-get_autocor_vars <- function(x, ...) {
-  UseMethod("get_autocor_vars")
-}
-
-#' @export
-get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
-}
-
-#' @export
-get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
-}
-
-#' @export
-get_autocor_vars.brmsformula <- function(x, ...) {
-  get_autocor_vars(x$autocor, ...)
-}
-
-#' @export
-get_autocor_vars.mvbrmsformula <- function(x, ...) {
-  unique(ulapply(x$forms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.mvbrmsterms <- function(x, ...) {
-  unique(ulapply(x$terms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.brmsfit <- function(x, ...) {
-  get_autocor_vars(x$formula, ...)
-}
-
-# convenient wrapper around 'get_autocor_vars'
-get_ac_groups <- function(x, ...) {
-  get_autocor_vars(x, var = "group", ...)
-}
-
-# extract family boundaries
-family_bounds <- function(x, ...) {
-  UseMethod("family_bounds")
-}
-
-# @return a named list with one element per response variable
-#' @export
-family_bounds.mvbrmsterms <- function(x, ...) {
-  lapply(x$terms, family_bounds, ...)
-}
-
-# @return a list with elements 'lb' and 'ub'
-#' @export
-family_bounds.brmsterms <- function(x, ...) {
-  family <- x$family$family
-  if (is.null(family)) {
-    return(list(lb = -Inf, ub = Inf))
-  }
-  resp <- usc(x$resp)
-  pos_families <- c(
-    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
-    "exponential", "lognormal", "frechet", "inverse.gaussian", 
-    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-    "hurdle_lognormal", "zero_inflated_poisson", 
-    "zero_inflated_negbinomial"
-  )
-  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
-  ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
-  if (family %in% pos_families) {
-    out <- list(lb = 0, ub = Inf)
-  } else if (family %in% c("bernoulli", beta_families)) {
-    out <- list(lb = 0, ub = 1)
-  } else if (family %in% c("categorical", ordinal_families)) {
-    out <- list(lb = 1, ub = paste0("ncat", resp))
-  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
-    out <- list(lb = 0, ub = paste0("trials", resp))
-  } else if (family %in% "von_mises") {
-    out <- list(lb = -pi, ub = pi)
-  } else if (family %in% c("wiener", "shifted_lognormal")) {
-    out <- list(lb = paste("min_Y", resp), ub = Inf)
-  } else {
-    out <- list(lb = -Inf, ub = Inf)
-  }
-  out
 }

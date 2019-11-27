@@ -597,8 +597,48 @@ subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
   structure(x, autocor_updated = TRUE)
 }
 
+# extract variable names used in autocor structures
+get_autocor_vars <- function(x, ...) {
+  UseMethod("get_autocor_vars")
+}
+
+#' @export
+get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
+  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
+}
+
+#' @export
+get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
+  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
+}
+
+#' @export
+get_autocor_vars.brmsformula <- function(x, ...) {
+  get_autocor_vars(x$autocor, ...)
+}
+
+#' @export
+get_autocor_vars.mvbrmsformula <- function(x, ...) {
+  unique(ulapply(x$forms, get_autocor_vars, ...))
+}
+
+#' @export
+get_autocor_vars.mvbrmsterms <- function(x, ...) {
+  unique(ulapply(x$terms, get_autocor_vars, ...))
+}
+
+#' @export
+get_autocor_vars.brmsfit <- function(x, ...) {
+  get_autocor_vars(x$formula, ...)
+}
+
+# convenient wrapper around 'get_autocor_vars'
+get_ac_groups <- function(x, ...) {
+  get_autocor_vars(x, var = "group", ...)
+}
+
 # regex to extract all parameter names of autocorrelation structures
-regex_cor_pars <- function() {
+regex_autocor_pars <- function() {
   p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
   p <- paste0("(", p, ")", collapse = "|")
   paste0("^(", p, ")(\\[|_|$)")

@@ -1601,3 +1601,49 @@ has_joint_theta <- function(bterms) {
   is.mixfamily(bterms$family) && 
     !"theta" %in% dpar_class(names(c(bterms$dpars, bterms$fdpars)))
 }
+
+# extract family boundaries
+family_bounds <- function(x, ...) {
+  UseMethod("family_bounds")
+}
+
+# @return a named list with one element per response variable
+#' @export
+family_bounds.mvbrmsterms <- function(x, ...) {
+  lapply(x$terms, family_bounds, ...)
+}
+
+# @return a list with elements 'lb' and 'ub'
+#' @export
+family_bounds.brmsterms <- function(x, ...) {
+  family <- x$family$family
+  if (is.null(family)) {
+    return(list(lb = -Inf, ub = Inf))
+  }
+  resp <- usc(x$resp)
+  pos_families <- c(
+    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
+    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+    "hurdle_lognormal", "zero_inflated_poisson", 
+    "zero_inflated_negbinomial"
+  )
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
+  ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
+  if (family %in% pos_families) {
+    out <- list(lb = 0, ub = Inf)
+  } else if (family %in% c("bernoulli", beta_families)) {
+    out <- list(lb = 0, ub = 1)
+  } else if (family %in% c("categorical", ordinal_families)) {
+    out <- list(lb = 1, ub = paste0("ncat", resp))
+  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
+    out <- list(lb = 0, ub = paste0("trials", resp))
+  } else if (family %in% "von_mises") {
+    out <- list(lb = -pi, ub = pi)
+  } else if (family %in% c("wiener", "shifted_lognormal")) {
+    out <- list(lb = paste("min_Y", resp), ub = Inf)
+  } else {
+    out <- list(lb = -Inf, ub = Inf)
+  }
+  out
+}
