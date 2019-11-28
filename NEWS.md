@@ -4,7 +4,7 @@
 
 * Support grouped ordinal threshold vectors via addition 
 argument `resp_thres`. (#675)
-* Allow storing `loo_R2` results via `add_criterion`. #793
+* Allow storing `loo_R2` results via `add_criterion`. (#793)
 
 ### Bug Fixes
 
