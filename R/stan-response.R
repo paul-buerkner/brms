@@ -229,7 +229,7 @@ stan_thres <- function(bterms, data, prior, ...) {
     )
   } else {
     if (has_equidistant_thres(family)) {
-      bound <- subset2(prior, class = "delta", ls = px)$bound
+      bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
       str_add(out$par) <- cglue(
         "  real first_Intercept{p}{gr};  // first threshold\n",
         "  real{bound} delta{p}{gr};  // distance between thresholds\n"

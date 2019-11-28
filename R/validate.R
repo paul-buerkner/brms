@@ -72,6 +72,17 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all_vars))
   y$adforms[names(adforms)] <- adforms
   
+  # centering would lead to incorrect results for grouped threshold vectors
+  # as each threshold vector only affects a subset of observations
+  if (!is.null(get_ad_expr(y, "thres", "gr"))) {
+    attr(formula, "center") <- FALSE
+    dp_classes <- dpar_class(names(x$pforms))
+    mu_names <- names(x$pforms)[dp_classes == "mu"]
+    for (dp in mu_names) {
+      attr(x$pforms[[dp]], "center") <- FALSE
+    }
+  }
+  
   # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   rhs_needed <- FALSE

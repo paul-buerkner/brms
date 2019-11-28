@@ -857,3 +857,18 @@ test_that("make_standata handles addition term 'rate' is correctly", {
   sdata <- make_standata(y | rate(time) ~ x, data, poisson())
   expect_equal(sdata$denom, as.array(data$time))
 })
+
+test_that("make_standata handles grouped ordinal thresholds correctly", {
+  dat <- data.frame(
+    y = sample(1:6, 10, TRUE),
+    y2 = sample(1:6, 10, TRUE),
+    gr = rep(c("a", "b"), each = 5),
+    th = rep(5:6, each = 5),
+    x = rnorm(10)
+  )
+  sdata <- make_standata(y | thres(th, gr) ~ x, data = dat, family = sratio())
+  expect_equal(sdata$nthres, as.array(c(5, 6)))
+  expect_equal(sdata$ngrthres, 2)
+  expect_equal(unname(sdata$Jthres[1, ]), c(1, 5))
+  expect_equal(unname(sdata$Jthres[10, ]), c(6, 11))
+})

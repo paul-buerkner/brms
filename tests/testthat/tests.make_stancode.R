@@ -712,6 +712,58 @@ test_that("ordinal disc parameters appear in the Stan code", {
   expect_match2(scode, "disc[n] = exp(disc[n])")
 })
 
+test_that("grouped ordinal thresholds appear in the Stan code", {
+  dat <- data.frame(
+    y = sample(1:6, 10, TRUE),
+    y2 = sample(1:6, 10, TRUE),
+    gr = rep(c("a", "b"), each = 5),
+    th = rep(5:6, each = 5),
+    x = rnorm(10)
+  )
+  
+  prior <- prior(normal(0,1), class = "Intercept", group = "b")
+  scode <- make_stancode(
+    y | thres(th, gr) ~ x, data = dat, 
+    family = sratio(), prior = prior
+  )
+  expect_match2(scode, "int<lower=2> nthres[ngrthres];")
+  expect_match2(scode, "merged_Intercept[Kthres_start[1]:Kthres_end[1]] = Intercept_1;")
+  expect_match2(scode, "target += sratio_logit_merged_lpmf(Y[n]")
+  expect_match2(scode, "target += normal_lpdf(Intercept_2 | 0, 1);")
+  # centering needs to be deactivated automatically
+  expect_match2(scode, "vector[nthres[1]] b_Intercept_1 = Intercept_1;")
+  
+  # model with equidistant thresholds
+  scode <- make_stancode(
+    y | thres(th, gr) ~ x, data = dat, 
+    family = cumulative(threshold = "equidistant"), 
+    prior = prior
+  )
+  expect_match2(scode, "target += cumulative_logit_merged_lpmf(Y[n]")
+  expect_match2(scode, "real first_Intercept_1;")
+  expect_match2(scode, "target += normal_lpdf(first_Intercept_2 | 0, 1);")
+  expect_match2(scode, "Intercept_2[k] = first_Intercept_2 + (k - 1.0) * delta_2;")
+  
+  # ordinal mixture model
+  scode <- make_stancode(
+    y | thres(th, gr) ~ x, data = dat, 
+    family = mixture(cratio, acat, order = "mu"), 
+    prior = prior
+  )
+  expect_match2(scode, "ps[1] = log(theta1) + cratio_logit_merged_lpmf(Y[n]")
+  expect_match2(scode, "ps[2] = log(theta2) + acat_logit_merged_lpmf(Y[n]")
+  expect_match2(scode, "vector[nmthres] merged_Intercept_mu1;")
+  expect_match2(scode, "merged_Intercept_mu2[Kthres_start[1]:Kthres_end[1]] = Intercept_mu2_1;")
+  expect_match2(scode, "vector[nthres[1]] b_mu1_Intercept_1 = Intercept_mu1_1;")
+  
+  # multivariate ordinal model
+  bform <- bf(y | thres(th, gr) ~ x, family = sratio) +
+    bf(y2 | thres(th, gr) ~ x, family = cumulative) 
+  scode <- make_stancode(bform, data = dat)
+  expect_match2(scode, "target += student_t_lpdf(Intercept_y2_1 | 3, 0, 10);")
+  expect_match2(scode, "merged_Intercept_y[Kthres_start_y[2]:Kthres_end_y[2]] = Intercept_y_2;")
+})
+
 test_that("monotonic effects appear in the Stan code", {
   prior <- c(prior(normal(0,1), class = b, coef = mox1),
              prior(dirichlet(c(1,0.5,2)), simo, coef = mox11),
