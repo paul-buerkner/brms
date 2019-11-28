@@ -1,5 +1,10 @@
 # brms 2.10.0++
 
+### New Features
+
+* Support grouped ordinal threshold vectors via addition 
+argument `resp_thres`. (#675)
+
 ### Bug Fixes
 
 * Fix prediction uncertainties of new group levels for 
@@ -22,6 +27,7 @@ multinomial models thanks to Santiago Olivella. (#770)
 `marginal_smooths` to `conditional_smooths`. (#735)
 * Model fit criteria computed via `add_criterion` are now 
 stored in the `brmsfit$criteria` slot.
+* Deprecate `resp_cat` in favor of `resp_thres`.
 
 # brms 2.10.0
 
