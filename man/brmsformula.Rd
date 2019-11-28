@@ -333,9 +333,19 @@ models for all parameters of the assumed response distribution.
   in \pkg{brms} in the expected way because this syntax is reserved
   for other purposes.}
   
-  For all ordinal families, \code{aterms} may contain a term 
-  \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
-  If not given, the number of categories is calculated from the data.
+  For all ordinal families, \code{aterms} may contain a term
+  \code{thres(number)} to specify the number thresholds (e.g,
+  \code{thres(6)}), which should be equal to the total number of response
+  categories - 1. If not given, the number of thresholds is calculated from
+  the data. If different threshold vectors should be used for different
+  subsets of the data, the \code{gr} argument can be used to provide the
+  grouping variable (e.g, \code{thres(6, gr = item)}, if \code{item} is the
+  grouping variable). In this case, the number of thresholds can also be a
+  variable in the data with different values per group.
+  
+  A deprecated quasi alias of \code{thres()} is \code{cat()} with which the
+  total number of response categories (i.e., number of thresholds + 1) can be
+  specified.
   
   In Wiener diffusion models (family \code{wiener}) the addition term
   \code{dec} is mandatory to specify the (vector of) binary decisions 

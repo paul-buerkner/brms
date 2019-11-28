@@ -72,6 +72,17 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all_vars))
   y$adforms[names(adforms)] <- adforms
   
+  # centering would lead to incorrect results for grouped threshold vectors
+  # as each threshold vector only affects a subset of observations
+  if (!is.null(get_ad_expr(y, "thres", "gr"))) {
+    attr(formula, "center") <- FALSE
+    dp_classes <- dpar_class(names(x$pforms))
+    mu_names <- names(x$pforms)[dp_classes == "mu"]
+    for (dp in mu_names) {
+      attr(x$pforms[[dp]], "center") <- FALSE
+    }
+  }
+  
   # copy stuff from the formula to parameter 'mu'
   str_rhs_form <- formula2str(rhs(formula))
   rhs_needed <- FALSE
@@ -326,6 +337,10 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     }
     if (check_response && "wiener" %in% families && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
+    }
+    if (is.formula(x$cat)) {
+      # 'cat' was replaced by 'thres' in brms 2.10.5
+      x$thres <- x$cat
     }
   }
   x
@@ -848,72 +863,6 @@ get_effect.btnl <- function(x, target = "fe", ...) {
   NULL
 }
 
-# extract variable names used in addition terms
-get_advars <- function(x, ...) {
-  UseMethod("get_advars")
-}
-
-#' @export
-get_advars.brmsterms <- function(x, ad, ...) {
-  ad <- as_one_character(ad)
-  all_vars(x$adforms[[ad]])
-}
-
-#' @export
-get_advars.mvbrmsterms <- function(x, ad, ...) {
-  unique(ulapply(x$terms, get_advars, ad = ad, ...))
-}
-
-# extract information about smooth terms
-# @param x either a formula or a list containing an element "sm"
-# @param data data.frame containing the covariates
-tidy_smef <- function(x, data) {
-  if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
-  }
-  form <- x[["sm"]] 
-  if (!is.formula(form)) {
-    return(empty_data_frame())
-  }
-  out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
-  nterms <- nrow(out)
-  out$sfun <- get_matches("^[^\\(]+", out$term)
-  out$vars <- out$byvars <- out$covars <- vector("list", nterms)
-  for (i in seq_len(nterms)) {
-    sm <- eval2(out$term[i])
-    out$covars[[i]] <- sm$term
-    if (sm$by != "NA") {
-      out$byvars[[i]] <- sm$by
-    }
-    out$vars[[i]] <- c(out$covars[[i]], out$byvars[[i]])
-  }
-  out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
-  # prepare information inferred from the data
-  sdata <- data_sm(x, data, knots = attr(data, "knots"))
-  bylevels <- attr(sdata$Xs, "bylevels")
-  nby <- lengths(bylevels)
-  tmp <- vector("list", nterms)
-  for (i in seq_len(nterms)) {
-    tmp[[i]] <- out[i, , drop = FALSE]
-    tmp[[i]]$termnum <- i
-    if (nby[i] > 0L) {
-      tmp[[i]] <- do_call(rbind, repl(tmp[[i]], nby[i]))
-      tmp[[i]]$bylevel <- rm_wsp(bylevels[[i]])
-      tmp[[i]]$byterm <- paste0(tmp[[i]]$term, tmp[[i]]$bylevel)
-      str_add(tmp[[i]]$label) <- rename(tmp[[i]]$bylevel)
-    } else {
-      tmp[[i]]$bylevel <- NA
-      tmp[[i]]$byterm <- tmp[[i]]$term
-    }
-  }
-  out <- do_call(rbind, tmp)
-  out$knots <- sdata[grepl("^knots_", names(sdata))]
-  out$nbases <- lengths(out$knots)
-  attr(out, "Xs_names") <- colnames(sdata$Xs)
-  rownames(out) <- NULL
-  out
-}
-
 all_terms <- function(x) {
   if (!length(x)) {
     return(character(0))
@@ -1049,34 +998,10 @@ rsv_vars <- function(bterms) {
   out
 }
 
-# check if smooths are present in the model
-has_smooths <- function(bterms) {
-  length(get_effect(bterms, target = "sm")) > 0L
-}
-
 # check if category specific effects are present in the model
 has_cs <- function(bterms) {
   length(get_effect(bterms, target = "cs")) > 0L ||
     any(get_re(bterms)$type %in% "cs")
-}
-
-# extract names of response categories
-extract_cat_names <- function(x, data) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  respform <- validate_resp_formula(x$formula)
-  mr <- model.response(model.frame(respform, data))
-  if (is_ordinal(x) && is.numeric(mr)) {
-    out <- as.character(seq_len(max(mr)))
-  } else if (has_multicol(x)) {
-    mr <- as.matrix(mr)
-    out <- as.character(colnames(mr))
-    if (!length(out)) {
-      out <- as.character(seq_cols(mr))
-    }
-  } else {
-    out <- levels(factor(mr))
-  }
-  out
 }
 
 # extract elements from objects
@@ -1099,151 +1024,4 @@ get_element.mvbrmsformula <- function(x, name, ...) {
 #' @export
 get_element.mvbrmsterms <- function(x, name, ...) {
   lapply(x$terms, get_element, name = name, ...)
-}
-
-# extract variable names used in autocor structures
-get_autocor_vars <- function(x, ...) {
-  UseMethod("get_autocor_vars")
-}
-
-#' @export
-get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
-}
-
-#' @export
-get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
-}
-
-#' @export
-get_autocor_vars.brmsformula <- function(x, ...) {
-  get_autocor_vars(x$autocor, ...)
-}
-
-#' @export
-get_autocor_vars.mvbrmsformula <- function(x, ...) {
-  unique(ulapply(x$forms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.mvbrmsterms <- function(x, ...) {
-  unique(ulapply(x$terms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.brmsfit <- function(x, ...) {
-  get_autocor_vars(x$formula, ...)
-}
-
-# convenient wrapper around 'get_autocor_vars'
-get_ac_groups <- function(x, ...) {
-  get_autocor_vars(x, var = "group", ...)
-}
-
-# extract truncation boundaries
-trunc_bounds <- function(x, ...) {
-  UseMethod("trunc_bounds")
-}
-
-# @return a named list with one element per response variable
-#' @export
-trunc_bounds.mvbrmsterms <- function(x, ...) {
-  lapply(x$terms, trunc_bounds, ...)
-}
-
-# @param data data.frame containing the truncation variables
-# @param incl_family include the family in the derivation of the bounds?
-# @param stan return bounds in form of Stan syntax?
-# @return a list with elements 'lb' and 'ub'
-#' @export
-trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE, 
-                                   stan = FALSE, ...) {
-  if (is.formula(x$adforms$trunc)) {
-    trunc <- eval_rhs(x$adforms$trunc)
-  } else {
-    trunc <- resp_trunc()
-  }
-  out <- list(
-    lb = eval2(trunc$vars$lb, data),
-    ub = eval2(trunc$vars$ub, data)
-  )
-  if (incl_family) {
-    family_bounds <- family_bounds(x)
-    out$lb <- max(out$lb, family_bounds$lb)
-    out$ub <- min(out$ub, family_bounds$ub)
-  }
-  if (stan) {
-    if (any(out$lb > -Inf | out$ub < Inf)) {
-      tmp <- c(
-        if (out$lb > -Inf) paste0("lower=", out$lb),
-        if (out$ub < Inf) paste0("upper=", out$ub)
-      )
-      out <- paste0("<", paste0(tmp, collapse = ","), ">")
-    } else {
-      out <- ""
-    }
-  }
-  out
-}
-
-# extract family boundaries
-family_bounds <- function(x, ...) {
-  UseMethod("family_bounds")
-}
-
-# @return a named list with one element per response variable
-#' @export
-family_bounds.mvbrmsterms <- function(x, ...) {
-  lapply(x$terms, family_bounds, ...)
-}
-
-# @return a list with elements 'lb' and 'ub'
-#' @export
-family_bounds.brmsterms <- function(x, ...) {
-  family <- x$family$family
-  if (is.null(family)) {
-    return(list(lb = -Inf, ub = Inf))
-  }
-  resp <- usc(x$resp)
-  pos_families <- c(
-    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
-    "exponential", "lognormal", "frechet", "inverse.gaussian", 
-    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-    "hurdle_lognormal", "zero_inflated_poisson", 
-    "zero_inflated_negbinomial"
-  )
-  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
-  ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
-  if (family %in% pos_families) {
-    out <- list(lb = 0, ub = Inf)
-  } else if (family %in% c("bernoulli", beta_families)) {
-    out <- list(lb = 0, ub = 1)
-  } else if (family %in% c("categorical", ordinal_families)) {
-    out <- list(lb = 1, ub = paste0("ncat", resp))
-  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
-    out <- list(lb = 0, ub = paste0("trials", resp))
-  } else if (family %in% "von_mises") {
-    out <- list(lb = -pi, ub = pi)
-  } else if (family %in% c("wiener", "shifted_lognormal")) {
-    out <- list(lb = paste("min_Y", resp), ub = Inf)
-  } else {
-    out <- list(lb = -Inf, ub = Inf)
-  }
-  out
-}
-
-# check if addition argument 'subset' ist used in the model
-has_subset <- function(bterms) {
-  .has_subset <- function(x) {
-    is.formula(x$adforms$subset)
-  }
-  if (is.brmsterms(bterms)) {
-    out <- .has_subset(bterms)
-  } else if (is.mvbrmsterms(bterms)) {
-    out <- any(ulapply(bterms$terms, .has_subset))
-  } else {
-    out <- FALSE
-  }
-  out 
 }

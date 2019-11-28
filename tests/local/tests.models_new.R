@@ -870,3 +870,22 @@ test_that("Cox models work correctly", {
   expect_range(posterior_summary(fit1)["b_trt", "Estimate"], -0.70, -0.30)
   expect_range(waic(fit1)$estimates[3, 1], 620, 670)
 })
+
+test_that("ordinal model with grouped thresholds works correctly", {
+  set.seed(1234)
+  dat <- data.frame(
+    y = sample(1:6, 100, TRUE),
+    gr = rep(c("a", "b"), each = 50),
+    th = rep(5:6, each = 50),
+    x = rnorm(100)
+  )
+  
+  prior <- prior(normal(0,1), class = "Intercept", group = "b")
+  fit <- brm(y | thres(th, gr) ~ x, dat, cumulative(), prior = prior) 
+  print(summary(fit))
+  pred <- predict(fit)
+  expect_equal(dim(pred), c(nrow(dat), max(dat$th) + 1))
+  expect_range(waic(fit)$estimates[3, 1], 350, 400)
+  ce <- conditional_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
+})

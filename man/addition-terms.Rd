@@ -5,6 +5,7 @@
 \alias{resp_se}
 \alias{resp_weights}
 \alias{resp_trials}
+\alias{resp_thres}
 \alias{resp_cat}
 \alias{resp_dec}
 \alias{resp_cens}
@@ -21,6 +22,8 @@ resp_se(x, sigma = FALSE)
 resp_weights(x, scale = FALSE)
 
 resp_trials(x)
+
+resp_thres(x, gr = NA)
 
 resp_cat(x)
 
@@ -41,17 +44,16 @@ resp_vreal(...)
 resp_vint(...)
 }
 \arguments{
-\item{x}{A vector; usually a variable defined in the
-data. Allowed values depend on the function:
-\code{resp_se} and \code{resp_weights} require positive numeric values.
-\code{resp_trials} and \code{resp_cat} require positive integers.
-\code{resp_dec} requires \code{0} and \code{1}, or alternatively
-\code{'lower'} and \code{'upper'}.
+\item{x}{A vector; usually a variable defined in the data. Allowed values
+depend on the function: \code{resp_se} and \code{resp_weights} require
+positive numeric values. \code{resp_trials}, \code{resp_thres}, and
+\code{resp_cat} require positive integers. \code{resp_dec} requires
+\code{0} and \code{1}, or alternatively \code{'lower'} and \code{'upper'}.
 \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-\code{FALSE} and \code{TRUE}.
-\code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
-and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
-and \code{2}) to indicate left, no, right, or interval censoring.}
+\code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
+\code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
+\code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
+or interval censoring.}
 
 \item{sigma}{Logical; Indicates whether the residual standard deviation
 parameter \code{sigma} should be included in addition to the known
@@ -60,6 +62,8 @@ but setting it to \code{TRUE} is usually the better choice.}
 
 \item{scale}{Logical; Indicates whether weights should be scaled
 so that the average weight equals one. Defaults to \code{FALSE}.}
+
+\item{gr}{A vector of grouping indicators.}
 
 \item{y2}{A vector specifying the upper bounds in interval censoring.}
 

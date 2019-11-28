@@ -447,7 +447,7 @@ data_Xme <- function(meef, data) {
           # validate values of the same level
           take <- Jme %in% l
           if (length(unique(Xn[take])) > 1L ||
-              length(unique(noise[take])) > 1L ) {
+              length(unique(noise[take])) > 1L) {
             stop2(
               "Measured values and measurement error should be ", 
               "unique for each group. Occured for level '", 
@@ -455,10 +455,8 @@ data_Xme <- function(meef, data) {
             )
           }
         }
-        not_dupl_Jme <- !duplicated(Jme)
-        to_order <- order(Jme[not_dupl_Jme])
-        Xn <- Xn[not_dupl_Jme][to_order]
-        noise <- noise[not_dupl_Jme][to_order]
+        Xn <- get_one_value_per_group(Xn, Jme)
+        noise <- get_one_value_per_group(noise, Jme)
       }
       out[[paste0("Xn_", k)]] <- as.array(Xn)
       out[[paste0("noise_", k)]] <- as.array(noise)
@@ -799,402 +797,6 @@ data_autocor <- function(bterms, data, old_locations = NULL) {
   exp(mean(log(Matrix::diag(Q_inv))))
 }
 
-#' Prepare Response Data
-#' 
-#' Prepare data related to response variables in \pkg{brms}. 
-#' Only exported for use in package development.
-#' 
-#' @param x An \R object.
-#' @param ... Further arguments passed to or from other methods.
-#' 
-#' @return A named list of data related to response variables.
-#' 
-#' @keywords internal
-#' @export
-data_response <- function(x, ...) {
-  UseMethod("data_response")
-}
-
-#' @export
-data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
-  out <- list()
-  for (i in seq_along(x$terms)) {
-    od <- old_sdata[[x$responses[i]]]
-    c(out) <- data_response(x$terms[[i]], old_sdata = od, ...)
-  }
-  if (x$rescor) {
-    out$nresp <- length(x$responses)
-    out$nrescor <- out$nresp * (out$nresp - 1) / 2
-  }
-  out
-}
-
-#' @export
-data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    not4stan = FALSE, old_sdata = NULL, ...) {
-  # prepare data for the response variable
-  data <- subset_data(data, x)
-  N <- nrow(data)
-  Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-  out <- list(N = N, Y = unname(Y))
-  if (is_binary(x$family) || is_categorical(x$family)) {
-    out$Y <- as_factor(out$Y, levels = old_sdata$resp_levels)
-    out$Y <- as.numeric(out$Y)
-    if (is_binary(x$family)) {
-      out$Y <- out$Y - 1
-    }
-  }
-  if (is_ordinal(x$family) && is.ordered(out$Y)) {
-    out$Y <- as.numeric(out$Y)
-  }
-  if (check_response) {
-    family4error <- family_names(x$family)
-    if (is.mixfamily(x$family)) {
-      family4error <- paste0(family4error, collapse = ", ")
-      family4error <- paste0("mixture(", family4error, ")")
-    }
-    if (!allow_factors(x$family) && !is.numeric(out$Y)) {
-      stop2("Family '", family4error, "' requires numeric responses.")
-    }
-    if (is_binary(x$family)) {
-      if (any(!out$Y %in% c(0, 1))) {
-        stop2("Family '", family4error, "' requires responses ",
-              "to contain only two different values.")
-      }
-    }
-    if (is_ordinal(x$family)) {
-      if (any(!is_wholenumber(out$Y)) || any(!out$Y > 0)) {
-        stop2("Family '", family4error, "' requires either positive ",
-              "integers or ordered factors as responses.")
-      }
-    }
-    if (use_int(x$family)) {
-      if (!all(is_wholenumber(out$Y))) {
-        stop2("Family '", family4error, "' requires integer responses.")
-      }
-    }
-    if (has_multicol(x$family)) {
-      if (!is.matrix(out$Y)) {
-        stop2("This model requires a response matrix.")
-      }
-    }
-    if (is_dirichlet(x$family)) {
-      if (!is_equal(rowSums(out$Y), rep(1, nrow(out$Y)))) {
-        stop2("Response values in dirichlet models must sum to 1.")
-      }
-    }
-    ybounds <- family_info(x$family, "ybounds")
-    closed <- family_info(x$family, "closed")
-    if (is.finite(ybounds[1])) {
-      y_min <- min(out$Y, na.rm = TRUE)
-      if (closed[1] && y_min < ybounds[1]) {
-        stop2("Family '", family4error, "' requires response greater ",
-              "than or equal to ", ybounds[1], ".")
-      } else if (!closed[1] && y_min <= ybounds[1]) {
-        stop2("Family '", family4error, "' requires response greater ",
-              "than ", round(ybounds[1], 2), ".")
-      }
-    }
-    if (is.finite(ybounds[2])) {
-      y_max <- max(out$Y, na.rm = TRUE)
-      if (closed[2] && y_max > ybounds[2]) {
-        stop2("Family '", family4error, "' requires response smaller ",
-              "than or equal to ", ybounds[2], ".")
-      } else if (!closed[2] && y_max >= ybounds[2]) {
-        stop2("Family '", family4error, "' requires response smaller ",
-              "than ", round(ybounds[2], 2), ".")
-      }
-    }
-    out$Y <- as.array(out$Y)
-  }
-  # data for addition arguments of the response
-  if (has_trials(x$family) || is.formula(x$adforms$trials)) {
-    if (!length(x$adforms$trials)) {
-      if (is_multinomial(x$family)) {
-        stop2("Specifying 'trials' is required in multinomial models.")
-      }
-      out$trials <- round(max(out$Y, na.rm = TRUE))
-      if (isTRUE(is.finite(out$trials))) {
-        message("Using the maximum response value as the number of trials.")
-        warning2(
-          "Using 'binomial' families without specifying 'trials' ", 
-          "on the left-hand side of the model formula is deprecated."
-        )
-      } else if (!is.null(old_sdata$trials)) {
-        out$trials <- max(old_sdata$trials)
-      } else {
-        stop2("Could not compute the number of trials.")
-      }
-    } else if (is.formula(x$adforms$trials)) {
-      trials <- eval_rhs(x$adforms$trials)
-      out$trials <- eval2(trials$vars$trials, data)
-      if (!is.numeric(out$trials)) {
-        stop2("Number of trials must be numeric.")
-      }
-      if (any(!is_wholenumber(out$trials) | out$trials < 1)) {
-        stop2("Number of trials must be positive integers.")
-      }
-    } else {
-      stop2("Argument 'trials' is misspecified.")
-    }
-    if (length(out$trials) == 1L) {
-      out$trials <- rep(out$trials, nrow(data))
-    }
-    if (check_response) {
-      if (is_multinomial(x$family)) {
-        if (!is_equal(rowSums(out$Y), out$trials)) {
-          stop2("Number of trials does not match the number of events.")
-        }
-      } else if (has_trials(x$family)) {
-        if (max(out$trials) == 1L && !not4stan) {
-          message("Only 2 levels detected so that family 'bernoulli' ",
-                  "might be a more efficient choice.")
-        }
-        if (any(out$Y > out$trials)) {
-          stop2("Number of trials is smaller than the number of events.")
-        }
-      }
-    }
-    out$trials <- as.array(out$trials)
-  }
-  if (has_cat(x$family) || is.formula(x$adforms$cat)) {
-    if (!length(x$adforms$cat)) {
-      if (!is.null(old_sdata$ncat)) {
-        out$ncat <- old_sdata$ncat
-      } else if (has_multicol(x$family)) {
-        out$ncat <- NCOL(out$Y)
-      } else {
-        out$ncat <- max(out$Y)
-      }
-    } else if (is.formula(x$adforms$cat)) {
-      cat <- eval_rhs(x$adforms$cat)
-      out$ncat <- as_one_numeric(eval2(cat$vars$cat, data))
-      if (!is_wholenumber(out$ncat) || out$ncat < 1) {
-        stop2("Number of categories must be a positive integer.")
-      }
-    } else {
-      stop2("Argument 'cat' is misspecified.")
-    }
-    if (out$ncat < 2L) {
-      stop2("At least two response categories are required.")
-    }
-    if (!has_multicol(x$family)) {
-      if (out$ncat == 2L && !not4stan) {
-        message("Only 2 levels detected so that family 'bernoulli' ",
-                "might be a more efficient choice.")
-      }
-      if (check_response && any(out$Y > out$ncat)) {
-        stop2("Number of categories is smaller than the response ",
-              "variable would suggest.")
-      }
-    }
-  }
-  if (is.formula(x$adforms$se)) {
-    se <- eval_rhs(x$adforms$se)
-    out$se <- eval2(se$vars$se, data) 
-    if (!is.numeric(out$se)) {
-      stop2("Standard errors must be numeric.")
-    }
-    if (min(out$se) < 0) {
-      stop2("Standard errors must be non-negative.")
-    }
-    out$se <- as.array(out$se)
-  }
-  if (is.formula(x$adforms$weights)) {
-    weights <- eval_rhs(x$adforms$weights)
-    out$weights <- eval2(weights$vars$weights, data)  
-    if (!is.numeric(out$weights)) {
-      stop2("Weights must be numeric.")
-    }
-    if (min(out$weights) < 0) {
-      stop2("Weights must be non-negative.")
-    }
-    if (weights$flags$scale) {
-      out$weights <- out$weights / sum(out$weights) * length(out$weights)
-    }
-    out$weights <- as.array(out$weights)
-  }
-  if (is.formula(x$adforms$dec)) {
-    dec <- eval_rhs(x$adforms$dec)
-    out$dec <- eval2(dec$vars$dec, data)
-    if (is.character(out$dec) || is.factor(out$dec)) {
-      if (!all(unique(out$dec) %in% c("lower", "upper"))) {
-        stop2("Decisions should be 'lower' or 'upper' ",
-              "when supplied as characters or factors.")
-      }
-      out$dec <- ifelse(out$dec == "lower", 0, 1)
-    } else {
-      out$dec <- as.numeric(as.logical(out$dec))
-    }
-    out$dec <- as.array(out$dec)
-  }
-  if (is.formula(x$adforms$rate)) {
-    rate <- eval_rhs(x$adforms$rate)
-    out$denom <- eval2(rate$vars$denom, data)
-    if (!is.numeric(out$denom)) {
-      stop2("Rate denomiators should be numeric.")
-    }
-    if (isTRUE(any(out$denom <= 0))) {
-      stop2("Rate denomiators should be positive.")
-    }
-    out$denom <- as.array(out$denom)
-  }
-  if (is.formula(x$adforms$cens) && check_response) {
-    cens <- eval_rhs(x$adforms$cens)
-    out$cens <- eval2(cens$vars$cens, data)
-    out$cens <- as.array(prepare_cens(out$cens))
-    if (!all(is_wholenumber(out$cens) & out$cens %in% -1:2)) {
-      stop2(
-        "Invalid censoring data. Accepted values are ",
-        "'left', 'none', 'right', and 'interval'\n",
-        "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
-        "TRUE and FALSE are also accepted ",
-        "and refer to 'right' and 'none' respectively."
-      )
-    }
-    icens <- out$cens %in% 2
-    if (any(icens)) {
-      if (cens$vars$y2 == "NA") {
-        stop2("Argument 'y2' is required for interval censored data.")
-      }
-      y2 <- unname(eval2(cens$vars$y2, data))
-      if (any(out$Y[icens] >= y2[icens])) {
-        stop2("Left censor points must be smaller than right ",
-              "censor points for interval censored data.")
-      }
-      y2[!icens] <- 0  # not used in Stan
-      out$rcens <- as.array(y2)
-    }
-  }
-  if (is.formula(x$adforms$trunc)) {
-    trunc <- eval_rhs(x$adforms$trunc)
-    out$lb <- as.numeric(eval2(trunc$vars$lb, data))
-    out$ub <- as.numeric(eval2(trunc$vars$ub, data))
-    if (any(out$lb >= out$ub)) {
-      stop2("Truncation bounds are invalid: lb >= ub")
-    }
-    if (length(out$lb) == 1L) {
-      out$lb <- rep(out$lb, N)
-    }
-    if (length(out$ub) == 1L) {
-      out$ub <- rep(out$ub, N)
-    }
-    if (length(out$lb) != N || length(out$ub) != N) {
-      stop2("Invalid truncation bounds.")
-    }
-    inv_bounds <- out$Y < out$lb | out$Y > out$ub
-    if (check_response && isTRUE(any(inv_bounds))) {
-      stop2("Some responses are outside of the truncation bounds.")
-    }
-  }
-  if (is.formula(x$adforms$mi)) {
-    sdy <- get_sdy(x, data)
-    if (is.null(sdy)) {
-      # missings only
-      which_mi <- which(is.na(out$Y))
-      out$Jmi <- as.array(which_mi)
-      out$Nmi <- length(out$Jmi)
-    } else {
-      # measurement error in the response
-      if (length(sdy) == 1L) {
-        sdy <- rep(sdy, length(out$Y))
-      }
-      if (length(sdy) != length(out$Y)) {
-        stop2("'sdy' must have the same length as the response.")
-      }
-      # all observations will have a latent score
-      which_mi <- which(is.na(out$Y) | is.infinite(sdy))
-      out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
-      out$Nme <- length(out$Jme)
-      out$noise <- as.array(sdy)
-      if (!not4stan) {
-        out$noise[which_mi] <- Inf
-      }
-    }
-    if (!not4stan) {
-      # Stan does not allow NAs in data
-      # use Inf to that min(Y) is not affected
-      out$Y[which_mi] <- Inf
-    }
-  }
-  if (is.formula(x$adforms$vreal)) {
-    # vectors of real values for use in custom families
-    vreal <- eval_rhs(x$adforms$vreal)
-    vreal <- lapply(vreal$vars, eval2, data)
-    names(vreal) <- paste0("vreal", seq_along(vreal))
-    for (i in seq_along(vreal)) {
-      if (length(vreal[[i]]) == 1L) {
-        vreal[[i]] <- rep(vreal[[i]], N)
-      }
-      vreal[[i]] <- as.array(as.numeric(vreal[[i]]))
-    }
-    c(out) <- vreal
-  }
-  if (is.formula(x$adforms$vint)) {
-    # vectors of integer values for use in custom families
-    vint <- eval_rhs(x$adforms$vint)
-    vint <- lapply(vint$vars, eval2, data)
-    names(vint) <- paste0("vint", seq_along(vint))
-    for (i in seq_along(vint)) {
-      if (length(vint[[i]]) == 1L) {
-        vint[[i]] <- rep(vint[[i]], N)
-      }
-      if (!all(is_wholenumber(vint[[i]]))) {
-        stop2("'vint' requires whole numbers as input.")
-      }
-      vint[[i]] <- as.array(vint[[i]])
-    }
-    c(out) <- vint
-  }
-  if (length(out)) {
-    resp <- usc(combine_prefix(x))
-    out <- setNames(out, paste0(names(out), resp))
-  }
-  out
-}
-
-# data specific for mixture models
-data_mixture <- function(bterms, prior = brmsprior()) {
-  stopifnot(is.brmsterms(bterms))
-  out <- list()
-  if (is.mixfamily(bterms$family)) {
-    families <- family_names(bterms$family)
-    dp_classes <- dpar_class(names(c(bterms$dpars, bterms$fdpars)))
-    if (!any(dp_classes %in% "theta")) {
-      # estimate mixture probabilities directly
-      take <- find_rows(prior, class = "theta", resp = bterms$resp)
-      theta_prior <- prior$prior[take]
-      if (isTRUE(nzchar(theta_prior))) {
-        theta_prior <- eval_dirichlet(theta_prior)
-        if (length(theta_prior) != length(families)) {
-          stop2("Invalid dirichlet prior for the ", 
-                "mixture probabilities 'theta'.")
-        }
-        out$con_theta <- theta_prior
-      } else {
-        out$con_theta <- rep(1, length(families)) 
-      }
-      p <- usc(combine_prefix(bterms))
-      names(out) <- paste0(names(out), p)
-    }
-  }
-  out
-}
-
-# data for the baseline functions of Cox models
-data_bhaz <- function(bterms, data, basis = NULL) {
-  out <- list()
-  if (!is_cox(bterms$family)) {
-    return(out) 
-  }
-  y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
-  args <- bterms$family$bhaz 
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = basis)
-  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = basis)
-  out$Kbhaz <- NCOL(out$Zbhaz)
-  out
-}
-
 # data for special priors such as horseshoe and lasso
 data_prior <- function(bterms, data, prior) {
   out <- list()
@@ -1222,5 +824,92 @@ data_prior <- function(bterms, data, prior) {
     names(lasso_data) <- paste0(lasso_obj_names, p) 
     out <- c(out, lasso_data)
   }
+  out
+}
+
+# Construct design matrices for brms models
+# @param formula a formula object
+# @param data A data frame created with model.frame.
+#   If another sort of object, model.frame is called first.
+# @param cols2remove names of the columns to remove from 
+#   the model matrix; mainly used for intercepts
+# @param rename rename column names via rename()?
+# @param ... currently ignored
+# @return
+#   The design matrix for the given formula and data.
+#   For details see ?stats::model.matrix
+get_model_matrix <- function(formula, data = environment(formula),
+                             cols2remove = NULL, rename = TRUE, ...) {
+  stopifnot(is.atomic(cols2remove))
+  terms <- validate_terms(formula)
+  if (is.null(terms)) {
+    return(NULL)
+  }
+  if (no_int(terms)) {
+    cols2remove <- union(cols2remove, "(Intercept)")
+  }
+  X <- stats::model.matrix(terms, data)
+  cols2remove <- which(colnames(X) %in% cols2remove)
+  if (length(cols2remove)) {
+    X <- X[, -cols2remove, drop = FALSE]
+  }
+  if (rename) {
+    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
+  }
+  X
+}
+
+# convenient wrapper around mgcv::PredictMat
+PredictMat <- function(object, data, ...) {
+  data <- rm_attr(data, "terms")
+  out <- mgcv::PredictMat(object, data = data, ...)
+  if (length(dim(out)) < 2L) {
+    # fixes issue #494
+    out <- matrix(out, nrow = 1)
+  }
+  out
+}
+
+# convenient wrapper around mgcv::smoothCon
+smoothCon <- function(object, data, ...) {
+  data <- rm_attr(data, "terms")
+  vars <- setdiff(c(object$term, object$by), "NA")
+  for (v in vars) {
+    # allow factor-like variables #562
+    if (is_like_factor(data[[v]])) {
+      data[[v]] <- as.factor(data[[v]])
+    }
+  }
+  mgcv::smoothCon(object, data = data, ...)
+}
+
+# Aid prediction from smooths represented as 'type = 2'
+# originally provided by Simon Wood 
+# @param sm output of mgcv::smoothCon
+# @param data new data supplied for prediction
+# @return A list of the same structure as returned by mgcv::smoothCon
+s2rPred <- function(sm, data) {
+  re <- mgcv::smooth2random(sm, names(data), type = 2)
+  # prediction matrix for new data
+  X <- PredictMat(sm, data)   
+  # transform to RE parameterization
+  if (!is.null(re$trans.U)) {
+    X <- X %*% re$trans.U
+  }
+  X <- t(t(X) * re$trans.D)
+  # re-order columns according to random effect re-ordering
+  X[, re$rind] <- X[, re$pen.ind != 0] 
+  # re-order penalization index in same way  
+  pen.ind <- re$pen.ind
+  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
+  # start returning the object
+  Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
+  out <- list(rand = list(), Xf = Xf)
+  for (i in seq_along(re$rand)) { 
+    # loop over random effect matrices
+    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
+    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
+  }
+  names(out$rand) <- names(re$rand)
   out
 }

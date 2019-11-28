@@ -53,10 +53,10 @@ test_that("make_standata returns correct data names for addition terms", {
                c("N", "Y", "trials", "K", "X", "prior_only"))
   expect_equal(names(make_standata(y | trials(10) ~ x, dat, "binomial")), 
                c("N", "Y", "trials", "K", "X", "prior_only"))
-  expect_equal(names(make_standata(y | cat(11) ~ x, dat, "acat")),
-               c("N", "Y", "ncat", "K", "X", "disc", "prior_only"))
-  expect_equal(names(make_standata(y | cat(10) ~ x, dat, cumulative())), 
-               c("N", "Y", "ncat", "K", "X", "disc", "prior_only"))
+  expect_equal(names(make_standata(y | thres(11) ~ x, dat, "acat")),
+               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
+  expect_equal(names(make_standata(y | thres(10) ~ x, dat, cumulative())), 
+               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
   sdata <- make_standata(y | trunc(0,20) ~ x, dat, "gaussian")
   expect_true(all(sdata$lb == 0) && all(sdata$ub == 20))
   sdata <- make_standata(y | trunc(ub = 21:30) ~ x, dat)
@@ -163,9 +163,9 @@ test_that("make_standata returns correct values for addition terms", {
   expect_equal(make_standata(s | trials(t) ~ 1, data = dat, 
                              family = "binomial")$trials, 
                as.array(11:19))
-  expect_equal(make_standata(s | cat(19) ~ 1, data = dat, 
-                             family = "cumulative")$ncat, 
-               19)
+  expect_equal(SW(make_standata(s | cat(19) ~ 1, data = dat, 
+                      family = "cumulative"))$nthres, 
+               18)
 })
 
 test_that("make_standata rejects incorrect addition terms", {
@@ -485,8 +485,8 @@ test_that("make_standata handles noise-free terms with grouping factors", {
     g = rep(c("b", "c", "a", "d", 1), each = 2)
   )
   sdata <- make_standata(y ~ me(x1, sdx, gr = g), dat)
-  expect_equal(sdata$Xn_1, as.array(c(5, 3, 1, 2, 4)))
-  expect_equal(sdata$noise_1, as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(unname(sdata$Xn_1), as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(unname(sdata$noise_1), as.array(c(5, 3, 1, 2, 4)))
   
   dat$sdx[2] <- 10
   expect_error(
@@ -856,4 +856,19 @@ test_that("make_standata handles addition term 'rate' is correctly", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   sdata <- make_standata(y | rate(time) ~ x, data, poisson())
   expect_equal(sdata$denom, as.array(data$time))
+})
+
+test_that("make_standata handles grouped ordinal thresholds correctly", {
+  dat <- data.frame(
+    y = sample(1:6, 10, TRUE),
+    y2 = sample(1:6, 10, TRUE),
+    gr = rep(c("a", "b"), each = 5),
+    th = rep(5:6, each = 5),
+    x = rnorm(10)
+  )
+  sdata <- make_standata(y | thres(th, gr) ~ x, data = dat, family = sratio())
+  expect_equal(sdata$nthres, as.array(c(5, 6)))
+  expect_equal(sdata$ngrthres, 2)
+  expect_equal(unname(sdata$Jthres[1, ]), c(1, 5))
+  expect_equal(unname(sdata$Jthres[10, ]), c(6, 11))
 })

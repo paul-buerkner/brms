@@ -155,10 +155,11 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
     if (is.mixfamily(x$family)) {
       mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
       for (mu in mu_pars) {
-        draws$thres[[mu]] <- extract_draws_thres(x$dpars[[mu]], samples, ...)
+        draws$thres[[mu]] <- 
+          extract_draws_thres(x$dpars[[mu]], samples, sdata, ...)
       }
     } else {
-      draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
+      draws$thres <- extract_draws_thres(x$dpars$mu, samples, sdata, ...)
     }
   }
   if (is_cox(x$family)) {
@@ -395,7 +396,7 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   if (is_ordinal(bterms$family)) {
     resp <- usc(bterms$resp)
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
+    draws$nthres <- sdata[[paste0("nthres", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       p <- usc(combine_prefix(bterms))
@@ -656,7 +657,7 @@ extract_draws_re <- function(bterms, sdata, draws_ranef,
       Znames <- paste0("Z_", ranef_g_px_cs_1$id, p, "_", ranef_g_px_cs_1$cn) 
       Z <- do_call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (i in seq_len(sdata$ncat - 1)) {
+      for (i in seq_len(sdata$nthres)) {
         index <- paste0("\\[", i, "\\]$")
         # select from all varying effects of that group
         select <- find_rows(ranef_g, ls = px) &
@@ -696,13 +697,18 @@ extract_draws_offset <- function(bterms, sdata, ...) {
 }
 
 # extract draws of ordinal thresholds
-extract_draws_thres <- function(bterms, samples, ...) {
+extract_draws_thres <- function(bterms, samples, sdata, ...) {
+  draws <- list()
   if (!is_ordinal(bterms$family)) {
-    return(NULL)
+    return(draws)
   }
+  resp <- usc(bterms$resp)
+  draws$nthres <- sdata[[paste0("nthres", resp)]]
+  draws$Jthres <- sdata[[paste0("Jthres", resp)]]
   p <- usc(combine_prefix(bterms))
-  int_regex <- paste0("^b", p, "_Intercept\\[")
-  get_samples(samples, int_regex)
+  regex <- paste0("^b", p, "_Intercept\\[")
+  draws$thres <- get_samples(samples, regex)
+  draws
 }
 
 # extract draws of baseline functions for the cox model
@@ -797,7 +803,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bterms))
   vars <- c(
-    "Y", "trials", "ncat", "se", "weights", 
+    "Y", "trials", "ncat", "nthres", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
   vars <- paste0(vars, resp)

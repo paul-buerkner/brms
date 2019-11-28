@@ -89,9 +89,7 @@ restructure_v2 <- function(x) {
   if (version <= "2.8.2") {
     # argument 'sparse' is now specified within 'formula'
     sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
-    x$formula <- SW(validate_formula(
-      formula(x), data = model.frame(x), sparse = sparse
-    ))
+    x$formula <- SW(validate_formula(x$formula, data = x$data, sparse = sparse))
   }
   if (version <= "2.8.3") {
     x <- rescale_old_mo(x)
@@ -120,6 +118,12 @@ restructure_v2 <- function(x) {
     # rename 'R2' to 'bayes_R2' according to #793
     names(criteria)[names(criteria) == "R2"] <- "bayes_R2"
     x$criteria <- criteria
+  }
+  if (version <= "2.10.4") {
+    # new slot 'thres' stored inside ordinal families
+    if (is_ordinal(x$formula)) {
+      x$formula <- SW(validate_formula(x$formula, data = x$data))
+    }
   }
   x
 }

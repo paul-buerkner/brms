@@ -609,10 +609,23 @@ add_sigma_se <- function(sigma, draws, i = NULL) {
   sigma
 }
 
+# return samples of ordinal thresholds for observation i
+# @param draws a drawsl or drawsnl object
+# @param i observation number
+subset_thres <- function(draws, i) {
+  thres <- draws$thres$thres
+  Jthres <- draws$thres$Jthres
+  if (!is.null(Jthres)) {
+    thres <- thres[, Jthres[i, 1]:Jthres[i, 2]]
+  }
+  thres
+}
+
 # helper function of 'get_dpar' to decide if
 # the link function should be applied by default
 apply_dpar_ilink <- function(dpar, family) {
-  !(has_cat(family) && dpar_class(dpar) == "mu") || is.customfamily(family)
+  !((has_cat(family) || has_thres(family)) && dpar_class(dpar) == "mu") ||
+    is.customfamily(family)
 }
 
 # insert zeros for the predictor term of the reference category

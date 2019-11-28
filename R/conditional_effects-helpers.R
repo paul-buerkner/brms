@@ -483,7 +483,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
     }
   }
   # use sensible default values for unspecified variables
-  subset_vars <- get_advars(bterms, "subset")
+  subset_vars <- get_ad_vars(bterms, "subset")
   int_vars <- get_int_vars(bterms)
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
@@ -650,7 +650,7 @@ conditional_effects_internal.brmsterms <- function(
     if (method != "fitted") {
       stop2("Can only use 'categorical' with method = 'fitted'.")
     }
-    if (!has_cat(x)) {
+    if (!(has_cat(x) || is_ordinal(x))) {
       stop2("Argument 'categorical' may only be used ", 
             "for categorical or ordinal models.")
     }

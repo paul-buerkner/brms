@@ -54,8 +54,12 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   }
   attr(out, "levels") <- draws$data$cats
   if (summary) {
-    if (is_ordinal(draws$family) || is_categorical(draws$family)) {
-      out <- posterior_table(out, levels = seq_len(draws$data$ncat))
+    if (is_ordinal(draws$family)) {
+      levels <- seq_len(max(draws$data$nthres) + 1)
+      out <- posterior_table(out, levels = levels)
+    } else if (is_categorical(draws$family)) {
+      levels <- seq_len(draws$data$ncat)
+      out <- posterior_table(out, levels = levels)
     } else {
       out <- posterior_summary(out, probs = probs, robust = robust)
     }
@@ -576,11 +580,13 @@ predict_acat <- function(i, draws, ...) {
 }  
 
 predict_ordinal <- function(i, draws, ...) {
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
   p <- pordinal(
-    seq_len(draws$data$ncat), 
+    seq_len(nthres + 1), 
     eta = get_dpar(draws, "mu", i = i), 
     disc = get_dpar(draws, "disc", i = i),
-    thres = draws$thres, 
+    thres = thres,
     family = draws$family$family, 
     link = draws$family$link
   )

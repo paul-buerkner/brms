@@ -178,6 +178,21 @@ subset_data <- function(data, bterms) {
   data
 }
 
+# get a single value per group 
+# @param x vector of values to extract one value per group
+# @param gr vector of grouping values
+# @return a vector of the same length as unique(group)
+get_one_value_per_group <- function(x, gr) {
+  stopifnot(length(x) == length(gr))
+  not_dupl_gr <- !duplicated(gr)
+  gr_unique <- gr[not_dupl_gr]
+  to_order <- order(gr_unique)
+  gr_unique <- gr_unique[to_order] 
+  out <- x[not_dupl_gr][to_order]
+  names(out) <- gr_unique
+  out
+}
+
 #' Validate New Data
 #' 
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
@@ -233,7 +248,7 @@ validate_newdata <- function(
   only_resp <- all.vars(bterms$respform)
   only_resp <- setdiff(only_resp, all.vars(rhs(bterms$allvars)))
   # always require 'dec' variables to be specified
-  dec_vars <- get_advars(bterms, "dec")
+  dec_vars <- get_ad_vars(bterms, "dec")
   missing_resp <- setdiff(c(only_resp, dec_vars), names(newdata))
   if (length(missing_resp)) {
     if (check_response) {
@@ -244,11 +259,11 @@ validate_newdata <- function(
     }
   }
   # censoring and weighting vars are unused in post-processing methods
-  cens_vars <- get_advars(bterms, "cens")
+  cens_vars <- get_ad_vars(bterms, "cens")
   for (v in setdiff(cens_vars, names(newdata))) {
     newdata[[v]] <- 0
   }
-  weights_vars <- get_advars(bterms, "weights")
+  weights_vars <- get_ad_vars(bterms, "weights")
   for (v in setdiff(weights_vars, names(newdata))) {
     newdata[[v]] <- 1
   }
@@ -422,225 +437,6 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
   x
 }
 
-# Construct design matrices for brms models
-# @param formula a formula object
-# @param data A data frame created with model.frame.
-#   If another sort of object, model.frame is called first.
-# @param cols2remove names of the columns to remove from 
-#   the model matrix; mainly used for intercepts
-# @param rename rename column names via rename()?
-# @param ... currently ignored
-# @return
-#   The design matrix for the given formula and data.
-#   For details see ?stats::model.matrix
-get_model_matrix <- function(formula, data = environment(formula),
-                             cols2remove = NULL, rename = TRUE, ...) {
-  stopifnot(is.atomic(cols2remove))
-  terms <- validate_terms(formula)
-  if (is.null(terms)) {
-    return(NULL)
-  }
-  if (no_int(terms)) {
-    cols2remove <- union(cols2remove, "(Intercept)")
-  }
-  X <- stats::model.matrix(terms, data)
-  cols2remove <- which(colnames(X) %in% cols2remove)
-  if (length(cols2remove)) {
-    X <- X[, -cols2remove, drop = FALSE]
-  }
-  if (rename) {
-    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
-  }
-  X
-}
-
-# convenient wrapper around mgcv::PredictMat
-PredictMat <- function(object, data, ...) {
-  data <- rm_attr(data, "terms")
-  out <- mgcv::PredictMat(object, data = data, ...)
-  if (length(dim(out)) < 2L) {
-    # fixes issue #494
-    out <- matrix(out, nrow = 1)
-  }
-  out
-}
-
-# convenient wrapper around mgcv::smoothCon
-smoothCon <- function(object, data, ...) {
-  data <- rm_attr(data, "terms")
-  vars <- setdiff(c(object$term, object$by), "NA")
-  for (v in vars) {
-    # allow factor-like variables #562
-    if (is_like_factor(data[[v]])) {
-      data[[v]] <- as.factor(data[[v]])
-    }
-  }
-  mgcv::smoothCon(object, data = data, ...)
-}
-
-# Aid prediction from smooths represented as 'type = 2'
-# originally provided by Simon Wood 
-# @param sm output of mgcv::smoothCon
-# @param data new data supplied for prediction
-# @return A list of the same structure as returned by mgcv::smoothCon
-s2rPred <- function(sm, data) {
-  re <- mgcv::smooth2random(sm, names(data), type = 2)
-  # prediction matrix for new data
-  X <- PredictMat(sm, data)   
-  # transform to RE parameterization
-  if (!is.null(re$trans.U)) {
-    X <- X %*% re$trans.U
-  }
-  X <- t(t(X) * re$trans.D)
-  # re-order columns according to random effect re-ordering
-  X[, re$rind] <- X[, re$pen.ind != 0] 
-  # re-order penalization index in same way  
-  pen.ind <- re$pen.ind
-  pen.ind[re$rind] <- pen.ind[pen.ind > 0]
-  # start returning the object
-  Xf <- X[, which(re$pen.ind == 0), drop = FALSE]
-  out <- list(rand = list(), Xf = Xf)
-  for (i in seq_along(re$rand)) { 
-    # loop over random effect matrices
-    out$rand[[i]] <- X[, which(pen.ind == i), drop = FALSE]
-    attr(out$rand[[i]], "s.label") <- attr(re$rand[[i]], "s.label")
-  }
-  names(out$rand) <- names(re$rand)
-  out
-}
-
-# Basis matrices for baseline hazard functions of the Cox model
-# @param y vector of response values
-# @param args arguments passed to the spline generating functions
-# @param integrate compute the I-spline instead of the M-spline basis?
-# @param basis optional precomputed basis matrix
-# @return the design matrix of the baseline hazard function
-bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE, 
-                              basis = NULL) {
-  require_package("splines2")
-  if (!is.null(basis)) {
-    # perform predictions based on an existing basis matrix
-    stopifnot(inherits(basis, "mSpline"))
-    if (integrate) {
-      # for predictions just the attibutes are required
-      # which are the same of M-Splines and I-Splines
-      class(basis) <- c("matrix", "iSpline")
-    }
-    return(predict(basis, y))
-  }
-  stopifnot(is.list(args))
-  args$x <- y
-  if (!is.null(args$intercept)) {
-    args$intercept <- as_one_logical(args$intercept) 
-  }
-  if (is.null(args$Boundary.knots)) {
-    if (isTRUE(args$intercept)) {
-      lower_knot <- min(y)
-      upper_knot <- max(y)
-    } else {
-      # we need a smaller lower boundary knot to avoid lp = -Inf 
-      # the below choices are ad-hoc and may need further thought
-      lower_knot <- max(min(y) - mad(y, na.rm = TRUE) / 10, 0)
-      upper_knot <- max(y) + mad(y, na.rm = TRUE) / 10
-    }
-    args$Boundary.knots <- c(lower_knot, upper_knot)
-  }
-  if (integrate) {
-    out <- do_call(splines2::iSpline, args)
-  } else {
-    out <- do_call(splines2::mSpline, args)
-  }
-  out
-}
-
-#' Extract response values
-#' 
-#' Extract response values from a \code{\link{brmsfit}} object.
-#' 
-#' @param x A \code{\link{brmsfit}} object.
-#' @param resp Optional names of response variables for which to extract values.
-#' @param warn For internal use only.
-#' @param ... Further arguments passed to \code{\link{standata}}.
-#' 
-#' @return Returns a vector of response values for univariate models and a
-#'   matrix of response values with one column per response variable for
-#'   multivariate models.
-#' 
-#' @keywords internal
-#' @export
-get_y <- function(x, resp = NULL, warn = FALSE, ...) {
-  stopifnot(is.brmsfit(x))
-  resp <- validate_resp(resp, x)
-  warn <- as_one_logical(warn)
-  args <- list(x, resp = resp, ...)
-  args$re_formula <- NA
-  args$check_response <- TRUE
-  args$only_response <- TRUE
-  args$internal <- TRUE
-  sdata <- do_call(standata, args)
-  if (warn) {
-    if (any(paste0("cens", usc(resp)) %in% names(sdata))) {
-      warning2("Results may not be meaningful for censored models.")
-    }
-  }
-  Ynames <- paste0("Y", usc(resp))
-  if (length(Ynames) > 1L) {
-    out <- do_call(cbind, sdata[Ynames])
-    colnames(out) <- resp
-  } else {
-    out <- sdata[[Ynames]]
-  }
-  structure(out, old_order = attr(sdata, "old_order"))
-}
-
-# coerce censored values into the right format
-# @param x vector of censoring indicators
-# @return transformed vector of censoring indicators
-prepare_cens <- function(x) {
-  .prepare_cens <- function(x) {  
-    stopifnot(length(x) == 1L)
-    regx <- paste0("^", x)
-    if (grepl(regx, "left")) {
-      x <- -1
-    } else if (grepl(regx, "none") || isFALSE(x)) {
-      x <- 0
-    } else if (grepl(regx, "right") || isTRUE(x)) {
-      x <- 1
-    } else if (grepl(regx, "interval")) {
-      x <- 2
-    }
-    return(x)
-  }
-  x <- unname(x)
-  if (is.factor(x)) {
-    x <- as.character(x)
-  }
-  ulapply(x, .prepare_cens)
-}
-
-# extract information on censoring of the response variable
-# @param x a brmsfit object
-# @param resp optional names of response variables for which to extract values
-# @return vector of censoring indicators or NULL in case of no censoring
-get_cens <- function(x, resp = NULL, newdata = NULL) {
-  stopifnot(is.brmsfit(x))
-  resp <- validate_resp(resp, x, multiple = FALSE)
-  bterms <- parse_bf(x$formula)
-  if (!is.null(resp)) {
-    bterms <- bterms$terms[[resp]]
-  }
-  if (is.null(newdata)) {
-    newdata <- model.frame(x)
-  }
-  out <- NULL
-  if (is.formula(bterms$adforms$cens)) {
-    cens <- eval_rhs(bterms$adforms$cens)
-    out <- eval2(cens$vars$cens, newdata)
-    out <- prepare_cens(out)
-  }
-  out
-}
-
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
@@ -671,14 +467,13 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   for (nlp in names(x$nlpars)) {
     out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
-  if (has_trials(x$family) || has_cat(x$family)) {
-    # trials and ncat should not be computed based on new data
+  if (has_trials(x$family) || has_cat(x$family) || has_thres(x$family)) {
+    # trials, ncat, and nthres should not be computed based on new data
     data_response <- data_response(
       x, data, check_response = FALSE, not4stan = TRUE
     )
     # partially match via $ to be independent of the response suffix
     out$trials <- data_response$trials
-    out$ncat <- data_response$ncat
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))

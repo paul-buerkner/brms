@@ -6,17 +6,16 @@
 #' 
 #' @name addition-terms
 #' 
-#' @param x A vector; usually a variable defined in the
-#'  data. Allowed values depend on the function:
-#'  \code{resp_se} and \code{resp_weights} require positive numeric values.
-#'  \code{resp_trials} and \code{resp_cat} require positive integers.
-#'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
-#'  \code{'lower'} and \code{'upper'}.
-#'  \code{resp_subset} requires \code{0} and \code{1}, or alternatively
-#'  \code{FALSE} and \code{TRUE}.
-#'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
-#'  and \code{'interval'} (or equivalently \code{-1}, \code{0}, \code{1},
-#'  and \code{2}) to indicate left, no, right, or interval censoring.
+#' @param x A vector; usually a variable defined in the data. Allowed values
+#'   depend on the function: \code{resp_se} and \code{resp_weights} require
+#'   positive numeric values. \code{resp_trials}, \code{resp_thres}, and
+#'   \code{resp_cat} require positive integers. \code{resp_dec} requires
+#'   \code{0} and \code{1}, or alternatively \code{'lower'} and \code{'upper'}.
+#'   \code{resp_subset} requires \code{0} and \code{1}, or alternatively
+#'   \code{FALSE} and \code{TRUE}. \code{resp_cens} requires \code{'left'},
+#'   \code{'none'}, \code{'right'}, and \code{'interval'} (or equivalently
+#'   \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate left, no, right,
+#'   or interval censoring.
 #' @param sigma Logical; Indicates whether the residual standard deviation
 #'  parameter \code{sigma} should be included in addition to the known
 #'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
@@ -34,6 +33,7 @@
 #'   at the same time using the plausible-values-technique.
 #' @param denom A vector of positive numeric values specifying
 #'   the denominator values from which the response rates are computed.
+#' @param gr A vector of grouping indicators.
 #' @param ... For \code{resp_vreal}, vectors of real values. 
 #'   For \code{resp_vint}, vectors of integer values.  
 #'
@@ -117,9 +117,23 @@ resp_trials <- function(x) {
 
 #' @rdname addition-terms
 #' @export
+resp_thres <- function(x, gr = NA) {
+  thres <- deparse(substitute(x))
+  gr <- deparse(substitute(gr))
+  class_resp_special("thres", call = match.call(), vars = nlist(thres, gr))
+}
+
+#' @rdname addition-terms
+#' @export
 resp_cat <- function(x) {
-  cat <- deparse(substitute(x))
-  class_resp_special("cat", call = match.call(), vars = nlist(cat))
+  # deprecated as of brms 2.10.5
+  # number of thresholds = number of response categories - 1
+  thres <- deparse(substitute(x))
+  str_add(thres) <- " - 1"
+  class_resp_special(
+    "thres", call = match.call(), 
+    vars = nlist(thres, gr = "NA")
+  )
 }
 
 #' @rdname addition-terms

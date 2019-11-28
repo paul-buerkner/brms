@@ -812,7 +812,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   # summary of autocorrelation effects
-  cor_pars <- pars[grepl(regex_cor_pars(), pars)]
+  cor_pars <- pars[grepl(regex_autocor_pars(), pars)]
   out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
   
@@ -1925,7 +1925,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_samples(object)
   object <- restructure(object)
   resp <- validate_resp(resp, object)
-  if (has_cat(family(object, resp = resp))) {
+  family <- family(object, resp = resp)
+  if (has_cat(family) || is_ordinal(family)) {
     stop2("Residuals are not defined for ordinal or categorical models.")
   }
   subset <- subset_samples(object, subset, nsamples)
@@ -2410,6 +2411,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     stop2("Please use argument 'newdata' to update the data.")
   }
   if (!is.null(newdata)) {
+    # TODO: update info stored in the families such as 'cats' or 'thres'
     dots$data <- newdata
     data.name <- substitute_name(newdata)
   } else {

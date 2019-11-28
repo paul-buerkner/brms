@@ -663,18 +663,37 @@ prior_thres <- function(bterms, def_scale_prior = "", ...) {
     # fixed thresholds cannot have separate priors
     return(prior)
   }
-  px <- check_prefix(bterms)
-  thres <- get_thres(bterms)
-  if (has_equidistant_thres(bterms)) {
-    thres <- thres[1]
-    # prior for the delta parameter for equidistant thresholds
-    bound <- str_if(has_ordered_thres(bterms), "<lower=0>")
-    prior <- prior + brmsprior(class = "delta", bound = bound, ls = px)
+  
+  # create priors for threshold per group
+  .prior_thres <- function(thres, thres_prior = "", group = "") {
+    prior <- empty_prior()
+    if (has_equidistant_thres(bterms)) {
+      # prior for the delta parameter for equidistant thresholds
+      thres <- character(0)
+      bound <- str_if(has_ordered_thres(bterms), "<lower=0>")
+      prior <- prior + brmsprior(
+        class = "delta", group = group, bound = bound, ls = px
+      )
+    } 
+    prior <- prior + brmsprior(
+      prior = c(thres_prior, rep("", length(thres))),
+      class = "Intercept", coef = c("", thres), 
+      group = group, ls = px
+    )
   }
-  prior <- prior + brmsprior(
-    prior = c(def_scale_prior, rep("", length(thres))), 
-    class = "Intercept", coef = c("", thres), ls = px
-  )
+  
+  px <- check_prefix(bterms)
+  groups <- get_thres_groups(bterms)
+  if (any(nzchar(groups))) {
+    # for models with multiple threshold vectors
+    prior <- prior + .prior_thres(character(0), def_scale_prior)
+    for (g in groups) {
+      prior <- prior + .prior_thres(get_thres(bterms, group = g), group = g)
+    }
+  } else {
+    # for models with a single threshold vector
+    prior <- prior + .prior_thres(get_thres(bterms), def_scale_prior)
+  }
   prior
 }
 
