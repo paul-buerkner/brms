@@ -451,7 +451,9 @@ test_that("Stan code for multivariate models is correct", {
     censi = sample(0:1, 10, TRUE)
   )
   # models with residual correlations
-  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, prior = prior(horseshoe(2)))
+  prior <- prior(horseshoe(2), resp = "y1") + 
+    prior(horseshoe(2), resp = "y2")
+  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, prior = prior)
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
   expect_match2(scode, "target += normal_lpdf(hs_local_y1[1] | 0, 1)")
@@ -460,8 +462,9 @@ test_that("Stan code for multivariate models is correct", {
   )
   expect_match2(scode, "rescor[choose(k - 1, 2) + j] = Rescor[j, k];")
   
-  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, student(),
-                         prior = prior(lasso(2, 10)))
+  prior <- prior(lasso(2, 10), resp = "y1") + 
+    prior(lasso(2, 10), resp = "y2")
+  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, student(), prior = prior)
   expect_match2(scode, "target += multi_student_t_lpdf(Y | nu, Mu, Sigma);")
   expect_match2(scode, "matrix[nresp, nresp] Sigma = multiply_lower")
   expect_match2(scode, "target += gamma_lpdf(nu | 2, 0.1)")
@@ -504,9 +507,9 @@ test_that("Stan code for multivariate models is correct", {
 
 test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(c(1, 2, 3, "a_b"), 2), x = 1:8, .g = 1:8)
-  prior <- prior(normal(0, 5), "b") +
+  prior <- prior(normal(0, 5), "b", dpar = muab) +
     prior(normal(0, 10), "b", dpar = mu2) +
-    prior(cauchy(0, 1), "Intercept") +
+    prior(cauchy(0, 1), "Intercept", dpar = mu2) +
     prior(normal(0, 2), "Intercept", dpar = mu3)
   
   scode <- make_stancode(y ~ x + (1 |ID| .g), data = dat, 
@@ -534,7 +537,7 @@ test_that("Stan code for multinomial models is correct", {
   dat$size <- with(dat, y1 + y2 + y3)
   dat$y <- with(dat, cbind(y1, y2, y3))
   prior <- prior(normal(0, 10), "b", dpar = muy2) +
-    prior(cauchy(0, 1), "Intercept") +
+    prior(cauchy(0, 1), "Intercept", dpar = muy2) +
     prior(normal(0, 2), "Intercept", dpar = muy3)
   scode <- make_stancode(bf(y | trials(size)  ~ 1, muy2 ~ x), data = dat, 
                          family = multinomial(), prior = prior)
@@ -552,7 +555,7 @@ test_that("Stan code for dirichlet models is correct", {
   names(dat) <- c("y1", "y2", "y3")
   dat$x <- rnorm(N)
   dat$y <- with(dat, cbind(y1, y2, y3))
-  prior <- prior(normal(0, 5), "b") +
+  prior <- prior(normal(0, 5), class = "b", dpar = "muy3") +
     prior(exponential(10), "phi")
   scode <- make_stancode(bf(y ~ 1, muy3 ~ x), data = dat, 
                          family = dirichlet(), prior = prior)

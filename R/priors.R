@@ -527,9 +527,8 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
   for (i in seq_along(x$terms)) {
     prior <- prior + prior_predictor(x$terms[[i]], ...) 
   }
-  # add "global" priors for population-level effects
-  # in 1.8.0 as users keep asking about this
   for (cl in c("b", "Intercept")) {
+    # deprecated; see warning in 'check_prior_special'
     if (any(with(prior, class == cl & coef == ""))) {
       prior <- prior + brmsprior(class = cl)
     }
@@ -596,8 +595,8 @@ prior_predictor.brmsterms <- function(x, data, ...) {
     )
     prior <- prior + nlp_prior
   }
-  # global population-level priors for categorical models
   if (conv_cats_dpars(x$family)) {
+    # deprecated; see warning in 'check_prior_special'
     for (cl in c("b", "Intercept")) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
@@ -981,7 +980,7 @@ prior_autocor <- function(bterms, def_scale_prior) {
 def_dprior <- function(x, dpar, data = NULL) {
   stopifnot(is.brmsterms(x))
   dpar <- as_one_character(dpar)
-  dpar_class <- dpar_class(dpar)
+  dpar_class <- dpar_class(dpar, family = x)
   link <- x$dpars[[dpar]]$family$link
   if (is.null(link)) {
     link <- "identity"
@@ -1253,8 +1252,15 @@ check_prior_special.brmsprior <- function(x, bterms, ...) {
 #' @export
 check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
-    # copy over the global population-level prior in MV models
+    # copy over the global population-level priors in MV models
     gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
+    if (any(nzchar(prior$prior[gi]))) {
+      # allowing global priors in multivariate models implies conceptual problems 
+      # in the specification of default priors as it becomes unclear on which 
+      # prior level they should be defined
+      warning2("Specifying global priors for regression coefficients in ", 
+               "multivariate models is deprecated and may not work as expected.")
+    }
     prior$remove[gi] <- TRUE
     for (r in x$responses) {
       rows <- which(find_rows(prior, class = cl, coef = "", resp = r))
@@ -1277,17 +1283,23 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   if (is.null(prior)) {
     prior <- empty_prior()
   }
-  # copy over the global population-level prior in categorical models
   if (conv_cats_dpars(x$family)) {
     for (cl in c("b", "Intercept")) {
       gi <- which(find_rows(
-        prior, class = cl, coef = "", 
+        prior, class = cl, coef = "",
         dpar = "", nlpar = "", resp = x$resp
       ))
+      if (any(nzchar(prior$prior[gi]))) {
+        # allowing global priors in categorical models implies conceptual problems 
+        # in the specification of default priors as it becomes unclear on which 
+        # prior level they should be defined
+        warning2("Specifying global priors for regression coefficients in ", 
+                 "categorical models is deprecated and may not work as expected.")
+      }
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
         rows <- which(find_rows(
-          prior, class = cl, coef = "", 
+          prior, class = cl, coef = "",
           dpar = dp, nlpar = "", resp = x$resp
         ))
         for (dpi in rows) {

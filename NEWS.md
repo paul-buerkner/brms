@@ -4,6 +4,7 @@
 
 * Support grouped ordinal threshold vectors via addition 
 argument `resp_thres`. (#675)
+* Allow storing `loo_R2` results via `add_criterion`. #793
 
 ### Bug Fixes
 
@@ -28,6 +29,8 @@ multinomial models thanks to Santiago Olivella. (#770)
 * Model fit criteria computed via `add_criterion` are now 
 stored in the `brmsfit$criteria` slot.
 * Deprecate `resp_cat` in favor of `resp_thres`.
+* Deprecate specifying global priors on regression coefficients
+in categorical and multivariate models.
 
 # brms 2.10.0
 

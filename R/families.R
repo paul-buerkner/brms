@@ -1157,8 +1157,17 @@ valid_dpars.brmsfit <- function(family, ...) {
 }
 
 # class of a distributional parameter
-dpar_class <- function(dpar) {
-  sub("[[:digit:]]*$", "", dpar)
+dpar_class <- function(dpar, family = NULL) {
+  out <- sub("[[:digit:]]*$", "", dpar) 
+  if (!is.null(family)) {
+    # TODO: avoid this special case by changing naming conventions
+    if (conv_cats_dpars(family) && grepl("^mu", out)) {
+      # categorical-like models have non-integer suffixes
+      # that will not be caught by the standard procedure
+      out <- "mu"
+    }
+  }
+  out
 }
 
 # id of a distributional parameter
