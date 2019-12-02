@@ -341,11 +341,11 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Age"), "ggplot"))
   expect_error(pp_check(fit2, "ribbon", x = "x"),
-               "Variable 'x' is not a valid variable")
+               "Variable 'x' could not be found in the data")
   expect_error(pp_check(fit1, "wrong_type"))
   expect_error(pp_check(fit2, "violin_grouped"), "group")
   expect_error(pp_check(fit1, "stat_grouped", group = "g"),
-               "not a valid grouping factor")
+               "Variable 'g' could not be found in the data")
   expect_true(is(pp_check(fit4), "ggplot"))
   expect_true(is(pp_check(fit5), "ggplot"))
   expect_error(pp_check(fit4, "error_binned"),

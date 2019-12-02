@@ -1328,25 +1328,22 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   # validate arguments 'resp', 'group', and 'x'
   object <- restructure(object)
   stopifnot_resp(object, resp)
-  valid_groups <- get_cat_vars(object)
-  if (!is.null(group) && !group %in% valid_groups) {
-    stop2("Group '", group, "' is not a valid grouping factor. ",
-          "Valid groups are: \n", collapse_comma(valid_groups))
-  }
-  is_group_type <- "group" %in% names(formals(ppc_fun))
-  if (is.null(group) && is_group_type) {
-    stop2("Argument 'group' is required for ppc type '", type, "'.")
-  }
   family <- family(object, resp = resp)
   if (has_multicol(family)) {
     stop2("'pp_check' is not implemented for this family.")
   }
-  bterms <- parse_bf(object$formula)
-  if ("x" %in% names(formals(ppc_fun)) && !is.null(x)) {
-    ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
-    if (!x %in% ae_coll) {
-      stop2("Variable '", x, "' is not a valid variable for this model.",
-            "\nValid variables are: ", collapse_comma(ae_coll))
+  valid_vars <- names(model.frame(object))
+  if ("group" %in% names(formals(ppc_fun))) {
+    if (is.null(group)) {
+      stop2("Argument 'group' is required for ppc type '", type, "'.")
+    }
+    if (!group %in% valid_vars) {
+      stop2("Variable '", group, "' could not be found in the data.")
+    }
+  }
+  if ("x" %in% names(formals(ppc_fun))) {
+    if (!is.null(x) && !x %in% valid_vars) {
+      stop2("Variable '", x, "' could not be found in the data.")
     }
   }
   if (type == "error_binned") {
@@ -1415,6 +1412,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     )
   }
   # allow using arguments 'group' and 'x' for new data
+  bterms <- parse_bf(object$formula)
   mf <- update_data(newdata, bterms, na.action = na.pass)
   if (!is.null(group)) {
     ppc_args$group <- mf[[group]]
