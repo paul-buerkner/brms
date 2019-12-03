@@ -616,7 +616,7 @@ subset_thres <- function(draws, i) {
   thres <- draws$thres$thres
   Jthres <- draws$thres$Jthres
   if (!is.null(Jthres)) {
-    thres <- thres[, Jthres[i, 1]:Jthres[i, 2]]
+    thres <- thres[, Jthres[i, 1]:Jthres[i, 2], drop = FALSE]
   }
   thres
 }
