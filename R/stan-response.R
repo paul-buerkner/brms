@@ -61,11 +61,11 @@ stan_response <- function(bterms, data) {
     if (any(nzchar(groups))) {
       str_add(out$data) <- glue(
         "  int<lower=1> ngrthres{resp};  // number of threshold groups\n",
-        "  int<lower=2> nthres{resp}[ngrthres{resp}];  // number of thresholds\n",
+        "  int<lower=1> nthres{resp}[ngrthres{resp}];  // number of thresholds\n",
         "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
       )
       str_add(out$tdata_def) <- glue(
-        "  int<lower=2> nmthres{resp} = prod(nthres{resp});", 
+        "  int<lower=1> nmthres{resp} = prod(nthres{resp});", 
         "  // total number of thresholds\n",
         "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];", 
         "  // start index per threshold group\n",
