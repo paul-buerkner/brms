@@ -729,7 +729,7 @@ test_that("grouped ordinal thresholds appear in the Stan code", {
     y | thres(th, gr) ~ x, data = dat, 
     family = sratio(), prior = prior
   )
-  expect_match2(scode, "int<lower=2> nthres[ngrthres];")
+  expect_match2(scode, "int<lower=1> nthres[ngrthres];")
   expect_match2(scode, "merged_Intercept[Kthres_start[1]:Kthres_end[1]] = Intercept_1;")
   expect_match2(scode, "target += sratio_logit_merged_lpmf(Y[n]")
   expect_match2(scode, "target += normal_lpdf(Intercept_2 | 0, 1);")
