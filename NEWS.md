@@ -31,6 +31,7 @@ stored in the `brmsfit$criteria` slot.
 * Deprecate `resp_cat` in favor of `resp_thres`.
 * Deprecate specifying global priors on regression coefficients
 in categorical and multivariate models.
+* Deprecate reserved variable `intercept` in favor of `Intercept`.
 
 # brms 2.10.0
 

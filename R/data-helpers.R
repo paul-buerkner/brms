@@ -60,6 +60,10 @@ update_data <- function(data, bterms, na.action = na.omit2,
 data_rsv_intercept <- function(data, bterms) {
   fe_forms <- get_effect(bterms, "fe")
   if (any(ulapply(fe_forms, no_int))) {
+    if ("intercept" %in% ulapply(fe_forms, all_vars)) {
+      warning2("Reserved variable name 'intercept' is deprecated. ", 
+               "Please use 'Intercept' instead.")
+    }
     if (any(data[["intercept"]] != 1)) {
       stop2("Variable name 'intercept' is resevered in models ",
             "without a population-level intercept.")

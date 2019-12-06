@@ -426,7 +426,7 @@ test_that("make_standata handles population-level intercepts", {
                          control = list(not4stan = TRUE))
   expect_equal(unname(sdata$X[, 1]), dat$x)
   
-  sdata <- make_standata(y ~ 0 + intercept + x, data = dat)
+  sdata <- make_standata(y ~ 0 + Intercept + x, data = dat)
   expect_equal(unname(sdata$X), cbind(1, dat$x))
 })
 
@@ -805,7 +805,10 @@ test_that("addition arguments 'vint' and 'vreal' work correctly", {
 
 test_that("reserved variables 'Intercept' is handled correctly", {
   dat <- data.frame(y = 1:10)
-  sdata <- make_standata(y ~ 0 + intercept, dat)
+  expect_warning(
+    sdata <- make_standata(y ~ 0 + intercept, dat),
+    "Reserved variable name 'intercept' is deprecated."
+  )
   expect_true(all(sdata$X[, "intercept"] == 1))
   sdata <- make_standata(y ~ 0 + Intercept, dat)
   expect_true(all(sdata$X[, "Intercept"] == 1))

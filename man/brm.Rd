@@ -376,7 +376,7 @@ ggplot(stack(sigmas), aes(values)) +
   geom_density(aes(fill = ind))
 
 
-# Quantile regression predicting the 25%-quantile
+# Quantile regression predicting the 25\%-quantile
 fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
