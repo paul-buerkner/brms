@@ -3296,8 +3296,8 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   out <- try(bridge_sampler(samples$fit, ...))
   if (is(out, "try-error")) {
     stop2(
-      "Bridgesampling failed. Did you set 'save_all_pars' ",
-      "to TRUE when fitting your model?"
+      "Bridgesampling failed. Perhaps you did not set ", 
+      "'save_all_pars' to TRUE when fitting your model?"
     )
   }
   out
@@ -3367,10 +3367,14 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' @export bayes_factor
 #' @export
 bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
+  model_name_1 <- deparse_combine(substitute(x1))
+  model_name_2 <- deparse_combine(substitute(x2))
   match_response(list(x1, x2))
   bridge1 <- bridge_sampler(x1, ...)
   bridge2 <- bridge_sampler(x2, ...)
-  bridgesampling::bf(bridge1, bridge2, log = log)
+  out <- bayes_factor(bridge1, bridge2, log = log)
+  attr(out, "model_names") <- c(model_name_1, model_name_2)
+  out
 }
 
 #' Posterior Model Probabilities from Marginal Likelihoods
