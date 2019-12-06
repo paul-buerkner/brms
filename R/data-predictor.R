@@ -306,19 +306,21 @@ data_gr_global <- function(ranef, cov_ranef = NULL) {
     }
   }
   for (id in unique(ranef$id)) {
+    tmp <- list()
     id_ranef <- subset2(ranef, id = id)
     nranef <- nrow(id_ranef)
     group <- id_ranef$group[1]
     levels <- attr(ranef, "levels")[[group]]
-    tmp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
-    c(out) <- setNames(tmp, paste0(c("N_", "M_", "NC_"), id))
+    tmp$N <- length(levels)
+    tmp$M <- nranef
+    tmp$NC <- as.integer(nranef * (nranef - 1) / 2)
     # prepare number of levels of an optional 'by' variable
     if (nzchar(id_ranef$by[1])) {
       stopifnot(!nzchar(id_ranef$type[1]))
       bylevels <- id_ranef$bylevels[[1]]
       Jby <- match(attr(levels, "by"), bylevels)
-      out[[paste0("Nby_", id)]] <- length(bylevels)
-      out[[paste0("Jby_", id)]] <- as.array(Jby)
+      tmp$Nby <- length(bylevels)
+      tmp$Jby <- as.array(Jby)
     }
     # prepare customized covariance matrices
     if (group %in% names(cov_ranef)) {
@@ -343,8 +345,10 @@ data_gr_global <- function(ranef, cov_ranef = NULL) {
         stop2("Covariance matrix of grouping factor '", 
               group, "' is not positive definite.")
       }
-      c(out) <- setNames(list(t(chol(cov_mat))), paste0("Lcov_", id))
+      tmp$Lcov <- t(chol(cov_mat))
     }
+    names(tmp) <- paste0(names(tmp), "_", id)
+    c(out) <- tmp
   }
   out
 }
