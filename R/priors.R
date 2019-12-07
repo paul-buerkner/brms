@@ -1648,6 +1648,9 @@ c.brmsprior <- function(x, ..., replace = FALSE) {
 
 #' @export
 "+.brmsprior" <- function(e1, e2) {
+  if (is.null(e2)) {
+    return(e1)
+  }
   if (!is.brmsprior(e2)) {
     stop2("Cannot add '", class(e2)[1], "' objects to the prior.")
   }
