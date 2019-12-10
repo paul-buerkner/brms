@@ -91,7 +91,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
       sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
     )
     args$chains <- 0
-    fit <- do_call(brm, args)
+    message("Compiling the C++ model")
+    fit <- suppressMessages(do_call(brm, args))
   }
   
   dots <- list(...)
