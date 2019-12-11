@@ -709,6 +709,9 @@ eval_silent <- function(expr, type = "output", try = FALSE,
 substitute_name <- function(x, envir = parent.frame(), nchar = 50) {
   out <- substitute(x)
   out <- eval2(paste0("substitute(", out, ")"), envir = envir)
+  if (missing(out)) {
+    return(NULL)
+  }
   substr(collapse(deparse(out)), 1, nchar)
 }
 

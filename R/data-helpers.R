@@ -14,7 +14,7 @@ update_data <- function(data, bterms, na.action = na.omit2,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
   if (missing(data)) {
-    stop2("Argument 'data' is missing.")
+    stop2("Data must be specified using the 'data' argument.")
   }
   if (isTRUE(attr(data, "brmsframe"))) {
     return(data)
