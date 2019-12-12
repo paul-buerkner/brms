@@ -1906,3 +1906,28 @@ test_that("centering design matrices can be changed correctly", {
   scode <- make_stancode(bform, data = dat)
   expect_match2(scode, "nlp_eta = Intercept_eta + Xc_eta * b_eta;")
 })
+
+test_that("to_vector() is correctly removed from prior of SD parameters", {
+  # see https://discourse.mc-stan.org/t/prior-for-sd-generate-parsing-text-error/12292/5
+  dat <- data.frame(
+    y = rnorm(100),
+    ID = 1:10,
+    group = rep(1:2, each = 5)
+  )
+  bform <- bf(
+    y ~ 1 + (1 | p | gr(ID, by=group)),
+    sigma ~ 1 + (1 | p | gr(ID, by=group))
+  )
+  bprior <- c(
+    prior(normal(0, 0.1), class = sd) ,
+    prior(normal(0, 0.01), class = sd, dpar = sigma)
+  )
+  scode <- make_stancode(
+    bform,
+    data = dat,
+    prior = bprior,
+    sample_prior = TRUE
+  )
+  expect_match2(scode, "prior_sd_1_1 = normal_rng(0,0.1);")
+  expect_match2(scode, "prior_sd_1_2 = normal_rng(0,0.01);")
+})
