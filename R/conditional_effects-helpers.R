@@ -136,6 +136,9 @@
 #' @param rug_args Only used if \code{rug = TRUE}: 
 #'   A named list of arguments passed to 
 #'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#' @param facet_args Only used if if multiple condtions are provided: 
+#'   A named list of arguments passed to 
+#'   \code{\link[ggplot2:facet_wrap]{facet_wrap}}.
 #' 
 #' @return An object of class \code{'brms_conditional_effects'}, which is a
 #'   named list with one data.frame per effect containing all information
@@ -836,7 +839,8 @@ plot.brms_conditional_effects <- function(
   jitter_width = 0, stype = c("contour", "raster"),
   line_args = list(), cat_args = list(), errorbar_args = list(), 
   surface_args = list(), spaghetti_args = list(), point_args = list(), 
-  rug_args = list(), theme = NULL, ask = TRUE, plot = TRUE, ...
+  rug_args = list(), facet_args = list(), theme = NULL, ask = TRUE, 
+  plot = TRUE, ...
 ) {
   dots <- list(...)
   plot <- use_alias(plot, dots$do_plot)
@@ -1014,8 +1018,10 @@ plot.brms_conditional_effects <- function(
       if (is.null(ncol)) {
         ncol <- max(floor(sqrt(ncond)), 3)
       }
+      .facet_args <- nlist(facets = "cond__", ncol)
+      replace_args(.facet_args, dont_replace) <- facet_args
       plots[[i]] <- plots[[i]] + 
-        facet_wrap("cond__", ncol = ncol)
+        do_call(facet_wrap, .facet_args)
     }
     plots[[i]] <- plots[[i]] + theme
     if (plot) {

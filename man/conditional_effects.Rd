@@ -46,6 +46,7 @@ conditional_effects(x, ...)
   spaghetti_args = list(),
   point_args = list(),
   rug_args = list(),
+  facet_args = list(),
   theme = NULL,
   ask = TRUE,
   plot = TRUE,
@@ -212,6 +213,10 @@ A named list of arguments passed to
 \item{rug_args}{Only used if \code{rug = TRUE}: 
 A named list of arguments passed to 
 \code{\link[ggplot2:geom_rug]{geom_rug}}.}
+
+\item{facet_args}{Only used if if multiple condtions are provided: 
+A named list of arguments passed to 
+\code{\link[ggplot2:facet_wrap]{facet_wrap}}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 
