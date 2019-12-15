@@ -56,7 +56,7 @@ update_data <- function(data, bterms, na.action = na.omit2,
   data
 }
 
-# add the resevered intercept variables to the data
+# add the reserved intercept variables to the data
 data_rsv_intercept <- function(data, bterms) {
   fe_forms <- get_effect(bterms, "fe")
   if (any(ulapply(fe_forms, no_int))) {
@@ -65,11 +65,11 @@ data_rsv_intercept <- function(data, bterms) {
                "Please use 'Intercept' instead.")
     }
     if (any(data[["intercept"]] != 1)) {
-      stop2("Variable name 'intercept' is resevered in models ",
+      stop2("Variable name 'intercept' is reserved in models ",
             "without a population-level intercept.")
     }
     if (any(data[["Intercept"]] != 1)) {
-      stop2("Variable name 'Intercept' is resevered in models ",
+      stop2("Variable name 'Intercept' is reserved in models ",
             "without a population-level intercept.")
     }
     data$intercept <- data$Intercept <- rep(1, length(data[[1]]))
