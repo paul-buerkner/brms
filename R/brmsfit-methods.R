@@ -550,7 +550,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
     }
     out <- as.matrix(x$fit, pars)
     mcpar <- c(
-      x$fit@sim$warmup * x$fit@sim$chain + 1, 
+      x$fit@sim$iter * x$fit@sim$chain - (nrow(out) - 1) * x$fit@sim$thin,
       x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin
     )
     attr(out, "mcpar") <- mcpar
