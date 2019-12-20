@@ -449,8 +449,9 @@ parse_sp <- function(formula) {
     attr(out, "uni_mo") <- uni_mo
     attr(out, "uni_me") <- uni_me
     attr(out, "uni_mi") <- uni_mi
-    uni_terms <- c(uni_mo, uni_me, uni_mi)
-    attr(out, "allvars") <- sp_fake_formula(uni_terms)
+    attr(out, "allvars") <- str2formula(all_vars(out))
+    # TODO: do we need sp_fake_formula at all?
+    # attr(out, "allvars") <- sp_fake_formula(uni_mo, uni_me, uni_mi)
   }
   out
 }

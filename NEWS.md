@@ -23,6 +23,8 @@ more than one step ahead.
 multinomial models thanks to Santiago Olivella. (#770)
 * Fix problems in the `as.mcmc` method for thinned models 
 thanks to @hoxo-m. (#811)
+* Fix problems in parsing covariates of special effects terms
+thanks to Riccardo Fusaroli (#813)
 
 ### Other Changes
 

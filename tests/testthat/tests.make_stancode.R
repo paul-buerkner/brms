@@ -788,6 +788,10 @@ test_that("monotonic effects appear in the Stan code", {
   expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * mo(simo_1, Xmo_1[n])")
   expect_true(!grepl("Z_1_w", scode))
   
+  # test issue #813
+  scode <- make_stancode(y ~ mo(x1):y, dat)
+  expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[n]) * Csp_1[n];")
+  
   expect_error(
     make_stancode(y ~ mo(x1) + (mo(x2) | x2), dat),
     "Special group-level terms require"
