@@ -549,20 +549,20 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
       stop2("Cannot include warmup samples when 'combine_chains' is TRUE.")
     }
     out <- as.matrix(x$fit, pars)
-    mcpar <- c(
-      x$fit@sim$warmup * x$fit@sim$chain + 1, 
-      x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin
-    )
+    ndraws <- nrow(out)
+    end <- x$fit@sim$iter * x$fit@sim$chains
+    thin <- x$fit@sim$thin
+    start <- end - (ndraws - 1) * thin
+    mcpar <- c(start, end, thin)
     attr(out, "mcpar") <- mcpar
     class(out) <- "mcmc"
   } else {
-    ps <- rstan::extract(
-      x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup
-    )
-    mcpar <- c(
-      if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
-      x$fit@sim$iter, x$fit@sim$thin
-    )
+    ps <- rstan::extract(x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup)
+    ndraws <- dim(ps)[1]
+    end <- x$fit@sim$iter
+    thin <- x$fit@sim$thin
+    start <- if (inc_warmup) thin else end - (ndraws - 1) * thin
+    mcpar <- c(start, end, thin)
     out <- vector("list", length = dim(ps)[2])
     for (i in seq_along(out)) {
       out[[i]] <- ps[, i, ]

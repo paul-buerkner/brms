@@ -21,6 +21,8 @@ more than one step ahead.
 * Fix problems when using `reloo` or `kfold` with CAR models.
 * Fix problems when using `fitted(..., scale = "linear")` with 
 multinomial models thanks to Santiago Olivella. (#770)
+* Fix problems in the `as.mcmc` method for thinned models 
+thanks to @hoxo-m. (#811)
 
 ### Other Changes
 
