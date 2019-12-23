@@ -99,17 +99,25 @@ that control several aspects of data validation and prediction.}
 \item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
-Predicted values of the response variable. 
-  If \code{summary = TRUE} the output depends on the family:
-  For categorical and ordinal families, it is a N x C matrix, 
-  where N is the number of observations and
-  C is the number of categories. 
-  For all other families, it is a N x E matrix where E is equal 
-  to \code{length(probs) + 2}.
-  If \code{summary = FALSE}, the output is as a S x N matrix, 
-  where S is the number of samples.
-  In multivariate models, the output is an array of 3 dimensions, 
-  where the third dimension indicates the response variables.
+An \code{array} of predicted response values.
+
+  If \code{summary = TRUE} the output depends on the family: For categorical
+  and ordinal families, the output is an N x C matrix, where N is the number
+  of observations, C is the number of categories, and the values are
+  predicted category probabilites. For all other families, the output is a N
+  x E matrix where E = \code{2 + length(probs)} is the number of summary
+  statistics: The \code{Estimate} column contains point estimates (either
+  mean or median depending on argument \code{robust}), while the
+  \code{Est.Error} column contains uncertainty estimates (either standard
+  deviation of median absolute deviation depending on argument
+  \code{robust}). The remaining columns starting with \code{Q} contain
+  quantile estimates as specifed via argument \code{probs}.
+  
+  If \code{summary = FALSE}, the output is as an S x N matrix, where S is the
+  number of posterior samples. 
+  
+  In multivariate models, an additional dimension is added to the output
+  which indexes along the different response variables.
 }
 \description{
 Predict responses based on the fitted model. Can be performed for the data

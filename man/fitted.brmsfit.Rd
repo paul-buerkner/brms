@@ -103,16 +103,26 @@ generic.}
 \item{re.form}{Alias of \code{re_formula}.}
 }
 \value{
-Fitted values extracted from \code{object}. 
- The output depends on the family:
- If \code{summary = TRUE} it is a N x E x C array 
- for categorical and ordinal models and a N x E matrix else.
- If \code{summary = FALSE} it is a S x N x C array 
- for categorical and ordinal models and a S x N matrix else.
- N is the number of observations, S is the number of samples, 
- C is the number of categories, and E is equal to \code{length(probs) + 2}.
- In multivariate models, the output is an array of 3 dimensions, 
- where the third dimension indicates the response variables.
+An \code{array} of predicted \emph{mean} response values.
+
+  If \code{summary = TRUE} the output depends on the family: For categorical
+  and ordinal families, the output is an N x E x C array, where N is the
+  number of observations, E is the number of summary statistics, and C is the
+  number of categories. For all other families, the output is an N x E
+  matrix. The number of summary statistics E is equal to \code{2 +
+  length(probs)}: The \code{Estimate} column contains point estimates (either
+  mean or median depending on argument \code{robust}), while the
+  \code{Est.Error} column contains uncertainty estimates (either standard
+  deviation of median absolute deviation depending on argument
+  \code{robust}). The remaining columns starting with \code{Q} contain
+  quantile estimates as specifed via argument \code{probs}.
+  
+  If \code{summary = FALSE} it is a S x N x C array for categorical and
+  ordinal models and a S x N matrix else, where S is the number of posterior
+  samples.
+  
+  In multivariate models, an additional dimension is added to the output
+  which indexes along the different response variables.
 }
 \description{
 Predict expected values of the response distribution (i.e., predict the
