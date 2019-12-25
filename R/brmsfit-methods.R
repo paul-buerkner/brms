@@ -557,11 +557,14 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
     attr(out, "mcpar") <- mcpar
     class(out) <- "mcmc"
   } else {
+    thin <- x$fit@sim$thin
+    if (inc_warmup && thin >= 2) {
+      stop2("Cannot include warmup samples when 'thin' >= 2.")
+    }
     ps <- rstan::extract(x$fit, pars, permuted = FALSE, inc_warmup = inc_warmup)
     ndraws <- dim(ps)[1]
     end <- x$fit@sim$iter
-    thin <- x$fit@sim$thin
-    start <- if (inc_warmup) thin else end - (ndraws - 1) * thin
+    start <- end - (ndraws - 1) * thin
     mcpar <- c(start, end, thin)
     out <- vector("list", length = dim(ps)[2])
     for (i in seq_along(out)) {
