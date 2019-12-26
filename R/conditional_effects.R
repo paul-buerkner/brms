@@ -5,7 +5,7 @@
 #' 
 #' @aliases marginal_effects marginal_effects.brmsfit
 #' 
-#' @param x An \R object usually of class \code{brmsfit}.
+#' @param x An object of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects
 #'   (main effects or interactions) for which to compute conditional plots.
 #'   Interactions are specified by a \code{:} between variable names.
@@ -221,8 +221,247 @@
 #' }
 #' 
 #' @export
+conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
+                                        int_conditions = NULL, re_formula = NA, 
+                                        robust = TRUE, probs = c(0.025, 0.975),
+                                        method = c("fitted", "predict"), 
+                                        spaghetti = FALSE, surface = FALSE,
+                                        categorical = FALSE, ordinal = FALSE,
+                                        transform = NULL, resolution = 100, 
+                                        select_points = 0, too_far = 0, ...) {
+  method <- match.arg(method)
+  spaghetti <- as_one_logical(spaghetti)
+  surface <- as_one_logical(surface)
+  categorical <- as_one_logical(categorical)
+  ordinal <- as_one_logical(ordinal)
+  contains_samples(x)
+  x <- restructure(x)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
+  bterms <- parse_bf(new_formula)
+  if (length(probs) != 2L) {
+    stop2("Arguments 'probs' must be of length 2.")
+  }
+  if (!is.null(transform) && method != "predict") {
+    stop2("'transform' is only allowed when 'method' is set to 'predict'.")
+  }
+  if (ordinal) {
+    warning2("Argument 'ordinal' is deprecated. ", 
+             "Please use 'categorical' instead.")
+  }
+  rsv_vars <- rsv_vars(bterms)
+  use_def_effects <- is.null(effects)
+  if (use_def_effects) {
+    effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
+  } else {
+    # allow to define interactions in any order
+    effects <- strsplit(as.character(effects), split = ":")
+    if (any(unique(unlist(effects)) %in% rsv_vars)) {
+      stop2("Variables ", collapse_comma(rsv_vars),
+            " should not be used as effects for this model")
+    }
+    if (any(lengths(effects) > 2L)) {
+      stop2("To display interactions of order higher than 2 ",
+            "please use the 'conditions' argument.")
+    }
+    all_effects <- get_all_effects(
+      bterms, rsv_vars = rsv_vars, comb_all = TRUE
+    )
+    ae_coll <- all_effects[lengths(all_effects) == 1L]
+    ae_coll <- ulapply(ae_coll, paste, collapse = ":")
+    matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
+    if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
+      invalid <- effects[setdiff(seq_along(effects), sort(matches))]  
+      invalid <- ulapply(invalid, paste, collapse = ":")
+      warning2(
+        "Some specified effects are invalid for this model: ",
+        collapse_comma(invalid), "\nValid effects are ", 
+        "(combinations of): ", collapse_comma(ae_coll)
+      )
+    }
+    effects <- unique(effects[sort(matches)])
+    if (!length(effects)) {
+      stop2(
+        "All specified effects are invalid for this model.\n", 
+        "Valid effects are (combinations of): ", 
+        collapse_comma(ae_coll)
+      )
+    }
+  }
+  if (categorical || ordinal) {
+    int_effs <- lengths(effects) == 2L
+    if (any(int_effs)) {
+      effects <- effects[!int_effs]
+      warning2(
+        "Interactions cannot be plotted directly if 'categorical' ", 
+        "is TRUE. Please use argument 'conditions' instead."
+      )
+    }
+  }
+  if (!length(effects)) {
+    stop2("No valid effects detected.")
+  }
+  mf <- model.frame(x)
+  conditions <- prepare_conditions(
+    x, conditions = conditions, effects = effects, 
+    re_formula = re_formula, rsv_vars = rsv_vars
+  )
+  int_vars <- get_int_vars(bterms)
+  int_conditions <- lapply(int_conditions, 
+    function(x) if (is.numeric(x)) sort(x, TRUE) else x
+  )
+  out <- list()
+  for (i in seq_along(effects)) {
+    eff <- effects[[i]]
+    marg_data <- prepare_marg_data(
+      mf[, eff, drop = FALSE], conditions = conditions, 
+      int_conditions = int_conditions, int_vars = int_vars,
+      surface = surface, resolution = resolution, 
+      reorder = use_def_effects
+    )
+    if (surface && length(eff) == 2L && too_far > 0) {
+      # exclude prediction grid points too far from data
+      ex_too_far <- mgcv::exclude.too.far(
+        g1 = marg_data[[eff[1]]], 
+        g2 = marg_data[[eff[2]]], 
+        d1 = mf[, eff[1]],
+        d2 = mf[, eff[2]],
+        dist = too_far)
+      marg_data <- marg_data[!ex_too_far, ]  
+    }
+    c(out) <- conditional_effects(
+      bterms, fit = x, marg_data = marg_data, method = method, 
+      surface = surface, spaghetti = spaghetti, categorical = categorical, 
+      ordinal = ordinal, re_formula = re_formula, transform = transform, 
+      conditions = conditions, int_conditions = int_conditions, 
+      select_points = select_points, probs = probs, robust = robust,
+      ...
+    )
+  }
+  structure(out, class = "brms_conditional_effects")
+}
+
+#' @rdname conditional_effects.brmsfit
+#' @export
 conditional_effects <- function(x, ...) {
   UseMethod("conditional_effects")
+}
+
+# compute expected values of MV models for use in conditional_effects
+# @return a list of summarized prediction matrices
+#' @export
+conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
+  resp <- validate_resp(resp, x$responses)
+  x$terms <- x$terms[resp]
+  out <- lapply(x$terms, conditional_effects, ...)
+  unlist(out, recursive = FALSE)
+}
+
+# compute fitted values of a univariate model for use in conditional_effects
+# @return a list with the summarized prediction matrix as the only element
+# @note argument 'resp' exists only to be excluded from '...' (#589)
+#' @export
+conditional_effects.brmsterms <- function(
+  x, fit, marg_data, int_conditions, method, surface, 
+  spaghetti, categorical, ordinal, probs, robust, 
+  dpar = NULL, resp = NULL, ...
+) {
+  stopifnot(is.brmsfit(fit))
+  effects <- attr(marg_data, "effects")
+  types <- attr(marg_data, "types")
+  catscale <- NULL
+  pred_args <- list(
+    fit, newdata = marg_data, allow_new_levels = TRUE, 
+    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
+    incl_autocor = FALSE, summary = FALSE, ...
+  )
+  out <- do_call(method, pred_args)
+  rownames(marg_data) <- NULL
+  
+  if (categorical || ordinal) {
+    if (method != "fitted") {
+      stop2("Can only use 'categorical' with method = 'fitted'.")
+    }
+    if (!(has_cat(x) || is_ordinal(x))) {
+      stop2("Argument 'categorical' may only be used ", 
+            "for categorical or ordinal models.")
+    }
+    if (categorical && ordinal) {
+      stop2("Please use argument 'categorical' instead of 'ordinal'.")
+    }
+    catscale <- if (is_multinomial(x)) "Count" else "Probability"
+    cats <- dimnames(out)[[3]]
+    if (is.null(cats)) cats <- seq_dim(out, 3)
+    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
+    marg_data <- cbind(marg_data, cats__ = cats)
+    effects[2] <- "cats__"
+    types[2] <- "factor"
+  } else {
+    if (conv_cats_dpars(x$family)) {
+      stop2("Please set 'categorical' to TRUE.")
+    }
+    if (is_ordinal(x$family) && is.null(dpar)) {
+      warning2(
+        "Predictions are treated as continuous variables in ",
+        "'conditional_effects' by default which is likely invalid ", 
+        "for ordinal families. Please set 'categorical' to TRUE."
+      )
+      if (method == "fitted") {
+        out <- ordinal_probs_continuous(out)
+      }
+    }
+  }
+  
+  first_numeric <- types[1] %in% "numeric"
+  second_numeric <- types[2] %in% "numeric"
+  both_numeric <- first_numeric && second_numeric
+  if (second_numeric && !surface) {
+    # can only be converted to factor after having called method
+    mde2 <- round(marg_data[[effects[2]]], 2)
+    levels2 <- sort(unique(mde2), TRUE)
+    marg_data[[effects[2]]] <- factor(mde2, levels = levels2)
+    labels2 <- names(int_conditions[[effects[2]]])
+    if (length(labels2) == length(levels2)) {
+      levels(marg_data[[effects[2]]]) <- labels2
+    }
+  }
+  marg_data <- add_effects__(marg_data, effects)
+  
+  spag <- NULL
+  if (first_numeric && spaghetti) {
+    if (surface) {
+      stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
+    }
+    spag <- out
+    if (categorical) {
+      spag <- do_call(cbind, array2list(spag))
+    }
+    sample <- rep(seq_rows(spag), each = ncol(spag))
+    if (length(types) == 2L) {
+      # samples should be unique across plotting groups
+      sample <- paste0(sample, "_", marg_data[[effects[2]]])
+    }
+    spag <- data.frame(as.numeric(t(spag)), factor(sample))
+    colnames(spag) <- c("estimate__", "sample__")
+    spag <- cbind(marg_data, spag)
+  }
+  
+  out <- posterior_summary(out, probs = probs, robust = robust)
+  if (categorical || ordinal) {
+    out <- do_call(rbind, array2list(out))
+  }
+  colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
+  out <- cbind(marg_data, out)
+  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
+  attr(out, "effects") <- effects
+  attr(out, "response") <- response
+  attr(out, "surface") <- unname(both_numeric && surface)
+  attr(out, "categorical") <- categorical
+  attr(out, "catscale") <- catscale
+  attr(out, "ordinal") <- ordinal
+  attr(out, "spaghetti") <- spag
+  attr(out, "points") <- make_point_frame(x, fit$data, effects, ...)
+  name <- paste0(usc(x$resp, "suffix"), paste0(effects, collapse = ":"))
+  setNames(list(out), name)
 }
 
 # get combinations of variables used in predictor terms
@@ -341,7 +580,7 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
-  advars <- ulapply(rmNULL(x$adforms[c("trials", "cat")]), all_vars)
+  advars <- ulapply(rmNULL(x$adforms[c("trials", "thres")]), all_vars)
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
@@ -613,129 +852,6 @@ vars_specified <- function(vars, data) {
   as.logical(ulapply(vars, .fun))
 }
 
-# compute fitted values for use in conditional_effects
-conditional_effects_internal <- function(x, ...) {
-  UseMethod("conditional_effects_internal")
-}
-
-# compute fitted values of MV models for use in conditional_effects
-# @return a list of summarized prediction matrices
-#' @export
-conditional_effects_internal.mvbrmsterms <- function(x, resp = NULL, ...) {
-  resp <- validate_resp(resp, x$responses)
-  x$terms <- x$terms[resp]
-  out <- lapply(x$terms, conditional_effects_internal, ...)
-  unlist(out, recursive = FALSE)
-}
-
-# compute fitted values of a univariate model for use in conditional_effects
-# @return a list with the summarized prediction matrix as the only element
-# @note argument 'resp' exists only to be excluded from '...' (#589)
-#' @export
-conditional_effects_internal.brmsterms <- function(
-  x, fit, marg_data, int_conditions, method, surface, 
-  spaghetti, categorical, ordinal, probs, robust, 
-  dpar = NULL, resp = NULL, ...
-) {
-  stopifnot(is.brmsfit(fit))
-  effects <- attr(marg_data, "effects")
-  types <- attr(marg_data, "types")
-  catscale <- NULL
-  pred_args <- list(
-    fit, newdata = marg_data, allow_new_levels = TRUE, 
-    dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
-    incl_autocor = FALSE, summary = FALSE, ...
-  )
-  out <- do_call(method, pred_args)
-  rownames(marg_data) <- NULL
-  
-  if (categorical || ordinal) {
-    if (method != "fitted") {
-      stop2("Can only use 'categorical' with method = 'fitted'.")
-    }
-    if (!(has_cat(x) || is_ordinal(x))) {
-      stop2("Argument 'categorical' may only be used ", 
-            "for categorical or ordinal models.")
-    }
-    if (categorical && ordinal) {
-      stop2("Please use argument 'categorical' instead of 'ordinal'.")
-    }
-    catscale <- if (is_multinomial(x)) "Count" else "Probability"
-    cats <- dimnames(out)[[3]]
-    if (is.null(cats)) cats <- seq_dim(out, 3)
-    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
-    marg_data <- cbind(marg_data, cats__ = cats)
-    effects[2] <- "cats__"
-    types[2] <- "factor"
-  } else {
-    if (conv_cats_dpars(x$family)) {
-      stop2("Please set 'categorical' to TRUE.")
-    }
-    if (is_ordinal(x$family) && is.null(dpar)) {
-      warning2(
-        "Predictions are treated as continuous variables in ",
-        "'conditional_effects' by default which is likely invalid ", 
-        "for ordinal families. Please set 'categorical' to TRUE."
-      )
-      if (method == "fitted") {
-        out <- ordinal_probs_continuous(out)
-      }
-    }
-  }
-  
-  first_numeric <- types[1] %in% "numeric"
-  second_numeric <- types[2] %in% "numeric"
-  both_numeric <- first_numeric && second_numeric
-  if (second_numeric && !surface) {
-    # can only be converted to factor after having called method
-    mde2 <- round(marg_data[[effects[2]]], 2)
-    levels2 <- sort(unique(mde2), TRUE)
-    marg_data[[effects[2]]] <- factor(mde2, levels = levels2)
-    labels2 <- names(int_conditions[[effects[2]]])
-    if (length(labels2) == length(levels2)) {
-      levels(marg_data[[effects[2]]]) <- labels2
-    }
-  }
-  marg_data <- add_effects__(marg_data, effects)
-  
-  spag <- NULL
-  if (first_numeric && spaghetti) {
-    if (surface) {
-      stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
-    }
-    spag <- out
-    if (categorical) {
-      spag <- do_call(cbind, array2list(spag))
-    }
-    sample <- rep(seq_rows(spag), each = ncol(spag))
-    if (length(types) == 2L) {
-      # samples should be unique across plotting groups
-      sample <- paste0(sample, "_", marg_data[[effects[2]]])
-    }
-    spag <- data.frame(as.numeric(t(spag)), factor(sample))
-    colnames(spag) <- c("estimate__", "sample__")
-    spag <- cbind(marg_data, spag)
-  }
-  
-  out <- posterior_summary(out, probs = probs, robust = robust)
-  if (categorical || ordinal) {
-    out <- do_call(rbind, array2list(out))
-  }
-  colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
-  out <- cbind(marg_data, out)
-  response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
-  attr(out, "effects") <- effects
-  attr(out, "response") <- response
-  attr(out, "surface") <- unname(both_numeric && surface)
-  attr(out, "categorical") <- categorical
-  attr(out, "catscale") <- catscale
-  attr(out, "ordinal") <- ordinal
-  attr(out, "spaghetti") <- spag
-  attr(out, "points") <- make_point_frame(x, fit$data, effects, ...)
-  name <- paste0(usc(x$resp, "suffix"), paste0(effects, collapse = ":"))
-  setNames(list(out), name)
-}
-
 # prepare data points based on the provided conditions
 # allows to add data points to conditional effects plots
 # @return a data.frame containing the data points to be plotted
@@ -831,7 +947,7 @@ print.brms_conditional_effects <- function(x, ...) {
   plot(x, ...)
 }
 
-#' @rdname conditional_effects
+#' @rdname conditional_effects.brmsfit
 #' @method plot brms_conditional_effects
 #' @export 
 plot.brms_conditional_effects <- function(
@@ -1039,6 +1155,13 @@ plot.brms_conditional_effects <- function(
 #' @export
 marginal_effects <- function(x, ...) {
   UseMethod("marginal_effects")
+}
+
+#' @export
+marginal_effects.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_effects' is deprecated. ",
+           "Please use 'conditional_effects' instead.")
+  conditional_effects(x, ...)
 }
 
 #' @export

@@ -1,16 +1,80 @@
-# evaluate log_lik for jointly for all observations 
-log_lik_internal <- function(draws, ...) {
-  UseMethod("log_lik_internal")
+#' Compute the Pointwise Log-Likelihood
+#' 
+#' @aliases log_lik logLik.brmsfit
+#' 
+#' @param object A fitted model object of class \code{brmsfit}. 
+#' @inheritParams posterior_predict.brmsfit
+#' @param combine Only relevant in multivariate models.
+#'   Indicates if the log-likelihoods of the submodels should
+#'   be combined per observation (i.e. added together; the default) 
+#'   or if the log-likelihoods should be returned separately.
+#' @param pointwise A flag indicating whether to compute the full
+#'   log-likelihood matrix at once (the default), or just return
+#'   the likelihood function along with all data and samples
+#'   required to compute the log-likelihood separately for each
+#'   observation. The latter option is rarely useful when
+#'   calling \code{log_lik} directly, but rather when computing
+#'   \code{\link{waic}} or \code{\link{loo}}.
+#' 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood
+#'  samples, where S is the number of samples and N is the number 
+#'  of observations in the data. For multivariate models and if 
+#'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+#'  where R is the number of response variables.
+#'  If \code{pointwise = TRUE}, the output is a function
+#'  with a \code{draws} attribute containing all relevant
+#'  data and posterior samples.
+#' 
+#' @aliases log_lik
+#' @method log_lik brmsfit
+#' @export
+#' @export log_lik
+#' @importFrom rstantools log_lik
+log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            resp = NULL, nsamples = NULL, subset = NULL, 
+                            pointwise = FALSE, combine = TRUE, ...) {
+  contains_samples(object)
+  object <- restructure(object)
+  draws <- extract_draws(
+    object, newdata = newdata, re_formula = re_formula, resp = resp, 
+    subset = subset, nsamples = nsamples, check_response = TRUE, ...
+  )
+  if (pointwise) {
+    stopifnot(combine)
+    log_lik <- log_lik_pointwise
+    attr(log_lik, "draws") <- draws
+    attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(draws)))
+  } else {
+    log_lik <- log_lik(draws, combine = combine)
+    if (anyNA(log_lik)) {
+      warning2(
+        "NAs were found in the log-likelihood. Possibly this is because ",
+        "some of your responses contain NAs. If you use 'mi' terms, try ", 
+        "setting 'resp' to those response variables without missing values. ",
+        "Alternatively, use 'newdata' to predict only complete cases."
+      )
+    }
+  }
+  log_lik
 }
 
 #' @export
-log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
-  if (length(draws$mvpars$rescor)) {
-    draws$mvpars$Mu <- get_Mu(draws)
-    draws$mvpars$Sigma <- get_Sigma(draws)
-    out <- log_lik_internal.brmsdraws(draws, ...)
+logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                           resp = NULL, nsamples = NULL, subset = NULL, 
+                           pointwise = FALSE, combine = TRUE, ...) {
+  cl <- match.call()
+  cl[[1]] <- quote(log_lik)
+  eval(cl, parent.frame())
+}
+
+#' @export
+log_lik.mvbrmsdraws <- function(object, combine = TRUE, ...) {
+  if (length(object$mvpars$rescor)) {
+    object$mvpars$Mu <- get_Mu(object)
+    object$mvpars$Sigma <- get_Sigma(object)
+    out <- log_lik.brmsdraws(object, ...)
   } else {
-    out <- lapply(draws$resps, log_lik_internal, ...)
+    out <- lapply(object$resps, log_lik, ...)
     if (combine) {
       out <- Reduce("+", out)
     } else {
@@ -22,19 +86,19 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik_internal.brmsdraws <- function(draws, ...) {
-  log_lik_fun <- paste0("log_lik_", draws$family$fun)
+log_lik.brmsdraws <- function(object, ...) {
+  log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
-  for (nlp in names(draws$nlpars)) {
-    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+  for (nlp in names(object$nlpars)) {
+    object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
-  for (dp in names(draws$dpars)) {
-    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
+  for (dp in names(object$dpars)) {
+    object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
-  N <- choose_N(draws)
-  out <- cblapply(seq_len(N), log_lik_fun, draws = draws)
+  N <- choose_N(object)
+  out <- cblapply(seq_len(N), log_lik_fun, draws = object)
   colnames(out) <- NULL
-  old_order <- draws$old_order
+  old_order <- object$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
   reorder_obs(out, old_order, sort = sort)
 }

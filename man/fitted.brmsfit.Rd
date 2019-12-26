@@ -35,9 +35,11 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{scale}{Either \code{"response"} or \code{"linear"}. 
-If \code{"response"} results are returned on the scale 
-of the response variable. If \code{"linear"} 
-fitted values are returned on the scale of the linear predictor.}
+If \code{"response"}, results are returned on the scale 
+of the response variable. If \code{"linear"},
+results are returned on the scale of the linear predictor term,
+that is without applying the inverse link function or
+other transformations.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

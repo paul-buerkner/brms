@@ -95,25 +95,20 @@ posterior_predict.brmsfit <- function(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
-  .posterior_predict(
+  posterior_predict(
     draws, transform = transform, sort = sort, ntrys = ntrys, 
     negative_rt = negative_rt, summary = FALSE
   )
 }
 
-# internal posterior_predict method
-.posterior_predict <- function(draws, ...) {
-  UseMethod(".posterior_predict")
-}
-
 #' @export
-.posterior_predict.mvbrmsdraws <- function(draws, ...) {
-  if (length(draws$mvpars$rescor)) {
-    draws$mvpars$Mu <- get_Mu(draws)
-    draws$mvpars$Sigma <- get_Sigma(draws)
-    out <- .posterior_predict.brmsdraws(draws, ...)
+posterior_predict.mvbrmsdraws <- function(object, ...) {
+  if (length(object$mvpars$rescor)) {
+    object$mvpars$Mu <- get_Mu(object)
+    object$mvpars$Sigma <- get_Sigma(object)
+    out <- posterior_predict.brmsdraws(object, ...)
   } else {
-    out <- lapply(draws$resps, .posterior_predict, ...)
+    out <- lapply(object$resps, posterior_predict, ...)
     along <- ifelse(length(out) > 1L, 3, 2)
     out <- do_call(abind, c(out, along = along))
   }
@@ -121,50 +116,50 @@ posterior_predict.brmsfit <- function(
 }
 
 #' @export
-.posterior_predict.brmsdraws <- function(draws, transform = NULL, sort = FALSE,
-                                         summary = FALSE, robust = FALSE, 
-                                         probs = c(0.025, 0.975), ...) {
-  for (nlp in names(draws$nlpars)) {
-    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+posterior_predict.brmsdraws <- function(object, transform = NULL, sort = FALSE,
+                                        summary = FALSE, robust = FALSE, 
+                                        probs = c(0.025, 0.975), ...) {
+  for (nlp in names(object$nlpars)) {
+    object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
-  for (dp in names(draws$dpars)) {
-    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
+  for (dp in names(object$dpars)) {
+    object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
-  pp_fun <- paste0("posterior_predict_", draws$family$fun)
+  pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
-  N <- choose_N(draws)
-  out <- lapply(seq_len(N), pp_fun, draws = draws, ...)
-  if (grepl("_mv$", draws$family$fun)) {
+  N <- choose_N(object)
+  out <- lapply(seq_len(N), pp_fun, draws = object, ...)
+  if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
-    dimnames(out)[[3]] <- names(draws$resps)
-  } else if (has_multicol(draws$family)) {
+    dimnames(out)[[3]] <- names(object$resps)
+  } else if (has_multicol(object$family)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
-    dimnames(out)[[3]] <- draws$data$cats
+    dimnames(out)[[3]] <- object$data$cats
   } else {
     out <- do_call(cbind, out) 
   }
   colnames(out) <- NULL
-  if (use_int(draws$family)) {
+  if (use_int(object$family)) {
     out <- check_discrete_trunc_bounds(
-      out, lb = draws$data$lb, ub = draws$data$ub
+      out, lb = object$data$lb, ub = object$data$ub
     )
   }
-  out <- reorder_obs(out, draws$old_order, sort = sort)
+  out <- reorder_obs(out, object$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
   if (!is.null(transform)) {
     out <- do_call(transform, list(out))
   }
-  attr(out, "levels") <- draws$data$cats
+  attr(out, "levels") <- object$data$cats
   summary <- as_one_logical(summary)
   if (summary) {
     # only for compatibility with the 'predict' method
-    if (is_ordinal(draws$family)) {
-      levels <- seq_len(max(draws$data$nthres) + 1)
+    if (is_ordinal(object$family)) {
+      levels <- seq_len(max(object$data$nthres) + 1)
       out <- posterior_table(out, levels = levels)
-    } else if (is_categorical(draws$family)) {
-      levels <- seq_len(draws$data$ncat)
+    } else if (is_categorical(object$family)) {
+      levels <- seq_len(object$data$ncat)
       out <- posterior_table(out, levels = levels)
     } else {
       out <- posterior_summary(out, probs = probs, robust = robust)
@@ -243,10 +238,38 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
-  .posterior_predict(
+  posterior_predict(
     draws, transform = transform, ntrys = ntrys, negative_rt = negative_rt, 
     sort = sort, summary = summary, robust = robust, probs = probs
   )
+}
+
+#' Predictive Intervals
+#'
+#' Compute intervals from the posterior predictive distribution.
+#' 
+#' @aliases predictive_interval
+#' 
+#' @param object An \R object of class \code{brmsfit}.
+#' @param prob A number p (0 < p < 1) indicating the desired probability mass to
+#'   include in the intervals. Defaults to \code{0.9}.
+#' @param ... Further arguments passed to \code{\link{posterior_predict}}.
+#' 
+#' @return A matrix with 2 columns for the lower and upper bounds of the
+#'   intervals, respectively, and as many rows as observations being predicted.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ zBase, data = epilepsy, family = poisson())
+#' predictive_interval(fit)
+#' }
+#' 
+#' @importFrom rstantools predictive_interval
+#' @export predictive_interval
+#' @export
+predictive_interval.brmsfit <- function(object, prob = 0.9, ...) {
+  out <- posterior_predict(object, ...)
+  predictive_interval(out, prob = prob)
 }
 
 # ------------------- family specific posterior_predict methods ---------------------

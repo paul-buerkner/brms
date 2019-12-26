@@ -6,11 +6,10 @@
 \title{Expected Values of the Posterior Predictive Distribution}
 \usage{
 \method{pp_expect}{brmsfit}(
-  object,
+  x,
   newdata = NULL,
   re_formula = NULL,
   re.form = NULL,
-  scale = c("response", "linear"),
   resp = NULL,
   dpar = NULL,
   nlpar = NULL,
@@ -20,10 +19,10 @@
   ...
 )
 
-pp_expect(object, ...)
+pp_expect(x, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}.}
+\item{x}{An object of class \code{brmsfit}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.
@@ -36,11 +35,6 @@ the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
-
-\item{scale}{Either \code{"response"} or \code{"linear"}. 
-If \code{"response"} results are returned on the scale 
-of the response variable. If \code{"linear"} 
-fitted values are returned on the scale of the linear predictor.}
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}

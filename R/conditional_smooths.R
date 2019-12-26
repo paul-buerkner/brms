@@ -5,7 +5,7 @@
 #' 
 #' @aliases marginal_smooths marginal_smooths.brmsfit
 #' 
-#' @inheritParams conditional_effects
+#' @inheritParams conditional_effects.brmsfit
 #' @param smooths Optional character vector of smooth terms
 #'   to display. If \code{NULL} (the default) all smooth terms
 #'   are shown.
@@ -44,37 +44,63 @@
 #' }
 #' 
 #' @export
+conditional_smooths.brmsfit <- function(x, smooths = NULL,
+                                        int_conditions = NULL,
+                                        probs = c(0.025, 0.975),
+                                        spaghetti = FALSE,
+                                        resolution = 100, too_far = 0,
+                                        subset = NULL, nsamples = NULL,
+                                        ...) {
+  spaghetti <- as_one_logical(spaghetti)
+  contains_samples(x)
+  x <- restructure(x)
+  x <- remove_autocor(x)
+  smooths <- rm_wsp(as.character(smooths))
+  bterms <- parse_bf(x$formula)
+  conditions <- prepare_conditions(x)
+  subset <- subset_samples(x, subset, nsamples)
+  # call as.matrix only once to save time and memory
+  samples <- as.matrix(x, subset = subset)
+  out <- conditional_smooths(
+    bterms, fit = x, samples = samples, smooths = smooths, 
+    conditions = conditions, int_conditions = int_conditions, 
+    too_far = too_far, resolution = resolution, probs = probs, 
+    spaghetti = spaghetti
+  )
+  if (!length(out)) {
+    stop2("No valid smooth terms found in the model.")
+  }
+  structure(out, class = "brms_conditional_effects", smooths_only = TRUE)
+}
+
+#' @rdname conditional_smooths.brmsfit
+#' @export
 conditional_smooths <- function(x, ...) {
   UseMethod("conditional_smooths")
 }
 
-# compute predictions based on the smooths terms only
-conditional_smooths_internal <- function(x, ...) {
-  UseMethod("conditional_smooths_internal")
-}
-
 #' @export
-conditional_smooths_internal.default <- function(x, ...) {
+conditional_smooths.default <- function(x, ...) {
   NULL
 }
 
 #' @export
-conditional_smooths_internal.mvbrmsterms <- function(x, ...) {
+conditional_smooths.mvbrmsterms <- function(x, ...) {
   out <- list()
   for (r in names(x$terms)) {
-    c(out) <- conditional_smooths_internal(x$terms[[r]], ...)
+    c(out) <- conditional_smooths(x$terms[[r]], ...)
   }
   out
 }
 
 #' @export
-conditional_smooths_internal.brmsterms <- function(x, ...) {
+conditional_smooths.brmsterms <- function(x, ...) {
   out <- list()
   for (dp in names(x$dpars)) {
-    c(out) <- conditional_smooths_internal(x$dpars[[dp]], ...)
+    c(out) <- conditional_smooths(x$dpars[[dp]], ...)
   }
   for (nlp in names(x$nlpars)) {
-    c(out) <- conditional_smooths_internal(x$nlpars[[nlp]], ...)
+    c(out) <- conditional_smooths(x$nlpars[[nlp]], ...)
   }
   out
 }
@@ -88,10 +114,10 @@ conditional_smooths_internal.brmsterms <- function(x, ...) {
 # @param ...: currently ignored
 # @return a named list with one element per smooth term
 #' @export
-conditional_smooths_internal.btl <- function(x, fit, samples, smooths,
-                                          conditions, int_conditions, 
-                                          probs, resolution, too_far,
-                                          spaghetti, ...) {
+conditional_smooths.btl <- function(x, fit, samples, smooths,
+                                    conditions, int_conditions, 
+                                    probs, resolution, too_far,
+                                    spaghetti, ...) {
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)
@@ -205,3 +231,11 @@ conditional_smooths_internal.btl <- function(x, fit, samples, smooths,
 marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
 }
+
+#' @export
+marginal_smooths.brmsfit <- function(x, ...) {
+  warning2("Method 'marginal_smooths' is deprecated. ",
+           "Please use 'conditional_smooths' instead.")
+  conditional_smooths(x, ...)
+}
+
