@@ -101,7 +101,9 @@ default_plot_pars <- function(family) {
 #' MCMC Plots Implemented in \pkg{bayesplot} 
 #' 
 #' Convenient way to call MCMC plotting functions 
-#' implemented in the \pkg{bayesplot} package. 
+#' implemented in the \pkg{bayesplot} package.
+#' 
+#' @aliases stanplot stanplot.brmsfit 
 #' 
 #' @inheritParams plot.brmsfit
 #' @param object An \R object typically of class \code{brmsfit}
@@ -137,26 +139,26 @@ default_plot_pars <- function(family) {
 #'              data = epilepsy, family = "poisson")
 #'              
 #' # plot posterior intervals
-#' stanplot(model)
+#' mcmc_plot(model)
 #' 
 #' # only show population-level effects in the plots
-#' stanplot(model, pars = "^b_")
+#' mcmc_plot(model, pars = "^b_")
 #' 
 #' # show histograms of the posterior distributions
-#' stanplot(model, type = "hist")
+#' mcmc_plot(model, type = "hist")
 #' 
 #' # plot some diagnostics of the sampler
-#' stanplot(model, type = "neff")
-#' stanplot(model, type = "rhat")
+#' mcmc_plot(model, type = "neff")
+#' mcmc_plot(model, type = "rhat")
 #' 
 #' # plot some diagnostics specific to the NUTS sampler
-#' stanplot(model, type = "nuts_acceptance")
-#' stanplot(model, type = "nuts_divergence")
+#' mcmc_plot(model, type = "nuts_acceptance")
+#' mcmc_plot(model, type = "nuts_divergence")
 #' }
 #' 
 #' @export
-stanplot.brmsfit <- function(object, pars = NA, type = "intervals", 
-                             fixed = FALSE, exact_match = FALSE, ...) {
+mcmc_plot.brmsfit <- function(object, pars = NA, type = "intervals", 
+                              fixed = FALSE, exact_match = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
   type <- as_one_character(type)
@@ -210,10 +212,22 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   do_call(mcmc_fun, mcmc_args)
 }
 
-#' @rdname stanplot.brmsfit
+#' @rdname mcmc_plot.brmsfit
+#' @export
+mcmc_plot <- function(object, ...) {
+  UseMethod("mcmc_plot")
+}
+
+# 'stanplot' has been deprecated in brms 2.10.6; remove in brms 3.0
 #' @export
 stanplot <- function(object, ...) {
   UseMethod("stanplot")
+}
+
+#' @export
+stanplot.brmsfit <- function(object, ...) {
+  warning2("Method 'stanplot' is deprecated. Please use 'mcmc_plot' instead.")
+  mcmc_plot.brmsfit(object, ...)
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object

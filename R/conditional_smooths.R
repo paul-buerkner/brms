@@ -236,6 +236,6 @@ marginal_smooths <- function(x, ...) {
 marginal_smooths.brmsfit <- function(x, ...) {
   warning2("Method 'marginal_smooths' is deprecated. ",
            "Please use 'conditional_smooths' instead.")
-  conditional_smooths(x, ...)
+  conditional_smooths.brmsfit(x, ...)
 }
 

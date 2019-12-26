@@ -30,6 +30,7 @@ thanks to Riccardo Fusaroli (#813)
 
 * Rename `marginal_effects` to `conditional_effects` and
 `marginal_smooths` to `conditional_smooths`. (#735)
+* Rename `stanplot` to `mcmc_plot`.
 * Add method `pp_expect` as an alias of `fitted`. (#644)
 * Model fit criteria computed via `add_criterion` are now 
 stored in the `brmsfit$criteria` slot.

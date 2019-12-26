@@ -1173,7 +1173,7 @@ marginal_effects <- function(x, ...) {
 marginal_effects.brmsfit <- function(x, ...) {
   warning2("Method 'marginal_effects' is deprecated. ",
            "Please use 'conditional_effects' instead.")
-  conditional_effects(x, ...)
+  conditional_effects.brmsfit(x, ...)
 }
 
 #' @export
