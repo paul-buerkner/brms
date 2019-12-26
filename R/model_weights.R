@@ -87,6 +87,126 @@ validate_weights_method <- function(method) {
   match.arg(method, options)
 }
 
+#' Posterior predictive samples averaged across models
+#' 
+#' Compute posterior predictive samples averaged across models.
+#' Weighting can be done in various ways, for instance using
+#' Akaike weights based on information criteria or 
+#' marginal likelihoods.
+#' 
+#' @inheritParams model_weights.brmsfit
+#' @param method Method used to obtain predictions to average over. Should be
+#'   one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
+#'   \code{"predictive_error"}.
+#' @param control Optional \code{list} of further arguments 
+#'   passed to the function specified in \code{weights}.
+#' @param nsamples Total number of posterior samples to use.
+#' @param seed A single numeric value passed to \code{\link{set.seed}}
+#'   to make results reproducible.
+#' @param summary Should summary statistics 
+#'   (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values? Default is \code{TRUE}.
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs  The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
+#' 
+#' @return Same as the output of the method specified 
+#'   in argument \code{method}.
+#'   
+#' @details Weights are computed with the \code{\link{model_weights}} method.
+#'   
+#' @seealso \code{\link{model_weights}}, \code{\link{posterior_average}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with 'treat' as predictor
+#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
+#' summary(fit1)
+#' 
+#' # model without 'treat' as predictor
+#' fit2 <- brm(rating ~ period + carry, data = inhaler)
+#' summary(fit2)
+#' 
+#' # compute model-averaged predicted values
+#' (df <- unique(inhaler[, c("treat", "period", "carry")]))
+#' pp_average(fit1, fit2, newdata = df)
+#' 
+#' # compute model-averaged fitted values
+#' pp_average(fit1, fit2, method = "fitted", newdata = df)
+#' }
+#' 
+#' @export
+pp_average.brmsfit <- function(
+  x, ..., weights = "stacking", method = "posterior_predict",
+  nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
+  model_names = NULL, control = list(), seed = NULL
+) {
+  if (!is.null(seed)) {
+    set.seed(seed) 
+  }
+  method <- validate_pp_method(method)
+  if ("subset" %in% names(list(...))) {
+    stop2("Cannot use argument 'subset' in pp_average.")
+  }
+  args <- split_dots(x, ..., model_names = model_names)
+  args$summary <- FALSE
+  models <- args$models
+  args$models <- NULL
+  if (!match_response(models)) {
+    stop2("Can only average models predicting the same response.")
+  }
+  if (is.null(nsamples)) {
+    nsamples <- nsamples(models[[1]])
+  }
+  weights <- validate_weights(weights, models, control)
+  nsamples <- round_largest_remainder(weights * nsamples)
+  names(weights) <- names(nsamples) <- names(models)
+  out <- named_list(names(models))
+  for (i in seq_along(out)) {
+    if (nsamples[i] > 0) {
+      args$object <- models[[i]]
+      args$nsamples <- nsamples[i]
+      out[[i]] <- do_call(method, args)
+    }
+  }
+  out <- do_call(rbind, out)
+  if (summary) {
+    out <- posterior_summary(out, probs = probs, robust = robust) 
+  }
+  attr(out, "weights") <- weights
+  attr(out, "nsamples") <- nsamples
+  out
+}
+
+#' @rdname pp_average.brmsfit
+#' @export
+pp_average <- function(x, ...) {
+  UseMethod("pp_average")
+}
+
+# validate weights passed to model averaging functions
+# see pp_average.brmsfit for more documentation
+validate_weights <- function(weights, models, control = list()) {
+  if (!is.numeric(weights)) {
+    weight_args <- c(unname(models), control)
+    weight_args$weights <- weights
+    weights <- do_call(model_weights, weight_args)
+  } else {
+    if (length(weights) != length(models)) {
+      stop2("If numeric, 'weights' must have the same length ",
+            "as the number of models.")
+    }
+    if (any(weights < 0)) {
+      stop2("If numeric, 'weights' must be positive.")
+    }
+  }
+  weights / sum(weights)
+}
+
 #' Posterior samples of parameters averaged across models
 #' 
 #' Extract posterior samples of parameters averaged across models.
@@ -217,105 +337,4 @@ posterior_average.brmsfit <- function(
 #' @export
 posterior_average <- function(x, ...) {
   UseMethod("posterior_average")
-}
-
-#' Posterior predictive samples averaged across models
-#' 
-#' Compute posterior predictive samples averaged across models.
-#' Weighting can be done in various ways, for instance using
-#' Akaike weights based on information criteria or 
-#' marginal likelihoods.
-#' 
-#' @inheritParams model_weights.brmsfit
-#' @param method Method used to obtain predictions to average over. Should be
-#'   one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
-#'   \code{"predictive_error"}.
-#' @param control Optional \code{list} of further arguments 
-#'   passed to the function specified in \code{weights}.
-#' @param nsamples Total number of posterior samples to use.
-#' @param seed A single numeric value passed to \code{\link{set.seed}}
-#'   to make results reproducible.
-#' @param summary Should summary statistics 
-#'   (i.e. means, sds, and 95\% intervals) be returned
-#'  instead of the raw values? Default is \code{TRUE}.
-#' @param robust If \code{FALSE} (the default) the mean is used as 
-#'  the measure of central tendency and the standard deviation as 
-#'  the measure of variability. If \code{TRUE}, the median and the 
-#'  median absolute deviation (MAD) are applied instead.
-#'  Only used if \code{summary} is \code{TRUE}.
-#' @param probs  The percentiles to be computed by the \code{quantile} 
-#'  function. Only used if \code{summary} is \code{TRUE}. 
-#' 
-#' @return Same as the output of the method specified 
-#'   in argument \code{method}.
-#'   
-#' @details Weights are computed with the \code{\link{model_weights}} method.
-#'   
-#' @seealso \code{\link{model_weights}}, \code{\link{posterior_average}}
-#'   
-#' @examples 
-#' \dontrun{
-#' # model with 'treat' as predictor
-#' fit1 <- brm(rating ~ treat + period + carry, data = inhaler)
-#' summary(fit1)
-#' 
-#' # model without 'treat' as predictor
-#' fit2 <- brm(rating ~ period + carry, data = inhaler)
-#' summary(fit2)
-#' 
-#' # compute model-averaged predicted values
-#' (df <- unique(inhaler[, c("treat", "period", "carry")]))
-#' pp_average(fit1, fit2, newdata = df)
-#' 
-#' # compute model-averaged fitted values
-#' pp_average(fit1, fit2, method = "fitted", newdata = df)
-#' }
-#' 
-#' @export
-pp_average.brmsfit <- function(
-  x, ..., weights = "stacking", method = "posterior_predict",
-  nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
-  model_names = NULL, control = list(), seed = NULL
-) {
-  if (!is.null(seed)) {
-    set.seed(seed) 
-  }
-  method <- validate_pp_method(method)
-  if ("subset" %in% names(list(...))) {
-    stop2("Cannot use argument 'subset' in pp_average.")
-  }
-  args <- split_dots(x, ..., model_names = model_names)
-  args$summary <- FALSE
-  models <- args$models
-  args$models <- NULL
-  if (!match_response(models)) {
-    stop2("Can only average models predicting the same response.")
-  }
-  if (is.null(nsamples)) {
-    nsamples <- nsamples(models[[1]])
-  }
-  weights <- validate_weights(weights, models, control)
-  nsamples <- round_largest_remainder(weights * nsamples)
-  names(weights) <- names(nsamples) <- names(models)
-  out <- named_list(names(models))
-  for (i in seq_along(out)) {
-    if (nsamples[i] > 0) {
-      args$object <- models[[i]]
-      args$nsamples <- nsamples[i]
-      out[[i]] <- do_call(method, args)
-    }
-  }
-  out <- do_call(rbind, out)
-  if (summary) {
-    out <- posterior_summary(out, probs = probs, robust = robust) 
-  }
-  attr(out, "weights") <- weights
-  attr(out, "nsamples") <- nsamples
-  out
-}
-
-#' @rdname pp_average.brmsfit
-#' @export
-pp_average <- function(x, ...) {
-  UseMethod("pp_average")
 }

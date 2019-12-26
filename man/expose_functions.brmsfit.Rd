@@ -10,7 +10,7 @@
 expose_functions(x, ...)
 }
 \arguments{
-\item{x}{An \R object}
+\item{x}{An object of class \code{brmsfit}.}
 
 \item{vectorize}{Logical; Indicates if the exposed functions
 should be vectorized via \code{\link{Vectorize}}. 

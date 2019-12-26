@@ -55,6 +55,3 @@ VarCorr(fit)
 }
 
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

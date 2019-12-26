@@ -50,6 +50,3 @@ cor_arma(~ visit | patient, p = 2, q = 2)
 \seealso{
 \code{\link{cor_ar}}, \code{\link{cor_ma}}
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

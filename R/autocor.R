@@ -58,8 +58,6 @@ NULL
 #' @return An object of class \code{cor_arma}, representing an 
 #'   autoregression-moving-average correlation structure.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
 #' @seealso \code{\link{cor_ar}}, \code{\link{cor_ma}}
 #' 
 #' @examples
@@ -108,8 +106,6 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #'   However, one may also model autoregressive effects of the response
 #'   variable, which is called ARR in \pkg{brms}.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
 #' @seealso \code{\link{cor_arma}}
 #' 
 #' @examples
@@ -129,9 +125,8 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' @param q A non-negative integer specifying the moving average (MA) 
 #'   order of the ARMA structure. Default is 1.  
 #' 
-#' @return An object of class \code{cor_arma} containing solely moving average terms.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @return An object of class \code{cor_arma} containing solely moving 
+#' average terms.
 #' 
 #' @seealso \code{\link{cor_arma}}
 #' 

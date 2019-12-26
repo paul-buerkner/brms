@@ -51,6 +51,3 @@ head(samples2)
 }
 
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

@@ -30,7 +30,8 @@ is only available for \code{gaussian} models and some of its
 generalizations.}
 }
 \value{
-An object of class \code{cor_arma} containing solely moving average terms.
+An object of class \code{cor_arma} containing solely moving 
+average terms.
 }
 \description{
 This function is a constructor for the \code{cor_arma} class, 
@@ -42,7 +43,4 @@ cor_ma(~visit|patient, q = 2)
 }
 \seealso{
 \code{\link{cor_arma}}
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

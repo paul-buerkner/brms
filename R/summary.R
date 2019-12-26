@@ -321,6 +321,13 @@ fixef_pars <- function() {
   paste0("^b(", types, ")_")
 }
 
+# algorithm used in the model fitting
+algorithm <- function(x) {
+  stopifnot(is.brmsfit(x))
+  if (is.null(x$algorithm)) "sampling"
+  else x$algorithm
+}
+
 #' Summarize Posterior Samples
 #' 
 #' Summarizes posterior samples based on point estimates (mean or median),
@@ -396,6 +403,28 @@ posterior_summary.brmsfit <- function(x, pars = NA,
                                       robust = FALSE, ...) {
   out <- as.matrix(x, pars = pars, ...)
   posterior_summary(out, probs = probs, robust = robust, ...)
+}
+
+# calculate estimates over posterior samples 
+# @param coef coefficient to be applied on the samples (e.g., "mean")
+# @param samples the samples over which to apply coef
+# @param margin see 'apply'
+# @param ... additional arguments passed to get(coef)
+# @return typically a matrix with colnames(samples) as colnames
+get_estimate <- function(coef, samples, margin = 2, ...) {
+  dots <- list(...)
+  args <- list(X = samples, MARGIN = margin, FUN = coef)
+  fun_args <- names(formals(coef))
+  if (!"..." %in% fun_args) {
+    dots <- dots[names(dots) %in% fun_args]
+  }
+  x <- do_call(apply, c(args, dots))
+  if (is.null(dim(x))) {
+    x <- matrix(x, dimnames = list(NULL, coef))
+  } else if (coef == "quantile") {
+    x <- aperm(x, length(dim(x)):1)
+  }
+  x 
 }
 
 #' Table Creation for Posterior Samples

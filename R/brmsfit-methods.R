@@ -1,3 +1,6 @@
+# This file contains several extractor methods for brmsfit objects.
+# A lot of other brmsfit methods have their own dedicated files.
+
 #' Extract Population-Level Estimates
 #' 
 #' Extract the population-level ('fixed') effects 
@@ -14,8 +17,6 @@
 #'   population-level effect and one column per calculated estimate. 
 #'   If \code{summary} is \code{FALSE}, a matrix with one row per 
 #'   posterior sample and one column per population-level effect.
-#'   
-#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -113,8 +114,6 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
 #'  
-#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}   
-#'   
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit), 
@@ -185,8 +184,6 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  If \code{summary} is \code{FALSE}, names of the second dimension
 #'  are the factor levels and names of the third dimension are the 
 #'  group-level effects.
-#'  
-#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #'  
 #' @examples
 #' \dontrun{
@@ -293,8 +290,6 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' three elements: a matrix containing the standard deviations, 
 #' an array containing the correlation matrix, and an array 
 #' containing the covariance matrix with variances on the diagonal.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -651,185 +646,13 @@ standata <- function(object, ...) {
   UseMethod("standata")
 }
 
-#' Interface to \pkg{shinystan}
-#' 
-#' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
-#' 
-#' @aliases launch_shinystan
-#' 
-#' @param object A fitted model object typically of class \code{brmsfit}. 
-#' @param rstudio Only relevant for RStudio users. 
-#' The default (\code{rstudio=FALSE}) is to launch the app 
-#' in the default web browser rather than RStudio's pop-up Viewer. 
-#' Users can change the default to \code{TRUE} 
-#' by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.
-#' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
-#' 
-#' @return An S4 shinystan object
-#' 
-#' @examples
-#' \dontrun{
-#' fit <- brm(rating ~ treat + period + carry + (1|subject),
-#'            data = inhaler, family = "gaussian")
-#' launch_shinystan(fit)                         
-#' }
-#' 
-#' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
-#' 
-#' @method launch_shinystan brmsfit
-#' @importFrom shinystan launch_shinystan
-#' @export launch_shinystan
-#' @export
-launch_shinystan.brmsfit <- function(
-  object, rstudio = getOption("shinystan.rstudio"), ...
-) {
-  contains_samples(object)
-  if (object$algorithm != "sampling") {
-    return(shinystan::launch_shinystan(object$fit, rstudio = rstudio, ...))
-  } 
-  draws <- as.array(object)
-  sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
-  control <- object$fit@stan_args[[1]]$control
-  if (is.null(control)) {
-    max_td <- 11
-  } else {
-    max_td <- control$max_treedepth
-    if (is.null(max_td)) {
-      max_td <- 11 
-    }
-  }
-  sso <- shinystan::as.shinystan(
-    X = draws, 
-    model_name = object$fit@model_name,
-    warmup = 0, 
-    sampler_params = sampler_params, 
-    max_treedepth = max_td,
-    algorithm = "NUTS"
-  )
-  shinystan::launch_shinystan(sso, rstudio = rstudio, ...)
-}
-
-#' Posterior Probabilities of Mixture Component Memberships
-#' 
-#' Compute the posterior probabilities of mixture component 
-#' memberships for each observation including uncertainty
-#' estimates.
-#' 
-#' @inheritParams predict.brmsfit
-#' @param x An \R object usually of class \code{brmsfit}.
-#' @param log Logical; Indicates whether to return 
-#'   probabilities on the log-scale.
-#' 
-#' @return 
-#' If \code{summary = TRUE}, an N x E x K array,
-#' where N is the number of observations, K is the number
-#' of mixture components, and E is equal to \code{length(probs) + 2}.
-#' If \code{summary = FALSE}, an S x N x K array, where
-#' S is the number of posterior samples.
-#' 
-#' @details 
-#' The returned probabilities can be written as
-#' \eqn{P(Kn = k | Yn)}, that is the posterior probability 
-#' that observation n originates from component k. 
-#' They are computed using Bayes' Theorem
-#' \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
-#' where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
-#' of observation n for component k, \eqn{P(Kn = k)} is 
-#' the (posterior) mixing probability of component k 
-#' (i.e. parameter \code{theta<k>}), and 
-#' \deqn{P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)}
-#' is a normalizing constant.
-#' 
-#' @examples 
-#' \dontrun{
-#' ## simulate some data
-#' set.seed(1234)
-#' dat <- data.frame(
-#'   y = c(rnorm(100), rnorm(50, 2)), 
-#'   x = rnorm(150)
-#' )
-#' ## fit a simple normal mixture model
-#' mix <- mixture(gaussian, nmix = 2)
-#' prior <- c(
-#'   prior(normal(0, 5), Intercept, nlpar = mu1),
-#'   prior(normal(0, 5), Intercept, nlpar = mu2),
-#'   prior(dirichlet(2, 2), theta)
-#' )
-#' fit1 <- brm(bf(y ~ x), dat, family = mix,
-#'             prior = prior, chains = 2, inits = 0)
-#' summary(fit1)
-#'    
-#' ## compute the membership probabilities         
-#' ppm <- pp_mixture(fit1)
-#' str(ppm)
-#' 
-#' ## extract point estimates for each observation
-#' head(ppm[, 1, ])
-#' 
-#' ## classify every observation according to 
-#' ## the most likely component
-#' apply(ppm[, 1, ], 1, which.max)
-#' }
-#' 
-#' @export
-pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
-                               resp = NULL, nsamples = NULL, subset = NULL, 
-                               log = FALSE, summary = TRUE, robust = FALSE, 
-                               probs = c(0.025, 0.975), ...) {
-  stopifnot_resp(x, resp)
-  contains_samples(x)
-  x <- restructure(x)
-  if (is_mv(x)) {
-    resp <- validate_resp(resp, x$formula$responses, multiple = FALSE)
-    family <- x$family[[resp]]
-  } else {
-    family <- x$family
-  }
-  if (!is.mixfamily(family)) {
-    stop2("Method 'pp_mixture' can only be applied on mixture models.")
-  }
-  draws <- extract_draws(
-    x, newdata = newdata, re_formula = re_formula, resp = resp, 
-    subset = subset, nsamples = nsamples, check_response = TRUE, ...
-  )
-  stopifnot(is.brmsdraws(draws))
-  draws$pp_mixture <- TRUE
-  for (dp in names(draws$dpars)) {
-    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
-  }
-  N <- choose_N(draws)
-  log_lik <- lapply(seq_len(N), log_lik_mixture, draws = draws)
-  log_lik <- abind(log_lik, along = 3)
-  log_lik <- aperm(log_lik, c(1, 3, 2))
-  old_order <- draws$old_order
-  sort <- isTRUE(ncol(log_lik) != length(old_order))
-  log_lik <- reorder_obs(log_lik, old_order, sort = sort)
-  if (!log) {
-    log_lik <- exp(log_lik)
-  }
-  if (summary) {
-    log_lik <- posterior_summary(log_lik, probs = probs, robust = robust)
-    dimnames(log_lik) <- list(
-      seq_len(nrow(log_lik)), colnames(log_lik),
-      paste0("P(K = ", seq_len(dim(log_lik)[3]), " | Y)")
-    )
-  }
-  log_lik
-}
-
-#' @rdname pp_mixture.brmsfit
-#' @export
-pp_mixture <- function(x, ...) {
-  UseMethod("pp_mixture")
-}
-
 #' Expose user-defined \pkg{Stan} functions
 #' 
 #' Export user-defined \pkg{Stan} function and
 #' optionally vectorize them. For more details see 
 #' \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
 #' 
-#' @param x An \R object
+#' @param x An object of class \code{brmsfit}.
 #' @param vectorize Logical; Indicates if the exposed functions
 #'   should be vectorized via \code{\link{Vectorize}}. 
 #'   Defaults to \code{FALSE}.

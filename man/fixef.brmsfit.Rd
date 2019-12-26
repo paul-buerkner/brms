@@ -54,6 +54,3 @@ fixef(fit, pars = c("age", "sex"))
 }
 
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

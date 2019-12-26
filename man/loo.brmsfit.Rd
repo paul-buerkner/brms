@@ -100,6 +100,3 @@ Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation
 and widely applicable information criterion in singular learning theory. 
 The Journal of Machine Learning Research, 11, 3571-3594.
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

@@ -208,3 +208,81 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   object$data.name <- data.name
   object
 }
+
+#' Update \pkg{brms} models based on multiple data sets
+#' 
+#' This method allows to update an existing \code{brmsfit_multiple} object.
+#' 
+#' @param object An object of class \code{brmsfit_multiple}.
+#' @param formula. Changes to the formula; for details see 
+#'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
+#' @param newdata List of \code{data.frames} to update the model with new data.
+#'   Currently required even if the original data should be used.
+#' @param ... Other arguments passed to \code{\link{update.brmsfit}}
+#'   and \code{\link{brm_multiple}}.
+#'  
+#' @examples 
+#' \dontrun{
+#' library(mice)
+#' imp <- mice(nhanes2)
+#' 
+#' # initially fit the model 
+#' fit_imp1 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
+#' summary(fit_imp1)
+#' 
+#' # update the model using fewer predictors
+#' fit_imp2 <- update(fit_imp1, formula. = . ~ hyp + chl, newdata = imp)
+#' summary(fit_imp2)
+#' }
+#'
+#' @export
+update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
+  dots <- list(...)
+  if ("data" %in% names(dots)) {
+    # otherwise the data name cannot be found by substitute 
+    stop2("Please use argument 'newdata' to update the data.")
+  }
+  if (is.null(newdata)) {
+    stop2("'newdata' is required when updating a 'brmsfit_multiple' object.")
+  }
+  data.name <- substitute_name(newdata)
+  if (inherits(newdata, "mids")) {
+    require_package("mice", version = "3.0.0")
+    newdata <- lapply(seq_len(newdata$m), mice::complete, data = newdata)
+  } else if (!(is.list(newdata) && is.vector(newdata))) {
+    stop2("'newdata' must be a list of data.frames.")
+  }
+  
+  # update the template model using all arguments
+  if (missing(formula.)) {
+    formula. <- NULL
+  }
+  args <- c(nlist(object, formula., newdata = newdata[[1]]), dots)
+  args$file <- NULL
+  args$chains <- 0
+  fit <- do_call(update.brmsfit, args)
+  
+  # arguments later passed to brm_multiple
+  args <- c(nlist(fit, data = newdata), dots)
+  # update arguments controlling the sampling process
+  # they cannot be accessed directly from the template model 
+  # as it does not contain any samples (chains = 0)
+  if (is.null(args$iter)) {
+    # only keep old 'warmup' if also keeping old 'iter'
+    args$warmup <- first_not_null(args$warmup, object$fit@sim$warmup)
+  }
+  if (is.null(args$chains)) {
+    # chains were combined across all submodels
+    args$chains <- object$fit@sim$chains / max(NROW(object$rhats), 1)
+  }
+  args$iter <- first_not_null(args$iter, object$fit@sim$iter)
+  args$thin <- first_not_null(args$thin, object$fit@sim$thin)
+  control <- attr(object$fit@sim$samples[[1]], "args")$control
+  control <- control[setdiff(names(control), names(args$control))]
+  args$control[names(control)] <- control
+  args$recompile <- NULL
+  
+  out <- do_call(brm_multiple, args)
+  out$data.name <- data.name
+  out
+}

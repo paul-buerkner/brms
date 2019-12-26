@@ -135,9 +135,6 @@ as.array.brmsfit <- function(x, ...) {
   posterior_samples(x, ..., as.array = TRUE)
 }
 
-# This file contains several methods for brmsfit objects.
-# A lot of other brmsfit methods have their own dedicated files.
-
 #' Extract Parameter Names
 #' 
 #' Extract all parameter names of a given model.
@@ -233,8 +230,6 @@ check_deprecated_fixed <- function(fixed, exact_match) {
 #'   use \code{... ~ 0 + Intercept + ...} in the formulas.
 #'   
 #' @return A data frame containing the prior samples.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -366,10 +361,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
   contains_samples(x)
-  pars <- extract_pars(
-    pars, all_pars = parnames(x),
-    fixed = fixed, ...
-  )
+  pars <- extract_pars(pars, all_pars = parnames(x), fixed = fixed, ...)
   if (combine_chains) {
     if (inc_warmup) {
       stop2("Cannot include warmup samples when 'combine_chains' is TRUE.")

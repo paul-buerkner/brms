@@ -49,6 +49,3 @@ cor_ar(~visit|patient, p = 2)
 \seealso{
 \code{\link{cor_arma}}
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}

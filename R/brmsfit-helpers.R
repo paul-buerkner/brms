@@ -5,12 +5,6 @@ contains_samples <- function(x) {
   invisible(TRUE)
 }
 
-algorithm <- function(x) {
-  stopifnot(is.brmsfit(x))
-  if (is.null(x$algorithm)) "sampling"
-  else x$algorithm
-}
-
 is_mv <- function(x) {
   stopifnot(is.brmsfit(x))
   is.mvbrmsformula(x$formula)
@@ -79,38 +73,11 @@ subset_samples <- function(x, subset = NULL, nsamples = NULL) {
   subset
 }
 
-# extract names of group-level effects
-# @param ranef output of tidy_ranef()
-# @param group optinal name of a grouping factor for
-#   which to extract effect names
-# @param bylevels optional names of 'by' levels for 
-#    which to extract effect names
-# @return a vector of character strings
-get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
-  stopifnot(is.data.frame(ranef))
-  if (!is.null(group)) {
-    group <- as_one_character(group)
-    ranef <- subset2(ranef, group = group)
-  }
-  stopifnot(length(unique(ranef$group)) == 1L)
-  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
-  if (isTRUE(nzchar(ranef$by[1]))) {
-    if (!is.null(bylevels)) {
-      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
-    } else {
-      bylevels <- ranef$bylevels[[1]]
-    }
-    bylabels <- paste0(ranef$by[1], bylevels)
-    out <- outer(out, bylabels, paste, sep = ":")
-  }
-  out
-}
-
 # get correlation names as combinations of variable names
 # @param names the variable names 
 # @param type character string to be put in front of the returned strings
 # @param brackets should the correlation names contain brackets 
-#   or underscores as seperators
+#   or underscores as seperators?
 # @param sep character string to separate names; only used if !brackets
 # @return a vector of character strings
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
@@ -119,13 +86,9 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
     for (i in seq_along(names)[-1]) {
       for (j in seq_len(i - 1)) {
         if (brackets) {
-          cornames <- c(cornames, 
-            paste0(type, "(", names[j], "," , names[i], ")")
-          )
+          c(cornames) <- paste0(type, "(", names[j], "," , names[i], ")")
         } else {
-          cornames <- c(cornames, 
-            paste0(type, sep, names[j], sep, names[i])
-          )
+          c(cornames) <- paste0(type, sep, names[j], sep, names[i])
         }
       }
     }
@@ -142,28 +105,6 @@ get_cat_vars <- function(x) {
     get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])
-}
-
-# calculate estimates over posterior samples 
-# @param coef coefficient to be applied on the samples (e.g., "mean")
-# @param samples the samples over which to apply coef
-# @param margin see 'apply'
-# @param ... additional arguments passed to get(coef)
-# @return typically a matrix with colnames(samples) as colnames
-get_estimate <- function(coef, samples, margin = 2, ...) {
-  dots <- list(...)
-  args <- list(X = samples, MARGIN = margin, FUN = coef)
-  fun_args <- names(formals(coef))
-  if (!"..." %in% fun_args) {
-    dots <- dots[names(dots) %in% fun_args]
-  }
-  x <- do_call(apply, c(args, dots))
-  if (is.null(dim(x))) {
-    x <- matrix(x, dimnames = list(NULL, coef))
-  } else if (coef == "quantile") {
-    x <- aperm(x, length(dim(x)):1)
-  }
-  x 
 }
 
 # covariance matrices based on correlation and SD samples
@@ -197,8 +138,10 @@ get_cov_matrix <- function(sd, cor = NULL) {
 
 # correlation matrices based on correlation samples
 # @param cor samples of correlations
-# @param size optional size of the desired correlation matrix
-#   ignored is cor is specified
+# @param size optional size of the desired correlation matrix;
+#   ignored is 'cor' is specified
+# @param nsamples optional number of posterior samples;
+#   ignored is 'cor' is specified
 get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   if (length(cor)) {
     cor <- as.matrix(cor)
@@ -586,32 +529,6 @@ insert_refcat  <- function(eta, family) {
   cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
 }
 
-# choose N to be used in 'predict' and 'log_lik'
-choose_N <- function(draws) {
-  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
-  if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
-}
-
-# prepare for calling family specific 'log_lik' and 'predict' functions
-prepare_family <- function(x) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  family <- x$family
-  if (use_cov(x$autocor) && has_natural_residuals(x)) {
-    family$fun <- paste0(family$family, "_cov")
-  } else if (is.cor_sar(x$autocor)) {
-    if (identical(x$autocor$type, "lag")) {
-      family$fun <- paste0(family$family, "_lagsar")
-    } else if (identical(x$autocor$type, "error")) {
-      family$fun <- paste0(family$family, "_errorsar")
-    }
-  } else if (is.cor_fixed(x$autocor)) {
-    family$fun <- paste0(family$family, "_fixed")
-  } else {
-    family$fun <- family$family
-  }
-  family
-}
-
 # validate the 'resp' argument of 'predict' and related methods
 # @param resp response names to be validated
 # @param x valid response names or brmsfit object to extract names from
@@ -679,25 +596,6 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
     out <- models
   }
   out
-}
-
-# validate weights passed to model averaging functions
-# see pp_average.brmsfit for more documentation
-validate_weights <- function(weights, models, control = list()) {
-  if (!is.numeric(weights)) {
-    weight_args <- c(unname(models), control)
-    weight_args$weights <- weights
-    weights <- do_call(model_weights, weight_args)
-  } else {
-    if (length(weights) != length(models)) {
-      stop2("If numeric, 'weights' must have the same length ",
-            "as the number of models.")
-    }
-    if (any(weights < 0)) {
-      stop2("If numeric, 'weights' must be positive.")
-    }
-  }
-  weights / sum(weights)
 }
 
 # reorder observations to be in the initial user-defined order

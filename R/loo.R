@@ -40,8 +40,6 @@
 #' @return If just one object is provided, an object of class \code{loo}. 
 #'  If multiple objects are provided, an object of class \code{loolist}.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
 #' @examples
 #' \dontrun{
 #' # model with population-level effects only
@@ -116,8 +114,6 @@ LOO <- function(x, ...) {
 #'  
 #' @return If just one object is provided, an object of class \code{loo}. 
 #'  If multiple objects are provided, an object of class \code{loolist}.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples 
 #' \dontrun{

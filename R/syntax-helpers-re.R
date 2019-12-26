@@ -522,3 +522,30 @@ get_levels <- function(...) {
   out <- unlist(out, recursive = FALSE)
   out[!duplicated(names(out))]
 }
+
+# extract names of group-level effects
+# @param ranef output of tidy_ranef()
+# @param group optinal name of a grouping factor for
+#   which to extract effect names
+# @param bylevels optional names of 'by' levels for 
+#    which to extract effect names
+# @return a vector of character strings
+get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
+  stopifnot(is.data.frame(ranef))
+  if (!is.null(group)) {
+    group <- as_one_character(group)
+    ranef <- subset2(ranef, group = group)
+  }
+  stopifnot(length(unique(ranef$group)) == 1L)
+  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
+  if (isTRUE(nzchar(ranef$by[1]))) {
+    if (!is.null(bylevels)) {
+      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
+    } else {
+      bylevels <- ranef$bylevels[[1]]
+    }
+    bylabels <- paste0(ranef$by[1], bylevels)
+    out <- outer(out, bylabels, paste, sep = ":")
+  }
+  out
+}
