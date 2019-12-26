@@ -36,7 +36,7 @@ predictive_error.brmsfit <- function(
   .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
     method = "posterior_predict", type = "ordinary", resp = resp, 
-    nsamples = nsamples, subset = subset, sort = sort
+    nsamples = nsamples, subset = subset, sort = sort, ...
   )
 }
 
@@ -99,7 +99,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   out <- .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
     method = method, type = type, resp = resp, 
-    nsamples = nsamples, subset = subset, sort = sort
+    nsamples = nsamples, subset = subset, sort = sort, ...
   )
   if (summary) {
     out <- posterior_summary(out, probs = probs, robust = robust)

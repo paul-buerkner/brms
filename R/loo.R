@@ -1,17 +1,174 @@
+#' Efficient approximate leave-one-out cross-validation (LOO)
+#' 
+#' Perform approximate leave-one-out cross-validation based 
+#' on the posterior likelihood using the \pkg{loo} package.
+#' For more details see \code{\link[loo:loo]{loo}}.
+#' 
+#' @aliases loo LOO LOO.brmsfit
+#' 
+#' @param x A \code{brmsfit} object.
+#' @param ... More \code{brmsfit} objects or further arguments
+#'   passed to the underlying post-processing functions.
+#'   In particular, see \code{\link{extract_draws}} for further
+#'   supported arguments.
+#' @param compare A flag indicating if the information criteria
+#'  of the models should be compared to each other
+#'  via \code{\link{loo_compare}}.
+#' @param pointwise A flag indicating whether to compute the full
+#'  log-likelihood matrix at once or separately for each observation. 
+#'  The latter approach is usually considerably slower but 
+#'  requires much less working memory. Accordingly, if one runs 
+#'  into memory issues, \code{pointwise = TRUE} is the way to go.
+#' @param reloo Logical; Indicate whether \code{\link{reloo}} 
+#'  should be applied on problematic observations. Defaults to \code{FALSE}.
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   Only used if argument \code{reloo} is \code{TRUE}.
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}} for more details.
+#' @param reloo_args Optional \code{list} of additional arguments passed to
+#'   \code{\link{reloo}}.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
+#' @inheritParams predict.brmsfit
+#' 
+#' @details See \code{\link{loo_compare}} for details on model comparisons.
+#'  For \code{brmsfit} objects, \code{LOO} is an alias of \code{loo}.
+#'  Use method \code{\link{add_criterion}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{loo}. 
+#'  If multiple objects are provided, an object of class \code{loolist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' (loo1 <- loo(fit1))
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' (loo2 <- loo(fit2))   
+#' 
+#' # compare both models
+#' loo_compare(loo1, loo2)                      
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @importFrom loo loo is.loo
+#' @export loo
+#' @export
+loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
+                         reloo_args = list(), model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  c(args) <- nlist(
+    criterion = "loo", pointwise, compare, 
+    resp, k_threshold, reloo, reloo_args
+  )
+  do_call(compute_loos, args)
+}
+
+#' @export
+LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                        pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
+                        reloo_args = list(), model_names = NULL) {
+  cl <- match.call()
+  cl[[1]] <- quote(loo)
+  eval(cl, parent.frame())
+}
+
 #' @export
 LOO <- function(x, ...) {
   UseMethod("LOO")
 }
 
+#' Widely Applicable Information Criterion (WAIC)
+#' 
+#' Compute the widely applicable information criterion (WAIC)
+#' based on the posterior likelihood using the \pkg{loo} package.
+#' For more details see \code{\link[loo:waic]{waic}}.
+#' 
+#' @aliases waic WAIC WAIC.brmsfit
+#' 
+#' @inheritParams loo.brmsfit
+#' 
+#' @details See \code{\link{loo_compare}} for details on model comparisons. 
+#'  For \code{brmsfit} objects, \code{WAIC} is an alias of \code{waic}.
+#'  Use method \code{\link[brms:add_criterion]{add_criterion}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
+#' @return If just one object is provided, an object of class \code{loo}. 
+#'  If multiple objects are provided, an object of class \code{loolist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' (waic1 <- waic(fit1))
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' (waic2 <- waic(fit2))   
+#' 
+#' # compare both models
+#' loo_compare(waic1, waic2)                      
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+#' Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+#' and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @importFrom loo waic
+#' @export waic
 #' @export
-WAIC <- function(x, ...) {
-  UseMethod("WAIC")
+waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = FALSE, model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
+  do_call(compute_loos, args)
 }
 
 #' @export
-loo_R2 <- function(object, ...) {
-  # temporary generic until available in loo
-  UseMethod("loo_R2")
+WAIC.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                         pointwise = FALSE, model_names = NULL) {
+  cl <- match.call()
+  cl[[1]] <- quote(waic)
+  eval(cl, parent.frame())
+}
+
+#' @export
+WAIC <- function(x, ...) {
+  UseMethod("WAIC")
 }
 
 # helper function used to create (lists of) 'loo' objects
@@ -172,6 +329,50 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
     }
   }
   loo_compare(loos)
+}
+
+#' Model averaging via stacking or pseudo-BMA weighting.
+#' 
+#' Compute model weights for \code{brmsfit} objects via stacking 
+#' or pseudo-BMA weighting. For more details, see
+#' \code{\link[loo:loo_model_weights]{loo::loo_model_weights}}.
+#' 
+#' @aliases loo_model_weights
+#' 
+#' @inheritParams loo.brmsfit
+#' 
+#' @return A named vector of model weights.
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' loo_model_weights(fit1, fit2)   
+#' }  
+#' 
+#' @method loo_model_weights brmsfit
+#' @importFrom loo loo_model_weights
+#' @export loo_model_weights
+#' @export
+loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  models <- args$models
+  args$models <- NULL
+  log_lik_list <- lapply(models, function(x) 
+    do_call(log_lik, c(list(x), args))
+  )
+  args$x <- log_lik_list
+  args$r_eff_list <- mapply(
+    r_eff_log_lik, log_lik = log_lik_list, 
+    fit = models, SIMPLIFY = FALSE
+  )
+  out <- do_call(loo::loo_model_weights, args)
+  names(out) <- names(models)
+  out
 }
 
 #' Add model fit criteria to model objects
@@ -545,232 +746,6 @@ reloo.loo <- function(x, fit, ...) {
 #' @export
 reloo <- function(x, ...) {
   UseMethod("reloo")
-}
-
-# helper function to perform k-fold cross-validation
-# @inheritParams kfold.brmsfit
-.kfold <- function(x, K = 10, Ksub = NULL, folds = NULL, 
-                   group = NULL, newdata = NULL, resp = NULL,
-                   save_fits = FALSE, ...) {
-  stopifnot(is.brmsfit(x))
-  if (is.brmsfit_multiple(x)) {
-    warn_brmsfit_multiple(x)
-    class(x) <- "brmsfit"
-  }
-  if (is.null(newdata)) {
-    mf <- model.frame(x) 
-  } else {
-    mf <- as.data.frame(newdata)
-  }
-  mf <- rm_attr(mf, c("terms", "brmsframe"))
-  N <- nrow(mf)
-  # validate argument 'group'
-  if (!is.null(group)) {
-    valid_groups <- get_cat_vars(x)
-    if (length(group) != 1L || !group %in% valid_groups) {
-      stop2("Group '", group, "' is not a valid grouping factor. ",
-            "Valid groups are: \n", collapse_comma(valid_groups))
-    }
-    gvar <- factor(get(group, mf))
-  }
-  # validate argument 'folds'
-  if (is.null(folds)) {
-    if (is.null(group)) {
-      fold_type <- "random"
-      folds <- loo::kfold_split_random(K, N)
-    } else {
-      fold_type <- "group"
-      folds <- as.numeric(gvar)
-      K <- length(levels(gvar))
-      message("Setting 'K' to the number of levels of '", group, "' (", K, ")")
-    }
-  } else if (is.character(folds) && length(folds) == 1L) {
-    opts <- c("loo", "stratified", "grouped")
-    fold_type <- match.arg(folds, opts)
-    req_group_opts <- c("stratified", "grouped")
-    if (fold_type %in% req_group_opts && is.null(group)) {
-      stop2("Argument 'group' is required for fold type '", fold_type, "'.")
-    }
-    if (fold_type == "loo") {
-      folds <- seq_len(N)
-      K <- N
-      message("Setting 'K' to the number of observations (", K, ")")
-    } else if (fold_type == "stratified") {
-      folds <- loo::kfold_split_stratified(K, gvar)
-    } else if (fold_type == "grouped") {
-      folds <- loo::kfold_split_grouped(K, gvar)
-    }
-  } else {
-    fold_type <- "custom"
-    folds <- as.numeric(factor(folds))
-    if (length(folds) != N) {
-      stop2("If 'folds' is a vector, it must be of length N.")
-    }
-    K <- max(folds)
-    message("Setting 'K' to the number of folds (", K, ")")
-  }
-  # validate argument 'Ksub'
-  if (is.null(Ksub)) {
-    Ksub <- seq_len(K)
-  } else {
-    # see issue #441 for reasons to check for arrays
-    is_array_Ksub <- is.array(Ksub)
-    Ksub <- as.integer(Ksub)
-    if (any(Ksub <= 0 | Ksub > K)) {
-      stop2("'Ksub' must contain positive integers not larger than 'K'.")
-    }
-    if (length(Ksub) == 1L && !is_array_Ksub) {
-      Ksub <- sample(seq_len(K), Ksub)
-    } else {
-      Ksub <- unique(Ksub)
-    }
-    Ksub <- sort(Ksub)
-  }
-  
-  # split dots for use in log_lik and update
-  dots <- list(...)
-  ll_arg_names <- arg_names("log_lik")
-  ll_args <- dots[intersect(names(dots), ll_arg_names)]
-  ll_args$allow_new_levels <- TRUE
-  ll_args$resp <- resp
-  ll_args$combine <- TRUE
-  up_args <- dots[setdiff(names(dots), ll_arg_names)]
-  up_args$refresh <- 0
-  
-  # function to be run inside future::future
-  .kfold_k <- function(k) {
-    if (fold_type == "loo" && !is.null(group)) {
-      omitted <- which(folds == folds[k])
-      predicted <- k
-    } else {
-      omitted <- predicted <- which(folds == k)
-    }
-    mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit <- subset_autocor(x, -omitted, incl_car = TRUE)
-    up_args$object <- fit
-    up_args$newdata <- mf_omitted
-    fit <- SW(do_call(update, up_args))
-    # allow predictions for matrix based correlation structures
-    fit <- subset_autocor(fit, predicted, autocor = x$autocor)
-    ll_args$object <- fit
-    ll_args$newdata <- mf[predicted, , drop = FALSE]
-    lppds <- do_call(log_lik, ll_args)
-    out <- nlist(lppds, omitted, predicted)
-    if (save_fits) out$fit <- fit
-    return(out)
-  }
-  
-  futures <- vector("list", length(Ksub))
-  lppds <- obs_order <- vector("list", length(Ksub))
-  if (save_fits) {
-    fits <- array(list(), dim = c(length(Ksub), 3))
-    dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
-  }
-  for (k in Ksub) {
-    ks <- match(k, Ksub)
-    message("Fitting model ", k, " out of ", K)
-    futures[[ks]] <- future::future(.kfold_k(k), packages = "brms")
-  }
-  for (k in Ksub) {
-    ks <- match(k, Ksub)
-    tmp <- future::value(futures[[ks]])
-    if (save_fits) {
-      fits[ks, ] <- tmp[c("fit", "omitted", "predicted")]
-    }
-    obs_order[[ks]] <- tmp$predicted
-    lppds[[ks]] <- tmp$lppds
-  }
-  
-  elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
-  # make sure elpds are put back in the right order
-  elpds <- elpds[order(unlist(obs_order))]
-  elpd_kfold <- sum(elpds)
-  se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
-  rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
-  cnames <- c("Estimate", "SE")
-  estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
-  estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
-  estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
-  out <- nlist(estimates, pointwise = cbind(elpd_kfold = elpds))
-  atts <- nlist(K, Ksub, group, folds, fold_type)
-  attributes(out)[names(atts)] <- atts
-  if (save_fits) {
-    out$fits <- fits
-    out$data <- mf
-  }
-  structure(out, class = c("kfold", "loo"))
-}
-
-#' Predictions from K-Fold Cross-Validation
-#' 
-#' Compute and evaluate predictions after performing K-fold 
-#' cross-validation via \code{\link{kfold}}. 
-#' 
-#' @param x Object of class \code{'kfold'} computed by \code{\link{kfold}}.
-#'   For \code{kfold_predict} to work, the fitted model objects need to have
-#'   been stored via argument \code{save_fits} of \code{\link{kfold}}.
-#' @param method The method used to make predictions. Either \code{"predict"}
-#'   or \code{"fitted"}. See \code{\link{predict.brmsfit}} for details.
-#' @inheritParams predict.brmsfit
-#' 
-#' @return A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
-#'   Slot \code{y} contains the vector of observed responses.
-#'   Slot \code{yrep} contains the matrix of predicted responses,
-#'   with rows being posterior draws and columns being observations.
-#'   
-#' @seealso \code{\link{kfold}}
-#'   
-#' @examples 
-#' \dontrun{
-#' fit <- brm(count ~ zBase * Trt + (1|patient),
-#'            data = epilepsy, family = poisson())
-#'             
-#' # perform k-fold cross validation
-#' (kf <- kfold(fit, save_fits = TRUE, chains = 1))
-#' 
-#' # define a loss function
-#' rmse <- function(y, yrep) {
-#'   yrep_mean <- colMeans(yrep)
-#'   sqrt(mean((yrep_mean - y)^2))
-#' }
-#' 
-#' # predict responses and evaluate the loss
-#' kfp <- kfold_predict(kf)
-#' rmse(y = kfp$y, yrep = kfp$yrep)
-#' }
-#'   
-#' @export
-kfold_predict <- function(x, method = c("predict", "fitted"), 
-                          resp = NULL, ...) {
-  if (!inherits(x, "kfold")) {
-    stop2("'x' must be a 'kfold' object.")
-  }
-  if (!all(c("fits", "data") %in% names(x))) {
-    stop2(
-      "Slots 'fits' and 'data' are required. ", 
-      "Please run kfold with 'save_fits = TRUE'."
-    )
-  }
-  method <- get(match.arg(method), mode = "function")
-  resp <- validate_resp(resp, x$fits[[1, "fit"]], multiple = FALSE)
-  all_predicted <- as.character(sort(unlist(x$fits[, "predicted"])))
-  npredicted <- length(all_predicted)
-  nsamples <- nsamples(x$fits[[1, "fit"]])
-  y <- rep(NA, npredicted)
-  yrep <- matrix(NA, nrow = nsamples, ncol = npredicted)
-  names(y) <- colnames(yrep) <- all_predicted
-  for (k in seq_rows(x$fits)) {
-    fit_k <- x$fits[[k, "fit"]]
-    predicted_k <- x$fits[[k, "predicted"]]
-    obs_names <- as.character(predicted_k)
-    newdata <- x$data[predicted_k, , drop = FALSE]
-    y[obs_names] <- get_y(fit_k, resp, newdata = newdata, ...)
-    yrep[, obs_names] <- method(
-      fit_k, newdata = newdata, resp = resp, 
-      allow_new_levels = TRUE, summary = FALSE, ...
-    )
-  }
-  nlist(y, yrep)
 }
 
 # recommend options if approximate loo fails for some observations

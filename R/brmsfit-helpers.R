@@ -144,25 +144,6 @@ get_cat_vars <- function(x) {
   unique(valid_groups[nzchar(valid_groups)])
 }
 
-# extract list of levels with one element per grouping factor
-# @param ... objects with a level attribute
-get_levels <- function(...) {
-  dots <- list(...)
-  out <- vector("list", length(dots))
-  for (i in seq_along(out)) {
-    levels <- attr(dots[[i]], "levels", exact = TRUE)
-    if (is.list(levels)) {
-      stopifnot(!is.null(names(levels)))
-      out[[i]] <- as.list(levels)
-    } else if (!is.null(levels)) {
-      stopifnot(isTRUE(nzchar(names(dots)[i])))
-      out[[i]] <- setNames(list(levels), names(dots)[[i]])
-    }
-  }
-  out <- unlist(out, recursive = FALSE)
-  out[!duplicated(names(out))]
-}
-
 # calculate estimates over posterior samples 
 # @param coef coefficient to be applied on the samples (e.g., "mean")
 # @param samples the samples over which to apply coef
@@ -183,50 +164,6 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
     x <- aperm(x, length(dim(x)):1)
   }
   x 
-}
-
-#' Table Creation for Posterior Samples
-#' 
-#' Create a table for unique values of posterior samples. 
-#' This is usually only useful when summarizing predictions 
-#' of ordinal models.
-#' 
-#' @param x A matrix of posterior samples where rows 
-#'   indicate samples and columns indicate parameters. 
-#' @param levels Optional values of possible posterior values.
-#'   Defaults to all unique values in \code{x}.
-#' 
-#' @return A matrix where rows indicate parameters 
-#'  and columns indicate the unique values of 
-#'  posterior samples.
-#'  
-#' @examples 
-#' \dontrun{
-#' fit <- brm(rating ~ period + carry + treat, 
-#'            data = inhaler, family = cumulative())
-#' pr <- predict(fit, summary = FALSE)
-#' posterior_table(pr)
-#' }
-#'  
-#' @export
-posterior_table <- function(x, levels = NULL) {
-  x <- as.matrix(x)
-  if (is.null(levels)) {
-    levels <- sort(unique(as.vector(x)))
-  }
-  xlevels <- attr(x, "levels")
-  if (length(xlevels) != length(levels)) {
-    xlevels <- levels
-  }
-  out <- lapply(seq_len(ncol(x)), 
-    function(n) table(factor(x[, n], levels = levels))
-  )
-  out <- do_call(rbind, out)
-  # compute relative frequencies
-  out <- out / sum(out[1, ])
-  rownames(out) <- colnames(x)
-  colnames(out) <- paste0("P(Y = ", xlevels, ")")
-  out
 }
 
 # covariance matrices based on correlation and SD samples
@@ -785,103 +722,15 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   eta
 }
 
-# transform posterior draws of ordinal probabilities to a 
-# continuous scale assuming equidistance between adjacent categories 
-# @param x an ndraws x nobs x ncat array of posterior draws
-# @return an ndraws x nobs matrix of posterior draws
-ordinal_probs_continuous <- function(x) {
-  stopifnot(length(dim(x)) == 3)
-  for (k in seq_dim(x, 3)) {
-    x[, , k] <- x[, , k] * k
-  }
-  x <- lapply(seq_dim(x, 2), function(s) rowSums(x[, s, ]))
-  do_call(cbind, x)
-}
-
-# regex to extract population-level coefficients
-fixef_pars <- function() {
-  types <- c("", "s", "cs", "sp", "mo", "me", "mi", "m")
-  types <- paste0("(", types, ")", collapse = "|")
-  paste0("^b(", types, ")_")
-}
-
-# list all parameter classes to be included in plots by default
-default_plot_pars <- function(family) {
-  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", valid_dpars(family), "$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
-    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
-}
-
-# extract all valid parameter names that match pars
-# @param pars A character vector or regular expression
-# @param all_pars all parameter names of the fitted model
-# @param exact_match should parnames be matched exactly?
-# @param na_value: what should be returned if pars is NA? 
-# @param ... Further arguments to be passed to grepl
-# @return A character vector of parameter names
-extract_pars <- function(pars, all_pars, exact_match = FALSE,
-                         na_value = all_pars, ...) {
-  if (!(anyNA(pars) || is.character(pars))) {
-    stop2("Argument 'pars' must be NA or a character vector.")
-  }
-  if (!anyNA(pars)) {
-    if (exact_match) {
-      out <- intersect(pars, all_pars)
-    } else {
-      out <- vector("list", length(pars))
-      for (i in seq_along(pars)) {
-        out[[i]] <- all_pars[grepl(pars[i], all_pars, ...)]
-      }
-      out <- unique(unlist(out))
-    }
-  } else {
-    out <- na_value
-  }
-  out
-}
-
 # extract argument names of a post-processing method
 arg_names <- function(method) {
-  opts <- c("predict", "fitted", "log_lik")
+  opts <- c("posterior_predict", "pp_expect", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
   c(out) <- names(formals(extract_draws.brmsfit))
   c(out) <- names(formals(validate_newdata))
   out <- unique(out)
   out <- setdiff(out, c("object", "x", "..."))
-  out
-}
-
-# ignore priors of certain parameters from whom we cannot obtain prior samples
-# currently applies only to overall intercepts of centered design matrices
-# fixes issue #696
-# @param x a brmsfit object
-# @param par name of the parameter
-# @return TRUE (if the prior should be ignored) or FALSE
-ignore_prior <- function(x, par) {
-  stopifnot(is.brmsfit(x))
-  par <- as_one_character(par)
-  out <- FALSE
-  if (grepl("^b_.*Intercept($|\\[)", par)) {
-    # cannot sample from intercepts if 'center' was TRUE
-    intercept_priors <- subset2(x$prior, class = "Intercept")
-    if (NROW(intercept_priors)) {
-      # prefixes of the model intercepts
-      p_intercepts <- usc(combine_prefix(intercept_priors))
-      # prefix of the parameter under question
-      p_par <- sub("^b", "", par)
-      p_par <- sub("_Intercept($|\\[)", "", p_par)
-      out <- p_par %in% p_intercepts
-      if (out) {
-        warning2(
-          "Sampling from the prior of an overall intercept is not ", 
-          "possible by default. See the documentation of the ", 
-          "'sample_prior' argument in help('brm')."
-        )
-      }
-    }
-  }
   out
 }
 

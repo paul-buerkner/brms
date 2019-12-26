@@ -583,6 +583,19 @@ get_int_vars.brmsterms <- function(x, ...) {
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
+# transform posterior draws of ordinal probabilities to a 
+# continuous scale assuming equidistance between adjacent categories 
+# @param x an ndraws x nobs x ncat array of posterior draws
+# @return an ndraws x nobs matrix of posterior draws
+ordinal_probs_continuous <- function(x) {
+  stopifnot(length(dim(x)) == 3)
+  for (k in seq_dim(x, 3)) {
+    x[, , k] <- x[, , k] * k
+  }
+  x <- lapply(seq_dim(x, 2), function(s) rowSums(x[, s, ]))
+  do_call(cbind, x)
+}
+
 #' Prepare Fully Crossed Conditions
 #' 
 #' This is a helper function to prepare fully crossed conditions primarily 

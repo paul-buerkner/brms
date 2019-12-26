@@ -503,3 +503,22 @@ get_dist_groups <- function(ranef, dist) {
   out <- subset2(ranef, dist = dist)
   out[!duplicated(out$group), c("group", "ggn", "id")]
 }
+
+# extract list of levels with one element per grouping factor
+# @param ... objects with a level attribute
+get_levels <- function(...) {
+  dots <- list(...)
+  out <- vector("list", length(dots))
+  for (i in seq_along(out)) {
+    levels <- attr(dots[[i]], "levels", exact = TRUE)
+    if (is.list(levels)) {
+      stopifnot(!is.null(names(levels)))
+      out[[i]] <- as.list(levels)
+    } else if (!is.null(levels)) {
+      stopifnot(isTRUE(nzchar(names(dots)[i])))
+      out[[i]] <- setNames(list(levels), names(dots)[[i]])
+    }
+  }
+  out <- unlist(out, recursive = FALSE)
+  out[!duplicated(names(out))]
+}

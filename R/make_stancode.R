@@ -198,3 +198,9 @@ make_stancode <- function(formula, data, family = gaussian(),
   class(complete_model) <- c("character", "brmsmodel")
   complete_model
 }
+
+#' @export
+print.brmsmodel <- function(x, ...) {
+  cat(x)
+  invisible(x) 
+}
