@@ -8,7 +8,7 @@
   object,
   newdata = NULL,
   re_formula = NULL,
-  method = c("fitted", "predict"),
+  method = "pp_expect",
   type = c("ordinary", "pearson"),
   resp = NULL,
   nsamples = NULL,
@@ -33,12 +33,10 @@ predictions of the grand mean when using sum coding.}
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{method}{Indicates the method to compute
-model implied values. Either \code{"fitted"}
-(expected values of the posterior predictive distribution) or
-\code{"predict"} (predicted response values). 
-Using \code{"predict"} is recommended
-but \code{"fitted"} is the current default for 
+\item{method}{Method use to obtain predictions. Either
+\code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+Using \code{"posterior_predict"} is recommended
+but \code{"pp_expect"} is the current default for 
 reasons of backwards compatibility.}
 
 \item{type}{The type of the residuals, 
@@ -59,6 +57,18 @@ If \code{NULL} (the default), all samples are used.}
 Indicating whether to return predicted values in the original 
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
+
+\item{summary}{Should summary statistics be returned
+instead of the raw values? Default is \code{TRUE}..}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deviation (MAD) are applied instead.
+Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to \code{\link{extract_draws}}
 that control several aspects of data validation and prediction.}

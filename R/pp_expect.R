@@ -10,7 +10,6 @@
 #' means of both methods averaged across samples should be very similar.
 #' 
 #' @inheritParams posterior_predict.brmsfit
-#' @param x An object of class \code{brmsfit}.
 #' @param dpar Optional name of a predicted distributional parameter.
 #'  If specified, fitted values of this parameters are returned.
 #' @param nlpar Optional name of a predicted non-linear parameter.
@@ -40,7 +39,7 @@
 #' }
 #' 
 #' @export 
-pp_expect.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
+pp_expect.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               re.form = NULL, resp = NULL, dpar = NULL,
                               nlpar = NULL, nsamples = NULL, subset = NULL, 
                               sort = FALSE, ...) {
@@ -48,10 +47,10 @@ pp_expect.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if ("re.form" %in% names(cl)) {
     re_formula <- re.form
   }
-  contains_samples(x)
-  x <- restructure(x)
+  contains_samples(object)
+  object <- restructure(object)
   draws <- extract_draws(
-    x, newdata = newdata, re_formula = re_formula, resp = resp, 
+    object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   pp_expect(
@@ -62,22 +61,22 @@ pp_expect.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 
 #' @rdname pp_expect.brmsfit
 #' @export
-pp_expect <- function(x, ...) {
+pp_expect <- function(object, ...) {
   UseMethod("pp_expect")
 }
 
 #' @export
-pp_expect.mvbrmsdraws <- function(x, ...) {
-  out <- lapply(x$resps, pp_expect, ...)
+pp_expect.mvbrmsdraws <- function(object, ...) {
+  out <- lapply(object$resps, pp_expect, ...)
   along <- ifelse(length(out) > 1L, 3, 2)
   do_call(abind, c(out, along = along))
 }
 
 #' @export
-pp_expect.brmsdraws <- function(x, scale, dpar, nlpar, sort, 
+pp_expect.brmsdraws <- function(object, scale, dpar, nlpar, sort, 
                                 summary, robust, probs, ...) {
-  dpars <- names(x$dpars)
-  nlpars <- names(x$nlpars)
+  dpars <- names(object$dpars)
+  nlpars <- names(object$nlpars)
   if (length(dpar)) {
     # predict a distributional parameter
     dpar <- as_one_character(dpar)
@@ -88,29 +87,29 @@ pp_expect.brmsdraws <- function(x, scale, dpar, nlpar, sort,
     if (length(nlpar)) {
       stop2("Cannot use 'dpar' and 'nlpar' at the same time.")
     }
-    predicted <- is.bdrawsl(x$dpars[[dpar]]) ||
-      is.bdrawsnl(x$dpars[[dpar]])
+    predicted <- is.bdrawsl(object$dpars[[dpar]]) ||
+      is.bdrawsnl(object$dpars[[dpar]])
     if (predicted) {
       # parameter varies across observations
       if (scale == "linear") {
-        x$dpars[[dpar]]$family$link <- "identity"
+        object$dpars[[dpar]]$family$link <- "identity"
       }
-      if (is_ordinal(x$family)) {
-        x$dpars[[dpar]]$cs <- NULL
-        x$family <- x$dpars[[dpar]]$family <- 
-          .dpar_family(link = x$dpars[[dpar]]$family$link)
+      if (is_ordinal(object$family)) {
+        object$dpars[[dpar]]$cs <- NULL
+        object$family <- object$dpars[[dpar]]$family <- 
+          .dpar_family(link = object$dpars[[dpar]]$family$link)
       }
       if (dpar_class(dpar) == "theta" && scale == "response") {
         ap_id <- as.numeric(dpar_id(dpar))
-        out <- get_theta(x)[, , ap_id, drop = FALSE]
+        out <- get_theta(object)[, , ap_id, drop = FALSE]
         dim(out) <- dim(out)[c(1, 2)]
       } else {
-        out <- get_dpar(x, dpar = dpar, ilink = TRUE)
+        out <- get_dpar(object, dpar = dpar, ilink = TRUE)
       }
     } else {
       # parameter is constant across observations
-      out <- x$dpars[[dpar]]
-      out <- matrix(out, nrow = x$nsamples, ncol = x$nobs)
+      out <- object$dpars[[dpar]]
+      out <- matrix(out, nrow = object$nsamples, ncol = object$nobs)
     }
   } else if (length(nlpar)) {
     # predict a non-linear parameter
@@ -119,34 +118,34 @@ pp_expect.brmsdraws <- function(x, scale, dpar, nlpar, sort,
       stop2("Invalid argument 'nlpar'. Valid non-linear ",
             "parameters are: ", collapse_comma(nlpars))
     }
-    out <- get_nlpar(x, nlpar = nlpar)
+    out <- get_nlpar(object, nlpar = nlpar)
   } else {
     # predict the mean of the response distribution
     if (scale == "response") {
       for (nlp in nlpars) {
-        x$nlpars[[nlp]] <- get_nlpar(x, nlpar = nlp)
+        object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
       }
       for (dp in dpars) {
-        x$dpars[[dp]] <- get_dpar(x, dpar = dp)
+        object$dpars[[dp]] <- get_dpar(object, dpar = dp)
       }
-      if (is_trunc(x)) {
-        out <- pp_expect_trunc(x)
+      if (is_trunc(object)) {
+        out <- pp_expect_trunc(object)
       } else {
-        pp_expect_fun <- paste0("pp_expect_", x$family$family)
+        pp_expect_fun <- paste0("pp_expect_", object$family$family)
         pp_expect_fun <- get(pp_expect_fun, asNamespace("brms"))
-        out <- pp_expect_fun(x)
+        out <- pp_expect_fun(object)
       }
     } else {
-      if (conv_cats_dpars(x$family)) {
+      if (conv_cats_dpars(object$family)) {
         mus <- dpars[grepl("^mu", dpars)] 
       } else {
         mus <- dpars[dpar_class(dpars) %in% "mu"]
       }
       if (length(mus) == 1L) {
-        out <- get_dpar(x, dpar = mus, ilink = FALSE)
+        out <- get_dpar(object, dpar = mus, ilink = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(mus, get_dpar, x = x, ilink = FALSE)
+        out <- lapply(mus, get_dpar, draws = object, ilink = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }
@@ -155,12 +154,11 @@ pp_expect.brmsdraws <- function(x, scale, dpar, nlpar, sort,
     out <- as.matrix(out)
   }
   colnames(out) <- NULL
-  out <- reorder_obs(out, x$old_order, sort = sort)
-  summary <- as_one_logical(summary)
+  out <- reorder_obs(out, object$old_order, sort = sort)
   if (summary) {
     # only for compatibility with the 'fitted' method
     out <- posterior_summary(out, probs = probs, robust = robust)
-    if (has_cat(x$family) && length(dim(out)) == 3L) {
+    if (has_cat(object$family) && length(dim(out)) == 3L) {
       if (scale == "linear") {
         dimnames(out)[[3]] <- paste0("eta", seq_dim(out, 3))
       } else {
@@ -238,6 +236,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            summary = TRUE, robust = FALSE, 
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
+  summary <- as_one_logical(summary)
   contains_samples(object)
   object <- restructure(object)
   draws <- extract_draws(

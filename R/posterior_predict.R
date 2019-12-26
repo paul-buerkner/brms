@@ -272,6 +272,23 @@ predictive_interval.brmsfit <- function(object, prob = 0.9, ...) {
   predictive_interval(out, prob = prob)
 }
 
+# validate method name to obtain posterior predictions
+# @param method name of the method
+# @return validated name of the method
+validate_pp_method <- function(method) {
+  method <- as_one_character(method)
+  if (method %in% c("posterior_predict", "predict", "pp")) {
+    method <- "posterior_predict"
+  } else if (method %in% c("pp_expect", "fitted")) {
+    method <- "pp_expect"
+  } else if (method %in% c("predictive_error", "residuals")) {
+    method <- "predictive_error"
+  } else {
+    stop2("Posterior predictive method '", method, "' it not supported.")
+  }
+  method
+}
+
 # ------------------- family specific posterior_predict methods ---------------------
 # All posterior_predict_<family> functions have the same arguments structure
 # @param i the column of draws to use that is the ith obervation 

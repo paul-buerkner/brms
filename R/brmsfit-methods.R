@@ -1350,9 +1350,9 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     if (is_ordinal(family)) {
       stop2("Type '", type, "' is not available for ordinal models.")
     }
-    method <- "fitted"
+    method <- "pp_expect"
   } else {
-    method <- "predict"
+    method <- "posterior_predict"
   }
   if (missing(nsamples)) {
     aps_types <- c(
@@ -1383,8 +1383,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   y <- get_y(object, resp = resp, newdata = newdata, ...)
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
-    object, newdata = newdata, resp = resp, subset = subset, 
-    sort = FALSE, summary = FALSE, ...
+    object, newdata = newdata, resp = resp, 
+    subset = subset, sort = FALSE, ...
   )
   yrep <- do_call(method, pred_args)
   # censored responses are misleading when displayed in pp_check
@@ -1588,14 +1588,14 @@ posterior_average.brmsfit <- function(
 #' @rdname pp_average
 #' @export
 pp_average.brmsfit <- function(
-  x, ..., weights = "loo2", method = c("predict", "fitted", "residuals"),
+  x, ..., weights = "loo2", method = "posterior_predict",
   nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
   model_names = NULL, control = list(), seed = NULL
 ) {
   if (!is.null(seed)) {
     set.seed(seed) 
   }
-  method <- match.arg(method)
+  method <- validate_pp_method(method)
   if ("subset" %in% names(list(...))) {
     stop2("Cannot use argument 'subset' in pp_average.")
   }
@@ -1635,7 +1635,7 @@ pp_average.brmsfit <- function(
 #' 
 #' @inheritParams predict.brmsfit
 #' @param ... Further arguments passed to 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}},
+#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}},
 #'   which is used in the computation of the R-squared values.
 #' 
 #' @return If \code{summary = TRUE} a 1 x C matrix is returned
@@ -1701,13 +1701,13 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
     return(as.matrix(var_ypred / (var_ypred + var_e)))
   }
   args_y <- list(object, warn = TRUE, ...)
-  args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+  args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
   for (i in seq_along(R2)) {
     # assumes expectations of different responses to be independent
     args_ypred$resp <- args_y$resp <- resp[i]
     y <- do_call(get_y, args_y)
-    ypred <- do.call(fitted, args_ypred)
+    ypred <- do.call(pp_expect, args_ypred)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
     }
@@ -1725,9 +1725,9 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
 #' 
 #' @aliases loo_R2
 #' 
-#' @inheritParams predict.brmsfit
+#' @inheritParams posterior_predict.brmsfit
 #' @param ... Further arguments passed to 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}} and
+#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}} and
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
 #'   which are used in the computation of the R-squared values.
 #' 
@@ -1776,13 +1776,13 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     return(1 - var(eloo) / var(y))
   }
   args_y <- list(object, warn = TRUE, ...)
-  args_ypred <- list(object, summary = FALSE, sort = TRUE, ...)
+  args_ypred <- list(object, sort = TRUE, ...)
   R2 <- named_list(paste0("R2", resp))
   for (i in seq_along(R2)) {
     # assumes expectations of different responses to be independent
     args_ypred$resp <- args_y$resp <- resp[i]
     y <- do_call(get_y, args_y)
-    ypred <- do.call(fitted, args_ypred)
+    ypred <- do.call(pp_expect, args_ypred)
     ll <- do_call(log_lik, args_ypred)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
@@ -2295,7 +2295,6 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #'   \code{"quantile"}.
 #' @param probs A vector of quantiles to compute. 
 #'   Only used if \code{type = quantile}.
-#' @param scale Passed to \code{\link[brms:fitted.brmsfit]{fitted}}.
 #' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
 #'   indicating the desired probability mass to include in the intervals. The
 #'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
@@ -2304,9 +2303,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #'   internally, which may be time consuming for models fit to very large datasets. 
 #' @param ... Optional arguments passed to the underlying methods that is 
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
-#'   \code{\link[brms:predict.brmsfit]{predict}} or
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}. 
-#' @inheritParams predict.brmsfit
+#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or
+#'   \code{\link[brms:posterior_linpred.brmsfit]{posterior_linpred}}. 
+#' @inheritParams posterior_predict.brmsfit
 #'   
 #' @return \code{loo_predict} and \code{loo_linpred} return a vector with one 
 #'   element per observation. The only exception is if \code{type = "quantile"} 
@@ -2352,7 +2351,7 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
     message("Running PSIS to compute weights")
     psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
   }
-  preds <- predict(object, resp = resp, summary = FALSE, ...)
+  preds <- posterior_predict(object, resp = resp, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
@@ -2363,7 +2362,7 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
 #' @export 
 loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
                                 probs = 0.5, psis_object = NULL, resp = NULL,
-                                scale = "linear", ...) {
+                                ...) {
   type <- match.arg(type)
   stopifnot_resp(object, resp)
   family <- family(object, resp = resp)
@@ -2375,7 +2374,7 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
     message("Running PSIS to compute weights")
     psis_object <- compute_loo(object, criterion = "psis", resp = resp, ...)
   }
-  preds <- fitted(object, scale = scale, resp = resp, summary = FALSE, ...)
+  preds <- posterior_linpred(object, resp = resp, ...)
   loo::E_loo(preds, psis_object, type = type, probs = probs)$value
 }
 
@@ -2393,7 +2392,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
   probs <- c(alpha, 1 - alpha)
   labs <- paste0(100 * probs, "%")
   intervals <- loo_predict(
-    object, type = "quantile", probs = probs, psis_object = psis_object, ...
+    object, type = "quantile", probs = probs, 
+    psis_object = psis_object, ...
   )
   rownames(intervals) <- labs
   t(intervals)

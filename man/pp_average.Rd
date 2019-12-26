@@ -9,7 +9,7 @@
   x,
   ...,
   weights = "loo2",
-  method = c("predict", "fitted", "residuals"),
+  method = "posterior_predict",
   nsamples = NULL,
   summary = TRUE,
   probs = c(0.025, 0.975),
@@ -42,8 +42,9 @@ likelihood values (make sure to specify reasonable priors in
 this case). Alternatively, \code{weights} can be a numeric vector 
 of pre-specified weights.}
 
-\item{method}{Type of predictions to average. Should be one of 
-\code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}.}
+\item{method}{Method used to obtain predictions to average over. Should be
+one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
+\code{"predictive_error"}.}
 
 \item{nsamples}{Total number of posterior samples to use.}
 

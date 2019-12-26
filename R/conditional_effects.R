@@ -42,9 +42,8 @@
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
-#' @param method Either \code{"fitted"} or \code{"predict"}. 
-#'   If \code{"fitted"}, plot conditional predictions of the regression curve. 
-#'   If \code{"predict"}, plot conditional predictions of the responses.
+#' @param method Method use to obtain predictions. Either
+#'   \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
@@ -64,7 +63,7 @@
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed. Only allowed
-#'   if \code{method = "predict"}.
+#'   if \code{method = "posterior_predict"}.
 #' @param resolution Number of support points used to generate 
 #'   the plots. Higher resolution leads to smoother plots. 
 #'   Defaults to \code{100}. If \code{surface} is \code{TRUE},
@@ -87,8 +86,8 @@
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{subset} or \code{nsamples}
-#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
+#'   passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
+#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
@@ -224,12 +223,12 @@
 conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                         int_conditions = NULL, re_formula = NA, 
                                         robust = TRUE, probs = c(0.025, 0.975),
-                                        method = c("fitted", "predict"), 
+                                        method = "pp_expect",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
                                         transform = NULL, resolution = 100, 
                                         select_points = 0, too_far = 0, ...) {
-  method <- match.arg(method)
+  method <- validate_pp_method(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
   categorical <- as_one_logical(categorical)
@@ -241,8 +240,8 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   if (length(probs) != 2L) {
     stop2("Arguments 'probs' must be of length 2.")
   }
-  if (!is.null(transform) && method != "predict") {
-    stop2("'transform' is only allowed when 'method' is set to 'predict'.")
+  if (!is.null(transform) && method != "posterior_predict") {
+    stop2("'transform' is only allowed if 'method = posterior_predict'.")
   }
   if (ordinal) {
     warning2("Argument 'ordinal' is deprecated. ", 
@@ -356,7 +355,7 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
   unlist(out, recursive = FALSE)
 }
 
-# compute fitted values of a univariate model for use in conditional_effects
+# conditional_effects for univariate model
 # @return a list with the summarized prediction matrix as the only element
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
@@ -372,14 +371,14 @@ conditional_effects.brmsterms <- function(
   pred_args <- list(
     fit, newdata = marg_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
-    incl_autocor = FALSE, summary = FALSE, ...
+    incl_autocor = FALSE, ...
   )
   out <- do_call(method, pred_args)
   rownames(marg_data) <- NULL
   
   if (categorical || ordinal) {
-    if (method != "fitted") {
-      stop2("Can only use 'categorical' with method = 'fitted'.")
+    if (method != "pp_expect") {
+      stop2("Can only use 'categorical' with method = 'pp_expect'.")
     }
     if (!(has_cat(x) || is_ordinal(x))) {
       stop2("Argument 'categorical' may only be used ", 
@@ -405,7 +404,7 @@ conditional_effects.brmsterms <- function(
         "'conditional_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
-      if (method == "fitted") {
+      if (method == "pp_expect") {
         out <- ordinal_probs_continuous(out)
       }
     }

@@ -382,8 +382,9 @@ model_weights <- function(x, ...) {
 #' marginal likelihoods.
 #' 
 #' @inheritParams model_weights
-#' @param method Type of predictions to average. Should be one of 
-#'   \code{"predict"} (default), \code{"fitted"}, or \code{"residuals"}. 
+#' @param method Method used to obtain predictions to average over. Should be
+#'   one of \code{"posterior_predict"} (default), \code{"pp_expect"}, or
+#'   \code{"predictive_error"}.
 #' @param control Optional \code{list} of further arguments 
 #'   passed to the function specified in \code{weights}.
 #' @param nsamples Total number of posterior samples to use.

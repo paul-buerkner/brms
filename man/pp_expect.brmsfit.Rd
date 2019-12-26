@@ -6,7 +6,7 @@
 \title{Expected Values of the Posterior Predictive Distribution}
 \usage{
 \method{pp_expect}{brmsfit}(
-  x,
+  object,
   newdata = NULL,
   re_formula = NULL,
   re.form = NULL,
@@ -19,10 +19,10 @@
   ...
 )
 
-pp_expect(x, ...)
+pp_expect(object, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsfit}.}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If
 \code{NULL} (default), the original data of the model is used.

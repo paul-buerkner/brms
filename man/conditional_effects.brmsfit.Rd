@@ -16,7 +16,7 @@
   re_formula = NA,
   robust = TRUE,
   probs = c(0.025, 0.975),
-  method = c("fitted", "predict"),
+  method = "pp_expect",
   spaghetti = FALSE,
   surface = FALSE,
   categorical = FALSE,
@@ -97,9 +97,8 @@ measure of central tendency. If \code{FALSE} the mean is used instead.}
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
-\item{method}{Either \code{"fitted"} or \code{"predict"}. 
-If \code{"fitted"}, plot conditional predictions of the regression curve. 
-If \code{"predict"}, plot conditional predictions of the responses.}
+\item{method}{Method use to obtain predictions. Either
+\code{"pp_expect"} (the default) or \code{"posterior_predict"}.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
@@ -124,7 +123,7 @@ on the y-axis. Defaults to \code{FALSE}.}
 \item{transform}{A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed. Only allowed
-if \code{method = "predict"}.}
+if \code{method = "posterior_predict"}.}
 
 \item{resolution}{Number of support points used to generate 
 the plots. Higher resolution leads to smoother plots. 
@@ -151,8 +150,8 @@ from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
 \item{...}{Further arguments such as \code{subset} or \code{nsamples}
-passed to \code{\link[brms:predict.brmsfit]{predict}} or 
-\code{\link[brms:fitted.brmsfit]{fitted}}.}
+passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
+\code{\link[brms:pp_expect.brmsfit]{pp_expect}}.}
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based

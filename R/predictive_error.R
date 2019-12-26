@@ -35,7 +35,7 @@ predictive_error.brmsfit <- function(
   }
   .predictive_error(
     object, newdata = newdata, re_formula = re_formula,
-    method = "predict", type = "ordinary", resp = resp, 
+    method = "posterior_predict", type = "ordinary", resp = resp, 
     nsamples = nsamples, subset = subset, sort = sort
   )
 }
@@ -46,16 +46,23 @@ predictive_error.brmsfit <- function(
 #' with additional arguments for obtaining summaries of the computed samples.
 #' 
 #' @inheritParams predictive_error.brmsfit
+#' @param method Method use to obtain predictions. Either
+#'  \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+#'  Using \code{"posterior_predict"} is recommended
+#'  but \code{"pp_expect"} is the current default for 
+#'  reasons of backwards compatibility.
 #' @param type The type of the residuals, 
 #'  either \code{"ordinary"} or \code{"pearson"}. 
-#'  More information is provided under 'Details'. 
-#' @param method Indicates the method to compute
-#'  model implied values. Either \code{"fitted"}
-#'  (expected values of the posterior predictive distribution) or
-#'  \code{"predict"} (predicted response values). 
-#'  Using \code{"predict"} is recommended
-#'  but \code{"fitted"} is the current default for 
-#'  reasons of backwards compatibility.
+#'  More information is provided under 'Details'.
+#' @param summary Should summary statistics be returned
+#'  instead of the raw values? Default is \code{TRUE}..
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
 #'  
 #' @return An \code{array} of predictive error/residual samples. If
 #'   \code{summary = FALSE} the output resembles those of
@@ -82,7 +89,7 @@ predictive_error.brmsfit <- function(
 #'
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                              method = c("fitted", "predict"),
+                              method = "pp_expect",
                               type = c("ordinary", "pearson"),
                               resp = NULL, nsamples = NULL,
                               subset = NULL, sort = FALSE, 
@@ -103,11 +110,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 # internal function doing the work for predictive_error.brmsfit
 .predictive_error <- function(object, newdata, re_formula, method, type,  
                               resp, nsamples, subset, sort, ...) {
-  type <- match.arg(type, c("ordinary", "pearson"))
-  method <- match.arg(method, c("fitted", "predict"))
-  summary <- as_one_logical(summary)
   contains_samples(object)
   object <- restructure(object)
+  method <- validate_pp_method(method)
+  type <- match.arg(type, c("ordinary", "pearson"))
   resp <- validate_resp(resp, object)
   family <- family(object, resp = resp)
   if (has_cat(family) || is_ordinal(family)) {
