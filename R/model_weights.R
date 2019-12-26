@@ -5,18 +5,17 @@
 #' marginal likelihoods.
 #' 
 #' @inheritParams loo.brmsfit
-#' @param weights Name of the criterion to compute weights from. 
-#'   Should be one of \code{"loo"}, \code{"waic"}, \code{"kfold"}, 
-#'   \code{"loo2"} (current default), or \code{"marglik"}. 
-#'   For the former three options, Akaike weights will be computed
-#'   based on the information criterion values returned by
-#'   the respective methods. For \code{"loo2"}, method
-#'   \code{\link{loo_model_weights}} will be used to obtain weights. 
-#'   For \code{"marglik"}, method \code{\link{post_prob}} 
-#'   will be used to compute weights based on log marginal 
-#'   likelihood values (make sure to specify reasonable priors in 
-#'   this case). Alternatively, \code{weights} can be a numeric vector 
-#'   of pre-specified weights.
+#' @param weights Name of the criterion to compute weights from. Should be one
+#'   of \code{"loo"}, \code{"waic"}, \code{"kfold"}, \code{"stacking"} (current
+#'   default), or \code{"bma"}, \code{"pseudobma"}, For the former three
+#'   options, Akaike weights will be computed based on the information criterion
+#'   values returned by the respective methods. For \code{"stacking"} and
+#'   \code{"pseudobma"} method \code{\link{loo_model_weights}} will be used to
+#'   obtain weights. For \code{"bma"}, method \code{\link{post_prob}} will be
+#'   used to compute Bayesian model averaging weights based on log marginal
+#'   likelihood values (make sure to specify reasonable priors in this case).
+#'   Some some method, \code{weights} may also be be a numeric vector of
+#'   pre-specified weights.
 #'   
 #' @return A numeric vector of weights for the models.
 #'   
@@ -35,10 +34,9 @@
 #' }
 #' 
 #' @export
-model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) {
-  options <- c("loo", "waic", "kfold", "loo2", "marglik")
-  weights <- tolower(weights)
-  weights <- match.arg(weights, options)
+model_weights.brmsfit <- function(x, ..., weights = "stacking", 
+                                  model_names = NULL) {
+  weights <- validate_weights_method(weights)
   args <- split_dots(x, ..., model_names = model_names)
   models <- args$models
   args$models <- NULL
@@ -53,10 +51,11 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
     }
     ic_diffs <- ics - min(ics)
     out <- exp(-ic_diffs / 2)
-  } else if (weights %in% "loo2") {
+  } else if (weights %in% c("stacking", "pseudobma")) {
     args <- c(unname(models), args)
+    args$method <- weights
     out <- do_call("loo_model_weights", args)
-  } else if (weights %in% "marglik") {
+  } else if (weights %in% "bma") {
     args <- c(unname(models), args)
     out <- do_call("post_prob", args)
   }
@@ -70,6 +69,22 @@ model_weights.brmsfit <- function(x, ..., weights = "loo2", model_names = NULL) 
 #' @export
 model_weights <- function(x, ...) {
   UseMethod("model_weights")
+}
+
+# validate name of the applied weighting method
+validate_weights_method <- function(method) {
+  method <- as_one_character(method)
+  method <- tolower(method)
+  if (method == "loo2") {
+    warning2("Weight method 'loo2' is deprecated. Use 'stacking' instead.")
+    method <- "stacking"
+  }
+  if (method == "marglik") {
+    warning2("Weight method 'marglik' is deprecated. Use 'bma' instead.")
+    method <- "bma"
+  }
+  options <- c("loo", "waic", "kfold", "stacking", "pseudobma", "bma")
+  match.arg(method, options)
 }
 
 #' Posterior samples of parameters averaged across models
@@ -111,7 +126,7 @@ model_weights <- function(x, ...) {
 #' 
 #' @export
 posterior_average.brmsfit <- function(
-  x, ..., pars = NULL, weights = "loo2", nsamples = NULL,
+  x, ..., pars = NULL, weights = "stacking", nsamples = NULL,
   missing = NULL, model_names = NULL, control = list(),
   seed = NULL
 ) {
@@ -258,7 +273,7 @@ posterior_average <- function(x, ...) {
 #' 
 #' @export
 pp_average.brmsfit <- function(
-  x, ..., weights = "loo2", method = "posterior_predict",
+  x, ..., weights = "stacking", method = "posterior_predict",
   nsamples = NULL, summary = TRUE, probs = c(0.025, 0.975), robust = FALSE,
   model_names = NULL, control = list(), seed = NULL
 ) {
