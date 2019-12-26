@@ -47,8 +47,7 @@ If \code{NULL} (the default), all samples are used.}
 \item{log}{Logical; Indicates whether to return 
 probabilities on the log-scale.}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 

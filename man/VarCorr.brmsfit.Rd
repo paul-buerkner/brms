@@ -20,8 +20,7 @@
 \item{sigma}{Ignored (included for compatibility with 
 \code{\link[nlme:VarCorr]{VarCorr}}).}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 

@@ -9,7 +9,7 @@
 #'  
 #' @param x An \R object containing data to be passed to Stan.
 #'   Only required if \code{block = 'data'} and ignored otherwise.
-#' @param name Optinal character string providing the desired variable 
+#' @param name Optional character string providing the desired variable 
 #'  name of the object in \code{x}. If \code{NULL} (the default)
 #'  the variable name is directly infered from \code{x}.
 #' @param scode Line of Stan code to define the variable

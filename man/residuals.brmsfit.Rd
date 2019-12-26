@@ -76,8 +76,7 @@ Indicating whether to return predicted values in the original
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 

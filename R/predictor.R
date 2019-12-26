@@ -457,8 +457,8 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   if (anyNA(Y)) {
     # predicting Y will be necessary at some point
     stopifnot(is.brmsdraws(fdraws) || is.mvbrmsdraws(fdraws))
-    predict_fun <- paste0("predict_", fdraws$family$fun)
-    predict_fun <- get(predict_fun, asNamespace("brms"))
+    pp_fun <- paste0("posterior_predict_", fdraws$family$fun)
+    pp_fun <- get(pp_fun, asNamespace("brms"))
   }
   S <- nrow(eta)
   N <- length(Y)
@@ -487,7 +487,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     if (is.na(y)) {
       # y was not observed and has to be predicted
       fdraws$dpars$mu <- eta
-      y <- predict_fun(n, fdraws)
+      y <- pp_fun(n, fdraws)
     }
     # errors in AR models need to be computed before adding AR terms
     err[, max_lag] <- y - eta_before_ar

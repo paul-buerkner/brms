@@ -1,15 +1,119 @@
-predict_internal <- function(draws, ...) {
-  UseMethod("predict_internal")
+#' Samples from the Posterior Predictive Distribution
+#' 
+#' Compute posterior samples of the posterior predictive distribution. Can be
+#' performed for the data used to fit the model (posterior predictive checks) or
+#' for new data. By definition, these samples have higher variance than samples
+#' of the means of the posterior predictive distribution computed by
+#' \code{\link{posterior_predict.brmsfit}}. This is because the residual error
+#' is incorporated in \code{posterior_predict}. However, the estimated means of
+#' both methods averaged across samples should be very similar.
+#' 
+#' @inheritParams extract_draws
+#' @param object An object of class \code{brmsfit}.
+#' @param re.form Alias of \code{re_formula}.
+#' @param transform A function or a character string naming 
+#'   a function to be applied on the predicted responses
+#'   before summary statistics are computed.
+#' @param negative_rt Only relevant for Wiener diffusion models. 
+#'   A flag indicating whether response times of responses
+#'   on the lower boundary should be returned as negative values.
+#'   This allows to distinguish responses on the upper and
+#'   lower boundary. Defaults to \code{FALSE}.
+#' @param sort Logical. Only relevant for time series models. 
+#'  Indicating whether to return predicted values in the original 
+#'  order (\code{FALSE}; default) or in the order of the 
+#'  time series (\code{TRUE}). 
+#' @param ntrys Parameter used in rejection sampling 
+#'   for truncated discrete models only 
+#'   (defaults to \code{5}). See Details for more information.
+#' @param ... Further arguments passed to \code{\link{extract_draws}}
+#'   that control several aspects of data validation and prediction.
+#' 
+#' @return An \code{array} of predicted response values. If \code{summary =
+#'   FALSE}, the output is as an S x N matrix, where S is the number of
+#'   posterior samples and N is the number of observations. In multivariate
+#'   models, an additional dimension is added to the output which indexes along
+#'   the different response variables.
+#' 
+#' @details \code{NA} values within factors in \code{newdata}, 
+#'   are interpreted as if all dummy variables of this factor are 
+#'   zero. This allows, for instance, to make predictions of the grand mean 
+#'   when using sum coding.  
+#' 
+#'   For truncated discrete models only: In the absence of any general algorithm
+#'   to sample from truncated discrete distributions, rejection sampling is
+#'   applied in this special case. This means that values are sampled until a
+#'   value lies within the defined truncation boundaries. In practice, this
+#'   procedure may be rather slow (especially in \R). Thus, we try to do
+#'   approximate rejection sampling by sampling each value \code{ntrys} times
+#'   and then select a valid value. If all values are invalid, the closest
+#'   boundary is used, instead. If there are more than a few of these
+#'   pathological cases, a warning will occur suggesting to increase argument
+#'   \code{ntrys}.
+#' 
+#' @examples 
+#' \dontrun{
+#' ## fit a model
+#' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
+#'            data = kidney, family = "exponential", inits = "0")
+#' 
+#' ## predicted responses
+#' pp <- posterior_predict(fit)
+#' str(pp)
+#' 
+#' ## predicted responses excluding the group-level effect of age
+#' pp <- posterior_predict(fit, re_formula = ~ (1 | patient))
+#' str(pp)
+#' 
+#' ## predicted responses of patient 1 for new data
+#' newdata <- data.frame(
+#'   sex = factor(c("male", "female")),
+#'   age = c(20, 50),
+#'   patient = c(1, 1)
+#' )
+#' pp <- posterior_predict(fit, newdata = newdata)
+#' str(pp)
+#' }
+#' 
+#' @aliases posterior_predict
+#' @method posterior_predict brmsfit
+#' @importFrom rstantools posterior_predict
+#' @export
+#' @export posterior_predict
+posterior_predict.brmsfit <- function(
+  object, newdata = NULL, re_formula = NULL, re.form = NULL, 
+  transform = NULL, resp = NULL, negative_rt = FALSE, 
+  nsamples = NULL, subset = NULL, sort = FALSE, ntrys = 5, ...
+) {
+  cl <- match.call()
+  if ("re.form" %in% names(cl)) {
+    re_formula <- re.form
+  }
+  contains_samples(object)
+  object <- restructure(object)
+  draws <- extract_draws(
+    object, newdata = newdata, re_formula = re_formula, resp = resp, 
+    nsamples = nsamples, subset = subset, check_response = FALSE, ...
+  )
+  .posterior_predict(
+    draws, transform = transform, sort = sort, ntrys = ntrys, 
+    negative_rt = negative_rt, summary = FALSE
+  )
+}
+
+# internal posterior_predict method
+.posterior_predict <- function(draws, ...) {
+  UseMethod(".posterior_predict")
 }
 
 #' @export
-predict_internal.mvbrmsdraws <- function(draws, ...) {
+.posterior_predict.mvbrmsdraws <- function(draws, ...) {
   if (length(draws$mvpars$rescor)) {
     draws$mvpars$Mu <- get_Mu(draws)
     draws$mvpars$Sigma <- get_Sigma(draws)
-    out <- predict_internal.brmsdraws(draws, ...)
+    out <- .posterior_predict.brmsdraws(draws, ...)
   } else {
-    out <- lapply(draws$resps, predict_internal, ...)
+    out <- lapply(draws$resps, .posterior_predict, ...)
     along <- ifelse(length(out) > 1L, 3, 2)
     out <- do_call(abind, c(out, along = along))
   }
@@ -17,19 +121,19 @@ predict_internal.mvbrmsdraws <- function(draws, ...) {
 }
 
 #' @export
-predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
-                                       sort = FALSE, robust = FALSE, 
-                                       probs = c(0.025, 0.975), ...) {
+.posterior_predict.brmsdraws <- function(draws, transform = NULL, sort = FALSE,
+                                         summary = FALSE, robust = FALSE, 
+                                         probs = c(0.025, 0.975), ...) {
   for (nlp in names(draws$nlpars)) {
     draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
   }
   for (dp in names(draws$dpars)) {
     draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
   }
-  predict_fun <- paste0("predict_", draws$family$fun)
-  predict_fun <- get(predict_fun, asNamespace("brms"))
+  pp_fun <- paste0("posterior_predict_", draws$family$fun)
+  pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(draws)
-  out <- lapply(seq_len(N), predict_fun, draws = draws, ...)
+  out <- lapply(seq_len(N), pp_fun, draws = draws, ...)
   if (grepl("_mv$", draws$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -53,7 +157,9 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
     out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- draws$data$cats
+  summary <- as_one_logical(summary)
   if (summary) {
+    # only for compatibility with the 'predict' method
     if (is_ordinal(draws$family)) {
       levels <- seq_len(max(draws$data$nthres) + 1)
       out <- posterior_table(out, levels = levels)
@@ -67,7 +173,84 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
   out
 }
 
-# All predict_<family> functions have the same arguments structure
+#' Samples from the Posterior Predictive Distribution
+#' 
+#' This method is an alias of \code{\link{posterior_predict.brmsfit}}
+#' with additional arguments for obtaining summaries of the computed samples.
+#' 
+#' @inheritParams posterior_predict.brmsfit
+#' @param summary Should summary statistics be returned
+#'  instead of the raw values? Default is \code{TRUE}.
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deviation (MAD) are applied instead.
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs  The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
+#'  
+#' @return An \code{array} of predicted response values.
+#'   If \code{summary = FALSE} the output resembles those of 
+#'   \code{\link{posterior_predict.brmsfit}}.
+#' 
+#'   If \code{summary = TRUE} the output depends on the family: For categorical
+#'   and ordinal families, the output is an N x C matrix, where N is the number
+#'   of observations, C is the number of categories, and the values are
+#'   predicted category probabilites. For all other families, the output is a N
+#'   x E matrix where E = \code{2 + length(probs)} is the number of summary
+#'   statistics: The \code{Estimate} column contains point estimates (either
+#'   mean or median depending on argument \code{robust}), while the
+#'   \code{Est.Error} column contains uncertainty estimates (either standard
+#'   deviation of median absolute deviation depending on argument
+#'   \code{robust}). The remaining columns starting with \code{Q} contain
+#'   quantile estimates as specifed via argument \code{probs}.  
+#'   
+#' @seealso \code{\link{posterior_predict.brmsfit}} 
+#'  
+#' @examples 
+#' \dontrun{
+#' ## fit a model
+#' fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient), 
+#'            data = kidney, family = "exponential", inits = "0")
+#' 
+#' ## predicted responses
+#' pp <- predict(fit)
+#' head(pp)
+#' 
+#' ## predicted responses excluding the group-level effect of age
+#' pp <- predict(fit, re_formula = ~ (1 | patient))
+#' head(pp)
+#' 
+#' ## predicted responses of patient 1 for new data
+#' newdata <- data.frame(
+#'   sex = factor(c("male", "female")),
+#'   age = c(20, 50),
+#'   patient = c(1, 1)
+#' )
+#' predict(fit, newdata = newdata)
+#' }
+#'  
+#' @export
+predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            transform = NULL, resp = NULL, 
+                            negative_rt = FALSE, nsamples = NULL, 
+                            subset = NULL, sort = FALSE, ntrys = 5, 
+                            summary = TRUE, robust = FALSE,
+                            probs = c(0.025, 0.975), ...) {
+  contains_samples(object)
+  object <- restructure(object)
+  draws <- extract_draws(
+    object, newdata = newdata, re_formula = re_formula, resp = resp, 
+    nsamples = nsamples, subset = subset, check_response = FALSE, ...
+  )
+  .posterior_predict(
+    draws, transform = transform, ntrys = ntrys, negative_rt = negative_rt, 
+    sort = sort, summary = summary, robust = robust, probs = probs
+  )
+}
+
+# ------------------- family specific posterior_predict methods ---------------------
+# All posterior_predict_<family> functions have the same arguments structure
 # @param i the column of draws to use that is the ith obervation 
 #   in the initial data.frame 
 # @param draws A named list returned by extract_draws containing 
@@ -75,7 +258,7 @@ predict_internal.brmsdraws <- function(draws, summary = TRUE, transform = NULL,
 # @param ... ignored arguments
 # @param A vector of length draws$nsamples containing samples
 #   from the posterior predictive distribution
-predict_gaussian <- function(i, draws, ...) {
+posterior_predict_gaussian <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "norm",
     mean = get_dpar(draws, "mu", i = i), 
@@ -84,7 +267,7 @@ predict_gaussian <- function(i, draws, ...) {
   )
 }
 
-predict_student <- function(i, draws, ...) {
+posterior_predict_student <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "student_t", 
     df = get_dpar(draws, "nu", i = i), 
@@ -94,7 +277,7 @@ predict_student <- function(i, draws, ...) {
   )
 }
 
-predict_lognormal <- function(i, draws, ...) {
+posterior_predict_lognormal <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "lnorm",
     meanlog = get_dpar(draws, "mu", i = i), 
@@ -103,7 +286,7 @@ predict_lognormal <- function(i, draws, ...) {
   )
 }
 
-predict_shifted_lognormal <- function(i, draws, ...) {
+posterior_predict_shifted_lognormal <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "shifted_lnorm",
     meanlog = get_dpar(draws, "mu", i = i), 
@@ -113,7 +296,7 @@ predict_shifted_lognormal <- function(i, draws, ...) {
   )
 }
 
-predict_skew_normal <- function(i, draws, ...) {
+posterior_predict_skew_normal <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "skew_normal",
     mu = get_dpar(draws, "mu", i = i),
@@ -123,7 +306,7 @@ predict_skew_normal <- function(i, draws, ...) {
   )
 }
 
-predict_gaussian_mv <- function(i, draws, ...) {
+posterior_predict_gaussian_mv <- function(i, draws, ...) {
   Mu <- get_Mu(draws, i = i)
   Sigma <- get_Sigma(draws, i = i)
   .predict <- function(s) {
@@ -132,7 +315,7 @@ predict_gaussian_mv <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_student_mv <- function(i, draws, ...) {
+posterior_predict_student_mv <- function(i, draws, ...) {
   nu <- get_dpar(draws, "nu", i = i)
   Mu <- get_Mu(draws, i = i)
   Sigma <- get_Sigma(draws, i = i)
@@ -142,7 +325,7 @@ predict_student_mv <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_gaussian_cov <- function(i, draws, ...) {
+posterior_predict_gaussian_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
   Sigma <- get_cov_matrix_autocor(draws, obs)
@@ -152,7 +335,7 @@ predict_gaussian_cov <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_student_cov <- function(i, draws, ...) {
+posterior_predict_student_cov <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
@@ -163,7 +346,7 @@ predict_student_cov <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_gaussian_lagsar <- function(i, draws, ...) {
+posterior_predict_gaussian_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
@@ -176,7 +359,7 @@ predict_gaussian_lagsar <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_student_lagsar <- function(i, draws, ...) {
+posterior_predict_student_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
@@ -190,7 +373,7 @@ predict_student_lagsar <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_gaussian_errorsar <- function(i, draws, ...) {
+posterior_predict_gaussian_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
@@ -202,7 +385,7 @@ predict_gaussian_errorsar <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_student_errorsar <- function(i, draws, ...) {
+posterior_predict_student_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
     W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
@@ -215,7 +398,7 @@ predict_student_errorsar <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_gaussian_fixed <- function(i, draws, ...) {
+posterior_predict_gaussian_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(draws, "mu"))
   .predict <- function(s) {
@@ -224,7 +407,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_student_fixed <- function(i, draws, ...) {
+posterior_predict_student_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(draws, "mu"))
   nu <- as.matrix(get_dpar(draws, "nu"))
@@ -234,7 +417,7 @@ predict_student_fixed <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-predict_binomial <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_binomial <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "binom", 
     size = draws$data$trials[i], 
@@ -244,12 +427,12 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_bernoulli <- function(i, draws, ...) {
+posterior_predict_bernoulli <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu", i = i)
   rbinom(length(mu), size = 1, prob = mu)
 }
 
-predict_poisson <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_poisson <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "pois",
     lambda = get_dpar(draws, "mu", i = i),
@@ -258,7 +441,7 @@ predict_poisson <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "nbinom",
     mu = get_dpar(draws, "mu", i = i), 
@@ -268,7 +451,7 @@ predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_geometric <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_geometric <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "nbinom",
     mu = get_dpar(draws, "mu", i = i), size = 1,
@@ -277,7 +460,7 @@ predict_geometric <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_discrete_weibull <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_discrete_weibull <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "discrete_weibull",
     mu = get_dpar(draws, "mu", i = i), 
@@ -287,7 +470,7 @@ predict_discrete_weibull <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_com_poisson <- function(i, draws, ntrys = 5, ...) {
+posterior_predict_com_poisson <- function(i, draws, ntrys = 5, ...) {
   rdiscrete(
     n = draws$nsamples, dist = "com_poisson",
     mu = get_dpar(draws, "mu", i = i), 
@@ -297,7 +480,7 @@ predict_com_poisson <- function(i, draws, ntrys = 5, ...) {
   )
 }
 
-predict_exponential <- function(i, draws, ...) {
+posterior_predict_exponential <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "exp",
     rate = 1 / get_dpar(draws, "mu", i = i),
@@ -305,7 +488,7 @@ predict_exponential <- function(i, draws, ...) {
   )
 }
 
-predict_gamma <- function(i, draws, ...) {
+posterior_predict_gamma <- function(i, draws, ...) {
   shape <- get_dpar(draws, "shape", i = i)
   scale <- get_dpar(draws, "mu", i = i) / shape
   rcontinuous(
@@ -315,7 +498,7 @@ predict_gamma <- function(i, draws, ...) {
   )
 }
 
-predict_weibull <- function(i, draws, ...) {
+posterior_predict_weibull <- function(i, draws, ...) {
   shape <- get_dpar(draws, "shape", i = i)
   scale <- get_dpar(draws, "mu", i = i) / gamma(1 + 1 / shape) 
   rcontinuous(
@@ -325,7 +508,7 @@ predict_weibull <- function(i, draws, ...) {
   )
 }
 
-predict_frechet <- function(i, draws, ...) {
+posterior_predict_frechet <- function(i, draws, ...) {
   nu <- get_dpar(draws, "nu", i = i)
   scale <- get_dpar(draws, "mu", i = i) / gamma(1 - 1 / nu)
   rcontinuous(
@@ -335,7 +518,7 @@ predict_frechet <- function(i, draws, ...) {
   )
 }
 
-predict_gen_extreme_value <- function(i, draws, ...) {
+posterior_predict_gen_extreme_value <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "gen_extreme_value", 
     sigma = get_dpar(draws, "sigma", i = i),
@@ -345,7 +528,7 @@ predict_gen_extreme_value <- function(i, draws, ...) {
   )
 }
 
-predict_inverse.gaussian <- function(i, draws, ...) {
+posterior_predict_inverse.gaussian <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "inv_gaussian",
     mu = get_dpar(draws, "mu", i = i), 
@@ -354,7 +537,7 @@ predict_inverse.gaussian <- function(i, draws, ...) {
   )
 }
 
-predict_exgaussian <- function(i, draws, ...) {
+posterior_predict_exgaussian <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "exgaussian",
     mu = get_dpar(draws, "mu", i = i), 
@@ -364,7 +547,7 @@ predict_exgaussian <- function(i, draws, ...) {
   )
 }
 
-predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
+posterior_predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
   out <- rcontinuous(
     n = 1, dist = "wiener", 
     delta = get_dpar(draws, "mu", i = i), 
@@ -381,7 +564,7 @@ predict_wiener <- function(i, draws, negative_rt = FALSE, ...) {
   out
 }
 
-predict_beta <- function(i, draws, ...) {
+posterior_predict_beta <- function(i, draws, ...) {
   mu <- get_dpar(draws, "mu", i = i)
   phi <- get_dpar(draws, "phi", i = i)
   rcontinuous(
@@ -391,7 +574,7 @@ predict_beta <- function(i, draws, ...) {
   )
 }
 
-predict_von_mises <- function(i, draws, ...) {
+posterior_predict_von_mises <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "von_mises",
     mu = get_dpar(draws, "mu", i = i), 
@@ -400,7 +583,7 @@ predict_von_mises <- function(i, draws, ...) {
   )
 }
 
-predict_asym_laplace <- function(i, draws, ...) {
+posterior_predict_asym_laplace <- function(i, draws, ...) {
   rcontinuous(
     n = draws$nsamples, dist = "asym_laplace",
     mu = get_dpar(draws, "mu", i = i), 
@@ -410,7 +593,7 @@ predict_asym_laplace <- function(i, draws, ...) {
   )
 }
 
-predict_zero_inflated_asym_laplace <- function(i, draws, ...) {
+posterior_predict_zero_inflated_asym_laplace <- function(i, draws, ...) {
   zi <- get_dpar(draws, "zi", i = i)
   tmp <- runif(draws$nsamples, 0, 1)
   ifelse(
@@ -425,12 +608,12 @@ predict_zero_inflated_asym_laplace <- function(i, draws, ...) {
   )
 }
 
-predict_cox <- function(i, draws, ...) {
+posterior_predict_cox <- function(i, draws, ...) {
   stop2("Cannot sample from the posterior predictive ",
         "distribution for family 'cox'.")
 }
 
-predict_hurdle_poisson <- function(i, draws, ...) {
+posterior_predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "hu", i = i) 
   lambda <- get_dpar(draws, "mu", i = i)
@@ -443,7 +626,7 @@ predict_hurdle_poisson <- function(i, draws, ...) {
   ifelse(hu < theta, 0, rpois(ndraws, lambda = lambda - t) + 1)
 }
 
-predict_hurdle_negbinomial <- function(i, draws, ...) {
+posterior_predict_hurdle_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "hu", i = i)
   mu <- get_dpar(draws, "mu", i = i)
@@ -457,7 +640,7 @@ predict_hurdle_negbinomial <- function(i, draws, ...) {
   ifelse(hu < theta, 0, rnbinom(ndraws, mu = mu - t, size = shape) + 1)
 }
 
-predict_hurdle_gamma <- function(i, draws, ...) {
+posterior_predict_hurdle_gamma <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "hu", i = i)
   shape <- get_dpar(draws, "shape", i = i)
@@ -468,7 +651,7 @@ predict_hurdle_gamma <- function(i, draws, ...) {
   ifelse(hu < theta, 0, rgamma(ndraws, shape = shape, scale = scale))
 }
 
-predict_hurdle_lognormal <- function(i, draws, ...) {
+posterior_predict_hurdle_lognormal <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "hu", i = i)
   mu <- get_dpar(draws, "mu", i = i)
@@ -479,7 +662,7 @@ predict_hurdle_lognormal <- function(i, draws, ...) {
   ifelse(hu < theta, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
 }
 
-predict_zero_inflated_beta <- function(i, draws, ...) {
+posterior_predict_zero_inflated_beta <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_dpar(draws, "zi", i = i)
   mu <- get_dpar(draws, "mu", i = i)
@@ -492,7 +675,7 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
   )
 }
 
-predict_zero_one_inflated_beta <- function(i, draws, ...) {
+posterior_predict_zero_one_inflated_beta <- function(i, draws, ...) {
   zoi <- get_dpar(draws, "zoi", i)
   coi <- get_dpar(draws, "coi", i)
   mu <- get_dpar(draws, "mu", i = i)
@@ -505,7 +688,7 @@ predict_zero_one_inflated_beta <- function(i, draws, ...) {
   )
 }
 
-predict_zero_inflated_poisson <- function(i, draws, ...) {
+posterior_predict_zero_inflated_poisson <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
   theta <- get_dpar(draws, "zi", i = i)
   lambda <- get_dpar(draws, "mu", i = i)
@@ -515,7 +698,7 @@ predict_zero_inflated_poisson <- function(i, draws, ...) {
   ifelse(zi < theta, 0, rpois(ndraws, lambda = lambda))
 }
 
-predict_zero_inflated_negbinomial <- function(i, draws, ...) {
+posterior_predict_zero_inflated_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
   theta <- get_dpar(draws, "zi", i = i)
   mu <- get_dpar(draws, "mu", i = i)
@@ -526,7 +709,7 @@ predict_zero_inflated_negbinomial <- function(i, draws, ...) {
   ifelse(zi < theta, 0, rnbinom(ndraws, mu = mu, size = shape))
 }
 
-predict_zero_inflated_binomial <- function(i, draws, ...) {
+posterior_predict_zero_inflated_binomial <- function(i, draws, ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- get_dpar(draws, "zi", i = i)
   trials <- draws$data$trials[i]
@@ -537,14 +720,14 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
   ifelse(zi < theta, 0, rbinom(ndraws, size = trials, prob = prob))
 }
 
-predict_categorical <- function(i, draws, ...) {
+posterior_predict_categorical <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
   eta <- insert_refcat(eta, family = draws$family)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
-predict_multinomial <- function(i, draws, ...) {
+posterior_predict_multinomial <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
   eta <- insert_refcat(eta, family = draws$family)
   p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
@@ -553,7 +736,7 @@ predict_multinomial <- function(i, draws, ...) {
   do_call(rbind, out)
 }
 
-predict_dirichlet <- function(i, draws, ...) {
+posterior_predict_dirichlet <- function(i, draws, ...) {
   mu_dpars <- str_subset(names(draws$dpars), "^mu")
   eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
   eta <- insert_refcat(eta, family = draws$family)
@@ -563,23 +746,23 @@ predict_dirichlet <- function(i, draws, ...) {
   rdirichlet(draws$nsamples, alpha = alpha)
 }
 
-predict_cumulative <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws)
+posterior_predict_cumulative <- function(i, draws, ...) {
+  posterior_predict_ordinal(i = i, draws = draws)
 }
 
-predict_sratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws)
+posterior_predict_sratio <- function(i, draws, ...) {
+  posterior_predict_ordinal(i = i, draws = draws)
 }
 
-predict_cratio <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws)
+posterior_predict_cratio <- function(i, draws, ...) {
+  posterior_predict_ordinal(i = i, draws = draws)
 }
 
-predict_acat <- function(i, draws, ...) {
-  predict_ordinal(i = i, draws = draws)
+posterior_predict_acat <- function(i, draws, ...) {
+  posterior_predict_ordinal(i = i, draws = draws)
 }  
 
-predict_ordinal <- function(i, draws, ...) {
+posterior_predict_ordinal <- function(i, draws, ...) {
   thres <- subset_thres(draws, i)
   nthres <- NCOL(thres)
   p <- pordinal(
@@ -593,16 +776,16 @@ predict_ordinal <- function(i, draws, ...) {
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
-predict_custom <- function(i, draws, ...) {
-  predict_fun <- draws$family$predict
-  if (!is.function(predict_fun)) {
-    predict_fun <- paste0("predict_", draws$family$name)
-    predict_fun <- get(predict_fun, draws$family$env)
+posterior_predict_custom <- function(i, draws, ...) {
+  pp_fun <- draws$family$predict
+  if (!is.function(pp_fun)) {
+    pp_fun <- paste0("posterior_predict_", draws$family$name)
+    pp_fun <- get(pp_fun, draws$family$env)
   }
-  predict_fun(i = i, draws = draws, ...)
+  pp_fun(i = i, draws = draws, ...)
 }
 
-predict_mixture <- function(i, draws, ...) {
+posterior_predict_mixture <- function(i, draws, ...) {
   families <- family_names(draws$family)
   theta <- get_theta(draws, i = i)
   smix <- sample_mixture_ids(theta)
@@ -610,10 +793,10 @@ predict_mixture <- function(i, draws, ...) {
   for (j in seq_along(families)) {
     sample_ids <- which(smix == j)
     if (length(sample_ids)) {
-      predict_fun <- paste0("predict_", families[j])
-      predict_fun <- get(predict_fun, asNamespace("brms"))
+      pp_fun <- paste0("posterior_predict_", families[j])
+      pp_fun <- get(pp_fun, asNamespace("brms"))
       tmp_draws <- pseudo_draws_for_mixture(draws, j, sample_ids)
-      out[sample_ids] <- predict_fun(i, tmp_draws, ...)
+      out[sample_ids] <- pp_fun(i, tmp_draws, ...)
     }
   }
   out

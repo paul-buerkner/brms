@@ -351,6 +351,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(pp_check(fit4, "error_binned"),
                "Type 'error_binned' is not available")
   
+  # pp_expect
+  expect_equal(dim(pp_expect(fit1)), c(nsamples(fit1), nobs(fit1)))
+  
   # pp_mixture
   expect_equal(dim(pp_mixture(fit5)), c(nobs(fit5), 4, 2))
   expect_error(pp_mixture(fit1), 

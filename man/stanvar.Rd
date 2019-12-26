@@ -11,7 +11,7 @@ stanvar(x = NULL, name = NULL, scode = NULL, block = "data")
 \item{x}{An \R object containing data to be passed to Stan.
 Only required if \code{block = 'data'} and ignored otherwise.}
 
-\item{name}{Optinal character string providing the desired variable 
+\item{name}{Optional character string providing the desired variable 
 name of the object in \code{x}. If \code{NULL} (the default)
 the variable name is directly infered from \code{x}.}
 
