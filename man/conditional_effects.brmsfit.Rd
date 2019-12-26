@@ -221,11 +221,11 @@ modifying the appearance of the plots.
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 and \code{\link[bayesplot:theme_default]{theme_default}}.}
 
-\item{ask}{logical; indicates if the user is prompted 
+\item{ask}{Logical; indicates if the user is prompted 
 before a new page is plotted. 
 Only used if \code{plot} is \code{TRUE}.}
 
-\item{plot}{logical; indicates if plots should be
+\item{plot}{Logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }

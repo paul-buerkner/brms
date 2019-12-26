@@ -81,7 +81,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$family <- draws$resps[[1]]$family
       draws$family$fun <- paste0(draws$family$family, "_mv")
       rescor <- get_cornames(resp, type = "rescor", brackets = FALSE)
-      draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
+      draws$mvpars$rescor <- get_samples(samples, rescor, fixed = TRUE)
       if (draws$family$family == "student") {
         # store in draws$dpars so that get_dpar can be called on nu
         draws$dpars$nu <- as.vector(get_samples(samples, "^nu$"))
@@ -242,7 +242,7 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   if (length(fixef)) {
     draws$X <- X
     b_pars <- paste0("b", p, "_", fixef)
-    draws$b <- get_samples(samples, b_pars, exact = TRUE)
+    draws$b <- get_samples(samples, b_pars, fixed = TRUE)
   }
   draws
 }
@@ -280,7 +280,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   }
   # extract general data and parameters for special effects
   bsp_pars <- paste0("bsp", p, "_", spef$coef)
-  draws$bsp <- get_samples(samples, bsp_pars, exact = TRUE)
+  draws$bsp <- get_samples(samples, bsp_pars, fixed = TRUE)
   # prepare draws specific to monotonic effects
   simo_coef <- get_simo_labels(spef)
   Jmo <- sdata[[paste0("Jmo", p)]]
@@ -288,7 +288,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   for (i in seq_along(simo_coef)) {
     J <- seq_len(Jmo[i])
     simo_par <- paste0("simo", p, "_", simo_coef[i], "[", J, "]")
-    draws$simo[[i]] <- get_samples(samples, simo_par, exact = TRUE)
+    draws$simo[[i]] <- get_samples(samples, simo_par, fixed = TRUE)
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
   }
   # prepare draws specific to noise-free effects
@@ -996,14 +996,14 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
               rnames <- get_rnames(ranef)
             }
             sd_pars <- paste0("sd_", g, "__", rnames)
-            sd_samples <- get_samples(samples, sd_pars, exact = TRUE)
+            sd_samples <- get_samples(samples, sd_pars, fixed = TRUE)
             cor_type <- paste0("cor_", g)
             cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
             cor_samples <- matrix(0, nrow(sd_samples), length(cor_pars))
             for (k in seq_along(cor_pars)) {
               if (cor_pars[k] %in% colnames(samples)) {
                 cor_samples[, k] <- get_samples(
-                  samples, cor_pars[k], exact = TRUE
+                  samples, cor_pars[k], fixed = TRUE
                 )
               }
             }

@@ -6,9 +6,9 @@
 #' @param pars Names of parameters for which posterior samples 
 #'   should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted.
-#' @param exact_match Indicates whether parameter names 
-#'   should be matched exactly or treated as regular expression. 
-#'   Default is \code{FALSE}.
+#' @param fixed Indicates whether parameter names 
+#'   should be matched exactly (\code{TRUE}) or treated as
+#'   regular expressions (\code{FALSE}). Default is \code{FALSE}.
 #' @param add_chain A flag indicating if the returned \code{data.frame} 
 #'   should contain two additional columns. The \code{chain} column 
 #'   indicates the chain in which each sample was generated, the \code{iter} 
@@ -30,7 +30,7 @@
 #'   \code{posterior_samples.brmsfit} and differ from
 #'   each other only in type of the returned object.
 #'   
-#' @return A data frame (matrix or array) containing the posterior samples, 
+#' @return A data.frame (matrix or array) containing the posterior samples, 
 #'   with one column per parameter. In case an array is returned,
 #'   it contains one additional dimension for the chains.
 #' 
@@ -49,7 +49,7 @@
 #' }
 #' 
 #' @export
-posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE, 
+posterior_samples.brmsfit <- function(x, pars = NA, fixed = FALSE, 
                                       add_chain = FALSE, subset = NULL, 
                                       as.matrix = FALSE, as.array = FALSE,
                                       ...) {
@@ -60,7 +60,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
   contains_samples(x)
-  pars <- extract_pars(pars, parnames(x), exact_match = exact_match, ...)
+  pars <- extract_pars(pars, parnames(x), fixed = fixed, ...)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -70,6 +70,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
   final_iter <- ceiling((iter - warmup) / thin)
   samples_taken <- seq(warmup + 1, iter, thin)
   
+  samples <- NULL 
   if (length(pars)) {
     if (as.matrix) {
       samples <- as.matrix(x$fit, pars = pars)
@@ -81,8 +82,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
     if (add_chain) {
       # name the column 'chain' not 'chains' (#32)
       samples <- cbind(samples,
-                       chain = factor(rep(1:chains, each = final_iter)),
-                       iter = rep(samples_taken, chains)           
+        chain = factor(rep(1:chains, each = final_iter)),
+        iter = rep(samples_taken, chains)           
       )
     }
     if (!is.null(subset)) {
@@ -92,8 +93,6 @@ posterior_samples.brmsfit <- function(x, pars = NA, exact_match = FALSE,
         samples <- samples[subset, , drop = FALSE] 
       }
     }
-  } else {
-    samples <- NULL 
   }
   samples
 }
@@ -105,12 +104,10 @@ posterior_samples <- function(x, pars = NA, ...) {
 }
 
 #' @export
-posterior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
+posterior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
   x <- as.data.frame(x)
   if (!anyNA(pars)) {
-    pars <- extract_pars(
-      pars, all_pars = names(x), exact_match = exact_match, ...
-    )
+    pars <- extract_pars(pars, all_pars = names(x), fixed = fixed, ...)
     x <- x[, pars, drop = FALSE]
   }
   if (!ncol(x)) {
@@ -138,20 +135,57 @@ as.array.brmsfit <- function(x, ...) {
   posterior_samples(x, ..., as.array = TRUE)
 }
 
+# This file contains several methods for brmsfit objects.
+# A lot of other brmsfit methods have their own dedicated files.
+
+#' Extract Parameter Names
+#' 
+#' Extract all parameter names of a given model.
+#'  
+#' @aliases parnames.brmsfit
+#' 
+#' @param x An \R object
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return A character vector containing the parameter names of the model.
+#' 
+#' @export
+parnames <- function(x, ...) {
+  UseMethod("parnames")
+}
+
+#' @export
+parnames.default <- function(x, ...) {
+  names(x)
+}
+
+#' @export
+parnames.brmsfit <- function(x, ...) {
+  out <- dimnames(x$fit)
+  if (is.list(out)) {
+    out <- out$parameters
+  }
+  out
+}
+
 # extract all valid parameter names that match pars
 # @param pars A character vector or regular expression
 # @param all_pars all parameter names of the fitted model
-# @param exact_match should parnames be matched exactly?
+# @param fixed should parnames be matched exactly?
+# @param exact_match deprecated alias of fixed
 # @param na_value: what should be returned if pars is NA? 
 # @param ... Further arguments to be passed to grepl
 # @return A character vector of parameter names
-extract_pars <- function(pars, all_pars, exact_match = FALSE,
+extract_pars <- function(pars, all_pars, fixed = FALSE,
+                         exact_match = FALSE,
                          na_value = all_pars, ...) {
   if (!(anyNA(pars) || is.character(pars))) {
     stop2("Argument 'pars' must be NA or a character vector.")
   }
+  fixed <- check_deprecated_fixed(fixed, exact_match)
   if (!anyNA(pars)) {
-    if (exact_match) {
+    fixed <- as_one_logical(fixed)
+    if (fixed) {
       out <- intersect(pars, all_pars)
     } else {
       out <- vector("list", length(pars))
@@ -164,6 +198,17 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
     out <- na_value
   }
   out
+}
+
+# check deprecated alias of argument 'fixed'
+check_deprecated_fixed <- function(fixed, exact_match) {
+  if (!isFALSE(exact_match)) {
+    # deprecated as of brms 2.10.6; remove in brms 3.0
+    warning2("Argument 'exact_match' is deprecated. ", 
+             "Please use 'fixed' instead.")
+    fixed <- exact_match
+  }
+  fixed
 }
 
 #' Extract prior samples
@@ -215,7 +260,7 @@ prior_samples.brmsfit <- function(x, pars = NA, ...) {
   par_names <- parnames(x)
   prior_names <- unique(par_names[grepl("^prior_", par_names)])
   if (length(prior_names)) {
-    samples <- posterior_samples(x, prior_names, exact_match = TRUE)
+    samples <- posterior_samples(x, prior_names, fixed = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
       .prior_samples <- function(par) {
@@ -251,12 +296,12 @@ prior_samples <- function(x, pars = NA, ...) {
 }
 
 #' @export
-prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
+prior_samples.default <- function(x, pars = NA, fixed = FALSE, ...) {
   if (anyNA(pars)) {
     pars <- "^prior_"
-    exact_match <- FALSE
+    fixed <- FALSE
   } else {
-    if (exact_match) {
+    if (fixed) {
       pars <- paste0("prior_", pars) 
     } else {
       hat <- substr(pars, 1, 1) == "^"
@@ -264,7 +309,7 @@ prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
       pars <- paste0("^prior_", pars)  
     }
   }
-  posterior_samples(x, pars = pars, exact_match = exact_match, ...)
+  posterior_samples(x, pars = pars, fixed = fixed, ...)
 }
 
 # ignore priors of certain parameters from whom we cannot obtain prior samples
@@ -317,13 +362,13 @@ ignore_prior <- function(x, par) {
 #' @export
 #' @export as.mcmc
 #' @importFrom coda as.mcmc
-as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
+as.mcmc.brmsfit <- function(x, pars = NA, fixed = FALSE,
                             combine_chains = FALSE, inc_warmup = FALSE,
                             ...) {
   contains_samples(x)
   pars <- extract_pars(
     pars, all_pars = parnames(x),
-    exact_match = exact_match, ...
+    fixed = fixed, ...
   )
   if (combine_chains) {
     if (inc_warmup) {

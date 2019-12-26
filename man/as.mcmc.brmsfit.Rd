@@ -8,7 +8,7 @@
 \method{as.mcmc}{brmsfit}(
   x,
   pars = NA,
-  exact_match = FALSE,
+  fixed = FALSE,
   combine_chains = FALSE,
   inc_warmup = FALSE,
   ...
@@ -21,9 +21,9 @@
 should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted.}
 
-\item{exact_match}{Indicates whether parameter names 
-should be matched exactly or treated as regular expression. 
-Default is \code{FALSE}.}
+\item{fixed}{Indicates whether parameter names 
+should be matched exactly (\code{TRUE}) or treated as
+regular expressions (\code{FALSE}). Default is \code{FALSE}.}
 
 \item{combine_chains}{Indicates whether chains should be combined.}
 

@@ -8,7 +8,7 @@
 \method{pp_average}{brmsfit}(
   x,
   ...,
-  weights = "loo2",
+  weights = "stacking",
   method = "posterior_predict",
   nsamples = NULL,
   summary = TRUE,

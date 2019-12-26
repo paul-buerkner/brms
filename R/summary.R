@@ -64,7 +64,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   # compute a summary for given set of parameters
   .summary <- function(object, pars, prob) {
     # TODO: use rstan::monitor instead once it is clean and stable
-    sims <- as.array(object, pars = pars, exact_match = TRUE)
+    sims <- as.array(object, pars = pars, fixed = TRUE)
     parnames <- dimnames(sims)[[3]]
     probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
     valid <- rep(NA, length(parnames))

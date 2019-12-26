@@ -11,7 +11,7 @@
 \method{posterior_samples}{brmsfit}(
   x,
   pars = NA,
-  exact_match = FALSE,
+  fixed = FALSE,
   add_chain = FALSE,
   subset = NULL,
   as.matrix = FALSE,
@@ -34,9 +34,9 @@ posterior_samples(x, pars = NA, ...)
 should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted.}
 
-\item{exact_match}{Indicates whether parameter names 
-should be matched exactly or treated as regular expression. 
-Default is \code{FALSE}.}
+\item{fixed}{Indicates whether parameter names 
+should be matched exactly (\code{TRUE}) or treated as
+regular expressions (\code{FALSE}). Default is \code{FALSE}.}
 
 \item{add_chain}{A flag indicating if the returned \code{data.frame} 
 should contain two additional columns. The \code{chain} column 
@@ -59,7 +59,7 @@ Further arguments to be passed to \code{posterior_samples}.}
 \item{row.names, optional}{See \code{\link[base:as.data.frame]{as.data.frame}}.}
 }
 \value{
-A data frame (matrix or array) containing the posterior samples, 
+A data.frame (matrix or array) containing the posterior samples, 
   with one column per parameter. In case an array is returned,
   it contains one additional dimension for the chains.
 }

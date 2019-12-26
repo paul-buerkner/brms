@@ -189,7 +189,7 @@ posterior_average.brmsfit <- function(
       subset <- sort(subset)
       ps <- posterior_samples(
         models[[i]], pars = pars, 
-        subset = subset, exact_match = TRUE
+        subset = subset, fixed = TRUE
       )
       if (!is.null(ps)) {
         out[[i]] <- ps

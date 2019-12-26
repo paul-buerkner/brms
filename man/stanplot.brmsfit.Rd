@@ -5,7 +5,14 @@
 \alias{stanplot}
 \title{MCMC Plots Implemented in \pkg{bayesplot}}
 \usage{
-\method{stanplot}{brmsfit}(object, pars = NA, type = "intervals", exact_match = FALSE, ...)
+\method{stanplot}{brmsfit}(
+  object,
+  pars = NA,
+  type = "intervals",
+  fixed = FALSE,
+  exact_match = FALSE,
+  ...
+)
 
 stanplot(object, ...)
 }
@@ -28,9 +35,11 @@ Supported types are (as names) \code{hist}, \code{dens},
 For an overview on the various plot types see
 \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.}
 
-\item{exact_match}{Indicates whether parameter names 
-should be matched exactly or treated as regular expression. 
-Default is \code{FALSE}.}
+\item{fixed}{Indicates whether parameter names 
+should be matched exactly (\code{TRUE}) or treated as
+regular expressions (\code{FALSE}). Default is \code{FALSE}.}
+
+\item{exact_match}{Deprecated alias of argument \code{fixed}.}
 
 \item{...}{Additional arguments passed to the plotting functions.
 See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for

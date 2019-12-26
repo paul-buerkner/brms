@@ -1,36 +1,3 @@
-# This file contains several methods for brmsfit objects.
-# A lot of other brmsfit methods have their own dedicated files.
-
-#' Extract Parameter Names
-#' 
-#' Extract all parameter names of a given model.
-#'  
-#' @aliases parnames.brmsfit
-#' 
-#' @param x An \R object
-#' @param ... Further arguments passed to or from other methods.
-#' 
-#' @return A character vector containing the parameter names of the model.
-#' 
-#' @export
-parnames <- function(x, ...) {
-  UseMethod("parnames")
-}
-
-#' @export
-parnames.default <- function(x, ...) {
-  names(x)
-}
-
-#' @export
-parnames.brmsfit <- function(x, ...) {
-  out <- dimnames(x$fit)
-  if (is.list(out)) {
-    out <- out$parameters
-  }
-  out
-}
-
 #' Extract Population-Level Estimates
 #' 
 #' Extract the population-level ('fixed') effects 
@@ -75,7 +42,7 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
   if (!length(fpars)) {
     return(NULL)
   }
-  out <- as.matrix(object, pars = fpars, exact_match = TRUE)
+  out <- as.matrix(object, pars = fpars, fixed = TRUE)
   colnames(out) <- gsub(fixef_pars(), "", fpars)
   if (summary) {
     out <- posterior_summary(out, probs, robust)
@@ -116,7 +83,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
   if (!length(fpars)) {
     return(NULL)
   }
-  samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
+  samples <- posterior_samples(object, pars = fpars, fixed = TRUE)
   names(samples) <- sub(fixef_pars(), "", names(samples))
   if (correlation) {
     out <- cor(samples) 
@@ -191,7 +158,7 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
       regex <- paste0(",", regex, "\\]$")
       rpars <- rpars[grepl(regex, rpars)]
     }
-    out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
+    out[[g]] <- as.matrix(object, rpars, fixed = TRUE)
     levels <- attr(ranef, "levels")[[g]]
     dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
     dimnames(out[[g]])[2:3] <- list(levels, coefs)
@@ -350,12 +317,12 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
   }
   .VarCorr <- function(y) {
     # extract samples for sd, cor and cov
-    out <- list(sd = as.matrix(x, pars = y$sd_pars, exact_match = TRUE))
+    out <- list(sd = as.matrix(x, pars = y$sd_pars, fixed = TRUE))
     colnames(out$sd) <- y$rnames
     # compute correlation and covariance matrices
     found_cor_pars <- intersect(y$cor_pars, parnames(x))
     if (length(found_cor_pars)) {
-      cor <- as.matrix(x, pars = found_cor_pars, exact_match = TRUE)
+      cor <- as.matrix(x, pars = found_cor_pars, fixed = TRUE)
       if (length(found_cor_pars) < length(y$cor_pars)) { 
         # some correlations are missing and will be replaced by 0
         cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))

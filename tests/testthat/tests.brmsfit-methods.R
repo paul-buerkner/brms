@@ -453,7 +453,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(ranef2$patient), c(nsamples(fit2), 59, 2))
   
   # residuals
-  res1 <- residuals(fit1, type = "pearson", probs = c(0.65))
+  res1 <- SW(residuals(fit1, type = "pearson", probs = c(0.65)))
   expect_equal(dim(res1), c(nobs(fit1), 3))
   newdata <- cbind(epilepsy[1:10, ], Exp = rep(1:5, 2))
   res2 <- residuals(fit1, newdata = newdata)
@@ -466,7 +466,7 @@ test_that("all S3 methods have reasonable ouputs", {
   res4 <- residuals(fit2)
   expect_equal(dim(res4), c(nobs(fit2), 4))
   
-  expect_error(residuals(fit4), "Residuals are not defined for ordinal")
+  expect_error(residuals(fit4), "Predictive errors are not defined")
   
   res6 <- residuals(fit6)
   expect_equal(dim(res6), c(nobs(fit6), 4, 2))

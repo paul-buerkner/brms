@@ -9,7 +9,7 @@
   x,
   ...,
   pars = NULL,
-  weights = "loo2",
+  weights = "stacking",
   nsamples = NULL,
   missing = NULL,
   model_names = NULL,
