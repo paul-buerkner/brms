@@ -891,7 +891,13 @@ rdiscrete <- function(n, dist, ..., lb = NULL, ub = NULL, ntrys = 5) {
     # sample from truncated distribution via rejection sampling
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
-    out <- matrix(do_call(rdist, c(list(n * ntrys), args)), ncol = ntrys)
+    out <- vector("list", ntrys)
+    for (i in seq_along(out)) {
+      # loop of the trys to prevent a mismatch between 'n' 
+      # and length of the parameter vectors passed as arguments
+      out[[i]] <- as.vector(do_call(rdist, c(list(n), args)))
+    }
+    out <- do_call(cbind, out)
     out <- apply(out, 1, extract_valid_sample, lb = lb, ub = ub)
   }
   out
