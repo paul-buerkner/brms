@@ -643,7 +643,7 @@ make_conditions <- function(x, vars, ...) {
 
 # extract the cond__ variable used for faceting
 get_cond__ <- function(x) {
-  out <- x[["cond__"]]
+  out <- as.character(x[["cond__"]])
   if (is.null(out)) {
     out <- rownames(x)
   }
