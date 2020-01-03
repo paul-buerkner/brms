@@ -91,7 +91,7 @@ An \code{array} of predicted response values.
   statistics: The \code{Estimate} column contains point estimates (either
   mean or median depending on argument \code{robust}), while the
   \code{Est.Error} column contains uncertainty estimates (either standard
-  deviation of median absolute deviation depending on argument
+  deviation or median absolute deviation depending on argument
   \code{robust}). The remaining columns starting with \code{Q} contain
   quantile estimates as specifed via argument \code{probs}.
 }
