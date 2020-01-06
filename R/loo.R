@@ -181,6 +181,9 @@ compute_loos <- function(
 ) {
   criterion <- match.arg(criterion)
   args <- nlist(criterion, ...)
+  for (i in seq_along(models)) {
+    models[[i]] <- restructure(models[[i]]) 
+  }
   if (length(models) > 1L) {
     if (!match_nobs(models)) {
       stop2("Models have different number of observations.")
@@ -316,6 +319,7 @@ loo_compare.brmsfit <- function(x, ..., criterion = c("loo", "waic", "kfold"),
   models <- split_dots(x, ..., model_names = model_names, other = FALSE)
   loos <- named_list(names(models))
   for (i in seq_along(models)) {
+    models[[i]] <- restructure(models[[i]])
     loos[[i]] <- get_criterion(models[[i]], criterion)
     if (is.null(loos[[i]])) {
       stop2(
