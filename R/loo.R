@@ -167,6 +167,49 @@ WAIC <- function(x, ...) {
   UseMethod("WAIC")
 }
 
+#' Efficient approximate leave-one-out cross-validation (LOO) using subsampling
+#' 
+#' @aliases loo_subsample
+#' 
+#' @inheritParams loo.brmsfit
+#' 
+#' @details More details can be found on
+#' \code{\link[loo:loo_subsample]{loo_subsample}}.
+#' 
+#' @examples
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler)
+#' (loo1 <- loo_subsample(fit1))
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler)
+#' (loo2 <- loo_subsample(fit2))   
+#' 
+#' # compare both models
+#' loo_compare(loo1, loo2)                      
+#' }
+#' 
+#' @importFrom loo loo_subsample
+#' @export loo_subsample
+#' @export
+loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
+                                  model_names = NULL) {
+  args <- split_dots(x, ..., model_names = model_names)
+  c(args) <- nlist(
+    criterion = "loo_subsample", compare, resp, 
+    pointwise = TRUE, add_point_draws = TRUE
+  )
+  do_call(compute_loos, args)
+}
+
+# possible criteria to evaluate via the loo package
+loo_criteria <- function() {
+  c("loo", "waic", "psis", "kfold", "loo_subsample")
+}
+
 # helper function used to create (lists of) 'loo' objects
 # @param models list of brmsfit objects
 # @param criterion name of the criterion to compute
@@ -176,7 +219,7 @@ WAIC <- function(x, ...) {
 # @return If length(models) > 1 an object of class 'loolist'
 #   If length(models) == 1 an object of class 'loo'
 compute_loos <- function(
-  models, criterion = c("loo", "waic", "psis", "psislw", "kfold"),
+  models, criterion = loo_criteria(),
   use_stored = TRUE, compare = TRUE, ...
 ) {
   criterion <- match.arg(criterion)
@@ -225,7 +268,7 @@ compute_loos <- function(
 # @param pointwise compute log-likelihood point-by-point?
 # @param ... passed to other post-processing methods
 # @return an object of class 'loo'
-compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
+compute_loo <- function(x, criterion = loo_criteria(),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
                         pointwise = FALSE, newdata = NULL, resp = NULL, 
                         model_name = "", use_stored = TRUE, ...) {
@@ -257,6 +300,11 @@ compute_loo <- function(x, criterion = c("loo", "waic", "psis", "kfold"),
         }
         loo_args$log_ratios <- -loo_args$x
         loo_args$x <- NULL
+      }
+      if (criterion == "loo_subsample") {
+        if (!pointwise) {
+          stop2("Can only use pointwise evaluation in 'loo_subsample'.")
+        }
       }
       out <- SW(do_call(criterion, loo_args, pkg = "loo"))
     }
@@ -380,8 +428,9 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
 #' @param x An \R object typically of class \code{brmsfit}.
 #' @param criterion Names of model fit criteria
 #'   to compute. Currently supported are \code{"loo"}, 
-#'   \code{"waic"}, \code{"kfold"}, \code{"bayes_R2"} (Bayesian R-squared), 
-#'   \code{"loo_R2"} (LOO-adjusted R-squard), and 
+#'   \code{"waic"}, \code{"kfold"}, \code{"loo_subsample"},
+#'   \code{"bayes_R2"} (Bayesian R-squared), 
+#'   \code{"loo_R2"} (LOO-adjusted R-squared), and 
 #'   \code{"marglik"} (log marginal likelihood).
 #' @param model_name Optional name of the model. If \code{NULL}
 #'   (the default) the name is taken from the call to \code{x}.
@@ -437,7 +486,8 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     warning2("Criterion 'R2' is deprecated. Please use 'bayes_R2' instead.")
     criterion[criterion == "R2"] <- "bayes_R2"
   }
-  options <- c("loo", "waic", "kfold", "bayes_R2", "loo_R2", "marglik")
+  loo_options <- c("loo", "waic", "kfold", "loo_subsample", "loo_R2")
+  options <- c(loo_options, "bayes_R2", "marglik")
   if (!length(criterion) || !all(criterion %in% options)) {
     stop2("Argument 'criterion' should be a subset of ",
           collapse_comma(options))
@@ -457,7 +507,7 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
   }
   new_criteria <- criterion[ulapply(x[criterion], is.null)]
   args <- list(x, ...)
-  for (fun in intersect(criterion, c("loo", "waic", "kfold", "loo_R2"))) {
+  for (fun in intersect(criterion, loo_options)) {
     args$model_names <- model_name
     x$criteria[[fun]] <- do_call(fun, args)
   }
@@ -476,28 +526,6 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     saveRDS(x, file = file)
   } 
   x
-}
-
-#' @rdname add_criterion
-#' @export
-add_loo <- function(x, model_name = NULL, ...) {
-  if (!is.null(model_name)) {
-    model_name <- as_one_character(model_name)
-  } else {
-    model_name <- deparse_combine(substitute(x)) 
-  }
-  add_criterion(x, criterion = "loo", model_name = model_name, ...)
-}
-
-#' @rdname add_criterion
-#' @export
-add_waic <- function(x, model_name = NULL, ...) {
-  if (!is.null(model_name)) {
-    model_name <- as_one_character(model_name)
-  } else {
-    model_name <- deparse_combine(substitute(x)) 
-  }
-  add_criterion(x, criterion = "waic", model_name = model_name, ...)
 }
 
 # extract a recomputed model fit criterion
@@ -809,6 +837,49 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
   r_eff_helper(exp(log_lik), fit = fit, allow_na = allow_na)
 }
 
+# methods required in loo_subsample
+#' @importFrom loo .ndraws
+#' @export
+.ndraws.brmsdraws <- function(x, ...) {
+  x$nsamples
+}
+
+#' @export
+.ndraws.mvbrmsdraws <- function(x, ...) {
+  x$nsamples
+}
+
+#' @importFrom loo .thin_draws
+#' @export
+.thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
+  # brmsdraws objects are too complex to implement a post-hoc subsetting method
+  if (length(loo_approximation_draws)) {
+    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
+  }
+  draws
+}
+
+#' @export
+.thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
+  if (length(loo_approximation_draws)) {
+    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
+  }
+  draws
+}
+
+#' @importFrom loo .compute_point_estimate
+#' @export
+.compute_point_estimate.brmsdraws <- function(x, ...) {
+  # point estimates are stored in the form of an attribute rather 
+  # than computed on the fly due to the complexity of brmsdraws objects
+  attr(x, "point_draws")
+}
+
+#' @export
+.compute_point_estimate.mvbrmsdraws <- function(x, ...) {
+  attr(x, "point_draws")
+}
+
 # print the output of a list of loo objects
 #' @export
 print.loolist <- function(x, digits = 1, ...) {
@@ -826,9 +897,33 @@ print.loolist <- function(x, digits = 1, ...) {
 }
 
 # ---------- deprecated functions ----------
+#' @rdname add_ic
+#' @export
+add_loo <- function(x, model_name = NULL, ...) {
+  warning2("'add_loo' is deprecated. Please use 'add_criterion' instead.")
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  add_criterion(x, criterion = "loo", model_name = model_name, ...)
+}
+
+#' @rdname add_ic
+#' @export
+add_waic <- function(x, model_name = NULL, ...) {
+  warning2("'add_waic' is deprecated. Please use 'add_criterion' instead.")
+  if (!is.null(model_name)) {
+    model_name <- as_one_character(model_name)
+  } else {
+    model_name <- deparse_combine(substitute(x)) 
+  }
+  add_criterion(x, criterion = "waic", model_name = model_name, ...)
+}
+
 #' Add model fit criteria to model objects
 #' 
-#' Deprecated alias of \code{\link{add_criterion}}.
+#' Deprecated aliases of \code{\link{add_criterion}}.
 #' 
 #' @inheritParams add_criterion
 #' @param ic,value Names of model fit criteria

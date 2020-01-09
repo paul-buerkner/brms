@@ -4,6 +4,8 @@
 
 * Support grouped ordinal threshold vectors via addition 
 argument `resp_thres`. (#675)
+* Support method `loo_subsample` for performing approximate
+leave-one-out cross-validation for large data.
 * Allow storing `loo_R2` results via `add_criterion`. (#793)
 
 ### Bug Fixes
@@ -40,6 +42,8 @@ in categorical and multivariate models.
 * Improve names of weighting methods in `model_weights`.
 * Deprecate reserved variable `intercept` in favor of `Intercept`.
 * Deprecate argument `exact_match` in favor of `fixed`.
+* Deprecate functions `add_loo` and `add_waic`
+in favor of `add_criterion`.
 
 # brms 2.10.0
 

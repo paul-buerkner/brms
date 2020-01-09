@@ -390,6 +390,15 @@ test_that("loo has reasonable outputs", {
   expect_range(loo_compare[2, 1], -1, 1)
 })
 
+test_that("loo_subsample has reasonable outputs", {
+  skip_on_cran()
+  
+  loo2 <- SW(loo_subsample(fit2, observations = 50))
+  expect_true(is.numeric(loo2$estimates))
+  expect_true(nrow(loo2$pointwise), 50)
+  expect_output(print(loo2), "looic")
+})
+
 test_that("loo_R2 has reasonable outputs", {
   skip_on_cran()
   
