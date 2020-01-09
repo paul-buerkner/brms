@@ -395,7 +395,7 @@ test_that("loo_subsample has reasonable outputs", {
   
   loo2 <- SW(loo_subsample(fit2, observations = 50))
   expect_true(is.numeric(loo2$estimates))
-  expect_true(nrow(loo2$pointwise), 50)
+  expect_equal(nrow(loo2$pointwise), 50)
   expect_output(print(loo2), "looic")
 })
 

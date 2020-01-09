@@ -13,10 +13,10 @@
 #'   By default, all coefficients are extracted.
 #' @param ... Currently ignored.
 #' 
-#' @return If \code{summary} is \code{TRUE}, a matrix with one row per 
-#'   population-level effect and one column per calculated estimate. 
+#' @return If \code{summary} is \code{TRUE}, a matrix returned
+#'   by \code{\link{posterior_summary}} for the population-level effects.
 #'   If \code{summary} is \code{FALSE}, a matrix with one row per 
-#'   posterior sample and one column per population-level effect.
+#'   posterior draw and one column per population-level effect.
 #' 
 #' @examples
 #' \dontrun{
@@ -106,13 +106,15 @@ vcov.brmsfit <- function(object, correlation = FALSE, pars = NULL, ...) {
 #'   for which to extract effects.
 #' @param ... Currently ignored.
 #'
-#' @return If \code{old} is \code{FALSE}: A list of arrays 
-#'  (one per grouping factor). If \code{summary} is \code{TRUE},
-#'  names of the first dimension are the factor levels and names
-#'  of the third dimension are the group-level effects. 
-#'  If \code{summary} is \code{FALSE}, names of the second dimension
-#'  are the factor levels and names of the third dimension are the 
-#'  group-level effects.
+#' @return A list of 3D arrays (one per grouping factor). 
+#'  If \code{summary} is \code{TRUE}, 
+#'  the 1st dimension contains the factor levels, 
+#'  the 2nd dimension contains the summary statistics 
+#'  (see \code{\link{posterior_summary}}), and
+#'  the 3rd dimension contains the group-level effects. 
+#'  If \code{summary} is \code{FALSE}, the 1st dimension contains
+#'  the posterior draws, the 2nd dimension contains the factor levels, 
+#'  and the 3rd dimension contains the group-level effects. 
 #'  
 #' @examples
 #' \dontrun{
@@ -177,13 +179,15 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #' @param ... Further arguments passed to \code{\link{fixef.brmsfit}}
 #'   and \code{\link{ranef.brmsfit}}.
 #'
-#' @return If \code{old} is \code{FALSE}: A list of arrays 
-#'  (one per grouping factor). If \code{summary} is \code{TRUE},
-#'  names of the first dimension are the factor levels and names
-#'  of the third dimension are the group-level effects. 
-#'  If \code{summary} is \code{FALSE}, names of the second dimension
-#'  are the factor levels and names of the third dimension are the 
-#'  group-level effects.
+#' @return A list of 3D arrays (one per grouping factor). 
+#'  If \code{summary} is \code{TRUE}, 
+#'  the 1st dimension contains the factor levels, 
+#'  the 2nd dimension contains the summary statistics 
+#'  (see \code{\link{posterior_summary}}), and
+#'  the 3rd dimension contains the group-level effects. 
+#'  If \code{summary} is \code{FALSE}, the 1st dimension contains
+#'  the posterior draws, the 2nd dimension contains the factor levels, 
+#'  and the 3rd dimension contains the group-level effects. 
 #'  
 #' @examples
 #' \dontrun{

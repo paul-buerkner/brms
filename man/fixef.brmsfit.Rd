@@ -35,10 +35,10 @@ By default, all coefficients are extracted.}
 \item{...}{Currently ignored.}
 }
 \value{
-If \code{summary} is \code{TRUE}, a matrix with one row per 
-  population-level effect and one column per calculated estimate. 
+If \code{summary} is \code{TRUE}, a matrix returned
+  by \code{\link{posterior_summary}} for the population-level effects.
   If \code{summary} is \code{FALSE}, a matrix with one row per 
-  posterior sample and one column per population-level effect.
+  posterior draw and one column per population-level effect.
 }
 \description{
 Extract the population-level ('fixed') effects 
