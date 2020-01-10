@@ -52,7 +52,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   }
   draws_ranef <- extract_draws_ranef(
     ranef = ranef, samples = samples, sdata = sdata, 
-    old_ranef = x$ranef, sample_new_levels = sample_new_levels,
+    resp = resp, old_ranef = x$ranef, 
+    sample_new_levels = sample_new_levels,
   )
   extract_draws(
     bterms, samples = samples, sdata = sdata, data = x$data, 
@@ -539,7 +540,7 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 # @param old_ranef same as 'ranef' but based on the original formula
 # @return a named list with one element per group containing posterior draws 
 #   of levels used in the data as well as additional meta-data
-extract_draws_ranef <- function(ranef, samples, sdata, old_ranef, 
+extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef, 
                                 sample_new_levels = "uncertainty", ...) {
   if (!nrow(ranef)) {
     return(NULL)
@@ -571,9 +572,10 @@ extract_draws_ranef <- function(ranef, samples, sdata, old_ranef,
     rsamples <- column_to_row_major_order(rsamples, nranef)
     # prepare data required for indexing parameters
     gtype <- ranef_g$gtype[1]
+    resp_g <- intersect(ranef_g$resp, resp)[1]
     # any valid ID works here as J and W are independent of the ID
     id <- ranef_g$id[1]
-    idresp <- paste0(id, usc(ranef_g$resp[1]))
+    idresp <- paste0(id, usc(resp_g))
     if (gtype == "mm") {
       ngf <- length(ranef_g$gcall[[1]]$groups)
       gf <- sdata[paste0("J_", idresp, "_", seq_len(ngf))]

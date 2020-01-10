@@ -742,22 +742,28 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   group_vars <- get_group_vars(bterms)
   req_vars <- setdiff(req_vars, group_vars)
   for (v in req_vars) {
-    if (v %in% subset_vars) {
-      # avoid unintentional subsetting of newdata (#755)
-      conditions[[v]] <- TRUE
-    } else if (!is_like_factor(mf[[v]])) {
-      # treat variable as numeric
-      if (v %in% int_vars) {
+    if (is_like_factor(mf[[v]])) {
+      # factor-like variable
+      if (v %in% subset_vars) {
+        # avoid unintentional subsetting of newdata (#755)
+        conditions[[v]] <- TRUE
+      } else {
+        # use reference category for factors
+        levels <- levels(as.factor(mf[[v]]))
+        ordered <- is.ordered(mf[[v]])
+        conditions[[v]] <- factor(levels[1], levels, ordered = ordered)
+      }
+    } else {
+      # numeric-like variable
+      if (v %in% subset_vars) {
+        # avoid unintentional subsetting of newdata (#755)
+        conditions[[v]] <- 1
+      } else if (v %in% int_vars) {
+        # ensure valid integer values
         conditions[[v]] <- round(median(mf[[v]], na.rm = TRUE))
       } else {
         conditions[[v]] <- mean(mf[[v]], na.rm = TRUE)
       }
-    } else {
-      # use reference category for factors
-      levels <- attr(as.factor(mf[[v]]), "levels")
-      conditions[[v]] <- factor(
-        levels[1], levels = levels, ordered = is.ordered(mf[[v]])
-      )
     }
   }
   all_vars <- c(all_vars(bterms$allvars), "cond__")
