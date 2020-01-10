@@ -198,7 +198,6 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
   class(draws) <- "bdrawsnl"
   p <- usc(combine_prefix(x))
   C <- sdata[[paste0("C", p)]]
-  stopifnot(is.matrix(C))
   for (cov in colnames(C)) {
     dim <- c(nrow(samples), nrow(C))
     draws$C[[cov]] <- as_draws_matrix(C[, cov], dim = dim)
@@ -262,9 +261,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   for (i in seq_along(draws$calls)) {
     call <- spef$joint_call[[i]]
     if (!is.null(spef$calls_mo[[i]])) {
-      new_mo <- paste0(
-        ".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")"
-      )
+      new_mo <- paste0(".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")")
       call <- rename(call, spef$calls_mo[[i]], new_mo)
     }
     if (!is.null(spef$calls_me[[i]])) {
@@ -1182,7 +1179,6 @@ is.bdrawsnl <- function(x) {
 #'   
 #' @export
 extract_draws <- function(x, ...) {
-  # extract data and posterior draws
   UseMethod("extract_draws")
 }
 
