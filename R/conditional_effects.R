@@ -643,11 +643,11 @@ make_conditions <- function(x, vars, ...) {
 
 # extract the cond__ variable used for faceting
 get_cond__ <- function(x) {
-  out <- as.character(x[["cond__"]])
+  out <- x[["cond__"]]
   if (is.null(out)) {
     out <- rownames(x)
   }
-  out
+  as.character(out)
 }
 
 #' Convert Rows to Labels
