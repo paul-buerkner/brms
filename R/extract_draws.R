@@ -200,9 +200,8 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
   C <- sdata[[paste0("C", p)]]
   stopifnot(is.matrix(C))
   for (cov in colnames(C)) {
-    draws$C[[cov]] <- as_draws_matrix(
-      C[, cov], dim = c(nrow(samples), nrow(C))
-    )
+    dim <- c(nrow(samples), nrow(C))
+    draws$C[[cov]] <- as_draws_matrix(C[, cov], dim = dim)
   }
   draws
 }

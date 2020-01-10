@@ -297,7 +297,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
   bform <- bf(y ~ a - b^z, flist = flist, nl = TRUE)
   sdata <- make_standata(bform, data = dat)
   expect_equal(names(sdata), 
-    c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1", 
+    c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
       "K_b", "X_b", "Ksp_b", "Imo_b", "Xmo_b_1", "Jmo_b", 
       "con_simo_b_1", "Z_1_b_2", "J_1", "N_1", 
       "M_1", "NC_1", "prior_only")
@@ -313,7 +313,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
     lf(a1 ~ 1, a2 ~ z + (x|g)) +
     lf(alpha ~ x)
   sdata <- make_standata(bform, dat, family = skew_normal())
-  sdata_names <- c("C_sigma_1", "C_sigma_2", "X_a2", "Z_1_a2_1")
+  sdata_names <- c("C_sigma", "X_a2", "Z_1_a2_1")
   expect_true(all(sdata_names %in% names(sdata)))
 })
 

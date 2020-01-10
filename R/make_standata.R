@@ -29,9 +29,9 @@ make_standata <- function(formula, data, family = gaussian(),
                           stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
                           control = list(), ...) {
-  # internal control arguments:
+  # control arguments:
+  #   internal: is make_standata called for internal use in S3 methods?
   #   new: is make_standata is called with new data?
-  #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
@@ -42,7 +42,7 @@ make_standata <- function(formula, data, family = gaussian(),
   }
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
-  not4stan <- isTRUE(control$not4stan)
+  internal <- isTRUE(control$internal)
   new <- isTRUE(control$new)
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
@@ -65,15 +65,15 @@ make_standata <- function(formula, data, family = gaussian(),
   
   out <- data_response(
     bterms, data, check_response = check_response,
-    not4stan = not4stan, old_sdata = control$old_sdata
+    internal = internal, old_sdata = control$old_sdata
   )
   if (!only_response) {
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
-      not4stan = not4stan, old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, ranef = ranef, 
+      knots = knots, old_sdata = control$old_sdata
     )
-    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef)
+    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_Xme(meef, data = data)
   }

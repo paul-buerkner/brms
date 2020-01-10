@@ -632,7 +632,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     )
   }
   if (internal) {
-    control[c("not4stan", "save_order")] <- TRUE
+    control$internal <- TRUE
+    control$save_order <- TRUE
   }
   sample_prior <- attr(object$prior, "sample_prior")
   knots <- attr(object$data, "knots")

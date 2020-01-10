@@ -26,11 +26,11 @@ data_predictor.mvbrmsterms <- function(x, data, old_sdata = NULL, ...) {
 
 #' @export
 data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL, 
-                                     not4stan = FALSE, old_sdata = NULL, ...) {
+                                     old_sdata = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, knots, not4stan)
+  args_eff <- nlist(data, ranef, prior, knots)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
@@ -53,15 +53,14 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 # @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
 # @param knots optional knot values for smoothing terms
-# @param not4stan is the data for use in S3 methods only?
 # @param old_sdata see 'extract_old_standata'
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), knots = NULL, 
-                               not4stan = FALSE, old_sdata = NULL, ...) {
-  c(data_fe(x, data, not4stan = not4stan, ...),
+                               old_sdata = NULL, ...) {
+  c(data_fe(x, data, ...),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
@@ -75,29 +74,24 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 
 # prepare data for non-linear parameters for use in Stan
 #' @export 
-data_predictor.btnl <- function(x, data, not4stan = FALSE, ...) {
+data_predictor.btnl <- function(x, data, ...) {
   out <- list()
   C <- get_model_matrix(x$covars, data = data)
-  if (length(all.vars(x$covars)) != ncol(C)) {
+  if (length(all.vars(x$covars)) != NCOL(C)) {
     stop2("Factors with more than two levels are not allowed as covariates.")
   }
   # fixes issue #127 occuring for factorial covariates
   colnames(C) <- all.vars(x$covars)
   p <- usc(combine_prefix(x))
-  if (not4stan) {
+  if (NCOL(C)) {
+    out[[paste0("KC", p)]] <- NCOL(C)
     out[[paste0("C", p)]] <- C
-  } else {
-    # use vectors as indexing matrices in Stan is slow
-    if (ncol(C)) {
-      Cnames <- paste0("C", p, "_", seq_cols(C))
-      c(out) <- setNames(as.list(as.data.frame(C)), Cnames)
-    }
   }
   out
 }
 
 # prepare data of fixed effects
-data_fe <- function(bterms, data, not4stan = FALSE) {
+data_fe <- function(bterms, data) {
   out <- list()
   p <- usc(combine_prefix(bterms))
   # the intercept is removed inside the Stan code for ordinal models
@@ -287,9 +281,10 @@ data_gr_local <- function(bterms, data, ranef) {
 }
 
 # prepare global data for each group-level-ID
-data_gr_global <- function(ranef, cov_ranef = NULL) {
+# @param internal is the data for use in S3 methods only?
+data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
   out <- list()
-  if (!is.null(cov_ranef)) {
+  if (!is.null(cov_ranef) && !internal) {
     # check validity of cov_ranef
     cr_names <- names(cov_ranef)
     cr_is_named <- length(cr_names) && all(nzchar(cr_names))

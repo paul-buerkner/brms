@@ -70,7 +70,7 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    not4stan = FALSE, old_sdata = NULL, ...) {
+                                    internal = FALSE, old_sdata = NULL, ...) {
   # prepare data for the response variable
   data <- subset_data(data, x)
   N <- nrow(data)
@@ -184,7 +184,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
           stop2("Number of trials does not match the number of events.")
         }
       } else if (has_trials(x$family)) {
-        if (max(trials) == 1L && !not4stan) {
+        if (max(trials) == 1L && !internal) {
           message("Only 2 levels detected so that family 'bernoulli' ",
                   "might be a more efficient choice.")
         }
@@ -201,7 +201,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       stop2("At least two response categories are required.")
     }
     if (!has_multicol(x$family)) {
-      if (ncat == 2L && !not4stan) {
+      if (ncat == 2L && !internal) {
         message("Only 2 levels detected so that family 'bernoulli' ",
                 "might be a more efficient choice.")
       }
@@ -239,7 +239,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         stop2("Number of thresholds is smaller than required by the response.")
       }
     }
-    if (max(nthres) == 1L && !not4stan) {
+    if (max(nthres) == 1L && !internal) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
     }
@@ -365,11 +365,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       out$Jme <- as.array(setdiff(seq_along(out$Y), which_mi))
       out$Nme <- length(out$Jme)
       out$noise <- as.array(sdy)
-      if (!not4stan) {
+      if (!internal) {
         out$noise[which_mi] <- Inf
       }
     }
-    if (!not4stan) {
+    if (!internal) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected
       out$Y[which_mi] <- Inf

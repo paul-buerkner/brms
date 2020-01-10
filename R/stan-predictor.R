@@ -48,13 +48,16 @@ stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
   new_covars <- NULL
   if (length(covars)) {
     p <- usc(combine_prefix(x))
-    covar_names <- glue("C{p}_{seq_along(covars)}")
-    new_covars <- glue(" {covar_names}{n}")
-    # use vectors as indexing matrices in Stan is slow
-    str_add(out$data) <- glue( 
-      "  // covariate vectors\n",
-      cglue("  vector[N{resp}] {covar_names};\n")
+    str_add(out$data) <- glue(
+      "  int<lower=1> KC{p};  // number of covariates\n",
+      "  matrix[N{resp}, KC{p}] C{p};  // matrix of covariates\n"
     )
+    kc <- seq_along(covars)
+    str_add(out$tdata_def) <- glue( 
+      "  // extract covariate vectors for faster indexing\n",
+      cglue("  vector[N{resp}] C{p}_{kc} = C{p}[, {kc}];\n")
+    )
+    new_covars <- glue(" C{p}_{kc}{n}")
   }
   # add whitespaces to be able to replace parameters and covariates
   syms <- c(
