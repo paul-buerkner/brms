@@ -132,7 +132,7 @@ test_that("ARMA models work correctly", {
   expect_range(waic(fit_arma)$estimates[3, 1], 250, 350)
   expect_equal(dim(predict(fit_arma)), c(nobs(fit_arma), 4))
   expect_ggplot(plot(conditional_effects(fit_arma), plot = FALSE)[[1]])
-  
+
   fit_arma_pois <- brm(
     count ~ Trt + (1 | patient), data = epilepsy, family = poisson(),
     autocor = cor_arma(~ visit | patient, p = 1, q = 1, cov = TRUE),
@@ -173,6 +173,25 @@ test_that("Models from hypothesis doc work correctly", {
   expect_equal(dim(hyp3$hypothesis), c(2, 8))
 })
 
+test_that("categorical models work correctly", {
+  fit2 <- brm(rating ~ period + carry + treat + (1|test|subject),
+              data = inhaler, family = categorical, iter = 500,
+              prior = c(prior(normal(0,5), "b"),
+                        prior(normal(0,5), "Intercept")),
+              chains = 2, refresh = 0)
+  print(fit2)
+  expect_range(WAIC(fit2)$estimates[3, 1], 830, 900)
+  ncat <- length(unique(inhaler$rating))
+  expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
+  expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
+  expect_equal(dim(fitted(fit2, scale = "linear")),
+               c(nobs(fit2), 4, ncat - 1))
+  # tests with new data
+  newd <- inhaler[1:10, ]
+  newd$rating <- NULL
+  expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
+})
+
 test_that("bridgesampling methods work correctly", {
   # model with the treatment effect
   fit1 <- brm(
@@ -201,9 +220,9 @@ test_that("bridgesampling methods work correctly", {
   expect_gt(pp2[1], pp1[1])
 })
 
-test_that("varying slopes without a fixed effect work", {
+test_that("varying slopes without overall effects work", {
   fit1 <- brm(count ~ zAge + zBase * Trt +
-                (as.numeric(visit)|patient),
+                (as.numeric(visit) | patient),
               data = epilepsy, family = gaussian(),
               chains = 2, refresh = 0)
   print(fit1)
@@ -227,25 +246,6 @@ test_that("varying slopes without a fixed effect work", {
 
   expect_range(WAIC(fit1)$estimates[3, 1], 1500, 1600)
   expect_equal(dim(predict(fit1)), c(nobs(fit1), 4))
-})
-
-test_that("categorical models work correctly", {
-  fit2 <- brm(rating ~ period + carry + treat + (1|test|subject),
-              data = inhaler, family = categorical, iter = 500,
-              prior = c(prior(normal(0,5), "b"),
-                        prior(normal(0,5), "Intercept")),
-              chains = 2, refresh = 0)
-  print(fit2)
-  expect_range(WAIC(fit2)$estimates[3, 1], 830, 900)
-  ncat <- length(unique(inhaler$rating))
-  expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
-  expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
-  expect_equal(dim(fitted(fit2, scale = "linear")),
-               c(nobs(fit2), 4, ncat - 1))
-  # tests with new data
-  newd <- inhaler[1:10, ]
-  newd$rating <- NULL
-  expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
 })
 
 test_that("multivariate normal models work correctly", {
@@ -380,11 +380,11 @@ test_that("Non-linear models of distributional parameters work correctly", {
 
 test_that("Nested non-linear models work correctly", {
   set.seed(2345)
-  dat <- data.frame(x = rnorm(100), z = 1:5)
+  dat <- data.frame(x = rnorm(300))
   dat$y <- 0.3 + 0.7 * brms:::inv_logit(2 * dat$x)
   bform <- bf(
     y ~ lb + (1 - lb) * inv_logit(b * x),
-    b + a ~ 1 + (1 | z), nlf(lb ~ inv_logit(a)),
+    b + a ~ 1, nlf(lb ~ inv_logit(a)),
     nl = TRUE
   )
   bprior <- prior(normal(0, 1), nlpar = "a") +

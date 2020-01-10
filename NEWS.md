@@ -1,4 +1,4 @@
-# brms 2.10.0++
+# brms 2.11.0
 
 ### New Features
 
@@ -6,7 +6,7 @@
 argument `resp_thres`. (#675)
 * Support method `loo_subsample` for performing approximate
 leave-one-out cross-validation for large data.
-* Allow storing `loo_R2` results via `add_criterion`. (#793)
+* Allow storing more model fit critera via `add_criterion`. (#793)
 
 ### Bug Fixes
 
