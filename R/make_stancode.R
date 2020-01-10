@@ -204,3 +204,33 @@ print.brmsmodel <- function(x, ...) {
   cat(x)
   invisible(x) 
 }
+
+#' Extract Stan model code
+#' 
+#' Extract Stan code that was used to specify the model.
+#' 
+#' @aliases stancode.brmsfit
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param version Logical; indicates if the first line containing
+#'   the \pkg{brms} version number should be included.
+#'   Defaults to \code{TRUE}.
+#' @param ... Currently ignored.
+#' 
+#' @return Stan model code for further processing.
+#' 
+#' @export
+stancode.brmsfit <- function(object, version = TRUE, ...) {
+  out <- object$model
+  if (!version) {
+    out <- sub("^[^\n]+[[:digit:]]\\.[^\n]+\n", "", out) 
+  }
+  out
+}
+
+#' @rdname stancode.brmsfit
+#' @export
+stancode <- function(object, ...) {
+  UseMethod("stancode")
+}
+
