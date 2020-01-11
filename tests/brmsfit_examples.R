@@ -84,6 +84,14 @@ brmsfit_example6 <- brm(
   stan_model_args = stan_model_args, testmode = TRUE
 )
 
+# easy loading of unchanged models to avoid refitting all of them
+# brmsfit_example1 <- brms:::brmsfit_example1
+# brmsfit_example2 <- brms:::brmsfit_example2
+# brmsfit_example3 <- brms:::brmsfit_example3
+# brmsfit_example4 <- brms:::brmsfit_example4
+# brmsfit_example5 <- brms:::brmsfit_example5
+# brmsfit_example6 <- brms:::brmsfit_example6
+
 usethis::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3, 
   brmsfit_example4, brmsfit_example5, brmsfit_example6,

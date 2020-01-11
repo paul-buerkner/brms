@@ -1175,10 +1175,10 @@ stan_autocor <- function(bterms, prior) {
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
       add_ar <- str_if(get_ar(autocor),
-                       glue("    mu{p}[n] += head(Err{p}[n], Kar{p}) * ar{p};\n")             
+                       glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")             
       )
       add_ma <- str_if(get_ma(autocor),
-                       glue("    mu{p}[n] += head(Err{p}[n], Kma{p}) * ma{p};\n")             
+                       glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")             
       )
       str_add(out$model_comp_arma) <- glue(
         "  // include ARMA terms\n",

@@ -576,10 +576,10 @@ test_that("Stan code for ARMA models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- make_stancode(y ~ x, dat, student(), autocor = cor_ar(~time))
   expect_match2(scode, "err[n] = Y[n] - mu[n];")
-  expect_match2(scode, "mu[n] += head(Err[n], Kar) * ar;")
+  expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
   
   scode <- make_stancode(y ~ x, dat, student(), autocor = cor_ma(~time, q = 2))
-  expect_match2(scode, "mu[n] += head(Err[n], Kma) * ma;")
+  expect_match2(scode, "mu[n] += Err[n, 1:Kma] * ma;")
   
   scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(), autocor = cor_ar())
   expect_match2(scode, "err_y[n] = Y_y[n] - mu_y[n];")
@@ -592,7 +592,7 @@ test_that("Stan code for ARMA models is correct", {
   scode <- make_stancode(bform, dat, family = student,
                          prior = prior(normal(0, 1), nlpar = eta),
                          autocor = cor_ar(~time))
-  expect_match2(scode, "mu[n] += head(Err[n], Kar) * ar;")
+  expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
   
   # correlations of latent residuals
   scode <- make_stancode(
