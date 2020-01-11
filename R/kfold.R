@@ -83,7 +83,7 @@
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
-#' (kfold1 <- kfold(fit1, chains = 1)
+#' (kfold1 <- kfold(fit1, chains = 1))
 #' 
 #' # use the future package for parallelization
 #' library(future)
