@@ -36,14 +36,30 @@
 \alias{acat}
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
-brmsfamily(family, link = NULL, link_sigma = "log",
-  link_shape = "log", link_nu = "logm1", link_phi = "log",
-  link_kappa = "log", link_beta = "log", link_zi = "logit",
-  link_hu = "logit", link_zoi = "logit", link_coi = "logit",
-  link_disc = "log", link_bs = "log", link_ndt = "log",
-  link_bias = "logit", link_xi = "log1p", link_alpha = "identity",
-  link_quantile = "logit", threshold = c("flexible", "equidistant"),
-  refcat = NULL, bhaz = NULL)
+brmsfamily(
+  family,
+  link = NULL,
+  link_sigma = "log",
+  link_shape = "log",
+  link_nu = "logm1",
+  link_phi = "log",
+  link_kappa = "log",
+  link_beta = "log",
+  link_zi = "logit",
+  link_hu = "logit",
+  link_zoi = "logit",
+  link_coi = "logit",
+  link_disc = "log",
+  link_bs = "log",
+  link_ndt = "log",
+  link_bias = "logit",
+  link_xi = "log1p",
+  link_alpha = "identity",
+  link_quantile = "logit",
+  threshold = c("flexible", "equidistant"),
+  refcat = NULL,
+  bhaz = NULL
+)
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -55,11 +71,9 @@ geometric(link = "log")
 
 lognormal(link = "identity", link_sigma = "log")
 
-shifted_lognormal(link = "identity", link_sigma = "log",
-  link_ndt = "log")
+shifted_lognormal(link = "identity", link_sigma = "log", link_ndt = "log")
 
-skew_normal(link = "identity", link_sigma = "log",
-  link_alpha = "identity")
+skew_normal(link = "identity", link_sigma = "log", link_alpha = "identity")
 
 exponential(link = "log")
 
@@ -67,13 +81,16 @@ weibull(link = "log", link_shape = "log")
 
 frechet(link = "log", link_nu = "logm1")
 
-gen_extreme_value(link = "identity", link_sigma = "log",
-  link_xi = "log1p")
+gen_extreme_value(link = "identity", link_sigma = "log", link_xi = "log1p")
 
 exgaussian(link = "identity", link_sigma = "log", link_beta = "log")
 
-wiener(link = "identity", link_bs = "log", link_ndt = "log",
-  link_bias = "logit")
+wiener(
+  link = "identity",
+  link_bs = "log",
+  link_ndt = "log",
+  link_bias = "logit"
+)
 
 Beta(link = "logit", link_phi = "log")
 
@@ -81,29 +98,28 @@ dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 
 von_mises(link = "tan_half", link_kappa = "log")
 
-asym_laplace(link = "identity", link_sigma = "log",
-  link_quantile = "logit")
+asym_laplace(link = "identity", link_sigma = "log", link_quantile = "logit")
 
 hurdle_poisson(link = "log")
 
-hurdle_negbinomial(link = "log", link_shape = "log",
-  link_hu = "logit")
+hurdle_negbinomial(link = "log", link_shape = "log", link_hu = "logit")
 
 hurdle_gamma(link = "log", link_shape = "log", link_hu = "logit")
 
-hurdle_lognormal(link = "identity", link_sigma = "log",
-  link_hu = "logit")
+hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
 
-zero_inflated_beta(link = "logit", link_phi = "log",
-  link_zi = "logit")
+zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 
-zero_one_inflated_beta(link = "logit", link_phi = "log",
-  link_zoi = "logit", link_coi = "logit")
+zero_one_inflated_beta(
+  link = "logit",
+  link_phi = "log",
+  link_zoi = "logit",
+  link_coi = "logit"
+)
 
 zero_inflated_poisson(link = "log", link_zi = "logit")
 
-zero_inflated_negbinomial(link = "log", link_shape = "log",
-  link_zi = "logit")
+zero_inflated_negbinomial(link = "log", link_shape = "log", link_zi = "logit")
 
 zero_inflated_binomial(link = "logit", link_zi = "logit")
 
@@ -111,17 +127,29 @@ categorical(link = "logit", refcat = NULL)
 
 multinomial(link = "logit", refcat = NULL)
 
-cumulative(link = "logit", link_disc = "log",
-  threshold = c("flexible", "equidistant"))
+cumulative(
+  link = "logit",
+  link_disc = "log",
+  threshold = c("flexible", "equidistant")
+)
 
-sratio(link = "logit", link_disc = "log", threshold = c("flexible",
-  "equidistant"))
+sratio(
+  link = "logit",
+  link_disc = "log",
+  threshold = c("flexible", "equidistant")
+)
 
-cratio(link = "logit", link_disc = "log", threshold = c("flexible",
-  "equidistant"))
+cratio(
+  link = "logit",
+  link_disc = "log",
+  threshold = c("flexible", "equidistant")
+)
 
-acat(link = "logit", link_disc = "log", threshold = c("flexible",
-  "equidistant"))
+acat(
+  link = "logit",
+  link_disc = "log",
+  threshold = c("flexible", "equidistant")
+)
 }
 \arguments{
 \item{family}{A character string naming the distribution of the response

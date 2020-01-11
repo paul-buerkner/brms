@@ -4,14 +4,12 @@
 \alias{coef.brmsfit}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+\method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
@@ -27,13 +25,15 @@ function. Only used if \code{summary} is \code{TRUE}.}
 and \code{\link{ranef.brmsfit}}.}
 }
 \value{
-If \code{old} is \code{FALSE}: A list of arrays 
- (one per grouping factor). If \code{summary} is \code{TRUE},
- names of the first dimension are the factor levels and names
- of the third dimension are the group-level effects. 
- If \code{summary} is \code{FALSE}, names of the second dimension
- are the factor levels and names of the third dimension are the 
- group-level effects.
+A list of 3D arrays (one per grouping factor). 
+ If \code{summary} is \code{TRUE}, 
+ the 1st dimension contains the factor levels, 
+ the 2nd dimension contains the summary statistics 
+ (see \code{\link{posterior_summary}}), and
+ the 3rd dimension contains the group-level effects. 
+ If \code{summary} is \code{FALSE}, the 1st dimension contains
+ the posterior draws, the 2nd dimension contains the factor levels, 
+ and the 3rd dimension contains the group-level effects.
 }
 \description{
 Extract model coefficients, which are the sum of population-level 
@@ -50,7 +50,4 @@ ranef(fit)
 coef(fit)
 }
 
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

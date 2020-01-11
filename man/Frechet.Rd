@@ -10,11 +10,9 @@
 \usage{
 dfrechet(x, loc = 0, scale = 1, shape = 1, log = FALSE)
 
-pfrechet(q, loc = 0, scale = 1, shape = 1, lower.tail = TRUE,
-  log.p = FALSE)
+pfrechet(q, loc = 0, scale = 1, shape = 1, lower.tail = TRUE, log.p = FALSE)
 
-qfrechet(p, loc = 0, scale = 1, shape = 1, lower.tail = TRUE,
-  log.p = FALSE)
+qfrechet(p, loc = 0, scale = 1, shape = 1, lower.tail = TRUE, log.p = FALSE)
 
 rfrechet(n, loc = 0, scale = 1, shape = 1)
 }

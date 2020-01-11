@@ -29,9 +29,9 @@ make_standata <- function(formula, data, family = gaussian(),
                           stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
                           control = list(), ...) {
-  # internal control arguments:
+  # control arguments:
+  #   internal: is make_standata called for internal use in S3 methods?
   #   new: is make_standata is called with new data?
-  #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
@@ -42,7 +42,7 @@ make_standata <- function(formula, data, family = gaussian(),
   }
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
-  not4stan <- isTRUE(control$not4stan)
+  internal <- isTRUE(control$internal)
   new <- isTRUE(control$new)
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
@@ -65,19 +65,15 @@ make_standata <- function(formula, data, family = gaussian(),
   
   out <- data_response(
     bterms, data, check_response = check_response,
-    not4stan = not4stan, new = new, 
-    old_sdata = control$old_sdata
+    internal = internal, old_sdata = control$old_sdata
   )
   if (!only_response) {
-    ranef <- tidy_ranef(
-      bterms, data, old_levels = control$old_levels,
-      old_sdata = control$old_sdata  
-    )
+    ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
-      not4stan = not4stan, old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, ranef = ranef, 
+      knots = knots, old_sdata = control$old_sdata
     )
-    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef)
+    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_Xme(meef, data = data)
   }
@@ -96,4 +92,82 @@ make_standata <- function(formula, data, family = gaussian(),
     attr(out, "old_order") <- attr(data, "old_order")
   }
   structure(out, class = "standata")
+}
+
+#' Extract data passed to Stan
+#' 
+#' Extract all data that was used by Stan to fit the model.
+#' 
+#' @aliases standata.brmsfit
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param internal Logical, indicates if the data should be prepared 
+#'   for internal use in other post-processing methods.
+#' @param control A named list currently for internal usage only.
+#' @param ... More arguments passed to \code{\link{make_standata}}.
+#' @inheritParams extract_draws
+#' 
+#' @return A named list containing the data originally passed to Stan.
+#' 
+#' @export
+standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                             incl_autocor = TRUE, new_objects = list(),
+                             internal = FALSE, control = list(), ...) {
+  object <- restructure(object)
+  if (!incl_autocor) {
+    object <- remove_autocor(object)
+  }
+  is_old_data <- isTRUE(attr(newdata, "old"))
+  if (is.null(newdata)) {
+    newdata <- object$data
+    is_old_data <- TRUE
+  }
+  new_formula <- update_re_terms(object$formula, re_formula)
+  bterms <- parse_bf(new_formula)
+  version <- object$version$brms
+  if (is_old_data) {
+    if (version <= "2.8.6" && has_smooths(bterms)) {
+      # the spline penality has changed in 2.8.7 (#646)
+      control$old_sdata <- extract_old_standata(
+        bterms, data = object$data, version = version
+      )
+    }
+  } else {
+    if (!isTRUE(attr(newdata, "valid"))) {
+      newdata <- validate_newdata(
+        newdata, object, re_formula = re_formula, ...
+      )
+    }
+    object <- add_new_objects(object, newdata, new_objects)
+    control$new <- TRUE
+    # ensure correct handling of functions like poly or scale
+    old_terms <- attr(object$data, "terms")
+    terms_attr <- c("variables", "predvars")
+    control$terms_attr <- attributes(old_terms)[terms_attr]
+    control$old_sdata <- extract_old_standata(
+      bterms, data = object$data, version = version
+    )
+    control$old_levels <- get_levels(
+      tidy_ranef(bterms, object$data),
+      tidy_meef(bterms, object$data)
+    )
+  }
+  if (internal) {
+    control$internal <- TRUE
+    control$save_order <- TRUE
+  }
+  sample_prior <- attr(object$prior, "sample_prior")
+  knots <- attr(object$data, "knots")
+  make_standata(
+    formula = new_formula, data = newdata, 
+    prior = object$prior, cov_ranef = object$cov_ranef, 
+    sample_prior = sample_prior, stanvars = object$stanvars, 
+    knots = knots, control = control, ...
+  )
+}
+
+#' @rdname standata.brmsfit
+#' @export
+standata <- function(object, ...) {
+  UseMethod("standata")
 }

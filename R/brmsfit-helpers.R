@@ -5,12 +5,6 @@ contains_samples <- function(x) {
   invisible(TRUE)
 }
 
-algorithm <- function(x) {
-  stopifnot(is.brmsfit(x))
-  if (is.null(x$algorithm)) "sampling"
-  else x$algorithm
-}
-
 is_mv <- function(x) {
   stopifnot(is.brmsfit(x))
   is.mvbrmsformula(x$formula)
@@ -79,38 +73,11 @@ subset_samples <- function(x, subset = NULL, nsamples = NULL) {
   subset
 }
 
-# extract names of group-level effects
-# @param ranef output of tidy_ranef()
-# @param group optinal name of a grouping factor for
-#   which to extract effect names
-# @param bylevels optional names of 'by' levels for 
-#    which to extract effect names
-# @return a vector of character strings
-get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
-  stopifnot(is.data.frame(ranef))
-  if (!is.null(group)) {
-    group <- as_one_character(group)
-    ranef <- subset2(ranef, group = group)
-  }
-  stopifnot(length(unique(ranef$group)) == 1L)
-  out <- paste0(usc(combine_prefix(ranef), "suffix"), ranef$coef)
-  if (isTRUE(nzchar(ranef$by[1]))) {
-    if (!is.null(bylevels)) {
-      stopifnot(all(bylevels %in% ranef$bylevels[[1]]))
-    } else {
-      bylevels <- ranef$bylevels[[1]]
-    }
-    bylabels <- paste0(ranef$by[1], bylevels)
-    out <- outer(out, bylabels, paste, sep = ":")
-  }
-  out
-}
-
 # get correlation names as combinations of variable names
 # @param names the variable names 
 # @param type character string to be put in front of the returned strings
 # @param brackets should the correlation names contain brackets 
-#   or underscores as seperators
+#   or underscores as seperators?
 # @param sep character string to separate names; only used if !brackets
 # @return a vector of character strings
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
@@ -119,13 +86,9 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
     for (i in seq_along(names)[-1]) {
       for (j in seq_len(i - 1)) {
         if (brackets) {
-          cornames <- c(cornames, 
-            paste0(type, "(", names[j], "," , names[i], ")")
-          )
+          c(cornames) <- paste0(type, "(", names[j], "," , names[i], ")")
         } else {
-          cornames <- c(cornames, 
-            paste0(type, sep, names[j], sep, names[i])
-          )
+          c(cornames) <- paste0(type, sep, names[j], sep, names[i])
         }
       }
     }
@@ -142,91 +105,6 @@ get_cat_vars <- function(x) {
     get_group_vars(x)
   )
   unique(valid_groups[nzchar(valid_groups)])
-}
-
-# extract list of levels with one element per grouping factor
-# @param ... objects with a level attribute
-get_levels <- function(...) {
-  dots <- list(...)
-  out <- vector("list", length(dots))
-  for (i in seq_along(out)) {
-    levels <- attr(dots[[i]], "levels", exact = TRUE)
-    if (is.list(levels)) {
-      stopifnot(!is.null(names(levels)))
-      out[[i]] <- as.list(levels)
-    } else if (!is.null(levels)) {
-      stopifnot(isTRUE(nzchar(names(dots)[i])))
-      out[[i]] <- setNames(list(levels), names(dots)[[i]])
-    }
-  }
-  out <- unlist(out, recursive = FALSE)
-  out[!duplicated(names(out))]
-}
-
-# calculate estimates over posterior samples 
-# @param coef coefficient to be applied on the samples (e.g., "mean")
-# @param samples the samples over which to apply coef
-# @param margin see 'apply'
-# @param ... additional arguments passed to get(coef)
-# @return typically a matrix with colnames(samples) as colnames
-get_estimate <- function(coef, samples, margin = 2, ...) {
-  dots <- list(...)
-  args <- list(X = samples, MARGIN = margin, FUN = coef)
-  fun_args <- names(formals(coef))
-  if (!"..." %in% fun_args) {
-    dots <- dots[names(dots) %in% fun_args]
-  }
-  x <- do_call(apply, c(args, dots))
-  if (is.null(dim(x))) {
-    x <- matrix(x, dimnames = list(NULL, coef))
-  } else if (coef == "quantile") {
-    x <- aperm(x, length(dim(x)):1)
-  }
-  x 
-}
-
-#' Table Creation for Posterior Samples
-#' 
-#' Create a table for unique values of posterior samples. 
-#' This is usually only useful when summarizing predictions 
-#' of ordinal models.
-#' 
-#' @param x A matrix of posterior samples where rows 
-#'   indicate samples and columns indicate parameters. 
-#' @param levels Optional values of possible posterior values.
-#'   Defaults to all unique values in \code{x}.
-#' 
-#' @return A matrix where rows indicate parameters 
-#'  and columns indicate the unique values of 
-#'  posterior samples.
-#'  
-#' @examples 
-#' \dontrun{
-#' fit <- brm(rating ~ period + carry + treat, 
-#'            data = inhaler, family = cumulative())
-#' pr <- predict(fit, summary = FALSE)
-#' posterior_table(pr)
-#' }
-#'  
-#' @export
-posterior_table <- function(x, levels = NULL) {
-  x <- as.matrix(x)
-  if (is.null(levels)) {
-    levels <- sort(unique(as.vector(x)))
-  }
-  xlevels <- attr(x, "levels")
-  if (length(xlevels) != length(levels)) {
-    xlevels <- levels
-  }
-  out <- lapply(seq_len(ncol(x)), 
-    function(n) table(factor(x[, n], levels = levels))
-  )
-  out <- do_call(rbind, out)
-  # compute relative frequencies
-  out <- out / sum(out[1, ])
-  rownames(out) <- colnames(x)
-  colnames(out) <- paste0("P(Y = ", xlevels, ")")
-  out
 }
 
 # covariance matrices based on correlation and SD samples
@@ -260,8 +138,10 @@ get_cov_matrix <- function(sd, cor = NULL) {
 
 # correlation matrices based on correlation samples
 # @param cor samples of correlations
-# @param size optional size of the desired correlation matrix
-#   ignored is cor is specified
+# @param size optional size of the desired correlation matrix;
+#   ignored is 'cor' is specified
+# @param nsamples optional number of posterior samples;
+#   ignored is 'cor' is specified
 get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
   if (length(cor)) {
     cor <- as.matrix(cor)
@@ -609,10 +489,23 @@ add_sigma_se <- function(sigma, draws, i = NULL) {
   sigma
 }
 
+# return samples of ordinal thresholds for observation i
+# @param draws a drawsl or drawsnl object
+# @param i observation number
+subset_thres <- function(draws, i) {
+  thres <- draws$thres$thres
+  Jthres <- draws$thres$Jthres
+  if (!is.null(Jthres)) {
+    thres <- thres[, Jthres[i, 1]:Jthres[i, 2], drop = FALSE]
+  }
+  thres
+}
+
 # helper function of 'get_dpar' to decide if
 # the link function should be applied by default
 apply_dpar_ilink <- function(dpar, family) {
-  !(has_cat(family) && dpar_class(dpar) == "mu") || is.customfamily(family)
+  !((has_cat(family) || has_thres(family)) && dpar_class(dpar) == "mu") ||
+    is.customfamily(family)
 }
 
 # insert zeros for the predictor term of the reference category
@@ -634,32 +527,6 @@ insert_refcat  <- function(eta, family) {
   before <- seq_len(iref - 1)
   after <- setdiff(seq_cols(eta), before)
   cbind(eta[, before, drop = FALSE], zeros, eta[, after, drop = FALSE])
-}
-
-# choose N to be used in 'predict' and 'log_lik'
-choose_N <- function(draws) {
-  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
-  if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
-}
-
-# prepare for calling family specific 'log_lik' and 'predict' functions
-prepare_family <- function(x) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  family <- x$family
-  if (use_cov(x$autocor) && has_natural_residuals(x)) {
-    family$fun <- paste0(family$family, "_cov")
-  } else if (is.cor_sar(x$autocor)) {
-    if (identical(x$autocor$type, "lag")) {
-      family$fun <- paste0(family$family, "_lagsar")
-    } else if (identical(x$autocor$type, "error")) {
-      family$fun <- paste0(family$family, "_errorsar")
-    }
-  } else if (is.cor_fixed(x$autocor)) {
-    family$fun <- paste0(family$family, "_fixed")
-  } else {
-    family$fun <- family$family
-  }
-  family
 }
 
 # validate the 'resp' argument of 'predict' and related methods
@@ -731,25 +598,6 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
   out
 }
 
-# validate weights passed to model averaging functions
-# see pp_average.brmsfit for more documentation
-validate_weights <- function(weights, models, control = list()) {
-  if (!is.numeric(weights)) {
-    weight_args <- c(unname(models), control)
-    weight_args$weights <- weights
-    weights <- do_call(model_weights, weight_args)
-  } else {
-    if (length(weights) != length(models)) {
-      stop2("If numeric, 'weights' must have the same length ",
-            "as the number of models.")
-    }
-    if (any(weights < 0)) {
-      stop2("If numeric, 'weights' must be positive.")
-    }
-  }
-  weights / sum(weights)
-}
-
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models 
 # @param eta 'nsamples' x 'nobs' matrix
@@ -772,65 +620,9 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   eta
 }
 
-# transform posterior draws of ordinal probabilities to a 
-# continuous scale assuming equidistance between adjacent categories 
-# @param x an ndraws x nobs x ncat array of posterior draws
-# @return an ndraws x nobs matrix of posterior draws
-ordinal_probs_continuous <- function(x) {
-  stopifnot(length(dim(x)) == 3)
-  for (k in seq_dim(x, 3)) {
-    x[, , k] <- x[, , k] * k
-  }
-  x <- lapply(seq_dim(x, 2), function(s) rowSums(x[, s, ]))
-  do_call(cbind, x)
-}
-
-# regex to extract population-level coefficients
-fixef_pars <- function() {
-  types <- c("", "s", "cs", "sp", "mo", "me", "mi", "m")
-  types <- paste0("(", types, ")", collapse = "|")
-  paste0("^b(", types, ")_")
-}
-
-# list all parameter classes to be included in plots by default
-default_plot_pars <- function(family) {
-  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", valid_dpars(family), "$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sderr", "^lagsar", "^errorsar", 
-    "^car", "^sdcar", "^sds_", "^sdgp_", "^lscale_")
-}
-
-# extract all valid parameter names that match pars
-# @param pars A character vector or regular expression
-# @param all_pars all parameter names of the fitted model
-# @param exact_match should parnames be matched exactly?
-# @param na_value: what should be returned if pars is NA? 
-# @param ... Further arguments to be passed to grepl
-# @return A character vector of parameter names
-extract_pars <- function(pars, all_pars, exact_match = FALSE,
-                         na_value = all_pars, ...) {
-  if (!(anyNA(pars) || is.character(pars))) {
-    stop2("Argument 'pars' must be NA or a character vector.")
-  }
-  if (!anyNA(pars)) {
-    if (exact_match) {
-      out <- intersect(pars, all_pars)
-    } else {
-      out <- vector("list", length(pars))
-      for (i in seq_along(pars)) {
-        out[[i]] <- all_pars[grepl(pars[i], all_pars, ...)]
-      }
-      out <- unique(unlist(out))
-    }
-  } else {
-    out <- na_value
-  }
-  out
-}
-
 # extract argument names of a post-processing method
 arg_names <- function(method) {
-  opts <- c("predict", "fitted", "log_lik")
+  opts <- c("posterior_predict", "pp_expect", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
   c(out) <- names(formals(extract_draws.brmsfit))
@@ -840,36 +632,43 @@ arg_names <- function(method) {
   out
 }
 
-# ignore priors of certain parameters from whom we cannot obtain prior samples
-# currently applies only to overall intercepts of centered design matrices
-# fixes issue #696
-# @param x a brmsfit object
-# @param par name of the parameter
-# @return TRUE (if the prior should be ignored) or FALSE
-ignore_prior <- function(x, par) {
-  stopifnot(is.brmsfit(x))
-  par <- as_one_character(par)
-  out <- FALSE
-  if (grepl("^b_.*Intercept($|\\[)", par)) {
-    # cannot sample from intercepts if 'center' was TRUE
-    intercept_priors <- subset2(x$prior, class = "Intercept")
-    if (NROW(intercept_priors)) {
-      # prefixes of the model intercepts
-      p_intercepts <- usc(combine_prefix(intercept_priors))
-      # prefix of the parameter under question
-      p_par <- sub("^b", "", par)
-      p_par <- sub("_Intercept($|\\[)", "", p_par)
-      out <- p_par %in% p_intercepts
-      if (out) {
-        warning2(
-          "Sampling from the prior of an overall intercept is not ", 
-          "possible by default. See the documentation of the ", 
-          "'sample_prior' argument in help('brm')."
-        )
-      }
+# read a brmsfit object from a file
+# @param file path to an rds file
+# @return a brmsfit object or NULL
+read_brmsfit <- function(file) {
+  file <- check_brmsfit_file(file)
+  x <- suppressWarnings(try(readRDS(file), silent = TRUE))
+  if (!is(x, "try-error")) {
+    if (!is.brmsfit(x)) {
+      stop2("Object loaded via 'file' is not of class 'brmsfit'.")
     }
+    x$file <- file
+  } else {
+    x <- NULL
   }
-  out
+  x
+}
+
+# write a brmsfit object to a file
+# @param x a brmsfit object
+# @param file path to an rds file
+# @return NULL
+write_brmsfit <- function(x, file) {
+  stopifnot(is.brmsfit(x))
+  file <- check_brmsfit_file(file)
+  x$file <- file
+  saveRDS(x, file = file)
+  invisible(NULL)
+}
+
+# check validity of file name to store a brmsfit object in
+check_brmsfit_file <- function(file) {
+  file <- as_one_character(file)
+  file_ending <- tolower(get_matches("\\.[^\\.]+$", file))
+  if (!isTRUE(file_ending == ".rds")) {
+    file <- paste0(file, ".rds")
+  }
+  file
 }
 
 # add dummy samples to a brmsfit object for use in unit tests

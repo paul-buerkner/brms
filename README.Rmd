@@ -163,17 +163,25 @@ fit2 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
             data = epilepsy, family = poisson())
 ```
 
-We can then go ahead and compare both models via approximate leave-one-out
+We can then go ahead and compare both models via approximate leave-one-out (LOO)
 cross-validation.
 
 ```{r loo, warning=FALSE}
 loo(fit1, fit2)
 ```
 
-Since lower `LOOIC` values indicate better fit, we see that the model
-accounting for overdispersion fits substantially better. The post-processing
-methods we have shown so far are just the tip of the iceberg. For a full list of
-methods to apply on fitted model objects, type `methods(class = "brmsfit")`.
+The `loo` output when comparing models is a little verbose. We first see the
+individual LOO summaries of the two models and then the comparison between them.
+Since higher `elpd` (i.e., expected log posterior density) values indicate
+better fit, we see that the model accounting for overdispersion (i.e., `fit2`)
+fits substantially better. However, we also see in the individual LOO outputs
+that there are several problematic observations for which the approximations may
+have not have been very accurate. To deal with this appropriately, we need to fall
+back to other methods such as `reloo` or `kfold` but this requires the model to
+be refit several times which takes too long for the purpose of a quick example.
+The post-processing methods we have shown above are just the tip of the
+iceberg. For a full list of methods to apply on fitted model objects, type
+`methods(class = "brmsfit")`.
 
 ## Citing brms and related software
 

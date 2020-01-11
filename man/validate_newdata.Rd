@@ -4,9 +4,17 @@
 \alias{validate_newdata}
 \title{Validate New Data}
 \usage{
-validate_newdata(newdata, object, re_formula = NULL,
-  allow_new_levels = FALSE, resp = NULL, check_response = TRUE,
-  incl_autocor = TRUE, all_group_vars = NULL, ...)
+validate_newdata(
+  newdata,
+  object,
+  re_formula = NULL,
+  allow_new_levels = FALSE,
+  resp = NULL,
+  check_response = TRUE,
+  incl_autocor = TRUE,
+  all_group_vars = NULL,
+  ...
+)
 }
 \arguments{
 \item{newdata}{A \code{data.frame} containing new data to be validated.}

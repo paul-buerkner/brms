@@ -8,9 +8,17 @@
 \usage{
 \method{print}{brmshypothesis}(x, digits = 2, chars = 20, ...)
 
-\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
-  chars = 40, colors = NULL, theme = NULL, ask = TRUE,
-  plot = TRUE, ...)
+\method{plot}{brmshypothesis}(
+  x,
+  N = 5,
+  ignore_prior = FALSE,
+  chars = 40,
+  colors = NULL,
+  theme = NULL,
+  ask = TRUE,
+  plot = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -40,11 +48,11 @@ modifying the appearance of the plots.
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 and \code{\link[bayesplot:theme_default]{theme_default}}.}
 
-\item{ask}{logical; indicates if the user is prompted 
+\item{ask}{Logical; indicates if the user is prompted 
 before a new page is plotted. 
 Only used if \code{plot} is \code{TRUE}.}
 
-\item{plot}{logical; indicates if plots should be
+\item{plot}{Logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }

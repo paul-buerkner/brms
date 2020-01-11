@@ -9,8 +9,7 @@
 \usage{
 dvon_mises(x, mu, kappa, log = FALSE)
 
-pvon_mises(q, mu, kappa, lower.tail = TRUE, log.p = FALSE,
-  acc = 1e-20)
+pvon_mises(q, mu, kappa, lower.tail = TRUE, log.p = FALSE, acc = 1e-20)
 
 rvon_mises(n, mu, kappa)
 }

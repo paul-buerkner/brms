@@ -4,8 +4,15 @@
 \alias{get_prior}
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
-get_prior(formula, data, family = gaussian(), autocor = NULL,
-  sparse = NULL, internal = FALSE, ...)
+get_prior(
+  formula,
+  data,
+  family = gaussian(),
+  autocor = NULL,
+  sparse = NULL,
+  internal = FALSE,
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},

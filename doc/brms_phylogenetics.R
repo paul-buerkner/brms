@@ -45,7 +45,7 @@ model_simple <- brm(
 ## ---------------------------------------------------------------------------------------
 summary(model_simple)
 plot(model_simple, N = 2, ask = FALSE)
-plot(marginal_effects(model_simple), points = TRUE) 
+plot(conditional_effects(model_simple), points = TRUE) 
 
 ## ---------------------------------------------------------------------------------------
 hyp <- "sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"
@@ -151,7 +151,7 @@ model_pois <- brm(
 
 ## ---------------------------------------------------------------------------------------
 summary(model_pois)
-plot(marginal_effects(model_pois), points = TRUE) 
+plot(conditional_effects(model_pois), points = TRUE) 
 
 ## ---- results='hide'--------------------------------------------------------------------
 model_normal <- brm(

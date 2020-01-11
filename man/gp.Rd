@@ -4,8 +4,17 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
-  gr = FALSE, cmc = TRUE, scale = TRUE, c = NULL)
+gp(
+  ...,
+  by = NA,
+  k = NA,
+  cov = "exp_quad",
+  iso = TRUE,
+  gr = FALSE,
+  cmc = TRUE,
+  scale = TRUE,
+  c = NULL
+)
 }
 \arguments{
 \item{...}{One or more predictors for the GP.}

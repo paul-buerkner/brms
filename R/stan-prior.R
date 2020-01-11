@@ -311,11 +311,12 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
   # D will contain all relevant information about the priors
   D <- data.frame(prior = prior[nzchar(prior)])
-  pars_regex <- "(?<=_lpdf\\()[^|]+" 
+  pars_regex <- "(?<=(_lpdf\\())[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
   # 'to_vector' should be removed from the parameter names
   has_tv <- grepl("^to_vector\\(", D$par)
-  D$par[has_tv] <- gsub("^to_vector\\(|\\)$", "", D$par[has_tv])
+  tv_regex <- "(^to_vector\\()|(\\)(?=((\\[[[:digit:]]+\\])?)$))"
+  D$par[has_tv] <- gsub(tv_regex, "", D$par[has_tv], perl = TRUE)
   # do not sample from some auxiliary parameters
   excl_regex <- c("z", "zs", "zb", "zgp", "Xn", "Y", "hs", "tmp")
   excl_regex <- paste0("(", excl_regex, ")", collapse = "|")

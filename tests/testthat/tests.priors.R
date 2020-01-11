@@ -18,7 +18,7 @@ test_that("get_prior finds all classes for which priors can be specified", {
         family = sratio(threshold = "equidistant")
       )$class
     ),
-    sort(c(rep("b", 4), "delta", rep("Intercept", 2)))
+    sort(c(rep("b", 4), "delta", rep("Intercept", 1)))
   )
 })
 

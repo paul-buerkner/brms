@@ -456,6 +456,9 @@ combine_family_info <- function(x, y, ...) {
     clb <- !any(ulapply(x[, 1], isFALSE))
     cub <- !any(ulapply(x[, 2], isFALSE))
     x <- c(clb, cub)
+  } else if (y == "thres") {
+    # thresholds are the same across mixture components
+    x <- x[[1]]
   }
   x
 }
@@ -1154,8 +1157,17 @@ valid_dpars.brmsfit <- function(family, ...) {
 }
 
 # class of a distributional parameter
-dpar_class <- function(dpar) {
-  sub("[[:digit:]]*$", "", dpar)
+dpar_class <- function(dpar, family = NULL) {
+  out <- sub("[[:digit:]]*$", "", dpar) 
+  if (!is.null(family)) {
+    # TODO: avoid this special case by changing naming conventions
+    if (conv_cats_dpars(family) && grepl("^mu", out)) {
+      # categorical-like models have non-integer suffixes
+      # that will not be caught by the standard procedure
+      out <- "mu"
+    }
+  }
+  out
 }
 
 # id of a distributional parameter
@@ -1468,8 +1480,12 @@ has_trials <- function(family) {
 
 # indicate if family has more than two response categories
 has_cat <- function(family) {
-  is_categorical(family) || is_ordinal(family) || 
-    is_multinomial(family) || is_dirichlet(family)
+  is_categorical(family) || is_multinomial(family) || is_dirichlet(family)
+}
+
+# indicate if family has thresholds
+has_thres <- function(family) {
+  is_ordinal(family)
 }
 
 # indicate if family has equidistant thresholds
@@ -1493,17 +1509,29 @@ has_eta_minus_thres <- function(family) {
 }
 
 # get names of response categories
+# @param group name of a group for which to extract categories
 get_cats <- function(family) {
   family_info(family, "cats")
 }
 
 # get names of ordinal thresholds for prior specification
-get_thres <- function(family) {
-  if (!is_ordinal(family)) {
-    return(NULL)
-  }
-  out <- seq_along(get_cats(family))
-  out[-length(out)]
+# @param group name of a group for which to extract categories
+get_thres <- function(family, group = "") {
+  group <- as_one_character(group)
+  thres <- family_info(family, "thres")
+  subset2(thres, group = group)$thres
+}
+
+# get group names of ordinal thresholds
+get_thres_groups <- function(family) {
+  thres <- family_info(family, "thres")
+  unique(thres$group)
+}
+
+# has the model group specific thresholds?
+has_thres_groups <- function(family) {
+  groups <- get_thres_groups(family)
+  any(nzchar(groups))
 }
 
 has_ndt <- function(family) {
@@ -1581,4 +1609,50 @@ has_joint_theta <- function(bterms) {
   stopifnot(is.brmsterms(bterms))
   is.mixfamily(bterms$family) && 
     !"theta" %in% dpar_class(names(c(bterms$dpars, bterms$fdpars)))
+}
+
+# extract family boundaries
+family_bounds <- function(x, ...) {
+  UseMethod("family_bounds")
+}
+
+# @return a named list with one element per response variable
+#' @export
+family_bounds.mvbrmsterms <- function(x, ...) {
+  lapply(x$terms, family_bounds, ...)
+}
+
+# @return a list with elements 'lb' and 'ub'
+#' @export
+family_bounds.brmsterms <- function(x, ...) {
+  family <- x$family$family
+  if (is.null(family)) {
+    return(list(lb = -Inf, ub = Inf))
+  }
+  resp <- usc(x$resp)
+  pos_families <- c(
+    "poisson", "negbinomial", "geometric", "gamma", "weibull", 
+    "exponential", "lognormal", "frechet", "inverse.gaussian", 
+    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+    "hurdle_lognormal", "zero_inflated_poisson", 
+    "zero_inflated_negbinomial"
+  )
+  beta_families <- c("beta", "zero_inflated_beta", "zero_one_inflated_beta")
+  ordinal_families <- c("cumulative", "cratio", "sratio", "acat")
+  if (family %in% pos_families) {
+    out <- list(lb = 0, ub = Inf)
+  } else if (family %in% c("bernoulli", beta_families)) {
+    out <- list(lb = 0, ub = 1)
+  } else if (family %in% c("categorical", ordinal_families)) {
+    out <- list(lb = 1, ub = paste0("ncat", resp))
+  } else if (family %in% c("binomial", "zero_inflated_binomial")) {
+    out <- list(lb = 0, ub = paste0("trials", resp))
+  } else if (family %in% "von_mises") {
+    out <- list(lb = -pi, ub = pi)
+  } else if (family %in% c("wiener", "shifted_lognormal")) {
+    out <- list(lb = paste("min_Y", resp), ub = Inf)
+  } else {
+    out <- list(lb = -Inf, ub = Inf)
+  }
+  out
 }

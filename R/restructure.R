@@ -89,9 +89,7 @@ restructure_v2 <- function(x) {
   if (version <= "2.8.2") {
     # argument 'sparse' is now specified within 'formula'
     sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
-    x$formula <- SW(validate_formula(
-      formula(x), data = model.frame(x), sparse = sparse
-    ))
+    x$formula <- SW(validate_formula(x$formula, data = x$data, sparse = sparse))
   }
   if (version <= "2.8.3") {
     x <- rescale_old_mo(x)
@@ -110,6 +108,21 @@ restructure_v2 <- function(x) {
   if (version <= "2.8.8") {
     if (any(grepl("^loclev(\\[|_|$)", pars))) {
       warning2("BSTS structures are no longer supported.")
+    }
+  }
+  if (version <= "2.10.3") {
+    # model fit criteria have been moved to x$criteria 
+    criterion_names <- c("loo", "waic", "kfold", "R2", "marglik")
+    criteria <- x[intersect(criterion_names, names(x))]
+    x[criterion_names] <- NULL
+    # rename 'R2' to 'bayes_R2' according to #793
+    names(criteria)[names(criteria) == "R2"] <- "bayes_R2"
+    x$criteria <- criteria
+  }
+  if (version <= "2.10.4") {
+    # new slot 'thres' stored inside ordinal families
+    if (is_ordinal(x$formula)) {
+      x$formula <- SW(validate_formula(x$formula, data = x$data))
     }
   }
   x

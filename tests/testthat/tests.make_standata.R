@@ -53,10 +53,10 @@ test_that("make_standata returns correct data names for addition terms", {
                c("N", "Y", "trials", "K", "X", "prior_only"))
   expect_equal(names(make_standata(y | trials(10) ~ x, dat, "binomial")), 
                c("N", "Y", "trials", "K", "X", "prior_only"))
-  expect_equal(names(make_standata(y | cat(11) ~ x, dat, "acat")),
-               c("N", "Y", "ncat", "K", "X", "disc", "prior_only"))
-  expect_equal(names(make_standata(y | cat(10) ~ x, dat, cumulative())), 
-               c("N", "Y", "ncat", "K", "X", "disc", "prior_only"))
+  expect_equal(names(make_standata(y | thres(11) ~ x, dat, "acat")),
+               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
+  expect_equal(names(make_standata(y | thres(10) ~ x, dat, cumulative())), 
+               c("N", "Y", "nthres", "K", "X", "disc", "prior_only"))
   sdata <- make_standata(y | trunc(0,20) ~ x, dat, "gaussian")
   expect_true(all(sdata$lb == 0) && all(sdata$ub == 20))
   sdata <- make_standata(y | trunc(ub = 21:30) ~ x, dat)
@@ -163,9 +163,9 @@ test_that("make_standata returns correct values for addition terms", {
   expect_equal(make_standata(s | trials(t) ~ 1, data = dat, 
                              family = "binomial")$trials, 
                as.array(11:19))
-  expect_equal(make_standata(s | cat(19) ~ 1, data = dat, 
-                             family = "cumulative")$ncat, 
-               19)
+  expect_equal(SW(make_standata(s | cat(19) ~ 1, data = dat, 
+                      family = "cumulative"))$nthres, 
+               18)
 })
 
 test_that("make_standata rejects incorrect addition terms", {
@@ -297,7 +297,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
   bform <- bf(y ~ a - b^z, flist = flist, nl = TRUE)
   sdata <- make_standata(bform, data = dat)
   expect_equal(names(sdata), 
-    c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1", 
+    c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
       "K_b", "X_b", "Ksp_b", "Imo_b", "Xmo_b_1", "Jmo_b", 
       "con_simo_b_1", "Z_1_b_2", "J_1", "N_1", 
       "M_1", "NC_1", "prior_only")
@@ -313,7 +313,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
     lf(a1 ~ 1, a2 ~ z + (x|g)) +
     lf(alpha ~ x)
   sdata <- make_standata(bform, dat, family = skew_normal())
-  sdata_names <- c("C_sigma_1", "C_sigma_2", "X_a2", "Z_1_a2_1")
+  sdata_names <- c("C_sigma", "X_a2", "Z_1_a2_1")
   expect_true(all(sdata_names %in% names(sdata)))
 })
 
@@ -331,13 +331,13 @@ test_that("make_standata correctly prepares data for monotonic effects", {
     as.vector(unname(sdata$Jmo)), 
     rep(c(max(data$x1) - 1, length(unique(data$x2)) - 1), 4)
   )
-  expect_equal(sdata$con_simo_1, rep(1, 3))
+  expect_equal(sdata$con_simo_1, as.array(rep(1, 3)))
   
   prior <- set_prior("dirichlet(1:3)", coef = "mox11", 
                      class = "simo", dpar = "sigma")
   sdata <- make_standata(bf(y ~ 1, sigma ~ mo(x1)), 
                          data = data, prior = prior)
-  expect_equal(sdata$con_simo_sigma_1, 1:3)
+  expect_equal(sdata$con_simo_sigma_1, as.array(1:3))
   
   prior <- c(
     set_prior("normal(0,1)", class = "b", coef = "mox1"),
@@ -345,8 +345,8 @@ test_that("make_standata correctly prepares data for monotonic effects", {
     prior_(~dirichlet(c(1, 0.5, 2)), class = "simo", coef = "mox1:mox21")
   )
   sdata <- make_standata(y ~ mo(x1)*mo(x2), data = data, prior = prior)
-  expect_equal(sdata$con_simo_1, c(1, 0.5, 2))
-  expect_equal(sdata$con_simo_3, c(1, 0.5, 2))
+  expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
+  expect_equal(sdata$con_simo_3, as.array(c(1, 0.5, 2)))
   
   expect_error(
     make_standata(y ~ mo(z), data = data),
@@ -426,7 +426,7 @@ test_that("make_standata handles population-level intercepts", {
                          control = list(not4stan = TRUE))
   expect_equal(unname(sdata$X[, 1]), dat$x)
   
-  sdata <- make_standata(y ~ 0 + intercept + x, data = dat)
+  sdata <- make_standata(y ~ 0 + Intercept + x, data = dat)
   expect_equal(unname(sdata$X), cbind(1, dat$x))
 })
 
@@ -485,8 +485,8 @@ test_that("make_standata handles noise-free terms with grouping factors", {
     g = rep(c("b", "c", "a", "d", 1), each = 2)
   )
   sdata <- make_standata(y ~ me(x1, sdx, gr = g), dat)
-  expect_equal(sdata$Xn_1, as.array(c(5, 3, 1, 2, 4)))
-  expect_equal(sdata$noise_1, as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(unname(sdata$Xn_1), as.array(c(5, 3, 1, 2, 4)))
+  expect_equal(unname(sdata$noise_1), as.array(c(5, 3, 1, 2, 4)))
   
   dat$sdx[2] <- 10
   expect_error(
@@ -805,7 +805,10 @@ test_that("addition arguments 'vint' and 'vreal' work correctly", {
 
 test_that("reserved variables 'Intercept' is handled correctly", {
   dat <- data.frame(y = 1:10)
-  sdata <- make_standata(y ~ 0 + intercept, dat)
+  expect_warning(
+    sdata <- make_standata(y ~ 0 + intercept, dat),
+    "Reserved variable name 'intercept' is deprecated."
+  )
   expect_true(all(sdata$X[, "intercept"] == 1))
   sdata <- make_standata(y ~ 0 + Intercept, dat)
   expect_true(all(sdata$X[, "Intercept"] == 1))
@@ -856,4 +859,19 @@ test_that("make_standata handles addition term 'rate' is correctly", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   sdata <- make_standata(y | rate(time) ~ x, data, poisson())
   expect_equal(sdata$denom, as.array(data$time))
+})
+
+test_that("make_standata handles grouped ordinal thresholds correctly", {
+  dat <- data.frame(
+    y = sample(1:6, 10, TRUE),
+    y2 = sample(1:6, 10, TRUE),
+    gr = rep(c("a", "b"), each = 5),
+    th = rep(5:6, each = 5),
+    x = rnorm(10)
+  )
+  sdata <- make_standata(y | thres(th, gr) ~ x, data = dat, family = sratio())
+  expect_equal(sdata$nthres, as.array(c(5, 6)))
+  expect_equal(sdata$ngrthres, 2)
+  expect_equal(unname(sdata$Jthres[1, ]), c(1, 5))
+  expect_equal(unname(sdata$Jthres[10, ]), c(6, 11))
 })

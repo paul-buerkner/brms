@@ -5,8 +5,7 @@
 \alias{nsamples}
 \title{Number of Posterior Samples}
 \usage{
-\method{nsamples}{brmsfit}(object, subset = NULL, incl_warmup = FALSE,
-  ...)
+\method{nsamples}{brmsfit}(object, subset = NULL, incl_warmup = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}

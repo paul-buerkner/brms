@@ -1,7 +1,17 @@
-# brms 2.10.0++
+# brms 2.11.0
+
+### New Features
+
+* Support grouped ordinal threshold vectors via addition 
+argument `resp_thres`. (#675)
+* Support method `loo_subsample` for performing approximate
+leave-one-out cross-validation for large data.
+* Allow storing more model fit critera via `add_criterion`. (#793)
 
 ### Bug Fixes
 
+* Fix prediction uncertainties of new group levels for 
+`sample_new_levels = "uncertainty"` thanks to Dominic Magirr. (#779)
 * Fix problems when using `pp_check` on
 censored models thanks to Andrew Milne. (#744)
 * Fix error in the generated Stan code of multivariate
@@ -13,11 +23,27 @@ more than one step ahead.
 * Fix problems when using `reloo` or `kfold` with CAR models.
 * Fix problems when using `fitted(..., scale = "linear")` with 
 multinomial models thanks to Santiago Olivella. (#770)
+* Fix problems in the `as.mcmc` method for thinned models 
+thanks to @hoxo-m. (#811)
+* Fix problems in parsing covariates of special effects terms
+thanks to Riccardo Fusaroli (#813)
 
 ### Other Changes
 
 * Rename `marginal_effects` to `conditional_effects` and
 `marginal_smooths` to `conditional_smooths`. (#735)
+* Rename `stanplot` to `mcmc_plot`.
+* Add method `pp_expect` as an alias of `fitted`. (#644)
+* Model fit criteria computed via `add_criterion` are now 
+stored in the `brmsfit$criteria` slot.
+* Deprecate `resp_cat` in favor of `resp_thres`.
+* Deprecate specifying global priors on regression coefficients
+in categorical and multivariate models.
+* Improve names of weighting methods in `model_weights`.
+* Deprecate reserved variable `intercept` in favor of `Intercept`.
+* Deprecate argument `exact_match` in favor of `fixed`.
+* Deprecate functions `add_loo` and `add_waic`
+in favor of `add_criterion`.
 
 # brms 2.10.0
 

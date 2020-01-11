@@ -4,16 +4,39 @@
 \alias{brm}
 \title{Fit Bayesian Generalized (Non-)Linear Multivariate Multilevel Models}
 \usage{
-brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
-  cov_ranef = NULL, sample_prior = c("no", "yes", "only"),
-  sparse = NULL, knots = NULL, stanvars = NULL, stan_funs = NULL,
-  fit = NA, save_ranef = TRUE, save_mevars = FALSE,
-  save_all_pars = FALSE, inits = "random", chains = 4, iter = 2000,
-  warmup = floor(iter/2), thin = 1, cores = getOption("mc.cores",
-  1L), control = NULL, algorithm = c("sampling", "meanfield",
-  "fullrank"), future = getOption("future", FALSE), silent = TRUE,
-  seed = NA, save_model = NULL, stan_model_args = list(),
-  save_dso = TRUE, file = NULL, ...)
+brm(
+  formula,
+  data,
+  family = gaussian(),
+  prior = NULL,
+  autocor = NULL,
+  cov_ranef = NULL,
+  sample_prior = c("no", "yes", "only"),
+  sparse = NULL,
+  knots = NULL,
+  stanvars = NULL,
+  stan_funs = NULL,
+  fit = NA,
+  save_ranef = TRUE,
+  save_mevars = FALSE,
+  save_all_pars = FALSE,
+  inits = "random",
+  chains = 4,
+  iter = 2000,
+  warmup = floor(iter/2),
+  thin = 1,
+  cores = getOption("mc.cores", 1L),
+  control = NULL,
+  algorithm = c("sampling", "meanfield", "fullrank"),
+  future = getOption("future", FALSE),
+  silent = TRUE,
+  seed = NA,
+  save_model = NULL,
+  stan_model_args = list(),
+  save_dso = TRUE,
+  file = NULL,
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},

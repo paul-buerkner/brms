@@ -5,8 +5,14 @@
 \alias{VarCorr}
 \title{Extract Variance and Correlation Components}
 \usage{
-\method{VarCorr}{brmsfit}(x, sigma = 1, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+\method{VarCorr}{brmsfit}(
+  x,
+  sigma = 1,
+  summary = TRUE,
+  robust = FALSE,
+  probs = c(0.025, 0.975),
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -14,8 +20,7 @@
 \item{sigma}{Ignored (included for compatibility with 
 \code{\link[nlme:VarCorr]{VarCorr}}).}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
@@ -49,7 +54,4 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 VarCorr(fit)
 }
 
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

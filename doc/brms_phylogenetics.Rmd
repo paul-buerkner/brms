@@ -95,7 +95,7 @@ sampling speed a bit. After fitting, the results can be investigated in detail.
 ```{r}
 summary(model_simple)
 plot(model_simple, N = 2, ask = FALSE)
-plot(marginal_effects(model_simple), points = TRUE) 
+plot(conditional_effects(model_simple), points = TRUE) 
 ```
 
 The so called phylogenetic signal (often symbolize by $\lambda$) can be computed
@@ -285,7 +285,7 @@ Again, we obtain a summary of the fitted model via
 
 ```{r}
 summary(model_pois)
-plot(marginal_effects(model_pois), points = TRUE) 
+plot(conditional_effects(model_pois), points = TRUE) 
 ```
 
 Now, assume we ignore the fact that the phenotype is count data and fit a linear

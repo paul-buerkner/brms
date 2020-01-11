@@ -74,8 +74,8 @@ log_lik_beta_binomial2 <- function(i, draws) {
 ## ----loo--------------------------------------------------------------------------------
 loo(fit1, fit2)
 
-## ----predict----------------------------------------------------------------------------
-predict_beta_binomial2 <- function(i, draws, ...) {
+## ----posterior_predict------------------------------------------------------------------
+posterior_predict_beta_binomial2 <- function(i, draws, ...) {
   mu <- draws$dpars$mu[, i]
   phi <- draws$dpars$phi
   trials <- draws$data$vint1[i]
@@ -85,14 +85,14 @@ predict_beta_binomial2 <- function(i, draws, ...) {
 ## ----pp_check---------------------------------------------------------------------------
 pp_check(fit2)
 
-## ----fitted-----------------------------------------------------------------------------
-fitted_beta_binomial2 <- function(draws) {
+## ----pp_expect--------------------------------------------------------------------------
+pp_expect_beta_binomial2 <- function(draws) {
   mu <- draws$dpars$mu
   trials <- draws$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
 }
 
-## ----marginal_effects-------------------------------------------------------------------
-marginal_effects(fit2, conditions = data.frame(size = 1))
+## ----conditional_effects----------------------------------------------------------------
+conditional_effects(fit2, conditions = data.frame(size = 1))
 

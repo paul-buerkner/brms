@@ -6,7 +6,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   incl_autocor = TRUE, oos = NULL, resp = NULL,
                                   nsamples = NULL, subset = NULL, nug = NULL, 
                                   smooths_only = FALSE, offset = TRUE, 
-                                  new_objects = list(), ...) {
+                                  new_objects = list(), point = NULL, ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   warn_brmsfit_multiple(x, newdata = newdata)
@@ -17,6 +17,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
+  samples <- point_samples(samples, point = point)
+  
   # prepare (new) data and stan data 
   newdata <- validate_newdata(
     newdata, object = x, re_formula = re_formula, 
@@ -48,12 +50,17 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       trunc_bounds <- trunc_bounds(bterms, data = newdata, incl_family = TRUE)
     }
   }
+  draws_ranef <- extract_draws_ranef(
+    ranef = ranef, samples = samples, sdata = sdata, 
+    resp = resp, old_ranef = x$ranef, 
+    sample_new_levels = sample_new_levels,
+  )
   extract_draws(
     bterms, samples = samples, sdata = sdata, data = x$data, 
-    ranef = ranef, old_ranef = x$ranef, meef = meef, resp = resp, 
+    draws_ranef = draws_ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
-    smooths_only = smooths_only, offset = offset, new = new, oos = oos, 
-    stanvars = names(x$stanvars), old_sdata = old_sdata,
+    smooths_only = smooths_only, offset = offset, new = new, 
+    oos = oos, stanvars = names(x$stanvars), old_sdata = old_sdata,
     trunc_bounds = trunc_bounds
   )
 }
@@ -77,7 +84,7 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
       draws$family <- draws$resps[[1]]$family
       draws$family$fun <- paste0(draws$family$family, "_mv")
       rescor <- get_cornames(resp, type = "rescor", brackets = FALSE)
-      draws$mvpars$rescor <- get_samples(samples, rescor, exact = TRUE)
+      draws$mvpars$rescor <- get_samples(samples, rescor, fixed = TRUE)
       if (draws$family$family == "student") {
         # store in draws$dpars so that get_dpar can be called on nu
         draws$dpars$nu <- as.vector(get_samples(samples, "^nu$"))
@@ -151,10 +158,11 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
     if (is.mixfamily(x$family)) {
       mu_pars <- str_subset(names(x$dpars), "^mu[[:digit:]]+")
       for (mu in mu_pars) {
-        draws$thres[[mu]] <- extract_draws_thres(x$dpars[[mu]], samples, ...)
+        draws$thres[[mu]] <- 
+          extract_draws_thres(x$dpars[[mu]], samples, sdata, ...)
       }
     } else {
-      draws$thres <- extract_draws_thres(x$dpars$mu, samples, ...)
+      draws$thres <- extract_draws_thres(x$dpars$mu, samples, sdata, ...)
     }
   }
   if (is_cox(x$family)) {
@@ -190,11 +198,9 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
   class(draws) <- "bdrawsnl"
   p <- usc(combine_prefix(x))
   C <- sdata[[paste0("C", p)]]
-  stopifnot(is.matrix(C))
   for (cov in colnames(C)) {
-    draws$C[[cov]] <- as_draws_matrix(
-      C[, cov], dim = c(nrow(samples), nrow(C))
-    )
+    dim <- c(nrow(samples), nrow(C))
+    draws$C[[cov]] <- as_draws_matrix(C[, cov], dim = dim)
   }
   draws
 }
@@ -218,7 +224,7 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   draws$cs <- extract_draws_cs(x, samples, sdata, ...)
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
-  draws$re <- extract_draws_re(x, samples, sdata, ...)
+  draws$re <- extract_draws_re(x, sdata, ...)
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
   }
@@ -237,7 +243,7 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
   if (length(fixef)) {
     draws$X <- X
     b_pars <- paste0("b", p, "_", fixef)
-    draws$b <- get_samples(samples, b_pars, exact = TRUE)
+    draws$b <- get_samples(samples, b_pars, fixed = TRUE)
   }
   draws
 }
@@ -255,9 +261,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   for (i in seq_along(draws$calls)) {
     call <- spef$joint_call[[i]]
     if (!is.null(spef$calls_mo[[i]])) {
-      new_mo <- paste0(
-        ".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")"
-      )
+      new_mo <- paste0(".mo(simo_", spef$Imo[[i]], ", Xmo_", spef$Imo[[i]], ")")
       call <- rename(call, spef$calls_mo[[i]], new_mo)
     }
     if (!is.null(spef$calls_me[[i]])) {
@@ -275,7 +279,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   }
   # extract general data and parameters for special effects
   bsp_pars <- paste0("bsp", p, "_", spef$coef)
-  draws$bsp <- get_samples(samples, bsp_pars, exact = TRUE)
+  draws$bsp <- get_samples(samples, bsp_pars, fixed = TRUE)
   # prepare draws specific to monotonic effects
   simo_coef <- get_simo_labels(spef)
   Jmo <- sdata[[paste0("Jmo", p)]]
@@ -283,7 +287,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
   for (i in seq_along(simo_coef)) {
     J <- seq_len(Jmo[i])
     simo_par <- paste0("simo", p, "_", simo_coef[i], "[", J, "]")
-    draws$simo[[i]] <- get_samples(samples, simo_par, exact = TRUE)
+    draws$simo[[i]] <- get_samples(samples, simo_par, fixed = TRUE)
     draws$Xmo[[i]] <- sdata[[paste0("Xmo", p, "_", i)]]
   }
   # prepare draws specific to noise-free effects
@@ -391,7 +395,7 @@ extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
   if (is_ordinal(bterms$family)) {
     resp <- usc(bterms$resp)
-    draws$ncat <- sdata[[paste0("ncat", resp)]]
+    draws$nthres <- sdata[[paste0("nthres", resp)]]
     csef <- colnames(get_model_matrix(bterms$cs, data))
     if (length(csef)) {
       p <- usc(combine_prefix(bterms))
@@ -524,53 +528,52 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   gp
 }
 
-# extract draws of group-level effects
-# @param ranef: output of 'tidy_ranef' based on the new formula 
+# extract draws for all group level effects
+# needs to be separate from 'extract_draws_re' to take correlations
+# across responses and distributional parameters into account (#779)
+# @param ranef output of 'tidy_ranef' based on the new formula 
 #   and old data but storing levels obtained from new data
 # @param old_ranef same as 'ranef' but based on the original formula
-extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef, 
-                             sample_new_levels = "uncertainty", ...) {
-  draws <- list()
-  px <- check_prefix(bterms)
-  ranef <- subset2(ranef, ls = px)
+# @return a named list with one element per group containing posterior draws 
+#   of levels used in the data as well as additional meta-data
+extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef, 
+                                sample_new_levels = "uncertainty", ...) {
   if (!nrow(ranef)) {
-    return(draws)
+    return(NULL)
   }
-  p <- usc(combine_prefix(px))
   groups <- unique(ranef$group)
-  old_ranef <- subset2(old_ranef, ls = px)
-  # assigning S4 objects requires initialisation of list elements
-  draws[c("Z", "Zsp", "Zcs")] <- list(named_list(groups))
+  out <- named_list(groups, list())
   for (g in groups) {
     # prepare general variables related to group g
-    g_ranef <- subset2(ranef, group = g)
-    g_old_ranef <- subset2(old_ranef, group = g)
+    ranef_g <- subset2(ranef, group = g)
+    old_ranef_g <- subset2(old_ranef, group = g)
     used_levels <- attr(ranef, "levels")[[g]]
     old_levels <- attr(old_ranef, "levels")[[g]]
     nlevels <- length(old_levels) 
-    nranef <- nrow(g_ranef)
+    nranef <- nrow(ranef_g)
     # prepare samples of group-level effects
-    rpars <- paste0("^r_", g, usc(p), "\\[")
+    rpars <- paste0("^r_", g, "(__.+)?\\[")
     rsamples <- get_samples(samples, rpars)
     if (!length(rsamples)) {
       stop2(
-        "Group-level effects for each level of group ", 
-        "'", g, "' not found. Please set 'save_ranef' to ", 
-        "TRUE when fitting your model."
+        "Group-level effects of group '", g, "' not found. ", 
+        "Please set 'save_ranef' to TRUE when fitting your model."
       )
     }
-    # only use samples of effects specified in the new formula
-    used_rpars <- match(g_ranef$coef, g_old_ranef$coef)
+    # only extract draws of effects specified in the new formula
+    used_rpars <- match(ranef_g$cn, old_ranef_g$cn)
     used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
     used_rpars <- as.vector(used_rpars)
     rsamples <- rsamples[, used_rpars, drop = FALSE]
     rsamples <- column_to_row_major_order(rsamples, nranef)
     # prepare data required for indexing parameters
-    gtype <- g_ranef$gtype[1]
-    id <- g_ranef$id[1]
-    idresp <- paste0(id, usc(g_ranef$resp[1]))
+    gtype <- ranef_g$gtype[1]
+    resp_g <- intersect(ranef_g$resp, resp)[1]
+    # any valid ID works here as J and W are independent of the ID
+    id <- ranef_g$id[1]
+    idresp <- paste0(id, usc(resp_g))
     if (gtype == "mm") {
-      ngf <- length(g_ranef$gcall[[1]]$groups)
+      ngf <- length(ranef_g$gcall[[1]]$groups)
       gf <- sdata[paste0("J_", idresp, "_", seq_len(ngf))]
       weights <- sdata[paste0("W_", idresp, "_", seq_len(ngf))]
     } else {
@@ -579,8 +582,8 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     }
     # generate samples for new levels
     args_new_rsamples <- nlist(
-      ranef = g_ranef, gf, used_levels, old_levels, 
-      rsamples, samples, sample_new_levels
+      ranef = ranef_g, gf, used_levels, old_levels, 
+      rsamples = rsamples, samples, sample_new_levels
     )
     new_rsamples <- do_call(get_new_rsamples, args_new_rsamples)
     max_level <- attr(new_rsamples, "max_level")
@@ -589,40 +592,87 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
     # keep only those levels actually used in the current data
     levels <- unique(unlist(gf))
     rsamples <- subset_levels(rsamples, levels, nranef)
-    
+    # store all information required in 'extract_draws_re'
+    out[[g]]$ranef <- ranef_g
+    out[[g]]$rsamples <- rsamples
+    out[[g]]$levels <- levels
+    out[[g]]$nranef <- nranef
+    out[[g]]$max_level <- max_level
+    out[[g]]$gf <- gf
+    out[[g]]$weights <- weights
+  }
+  out
+}
+
+# extract draws and data of group-level effects
+# @param draws_ranef a named list with one element per group containing
+#   posterior draws of levels as well as additional meta-data
+extract_draws_re <- function(bterms, sdata, draws_ranef,
+                             sample_new_levels = "uncertainty", ...) {
+  draws <- list()
+  if (!length(draws_ranef)) {
+    return(draws) 
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  ranef_px <- lapply(draws_ranef, "[[", "ranef")
+  ranef_px <- do_call(rbind, ranef_px)
+  ranef_px <- subset2(ranef_px, ls = px)
+  if (!NROW(ranef_px)) {
+    return(draws)
+  }
+  groups <- unique(ranef_px$group)
+  # assigning S4 objects requires initialisation of list elements
+  draws[c("Z", "Zsp", "Zcs")] <- list(named_list(groups))
+  for (g in groups) {
+    # extract variables specific to group 'g'
+    ranef_g <- draws_ranef[[g]]$ranef
+    ranef_g_px <- subset2(ranef_g, ls = px)
+    rsamples <- draws_ranef[[g]]$rsamples
+    nranef <- draws_ranef[[g]]$nranef
+    levels <- draws_ranef[[g]]$levels
+    max_level <- draws_ranef[[g]]$max_level
+    gf <- draws_ranef[[g]]$gf
+    weights <- draws_ranef[[g]]$weights
     # store samples and corresponding data in 'draws'
     # special group-level terms (mo, me, mi)
-    g_ranef_sp <- subset2(g_ranef, type = "sp")
-    if (nrow(g_ranef_sp)) {
+    ranef_g_px_sp <- subset2(ranef_g_px, type = "sp")
+    if (nrow(ranef_g_px_sp)) {
       Z <- matrix(1, length(gf[[1]])) 
       draws[["Zsp"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (co in g_ranef_sp$coef) {
-        take <- which(g_ranef$coef == co & g_ranef$type == "sp")
-        take <- take + nranef * (seq_along(levels) - 1)
-        draws[["rsp"]][[co]][[g]] <- rsamples[, take, drop = FALSE]
+      for (co in ranef_g_px_sp$coef) {
+        # select from all varying effects of that group
+        select <- find_rows(ranef_g, ls = px) & 
+          ranef_g$coef == co & ranef_g$type == "sp"
+        select <- which(select)
+        select <- select + nranef * (seq_along(levels) - 1)
+        draws[["rsp"]][[co]][[g]] <- rsamples[, select, drop = FALSE]
       }
     }
     # category specific group-level terms
-    g_ranef_cs <- subset2(g_ranef, type = "cs")
-    if (nrow(g_ranef_cs)) {
+    ranef_g_px_cs <- subset2(ranef_g_px, type = "cs")
+    if (nrow(ranef_g_px_cs)) {
       # all categories share the same Z matrix
-      take <- grepl("\\[1\\]$", g_ranef_cs$coef)
-      Znames <- paste0("Z_", g_ranef_cs$id[take], p, "_", g_ranef_cs$cn[take])
+      ranef_g_px_cs_1 <- ranef_g_px_cs[grepl("\\[1\\]$", ranef_g_px_cs$coef), ]
+      Znames <- paste0("Z_", ranef_g_px_cs_1$id, p, "_", ranef_g_px_cs_1$cn) 
       Z <- do_call(cbind, sdata[Znames])
       draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      for (i in seq_len(sdata$ncat - 1)) {
+      for (i in seq_len(sdata$nthres)) {
         index <- paste0("\\[", i, "\\]$")
-        take <- which(grepl(index, g_ranef$coef) & g_ranef$type == "cs")
-        take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
-        draws[["rcs"]][[g]][[i]] <- rsamples[, take, drop = FALSE]
+        # select from all varying effects of that group
+        select <- find_rows(ranef_g, ls = px) &
+          grepl(index, ranef_g$coef) & ranef_g$type == "cs"
+        select <- which(select)
+        select <- as.vector(outer(select, nranef * (seq_along(levels) - 1), "+"))
+        draws[["rcs"]][[g]][[i]] <- rsamples[, select, drop = FALSE]
       }
     }
     # basic group-level terms
-    g_ranef_basic <- subset2(g_ranef, type = c("", "mmc"))
-    if (nrow(g_ranef_basic)) {
-      Znames <- paste0("Z_", g_ranef_basic$id, p, "_", g_ranef_basic$cn)
-      if (g_ranef_basic$gtype[1] == "mm") {
-        ng <- length(g_ranef_basic$gcall[[1]]$groups)
+    ranef_g_px_basic <- subset2(ranef_g_px, type = c("", "mmc"))
+    if (nrow(ranef_g_px_basic)) {
+      Znames <- paste0("Z_", ranef_g_px_basic$id, p, "_", ranef_g_px_basic$cn)
+      if (ranef_g_px_basic$gtype[1] == "mm") {
+        ng <- length(ranef_g_px_basic$gcall[[1]]$groups)
         Z <- vector("list", ng)
         for (k in seq_len(ng)) {
           Z[[k]] <- do_call(cbind, sdata[paste0(Znames, "_", k)])
@@ -631,10 +681,11 @@ extract_draws_re <- function(bterms, samples, sdata, data, ranef, old_ranef,
         Z <- do_call(cbind, sdata[Znames])
       }
       draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
-      take <- which(g_ranef$type %in% c("", "mmc"))
-      take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
-      rsamples <- rsamples[, take, drop = FALSE]
-      draws[["r"]][[g]] <- rsamples
+      # select from all varying effects of that group
+      select <- find_rows(ranef_g, ls = px) & ranef_g$type %in% c("", "mmc")
+      select <- which(select)
+      select <- as.vector(outer(select, nranef * (seq_along(levels) - 1), "+"))
+      draws[["r"]][[g]] <- rsamples[, select, drop = FALSE]
     }
   }
   draws
@@ -646,13 +697,18 @@ extract_draws_offset <- function(bterms, sdata, ...) {
 }
 
 # extract draws of ordinal thresholds
-extract_draws_thres <- function(bterms, samples, ...) {
+extract_draws_thres <- function(bterms, samples, sdata, ...) {
+  draws <- list()
   if (!is_ordinal(bterms$family)) {
-    return(NULL)
+    return(draws)
   }
+  resp <- usc(bterms$resp)
+  draws$nthres <- sdata[[paste0("nthres", resp)]]
+  draws$Jthres <- sdata[[paste0("Jthres", resp)]]
   p <- usc(combine_prefix(bterms))
-  int_regex <- paste0("^b", p, "_Intercept\\[")
-  get_samples(samples, int_regex)
+  regex <- paste0("^b", p, "_Intercept\\[")
+  draws$thres <- get_samples(samples, regex)
+  draws
 }
 
 # extract draws of baseline functions for the cox model
@@ -747,7 +803,7 @@ extract_draws_autocor <- function(bterms, samples, sdata, oos = NULL,
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bterms))
   vars <- c(
-    "Y", "trials", "ncat", "se", "weights", 
+    "Y", "trials", "ncat", "nthres", "se", "weights", 
     "dec", "cens", "rcens", "lb", "ub"
   )
   vars <- paste0(vars, resp)
@@ -767,6 +823,32 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
     draws$cats <- get_cats(bterms)
   }
   draws
+}
+
+# choose number of observations to be used in post-processing methods
+choose_N <- function(draws) {
+  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
+  if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
+}
+
+# prepare for calling family specific post-processing functions
+prepare_family <- function(x) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  family <- x$family
+  if (use_cov(x$autocor) && has_natural_residuals(x)) {
+    family$fun <- paste0(family$family, "_cov")
+  } else if (is.cor_sar(x$autocor)) {
+    if (identical(x$autocor$type, "lag")) {
+      family$fun <- paste0(family$family, "_lagsar")
+    } else if (identical(x$autocor$type, "error")) {
+      family$fun <- paste0(family$family, "_errorsar")
+    }
+  } else if (is.cor_fixed(x$autocor)) {
+    family$fun <- paste0(family$family, "_fixed")
+  } else {
+    family$fun <- family$family
+  }
+  family
 }
 
 # create pseudo brmsdraws objects for components of mixture models
@@ -940,14 +1022,14 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
               rnames <- get_rnames(ranef)
             }
             sd_pars <- paste0("sd_", g, "__", rnames)
-            sd_samples <- get_samples(samples, sd_pars, exact = TRUE)
+            sd_samples <- get_samples(samples, sd_pars, fixed = TRUE)
             cor_type <- paste0("cor_", g)
             cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
             cor_samples <- matrix(0, nrow(sd_samples), length(cor_pars))
             for (k in seq_along(cor_pars)) {
               if (cor_pars[k] %in% colnames(samples)) {
                 cor_samples[, k] <- get_samples(
-                  samples, cor_pars[k], exact = TRUE
+                  samples, cor_pars[k], fixed = TRUE
                 )
               }
             }
@@ -964,10 +1046,15 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
         max_level <- max_level + length(new_indices)
       } else if (sample_new_levels == "uncertainty") {
         out[[i]] <- matrix(nrow = nrow(rsamples), ncol = nranef)
+        # selected levels need to be the same for all varying effects
+        # to correctly take their correlations into account
+        sel_levels <- sample(seq_len(nlevels), NROW(rsamples), TRUE)
         for (k in seq_len(nranef)) {
           indices <- seq(k, nlevels * nranef, by = nranef)
           tmp <- rsamples[, indices, drop = FALSE]
-          out[[i]][, k] <- apply(tmp, 1, sample, size = 1)
+          for (j in seq_rows(tmp)) {
+            out[[i]][j, k] <- tmp[j, sel_levels[j]]
+          }
         }
         max_level <- max_level + 1
         gf[[i]][gf[[i]] > nlevels] <- max_level
@@ -980,9 +1067,30 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
   structure(out, gf = gf, max_level = max_level)
 }
 
+# extract samples of selected parameters
 get_samples <- function(x, pars, ...) {
   pars <- extract_pars(pars, all_pars = colnames(x), ...)
   x[, pars, drop = FALSE]
+}
+
+# compute point estimates of posterior samples
+# currently used primarily for 'loo_subsample'
+# @param samples matrix of posterior samples
+# @param point optional name of the point estimate to be computed
+# @return a matrix with one row and as many columns as parameters
+point_samples <- function(samples, point = NULL) {
+  if (!is.null(point)) {
+    point <- match.arg(point, c("mean", "median"))
+    parnames <- colnames(samples)
+    if (point == "mean") {
+      samples <- matrixStats::colMeans2(samples)
+    } else if (point == "median") {
+      samples <- matrixStats::colMedians(samples)
+    }
+    samples <- t(samples)
+    colnames(samples) <- parnames
+  }
+  samples
 }
 
 is.brmsdraws <- function(x) {
@@ -1059,6 +1167,11 @@ is.bdrawsnl <- function(x) {
 #'   positive definite. Adding a very small number to the matrix's diagonal
 #'   often solves this problem. If \code{NULL} (the default), \code{nug} is
 #'   chosen internally.
+#' @param point Shall the returned object contain only point estimates of the
+#'   parameters instead of their posterior samples? Defaults to \code{NULL} in
+#'   which case no point estimate is computed. Alternatively, may be set to
+#'   \code{"mean"} or \code{"median"}. This argument is primarily implemented to
+#'   ensure compatibility with the \code{\link{loo_subsample}} method.
 #' @param ... Further arguments passed to \code{\link{validate_newdata}}.
 #'
 #' @return An object of class \code{'brmsdraws'} or \code{'mvbrmsdraws'},
@@ -1066,7 +1179,6 @@ is.bdrawsnl <- function(x) {
 #'   
 #' @export
 extract_draws <- function(x, ...) {
-  # extract data and posterior draws
   UseMethod("extract_draws")
 }
 

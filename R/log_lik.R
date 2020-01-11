@@ -1,16 +1,97 @@
-# evaluate log_lik for jointly for all observations 
-log_lik_internal <- function(draws, ...) {
-  UseMethod("log_lik_internal")
+#' Compute the Pointwise Log-Likelihood
+#' 
+#' @aliases log_lik logLik.brmsfit
+#' 
+#' @param object A fitted model object of class \code{brmsfit}. 
+#' @inheritParams posterior_predict.brmsfit
+#' @param combine Only relevant in multivariate models.
+#'   Indicates if the log-likelihoods of the submodels should
+#'   be combined per observation (i.e. added together; the default) 
+#'   or if the log-likelihoods should be returned separately.
+#' @param pointwise A flag indicating whether to compute the full
+#'   log-likelihood matrix at once (the default), or just return
+#'   the likelihood function along with all data and samples
+#'   required to compute the log-likelihood separately for each
+#'   observation. The latter option is rarely useful when
+#'   calling \code{log_lik} directly, but rather when computing
+#'   \code{\link{waic}} or \code{\link{loo}}.
+#' @param add_point_draws For internal use only. Ensures compatibility with the
+#'   \code{\link{loo_subsample}} method.
+#' 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood
+#'  samples, where S is the number of samples and N is the number 
+#'  of observations in the data. For multivariate models and if 
+#'  \code{combine} is \code{FALSE}, an S x N x R array is returned, 
+#'  where R is the number of response variables.
+#'  If \code{pointwise = TRUE}, the output is a function
+#'  with a \code{draws} attribute containing all relevant
+#'  data and posterior samples.
+#' 
+#' @aliases log_lik
+#' @method log_lik brmsfit
+#' @export
+#' @export log_lik
+#' @importFrom rstantools log_lik
+log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            resp = NULL, nsamples = NULL, subset = NULL, 
+                            pointwise = FALSE, combine = TRUE,
+                            add_point_draws = FALSE, ...) {
+  pointwise <- as_one_logical(pointwise)
+  combine <- as_one_logical(combine)
+  add_point_draws <- as_one_logical(add_point_draws)
+  contains_samples(object)
+  object <- restructure(object)
+  draws <- extract_draws(
+    object, newdata = newdata, re_formula = re_formula, resp = resp, 
+    subset = subset, nsamples = nsamples, check_response = TRUE, ...
+  )
+  if (add_point_draws) {
+    # required for the loo_subsample method
+    # Computing a point estimate based on the full draws object is too
+    # difficult due to its highly nested structure. As an alternative, a second
+    # draws object is created from the point estimates of the samples directly.
+    attr(draws, "point_draws") <- extract_draws(
+      object, newdata = newdata, re_formula = re_formula, resp = resp, 
+      subset = subset, nsamples = nsamples, check_response = TRUE, 
+      point = "median", ...
+    )
+  }
+  if (pointwise) {
+    stopifnot(combine)
+    log_lik <- log_lik_pointwise
+    attr(log_lik, "draws") <- draws
+    attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(draws)))
+  } else {
+    log_lik <- log_lik(draws, combine = combine)
+    if (anyNA(log_lik)) {
+      warning2(
+        "NAs were found in the log-likelihood. Possibly this is because ",
+        "some of your responses contain NAs. If you use 'mi' terms, try ", 
+        "setting 'resp' to those response variables without missing values. ",
+        "Alternatively, use 'newdata' to predict only complete cases."
+      )
+    }
+  }
+  log_lik
 }
 
 #' @export
-log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
-  if (length(draws$mvpars$rescor)) {
-    draws$mvpars$Mu <- get_Mu(draws)
-    draws$mvpars$Sigma <- get_Sigma(draws)
-    out <- log_lik_internal.brmsdraws(draws, ...)
+logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                           resp = NULL, nsamples = NULL, subset = NULL, 
+                           pointwise = FALSE, combine = TRUE, ...) {
+  cl <- match.call()
+  cl[[1]] <- quote(log_lik)
+  eval(cl, parent.frame())
+}
+
+#' @export
+log_lik.mvbrmsdraws <- function(object, combine = TRUE, ...) {
+  if (length(object$mvpars$rescor)) {
+    object$mvpars$Mu <- get_Mu(object)
+    object$mvpars$Sigma <- get_Sigma(object)
+    out <- log_lik.brmsdraws(object, ...)
   } else {
-    out <- lapply(draws$resps, log_lik_internal, ...)
+    out <- lapply(object$resps, log_lik, ...)
     if (combine) {
       out <- Reduce("+", out)
     } else {
@@ -22,19 +103,19 @@ log_lik_internal.mvbrmsdraws <- function(draws, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik_internal.brmsdraws <- function(draws, ...) {
-  log_lik_fun <- paste0("log_lik_", draws$family$fun)
+log_lik.brmsdraws <- function(object, ...) {
+  log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
-  for (nlp in names(draws$nlpars)) {
-    draws$nlpars[[nlp]] <- get_nlpar(draws, nlpar = nlp)
+  for (nlp in names(object$nlpars)) {
+    object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
-  for (dp in names(draws$dpars)) {
-    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
+  for (dp in names(object$dpars)) {
+    object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
-  N <- choose_N(draws)
-  out <- cblapply(seq_len(N), log_lik_fun, draws = draws)
+  N <- choose_N(object)
+  out <- cblapply(seq_len(N), log_lik_fun, draws = object)
   colnames(out) <- NULL
-  old_order <- draws$old_order
+  old_order <- object$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
   reorder_obs(out, old_order, sort = sort)
 }
@@ -590,14 +671,15 @@ log_lik_dirichlet <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_cumulative <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (draws$thres - mu)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (thres - mu)
   y <- draws$data$Y[i]
   if (y == 1) { 
     out <- log(ilink(eta[, 1], draws$family$link))
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- log(1 - ilink(eta[, y - 1], draws$family$link)) 
   } else {
     out <- log(
@@ -609,19 +691,20 @@ log_lik_cumulative <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_sratio <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (draws$thres - mu)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (thres - mu)
   y <- draws$data$Y[i]
-  q <- sapply(seq_len(min(y, ncat - 1)), 
+  q <- sapply(seq_len(min(y, nthres)), 
     function(k) 1 - ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
   } else if (y == 2) {
     out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- rowSums(log(q))
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
@@ -630,19 +713,20 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_cratio <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (mu - draws$thres)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (mu - thres)
   y <- draws$data$Y[i]
-  q <- sapply(seq_len(min(y, ncat - 1)), 
+  q <- sapply(seq_len(min(y, nthres)), 
     function(k) ilink(eta[, k], draws$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1])
   }  else if (y == 2) {
     out <- log(1 - q[, 2]) + log(q[, 1])
-  } else if (y == ncat) {
+  } else if (y == nthres + 1) {
     out <- rowSums(log(q))
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
@@ -651,30 +735,32 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_acat <- function(i, draws, data = data.frame()) {
-  ncat <- draws$data$ncat
   disc <- get_dpar(draws, "disc", i = i)
   mu <- get_dpar(draws, "mu", i = i)
-  eta <- disc * (mu - draws$thres)
+  thres <- subset_thres(draws, i)
+  nthres <- NCOL(thres)
+  eta <- disc * (mu - thres)
   y <- draws$data$Y[i]
   if (draws$family$link == "logit") { # more efficient calculation 
-    q <- sapply(1:(ncat - 1), function(k) eta[, k])
+    q <- sapply(1:nthres, function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
-               matrix(0, nrow = nrow(eta), ncol = ncat - 2))
-    if (ncat > 2) {
-      p[, 3:ncat] <- sapply(3:ncat, function(k) rowSums(q[, 1:(k - 1)]))
+               matrix(0, nrow = nrow(eta), ncol = nthres - 1))
+    if (nthres > 1L) {
+      p[, 3:(nthres + 1)] <- 
+        sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
     }
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
-    q <- sapply(1:(ncat - 1), function(k) 
+    q <- sapply(1:nthres, function(k) 
       ilink(eta[, k], draws$family$link))
-    p <- cbind(apply(1 - q[, 1:(ncat - 1)], 1, prod), 
-               matrix(0, nrow = nrow(eta), ncol = ncat - 1))
-    if (ncat > 2) {
-      p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), function(k) 
+    p <- cbind(apply(1 - q[, 1:nthres], 1, prod), 
+               matrix(0, nrow = nrow(eta), ncol = nthres))
+    if (nthres > 1L) {
+      p[, 2:nthres] <- sapply(2:nthres, function(k) 
         apply(as.matrix(q[, 1:(k - 1)]), 1, prod) * 
-          apply(as.matrix(1 - q[, k:(ncat - 1)]), 1, prod))
+          apply(as.matrix(1 - q[, k:nthres]), 1, prod))
     }
-    p[, ncat] <- apply(q[, 1:(ncat - 1)], 1, prod)
+    p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
   }
   log_lik_weight(out, i = i, draws = draws)

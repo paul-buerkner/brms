@@ -351,14 +351,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 save_dso = TRUE, file = NULL, ...) {
   
   if (!is.null(file)) {
-    # optionally load saved model object
-    file <- paste0(as_one_character(file), ".rds")
-    x <- suppressWarnings(try(readRDS(file), silent = TRUE))
-    if (!is(x, "try-error")) {
-      if (!is.brmsfit(x)) {
-        stop2("Object loaded via 'file' is not of class 'brmsfit'.")
-      }
-      x$file <- file
+    x <- read_brmsfit(file)
+    if (!is.null(x)) {
       return(x)
     }
   }
@@ -489,8 +483,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- rename_pars(x)
   }
   if (!is.null(file)) {
-    x$file <- file
-    saveRDS(x, file = file)
+    write_brmsfit(x, file)
   }
   x
 }

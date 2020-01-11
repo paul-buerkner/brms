@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.10.3
-Date: 2019-09-28
+Version: 2.11.0
+Date: 2019-01-10
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -71,4 +71,4 @@ BugReports: https://github.com/paul-buerkner/brms/issues
 VignetteBuilder: 
     knitr,
     R.rsp
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

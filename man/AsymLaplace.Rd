@@ -10,11 +10,23 @@
 \usage{
 dasym_laplace(x, mu = 0, sigma = 1, quantile = 0.5, log = FALSE)
 
-pasym_laplace(q, mu = 0, sigma = 1, quantile = 0.5,
-  lower.tail = TRUE, log.p = FALSE)
+pasym_laplace(
+  q,
+  mu = 0,
+  sigma = 1,
+  quantile = 0.5,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 
-qasym_laplace(p, mu = 0, sigma = 1, quantile = 0.5,
-  lower.tail = TRUE, log.p = FALSE)
+qasym_laplace(
+  p,
+  mu = 0,
+  sigma = 1,
+  quantile = 0.5,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 
 rasym_laplace(n, mu = 0, sigma = 1, quantile = 0.5)
 }

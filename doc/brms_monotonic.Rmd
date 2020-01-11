@@ -91,7 +91,7 @@ The summary methods yield
 ```{r}
 summary(fit1)
 plot(fit1, pars = "simo")
-plot(marginal_effects(fit1))
+plot(conditional_effects(fit1))
 ```
 
 The distributions of the simplex parameter of `income`, as shown in the `plot`
@@ -195,7 +195,7 @@ fit5 <- brm(ls ~ mo(income)*age, data = dat)
 
 ```{r}
 summary(fit5)
-marginal_effects(fit5, "income:age")
+conditional_effects(fit5, "income:age")
 ```
 
 ## Modelling Monotonic Group-Level Effects

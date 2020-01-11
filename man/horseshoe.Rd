@@ -4,8 +4,15 @@
 \alias{horseshoe}
 \title{Regularized horseshoe priors in \pkg{brms}}
 \usage{
-horseshoe(df = 1, scale_global = 1, df_global = 1, scale_slab = 2,
-  df_slab = 4, par_ratio = NULL, autoscale = TRUE)
+horseshoe(
+  df = 1,
+  scale_global = 1,
+  df_global = 1,
+  scale_slab = 2,
+  df_slab = 4,
+  par_ratio = NULL,
+  autoscale = TRUE
+)
 }
 \arguments{
 \item{df}{Degrees of freedom of student-t prior of the 

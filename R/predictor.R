@@ -352,11 +352,11 @@ predictor_cs <- function(eta, draws, i) {
   if (!length(cs[["bcs"]]) && !length(re[["rcs"]])) {
     return(eta)
   }
-  ncat <- cs[["ncat"]]
+  nthres <- cs[["nthres"]]
   rcs <- NULL
   if (!is.null(re[["rcs"]])) {
     groups <- names(re[["rcs"]])
-    rcs <- vector("list", ncat - 1)
+    rcs <- vector("list", nthres)
     for (k in seq_along(rcs)) {
       rcs[[k]] <- named_list(groups)
       for (g in groups) {
@@ -370,26 +370,26 @@ predictor_cs <- function(eta, draws, i) {
   }
   .predictor_cs(
     eta, X = p(cs[["Xcs"]], i), 
-    b = cs[["bcs"]], ncat = ncat, r = rcs
+    b = cs[["bcs"]], nthres = nthres, r = rcs
   )
 }
 
 # workhorse function of predictor_cs
 # @param X category specific design matrix 
 # @param b category specific effects samples
-# @param ncat number of categories
+# @param nthres number of thresholds
 # @param eta linear predictor matrix
 # @param r list of samples of cs group-level effects
 # @return 3D predictor array including category specific effects
-.predictor_cs <- function(eta, X, b, ncat, r = NULL) {
+.predictor_cs <- function(eta, X, b, nthres, r = NULL) {
   stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
-  ncat <- max(ncat)
-  eta <- predictor_expand(eta, ncat)
+  nthres <- max(nthres)
+  eta <- predictor_expand(eta, nthres)
   if (!is.null(X)) {
-    I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
+    I <- seq(1, (nthres) * ncol(X), nthres) - 1
     X <- t(X)
   }
-  for (k in seq_len(ncat - 1)) {
+  for (k in seq_len(nthres)) {
     if (!is.null(X)) {
       eta[, , k] <- eta[, , k] + b[, I + k, drop = FALSE] %*% X 
     }
@@ -401,9 +401,9 @@ predictor_cs <- function(eta, draws, i) {
 }
 
 # expand dimension of the predictor matrix to a 3D array
-predictor_expand <- function(eta, ncat) {
+predictor_expand <- function(eta, nthres) {
   if (length(dim(eta)) == 2L) {
-    eta <- array(eta, dim = c(dim(eta), ncat - 1))    
+    eta <- array(eta, dim = c(dim(eta), nthres))    
   }
   eta
 }
@@ -457,8 +457,8 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
   if (anyNA(Y)) {
     # predicting Y will be necessary at some point
     stopifnot(is.brmsdraws(fdraws) || is.mvbrmsdraws(fdraws))
-    predict_fun <- paste0("predict_", fdraws$family$fun)
-    predict_fun <- get(predict_fun, asNamespace("brms"))
+    pp_fun <- paste0("posterior_predict_", fdraws$family$fun)
+    pp_fun <- get(pp_fun, asNamespace("brms"))
   }
   S <- nrow(eta)
   N <- length(Y)
@@ -487,7 +487,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
     if (is.na(y)) {
       # y was not observed and has to be predicted
       fdraws$dpars$mu <- eta
-      y <- predict_fun(n, fdraws)
+      y <- pp_fun(n, fdraws)
     }
     # errors in AR models need to be computed before adding AR terms
     err[, max_lag] <- y - eta_before_ar
