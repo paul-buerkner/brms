@@ -8,21 +8,32 @@
 
 <title>Changelog • brms</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
+
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -30,10 +41,11 @@
 
 
 
-<meta property="og:title" content="Changelog" />
 
+<meta property="og:title" content="Changelog" />
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
+
 
 
 
@@ -45,6 +57,7 @@
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
+
 
 
   </head>
@@ -63,7 +76,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
       </span>
     </div>
 
@@ -112,7 +125,6 @@
   <a href="http://mc-stan.org">Stan</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
@@ -139,6 +151,7 @@
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
@@ -148,20 +161,32 @@
       <small>Source: <a href='https://github.com/paul-buerkner/brms/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
-    <div id="brms-2100" class="section level1">
+    <div id="brms-2110" class="section level1">
 <h1 class="page-header">
-<a href="#brms-2100" class="anchor"></a>brms 2.10.0++<small> 2019-08-29 </small>
+<a href="#brms-2110" class="anchor"></a>brms 2.11.0<small> Unreleased </small>
 </h1>
+<div id="new-features" class="section level3">
+<h3 class="hasAnchor">
+<a href="#new-features" class="anchor"></a>New Features</h3>
+<ul>
+<li>Support grouped ordinal threshold vectors via addition argument <code>resp_thres</code>. (<a href='https://github.com/paul-buerkner/brms/issues/675'>#675</a>)</li>
+<li>Support method <code>loo_subsample</code> for performing approximate leave-one-out cross-validation for large data.</li>
+<li>Allow storing more model fit critera via <code>add_criterion</code>. (<a href='https://github.com/paul-buerkner/brms/issues/793'>#793</a>)</li>
+</ul>
+</div>
 <div id="bug-fixes" class="section level3">
 <h3 class="hasAnchor">
 <a href="#bug-fixes" class="anchor"></a>Bug Fixes</h3>
 <ul>
+<li>Fix prediction uncertainties of new group levels for <code>sample_new_levels = "uncertainty"</code> thanks to Dominic Magirr. (<a href='https://github.com/paul-buerkner/brms/issues/779'>#779</a>)</li>
 <li>Fix problems when using <code>pp_check</code> on censored models thanks to Andrew Milne. (<a href='https://github.com/paul-buerkner/brms/issues/744'>#744</a>)</li>
 <li>Fix error in the generated Stan code of multivariate <code>zero_inflated_binomial</code> models thanks to Raoul Wolf. (<a href='https://github.com/paul-buerkner/brms/issues/756'>#756</a>)</li>
 <li>Fix predictions of spline models when using addition argument <code>subset</code> thanks to Ruben Arslan.</li>
 <li>Fix out-of-sample predictions of AR models when predicting more than one step ahead.</li>
 <li>Fix problems when using <code>reloo</code> or <code>kfold</code> with CAR models.</li>
-<li>Fix problems when using <code><a href="https://www.rdocumentation.org/packages/stats/topics/fitted.values">fitted(..., scale = "linear")</a></code> with multinomial models thanks to Santiago Olivella. (<a href='https://github.com/paul-buerkner/brms/issues/770'>#770</a>)</li>
+<li>Fix problems when using <code><a href="https://rdrr.io/r/stats/fitted.values.html">fitted(..., scale = "linear")</a></code> with multinomial models thanks to Santiago Olivella. (<a href='https://github.com/paul-buerkner/brms/issues/770'>#770</a>)</li>
+<li>Fix problems in the <code>as.mcmc</code> method for thinned models thanks to <a href='https://github.com/hoxo-m'>@hoxo-m</a>. (<a href='https://github.com/paul-buerkner/brms/issues/811'>#811</a>)</li>
+<li>Fix problems in parsing covariates of special effects terms thanks to Riccardo Fusaroli (<a href='https://github.com/paul-buerkner/brms/issues/813'>#813</a>)</li>
 </ul>
 </div>
 <div id="other-changes" class="section level3">
@@ -169,16 +194,25 @@
 <a href="#other-changes" class="anchor"></a>Other Changes</h3>
 <ul>
 <li>Rename <code>marginal_effects</code> to <code>conditional_effects</code> and <code>marginal_smooths</code> to <code>conditional_smooths</code>. (<a href='https://github.com/paul-buerkner/brms/issues/735'>#735</a>)</li>
+<li>Rename <code>stanplot</code> to <code>mcmc_plot</code>.</li>
+<li>Add method <code>pp_expect</code> as an alias of <code>fitted</code>. (<a href='https://github.com/paul-buerkner/brms/issues/644'>#644</a>)</li>
+<li>Model fit criteria computed via <code>add_criterion</code> are now stored in the <code>brmsfit$criteria</code> slot.</li>
+<li>Deprecate <code>resp_cat</code> in favor of <code>resp_thres</code>.</li>
+<li>Deprecate specifying global priors on regression coefficients in categorical and multivariate models.</li>
+<li>Improve names of weighting methods in <code>model_weights</code>.</li>
+<li>Deprecate reserved variable <code>intercept</code> in favor of <code>Intercept</code>.</li>
+<li>Deprecate argument <code>exact_match</code> in favor of <code>fixed</code>.</li>
+<li>Deprecate functions <code>add_loo</code> and <code>add_waic</code> in favor of <code>add_criterion</code>.</li>
 </ul>
 </div>
 </div>
-    <div id="brms-2100-1" class="section level1">
+    <div id="brms-2100" class="section level1">
 <h1 class="page-header">
-<a href="#brms-2100-1" class="anchor"></a>brms 2.10.0<small> 2019-08-29 </small>
+<a href="#brms-2100" class="anchor"></a>brms 2.10.0<small> 2019-08-29 </small>
 </h1>
-<div id="new-features" class="section level3">
+<div id="new-features-1" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features" class="anchor"></a>New Features</h3>
+<a href="#new-features-1" class="anchor"></a>New Features</h3>
 <ul>
 <li>Improve convergence diagnostics in the <code>summary</code> output. (<a href='https://github.com/paul-buerkner/brms/issues/712'>#712</a>)</li>
 <li>Use primitive Stan GLM functions whenever possible. (<a href='https://github.com/paul-buerkner/brms/issues/703'>#703</a>)</li>
@@ -219,9 +253,9 @@
 <h1 class="page-header">
 <a href="#brms-290" class="anchor"></a>brms 2.9.0<small> 2019-05-23 </small>
 </h1>
-<div id="new-features-1" class="section level3">
+<div id="new-features-2" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-1" class="anchor"></a>New Features</h3>
+<a href="#new-features-2" class="anchor"></a>New Features</h3>
 <ul>
 <li>Specify non-linear ordinal models. (<a href='https://github.com/paul-buerkner/brms/issues/623'>#623</a>)</li>
 <li>Allow to fix thresholds in ordinal mixture models (<a href='https://github.com/paul-buerkner/brms/issues/626'>#626</a>)</li>
@@ -260,9 +294,9 @@
 <h1 class="page-header">
 <a href="#brms-280" class="anchor"></a>brms 2.8.0<small> 2019-03-15 </small>
 </h1>
-<div id="new-features-2" class="section level3">
+<div id="new-features-3" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-2" class="anchor"></a>New Features</h3>
+<a href="#new-features-3" class="anchor"></a>New Features</h3>
 <ul>
 <li>Fit multinomial models via family <code>multinomial</code>. (<a href='https://github.com/paul-buerkner/brms/issues/463'>#463</a>)</li>
 <li>Fit Dirichlet models via family <code>dirichlet</code>. (<a href='https://github.com/paul-buerkner/brms/issues/463'>#463</a>)</li>
@@ -308,9 +342,9 @@
 <h1 class="page-header">
 <a href="#brms-270" class="anchor"></a>brms 2.7.0<small> 2018-12-17 </small>
 </h1>
-<div id="new-features-3" class="section level3">
+<div id="new-features-4" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-3" class="anchor"></a>New features</h3>
+<a href="#new-features-4" class="anchor"></a>New features</h3>
 <ul>
 <li>Fit approximate and non-isotropic Gaussian processes via <code>gp</code>. (<a href='https://github.com/paul-buerkner/brms/issues/540'>#540</a>)</li>
 <li>Enable parallelization of model fitting in <code>brm_multiple</code> via the future package. (<a href='https://github.com/paul-buerkner/brms/issues/364'>#364</a>)</li>
@@ -334,7 +368,7 @@
 <a href="#bug-fixes-4" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix an issue that could result in a substantial efficiency drop of various post-processing methods for larger models.</li>
-<li>Fix an issue when that resulted in an error when using <code><a href="https://www.rdocumentation.org/packages/stats/topics/fitted.values">fitted(..., scale = "linear")</a></code> with ordinal models thanks to Andrew Milne. (<a href='https://github.com/paul-buerkner/brms/issues/557'>#557</a>)</li>
+<li>Fix an issue when that resulted in an error when using <code><a href="https://rdrr.io/r/stats/fitted.values.html">fitted(..., scale = "linear")</a></code> with ordinal models thanks to Andrew Milne. (<a href='https://github.com/paul-buerkner/brms/issues/557'>#557</a>)</li>
 <li>Allow setting priors on the overall intercept in sparse models.</li>
 <li>Allow sampling from models with only a single observation that also contain an offset thanks to Antonio Vargas. (<a href='https://github.com/paul-buerkner/brms/issues/545'>#545</a>)</li>
 <li>Fix an error when sampling from priors in mixture models thanks to Jacki Buros Novik. (<a href='https://github.com/paul-buerkner/brms/issues/542'>#542</a>)</li>
@@ -349,13 +383,13 @@
 <h1 class="page-header">
 <a href="#brms-260" class="anchor"></a>brms 2.6.0<small> 2018-10-23 </small>
 </h1>
-<div id="new-features-4" class="section level3">
+<div id="new-features-5" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-4" class="anchor"></a>New features</h3>
+<a href="#new-features-5" class="anchor"></a>New features</h3>
 <ul>
 <li>Fit factor smooth interactions thanks to Simon Wood.</li>
 <li>Specify separate priors for thresholds in ordinal models. (<a href='https://github.com/paul-buerkner/brms/issues/524'>#524</a>)</li>
-<li>Pass additional arguments to <code><a href="https://www.rdocumentation.org/packages/rstan/topics/stan_model">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
+<li>Pass additional arguments to <code><a href="https://rdrr.io/pkg/rstan/man/stan_model.html">rstan::stan_model</a></code> via argument <code>stan_model_args</code> in <code>brm</code>. (<a href='https://github.com/paul-buerkner/brms/issues/525'>#525</a>)</li>
 <li>Save model objects via argument <code>file</code> in <code>add_ic</code> after adding model fit criteria. (<a href='https://github.com/paul-buerkner/brms/issues/478'>#478</a>)</li>
 <li>Compute density ratios based on MCMC samples via <code>density_ratio</code>.</li>
 <li>Ignore offsets in various post-processing methods via argument <code>offset</code>.</li>
@@ -384,9 +418,9 @@
 <h1 class="page-header">
 <a href="#brms-250" class="anchor"></a>brms 2.5.0<small> 2018-09-16 </small>
 </h1>
-<div id="new-features-5" class="section level3">
+<div id="new-features-6" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-5" class="anchor"></a>New features</h3>
+<a href="#new-features-6" class="anchor"></a>New features</h3>
 <ul>
 <li>Improve <code>marginal_effects</code> to better display ordinal and categorical models via argument <code>categorical</code>. (<a href='https://github.com/paul-buerkner/brms/issues/491'>#491</a>, <a href='https://github.com/paul-buerkner/brms/issues/497'>#497</a>)</li>
 <li>Improve method <code>kfold</code> to offer more options for specifying omitted subsets. (<a href='https://github.com/paul-buerkner/brms/issues/510'>#510</a>)</li>
@@ -425,9 +459,9 @@
 <h1 class="page-header">
 <a href="#brms-240" class="anchor"></a>brms 2.4.0<small> 2018-07-20 </small>
 </h1>
-<div id="new-features-6" class="section level3">
+<div id="new-features-7" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-6" class="anchor"></a>New features</h3>
+<a href="#new-features-7" class="anchor"></a>New features</h3>
 <ul>
 <li>Define custom variables in all of Stan’s program blocks via function <code>stanvar</code>. (<a href='https://github.com/paul-buerkner/brms/issues/459'>#459</a>)</li>
 <li>Change the scope of non-linear parameters to be global within univariate models. (<a href='https://github.com/paul-buerkner/brms/issues/390'>#390</a>)</li>
@@ -468,9 +502,9 @@
 <h1 class="page-header">
 <a href="#brms-231" class="anchor"></a>brms 2.3.1<small> 2018-06-05 </small>
 </h1>
-<div id="new-features-7" class="section level3">
+<div id="new-features-8" class="section level3">
 <h3 class="hasAnchor">
-<a href="#new-features-7" class="anchor"></a>New features</h3>
+<a href="#new-features-8" class="anchor"></a>New features</h3>
 <ul>
 <li>Allow censoring and truncation in zero-inflated and hurdle models. (<a href='https://github.com/paul-buerkner/brms/issues/430'>#430</a>)</li>
 <li>Export zero-inflated and hurdle distribution functions.</li>
@@ -746,8 +780,8 @@
 <li>Perform model comparisons based on marginal likelihoods using the methods <code>bridge_sampler</code>, <code>bayes_factor</code>, and <code>post_prob</code> all powered by the <code>bridgesampling</code> package.</li>
 <li>Compute a Bayesian version of R-squared with the <code>bayes_R2</code> method.</li>
 <li>Specify non-linear models for all distributional parameters.</li>
-<li>Combine multiple model formulas using the <code>+</code> operator and the helper functions <code>lf</code>, <code>nlf</code>, and <code>set_nl</code>.</li>
-<li>Combine multiple priors using the <code>+</code> operator.</li>
+<li>Combine multiple model formulas using the <code><a href="https://rdrr.io/r/base/Arithmetic.html">+</a></code> operator and the helper functions <code>lf</code>, <code>nlf</code>, and <code>set_nl</code>.</li>
+<li>Combine multiple priors using the <code><a href="https://rdrr.io/r/base/Arithmetic.html">+</a></code> operator.</li>
 <li>Split the <code>nlpar</code> argument of <code>set_prior</code> into the three arguments <code>resp</code>, <code>dpar</code>, and <code>nlpar</code> to allow for more flexible prior specifications.</li>
 </ul>
 </div>
@@ -1190,7 +1224,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <h1 class="page-header">
 <a href="#brms-100" class="anchor"></a>brms 1.0.0<small> 2016-09-15 </small>
 </h1>
-<p>This is one of the largest updates of <code>brms</code> since its initial release. In addition to many new features, the multivariate <code>'trait'</code> syntax has been removed from the package as it was confusing for users, required much special case coding, and was hard to maintain. See <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help(brmsformula)</a></code> for details of the formula syntax applied in <code>brms</code>.</p>
+<p>This is one of the largest updates of <code>brms</code> since its initial release. In addition to many new features, the multivariate <code>'trait'</code> syntax has been removed from the package as it was confusing for users, required much special case coding, and was hard to maintain. See <code><a href="https://rdrr.io/r/utils/help.html">help(brmsformula)</a></code> for details of the formula syntax applied in <code>brms</code>.</p>
 <div id="features-19" class="section level3">
 <h3 class="hasAnchor">
 <a href="#features-19" class="anchor"></a>Features</h3>
@@ -1244,7 +1278,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <h3 class="hasAnchor">
 <a href="#other-changes-26" class="anchor"></a>Other changes</h3>
 <ul>
-<li>The <code><a href="https://www.rdocumentation.org/packages/stats/topics/family">gaussian("log")</a></code> family no longer implies a log-normal distribution, but a normal distribution with log-link to match the behavior of <code>glm</code>. The log-normal distribution can now be specified via family <code>lognormal</code>.</li>
+<li>The <code><a href="https://rdrr.io/r/stats/family.html">gaussian("log")</a></code> family no longer implies a log-normal distribution, but a normal distribution with log-link to match the behavior of <code>glm</code>. The log-normal distribution can now be specified via family <code>lognormal</code>.</li>
 <li>Update syntax of <code>Stan</code> models to match the recommended syntax of <code>Stan</code> 2.10.</li>
 </ul>
 </div>
@@ -1284,7 +1318,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <a href="#bug-fixes-29" class="anchor"></a>Bug fixes</h3>
 <ul>
 <li>Fix a bug that could lead to a cryptic error message when changing some parts of the model <code>formula</code> using the <code>update</code> method.</li>
-<li>Fix a bug that could lead to an error when calling <code>marginal_effects</code> for predictors that were generated with the <code><a href="https://www.rdocumentation.org/packages/base/topics/scale">base::scale</a></code> function thanks to Tom Wallis.</li>
+<li>Fix a bug that could lead to an error when calling <code>marginal_effects</code> for predictors that were generated with the <code><a href="https://rdrr.io/r/base/scale.html">base::scale</a></code> function thanks to Tom Wallis.</li>
 <li>Allow interactions of numeric and categorical predictors in <code>marginal_effects</code> to be passed to the <code>effects</code> argument in any order.</li>
 <li>Fix a bug that could lead to incorrect results of <code>predict</code> and related methods when called with <code>newdata</code> in models using the <code>poly</code> function thanks to Brock Ferguson.</li>
 <li>Make sure that user-specified factor contrasts are always applied in multivariate models.</li>
@@ -1361,7 +1395,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Do not remove bad behaving chains anymore as they may point to general convergence problems that are dangerous to ignore.</li>
 <li>Improve flexibility of the <code>theme</code> argument in all plotting functions.</li>
 <li>Only show the legend once per page, when computing trace and density plots with the <code>plot</code> method.</li>
-<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://www.rdocumentation.org/packages/rstan/topics/stanc">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
+<li>Move code of self-defined <code>Stan</code> functions to <code>inst/chunks</code> and incorporate them into the models using <code><a href="https://rdrr.io/pkg/rstan/man/stanc.html">rstan::stanc_builder</a></code>. Also, add unit tests for these functions.</li>
 </ul>
 </div>
 <div id="bug-fixes-31" class="section level3">
@@ -1455,7 +1489,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Improve checks on argument <code>newdata</code> used in the <code>fitted</code> and <code>predict</code> method.</li>
 <li>Method <code>standata</code> is now the only way to extract data that was passed to <code>Stan</code> from a <code>brmsfit</code> object.</li>
 <li>Slightly improve <code>Stan</code> code for models containing no random effects.</li>
-<li>Change the default prior of the degrees of freedom of the <code>student</code> family to <code><a href="https://www.rdocumentation.org/packages/base/topics/Special">gamma(2,0.1)</a></code>.</li>
+<li>Change the default prior of the degrees of freedom of the <code>student</code> family to <code><a href="https://rdrr.io/r/base/Special.html">gamma(2,0.1)</a></code>.</li>
 <li>Improve readability of the output of method <code>VarCorr</code>.</li>
 <li>Export the <code>make_stancode</code> function to give users direct access to <code>Stan</code> code generated by <code>brms</code>.</li>
 <li>Rename the <code>brmdata</code> function to <code>make_standata</code>. The former remains usable as a deprecated alias.</li>
@@ -1557,7 +1591,7 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 <li>Slightly change the internal structure of brms to reflect that <code>rstan</code> is finally on CRAN.</li>
 <li>Thoroughly check validity of the response variable before the data is passed to <code>Stan</code>.</li>
 <li>Prohibit variable names containing double underscores <code>__</code> to avoid naming conflicts.</li>
-<li>Allow function calls with several arguments (e.g. <code><a href="https://www.rdocumentation.org/packages/stats/topics/poly">poly(x,3)</a></code>) in the formula argument of function <code>brm</code>.</li>
+<li>Allow function calls with several arguments (e.g. <code><a href="https://rdrr.io/r/stats/poly.html">poly(x,3)</a></code>) in the formula argument of function <code>brm</code>.</li>
 <li>Always center random effects estimates returned by S3 method <code>ranef</code> around zero.</li>
 <li>Prevent the use of customized covariance matrices for grouping factors with multiple random effects for now.</li>
 <li>Remove any experimental <code>JAGS</code> code from the package.</li>
@@ -1654,8 +1688,8 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
     <div id="tocnav">
       <h2>Contents</h2>
       <ul class="nav nav-pills nav-stacked">
+        <li><a href="#brms-2110">2.11.0</a></li>
         <li><a href="#brms-2100">2.10.0</a></li>
-        <li><a href="#brms-2100-1">2.10.0</a></li>
         <li><a href="#brms-290">2.9.0</a></li>
         <li><a href="#brms-280">2.8.0</a></li>
         <li><a href="#brms-270">2.7.0</a></li>
@@ -1702,19 +1736,23 @@ the <code>cor_bsts</code> structure thanks to Andrew Ellis.</li>
 
 </div>
 
+
       <footer>
       <div class="copyright">
   <p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
+
       </footer>
    </div>
 
   
 
+
   </body>
 </html>
+
 

@@ -6,9 +6,16 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estimating Multivariate Models with brms • brms</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Estimating Multivariate Models with brms">
 <meta property="og:description" content="">
 <meta property="og:image" content="/logo.png">
@@ -31,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
       </span>
     </div>
 
@@ -108,13 +115,14 @@
 <!--/.navbar -->
 
       
+
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1>Estimating Multivariate Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-10-19</h4>
+            <h4 class="date">2020-01-11</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_multivariate.Rmd"><code>vignettes/brms_multivariate.Rmd</code></a></small>
       <div class="hidden name"><code>brms_multivariate.Rmd</code></div>
@@ -127,8 +135,8 @@
 <h2 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h2>
 <p>In the present vignette, we want to discuss how to specify multivariate multilevel models using <strong>brms</strong>. We call a model <em>multivariate</em> if it contains multiple response variables, each being predicted by its own set of predictors. Consider an example from biology. Hadfield, Nutall, Osorio, and Owens (2007) analyzed data of the Eurasian blue tit (<a href="https://en.wikipedia.org/wiki/Eurasian_blue_tit" class="uri">https://en.wikipedia.org/wiki/Eurasian_blue_tit</a>). They predicted the <code>tarsus</code> length as well as the <code>back</code> color of chicks. Half of the brood were put into another <code>fosternest</code>, while the other half stayed in the fosternest of their own <code>dam</code>. This allows to separate genetic from environmental factors. Additionally, we have information about the <code>hatchdate</code> and <code>sex</code> of the chicks (the latter being known for 94% of the animals).</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/data">data</a></span>(<span class="st">"BTdata"</span>, <span class="dt">package =</span> <span class="st">"MCMCglmm"</span>)</a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(BTdata)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"BTdata"</span>, <span class="dt">package =</span> <span class="st">"MCMCglmm"</span>)</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(BTdata)</a></code></pre></div>
 <pre><code>       tarsus       back  animal     dam fosternest  hatchdate  sex
 1 -1.89229718  1.1464212 R187142 R187557      F2102 -0.6874021  Fem
 2  1.13610981 -0.7596521 R187154 R187559      F1902 -0.6874021 Male
@@ -145,9 +153,9 @@
 <a class="sourceLine" id="cb3-2" title="2">  <span class="kw"><a href="../reference/mvbind.html">mvbind</a></span>(tarsus, back) <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>hatchdate <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>p<span class="op">|</span>fosternest) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>q<span class="op">|</span>dam),</a>
 <a class="sourceLine" id="cb3-3" title="3">  <span class="dt">data =</span> BTdata, <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span></a>
 <a class="sourceLine" id="cb3-4" title="4">)</a></code></pre></div>
-<p>As can be seen in the model code, we have used <code>mvbind</code> notation to tell <strong>brms</strong> that both <code>tarsus</code> and <code>back</code> are separate response variables. The term <code>(1|p|fosternest)</code> indicates a varying intercept over <code>fosternest</code>. By writing <code>|p|</code> in between we indicate that all varying effects of <code>fosternest</code> should be modeled as correlated. This makes sense since we actually have two model parts, one for <code>tarsus</code> and one for <code>back</code>. The indicator <code>p</code> is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of <strong>brms</strong>, see <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help("brmsformula")</a></code> and <code>vignette("brms_multilevel")</code>). Similarily, the term <code>(1|q|dam)</code> indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see <code><a href="../articles/brms_phylogenetics.html">vignette("brms_phylogenetics")</a></code>). The model results are readily summarized via</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw"><a href="../reference/add_ic.html">add_ic</a></span>(fit1) &lt;-<span class="st"> "loo"</span></a>
-<a class="sourceLine" id="cb4-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit1)</a></code></pre></div>
+<p>As can be seen in the model code, we have used <code>mvbind</code> notation to tell <strong>brms</strong> that both <code>tarsus</code> and <code>back</code> are separate response variables. The term <code>(1|p|fosternest)</code> indicates a varying intercept over <code>fosternest</code>. By writing <code>|p|</code> in between we indicate that all varying effects of <code>fosternest</code> should be modeled as correlated. This makes sense since we actually have two model parts, one for <code>tarsus</code> and one for <code>back</code>. The indicator <code>p</code> is arbitrary and can be replaced by other symbols that comes into your mind (for details about the multilevel syntax of <strong>brms</strong>, see <code><a href="https://rdrr.io/r/utils/help.html">help("brmsformula")</a></code> and <code>vignette("brms_multilevel")</code>). Similarily, the term <code>(1|q|dam)</code> indicates correlated varying effects of the genetic mother of the chicks. Alternatively, we could have also modeled the genetic similarities through pedigrees and corresponding relatedness matrices, but this is not the focus of this vignette (please see <code><a href="../articles/brms_phylogenetics.html">vignette("brms_phylogenetics")</a></code>). The model results are readily summarized via</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/add_criterion.html">add_criterion</a></span>(fit1, <span class="st">"loo"</span>)</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit1)</a></code></pre></div>
 <pre><code> Family: MV(gaussian, gaussian) 
   Links: mu = identity; sigma = identity
          mu = identity; sigma = identity 
@@ -160,43 +168,43 @@ Samples: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~dam (Number of levels: 106) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.00      894
-sd(back_Intercept)                       0.25      0.07     0.09     0.39 1.01      252
-cor(tarsus_Intercept,back_Intercept)    -0.51      0.22    -0.93    -0.09 1.00      549
+sd(tarsus_Intercept)                     0.49      0.05     0.40     0.59 1.00      621
+sd(back_Intercept)                       0.25      0.08     0.10     0.40 1.00      295
+cor(tarsus_Intercept,back_Intercept)    -0.52      0.22    -0.94    -0.09 1.00      530
                                      Tail_ESS
-sd(tarsus_Intercept)                     1434
-sd(back_Intercept)                        418
-cor(tarsus_Intercept,back_Intercept)      666
+sd(tarsus_Intercept)                     1355
+sd(back_Intercept)                        545
+cor(tarsus_Intercept,back_Intercept)      792
 
 ~fosternest (Number of levels: 104) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.27      0.05     0.16     0.38 1.00      669
-sd(back_Intercept)                       0.35      0.06     0.24     0.46 1.00      556
-cor(tarsus_Intercept,back_Intercept)     0.69      0.20     0.24     0.98 1.01      336
+sd(tarsus_Intercept)                     0.27      0.05     0.17     0.37 1.00      633
+sd(back_Intercept)                       0.35      0.06     0.24     0.47 1.00      529
+cor(tarsus_Intercept,back_Intercept)     0.69      0.20     0.23     0.98 1.00      281
                                      Tail_ESS
-sd(tarsus_Intercept)                      909
-sd(back_Intercept)                        967
-cor(tarsus_Intercept,back_Intercept)      579
+sd(tarsus_Intercept)                     1070
+sd(back_Intercept)                        873
+cor(tarsus_Intercept,back_Intercept)      769
 
 Population-Level Effects: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-tarsus_Intercept    -0.41      0.07    -0.54    -0.27 1.00     1850     1796
-back_Intercept      -0.01      0.07    -0.15     0.11 1.00     3006     1378
-tarsus_sexMale       0.77      0.06     0.66     0.89 1.00     4203     1629
-tarsus_sexUNK        0.23      0.13    -0.03     0.49 1.00     4456     1450
-tarsus_hatchdate    -0.04      0.06    -0.16     0.07 1.00     1839     1730
-back_sexMale         0.01      0.07    -0.12     0.14 1.00     5439     1494
-back_sexUNK          0.15      0.15    -0.14     0.46 1.00     4241     1518
-back_hatchdate      -0.09      0.05    -0.19     0.01 1.00     2799     1593
+tarsus_Intercept    -0.41      0.07    -0.55    -0.27 1.00     1750     1596
+back_Intercept      -0.01      0.06    -0.13     0.11 1.00     2927     1665
+tarsus_sexMale       0.77      0.06     0.66     0.88 1.00     3966     1804
+tarsus_sexUNK        0.23      0.13    -0.03     0.49 1.00     3724     1525
+tarsus_hatchdate    -0.04      0.06    -0.16     0.07 1.00     1863     1645
+back_sexMale         0.01      0.07    -0.13     0.14 1.00     5006     1227
+back_sexUNK          0.15      0.14    -0.14     0.43 1.00     3792     1417
+back_hatchdate      -0.09      0.05    -0.19     0.01 1.00     2633     1752
 
 Family Specific Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2314     1208
-sigma_back       0.90      0.02     0.85     0.95 1.00     2537     1570
+sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2634     1378
+sigma_back       0.90      0.03     0.85     0.95 1.00     2101     1221
 
 Residual Correlations: 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-rescor(tarsus,back)    -0.05      0.04    -0.12     0.02 1.00     2508     1656
+rescor(tarsus,back)    -0.05      0.04    -0.13     0.03 1.00     3159     1293
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -209,8 +217,8 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>This looks pretty solid, but we notice a slight unmodeled left skewness in the distribution of <code>tarsus</code>. We will come back to this later on. Next, we want to investigate how much variation in the response variables can be explained by our model and we use a Bayesian generalization of the <span class="math inline">\(R^2\)</span> coefficient.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="../reference/bayes_R2.brmsfit.html">bayes_R2</a></span>(fit1)</a></code></pre></div>
 <pre><code>          Estimate  Est.Error      Q2.5     Q97.5
-R2tarsus 0.4357897 0.02320327 0.3899238 0.4785222
-R2back   0.2006230 0.02777255 0.1456248 0.2552460</code></pre>
+R2tarsus 0.4346909 0.02289403 0.3877315 0.4769053
+R2back   0.1998240 0.02818367 0.1442744 0.2541980</code></pre>
 <p>Clearly, there is much variation in both animal characteristics that we can not explain, but apparently we can explain more of the variation in tarsus length than in back color.</p>
 </div>
 <div id="more-complex-multivariate-models" class="section level2">
@@ -220,9 +228,9 @@ R2back   0.2006230 0.02777255 0.1456248 0.2552460</code></pre>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">bf_tarsus &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(tarsus <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>p<span class="op">|</span>fosternest) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>q<span class="op">|</span>dam))</a>
 <a class="sourceLine" id="cb10-2" title="2">bf_back &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(back <span class="op">~</span><span class="st"> </span>hatchdate <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>p<span class="op">|</span>fosternest) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>q<span class="op">|</span>dam))</a>
 <a class="sourceLine" id="cb10-3" title="3">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(bf_tarsus <span class="op">+</span><span class="st"> </span>bf_back, <span class="dt">data =</span> BTdata, <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>)</a></code></pre></div>
-<p>Note that we have literally <em>added</em> the two model parts via the <code>+</code> operator, which is in this case equivalent to writing <code><a href="../reference/mvbrmsformula.html">mvbf(bf_tarsus, bf_back)</a></code>. See <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help("brmsformula")</a></code> and <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help("mvbrmsformula")</a></code> for more details about this syntax. Again, we summarize the model first.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw"><a href="../reference/add_ic.html">add_ic</a></span>(fit2) &lt;-<span class="st"> "loo"</span></a>
-<a class="sourceLine" id="cb11-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit2)</a></code></pre></div>
+<p>Note that we have literally <em>added</em> the two model parts via the <code><a href="https://rdrr.io/r/base/Arithmetic.html">+</a></code> operator, which is in this case equivalent to writing <code><a href="../reference/mvbrmsformula.html">mvbf(bf_tarsus, bf_back)</a></code>. See <code><a href="https://rdrr.io/r/utils/help.html">help("brmsformula")</a></code> and <code><a href="https://rdrr.io/r/utils/help.html">help("mvbrmsformula")</a></code> for more details about this syntax. Again, we summarize the model first.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/add_criterion.html">add_criterion</a></span>(fit2, <span class="st">"loo"</span>)</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit2)</a></code></pre></div>
 <pre><code> Family: MV(gaussian, gaussian) 
   Links: mu = identity; sigma = identity
          mu = identity; sigma = identity 
@@ -235,40 +243,40 @@ Samples: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~dam (Number of levels: 106) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.48      0.05     0.39     0.59 1.01      716
-sd(back_Intercept)                       0.25      0.08     0.08     0.40 1.01      302
-cor(tarsus_Intercept,back_Intercept)    -0.50      0.23    -0.95    -0.04 1.01      478
+sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.00      957
+sd(back_Intercept)                       0.25      0.07     0.12     0.39 1.00      423
+cor(tarsus_Intercept,back_Intercept)    -0.51      0.22    -0.94    -0.07 1.00      677
                                      Tail_ESS
-sd(tarsus_Intercept)                     1205
-sd(back_Intercept)                        363
-cor(tarsus_Intercept,back_Intercept)      479
+sd(tarsus_Intercept)                     1481
+sd(back_Intercept)                        740
+cor(tarsus_Intercept,back_Intercept)      857
 
 ~fosternest (Number of levels: 104) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.27      0.05     0.16     0.38 1.00      696
-sd(back_Intercept)                       0.35      0.06     0.23     0.46 1.01      377
-cor(tarsus_Intercept,back_Intercept)     0.68      0.21     0.21     0.98 1.01      207
+sd(tarsus_Intercept)                     0.27      0.06     0.16     0.38 1.00      604
+sd(back_Intercept)                       0.35      0.06     0.22     0.47 1.00      593
+cor(tarsus_Intercept,back_Intercept)     0.70      0.20     0.25     0.99 1.00      368
                                      Tail_ESS
-sd(tarsus_Intercept)                     1075
-sd(back_Intercept)                        580
-cor(tarsus_Intercept,back_Intercept)      486
+sd(tarsus_Intercept)                      938
+sd(back_Intercept)                        796
+cor(tarsus_Intercept,back_Intercept)      606
 
 Population-Level Effects: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-tarsus_Intercept    -0.41      0.07    -0.55    -0.28 1.00     1147     1374
-back_Intercept       0.00      0.05    -0.11     0.11 1.01     1648     1302
-tarsus_sexMale       0.77      0.06     0.65     0.89 1.00     3162     1518
-tarsus_sexUNK        0.23      0.13    -0.03     0.47 1.00     4238     1331
-back_hatchdate      -0.08      0.05    -0.18     0.02 1.00     1908     1416
+tarsus_Intercept    -0.41      0.07    -0.54    -0.27 1.00     1791     1342
+back_Intercept      -0.00      0.05    -0.10     0.10 1.00     2074     1460
+tarsus_sexMale       0.77      0.06     0.66     0.88 1.00     3675     1548
+tarsus_sexUNK        0.23      0.13    -0.02     0.47 1.01     2582     1280
+back_hatchdate      -0.08      0.05    -0.18     0.02 1.00     2080     1603
 
 Family Specific Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2267     1386
-sigma_back       0.90      0.02     0.86     0.95 1.00     2173     1476
+sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2258     1451
+sigma_back       0.90      0.02     0.85     0.95 1.00     1938     1131
 
 Residual Correlations: 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-rescor(tarsus,back)    -0.05      0.04    -0.12     0.02 1.00     2881     1486
+rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     2264     1581
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -280,18 +288,18 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 2000 by 828 log-likelihood matrix
 
          Estimate   SE
-elpd_loo  -2127.2 33.8
-p_loo       178.1  7.7
-looic      4254.3 67.5
+elpd_loo  -2126.4 33.6
+p_loo       176.9  7.4
+looic      4252.9 67.1
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     815   98.4%   294       
- (0.5, 0.7]   (ok)        10    1.2%   110       
-   (0.7, 1]   (bad)        2    0.2%   9         
-   (1, Inf)   (very bad)   1    0.1%   46        
+(-Inf, 0.5]   (good)     807   97.5%   235       
+ (0.5, 0.7]   (ok)        19    2.3%   101       
+   (0.7, 1]   (bad)        2    0.2%   132       
+   (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -299,38 +307,39 @@ Output of model 'fit2':
 Computed from 2000 by 828 log-likelihood matrix
 
          Estimate   SE
-elpd_loo  -2124.6 33.6
-p_loo       173.8  7.3
-looic      4249.2 67.2
+elpd_loo  -2125.1 33.7
+p_loo       174.5  7.5
+looic      4250.2 67.4
 ------
 Monte Carlo SE of elpd_loo is NA.
 
 Pareto k diagnostic values:
                          Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     815   98.4%   238       
- (0.5, 0.7]   (ok)        11    1.3%   111       
-   (0.7, 1]   (bad)        2    0.2%   52        
+(-Inf, 0.5]   (good)     810   97.8%   162       
+ (0.5, 0.7]   (ok)        16    1.9%   184       
+   (0.7, 1]   (bad)        2    0.2%   20        
    (1, Inf)   (very bad)   0    0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit2  0.0       0.0   
-fit1 -2.6       1.3   </code></pre>
+fit1 -1.3       1.3   </code></pre>
 <p>Apparently, there is no noteworthy difference in the model fit. Accordingly, we do not really need to model <code>sex</code> and <code>hatchdate</code> for both response variables, but there is also no harm in including them (so I would probably just include them).</p>
 <p>To give you a glimpse of the capabilities of <strong>brms</strong>’ multivariate syntax, we change our model in various directions at the same time. Remember the slight left skewness of <code>tarsus</code>, which we will now model by using the <code>skew_normal</code> family instead of the <code>gaussian</code> family. Since we do not have a multivariate normal (or student-t) model, anymore, estimating residual correlations is no longer possible. We make this explicit using the <code>set_rescor</code> function. Further, we investigate if the relationship of <code>back</code> and <code>hatchdate</code> is really linear as previously assumed by fitting a non-linear spline of <code>hatchdate</code>. On top of it, we model separate residual variances of <code>tarsus</code> for males and femals chicks.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">bf_tarsus &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(tarsus <span class="op">~</span><span class="st"> </span>sex <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>p<span class="op">|</span>fosternest) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>q<span class="op">|</span>dam)) <span class="op">+</span></a>
 <a class="sourceLine" id="cb15-2" title="2"><span class="st">  </span><span class="kw"><a href="../reference/brmsformula-helpers.html">lf</a></span>(sigma <span class="op">~</span><span class="st"> </span><span class="dv">0</span> <span class="op">+</span><span class="st"> </span>sex) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="../reference/brmsfamily.html">skew_normal</a></span>()</a>
 <a class="sourceLine" id="cb15-3" title="3">bf_back &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(back <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/s.html">s</a></span>(hatchdate) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>p<span class="op">|</span>fosternest) <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>q<span class="op">|</span>dam)) <span class="op">+</span></a>
-<a class="sourceLine" id="cb15-4" title="4"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/family">gaussian</a></span>()</a>
-<a class="sourceLine" id="cb15-5" title="5">fit3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
-<a class="sourceLine" id="cb15-6" title="6">  bf_tarsus <span class="op">+</span><span class="st"> </span>bf_back <span class="op">+</span><span class="st"> </span><span class="kw"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span>(<span class="ot">FALSE</span>), </a>
-<a class="sourceLine" id="cb15-7" title="7">  <span class="dt">data =</span> BTdata, <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>,</a>
-<a class="sourceLine" id="cb15-8" title="8">  <span class="dt">control =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>(<span class="dt">adapt_delta =</span> <span class="fl">0.95</span>)</a>
-<a class="sourceLine" id="cb15-9" title="9">)</a></code></pre></div>
+<a class="sourceLine" id="cb15-4" title="4"><span class="st">  </span><span class="kw"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span>()</a>
+<a class="sourceLine" id="cb15-5" title="5"></a>
+<a class="sourceLine" id="cb15-6" title="6">fit3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
+<a class="sourceLine" id="cb15-7" title="7">  bf_tarsus <span class="op">+</span><span class="st"> </span>bf_back <span class="op">+</span><span class="st"> </span><span class="kw"><a href="../reference/brmsformula-helpers.html">set_rescor</a></span>(<span class="ot">FALSE</span>), </a>
+<a class="sourceLine" id="cb15-8" title="8">  <span class="dt">data =</span> BTdata, <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>,</a>
+<a class="sourceLine" id="cb15-9" title="9">  <span class="dt">control =</span> <span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">adapt_delta =</span> <span class="fl">0.95</span>)</a>
+<a class="sourceLine" id="cb15-10" title="10">)</a></code></pre></div>
 <p>Again, we summarize the model and look at some posterior-predictive checks.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw"><a href="../reference/add_ic.html">add_ic</a></span>(fit3) &lt;-<span class="st"> "loo"</span></a>
-<a class="sourceLine" id="cb16-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit3)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">fit3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/add_criterion.html">add_criterion</a></span>(fit3, <span class="st">"loo"</span>)</a>
+<a class="sourceLine" id="cb16-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit3)</a></code></pre></div>
 <pre><code> Family: MV(skew_normal, gaussian) 
   Links: mu = identity; sigma = log; alpha = identity
          mu = identity; sigma = identity 
@@ -343,53 +352,53 @@ Samples: 2 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Smooth Terms: 
                        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sds(back_shatchdate_1)     2.59      1.45     0.36     6.20 1.00      492      396
+sds(back_shatchdate_1)     2.51      1.39     0.44     5.91 1.01      450      405
 
 Group-Level Effects: 
 ~dam (Number of levels: 106) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.47      0.05     0.38     0.58 1.01      709
-sd(back_Intercept)                       0.23      0.08     0.06     0.37 1.00      207
-cor(tarsus_Intercept,back_Intercept)    -0.50      0.25    -0.93     0.05 1.00      304
+sd(tarsus_Intercept)                     0.47      0.05     0.38     0.58 1.01      425
+sd(back_Intercept)                       0.23      0.07     0.07     0.36 1.00      282
+cor(tarsus_Intercept,back_Intercept)    -0.52      0.24    -0.94    -0.03 1.00      489
                                      Tail_ESS
-sd(tarsus_Intercept)                      982
-sd(back_Intercept)                        134
-cor(tarsus_Intercept,back_Intercept)      340
+sd(tarsus_Intercept)                      749
+sd(back_Intercept)                        352
+cor(tarsus_Intercept,back_Intercept)      574
 
 ~fosternest (Number of levels: 104) 
                                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-sd(tarsus_Intercept)                     0.26      0.05     0.15     0.37 1.00      577
-sd(back_Intercept)                       0.32      0.06     0.20     0.43 1.01      393
-cor(tarsus_Intercept,back_Intercept)     0.63      0.24     0.07     0.98 1.03      194
+sd(tarsus_Intercept)                     0.26      0.05     0.16     0.37 1.00      508
+sd(back_Intercept)                       0.31      0.06     0.21     0.42 1.00      546
+cor(tarsus_Intercept,back_Intercept)     0.66      0.23     0.13     0.98 1.01      225
                                      Tail_ESS
-sd(tarsus_Intercept)                      802
-sd(back_Intercept)                        865
-cor(tarsus_Intercept,back_Intercept)      378
+sd(tarsus_Intercept)                      948
+sd(back_Intercept)                       1020
+cor(tarsus_Intercept,back_Intercept)      594
 
 Population-Level Effects: 
                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-tarsus_Intercept        -0.41      0.07    -0.54    -0.28 1.00     1153     1319
-back_Intercept           0.00      0.05    -0.10     0.10 1.01     1727     1594
-tarsus_sexMale           0.77      0.06     0.66     0.89 1.00     3083     1275
-tarsus_sexUNK            0.22      0.12    -0.03     0.45 1.00     2492     1559
-sigma_tarsus_sexFem     -0.30      0.04    -0.38    -0.22 1.00     3496     1513
-sigma_tarsus_sexMale    -0.25      0.04    -0.32    -0.16 1.00     2140     1185
-sigma_tarsus_sexUNK     -0.39      0.13    -0.63    -0.14 1.00     2610     1568
-back_shatchdate_1        0.33      3.75    -6.00     8.48 1.00     1147     1171
+tarsus_Intercept        -0.41      0.07    -0.54    -0.28 1.00      770     1076
+back_Intercept          -0.00      0.05    -0.09     0.10 1.00     1253     1243
+tarsus_sexMale           0.77      0.06     0.65     0.88 1.00     2112     1464
+tarsus_sexUNK            0.22      0.12    -0.01     0.44 1.00     1694     1503
+sigma_tarsus_sexFem     -0.30      0.04    -0.38    -0.22 1.00     2227     1526
+sigma_tarsus_sexMale    -0.24      0.04    -0.32    -0.16 1.00     2434     1396
+sigma_tarsus_sexUNK     -0.40      0.13    -0.64    -0.13 1.00     1941     1279
+back_shatchdate_1        0.24      3.69    -5.82     8.39 1.00      846     1144
 
 Family Specific Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma_back       0.90      0.02     0.85     0.95 1.00     2386     1242
-alpha_tarsus    -1.22      0.43    -1.87     0.14 1.00     1150      433
+sigma_back       0.90      0.02     0.86     0.95 1.00     1564     1789
+alpha_tarsus    -1.23      0.43    -1.88     0.02 1.00      963      369
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>We see that the (log) residual standard deviation of <code>tarsus</code> is somewhat larger for chicks whose sex could not be identified as compared to male or female chicks. Further, we see from the negative <code>alpha</code> (skewness) parameter of <code>tarsus</code> that the residuals are indeed slightly left-skewed. Lastly, running</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1"><span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit3, <span class="st">"hatchdate"</span>, <span class="dt">resp =</span> <span class="st">"back"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1"><span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit3, <span class="st">"hatchdate"</span>, <span class="dt">resp =</span> <span class="st">"back"</span>)</a></code></pre></div>
 <p><img src="brms_multivariate_files/figure-html/me3-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>reveals a non-linear relationship of <code>hatchdate</code> on the <code>back</code> color, which seems to change in waves over the course of the hatch dates.</p>
-<p>There are many more modeling options for multivariate models, which are not discussed in this vignette. Examples include autocorrelation structures, Gaussian processes, or explicit non-linear predictors (e.g., see <code><a href="https://www.rdocumentation.org/packages/utils/topics/help">help("brmsformula")</a></code> or <code>vignette("brms_multilevel")</code>). In fact, nearly all the flexibility of univariate models is retained in multivariate models.</p>
+<p>There are many more modeling options for multivariate models, which are not discussed in this vignette. Examples include autocorrelation structures, Gaussian processes, or explicit non-linear predictors (e.g., see <code><a href="https://rdrr.io/r/utils/help.html">help("brmsformula")</a></code> or <code>vignette("brms_multilevel")</code>). In fact, nearly all the flexibility of univariate models is retained in multivariate models.</p>
 </div>
 <div id="references" class="section level2">
 <h2 class="hasAnchor">
@@ -399,6 +408,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+
         <div id="tocnav">
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
@@ -414,17 +424,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
 
 
+
       <footer><div class="copyright">
   <p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
+
       </footer>
 </div>
 
   
+
 
   </body>
 </html>

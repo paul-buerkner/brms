@@ -6,9 +6,16 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estimating Monotonic Effects with brms • brms</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Estimating Monotonic Effects with brms">
 <meta property="og:description" content="">
 <meta property="og:image" content="/logo.png">
@@ -31,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.10.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
       </span>
     </div>
 
@@ -108,13 +115,14 @@
 <!--/.navbar -->
 
       
+
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1>Estimating Monotonic Effects with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2019-10-19</h4>
+            <h4 class="date">2020-01-11</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_monotonic.Rmd"><code>vignettes/brms_monotonic.Rmd</code></a></small>
       <div class="hidden name"><code>brms_monotonic.Rmd</code></div>
@@ -134,16 +142,16 @@
 <h2 class="hasAnchor">
 <a href="#a-simple-monotonic-model" class="anchor"></a>A Simple Monotonic Model</h2>
 <p>A main application of monotonic effects are ordinal predictors that can be modeled this way without falsely treating them either as continuous or as unordered categorical predictors. In Psychology, for instance, this kind of data is omnipresent in the form of Likert scale items, which are often treated as being continuous for convenience without ever testing this assumption. As an example, suppose we are interested in the relationship of yearly income (in $) and life satisfaction measured on an arbitrary scale from 0 to 100. Usually, people are not asked for the exact income. Instead, they are asked to rank themselves in one of certain classes, say: ‘below 20k’, ‘between 20k and 40k’, ‘between 40k and 100k’ and ‘above 100k’. We use some simulated data for illustration purposes.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">income_options &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"below_20"</span>, <span class="st">"20_to_40"</span>, <span class="st">"40_to_100"</span>, <span class="st">"greater_100"</span>)</a>
-<a class="sourceLine" id="cb1-2" title="2">income &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/factor">factor</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sample">sample</a></span>(income_options, <span class="dv">100</span>, <span class="ot">TRUE</span>), </a>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">income_options &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"below_20"</span>, <span class="st">"20_to_40"</span>, <span class="st">"40_to_100"</span>, <span class="st">"greater_100"</span>)</a>
+<a class="sourceLine" id="cb1-2" title="2">income &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(income_options, <span class="dv">100</span>, <span class="ot">TRUE</span>), </a>
 <a class="sourceLine" id="cb1-3" title="3">                 <span class="dt">levels =</span> income_options, <span class="dt">ordered =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb1-4" title="4">mean_ls &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">70</span>, <span class="dv">75</span>)</a>
-<a class="sourceLine" id="cb1-5" title="5">ls &lt;-<span class="st"> </span>mean_ls[income] <span class="op">+</span><span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/Normal">rnorm</a></span>(<span class="dv">100</span>, <span class="dt">sd =</span> <span class="dv">7</span>)</a>
-<a class="sourceLine" id="cb1-6" title="6">dat &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(income, ls)</a></code></pre></div>
+<a class="sourceLine" id="cb1-4" title="4">mean_ls &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">70</span>, <span class="dv">75</span>)</a>
+<a class="sourceLine" id="cb1-5" title="5">ls &lt;-<span class="st"> </span>mean_ls[income] <span class="op">+</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">100</span>, <span class="dt">sd =</span> <span class="dv">7</span>)</a>
+<a class="sourceLine" id="cb1-6" title="6">dat &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(income, ls)</a></code></pre></div>
 <p>We now proceed with analyzing the data modeling <code>income</code> as a monotonic effect.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/mo.html">mo</a></span>(income), <span class="dt">data =</span> dat)</a></code></pre></div>
 <p>The summary methods yield</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit1)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit1)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
@@ -153,31 +161,31 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    31.54      1.54    28.50    34.60 1.00     2623     2481
-moincome     14.35      0.66    13.08    15.67 1.00     2624     2335
+Intercept    32.15      1.41    29.36    34.87 1.00     2704     2363
+moincome     14.03      0.66    12.72    15.38 1.00     2601     1993
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.67      0.04     0.60     0.75 1.00     3295     2209
-moincome1[2]     0.18      0.04     0.10     0.27 1.00     4454     2791
-moincome1[3]     0.14      0.04     0.06     0.22 1.00     4048     2307
+moincome1[1]     0.64      0.04     0.56     0.72 1.00     2938     2495
+moincome1[2]     0.30      0.04     0.22     0.38 1.00     3788     3211
+moincome1[3]     0.06      0.03     0.00     0.13 1.00     2593     1640
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.65      0.47     5.79     7.64 1.00     3779     2511
+sigma     7.03      0.51     6.13     8.14 1.00     3561     2368
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit1, <span class="dt">pars =</span> <span class="st">"simo"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(fit1, <span class="dt">pars =</span> <span class="st">"simo"</span>)</a></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit1))</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit1))</a></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The distributions of the simplex parameter of <code>income</code>, as shown in the <code>plot</code> method, demonstrate that the largest difference (about 70% of the difference between minimum and maximum category) is between the first two categories.</p>
 <p>Now, let’s compare of monotonic model with two common alternative models. (a) Assume <code>income</code> to be continuous:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">dat<span class="op">$</span>income_num &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/numeric">as.numeric</a></span>(dat<span class="op">$</span>income)</a>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">dat<span class="op">$</span>income_num &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span>(dat<span class="op">$</span>income)</a>
 <a class="sourceLine" id="cb7-2" title="2">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span>income_num, <span class="dt">data =</span> dat)</a></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit2)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit2)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income_num 
@@ -187,20 +195,20 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     26.89      2.42    22.22    31.56 1.00     4012     2621
-income_num    13.00      0.85    11.34    14.66 1.00     3983     3112
+Intercept     23.38      2.34    18.82    28.00 1.00     3644     2754
+income_num    14.79      0.92    13.02    16.66 1.00     3549     2918
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     9.04      0.67     7.85    10.49 1.00     3855     2671
+sigma     9.43      0.68     8.24    10.88 1.00     3976     2922
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>or (b) Assume <code>income</code> to be an unordered factor:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/contrasts">contrasts</a></span>(dat<span class="op">$</span>income) &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/contrast">contr.treatment</a></span>(<span class="dv">4</span>)</a>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw"><a href="https://rdrr.io/r/stats/contrasts.html">contrasts</a></span>(dat<span class="op">$</span>income) &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/contrast.html">contr.treatment</a></span>(<span class="dv">4</span>)</a>
 <a class="sourceLine" id="cb10-2" title="2">fit3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span>income, <span class="dt">data =</span> dat)</a></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit3)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit3)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ income 
@@ -210,14 +218,14 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    31.27      1.51    28.29    34.21 1.00     2674     2776
-income2      29.22      2.00    25.32    33.16 1.00     3118     3338
-income3      37.20      2.04    33.22    41.11 1.00     2973     3138
-income4      43.42      1.98    39.59    47.24 1.00     2802     2931
+Intercept    31.91      1.38    29.26    34.70 1.00     3532     2772
+income2      27.25      1.95    23.37    31.11 1.00     3695     2980
+income3      40.19      1.90    36.41    44.07 1.00     3479     3139
+income4      41.93      2.18    37.71    46.22 1.00     3859     3215
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.67      0.49     5.79     7.73 1.00     4130     2639
+sigma     7.04      0.51     6.12     8.16 1.00     4325     2942
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -229,9 +237,9 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -333.4  7.5
-p_loo         4.9  0.9
-looic       666.9 15.1
+elpd_loo   -338.5  6.6
+p_loo         4.4  0.6
+looic       677.0 13.2
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -243,9 +251,9 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -363.1  7.4
-p_loo         3.1  0.6
-looic       726.2 14.9
+elpd_loo   -367.4  6.3
+p_loo         2.9  0.4
+looic       734.9 12.6
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -257,9 +265,9 @@ Output of model 'fit3':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -333.4  7.5
-p_loo         4.9  0.9
-looic       666.9 15.0
+elpd_loo   -338.9  6.7
+p_loo         4.7  0.7
+looic       677.9 13.3
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -268,20 +276,20 @@ See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
-fit3   0.0       0.0  
-fit1   0.0       0.2  
-fit2 -29.7       5.9  </code></pre>
+fit1   0.0       0.0  
+fit3  -0.4       0.4  
+fit2 -28.9       6.0  </code></pre>
 <p>The monotonic model fits better than the continuous model, which is not surprising given that the relationship between <code>income</code> and <code>ls</code> is non-linear. The monotonic and the unorderd factor model have almost identical fit in this example, but this may not be the case for other data sets.</p>
 </div>
 <div id="setting-prior-distributions" class="section level2">
 <h2 class="hasAnchor">
 <a href="#setting-prior-distributions" class="anchor"></a>Setting Prior Distributions</h2>
 <p>In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirchlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^D \zeta_i = 1\)</span>) and zero otherwise. The Dirichlet prior has a single parameter <span class="math inline">\(\alpha\)</span> of the same length as <span class="math inline">\(\zeta\)</span>. The higher <span class="math inline">\(\alpha_i\)</span> the higher the a-priori probability of higher values of <span class="math inline">\(\zeta_i\)</span>. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of <span class="math inline">\(\zeta_1\)</span> (difference between ‘below_20’ and ‘20_to_40’) and hence into higher values of <span class="math inline">\(\alpha_1\)</span>. We choose <span class="math inline">\(\alpha_1 = 2\)</span> and <span class="math inline">\(\alpha_2 = \alpha_3 = 1\)</span>, the latter being the default value of <span class="math inline">\(\alpha\)</span>. To fit the model we write:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">prior4 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw"><a href="../reference/brmsfamily.html">dirichlet</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)), <span class="dt">class =</span> <span class="st">"simo"</span>, <span class="dt">coef =</span> <span class="st">"moincome1"</span>)</a>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">prior4 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw"><a href="../reference/brmsfamily.html">dirichlet</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)), <span class="dt">class =</span> <span class="st">"simo"</span>, <span class="dt">coef =</span> <span class="st">"moincome1"</span>)</a>
 <a class="sourceLine" id="cb15-2" title="2">fit4 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/mo.html">mo</a></span>(income), <span class="dt">data =</span> dat,</a>
 <a class="sourceLine" id="cb15-3" title="3">            <span class="dt">prior =</span> prior4, <span class="dt">sample_prior =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p>The <code>1</code> at the end of <code>"moincome1"</code> may appear strange when first working with monotonic effects. However, it is necessary as one monotonic term may be associated with multiple simplex parameters, if interactions of multiple monotonic variables are included in the model.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit4)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit4)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) 
@@ -291,24 +299,24 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    31.48      1.56    28.40    34.53 1.00     2965     2400
-moincome     14.35      0.67    13.01    15.64 1.00     2814     2641
+Intercept    32.10      1.40    29.40    34.86 1.00     3110     2651
+moincome     14.02      0.67    12.73    15.33 1.00     3009     2508
 
 Simplex Parameters: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.68      0.04     0.60     0.75 1.00     3210     2593
-moincome1[2]     0.18      0.04     0.10     0.27 1.00     3789     2595
-moincome1[3]     0.14      0.04     0.06     0.22 1.00     2730     1694
+moincome1[1]     0.65      0.04     0.56     0.73 1.00     2911     2149
+moincome1[2]     0.30      0.04     0.21     0.38 1.00     3836     3126
+moincome1[3]     0.05      0.04     0.00     0.13 1.00     2515     1960
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.68      0.49     5.81     7.71 1.00     3989     2445
+sigma     7.04      0.51     6.14     8.14 1.00     3336     2567
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>We have used <code>sample_prior = TRUE</code> to also obtain samples from the prior distribution of <code>simo_moincome1</code> so that we can visualized it.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/graphics/topics/plot">plot</a></span>(fit4, <span class="dt">pars =</span> <span class="st">"prior_simo"</span>, <span class="dt">N =</span> <span class="dv">3</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(fit4, <span class="dt">pars =</span> <span class="st">"prior_simo"</span>, <span class="dt">N =</span> <span class="dv">3</span>)</a></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-11-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>As is visible in the plots, <code>simo_moincome1[1]</code> was a-priori on average twice as high as <code>simo_moincome1[2]</code> and <code>simo_moincome1[3]</code> as a result of setting <span class="math inline">\(\alpha_1\)</span> to 2.</p>
 </div>
@@ -316,10 +324,10 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <h2 class="hasAnchor">
 <a href="#modeling-interactions-of-monotonic-variables" class="anchor"></a>Modeling interactions of monotonic variables</h2>
 <p>Suppose, we have additionally asked participants for their age.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">dat<span class="op">$</span>age &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/Normal">rnorm</a></span>(<span class="dv">100</span>, <span class="dt">mean =</span> <span class="dv">40</span>, <span class="dt">sd =</span> <span class="dv">10</span>)</a></code></pre></div>
-<p>We are not only interested in the main effect of age but also in the interaction of income and age. Interactions with monotonic variables can be specified in the usual way using the <code>*</code> operator:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">dat<span class="op">$</span>age &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">100</span>, <span class="dt">mean =</span> <span class="dv">40</span>, <span class="dt">sd =</span> <span class="dv">10</span>)</a></code></pre></div>
+<p>We are not only interested in the main effect of age but also in the interaction of income and age. Interactions with monotonic variables can be specified in the usual way using the <code><a href="https://rdrr.io/r/base/Arithmetic.html">*</a></code> operator:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1">fit5 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/mo.html">mo</a></span>(income)<span class="op">*</span>age, <span class="dt">data =</span> dat)</a></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit5)</a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit5)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age 
@@ -329,40 +337,40 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       29.02      5.33    18.75    39.80 1.00     1268     1680
-age              0.06      0.12    -0.19     0.30 1.00     1208     1696
-moincome        14.67      2.74     9.46    20.09 1.00      950     1505
-moincome:age    -0.01      0.07    -0.14     0.12 1.00      925     1481
+Intercept       27.51      5.86    15.54    38.41 1.00     1228     1778
+age              0.11      0.14    -0.14     0.40 1.00     1149     1555
+moincome        15.71      2.66    10.85    21.16 1.00      987     1314
+moincome:age    -0.04      0.07    -0.17     0.08 1.00      956     1446
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.66      0.08     0.52     0.83 1.00     1170     1208
-moincome1[2]         0.19      0.06     0.06     0.31 1.00     2026     1215
-moincome1[3]         0.15      0.06     0.03     0.28 1.00     1622     1404
-moincome:age1[1]     0.35      0.24     0.02     0.85 1.00     2293     2289
-moincome:age1[2]     0.33      0.23     0.02     0.83 1.00     2628     2726
-moincome:age1[3]     0.33      0.23     0.01     0.82 1.00     2197     2093
+moincome1[1]         0.64      0.06     0.52     0.76 1.00     1859     1537
+moincome1[2]         0.29      0.06     0.17     0.39 1.00     2184     1526
+moincome1[3]         0.08      0.05     0.00     0.20 1.00     1907     1768
+moincome:age1[1]     0.43      0.25     0.02     0.89 1.00     2039     2162
+moincome:age1[2]     0.28      0.23     0.01     0.82 1.00     1724     1849
+moincome:age1[3]     0.29      0.21     0.01     0.78 1.00     2545     2198
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.70      0.48     5.86     7.74 1.00     3006     2831
+sigma     7.05      0.52     6.12     8.15 1.00     2655     2343
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="kw"><a href="../reference/conditional_effects.html">marginal_effects</a></span>(fit5, <span class="st">"income:age"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit5, <span class="st">"income:age"</span>)</a></code></pre></div>
 <p><img src="brms_monotonic_files/figure-html/unnamed-chunk-14-1.png" width="60%" style="display: block; margin: auto;"></p>
 </div>
 <div id="modelling-monotonic-group-level-effects" class="section level2">
 <h2 class="hasAnchor">
 <a href="#modelling-monotonic-group-level-effects" class="anchor"></a>Modelling Monotonic Group-Level Effects</h2>
 <p>Suppose that the 100 people in our sample data were drawn from 10 different cities; 10 people per city. Thus, we add an identifier for <code>city</code> to the data and add some city-related variation to <code>ls</code>.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1">dat<span class="op">$</span>city &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/rep">rep</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">each =</span> <span class="dv">10</span>)</a>
-<a class="sourceLine" id="cb24-2" title="2">var_city &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/stats/topics/Normal">rnorm</a></span>(<span class="dv">10</span>, <span class="dt">sd =</span> <span class="dv">10</span>)</a>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1">dat<span class="op">$</span>city &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/rep.html">rep</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">each =</span> <span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb24-2" title="2">var_city &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">10</span>, <span class="dt">sd =</span> <span class="dv">10</span>)</a>
 <a class="sourceLine" id="cb24-3" title="3">dat<span class="op">$</span>ls &lt;-<span class="st"> </span>dat<span class="op">$</span>ls <span class="op">+</span><span class="st"> </span>var_city[dat<span class="op">$</span>city]</a></code></pre></div>
 <p>With the following code, we fit a multilevel model assuming the intercept and the effect of <code>income</code> to vary by city:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">fit6 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(ls <span class="op">~</span><span class="st"> </span><span class="kw"><a href="../reference/mo.html">mo</a></span>(income)<span class="op">*</span>age <span class="op">+</span><span class="st"> </span>(<span class="kw"><a href="../reference/mo.html">mo</a></span>(income) <span class="op">|</span><span class="st"> </span>city), <span class="dt">data =</span> dat)</a></code></pre></div>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(fit6)</a></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit6)</a></code></pre></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: ls ~ mo(income) * age + (mo(income) | city) 
@@ -373,29 +381,29 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~city (Number of levels: 10) 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)              13.02      3.61     7.77    21.57 1.00     1273     2167
-sd(moincome)                1.06      0.82     0.04     3.04 1.00     1489     1690
-cor(Intercept,moincome)    -0.35      0.50    -0.98     0.80 1.00     4195     2670
+sd(Intercept)              13.38      3.73     7.91    22.34 1.00     1334     2128
+sd(moincome)                2.08      1.15     0.17     4.75 1.00      836      868
+cor(Intercept,moincome)    -0.41      0.38    -0.94     0.49 1.00     2865     2039
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       36.95      7.09    23.22    51.20 1.00     1297     1825
-age              0.04      0.13    -0.22     0.30 1.00     1939     2482
-moincome        14.37      2.84     8.95    20.04 1.00     1455     2350
-moincome:age     0.00      0.07    -0.13     0.13 1.00     1441     2184
+Intercept       27.33      7.94    10.62    42.71 1.00      953     1641
+age              0.07      0.16    -0.22     0.43 1.00     1065     1694
+moincome        14.94      3.03     9.39    21.36 1.00      960     1322
+moincome:age    -0.02      0.07    -0.18     0.11 1.00      942     1309
 
 Simplex Parameters: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.67      0.08     0.53     0.84 1.00     1957     1813
-moincome1[2]         0.20      0.06     0.06     0.32 1.00     3265     2179
-moincome1[3]         0.13      0.06     0.02     0.27 1.00     2347     1743
-moincome:age1[1]     0.35      0.24     0.01     0.84 1.00     3464     2246
-moincome:age1[2]     0.33      0.23     0.01     0.82 1.00     3862     2874
-moincome:age1[3]     0.32      0.23     0.01     0.83 1.00     3695     2590
+moincome1[1]         0.65      0.07     0.53     0.84 1.00     1665      930
+moincome1[2]         0.28      0.07     0.11     0.38 1.00     1804      996
+moincome1[3]         0.07      0.05     0.00     0.18 1.00     2437     1906
+moincome:age1[1]     0.41      0.27     0.02     0.92 1.00     1820     2654
+moincome:age1[2]     0.32      0.25     0.01     0.86 1.00     1970     2583
+moincome:age1[3]     0.27      0.21     0.01     0.78 1.00     3556     2506
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     6.61      0.52     5.65     7.71 1.00     4472     2765
+sigma     6.40      0.52     5.48     7.51 1.00     2712     2770
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 
@@ -410,6 +418,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+
         <div id="tocnav">
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
@@ -427,17 +436,20 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
 
 
+
       <footer><div class="copyright">
   <p>Developed by Paul-Christian Bürkner.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
+
       </footer>
 </div>
 
   
+
 
   </body>
 </html>
