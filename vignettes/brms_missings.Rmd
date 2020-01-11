@@ -124,7 +124,7 @@ with further post-processing and interpretation of the results. For instance, we
 could investigate the combined effect of `age` and `chl`.
 
 ```{r}
-marginal_effects(fit_imp1, "age:chl")
+conditional_effects(fit_imp1, "age:chl")
 ```
 
 To summarize, the advantages of multiple imputation are obvious: One can apply
@@ -176,7 +176,7 @@ in the usual way.
 
 ```{r}
 summary(fit_imp2)
-marginal_effects(fit_imp2, "age:chl", resp = "bmi")
+conditional_effects(fit_imp2, "age:chl", resp = "bmi")
 ```
 
 The results look pretty similar to those obtained from multiple imputation, but

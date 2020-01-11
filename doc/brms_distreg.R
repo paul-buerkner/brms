@@ -32,7 +32,7 @@ fit1 <- brm(bf(symptom_post ~ group, sigma ~ group),
 ## ---- results='hide'--------------------------------------------------------------------
 summary(fit1)
 plot(fit1, N = 2, ask = FALSE)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 
 ## ---------------------------------------------------------------------------------------
 hyp <- c("exp(sigma_Intercept) = 0",
@@ -54,7 +54,7 @@ fit_zinb1 <- brm(count ~ persons + child + camper,
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_zinb1)
-plot(marginal_effects(fit_zinb1), ask = FALSE)
+plot(conditional_effects(fit_zinb1), ask = FALSE)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
@@ -62,7 +62,7 @@ fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_zinb2)
-plot(marginal_effects(fit_zinb2), ask = FALSE)
+plot(conditional_effects(fit_zinb2), ask = FALSE)
 
 ## ---------------------------------------------------------------------------------------
 dat_smooth <- mgcv::gamSim(eg = 6, n = 200, scale = 2, verbose = FALSE)
@@ -77,5 +77,5 @@ fit_smooth1 <- brm(
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_smooth1)
-plot(marginal_effects(fit_smooth1), points = TRUE, ask = FALSE)
+plot(conditional_effects(fit_smooth1), points = TRUE, ask = FALSE)
 

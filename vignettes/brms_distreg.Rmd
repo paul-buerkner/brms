@@ -100,13 +100,13 @@ Useful summary statistics and plots can be obtained via
 ```{r, results='hide'}
 summary(fit1)
 plot(fit1, N = 2, ask = FALSE)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 ```
 
 The population-level effect `sigma_grouptreat`, which is the contrast of the two
 residual standard deviations on the log-scale, reveals that the variances of
 both groups are indeed different. This impression is confirmed when looking at
-the `marginal_effects` of `group`. Going one step further, we can compute the
+the `conditional_effects` of `group`. Going one step further, we can compute the
 residual standard deviations on the original scale using the `hypothesis`
 method.
 
@@ -169,7 +169,7 @@ Again, we summarize the results using the usual methods.
 
 ```{r}
 summary(fit_zinb1)
-plot(marginal_effects(fit_zinb1), ask = FALSE)
+plot(conditional_effects(fit_zinb1), ask = FALSE)
 ```
 
 According to the parameter estimates, larger groups catch more fish, campers
@@ -195,7 +195,7 @@ fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
 
 ```{r}
 summary(fit_zinb2)
-plot(marginal_effects(fit_zinb2), ask = FALSE)
+plot(conditional_effects(fit_zinb2), ask = FALSE)
 ```
 
 To transform the linear predictor of `zi` into a probability, **brms** applies
@@ -246,7 +246,7 @@ fit_smooth1 <- brm(
 
 ```{r}
 summary(fit_smooth1)
-plot(marginal_effects(fit_smooth1), points = TRUE, ask = FALSE)
+plot(conditional_effects(fit_smooth1), points = TRUE, ask = FALSE)
 ```
 
 This model is likely an overkill for the data at hand, but nicely demonstrates

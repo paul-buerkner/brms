@@ -187,7 +187,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 A graphical summary is available through
 
 \begin{Sinput}
-marginal_effects(fit_zinb1)
+conditional_effects(fit_zinb1)
 \end{Sinput}
 \begin{figure}[ht]
   \centering
@@ -313,7 +313,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 For models including splines, the output of \code{summary} is not tremendously helpful, but we get at least some information. Firstly, the credible intervals of the standard deviations of the coefficients forming the splines (under \code{'Smooth Terms'}) are sufficiently far away from zero to indicate non-linearity in the (combined) effect of \code{area} and \code{yearc}. Secondly, even after controlling for these predictors, districts still vary with respect to rent per square meter by a sizable amount as visible under \code{'Group-Level Effects'} in the output. To further understand the effect of the predictor, we apply graphical methods:
 
 \begin{Sinput}
-marginal_effects(fit_rent1, surface = TRUE)
+conditional_effects(fit_rent1, surface = TRUE)
 \end{Sinput}
 In Figure \ref{me_rent1}, the marginal effects of both predictors are displayed, while the respective other predictor is fixed at its mean. In Figure \ref{me_rent2}, the combined effect is shown, clearly demonstrating an interaction between the variables. In particular, housing rents appear to be highest for small and relatively new apartments.
 
@@ -351,7 +351,7 @@ cor(Intercept,sigma_Intercept)     0.72      0.17     0.35     0.98        648 1
 As visible from the positive correlation of the intercepts, districts with overall higher rent per square meter have higher variation at the same time. Lastly, we want to turn our attention to the splines. While \code{marginal\_effects} is used to visualize effects of predictors on the expected response, \code{marginal\_smooths} is used to show just the spline parts of the model:
 
 \begin{Sinput}
-marginal_smooths(fit_rent2)
+conditional_smooths(fit_rent2)
 \end{Sinput} 
 The plot on the left-hand side of Figure \ref{me_rent3} resembles the one in Figure \ref{me_rent2}, but the scale is different since only the spline is plotted. The right-hand side of \ref{me_rent3} shows the spline for \code{sigma}. Since we apply the log-link on \code{sigma} by default the spline is on the log-scale as well. As visible in the plot, the variation in the rent per square meter is highest for relatively small and old apartments, while the variation is smallest for medium to large apartments build around the 1960s.
 
@@ -445,7 +445,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 as well as
 
 \begin{Sinput}
-marginal_effects(fit_loss1)
+conditional_effects(fit_loss1)
 \end{Sinput}
 \begin{figure}[ht]
   \centering
@@ -458,8 +458,8 @@ marginal_effects(fit_loss1)
 \begin{Sinput}
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-me_year <- marginal_effects(fit_loss1, conditions = conditions, 
-                            re_formula = NULL, method = "predict")
+me_year <- conditional_effects(fit_loss1, conditions = conditions, 
+                               re_formula = NULL, method = "predict")
 plot(me_year, ncol = 5, points = TRUE)
 \end{Sinput}
 \begin{figure}[ht]

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2019-07-15" />
+<meta name="date" content="2020-01-11" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -217,7 +217,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author">Paul Bürkner</h4>
-<h4 class="date">2019-07-15</h4>
+<h4 class="date">2020-01-11</h4>
 
 
 <div id="TOC">
@@ -387,6 +387,9 @@ f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
 \]</span> where <span class="math inline">\(\alpha\)</span> is the zero-one-inflation probability (i.e. the probability that zero or one occurs) and <span class="math inline">\(\gamma\)</span> is the conditional one-inflation probability (i.e. the probability that one occurs rather than zero). Currently implemented families are <strong>zero_one_inflated_beta</strong>.</p>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
