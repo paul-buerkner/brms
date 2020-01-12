@@ -1,6 +1,157 @@
 # This file contains functions dealing with the extended 
 # formula syntax to specify special effects terms
 
+#' Predictors with Measurement Error in \pkg{brms} Models
+#' 
+#' Specify predictors with measurement error. The function does not evaluate its
+#' arguments -- it exists purely to help set up a model.
+#' 
+#' @param x The variable measured with error.
+#' @param sdx Known measurement error of \code{x}
+#'   treated as standard deviation.
+#' @param gr Optional grouping factor to specify which
+#'   values of \code{x} correspond to the same value of the
+#'   latent variable. If \code{NULL} (the default) each
+#'   observation will have its own value of the latent variable.
+#' 
+#' @details 
+#' For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' By default, latent noise-free variables are assumed
+#' to be correlated. To change that, add \code{set_mecor(FALSE)}
+#' to your model formula object (see examples).
+#' 
+#' @seealso 
+#' \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # sample some data
+#' N <- 100
+#' dat <- data.frame(
+#'   y = rnorm(N), x1 = rnorm(N), 
+#'   x2 = rnorm(N), sdx = abs(rnorm(N, 1))
+#'  )
+#' # fit a simple error-in-variables model 
+#' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
+#'            save_mevars = TRUE)
+#' summary(fit1)
+#' 
+#' # turn off modeling of correlations
+#' bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
+#' fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+#' summary(fit2)
+#' } 
+#' 
+#' @export
+me <- function(x, sdx, gr = NULL) {
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  sdx <- deparse(substitute(sdx))
+  gr <- substitute(gr)
+  if (!is.null(gr)) {
+    gr <- deparse_combine(gr)
+    stopif_illegal_group(gr)
+  } else {
+    gr <- ""
+  }
+  label <- deparse(match.call())
+  out <- nlist(term, sdx, gr, label)
+  class(out) <- c("me_term", "sp_term")
+  out
+}
+
+#' Predictors with Missing Values in \pkg{brms} Models
+#' 
+#' Specify predictor term with missing values in \pkg{brms}. The function does
+#' not evaluate its arguments -- it exists purely to help set up a model.
+#' 
+#' @param x The variable containing missings.
+#' 
+#' @details For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' @seealso \code{\link{brmsformula}}
+#'   
+#' @examples 
+#' \dontrun{
+#' data("nhanes", package = "mice")
+#' bform <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) + set_rescor(FALSE)
+#' fit <- brm(bform, data = nhanes)
+#' summary(fit)
+#' plot(marginal_effects(fit, resp = "bmi"), ask = FALSE)
+#' LOO(fit, newdata = na.omit(fit$data))
+#' } 
+#' 
+#' @export
+mi <- function(x) {
+  # use 'term' for consistency with other special terms
+  term <- substitute(x)
+  vars <- all.vars(term)
+  term <- deparse(term)
+  if (!is_equal(term, vars)) {
+    stop2("'mi' only accepts single untransformed variables.")
+  }
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mi_term", "sp_term")
+  out
+}
+
+#' Monotonic Predictors in \pkg{brms} Models
+#' 
+#' Specify a monotonic predictor term in \pkg{brms}. The function does not
+#' evaluate its arguments -- it exists purely to help set up a model.
+#' 
+#' @param x An integer variable or an ordered factor to be modeled as monotonic.
+#'  
+#' @details For detailed documentation see \code{help(brmsformula)}
+#'   as well as \code{vignette("brms_monotonic")}.
+#' 
+#' @seealso \code{\link{brmsformula}}
+#' 
+#' @references 
+#' Bürkner P. C. & Charpentier, E. (in review). Monotonic Effects: A Principled 
+#' Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
+#' preprint.
+#'   
+#' @examples   
+#' \dontrun{
+#' # generate some data
+#' income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
+#' income <- factor(sample(income_options, 100, TRUE), 
+#'                  levels = income_options, ordered = TRUE)
+#' mean_ls <- c(30, 60, 70, 75)
+#' ls <- mean_ls[income] + rnorm(100, sd = 7)
+#' dat <- data.frame(income, ls)
+#' 
+#' # fit a simple monotonic model
+#' fit1 <- brm(ls ~ mo(income), data = dat)
+#' 
+#' # summarise the model
+#' summary(fit1)
+#' plot(fit1, N = 6)
+#' plot(marginal_effects(fit1), points = TRUE)
+#' 
+#' # model interaction with other variables
+#' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
+#' fit2 <- brm(ls ~ mo(income)*x, data = dat)
+#' 
+#' # summarise the model
+#' summary(fit2)
+#' plot(marginal_effects(fit2), points = TRUE)
+#' } 
+#'  
+#' @export
+mo <- function(x) {
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mo_term", "sp_term")
+  out
+}
+
 # find variable names for which to keep NAs
 vars_keep_na <- function(x, ...) {
   UseMethod("vars_keep_na")

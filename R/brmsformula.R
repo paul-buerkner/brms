@@ -1490,3 +1490,82 @@ warn_dpar <- function(dpar) {
   }
   NULL
 }
+
+# return the right-hand side of a formula
+rhs <- function(x) {
+  attri <- attributes(x)
+  x <- as.formula(x)
+  x <- if (length(x) == 3) x[-2] else x
+  do_call(structure, c(list(x), attri))
+}
+
+# return the left-hand side of a formula
+lhs <- function(x) {
+  x <- as.formula(x)
+  if (length(x) == 3L) update(x, . ~ 1) else NULL
+}
+
+# convert a string to a formula
+# @param x vector of strings to be converted
+# @param ... passed to formula()
+str2formula <- function(x, ..., collapse = "+") {
+  has_chars <- nzchar(x)
+  if (length(x) && any(has_chars)) {
+    out <- paste(x[has_chars], collapse = collapse) 
+  } else {
+    out <- "1"
+  }
+  out <- formula(paste("~", out), ...)
+  environment(out) <- parent.frame()
+  out
+}
+
+# convert a formula to a character string
+# @param formula a model formula
+# @param rm a vector of to elements indicating how many characters 
+#   should be removed at the beginning and end of the string respectively
+# @param space how should whitespaces be treated?
+formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+  formula <- as.formula(formula)
+  space <- match.arg(space)
+  if (anyNA(rm[2])) rm[2] <- 0
+  x <- Reduce(paste, deparse(formula))
+  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  if (space == "trim") {
+    x <- gsub(" {1,}", " ", x, perl = TRUE)
+  } else {
+    x <- gsub(" ", "", x, perl = TRUE) 
+  }
+  substr(x, 1 + rm[1], nchar(x) - rm[2])
+}
+
+is.formula <- function(x) {
+  inherits(x, "formula")
+}
+
+# wrapper around as.formula with additional checks
+as_formula <- function(x) {
+  x <- as.formula(x)
+  # fixes issue #749
+  rhs <- rhs(x)[[2]]
+  if (isTRUE(is.call(rhs) && rhs[[1]] == "~")) {
+    stop2("Nested formulas are not allowed. Did you use '~~' somewhere?")
+  }
+  x
+}
+
+# expand the '.' variable in formula using stats::terms
+expand_dot_formula <- function(formula, data = NULL) {
+  if (isTRUE("." %in% all.vars(formula))) {
+    att <- attributes(formula)
+    try_terms <- try(
+      stats::terms(formula, data = data), 
+      silent = TRUE
+    )
+    if (!is(try_terms, "try-error")) {
+      formula <- formula(try_terms)
+    }
+    attributes(formula) <- att
+  }
+  formula
+}
