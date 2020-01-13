@@ -831,26 +831,6 @@ choose_N <- function(draws) {
   if (!is.null(draws$ac$N_tg)) draws$ac$N_tg else draws$nobs
 }
 
-# prepare for calling family specific post-processing functions
-prepare_family <- function(x) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x))
-  family <- x$family
-  if (use_cov(x$autocor) && has_natural_residuals(x)) {
-    family$fun <- paste0(family$family, "_cov")
-  } else if (is.cor_sar(x$autocor)) {
-    if (identical(x$autocor$type, "lag")) {
-      family$fun <- paste0(family$family, "_lagsar")
-    } else if (identical(x$autocor$type, "error")) {
-      family$fun <- paste0(family$family, "_errorsar")
-    }
-  } else if (is.cor_fixed(x$autocor)) {
-    family$fun <- paste0(family$family, "_fixed")
-  } else {
-    family$fun <- family$family
-  }
-  family
-}
-
 # create pseudo brmsdraws objects for components of mixture models
 # @param comp the mixture component number
 # @param sample_ids see predict_mixture

@@ -739,7 +739,7 @@ use_glm_primitive <- function(bterms) {
   mu <- bterms$dpars[["mu"]]
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
       isTRUE(bterms$rescor) || length(bterms$adforms) ||
-      !is.cor_empty(bterms$autocor)) {
+      is.formula(mu$ac)) {
     return(FALSE)
   }
   # supported families and link functions

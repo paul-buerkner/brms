@@ -151,7 +151,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
   out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
-  structure(out, class = "gpterm")
+  structure(out, class = "gp_term")
 }
 
 # get labels of gaussian process terms

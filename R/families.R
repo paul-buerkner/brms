@@ -1548,14 +1548,14 @@ no_sigma <- function(bterms) {
   if (is.formula(bterms$adforms$se)) {
     se <- eval_rhs(bterms$adforms$se)
     se_only <- isFALSE(se$flags$sigma)
-    if (se_only && use_cov(bterms$autocor)) {
+    if (se_only && use_cov(bterms)) {
       stop2("Please set argument 'sigma' of function 'se' ",
             "to TRUE when modeling ARMA covariance matrices.")
     }
   } else {
     se_only <- FALSE
   }
-  se_only || is.cor_fixed(bterms$autocor)
+  se_only || has_ac_class(bterms, "fcor")
 }
 
 # has the model a non-predicted but estimated sigma parameter?
@@ -1570,22 +1570,33 @@ pred_sigma <- function(bterms) {
   "sigma" %in% dpar_class(names(bterms$dpars))
 }
 
-# has the model latent residuals to be used in autocor structures
-has_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) && 
-    (is.cor_arma(bterms$autocor) || is.cor_cosy(bterms$autocor))
-}
-
-# should natural residuals be modeled as correlated?
-has_cor_natural_residuals <- function(bterms) {
-  has_natural_residuals(bterms) &&
-    (use_cov(bterms$autocor) || is.cor_sar(bterms$autocor))
-}
-
 # do not include a 'nu' parameter in a univariate model?
 no_nu <- function(bterms) {
   # the multi_student_t family only has a single 'nu' parameter
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
+}
+
+# prepare for calling family specific post-processing functions
+prepare_family <- function(x) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  family <- x$family
+  acef <- tidy_acef(x)
+  if (use_cov(acef) && has_natural_residuals(x)) {
+    family$fun <- paste0(family$family, "_cov")
+  } else if (has_ac_class(acef, "sar")) {
+    acef_sar <- subset2(acef, class = "sar")
+    if (has_ac_subset(acef_sar, type = "lag")) {
+      family$fun <- paste0(family$family, "_lagsar")
+    } else if (has_ac_subset(acef_sar, type = "error")) {
+      family$fun <- paste0(family$family, "_errorsar")
+    }
+  } else if (has_ac_class(acef, "fcor")) {
+    # TODO: change to "_fcor"?
+    family$fun <- paste0(family$family, "_fixed")
+  } else {
+    family$fun <- family$family
+  }
+  family
 }
 
 # order intercepts to help identifying mixture components?

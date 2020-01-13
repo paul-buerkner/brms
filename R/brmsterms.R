@@ -260,7 +260,7 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
 parse_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
-  types <- c("fe", "re", "sp", "cs", "sm", "gp", "offset")
+  types <- c("fe", "re", "sp", "cs", "sm", "gp", "ac", "offset")
   for (t in types) {
     tmp <- do_call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
@@ -485,6 +485,23 @@ parse_gp <- function(formula) {
     out <- str2formula(out)
     attr(out, "allvars") <- allvars
   }
+  out
+}
+
+# extract autocorrelation terms
+parse_ac <- function(formula) {
+  out <- find_terms(formula, "ac")
+  if (!length(out)) {
+    return(out)
+  }
+  eterms <- lapply(out, eval2)
+  allvars <- unlist(c(
+    lapply(eterms, "[[", "time"),
+    lapply(eterms, "[[", "gr")
+  ))
+  allvars <- str2formula(all_vars(allvars))
+  out <- str2formula(out)
+  attr(out, "allvars") <- allvars
   out
 }
 
@@ -877,9 +894,13 @@ all_terms <- function(x) {
 # generate a regular expression to extract special terms
 # @param type one or more special term types to be extracted 
 regex_sp <- function(type = "all") {
-  choices <- c("all", "sp", "sm", "gp", "cs", "mmc", all_sp_types())
+  choices <- c("all", "sp", "sm", "gp", "cs", "mmc", "ac", all_sp_types())
   type <- unique(match.arg(type, choices, several.ok = TRUE))
-  funs <- c(sm = "(s|(t2)|(te)|(ti))", gp = "gp", cs = "cse?", mmc = "mmc")
+  funs <- c(
+    sm = "(s|(t2)|(te)|(ti))", 
+    gp = "gp", cs = "cse?", mmc = "mmc", 
+    ac = "((arma)|(cosy)|(sar)|(car)|(fcor))"
+  )
   funs[all_sp_types()] <- all_sp_types()
   if ("sp" %in% type) {
     # allows extracting all 'sp' terms at once

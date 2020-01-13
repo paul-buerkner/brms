@@ -504,16 +504,16 @@ has_ma_only <- function(x) {
 } 
 
 # use the covariance parameterization of a correlation structure?
-use_cov <- function(x) {
-  stop_not_cor_brms(x)
-  out <- FALSE
-  if (is.cor_arma(x)) {
-    out <- isTRUE(x$cov)
-  } else if (is.cor_cosy(x)) {
-    out <- TRUE
-  }
-  out
-}
+# use_cov <- function(x) {
+#   stop_not_cor_brms(x)
+#   out <- FALSE
+#   if (is.cor_arma(x)) {
+#     out <- isTRUE(x$cov)
+#   } else if (is.cor_cosy(x)) {
+#     out <- TRUE
+#   }
+#   out
+# }
 
 stop_not_cor_brms <- function(x) {
   if (!(is.null(x) || is.cor_brms(x))) {

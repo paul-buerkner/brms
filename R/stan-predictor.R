@@ -145,7 +145,7 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
     }
   }
   out <- collapse_lists(ls = out)
-  str_add_list(out) <- stan_autocor(x, prior = prior)
+  # str_add_list(out) <- stan_autocor(x, prior = prior)
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
   out
@@ -1087,16 +1087,369 @@ stan_gp <- function(bterms, data, prior, ...) {
 }
 
 # Stan code for the linear predictor of autocorrelation terms 
-stan_ac <- function(bterms, ...) {
-  stopifnot(is.btl(bterms))
+stan_ac <- function(bterms, data, prior, ...) {
+  # stopifnot(is.btl(bterms))
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
-  if (has_latent_residuals(bterms)) {
-    str_add(out$eta) <- glue(" + err{p}")
+  has_natural_residuals <- has_natural_residuals(bterms)
+  has_latent_residuals <- has_latent_residuals(bterms)
+  acef <- tidy_acef(bterms, data)
+  
+  acef_arma <- subset2(acef, class = "arma")
+  if (NROW(acef_arma)) {
+    # TODO: check if autocor is specified for mu only
+    err_msg <- "ARMA models are not implemented"
+    if (is.mixfamily(bterms$family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    str_add(out$data) <- glue( 
+      "  // data needed for ARMA correlations\n",
+      "  int<lower=0> Kar{p};  // AR order\n",
+      "  int<lower=0> Kma{p};  // MA order\n"
+    )
+    str_add(out$tdata_def) <- glue( 
+      "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
+    )
+    ar_bound <- ma_bound <- "<lower=-1,upper=1>"
+    if (!acef_arma$cov) {
+      err_msg <- "Please set cov = TRUE in ARMA correlation structures"
+      if (!has_natural_residuals) {
+        stop2(err_msg, " for family '", bterms$family$family, "'.")
+      }
+      if (is.formula(bterms$adforms$se)) {
+        stop2(err_msg, " when including known standard errors.")
+      }
+      str_add(out$data) <- glue( 
+        "  // number of lags per observation\n",
+        "  int<lower=0> J_lag{p}[N{p}];\n"                
+      )
+      str_add(out$model_def) <- glue(
+        "  // objects storing residuals\n",
+        "  matrix[N{p}, max_lag{p}] Err{p}",
+        " = rep_matrix(0, N{p}, max_lag{p});\n",
+        "  vector[N{p}] err{p};\n"
+      )
+      Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
+      add_ar <- str_if(acef_arma$p > 0,
+        glue("    mu{p}[n] += Err{p}[n, 1:Kar{p}] * ar{p};\n")             
+      )
+      add_ma <- str_if(acef_arma$q > 0,
+        glue("    mu{p}[n] += Err{p}[n, 1:Kma{p}] * ma{p};\n")             
+      )
+      str_add(out$model_comp_arma) <- glue(
+        "  // include ARMA terms\n",
+        "  for (n in 1:N{p}) {{\n",
+        add_ma,
+        "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
+        "    for (i in 1:J_lag{p}[n]) {{\n",
+        "      Err{p}[n + 1, i] = err{p}[n + 1 - i];\n",
+        "    }}\n",
+        add_ar,
+        "  }}\n"
+      )
+      # in the conditional formulation no boundaries are required
+      ar_bound <- ma_bound <- ""
+    }
+    if (acef_arma$p > 0) {
+      str_add(out$par) <- glue( 
+        "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ar", px = px, suffix = p
+      )
+    }
+    if (acef_arma$q > 0) {
+      str_add(out$par) <- glue( 
+        "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "ma", px = px, suffix = p
+      )
+    }
   }
-  if (is.cor_car(bterms$autocor)) {
+  
+  acef_cosy <- subset2(acef, class = "cosy")
+  if (NROW(acef_cosy)) {
+    # compound symmetry correlation structure
+    err_msg <- "Compound symmetry models are not implemented"
+    if (is.mixfamily(bterms$family)) {
+      stop2(err_msg, " for mixture models.")
+    }
+    # most code is shared with ARMA covariance models
+    str_add(out$par) <- glue(
+      "  real<lower=0,upper=1> cosy{p};  // compound symmetry correlation\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "cosy", px = px, suffix = p
+    )
+  }
+  
+  acef_time_cov <- subset2(acef, dim = "time", cov = TRUE)
+  if (NROW(acef_time_cov)) {
+    # use correlation structures in covariance matrix parameterization
+    # optional for ARMA models and obligatory for compound symmetry models
+    # TODO: move these checks to a place where all information is available
+    # err_msg <- "Cannot model residual covariance matrices via 'autocor'"
+    # if (isTRUE(bterms$rescor)) {
+    #   stop2(err_msg, " when estimating 'rescor'.")
+    # }
+    # pred_other_pars <- any(!names(bterms$dpars) %in% c("mu", "sigma"))
+    # if (has_natural_residuals && pred_other_pars) {
+    #   stop2(err_msg, " when predicting parameters other than 'mu' and 'sigma'.")
+    # }
+    # can only model one covariance structure at a time
+    stopifnot(NROW(acef_time_cov) == 1)
+    str_add(out$data) <- glue( 
+      "  // see the functions block for details\n",
+      "  int<lower=1> N_tg{p};\n",
+      "  int<lower=1> begin_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
+      "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
+    )
+    if (!is.formula(bterms$adforms$se)) {
+      str_add(out$tdata_def) <- glue(
+        "  // no known standard errors specified by the user\n",
+        "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
+      )
+    }
+    str_add(out$tpar_def) <- glue(
+      "  // cholesky factor of the autocorrelation matrix\n",
+      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"               
+    )
+    if (acef_time_cov$class == "arma") {
+      if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
+        cor_fun <- "ar1"
+        cor_args <- glue("ar{p}[1]")
+      } else if (acef_time_cov$p == 0 && acef_time_cov$q > 0) {
+        cor_fun <- "ma1"
+        cor_args <- glue("ma{p}[1]")
+      } else {
+        cor_fun <- "arma1"
+        cor_args <- glue("ar{p}[1], ma{p}[1]")
+      }
+    } else if (acef_time_cov$class == "cosy") {
+      cor_fun <- "cosy"
+      cor_args <- glue("cosy{p}")
+    }
+    str_add(out$tpar_comp) <- glue(
+      "  // compute residual covariance matrix\n",
+      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
+    )
+    if (has_latent_residuals) {
+      # TODO: support autocor terms for non-linear models via 'autocor'
+      # err_msg <- "Latent residuals are not implemented"
+      # if (is.btnl(bterms$dpars[["mu"]])) {
+      #   stop2(err_msg, " for non-linear models.")
+      # }
+      # if (conv_cats_dpars(bterms)) {
+      #   stop2(err_msg, " for this family.")
+      # }
+      str_add(out$par) <- glue(
+        "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+        "  real<lower=0> sderr{p};  // SD of residuals\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  vector[N{p}] err{p};  // actual residuals\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute correlated residuals\n",
+        "  err{p} = scale_cov_err(",
+        "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
+      )
+      str_add(out$prior) <- glue(
+        "  target += normal_lpdf(zerr{p} | 0, 1);\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "sderr", px = px, suffix = p
+      )
+      str_add(out$eta) <- glue(" + err{p}")
+    }
+  }
+  
+  acef_sar <- subset2(acef, class = "sar")
+  if (NROW(acef_sar)) {
+    err_msg <- "SAR models are not implemented"
+    if (is.mixfamily(bterms$family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (!has_natural_residuals) {
+      stop2(err_msg, " for family '", bterms$family$family, "'.")
+    }
+    # if (isTRUE(bterms$rescor)) {
+    #   stop2(err_msg, " when 'rescor' is estimated.")
+    # }
+    # if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
+    #   stop2(err_msg, " when predicting 'sigma' or 'nu'.")
+    # }
+    str_add(out$data) <- glue(
+      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
+      "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
+    )
+    str_add(out$tdata_def) <- glue(
+      "  // the eigenvalues define the boundaries of the SAR correlation\n",
+      "  real min_eigenW{p} = min(eigenW{p});\n",
+      "  real max_eigenW{p} = max(eigenW{p});\n"
+    )
+    if (identical(acef_sar$type, "lag")) {
+      str_add(out$par) <- glue( 
+        "  // lag-SAR correlation parameter\n",
+        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> lagsar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "lagsar", px = px, suffix = p
+      )
+    } else if (identical(acef_sar$type, "error")) {
+      str_add(out$par) <- glue( 
+        "  // error-SAR correlation parameter\n",
+        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> errorsar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "errorsar", px = px, suffix = p
+      )
+    }
+  }
+  
+  acef_car <- subset2(acef, class = "car")
+  if (NROW(acef_car)) {
+    err_msg <- "CAR models are not implemented"
+    if (is.mixfamily(bterms$family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (is.btnl(bterms)) {
+      stop2(err_msg, " for non-linear models.")
+    }
+    str_add(out$data) <- glue(
+      "  // data for the CAR structure\n",
+      "  int<lower=1> Nloc{p};\n",
+      "  int<lower=1> Jloc{p}[N{p}];\n",
+      "  int<lower=0> Nedges{p};\n",
+      "  int<lower=1> edges1{p}[Nedges{p}];\n",
+      "  int<lower=1> edges2{p}[Nedges{p}];\n"
+    )
+    str_add(out$par) <- glue(
+      "  real<lower=0> sdcar{p};  // SD of the CAR structure\n"
+    )
+    str_add(out$prior) <- stan_prior(
+      prior, class = "sdcar", px = px, suffix = p
+    )
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
+    if (acef_car$type %in% c("escar", "esicar")) {
+      str_add(out$data) <- glue(
+        "  vector[Nloc{p}] Nneigh{p};\n",
+        "  vector[Nloc{p}] eigenW{p};\n"
+      )
+    }
+    if (acef_car$type %in% "escar") {
+      str_add(out$par) <- glue(
+        "  real<lower=0, upper=1> car{p};\n",
+        "  vector[Nloc{p}] rcar{p};\n"
+      )
+      car_args <- c(
+        "car", "sdcar", "Nloc", "Nedges", 
+        "Nneigh", "eigenW", "edges1", "edges2"
+      )
+      car_args <- paste0(car_args, p, collapse = ", ")
+      str_add(out$prior) <- stan_prior(
+        prior, class = "car", px = px, suffix = p
+      )
+      str_add(out$prior) <- glue(
+        "  target += sparse_car_lpdf(\n", 
+        "    rcar{p} | {car_args}\n",
+        "  );\n"
+      )
+    } else if (acef_car$type %in% "esicar") {
+      str_add(out$par) <- glue(
+        "  vector[Nloc{p} - 1] zcar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  vector[Nloc{p}] rcar{p};\n"                
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // sum-to-zero constraint\n",
+        "  rcar[1:(Nloc{p} - 1)] = zcar{p};\n",
+        "  rcar[Nloc{p}] = - sum(zcar{p});\n"
+      )
+      car_args <- c(
+        "sdcar", "Nloc", "Nedges", 
+        "Nneigh", "eigenW", "edges1", "edges2"
+      )
+      car_args <- paste0(car_args, p, collapse = ", ")
+      str_add(out$prior) <- glue(
+        "  target += sparse_icar_lpdf(\n", 
+        "    rcar{p} | {car_args}\n",
+        "  );\n"
+      )
+    } else if (acef_car$type %in% "icar") {
+      # intrinsic car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$par) <- glue(
+        "  // parameters for the ICAR structure\n",
+        "  vector[Nloc{p}] zcar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // scaled parameters for the ICAR structure\n",
+        "  vector[Nloc{p}] rcar{p} = zcar{p} * sdcar{p};\n"
+      )
+      str_add(out$prior) <- glue(
+        "  // improper prior on the spatial CAR component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
+      )
+    } else if (acef_car$type %in% "bym2") {
+      # BYM2 car based on the case study of Mitzi Morris
+      # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
+      str_add(out$data) <- glue(
+        "  // scaling factor of the spatial CAR component\n",
+        "  real<lower=0> car_scale{p};\n"
+      )
+      str_add(out$par) <- glue(
+        "  // parameters for the BYM2 structure\n",
+        "  vector[Nloc{p}] zcar{p};  // spatial part\n",
+        "  vector[Nloc{p}] nszcar{p};  // non-spatial part\n",
+        "  // proportion of variance in the spatial part\n",
+        "  real<lower=0,upper=1> rhocar{p};\n"
+      )
+      str_add(out$tpar_def) <- glue(
+        "  // join the spatial and the non-spatial CAR component\n",
+        "  vector[Nloc{p}] rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
+        " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
+      )
+      str_add(out$prior) <- stan_prior(
+        prior, class = "rhocar", px = px, suffix = p
+      )
+      str_add(out$prior) <- glue(
+        "  // improper prior on the spatial BYM2 component\n",
+        "  target += -0.5 * dot_self(zcar{p}[edges1{p}] - zcar{p}[edges2{p}]);\n",
+        "  // soft sum-to-zero constraint\n",
+        "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
+        "  // proper prior on the non-spatial BYM2 component\n",
+        "  target += normal_lpdf(nszcar | 0, 1);\n"
+      )
+    }
+  }
+  
+  acef_fcor <- subset2(acef, class = "fcor")
+  if (NROW(acef_fcor)) {
+    err_msg <- "Correlation structure 'fcor' is not implemented"
+    if (is.mixfamily(bterms$family)) {
+      stop2(err_msg, " for mixture models.") 
+    }
+    if (!has_natural_residuals) {
+      stop2(err_msg, " for family '", bterms$family$family, "'.")
+    }
+    if (isTRUE(bterms$rescor)) {
+      stop2(err_msg, " when 'rescor' is estimated.")
+    }
+    str_add(out$data) <- glue( 
+      "  matrix[N{p}, N{p}] V{p};  // known residual covariance matrix\n"
+    )
+    if (bterms$family$family %in% "gaussian") {
+      str_add(out$tdata_def) <- glue(
+        "  matrix[N{p}, N{p}] LV{p} = cholesky_decompose(V{p});\n"
+      )
+    }
   }
   out
 }
