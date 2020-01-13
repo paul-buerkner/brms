@@ -24,6 +24,9 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 
 \item{\code{data.name}}{The name of \code{data} as specified by the user}
 
+\item{\code{data2}}{An optional \code{list} of data objects which cannot be passed
+via \code{data}}
+
 \item{\code{model}}{The model code in \pkg{Stan} language}
 
 \item{\code{prior}}{A \code{\link{brmsprior}} object containing

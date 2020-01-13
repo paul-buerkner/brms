@@ -579,6 +579,18 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 }
 
+# is an object named?
+is_named <- function(x) {
+  names <- names(x)
+  if (is.null(names)) {
+    return(FALSE)
+  }
+  if (any(!nzchar(names) | is.na(names))) {
+    return(FALSE)
+  }
+  TRUE
+}
+
 #' Execute a Function Call
 #'
 #' Execute a function call similar to \code{\link{do.call}}, but without

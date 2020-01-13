@@ -10,6 +10,7 @@ brm(
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
+  data2 = NULL,
   cov_ranef = NULL,
   sample_prior = c("no", "yes", "only"),
   sparse = NULL,

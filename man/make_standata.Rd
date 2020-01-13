@@ -9,6 +9,7 @@ make_standata(
   data,
   family = gaussian(),
   prior = NULL,
+  data2 = NULL,
   autocor = NULL,
   cov_ranef = NULL,
   sample_prior = c("no", "yes", "only"),

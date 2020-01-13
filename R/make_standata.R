@@ -24,7 +24,8 @@
 #'          
 #' @export
 make_standata <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, cov_ranef = NULL,
+                          prior = NULL, data2 = NULL, 
+                          autocor = NULL, cov_ranef = NULL, 
                           sample_prior = c("no", "yes", "only"), 
                           stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
@@ -55,13 +56,14 @@ make_standata <- function(formula, data, family = gaussian(),
     check_nlpar_prior = FALSE
   )
   na_action <- if (new) na.pass else na.omit2
-  data <- update_data(
+  data <- validate_data(
     data, bterms = bterms, na.action = na_action, 
     drop.unused.levels = !new, knots = knots,
     terms_attr = control$terms_attr
   )
   # order data for use in autocorrelation models
   data <- order_data(data, bterms = bterms)
+  data2 <- validate_data2(data2)
   
   out <- data_response(
     bterms, data, check_response = check_response,
@@ -70,8 +72,8 @@ make_standata <- function(formula, data, family = gaussian(),
   if (!only_response) {
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, 
-      knots = knots, old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, data2 = data2,
+      ranef = ranef, knots = knots, old_sdata = control$old_sdata
     )
     c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)

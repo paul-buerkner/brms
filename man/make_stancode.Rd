@@ -9,6 +9,7 @@ make_stancode(
   data,
   family = gaussian(),
   prior = NULL,
+  data2 = NULL,
   autocor = NULL,
   cov_ranef = NULL,
   sparse = NULL,

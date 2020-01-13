@@ -59,7 +59,7 @@
 #' 
 #' @export
 brm_multiple <- function(formula, data, family = gaussian(), prior = NULL, 
-                         autocor = NULL, cov_ranef = NULL, 
+                         data2 = NULL, autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
                          sparse = NULL, knots = NULL, stanvars = NULL,
                          stan_funs = NULL, combine = TRUE, fit = NA,
@@ -89,7 +89,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     class(fit) <- setdiff(class(fit), "brmsfit_multiple")
   } else {
     args <- nlist(
-      formula, data = data[[1]], family, prior, autocor, cov_ranef,
+      formula, data = data[[1]], family, prior, data2, autocor, cov_ranef,
       sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
     )
     args$chains <- 0

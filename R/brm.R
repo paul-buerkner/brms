@@ -337,7 +337,7 @@
 #' @import Rcpp
 #' @export
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, cov_ranef = NULL, 
+                autocor = NULL, data2 = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
                 sparse = NULL, knots = NULL, stanvars = NULL,
                 stan_funs = NULL, fit = NA, save_ranef = TRUE, 
@@ -391,7 +391,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
     data.name <- substitute_name(data)
-    data <- update_data(data, bterms = bterms)
+    data <- validate_data(data, bterms = bterms)
+    data2 <- validate_data2(data2)
     prior <- check_prior(
       prior, formula = formula, data = data,
       sample_prior = sample_prior, warn = FALSE
@@ -399,7 +400,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # initialize S3 object
     x <- brmsfit(
       formula = formula, family = family, data = data, 
-      data.name = data.name, prior = prior, 
+      data.name = data.name, data2 = data2, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
       stanvars = stanvars, stan_funs = stan_funs,
       algorithm = algorithm
@@ -412,7 +413,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
-      cov_ranef = cov_ranef,
+      data2 = data2, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model
@@ -420,7 +421,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- make_standata(
-      formula, data = data, prior = prior, 
+      formula, data = data, prior = prior, data2 = data2,
       cov_ranef = cov_ranef, sample_prior = sample_prior,
       knots = knots, stanvars = stanvars
     )

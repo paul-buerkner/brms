@@ -10,9 +10,9 @@
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-update_data <- function(data, bterms, na.action = na.omit2,
-                        drop.unused.levels = TRUE,
-                        terms_attr = NULL, knots = NULL) {
+validate_data <- function(data, bterms, na.action = na.omit2,
+                          drop.unused.levels = TRUE,
+                          terms_attr = NULL, knots = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
   }
@@ -54,6 +54,24 @@ update_data <- function(data, bterms, na.action = na.omit2,
   attr(data, "knots") <- knots
   attr(data, "brmsframe") <- TRUE
   data
+}
+
+# validate the 'data2' argument
+# @param data2 a named list of data objects
+# @return a validated named list of data objects
+validate_data2 <- function(data2) {
+  # TODO: specify spline-related matrices in 'data2'
+  # TODO: specify 'knots' in 'data2'?
+  if (is.null(data2)) {
+    data2 <- list()
+  }
+  if (!is.list(data2)) {
+    stop2("'data2' must be a list.")
+  }
+  if (length(data2) && !is_named(data2)) {
+    stop2("All elements of 'data2' must be named.")
+  }
+  data2
 }
 
 # add the reserved intercept variables to the data
