@@ -30,7 +30,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, knots)
+  args_eff <- nlist(data, ranef, prior, knots, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
@@ -44,7 +44,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
   c(out) <- data_mixture(x, prior = prior)
-  c(out) <- data_autocor(x, data = data, old_locations = old_sdata$locations)
+  # c(out) <- data_autocor(x, data = data, old_locations = old_sdata$locations)
   out
 }
 
@@ -58,14 +58,15 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
-                               prior = brmsprior(), knots = NULL, 
-                               old_sdata = NULL, ...) {
-  c(data_fe(x, data, ...),
+                               prior = brmsprior(), data2 = list(),
+                               knots = NULL, old_sdata = NULL, ...) {
+  c(data_fe(x, data),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
+    data_ac(x, data, data2 = data2, old_locations = old_sdata$locations),
     data_offset(x, data),
     data_bhaz(x, data, basis = old_sdata$base_basis),
     data_prior(x, data, prior = prior)
@@ -610,6 +611,158 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
     out[[paste0("slambda", sfx)]] <- slambda
   } else {
     out[[paste0("Xgp", sfx)]] <- as.array(Xgp)
+  }
+  out
+}
+
+# data for autocorrelation variables
+# @param old_locations: optional old locations for CAR models
+data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
+  # stopifnot(is.brmsterms(bterms))
+  # autocor <- bterms$autocor
+  N <- nrow(data)
+  out <- list()
+  acef <- tidy_acef(bterms)
+  if (has_ac_subset(bterms, dim = "time")) {
+    gr <- subset2(acef, dim = "time")$gr
+    if (gr != "NA") {
+      tgroup <- as.numeric(factor(data[[gr]]))
+    } else {
+      tgroup <- rep(1, N) 
+    }
+  }
+  if (has_ac_class(acef, "arma")) {
+    # ARMA correlations
+    acef_arma <- subset2(acef, class = "arma")
+    out$Kar <- acef_arma$p
+    out$Kma <- acef_arma$q
+    if (!use_cov(acef_arma)) {
+      # data for the 'predictor' version of ARMA
+      max_lag <- max(out$Kar, out$Kma)
+      out$J_lag <- as.array(rep(0, N))
+      for (n in seq_len(N)[-N]) {
+        ind <- n:max(1, n + 1 - max_lag)
+        # indexes errors to be used in the n+1th prediction
+        out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
+      }
+    }
+  }
+  if (use_cov(acef)) {
+    # data for the 'covariance' versions of time-series structures
+    out$N_tg <- length(unique(tgroup))
+    out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+    out$nobs_tg <- as.array(with(out, 
+      c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+    ))
+    out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+  }
+  if (has_ac_class(acef, "sar")) {
+    acef_sar <- subset2(acef, class = "sar")
+    if (!acef_sar$W %in% names(data2)) {
+      stop2("Object '", acef_sar$W, "' is missing in 'data2'.")
+    }
+    W <- get(acef_sar$W, data2)
+    if (!identical(dim(W), rep(N, 2))) {
+      stop2("Dimensions of '", acef_sar$W, "' must be equal to ", 
+            "the number of observations.")
+    }
+    out$W <- W
+    out$eigenW <- eigen(W)$values
+    # simplifies code of choose_N
+    out$N_tg <- 1
+  }
+  if (has_ac_class(acef, "car")) {
+    acef_car <- subset2(acef, class = "car")
+    new <- !is.null(old_locations)
+    if (!acef_car$W %in% names(data2)) {
+      stop2("Object '", acef_car$W, "' is missing in 'data2'.")
+    }
+    W <- get(acef_car$W, data2)
+    if (acef_car$gr != "NA") {
+      loc_data <- get(acef_car$gr, data)
+      locations <- levels(factor(loc_data))
+      if (new) {
+        new_locations <- setdiff(locations, old_locations)
+        if (length(new_locations)) {
+          stop2("Cannot handle new locations in CAR models.")
+        }
+      } else {
+        old_locations <- locations
+      }
+      Nloc <- length(locations)
+      Jloc <- as.array(match(loc_data, old_locations))
+      found_locations <- rownames(W)
+      if (is.null(found_locations)) {
+        stop2("Row names are required for '", acef_car$W, "'.")
+      }
+      colnames(W) <- found_locations
+      found <- locations %in% found_locations
+      if (any(!found)) {
+        stop2("Row names of '", acef_car$W, "' do not match ", 
+              "the names of the grouping levels.")
+      }
+      W <- W[locations, locations, drop = FALSE]
+    } else {
+      Nloc <- N
+      Jloc <- as.array(seq_len(Nloc))
+      if (!is_equal(dim(W), rep(Nloc, 2))) {
+        if (new) {
+          stop2("Cannot handle new data in CAR models ",
+                "without a grouping factor.")
+        } else {
+          stop2("Dimensions of 'W' must be equal ", 
+                "to the number of observations.") 
+        }
+      }
+    }
+    W_tmp <- W
+    W_tmp[upper.tri(W_tmp)] <- NA
+    edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+    c(out) <- nlist(
+      Nloc, Jloc, Nedges = nrow(edges),  
+      edges1 = as.array(edges[, 1]), 
+      edges2 = as.array(edges[, 2])
+    )
+    if (acef_car$type %in% c("escar", "esicar")) {
+      Nneigh <- Matrix::colSums(W)
+      if (any(Nneigh == 0)) {
+        stop2(
+          "For exact sparse CAR, all locations should have at ", 
+          "least one neighbor within the provided data set. ",
+          "Consider using type = 'icar' instead."
+        )
+      }
+      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+      eigenW <- t(inv_sqrt_D) %*% W %*% inv_sqrt_D
+      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+      c(out) <- nlist(Nneigh, eigenW)
+    } else if (acef_car$type %in% "bym2") {
+      c(out) <- list(car_scale = .car_scale(edges, Nloc))
+    }
+  }
+  if (has_ac_class(acef, "fcor")) {
+    acef_fcor <- subset2(acef, class = "fcor")
+    if (!acef_fcor$V %in% names(data2)) {
+      stop2("Object '", acef_fcor$V, "' is missing in 'data2'.")
+    }
+    V <- get(acef_fcor$V, data2)
+    rmd_rows <- attr(data, "na.action")
+    if (!is.null(rmd_rows)) {
+      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+    }
+    if (nrow(V) != N) {
+      stop2("'", acef_fcor$V, "' must have the same number of rows as 'data'.")
+    }
+    if (min(eigen(V)$values <= 0)) {
+      stop2("'", acef_fcor$V, "' must be positive definite.")
+    }
+    out$V <- V
+    # simplifies code of choose_N
+    out$N_tg <- 1
+  }
+  if (length(out)) {
+    resp <- usc(combine_prefix(bterms))
+    out <- setNames(out, paste0(names(out), resp))
   }
   out
 }

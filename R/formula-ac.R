@@ -1,14 +1,13 @@
 #' @export
-arma <- function(time = NA, p = 1, q = 1, gr = NA, cov = FALSE) {
+arma <- function(time = NA, gr = NA, p = 1, q = 1,cov = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
-  p <- as_one_numeric(p)
-  q <- as_one_numeric(q)
   gr <- deparse(substitute(gr))
   if (gr != "NA") {
     stopif_illegal_group(gr)
   }
-  cov <- as_one_logical(cov)
+  p <- as_one_numeric(p)
+  q <- as_one_numeric(q)
   if (!(p >= 0 && is_wholenumber(p))) {
     stop2("Autoregressive order must be a non-negative integer.")
   }
@@ -18,11 +17,12 @@ arma <- function(time = NA, p = 1, q = 1, gr = NA, cov = FALSE) {
   if (!sum(p, q)) {
     stop2("At least one of 'p' and 'q' should be greater zero.")
   }
+  cov <- as_one_logical(cov)
   if (cov && (p > 1 || q > 1)) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
-  out <- nlist(time, p, q, gr, cov, label)
+  out <- nlist(time, gr, p, q, cov, label)
   class(out) <- c("arma_term", "ac_term")
   out
 }
@@ -43,10 +43,13 @@ cosy <- function(time = NA, gr = NA) {
 #' @export
 sar <- function(W, type = "lag") {
   label <- deparse(match.call())
-  mat <- deparse(substitute(W))
+  W <- deparse(substitute(W))
+  if (!nzchar(W)) {
+    stop2("Argument 'W' is missing in 'sar'.")
+  }
   options <- c("lag", "error")
   type <- match.arg(type, options)
-  out <- nlist(mat, type, label)
+  out <- nlist(W, type, label)
   class(out) <- c("sar_term", "ac_term")
   out
 }
@@ -54,14 +57,17 @@ sar <- function(W, type = "lag") {
 #' @export
 car <- function(W, gr = NA, type = "escar") {
   label <- deparse(match.call())
-  mat <- deparse(substitute(W))
+  W <- deparse(substitute(W))
+  if (!nzchar(W)) {
+    stop2("Argument 'W' is missing in 'car'.")
+  }
   gr <- deparse(substitute(gr))
   if (gr != "NA") {
     stopif_illegal_group(gr)
   }
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
-  out <- nlist(mat, gr, type, label)
+  out <- nlist(W, gr, type, label)
   class(out) <- c("car_term", "ac_term")
   out
 }
@@ -70,8 +76,11 @@ car <- function(W, gr = NA, type = "escar") {
 fcor <- function(V) {
   # TODO: support estimating sigma additionally
   label <- deparse(match.call())
-  mat <- deparse(substitute(V))
-  out <- nlist(mat, label)
+  V <- deparse(substitute(V))
+  if (!nzchar(V)) {
+    stop2("Argument 'V' is missing in 'fcor'.")
+  }
+  out <- nlist(V, label)
   class(out) <- c("fcor_term", "ac_term")
   out
 }
@@ -99,19 +108,23 @@ tidy_acef.acef <- function(x, ...) {
 }
 
 #' @export
+tidy_acef.NULL <- function(x, ...) {
+  empty_acef()
+}
+
+#' @export
 tidy_acef.btl <- function(x, data = NULL, ...) {
   form <- x[["ac"]]
   if (!is.formula(form)) {
-    return(empty_data_frame())
+    return(empty_acef())
   }
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- NROW(out)
-  cnames <- c("label", "class", "dim", "type", "time", "gr", "p", "q")
+  cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "W", "V")
   out[cnames] <- list(NA)
   out$cov <- FALSE
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
-    out$label[i] <- ac$label
     if (is.arma_term(ac)) {
       out$class[i] <- "arma"
       out$dim[i] <- "time"
@@ -128,24 +141,22 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$gr[i] <- ac$gr
       out$cov[i] <- TRUE
     }
-    # TODO: store data stuff
     if (is.sar_term(ac)) {
       out$class[i] <- "sar"
       out$dim[i] <- "space"
       out$type[i] <- ac$type
-      out$mat[i] <- ac$mat
-      # out$cov[i] <- TRUE
+      out$W[i] <- ac$W
     }
     if (is.car_term(ac)) {
       out$class[i] <- "car"
       out$dim[i] <- "space"
       out$type[i] <- ac$type
       out$gr[i] <- ac$gr
-      out$mat[i] <- ac$mat
+      out$W[i] <- ac$W
     }
     if (is.fcor_term(ac)) {
       out$class[i] <- "fcor"
-      out$mat[i] <- ac$mat
+      out$V[i] <- ac$V
     }
   }
   if (sum(out$class %in% "arma") > 1L) {
@@ -166,6 +177,10 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
 #' @export
 tidy_acef.btnl <- function(x, ... ) {
   tidy_acef.btl(x, ...)
+}
+
+empty_acef <- function() {
+  structure(empty_data_frame(), class = c("acef", "data.frame"))
 }
 
 # is certain subset of autocor terms is present?
