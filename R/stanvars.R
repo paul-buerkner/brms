@@ -138,6 +138,19 @@ validate_stanvars <- function(x) {
   x
 }
 
+# update stanvars inside a brmsfit object
+update_stanvars <- function(x, newdata2) {
+  stopifnot(is.brmsfit(x))
+  newdata2 <- validate_data2(newdata2)
+  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
+  for (name in names(stanvars_data)) {
+    if (name %in% names(newdata2)) {
+      x$stanvars[[name]]$sdata <- newdata2[[name]]
+    }
+  }
+  x
+}
+
 #' @export
 c.stanvars <- function(x, ...) {
   dots <- lapply(list(...), validate_stanvars)

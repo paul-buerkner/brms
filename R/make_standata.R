@@ -33,6 +33,7 @@ make_standata <- function(formula, data, family = gaussian(),
   # control arguments:
   #   internal: is make_standata called for internal use in S3 methods?
   #   new: is make_standata is called with new data?
+  #   incl_autocor: include autocorrelation terms?
   #   save_order: should the initial order of the data be saved?
   #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
@@ -45,6 +46,7 @@ make_standata <- function(formula, data, family = gaussian(),
   only_response <- as_one_logical(only_response)
   internal <- isTRUE(control$internal)
   new <- isTRUE(control$new)
+  incl_autocor <- !isFALSE(control$incl_autocor)
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
@@ -73,7 +75,8 @@ make_standata <- function(formula, data, family = gaussian(),
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2,
-      ranef = ranef, knots = knots, old_sdata = control$old_sdata
+      ranef = ranef, knots = knots, incl_autocor = incl_autocor,
+      old_sdata = control$old_sdata
     )
     c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
@@ -113,17 +116,22 @@ make_standata <- function(formula, data, family = gaussian(),
 #' 
 #' @export
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                             incl_autocor = TRUE, new_objects = list(),
-                             internal = FALSE, control = list(), ...) {
+                             newdata2 = NULL, new_objects = NULL,
+                             incl_autocor = TRUE, internal = FALSE,
+                             control = list(), ...) {
   object <- restructure(object)
-  if (!incl_autocor) {
-    object <- remove_autocor(object)
-  }
+  newdata2 <- use_alias(newdata2, new_objects)
+  incl_autocor <- as_one_logical(incl_autocor)
+  internal <- as_one_logical(internal)
   is_old_data <- isTRUE(attr(newdata, "old"))
   if (is.null(newdata)) {
     newdata <- object$data
     is_old_data <- TRUE
   }
+  if (is.null(newdata2)) {
+    newdata2 <- object$data2
+  }
+  newdata2 <- validate_data2(newdata2)
   new_formula <- update_re_terms(object$formula, re_formula)
   bterms <- parse_bf(new_formula)
   version <- object$version$brms
@@ -140,7 +148,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         newdata, object, re_formula = re_formula, ...
       )
     }
-    object <- add_new_objects(object, newdata, new_objects)
+    object <- update_stanvars(object, newdata2)
     control$new <- TRUE
     # ensure correct handling of functions like poly or scale
     old_terms <- attr(object$data, "terms")
@@ -154,6 +162,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       tidy_meef(bterms, object$data)
     )
   }
+  control$incl_autocor <- incl_autocor
   if (internal) {
     control$internal <- TRUE
     control$save_order <- TRUE
@@ -162,8 +171,10 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   knots <- attr(object$data, "knots")
   make_standata(
     formula = new_formula, data = newdata, 
-    prior = object$prior, cov_ranef = object$cov_ranef, 
-    sample_prior = sample_prior, stanvars = object$stanvars, 
+    prior = object$prior, data2 = newdata2,
+    cov_ranef = object$cov_ranef, 
+    sample_prior = sample_prior, 
+    stanvars = object$stanvars, 
     knots = knots, control = control, ...
   )
 }

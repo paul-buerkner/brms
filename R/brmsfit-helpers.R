@@ -173,9 +173,9 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
 get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
   nobs <- length(obs)
   nsamples <- draws$nsamples
-  autocor <- draws$ac$autocor
+  acef <- draws$ac$acef
   # prepare correlations
-  if (is.cor_arma(draws$ac$autocor)) {
+  if (has_ac_class(acef, "arma")) {
     ar <- as.numeric(draws$ac$ar)
     ma <- as.numeric(draws$ac$ma)
     if (length(ar) && !length(ma)) {
@@ -185,9 +185,9 @@ get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
     } else if (length(ar) && length(ma)) {
       cor <- get_cor_matrix_arma1(ar, ma, nobs)
     } else {
-      stop("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
+      stop2("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
     }
-  } else if (is.cor_cosy(draws$ac$autocor)) {
+  } else if (has_ac_class(acef, "cosy")) {
     cosy <- as.numeric(draws$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
   } else {

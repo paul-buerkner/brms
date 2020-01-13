@@ -1,5 +1,5 @@
 #' @export
-arma <- function(time = NA, gr = NA, p = 1, q = 1,cov = FALSE) {
+arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
@@ -146,6 +146,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$dim[i] <- "space"
       out$type[i] <- ac$type
       out$W[i] <- ac$W
+      out$cov[i] <- TRUE
     }
     if (is.car_term(ac)) {
       out$class[i] <- "car"
@@ -157,6 +158,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
     if (is.fcor_term(ac)) {
       out$class[i] <- "fcor"
       out$V[i] <- ac$V
+      out$cov[i] <- TRUE
     }
   }
   if (sum(out$class %in% "arma") > 1L) {
@@ -194,25 +196,24 @@ has_ac_class <- function(x, class) {
 }
 
 # use explicit residual covariance structure?
-use_cov <- function(x) {
+use_ac_cov <- function(x) {
   has_ac_subset(x, cov = TRUE)
+}
+
+# use explicit residual covariance structure for time-series?
+use_ac_cov_time <- function(x) {
+  has_ac_subset(x, cov = TRUE, dim = "time")
 }
 
 # should natural residuals be modeled as correlated?
 has_cor_natural_residuals <- function(bterms) {
-  # acef <- tidy_acef(bterms)
-  has_natural_residuals(bterms) && use_cov(bterms)
-  #(use_cov(bterms$autocor) || is.cor_sar(bterms$autocor))
+  has_natural_residuals(bterms) && use_ac_cov(bterms)
 }
 
 # has the model latent residuals to be used in autocor structures
 # TODO: rename to has_cor_latent_residuals?
 has_latent_residuals <- function(bterms) {
-  # acef <- tidy_acef(bterms)
-  !has_natural_residuals(bterms) && use_cov(bterms)
-    # TODO: generalize to arbitrary autocor types?
-    # any(c("arma", "cosy") %in% ac_types(bterms))
-    #(is.cor_arma(bterms$autocor) || is.cor_cosy(bterms$autocor))
+  !has_natural_residuals(bterms) && use_ac_cov(bterms)
 }
 
 # helper function to prepare spatial weights matrices

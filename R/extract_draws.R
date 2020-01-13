@@ -6,14 +6,16 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   incl_autocor = TRUE, oos = NULL, resp = NULL,
                                   nsamples = NULL, subset = NULL, nug = NULL, 
                                   smooths_only = FALSE, offset = TRUE, 
-                                  new_objects = list(), point = NULL, ...) {
+                                  newdata2 = NULL, new_objects = NULL,
+                                  point = NULL, ...) {
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   warn_brmsfit_multiple(x, newdata = newdata)
+  incl_autocor <- as_one_logical(incl_autocor)
+  smooths_only <- as_one_logical(smooths_only)
+  offset <- as_one_logical(offset)
+  newdata2 <- use_alias(newdata2, new_objects)
   x <- restructure(x)
-  if (!incl_autocor) {
-    x <- remove_autocor(x) 
-  }
   resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
@@ -23,13 +25,15 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   newdata <- validate_newdata(
     newdata, object = x, re_formula = re_formula, 
     resp = resp, allow_new_levels = allow_new_levels, 
-    new_objects = new_objects, ...
+    newdata2 = newdata2, ...
   )
   new <- !isTRUE(attr(newdata, "old"))
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula, 
-    resp = resp, allow_new_levels = allow_new_levels, 
-    new_objects = new_objects, internal = TRUE, ...
+    newdata2 = newdata2, resp = resp, 
+    allow_new_levels = allow_new_levels, 
+    incl_autocor = incl_autocor,
+    internal = TRUE, ...
   )
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- parse_bf(new_formula)
@@ -61,7 +65,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     sample_new_levels = sample_new_levels, nug = nug, 
     smooths_only = smooths_only, offset = offset, new = new, 
     oos = oos, stanvars = names(x$stanvars), old_sdata = old_sdata,
-    trunc_bounds = trunc_bounds
+    trunc_bounds = trunc_bounds, incl_autocor = incl_autocor
   )
 }
 
@@ -104,12 +108,14 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
 }
 
 #' @export
-extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
+extract_draws.brmsterms <- function(x, samples, sdata, data,
+                                    incl_autocor = TRUE, ...) {
   data <- subset_data(data, x)
   nsamples <- nrow(samples)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
-  draws <- nlist(family = prepare_family(x), nsamples, nobs, resp = x$resp)
+  draws <- nlist(nsamples, nobs, resp = x$resp)
+  draws$family <- prepare_family(x, incl_autocor = incl_autocor)
   draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)
@@ -118,7 +124,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       draws$dpars[[dp]] <- extract_draws(
         x$dpars[[dp]], samples = samples, 
-        sdata = sdata, data = data, ...
+        sdata = sdata, data = data,
+        incl_autocor = incl_autocor, ...
       )
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
@@ -130,7 +137,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
   for (nlp in names(x$nlpars)) {
     draws$nlpars[[nlp]] <- extract_draws(
       x$nlpars[[nlp]], samples = samples, 
-      sdata = sdata, data = data, ...
+      sdata = sdata, data = data,
+      incl_autocor = incl_autocor, ...
     )
   }
   if (is.mixfamily(x$family)) {
@@ -178,10 +186,10 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
       draws$bhaz <- extract_draws_bhaz(x$dpars$mu, samples, sdata, ...)
     }
   }
-  if (has_cor_natural_residuals(x)) {
-    # only include autocor samples on the top-level of draws 
-    # when using the covariance formulation of autocorrelations
-    draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
+  if (incl_autocor) {
+    # only include those autocor samples on the top-level 
+    # of draws which imply explicit covariance matrices
+    draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, cov = TRUE, ...)
   }
   draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
   structure(draws, class = "brmsdraws")
@@ -207,9 +215,7 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
 
 #' @export
 extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, 
-                              offset = TRUE, ...) {
-  smooths_only <- as_one_logical(smooths_only)
-  offset <- as_one_logical(offset)
+                              incl_autocor = TRUE, offset = TRUE, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   draws <- nlist(family = x$family, nsamples, nobs)
@@ -225,11 +231,11 @@ extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE,
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
   draws$re <- extract_draws_re(x, sdata, ...)
+  if (incl_autocor) {
+    draws$ac <- extract_draws_ac(x, samples, sdata, cov = FALSE, ...)
+  }
   if (offset) {
     draws$offset <- extract_draws_offset(x, sdata, ...)
-  }
-  if (!has_cor_natural_residuals(x)) {
-    draws$ac <- extract_draws_autocor(x, samples, sdata, ...)
   }
   draws
 }
@@ -691,6 +697,84 @@ extract_draws_re <- function(bterms, sdata, draws_ranef,
   draws
 }
 
+# extract draws of autocorrelation parameters
+# @param cov extract autocor terms using covariance matrices?
+extract_draws_ac <- function(bterms, samples, sdata, oos = NULL, 
+                             cov = FALSE, new = FALSE, ...) {
+  draws <- list()
+  cov <- as_one_logical(cov)
+  acef <- tidy_acef(bterms)
+  acef <- subset2(acef, cov = cov)
+  if (!NROW(acef)) {
+    return(draws)
+  }
+  draws$acef <- acef
+  p <- usc(combine_prefix(bterms))
+  draws$N_tg <- sdata[[paste0("N_tg", p)]]
+  if (has_ac_class(acef, "arma")) {
+    acef_arma <- subset2(acef, class = "arma")
+    draws$Y <- sdata[[paste0("Y", p)]]
+    if (!is.null(oos)) {
+      if (any(oos > length(draws$Y))) {
+        stop2("'oos' should not contain integers larger than N.")
+      }
+      # .predictor_arma has special behavior for NA responses 
+      draws$Y[oos] <- NA
+    }
+    draws$J_lag <- sdata[[paste0("J_lag", p)]]
+    if (acef_arma$p > 0) {
+      draws$ar <- get_samples(samples, paste0("^ar", p, "\\["))
+    }
+    if (acef_arma$q > 0) {
+      draws$ma <- get_samples(samples, paste0("^ma", p, "\\["))
+    }
+  }
+  if (has_ac_class(acef, "cosy")) {
+    draws$cosy <-  get_samples(samples, paste0("^cosy", p, "$"))
+  }
+  if (use_ac_cov_time(acef)) {
+    # draws for the covariance structures of time-series models
+    draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
+    draws$end_tg <- sdata[[paste0("end_tg", p)]]
+    if (has_latent_residuals(bterms)) {
+      regex_err <- paste0("^err", p, "\\[")
+      has_err <- any(grepl(regex_err, colnames(samples)))
+      if (has_err && !new) {
+        draws$err <- get_samples(samples, regex_err)
+      } else {
+        # need to sample correlated residuals
+        draws$err <- matrix(nrow = nrow(samples), ncol = length(draws$Y))
+        draws$sderr <- get_samples(samples, paste0("^sderr", p, "$"))
+        for (i in seq_len(draws$N_tg)) {
+          obs <- with(draws, begin_tg[i]:end_tg[i])
+          zeros <- rep(0, length(obs))
+          cov <- get_cov_matrix_autocor(list(ac = draws), obs, latent = TRUE)
+          .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
+          draws$err[, obs] <- rblapply(seq_rows(samples), .err)
+        }
+      }
+    }
+  }
+  if (has_ac_class(acef, "sar")) {
+    draws$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))
+    draws$errorsar <- get_samples(samples, paste0("^errorsar", p, "$"))
+    draws$W <- sdata[[paste0("W", p)]]
+  }
+  if (has_ac_class(acef, "car")) {
+    acef_car <- subset2(acef, class = "car")
+    if (new && acef_car$gr == "NA") {
+      stop2("Without a grouping factor, CAR models cannot handle newdata.")
+    }
+    gcar <- sdata[[paste0("Jloc", p)]]
+    Zcar <- matrix(rep(1, length(gcar)))
+    draws$Zcar <- prepare_Z(Zcar, list(gcar))
+    rcar <- get_samples(samples, paste0("^rcar", p, "\\["))
+    rcar <- rcar[, unique(gcar), drop = FALSE]
+    draws$rcar <- rcar
+  }
+  draws
+}
+
 extract_draws_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
   sdata[[paste0("offset", p)]]
@@ -1120,10 +1204,10 @@ is.bdrawsnl <- function(x) {
 #'   correlations. This options may be useful for conducting Bayesian power
 #'   analysis. If \code{"old_levels"}, directly sample new levels from the
 #'   existing levels.
-#' @param new_objects A named \code{list} of objects containing new data, which
-#'   cannot be passed via argument \code{newdata}. Required for objects passed
-#'   via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
-#'   \code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.
+#' @param newdata2 A named \code{list} of objects containing new data, which
+#'   cannot be passed via argument \code{newdata}. Required for some objects 
+#'   used in autocorrelation structures, or \code{\link{stanvars}}.
+#' @param new_objects Deprecated alias of \code{newdata2}.
 #' @param incl_autocor A flag indicating if correlation structures originally
 #'   specified via \code{autocor} should be included in the predictions.
 #'   Defaults to \code{TRUE}.

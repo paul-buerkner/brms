@@ -19,7 +19,8 @@
   nug = NULL,
   smooths_only = FALSE,
   offset = TRUE,
-  new_objects = list(),
+  newdata2 = NULL,
+  new_objects = NULL,
   point = NULL,
   ...
 )
@@ -85,10 +86,11 @@ computation of smooth terms will be extracted.}
 \item{offset}{Logical; Indicates if offsets should be included in the
 predictions. Defaults to \code{TRUE}.}
 
-\item{new_objects}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Required for objects passed
-via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
-\code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.}
+\item{newdata2}{A named \code{list} of objects containing new data, which
+cannot be passed via argument \code{newdata}. Required for some objects 
+used in autocorrelation structures, or \code{\link{stanvars}}.}
+
+\item{new_objects}{Deprecated alias of \code{newdata2}.}
 
 \item{point}{Shall the returned object contain only point estimates of the
 parameters instead of their posterior samples? Defaults to \code{NULL} in

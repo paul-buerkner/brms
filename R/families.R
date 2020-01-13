@@ -1548,9 +1548,9 @@ no_sigma <- function(bterms) {
   if (is.formula(bterms$adforms$se)) {
     se <- eval_rhs(bterms$adforms$se)
     se_only <- isFALSE(se$flags$sigma)
-    if (se_only && use_cov(bterms)) {
+    if (se_only && use_ac_cov_time(bterms)) {
       stop2("Please set argument 'sigma' of function 'se' ",
-            "to TRUE when modeling ARMA covariance matrices.")
+            "to TRUE when modeling time-series covariance matrices.")
     }
   } else {
     se_only <- FALSE
@@ -1577,11 +1577,15 @@ no_nu <- function(bterms) {
 }
 
 # prepare for calling family specific post-processing functions
-prepare_family <- function(x) {
+prepare_family <- function(x, incl_autocor = TRUE) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
+  if (!incl_autocor) {
+    family$fun <- family$family
+    return(family)
+  }
   acef <- tidy_acef(x)
-  if (use_cov(acef) && has_natural_residuals(x)) {
+  if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
     family$fun <- paste0(family$family, "_cov")
   } else if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")

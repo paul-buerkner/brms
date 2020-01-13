@@ -25,7 +25,7 @@ predictor.bdrawsl <- function(draws, i = NULL, fdraws = NULL, ...) {
     predictor_gp(draws, i) +
     predictor_offset(draws, i, nobs)
   # some autocorrelation structures depend on eta
-  eta <- predictor_autocor(eta, draws, i, fdraws = fdraws)
+  eta <- predictor_ac(eta, draws, i, fdraws = fdraws)
   # intentionally last as it may return 3D arrays
   eta <- predictor_cs(eta, draws, i)
   unname(eta)
@@ -419,8 +419,8 @@ predictor_offset <- function(draws, i, nobs) {
 # compute eta for autocorrelation structures
 # @note eta has to be passed to this function in 
 #   order for ARMA structures to work correctly
-predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
-  if (is.cor_arma(draws$ac$autocor)) {
+predictor_ac <- function(eta, draws, i, fdraws = NULL) {
+  if (has_ac_class(draws$ac$acef, "arma")) {
     if (!is.null(draws$ac$err)) {
       # ARMA correlations via latent residuals
       eta <- eta + p(draws$ac$err, i, row = FALSE)
@@ -436,7 +436,7 @@ predictor_autocor <- function(eta, draws, i, fdraws = NULL) {
       ) 
     }
   }
-  if (is.cor_car(draws$ac$autocor)) {
+  if (has_ac_class(draws$ac$acef, "car")) {
     eta <- eta + .predictor_re(Z = p(draws$ac$Zcar, i), r = draws$ac$rcar)
   }
   eta

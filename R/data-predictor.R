@@ -59,18 +59,22 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
-                               knots = NULL, old_sdata = NULL, ...) {
-  c(data_fe(x, data),
+                               knots = NULL, incl_autocor = TRUE,
+                               old_sdata = NULL, ...) {
+  out <- c(data_fe(x, data),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
-    data_ac(x, data, data2 = data2, old_locations = old_sdata$locations),
     data_offset(x, data),
     data_bhaz(x, data, basis = old_sdata$base_basis),
     data_prior(x, data, prior = prior)
   )
+  if (incl_autocor) {
+    c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
+  }
+  out
 }
 
 # prepare data for non-linear parameters for use in Stan
@@ -616,12 +620,10 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
 }
 
 # data for autocorrelation variables
-# @param old_locations: optional old locations for CAR models
-data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
-  # stopifnot(is.brmsterms(bterms))
-  # autocor <- bterms$autocor
-  N <- nrow(data)
+# @param locations optional original locations for CAR models
+data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   out <- list()
+  N <- nrow(data)
   acef <- tidy_acef(bterms)
   if (has_ac_subset(bterms, dim = "time")) {
     gr <- subset2(acef, dim = "time")$gr
@@ -636,7 +638,7 @@ data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
     acef_arma <- subset2(acef, class = "arma")
     out$Kar <- acef_arma$p
     out$Kma <- acef_arma$q
-    if (!use_cov(acef_arma)) {
+    if (!use_ac_cov_time(acef_arma)) {
       # data for the 'predictor' version of ARMA
       max_lag <- max(out$Kar, out$Kma)
       out$J_lag <- as.array(rep(0, N))
@@ -647,7 +649,7 @@ data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
       }
     }
   }
-  if (use_cov(acef)) {
+  if (use_ac_cov_time(acef)) {
     # data for the 'covariance' versions of time-series structures
     out$N_tg <- length(unique(tgroup))
     out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
@@ -662,6 +664,7 @@ data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
       stop2("Object '", acef_sar$W, "' is missing in 'data2'.")
     }
     W <- get(acef_sar$W, data2)
+    W <- sar_weights(W)
     if (!identical(dim(W), rep(N, 2))) {
       stop2("Dimensions of '", acef_sar$W, "' must be equal to ", 
             "the number of observations.")
@@ -673,24 +676,24 @@ data_ac <- function(bterms, data, data2, old_locations = NULL, ...) {
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
-    new <- !is.null(old_locations)
+    new <- !is.null(locations)
     if (!acef_car$W %in% names(data2)) {
       stop2("Object '", acef_car$W, "' is missing in 'data2'.")
     }
     W <- get(acef_car$W, data2)
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
-      locations <- levels(factor(loc_data))
+      new_locations <- levels(factor(loc_data))
       if (new) {
-        new_locations <- setdiff(locations, old_locations)
-        if (length(new_locations)) {
+        invalid_locations <- setdiff(new_locations, locations)
+        if (length(invalid_locations)) {
           stop2("Cannot handle new locations in CAR models.")
         }
       } else {
-        old_locations <- locations
+        locations <- new_locations
       }
       Nloc <- length(locations)
-      Jloc <- as.array(match(loc_data, old_locations))
+      Jloc <- as.array(match(loc_data, locations))
       found_locations <- rownames(W)
       if (is.null(found_locations)) {
         stop2("Row names are required for '", acef_car$W, "'.")
