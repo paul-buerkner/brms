@@ -170,7 +170,10 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
 # @param draws a brmsdraws object
 # @param obs observations for which to compute the covariance matrix
 # @param latent compute covariance matrix for latent residuals?
-get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
+get_cov_matrix_ac <- function(draws, obs = NULL, latent = FALSE) {
+  if (is.null(obs)) {
+    obs <- seq_len(draws$nobs) 
+  }
   nobs <- length(obs)
   nsamples <- draws$nsamples
   acef <- draws$ac$acef
@@ -190,6 +193,8 @@ get_cov_matrix_autocor <- function(draws, obs, latent = FALSE) {
   } else if (has_ac_class(acef, "cosy")) {
     cosy <- as.numeric(draws$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
+  } else if (has_ac_class(acef, "fcor")) {
+    cor <- get_cor_matrix_fcor(draws$ac$V, nsamples)
   } else {
     cor <- get_cor_matrix_ident(nsamples, nobs)
   }
@@ -295,6 +300,15 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
     } 
   } 
   out
+}
+
+# prepare a fixed correlation matrix
+# @param V matrix to be prepared
+# @param nsamples number of posterior samples
+# @return a numeric 'nsamples' x 'nobs' x 'nobs' array
+get_cor_matrix_fcor <- function(V, nsamples) {
+  out <- array(V, dim = c(dim(V), nsamples))
+  aperm(out, c(3, 1, 2))
 }
 
 # compute an identity correlation matrix

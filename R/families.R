@@ -1555,7 +1555,7 @@ no_sigma <- function(bterms) {
   } else {
     se_only <- FALSE
   }
-  se_only || has_ac_class(bterms, "fcor")
+  se_only
 }
 
 # has the model a non-predicted but estimated sigma parameter?
@@ -1586,7 +1586,7 @@ prepare_family <- function(x, incl_autocor = TRUE) {
   }
   acef <- tidy_acef(x)
   if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
-    family$fun <- paste0(family$family, "_cov")
+    family$fun <- paste0(family$family, "_time")
   } else if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
     if (has_ac_subset(acef_sar, type = "lag")) {
@@ -1595,8 +1595,7 @@ prepare_family <- function(x, incl_autocor = TRUE) {
       family$fun <- paste0(family$family, "_errorsar")
     }
   } else if (has_ac_class(acef, "fcor")) {
-    # TODO: change to "_fcor"?
-    family$fun <- paste0(family$family, "_fixed")
+    family$fun <- paste0(family$family, "_fcor")
   } else {
     family$fun <- family$family
   }

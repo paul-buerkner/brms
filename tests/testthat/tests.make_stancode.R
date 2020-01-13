@@ -923,9 +923,6 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
   expect_match2(make_stancode(y~1, data = data, family = student(),
                              autocor = cor_fixed(V)),
                "target += multi_student_t_lpdf(Y | nu, mu, V)")
-  expect_match2(make_stancode(y~1, data = data, family = student(),
-                             autocor = cor_fixed(V)),
-               "target += multi_student_t_lpdf(Y | nu, mu, V)")
 })
 
 test_that("Stan code for GAMMs is correct", {

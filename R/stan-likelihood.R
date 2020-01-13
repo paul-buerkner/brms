@@ -306,7 +306,7 @@ stan_llh_gaussian_mv <- function(bterms, resp = "", mix = "") {
   sdist("multi_normal_cholesky", p$Mu, p$LSigma)
 }
 
-stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
+stan_llh_gaussian_time <- function(bterms, resp = "", mix = "") {
   if (stan_llh_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
@@ -314,20 +314,21 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
   v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("normal_cov_{sfx}"), 
+  sdist(glue("normal_time_{sfx}"), 
     p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
-stan_llh_gaussian_fixed <- function(bterms, resp = "", mix = "") {
+stan_llh_gaussian_fcor <- function(bterms, resp = "", mix = "") {
   has_se <- is.formula(bterms$adforms$se)
   if (stan_llh_adj(bterms) || has_se) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$LV <- paste0("LV", resp)
-  sdist("multi_normal_cholesky", p$mu, p$LV)
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$LV)
 }
 
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
@@ -361,7 +362,7 @@ stan_llh_student_mv <- function(bterms, resp = "", mix = "") {
   sdist("multi_student_t", p$nu, p$Mu, p$Sigma)
 }
 
-stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
+stan_llh_student_time <- function(bterms, resp = "", mix = "") {
   if (stan_llh_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
@@ -369,20 +370,21 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
   v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("student_t_cov_{sfx}"), 
+  sdist(glue("student_t_time_{sfx}"), 
     p$nu, p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
-stan_llh_student_fixed <- function(bterms, resp = "", mix = "") {
+stan_llh_student_fcor <- function(bterms, resp = "", mix = "") {
   has_se <- is.formula(bterms$adforms$se)
   if (stan_llh_adj(bterms) || has_se) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  p$V <- paste0("V", resp)
-  sdist("multi_student_t", p$nu, p$mu, p$V)
+  p$LV <- paste0("LV", resp)
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$LV)
 }
 
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {

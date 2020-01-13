@@ -365,21 +365,21 @@ posterior_predict_student_mv <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-posterior_predict_gaussian_cov <- function(i, draws, ...) {
+posterior_predict_gaussian_time <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_autocor(draws, obs)
+  Sigma <- get_cov_matrix_ac(draws, obs)
   .predict <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-posterior_predict_student_cov <- function(i, draws, ...) {
+posterior_predict_student_time <- function(i, draws, ...) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   nu <- as.matrix(get_dpar(draws, "nu", i = obs))
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_autocor(draws, obs)
+  Sigma <- get_cov_matrix_ac(draws, obs)
   .predict <- function(s) {
     rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
@@ -438,21 +438,23 @@ posterior_predict_student_errorsar <- function(i, draws, ...) {
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-posterior_predict_gaussian_fixed <- function(i, draws, ...) {
+posterior_predict_gaussian_fcor <- function(i, draws, ...) {
   stopifnot(i == 1)
   mu <- as.matrix(get_dpar(draws, "mu"))
+  Sigma <- get_cov_matrix_ac(draws)
   .predict <- function(s) {
-    rmulti_normal(1, mu = mu[s, ], Sigma = draws$ac$V)
+    rmulti_normal(1, mu = mu[s, ], Sigma = Sigma[s, , ])
   }
   rblapply(seq_len(draws$nsamples), .predict)
 }
 
-posterior_predict_student_fixed <- function(i, draws, ...) {
+posterior_predict_student_fcor <- function(i, draws, ...) {
   stopifnot(i == 1)
-  mu <- as.matrix(get_dpar(draws, "mu"))
   nu <- as.matrix(get_dpar(draws, "nu"))
+  mu <- as.matrix(get_dpar(draws, "mu"))
+  Sigma <- get_cov_matrix_ac(draws)
   .predict <- function(s) {
-    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$ac$V)
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = Sigma[s, , ])
   }
   rblapply(seq_len(draws$nsamples), .predict)
 }

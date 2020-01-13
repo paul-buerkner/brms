@@ -772,6 +772,9 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
     rcar <- rcar[, unique(gcar), drop = FALSE]
     draws$rcar <- rcar
   }
+  if (has_ac_class(acef, "fcor")) {
+    draws$V <- sdata[[paste0("V", p)]]
+  }
   draws
 }
 

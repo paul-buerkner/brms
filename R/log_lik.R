@@ -231,11 +231,11 @@ log_lik_student_mv <- function(i, draws, data = data.frame()) {
   log_lik_weight(out, i = i, draws = draws)
 }
 
-log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
+log_lik_gaussian_time <- function(i, draws, data = data.frame()) {
   obs <- with(draws$ac, begin_tg[i]:end_tg[i])
   Y <- as.numeric(draws$data$Y[obs])
   mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_autocor(draws, obs)
+  Sigma <- get_cov_matrix_ac(draws, obs)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     g <- solve(C, Y - mu[s, ])
@@ -248,7 +248,7 @@ log_lik_gaussian_cov <- function(i, draws, data = data.frame()) {
   rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
-log_lik_student_cov <- function(i, draws, data = data.frame()) {
+log_lik_student_time <- function(i, draws, data = data.frame()) {
   stop_no_pw()
 }
 
@@ -299,14 +299,15 @@ log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
   stop_no_pw()
 }
 
-log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
+log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
   Y <- as.numeric(draws$data$Y)
-  C <- draws$ac$V
-  cbar <- diag(solve(C))
+  mu <- get_dpar(draws, "mu")
+  Sigma <- get_cov_matrix_ac(draws)
   .log_lik <- function(s) {
+    C <- as.matrix(Sigma[s, , ])
     g <- solve(C, Y - mu[s, ])
+    cbar <- diag(solve(C))
     yloo <- Y - g / cbar
     sdloo <- sqrt(1 / cbar)
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
@@ -315,7 +316,7 @@ log_lik_gaussian_fixed <- function(i, draws, data = data.frame()) {
   rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
-log_lik_student_fixed <- function(i, draws, data = data.frame()) {
+log_lik_student_fcor <- function(i, draws, data = data.frame()) {
   stop_no_pw()
 }
 
