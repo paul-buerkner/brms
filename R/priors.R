@@ -611,7 +611,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       brmsprior(class = "sdme", resp = x$resp)
   }
   # priors for autocorrelation parameters
-  prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
+  # prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
   prior
 }
 
@@ -624,6 +624,7 @@ prior_predictor.btl <- function(x, ...) {
     prior_cs(x, ...) +
     prior_sm(x, ...) + 
     prior_gp(x, ...) +
+    prior_ac(x, ...) +
     prior_bhaz(x, ...)
 }
 
@@ -929,6 +930,57 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
       class = "sds", coef = c("", smterms), 
       prior = prior_strings, ls = px
     )
+  }
+  prior
+}
+
+# priors for autocor parameters
+prior_ac <- function(bterms, def_scale_prior, ...) {
+  # stopifnot(is.brmsterms(bterms))
+  # autocor <- bterms$autocor
+  # resp <- bterms$resp
+  prior <- empty_prior()
+  acef <- tidy_acef(bterms)
+  if (!NROW(acef)) {
+    return(prior)
+  }
+  px <- check_prefix(bterms)
+  if (has_ac_class(acef, "arma")) {
+    cbound <- "<lower=-1,upper=1>"
+    acef_arma <- subset2(acef, class = "arma")
+    if (acef_arma$p > 0) {
+      prior <- prior + brmsprior(class = "ar", bound = cbound, ls = px)
+    }
+    if (acef_arma$q > 0) {
+      prior <- prior + brmsprior(class = "ma", bound = cbound, ls = px)
+    }
+  }
+  if (has_ac_class(acef, "cosy")) {
+    prior <- prior + brmsprior(class = "cosy", ls = px)
+  }
+  if (has_latent_residuals(bterms)) {
+    prior <- prior + 
+      brmsprior(def_scale_prior, class = "sderr", ls = px)
+  }
+  if (has_ac_class(acef, "sar")) {
+    acef_sar <- subset2(acef, class = "sar")
+    if (acef_sar$type == "lag") {
+      prior <- prior + brmsprior(class = "lagsar", ls = px)
+    }
+    if (acef_sar$type == "error") {
+      prior <- prior + brmsprior(class = "errorsar", ls = px)
+    }
+  }
+  if (has_ac_class(acef, "car")) {
+    acef_car <- subset2(acef, class = "car")
+    prior <- prior +  
+      brmsprior(def_scale_prior, class = "sdcar", ls = px)
+    if (acef_car$type %in% "escar") {
+      prior <- prior + brmsprior(class = "car", ls = px)
+    } else if (acef_car$type %in% "bym2") {
+      prior <- prior + 
+        brmsprior("beta(1, 1)", class = "rhocar", ls = px)
+    }
   }
   prior
 }
