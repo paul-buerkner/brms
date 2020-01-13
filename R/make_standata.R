@@ -148,7 +148,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         newdata, object, re_formula = re_formula, ...
       )
     }
-    object <- update_stanvars(object, newdata2)
+    object <- add_new_stanvars(object, newdata2)
     control$new <- TRUE
     # ensure correct handling of functions like poly or scale
     old_terms <- attr(object$data, "terms")
