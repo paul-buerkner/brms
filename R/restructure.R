@@ -103,7 +103,7 @@ restructure_v2 <- function(x) {
     # internal handling of special effects terms has changed
     # this requires updating the 'terms' attribute of the data
     x$data <- rm_attr(x$data, c("brmsframe", "terms"))
-    x$data <- update_data(x$data, bterms) 
+    x$data <- validate_data(x$data, bterms) 
   }
   if (version <= "2.8.8") {
     if (any(grepl("^loclev(\\[|_|$)", pars))) {
@@ -154,7 +154,7 @@ restructure_v1 <- function(x) {
   x$nonlinear <- x$partial <- x$threshold <- NULL
   bterms <- parse_bf(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
-  x$data <- update_data(x$data, bterms) 
+  x$data <- validate_data(x$data, bterms) 
   x$ranef <- tidy_ranef(bterms, model.frame(x))
   if ("prior_frame" %in% class(x$prior)) {
     class(x$prior) <- c("brmsprior", "data.frame") 

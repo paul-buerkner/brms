@@ -438,60 +438,6 @@ validate_newdata <- function(
   structure(newdata, valid = TRUE)
 }
 
-# allows for updating of objects containing new data
-# which cannot be passed via argument 'newdata'
-# @param x object of class 'brmsfit'
-# @param new_objects: optional named list of new objects
-# @return a possibly updated 'brmsfit' object
-# add_new_objects <- function(x, newdata, new_objects = list()) {
-#   stopifnot(is.brmsfit(x), is.data.frame(newdata))
-#   # update autocor variables with new objects
-#   # do not include 'cor_car' here as the adjacency matrix
-#   # (or subsets of it) should be the same for newdata
-#   .update_autocor <- function(autocor, resp = "") {
-#     resp <- usc(resp)
-#     if (is.cor_sar(autocor)) {
-#       W_name <- paste0("W", resp)
-#       if (W_name %in% names(new_objects)) {
-#         autocor$W <- cor_sar(new_objects[[W_name]])$W
-#       } else {
-#         message("Using the identity matrix as weighting matrix by default")
-#         autocor$W <- diag(nrow(newdata))
-#       }
-#     } else if (is.cor_fixed(autocor)) {
-#       V_name <- paste0("V", resp)
-#       if (V_name %in% names(new_objects)) {
-#         autocor$V <- cor_fixed(new_objects[[V_name]])$V
-#       } else {
-#         message("Using the median variance by default")
-#         median_V <- median(diag(autocor$V), na.rm = TRUE)
-#         autocor$V <- diag(median_V, nrow(newdata)) 
-#       }
-#     }
-#     return(autocor)
-#   }
-#   if (!isTRUE(attr(x, "autocor_updated"))) {
-#     # attribute is set by subset_autocor() to prevent double updating
-#     if (is_mv(x)) {
-#       resps <- names(x$formula$forms)
-#       for (i in seq_along(resps)) {
-#         new_autocor <- autocor(x, resp = resps[i])
-#         new_autocor <- .update_autocor(new_autocor, resps[i])
-#         x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-#       }
-#     } else {
-#       x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
-#     }
-#   }
-#   stanvars_data <- subset_stanvars(x$stanvars, block = "data")
-#   for (name in names(stanvars_data)) {
-#     if (name %in% names(new_objects)) {
-#       x$stanvars[[name]]$sdata <- new_objects[[name]]
-#     }
-#   }
-#   x
-# }
-
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {

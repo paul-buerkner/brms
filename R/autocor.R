@@ -460,40 +460,6 @@ print.cov_fixed <- function(x, ...) {
   print.cor_fixed(x)
 }
 
-# get AR (autoregressive effects of residuals) order
-# get_ar <- function(x) {
-#   stop_not_cor_brms(x)
-#   ifelse(is.null(x$p), 0, x$p)
-# }
-
-# get MA (moving-average) order
-# get_ma <- function(x) {
-#   stop_not_cor_brms(x)
-#   ifelse(is.null(x$q), 0, x$q)
-# }
-
-# has only AR correlations?
-# has_ar_only <- function(x) {
-#   get_ar(x) && !get_ma(x)
-# } 
-
-# has only MA correlations?
-# has_ma_only <- function(x) {
-#   get_ma(x) && !get_ar(x)
-# } 
-
-# use the covariance parameterization of a correlation structure?
-# use_cov <- function(x) {
-#   stop_not_cor_brms(x)
-#   out <- FALSE
-#   if (is.cor_arma(x)) {
-#     out <- isTRUE(x$cov)
-#   } else if (is.cor_cosy(x)) {
-#     out <- TRUE
-#   }
-#   out
-# }
-
 stop_not_cor_brms <- function(x) {
   if (!(is.null(x) || is.cor_brms(x))) {
     stop2("Argument 'autocor' must be of class 'cor_brms'.")
@@ -510,106 +476,37 @@ is.cor_empty <- function(x) {
   inherits(x, "cor_empty")
 }
 
-# check validity of the autocor argument
-# check_autocor <- function(autocor) {
-#   if (is.null(autocor))  {
-#     autocor <- cor_empty()
-#   }
-#   stop_not_cor_brms(autocor)
-#   autocor
-# }
-
-# remove autocorrelation structures
-# @param x a brmsfit object
-# remove_autocor <- function(x) {
-#   stopifnot(is.brmsfit(x))
-#   if (is_mv(x)) {
-#     for (r in names(x$formula$forms)) {
-#       x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
-#     }
-#   } else {
-#     x$autocor <- x$formula$autocor <- cor_empty()
-#   }
-#   x
-# }
-
-# subset matrices stored in 'cor_brms' objects
-# @param x a brmsfit object to be updated
-# @param subset indices of observations to keep
-# @param autocor optional (list of) 'cor_brms' objects 
-#   from which to take matrices
-# @param incl_car also subset adjacency matrices of CAR models?
-#   see 'add_new_objects' for why we often need to ignore CAR models
-# @return an updated brmsfit object
-# subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
-#   .subset_autocor <- function(autocor) {
-#     if (is.cor_sar(autocor) || is.cor_car(autocor)) {
-#       autocor$W <- autocor$W[subset, subset, drop = FALSE]
-#     } else if (is.cor_fixed(autocor)) {
-#       autocor$V <- autocor$V[subset, subset, drop = FALSE]
-#     }
-#     return(autocor)
-#   }
-#   if (is.null(autocor)) {
-#     autocor <- autocor(x)
-#   }
-#   if (is_mv(x)) {
-#     for (i in seq_along(x$formula$forms)) {
-#       dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
-#       if (!dont_subset) {
-#         new_autocor <- .subset_autocor(autocor[[i]])
-#         x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-#       }
-#     }
-#   } else {
-#     dont_subset <- is.cor_car(autocor) && !incl_car
-#     if (!dont_subset) {
-#       x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
-#     }
-#   }
-#   # prevents double updating in add_new_objects()
-#   structure(x, autocor_updated = TRUE)
-# }
-
-# extract variable names used in autocor structures
-# get_autocor_vars <- function(x, ...) {
-#   UseMethod("get_autocor_vars")
-# }
-
+#' (Deprecated) Extract Autocorrelation Objects
+#' 
+#' @inheritParams posterior_predict.brmsfit
+#' @param ... Currently unused.
+#' 
+#' @return A \code{cor_brms} object or a list of such objects for multivariate 
+#'   models. Not supported for models fitted with brms 2.11.1 or higher.
+#' 
 #' @export
-# get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
-#   if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
-# }
+autocor.brmsfit <- function(object, resp = NULL, ...) {
+  warning2("Method 'autocor' is deprecated and will be removed in the future.")
+  object <- restructure(object)
+  resp <- validate_resp(resp, object)
+  if (!is.null(resp)) {
+    # multivariate model
+    autocor <- object$autocor[resp]
+    if (length(resp) == 1L) {
+      autocor <- autocor[[1]]
+    }
+  } else {
+    # univariate model
+    autocor <- object$autocor
+  }
+  autocor
+}
 
+#' @rdname autocor.brmsfit
 #' @export
-# get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
-#   if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
-# }
-
-#' @export
-# get_autocor_vars.brmsformula <- function(x, ...) {
-#   get_autocor_vars(x$autocor, ...)
-# }
-
-#' @export
-# get_autocor_vars.mvbrmsformula <- function(x, ...) {
-#   unique(ulapply(x$forms, get_autocor_vars, ...))
-# }
-
-#' @export
-# get_autocor_vars.mvbrmsterms <- function(x, ...) {
-#   unique(ulapply(x$terms, get_autocor_vars, ...))
-# }
-
-#' @export
-# get_autocor_vars.brmsfit <- function(x, ...) {
-#   get_autocor_vars(x$formula, ...)
-# }
-
-# convenient wrapper around 'get_autocor_vars'
-# get_ac_groups <- function(x, ...) {
-#   get_autocor_vars(x, var = "group", ...)
-# }
+autocor <- function(object, ...) {
+  UseMethod("autocor")
+}
 
 # extract variables for autocorrelation structures
 # @param autocor object of class 'cor_brms'

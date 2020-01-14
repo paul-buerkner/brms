@@ -986,49 +986,6 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
   prior
 }
 
-# priors for autocor parameters
-prior_autocor <- function(bterms, def_scale_prior) {
-  stopifnot(is.brmsterms(bterms))
-  autocor <- bterms$autocor
-  resp <- bterms$resp
-  cbound <- "<lower=-1,upper=1>"
-  prior <- empty_prior()
-  if (is.cor_arma(autocor)) {
-    if (get_ar(autocor)) {
-      prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
-    }
-    if (get_ma(autocor)) {
-      prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
-    }
-  }
-  if (is.cor_cosy(autocor)) {
-    prior <- prior + brmsprior(class = "cosy", resp = resp)
-  }
-  if (has_latent_residuals(bterms)) {
-    prior <- prior + 
-      brmsprior(def_scale_prior, class = "sderr", resp = resp)
-  }
-  if (is.cor_sar(autocor)) {
-    if (identical(autocor$type, "lag")) {
-      prior <- prior + brmsprior(class = "lagsar", resp = resp)
-    }
-    if (identical(autocor$type, "error")) {
-      prior <- prior + brmsprior(class = "errorsar", resp = resp)
-    }
-  }
-  if (is.cor_car(autocor)) {
-    prior <- prior +  
-      brmsprior(def_scale_prior, class = "sdcar", resp = resp)
-    if (autocor$type %in% "escar") {
-      prior <- prior + brmsprior(class = "car", resp = resp)
-    } else if (autocor$type %in% "bym2") {
-      prior <- prior + 
-        brmsprior("beta(1, 1)", class = "rhocar", resp = resp)
-    }
-  }
-  prior
-}
-
 # default priors for distributional parameters
 def_dprior <- function(x, dpar, data = NULL) {
   stopifnot(is.brmsterms(x))
