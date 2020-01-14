@@ -1443,10 +1443,10 @@ stan_ac <- function(bterms, data, prior, ...) {
       stop2(err_msg, " when 'rescor' is estimated.")
     }
     str_add(out$data) <- glue( 
-      "  matrix[N{p}, N{p}] V{p};  // known residual covariance matrix\n"
+      "  matrix[N{p}, N{p}] M{p};  // known residual covariance matrix\n"
     )
     str_add(out$tdata_def) <- glue(
-      "  matrix[N{p}, N{p}] LV{p} = cholesky_decompose(V{p});\n"
+      "  matrix[N{p}, N{p}] LM{p} = cholesky_decompose(M{p});\n"
     )
   }
   out

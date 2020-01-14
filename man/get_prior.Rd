@@ -8,7 +8,6 @@ get_prior(
   formula,
   data,
   family = gaussian(),
-  data2 = NULL,
   autocor = NULL,
   sparse = NULL,
   internal = FALSE,

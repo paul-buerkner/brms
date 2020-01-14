@@ -53,8 +53,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   mecor <- isTRUE(x$mecor)
   formula <- x$formula
   family <- x$family
-  autocor <- x$autocor
-  y <- nlist(formula, family, autocor, mv, rescor, mecor) 
+  y <- nlist(formula, family, mv, rescor, mecor) 
   class(y) <- "brmsterms"
   
   if (check_response) {
@@ -84,6 +83,7 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   }
   
   # copy stuff from the formula to parameter 'mu'
+  # TODO: allow updating of 'mu' via 'formula'
   str_rhs_form <- formula2str(rhs(formula))
   rhs_needed <- FALSE
   if (is.mixfamily(family)) {
@@ -490,9 +490,10 @@ parse_gp <- function(formula) {
 
 # extract autocorrelation terms
 parse_ac <- function(formula) {
-  out <- find_terms(formula, "ac")
+  autocor <- attr(formula, "autocor")
+  out <- c(find_terms(formula, "ac"), find_terms(autocor, "ac"))
   if (!length(out)) {
-    return(out)
+    return(NULL)
   }
   eterms <- lapply(out, eval2)
   allvars <- unlist(c(

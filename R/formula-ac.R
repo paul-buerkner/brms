@@ -41,25 +41,25 @@ cosy <- function(time = NA, gr = NA) {
 }
 
 #' @export
-sar <- function(W, type = "lag") {
+sar <- function(M, type = "lag") {
   label <- deparse(match.call())
-  W <- deparse(substitute(W))
-  if (!nzchar(W)) {
-    stop2("Argument 'W' is missing in 'sar'.")
+  M <- deparse(substitute(M))
+  if (!nzchar(M)) {
+    stop2("Argument 'M' is missing in 'sar'.")
   }
   options <- c("lag", "error")
   type <- match.arg(type, options)
-  out <- nlist(W, type, label)
+  out <- nlist(M, type, label)
   class(out) <- c("sar_term", "ac_term")
   out
 }
 
 #' @export
-car <- function(W, gr = NA, type = "escar") {
+car <- function(M, gr = NA, type = "escar") {
   label <- deparse(match.call())
-  W <- deparse(substitute(W))
-  if (!nzchar(W)) {
-    stop2("Argument 'W' is missing in 'car'.")
+  M <- deparse(substitute(M))
+  if (!nzchar(M)) {
+    stop2("Argument 'M' is missing in 'car'.")
   }
   gr <- deparse(substitute(gr))
   if (gr != "NA") {
@@ -67,22 +67,35 @@ car <- function(W, gr = NA, type = "escar") {
   }
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
-  out <- nlist(W, gr, type, label)
+  out <- nlist(M, gr, type, label)
   class(out) <- c("car_term", "ac_term")
   out
 }
 
 #' @export
-fcor <- function(V) {
-  # TODO: support estimating sigma additionally
+fcor <- function(M) {
   label <- deparse(match.call())
-  V <- deparse(substitute(V))
-  if (!nzchar(V)) {
-    stop2("Argument 'V' is missing in 'fcor'.")
+  M <- deparse(substitute(M))
+  if (!nzchar(M)) {
+    stop2("Argument 'M' is missing in 'fcor'.")
   }
-  out <- nlist(V, label)
+  out <- nlist(M, label)
   class(out) <- c("fcor_term", "ac_term")
   out
+}
+
+# validate 'autocor' argument
+validate_autocor <- function(autocor) {
+  if (is.cor_brms(autocor)) {
+    autocor <- formula_cor_brms(autocor)
+  }
+  if (is.formula(autocor)) {
+    autocor <- parse_ac(autocor)
+  }
+  if (!is.null(autocor) && !is.formula(autocor)) {
+    stop2("Argument 'autocor' must be a formula or 'cor_brms' object.")
+  }
+  autocor
 }
 
 # gather information on autocor terms
@@ -94,22 +107,19 @@ tidy_acef <- function(x, ...) {
 #' @export
 tidy_acef.default <- function(x, ...) {
   x <- parse_bf(x, check_response = FALSE)
-  stopifnot(is.brmsterms(x))
   tidy_acef(x, ...)
 }
 
+#' @export
+tidy_acef.mvbrmsterms <- function(x, ...) {
+  out <- lapply(x$terms, tidy_acef, ...)
+  do_call(rbind, out)
+}
+
+#' @export
 tidy_acef.brmsterms <- function(x, ...) {
-  tidy_acef(x$dpars$mu, ...)
-}
-
-#' @export
-tidy_acef.acef <- function(x, ...) {
-  x
-}
-
-#' @export
-tidy_acef.NULL <- function(x, ...) {
-  empty_acef()
+  out <- lapply(x$dpars, tidy_acef, ...)
+  do_call(rbind, out)
 }
 
 #' @export
@@ -118,11 +128,13 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   if (!is.formula(form)) {
     return(empty_acef())
   }
+  px <- check_prefix(x)
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
   nterms <- NROW(out)
-  cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "W", "V")
+  cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
   out$cov <- FALSE
+  out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
     if (is.arma_term(ac)) {
@@ -145,7 +157,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$class[i] <- "sar"
       out$dim[i] <- "space"
       out$type[i] <- ac$type
-      out$W[i] <- ac$W
+      out$M[i] <- ac$M
       out$cov[i] <- TRUE
     }
     if (is.car_term(ac)) {
@@ -153,25 +165,31 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$dim[i] <- "space"
       out$type[i] <- ac$type
       out$gr[i] <- ac$gr
-      out$W[i] <- ac$W
+      out$M[i] <- ac$M
     }
     if (is.fcor_term(ac)) {
       out$class[i] <- "fcor"
-      out$V[i] <- ac$V
+      out$M[i] <- ac$M
       out$cov[i] <- TRUE
     }
   }
-  if (sum(out$class %in% "arma") > 1L) {
-    stop2("Formulas may not contain more than one ARMA term.")
+  if (any(duplicated(out$class))) {
+    stop2("Can only model one term per autocorrelation class.")
   }
-  if (sum(out$class %in% "cosy") > 1L) {
-    stop2("Formulas may not contain more than one COSY term.")
+  if (NROW(subset2(out, dim = "time")) > 1) {
+    stop2("Can only model one time-series term.")
   }
-  acef_time_cov <- subset2(out, dim = "time", cov = TRUE)
-  if (NROW(acef_time_cov) > 1) {
-    stop2("Can only model one time-related covariance structure at a time.")
+  if (NROW(subset2(out, dim = "space")) > 1) {
+    stop2("Can only model one spatial term.")
   }
-  # TODO: add more validity checks
+  if (NROW(subset2(out, cov = TRUE)) > 1) {
+    stop2("Can only model one explicit covariance term.")
+  }
+  if (NROW(subset2(out, cov = TRUE))) {
+    if (!dpar_class(px$dpar) %in% c("", "mu") || nzchar(px$nlpar)) {
+      stop2("Explicit covariance terms can only be specified on 'mu'.")
+    }
+  }
   class(out) <- c("acef", "data.frame")
   out
 }
@@ -181,8 +199,31 @@ tidy_acef.btnl <- function(x, ... ) {
   tidy_acef.btl(x, ...)
 }
 
+#' @export
+tidy_acef.acef <- function(x, ...) {
+  x
+}
+
+#' @export
+tidy_acef.NULL <- function(x, ...) {
+  empty_acef()
+}
+
 empty_acef <- function() {
   structure(empty_data_frame(), class = c("acef", "data.frame"))
+}
+
+# get names of certain autocor variables
+get_ac_vars <- function(x, var, ...) {
+  var <- match.arg(var, c("time", "gr", "M"))
+  acef <- subset2(tidy_acef(x), ...)
+  out <- unique(acef[[var]])
+  setdiff(na.omit(out), "NA")
+}
+
+# get names of autocor grouping variables
+get_ac_groups <- function(x, ...) {
+  get_ac_vars(x, "gr", ...)
 }
 
 # is certain subset of autocor terms is present?
@@ -216,19 +257,69 @@ has_latent_residuals <- function(bterms) {
   !has_natural_residuals(bterms) && use_ac_cov(bterms)
 }
 
-# helper function to prepare spatial weights matrices
-sar_weights <- function(W) {
-  if (is(W, "listw")) {
+# validate SAR matrices
+validate_sar_matrix <- function(M) {
+  if (is(M, "listw")) {
     require_package("spdep")
-    W <- spdep::listw2mat(W)
-  } else if (is(W, "nb")) {
+    M <- spdep::listw2mat(M)
+  } else if (is(M, "nb")) {
     require_package("spdep")
-    W <- spdep::nb2mat(W)
+    M <- spdep::nb2mat(M)
   }
-  if (!is.matrix(W)) {
-    stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
+  if (length(dim(M)) != 2L) {
+    stop2("'M' for SAR terms must be of class 'matrix', 'listw', or 'nb'.")
   }
-  W
+  M <- Matrix::Matrix(M, sparse = TRUE)
+  if (!Matrix::isSymmetric(M, check.attributes = FALSE)) {
+    stop2("'M' for CAR terms must be symmetric.")
+  }
+  M
+}
+
+# validate CAR matrices
+validate_car_matrix <- function(M) {
+  if (length(dim(M)) != 2L) {
+    stop2("'M' for CAR terms must be a matrix.")
+  }
+  M <- Matrix::Matrix(M, sparse = TRUE)
+  if (!Matrix::isSymmetric(M, check.attributes = FALSE)) {
+    stop2("'M' for CAR terms must be symmetric.")
+  }
+  if (is.null(rownames(M))) {
+    stop2("Row names are required for 'M' for CAR terms.")
+  }
+  colnames(M) <- rownames(M)
+  not_binary <- !(M == 0 | M == 1)
+  if (any(not_binary)) {
+    message("Converting all non-zero values in 'M' to 1")
+    M[not_binary] <- 1
+  }
+  M
+}
+
+# validate FCOR matrices
+validate_fcor_matrix <- function(M) {
+  if (length(dim(M)) <= 1L) {
+    M <- diag(as.vector(M), length(M))
+  }
+  if (length(dim(M)) != 2L) {
+    stop2("'M' for FCOR terms must be a matrix.")
+  }
+  M <- as.matrix(M)
+  if (!isSymmetric(M, check.attributes = FALSE)) {
+    stop2("'M' for FCOR terms must be symmetric.")
+  }
+  if (min(eigen(M)$values <= 0)) {
+    stop2("'M' for FCOR terms must be positive definite.")
+  }
+  M
+}
+
+# regex to extract all parameter names of autocorrelation structures
+regex_autocor_pars <- function() {
+  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
+  p <- paste0("(", p, ")", collapse = "|")
+  paste0("^(", p, ")(\\[|_|$)")
 }
 
 is.ac_term <- function(x) {

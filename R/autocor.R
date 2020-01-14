@@ -241,21 +241,6 @@ cor_errorsar <- function(W) {
   out
 }
 
-# helper function to prepare spatial weights matrices
-sar_weights <- function(W) {
-  if (is(W, "listw")) {
-    require_package("spdep")
-    W <- spdep::listw2mat(W)
-  } else if (is(W, "nb")) {
-    require_package("spdep")
-    W <- spdep::nb2mat(W)
-  }
-  if (!is.matrix(W)) {
-    stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
-  }
-  W
-}
-
 #' Spatial conditional autoregressive (CAR) structures
 #' 
 #' These functions are constructors for the \code{cor_car} class
@@ -482,26 +467,26 @@ print.cov_fixed <- function(x, ...) {
 }
 
 # get AR (autoregressive effects of residuals) order
-get_ar <- function(x) {
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$p), 0, x$p)
-}
+# get_ar <- function(x) {
+#   stop_not_cor_brms(x)
+#   ifelse(is.null(x$p), 0, x$p)
+# }
 
 # get MA (moving-average) order
-get_ma <- function(x) {
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$q), 0, x$q)
-}
+# get_ma <- function(x) {
+#   stop_not_cor_brms(x)
+#   ifelse(is.null(x$q), 0, x$q)
+# }
 
 # has only AR correlations?
-has_ar_only <- function(x) {
-  get_ar(x) && !get_ma(x)
-} 
+# has_ar_only <- function(x) {
+#   get_ar(x) && !get_ma(x)
+# } 
 
 # has only MA correlations?
-has_ma_only <- function(x) {
-  get_ma(x) && !get_ar(x)
-} 
+# has_ma_only <- function(x) {
+#   get_ma(x) && !get_ar(x)
+# } 
 
 # use the covariance parameterization of a correlation structure?
 # use_cov <- function(x) {
@@ -515,12 +500,12 @@ has_ma_only <- function(x) {
 #   out
 # }
 
-stop_not_cor_brms <- function(x) {
-  if (!(is.null(x) || is.cor_brms(x))) {
-    stop2("Argument 'autocor' must be of class 'cor_brms'.")
-  }
-  TRUE
-}
+# stop_not_cor_brms <- function(x) {
+#   if (!(is.null(x) || is.cor_brms(x))) {
+#     stop2("Argument 'autocor' must be of class 'cor_brms'.")
+#   }
+#   TRUE
+# }
 
 # empty 'cor_brms' object
 cor_empty <- function() {
@@ -532,27 +517,27 @@ is.cor_empty <- function(x) {
 }
 
 # check validity of the autocor argument
-check_autocor <- function(autocor) {
-  if (is.null(autocor))  {
-    autocor <- cor_empty()
-  }
-  stop_not_cor_brms(autocor)
-  autocor
-}
+# check_autocor <- function(autocor) {
+#   if (is.null(autocor))  {
+#     autocor <- cor_empty()
+#   }
+#   stop_not_cor_brms(autocor)
+#   autocor
+# }
 
 # remove autocorrelation structures
 # @param x a brmsfit object
-remove_autocor <- function(x) {
-  stopifnot(is.brmsfit(x))
-  if (is_mv(x)) {
-    for (r in names(x$formula$forms)) {
-      x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
-    }
-  } else {
-    x$autocor <- x$formula$autocor <- cor_empty()
-  }
-  x
-}
+# remove_autocor <- function(x) {
+#   stopifnot(is.brmsfit(x))
+#   if (is_mv(x)) {
+#     for (r in names(x$formula$forms)) {
+#       x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
+#     }
+#   } else {
+#     x$autocor <- x$formula$autocor <- cor_empty()
+#   }
+#   x
+# }
 
 # subset matrices stored in 'cor_brms' objects
 # @param x a brmsfit object to be updated
@@ -562,79 +547,73 @@ remove_autocor <- function(x) {
 # @param incl_car also subset adjacency matrices of CAR models?
 #   see 'add_new_objects' for why we often need to ignore CAR models
 # @return an updated brmsfit object
-subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
-  .subset_autocor <- function(autocor) {
-    if (is.cor_sar(autocor) || is.cor_car(autocor)) {
-      autocor$W <- autocor$W[subset, subset, drop = FALSE]
-    } else if (is.cor_fixed(autocor)) {
-      autocor$V <- autocor$V[subset, subset, drop = FALSE]
-    }
-    return(autocor)
-  }
-  if (is.null(autocor)) {
-    autocor <- autocor(x)
-  }
-  if (is_mv(x)) {
-    for (i in seq_along(x$formula$forms)) {
-      dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
-      if (!dont_subset) {
-        new_autocor <- .subset_autocor(autocor[[i]])
-        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-      }
-    }
-  } else {
-    dont_subset <- is.cor_car(autocor) && !incl_car
-    if (!dont_subset) {
-      x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
-    }
-  }
-  # prevents double updating in add_new_objects()
-  structure(x, autocor_updated = TRUE)
-}
+# subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
+#   .subset_autocor <- function(autocor) {
+#     if (is.cor_sar(autocor) || is.cor_car(autocor)) {
+#       autocor$W <- autocor$W[subset, subset, drop = FALSE]
+#     } else if (is.cor_fixed(autocor)) {
+#       autocor$V <- autocor$V[subset, subset, drop = FALSE]
+#     }
+#     return(autocor)
+#   }
+#   if (is.null(autocor)) {
+#     autocor <- autocor(x)
+#   }
+#   if (is_mv(x)) {
+#     for (i in seq_along(x$formula$forms)) {
+#       dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
+#       if (!dont_subset) {
+#         new_autocor <- .subset_autocor(autocor[[i]])
+#         x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+#       }
+#     }
+#   } else {
+#     dont_subset <- is.cor_car(autocor) && !incl_car
+#     if (!dont_subset) {
+#       x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
+#     }
+#   }
+#   # prevents double updating in add_new_objects()
+#   structure(x, autocor_updated = TRUE)
+# }
 
 # extract variable names used in autocor structures
-get_autocor_vars <- function(x, ...) {
-  UseMethod("get_autocor_vars")
-}
+# get_autocor_vars <- function(x, ...) {
+#   UseMethod("get_autocor_vars")
+# }
 
 #' @export
-get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
-}
+# get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
+#   if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
+# }
 
 #' @export
-get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
-}
+# get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
+#   if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
+# }
 
 #' @export
-get_autocor_vars.brmsformula <- function(x, ...) {
-  get_autocor_vars(x$autocor, ...)
-}
+# get_autocor_vars.brmsformula <- function(x, ...) {
+#   get_autocor_vars(x$autocor, ...)
+# }
 
 #' @export
-get_autocor_vars.mvbrmsformula <- function(x, ...) {
-  unique(ulapply(x$forms, get_autocor_vars, ...))
-}
+# get_autocor_vars.mvbrmsformula <- function(x, ...) {
+#   unique(ulapply(x$forms, get_autocor_vars, ...))
+# }
 
 #' @export
-get_autocor_vars.mvbrmsterms <- function(x, ...) {
-  unique(ulapply(x$terms, get_autocor_vars, ...))
-}
+# get_autocor_vars.mvbrmsterms <- function(x, ...) {
+#   unique(ulapply(x$terms, get_autocor_vars, ...))
+# }
 
 #' @export
-get_autocor_vars.brmsfit <- function(x, ...) {
-  get_autocor_vars(x$formula, ...)
-}
+# get_autocor_vars.brmsfit <- function(x, ...) {
+#   get_autocor_vars(x$formula, ...)
+# }
 
 # convenient wrapper around 'get_autocor_vars'
-get_ac_groups <- function(x, ...) {
-  get_autocor_vars(x, var = "group", ...)
-}
+# get_ac_groups <- function(x, ...) {
+#   get_autocor_vars(x, var = "group", ...)
+# }
 
-# regex to extract all parameter names of autocorrelation structures
-regex_autocor_pars <- function() {
-  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
-  p <- paste0("(", p, ")", collapse = "|")
-  paste0("^(", p, ")(\\[|_|$)")
-}

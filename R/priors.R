@@ -476,8 +476,8 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data, family = gaussian(), data2 = NULL,
-                      autocor = NULL, sparse = NULL, internal = FALSE, ...) {
+get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
+                      sparse = NULL, internal = FALSE, ...) {
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
@@ -488,7 +488,6 @@ get_prior <- function(formula, data, family = gaussian(), data2 = NULL,
   )
   bterms <- parse_bf(formula)
   data <- validate_data(data, bterms = bterms)
-  data2 <- validate_data2(data2)
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
   # initialize output

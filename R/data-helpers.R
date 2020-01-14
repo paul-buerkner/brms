@@ -59,7 +59,7 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 # validate the 'data2' argument
 # @param data2 a named list of data objects
 # @return a validated named list of data objects
-validate_data2 <- function(data2) {
+validate_data2 <- function(data2, bterms) {
   # TODO: specify spline-related matrices in 'data2'
   # TODO: specify 'knots' in 'data2'?
   if (is.null(data2)) {
@@ -70,8 +70,30 @@ validate_data2 <- function(data2) {
   }
   if (length(data2) && !is_named(data2)) {
     stop2("All elements of 'data2' must be named.")
+  } 
+  # validate autocorrelation matrices
+  acef <- tidy_acef(bterms)
+  sar_M_names <- get_ac_vars(acef, "M", class = "sar")
+  for (M in sar_M_names) {
+    data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
+  }
+  car_M_names <- get_ac_vars(acef, "M", class = "car")
+  for (M in car_M_names) {
+    data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
+  }
+  fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
+  for (M in fcor_M_names) {
+    data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
   }
   data2
+}
+
+# get an object from the 'data2' argument
+get_from_data2 <- function(x, data2) {
+  if (!x %in% names(data2)) {
+    stop2("Object '", x, "' was not found in 'data2'.")
+  }
+  get(x, data2)
 }
 
 # add the reserved intercept variables to the data
@@ -145,18 +167,18 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
 # @param bterms brmsterms of mvbrmsterms object
 # @return 'data' potentially ordered differently
 order_data <- function(data, bterms) {
-  time <- get_autocor_vars(bterms, "time")
-  # ordering does not matter for the CAR structure
-  group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
-  if (length(time) > 1L || length(group) > 1L) {
-    stop2("All autocorrelation structures must have the same ",
-          "time and group variables.")
+  # ordering does only matter for time-series models
+  time <- get_ac_vars(bterms, "time", dim = "time")
+  gr <- get_ac_vars(bterms, "gr", dim = "time")
+  if (length(time) > 1L || length(gr) > 1L) {
+    stop2("All time-series structures must have the same ",
+          "'time' and 'gr' variables.")
   }
-  if (length(time) || length(group)) {
-    if (length(group)) {
-      gv <- data[[group]]
+  if (length(time) || length(gr)) {
+    if (length(gr)) {
+      gv <- data[[gr]]
     } else {
-      gv <- rep(1, nrow(data))
+      gv <- rep(1L, nrow(data))
     }
     if (length(time)) {
       tv <- data[[time]]
@@ -410,54 +432,54 @@ validate_newdata <- function(
 # @param x object of class 'brmsfit'
 # @param new_objects: optional named list of new objects
 # @return a possibly updated 'brmsfit' object
-add_new_objects <- function(x, newdata, new_objects = list()) {
-  stopifnot(is.brmsfit(x), is.data.frame(newdata))
-  # update autocor variables with new objects
-  # do not include 'cor_car' here as the adjacency matrix
-  # (or subsets of it) should be the same for newdata
-  .update_autocor <- function(autocor, resp = "") {
-    resp <- usc(resp)
-    if (is.cor_sar(autocor)) {
-      W_name <- paste0("W", resp)
-      if (W_name %in% names(new_objects)) {
-        autocor$W <- cor_sar(new_objects[[W_name]])$W
-      } else {
-        message("Using the identity matrix as weighting matrix by default")
-        autocor$W <- diag(nrow(newdata))
-      }
-    } else if (is.cor_fixed(autocor)) {
-      V_name <- paste0("V", resp)
-      if (V_name %in% names(new_objects)) {
-        autocor$V <- cor_fixed(new_objects[[V_name]])$V
-      } else {
-        message("Using the median variance by default")
-        median_V <- median(diag(autocor$V), na.rm = TRUE)
-        autocor$V <- diag(median_V, nrow(newdata)) 
-      }
-    }
-    return(autocor)
-  }
-  if (!isTRUE(attr(x, "autocor_updated"))) {
-    # attribute is set by subset_autocor() to prevent double updating
-    if (is_mv(x)) {
-      resps <- names(x$formula$forms)
-      for (i in seq_along(resps)) {
-        new_autocor <- autocor(x, resp = resps[i])
-        new_autocor <- .update_autocor(new_autocor, resps[i])
-        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-      }
-    } else {
-      x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
-    }
-  }
-  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
-  for (name in names(stanvars_data)) {
-    if (name %in% names(new_objects)) {
-      x$stanvars[[name]]$sdata <- new_objects[[name]]
-    }
-  }
-  x
-}
+# add_new_objects <- function(x, newdata, new_objects = list()) {
+#   stopifnot(is.brmsfit(x), is.data.frame(newdata))
+#   # update autocor variables with new objects
+#   # do not include 'cor_car' here as the adjacency matrix
+#   # (or subsets of it) should be the same for newdata
+#   .update_autocor <- function(autocor, resp = "") {
+#     resp <- usc(resp)
+#     if (is.cor_sar(autocor)) {
+#       W_name <- paste0("W", resp)
+#       if (W_name %in% names(new_objects)) {
+#         autocor$W <- cor_sar(new_objects[[W_name]])$W
+#       } else {
+#         message("Using the identity matrix as weighting matrix by default")
+#         autocor$W <- diag(nrow(newdata))
+#       }
+#     } else if (is.cor_fixed(autocor)) {
+#       V_name <- paste0("V", resp)
+#       if (V_name %in% names(new_objects)) {
+#         autocor$V <- cor_fixed(new_objects[[V_name]])$V
+#       } else {
+#         message("Using the median variance by default")
+#         median_V <- median(diag(autocor$V), na.rm = TRUE)
+#         autocor$V <- diag(median_V, nrow(newdata)) 
+#       }
+#     }
+#     return(autocor)
+#   }
+#   if (!isTRUE(attr(x, "autocor_updated"))) {
+#     # attribute is set by subset_autocor() to prevent double updating
+#     if (is_mv(x)) {
+#       resps <- names(x$formula$forms)
+#       for (i in seq_along(resps)) {
+#         new_autocor <- autocor(x, resp = resps[i])
+#         new_autocor <- .update_autocor(new_autocor, resps[i])
+#         x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
+#       }
+#     } else {
+#       x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
+#     }
+#   }
+#   stanvars_data <- subset_stanvars(x$stanvars, block = "data")
+#   for (name in names(stanvars_data)) {
+#     if (name %in% names(new_objects)) {
+#       x$stanvars[[name]]$sdata <- new_objects[[name]]
+#     }
+#   }
+#   x
+# }
 
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
@@ -501,9 +523,11 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(Y))
   }
-  if (is.cor_car(x$autocor)) {
-    if (isTRUE(nzchar(x$time$group))) {
-      out$locations <- levels(factor(get(x$time$group, data)))
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    stopifnot(length(gr) <= 1L)
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- levels(factor(get(gr, data)))
     } else {
       out$locations <- NA
     }

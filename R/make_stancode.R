@@ -42,11 +42,11 @@ make_stancode <- function(formula, data, family = gaussian(),
   bterms <- parse_bf(formula)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
-    prior, formula = formula, data = data, 
+    prior, formula = formula, data = data,
     sample_prior = sample_prior, warn = TRUE
   )
   data <- validate_data(data, bterms = bterms)
-  data2 <- validate_data2(data2)
+  data2 <- validate_data2(data2, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
   stanvars <- validate_stanvars(stanvars)

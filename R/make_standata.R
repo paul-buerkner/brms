@@ -65,7 +65,7 @@ make_standata <- function(formula, data, family = gaussian(),
   )
   # order data for use in autocorrelation models
   data <- order_data(data, bterms = bterms)
-  data2 <- validate_data2(data2)
+  data2 <- validate_data2(data2, bterms = bterms)
   
   out <- data_response(
     bterms, data, check_response = check_response,
@@ -131,7 +131,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.null(newdata2)) {
     newdata2 <- object$data2
   }
-  newdata2 <- validate_data2(newdata2)
+  newdata2 <- validate_data2(newdata2, bterms = bterms)
   new_formula <- update_re_terms(object$formula, re_formula)
   bterms <- parse_bf(new_formula)
   version <- object$version$brms

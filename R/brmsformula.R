@@ -692,11 +692,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(decomp)) {
     attr(out$formula, "decomp") <- match.arg(decomp, decomp_opts())
   }
+  if (!is.null(autocor)) {
+    attr(out$formula, "autocor") <- validate_autocor(autocor)
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
-  }
-  if (!is.null(autocor)) {
-    out$autocor <- check_autocor(autocor)
   }
   if (!is.null(lhs(formula))) {
     out$resp <- parse_resp(formula)
@@ -1183,15 +1183,16 @@ validate_formula.default <- function(formula, ...) {
 # @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
-  formula, family = gaussian(), autocor = cor_empty(), 
+  formula, family = gaussian(), autocor = NULL, 
   data = NULL, threshold = NULL, sparse = NULL, ...
 ) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
     out$family <- check_family(family)
   }
-  if (is.null(out$autocor) || is.cor_empty(out$autocor)) {
-    out$autocor <- check_autocor(autocor)
+  if (is.null(attr(formula, "autocor")) || !is.null(autocor)) {
+    # store 'autocor' as an attribute to carry it around easier
+    attr(formula, "autocor") <- validate_autocor(autocor)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)

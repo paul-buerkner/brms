@@ -660,27 +660,22 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   }
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
-    if (!acef_sar$W %in% names(data2)) {
-      stop2("Object '", acef_sar$W, "' is missing in 'data2'.")
-    }
-    W <- get(acef_sar$W, data2)
-    W <- sar_weights(W)
-    if (!identical(dim(W), rep(N, 2))) {
-      stop2("Dimensions of '", acef_sar$W, "' must be equal to ", 
+    M <- data2[[acef_sar$M]]
+    stopifnot(is.matrix(M))
+    if (!is_equal(dim(M), rep(N, 2))) {
+      stop2("Dimensions of 'M' for SAR terms must be equal to ", 
             "the number of observations.")
     }
-    out$W <- W
-    out$eigenW <- eigen(W)$values
+    out$M <- M
+    out$eigenM <- eigen(M)$values
     # simplifies code of choose_N
     out$N_tg <- 1
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
     new <- !is.null(locations)
-    if (!acef_car$W %in% names(data2)) {
-      stop2("Object '", acef_car$W, "' is missing in 'data2'.")
-    }
-    W <- get(acef_car$W, data2)
+    M <- data2[[acef_car$M]]
+    stopifnot(is.matrix(M))
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
       new_locations <- levels(factor(loc_data))
@@ -694,40 +689,35 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       }
       Nloc <- length(locations)
       Jloc <- as.array(match(loc_data, locations))
-      found_locations <- rownames(W)
-      if (is.null(found_locations)) {
-        stop2("Row names are required for '", acef_car$W, "'.")
-      }
-      colnames(W) <- found_locations
-      found <- locations %in% found_locations
+      found <- locations %in% rownames(M)
       if (any(!found)) {
-        stop2("Row names of '", acef_car$W, "' do not match ", 
+        stop2("Row names of 'M' for CAR terms do not match ", 
               "the names of the grouping levels.")
       }
-      W <- W[locations, locations, drop = FALSE]
+      M <- M[locations, locations, drop = FALSE]
     } else {
       Nloc <- N
       Jloc <- as.array(seq_len(Nloc))
-      if (!is_equal(dim(W), rep(Nloc, 2))) {
+      if (!is_equal(dim(M), rep(Nloc, 2))) {
         if (new) {
           stop2("Cannot handle new data in CAR models ",
                 "without a grouping factor.")
         } else {
-          stop2("Dimensions of 'W' must be equal ", 
+          stop2("Dimensions of 'M' for CAR terms must be equal ", 
                 "to the number of observations.") 
         }
       }
     }
-    W_tmp <- W
-    W_tmp[upper.tri(W_tmp)] <- NA
-    edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+    M_tmp <- M
+    M_tmp[upper.tri(M_tmp)] <- NA
+    edges <- which(as.matrix(M_tmp == 1), arr.ind = TRUE)
     c(out) <- nlist(
       Nloc, Jloc, Nedges = nrow(edges),  
       edges1 = as.array(edges[, 1]), 
       edges2 = as.array(edges[, 2])
     )
     if (acef_car$type %in% c("escar", "esicar")) {
-      Nneigh <- Matrix::colSums(W)
+      Nneigh <- Matrix::colSums(M)
       if (any(Nneigh == 0)) {
         stop2(
           "For exact sparse CAR, all locations should have at ", 
@@ -736,30 +726,25 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
         )
       }
       inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-      eigenW <- t(inv_sqrt_D) %*% W %*% inv_sqrt_D
-      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
-      c(out) <- nlist(Nneigh, eigenW)
+      eigenM <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
+      eigenM <- eigen(eigenM, TRUE, only.values = TRUE)$values
+      c(out) <- nlist(Nneigh, eigenM)
     } else if (acef_car$type %in% "bym2") {
       c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
   }
   if (has_ac_class(acef, "fcor")) {
-    acef_fcor <- subset2(acef, class = "fcor")
-    if (!acef_fcor$V %in% names(data2)) {
-      stop2("Object '", acef_fcor$V, "' is missing in 'data2'.")
-    }
-    V <- get(acef_fcor$V, data2)
+    M <- data2[[acef_fcor$M]]
+    stopifnot(is.matrix(M))
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
-      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+      M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
-    if (nrow(V) != N) {
-      stop2("'", acef_fcor$V, "' must have the same number of rows as 'data'.")
+    if (nrow(M) != N) {
+      stop2("Dimensions of 'M' for FCOR terms must be equal ", 
+            "to the number of observations.") 
     }
-    if (min(eigen(V)$values <= 0)) {
-      stop2("'", acef_fcor$V, "' must be positive definite.")
-    }
-    out$V <- V
+    out$M <- M
     # simplifies code of choose_N
     out$N_tg <- 1
   }
@@ -789,137 +774,137 @@ data_offset <- function(bterms, data) {
 
 # data for autocorrelation variables
 # @param old_locations: optional old locations for CAR models
-data_autocor <- function(bterms, data, old_locations = NULL) {
-  stopifnot(is.brmsterms(bterms))
-  autocor <- bterms$autocor
-  N <- nrow(data)
-  out <- list()
-  if (is.cor_arma(autocor) || is.cor_cosy(autocor)) {
-    if (length(bterms$time$group)) {
-      tgroup <- as.numeric(factor(data[[bterms$time$group]]))
-    } else {
-      tgroup <- rep(1, N) 
-    }
-  }
-  if (is.cor_arma(autocor)) {
-    # ARMA correlations
-    out$Kar <- get_ar(autocor)
-    out$Kma <- get_ma(autocor)
-    if (!use_cov(autocor)) {
-      # data for the 'predictor' version of ARMA
-      max_lag <- max(out$Kar, out$Kma)
-      out$J_lag <- as.array(rep(0, N))
-      for (n in seq_len(N)[-N]) {
-        ind <- n:max(1, n + 1 - max_lag)
-        # indexes errors to be used in the n+1th prediction
-        out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
-      }
-    }
-  }
-  if (use_cov(autocor)) {
-    # data for the 'covariance' versions of ARMA and COSY structures
-    out$N_tg <- length(unique(tgroup))
-    out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
-    out$nobs_tg <- as.array(with(out, 
-      c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
-    ))
-    out$end_tg <- with(out, begin_tg + nobs_tg - 1)
-  }
-  if (is.cor_sar(autocor)) {
-    if (!identical(dim(autocor$W), rep(N, 2))) {
-      stop2("Dimensions of 'W' must be equal to the number of observations.")
-    }
-    out$W <- autocor$W
-    out$eigenW <- eigen(out$W)$values
-    # simplifies code of choose_N
-    out$N_tg <- 1
-  }
-  if (is.cor_car(autocor)) {
-    new <- !is.null(old_locations)
-    if (isTRUE(nzchar(bterms$time$group))) {
-      loc_data <- get(bterms$time$group, data)
-      locations <- levels(factor(loc_data))
-      if (new) {
-        new_locations <- setdiff(locations, old_locations)
-        if (length(new_locations)) {
-          stop2("Cannot handle new locations in CAR models.")
-        }
-      } else {
-        old_locations <- locations
-      }
-      Nloc <- length(locations)
-      Jloc <- as.array(match(loc_data, old_locations))
-      found_locations <- rownames(autocor$W)
-      if (is.null(found_locations)) {
-        stop2("Row names are required for 'W'.")
-      }
-      colnames(autocor$W) <- found_locations
-      found <- locations %in% found_locations
-      if (any(!found)) {
-        stop2("Row names of 'W' do not match ", 
-              "the names of the grouping levels.")
-      }
-      autocor$W <- autocor$W[locations, locations, drop = FALSE]
-    } else {
-      Nloc <- N
-      Jloc <- as.array(seq_len(Nloc))
-      if (!identical(dim(autocor$W), rep(Nloc, 2))) {
-        if (new) {
-          stop2("Cannot handle new data in CAR models ",
-                "without a grouping factor.")
-        } else {
-          stop2("Dimensions of 'W' must be equal ", 
-                "to the number of observations.") 
-        }
-      }
-    }
-    W_tmp <- autocor$W
-    W_tmp[upper.tri(W_tmp)] <- NA
-    edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
-    c(out) <- nlist(
-      Nloc, Jloc, Nedges = nrow(edges),  
-      edges1 = as.array(edges[, 1]), 
-      edges2 = as.array(edges[, 2])
-    )
-    if (autocor$type %in% c("escar", "esicar")) {
-      Nneigh <- Matrix::colSums(autocor$W)
-      if (any(Nneigh == 0)) {
-        stop2(
-          "For exact sparse CAR, all locations should have at ", 
-          "least one neighbor within the provided data set. ",
-          "Consider using type = 'icar' instead."
-        )
-      }
-      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-      eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
-      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
-      c(out) <- nlist(Nneigh, eigenW)
-    } else if (autocor$type %in% "bym2") {
-      c(out) <- list(car_scale = .car_scale(edges, Nloc))
-    }
-  }
-  if (is.cor_fixed(autocor)) {
-    V <- autocor$V
-    rmd_rows <- attr(data, "na.action")
-    if (!is.null(rmd_rows)) {
-      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
-    }
-    if (nrow(V) != N) {
-      stop2("'V' must have the same number of rows as 'data'.")
-    }
-    if (min(eigen(V)$values <= 0)) {
-      stop2("'V' must be positive definite.")
-    }
-    out$V <- V
-    # simplifies code of choose_N
-    out$N_tg <- 1
-  }
-  if (length(out)) {
-    resp <- usc(combine_prefix(bterms))
-    out <- setNames(out, paste0(names(out), resp))
-  }
-  out
-}
+# data_autocor <- function(bterms, data, old_locations = NULL) {
+#   stopifnot(is.brmsterms(bterms))
+#   autocor <- bterms$autocor
+#   N <- nrow(data)
+#   out <- list()
+#   if (is.cor_arma(autocor) || is.cor_cosy(autocor)) {
+#     if (length(bterms$time$group)) {
+#       tgroup <- as.numeric(factor(data[[bterms$time$group]]))
+#     } else {
+#       tgroup <- rep(1, N) 
+#     }
+#   }
+#   if (is.cor_arma(autocor)) {
+#     # ARMA correlations
+#     out$Kar <- get_ar(autocor)
+#     out$Kma <- get_ma(autocor)
+#     if (!use_cov(autocor)) {
+#       # data for the 'predictor' version of ARMA
+#       max_lag <- max(out$Kar, out$Kma)
+#       out$J_lag <- as.array(rep(0, N))
+#       for (n in seq_len(N)[-N]) {
+#         ind <- n:max(1, n + 1 - max_lag)
+#         # indexes errors to be used in the n+1th prediction
+#         out$J_lag[n] <- sum(tgroup[ind] %in% tgroup[n + 1])
+#       }
+#     }
+#   }
+#   if (use_cov(autocor)) {
+#     # data for the 'covariance' versions of ARMA and COSY structures
+#     out$N_tg <- length(unique(tgroup))
+#     out$begin_tg <- as.array(ulapply(unique(tgroup), match, tgroup))
+#     out$nobs_tg <- as.array(with(out, 
+#       c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+#     ))
+#     out$end_tg <- with(out, begin_tg + nobs_tg - 1)
+#   }
+#   if (is.cor_sar(autocor)) {
+#     if (!identical(dim(autocor$W), rep(N, 2))) {
+#       stop2("Dimensions of 'W' must be equal to the number of observations.")
+#     }
+#     out$W <- autocor$W
+#     out$eigenW <- eigen(out$W)$values
+#     # simplifies code of choose_N
+#     out$N_tg <- 1
+#   }
+#   if (is.cor_car(autocor)) {
+#     new <- !is.null(old_locations)
+#     if (isTRUE(nzchar(bterms$time$group))) {
+#       loc_data <- get(bterms$time$group, data)
+#       locations <- levels(factor(loc_data))
+#       if (new) {
+#         new_locations <- setdiff(locations, old_locations)
+#         if (length(new_locations)) {
+#           stop2("Cannot handle new locations in CAR models.")
+#         }
+#       } else {
+#         old_locations <- locations
+#       }
+#       Nloc <- length(locations)
+#       Jloc <- as.array(match(loc_data, old_locations))
+#       found_locations <- rownames(autocor$W)
+#       if (is.null(found_locations)) {
+#         stop2("Row names are required for 'W'.")
+#       }
+#       colnames(autocor$W) <- found_locations
+#       found <- locations %in% found_locations
+#       if (any(!found)) {
+#         stop2("Row names of 'W' do not match ", 
+#               "the names of the grouping levels.")
+#       }
+#       autocor$W <- autocor$W[locations, locations, drop = FALSE]
+#     } else {
+#       Nloc <- N
+#       Jloc <- as.array(seq_len(Nloc))
+#       if (!identical(dim(autocor$W), rep(Nloc, 2))) {
+#         if (new) {
+#           stop2("Cannot handle new data in CAR models ",
+#                 "without a grouping factor.")
+#         } else {
+#           stop2("Dimensions of 'W' must be equal ", 
+#                 "to the number of observations.") 
+#         }
+#       }
+#     }
+#     W_tmp <- autocor$W
+#     W_tmp[upper.tri(W_tmp)] <- NA
+#     edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+#     c(out) <- nlist(
+#       Nloc, Jloc, Nedges = nrow(edges),  
+#       edges1 = as.array(edges[, 1]), 
+#       edges2 = as.array(edges[, 2])
+#     )
+#     if (autocor$type %in% c("escar", "esicar")) {
+#       Nneigh <- Matrix::colSums(autocor$W)
+#       if (any(Nneigh == 0)) {
+#         stop2(
+#           "For exact sparse CAR, all locations should have at ", 
+#           "least one neighbor within the provided data set. ",
+#           "Consider using type = 'icar' instead."
+#         )
+#       }
+#       inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+#       eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+#       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+#       c(out) <- nlist(Nneigh, eigenW)
+#     } else if (autocor$type %in% "bym2") {
+#       c(out) <- list(car_scale = .car_scale(edges, Nloc))
+#     }
+#   }
+#   if (is.cor_fixed(autocor)) {
+#     V <- autocor$V
+#     rmd_rows <- attr(data, "na.action")
+#     if (!is.null(rmd_rows)) {
+#       V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+#     }
+#     if (nrow(V) != N) {
+#       stop2("'V' must have the same number of rows as 'data'.")
+#     }
+#     if (min(eigen(V)$values <= 0)) {
+#       stop2("'V' must be positive definite.")
+#     }
+#     out$V <- V
+#     # simplifies code of choose_N
+#     out$N_tg <- 1
+#   }
+#   if (length(out)) {
+#     resp <- usc(combine_prefix(bterms))
+#     out <- setNames(out, paste0(names(out), resp))
+#   }
+#   out
+# }
 
 # compute the spatial scaling factor of CAR models
 # @param edges matrix with two columns defining the adjacency of the locations

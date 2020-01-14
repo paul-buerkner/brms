@@ -326,9 +326,9 @@ stan_llh_gaussian_fcor <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  p$LV <- paste0("LV", resp)
+  p$LM <- paste0("LM", resp)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$LV)
+  sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$LM)
 }
 
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
@@ -382,9 +382,9 @@ stan_llh_student_fcor <- function(bterms, resp = "", mix = "") {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  p$LV <- paste0("LV", resp)
+  p$LM <- paste0("LM", resp)
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$LV)
+  sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$LM)
 }
 
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {

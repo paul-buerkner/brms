@@ -392,7 +392,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     bterms <- parse_bf(formula)
     data.name <- substitute_name(data)
     data <- validate_data(data, bterms = bterms)
-    data2 <- validate_data2(data2)
+    data2 <- validate_data2(data2, bterms = bterms)
     prior <- check_prior(
       prior, formula = formula, data = data,
       sample_prior = sample_prior, warn = FALSE
