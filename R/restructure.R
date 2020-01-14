@@ -132,7 +132,6 @@ restructure_v2 <- function(x) {
       data2 = list(), bterms = bterms, 
       get_data2_autocor(x$formula)
     )
-    x$autocor <- NULL
   }
   x
 }

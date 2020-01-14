@@ -1345,20 +1345,20 @@ update.brmsformula <- function(object, formula.,
                                ...) {
   mode <- match.arg(mode)
   object <- bf(object)
-  up_family <- formula.[["family"]]
-  if (is.null(up_family)) {
-    up_family <- object[["family"]]
-  }
-  up_autocor <- formula.[["autocor"]]
-  if (is.null(up_autocor)) {
-    up_autocor <- object[["autocor"]]
-  }
-  up_nl <- get_nl(formula, aol = FALSE)
+  up_nl <- get_nl(formula., aol = FALSE)
   if (is.null(up_nl)) {
     up_nl <- get_nl(object)
   }
   # already use up_nl here to avoid ordinary parsing of NL formulas
   formula. <- bf(formula., nl = up_nl)
+  up_family <- formula.[["family"]]
+  if (is.null(up_family)) {
+    up_family <- object[["family"]]
+  }
+  up_autocor <- attr(formula.$formula, "autocor")
+  if (is.null(up_autocor)) {
+    up_autocor <- attr(object$formula, "autocor")
+  }
   old_form <- object$formula
   up_form <- formula.$formula
   if (mode == "update") {

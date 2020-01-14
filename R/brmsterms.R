@@ -254,7 +254,7 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
 parse_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
-  types <- c("fe", "re", "sp", "cs", "sm", "gp", "ac", "offset")
+  types <- setdiff(all_term_types(), excluded_term_types(formula))
   for (t in types) {
     tmp <- do_call(paste0("parse_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
@@ -287,7 +287,9 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   y$used_nlpars <- intersect(all_vars, nlpars)
   covars <- setdiff(all_vars, nlpars)
   y$covars <- structure(str2formula(covars), int = FALSE)
-  y$ac <- parse_ac(attr(formula, "autocor"))
+  if (!"ac" %in% excluded_term_types(formula)) {
+    y$ac <- parse_ac(attr(formula, "autocor")) 
+  }
   y$allvars <- allvars_formula(covars, get_allvars(y$ac))
   environment(y$allvars) <- environment(formula)
   y$loop <- loop
@@ -347,8 +349,8 @@ parse_fe <- function(formula) {
   sp_terms <- find_terms(all_terms, "all", complete = FALSE)
   re_terms <- all_terms[grepl("\\|", all_terms)]
   int_term <- attr(terms(formula), "intercept")
-  out <- setdiff(all_terms, c(sp_terms, re_terms))
-  out <- paste(c(int_term, out), collapse = "+")
+  fe_terms <- setdiff(all_terms, c(sp_terms, re_terms))
+  out <- paste(c(int_term, fe_terms), collapse = "+")
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
   attr(out, "decomp") <- get_decomp(formula)
@@ -371,6 +373,9 @@ parse_fe <- function(formula) {
 # @return a data.frame with one row per group-level term
 parse_re <- function(formula) {
   re_terms <- get_re_terms(formula, brackets = FALSE)
+  if (!length(re_terms)) {
+    return(NULL)
+  }
   re_terms <- split_re_terms(re_terms)
   re_parts <- re_parts(re_terms)
   out <- allvars <- vector("list", length(re_terms))
@@ -395,23 +400,15 @@ parse_re <- function(formula) {
     re_allvars <- get_allvars(form, type = ftype)
     allvars[[i]] <- allvars_formula(re_allvars, gcall$allvars)
   }
-  if (length(out)) {
-    out <- do_call(rbind, out)
-    out <- out[order(out$group), ]
-    attr(out, "allvars") <- allvars_formula(allvars)
-    if (no_cmc(formula)) {
-      # disabling cell-mean coding in all group-level terms
-      # has to come last to avoid removal of attributes
-      for (i in seq_rows(out)) {
-        attr(out$form[[i]], "cmc") <- FALSE
-      }
+  out <- do_call(rbind, out)
+  out <- out[order(out$group), ]
+  attr(out, "allvars") <- allvars_formula(allvars)
+  if (no_cmc(formula)) {
+    # disabling cell-mean coding in all group-level terms
+    # has to come last to avoid removal of attributes
+    for (i in seq_rows(out)) {
+      attr(out$form[[i]], "cmc") <- FALSE
     }
-  } else {
-    out <- data.frame(
-      group = character(0), gtype = character(0),
-      gn = numeric(0), id = numeric(0), type = character(0), 
-      cor = logical(0), form = character(0)
-    )
   }
   out
 }
@@ -419,14 +416,15 @@ parse_re <- function(formula) {
 # extract category specific terms for ordinal models
 parse_cs <- function(formula) {
   out <- find_terms(formula, "cs")
-  if (length(out)) {
-    out <- ulapply(out, eval2)
-    out <- str2formula(out)
-    attr(out, "allvars") <- allvars_formula(out)
-    # do not test whether variables were supplied to 'cs'
-    # to allow category specific group-level intercepts
-    attr(out, "int") <- FALSE
+  if (!length(out)) {
+    return(NULL)
   }
+  out <- ulapply(out, eval2)
+  out <- str2formula(out)
+  attr(out, "allvars") <- allvars_formula(out)
+  # do not test whether variables were supplied to 'cs'
+  # to allow category specific group-level intercepts
+  attr(out, "int") <- FALSE
   out
 }
 
@@ -434,52 +432,55 @@ parse_cs <- function(formula) {
 parse_sp <- function(formula) {
   types <- c("mo", "me", "mi")
   out <- find_terms(formula, types, complete = FALSE)
-  if (length(out)) {
-    uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
-    uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
-    uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
-    # remove the intercept as it is handled separately
-    out <- str2formula(c("0", out))
-    attr(out, "int") <- FALSE
-    attr(out, "uni_mo") <- uni_mo
-    attr(out, "uni_me") <- uni_me
-    attr(out, "uni_mi") <- uni_mi
-    attr(out, "allvars") <- str2formula(all_vars(out))
-    # TODO: do we need sp_fake_formula at all?
-    # attr(out, "allvars") <- sp_fake_formula(uni_mo, uni_me, uni_mi)
+  if (!length(out)) {
+    return(NULL) 
   }
+  uni_mo <- rm_wsp(get_matches_expr(regex_sp("mo"), out))
+  uni_me <- rm_wsp(get_matches_expr(regex_sp("me"), out))
+  uni_mi <- rm_wsp(get_matches_expr(regex_sp("mi"), out))
+  # remove the intercept as it is handled separately
+  out <- str2formula(c("0", out))
+  attr(out, "int") <- FALSE
+  attr(out, "uni_mo") <- uni_mo
+  attr(out, "uni_me") <- uni_me
+  attr(out, "uni_mi") <- uni_mi
+  attr(out, "allvars") <- str2formula(all_vars(out))
+  # TODO: do we need sp_fake_formula at all?
+  # attr(out, "allvars") <- sp_fake_formula(uni_mo, uni_me, uni_mi)
   out
 }
 
 # extract spline terms
 parse_sm <- function(formula) {
   out <- find_terms(formula, "sm")
-  if (length(out)) {
-    if (any(grepl("^(te|ti)\\(", out))) {
-      stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
-            "implemented in brms. Consider using 't2' instead.")
-    }
-    out <- str2formula(out)
-    attr(out, "allvars") <- mgcv::interpret.gam(out)$fake.formula
+  if (!length(out)) {
+    return(NULL)
   }
+  if (any(grepl("^(te|ti)\\(", out))) {
+    stop2("Tensor product smooths 'te' and 'ti' are not yet ", 
+          "implemented in brms. Consider using 't2' instead.")
+  }
+  out <- str2formula(out)
+  attr(out, "allvars") <- mgcv::interpret.gam(out)$fake.formula
   out
 }
 
 # extract gaussian process terms
 parse_gp <- function(formula) {
   out <- find_terms(formula, "gp")
-  if (length(out)) {
-    eterms <- lapply(out, eval2)
-    covars <- lapply(eterms, "[[", "term")
-    byvars <- lapply(eterms, "[[", "by")
-    allvars <- str2formula(unlist(c(covars, byvars)))
-    allvars <- str2formula(all_vars(allvars))
-    if (!length(all_vars(allvars))) {
-      stop2("No variable supplied to function 'gp'.")
-    }
-    out <- str2formula(out)
-    attr(out, "allvars") <- allvars
+  if (!length(out)) {
+    return(NULL)
   }
+  eterms <- lapply(out, eval2)
+  covars <- lapply(eterms, "[[", "term")
+  byvars <- lapply(eterms, "[[", "by")
+  allvars <- str2formula(unlist(c(covars, byvars)))
+  allvars <- str2formula(all_vars(allvars))
+  if (!length(all_vars(allvars))) {
+    stop2("No variable supplied to function 'gp'.")
+  }
+  out <- str2formula(out)
+  attr(out, "allvars") <- allvars
   out
 }
 
@@ -503,27 +504,28 @@ parse_ac <- function(formula) {
 
 # extract offset terms
 parse_offset <- function(formula) {
-  out <- character(0)
   terms <- terms(as.formula(formula))
   pos <- attr(terms, "offset")
-  if (!is.null(pos)) {
-    vars <- attr(terms, "variables")
-    out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
-    out <- str2formula(out)
-    attr(out, "allvars") <- str2formula(all_vars(out))
+  if (is.null(pos)) {
+    return(NULL)
   }
+  vars <- attr(terms, "variables")
+  out <- ulapply(pos, function(i) deparse(vars[[i + 1]]))
+  out <- str2formula(out)
+  attr(out, "allvars") <- str2formula(all_vars(out))
   out
 }
 
 # extract multiple covariates in multi-membership terms
 parse_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
-  if (length(out)) {
-    # remove the intercept as it is handled separately
-    out <- str2formula(c("0", out))
-    attr(out, "allvars") <- allvars_formula(out)
-    attr(out, "int") <- FALSE
+  if (!length(out)) {
+    return(NULL)
   }
+  # remove the intercept as it is handled separately
+  out <- str2formula(c("0", out))
+  attr(out, "allvars") <- allvars_formula(out)
+  attr(out, "int") <- FALSE
   out
 }
 
@@ -617,6 +619,11 @@ as.brmsterms <- function(x) {
     out$adforms$mi <- miforms[[1]]
   }
   out
+}
+
+# names of supported term types
+all_term_types <- function() {
+  c("fe", "re", "sp", "cs", "sm", "gp", "ac", "offset")
 }
 
 # avoid ambiguous parameter names

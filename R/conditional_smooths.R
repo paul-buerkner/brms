@@ -54,13 +54,13 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
   spaghetti <- as_one_logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)
-  x <- remove_autocor(x)
+  x <- exclude_terms(x, incl_autocor = FALSE)
   smooths <- rm_wsp(as.character(smooths))
-  bterms <- parse_bf(x$formula)
   conditions <- prepare_conditions(x)
   subset <- subset_samples(x, subset, nsamples)
   # call as.matrix only once to save time and memory
   samples <- as.matrix(x, subset = subset)
+  bterms <- parse_bf(exclude_terms(x$formula, smooths_only = TRUE))
   out <- conditional_smooths(
     bterms, fit = x, samples = samples, smooths = smooths, 
     conditions = conditions, int_conditions = int_conditions, 
@@ -184,7 +184,7 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
       fit, newdata, re_formula = NA, 
       internal = TRUE, check_response = FALSE
     )
-    draws_args <- nlist(x, samples, sdata, data = mf, smooths_only = TRUE)
+    draws_args <- nlist(x, samples, sdata, data = mf)
     draws <- do_call(extract_draws, draws_args)
     J <- which(smef$termnum == i)
     scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])

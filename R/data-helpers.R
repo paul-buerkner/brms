@@ -284,11 +284,9 @@ validate_newdata <- function(
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
   newdata <- rm_attr(newdata, c("terms", "brmsframe"))
-  stopifnot(is.brmsfit(object))
+  object <- restructure(object)
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
   resp <- validate_resp(resp, object)
-  if (!incl_autocor) {
-    object <- remove_autocor(object) 
-  }
   new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {

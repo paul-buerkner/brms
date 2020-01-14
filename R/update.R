@@ -179,7 +179,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- NULL
     }
     bterms <- parse_bf(object$formula)
-    object$data <- update_data(dots$data, bterms = bterms)
+    object$data <- validate_data(dots$data, bterms = bterms)
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)

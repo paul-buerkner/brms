@@ -443,9 +443,11 @@ get_re.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_re.btl <- function(x, ...) {
-  stopifnot(is.data.frame(x$re))
   px <- check_prefix(x)
-  re <- x$re
+  re <- x[["re"]]
+  if (is.null(re)) {
+    re <- empty_re()
+  }
   re$resp <- rep(px$resp, nrow(re)) 
   re$dpar <- rep(px$dpar, nrow(re))
   re$nlpar <- rep(px$nlpar, nrow(re)) 
@@ -615,6 +617,14 @@ empty_ranef <- function() {
       stringsAsFactors = FALSE
     ),
     class = c("ranef_frame", "data.frame")
+  )
+}
+
+empty_re <- function() {
+  data.frame(
+    group = character(0), gtype = character(0),
+    gn = numeric(0), id = numeric(0), type = character(0), 
+    cor = logical(0), form = character(0)
   )
 }
 

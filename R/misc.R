@@ -252,7 +252,7 @@ as_one_logical <- function(x, allow_na = FALSE) {
   x <- as.logical(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- deparse_combine(s, max_char = 100L)
-    stop2("Cannot coerce ", s, " to a single logical value.")
+    stop2("Cannot coerce '", s, "' to a single logical value.")
   }
   x
 }
@@ -263,7 +263,7 @@ as_one_numeric <- function(x, allow_na = FALSE) {
   x <- SW(as.numeric(x))
   if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- deparse_combine(s, max_char = 100L)
-    stop2("Cannot coerce ", s, " to a single numeric value.")
+    stop2("Cannot coerce '", s, "' to a single numeric value.")
   }
   x
 }
@@ -274,7 +274,7 @@ as_one_character <- function(x, allow_na = FALSE) {
   x <- as.character(x)
   if (length(x) != 1L || anyNA(x) && !allow_na) {
     s <- deparse_combine(s, max_char = 100L)
-    stop2("Cannot coerce ", s, " to a single character value.")
+    stop2("Cannot coerce '", s, "' to a single character value.")
   }
   x
 }
@@ -286,7 +286,7 @@ as_one_variable <- function(x, allow_na = TRUE) {
     return(x)
   }
   if (!nzchar(x) || !is_equal(x, all_vars(x))) {
-    stop2("Cannot coerce ", x, " to a single variable name.")
+    stop2("Cannot coerce '", x, "' to a single variable name.")
   }
   x
 }

@@ -59,28 +59,23 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
-                               knots = NULL, incl_autocor = TRUE,
-                               old_sdata = NULL, ...) {
-  out <- c(data_fe(x, data),
+                               knots = NULL, old_sdata = NULL, ...) {
+  c(data_fe(x, data),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
+    data_ac(x, data, data2 = data2, locations = old_sdata$locations),
     data_offset(x, data),
     data_bhaz(x, data, basis = old_sdata$base_basis),
     data_prior(x, data, prior = prior)
   )
-  if (incl_autocor) {
-    c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
-  }
-  out
 }
 
 # prepare data for non-linear parameters for use in Stan
 #' @export 
-data_predictor.btnl <- function(x, data, incl_autocor = TRUE, 
-                                old_sdata = NULL, ...) {
+data_predictor.btnl <- function(x, data, old_sdata = NULL, ...) {
   out <- list()
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != NCOL(C)) {
@@ -93,9 +88,7 @@ data_predictor.btnl <- function(x, data, incl_autocor = TRUE,
     out[[paste0("KC", p)]] <- NCOL(C)
     out[[paste0("C", p)]] <- C
   }
-  if (incl_autocor) {
-    c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
-  }
+  c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
   out
 }
 

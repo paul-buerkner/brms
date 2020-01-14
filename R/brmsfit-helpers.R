@@ -194,7 +194,7 @@ get_cov_matrix_ac <- function(draws, obs = NULL, latent = FALSE) {
     cosy <- as.numeric(draws$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
   } else if (has_ac_class(acef, "fcor")) {
-    cor <- get_cor_matrix_fcor(draws$ac$V, nsamples)
+    cor <- get_cor_matrix_fcor(draws$ac$M, nsamples)
   } else {
     cor <- get_cor_matrix_ident(nsamples, nobs)
   }
@@ -303,11 +303,11 @@ get_cor_matrix_cosy <- function(cosy, nobs) {
 }
 
 # prepare a fixed correlation matrix
-# @param V matrix to be prepared
+# @param M matrix to be prepared
 # @param nsamples number of posterior samples
 # @return a numeric 'nsamples' x 'nobs' x 'nobs' array
-get_cor_matrix_fcor <- function(V, nsamples) {
-  out <- array(V, dim = c(dim(V), nsamples))
+get_cor_matrix_fcor <- function(M, nsamples) {
+  out <- array(M, dim = c(dim(M), nsamples))
   aperm(out, c(3, 1, 2))
 }
 

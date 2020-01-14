@@ -1577,13 +1577,9 @@ no_nu <- function(bterms) {
 }
 
 # prepare for calling family specific post-processing functions
-prepare_family <- function(x, incl_autocor = TRUE) {
+prepare_family <- function(x) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x))
   family <- x$family
-  if (!incl_autocor) {
-    family$fun <- family$family
-    return(family)
-  }
   acef <- tidy_acef(x)
   if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
     family$fun <- paste0(family$family, "_time")

@@ -11,11 +11,12 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   warn_brmsfit_multiple(x, newdata = newdata)
-  incl_autocor <- as_one_logical(incl_autocor)
-  smooths_only <- as_one_logical(smooths_only)
-  offset <- as_one_logical(offset)
   newdata2 <- use_alias(newdata2, new_objects)
   x <- restructure(x)
+  x <- exclude_terms(
+    x, incl_autocor = incl_autocor, 
+    offset = offset, smooths_only = smooths_only
+  )
   resp <- validate_resp(resp, x)
   subset <- subset_samples(x, subset, nsamples)
   samples <- as.matrix(x, subset = subset)
@@ -32,7 +33,6 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     x, newdata = newdata, re_formula = re_formula, 
     newdata2 = newdata2, resp = resp, 
     allow_new_levels = allow_new_levels, 
-    incl_autocor = incl_autocor,
     internal = TRUE, ...
   )
   new_formula <- update_re_terms(x$formula, re_formula)
@@ -63,9 +63,8 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     bterms, samples = samples, sdata = sdata, data = x$data, 
     draws_ranef = draws_ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
-    smooths_only = smooths_only, offset = offset, new = new, 
-    oos = oos, stanvars = names(x$stanvars), old_sdata = old_sdata,
-    trunc_bounds = trunc_bounds, incl_autocor = incl_autocor
+    new = new, oos = oos, stanvars = names(x$stanvars), 
+    old_sdata = old_sdata, trunc_bounds = trunc_bounds
   )
 }
 
@@ -108,14 +107,13 @@ extract_draws.mvbrmsterms <- function(x, samples, sdata, resp = NULL, ...) {
 }
 
 #' @export
-extract_draws.brmsterms <- function(x, samples, sdata, data,
-                                    incl_autocor = TRUE, ...) {
+extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
   data <- subset_data(data, x)
   nsamples <- nrow(samples)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   resp <- usc(combine_prefix(x))
   draws <- nlist(nsamples, nobs, resp = x$resp)
-  draws$family <- prepare_family(x, incl_autocor = incl_autocor)
+  draws$family <- prepare_family(x)
   draws$old_order <- attr(sdata, "old_order")
   valid_dpars <- valid_dpars(x)
   draws$dpars <- named_list(valid_dpars)
@@ -124,8 +122,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, data,
     if (is.btl(x$dpars[[dp]]) || is.btnl(x$dpars[[dp]])) {
       draws$dpars[[dp]] <- extract_draws(
         x$dpars[[dp]], samples = samples, 
-        sdata = sdata, data = data,
-        incl_autocor = incl_autocor, ...
+        sdata = sdata, data = data, ...
       )
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       draws$dpars[[dp]] <- x$fdpars[[dp]]$value
@@ -137,8 +134,7 @@ extract_draws.brmsterms <- function(x, samples, sdata, data,
   for (nlp in names(x$nlpars)) {
     draws$nlpars[[nlp]] <- extract_draws(
       x$nlpars[[nlp]], samples = samples, 
-      sdata = sdata, data = data,
-      incl_autocor = incl_autocor, ...
+      sdata = sdata, data = data, ...
     )
   }
   if (is.mixfamily(x$family)) {
@@ -186,11 +182,9 @@ extract_draws.brmsterms <- function(x, samples, sdata, data,
       draws$bhaz <- extract_draws_bhaz(x$dpars$mu, samples, sdata, ...)
     }
   }
-  if (incl_autocor) {
-    # only include those autocor samples on the top-level 
-    # of draws which imply explicit covariance matrices
-    draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, cov = TRUE, ...)
-  }
+  # only include those autocor samples on the top-level 
+  # of draws which imply explicit covariance matrices
+  draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, cov = TRUE, ...)
   draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
   structure(draws, class = "brmsdraws")
 }
@@ -214,29 +208,19 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
 }
 
 #' @export
-extract_draws.btl <- function(x, samples, sdata, smooths_only = FALSE, 
-                              incl_autocor = TRUE, offset = TRUE, ...) {
+extract_draws.btl <- function(x, samples, sdata, ...) {
   nsamples <- nrow(samples)
   nobs <- sdata[[paste0("N", usc(x$resp))]]
   draws <- nlist(family = x$family, nsamples, nobs)
   class(draws) <- "bdrawsl"
-  if (smooths_only) {
-    # make sure only smooth terms will be included in draws
-    draws$sm <- extract_draws_sm(x, samples, sdata, ...)
-    return(draws)
-  }
   draws$fe <- extract_draws_fe(x, samples, sdata, ...)
   draws$sp <- extract_draws_sp(x, samples, sdata, ...)
   draws$cs <- extract_draws_cs(x, samples, sdata, ...)
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
   draws$re <- extract_draws_re(x, sdata, ...)
-  if (incl_autocor) {
-    draws$ac <- extract_draws_ac(x, samples, sdata, cov = FALSE, ...)
-  }
-  if (offset) {
-    draws$offset <- extract_draws_offset(x, sdata, ...)
-  }
+  draws$ac <- extract_draws_ac(x, samples, sdata, cov = FALSE, ...)
+  draws$offset <- extract_draws_offset(x, sdata, ...)
   draws
 }
 
@@ -255,8 +239,9 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
 }
 
 # extract draws of special effects terms
-extract_draws_sp <- function(bterms, samples, sdata, data, meef, 
-                             new = FALSE, trunc_bounds = NULL, ...) {
+extract_draws_sp <- function(bterms, samples, sdata, data, 
+                             meef = empty_meef(), new = FALSE,
+                             trunc_bounds = NULL, ...) {
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(draws)
@@ -399,16 +384,17 @@ extract_draws_sp <- function(bterms, samples, sdata, data, meef,
 # extract draws of category specific effects
 extract_draws_cs <- function(bterms, samples, sdata, data, ...) {
   draws <- list()
-  if (is_ordinal(bterms$family)) {
-    resp <- usc(bterms$resp)
-    draws$nthres <- sdata[[paste0("nthres", resp)]]
-    csef <- colnames(get_model_matrix(bterms$cs, data))
-    if (length(csef)) {
-      p <- usc(combine_prefix(bterms))
-      cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
-      draws$bcs <- get_samples(samples, cs_pars)
-      draws$Xcs <- sdata[[paste0("Xcs", p)]]
-    }
+  if (!is_ordinal(bterms$family)) {
+    return(draws) 
+  }
+  resp <- usc(bterms$resp)
+  draws$nthres <- sdata[[paste0("nthres", resp)]]
+  csef <- colnames(get_model_matrix(bterms$cs, data))
+  if (length(csef)) {
+    p <- usc(combine_prefix(bterms))
+    cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
+    draws$bcs <- get_samples(samples, cs_pars)
+    draws$Xcs <- sdata[[paste0("Xcs", p)]]
   }
   draws
 }
@@ -545,7 +531,7 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef, 
                                 sample_new_levels = "uncertainty", ...) {
   if (!nrow(ranef)) {
-    return(NULL)
+    return(list())
   }
   groups <- unique(ranef$group)
   out <- named_list(groups, list())
@@ -613,7 +599,7 @@ extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef,
 # extract draws and data of group-level effects
 # @param draws_ranef a named list with one element per group containing
 #   posterior draws of levels as well as additional meta-data
-extract_draws_re <- function(bterms, sdata, draws_ranef,
+extract_draws_re <- function(bterms, sdata, draws_ranef = list(),
                              sample_new_levels = "uncertainty", ...) {
   draws <- list()
   if (!length(draws_ranef)) {

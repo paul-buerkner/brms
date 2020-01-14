@@ -223,43 +223,47 @@ get_uni_me <- function(x) {
 # save all me-terms within a tidy data.frame
 tidy_meef <- function(bterms, data, old_levels = NULL) {
   uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    if (has_subset(bterms)) {
-      # 'Xme' variables need to be the same across univariate models
-      stop2("Argument 'subset' is not supported when using 'me' terms.")
-    }
-    out <- data.frame(
-      term = uni_me, xname = "", grname = "", 
-      stringsAsFactors = FALSE
-    )
-    levels <- vector("list", nrow(out))
-    for (i in seq_rows(out)) {
-      tmp <- eval2(out$term[i])
-      out$xname[i] <- tmp$term
-      if (isTRUE(nzchar(tmp$gr))) {
-        out$grname[i] <- tmp$gr
-        if (length(old_levels)) {
-          levels[[i]] <- old_levels[[tmp$gr]]
-        } else {
-          levels[[i]] <- levels(factor(get(tmp$gr, data)))
-        } 
-      }
-    }
-    out$coef <- rename(paste0("me", out$xname))
-    out$cor <- isTRUE(bterms$mecor)
-    names(levels) <- out$grname
-    levels <- levels[lengths(levels) > 0L]
-    if (length(levels)) {
-      levels <- levels[!duplicated(names(levels))]
-      attr(out, "levels") <- levels
-    }
-  } else {
-    out <- data.frame(
-      term = character(0), xname = character(0),
-      grname = character(0), cor = logical(0),
-      stringsAsFactors = FALSE
-    )
+  if (!length(uni_me)) {
+    return(empty_meef()) 
   }
+  if (has_subset(bterms)) {
+    # 'Xme' variables need to be the same across univariate models
+    stop2("Argument 'subset' is not supported when using 'me' terms.")
+  }
+  out <- data.frame(
+    term = uni_me, xname = "", grname = "", 
+    stringsAsFactors = FALSE
+  )
+  levels <- vector("list", nrow(out))
+  for (i in seq_rows(out)) {
+    tmp <- eval2(out$term[i])
+    out$xname[i] <- tmp$term
+    if (isTRUE(nzchar(tmp$gr))) {
+      out$grname[i] <- tmp$gr
+      if (length(old_levels)) {
+        levels[[i]] <- old_levels[[tmp$gr]]
+      } else {
+        levels[[i]] <- levels(factor(get(tmp$gr, data)))
+      } 
+    }
+  }
+  out$coef <- rename(paste0("me", out$xname))
+  out$cor <- isTRUE(bterms$mecor)
+  names(levels) <- out$grname
+  levels <- levels[lengths(levels) > 0L]
+  if (length(levels)) {
+    levels <- levels[!duplicated(names(levels))]
+    attr(out, "levels") <- levels
+  }
+  structure(out, class = c("meef_frame", "data.frame"))
+}
+
+empty_meef <- function() {
+  out <- data.frame(
+    term = character(0), xname = character(0),
+    grname = character(0), cor = logical(0),
+    stringsAsFactors = FALSE
+  )
   structure(out, class = c("meef_frame", "data.frame"))
 }
 

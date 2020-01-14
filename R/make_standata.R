@@ -33,7 +33,6 @@ make_standata <- function(formula, data, family = gaussian(),
   # control arguments:
   #   internal: is make_standata called for internal use in S3 methods?
   #   new: is make_standata is called with new data?
-  #   incl_autocor: include autocorrelation terms?
   #   save_order: should the initial order of the data be saved?
   #   old_sdata: list of stan data computed from the orginal data
   #   terms_attr: list of attributes of the original model.frame
@@ -46,7 +45,6 @@ make_standata <- function(formula, data, family = gaussian(),
   only_response <- as_one_logical(only_response)
   internal <- isTRUE(control$internal)
   new <- isTRUE(control$new)
-  incl_autocor <- !isFALSE(control$incl_autocor)
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
@@ -78,8 +76,7 @@ make_standata <- function(formula, data, family = gaussian(),
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2,
-      ranef = ranef, knots = knots, incl_autocor = incl_autocor,
-      old_sdata = control$old_sdata
+      ranef = ranef, knots = knots, old_sdata = control$old_sdata
     )
     c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
@@ -123,8 +120,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              incl_autocor = TRUE, internal = FALSE,
                              control = list(), ...) {
   object <- restructure(object)
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
   newdata2 <- use_alias(newdata2, new_objects)
-  incl_autocor <- as_one_logical(incl_autocor)
   internal <- as_one_logical(internal)
   is_old_data <- isTRUE(attr(newdata, "old"))
   if (is.null(newdata)) {
@@ -165,7 +162,6 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       tidy_meef(bterms, object$data)
     )
   }
-  control$incl_autocor <- incl_autocor
   if (internal) {
     control$internal <- TRUE
     control$save_order <- TRUE
