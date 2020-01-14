@@ -661,7 +661,6 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
     M <- data2[[acef_sar$M]]
-    stopifnot(is.matrix(M))
     if (!is_equal(dim(M), rep(N, 2))) {
       stop2("Dimensions of 'M' for SAR terms must be equal to ", 
             "the number of observations.")
@@ -675,7 +674,6 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
     acef_car <- subset2(acef, class = "car")
     new <- !is.null(locations)
     M <- data2[[acef_car$M]]
-    stopifnot(is.matrix(M))
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
       new_locations <- levels(factor(loc_data))
@@ -735,7 +733,6 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   }
   if (has_ac_class(acef, "fcor")) {
     M <- data2[[acef_fcor$M]]
-    stopifnot(is.matrix(M))
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]

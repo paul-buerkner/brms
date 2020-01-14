@@ -58,8 +58,11 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 
 # validate the 'data2' argument
 # @param data2 a named list of data objects
+# @param bterms object returned by 'parse_bf'
+# @param ... more named list to pass objects to data2 from other sources
+#   only required for backwards compatibility with deprecated arguments
 # @return a validated named list of data objects
-validate_data2 <- function(data2, bterms) {
+validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
   # TODO: specify 'knots' in 'data2'?
   if (is.null(data2)) {
@@ -70,7 +73,12 @@ validate_data2 <- function(data2, bterms) {
   }
   if (length(data2) && !is_named(data2)) {
     stop2("All elements of 'data2' must be named.")
-  } 
+  }
+  dots <- list(...)
+  for (i in seq_along(dots)) {
+    stopifnot(is.list(dots[[i]]), is_named(dots[[i]]))
+    data2[names(dots[[i]])] <- dots[[i]]
+  }
   # validate autocorrelation matrices
   acef <- tidy_acef(bterms)
   sar_M_names <- get_ac_vars(acef, "M", class = "sar")

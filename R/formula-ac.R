@@ -87,14 +87,20 @@ fcor <- function(M) {
 # validate 'autocor' argument
 validate_autocor <- function(autocor) {
   if (is.cor_brms(autocor)) {
-    autocor <- formula_cor_brms(autocor)
+    warning2("Using 'cor_brms' objects for 'autocor' is deprecated. ",
+             "Please see ?cor_brms for details.")
+    autocor <- as_formula_cor_brms(autocor)
   }
-  if (is.formula(autocor)) {
-    autocor <- parse_ac(autocor)
+  if (is.null(autocor)) {
+    return(NULL)
   }
+  autocor <- as.formula(autocor)
+  att <- attributes(autocor)
+  autocor <- parse_ac(autocor)
   if (!is.null(autocor) && !is.formula(autocor)) {
-    stop2("Argument 'autocor' must be a formula or 'cor_brms' object.")
+    stop2("Argument 'autocor' must be coercible to a formula.")
   }
+  attributes(autocor)[names(att)] <- att
   autocor
 }
 

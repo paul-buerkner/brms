@@ -1,3 +1,6 @@
+# All functions in this file belong to the deprecated 'cor_brms' class
+# for specifying autocorrelation structures. They will be removed in brms 3.
+
 #' Correlation structure classes for the \pkg{brms} package
 #' 
 #' Classes of correlation structures available in the \pkg{brms} package. 
@@ -218,7 +221,7 @@ cor_cosy <- function(formula = ~ 1) {
 cor_sar <- function(W, type = c("lag", "error")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
-  W <- sar_weights(W)
+  W <- validate_sar_matrix(W)
   structure(
     nlist(W, W_name, type), 
     class = c("cor_sar", "cor_brms")
@@ -304,15 +307,7 @@ cor_car <- function(W, formula = ~1, type = "escar") {
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
   W_name <- deparse(substitute(W))
-  W <- Matrix::Matrix(W, sparse = TRUE)
-  if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {
-    stop2("'W' must be symmetric.")
-  }
-  not_binary <- !(W == 0 | W == 1)
-  if (any(not_binary)) {
-    message("Converting all non-zero values in 'W' to 1")
-    W[not_binary] <- 1
-  }
+  W <- validate_car_matrix(W)
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
     stop2("'formula' should be a one-sided formula.")
@@ -356,6 +351,7 @@ cor_icar <- function(W, formula = ~1) {
 #' 
 #' @export
 cor_fixed <- function(V) {
+  V_name <- deparse(substitute(V))
   if (is.vector(V)) {
     V <- diag(V)
   } else {
@@ -364,7 +360,7 @@ cor_fixed <- function(V) {
   if (!isSymmetric(unname(V))) {
     stop2("'V' must be symmetric")
   }
-  structure(list(V = V), class = c("cor_fixed", "cor_brms"))
+  structure(nlist(V, V_name), class = c("cor_fixed", "cor_brms"))
 }
 
 #' (Defunct) Basic Bayesian Structural Time Series
@@ -428,8 +424,7 @@ print.cor_empty <- function(x, ...) {
 
 #' @export
 print.cor_arma <- function(x, ...) {
-  cat(paste0("arma(", formula2str(x$formula), ", ", 
-             get_ar(x), ", ", get_ma(x), ")"))
+  cat(paste0("arma(", formula2str(x$formula), ", ", x$p, ", ", x$q, ")"))
   invisible(x)
 }
 
@@ -447,9 +442,7 @@ print.cor_sar <- function(x, ...) {
 
 #' @export
 print.cor_car <- function(x, ...) {
-  cat(paste0(
-    "car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"
-  ))
+  cat(paste0("car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"))
   invisible(x)
 }
 
@@ -500,12 +493,12 @@ print.cov_fixed <- function(x, ...) {
 #   out
 # }
 
-# stop_not_cor_brms <- function(x) {
-#   if (!(is.null(x) || is.cor_brms(x))) {
-#     stop2("Argument 'autocor' must be of class 'cor_brms'.")
-#   }
-#   TRUE
-# }
+stop_not_cor_brms <- function(x) {
+  if (!(is.null(x) || is.cor_brms(x))) {
+    stop2("Argument 'autocor' must be of class 'cor_brms'.")
+  }
+  TRUE
+}
 
 # empty 'cor_brms' object
 cor_empty <- function() {
@@ -617,3 +610,120 @@ is.cor_empty <- function(x) {
 #   get_autocor_vars(x, var = "group", ...)
 # }
 
+# extract variables for autocorrelation structures
+# @param autocor object of class 'cor_brms'
+# @return a list with elements 'time', and 'group'
+parse_autocor <- function(autocor) {
+  out <- list()
+  formula <- autocor$formula
+  if (is.null(formula)) {
+    formula <- ~1 
+  }
+  if (!is.null(lhs(formula))) {
+    stop2("Autocorrelation formulas must be one-sided.")
+  }
+  formula <- formula2str(formula)
+  time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
+  time_vars <- all_vars(time)
+  if (is.cor_car(autocor) && length(time_vars) > 0L) {
+    stop2("The CAR structure should not contain a 'time' variable.")
+  }
+  if (length(time_vars) > 1L) {
+    stop2("Autocorrelation structures may only contain 1 time variable.")
+  }
+  if (length(time_vars)) {
+    out$time <- time_vars
+  } else {
+    out$time <- NA
+  }
+  group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
+  stopif_illegal_group(group)
+  group_vars <- all_vars(group)
+  if (length(group_vars)) {
+    out$group <- paste0(group_vars, collapse = ":")
+  } else {
+    out$group <- NA
+  }
+  out
+}
+
+# transform a 'cor_brms' object into a formula
+# this ensure compatibility with brms <= 2.11
+as_formula_cor_brms <- function(x) {
+  stop_not_cor_brms(x)
+  if (is.cor_empty(x))  {
+    return(NULL)
+  }
+  args <- data2 <- list()
+  pac <- parse_autocor(x)
+  if (is.cor_arma(x)) {
+    fun <- "arma"
+    args$time <- pac$time
+    args$gr <- pac$group
+    args$p <- x$p
+    args$q <- x$q
+    args$cov <- x$cov
+    out <- paste0(names(args), " = ", args, collapse = ", ")
+    out <- paste0("arma(", out, ")")
+  } else if (is.cor_cosy(x)) {
+    fun <- "cosy"
+    args$time <- pac$time
+    args$gr <- pac$group
+  } else if (is.cor_sar(x)) {
+    fun <- "sar"
+    args$M <- make_M_names(x$W_name)
+    args$type <- paste0("'", x$type, "'")
+    data2[[args$M]] <- x$W
+  } else if (is.cor_car(x)) {
+    fun <- "car"
+    args$M <- make_M_names(x$W_name)
+    args$gr <- pac$group
+    args$type <- paste0("'", x$type, "'")
+    data2[[args$M]] <- x$W
+  } else if (is.cor_fixed(x)) {
+    fun <- "fcor"
+    args$M <- make_M_names(x$V_name)
+    data2[[args$M]] <- x$V
+  }
+  out <- paste0(names(args), " = ", args, collapse = ", ")
+  out <- paste0(fun, "(", out, ")")
+  out <- str2formula(out)
+  attr(out, "data2") <- data2
+  class(out) <- c("cor_brms_formula", "formula")
+  out
+}
+
+# ensures covariance matrix inputs are named reasonably
+make_M_names <- function(x) {
+  out <- make.names(x)
+  if (!length(out)) {
+    # likely unique random name for the matrix argument
+    out <- paste0("M", collapse(sample(0:9, 5, TRUE)))
+  }
+  out
+}
+
+# get data objects from 'autocor' for use in 'data2'
+# for backwards compatibility with brms <= 2.11
+get_data2_autocor <- function(x, ...) {
+  UseMethod("get_data2_autocor")
+}
+
+#' @export
+get_data2_autocor.brmsformula <- function(x, ...) {
+  attr(attr(x$formula, "autocor"), "data2")
+}
+
+#' @export
+get_data2_autocor.mvbrmsformula <- function(x, ...) {
+  ulapply(x$forms, get_data2_autocor, recursive = FALSE)
+}
+
+#' @export
+print.cor_brms_formula <- function(x, ...) {
+  y <- x
+  attr(y, "data2") <- NULL
+  class(y) <- "formula"
+  print(y)
+  invisible(x)
+}

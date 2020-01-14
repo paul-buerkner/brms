@@ -210,12 +210,6 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     stop2("Category specific effects require families ", 
           "'sratio', 'cratio', or 'acat'.")
   }
-  # parse autocor formula
-  y$time <- parse_time(autocor)
-  if (!is.null(y$dpars[["mu"]])) {
-    y$dpars$mu$autocor <- autocor
-    y$dpars$mu$time <- y$time
-  }
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
@@ -560,40 +554,6 @@ parse_resp <- function(formula, check_names = TRUE) {
   if (check_names) {
     out <- make_stan_names(out)
   }
-  out
-}
-
-# extract time and grouping variables for autocorrelation structures
-# @param autocor object of class 'cor_brms'
-# @return a list with elements 'time', 'group', and 'allvars'
-parse_time <- function(autocor) {
-  out <- list()
-  formula <- autocor$formula
-  if (is.null(formula)) {
-    formula <- ~ 1 
-  }
-  if (!is.null(lhs(formula))) {
-    stop2("Autocorrelation formulas must be one-sided.")
-  }
-  formula <- formula2str(formula)
-  time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
-  time_vars <- all_vars(time)
-  if (is.cor_car(autocor) && length(time_vars) > 0L) {
-    stop2("The CAR structure should not contain a 'time' variable.")
-  }
-  if (length(time_vars) > 1L) {
-    stop2("Autocorrelation structures may only contain 1 time variable.")
-  }
-  if (length(time_vars)) {
-    out$time <- time_vars
-  }
-  group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
-  stopif_illegal_group(group)
-  group_vars <- all_vars(group)
-  if (length(group_vars)) {
-    out$group <- paste0(group_vars, collapse = ":")
-  }
-  out$allvars <- str2formula(c(time_vars, group_vars))
   out
 }
 

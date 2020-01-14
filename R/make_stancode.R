@@ -19,7 +19,7 @@
 #'
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
-                          prior = NULL, data2 = NULL, autocor = NULL,
+                          prior = NULL, autocor = NULL,
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = c("no", "yes", "only"), 
                           stanvars = NULL, stan_funs = NULL, 
@@ -46,7 +46,6 @@ make_stancode <- function(formula, data, family = gaussian(),
     sample_prior = sample_prior, warn = TRUE
   )
   data <- validate_data(data, bterms = bterms)
-  data2 <- validate_data2(data2, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
   stanvars <- validate_stanvars(stanvars)

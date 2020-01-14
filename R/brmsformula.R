@@ -1190,9 +1190,12 @@ validate_formula.brmsformula <- function(
   if (is.null(out$family) && !is.null(family)) {
     out$family <- check_family(family)
   }
-  if (is.null(attr(formula, "autocor")) || !is.null(autocor)) {
+  if (is.null(attr(formula, "autocor")) && !is.null(autocor)) {
+    # deprecated as of brms 2.11.1
+    warning2("Argument 'autocor' should be specified in 'formula'. ", 
+             "See ?brmsformula for details.")
     # store 'autocor' as an attribute to carry it around easier
-    attr(formula, "autocor") <- validate_autocor(autocor)
+    attr(out$formula, "autocor") <- validate_autocor(autocor)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)

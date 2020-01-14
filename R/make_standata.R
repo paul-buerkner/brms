@@ -65,7 +65,10 @@ make_standata <- function(formula, data, family = gaussian(),
   )
   # order data for use in autocorrelation models
   data <- order_data(data, bterms = bterms)
-  data2 <- validate_data2(data2, bterms = bterms)
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula)
+  )
   
   out <- data_response(
     bterms, data, check_response = check_response,
