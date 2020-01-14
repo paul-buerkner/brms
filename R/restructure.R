@@ -52,7 +52,7 @@ restructure <- function(x, rstr_summary = FALSE) {
 restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   x$formula <- update_old_family(x$formula)
-  bterms <- parse_bf(x$formula)
+  bterms <- SW(parse_bf(x$formula))
   pars <- parnames(x)
   version <- x$version$brms
   if (version <= "2.1.1") {
@@ -124,6 +124,15 @@ restructure_v2 <- function(x) {
     if (is_ordinal(x$formula)) {
       x$formula <- SW(validate_formula(x$formula, data = x$data))
     }
+  }
+  if (version <= "2.11.0") {
+    # 'autocor' was integrated into the formula interface
+    x$formula <- SW(validate_formula(x$formula))
+    x$data2 <- validate_data2(
+      data2 = list(), bterms = bterms, 
+      get_data2_autocor(x$formula)
+    )
+    x$autocor <- NULL
   }
   x
 }

@@ -694,7 +694,11 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   }
   if (!is.null(autocor)) {
     attr(out$formula, "autocor") <- validate_autocor(autocor)
-  }
+  } else if (!is.null(out$autocor)) {
+    # for backwards compatibility with brms <= 2.11.0
+    attr(out$formula, "autocor") <- validate_autocor(out$autocor)
+    out$autocor <- NULL
+  } 
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -702,10 +706,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out$resp <- parse_resp(formula)
   }
   # add default values for unspecified elements
-  defs <- list(
-    pforms = list(), pfix = list(), family = NULL, 
-    autocor = NULL, resp = NULL
-  )
+  defs <- list(pforms = list(), pfix = list(), family = NULL, resp = NULL)
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
   class(out) <- c("brmsformula", "bform")
@@ -1190,10 +1191,12 @@ validate_formula.brmsformula <- function(
   if (is.null(out$family) && !is.null(family)) {
     out$family <- check_family(family)
   }
-  if (is.null(attr(formula, "autocor")) && !is.null(autocor)) {
-    # deprecated as of brms 2.11.1
-    warning2("Argument 'autocor' should be specified in 'formula'. ", 
-             "See ?brmsformula for details.")
+  if (is.null(attr(out$formula, "autocor")) && !is.null(autocor)) {
+    # 'autocor' interface has been changed in brms 2.11.1
+    warning2(
+      "Argument 'autocor' should be specified within the ", 
+      "'formula' argument. See ?brmsformula for help."
+    )
     # store 'autocor' as an attribute to carry it around easier
     attr(out$formula, "autocor") <- validate_autocor(autocor)
   }
@@ -1439,6 +1442,11 @@ update_adterms <- function(formula, adform, action = c("update", "replace")) {
 print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
   str_wsp <- collapse(rep(" ", wsp))
+  autocor <- attr(x$formula, "autocor")
+  if (!is.null(autocor)) {
+    autocor <- formula2str(autocor, rm = 1, space = "trim")
+    cat(paste0(str_wsp, "autocor ~ ", autocor, "\n"))
+  }
   pforms <- x$pforms
   if (length(pforms)) {
     pforms <- ulapply(pforms, formula2str, space = "trim")

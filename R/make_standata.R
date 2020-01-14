@@ -134,9 +134,9 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.null(newdata2)) {
     newdata2 <- object$data2
   }
-  newdata2 <- validate_data2(newdata2, bterms = bterms)
   new_formula <- update_re_terms(object$formula, re_formula)
   bterms <- parse_bf(new_formula)
+  newdata2 <- validate_data2(newdata2, bterms = bterms)
   version <- object$version$brms
   if (is_old_data) {
     if (version <= "2.8.6" && has_smooths(bterms)) {

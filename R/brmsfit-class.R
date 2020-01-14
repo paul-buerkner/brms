@@ -48,9 +48,9 @@ NULL
 # brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", data2 = list(), model = "", 
-                    prior = empty_prior(), autocor = NULL, 
-                    ranef = empty_ranef(), cov_ranef = NULL, 
-                    criteria = list(), stanvars = NULL, stan_funs = NULL, 
+                    prior = empty_prior(), ranef = empty_ranef(), 
+                    cov_ranef = NULL, criteria = list(), 
+                    stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
   version <- list(
@@ -58,8 +58,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
-    formula, family, data, data.name, data2, model, prior,
-    autocor, ranef, cov_ranef, stanvars, stan_funs, 
+    formula, family, data, data.name, data2, model, 
+    prior, ranef, cov_ranef, stanvars, stan_funs, 
     fit, exclude, algorithm, version, file
   )
   class(x) <- "brmsfit"

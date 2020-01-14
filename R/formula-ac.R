@@ -86,6 +86,9 @@ fcor <- function(M) {
 
 # validate 'autocor' argument
 validate_autocor <- function(autocor) {
+  if (is.null(autocor) || is.cor_empty(autocor)) {
+    return(NULL)
+  }
   if (is.cor_brms(autocor)) {
     warning2("Using 'cor_brms' objects for 'autocor' is deprecated. ",
              "Please see ?cor_brms for details.")
@@ -119,13 +122,15 @@ tidy_acef.default <- function(x, ...) {
 #' @export
 tidy_acef.mvbrmsterms <- function(x, ...) {
   out <- lapply(x$terms, tidy_acef, ...)
-  do_call(rbind, out)
+  out <- do_call(rbind, out)
+  structure(out, class = acef_class()) 
 }
 
 #' @export
 tidy_acef.brmsterms <- function(x, ...) {
   out <- lapply(x$dpars, tidy_acef, ...)
-  do_call(rbind, out)
+  out <- do_call(rbind, out) 
+  structure(out, class = acef_class())
 }
 
 #' @export
@@ -196,8 +201,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       stop2("Explicit covariance terms can only be specified on 'mu'.")
     }
   }
-  class(out) <- c("acef", "data.frame")
-  out
+  structure(out, class = acef_class())
 }
 
 #' @export
@@ -216,7 +220,11 @@ tidy_acef.NULL <- function(x, ...) {
 }
 
 empty_acef <- function() {
-  structure(empty_data_frame(), class = c("acef", "data.frame"))
+  structure(empty_data_frame(), class = acef_class())
+}
+
+acef_class <- function() {
+  c("acef", "data.frame")
 }
 
 # get names of certain autocor variables

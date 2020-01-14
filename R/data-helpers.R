@@ -76,8 +76,10 @@ validate_data2 <- function(data2, bterms, ...) {
   }
   dots <- list(...)
   for (i in seq_along(dots)) {
-    stopifnot(is.list(dots[[i]]), is_named(dots[[i]]))
-    data2[names(dots[[i]])] <- dots[[i]]
+    if (length(dots[[i]])) {
+      stopifnot(is.list(dots[[i]]), is_named(dots[[i]]))
+      data2[names(dots[[i]])] <- dots[[i]]
+    }
   }
   # validate autocorrelation matrices
   acef <- tidy_acef(bterms)

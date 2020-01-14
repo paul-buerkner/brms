@@ -416,9 +416,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
-      data2 = data2, cov_ranef = cov_ranef,
-      sample_prior = sample_prior, knots = knots, 
-      stanvars = stanvars, stan_funs = stan_funs, 
+      cov_ranef = cov_ranef, sample_prior = sample_prior, 
+      knots = knots, stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
