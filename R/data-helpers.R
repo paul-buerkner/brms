@@ -65,6 +65,9 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
   # TODO: specify 'knots' in 'data2'?
+  if (isTRUE(attr(data2, "valid"))) {
+    return(data2)
+  }
   if (is.null(data2)) {
     data2 <- list()
   }
@@ -95,7 +98,7 @@ validate_data2 <- function(data2, bterms, ...) {
   for (M in fcor_M_names) {
     data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
   }
-  data2
+  structure(data2, valid = TRUE)
 }
 
 # get an object from the 'data2' argument

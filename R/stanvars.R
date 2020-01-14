@@ -141,7 +141,6 @@ validate_stanvars <- function(x) {
 # add new stanvars to a brmsfit object
 add_new_stanvars <- function(x, newdata2) {
   stopifnot(is.brmsfit(x))
-  newdata2 <- validate_data2(newdata2)
   stanvars_data <- subset_stanvars(x$stanvars, block = "data")
   for (name in names(stanvars_data)) {
     if (name %in% names(newdata2)) {

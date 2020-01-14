@@ -67,7 +67,7 @@ NULL
 #' cor_arma(~ visit | patient, p = 2, q = 2)
 #' 
 #' @export
-cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
+cor_arma <- function(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
@@ -115,7 +115,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' cor_ar(~visit|patient, p = 2)
 #' 
 #' @export
-cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
+cor_ar <- function(formula = ~1, p = 1, cov = FALSE) {
   cor_arma(formula = formula, p = p, q = 0, cov = cov)
 }
   
@@ -137,7 +137,7 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' cor_ma(~visit|patient, q = 2)
 #' 
 #' @export
-cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
+cor_ma <- function(formula = ~1, q = 1, cov = FALSE) {
   cor_arma(formula = formula, p = 0, q = q, cov = cov)
 }
 
@@ -149,7 +149,7 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #' 
 #' @keywords internal
 #' @export
-cor_arr <- function(formula = ~ 1, r = 1) {
+cor_arr <- function(formula = ~1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
@@ -169,7 +169,7 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 #' cor_cosy(~ visit | patient)
 #' 
 #' @export 
-cor_cosy <- function(formula = ~ 1) {
+cor_cosy <- function(formula = ~1) {
   formula <- as.formula(formula)
   x <- nlist(formula)
   class(x) <- c("cor_cosy", "cor_brms")
@@ -419,30 +419,31 @@ is.cor_fixed <- function(x) {
 
 #' @export
 print.cor_empty <- function(x, ...) {
-  cat("empty()")
+  cat("empty()\n")
 }
 
 #' @export
 print.cor_arma <- function(x, ...) {
-  cat(paste0("arma(", formula2str(x$formula), ", ", x$p, ", ", x$q, ")"))
+  cat(paste0("arma(", formula2str(x$formula), ", ", x$p, ", ", x$q, ")\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_cosy <- function(x, ...) {
-  cat(paste0("cosy(", formula2str(x$formula), ")"))
+  cat(paste0("cosy(", formula2str(x$formula), ")\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_sar <- function(x, ...) {
-  cat(paste0("sar(", x$W_name, ", '", x$type, "')"))
+  cat(paste0("sar(", x$W_name, ", '", x$type, "')\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_car <- function(x, ...) {
-  cat(paste0("car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"))
+  form <- formula2str(x$formula)
+  cat(paste0("car(", x$W_name, ", ", form, ", '", x$type, "')\n"))
   invisible(x)
 }
 

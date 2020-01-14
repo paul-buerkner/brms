@@ -388,7 +388,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       autocor = autocor, sparse = sparse
     )
     family <- get_element(formula, "family")
-    autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
     data.name <- substitute_name(data)
     data <- validate_data(data, bterms = bterms)
@@ -404,9 +403,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- brmsfit(
       formula = formula, family = family, data = data, 
       data.name = data.name, data2 = data2, prior = prior, 
-      autocor = autocor, cov_ranef = cov_ranef, 
-      stanvars = stanvars, stan_funs = stan_funs,
-      algorithm = algorithm
+      cov_ranef = cov_ranef, stanvars = stanvars, 
+      stan_funs = stan_funs, algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(

@@ -79,7 +79,8 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 
 # prepare data for non-linear parameters for use in Stan
 #' @export 
-data_predictor.btnl <- function(x, data, ...) {
+data_predictor.btnl <- function(x, data, incl_autocor = TRUE, 
+                                old_sdata = NULL, ...) {
   out <- list()
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != NCOL(C)) {
@@ -91,6 +92,9 @@ data_predictor.btnl <- function(x, data, ...) {
   if (NCOL(C)) {
     out[[paste0("KC", p)]] <- NCOL(C)
     out[[paste0("C", p)]] <- C
+  }
+  if (incl_autocor) {
+    c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
   }
   out
 }
@@ -687,6 +691,9 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       }
       Nloc <- length(locations)
       Jloc <- as.array(match(loc_data, locations))
+      if (is.null(rownames(M))) {
+        stop2("Row names are required for 'M' in CAR terms.")
+      }
       found <- locations %in% rownames(M)
       if (any(!found)) {
         stop2("Row names of 'M' for CAR terms do not match ", 
@@ -732,6 +739,7 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
     }
   }
   if (has_ac_class(acef, "fcor")) {
+    acef_fcor <- subset2(acef, class = "fcor")
     M <- data2[[acef_fcor$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {

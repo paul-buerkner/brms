@@ -18,7 +18,7 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 \describe{
 \item{\code{formula}}{A \code{\link{brmsformula}} object}
 
-\item{\code{family}}{A \code{\link{brmsfamily}} object}
+\item{\code{family}}{(Deprected) A \code{\link{brmsfamily}} object}
 
 \item{\code{data}}{A \code{data.frame} containing all variables used in the model}
 
@@ -32,7 +32,7 @@ via \code{data}}
 \item{\code{prior}}{A \code{\link{brmsprior}} object containing
 information on the priors used in the model}
 
-\item{\code{autocor}}{An \code{\link{cor_brms}} object containing 
+\item{\code{autocor}}{(Deprected) An \code{\link{cor_brms}} object containing 
 the autocorrelation structure if specified}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure}

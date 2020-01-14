@@ -3,9 +3,30 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
   gr <- deparse(substitute(gr))
-  if (gr != "NA") {
-    stopif_illegal_group(gr)
-  }
+  .arma(time = time, gr = gr, p = p, q = q, cov = cov, label = label)
+}
+
+#' @export
+ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
+  label <- deparse(match.call())
+  time <- deparse(substitute(time))
+  gr <- deparse(substitute(gr))
+  .arma(time = time, gr = gr, p = p, q = 0, cov = cov, label = label)
+}
+
+#' @export
+ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
+  label <- deparse(match.call())
+  time <- deparse(substitute(time))
+  gr <- deparse(substitute(gr))
+  .arma(time = time, gr = gr, p = 0, q = q, cov = cov, label = label)
+}
+
+# helper function to validate input to arma()
+.arma <- function(time, gr, p, q, cov, label) {
+  time <- as_one_variable(time)
+  gr <- as_one_character(gr)
+  stopif_illegal_group(gr)
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
   if (!(p >= 0 && is_wholenumber(p))) {
@@ -22,6 +43,7 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
     stop2("Covariance formulation of ARMA structures is ", 
           "only possible for effects of maximal order one.")
   }
+  label <- as_one_character(label)
   out <- nlist(time, gr, p, q, cov, label)
   class(out) <- c("arma_term", "ac_term")
   out
@@ -31,10 +53,9 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 cosy <- function(time = NA, gr = NA) {
   label <- deparse(match.call())
   time <- deparse(substitute(time))
+  time <- as_one_variable(time)
   gr <- deparse(substitute(gr))
-  if (gr != "NA") {
-    stopif_illegal_group(gr)
-  }
+  stopif_illegal_group(gr)
   out <- nlist(time, gr, label)
   class(out) <- c("cosy_term", "ac_term")
   out
@@ -44,9 +65,7 @@ cosy <- function(time = NA, gr = NA) {
 sar <- function(M, type = "lag") {
   label <- deparse(match.call())
   M <- deparse(substitute(M))
-  if (!nzchar(M)) {
-    stop2("Argument 'M' is missing in 'sar'.")
-  }
+  M <- as_one_variable(M)
   options <- c("lag", "error")
   type <- match.arg(type, options)
   out <- nlist(M, type, label)
@@ -58,13 +77,9 @@ sar <- function(M, type = "lag") {
 car <- function(M, gr = NA, type = "escar") {
   label <- deparse(match.call())
   M <- deparse(substitute(M))
-  if (!nzchar(M)) {
-    stop2("Argument 'M' is missing in 'car'.")
-  }
+  M <- as_one_variable(M)
   gr <- deparse(substitute(gr))
-  if (gr != "NA") {
-    stopif_illegal_group(gr)
-  }
+  stopif_illegal_group(gr)
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
   out <- nlist(M, gr, type, label)
@@ -76,9 +91,7 @@ car <- function(M, gr = NA, type = "escar") {
 fcor <- function(M) {
   label <- deparse(match.call())
   M <- deparse(substitute(M))
-  if (!nzchar(M)) {
-    stop2("Argument 'M' is missing in 'fcor'.")
-  }
+  M <- as_one_variable(M)
   out <- nlist(M, label)
   class(out) <- c("fcor_term", "ac_term")
   out
@@ -129,8 +142,23 @@ tidy_acef.mvbrmsterms <- function(x, ...) {
 #' @export
 tidy_acef.brmsterms <- function(x, ...) {
   out <- lapply(x$dpars, tidy_acef, ...)
-  out <- do_call(rbind, out) 
-  structure(out, class = acef_class())
+  out <- do_call(rbind, out)
+  if (!NROW(out)) {
+    return(empty_acef())
+  }
+  out <- structure(out, class = acef_class())
+  if (has_ac_class(out, "sar")) {
+    if (any(c("sigma", "nu") %in% names(x$dpars))) {
+      stop2("SAR models are not implemented when predicting 'sigma' or 'nu'.")
+    }
+  }
+  if (use_ac_cov(out)) {
+    if (isTRUE(x$rescor)) {
+      stop2("Explicit covariance terms cannot be modeled ", 
+            "when 'rescor' is estimated at the same time.")
+    }
+  }
+  out
 }
 
 #' @export
@@ -138,6 +166,9 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   form <- x[["ac"]]
   if (!is.formula(form)) {
     return(empty_acef())
+  }
+  if (is.mixfamily(x$family)) {
+    stop2("Autocorrelation terms cannot be applied in mixture models.")
   }
   px <- check_prefix(x)
   out <- data.frame(term = all_terms(form), stringsAsFactors = FALSE)
@@ -196,8 +227,8 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   if (NROW(subset2(out, cov = TRUE)) > 1) {
     stop2("Can only model one explicit covariance term.")
   }
-  if (NROW(subset2(out, cov = TRUE))) {
-    if (!dpar_class(px$dpar) %in% c("", "mu") || nzchar(px$nlpar)) {
+  if (use_ac_cov(out) || has_ac_class(out, "arma")) {
+    if (any(!out$dpar %in% c("", "mu") | nzchar(out$nlpar))) {
       stop2("Explicit covariance terms can only be specified on 'mu'.")
     }
   }
@@ -299,13 +330,10 @@ validate_car_matrix <- function(M) {
   if (!Matrix::isSymmetric(M, check.attributes = FALSE)) {
     stop2("'M' for CAR terms must be symmetric.")
   }
-  if (is.null(rownames(M))) {
-    stop2("Row names are required for 'M' for CAR terms.")
-  }
   colnames(M) <- rownames(M)
   not_binary <- !(M == 0 | M == 1)
   if (any(not_binary)) {
-    message("Converting all non-zero values in 'M' to 1")
+    message("Converting all non-zero values in 'M' to 1.")
     M[not_binary] <- 1
   }
   M

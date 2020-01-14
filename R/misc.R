@@ -279,6 +279,18 @@ as_one_character <- function(x, allow_na = FALSE) {
   x
 }
 
+# coerce 'x' to a single character variable name
+as_one_variable <- function(x, allow_na = TRUE) {
+  x <- as_one_character(x)
+  if (x == "NA" && allow_na) {
+    return(x)
+  }
+  if (!nzchar(x) || !is_equal(x, all_vars(x))) {
+    stop2("Cannot coerce ", x, " to a single variable name.")
+  }
+  x
+}
+
 has_rows <- function(x) {
   isTRUE(nrow(x) > 0L)
 }

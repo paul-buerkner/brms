@@ -96,6 +96,7 @@ stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
   out$eta <- NULL
   str_add_list(out) <- stan_thres(x, ...)
   str_add_list(out) <- stan_bhaz(x, ...)
+  str_add_list(out) <- stan_ac(x, ...)
   out
 }
 
@@ -1088,21 +1089,16 @@ stan_gp <- function(bterms, data, prior, ...) {
 
 # Stan code for the linear predictor of autocorrelation terms 
 stan_ac <- function(bterms, data, prior, ...) {
-  # stopifnot(is.btl(bterms))
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   has_natural_residuals <- has_natural_residuals(bterms)
   has_latent_residuals <- has_latent_residuals(bterms)
   acef <- tidy_acef(bterms, data)
-  
+
+  # validity of the autocor terms has already been checked in 'tidy_acef'
   acef_arma <- subset2(acef, class = "arma")
   if (NROW(acef_arma)) {
-    # TODO: check if autocor is specified for mu only
-    err_msg <- "ARMA models are not implemented"
-    if (is.mixfamily(bterms$family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
     str_add(out$data) <- glue( 
       "  // data needed for ARMA correlations\n",
       "  int<lower=0> Kar{p};  // AR order\n",
@@ -1172,10 +1168,6 @@ stan_ac <- function(bterms, data, prior, ...) {
   acef_cosy <- subset2(acef, class = "cosy")
   if (NROW(acef_cosy)) {
     # compound symmetry correlation structure
-    err_msg <- "Compound symmetry models are not implemented"
-    if (is.mixfamily(bterms$family)) {
-      stop2(err_msg, " for mixture models.")
-    }
     # most code is shared with ARMA covariance models
     str_add(out$par) <- glue(
       "  real<lower=0,upper=1> cosy{p};  // compound symmetry correlation\n"
@@ -1188,16 +1180,7 @@ stan_ac <- function(bterms, data, prior, ...) {
   acef_time_cov <- subset2(acef, dim = "time", cov = TRUE)
   if (NROW(acef_time_cov)) {
     # use correlation structures in covariance matrix parameterization
-    # optional for ARMA models and obligatory for compound symmetry models
-    # TODO: move these checks to a place where all information is available
-    # err_msg <- "Cannot model residual covariance matrices via 'autocor'"
-    # if (isTRUE(bterms$rescor)) {
-    #   stop2(err_msg, " when estimating 'rescor'.")
-    # }
-    # pred_other_pars <- any(!names(bterms$dpars) %in% c("mu", "sigma"))
-    # if (has_natural_residuals && pred_other_pars) {
-    #   stop2(err_msg, " when predicting parameters other than 'mu' and 'sigma'.")
-    # }
+    # optional for ARMA models and obligatory for COSY models
     # can only model one covariance structure at a time
     stopifnot(NROW(acef_time_cov) == 1)
     str_add(out$data) <- glue( 
@@ -1237,14 +1220,13 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
     )
     if (has_latent_residuals) {
-      # TODO: support autocor terms for non-linear models via 'autocor'
-      # err_msg <- "Latent residuals are not implemented"
-      # if (is.btnl(bterms$dpars[["mu"]])) {
-      #   stop2(err_msg, " for non-linear models.")
-      # }
-      # if (conv_cats_dpars(bterms)) {
-      #   stop2(err_msg, " for this family.")
-      # }
+      err_msg <- "Latent residuals are not implemented"
+      if (is.btnl(bterms)) {
+        stop2(err_msg, " for non-linear models.")
+      }
+      if (conv_cats_dpars(bterms)) {
+        stop2(err_msg, " for this family.")
+      }
       str_add(out$par) <- glue(
         "  vector[N{p}] zerr{p};  // unscaled residuals\n",
         "  real<lower=0> sderr{p};  // SD of residuals\n"
@@ -1269,19 +1251,10 @@ stan_ac <- function(bterms, data, prior, ...) {
   
   acef_sar <- subset2(acef, class = "sar")
   if (NROW(acef_sar)) {
-    err_msg <- "SAR models are not implemented"
-    if (is.mixfamily(bterms$family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
     if (!has_natural_residuals) {
-      stop2(err_msg, " for family '", bterms$family$family, "'.")
+      stop2("SAR terms are not implemented ", 
+            "for family '", bterms$family$family, "'.")
     }
-    # if (isTRUE(bterms$rescor)) {
-    #   stop2(err_msg, " when 'rescor' is estimated.")
-    # }
-    # if (any(c("sigma", "nu") %in% names(bterms$dpars))) {
-    #   stop2(err_msg, " when predicting 'sigma' or 'nu'.")
-    # }
     str_add(out$data) <- glue(
       "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
       "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
@@ -1291,7 +1264,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  real min_eigenW{p} = min(eigenW{p});\n",
       "  real max_eigenW{p} = max(eigenW{p});\n"
     )
-    if (identical(acef_sar$type, "lag")) {
+    if (acef_sar$type == "lag") {
       str_add(out$par) <- glue( 
         "  // lag-SAR correlation parameter\n",
         "  real<lower=min_eigenW{p},upper=max_eigenW{p}> lagsar{p};\n"
@@ -1299,7 +1272,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       str_add(out$prior) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p
       )
-    } else if (identical(acef_sar$type, "error")) {
+    } else if (acef_sar$type == "error") {
       str_add(out$par) <- glue( 
         "  // error-SAR correlation parameter\n",
         "  real<lower=min_eigenW{p},upper=max_eigenW{p}> errorsar{p};\n"
@@ -1312,12 +1285,8 @@ stan_ac <- function(bterms, data, prior, ...) {
   
   acef_car <- subset2(acef, class = "car")
   if (NROW(acef_car)) {
-    err_msg <- "CAR models are not implemented"
-    if (is.mixfamily(bterms$family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
     if (is.btnl(bterms)) {
-      stop2(err_msg, " for non-linear models.")
+      stop2("CAR terms are not implemented for non-linear models.")
     }
     str_add(out$data) <- glue(
       "  // data for the CAR structure\n",
@@ -1340,7 +1309,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  vector[Nloc{p}] eigenW{p};\n"
       )
     }
-    if (acef_car$type %in% "escar") {
+    if (acef_car$type == "escar") {
       str_add(out$par) <- glue(
         "  real<lower=0, upper=1> car{p};\n",
         "  vector[Nloc{p}] rcar{p};\n"
@@ -1358,7 +1327,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "    rcar{p} | {car_args}\n",
         "  );\n"
       )
-    } else if (acef_car$type %in% "esicar") {
+    } else if (acef_car$type == "esicar") {
       str_add(out$par) <- glue(
         "  vector[Nloc{p} - 1] zcar{p};\n"
       )
@@ -1397,7 +1366,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n"
       )
-    } else if (acef_car$type %in% "bym2") {
+    } else if (acef_car$type == "bym2") {
       # BYM2 car based on the case study of Mitzi Morris
       # http://mc-stan.org/users/documentation/case-studies/icar_stan.html
       str_add(out$data) <- glue(
@@ -1432,15 +1401,9 @@ stan_ac <- function(bterms, data, prior, ...) {
   
   acef_fcor <- subset2(acef, class = "fcor")
   if (NROW(acef_fcor)) {
-    err_msg <- "Correlation structure 'fcor' is not implemented"
-    if (is.mixfamily(bterms$family)) {
-      stop2(err_msg, " for mixture models.") 
-    }
     if (!has_natural_residuals) {
-      stop2(err_msg, " for family '", bterms$family$family, "'.")
-    }
-    if (isTRUE(bterms$rescor)) {
-      stop2(err_msg, " when 'rescor' is estimated.")
+      stop2("FCOR terms are not implemented ", 
+            "for family '", bterms$family$family, "'.")
     }
     str_add(out$data) <- glue( 
       "  matrix[N{p}, N{p}] M{p};  // known residual covariance matrix\n"

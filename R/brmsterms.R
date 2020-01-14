@@ -265,7 +265,7 @@ parse_lf <- function(formula) {
     get_allvars(y$fe), get_allvars(y$re),
     get_allvars(y$cs), get_allvars(y$sp),
     get_allvars(y$sm), get_allvars(y$gp),
-    get_allvars(y$offset)
+    get_allvars(y$ac), get_allvars(y$offset)
   )
   environment(y$allvars) <- environment(formula)
   structure(y, class = "btl")
@@ -287,7 +287,8 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   y$used_nlpars <- intersect(all_vars, nlpars)
   covars <- setdiff(all_vars, nlpars)
   y$covars <- structure(str2formula(covars), int = FALSE)
-  y$allvars <- allvars_formula(covars)
+  y$ac <- parse_ac(attr(formula, "autocor"))
+  y$allvars <- allvars_formula(covars, get_allvars(y$ac))
   environment(y$allvars) <- environment(formula)
   y$loop <- loop
   structure(y, class = "btnl")
@@ -860,7 +861,7 @@ regex_sp <- function(type = "all") {
   funs <- c(
     sm = "(s|(t2)|(te)|(ti))", 
     gp = "gp", cs = "cse?", mmc = "mmc", 
-    ac = "((arma)|(cosy)|(sar)|(car)|(fcor))"
+    ac = "((arma)|(ar)|(ma)|(cosy)|(sar)|(car)|(fcor))"
   )
   funs[all_sp_types()] <- all_sp_types()
   if ("sp" %in% type) {
