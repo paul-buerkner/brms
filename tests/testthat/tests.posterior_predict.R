@@ -105,7 +105,7 @@ test_that("loglik for SAR models runs without errors", {
     nu = rep(2, ns),
     sigma = rep(10, ns)
   )
-  draws$ac <- list(lagsar = matrix(c(0.3, 0.5, 0.7)), W = diag(10))
+  draws$ac <- list(lagsar = matrix(c(0.3, 0.5, 0.7)), M = diag(10))
   
   pred <- brms:::posterior_predict_gaussian_lagsar(1, draws = draws)
   expect_equal(dim(pred), c(3, 10))

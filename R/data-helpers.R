@@ -118,6 +118,9 @@ get_from_data2 <- function(x, data2) {
 # @param i observation based indices
 # @return data2 with potentially indexed elements
 subset_data2 <- function(data2, i) {
+  if (!length(data2)) {
+    return(data2)
+  }
   stopifnot(is.list(data2), is_named(data2))
   for (var in names(data2)) {
     if (isTRUE(attr(data2[[var]], "obs_based_matrix"))) {

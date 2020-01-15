@@ -1256,18 +1256,18 @@ stan_ac <- function(bterms, data, prior, ...) {
             "for family '", bterms$family$family, "'.")
     }
     str_add(out$data) <- glue(
-      "  matrix[N{p}, N{p}] W{p};  // spatial weight matrix\n",
-      "  vector[N{p}] eigenW{p};  // eigenvalues of W{p}\n"
+      "  matrix[N{p}, N{p}] M{p};  // spatial weight matrix\n",
+      "  vector[N{p}] eigenM{p};  // eigenvalues of M{p}\n"
     )
     str_add(out$tdata_def) <- glue(
       "  // the eigenvalues define the boundaries of the SAR correlation\n",
-      "  real min_eigenW{p} = min(eigenW{p});\n",
-      "  real max_eigenW{p} = max(eigenW{p});\n"
+      "  real min_eigenM{p} = min(eigenM{p});\n",
+      "  real max_eigenM{p} = max(eigenM{p});\n"
     )
     if (acef_sar$type == "lag") {
       str_add(out$par) <- glue( 
         "  // lag-SAR correlation parameter\n",
-        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> lagsar{p};\n"
+        "  real<lower=min_eigenM{p},upper=max_eigenM{p}> lagsar{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p
@@ -1275,7 +1275,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     } else if (acef_sar$type == "error") {
       str_add(out$par) <- glue( 
         "  // error-SAR correlation parameter\n",
-        "  real<lower=min_eigenW{p},upper=max_eigenW{p}> errorsar{p};\n"
+        "  real<lower=min_eigenM{p},upper=max_eigenM{p}> errorsar{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "errorsar", px = px, suffix = p
@@ -1306,7 +1306,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     if (acef_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
         "  vector[Nloc{p}] Nneigh{p};\n",
-        "  vector[Nloc{p}] eigenW{p};\n"
+        "  vector[Nloc{p}] eigenM{p};\n"
       )
     }
     if (acef_car$type == "escar") {
@@ -1316,7 +1316,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
       car_args <- c(
         "car", "sdcar", "Nloc", "Nedges", 
-        "Nneigh", "eigenW", "edges1", "edges2"
+        "Nneigh", "eigenM", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
       str_add(out$prior) <- stan_prior(
@@ -1341,7 +1341,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
       car_args <- c(
         "sdcar", "Nloc", "Nedges", 
-        "Nneigh", "eigenW", "edges1", "edges2"
+        "Nneigh", "eigenM", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
       str_add(out$prior) <- glue(
@@ -1927,13 +1927,13 @@ stan_dpar_transform <- function(bterms) {
           "  real {xi};  // scaled shape parameter\n"
         )
         sigma <- glue("sigma{id}")
-        v <- str_if(sigma %in% names(bterms$dpars), "_vector")
+        sfx <- str_if(sigma %in% names(bterms$dpars), "_vector")
         args <- sargs(
           glue("tmp_{xi}"), glue("Y{p}"), 
           glue("mu{id}{p}"), glue("{sigma}{p}")
         )
         str_add(out$model_comp_dpar_trans) <- glue(
-          "  {xi}{p} = scale_xi{v}({args});\n"
+          "  {xi}{p} = scale_xi{sfx}({args});\n"
         )
       }
     }

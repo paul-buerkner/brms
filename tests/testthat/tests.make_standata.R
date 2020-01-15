@@ -370,7 +370,8 @@ test_that("make_standata correctly prepares data for monotonic effects", {
 test_that("make_standata returns FCOR covariance matrices", {
   data <- data.frame(y = 1:5)
   data2 <- list(V = diag(5))
-  expect_equal(make_standata(y ~ fcor(V), data, data2 = data2)$M, data2$V)
+  expect_equal(make_standata(y ~ fcor(V), data, data2 = data2)$M, 
+               data2$V, check.attributes = FALSE)
   
   expect_warning(
     expect_error(
@@ -699,19 +700,20 @@ test_that("make_standata includes data for SAR models", {
 })
 
 test_that("make_standata includes data for CAR models", {
-  dat = data.frame(y = rnorm(10), x = rnorm(10))
+  dat = data.frame(y = rnorm(10), x = rnorm(10), obs = 1:10)
   edges <- cbind(1:10, 10:1)
   W <- matrix(0, nrow = 10, ncol = 10)
   for (i in seq_len(nrow(edges))) {
     W[edges[i, 1], edges[i, 2]] <- 1 
-  } 
+  }
+  rownames(W) <- 1:nrow(W)
   dat2 <- list(W = W)
   
-  sdata <- make_standata(y ~ x + car(W), dat, data2 = dat2)
+  sdata <- make_standata(y ~ x + car(W, gr = obs), dat, data2 = dat2)
   expect_equal(sdata$Nloc, 10)
-  expect_equal(sdata$Nneigh, rep(1, 10))
-  expect_equal(sdata$edges1, as.array(10:6))
-  expect_equal(sdata$edges2, as.array(1:5))
+  expect_equal(unname(sdata$Nneigh), rep(1, 10))
+  expect_equal(unname(sdata$edges1), as.array(10:6))
+  expect_equal(unname(sdata$edges2), as.array(1:5))
   
   sdata_old <- SW(make_standata(y ~ x, dat, autocor = cor_car(W)))
   expect_equal(sdata, sdata_old)
@@ -723,7 +725,8 @@ test_that("make_standata includes data for CAR models", {
   expect_equal(sdata$edges1, as.array(2))
   expect_equal(sdata$edges2, as.array(1))
   
-  sdata <- make_standata(y ~ x + car(W, type = "bym2"), dat, data2 = dat2)
+  sdata <- make_standata(y ~ x + car(W, group, type = "bym2"), 
+                         data = dat, data2 = dat2)
   expect_equal(length(sdata$car_scale), 1L)
   
   # test error messages
@@ -737,7 +740,7 @@ test_that("make_standata includes data for CAR models", {
   expect_error(make_standata(y ~ car(W), dat, data2 = dat2),
                "'M' for CAR terms must be symmetric")
   dat2$W[10, 1] <- 0
-  expect_error(make_standata(y ~ x + car(W), dat, data2 = dat2),
+  expect_error(SW(make_standata(y ~ x + car(W), dat, data2 = dat2)),
                "all locations should have at least one neighbor")
 })
 

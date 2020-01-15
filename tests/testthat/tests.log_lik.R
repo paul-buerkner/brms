@@ -142,7 +142,7 @@ test_that("log_lik for SAR models runs without errors", {
   )
   draws$ac <-  list(
     lagsar = matrix(c(0.3, 0.5, 0.7)),
-    W = diag(10)
+    M = diag(10)
   )
   draws$data <- list(Y = rnorm(10))
 

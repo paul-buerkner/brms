@@ -389,9 +389,9 @@ posterior_predict_student_time <- function(i, draws, ...) {
 posterior_predict_gaussian_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    M_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$M)
+    mu <- as.numeric(solve(M_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu, Sigma = Sigma)
   }
   mu <- get_dpar(draws, "mu")
@@ -402,9 +402,9 @@ posterior_predict_gaussian_lagsar <- function(i, draws, ...) {
 posterior_predict_student_lagsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$W)
-    mu <- as.numeric(solve(W_new) %*% mu[s, ])
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    M_new <- with(draws, diag(nobs) - ac$lagsar[s] * ac$M)
+    mu <- as.numeric(solve(M_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu, Sigma = Sigma)
   }
   mu <- get_dpar(draws, "mu")
@@ -416,8 +416,8 @@ posterior_predict_student_lagsar <- function(i, draws, ...) {
 posterior_predict_gaussian_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    M_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$M)
+    Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma)
   }
   mu <- get_dpar(draws, "mu")
@@ -428,8 +428,8 @@ posterior_predict_gaussian_errorsar <- function(i, draws, ...) {
 posterior_predict_student_errorsar <- function(i, draws, ...) {
   stopifnot(i == 1)
   .predict <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$W)
-    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    M_new <- with(draws, diag(nobs) - ac$errorsar[s] * ac$M)
+    Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu[s, ], Sigma = Sigma)
   }
   mu <- get_dpar(draws, "mu")

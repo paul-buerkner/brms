@@ -744,7 +744,7 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
   if (has_ac_class(acef, "sar")) {
     draws$lagsar <- get_samples(samples, paste0("^lagsar", p, "$"))
     draws$errorsar <- get_samples(samples, paste0("^errorsar", p, "$"))
-    draws$W <- sdata[[paste0("W", p)]]
+    draws$M <- sdata[[paste0("M", p)]]
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
@@ -759,7 +759,7 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
     draws$rcar <- rcar
   }
   if (has_ac_class(acef, "fcor")) {
-    draws$V <- sdata[[paste0("V", p)]]
+    draws$M <- sdata[[paste0("M", p)]]
   }
   draws
 }

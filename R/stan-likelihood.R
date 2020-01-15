@@ -334,17 +334,17 @@ stan_llh_gaussian_fcor <- function(bterms, resp = "", mix = "") {
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W", "eigenW")
+  v <- c("lagsar", "M", "eigenM")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
+  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$M, p$eigenM)
 }
 
 stan_llh_gaussian_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W", "eigenW")
+  v <- c("errorsar", "M", "eigenM")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
+  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$M, p$eigenM)
 }
 
 stan_llh_student <- function(bterms, resp = "", mix = "") {
@@ -390,17 +390,17 @@ stan_llh_student_fcor <- function(bterms, resp = "", mix = "") {
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W", "eigenW")
+  v <- c("lagsar", "M", "eigenM")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
+  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$M, p$eigenM)
 }
 
 stan_llh_student_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W", "eigenW")
+  v <- c("errorsar", "M", "eigenM")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
+  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, p$errorsar, p$M, p$eigenM)
 }
 
 stan_llh_lognormal <- function(bterms, resp = "", mix = "") {
