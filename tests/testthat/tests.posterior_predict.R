@@ -88,12 +88,12 @@ test_that("posterior_predict for ARMA covariance models runs without errors", {
   )
   draws$data <- list(se = rgamma(ns, 10))
   
-  draws$family$fun <- "gaussian_cov"
-  pred <- brms:::posterior_predict_gaussian_cov(1, draws = draws)
+  draws$family$fun <- "gaussian_time"
+  pred <- brms:::posterior_predict_gaussian_time(1, draws = draws)
   expect_equal(length(pred), ns * 4)
   
-  draws$family$fun <- "student_cov"
-  pred <- brms:::posterior_predict_student_cov(2, draws = draws)
+  draws$family$fun <- "student_time"
+  pred <- brms:::posterior_predict_student_time(2, draws = draws)
   expect_equal(length(pred), ns * 7)
 })
 
@@ -120,18 +120,19 @@ test_that("loglik for SAR models runs without errors", {
   expect_equal(dim(pred), c(3, 10))
 })
 
-test_that("posterior_predict for 'cor_fixed' models runs without errors", {
+test_that("posterior_predict for FCOR models runs without errors", {
   ns <- 3
-  draws <- structure(list(nsamples = ns), class = "brmsdraws")
+  nobs <- 10
+  draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
-    mu = matrix(rnorm(30), nrow = ns),
-    nu = rep(2, ns)
+    mu = matrix(rnorm(nobs * ns), nrow = ns),
+    sigma = rep(1, ns), nu = rep(2, ns)
   )
-  draws$ac <- list(V = diag(10))
-  pred <- brms:::posterior_predict_gaussian_fixed(1, draws = draws)
-  expect_equal(dim(pred), c(3, 10))
-  pred <- brms:::posterior_predict_student_fixed(1, draws = draws)
-  expect_equal(dim(pred), c(3, 10))
+  draws$ac <- list(M = diag(nobs))
+  pred <- brms:::posterior_predict_gaussian_fcor(1, draws = draws)
+  expect_equal(dim(pred), c(ns, nobs))
+  pred <- brms:::posterior_predict_student_fcor(1, draws = draws)
+  expect_equal(dim(pred), c(ns, nobs))
 })
 
 test_that("posterior_predict for count and survival models runs without errors", {

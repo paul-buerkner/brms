@@ -1,17 +1,17 @@
 context("Tests for brmsfit methods")
 
+expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
+  testthat::expect_true(all(object >= lower & object <= upper), ...)
+}
+SM <- suppressMessages
+SW <- suppressWarnings
+
 fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
 fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
 fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
 fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
 fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
 fit6 <- brms:::rename_pars(brms:::brmsfit_example6)
-
-expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
-  testthat::expect_true(all(object >= lower & object <= upper), ...)
-}
-SM <- suppressMessages
-SW <- suppressWarnings
 
 # test S3 methods in alphabetical order
 test_that("as.data.frame has reasonable ouputs", {
@@ -47,8 +47,8 @@ test_that("as.mcmc has reasonable ouputs", {
 })
 
 test_that("autocor has reasonable ouputs", {
-  expect_true(is.cor_arma(autocor(fit1)))
-  expect_true(is.cor_brms(autocor(fit6, resp = "count")))
+  expect_true(is.null(SW(autocor(fit1))))
+  expect_true(is.null(SW(autocor(fit6, resp = "count"))))
 })
 
 test_that("bayes_R2 has reasonable ouputs", {
