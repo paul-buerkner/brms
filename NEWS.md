@@ -1,3 +1,9 @@
+# brms 2.11.1
+
+### Bug Fixes
+
+* Fix version requirement of the `loo` package.
+
 # brms 2.11.0
 
 ### New Features
