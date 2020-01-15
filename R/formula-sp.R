@@ -332,12 +332,13 @@ tidy_spef <- function(x, data) {
       # do it like parse_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
-    sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
-    sp_calls <- sub("^I\\(", "(", terms_split[[i]][sp_calls])
+    has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
+    sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
     out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
+    out$Ic[i] <- any(!has_sp_calls)
   }
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  out$Ic <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  out$Ic <- cumsum(out$Ic | not_one)
   out
 }
 
