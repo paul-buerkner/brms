@@ -3,6 +3,7 @@
 ### Bug Fixes
 
 * Fix version requirement of the `loo` package.
+* Fix effective sample size note in the `summary` output. (#824)
 
 # brms 2.11.0
 
