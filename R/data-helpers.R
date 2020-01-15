@@ -89,14 +89,18 @@ validate_data2 <- function(data2, bterms, ...) {
   sar_M_names <- get_ac_vars(acef, "M", class = "sar")
   for (M in sar_M_names) {
     data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
   car_M_names <- get_ac_vars(acef, "M", class = "car")
   for (M in car_M_names) {
     data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
+    # observation based CAR matrices are deprecated and
+    # there is no need to label them as observation based
   }
   fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
   for (M in fcor_M_names) {
     data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
   structure(data2, valid = TRUE)
 }
@@ -107,6 +111,22 @@ get_from_data2 <- function(x, data2) {
     stop2("Object '", x, "' was not found in 'data2'.")
   }
   get(x, data2)
+}
+
+# index observation based elements in 'data2' 
+# @param data2 a named list of objects 
+# @param i observation based indices
+# @return data2 with potentially indexed elements
+subset_data2 <- function(data2, i) {
+  stopifnot(is.list(data2), is_named(data2))
+  for (var in names(data2)) {
+    if (isTRUE(attr(data2[[var]], "obs_based_matrix"))) {
+      # matrices with dimensions equal to the number of observations
+      data2[[var]] <- data2[[var]][i, i, drop = FALSE]
+      attr(data2[[var]], "obs_based_matrix") <- TRUE
+    }
+  }
+  data2
 }
 
 # add the reserved intercept variables to the data

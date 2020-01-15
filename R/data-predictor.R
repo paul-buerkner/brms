@@ -658,29 +658,33 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   if (has_ac_class(acef, "sar")) {
     acef_sar <- subset2(acef, class = "sar")
     M <- data2[[acef_sar$M]]
+    rmd_rows <- attr(data, "na.action")
+    if (!is.null(rmd_rows)) {
+      M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
+    }
     if (!is_equal(dim(M), rep(N, 2))) {
       stop2("Dimensions of 'M' for SAR terms must be equal to ", 
             "the number of observations.")
     }
-    out$M <- M
+    out$M <- as.matrix(M)
     out$eigenM <- eigen(M)$values
     # simplifies code of choose_N
     out$N_tg <- 1
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
-    new <- !is.null(locations)
+    needs_locations <- is.null(locations)
     M <- data2[[acef_car$M]]
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
       new_locations <- levels(factor(loc_data))
-      if (new) {
+      if (needs_locations) {
+        locations <- new_locations
+      } else {
         invalid_locations <- setdiff(new_locations, locations)
         if (length(invalid_locations)) {
           stop2("Cannot handle new locations in CAR models.")
         }
-      } else {
-        locations <- new_locations
       }
       Nloc <- length(locations)
       Jloc <- as.array(match(loc_data, locations))
@@ -694,15 +698,20 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       }
       M <- M[locations, locations, drop = FALSE]
     } else {
+      warning2(
+        "Using CAR terms without a grouping factor is deprecated. ",
+        "Please use argument 'gr' even if each observation ",
+        "represents its own location."
+      )
       Nloc <- N
       Jloc <- as.array(seq_len(Nloc))
       if (!is_equal(dim(M), rep(Nloc, 2))) {
-        if (new) {
-          stop2("Cannot handle new data in CAR models ",
-                "without a grouping factor.")
-        } else {
+        if (needs_locations) {
           stop2("Dimensions of 'M' for CAR terms must be equal ", 
                 "to the number of observations.") 
+        } else {
+          stop2("Cannot handle new data in CAR models ",
+                "without a grouping factor.") 
         }
       }
     }

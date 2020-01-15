@@ -315,9 +315,6 @@ validate_sar_matrix <- function(M) {
     stop2("'M' for SAR terms must be of class 'matrix', 'listw', or 'nb'.")
   }
   M <- Matrix::Matrix(M, sparse = TRUE)
-  if (!Matrix::isSymmetric(M, check.attributes = FALSE)) {
-    stop2("'M' for CAR terms must be symmetric.")
-  }
   M
 }
 

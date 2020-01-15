@@ -138,7 +138,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
   }
-  arg_names <- c("cov_ranef", "stanvars", "stan_funs")
+  arg_names <- c("data2", "cov_ranef", "stanvars", "stan_funs")
   old_args <- setdiff(arg_names, names(dots))
   dots[old_args] <- object[old_args]
   
@@ -180,6 +180,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
     bterms <- parse_bf(object$formula)
     object$data <- validate_data(dots$data, bterms = bterms)
+    object$data2 <- validate_data2(dots$data2, bterms = bterms)
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
