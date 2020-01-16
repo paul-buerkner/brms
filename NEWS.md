@@ -6,6 +6,8 @@
 * Fix effective sample size note in the `summary` output. (#824)
 * Fix an edge case in the handling of covariates in 
 special terms thanks to Andrew Milne. (#823)
+* Allow restructuring objects multiple times with different
+brms versions thanks to Jonathan A. Nations. (#828)
 
 # brms 2.11.0
 

@@ -24,10 +24,13 @@ restructure <- function(x, rstr_summary = FALSE) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
-  if (x$version$brms >= utils::packageVersion("brms")) {
+  current_version <- utils::packageVersion("brms") 
+  if (x$version$brms >= current_version) {
     return(x)
   } 
-  if (!isTRUE(attr(x, "restructured"))) {
+  restructured <- attr(x, "restructured")
+  if (!is.package_version(restructured) || restructured < current_version) {
+    # object is not up to date with the current brms version
     if (x$version$brms < "2.0.0") {
       x <- restructure_v1(x)
     }
@@ -46,7 +49,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       remove("summary", pos = stan_env)
     }
   }
-  structure(x, restructured = TRUE)
+  structure(x, restructured = current_version)
 }
 
 restructure_v2 <- function(x) {
