@@ -8,6 +8,8 @@
 special terms thanks to Andrew Milne. (#823)
 * Allow restructuring objects multiple times with different
 brms versions thanks to Jonathan A. Nations. (#828)
+* Fix validation of ordered factors in `newdata` 
+thanks to Andrew Milne. (#830)
 
 # brms 2.11.0
 
