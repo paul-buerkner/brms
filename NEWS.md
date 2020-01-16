@@ -1,3 +1,16 @@
+# brms 2.11.1
+
+### Bug Fixes
+
+* Fix version requirement of the `loo` package.
+* Fix effective sample size note in the `summary` output. (#824)
+* Fix an edge case in the handling of covariates in 
+special terms thanks to Andrew Milne. (#823)
+* Allow restructuring objects multiple times with different
+brms versions thanks to Jonathan A. Nations. (#828)
+* Fix validation of ordered factors in `newdata` 
+thanks to Andrew Milne. (#830)
+
 # brms 2.11.0
 
 ### New Features

@@ -278,9 +278,9 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0("Samples were drawn using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(
-        "For each parameter, Eff.Sample \n",
-        "is a crude measure of effective sample size, ", 
-        "and Rhat is the potential \n",
+        "For each parameter, Bulk_ESS\n",
+        "and Tail_ESS are effective sample size measures, ",
+        "and Rhat is the potential\n", 
         "scale reduction factor on split chains ",
         "(at convergence, Rhat = 1)."
       ))

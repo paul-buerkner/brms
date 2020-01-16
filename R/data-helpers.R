@@ -381,6 +381,7 @@ validate_newdata <- function(
         new_levels <- levels(new_factor)
         old_levels <- levels(factors[[i]])
         old_contrasts <- contrasts(factors[[i]])
+        old_ordered <- is.ordered(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
         # don't add the 'zero__' level to response variables
         is_resp <- factor_names[i] %in% all.vars(bterms$respform)
@@ -397,7 +398,8 @@ validate_newdata <- function(
             "\nLevels found: ", collapse_comma(new_levels)
           )
         }
-        newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
+        newdata[[factor_names[i]]] <- 
+          factor(new_factor, old_levels, ordered = old_ordered)
         # don't use contrasts(.) here to avoid dimension checks
         attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
       }
