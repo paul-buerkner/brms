@@ -73,11 +73,11 @@ exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars,
   p <- usc(combine_prefix(x))
   out <- paste0(c("chol_cov", names(x$dpars)), p)
   if (!save_all_pars) {
-    c(out) <- c(
-      paste0("ordered_Intercept", p),
-      paste0("fixed_Intercept", p),
-      paste0(c("theta", "zcar", "nszcar", "zerr"), p)
+    par_classes <- c(
+      "ordered_Intercept", "fixed_Intercept", "theta", 
+      "zcar", "nszcar", "zerr", "chol_cor"
     )
+    c(out) <- paste0(par_classes, p)
     for (dp in names(x$dpars)) {
       c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
     }

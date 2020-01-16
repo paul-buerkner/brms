@@ -75,7 +75,8 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 
 # prepare data for non-linear parameters for use in Stan
 #' @export 
-data_predictor.btnl <- function(x, data, old_sdata = NULL, ...) {
+data_predictor.btnl <- function(x, data, data2 = list(), 
+                                old_sdata = NULL, ...) {
   out <- list()
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != NCOL(C)) {

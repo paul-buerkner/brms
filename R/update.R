@@ -69,10 +69,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (missing(formula.) || is.null(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
-      dots$formula <- dots$formula + check_family(dots$family)
+      dots$formula <- bf(dots$formula, family = dots$family)
     } 
     if (!is.null(dots[["autocor"]])) {
-      dots$formula <- dots$formula + check_autocor(dots$autocor)
+      dots$formula <- bf(dots$formula, autocor = dots$autocor)
     }
   } else {
     # TODO: restructure updating of the model formula

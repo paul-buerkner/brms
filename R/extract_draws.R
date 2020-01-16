@@ -734,7 +734,7 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
         for (i in seq_len(draws$N_tg)) {
           obs <- with(draws, begin_tg[i]:end_tg[i])
           zeros <- rep(0, length(obs))
-          cov <- get_cov_matrix_autocor(list(ac = draws), obs, latent = TRUE)
+          cov <- get_cov_matrix_ac(list(ac = draws), obs, latent = TRUE)
           .err <- function(s) rmulti_normal(1, zeros, Sigma = cov[s, , ])
           draws$err[, obs] <- rblapply(seq_rows(samples), .err)
         }
