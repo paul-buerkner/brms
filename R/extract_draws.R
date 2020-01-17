@@ -183,8 +183,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
     }
   }
   # only include those autocor samples on the top-level 
-  # of draws which imply explicit covariance matrices
-  draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, cov = TRUE, ...)
+  # of draws which imply covariance matrices on natural residuals
+  draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, nat_cov = TRUE, ...)
   draws$data <- extract_draws_data(x, sdata = sdata, data = data, ...)
   structure(draws, class = "brmsdraws")
 }
@@ -219,7 +219,7 @@ extract_draws.btl <- function(x, samples, sdata, ...) {
   draws$sm <- extract_draws_sm(x, samples, sdata, ...)
   draws$gp <- extract_draws_gp(x, samples, sdata, ...)
   draws$re <- extract_draws_re(x, sdata, ...)
-  draws$ac <- extract_draws_ac(x, samples, sdata, cov = FALSE, ...)
+  draws$ac <- extract_draws_ac(x, samples, sdata, nat_cov = FALSE, ...)
   draws$offset <- extract_draws_offset(x, sdata, ...)
   draws
 }
@@ -684,13 +684,13 @@ extract_draws_re <- function(bterms, sdata, draws_ranef = list(),
 }
 
 # extract draws of autocorrelation parameters
-# @param cov extract autocor terms using covariance matrices?
+# @param nat_cov extract terms for covariance matrices of natural residuals?
 extract_draws_ac <- function(bterms, samples, sdata, oos = NULL, 
-                             cov = FALSE, new = FALSE, ...) {
+                             nat_cov = FALSE, new = FALSE, ...) {
   draws <- list()
-  cov <- as_one_logical(cov)
+  nat_cov <- as_one_logical(nat_cov)
   acef <- tidy_acef(bterms)
-  acef <- subset2(acef, cov = cov)
+  acef <- subset2(acef, nat_cov = nat_cov)
   if (!NROW(acef)) {
     return(draws)
   }
@@ -722,7 +722,7 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
     # draws for the covariance structures of time-series models
     draws$begin_tg <- sdata[[paste0("begin_tg", p)]]
     draws$end_tg <- sdata[[paste0("end_tg", p)]]
-    if (has_latent_residuals(bterms)) {
+    if (has_cor_latent_residuals(bterms)) {
       regex_err <- paste0("^err", p, "\\[")
       has_err <- any(grepl(regex_err, colnames(samples)))
       if (has_err && !new) {

@@ -105,7 +105,7 @@ test_that("ARMA models work correctly", {
   dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
 
   fit_ar <- brm(
-    y ~ x, data = dat, autocor = cor_ar(p = 5),
+    y ~ x + ar(p = 5), data = dat,
     prior = prior(normal(0, 5), class = "ar"),
     chains = 2, refresh = 0
   )
@@ -116,14 +116,13 @@ test_that("ARMA models work correctly", {
   expect_range(ar[5], -0.6, -0.1)
   expect_ggplot(plot(conditional_effects(fit_ar))[[1]])
 
-  fit_ma <- brm(y ~ x, data = dat, autocor = cor_ma(q = 1),
+  fit_ma <- brm(y ~ x + ma(q = 1), data = dat,
                 chains = 2, refresh = 0)
   print(fit_ma)
   expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
 
   fit_arma <- brm(
-    y ~ x + (1|g), data = dat,
-    autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
+    y ~ x + (1|g) + arma(gr = g, cov = TRUE), data = dat,
     prior = prior(normal(0, 5), class = "ar") +
       prior(normal(0, 6), class = "ma"),
     chains = 2, refresh = 0
@@ -134,8 +133,8 @@ test_that("ARMA models work correctly", {
   expect_ggplot(plot(conditional_effects(fit_arma), plot = FALSE)[[1]])
 
   fit_arma_pois <- brm(
-    count ~ Trt + (1 | patient), data = epilepsy, family = poisson(),
-    autocor = cor_arma(~ visit | patient, p = 1, q = 1, cov = TRUE),
+    count ~ Trt + (1 | patient) + arma(visit, patient, cov = TRUE),
+    data = epilepsy, family = poisson(),
     chains = 2, refresh = 0
   )
   print(fit_arma_pois)
@@ -259,8 +258,9 @@ test_that("multivariate normal models work correctly", {
   tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
-                  data = data, autocor = cor_arma(~tim|id, p = 1),
+  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + 
+                   (1|x|id) + arma(tim, id, q = 0),
+                  data = data,
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
                             prior_(~lkj(5), class = "rescor")),
@@ -720,8 +720,8 @@ test_that("CAR models work correctly", {
   
   # fit a CAR model
   fit_car <- brm(
-    y | trials(size) ~ x1 + x2, data = dat, 
-    family = binomial(), autocor = cor_car(W, ~1|obs),
+    y | trials(size) ~ x1 + x2 + car(W, obs),
+    data = dat, data2 = list(W = W), family = binomial(), 
     chains = 2, refresh = 0
   ) 
   print(fit_car)

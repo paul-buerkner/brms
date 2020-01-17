@@ -3,6 +3,10 @@ context("Tests for brmsfit methods")
 expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
   testthat::expect_true(all(object >= lower & object <= upper), ...)
 }
+expect_ggplot <- function(object, ...) {
+  testthat::expect_true(is(object, "ggplot"), ...)
+}
+
 SM <- suppressMessages
 SW <- suppressWarnings
 
@@ -89,7 +93,7 @@ test_that("conditional_effects has reasonable ouputs", {
   expect_equal(nrow(me[[2]]), 100)
   meplot <- plot(me, points = TRUE, rug = TRUE, 
                  ask = FALSE, plot = FALSE)
-  expect_true(is(meplot[[1]], "ggplot"))
+  expect_ggplot(meplot[[1]])
   
   me <- conditional_effects(fit1, "Trt", select_points = 0.1)
   expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
@@ -97,14 +101,14 @@ test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(fit1, "Exp:Age", surface = TRUE, 
                             resolution = 15, too_far = 0.2)
   meplot <- plot(me, plot = FALSE)
-  expect_true(is(meplot[[1]], "ggplot"))
+  expect_ggplot(meplot[[1]])
   meplot <- plot(me, stype = "raster", plot = FALSE)
-  expect_true(is(meplot[[1]], "ggplot"))
+  expect_ggplot(meplot[[1]])
   
   me <- conditional_effects(fit1, "Age", spaghetti = TRUE, nsamples = 10)
   expect_equal(nrow(attr(me$Age, "spaghetti")), 1000)
   meplot <- plot(me, plot = FALSE)
-  expect_true(is(meplot[[1]], "ggplot"))
+  expect_ggplot(meplot[[1]])
   expect_error(
     conditional_effects(fit1, "Age", spaghetti = TRUE, surface = TRUE),
     "Cannot use 'spaghetti' and 'surface' at the same time"
@@ -179,20 +183,20 @@ test_that("plot of conditional_effects has reasonable outputs", {
   # test with 1 numeric predictor
   attr(marg_results[[1]], "effects") <- "P1"
   marg_plot <- plot(marg_results, plot = FALSE)
-  expect_true(is(marg_plot[[1]], "ggplot"))
+  expect_ggplot(marg_plot[[1]])
   # test with 1 categorical predictor
   attr(marg_results[[1]], "effects") <- "P2"
   marg_plot <- plot(marg_results, plot = FALSE)
-  expect_true(is(marg_plot[[1]], "ggplot"))
+  expect_ggplot(marg_plot[[1]])
   # test with 1 numeric and 1 categorical predictor
   attr(marg_results[[1]], "effects") <- c("P1", "P2")
   marg_plot <- plot(marg_results, plot = FALSE)
-  expect_true(is(marg_plot[[1]], "ggplot"))
+  expect_ggplot(marg_plot[[1]])
   # test ordinal raster plot
   attr(marg_results[[1]], "effects") <- c("P1", "cats__")
   attr(marg_results[[1]], "ordinal") <- TRUE
   marg_plot <- plot(marg_results, plot = FALSE)
-  expect_true(is(marg_plot[[1]], "ggplot"))
+  expect_ggplot(marg_plot[[1]])
 })
 
 test_that("conditional_smooths has reasonable ouputs", {
@@ -307,12 +311,12 @@ test_that("hypothesis has reasonable ouputs", {
   hyp <- hypothesis(fit1, c("Age > Trt1", "Trt1:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 8))
   expect_output(print(hyp), "(Age)-(Trt1) > 0", fixed = TRUE)
-  expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))
+  expect_ggplot(plot(hyp, plot = FALSE)[[1]])
   
   hyp <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
   expect_true(is.numeric(hyp$hypothesis$Evid.Ratio[1]))
   expect_output(print(hyp), "class sd_visit:", fixed = TRUE)
-  expect_true(is(plot(hyp, ignore_prior = TRUE, plot = FALSE)[[1]], "ggplot"))
+  expect_ggplot(plot(hyp, ignore_prior = TRUE, plot = FALSE)[[1]])
   
   hyp <- hypothesis(fit1, "0 > r_visit[4,Intercept]", class = "", alpha = 0.01)
   expect_equal(dim(hyp$hypothesis), c(1, 8))
@@ -575,29 +579,29 @@ test_that("pp_average has reasonable outputs", {
 })
 
 test_that("pp_check has reasonable outputs", {
-  expect_true(is(pp_check(fit1), "ggplot"))
-  expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
-  expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
-  expect_true(is(pp_check(fit1, "error_binned"), "ggplot"))
+  expect_ggplot(pp_check(fit1))
+  expect_ggplot(pp_check(fit1, newdata = fit1$data[1:100, ]))
+  expect_ggplot(pp_check(fit1, "stat", nsamples = 5))
+  expect_ggplot(pp_check(fit1, "error_binned"))
   pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
-  expect_true(is(pp, "ggplot"))
+  expect_ggplot(pp)
   pp <- pp_check(fit1, type = "violin_grouped", 
                  group = "visit", newdata = fit1$data[1:100, ])
-  expect_true(is(pp, "ggplot"))
+  expect_ggplot(pp)
   
   pp <- SW(pp_check(fit1, type = "loo_pit", cores = 1))
-  expect_true(is(pp, "ggplot"))
+  expect_ggplot(pp)
   
-  expect_true(is(pp_check(fit3), "ggplot"))
-  expect_true(is(pp_check(fit2, "ribbon", x = "Age"), "ggplot"))
+  expect_ggplot(pp_check(fit3))
+  expect_ggplot(pp_check(fit2, "ribbon", x = "Age"))
   expect_error(pp_check(fit2, "ribbon", x = "x"),
                "Variable 'x' could not be found in the data")
   expect_error(pp_check(fit1, "wrong_type"))
   expect_error(pp_check(fit2, "violin_grouped"), "group")
   expect_error(pp_check(fit1, "stat_grouped", group = "g"),
                "Variable 'g' could not be found in the data")
-  expect_true(is(pp_check(fit4), "ggplot"))
-  expect_true(is(pp_check(fit5), "ggplot"))
+  expect_ggplot(pp_check(fit4))
+  expect_ggplot(pp_check(fit5))
   expect_error(pp_check(fit4, "error_binned"),
                "Type 'error_binned' is not available")
 })
@@ -752,19 +756,17 @@ test_that("standata has reasonable outputs", {
 })
 
 test_that("mcmc_plot has reasonable outputs", {
-  expect_silent(p <- mcmc_plot(fit1))
-  expect_silent(p <- mcmc_plot(fit1, pars = "^b"))
-  expect_silent(p <- suppressMessages(
-    mcmc_plot(fit1, type = "trace", pars = "^b_")
-  ))
-  expect_silent(p <- mcmc_plot(fit1, type = "hist", pars = "^sd_"))
-  expect_silent(p <- mcmc_plot(fit1, type = "dens"))
-  expect_silent(p <- mcmc_plot(fit1, type = "scatter",
-                               pars = parnames(fit1)[2:3], 
-                               fixed = TRUE))
-  expect_silent(p <- mcmc_plot(fit1, type = "rhat", pars = "^b_"))
-  expect_silent(p <- mcmc_plot(fit1, type = "neff"))
-  expect_silent(p <- mcmc_plot(fit1, type = "acf"))
+  expect_ggplot(mcmc_plot(fit1))
+  expect_ggplot(mcmc_plot(fit1, pars = "^b"))
+  expect_ggplot(SM(mcmc_plot(fit1, type = "trace", pars = "^b_")))
+  expect_ggplot(mcmc_plot(fit1, type = "hist", pars = "^sd_"))
+  expect_ggplot(mcmc_plot(fit1, type = "dens"))
+  expect_ggplot(mcmc_plot(fit1, type = "scatter",
+                          pars = parnames(fit1)[2:3], 
+                          fixed = TRUE))
+  expect_ggplot(SW(mcmc_plot(fit1, type = "rhat", pars = "^b_")))
+  expect_ggplot(SW(mcmc_plot(fit1, type = "neff")))
+  expect_ggplot(mcmc_plot(fit1, type = "acf"))
   expect_silent(p <- mcmc_plot(fit1, type = "nuts_divergence"))
   expect_error(mcmc_plot(fit1, type = "density"), "Invalid plot type")
   expect_error(mcmc_plot(fit1, type = "hex"), 

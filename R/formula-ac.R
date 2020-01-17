@@ -407,7 +407,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   nterms <- NROW(out)
   cnames <- c("class", "dim", "type", "time", "gr", "p", "q", "M")
   out[cnames] <- list(NA)
-  out$cov <- FALSE
+  out$cov <- out$nat_cov <- FALSE
   out[names(px)] <- px
   for (i in seq_len(nterms)) {
     ac <- eval2(out$term[i])
@@ -447,6 +447,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$cov[i] <- TRUE
     }
   }
+  out$nat_cov <- out$cov & has_natural_residuals(x)
   if (any(duplicated(out$class))) {
     stop2("Can only model one term per autocorrelation class.")
   }
@@ -456,8 +457,8 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
   if (NROW(subset2(out, dim = "space")) > 1) {
     stop2("Can only model one spatial term.")
   }
-  if (NROW(subset2(out, cov = TRUE)) > 1) {
-    stop2("Can only model one explicit covariance term.")
+  if (NROW(subset2(out, nat_cov = TRUE)) > 1) {
+    stop2("Can only model one covariance matrix of natural residuals.")
   }
   if (use_ac_cov(out) || has_ac_class(out, "arma")) {
     if (any(!out$dpar %in% c("", "mu") | nzchar(out$nlpar))) {
@@ -528,9 +529,8 @@ has_cor_natural_residuals <- function(bterms) {
   has_natural_residuals(bterms) && use_ac_cov(bterms)
 }
 
-# has the model latent residuals to be used in autocor structures
-# TODO: rename to has_cor_latent_residuals?
-has_latent_residuals <- function(bterms) {
+# has the model correlated latent residuals
+has_cor_latent_residuals <- function(bterms) {
   !has_natural_residuals(bterms) && use_ac_cov(bterms)
 }
 

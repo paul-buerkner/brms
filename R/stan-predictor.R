@@ -1093,7 +1093,7 @@ stan_ac <- function(bterms, data, prior, ...) {
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   has_natural_residuals <- has_natural_residuals(bterms)
-  has_latent_residuals <- has_latent_residuals(bterms)
+  has_cor_latent_residuals <- has_cor_latent_residuals(bterms)
   acef <- tidy_acef(bterms, data)
 
   # validity of the autocor terms has already been checked in 'tidy_acef'
@@ -1219,7 +1219,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  // compute residual covariance matrix\n",
       "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
     )
-    if (has_latent_residuals) {
+    if (has_cor_latent_residuals) {
       err_msg <- "Latent residuals are not implemented"
       if (is.btnl(bterms)) {
         stop2(err_msg, " for non-linear models.")

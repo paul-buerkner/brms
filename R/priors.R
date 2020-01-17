@@ -937,9 +937,6 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
 
 # priors for autocor parameters
 prior_ac <- function(bterms, def_scale_prior, ...) {
-  # stopifnot(is.brmsterms(bterms))
-  # autocor <- bterms$autocor
-  # resp <- bterms$resp
   prior <- empty_prior()
   acef <- tidy_acef(bterms)
   if (!NROW(acef)) {
@@ -959,7 +956,7 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
   if (has_ac_class(acef, "cosy")) {
     prior <- prior + brmsprior(class = "cosy", ls = px)
   }
-  if (has_latent_residuals(bterms)) {
+  if (has_cor_latent_residuals(bterms)) {
     prior <- prior + 
       brmsprior(def_scale_prior, class = "sderr", ls = px)
   }
