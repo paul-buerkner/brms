@@ -157,7 +157,7 @@ too surpirsing since we simulated the data from exactly that model.
 
 On his blog, Markus Gesmann predicts the growth of cumulative insurance loss
 payments over time, originated from different origin years (see
-http://www.magesblog.com/post/2015/11/loss-developments-via-growth-curves-and.html).
+https://www.magesblog.com/post/2015-11-03-loss-developments-via-growth-curves-and/).
 We will use a slightly simplified version of his model for demonstration
 purposes here. It looks as follows:
 
