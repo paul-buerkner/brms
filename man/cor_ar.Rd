@@ -2,7 +2,7 @@
 % Please edit documentation in R/autocor.R
 \name{cor_ar}
 \alias{cor_ar}
-\title{AR(p) correlation structure}
+\title{(Deprecated) AR(p) correlation structure}
 \usage{
 cor_ar(formula = ~1, p = 1, cov = FALSE)
 }
@@ -33,6 +33,7 @@ generalizations.}
 An object of class \code{cor_arma} containing solely autoregression terms.
 }
 \description{
+This function is deprecated. Please see \code{\link{ar}} for the new syntax.
 This function is a constructor for the \code{cor_arma} class, 
 allowing for autoregression terms only.
 }

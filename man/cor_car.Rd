@@ -3,7 +3,7 @@
 \name{cor_car}
 \alias{cor_car}
 \alias{cor_icar}
-\title{Spatial conditional autoregressive (CAR) structures}
+\title{(Deprecated) Spatial conditional autoregressive (CAR) structures}
 \usage{
 cor_car(W, formula = ~1, type = "escar")
 
@@ -29,7 +29,8 @@ are \code{"escar"} (exact sparse CAR), \code{"esicar"}
 and \code{"bym2"}. More information is provided in the 'Details' section.}
 }
 \description{
-These functions are constructors for the \code{cor_car} class
+These function are deprecated. Please see \code{\link{car}} for the new
+syntax. These functions are constructors for the \code{cor_car} class
 implementing spatial conditional autoregressive structures.
 }
 \details{

@@ -70,6 +70,10 @@ description of the available correlation structures. Defaults to
 \code{NULL}, corresponding to no correlations. In multivariate models,
 \code{autocor} might also be a list of autocorrelation structures.}
 
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures.}
+
 \item{cov_ranef}{A list of matrices that are proportional to the (within)
 covariance structure of the group-level effects. The names of the matrices
 should correspond to columns in \code{data} that are used as grouping

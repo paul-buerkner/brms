@@ -3,7 +3,7 @@
 \name{cor_arma}
 \alias{cor_arma}
 \alias{cor_arma-class}
-\title{ARMA(p,q) correlation structure}
+\title{(Deprecated) ARMA(p,q) correlation structure}
 \usage{
 cor_arma(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE)
 }
@@ -40,6 +40,7 @@ An object of class \code{cor_arma}, representing an
   autoregression-moving-average correlation structure.
 }
 \description{
+This function is deprecated. Please see \code{\link{arma}} for the new syntax.
 This functions is a constructor for the \code{cor_arma} class, representing 
 an autoregression-moving average correlation structure of order (p, q).
 }

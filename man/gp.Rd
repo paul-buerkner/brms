@@ -58,7 +58,7 @@ predictions should be computed. A good default could be \code{c = 5/4}
 but we are still working on providing better recommendations.}
 }
 \value{
-An object of class \code{'gpterm'}, which is a list 
+An object of class \code{'gp_term'}, which is a list 
   of arguments to be interpreted by the formula 
   parsing functions of \pkg{brms}.
 }

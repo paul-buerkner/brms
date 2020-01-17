@@ -4,7 +4,7 @@
 \alias{cor_sar}
 \alias{cor_lagsar}
 \alias{cor_errorsar}
-\title{Spatial simultaneous autoregressive (SAR) structures}
+\title{(Deprecated) Spatial simultaneous autoregressive (SAR) structures}
 \usage{
 cor_sar(W, type = c("lag", "error"))
 
@@ -27,7 +27,8 @@ An object of class \code{cor_sar} to be used in calls to
   \code{\link{brm}}.
 }
 \description{
-These functions are constructors for the \code{cor_sar} class
+Thse functions are deprecated. Please see \code{\link{sar}} for the new
+syntax. These functions are constructors for the \code{cor_sar} class
 implementing spatial simultaneous autoregressive structures.
 The \code{lagsar} structure implements SAR of the response values:
 \deqn{y = \rho W y + \eta + e}

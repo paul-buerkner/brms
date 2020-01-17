@@ -1,7 +1,7 @@
 # All functions in this file belong to the deprecated 'cor_brms' class
 # for specifying autocorrelation structures. They will be removed in brms 3.
 
-#' Correlation structure classes for the \pkg{brms} package
+#' (Deprecated) Correlation structure classes for the \pkg{brms} package
 #' 
 #' Classes of correlation structures available in the \pkg{brms} package. 
 #' \code{cor_brms} is not a correlation structure itself, 
@@ -28,8 +28,9 @@
 #' 
 NULL
 
-#' ARMA(p,q) correlation structure
+#' (Deprecated) ARMA(p,q) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{arma}} for the new syntax.
 #' This functions is a constructor for the \code{cor_arma} class, representing 
 #' an autoregression-moving average correlation structure of order (p, q).
 #' 
@@ -93,8 +94,9 @@ cor_arma <- function(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE) {
   x
 }
 
-#' AR(p) correlation structure
+#' (Deprecated) AR(p) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{ar}} for the new syntax.
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for autoregression terms only.
 #' 
@@ -119,8 +121,9 @@ cor_ar <- function(formula = ~1, p = 1, cov = FALSE) {
   cor_arma(formula = formula, p = p, q = 0, cov = cov)
 }
   
-#' MA(q) correlation structure
+#' (Deprecated) MA(q) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{ma}} for the new syntax.
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for moving average terms only.
 #' 
@@ -153,8 +156,9 @@ cor_arr <- function(formula = ~1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
-#' Compound Symmetry (COSY) Correlation Structure
+#' (Deprecated) Compound Symmetry (COSY) Correlation Structure
 #' 
+#' This function is deprecated. Please see \code{\link{cosy}} for the new syntax.
 #' This functions is a constructor for the \code{cor_cosy} class, representing 
 #' a compound symmetry structure corresponding to uniform correlation.
 #' 
@@ -176,9 +180,10 @@ cor_cosy <- function(formula = ~1) {
   x
 }
 
-#' Spatial simultaneous autoregressive (SAR) structures
+#' (Deprecated) Spatial simultaneous autoregressive (SAR) structures
 #' 
-#' These functions are constructors for the \code{cor_sar} class
+#' Thse functions are deprecated. Please see \code{\link{sar}} for the new
+#' syntax. These functions are constructors for the \code{cor_sar} class
 #' implementing spatial simultaneous autoregressive structures.
 #' The \code{lagsar} structure implements SAR of the response values:
 #' \deqn{y = \rho W y + \eta + e}
@@ -244,9 +249,10 @@ cor_errorsar <- function(W) {
   out
 }
 
-#' Spatial conditional autoregressive (CAR) structures
+#' (Deprecated) Spatial conditional autoregressive (CAR) structures
 #' 
-#' These functions are constructors for the \code{cor_car} class
+#' These function are deprecated. Please see \code{\link{car}} for the new
+#' syntax. These functions are constructors for the \code{cor_car} class
 #' implementing spatial conditional autoregressive structures.
 #' 
 #' @param W Adjacency matrix of locations. 
@@ -329,10 +335,11 @@ cor_icar <- function(W, formula = ~1) {
   out
 }
 
-#' Fixed user-defined covariance matrices 
+#' (Deprecated) Fixed user-defined covariance matrices 
 #' 
-#' Define a fixed covariance matrix of the response variable
-#' for instance to model multivariate effect sizes in meta-analysis.
+#' This function is deprecated. Please see \code{\link{fcor}} for the new
+#' syntax. Define a fixed covariance matrix of the response variable for
+#' instance to model multivariate effect sizes in meta-analysis.
 #' 
 #' @aliases cov_fixed
 #'

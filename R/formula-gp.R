@@ -69,7 +69,7 @@
 #'  In the current implementation, \code{"exp_quad"} is the only supported 
 #'  covariance kernel. More options will follow in the future.
 #'  
-#' @return An object of class \code{'gpterm'}, which is a list 
+#' @return An object of class \code{'gp_term'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #'   
