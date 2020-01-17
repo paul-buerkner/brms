@@ -190,8 +190,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
     object$exclude <- exclude_pars(
-      bterms, data = object$data, ranef = object$ranef, 
-      save_ranef = dots$save_ranef, save_mevars = dots$save_mevars,
+      object, save_ranef = dots$save_ranef, 
+      save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
     if (!is.null(dots$algorithm)) {

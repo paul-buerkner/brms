@@ -65,24 +65,3 @@ test_that("update_re_terms works correctly", {
   expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
                bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
 })
-
-test_that("exclude_pars returns expected parameter names", {
-  ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
-                       gn = c(1, 1, 2), coef = c("x", "z", "x"), 
-                       cn = c(1, 2, 1), nlpar = "", ggn = c(1, 2, 2), 
-                       cor = c(TRUE, TRUE, FALSE))
-  empty_effects <- structure(list(), class = "brmsterms")
-  ep <- exclude_pars(empty_effects, ranef = ranef)
-  expect_true(all(c("r_1", "r_2") %in% ep))
-  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
-  expect_true("r_1_1" %in% ep)
-  
-  ranef$nlpar <- c("a", "a", "")
-  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
-  expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
-  bterms <- parse_bf(y ~ x + s(z))
-  data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
-  expect_true("zs_1_1" %in% exclude_pars(bterms, data))
-  bterms <- parse_bf(bf(y ~ eta, eta ~ x + s(z), family = gaussian(), nl = TRUE))
-  expect_true("zs_eta_1_1" %in% exclude_pars(bterms, data))
-})
