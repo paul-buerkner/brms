@@ -7,6 +7,7 @@
 \alias{lf}
 \alias{set_nl}
 \alias{set_rescor}
+\alias{acformula}
 \alias{set_mecor}
 \title{Linear and Non-linear formulas in \pkg{brms}}
 \usage{
@@ -22,6 +23,8 @@ lf(
   sparse = NULL,
   decomp = NULL
 )
+
+acformula(autocor, resp = NULL)
 
 set_nl(nl = TRUE, dpar = NULL, resp = NULL)
 
@@ -104,6 +107,10 @@ no decomposition. Other options currently available are
 \code{"QR"} for the QR decomposition that helps in fitting models
 with highly correlated predictors.}
 
+\item{autocor}{A one sided formula containing autocorrelation
+terms. All none autocorrelation terms in \code{autocor} will
+be silently ignored.}
+
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
 is treated as an ordinary linear model formula.}
@@ -143,6 +150,9 @@ bf(y ~ a * inv_logit(x * b)) +
 bf(y1 ~ x + (1|g)) + 
   bf(y2 ~ z) +
   set_rescor(TRUE)
+  
+# add autocorrelation terms
+bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(W))
 }
 \seealso{
 \code{\link{brmsformula}}, \code{\link{mvbrmsformula}}

@@ -742,6 +742,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #' @param resp Optional character string specifying the response 
 #'   variable to which the formulas passed via \code{...} and
 #'   \code{flist} belong. Only relevant in multivariate models.
+#' @param autocor A one sided formula containing autocorrelation
+#'   terms. All none autocorrelation terms in \code{autocor} will
+#'   be silently ignored.
 #' @param rescor Logical; Indicates if residual correlation between
 #'   the response variables should be modeled. Currently this is only
 #'   possible in multivariate \code{gaussian} and \code{student} models.
@@ -774,6 +777,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #' bf(y1 ~ x + (1|g)) + 
 #'   bf(y2 ~ z) +
 #'   set_rescor(TRUE)
+#'   
+#' # add autocorrelation terms
+#' bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(W))
 NULL
 
 #' @rdname brmsformula-helpers
@@ -835,6 +841,19 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
     }
   }
   structure(out, resp = resp)
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+acformula <- function(autocor, resp = NULL) {
+  autocor <- parse_ac(as.formula(autocor))
+  if (!is.formula(autocor)) {
+    stop2("'autocor' must contain at least one autocorrelation term.")
+  }
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
+  }
+  structure(autocor, resp = resp, class = c("acformula", "formula"))
 }
 
 #' @rdname brmsformula-helpers
@@ -1003,7 +1022,7 @@ plus_brmsformula <- function(e1, e2) {
   } 
   if (is.family(e2)) {
     e1 <- bf(e1, family = e2)
-  } else if (is.cor_brms(e2)) {
+  } else if (is.cor_brms(e2) || inherits(e2, "acformula")) {
     e1 <- bf(e1, autocor = e2)
   } else if (inherits(e2, "setnl")) {
     dpar <- attr(e2, "dpar")

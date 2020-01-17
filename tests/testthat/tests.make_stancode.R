@@ -596,8 +596,8 @@ test_that("Stan code for ARMA models is correct", {
   )
   expect_match2(scode, "err_y[n] = Y_y[n] - mu_y[n];")
   
-  scode <- make_stancode(bf(y ~ x + arma(time, cov = TRUE), sigma ~ x), dat, 
-                         family = student)
+  bform <- bf(y ~ x, sigma ~ x) + acformula(~arma(time, cov = TRUE))
+  scode <- make_stancode(bform, dat, family = student)
   expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, chol_cor")
   
   bform <- bf(y ~ exp(eta) - 1, eta ~ x, autocor = ~ar(time), nl = TRUE)
