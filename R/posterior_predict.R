@@ -770,7 +770,7 @@ posterior_predict_categorical <- function(i, draws, ...) {
 posterior_predict_multinomial <- function(i, draws, ...) {
   eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
   eta <- insert_refcat(eta, family = draws$family)
-  p <- pcategorical(seq_len(draws$data$ncat), eta = eta)
+  p <- dcategorical(seq_len(draws$data$ncat), eta = eta)
   size <- draws$data$trials[i]
   out <- lapply(seq_rows(p), function(s) t(rmultinom(1, size, p[s, ])))
   do_call(rbind, out)
