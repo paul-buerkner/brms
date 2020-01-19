@@ -570,7 +570,7 @@ extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef,
     gtype <- ranef_g$gtype[1]
     resp_g <- intersect(ranef_g$resp, resp)[1]
     # any valid ID works here as J and W are independent of the ID
-    id <- ranef_g$id[1]
+    id <- subset2(ranef_g, resp = resp)$id[1]
     idresp <- paste0(id, usc(resp_g))
     if (gtype == "mm") {
       ngf <- length(ranef_g$gcall[[1]]$groups)
