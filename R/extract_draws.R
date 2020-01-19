@@ -536,11 +536,13 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 # @param old_ranef same as 'ranef' but based on the original formula
 # @return a named list with one element per group containing posterior draws 
 #   of levels used in the data as well as additional meta-data
-extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef, 
+extract_draws_ranef <- function(ranef, samples, sdata, old_ranef, resp = NULL,
                                 sample_new_levels = "uncertainty", ...) {
   if (!nrow(ranef)) {
     return(NULL)
   }
+  # ensures subsetting 'ranef' by 'resp' works correctly
+  resp <- resp %||% ""
   groups <- unique(ranef$group)
   out <- named_list(groups, list())
   for (g in groups) {
@@ -561,7 +563,8 @@ extract_draws_ranef <- function(ranef, samples, sdata, resp, old_ranef,
       )
     }
     # only extract draws of effects specified in the new formula
-    used_rpars <- match(ranef_g$cn, old_ranef_g$cn)
+    cols_match <- c("coef", "resp", "dpar", "nlpar")
+    used_rpars <- which(find_rows(old_ranef_g, ls = ranef_g[cols_match]))
     used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
     used_rpars <- as.vector(used_rpars)
     rsamples <- rsamples[, used_rpars, drop = FALSE]

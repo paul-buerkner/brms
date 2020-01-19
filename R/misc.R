@@ -327,6 +327,11 @@ subset_keep_attr <- function(x, y) {
   x
 }
 
+'%||%' <- function(x, y) {
+  if (is.null(x)) x <- y
+  x
+}
+
 # check if 'x' is a whole number (integer)
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   if (is.numeric(x)) {
