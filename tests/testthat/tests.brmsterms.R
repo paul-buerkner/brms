@@ -18,10 +18,19 @@ test_that("parse_bf handles very long RE terms", {
 
 test_that("parse_bf correctly handles auxiliary parameter 'mu'", {
   bterms1 <- parse_bf(y ~ x + (x|g))
-  bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
+  bterms2 <- parse_bf(bf(y ~ 1, mu ~ x + (x|g)))
   expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
-  expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g))),
-               "All 'mu' parameters are specified")
+  
+  # commented out for now as updating is not yet enabled
+  # bterms1 <- parse_bf(bf(y ~ z + x + (x|g)))
+  # bterms2 <- parse_bf(bf(y ~ z, lf(mu ~ x + (x|g))))
+  # expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
+  # 
+  # bterms1 <- parse_bf(bf(y ~ z, lf(mu ~ x + (x|g), cmc = FALSE)))
+  # expect_true(!attr(bterms1$dpars$mu$fe, "cmc"))
+  # 
+  # expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g), nl = TRUE)),
+  #              "Cannot combine non-linear formulas")
 })
 
 test_that("parse_bf correctly check fixed auxiliary parameters", {

@@ -10,37 +10,12 @@
 #'   (or one that can be coerced to that class): 
 #'   a symbolic description of the model to be fitted. 
 #'   The details of model specification are given in 'Details'.
-#' @param ... Additional \code{formula} objects to specify 
-#'   predictors of non-linear and distributional parameters. 
-#'   Formulas can either be named directly or contain
-#'   names on their left-hand side. 
-#'   The following are distributional parameters of specific families
-#'   (all other parameters are treated as non-linear parameters):
-#'   \code{sigma} (residual standard deviation or scale of
-#'   the \code{gaussian}, \code{student}, \code{skew_normal}, 
-#'   \code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
-#'   \code{shape} (shape parameter of the \code{Gamma},
-#'   \code{weibull}, \code{negbinomial}, and related
-#'   zero-inflated / hurdle families); \code{nu} (degrees of freedom 
-#'   parameter of the \code{student} and \code{frechet} families);
-#'   \code{phi} (precision parameter of the \code{beta} 
-#'   and \code{zero_inflated_beta} families);
-#'   \code{kappa} (precision parameter of the \code{von_mises} family);
-#'   \code{beta} (mean parameter of the exponential component
-#'   of the \code{exgaussian} family);
-#'   \code{quantile} (quantile parameter of the \code{asym_laplace} family);
-#'   \code{zi} (zero-inflation probability); 
-#'   \code{hu} (hurdle probability);
-#'   \code{zoi} (zero-one-inflation probability);
-#'   \code{coi} (conditional one-inflation probability);
-#'   \code{disc} (discrimination) for ordinal models;
-#'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
-#'   non-decision time, and initial bias of the \code{wiener}
-#'   diffusion model).
-#'   By default, distributional parameters are modeled 
-#'   on the log scale if they can be positive only or on the 
-#'   logit scale if the can only be within the unit interval.
-#'   See 'Details' for more explanation.
+#' @param ... Additional \code{formula} objects to specify predictors of
+#'   non-linear and distributional parameters. Formulas can either be named
+#'   directly or contain names on their left-hand side. Alternatively,
+#'   it is possible to fix parameters to certain values by passing
+#'   numbers or character strings in which case arguments have to be named
+#'   to provide the parameter names. See 'Details' for more information.
 #' @param flist Optional list of formulas, which are treated in the 
 #'   same way as formulas passed via the \code{...} argument.
 #' @param nl Logical; Indicates whether \code{formula} should be
@@ -414,12 +389,41 @@
 #'   
 #'   \bold{Formula syntax for predicting distributional parameters}
 #'   
-#'   It is also possible to predict parameters of the response
-#'   distribution such as the residual standard deviation \code{sigma} 
-#'   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
-#'   The syntax closely resembles that of a non-linear 
-#'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}. 
-#'   For some examples of distributional models, see \code{vignette("brms_distreg")}.
+#'   It is also possible to predict parameters of the response distribution such
+#'   as the residual standard deviation \code{sigma} in gaussian models or the
+#'   hurdle probability \code{hu} in hurdle models. The syntax closely resembles
+#'   that of a non-linear parameter, for instance \code{sigma ~ x + s(z) +
+#'   (1+x|g)}. For some examples of distributional models, see
+#'   \code{vignette("brms_distreg")}.
+#'   
+#'   Parameter \code{mu} exists for every family and can be used as an
+#'   alternative to specifying terms in \code{formula}. If both \code{mu} and
+#'   \code{formula} are given, the right-hand side of \code{formula} is ignored.
+#'   Accordingly, specifying terms on the right-hand side of both \code{formula} 
+#'   and \code{mu} at the same time is deprecated. In future versions,
+#'   \code{formula} might be updated by \code{mu}. 
+#'   
+#'   The following are
+#'   distributional parameters of specific families (all other parameters are
+#'   treated as non-linear parameters): \code{sigma} (residual standard
+#'   deviation or scale of the \code{gaussian}, \code{student},
+#'   \code{skew_normal}, \code{lognormal} \code{exgaussian}, and
+#'   \code{asym_laplace} families); \code{shape} (shape parameter of the
+#'   \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
+#'   / hurdle families); \code{nu} (degrees of freedom parameter of the
+#'   \code{student} and \code{frechet} families); \code{phi} (precision
+#'   parameter of the \code{beta} and \code{zero_inflated_beta} families);
+#'   \code{kappa} (precision parameter of the \code{von_mises} family);
+#'   \code{beta} (mean parameter of the exponential component of the
+#'   \code{exgaussian} family); \code{quantile} (quantile parameter of the
+#'   \code{asym_laplace} family); \code{zi} (zero-inflation probability);
+#'   \code{hu} (hurdle probability); \code{zoi} (zero-one-inflation
+#'   probability); \code{coi} (conditional one-inflation probability);
+#'   \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
+#'   \code{bias} (boundary separation, non-decision time, and initial bias of
+#'   the \code{wiener} diffusion model). By default, distributional parameters
+#'   are modeled on the log scale if they can be positive only or on the logit
+#'   scale if the can only be within the unit interval.
 #'   
 #'   Alternatively, one may fix distributional parameters to certain values.
 #'   However, this is mainly useful when models become too 
@@ -1563,7 +1567,11 @@ str2formula <- function(x, ..., collapse = "+") {
 # @param rm a vector of to elements indicating how many characters 
 #   should be removed at the beginning and end of the string respectively
 # @param space how should whitespaces be treated?
+# @return a single character string or NULL
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+  if (is.null(formula)) {
+    return(NULL)
+  }
   formula <- as.formula(formula)
   space <- match.arg(space)
   if (anyNA(rm[2])) rm[2] <- 0
@@ -1575,6 +1583,16 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
     x <- gsub(" ", "", x, perl = TRUE) 
   }
   substr(x, 1 + rm[1], nchar(x) - rm[2])
+}
+
+# right-hand side of a formula as a character string
+str_rhs <- function(x) {
+  formula2str(rhs(x), rm = c(1, 0))
+}
+
+# left-hand side of a formula as a character string
+str_lhs <- function(x) {
+  formula2str(lhs(x), rm = c(0, 2))
 }
 
 is.formula <- function(x) {

@@ -82,43 +82,22 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
     }
   }
   
-  # copy stuff from the formula to parameter 'mu'
-  # TODO: allow updating of 'mu' via 'formula'
-  str_rhs_form <- formula2str(rhs(formula))
-  rhs_needed <- FALSE
+  # combine the main formula with formulas for the 'mu' parameters
   if (is.mixfamily(family)) {
-    for (i in seq_along(family$mix)) {
-      mui <- paste0("mu", i)
-      if (!is.formula(x$pforms[[mui]])) {
-        x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
-        attributes(x$pforms[[mui]]) <- attributes(formula)
-        rhs_needed <- TRUE
-      }
+    mu_dpars <- paste0("mu", seq_along(family$mix))
+    for (dp in mu_dpars) {
+      x$pforms[[dp]] <- combine_formulas(formula, x$pforms[[dp]], dp)
     }
+    x$pforms <- move2start(x$pforms, mu_dpars)
   } else if (conv_cats_dpars(x$family)) {
     mu_dpars <- str_subset(x$family$dpars, "^mu")
     for (dp in mu_dpars) {
-      if (!is.formula(x$pforms[[dp]])) {
-        x$pforms[[dp]] <- eval2(paste0(dp, str_rhs_form))
-        attributes(x$pforms[[dp]]) <- attributes(formula)
-        rhs_needed <- TRUE
-      }
+      x$pforms[[dp]] <- combine_formulas(formula, x$pforms[[dp]], dp)
     }
+    x$pforms <- move2start(x$pforms, mu_dpars)
   } else {
-    if (!is.formula(x$pforms[["mu"]])) { 
-      x$pforms$mu <- eval2(paste0("mu", str_rhs_form))
-      attributes(x$pforms$mu) <- attributes(formula)
-      rhs_needed <- TRUE
-    }
+    x$pforms[["mu"]] <- combine_formulas(formula, x$pforms[["mu"]], "mu")
     x$pforms <- move2start(x$pforms, "mu")
-  }
-  terms <- try(terms(rhs(formula)), silent = TRUE)
-  has_terms <- is(terms, "try-error") || 
-    length(attr(terms, "term.labels")) ||
-    length(attr(terms, "offset"))
-  if (!rhs_needed && has_terms) {
-    stop2("All 'mu' parameters are specified so that ",
-          "the right-hand side of 'formula' is unused.")
   }
   
   # predicted distributional parameters
@@ -754,6 +733,50 @@ plus_rhs <- function(x) {
     out <- " + 1"
   }
   out
+}
+
+# combine formulas for distributional parameters
+# @param formula1 primary formula from which to take the RHS
+# @param formula2 secondary formula used to update the RHS of formula1
+# @param lhs character string to define the left-hand side of the output
+# @param update a flag to indicate whether updating should be allowed.
+#   Defaults to FALSE to maintain backwards compatibility
+# @return a formula object 
+combine_formulas <- function(formula1, formula2, lhs, update = FALSE) {
+  stopifnot(is.formula(formula1))
+  stopifnot(is.null(formula2) || is.formula(formula2))
+  lhs <- as_one_character(lhs)
+  update <- as_one_logical(update)
+  if (is.null(formula2)) {
+    rhs <- str_rhs(formula1)
+    att <- attributes(formula1)
+  } else if (update && has_terms(formula1)) {
+    # TODO: decide about intuitive updating behavior
+    if (get_nl(formula1) || get_nl(formula2)) {
+      stop2("Cannot combine non-linear formulas.")
+    }
+    old_formula <- eval2(paste0("~ ", str_rhs(formula1)))
+    new_formula <- eval2(paste0("~ . + ", str_rhs(formula2)))
+    rhs <- str_rhs(update(old_formula, new_formula))
+    att <- attributes(formula1)
+    att[names(attributes(formula2))] <- attributes(formula2)
+  } else {
+    rhs <- str_rhs(formula2)
+    att <- attributes(formula2)
+  }
+  out <- eval2(paste0(lhs, " ~ ", rhs))
+  attributes(out)[names(att)] <- att
+  out
+} 
+
+# does the formula contain any terms?
+# @return TRUE or FALSE
+has_terms <- function(formula) {
+  stopifnot(is.formula(formula))
+  terms <- try(terms(rhs(formula)), silent = TRUE)
+  is(terms, "try-error") || 
+    length(attr(terms, "term.labels")) ||
+    length(attr(terms, "offset")) 
 }
 
 # indicate if the predictor term belongs to a non-linear parameter
