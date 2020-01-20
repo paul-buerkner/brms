@@ -18,10 +18,19 @@ test_that("parse_bf handles very long RE terms", {
 
 test_that("parse_bf correctly handles auxiliary parameter 'mu'", {
   bterms1 <- parse_bf(y ~ x + (x|g))
-  bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
+  bterms2 <- parse_bf(bf(y ~ 1, mu ~ x + (x|g)))
   expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
-  expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g))),
-               "All 'mu' parameters are specified")
+  
+  # commented out for now as updating is not yet enabled
+  # bterms1 <- parse_bf(bf(y ~ z + x + (x|g)))
+  # bterms2 <- parse_bf(bf(y ~ z, lf(mu ~ x + (x|g))))
+  # expect_equal(bterms1$dpars$mu, bterms2$dpars$mu)
+  # 
+  # bterms1 <- parse_bf(bf(y ~ z, lf(mu ~ x + (x|g), cmc = FALSE)))
+  # expect_true(!attr(bterms1$dpars$mu$fe, "cmc"))
+  # 
+  # expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g), nl = TRUE)),
+  #              "Cannot combine non-linear formulas")
 })
 
 test_that("parse_bf correctly check fixed auxiliary parameters", {
@@ -64,25 +73,4 @@ test_that("update_re_terms works correctly", {
                bf(y ~ x, sigma = ~ x + (1|gr(g))))
   expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
                bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
-})
-
-test_that("exclude_pars returns expected parameter names", {
-  ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
-                       gn = c(1, 1, 2), coef = c("x", "z", "x"), 
-                       cn = c(1, 2, 1), nlpar = "", ggn = c(1, 2, 2), 
-                       cor = c(TRUE, TRUE, FALSE))
-  empty_effects <- structure(list(), class = "brmsterms")
-  ep <- exclude_pars(empty_effects, ranef = ranef)
-  expect_true(all(c("r_1", "r_2") %in% ep))
-  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
-  expect_true("r_1_1" %in% ep)
-  
-  ranef$nlpar <- c("a", "a", "")
-  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
-  expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
-  bterms <- parse_bf(y ~ x + s(z))
-  data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
-  expect_true("zs_1_1" %in% exclude_pars(bterms, data))
-  bterms <- parse_bf(bf(y ~ eta, eta ~ x + s(z), family = gaussian(), nl = TRUE))
-  expect_true("zs_eta_1_1" %in% exclude_pars(bterms, data))
 })

@@ -164,7 +164,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   }
   # allow using arguments 'group' and 'x' for new data
   bterms <- parse_bf(object$formula)
-  mf <- update_data(newdata, bterms, na.action = na.pass)
+  mf <- validate_data(newdata, bterms, na.action = na.pass)
   if (!is.null(group)) {
     ppc_args$group <- mf[[group]]
   }

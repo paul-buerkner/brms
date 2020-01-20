@@ -27,9 +27,9 @@ stan_model_args <- list(save_dso = FALSE)
 library(brms)
 brmsfit_example1 <- brm(
   bf(count ~ Trt*Age + mo(Exp) + s(Age) +
-      offset(Age) + (1+Trt|visit), sigma ~ Trt),
+      offset(Age) + (1+Trt|visit) + arma(visit, patient),
+     sigma ~ Trt),
   data = dat, family = student(), 
-  autocor = cor_arma(~visit|patient, 1, 1),
   prior = set_prior("normal(0,2)", class = "b") +
     set_prior("cauchy(0,2)", class = "sd") +
     set_prior("normal(0,3)", dpar = "sigma"),

@@ -85,8 +85,8 @@ test_that("get_prior returns correct priors for multivariate models", {
   
   # check family and autocor specific priors
   family <- list(gaussian, Beta())
-  autocor <- list(cor_ar(), NULL)
-  prior <- get_prior(bform, dat, family = family, autocor = autocor)
+  bform <- bf(y1 ~ x + (x|ID1|g) + ar()) + bf(y2 ~ 1)
+  prior <- get_prior(bform, dat, family = family)
   expect_true(any(with(prior, class == "sigma" & resp == "y1")))
   expect_true(any(with(prior, class == "ar" & resp == "y1")))
   expect_true(any(with(prior, class == "phi" & resp == "y2")))

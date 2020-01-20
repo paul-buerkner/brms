@@ -485,7 +485,7 @@ do_renaming <- function(x, change) {
 reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar", "errorsar", 
-    "car", "sdcar", "sigmaLL", "sd", "cor", "df", "sds", "sdgp", 
+    "car", "sdcar", "cosy", "sd", "cor", "df", "sds", "sdgp", 
     "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"

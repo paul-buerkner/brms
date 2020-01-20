@@ -51,9 +51,9 @@ test_that("Ordinal model from brm doc works correctly", {
   )
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
-  expect_warning(me <- conditional_effects(fit2, effect = "treat"),
+  expect_warning(ce <- conditional_effects(fit2, effect = "treat"),
                  "Predictions are treated as continuous variables")
-  expect_ggplot(plot(me)[[1]])
+  expect_ggplot(plot(ce)[[1]])
 })
 
 test_that("Survival model from brm doc works correctly", {
@@ -80,8 +80,8 @@ test_that("Binomial model from brm doc works correctly", {
     family = binomial("probit"), refresh = 0
   )
   print(fit4)
-  me <- conditional_effects(fit4)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit4)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
 test_that("Non-linear model from brm doc works correctly", {
@@ -94,8 +94,8 @@ test_that("Non-linear model from brm doc works correctly", {
      prior(normal(0, 2), nlpar = a2), refresh = 0
   )
   print(fit5)
-  me <- conditional_effects(fit5)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit5)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
 test_that("ARMA models work correctly", {
@@ -105,7 +105,7 @@ test_that("ARMA models work correctly", {
   dat <- list(y = y, x = rnorm(N), g = sample(1:5, N, TRUE))
 
   fit_ar <- brm(
-    y ~ x, data = dat, autocor = cor_ar(p = 5),
+    y ~ x + ar(p = 5), data = dat,
     prior = prior(normal(0, 5), class = "ar"),
     chains = 2, refresh = 0
   )
@@ -116,14 +116,13 @@ test_that("ARMA models work correctly", {
   expect_range(ar[5], -0.6, -0.1)
   expect_ggplot(plot(conditional_effects(fit_ar))[[1]])
 
-  fit_ma <- brm(y ~ x, data = dat, autocor = cor_ma(q = 1),
+  fit_ma <- brm(y ~ x + ma(q = 1), data = dat,
                 chains = 2, refresh = 0)
   print(fit_ma)
   expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
 
   fit_arma <- brm(
-    y ~ x + (1|g), data = dat,
-    autocor = cor_arma(~1|g, p = 1, q = 1, cov = TRUE),
+    y ~ x + (1|g) + arma(gr = g, cov = TRUE), data = dat,
     prior = prior(normal(0, 5), class = "ar") +
       prior(normal(0, 6), class = "ma"),
     chains = 2, refresh = 0
@@ -134,8 +133,8 @@ test_that("ARMA models work correctly", {
   expect_ggplot(plot(conditional_effects(fit_arma), plot = FALSE)[[1]])
 
   fit_arma_pois <- brm(
-    count ~ Trt + (1 | patient), data = epilepsy, family = poisson(),
-    autocor = cor_arma(~ visit | patient, p = 1, q = 1, cov = TRUE),
+    count ~ Trt + (1 | patient) + arma(visit, patient, cov = TRUE),
+    data = epilepsy, family = poisson(),
     chains = 2, refresh = 0
   )
   print(fit_arma_pois)
@@ -226,8 +225,8 @@ test_that("varying slopes without overall effects work", {
               data = epilepsy, family = gaussian(),
               chains = 2, refresh = 0)
   print(fit1)
-  me <- conditional_effects(fit1)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit1)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   # test reloo
   loo1 <- LOO(fit1)
   reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
@@ -236,13 +235,13 @@ test_that("varying slopes without overall effects work", {
   expect_range(reloo2$estimates[3, 1], 1600, 1700)
 
   conditions <- data.frame(zAge = 0, zBase = 0, Trt = 0)
-  me <- conditional_effects(fit1, conditions = conditions)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit1, conditions = conditions)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 
   conditions <- data.frame(zAge = 0, zBase = 0,
                            Trt = 0, visit = c(1:4, NA))
-  me <- conditional_effects(fit1, conditions = conditions, re_formula = NULL)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit1, conditions = conditions, re_formula = NULL)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 
   expect_range(WAIC(fit1)$estimates[3, 1], 1500, 1600)
   expect_equal(dim(predict(fit1)), c(nobs(fit1), 4))
@@ -259,8 +258,9 @@ test_that("multivariate normal models work correctly", {
   tim <- sample(1:N, N)
   data <- data.frame(y1, y2, x, month, id, tim)
 
-  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + (1|x|id),
-                  data = data, autocor = cor_arma(~tim|id, p = 1),
+  fit_mv1 <- brm(mvbind(y1, y2) ~ s(x) + poly(month, 3) + 
+                   (1|x|id) + arma(tim, id, q = 0),
+                  data = data,
                   prior = c(prior_(~normal(0,5), resp = "y1"),
                             prior_(~normal(0,5), resp = "y2"),
                             prior_(~lkj(5), class = "rescor")),
@@ -372,8 +372,8 @@ test_that("Non-linear models of distributional parameters work correctly", {
   bprior <- prior(normal(0, 3), nlpar = a)
   fit <- brm(bform, dat, prior = bprior, chains = 2, refresh = 0)
   print(fit)
-  me <- conditional_effects(fit, method = "predict")
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit, method = "predict")
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_equal(dim(fitted(fit, dat[1:10, ])), c(10, 4))
   expect_range(LOO(fit)$estimates[3, 1], 240, 350)
 })
@@ -392,8 +392,8 @@ test_that("Nested non-linear models work correctly", {
   fit <- brm(bform, dat, prior = bprior, family = Beta(), refresh = 0)
   print(fit)
 
-  me <- conditional_effects(fit)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(bayes_R2(fit)[, 1], 0.2, 0.55)
 })
 
@@ -408,10 +408,10 @@ test_that("Multivariate GAMMs work correctly", {
   )
   print(fit_gam)
 
-  me <- conditional_effects(fit_gam)
-  expect_ggplot(plot(me, ask = FALSE, rug = TRUE, points = TRUE)[[1]])
-  me <- conditional_effects(fit_gam, surface = TRUE, too_far = 0.05)
-  expect_ggplot(plot(me, ask = FALSE, rug = TRUE)[[1]])
+  ce <- conditional_effects(fit_gam)
+  expect_ggplot(plot(ce, ask = FALSE, rug = TRUE, points = TRUE)[[1]])
+  ce <- conditional_effects(fit_gam, surface = TRUE, too_far = 0.05)
+  expect_ggplot(plot(ce, ask = FALSE, rug = TRUE)[[1]])
 
   ms <- conditional_smooths(fit_gam, resolution = 25)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
@@ -434,8 +434,8 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
                   chains = 2, refresh = 0)
   print(fit_gam2)
 
-  me <- conditional_effects(fit_gam2, "x2:fac")
-  expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_gam2, "x2:fac")
+  expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
   ms <- conditional_smooths(fit_gam2, res = 10)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
 
@@ -443,8 +443,8 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
                   chains = 2, refresh = 0)
   print(fit_gam3)
 
-  me <- conditional_effects(fit_gam3, "x2:fac")
-  expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_gam3, "x2:fac")
+  expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
   ms <- conditional_smooths(fit_gam3, too_far = 0.1)
   expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
   expect_ggplot(plot(ms, rug = TRUE, stype = "raster", ask = FALSE)[[1]])
@@ -473,8 +473,8 @@ test_that("generalized extreme value models work correctly", {
   prfi <- cbind(predict(fit_gev), fitted(fit_gev))
   expect_range(prfi[, 1], prfi[, 5] - 0.03, prfi[, 5] + 0.03)
   # expect_range(loo(fit_gev)$estimates[3, 1], -115, -95)
-  me <- conditional_effects(fit_gev, "cYear")
-  expect_ggplot(plot(me, points = TRUE, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_gev, "cYear")
+  expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
 })
 
 test_that("update works correctly for some special cases", {
@@ -605,27 +605,27 @@ test_that("Gaussian processes work correctly", {
               chains = 2, refresh = 0)
   print(fit1)
   expect_ggplot(pp_check(fit1))
-  me <- conditional_effects(fit1, nsamples = 200, nug = 1e-07)
-  expect_ggplot(plot(me, ask = FALSE)[[3]])
+  ce <- conditional_effects(fit1, nsamples = 200, nug = 1e-07)
+  expect_ggplot(plot(ce, ask = FALSE)[[3]])
   expect_range(WAIC(fit1)$estimates[3, 1], 100, 200)
 
   # multivariate GPs
   fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, refresh = 0)
   print(fit2)
   expect_ggplot(pp_check(fit2))
-  me <- conditional_effects(
+  ce <- conditional_effects(
     fit2, nsamples = 200, nug = 1e-07,
     surface = TRUE, resolution = 10
   )
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 100, 200)
 
   # GP with continuous 'by' variable
   fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2, refresh = 0)
   print(fit3)
   expect_ggplot(pp_check(fit3))
-  me <- conditional_effects(fit3, nsamples = 200, nug = 1e-07)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit3, nsamples = 200, nug = 1e-07)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit3)$estimates[3, 1], 100, 200)
   
   # GP with factor 'by' variable
@@ -633,8 +633,8 @@ test_that("Gaussian processes work correctly", {
   fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, refresh = 0)
   print(fit4)
   expect_ggplot(pp_check(fit4))
-  me <- conditional_effects(fit4, nsamples = 200, nug = 1e-07)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit4, nsamples = 200, nug = 1e-07)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit4)$estimates[3, 1], 400, 600)
 })
 
@@ -649,11 +649,11 @@ test_that("Approximate Gaussian processes work correctly", {
   )
   print(fit1)
   expect_range(bayes_R2(fit1)[1, 1], 0.50, 0.75) 
-  me <- conditional_effects(
+  ce <- conditional_effects(
     fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit1)$estimates[3, 1], 390, 450)
   
   # non isotropic approximate GP
@@ -663,32 +663,32 @@ test_that("Approximate Gaussian processes work correctly", {
   )
   print(fit2)
   expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.58) 
-  me <- conditional_effects(
+  ce <- conditional_effects(
     fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit2)$estimates[3, 1], 420, 440)
 })
 
 test_that("SAR models work correctly", {
   data(oldcol, package = "spdep")
-  fit_lagsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                    autocor = cor_lagsar(COL.nb), 
+  fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb), 
+                    data = COL.OLD, data2 = list(COL.nb = COL.nb),
                     chains = 2, refresh = 0)
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
-  me = conditional_effects(fit_lagsar, nsamples = 200)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_lagsar, nsamples = 200)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_lagsar)$estimates[3, 1], 350, 380)
   
-  fit_errorsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
-                      autocor = cor_errorsar(COL.nb), 
+  fit_errorsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb, type = "error"), 
+                      data = COL.OLD, data2 = list(COL.nb = COL.nb),
                       chains = 2, refresh = 0)
   print(fit_errorsar)
   expect_ggplot(pp_check(fit_errorsar))
-  me = conditional_effects(fit_errorsar, nsamples = 200)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_errorsar, nsamples = 200)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(WAIC(fit_errorsar)$estimates[3, 1], 350, 380)
 })
 
@@ -720,21 +720,29 @@ test_that("CAR models work correctly", {
   
   # fit a CAR model
   fit_car <- brm(
-    y | trials(size) ~ x1 + x2, data = dat, 
-    family = binomial(), autocor = cor_car(W, ~1|obs),
+    y | trials(size) ~ x1 + x2 + car(W, obs),
+    data = dat, data2 = list(W = W), family = binomial(), 
     chains = 2, refresh = 0
   ) 
   print(fit_car)
   expect_ggplot(pp_check(fit_car))
-  me = conditional_effects(fit_car, nsamples = 200)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce = conditional_effects(fit_car, nsamples = 200)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_range(LOO(fit_car)$estimates[3, 1], 450, 550)
   expect_false(isTRUE(all.equal(
     fitted(fit_car, newdata = dat[1:5, ]), 
     fitted(fit_car, newdata = dat[1:5, ], incl_autocor = FALSE)
   )))
+  
+  newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = 1)
+  pp <- posterior_predict(fit_car, newdata = newdata)
+  expect_equal(dim(pp), c(nsamples(fit_car), 1))
+  
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = -1)
-  expect_error(predict(fit_car, newdata = newdata),
+  new_W <- W
+  rownames(W)[1] <- "-1"
+  newdata2 <- list(W = new_W)
+  expect_error(predict(fit_car, newdata = newdata, newdata2 = newdata2),
                "Cannot handle new locations in CAR models")
 })
 
@@ -761,8 +769,8 @@ test_that("Missing value imputation works correctly", {
   print(fit_imp2)
   pred <- predict(fit_imp2)
   expect_true(!anyNA(pred))
-  me <- conditional_effects(fit_imp2, resp = "bmi")
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_imp2, resp = "bmi")
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp2, newdata = na.omit(fit_imp2$data))
   expect_range(loo$estimates[3, 1], 200, 220)
   
@@ -775,8 +783,8 @@ test_that("Missing value imputation works correctly", {
   print(fit_imp3)
   pred <- predict(fit_imp3)
   expect_true(!anyNA(pred))
-  me <- conditional_effects(fit_imp3, resp = "bmi")
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit_imp3, resp = "bmi")
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
   expect_range(loo$estimates[3, 1], 200, 220)
 })
@@ -811,8 +819,8 @@ test_that("multinomial models work correctly", {
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
   waic <- waic(fit)
   expect_range(waic$estimates[3, 1], 550, 600)
-  me <- conditional_effects(fit, categorical = TRUE)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
 test_that("dirichlet models work correctly", {
@@ -830,8 +838,8 @@ test_that("dirichlet models work correctly", {
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
   waic <- waic(fit)
   expect_range(waic$estimates[3, 1], -530, -500)
-  me <- conditional_effects(fit, categorical = TRUE)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit, categorical = TRUE)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })
 
 test_that("Addition argument 'subset' works correctly", {
@@ -852,8 +860,8 @@ test_that("Addition argument 'subset' works correctly", {
   expect_equal(nrow(pred), sum(BTdata$sub2))
   waic <- waic(fit, resp = "back")
   expect_range(waic$estimates[3, 1], 1100, 1200)
-  me <- conditional_effects(fit)
-  expect_ggplot(plot(me, ask = FALSE)[[1]])
+  ce <- conditional_effects(fit)
+  expect_ggplot(plot(ce, ask = FALSE)[[1]])
   expect_equal(nobs(fit, resp = "tarsus"), sum(BTdata$sub1))
 })
 

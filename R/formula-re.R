@@ -318,15 +318,16 @@ check_re_formula <- function(re_formula, formula) {
   if (is.null(re_formula)) {
     re_formula <- old_re_formula
   } else if (SW(anyNA(re_formula))) {
-    re_formula <- ~ 1
+    re_formula <- ~1
   } else {
     re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
-    new <- parse_bf(re_formula, check_response = FALSE)$dpars$mu$re
-    old <- parse_bf(old_re_formula, check_response = FALSE)$dpars$mu$re
-    if (nrow(new)) {
+    new <- parse_bf(re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    old <- parse_bf(old_re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    if (NROW(new) && NROW(old)) {
+      # compare old and new ranefs
       new_terms <- lapply(new$form, terms)
-      found <- rep(FALSE, nrow(new))
-      for (i in 1:nrow(new)) {
+      found <- rep(FALSE, NROW(new))
+      for (i in seq_rows(new)) {
         group <- new$group[[i]]
         old_terms <- lapply(old$form[old$group == group], terms)
         j <- 1
@@ -341,16 +342,16 @@ check_re_formula <- function(re_formula, formula) {
         }
       }  
       new <- new[found, ]
-      if (nrow(new)) {
+      if (NROW(new)) {
         forms <- ulapply(new$form, formula2str, rm = 1)
         groups <- ulapply(new$gcall, "[[", "label")
         re_terms <- paste("(", forms, "|", groups, ")")
         re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
       } else {
-        re_formula <- ~ 1
+        re_formula <- ~1
       }
     } else {
-      re_formula <- ~ 1
+      re_formula <- ~1
     }
   }
   re_formula
@@ -443,9 +444,11 @@ get_re.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_re.btl <- function(x, ...) {
-  stopifnot(is.data.frame(x$re))
   px <- check_prefix(x)
-  re <- x$re
+  re <- x[["re"]]
+  if (is.null(re)) {
+    re <- empty_re()
+  }
   re$resp <- rep(px$resp, nrow(re)) 
   re$dpar <- rep(px$dpar, nrow(re))
   re$nlpar <- rep(px$nlpar, nrow(re)) 
@@ -615,6 +618,14 @@ empty_ranef <- function() {
       stringsAsFactors = FALSE
     ),
     class = c("ranef_frame", "data.frame")
+  )
+}
+
+empty_re <- function() {
+  data.frame(
+    group = character(0), gtype = character(0),
+    gn = numeric(0), id = numeric(0), type = character(0), 
+    cor = logical(0), form = character(0)
   )
 }
 

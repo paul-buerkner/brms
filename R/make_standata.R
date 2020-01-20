@@ -24,7 +24,8 @@
 #'          
 #' @export
 make_standata <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, cov_ranef = NULL,
+                          prior = NULL, data2 = NULL, 
+                          autocor = NULL, cov_ranef = NULL, 
                           sample_prior = c("no", "yes", "only"), 
                           stanvars = NULL, knots = NULL, 
                           check_response = TRUE, only_response = FALSE, 
@@ -55,13 +56,17 @@ make_standata <- function(formula, data, family = gaussian(),
     check_nlpar_prior = FALSE
   )
   na_action <- if (new) na.pass else na.omit2
-  data <- update_data(
+  data <- validate_data(
     data, bterms = bterms, na.action = na_action, 
     drop.unused.levels = !new, knots = knots,
     terms_attr = control$terms_attr
   )
   # order data for use in autocorrelation models
   data <- order_data(data, bterms = bterms)
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula)
+  )
   
   out <- data_response(
     bterms, data, check_response = check_response,
@@ -70,8 +75,8 @@ make_standata <- function(formula, data, family = gaussian(),
   if (!only_response) {
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, 
-      knots = knots, old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, data2 = data2,
+      ranef = ranef, knots = knots, old_sdata = control$old_sdata
     )
     c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
@@ -111,19 +116,24 @@ make_standata <- function(formula, data, family = gaussian(),
 #' 
 #' @export
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                             incl_autocor = TRUE, new_objects = list(),
-                             internal = FALSE, control = list(), ...) {
+                             newdata2 = NULL, new_objects = NULL,
+                             incl_autocor = TRUE, internal = FALSE,
+                             control = list(), ...) {
   object <- restructure(object)
-  if (!incl_autocor) {
-    object <- remove_autocor(object)
-  }
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
+  newdata2 <- use_alias(newdata2, new_objects)
+  internal <- as_one_logical(internal)
   is_old_data <- isTRUE(attr(newdata, "old"))
   if (is.null(newdata)) {
     newdata <- object$data
     is_old_data <- TRUE
   }
+  if (is.null(newdata2)) {
+    newdata2 <- object$data2
+  }
   new_formula <- update_re_terms(object$formula, re_formula)
   bterms <- parse_bf(new_formula)
+  newdata2 <- validate_data2(newdata2, bterms = bterms)
   version <- object$version$brms
   if (is_old_data) {
     if (version <= "2.8.6" && has_smooths(bterms)) {
@@ -138,7 +148,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         newdata, object, re_formula = re_formula, ...
       )
     }
-    object <- add_new_objects(object, newdata, new_objects)
+    object <- add_new_stanvars(object, newdata2)
     control$new <- TRUE
     # ensure correct handling of functions like poly or scale
     old_terms <- attr(object$data, "terms")
@@ -160,8 +170,10 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   knots <- attr(object$data, "knots")
   make_standata(
     formula = new_formula, data = newdata, 
-    prior = object$prior, cov_ranef = object$cov_ranef, 
-    sample_prior = sample_prior, stanvars = object$stanvars, 
+    prior = object$prior, data2 = newdata2,
+    cov_ranef = object$cov_ranef, 
+    sample_prior = sample_prior, 
+    stanvars = object$stanvars, 
     knots = knots, control = control, ...
   )
 }

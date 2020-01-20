@@ -513,39 +513,6 @@ family.brmsfit <- function(object, resp = NULL, ...) {
   family
 }
 
-#' Extract Autocorrelation Objects
-#' 
-#' @inheritParams posterior_predict.brmsfit
-#' @param ... Currently unused.
-#' 
-#' @return A \code{cor_brms} object
-#' or a list of such objects for multivariate models.
-#' 
-#' @export
-autocor.brmsfit <- function(object, resp = NULL, ...) {
-  resp <- validate_resp(resp, object)
-  if (!is.null(resp)) {
-    # multivariate model
-    autocor <- lapply(object$formula$forms[resp], "[[", "autocor")
-    if (length(resp) == 1L) {
-      autocor <- autocor[[1]]
-    }
-  } else {
-    # univariate model
-    autocor <- object$formula$autocor
-    if (is.null(autocor)) {
-      autocor <- object$autocor
-    }
-  }
-  autocor
-}
-
-#' @rdname autocor.brmsfit
-#' @export
-autocor <- function(object, ...) {
-  UseMethod("autocor")
-}
-
 #' Expose user-defined \pkg{Stan} functions
 #' 
 #' Export user-defined \pkg{Stan} function and

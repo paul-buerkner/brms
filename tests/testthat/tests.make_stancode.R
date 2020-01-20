@@ -72,8 +72,7 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(uniform(-1, 1), ar),
              prior(normal(0, 0.5), ma),
              prior(normal(0, 5)))
-  autocor <- cor_arma(p = 1, q = 1, cov = TRUE)
-  scode <- make_stancode(y ~ mo(g), dat, autocor = autocor,
+  scode <- make_stancode(y ~ mo(g) + arma(cov = TRUE), dat,
                          prior = prior, sample_prior = TRUE)
   expect_match2(scode, "vector<lower=-1,upper=1>[Kar] ar;")
   expect_match2(scode, "vector<lower=-1,upper=1>[Kma] ma;")
@@ -403,23 +402,29 @@ test_that("self-defined functions appear in the Stan code", {
                "real hurdle_lognormal_lpdf(real y")
   
   # linear models with special covariance structures
-  expect_match2(make_stancode(rating ~ treat, data = inhaler, 
-                              autocor = cor_ma(cov = TRUE)),
-               "real normal_cov_hom_lpdf(vector y")
-  expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
-                             autocor = cor_ar(cov = TRUE)),
-               "real student_t_cov_hom_lpdf(vector y")
+  expect_match2(
+    make_stancode(rating ~ treat + ar(cov = TRUE), data = inhaler),
+    "real normal_time_hom_lpdf(vector y"
+  )
+  expect_match2(
+    make_stancode(time ~ age + ar(cov = TRUE), data = kidney,
+                  family = "student"),
+    "real student_t_time_hom_lpdf(vector y"
+  )
   
   # ARMA covariance matrices
-  expect_match2(make_stancode(rating ~ treat, data = inhaler, 
-                             autocor = cor_ar(cov = TRUE)),
-               "matrix cholesky_cor_ar1(real ar")
-  expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
-                             autocor = cor_ma(cov = TRUE)),
-               "matrix cholesky_cor_ma1(real ma")
-  expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
-                             autocor = cor_arma(p = 1, q = 1, cov = TRUE)),
-               "matrix cholesky_cor_arma1(real ar, real ma")
+  expect_match2(
+    make_stancode(rating ~ treat + ar(cov = TRUE), data = inhaler),
+    "matrix cholesky_cor_ar1(real ar"
+  )
+  expect_match2(
+    make_stancode(time ~ age + ma(cov = TRUE), data = kidney),
+    "matrix cholesky_cor_ma1(real ma"
+  )
+  expect_match2(
+    make_stancode(time ~ age + arma(cov = TRUE), data = kidney),
+    "matrix cholesky_cor_arma1(real ar, real ma"
+  )
   
   # kronecker products
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
@@ -431,15 +436,15 @@ test_that("invalid combinations of modeling options are detected", {
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), 
                      wi = 1:10, ci = sample(-1:1, 10, TRUE))
   expect_error(
-    make_stancode(y1 | cens(ci) ~ y2, data = data, autocor = cor_ar(cov = TRUE)),
+    make_stancode(y1 | cens(ci) ~ y2 + ar(cov = TRUE), data = data),
     "Invalid addition arguments for this model"
   )
   expect_error(
-    make_stancode(mvbind(y1, y2) ~ 1, data = data, autocor = cor_ar(cov = TRUE)),
-    "Cannot model residual covariance matrices via 'autocor' when estimating 'rescor'"
+    make_stancode(mvbind(y1, y2) ~ 1 + ar(cov = TRUE), data = data),
+    "Explicit covariance terms cannot be modeled when 'rescor'"
   )
   expect_error(
-    make_stancode(y1 | resp_se(wi) ~ y2, data = data, autocor = cor_ma()),
+    make_stancode(y1 | resp_se(wi) ~ y2 + ma(), data = data),
     "Please set cov = TRUE in ARMA correlation structures"
   )
 })
@@ -479,10 +484,13 @@ test_that("Stan code for multivariate models is correct", {
   )
   
   # models without residual correlations
-  bform <- bf(y1 | cens(censi) ~ x + y2 + (x|2|g)) + 
-    gaussian() + cor_ar() +
-    (bf(x ~ 1) + mixture(poisson, nmix = 2)) +
-    (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal())
+  expect_warning(
+    bform <- bf(y1 | cens(censi) ~ x + y2 + (x|2|g)) + 
+      gaussian() + cor_ar() +
+      (bf(x ~ 1) + mixture(poisson, nmix = 2)) +
+      (bf(y2 ~ s(y2) + (1|2|g)) + skew_normal()),
+    "Using 'cor_brms' objects for 'autocor' is deprecated"
+  )
   bprior <- prior(normal(0, 5), resp = y1) +
     prior(normal(0, 10), resp = y2)
   scode <- make_stancode(bform, dat, prior = bprior)
@@ -574,33 +582,38 @@ test_that("Stan code for dirichlet models is correct", {
 
 test_that("Stan code for ARMA models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
-  scode <- make_stancode(y ~ x, dat, student(), autocor = cor_ar(~time))
+  scode <- make_stancode(y ~ x + ar(time), dat, student())
   expect_match2(scode, "err[n] = Y[n] - mu[n];")
   expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
   
-  scode <- make_stancode(y ~ x, dat, student(), autocor = cor_ma(~time, q = 2))
+  scode <- make_stancode(y ~ x + ma(time, q = 2), dat, student())
   expect_match2(scode, "mu[n] += Err[n, 1:Kma] * ma;")
   
-  scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(), autocor = cor_ar())
+  expect_warning(
+    scode <- make_stancode(mvbind(y, x) ~ 1, dat, gaussian(), 
+                           autocor = cor_ar()),
+    "Argument 'autocor' should be specified within the 'formula' argument"
+  )
   expect_match2(scode, "err_y[n] = Y_y[n] - mu_y[n];")
   
-  scode <- make_stancode(bf(y ~ x, sigma ~ x), dat, family = student,
-                         autocor = cor_arma(~time, p = 1, q = 1, cov = TRUE))
-  expect_match2(scode, "student_t_cov_het_lpdf(Y | nu, mu, sigma, chol_cor")
+  bform <- bf(y ~ x, sigma ~ x) + acformula(~arma(time, cov = TRUE))
+  scode <- make_stancode(bform, dat, family = student)
+  expect_match2(scode, "student_t_time_het_lpdf(Y | nu, mu, sigma, chol_cor")
   
-  bform <- bf(y ~ exp(eta) - 1, eta ~ x, nl = TRUE)
+  bform <- bf(y ~ exp(eta) - 1, eta ~ x, autocor = ~ar(time), nl = TRUE)
   scode <- make_stancode(bform, dat, family = student,
-                         prior = prior(normal(0, 1), nlpar = eta),
-                         autocor = cor_ar(~time))
+                         prior = prior(normal(0, 1), nlpar = eta))
   expect_match2(scode, "mu[n] += Err[n, 1:Kar] * ar;")
   
   # correlations of latent residuals
   scode <- make_stancode(
-    y ~ x, dat, family = poisson, autocor = cor_ar(~time, cov = TRUE),
+    y ~ x + ar(time, cov = TRUE), dat, family = poisson,
     prior = prior(cauchy(0, 10), class = sderr)
   )
   expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max(nobs_tg));")
-  expect_match2(scode, "err = scale_cov_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);")
+  expect_match2(scode, 
+    "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
+  )
   expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
   expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
 })
@@ -608,18 +621,16 @@ test_that("Stan code for ARMA models is correct", {
 test_that("Stan code for compound symmetry models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- make_stancode(
-    y ~ x, dat, autocor = cor_cosy(~time),
+    y ~ x + cosy(time), dat,
     prior = prior(normal(0, 2), cosy)
   )
   expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
   expect_match2(scode, "target += normal_lpdf(cosy | 0, 2);")
   
-  scode <- make_stancode(bf(y ~ x, sigma ~ x), dat, autocor = cor_cosy(~time))
-  expect_match2(scode, "normal_cov_het_lpdf(Y | mu, sigma, chol_cor")
+  scode <- make_stancode(bf(y ~ x + cosy(time), sigma ~ x), dat)
+  expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, chol_cor")
   
-  scode <- make_stancode(
-    y ~ x, dat, family = poisson, autocor = cor_cosy(~time)
-  )
+  scode <- make_stancode(y ~ x + cosy(time), dat, family = poisson)
   expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
 })
 
@@ -914,18 +925,13 @@ test_that("functions defined in 'stan_funs' appear in the functions block", {
   expect_match2(scode, test_fun)
 })
 
-test_that("fixed residual covariance matrices appear in the Stan code", {
+test_that("FCOR matrices appear in the Stan code", {
   data <- data.frame(y = 1:5)
   V <- diag(5)
-  expect_match2(make_stancode(y~1, data = data, family = gaussian(), 
-                             autocor = cor_fixed(V)),
-               "target += multi_normal_cholesky_lpdf(Y | mu, LV)")
-  expect_match2(make_stancode(y~1, data = data, family = student(),
-                             autocor = cor_fixed(V)),
-               "target += multi_student_t_lpdf(Y | nu, mu, V)")
-  expect_match2(make_stancode(y~1, data = data, family = student(),
-                             autocor = cor_fixed(V)),
-               "target += multi_student_t_lpdf(Y | nu, mu, V)")
+  expect_match2(make_stancode(y ~ fcor(V), data = data, family = gaussian()),
+               "target += normal_fcor_hom_lpdf(Y | mu, sigma, Lfcor);")
+  expect_match2(make_stancode(y ~ fcor(V), data = data, family = student()),
+               "target += student_t_fcor_hom_lpdf(Y | nu, mu, sigma, Lfcor);")
 })
 
 test_that("Stan code for GAMMs is correct", {
@@ -1572,37 +1578,38 @@ test_that("Stan code for SAR models is correct", {
   W <- matrix(0, nrow = 10, ncol = 10)
   
   scode <- make_stancode(
-    y ~ x, data = dat, autocor = cor_lagsar(W),
+    y ~ x + sar(W), data = dat,
     prior = prior(normal(0.5, 1), lagsar)
   )
   expect_match2(scode, 
-    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, W, eigenW)"
+    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, Msar, eigenMsar)"
   )
   expect_match2(scode, "target += normal_lpdf(lagsar | 0.5, 1)")
   
   scode <- make_stancode(
-    y ~ x, data = dat, family = student(), autocor = cor_lagsar(W)
+    y ~ x + sar(W, type = "lag"), 
+    data = dat, family = student()
   )
   expect_match2(scode, 
-    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, W, eigenW)"
+    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, Msar, eigenMsar)"
   )
   
-  scode <- make_stancode(y ~ x, data = dat, autocor = cor_errorsar(W))
+  scode <- make_stancode(y ~ x + sar(W, type = "error"), data = dat)
   expect_match2(scode, 
-    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, W, eigenW)"
+    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, Msar, eigenMsar)"
   )
   
   scode <- make_stancode(
-    y ~ x, data = dat, family = student(), 
-    autocor = cor_errorsar(W), prior = prior(beta(2, 3), errorsar)
+    y ~ x + sar(W, "error"), data = dat, family = student(), 
+    prior = prior(beta(2, 3), errorsar)
   )
   expect_match2(scode, 
-    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, W, eigenW)"
+    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, Msar, eigenMsar)"
   )
   expect_match2(scode, "target += beta_lpdf(errorsar | 2, 3)")
   
   expect_error(
-    make_stancode(bf(y ~ x, sigma ~ x), data = dat, autocor = cor_lagsar(W)),
+    make_stancode(bf(y ~ sar(W), sigma ~ x), data = dat),
     "SAR models are not implemented when predicting 'sigma'" 
   )
 })
@@ -1614,25 +1621,26 @@ test_that("Stan code for CAR models is correct", {
   for (i in seq_len(nrow(edges))) {
     W[edges[i, 1], edges[i, 2]] <- 1 
   }
+  rownames(W) <- seq_len(nrow(W))
   
-  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W))
+  scode <- make_stancode(y ~ x + car(W), dat)
   expect_match2(scode, "real sparse_car_lpdf(vector phi")
   expect_match2(scode, "target += sparse_car_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
 
-  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W, type = "esicar"))
+  scode <- make_stancode(y ~ x + car(W, type = "esicar"), dat)
   expect_match2(scode, "real sparse_icar_lpdf(vector phi")
   expect_match2(scode, "target += sparse_icar_lpdf(")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
   
-  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
+  scode <- make_stancode(y ~ x + car(W, type = "icar"), dat)
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
   expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "vector[Nloc] rcar = zcar * sdcar")
   
-  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W, type = "bym2"))
+  scode <- make_stancode(y ~ x + car(W, type = "bym2"), dat)
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
   expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
@@ -1641,6 +1649,12 @@ test_that("Stan code for CAR models is correct", {
     "vector[Nloc] rcar = (sqrt(1 - rhocar) * nszcar + ", 
     "sqrt(rhocar * inv(car_scale)) * zcar) * sdcar"
   ))
+  
+  # apply a CAR term on a distributional parameter other than 'mu'
+  scode <- make_stancode(bf(y ~ x, sigma ~ car(W)), dat)
+  expect_match2(scode, "real sparse_car_lpdf(vector phi")
+  expect_match2(scode, "target += sparse_car_lpdf(")
+  expect_match2(scode, "sigma[n] += rcar_sigma[Jloc_sigma[n]]")
 })
 
 test_that("Stan code for skew_normal models is correct", {

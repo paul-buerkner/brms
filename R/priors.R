@@ -17,11 +17,9 @@
 #' @param nlpar Name of a non-linear parameter. 
 #'   Only used in non-linear models.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
-#'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-#'   Defaults to \code{NULL}, that is no restriction.
+#'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed
-#'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-#'   Defaults to \code{NULL}, that is no restriction.
+#'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param check Logical; Indicates whether priors
 #'   should be checked for validity (as far as possible).
 #'   Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
@@ -373,11 +371,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
   if (!is.na(lb) || !is.na(ub)) {
     # TODO: extend the boundary interface to more parameter classes
-    if (!class %in% c("b")) {
-      stop2(
-        "Currently boundaries are only allowed for ", 
-        "population-level coefficients."
-      ) 
+    boundary_classes <- c("b")
+    if (!class %in% boundary_classes) {
+      stop2("Currently boundaries are only allowed for classe(s) ",
+            collapse_comma(boundary_classes), "."
+      )
     }
     if (nzchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
@@ -487,7 +485,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
     autocor = autocor, sparse = sparse
   )
   bterms <- parse_bf(formula)
-  data <- update_data(data, bterms = bterms)
+  data <- validate_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
   # initialize output
@@ -611,7 +609,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       brmsprior(class = "sdme", resp = x$resp)
   }
   # priors for autocorrelation parameters
-  prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
+  # prior <- prior + prior_autocor(x, def_scale_prior = def_scale_prior)
   prior
 }
 
@@ -624,6 +622,7 @@ prior_predictor.btl <- function(x, ...) {
     prior_cs(x, ...) +
     prior_sm(x, ...) + 
     prior_gp(x, ...) +
+    prior_ac(x, ...) +
     prior_bhaz(x, ...)
 }
 
@@ -631,7 +630,8 @@ prior_predictor.btl <- function(x, ...) {
 #' @export
 prior_predictor.btnl <- function(x, ...) {
   # thresholds are required even in non-linear ordinal models
-  prior_thres(x, ...)
+  prior_thres(x, ...) +
+    prior_ac(x, ...)
 }
 
 # priors for population-level parameters
@@ -934,43 +934,47 @@ prior_sm <- function(bterms, data, def_scale_prior, ...) {
 }
 
 # priors for autocor parameters
-prior_autocor <- function(bterms, def_scale_prior) {
-  stopifnot(is.brmsterms(bterms))
-  autocor <- bterms$autocor
-  resp <- bterms$resp
-  cbound <- "<lower=-1,upper=1>"
+prior_ac <- function(bterms, def_scale_prior, ...) {
   prior <- empty_prior()
-  if (is.cor_arma(autocor)) {
-    if (get_ar(autocor)) {
-      prior <- prior + brmsprior(class = "ar", resp = resp, bound = cbound)
+  acef <- tidy_acef(bterms)
+  if (!NROW(acef)) {
+    return(prior)
+  }
+  px <- check_prefix(bterms)
+  if (has_ac_class(acef, "arma")) {
+    acef_arma <- subset2(acef, class = "arma")
+    if (acef_arma$p > 0) {
+      prior <- prior + brmsprior(class = "ar", ls = px)
     }
-    if (get_ma(autocor)) {
-      prior <- prior + brmsprior(class = "ma", resp = resp, bound = cbound)
+    if (acef_arma$q > 0) {
+      prior <- prior + brmsprior(class = "ma", ls = px)
     }
   }
-  if (is.cor_cosy(autocor)) {
-    prior <- prior + brmsprior(class = "cosy", resp = resp)
+  if (has_ac_class(acef, "cosy")) {
+    prior <- prior + brmsprior(class = "cosy", ls = px)
   }
-  if (has_latent_residuals(bterms)) {
+  if (has_cor_latent_residuals(bterms)) {
     prior <- prior + 
-      brmsprior(def_scale_prior, class = "sderr", resp = resp)
+      brmsprior(def_scale_prior, class = "sderr", ls = px)
   }
-  if (is.cor_sar(autocor)) {
-    if (identical(autocor$type, "lag")) {
-      prior <- prior + brmsprior(class = "lagsar", resp = resp)
+  if (has_ac_class(acef, "sar")) {
+    acef_sar <- subset2(acef, class = "sar")
+    if (acef_sar$type == "lag") {
+      prior <- prior + brmsprior(class = "lagsar", ls = px)
     }
-    if (identical(autocor$type, "error")) {
-      prior <- prior + brmsprior(class = "errorsar", resp = resp)
+    if (acef_sar$type == "error") {
+      prior <- prior + brmsprior(class = "errorsar", ls = px)
     }
   }
-  if (is.cor_car(autocor)) {
+  if (has_ac_class(acef, "car")) {
+    acef_car <- subset2(acef, class = "car")
     prior <- prior +  
-      brmsprior(def_scale_prior, class = "sdcar", resp = resp)
-    if (autocor$type %in% "escar") {
-      prior <- prior + brmsprior(class = "car", resp = resp)
-    } else if (autocor$type %in% "bym2") {
+      brmsprior(def_scale_prior, class = "sdcar", ls = px)
+    if (acef_car$type %in% "escar") {
+      prior <- prior + brmsprior(class = "car", ls = px)
+    } else if (acef_car$type %in% "bym2") {
       prior <- prior + 
-        brmsprior("beta(1, 1)", class = "rhocar", resp = resp)
+        brmsprior("beta(1, 1)", class = "rhocar", ls = px)
     }
   }
   prior

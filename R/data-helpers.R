@@ -10,9 +10,9 @@
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-update_data <- function(data, bterms, na.action = na.omit2,
-                        drop.unused.levels = TRUE,
-                        terms_attr = NULL, knots = NULL) {
+validate_data <- function(data, bterms, na.action = na.omit2,
+                          drop.unused.levels = TRUE,
+                          terms_attr = NULL, knots = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
   }
@@ -54,6 +54,82 @@ update_data <- function(data, bterms, na.action = na.omit2,
   attr(data, "knots") <- knots
   attr(data, "brmsframe") <- TRUE
   data
+}
+
+# validate the 'data2' argument
+# @param data2 a named list of data objects
+# @param bterms object returned by 'parse_bf'
+# @param ... more named list to pass objects to data2 from other sources
+#   only required for backwards compatibility with deprecated arguments
+# @return a validated named list of data objects
+validate_data2 <- function(data2, bterms, ...) {
+  # TODO: specify spline-related matrices in 'data2'
+  # TODO: specify 'knots' in 'data2'?
+  if (isTRUE(attr(data2, "valid"))) {
+    return(data2)
+  }
+  if (is.null(data2)) {
+    data2 <- list()
+  }
+  if (!is.list(data2)) {
+    stop2("'data2' must be a list.")
+  }
+  if (length(data2) && !is_named(data2)) {
+    stop2("All elements of 'data2' must be named.")
+  }
+  dots <- list(...)
+  for (i in seq_along(dots)) {
+    if (length(dots[[i]])) {
+      stopifnot(is.list(dots[[i]]), is_named(dots[[i]]))
+      data2[names(dots[[i]])] <- dots[[i]]
+    }
+  }
+  # validate autocorrelation matrices
+  acef <- tidy_acef(bterms)
+  sar_M_names <- get_ac_vars(acef, "M", class = "sar")
+  for (M in sar_M_names) {
+    data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
+  }
+  car_M_names <- get_ac_vars(acef, "M", class = "car")
+  for (M in car_M_names) {
+    data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
+    # observation based CAR matrices are deprecated and
+    # there is no need to label them as observation based
+  }
+  fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
+  for (M in fcor_M_names) {
+    data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
+  }
+  structure(data2, valid = TRUE)
+}
+
+# get an object from the 'data2' argument
+get_from_data2 <- function(x, data2) {
+  if (!x %in% names(data2)) {
+    stop2("Object '", x, "' was not found in 'data2'.")
+  }
+  get(x, data2)
+}
+
+# index observation based elements in 'data2' 
+# @param data2 a named list of objects 
+# @param i observation based indices
+# @return data2 with potentially indexed elements
+subset_data2 <- function(data2, i) {
+  if (!length(data2)) {
+    return(data2)
+  }
+  stopifnot(is.list(data2), is_named(data2))
+  for (var in names(data2)) {
+    if (isTRUE(attr(data2[[var]], "obs_based_matrix"))) {
+      # matrices with dimensions equal to the number of observations
+      data2[[var]] <- data2[[var]][i, i, drop = FALSE]
+      attr(data2[[var]], "obs_based_matrix") <- TRUE
+    }
+  }
+  data2
 }
 
 # add the reserved intercept variables to the data
@@ -127,18 +203,18 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
 # @param bterms brmsterms of mvbrmsterms object
 # @return 'data' potentially ordered differently
 order_data <- function(data, bterms) {
-  time <- get_autocor_vars(bterms, "time")
-  # ordering does not matter for the CAR structure
-  group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
-  if (length(time) > 1L || length(group) > 1L) {
-    stop2("All autocorrelation structures must have the same ",
-          "time and group variables.")
+  # ordering does only matter for time-series models
+  time <- get_ac_vars(bterms, "time", dim = "time")
+  gr <- get_ac_vars(bterms, "gr", dim = "time")
+  if (length(time) > 1L || length(gr) > 1L) {
+    stop2("All time-series structures must have the same ",
+          "'time' and 'gr' variables.")
   }
-  if (length(time) || length(group)) {
-    if (length(group)) {
-      gv <- data[[group]]
+  if (length(time) || length(gr)) {
+    if (length(gr)) {
+      gv <- data[[gr]]
     } else {
-      gv <- rep(1, nrow(data))
+      gv <- rep(1L, nrow(data))
     }
     if (length(time)) {
       tv <- data[[time]]
@@ -231,11 +307,9 @@ validate_newdata <- function(
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
   newdata <- rm_attr(newdata, c("terms", "brmsframe"))
-  stopifnot(is.brmsfit(object))
+  object <- restructure(object)
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
   resp <- validate_resp(resp, object)
-  if (!incl_autocor) {
-    object <- remove_autocor(object) 
-  }
   new_formula <- update_re_terms(formula(object), re_formula)
   bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
@@ -389,60 +463,7 @@ validate_newdata <- function(
   structure(newdata, valid = TRUE)
 }
 
-# allows for updating of objects containing new data
-# which cannot be passed via argument 'newdata'
-# @param x object of class 'brmsfit'
-# @param new_objects: optional named list of new objects
-# @return a possibly updated 'brmsfit' object
-add_new_objects <- function(x, newdata, new_objects = list()) {
-  stopifnot(is.brmsfit(x), is.data.frame(newdata))
-  # update autocor variables with new objects
-  # do not include 'cor_car' here as the adjacency matrix
-  # (or subsets of it) should be the same for newdata
-  .update_autocor <- function(autocor, resp = "") {
-    resp <- usc(resp)
-    if (is.cor_sar(autocor)) {
-      W_name <- paste0("W", resp)
-      if (W_name %in% names(new_objects)) {
-        autocor$W <- cor_sar(new_objects[[W_name]])$W
-      } else {
-        message("Using the identity matrix as weighting matrix by default")
-        autocor$W <- diag(nrow(newdata))
-      }
-    } else if (is.cor_fixed(autocor)) {
-      V_name <- paste0("V", resp)
-      if (V_name %in% names(new_objects)) {
-        autocor$V <- cor_fixed(new_objects[[V_name]])$V
-      } else {
-        message("Using the median variance by default")
-        median_V <- median(diag(autocor$V), na.rm = TRUE)
-        autocor$V <- diag(median_V, nrow(newdata)) 
-      }
-    }
-    return(autocor)
-  }
-  if (!isTRUE(attr(x, "autocor_updated"))) {
-    # attribute is set by subset_autocor() to prevent double updating
-    if (is_mv(x)) {
-      resps <- names(x$formula$forms)
-      for (i in seq_along(resps)) {
-        new_autocor <- autocor(x, resp = resps[i])
-        new_autocor <- .update_autocor(new_autocor, resps[i])
-        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-      }
-    } else {
-      x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
-    }
-  }
-  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
-  for (name in names(stanvars_data)) {
-    if (name %in% names(new_objects)) {
-      x$stanvars[[name]]$sdata <- new_objects[[name]]
-    }
-  }
-  x
-}
-
+# TODO: refactor preparation and storage of old standata
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
@@ -473,33 +494,20 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   for (nlp in names(x$nlpars)) {
     out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
-  if (has_trials(x$family) || has_cat(x$family) || has_thres(x$family)) {
-    # trials, ncat, and nthres should not be computed based on new data
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
+  if (has_trials(x$family)) {
+    # trials should not be computed based on new data
+    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
     # partially match via $ to be independent of the response suffix
-    out$trials <- data_response$trials
+    out$trials <- datr$trials
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(Y))
   }
-  if (is.cor_car(x$autocor)) {
-    if (isTRUE(nzchar(x$time$group))) {
-      out$locations <- levels(factor(get(x$time$group, data)))
-    } else {
-      out$locations <- NA
-    }
-  }
   if (is_cox(x$family)) {
     # compute basis matrix of the baseline hazard for the Cox model
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
-    out$bhaz_basis <- bhaz_basis_matrix(
-      data_response$Y, args = x$family$bhaz
-    )
+    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
+    out$bhaz_basis <- bhaz_basis_matrix(datr$Y, args = x$family$bhaz)
   }
   out
 }
@@ -511,11 +519,20 @@ extract_old_standata.btnl <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.btl <- function(x, data, ...) {
-  list(
-    smooths = make_sm_list(x, data, ...),
-    gps = make_gp_list(x, data, ...),
-    Jmo = make_Jmo_list(x, data, ...)
-  )
+  out <- list()
+  out$smooths <- make_sm_list(x, data, ...)
+  out$gps <- make_gp_list(x, data, ...)
+  out$Jmo <- make_Jmo_list(x, data, ...)
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    stopifnot(length(gr) <= 1L)
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- levels(factor(get(gr, data)))
+    } else {
+      out$locations <- NA
+    }
+  }
+  out
 }
 
 # extract data related to smooth terms

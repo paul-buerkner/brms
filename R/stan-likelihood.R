@@ -306,7 +306,7 @@ stan_llh_gaussian_mv <- function(bterms, resp = "", mix = "") {
   sdist("multi_normal_cholesky", p$Mu, p$LSigma)
 }
 
-stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
+stan_llh_gaussian_time <- function(bterms, resp = "", mix = "") {
   if (stan_llh_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
@@ -314,36 +314,37 @@ stan_llh_gaussian_cov <- function(bterms, resp = "", mix = "") {
   v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("normal_cov_{sfx}"), 
+  sdist(glue("normal_time_{sfx}"), 
     p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
-stan_llh_gaussian_fixed <- function(bterms, resp = "", mix = "") {
+stan_llh_gaussian_fcor <- function(bterms, resp = "", mix = "") {
   has_se <- is.formula(bterms$adforms$se)
   if (stan_llh_adj(bterms) || has_se) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  p$LV <- paste0("LV", resp)
-  sdist("multi_normal_cholesky", p$mu, p$LV)
+  p$Lfcor <- paste0("Lfcor", resp)
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("normal_fcor_{sfx}"), p$mu, p$sigma, p$Lfcor)
 }
 
 stan_llh_gaussian_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W", "eigenW")
+  v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
+  sdist("normal_lagsar", p$mu, p$sigma, p$lagsar, p$Msar, p$eigenMsar)
 }
 
 stan_llh_gaussian_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W", "eigenW")
+  v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
+  sdist("normal_errorsar", p$mu, p$sigma, p$errorsar, p$Msar, p$eigenMsar)
 }
 
 stan_llh_student <- function(bterms, resp = "", mix = "") {
@@ -361,7 +362,7 @@ stan_llh_student_mv <- function(bterms, resp = "", mix = "") {
   sdist("multi_student_t", p$nu, p$Mu, p$Sigma)
 }
 
-stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
+stan_llh_student_time <- function(bterms, resp = "", mix = "") {
   if (stan_llh_adj(bterms)) {
     stop2("Invalid addition arguments for this model.")
   }
@@ -369,36 +370,39 @@ stan_llh_student_cov <- function(bterms, resp = "", mix = "") {
   v <- c("chol_cor", "se2", "nobs_tg", "begin_tg", "end_tg")
   p[v] <- as.list(paste0(v, resp))
   sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
-  sdist(glue("student_t_cov_{sfx}"), 
+  sdist(glue("student_t_time_{sfx}"), 
     p$nu, p$mu, p$sigma, p$chol_cor, p$se2,
     p$nobs_tg, p$begin_tg, p$end_tg
   )
 }
 
-stan_llh_student_fixed <- function(bterms, resp = "", mix = "") {
+stan_llh_student_fcor <- function(bterms, resp = "", mix = "") {
   has_se <- is.formula(bterms$adforms$se)
   if (stan_llh_adj(bterms) || has_se) {
     stop2("Invalid addition arguments for this model.")
   }
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
-  p$V <- paste0("V", resp)
-  sdist("multi_student_t", p$nu, p$mu, p$V)
+  p$Lfcor <- paste0("Lfcor", resp)
+  sfx <- str_if("sigma" %in% names(bterms$dpars), "het", "hom")
+  sdist(glue("student_t_fcor_{sfx}"), p$nu, p$mu, p$sigma, p$Lfcor)
 }
 
 stan_llh_student_lagsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("lagsar", "W", "eigenW")
+  v <- c("lagsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, p$lagsar, p$W, p$eigenW)
+  sdist("student_t_lagsar", p$nu, p$mu, p$sigma, 
+        p$lagsar, p$Msar, p$eigenMsar)
 }
 
 stan_llh_student_errorsar <- function(bterms, resp = "", mix = "") {
   p <- stan_llh_dpars(bterms, FALSE, resp, mix)
   p$sigma <- stan_llh_add_se(p$sigma, bterms, FALSE, resp)
-  v <- c("errorsar", "W", "eigenW")
+  v <- c("errorsar", "Msar", "eigenMsar")
   p[v] <- as.list(paste0(v, resp))
-  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, p$errorsar, p$W, p$eigenW)
+  sdist("student_t_errorsar", p$nu, p$mu, p$sigma, 
+        p$errorsar, p$Msar, p$eigenMsar)
 }
 
 stan_llh_lognormal <- function(bterms, resp = "", mix = "") {
@@ -739,7 +743,7 @@ use_glm_primitive <- function(bterms) {
   mu <- bterms$dpars[["mu"]]
   if (!is.btl(mu) || length(bterms$dpars) > 1L ||
       isTRUE(bterms$rescor) || length(bterms$adforms) ||
-      !is.cor_empty(bterms$autocor)) {
+      is.formula(mu$ac)) {
     return(FALSE)
   }
   # supported families and link functions

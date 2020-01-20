@@ -33,12 +33,17 @@
 #'   \code{\link{set_prior}} or related functions and combined using the
 #'   \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 #'   for more help.
-#' @param autocor An optional \code{\link{cor_brms}} object describing the
-#'   correlation structure within the response variable (i.e., the
-#'   'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-#'   description of the available correlation structures. Defaults to
+#' @param data2 A named \code{list} of objects containing data, which
+#'   cannot be passed via argument \code{data}. Required for some objects 
+#'   used in autocorrelation structures to specify dependency structures.
+#' @param autocor (Deprecated) An optional \code{\link{cor_brms}} object
+#'   describing the correlation structure within the response variable (i.e.,
+#'   the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+#'   a description of the available correlation structures. Defaults to
 #'   \code{NULL}, corresponding to no correlations. In multivariate models,
 #'   \code{autocor} might also be a list of autocorrelation structures.
+#'   It is now recommend to specify autocorrelation terms directly
+#'   within \code{formula}. See \code{\link{brmsformula}} for more details.
 #' @param sparse (Deprecated) Logical; indicates whether the population-level
 #'   design matrices should be treated as sparse (defaults to \code{FALSE}). For
 #'   design matrices with many zeros, this can considerably reduce required
@@ -337,7 +342,7 @@
 #' @import Rcpp
 #' @export
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, cov_ranef = NULL, 
+                autocor = NULL, data2 = NULL, cov_ranef = NULL, 
                 sample_prior = c("no", "yes", "only"), 
                 sparse = NULL, knots = NULL, stanvars = NULL,
                 stan_funs = NULL, fit = NA, save_ranef = TRUE, 
@@ -388,10 +393,13 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       autocor = autocor, sparse = sparse
     )
     family <- get_element(formula, "family")
-    autocor <- get_element(formula, "autocor")
     bterms <- parse_bf(formula)
     data.name <- substitute_name(data)
-    data <- update_data(data, bterms = bterms)
+    data <- validate_data(data, bterms = bterms)
+    data2 <- validate_data2(
+      data2, bterms = bterms, 
+      get_data2_autocor(formula)
+    )
     prior <- check_prior(
       prior, formula = formula, data = data,
       sample_prior = sample_prior, warn = FALSE
@@ -399,10 +407,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # initialize S3 object
     x <- brmsfit(
       formula = formula, family = family, data = data, 
-      data.name = data.name, prior = prior, 
-      autocor = autocor, cov_ranef = cov_ranef, 
-      stanvars = stanvars, stan_funs = stan_funs,
-      algorithm = algorithm
+      data.name = data.name, data2 = data2, prior = prior, 
+      cov_ranef = cov_ranef, stanvars = stanvars, 
+      stan_funs = stan_funs, algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -412,15 +419,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
-      cov_ranef = cov_ranef,
-      sample_prior = sample_prior, knots = knots, 
-      stanvars = stanvars, stan_funs = stan_funs, 
+      cov_ranef = cov_ranef, sample_prior = sample_prior, 
+      knots = knots, stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- make_standata(
-      formula, data = data, prior = prior, 
+      formula, data = data, prior = prior, data2 = data2,
       cov_ranef = cov_ranef, sample_prior = sample_prior,
       knots = knots, stanvars = stanvars
     )

@@ -69,7 +69,7 @@
 #'  In the current implementation, \code{"exp_quad"} is the only supported 
 #'  covariance kernel. More options will follow in the future.
 #'  
-#' @return An object of class \code{'gpterm'}, which is a list 
+#' @return An object of class \code{'gp_term'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #'   
@@ -151,7 +151,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
   scale <- as_one_logical(scale)
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
   out <- nlist(term, label, by, cov, k, iso, gr, cmc, scale, c)
-  structure(out, class = "gpterm")
+  structure(out, class = "gp_term")
 }
 
 # get labels of gaussian process terms

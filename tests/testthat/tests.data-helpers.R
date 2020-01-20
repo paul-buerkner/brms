@@ -13,16 +13,16 @@ test_that("validate_newdata handles factors correctly", {
                "New factor levels are not allowed")
 })
 
-test_that("update_data returns correct model.frames", {
+test_that("validate_data returns correct model.frames", {
   dat <- data.frame(y = 1:5, x = 1:5, z = 6:10, g = 5:1)
   
   bterms <- parse_bf(y ~ as.numeric(x) + (as.factor(z) | g),
                      family = gaussian())
-  mf <- brms:::update_data(dat, bterms = bterms)
+  mf <- brms:::validate_data(dat, bterms = bterms)
   expect_true(all(c("x", "z") %in% names(mf)))
   
   bterms <- parse_bf(y ~ 1 + (1|g/x/z), family = gaussian())
-  mf <- brms:::update_data(dat, bterms = bterms)
+  mf <- brms:::validate_data(dat, bterms = bterms)
   expect_equal(mf[["g:x"]], paste0(dat$g, "_", dat$x))
   expect_equal(mf[["g:x:z"]], paste0(dat$g, "_", dat$x, "_", dat$z))
 })

@@ -18,18 +18,21 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 \describe{
 \item{\code{formula}}{A \code{\link{brmsformula}} object}
 
-\item{\code{family}}{A \code{\link{brmsfamily}} object}
+\item{\code{family}}{(Deprecated) A \code{\link{brmsfamily}} object}
 
 \item{\code{data}}{A \code{data.frame} containing all variables used in the model}
 
 \item{\code{data.name}}{The name of \code{data} as specified by the user}
+
+\item{\code{data2}}{An optional \code{list} of data objects which cannot be passed
+via \code{data}}
 
 \item{\code{model}}{The model code in \pkg{Stan} language}
 
 \item{\code{prior}}{A \code{\link{brmsprior}} object containing
 information on the priors used in the model}
 
-\item{\code{autocor}}{An \code{\link{cor_brms}} object containing 
+\item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing 
 the autocorrelation structure if specified}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure}

@@ -717,13 +717,14 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   .reloo <- function(j) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- subset_autocor(x, -omitted, incl_car = TRUE)
+    fit_j <- x
     up_args$object <- fit_j
     up_args$newdata <- mf_omitted
+    up_args$data2 <- subset_data2(x$data2, -omitted)
     fit_j <- SW(do_call(update, up_args))
-    fit_j <- subset_autocor(fit_j, omitted, autocor = x$autocor)
     ll_args$object <- fit_j
     ll_args$newdata <- mf[omitted, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(x$data2, omitted)
     return(do_call(log_lik, ll_args))
   }
   
@@ -747,8 +748,9 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   elpd_loo <- ulapply(lls, log_mean_exp)
   # compute \hat{lpd}_j for each of the held out observations (using log-lik
   # matrix from full posterior, not the leave-one-out posteriors)
-  x <- subset_autocor(x, obs)
-  ll_x <- log_lik(x, newdata = mf[obs, , drop = FALSE])
+  mf_obs <- mf[obs, , drop = FALSE]
+  data2_obs <- subset_data2(x$data2, obs)
+  ll_x <- log_lik(x, newdata = mf_obs, newdata2 = data2_obs)
   hat_lpd <- apply(ll_x, 2, log_mean_exp)
   # compute effective number of parameters
   p_loo <- hat_lpd - elpd_loo

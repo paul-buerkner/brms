@@ -12,13 +12,15 @@
 #' See \code{methods(class = "brmsfit")} for an overview of available methods.
 #' 
 #' @slot formula A \code{\link{brmsformula}} object
-#' @slot family A \code{\link{brmsfamily}} object
+#' @slot family (Deprecated) A \code{\link{brmsfamily}} object
 #' @slot data A \code{data.frame} containing all variables used in the model
-#' @slot data.name The name of \code{data} as specified by the user 
+#' @slot data.name The name of \code{data} as specified by the user
+#' @slot data2 An optional \code{list} of data objects which cannot be passed
+#'   via \code{data} 
 #' @slot model The model code in \pkg{Stan} language
 #' @slot prior A \code{\link{brmsprior}} object containing
 #'   information on the priors used in the model
-#' @slot autocor An \code{\link{cor_brms}} object containing 
+#' @slot autocor (Deprecated) An \code{\link{cor_brms}} object containing 
 #'   the autocorrelation structure if specified
 #' @slot ranef A \code{data.frame} containing the group-level structure
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices
@@ -45,8 +47,9 @@ NULL
 
 # brmsfit class
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
-                    data.name = "", model = "", prior = empty_prior(), 
-                    autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
+                    data.name = "", data2 = list(), model = "", 
+                    prior = empty_prior(), autocor = NULL, 
+                    ranef = empty_ranef(), cov_ranef = NULL, 
                     criteria = list(), stanvars = NULL, stan_funs = NULL, 
                     fit = NA, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
@@ -55,7 +58,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
-    formula, family, data, data.name, model, prior,
+    formula, family, data, data.name, data2, model, prior,
     autocor, ranef, cov_ranef, stanvars, stan_funs, 
     fit, exclude, algorithm, version, file
   )

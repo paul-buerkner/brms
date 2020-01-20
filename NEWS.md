@@ -1,3 +1,22 @@
+# brms 2.11.1++
+
+### New Features
+
+* Specify autocorrelation terms directly in the model formula. (#708)
+* Estimate `sigma` in combination with fixed correlation matrices
+via autocorrelation term `fcor`.
+* Use argument `data2` in `brm` and related functions to pass
+data objects which cannot be passed via `data`. The usage of `data2`
+will be extended in future versions.
+
+### Bug Fixes
+
+* Fix output of `posterior_predict` for `multinomial` models
+thanks to Ivan Ukhov.
+* Fix selection of group-level terms via `re_formula` in
+multivariate models thanks to Maxime Dahirel. (#834)
+
+
 # brms 2.11.1
 
 ### Bug Fixes

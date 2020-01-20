@@ -25,48 +25,25 @@ brmsformula(
 a symbolic description of the model to be fitted. 
 The details of model specification are given in 'Details'.}
 
-\item{...}{Additional \code{formula} objects to specify 
-predictors of non-linear and distributional parameters. 
-Formulas can either be named directly or contain
-names on their left-hand side. 
-The following are distributional parameters of specific families
-(all other parameters are treated as non-linear parameters):
-\code{sigma} (residual standard deviation or scale of
-the \code{gaussian}, \code{student}, \code{skew_normal}, 
-\code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
-\code{shape} (shape parameter of the \code{Gamma},
-\code{weibull}, \code{negbinomial}, and related
-zero-inflated / hurdle families); \code{nu} (degrees of freedom 
-parameter of the \code{student} and \code{frechet} families);
-\code{phi} (precision parameter of the \code{beta} 
-and \code{zero_inflated_beta} families);
-\code{kappa} (precision parameter of the \code{von_mises} family);
-\code{beta} (mean parameter of the exponential component
-of the \code{exgaussian} family);
-\code{quantile} (quantile parameter of the \code{asym_laplace} family);
-\code{zi} (zero-inflation probability); 
-\code{hu} (hurdle probability);
-\code{zoi} (zero-one-inflation probability);
-\code{coi} (conditional one-inflation probability);
-\code{disc} (discrimination) for ordinal models;
-\code{bs}, \code{ndt}, and \code{bias} (boundary separation,
-non-decision time, and initial bias of the \code{wiener}
-diffusion model).
-By default, distributional parameters are modeled 
-on the log scale if they can be positive only or on the 
-logit scale if the can only be within the unit interval.
-See 'Details' for more explanation.}
+\item{...}{Additional \code{formula} objects to specify predictors of
+non-linear and distributional parameters. Formulas can either be named
+directly or contain names on their left-hand side. Alternatively,
+it is possible to fix parameters to certain values by passing
+numbers or character strings in which case arguments have to be named
+to provide the parameter names. See 'Details' for more information.}
 
 \item{flist}{Optional list of formulas, which are treated in the 
 same way as formulas passed via the \code{...} argument.}
 
 \item{family}{Same argument as in \code{\link{brm}}.
 If \code{family} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
-\item{autocor}{Same argument as in \code{\link{brm}}.
+\item{autocor}{An optional \code{formula} which contains
+autocorrelation terms as described in \code{\link{autocor-terms}}
+or alternatively a \code{\link{cor_brms}} object (deprecated).
 If \code{autocor} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
@@ -240,6 +217,11 @@ models for all parameters of the assumed response distribution.
   as an additional response with corresponding predictors and the 
   addition term \code{mi()}. In our example, we could write
   \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+  
+  \bold{Autocorrelation terms}
+  
+  Autocorrelation terms can be directly specified inside the formula
+  as well. Details can be found in \code{\link{autocor-terms}}.
   
   \bold{Additional response information}
   
@@ -434,12 +416,41 @@ models for all parameters of the assumed response distribution.
   
   \bold{Formula syntax for predicting distributional parameters}
   
-  It is also possible to predict parameters of the response
-  distribution such as the residual standard deviation \code{sigma} 
-  in gaussian models or the hurdle probability \code{hu} in hurdle models. 
-  The syntax closely resembles that of a non-linear 
-  parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}. 
-  For some examples of distributional models, see \code{vignette("brms_distreg")}.
+  It is also possible to predict parameters of the response distribution such
+  as the residual standard deviation \code{sigma} in gaussian models or the
+  hurdle probability \code{hu} in hurdle models. The syntax closely resembles
+  that of a non-linear parameter, for instance \code{sigma ~ x + s(z) +
+  (1+x|g)}. For some examples of distributional models, see
+  \code{vignette("brms_distreg")}.
+  
+  Parameter \code{mu} exists for every family and can be used as an
+  alternative to specifying terms in \code{formula}. If both \code{mu} and
+  \code{formula} are given, the right-hand side of \code{formula} is ignored.
+  Accordingly, specifying terms on the right-hand side of both \code{formula} 
+  and \code{mu} at the same time is deprecated. In future versions,
+  \code{formula} might be updated by \code{mu}. 
+  
+  The following are
+  distributional parameters of specific families (all other parameters are
+  treated as non-linear parameters): \code{sigma} (residual standard
+  deviation or scale of the \code{gaussian}, \code{student},
+  \code{skew_normal}, \code{lognormal} \code{exgaussian}, and
+  \code{asym_laplace} families); \code{shape} (shape parameter of the
+  \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
+  / hurdle families); \code{nu} (degrees of freedom parameter of the
+  \code{student} and \code{frechet} families); \code{phi} (precision
+  parameter of the \code{beta} and \code{zero_inflated_beta} families);
+  \code{kappa} (precision parameter of the \code{von_mises} family);
+  \code{beta} (mean parameter of the exponential component of the
+  \code{exgaussian} family); \code{quantile} (quantile parameter of the
+  \code{asym_laplace} family); \code{zi} (zero-inflation probability);
+  \code{hu} (hurdle probability); \code{zoi} (zero-one-inflation
+  probability); \code{coi} (conditional one-inflation probability);
+  \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
+  \code{bias} (boundary separation, non-decision time, and initial bias of
+  the \code{wiener} diffusion model). By default, distributional parameters
+  are modeled on the log scale if they can be positive only or on the logit
+  scale if the can only be within the unit interval.
   
   Alternatively, one may fix distributional parameters to certain values.
   However, this is mainly useful when models become too 

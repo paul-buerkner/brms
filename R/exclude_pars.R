@@ -1,22 +1,30 @@
 # list parameters NOT to be saved by Stan
-# @param bterms object of class brmsterms
-# @param data data passed by the user
-# @param ranef output of tidy_ranef
+# @return a vector of parameter names to be excluded
+exclude_pars <- function(x, ...) {
+  UseMethod("exclude_pars")
+}
+
+#' @export
+exclude_pars.default <- function(x, ...) {
+  character(0)
+}
+
 # @param save_ranef save varying effects per level?
 # @param save_mevars save noise-free variables?
 # @param save_all_pars save all variables from the 'parameters' block?
-# @return a vector of parameters to be excluded
-exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
-                         save_ranef = TRUE, save_mevars = FALSE,
-                         save_all_pars = FALSE) {
+#' @export
+exclude_pars.brmsfit <- function(x, save_ranef = TRUE, save_mevars = FALSE,
+                                 save_all_pars = FALSE, ...) {
   save_ranef <- as_one_logical(save_ranef)
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)
-  out <- exclude_pars_internal(
-    bterms, data = data, save_ranef = save_ranef, 
-    save_all_pars = save_all_pars, save_mevars = save_mevars
+  out <- character(0)
+  bterms <- parse_bf(x$formula)
+  c(out) <- exclude_pars(
+    bterms, data = x$data, save_ranef = save_ranef, 
+    save_all_pars = save_all_pars, save_mevars = save_mevars, ...
   )
-  meef <- tidy_meef(bterms, data)
+  meef <- tidy_meef(bterms, x$data)
   if (nrow(meef)) {
     I <- seq_along(unique(meef$grname))
     K <- seq_rows(meef)
@@ -28,6 +36,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       c(out) <- paste0("Xme_", K)
     }
   }
+  ranef <- x$ranef
   if (has_rows(ranef)) {
     rm_re_pars <- c(if (!save_all_pars) c("z", "L"), "Cor", "r")
     for (id in unique(ranef$id)) {
@@ -42,48 +51,38 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       c(out) <- paste0(c("udf_", "dfm_"), tranef$ggn)
     }
   }
+  out <- unique(out)
   att <- nlist(save_ranef, save_mevars, save_all_pars)
-  do_call(structure, c(list(unique(out)), att))
-}
-
-exclude_pars_internal <- function(x, ...) {
-  UseMethod("exclude_pars_internal")
+  attributes(out)[names(att)] <- att
+  out
 }
 
 #' @export
-exclude_pars_internal.default <- function(x, ...) {
-  NULL
-}
-
-#' @export
-exclude_pars_internal.mvbrmsterms <- function(x, save_all_pars, ...) {
+exclude_pars.mvbrmsterms <- function(x, save_all_pars = FALSE, ...) {
   out <- c("Rescor", "Sigma")
   if (!save_all_pars) {
     c(out) <- c("Lrescor", "LSigma")
   }
   for (i in seq_along(x$terms)) {
-    c(out) <- exclude_pars_internal(x$terms[[i]], save_all_pars, ...)
+    c(out) <- exclude_pars(x$terms[[i]], save_all_pars = save_all_pars, ...)
   }
   out
 }
 
 #' @export
-exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars, 
-                                            save_mevars, ...) {
+exclude_pars.brmsterms <- function(x, save_ranef = TRUE, save_mevars = FALSE, 
+                                   save_all_pars = FALSE, ...) {
+  out <- character(0)
   p <- usc(combine_prefix(x))
-  out <- paste0(c("chol_cov", names(x$dpars)), p)
   if (!save_all_pars) {
-    c(out) <- c(
-      paste0("ordered_Intercept", p),
-      paste0("fixed_Intercept", p),
-      paste0(c("theta", "zcar", "nszcar", "zerr"), p)
-    )
-    for (dp in names(x$dpars)) {
-      c(out) <- exclude_pars_internal(x$dpars[[dp]], ...)
-    }
-    for (nlp in names(x$nlpars)) {
-      c(out) <- exclude_pars_internal(x$nlpars[[nlp]], ...)
-    }
+    par_classes <- c("ordered_Intercept", "fixed_Intercept", "theta")
+    c(out) <- paste0(par_classes, p)
+  }
+  for (dp in names(x$dpars)) {
+    c(out) <- exclude_pars(x$dpars[[dp]], save_all_pars = save_all_pars, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    c(out) <- exclude_pars(x$nlpars[[nlp]], save_all_pars = save_all_pars, ...)
   }
   if (!save_mevars && is.formula(x$adforms$mi)) {
     c(out) <- paste0("Yl", p)
@@ -96,17 +95,22 @@ exclude_pars_internal.brmsterms <- function(x, save_ranef, save_all_pars,
 }
 
 #' @export
-exclude_pars_internal.btl <- function(x, data, ...) {
+exclude_pars.btl <- function(x, data, save_all_pars = FALSE, ...) {
+  out <- character(0)
   p <- usc(combine_prefix(x))
-  out <- c(
-    "bQ", "hs_global", "hs_local", "zb", "hs_localsp", 
-    "zbsp", "first_Intercept", "merged_Intercept"
-  )
-  out <- paste0(out, p)
-  smef <- tidy_smef(x, data)
-  for (i in seq_rows(smef)) {
-    nb <- seq_len(smef$nbases[i])
-    c(out) <- paste0("zs", p, "_", i, "_", nb)
+  c(out) <- paste0("chol_cor", p)
+  if (!save_all_pars) {
+    par_classes <- c(
+      "bQ", "hs_global", "hs_local", "zb", "hs_localsp", 
+      "zbsp", "first_Intercept", "merged_Intercept",
+      "zcar", "nszcar", "zerr"
+    )
+    c(out) <- paste0(par_classes, p)
+    smef <- tidy_smef(x, data)
+    for (i in seq_rows(smef)) {
+      nb <- seq_len(smef$nbases[i])
+      c(out) <- paste0("zs", p, "_", i, "_", nb)
+    } 
   }
   out
 }

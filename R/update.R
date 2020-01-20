@@ -69,10 +69,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (missing(formula.) || is.null(formula.)) {
     dots$formula <- object$formula
     if (!is.null(dots[["family"]])) {
-      dots$formula <- dots$formula + check_family(dots$family)
+      dots$formula <- bf(dots$formula, family = dots$family)
     } 
     if (!is.null(dots[["autocor"]])) {
-      dots$formula <- dots$formula + check_autocor(dots$autocor)
+      dots$formula <- bf(dots$formula, autocor = dots$autocor)
     }
   } else {
     # TODO: restructure updating of the model formula
@@ -138,7 +138,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
   }
-  arg_names <- c("cov_ranef", "stanvars", "stan_funs")
+  arg_names <- c("data2", "cov_ranef", "stanvars", "stan_funs")
   old_args <- setdiff(arg_names, names(dots))
   dots[old_args] <- object[old_args]
   
@@ -179,7 +179,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- NULL
     }
     bterms <- parse_bf(object$formula)
-    object$data <- update_data(dots$data, bterms = bterms)
+    object$data <- validate_data(dots$data, bterms = bterms)
+    object$data2 <- validate_data2(dots$data2, bterms = bterms)
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- tidy_ranef(bterms, data = object$data)
@@ -189,8 +190,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
     object$exclude <- exclude_pars(
-      bterms, data = object$data, ranef = object$ranef, 
-      save_ranef = dots$save_ranef, save_mevars = dots$save_mevars,
+      object, save_ranef = dots$save_ranef, 
+      save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
     if (!is.null(dots$algorithm)) {
