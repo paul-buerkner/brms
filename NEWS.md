@@ -3,6 +3,11 @@
 ### New Features
 
 * Specify autocorrelation terms directly in the model formula. (#708)
+* Estimate `sigma` in combination with fixed correlation matrices
+via autocorrelation term `fcor`.
+* Use argument `data2` in `brm` and related functions to pass
+data objects which cannot be passed via `data`. The usage of `data2`
+will be extended in future versions.
 
 ### Bug Fixes
 
