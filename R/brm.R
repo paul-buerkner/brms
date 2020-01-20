@@ -36,12 +36,14 @@
 #' @param data2 A named \code{list} of objects containing data, which
 #'   cannot be passed via argument \code{data}. Required for some objects 
 #'   used in autocorrelation structures to specify dependency structures.
-#' @param autocor An optional \code{\link{cor_brms}} object describing the
-#'   correlation structure within the response variable (i.e., the
-#'   'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-#'   description of the available correlation structures. Defaults to
+#' @param autocor (Deprecated) An optional \code{\link{cor_brms}} object
+#'   describing the correlation structure within the response variable (i.e.,
+#'   the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+#'   a description of the available correlation structures. Defaults to
 #'   \code{NULL}, corresponding to no correlations. In multivariate models,
 #'   \code{autocor} might also be a list of autocorrelation structures.
+#'   It is now recommend to specify autocorrelation terms directly
+#'   within \code{formula}. See \code{\link{brmsformula}} for more details.
 #' @param sparse (Deprecated) Logical; indicates whether the population-level
 #'   design matrices should be treated as sparse (defaults to \code{FALSE}). For
 #'   design matrices with many zeros, this can considerably reduce required

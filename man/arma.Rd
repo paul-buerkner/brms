@@ -50,5 +50,5 @@ summary(fit)
 
 }
 \seealso{
-\code{\link{ar}}, \code{\link{ma}}, \code{\link{cosy}}
+\code{\link{autocor-terms}}, \code{\link{ar}}, \code{\link{ma}},
 }

@@ -53,3 +53,6 @@ plot(fit2)
 }
 
 }
+\seealso{
+\code{\link{autocor-terms}}
+}

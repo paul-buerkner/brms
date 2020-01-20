@@ -35,5 +35,5 @@ summary(fit)
 
 }
 \seealso{
-\code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}}
+\code{\link{autocor-terms}}
 }

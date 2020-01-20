@@ -32,3 +32,6 @@ fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 }
 
 }
+\seealso{
+\code{\link{autocor-terms}}
+}

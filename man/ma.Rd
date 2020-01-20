@@ -47,5 +47,5 @@ summary(fit)
 
 }
 \seealso{
-\code{\link{arma}}, \code{\link{ar}}, \code{\link{cosy}}
+\code{\link{autocor-terms}}, \code{\link{arma}}, \code{\link{ar}}
 }

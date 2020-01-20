@@ -71,3 +71,6 @@ summary(fit)
 }
 
 }
+\seealso{
+\code{\link{autocor-terms}}
+}

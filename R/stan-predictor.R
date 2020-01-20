@@ -1108,7 +1108,6 @@ stan_ac <- function(bterms, data, prior, ...) {
     str_add(out$tdata_def) <- glue( 
       "  int max_lag{p} = max(Kar{p}, Kma{p});\n"
     )
-    ar_bound <- ma_bound <- "<lower=-1,upper=1>"
     if (!acef_arma$cov) {
       err_msg <- "Please set cov = TRUE in ARMA correlation structures"
       if (!has_natural_residuals) {
@@ -1145,10 +1144,10 @@ stan_ac <- function(bterms, data, prior, ...) {
         add_ar,
         "  }}\n"
       )
-      # in the conditional formulation no boundaries are required
-      ar_bound <- ma_bound <- ""
     }
     if (acef_arma$p > 0) {
+      # no boundaries are required in the conditional formulation
+      ar_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
       str_add(out$par) <- glue( 
         "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
       )
@@ -1157,6 +1156,8 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
     }
     if (acef_arma$q > 0) {
+      # no boundaries are required in the conditional formulation
+      ma_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
       str_add(out$par) <- glue( 
         "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
       )

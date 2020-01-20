@@ -63,12 +63,14 @@ linear \code{gaussian} model is applied. In multivariate models,
 \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 for more help.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-description of the available correlation structures. Defaults to
+\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+a description of the available correlation structures. Defaults to
 \code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.}
+\code{autocor} might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
 \item{data2}{A named \code{list} of objects containing data, which
 cannot be passed via argument \code{data}. Required for some objects 

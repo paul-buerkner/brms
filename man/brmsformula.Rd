@@ -62,11 +62,13 @@ same way as formulas passed via the \code{...} argument.}
 
 \item{family}{Same argument as in \code{\link{brm}}.
 If \code{family} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
-\item{autocor}{Same argument as in \code{\link{brm}}.
+\item{autocor}{An optional \code{formula} which contains
+autocorrelation terms as described in \code{\link{autocor-terms}}
+or alternatively a \code{\link{cor_brms}} object (deprecated).
 If \code{autocor} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
@@ -240,6 +242,11 @@ models for all parameters of the assumed response distribution.
   as an additional response with corresponding predictors and the 
   addition term \code{mi()}. In our example, we could write
   \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+  
+  \bold{Autocorrelation terms}
+  
+  Autocorrelation terms can be directly specified inside the formula
+  as well. Details can be found in \code{\link{autocor-terms}}.
   
   \bold{Additional response information}
   

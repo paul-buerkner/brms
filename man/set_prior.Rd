@@ -52,12 +52,10 @@ Only used in distributional models.}
 Only used in non-linear models.}
 
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
-for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-Defaults to \code{NULL}, that is no restriction.}
+for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
 
 \item{ub}{Upper bound for parameter restriction. Currently only allowed
-for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-Defaults to \code{NULL}, that is no restriction.}
+for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.}
 
 \item{check}{Logical; Indicates whether priors
 should be checked for validity (as far as possible).

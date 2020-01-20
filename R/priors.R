@@ -17,11 +17,9 @@
 #' @param nlpar Name of a non-linear parameter. 
 #'   Only used in non-linear models.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
-#'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-#'   Defaults to \code{NULL}, that is no restriction.
+#'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed
-#'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
-#'   Defaults to \code{NULL}, that is no restriction.
+#'   for classes \code{"b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param check Logical; Indicates whether priors
 #'   should be checked for validity (as far as possible).
 #'   Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
@@ -373,11 +371,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
   if (!is.na(lb) || !is.na(ub)) {
     # TODO: extend the boundary interface to more parameter classes
-    if (!class %in% c("b")) {
-      stop2(
-        "Currently boundaries are only allowed for ", 
-        "population-level coefficients."
-      ) 
+    boundary_classes <- c("b")
+    if (!class %in% boundary_classes) {
+      stop2("Currently boundaries are only allowed for classe(s) ",
+            collapse_comma(boundary_classes), "."
+      )
     }
     if (nzchar(coef)) {
       stop2("Argument 'coef' may not be specified when using boundaries.")
@@ -944,13 +942,12 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
   }
   px <- check_prefix(bterms)
   if (has_ac_class(acef, "arma")) {
-    cbound <- "<lower=-1,upper=1>"
     acef_arma <- subset2(acef, class = "arma")
     if (acef_arma$p > 0) {
-      prior <- prior + brmsprior(class = "ar", bound = cbound, ls = px)
+      prior <- prior + brmsprior(class = "ar", ls = px)
     }
     if (acef_arma$q > 0) {
-      prior <- prior + brmsprior(class = "ma", bound = cbound, ls = px)
+      prior <- prior + brmsprior(class = "ma", ls = px)
     }
   }
   if (has_ac_class(acef, "cosy")) {

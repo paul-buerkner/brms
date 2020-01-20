@@ -1,3 +1,36 @@
+#' Autocorrelation structures
+#' 
+#' Specify autocorrelation terms in \pkg{brms} models. Currently supported terms
+#' are \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
+#' \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}}, and
+#' \code{\link{fcor}}. Terms can be directly specified within the formula, or
+#' passed to the \code{autocor} argument of \code{\link{brmsformula}} in the
+#' form of a one-sided formula. For deprecated ways of specifying
+#' autocorrelation terms, see \code{\link{cor_brms}}.
+#' 
+#' @name autocor-terms
+#' 
+#' @details The autocor term functions are almost solely useful when called in 
+#' formulas passed to the \pkg{brms} package. They do not evaluate its 
+#' arguments -- but exist purely to help set up a model with autocorrelation
+#' terms.
+#' 
+#' @seealso \code{\link{brmsformula}}, \code{\link{acformula}},
+#'   \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}},
+#'   \code{\link{cosy}}, \code{\link{sar}}, \code{\link{car}},
+#'   \code{\link{fcor}}
+#' 
+#' @examples 
+#' # specify autocor terms within the formula
+#' y ~ x + arma(p = 1, q = 1) + car(M)
+#' 
+#' # specify autocor terms in the 'autocor' argument
+#' bf(y ~ x, autocor = ~ arma(p = 1, q = 1) + car(M))
+#' 
+#' # specify autocor terms via 'acformula'
+#' bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(M))
+NULL 
+
 #' Set up ARMA(p,q) correlation structures
 #' 
 #' Set up an autoregressive moving average (ARMA) term of order (p, q) in
@@ -27,7 +60,7 @@
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #' 
-#' @seealso \code{\link{ar}}, \code{\link{ma}}, \code{\link{cosy}}
+#' @seealso \code{\link{autocor-terms}}, \code{\link{ar}}, \code{\link{ma}},
 #' 
 #' @examples
 #' \dontrun{
@@ -57,7 +90,7 @@ arma <- function(time = NA, gr = NA, p = 1, q = 1, cov = FALSE) {
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #' 
-#' @seealso \code{\link{arma}}, \code{\link{ma}}, \code{\link{cosy}}
+#' @seealso \code{\link{autocor-terms}}, \code{\link{arma}}, \code{\link{ma}}
 #' 
 #' @examples
 #' \dontrun{
@@ -87,7 +120,7 @@ ar <- function(time = NA, gr = NA, p = 1, cov = FALSE) {
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #' 
-#' @seealso \code{\link{arma}}, \code{\link{ar}}, \code{\link{cosy}}
+#' @seealso \code{\link{autocor-terms}}, \code{\link{arma}}, \code{\link{ar}}
 #' 
 #' @examples
 #' \dontrun{
@@ -144,7 +177,7 @@ ma <- function(time = NA, gr = NA, q = 1, cov = FALSE) {
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
 #' 
-#' @seealso \code{\link{arma}}, \code{\link{ar}}, \code{\link{ma}}
+#' @seealso \code{\link{autocor-terms}}
 #' 
 #' @examples
 #' \dontrun{
@@ -193,6 +226,8 @@ cosy <- function(time = NA, gr = NA) {
 #' @return An object of class \code{'sar_term'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
+#'   
+#' @seealso \code{\link{autocor-terms}}
 #'   
 #' @examples 
 #' \dontrun{
@@ -246,6 +281,8 @@ sar <- function(M, type = "lag") {
 #' @return An object of class \code{'car_term'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
+#'   
+#' @seealso \code{\link{autocor-terms}}
 #' 
 #' @details The \code{escar} and \code{esicar} types are 
 #'   implemented based on the case study of Max Joseph
@@ -318,6 +355,8 @@ car <- function(M, gr = NA, type = "escar") {
 #' @return An object of class \code{'fcor_term'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \pkg{brms}.
+#'   
+#' @seealso \code{\link{autocor-terms}}
 #' 
 #' @examples 
 #' \dontrun{
