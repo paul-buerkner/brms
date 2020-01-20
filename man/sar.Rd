@@ -14,7 +14,8 @@ the spatial weighting matrix can be computed.}
 
 \item{type}{Type of the SAR structure. Either \code{"lag"} 
 (for SAR of the response values) or \code{"error"} 
-(for SAR of the residuals).}
+(for SAR of the residuals). More information is
+provided in the 'Details' section.}
 }
 \value{
 An object of class \code{'sar_term'}, which is a list 

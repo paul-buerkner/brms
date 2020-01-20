@@ -1092,6 +1092,7 @@ stan_ac <- function(bterms, data, prior, ...) {
   out <- list()
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
+  resp <- usc(px$resp)
   has_natural_residuals <- has_natural_residuals(bterms)
   has_cor_latent_residuals <- has_cor_latent_residuals(bterms)
   acef <- tidy_acef(bterms, data)
@@ -1111,20 +1112,20 @@ stan_ac <- function(bterms, data, prior, ...) {
     if (!acef_arma$cov) {
       err_msg <- "Please set cov = TRUE in ARMA correlation structures"
       if (!has_natural_residuals) {
-        stop2(err_msg, " for family '", bterms$family$family, "'.")
+        stop2(err_msg, " for this family.")
       }
       if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when including known standard errors.")
       }
       str_add(out$data) <- glue( 
         "  // number of lags per observation\n",
-        "  int<lower=0> J_lag{p}[N{p}];\n"                
+        "  int<lower=0> J_lag{p}[N{resp}];\n"                
       )
       str_add(out$model_def) <- glue(
         "  // objects storing residuals\n",
-        "  matrix[N{p}, max_lag{p}] Err{p}",
-        " = rep_matrix(0, N{p}, max_lag{p});\n",
-        "  vector[N{p}] err{p};\n"
+        "  matrix[N{resp}, max_lag{p}] Err{p}",
+        " = rep_matrix(0, N{resp}, max_lag{p});\n",
+        "  vector[N{resp}] err{p};\n"
       )
       Y <- str_if(is.formula(bterms$adforms$mi), "Yl", "Y")
       add_ar <- str_if(acef_arma$p > 0,
@@ -1135,7 +1136,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
       str_add(out$model_comp_arma) <- glue(
         "  // include ARMA terms\n",
-        "  for (n in 1:N{p}) {{\n",
+        "  for (n in 1:N{resp}) {{\n",
         add_ma,
         "    err{p}[n] = {Y}{p}[n] - mu{p}[n];\n",
         "    for (i in 1:J_lag{p}[n]) {{\n",
@@ -1193,7 +1194,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
-        "  vector[N{p}] se2{p} = rep_vector(0, N{p});\n"
+        "  vector[N{resp}] se2{p} = rep_vector(0, N{resp});\n"
       )
     }
     str_add(out$tpar_def) <- glue(
@@ -1224,19 +1225,16 @@ stan_ac <- function(bterms, data, prior, ...) {
       if (is.btnl(bterms)) {
         stop2(err_msg, " for non-linear models.")
       }
-      if (conv_cats_dpars(bterms)) {
-        stop2(err_msg, " for this family.")
-      }
       str_add(out$par) <- glue(
-        "  vector[N{p}] zerr{p};  // unscaled residuals\n",
+        "  vector[N{resp}] zerr{p};  // unscaled residuals\n",
         "  real<lower=0> sderr{p};  // SD of residuals\n"
       )
       str_add(out$tpar_def) <- glue(
-        "  vector[N{p}] err{p};  // actual residuals\n"
+        "  vector[N{resp}] err{p};  // actual residuals\n"
       )
       str_add(out$tpar_comp) <- glue(
-        "  // compute correlated residuals\n",
-        "  err{p} = scale_cov_err(",
+        "  // compute correlated time-series residuals\n",
+        "  err{p} = scale_time_err(",
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
       str_add(out$prior) <- glue(
@@ -1252,12 +1250,11 @@ stan_ac <- function(bterms, data, prior, ...) {
   acef_sar <- subset2(acef, class = "sar")
   if (NROW(acef_sar)) {
     if (!has_natural_residuals) {
-      stop2("SAR terms are not implemented ", 
-            "for family '", bterms$family$family, "'.")
+      stop2("SAR terms are not implemented for this family.")
     }
     str_add(out$data) <- glue(
-      "  matrix[N{p}, N{p}] M{p};  // spatial weight matrix\n",
-      "  vector[N{p}] eigenM{p};  // eigenvalues of M{p}\n"
+      "  matrix[N{resp}, N{resp}] M{p};  // spatial weight matrix\n",
+      "  vector[N{resp}] eigenM{p};  // eigenvalues of M{p}\n"
     )
     str_add(out$tdata_def) <- glue(
       "  // the eigenvalues define the boundaries of the SAR correlation\n",
@@ -1291,7 +1288,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     str_add(out$data) <- glue(
       "  // data for the CAR structure\n",
       "  int<lower=1> Nloc{p};\n",
-      "  int<lower=1> Jloc{p}[N{p}];\n",
+      "  int<lower=1> Jloc{p}[N{resp}];\n",
       "  int<lower=0> Nedges{p};\n",
       "  int<lower=1> edges1{p}[Nedges{p}];\n",
       "  int<lower=1> edges2{p}[Nedges{p}];\n"
@@ -1402,14 +1399,13 @@ stan_ac <- function(bterms, data, prior, ...) {
   acef_fcor <- subset2(acef, class = "fcor")
   if (NROW(acef_fcor)) {
     if (!has_natural_residuals) {
-      stop2("FCOR terms are not implemented ", 
-            "for family '", bterms$family$family, "'.")
+      stop2("FCOR terms are not implemented for this family.")
     }
     str_add(out$data) <- glue( 
-      "  matrix[N{p}, N{p}] M{p};  // known residual covariance matrix\n"
+      "  matrix[N{resp}, N{resp}] M{p};  // known residual covariance matrix\n"
     )
     str_add(out$tdata_def) <- glue(
-      "  matrix[N{p}, N{p}] LM{p} = cholesky_decompose(M{p});\n"
+      "  matrix[N{resp}, N{resp}] LM{p} = cholesky_decompose(M{p});\n"
     )
   }
   out
@@ -1873,7 +1869,7 @@ stan_dpar_transform <- function(bterms) {
     iref <- match(bterms$family$refcat, bterms$family$cats)
     mu_dpars[iref] <- "0" 
     str_add(out$model_comp_catjoin) <- glue(
-      "  for (n in 1:N{p}) {{\n",
+      "  for (n in 1:N{resp}) {{\n",
       "    mu{p}[n] = {stan_vector(mu_dpars)};\n",
       "  }}\n"
     )

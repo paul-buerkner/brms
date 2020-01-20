@@ -25,7 +25,7 @@ order of the ARMA structure. Default is \code{1}.}
 means of residual covariance matrices. This is currently only possible for
 stationary ARMA effects of order 1. If the model family does not have
 natural residuals, latent residuals are added automatically. If
-\code{FALSE} (the default) a regression formulation is used that is
+\code{FALSE} (the default), a regression formulation is used that is
 considerably faster and allows for ARMA effects of order higher than 1 but
 is only available for \code{gaussian} models and some of its 
 generalizations.}

@@ -611,7 +611,9 @@ test_that("Stan code for ARMA models is correct", {
     prior = prior(cauchy(0, 10), class = sderr)
   )
   expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max(nobs_tg));")
-  expect_match2(scode, "err = scale_cov_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);")
+  expect_match2(scode, 
+    "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
+  )
   expect_match2(scode, "vector[N] mu = Intercept + Xc * b + err;")
   expect_match2(scode, "target += cauchy_lpdf(sderr | 0, 10);")
 })
@@ -1647,6 +1649,12 @@ test_that("Stan code for CAR models is correct", {
     "vector[Nloc] rcar = (sqrt(1 - rhocar) * nszcar + ", 
     "sqrt(rhocar * inv(car_scale)) * zcar) * sdcar"
   ))
+  
+  # apply a CAR term on a distributional parameter other than 'mu'
+  scode <- make_stancode(bf(y ~ x, sigma ~ car(W)), dat)
+  expect_match2(scode, "real sparse_car_lpdf(vector phi")
+  expect_match2(scode, "target += sparse_car_lpdf(")
+  expect_match2(scode, "sigma[n] += rcar_sigma[Jloc_sigma[n]]")
 })
 
 test_that("Stan code for skew_normal models is correct", {

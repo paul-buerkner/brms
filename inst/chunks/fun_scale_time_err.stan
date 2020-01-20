@@ -1,4 +1,4 @@
-  /* scale and correlate residuals 
+  /* scale and correlate time-series residuals 
    * Args: 
    *   zerr: standardized and independent residuals
    *   sderr: standard deviation of the residuals
@@ -9,8 +9,8 @@
    * Returns: 
    *   vector of scaled and correlated residuals
    */ 
-   vector scale_cov_err(vector zerr, real sderr, matrix chol_cor, 
-                        int[] nobs, int[] begin, int[] end) { 
+   vector scale_time_err(vector zerr, real sderr, matrix chol_cor, 
+                         int[] nobs, int[] begin, int[] end) { 
      vector[rows(zerr)] err; 
      for (i in 1:size(nobs)) { 
        err[begin[i]:end[i]] = 

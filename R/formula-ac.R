@@ -18,7 +18,7 @@
 #'   means of residual covariance matrices. This is currently only possible for
 #'   stationary ARMA effects of order 1. If the model family does not have
 #'   natural residuals, latent residuals are added automatically. If
-#'   \code{FALSE} (the default) a regression formulation is used that is
+#'   \code{FALSE} (the default), a regression formulation is used that is
 #'   considerably faster and allows for ARMA effects of order higher than 1 but
 #'   is only available for \code{gaussian} models and some of its 
 #'   generalizations.
@@ -179,7 +179,8 @@ cosy <- function(time = NA, gr = NA) {
 #'   the spatial weighting matrix can be computed.
 #' @param type Type of the SAR structure. Either \code{"lag"} 
 #'   (for SAR of the response values) or \code{"error"} 
-#'   (for SAR of the residuals).
+#'   (for SAR of the residuals). More information is
+#'   provided in the 'Details' section.
 #'   
 #' @details The \code{lagsar} structure implements SAR of the response values:
 #'   \deqn{y = \rho W y + \eta + e}
@@ -212,6 +213,9 @@ cosy <- function(time = NA, gr = NA) {
 #' @export
 sar <- function(M, type = "lag") {
   label <- deparse(match.call())
+  if (missing(M)) {
+    stop2("Argument 'M' is missing in sar().")
+  }
   M <- deparse(substitute(M))
   M <- as_one_variable(M)
   options <- c("lag", "error")
@@ -284,6 +288,9 @@ sar <- function(M, type = "lag") {
 #' @export
 car <- function(M, gr = NA, type = "escar") {
   label <- deparse(match.call())
+  if (missing(M)) {
+    stop2("Argument 'M' is missing in car().")
+  }
   M <- deparse(substitute(M))
   M <- as_one_variable(M)
   gr <- deparse(substitute(gr))
@@ -322,6 +329,9 @@ car <- function(M, gr = NA, type = "escar") {
 #' @export
 fcor <- function(M) {
   label <- deparse(match.call())
+  if (missing(M)) {
+    stop2("Argument 'M' is missing in fcor().")
+  }
   M <- deparse(substitute(M))
   M <- as_one_variable(M)
   out <- nlist(M, label)
@@ -447,7 +457,12 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       out$cov[i] <- TRUE
     }
   }
+  # covariance matrices of natural residuals will be handled
+  # directly in the likelihood function while latent residuals will
+  # be added to the linear predictor of the main parameter 'mu'
   out$nat_cov <- out$cov & has_natural_residuals(x)
+  class(out) <- acef_class()
+  # validate specified autocor terms
   if (any(duplicated(out$class))) {
     stop2("Can only model one term per autocorrelation class.")
   }
@@ -465,7 +480,7 @@ tidy_acef.btl <- function(x, data = NULL, ...) {
       stop2("Explicit covariance terms can only be specified on 'mu'.")
     }
   }
-  structure(out, class = acef_class())
+  out
 }
 
 #' @export
