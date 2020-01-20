@@ -105,7 +105,7 @@ test_that("loglik for SAR models runs without errors", {
     nu = rep(2, ns),
     sigma = rep(10, ns)
   )
-  draws$ac <- list(lagsar = matrix(c(0.3, 0.5, 0.7)), M = diag(10))
+  draws$ac <- list(lagsar = matrix(c(0.3, 0.5, 0.7)), Msar = diag(10))
   
   pred <- brms:::posterior_predict_gaussian_lagsar(1, draws = draws)
   expect_equal(dim(pred), c(3, 10))
@@ -128,7 +128,7 @@ test_that("posterior_predict for FCOR models runs without errors", {
     mu = matrix(rnorm(nobs * ns), nrow = ns),
     sigma = rep(1, ns), nu = rep(2, ns)
   )
-  draws$ac <- list(M = diag(nobs))
+  draws$ac <- list(Mfcor = diag(nobs))
   pred <- brms:::posterior_predict_gaussian_fcor(1, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   pred <- brms:::posterior_predict_student_fcor(1, draws = draws)

@@ -929,9 +929,9 @@ test_that("FCOR matrices appear in the Stan code", {
   data <- data.frame(y = 1:5)
   V <- diag(5)
   expect_match2(make_stancode(y ~ fcor(V), data = data, family = gaussian()),
-               "target += normal_fcor_hom_lpdf(Y | mu, sigma, LM);")
+               "target += normal_fcor_hom_lpdf(Y | mu, sigma, Lfcor);")
   expect_match2(make_stancode(y ~ fcor(V), data = data, family = student()),
-               "target += student_t_fcor_hom_lpdf(Y | nu, mu, sigma, LM);")
+               "target += student_t_fcor_hom_lpdf(Y | nu, mu, sigma, Lfcor);")
 })
 
 test_that("Stan code for GAMMs is correct", {
@@ -1582,7 +1582,7 @@ test_that("Stan code for SAR models is correct", {
     prior = prior(normal(0.5, 1), lagsar)
   )
   expect_match2(scode, 
-    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, M, eigenM)"
+    "target += normal_lagsar_lpdf(Y | mu, sigma, lagsar, Msar, eigenMsar)"
   )
   expect_match2(scode, "target += normal_lpdf(lagsar | 0.5, 1)")
   
@@ -1591,12 +1591,12 @@ test_that("Stan code for SAR models is correct", {
     data = dat, family = student()
   )
   expect_match2(scode, 
-    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, M, eigenM)"
+    "target += student_t_lagsar_lpdf(Y | nu, mu, sigma, lagsar, Msar, eigenMsar)"
   )
   
   scode <- make_stancode(y ~ x + sar(W, type = "error"), data = dat)
   expect_match2(scode, 
-    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, M, eigenM)"
+    "target += normal_errorsar_lpdf(Y | mu, sigma, errorsar, Msar, eigenMsar)"
   )
   
   scode <- make_stancode(
@@ -1604,7 +1604,7 @@ test_that("Stan code for SAR models is correct", {
     prior = prior(beta(2, 3), errorsar)
   )
   expect_match2(scode, 
-    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, M, eigenM)"
+    "target += student_t_errorsar_lpdf(Y | nu, mu, sigma, errorsar, Msar, eigenMsar)"
   )
   expect_match2(scode, "target += beta_lpdf(errorsar | 2, 3)")
   

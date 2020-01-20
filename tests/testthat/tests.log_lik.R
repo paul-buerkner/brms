@@ -142,7 +142,7 @@ test_that("log_lik for SAR models runs without errors", {
   )
   draws$ac <-  list(
     lagsar = matrix(c(0.3, 0.5, 0.7)),
-    M = diag(10)
+    Msar = diag(10)
   )
   draws$data <- list(Y = rnorm(10))
 
@@ -167,7 +167,7 @@ test_that("log_lik for FCOR models runs without errors", {
     mu = matrix(rnorm(nobs * ns), nrow = ns),
     sigma = rep(1, ns), nu = rep(2, ns)
   )
-  draws$ac <- list(M = diag(nobs))
+  draws$ac <- list(Mfcor = diag(nobs))
   draws$data$Y <- rnorm(nobs)
   ll <- brms:::log_lik_gaussian_fcor(1, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))

@@ -12,7 +12,7 @@
 #' See \code{methods(class = "brmsfit")} for an overview of available methods.
 #' 
 #' @slot formula A \code{\link{brmsformula}} object
-#' @slot family (Deprected) A \code{\link{brmsfamily}} object
+#' @slot family (Deprecated) A \code{\link{brmsfamily}} object
 #' @slot data A \code{data.frame} containing all variables used in the model
 #' @slot data.name The name of \code{data} as specified by the user
 #' @slot data2 An optional \code{list} of data objects which cannot be passed
@@ -20,7 +20,7 @@
 #' @slot model The model code in \pkg{Stan} language
 #' @slot prior A \code{\link{brmsprior}} object containing
 #'   information on the priors used in the model
-#' @slot autocor (Deprected) An \code{\link{cor_brms}} object containing 
+#' @slot autocor (Deprecated) An \code{\link{cor_brms}} object containing 
 #'   the autocorrelation structure if specified
 #' @slot ranef A \code{data.frame} containing the group-level structure
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices

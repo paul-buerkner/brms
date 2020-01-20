@@ -44,7 +44,6 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
   c(out) <- data_mixture(x, prior = prior)
-  # c(out) <- data_autocor(x, data = data, old_locations = old_sdata$locations)
   out
 }
 
@@ -667,8 +666,8 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       stop2("Dimensions of 'M' for SAR terms must be equal to ", 
             "the number of observations.")
     }
-    out$M <- as.matrix(M)
-    out$eigenM <- eigen(M)$values
+    out$Msar <- as.matrix(M)
+    out$eigenMsar <- eigen(M)$values
     # simplifies code of choose_N
     out$N_tg <- 1
   }
@@ -734,9 +733,9 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
         )
       }
       inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-      eigenM <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
-      eigenM <- eigen(eigenM, TRUE, only.values = TRUE)$values
-      c(out) <- nlist(Nneigh, eigenM)
+      eigenMcar <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
+      eigenMcar <- eigen(eigenMcar, TRUE, only.values = TRUE)$values
+      c(out) <- nlist(Nneigh, eigenMcar)
     } else if (acef_car$type %in% "bym2") {
       c(out) <- list(car_scale = .car_scale(edges, Nloc))
     }
@@ -752,7 +751,7 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       stop2("Dimensions of 'M' for FCOR terms must be equal ", 
             "to the number of observations.") 
     }
-    out$M <- M
+    out$Mfcor <- M
     # simplifies code of choose_N
     out$N_tg <- 1
   }

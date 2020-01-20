@@ -370,7 +370,7 @@ test_that("make_standata correctly prepares data for monotonic effects", {
 test_that("make_standata returns FCOR covariance matrices", {
   data <- data.frame(y = 1:5)
   data2 <- list(V = diag(5))
-  expect_equal(make_standata(y ~ fcor(V), data, data2 = data2)$M, 
+  expect_equal(make_standata(y ~ fcor(V), data, data2 = data2)$Mfcor, 
                data2$V, check.attributes = FALSE)
   
   expect_warning(

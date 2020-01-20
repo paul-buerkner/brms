@@ -146,7 +146,6 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
     }
   }
   out <- collapse_lists(ls = out)
-  # str_add_list(out) <- stan_autocor(x, prior = prior)
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
   out
@@ -1254,18 +1253,18 @@ stan_ac <- function(bterms, data, prior, ...) {
       stop2("SAR terms are not implemented for this family.")
     }
     str_add(out$data) <- glue(
-      "  matrix[N{resp}, N{resp}] M{p};  // spatial weight matrix\n",
-      "  vector[N{resp}] eigenM{p};  // eigenvalues of M{p}\n"
+      "  matrix[N{resp}, N{resp}] Msar{p};  // spatial weight matrix\n",
+      "  vector[N{resp}] eigenMsar{p};  // eigenvalues of Msar{p}\n"
     )
     str_add(out$tdata_def) <- glue(
       "  // the eigenvalues define the boundaries of the SAR correlation\n",
-      "  real min_eigenM{p} = min(eigenM{p});\n",
-      "  real max_eigenM{p} = max(eigenM{p});\n"
+      "  real min_eigenMsar{p} = min(eigenMsar{p});\n",
+      "  real max_eigenMsar{p} = max(eigenMsar{p});\n"
     )
     if (acef_sar$type == "lag") {
       str_add(out$par) <- glue( 
         "  // lag-SAR correlation parameter\n",
-        "  real<lower=min_eigenM{p},upper=max_eigenM{p}> lagsar{p};\n"
+        "  real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}> lagsar{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "lagsar", px = px, suffix = p
@@ -1273,7 +1272,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     } else if (acef_sar$type == "error") {
       str_add(out$par) <- glue( 
         "  // error-SAR correlation parameter\n",
-        "  real<lower=min_eigenM{p},upper=max_eigenM{p}> errorsar{p};\n"
+        "  real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}> errorsar{p};\n"
       )
       str_add(out$prior) <- stan_prior(
         prior, class = "errorsar", px = px, suffix = p
@@ -1304,7 +1303,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     if (acef_car$type %in% c("escar", "esicar")) {
       str_add(out$data) <- glue(
         "  vector[Nloc{p}] Nneigh{p};\n",
-        "  vector[Nloc{p}] eigenM{p};\n"
+        "  vector[Nloc{p}] eigenMcar{p};\n"
       )
     }
     if (acef_car$type == "escar") {
@@ -1314,7 +1313,7 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
       car_args <- c(
         "car", "sdcar", "Nloc", "Nedges", 
-        "Nneigh", "eigenM", "edges1", "edges2"
+        "Nneigh", "eigenMcar", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
       str_add(out$prior) <- stan_prior(
@@ -1338,8 +1337,8 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  rcar[Nloc{p}] = - sum(zcar{p});\n"
       )
       car_args <- c(
-        "sdcar", "Nloc", "Nedges", 
-        "Nneigh", "eigenM", "edges1", "edges2"
+        "sdcar", "Nloc", "Nedges", "Nneigh", 
+        "eigenMcar", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
       str_add(out$prior) <- glue(
@@ -1403,10 +1402,10 @@ stan_ac <- function(bterms, data, prior, ...) {
       stop2("FCOR terms are not implemented for this family.")
     }
     str_add(out$data) <- glue( 
-      "  matrix[N{resp}, N{resp}] M{p};  // known residual covariance matrix\n"
+      "  matrix[N{resp}, N{resp}] Mfcor{p};  // known residual covariance matrix\n"
     )
     str_add(out$tdata_def) <- glue(
-      "  matrix[N{resp}, N{resp}] LM{p} = cholesky_decompose(M{p});\n"
+      "  matrix[N{resp}, N{resp}] Lfcor{p} = cholesky_decompose(Mfcor{p});\n"
     )
   }
   out

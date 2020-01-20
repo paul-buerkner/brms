@@ -260,7 +260,7 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
-    IB <- I - with(draws$ac, lagsar[s, ] * M)
+    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     g <- Cinv %*% (Y - solve(IB, mu[s, ]))
     cbar <- diag(Cinv)
@@ -283,7 +283,7 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
   Y <- as.numeric(draws$data$Y)
   I <- diag(draws$nobs)
   .log_lik <- function(s) {
-    IB <- I - with(draws$ac, errorsar[s, ] * M)
+    IB <- I - with(draws$ac, errorsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     g <- Cinv %*% (Y - mu[s, ])
     cbar <- diag(Cinv)
