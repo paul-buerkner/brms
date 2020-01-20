@@ -25,22 +25,25 @@ restructure <- function(x, rstr_summary = FALSE) {
     x$version <- list(brms = x$version)
   }
   current_version <- utils::packageVersion("brms") 
-  if (x$version$brms >= current_version) {
+  restr_version <- get_restructure_version(x)
+  if (restr_version >= current_version) {
+    # object is up to date with the current brms version
     return(x)
-  } 
-  restructured <- attr(x, "restructured")
-  if (!is.package_version(restructured) || restructured < current_version) {
-    # object is not up to date with the current brms version
-    if (x$version$brms < "2.0.0") {
-      x <- restructure_v1(x)
-    }
-    if (x$version$brms < "3.0.0") {
-      x <- restructure_v2(x)
-    }
   }
+  if (restr_version < "2.0.0") {
+    x <- restructure_v1(x)
+  }
+  if (restr_version < "3.0.0") {
+    x <- restructure_v2(x)
+  }
+  # remember the version with which the object was restructured
+  x$version$restructure <- current_version
+  # remove unused attribute
+  attr(x, "restructured") <- NULL
+  # optionally also restructure the rstan summary
+  # TODO: remove at some point as summary.brmsfit no longer requires it
   stan_env <- attributes(x$fit)$.MISC
   if (rstr_summary && exists("summary", stan_env)) {
-    # TODO: remove at some point as summary.brmsfit no longer requires it
     stan_summary <- get("summary", stan_env)
     old_parnames <- rownames(stan_summary$msd)
     if (!identical(old_parnames, parnames(x))) {
@@ -49,7 +52,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       remove("summary", pos = stan_env)
     }
   }
-  structure(x, restructured = current_version)
+  x
 }
 
 restructure_v2 <- function(x) {
@@ -57,7 +60,7 @@ restructure_v2 <- function(x) {
   x$formula <- update_old_family(x$formula)
   bterms <- SW(parse_bf(x$formula))
   pars <- parnames(x)
-  version <- x$version$brms
+  version <- get_restructure_version(x)
   if (version <= "2.1.1") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
@@ -141,7 +144,7 @@ restructure_v2 <- function(x) {
 
 # restructure models fitted with brms 1.x
 restructure_v1 <- function(x) {
-  version <- x$version$brms
+  version <- get_restructure_version(x)
   if (version < "1.0.0") {
     warning2(
       "Models fitted with brms < 1.0 are no longer offically ",
@@ -211,6 +214,20 @@ restructure_v1 <- function(x) {
     x <- do_renaming(x, change)
   }
   x
+}
+
+# get version with which a brmsfit object was restructured
+get_restructure_version <- function(x) {
+  stopifnot(is.brmsfit(x))
+  out <- x$version$restructure
+  if (!is.package_version(out)) {
+    # models restructured with brms 2.11.1 store it as an attribute
+    out <- attr(x, "restructured", exact = TRUE) 
+  }
+  if (!is.package_version(out)) {
+    out <- x$version$brms
+  }
+  out
 }
 
 # convert old model formulas to brmsformula objects
