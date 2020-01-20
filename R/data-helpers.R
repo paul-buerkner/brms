@@ -463,6 +463,7 @@ validate_newdata <- function(
   structure(newdata, valid = TRUE)
 }
 
+# TODO: refactor preparation and storage of old standata
 # helper function for validate_newdata to extract
 # old standata required for the computation of new standata
 extract_old_standata <- function(x, data, ...) {
@@ -493,35 +494,20 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
   for (nlp in names(x$nlpars)) {
     out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
   }
-  if (has_trials(x$family) || has_cat(x$family) || has_thres(x$family)) {
-    # trials, ncat, and nthres should not be computed based on new data
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
+  if (has_trials(x$family)) {
+    # trials should not be computed based on new data
+    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
     # partially match via $ to be independent of the response suffix
-    out$trials <- data_response$trials
+    out$trials <- datr$trials
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
     Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(Y))
   }
-  if (has_ac_class(x, "car")) {
-    gr <- get_ac_vars(x, "gr", class = "car")
-    stopifnot(length(gr) <= 1L)
-    if (isTRUE(nzchar(gr))) {
-      out$locations <- levels(factor(get(gr, data)))
-    } else {
-      out$locations <- NA
-    }
-  }
   if (is_cox(x$family)) {
     # compute basis matrix of the baseline hazard for the Cox model
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
-    out$bhaz_basis <- bhaz_basis_matrix(
-      data_response$Y, args = x$family$bhaz
-    )
+    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
+    out$bhaz_basis <- bhaz_basis_matrix(datr$Y, args = x$family$bhaz)
   }
   out
 }
@@ -533,11 +519,20 @@ extract_old_standata.btnl <- function(x, data, ...) {
 
 #' @export
 extract_old_standata.btl <- function(x, data, ...) {
-  list(
-    smooths = make_sm_list(x, data, ...),
-    gps = make_gp_list(x, data, ...),
-    Jmo = make_Jmo_list(x, data, ...)
-  )
+  out <- list()
+  out$smooths <- make_sm_list(x, data, ...)
+  out$gps <- make_gp_list(x, data, ...)
+  out$Jmo <- make_Jmo_list(x, data, ...)
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    stopifnot(length(gr) <= 1L)
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- levels(factor(get(gr, data)))
+    } else {
+      out$locations <- NA
+    }
+  }
+  out
 }
 
 # extract data related to smooth terms

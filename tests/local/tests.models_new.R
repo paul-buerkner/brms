@@ -733,8 +733,16 @@ test_that("CAR models work correctly", {
     fitted(fit_car, newdata = dat[1:5, ]), 
     fitted(fit_car, newdata = dat[1:5, ], incl_autocor = FALSE)
   )))
+  
+  newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = 1)
+  pp <- posterior_predict(fit_car, newdata = newdata)
+  expect_equal(dim(pp), c(nsamples(fit_car), 1))
+  
   newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = -1)
-  expect_error(predict(fit_car, newdata = newdata),
+  new_W <- W
+  rownames(W)[1] <- "-1"
+  newdata2 <- list(W = new_W)
+  expect_error(predict(fit_car, newdata = newdata, newdata2 = newdata2),
                "Cannot handle new locations in CAR models")
 })
 

@@ -725,7 +725,7 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
     )
     if (acef_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
-      if (any(Nneigh == 0)) {
+      if (any(Nneigh == 0) && needs_locations) {
         stop2(
           "For exact sparse CAR, all locations should have at ", 
           "least one neighbor within the provided data set. ",
