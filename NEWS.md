@@ -1,3 +1,17 @@
+# brms 2.11.1++
+
+### New Features
+
+* Specify autocorrelation terms directly in the model formula. (#708)
+
+### Bug Fixes
+
+* Fix output of `posterior_predict` for `multinomial` models
+thanks to Ivan Ukhov.
+* Fix selection of group-level terms via `re_formula` in
+multivariate models thanks to Maxime Dahirel. (#834)
+
+
 # brms 2.11.1
 
 ### Bug Fixes
