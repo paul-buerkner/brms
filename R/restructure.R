@@ -139,6 +139,11 @@ restructure_v2 <- function(x) {
       get_data2_autocor(x$formula)
     )
   }
+  if (version <= "2.11.2") {
+    # ordering after IDs matches the order of the posterior samples 
+    # if multiple IDs are used for the same grouping factor (#835)
+    x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
+  }
   x
 }
 

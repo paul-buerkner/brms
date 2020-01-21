@@ -629,6 +629,7 @@ extract_draws_re <- function(bterms, sdata, draws_ranef = list(),
     max_level <- draws_ranef[[g]]$max_level
     gf <- draws_ranef[[g]]$gf
     weights <- draws_ranef[[g]]$weights
+    # TODO: define 'select' according to parameter names not by position
     # store samples and corresponding data in 'draws'
     # special group-level terms (mo, me, mi)
     ranef_g_px_sp <- subset2(ranef_g_px, type = "sp")

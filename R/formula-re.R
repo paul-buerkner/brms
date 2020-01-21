@@ -605,6 +605,9 @@ tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
       attr(ranef, "levels") <- old_levels
     }
   }
+  # ordering after IDs matches the order of the posterior samples 
+  # if multiple IDs are used for the same grouping factor (#835)
+  ranef <- ranef[order(ranef$id), , drop = FALSE]
   structure(ranef, class = c("ranef_frame", "data.frame"))
 }
 
