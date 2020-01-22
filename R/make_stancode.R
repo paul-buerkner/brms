@@ -67,7 +67,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_predictor$prior,
     scode_ranef$prior,
     scode_Xme$prior,
-    stan_prior(class = "", prior = prior)
+    stan_unchecked_prior(prior)
   )
   # generate functions block
   scode_functions <- paste0(

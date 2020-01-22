@@ -230,10 +230,19 @@ stan_thres <- function(bterms, data, prior, ...) {
   } else {
     if (has_equidistant_thres(family)) {
       bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
-      str_add(out$par) <- cglue(
-        "  real first_Intercept{p}{gr};  // first threshold\n",
-        "  real{bound} delta{p}{gr};  // distance between thresholds\n"
-      )
+      for (i in seq_along(groups)) {
+        str_add_list(out) <- stan_prior(
+          prior, class = "Intercept", group = groups[i], 
+          type = "real", prefix = "first_",
+          suffix = glue("{p}{gr[i]}"), px = px, 
+          comment = "first threshold"
+        )
+        str_add_list(out) <- stan_prior(
+          prior, class = "delta", group = groups[i], 
+          type = glue("real{bound}"), px = px, suffix = gr[i], 
+          comment = "distance between thresholds"
+        )
+      }
       str_add(out$tpar_def) <- cglue(
         "  // temporary thresholds for centered predictors\n",
         "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
@@ -245,26 +254,14 @@ stan_thres <- function(bterms, data, prior, ...) {
         " + (k - 1.0) * delta{p}{gr};\n",
         "  }}\n"
       )
-      for (i in seq_along(groups)) {
-        str_add(out$prior) <- stan_prior(
-          prior, class = "delta", group = groups[i], 
-          px = px, suffix = gr[i]
-        )
-        str_add(out$prior) <- stan_prior(
-          prior, class = "Intercept", group = groups[i], 
-          px = px, prefix = "first_", suffix = glue("{p}{gr[i]}")
-        )
-      }
     } else {
-      str_add(out$par) <- cglue(
-        "  // temporary thresholds for centered predictors\n",
-        "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
-      )
       for (i in seq_along(groups)) {
-        str_add(out$prior) <- stan_prior(
+        str_add_list(out) <- stan_prior(
           prior, class = "Intercept", group = groups[i], 
           coef = get_thres(bterms, group = groups[i]), 
-          px = px, suffix = glue("{p}{gr[i]}")
+          type = glue("{type}[nthres{resp}{grb[i]}]"),
+          px = px, suffix = glue("{p}{gr[i]}"),
+          comment = "temporary thresholds for centered predictors"
         )
       }
     }
@@ -313,8 +310,10 @@ stan_bhaz <- function(bterms, prior, ...) {
     "  // design matrix of the cumulative baseline function\n",
     "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
   )
-  str_add(out$par) <- glue(
-    "  vector<lower=0>[Kbhaz{resp}] sbhaz; // baseline coefficients\n"
+  str_add_list(out) <- stan_prior(
+    prior, class = "sbhaz", suffix = resp, px = px, 
+    type = glue("vector<lower=0>[Kbhaz{resp}]"),
+    comment = "baseline coefficients"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",
@@ -322,7 +321,6 @@ stan_bhaz <- function(bterms, prior, ...) {
     "  // compute values of cumulative baseline function\n",
     "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp} * sbhaz{resp};\n"
   )
-  str_add(out$prior) <- stan_prior(prior, class = "sbhaz", px = px)
   out
 }
 
@@ -401,15 +399,13 @@ stan_mixture <- function(bterms, data, prior) {
       grb <- paste0("[", seq_along(groups), "]")
     }
     type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
-    str_add(out$par) <- cglue( 
-      "  // thresholds fixed over mixture components\n",
-      "  {type}[nthres{p}{grb}] fixed_Intercept{p}{gr};\n"
-    )
     for (i in seq_along(groups)) {
-      str_add(out$prior) <- stan_prior(
+      str_add_list(out) <- stan_prior(
         prior, class = "Intercept", px = px,  
         coef = get_thres(bterms, group = groups[i]), 
-        prefix = "fixed_", suffix = glue("{p}{gr[i]}")
+        type = glue("{type}[nthres{p}{grb[i]}]"),
+        prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
+        comment = "thresholds fixed over mixture components"
       )
     }
   }

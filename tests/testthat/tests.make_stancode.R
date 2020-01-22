@@ -91,8 +91,8 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(normal(0, 1), coef = x1),
              prior(normal(0, 2), coef = x1, dpar = sigma))
   scode <- make_stancode(bf(y ~ x1, sigma ~ x1), dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(b | 0, 1);")
-  expect_match2(scode, "target += normal_lpdf(b_sigma | 0, 2);")
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1);")
+  expect_match2(scode, "target += normal_lpdf(b_sigma[1] | 0, 2);")
   
   prior <- c(set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE),
              set_prior("", class = "sigma"))
@@ -1515,14 +1515,14 @@ test_that("Stan code for Gaussian processes is correct", {
   
   prior <- prior(gamma(0.1, 0.1), sdgp)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
-  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
+  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1[1]")
   expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_1[1] | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(lscale_1[1][1] | 0, 1)")
   expect_match2(scode, "+ Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)[Jgp_2]")
   
   # non-isotropic GP
@@ -1556,7 +1556,7 @@ test_that("Stan code for Gaussian processes is correct", {
              prior(normal(0, 1), b, nlpar = a))
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_a_1[1] | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(lscale_a_1[1][1] | 0, 10)")
   expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
   
@@ -1569,7 +1569,7 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode,
     "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
   )
-  expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3] | 2, 2);")
+  expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3][1] | 2, 2);")
   expect_match2(scode, "target += normal_lpdf(zgp_a_1_3 | 0, 1);")
 })
 
@@ -1786,22 +1786,23 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
   # use the non-centered parameterization for 'b'
-  bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
-    set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
-  stanvars <- stanvar(scode = "vector[Kc] zb;", block = "parameters") +
-    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
-    stanvar(scode = "vector[Kc] b = zb * tau;", 
-            block="tparameters", name = "b")
-  scode <- make_stancode(count ~ Trt, epilepsy, 
-                         prior = bprior, stanvars = stanvars)
-  expect_match2(scode, "vector[Kc] b = zb * tau;")
+  # unofficial feature not supported anymore for the time being
+  # bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
+  #   set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
+  # stanvars <- stanvar(scode = "vector[Kc] zb;", block = "parameters") +
+  #   stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+  #   stanvar(scode = "vector[Kc] b = zb * tau;", 
+  #           block="tparameters", name = "b")
+  # scode <- make_stancode(count ~ Trt, epilepsy, 
+  #                        prior = bprior, stanvars = stanvars)
+  # expect_match2(scode, "vector[Kc] b = zb * tau;")
   
-  stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
-    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
-    stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
-            block = "tparameters", name = "bsp")
-  scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
-  expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
+  # stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
+  #   stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+  #   stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
+  #           block = "tparameters", name = "bsp")
+  # scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
+  # expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
 })
 
 test_that("custom families are handled correctly", {
