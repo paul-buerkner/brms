@@ -91,8 +91,8 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(normal(0, 1), coef = x1),
              prior(normal(0, 2), coef = x1, dpar = sigma))
   scode <- make_stancode(bf(y ~ x1, sigma ~ x1), dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(b | 0, 1);")
-  expect_match2(scode, "target += normal_lpdf(b_sigma | 0, 2);")
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1);")
+  expect_match2(scode, "target += normal_lpdf(b_sigma[1] | 0, 2);")
   
   prior <- c(set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE),
              set_prior("", class = "sigma"))
@@ -227,6 +227,57 @@ test_that("special shrinkage priors appear in the Stan code", {
                "Defining separate priors for single coefficients")
   expect_error(make_stancode(x1 ~ y, dat, prior = prior(lasso(), lb = 0)),
                "Setting boundaries on coefficients is not allowed")
+})
+
+test_that("priors can be fixed to constants", {
+  dat <- data.frame(y = 1:12, x1 = rnorm(12), x2 = rnorm(12), 
+                    g = rep(1:6, each = 2), h = factor(rep(1:2, each = 6)))
+  
+  prior <- prior(constant(3), coef = x1) +
+    prior(constant(-1), coef = x2) +
+    prior(constant(10), Intercept) + 
+    prior(constant(1), sd, group = g) + 
+    prior(constant(2), sd, group = g, coef = x1) +
+    prior(constant(0.3), sigma)
+  scode <- make_stancode(y ~ x1*x2 + (x1*x2 | g), dat, prior = prior)
+  expect_match2(scode, "b[1] = 3;")
+  expect_match2(scode, "b[2] = -1;")
+  expect_match2(scode, "Intercept = 1")
+  expect_match2(scode, "sd_1[1] = 1;")
+  expect_match2(scode, "sd_1[2] = 2;")
+  expect_match2(scode, "sigma = 0.3;")
+  
+  prior <- prior(constant(3))
+  scode <- make_stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
+                         prior = prior)
+  expect_match2(scode, "b = rep_vector(3, rows(b));")
+  expect_match2(scode, "bcs = rep_matrix(3, rows(bcs), cols(bcs));")
+  
+  prior <- prior(constant(3)) +
+    prior(constant(-1), coef = g)
+  scode <- make_stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
+                         prior = prior)
+  expect_match2(scode, "b = rep_vector(3, rows(b));")
+  expect_match2(scode, "bcs[1] = rep_row_vector(-1, cols(bcs[1]));")
+  
+  prior <- prior(constant(3), class = "sd", group = "g") +
+    prior("constant([[1, 0], [0, 1]])", class = "cor")
+  scode <- make_stancode(y ~ x1 + (x1 | gr(g, by = h)), dat, prior = prior)
+  expect_match2(scode, "sd_1 = rep_matrix(3, rows(sd_1), cols(sd_1));")
+  expect_match2(scode, "L_1[2] = [[1, 0], [0, 1]];")
+  
+  prior <- prior(constant(0.5), class = lscale, coef = gpx1h1) +
+    prior(constant(1), class = lscale, coef = gpx1h2)
+  scode <- make_stancode(y ~ gp(x1, by = h), dat, prior = prior)
+  expect_match2(scode, "lscale_1[1][1] = 0.5;")
+  expect_match2(scode, "lscale_1[2][1] = 1;")
+  
+  # test error messages
+  prior <- prior(normal(0, 1)) + prior(constant(3), coef = x1)
+  expect_error(
+    make_stancode(y ~ x1 + x2, data = dat, prior = prior),
+    "you can either estimate or fix all values"
+  )
 })
 
 test_that("link functions appear in the Stan code", {
@@ -494,7 +545,7 @@ test_that("Stan code for multivariate models is correct", {
   bprior <- prior(normal(0, 5), resp = y1) +
     prior(normal(0, 10), resp = y2)
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "vector[N_1] r_1_y2_3 = r_1[, 3]")
+  expect_match2(scode, "r_1_y2_3 = r_1[, 3]")
   expect_match2(scode, "err_y1[n] = Y_y1[n] - mu_y1[n]")
   expect_match2(scode, "target += normal_lccdf(Y_y1[n] | mu_y1[n], sigma_y1)")
   expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
@@ -709,7 +760,7 @@ test_that("Stan code of ordinal models is correct", {
     bf(y ~ 1, mu1 ~ x1, mu2 ~ 1), data = dat, 
     family = mixture(cumulative(), nmix = 2, order = "mu")
   )
-  expect_match2(scode, "ordered[nthres] Intercept_mu2 = fixed_Intercept;")
+  expect_match2(scode, "Intercept_mu2 = fixed_Intercept;")
   expect_match2(scode, "target += student_t_lpdf(fixed_Intercept | 3, 0, 10);")
 })
 
@@ -1154,7 +1205,7 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(mvbind(y, z) ~ me(x, xsd), dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
-  expect_match2(scode, "vector[N] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
+  expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
   
   # noise-free terms with grouping factors
   bform <- bf(y ~ me(x, xsd, ID) + (me(x, xsd, ID) | ID))
@@ -1164,7 +1215,7 @@ test_that("noise-free terms appear in the Stan code", {
   
   bform <- bform + set_mecor(FALSE)
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "vector[Nme_1] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
+  expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
 })
 
 test_that("Stan code of multi-membership models is correct", {
@@ -1515,14 +1566,14 @@ test_that("Stan code for Gaussian processes is correct", {
   
   prior <- prior(gamma(0.1, 0.1), sdgp)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
-  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
+  expect_match2(scode, "target += inv_gamma_lpdf(lscale_1[1]")
   expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   prior <- prior + prior(normal(0, 1), lscale, coef = gpx1)
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1, gr = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_1[1] | 0, 1)")
+  expect_match2(scode, "target += normal_lpdf(lscale_1[1][1] | 0, 1)")
   expect_match2(scode, "+ Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)[Jgp_2]")
   
   # non-isotropic GP
@@ -1556,7 +1607,7 @@ test_that("Stan code for Gaussian processes is correct", {
              prior(normal(0, 1), b, nlpar = a))
   scode <- make_stancode(bf(y ~ a, a ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_a_1[1] | 0, 10)")
+  expect_match2(scode, "target += normal_lpdf(lscale_a_1[1][1] | 0, 10)")
   expect_match2(scode, "target += gamma_lpdf(sdgp_a_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_a_1, sdgp_a_1[1], lscale_a_1[1], zgp_a_1)")
   
@@ -1569,7 +1620,7 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode,
     "gp(Xgp_a_1_3, sdgp_a_1[3], lscale_a_1[3], zgp_a_1_3)[Jgp_a_1_3]"             
   )
-  expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3] | 2, 2);")
+  expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3][1] | 2, 2);")
   expect_match2(scode, "target += normal_lpdf(zgp_a_1_3 | 0, 1);")
 })
 
@@ -1638,7 +1689,7 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
   expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
-  expect_match2(scode, "vector[Nloc] rcar = zcar * sdcar")
+  expect_match2(scode, "rcar = zcar * sdcar")
   
   scode <- make_stancode(y ~ x + car(W, type = "bym2"), dat)
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
@@ -1646,7 +1697,7 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "target += beta_lpdf(rhocar | 1, 1)")
   expect_match2(scode, paste0(
-    "vector[Nloc] rcar = (sqrt(1 - rhocar) * nszcar + ", 
+    "rcar = (sqrt(1 - rhocar) * nszcar + ", 
     "sqrt(rhocar * inv(car_scale)) * zcar) * sdcar"
   ))
   
@@ -1786,22 +1837,23 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
   # use the non-centered parameterization for 'b'
-  bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
-    set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
-  stanvars <- stanvar(scode = "vector[Kc] zb;", block = "parameters") +
-    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
-    stanvar(scode = "vector[Kc] b = zb * tau;", 
-            block="tparameters", name = "b")
-  scode <- make_stancode(count ~ Trt, epilepsy, 
-                         prior = bprior, stanvars = stanvars)
-  expect_match2(scode, "vector[Kc] b = zb * tau;")
+  # unofficial feature not supported anymore for the time being
+  # bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
+  #   set_prior("target += normal_lpdf(tau | 0, 10)", check = FALSE)
+  # stanvars <- stanvar(scode = "vector[Kc] zb;", block = "parameters") +
+  #   stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+  #   stanvar(scode = "vector[Kc] b = zb * tau;", 
+  #           block="tparameters", name = "b")
+  # scode <- make_stancode(count ~ Trt, epilepsy, 
+  #                        prior = bprior, stanvars = stanvars)
+  # expect_match2(scode, "vector[Kc] b = zb * tau;")
   
-  stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
-    stanvar(scode = "real<lower=0> tau;", block = "parameters") +
-    stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
-            block = "tparameters", name = "bsp")
-  scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
-  expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
+  # stanvars <- stanvar(scode = "vector[Ksp] zbsp;", block = "parameters") +
+  #   stanvar(scode = "real<lower=0> tau;", block = "parameters") +
+  #   stanvar(scode = "vector[Ksp] bsp = zbsp * tau;", 
+  #           block = "tparameters", name = "bsp")
+  # scode <- make_stancode(count ~ mo(Base), epilepsy, stanvars = stanvars)
+  # expect_match2(scode, "vector[Ksp] bsp = zbsp * tau;")
 })
 
 test_that("custom families are handled correctly", {
@@ -1895,7 +1947,7 @@ test_that("likelihood of distributional beta models is correct", {
 
 test_that("student-t group-level effects work without errors", {
   scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
-  expect_match2(scode, "vector[N_1] dfm_1 = sqrt(df_1 * udf_1);")
+  expect_match2(scode, "dfm_1 = sqrt(df_1 * udf_1);")
   expect_match2(scode, "dfm_1 .* (sd_1[1] * (z_1[1]));")
   expect_match2(scode, "target += gamma_lpdf(df_1 | 2, 0.1);")
   expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")

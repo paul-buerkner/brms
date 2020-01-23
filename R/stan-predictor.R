@@ -107,45 +107,61 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   data <- subset_data(data, x)
-  out <- list(stan_response(x, data = data))
+  out <- list()
+  str_add_list(out) <- stan_response(x, data = data)
   valid_dpars <- valid_dpars(x)
   args <- nlist(data, prior, nlpars = names(x$nlpars), ...)
   args$primitive <- use_glm_primitive(x)
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
-    out[[nlp]] <- do_call(stan_predictor, c(nlp_args, args))
+    str_add_list(out) <- do_call(stan_predictor, c(nlp_args, args))
   }
   for (dp in valid_dpars) {
     dp_terms <- x$dpars[[dp]]
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
+      # distributional parameter is predicted
       ilink <- stan_eta_ilink(dp, bterms = x, resp = resp)
       dp_args <- list(dp_terms, ilink = ilink)
-      out[[dp]] <- do_call(stan_predictor, c(dp_args, args))
+      str_add_list(out) <- do_call(stan_predictor, c(dp_args, args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
-      dp_def <- stan_dpar_defs(dp, resp, family = x$family, fixed = TRUE)
-      out[[dp]] <- list(data = dp_def)
+      # distributional parameter is fixed to a numeric value
+      dp_type <- stan_dpar_types(dp, resp, family = x$family, fixed = TRUE)
+      if (nzchar(dp_type)) {
+        dp_comment <- stan_comment(attr(dp_type, "comment"))
+        str_add(out$data) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n") 
+      }
     } else if (is.character(x$fdpars[[dp]]$value)) {
+      # distributional parameter is fixed to another distributional parameter
       if (!x$fdpars[[dp]]$value %in% valid_dpars) {
         stop2("Parameter '", x$fdpars[[dp]]$value, "' cannot be found.")
       }
-      dp_def <- stan_dpar_defs(dp, resp, family = x$family)
-      dp_co <- glue("  {dp}{resp} = {x$fdpars[[dp]]$value}{resp};\n")
-      out[[dp]] <- list(tpar_def = dp_def, tpar_comp = dp_co)
+      dp_type <- stan_dpar_types(dp, resp, family = x$family)
+      if (nzchar(dp_type)) {
+        dp_comment <- stan_comment(attr(dp_type, "comment"))
+        str_add(out$tpar_def) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n")
+        str_add(out$tpar_comp) <- glue("  {dp}{resp} = {x$fdpars[[dp]]$value}{resp};\n") 
+      }
     } else {
-      dp_def <- stan_dpar_defs(dp, resp, family = x$family)
-      dp_def_tmp <- stan_dpar_defs_tmp(dp, resp, family = x$family)
-      if (nzchar(dp_def_tmp)) {
-        dp_prior <- stan_prior(
-          prior, dp, prefix = "tmp_", suffix = resp, px = px
+      # distributional parameter is estimated as a scalar
+      dp_type <- stan_dpar_types(dp, resp, family = x$family)
+      dp_tmp_type <- stan_dpar_tmp_types(dp, resp, family = x$family)
+      if (nzchar(dp_tmp_type)) {
+        # distributional parameter has a temporary definition
+        dp_comment <- stan_comment(attr(dp_tmp_type, "comment"))
+        str_add_list(out) <- stan_prior(
+          prior, dp, type = dp_tmp_type, prefix = "tmp_", 
+          suffix = resp, px = px, comment = dp_comment
         )
-        out[[dp]] <- list(par = dp_def_tmp, prior = dp_prior)
-      } else if (nzchar(dp_def)) {
-        dp_prior <- stan_prior(prior, dp, suffix = resp, px = px)
-        out[[dp]] <- list(par = dp_def, prior = dp_prior)
+      } else if (nzchar(dp_type)) {
+        # distributional parameter has a regular definition
+        dp_comment <- stan_comment(attr(dp_type, "comment"))
+        str_add_list(out) <- stan_prior(
+          prior, dp, type = dp_type, suffix = resp, 
+          px = px, comment = dp_comment
+        )
       }
     }
   }
-  out <- collapse_lists(ls = out)
   str_add_list(out) <- stan_mixture(x, data = data, prior = prior)
   str_add_list(out) <- stan_dpar_transform(x)
   out
@@ -205,14 +221,14 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
         )
       }
     }
-    str_add(out$par) <- glue(
-      "  // parameters for multivariate linear models\n",
-      "  cholesky_factor_corr[nresp] Lrescor;\n"
+    str_add_list(out) <- stan_prior(
+      prior, class = "Lrescor", type = "cholesky_factor_corr[nresp]",
+      comment = "parameters for multivariate linear models"
     )
-    str_add(out$prior) <- stan_prior(prior, class = "Lrescor")
     if (family == "student") {
-      str_add(out$par) <- stan_dpar_defs("nu")
-      str_add(out$prior) <- stan_prior(prior, class = "nu")
+      str_add_list(out) <- stan_prior(
+        prior, class = "nu", type = stan_dpar_types("nu")
+      )
     } 
     sigma <- ulapply(x$terms, stan_sigma_transform)
     if (any(grepl("\\[n\\]", sigma))) {
@@ -314,44 +330,45 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
       )
     }
     # prepare population-level coefficients
-    bound <- get_bound(prior, class = "b", px = px)
+    b_bound <- get_bound(prior, class = "b", px = px)
+    b_type <- glue("vector{b_bound}[K{ct}{p}]")
     use_horseshoe <- stan_use_horseshoe(bterms, prior)
     if (decomp == "none") {
-      bsuffix <- ""
-      comment_b <- "  // population-level effects"
-      stan_def_b <- glue("  vector{bound}[K{ct}{p}] b{p};{comment_b}\n")
+      b_suffix <- ""
+      b_comment <- "population-level effects"
       if (use_horseshoe) {
-        str_add(out$tpar_def) <- stan_def_b
-      } else if (!glue("b{p}") %in% names(stanvars)) {
-        str_add(out$par) <- stan_def_b
+        str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
+      } else {
+        str_add_list(out) <- stan_prior(
+          prior, class = "b", type = b_type, 
+          coef = fixef, px = px, suffix = p,
+          comment = b_comment
+        )
       }
     } else {
       stopifnot(decomp == "QR")
-      if (nzchar(bound)) {
+      if (nzchar(b_bound)) {
         stop2("Cannot impose bounds on decomposed coefficients.")
       }
-      bsuffix <- "Q"
-      comment_bQ <- "  // regression coefficients at QR scale"
-      stan_def_bQ <- glue("  vector[K{ct}{p}] bQ{p};{comment_bQ}\n")
+      b_suffix <- "Q"
+      b_comment <- "regression coefficients at QR scale"
       if (use_horseshoe) {
-        str_add(out$tpar_def) <- stan_def_bQ
+        str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
       } else {
-        str_add(out$par) <- stan_def_bQ
+        str_add_list(out) <- stan_prior(
+          prior, class = "b", type = b_type, coef = fixef, 
+          px = px, suffix = glue("Q{p}"), comment = b_comment
+        )
       }
       str_add(out$gen_def) <- glue(
         "  // obtain the actual coefficients\n",
         "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
       )
     }
-    str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = fixef, px = px, 
-      suffix = glue("{bsuffix}{p}")
-    )
-    stan_special_priors <- stan_special_prior_local(
+    str_add_list(out) <- stan_special_prior_local(
       prior, class = "b", ncoef = length(fixef), 
-      px = px, center_X = center_X, suffix = bsuffix
+      px = px, center_X = center_X, suffix = b_suffix
     )
-    out <- collapse_lists(out, stan_special_priors)
   }
   
   order_intercepts <- order_intercepts(bterms)
@@ -400,6 +417,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     }
     if (!is_ordinal(family)) {
       # intercepts of ordinal models are handled in 'stan_thres'
+      intercept_type <- "real"
       if (order_intercepts) {
         # identify mixtures via ordering of the intercepts
         dp_id <- dpar_id(px$dpar)
@@ -407,19 +425,17 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
           "  // identify mixtures via ordering of the intercepts\n",                   
           "  real Intercept{p} = ordered_Intercept{resp}[{dp_id}];\n"
         )
-      } else {
-        str_add(out$par) <- glue(
-          "  // temporary intercept for centered predictors\n",
-          "  real Intercept{p};\n"
-        )
+        # intercept parameter needs to be defined outside of 'stan_prior'
+        intercept_type <- ""
       }
       str_add(out$eta) <- glue(" + Intercept{p}")
       str_add(out$gen_def) <- glue(
         "  // actual population-level intercept\n",
         "  real b{p}_Intercept = Intercept{p}{sub_X_means};\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", px = px, suffix = p
+      str_add_list(out) <- stan_prior(
+        prior, class = "Intercept", type = intercept_type, suffix = p,
+        px = px, comment = "temporary intercept for centered predictors"
       )
     }
   }
@@ -453,18 +469,22 @@ stan_re <- function(ranef, prior, ...) {
     for (i in seq_rows(tranef)) {
       g <- usc(tranef$ggn[i])
       id <- tranef$id[i]
+      str_add_list(out) <- stan_prior(
+        prior, class = "df", group = tranef$group[i], 
+        type = "real<lower=1>", suffix = g
+      )
       str_add(out$par) <- glue(
-        "  real<lower=1> df{g};\n",
         "  vector<lower=0>[N_{id}] udf{g};\n"
-      )
-      str_add(out$tpar_def) <- glue(
-        "  vector[N_{id}] dfm{g} = sqrt(df{g} * udf{g});\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "df", group = tranef$group[i], suffix = g
       )
       str_add(out$prior) <- glue(
         "  target += inv_chi_square_lpdf(udf{g} | df{g});\n"
+      )
+      # separate definition from computation to support fixed parameters
+      str_add(out$tpar_def) <- glue(
+        "  vector[N_{id}] dfm{g};\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  dfm{g} = sqrt(df{g} * udf{g});\n"
       )
     }
   }
@@ -541,22 +561,18 @@ stan_re <- function(ranef, prior, ...) {
   }
   # define standard deviation parameters
   if (has_by) {
-    str_add(out$par) <- glue(
-      "  matrix<lower=0>[M_{id}, Nby_{id}] sd_{id};",
-      "  // group-level standard deviations\n"
-    )
-    str_add(out$prior) <- stan_prior(
+    str_add_list(out) <- stan_prior(
       prior, class = "sd", group = r$group[1], coef = r$coef,
-      px = px, prefix = "to_vector(", suffix = glue("_{id})")
+      type = glue("matrix<lower=0>[M_{id}, Nby_{id}]"),
+      suffix = glue("_{id}"), px = px, broadcast = "matrix",
+      comment = "group-level standard deviations"
     )
   } else {
-    str_add(out$par) <- glue(
-      "  vector<lower=0>[M_{id}] sd_{id};",
-      "  // group-level standard deviations\n"
-    )
-    str_add(out$prior) <- stan_prior(
+    str_add_list(out) <- stan_prior(
       prior, class = "sd", group = r$group[1], coef = r$coef,
-      px = px, suffix = glue("_{id}")
+      type = glue("vector<lower=0>[M_{id}]"), 
+      suffix = glue("_{id}"), px = px, 
+      comment = "group-level standard deviations"
     )
   }
   dfm <- ""
@@ -583,18 +599,19 @@ stan_re <- function(ranef, prior, ...) {
           "matrices when fitting multiple group-level effects."
         )
       }
-      str_add(out$par) <- glue(
-        "  // cholesky factor of correlation matrix\n",
-        "  cholesky_factor_corr[M_{id}] L_{id}[Nby_{id}];\n"
-      )
+      str_add_list(out) <- stan_prior(
+        prior, class = "L", group = r$group[1], coef = Nby, 
+        type = glue("cholesky_factor_corr[M_{id}]"), 
+        suffix = glue("_{id}"), dim = glue("[Nby_{id}]"), 
+        comment = "cholesky factor of correlation matrix",
+        broadcast = "array"
+      ) 
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // actual group-level effects\n",
-        "  matrix[N_{id}, M_{id}] r_{id}", 
-        " = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
+        "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "L", group = r$group[1],
-        suffix = glue("_{id}[{Nby}]")
+      str_add(out$tpar_comp) <- glue(
+        "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // group-level correlations\n",
@@ -606,9 +623,10 @@ stan_re <- function(ranef, prior, ...) {
         glue("cor_{id}_{Nby}"), glue("M_{id}")
       )
     } else {
-      str_add(out$par) <- glue(
-        "  // cholesky factor of correlation matrix\n",
-        "  cholesky_factor_corr[M_{id}] L_{id};\n"
+      str_add_list(out) <- stan_prior(
+        prior, class = "L", group = r$group[1], suffix = usc(id),
+        type = glue("cholesky_factor_corr[M_{id}]"), 
+        comment = "cholesky factor of correlation matrix"
       )
       if (has_ccov) {
         rdef <- glue(
@@ -621,12 +639,13 @@ stan_re <- function(ranef, prior, ...) {
           "(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})';\n"
         )
       }
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // actual group-level effects\n",
-        "  matrix[N_{id}, M_{id}] r_{id} = {dfm}{rdef}"
+        "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "L", group = r$group[1], suffix = usc(id)
+      str_add(out$tpar_comp) <- glue(
+        "  // compute actual group-level effects\n",
+        "  r_{id} = {dfm}{rdef};\n"
       )
       str_add(out$gen_def) <- glue(
         "  // group-level correlations\n",
@@ -638,10 +657,14 @@ stan_re <- function(ranef, prior, ...) {
         cor = glue("cor_{id}"), ncol = glue("M_{id}")
       )
     }
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- 
       "  // using vectors speeds up indexing in loops\n"
     str_add(out$tpar_def) <- cglue(
-      "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
+      "  vector[N_{id}] r_{idp}_{r$cn};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  r_{idp}_{r$cn} = r_{id}[, {J}];\n"
     )
   } else {
     # single or uncorrelated group-level effects
@@ -652,20 +675,25 @@ stan_re <- function(ranef, prior, ...) {
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(z_{id}[{seq_rows(r)}] | 0, 1);\n"
     )
-    str_add(out$tpar_def) <- "  // actual group-level effects\n" 
     Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
       dfm <- glue("dfm_{tr$ggn[1]} .* ")
     }
     if (has_by) {
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
+        "  vector[N_{id}] r_{idp}_{r$cn};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  r_{idp}_{r$cn} = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
       )
     } else {
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dfm}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
+        "  vector[N_{id}] r_{idp}_{r$cn};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  r_{idp}_{r$cn} = {dfm}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
       )
     }
   }
@@ -690,15 +718,12 @@ stan_sm <- function(bterms, data, prior, ...) {
       "  matrix[N{resp}, Ks{p}] Xs{p};",
       "  // design matrix for the linear effects\n"
     )
-    str_add(out$pars) <- glue(
-      "  // spline coefficients\n",
-      "  vector[Ks{p}] bs{p};\n"
+    str_add_list(out) <- stan_prior(
+      prior, class = "b", coef = Xs_names,
+      type = glue("vector[Ks{p}]"), suffix = glue("s{p}"),
+      px = px, comment = "spline coefficients"
     )
     str_add(out$eta) <- glue(" + Xs{p} * bs{p}")
-    str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = Xs_names,
-      px = px, suffix = glue("s{p}")
-    )
   }
   for (i in seq_rows(smef)) {
     pi <- glue("{p}_{i}")
@@ -717,21 +742,27 @@ stan_sm <- function(bterms, data, prior, ...) {
     )
     str_add(out$par) <- cglue(
       "  // standarized spline coefficients\n",
-      "  vector[knots{pi}[{nb}]] zs{pi}_{nb};\n",
-      "  // standard deviations of the coefficients\n",
-      "  real<lower=0> sds{pi}_{nb};\n"
+      "  vector[knots{pi}[{nb}]] zs{pi}_{nb};\n"
     )
+    for (j in nb) {
+      str_add_list(out) <- stan_prior(
+        prior, class = "sds", coef = smef$term[i], 
+        type = glue("real<lower=0>"),
+        suffix = glue("{pi}_{j}"), px = px, 
+        comment = "standard deviations of spline coefficients"
+      ) 
+    }
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- cglue(
       "  // actual spline coefficients\n",
-      "  vector[knots{pi}[{nb}]] s{pi}_{nb}", 
-      " = sds{pi}_{nb} * zs{pi}_{nb};\n"
+      "  vector[knots{pi}[{nb}]] s{pi}_{nb};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  // compute actual spline coefficients\n",
+      "  s{pi}_{nb} = sds{pi}_{nb} * zs{pi}_{nb};\n"
     )
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(zs{pi}_{nb} | 0, 1);\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "sds", coef = smef$term[i], 
-      px = px, suffix = glue("{pi}_{nb}")
     )
     str_add(out$eta) <- cglue(
       " + Zs{pi}_{nb} * s{pi}_{nb}"
@@ -755,17 +786,15 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
       "  matrix[N{resp}, Kcs{p}] Xcs{p};  // category specific design matrix\n"
     )
     bound <- get_bound(prior, class = "b", px = px)
-    str_add(out$par) <- glue(
-      "  matrix{bound}[Kcs{p}, nthres{resp}] bcs{p};",
-      "  // category specific effects\n"
+    str_add_list(out) <- stan_prior(
+      prior, class = "b", coef = csef,
+      type = glue("matrix{bound}[Kcs{p}, nthres{resp}]"),
+      suffix = "cs", px = px, broadcast = "matrix",
+      comment = "category specific effects"
     )
     str_add(out$model_def) <- glue(
       "  // linear predictor for category specific effects\n",
       "  matrix[N{resp}, nthres{resp}] mucs{p} = Xcs{p} * bcs{p};\n"
-    ) 
-    str_add(out$prior) <- stan_prior(
-      prior, class = "b", coef = csef,
-      suffix = "cs", px = px, matrix = TRUE
     )
   }
   if (nrow(ranef)) {
@@ -800,7 +829,6 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
     str_add(out$model_comp_eta_loop) <- glue(
       "  for (n in 1:N{resp}) {{\n    ", mucs_loop, "  }\n"
     )
-   
   }
   out
 }
@@ -860,24 +888,21 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
     )
   }
   # prepare special effects coefficients
-  if (!glue("bsp{p}") %in% names(stanvars)) {
-    bound <- get_bound(prior, class = "b", px = px)
-    if (stan_use_horseshoe(bterms, prior)) {
-      str_add(out$tpar_def) <- glue(
-        "  // special effects coefficients\n", 
-        "  vector{bound}[Ksp{p}] bsp{p};\n"
-      )
-    } else {
-      str_add(out$par) <- glue(
-        "  // special effects coefficients\n", 
-        "  vector{bound}[Ksp{p}] bsp{p};\n"
-      )
-    }
+  bound <- get_bound(prior, class = "b", px = px)
+  if (stan_use_horseshoe(bterms, prior)) {
+    str_add(out$tpar_def) <- glue(
+      "  // special effects coefficients\n", 
+      "  vector{bound}[Ksp{p}] bsp{p};\n"
+    )
+  } else {
+    str_add_list(out) <- stan_prior(
+      prior, class = "b", coef = spef$coef, 
+      type = glue("vector{bound}[Ksp{p}]"),
+      px = px, suffix = glue("sp{p}"),
+      comment = "special effects coefficients"
+    )
   }
-  str_add(out$prior) <- stan_prior(
-    prior, class = "b", coef = spef$coef, 
-    px = px, suffix = glue("sp{p}")
-  )
+  
   # include special Stan code for monotonic effects
   I <- unlist(spef$Imo)
   if (length(I)) {
@@ -937,25 +962,21 @@ stan_gp <- function(bterms, data, prior, ...) {
         "  int<lower=1> NBgp{pi};\n"
       )
     } 
-    str_add(out$par) <- glue(
-      "  // GP standard deviation parameters\n",
-      "  vector<lower=0>[Kgp{pi}] sdgp{pi};\n"
+    str_add_list(out) <- stan_prior(
+      prior, class = "sdgp", coef = sfx1, 
+      type = glue("vector<lower=0>[Kgp{pi}]"),
+      px = px, suffix = pi, 
+      comment = "GP standard deviation parameters"
     )
     if (gpef$iso[i]) {
-      str_add(out$par) <- glue(
-        "  // GP length-scale parameters\n",
-        "  vector<lower=0>[1] lscale{pi}[Kgp{pi}];\n" 
-      )
+      lscale_type <- "vector<lower=0>[1]"
+      lscale_dim <- glue("[Kgp{pi}]")
+      lscale_comment <- "GP length-scale parameters"
     } else {
-      str_add(out$par) <- glue(
-        "  // GP length-scale parameters\n",
-        "  vector<lower=0>[Dgp{pi}] lscale{pi}[Kgp{pi}];\n"
-      )
+      lscale_type <- glue("vector<lower=0>[Dgp{pi}]")
+      lscale_dim <- glue("[Kgp{pi}]")
+      lscale_comment <- "GP length-scale parameters"
     }
-    str_add(out$prior) <- stan_prior(
-      prior, class = "sdgp", coef = sfx1, 
-      px = px, suffix = pi
-    )
     if (byfac) {
       J <- seq_along(cons)
       Ngp <- glue("Ngp{pi}")
@@ -970,6 +991,13 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$data) <- cglue(
         "  int<lower=1> {Igp}[{Ngp}[{J}]];\n",
         "  vector[{Ngp}[{J}]] Cgp{pi}_{J};\n"
+      )
+      str_add_list(out) <- stan_prior(
+        prior, class = "lscale", coef = sfx2, 
+        type = lscale_type, dim = lscale_dim,
+        suffix = glue("{pi}"), px = px,
+        comment = lscale_comment,
+        broadcast = "array"
       )
       if (gr) {
         str_add(out$data) <- glue(
@@ -1021,14 +1049,15 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$prior) <- cglue(
         "{tp()}normal_lpdf(zgp{pi}_{J} | 0, 1);\n"
       )
-      for (j in seq_along(cons)) {
-        str_add(out$prior) <- stan_prior(
-          prior, class = "lscale", coef = sfx2[j, ], 
-          px = px, suffix = glue("{pi}[{j}]")
-        )
-      }
     } else {
       # no by-factor variable
+      str_add_list(out) <- stan_prior(
+        prior, class = "lscale", coef = sfx2, 
+        type = lscale_type, dim = lscale_dim, 
+        suffix = glue("{pi}"), px = px,
+        comment = lscale_comment,
+        broadcast = "array"
+      )
       Nsubgp <- str_if(gr, glue("Nsubgp{pi}"), glue("N{resp}"))
       if (gr) {
         str_add(out$data) <- glue(
@@ -1076,10 +1105,6 @@ stan_gp <- function(bterms, data, prior, ...) {
       str_add(out$eta) <- glue(" + {Cgp}{gp_call}{Jgp}")
       str_add(out$prior) <- glue(
         "{tp()}normal_lpdf(zgp{pi} | 0, 1);\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "lscale", coef = sfx2, 
-        px = px, suffix = glue("{pi}[1]")
       )
     }
   }
@@ -1147,21 +1172,21 @@ stan_ac <- function(bterms, data, prior, ...) {
     if (acef_arma$p > 0) {
       # no boundaries are required in the conditional formulation
       ar_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
-      str_add(out$par) <- glue( 
-        "  vector{ar_bound}[Kar{p}] ar{p};  // autoregressive effects\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "ar", px = px, suffix = p
+      str_add_list(out) <- stan_prior(
+        prior, class = "ar", px = px, suffix = p,
+        coef = seq_along(acef_arma$p),
+        type = glue("vector{ar_bound}[Kar{p}]"),
+        comment = "autoregressive coefficients"
       )
     }
     if (acef_arma$q > 0) {
       # no boundaries are required in the conditional formulation
       ma_bound <- str_if(acef_arma$cov, "<lower=-1,upper=1>")
-      str_add(out$par) <- glue( 
-        "  vector{ma_bound}[Kma{p}] ma{p};  // moving-average effects\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "ma", px = px, suffix = p
+      str_add_list(out) <- stan_prior(
+        prior, class = "ma", px = px, suffix = p,
+        coef = seq_along(acef_arma$q),
+        type = glue("vector{ma_bound}[Kma{p}]"),
+        comment = "moving-average coefficients"
       )
     }
   }
@@ -1170,11 +1195,10 @@ stan_ac <- function(bterms, data, prior, ...) {
   if (NROW(acef_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
-    str_add(out$par) <- glue(
-      "  real<lower=0,upper=1> cosy{p};  // compound symmetry correlation\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "cosy", px = px, suffix = p
+    str_add_list(out) <- stan_prior(
+      prior, class = "cosy", px = px, suffix = p,
+      type = "real<lower=0,upper=1>",
+      comment = "compound symmetry correlation"
     )
   }
   
@@ -1226,8 +1250,11 @@ stan_ac <- function(bterms, data, prior, ...) {
         stop2(err_msg, " for non-linear models.")
       }
       str_add(out$par) <- glue(
-        "  vector[N{resp}] zerr{p};  // unscaled residuals\n",
-        "  real<lower=0> sderr{p};  // SD of residuals\n"
+        "  vector[N{resp}] zerr{p};  // unscaled residuals\n"
+      )
+      str_add_list(out) <- stan_prior(
+        prior, class = "sderr", px = px, suffix = p,
+        type = "real<lower=0>", comment = "SD of residuals"
       )
       str_add(out$tpar_def) <- glue(
         "  vector[N{resp}] err{p};  // actual residuals\n"
@@ -1239,9 +1266,6 @@ stan_ac <- function(bterms, data, prior, ...) {
       )
       str_add(out$prior) <- glue(
         "  target += normal_lpdf(zerr{p} | 0, 1);\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "sderr", px = px, suffix = p
       )
       str_add(out$eta) <- glue(" + err{p}")
     }
@@ -1262,20 +1286,16 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  real max_eigenMsar{p} = max(eigenMsar{p});\n"
     )
     if (acef_sar$type == "lag") {
-      str_add(out$par) <- glue( 
-        "  // lag-SAR correlation parameter\n",
-        "  real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}> lagsar{p};\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "lagsar", px = px, suffix = p
+      str_add_list(out) <- stan_prior(
+        prior, class = "lagsar", px = px, suffix = p,
+        type = glue("real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}>"),
+        comment = "lag-SAR correlation parameter"
       )
     } else if (acef_sar$type == "error") {
-      str_add(out$par) <- glue( 
-        "  // error-SAR correlation parameter\n",
-        "  real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}> errorsar{p};\n"
-      )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "errorsar", px = px, suffix = p
+      str_add_list(out) <- stan_prior(
+        prior, class = "errorsar", px = px, suffix = p,
+        type = glue("real<lower=min_eigenMsar{p},upper=max_eigenMsar{p}>"),
+        comment = "error-SAR correlation parameter"
       )
     }
   }
@@ -1293,11 +1313,9 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  int<lower=1> edges1{p}[Nedges{p}];\n",
       "  int<lower=1> edges2{p}[Nedges{p}];\n"
     )
-    str_add(out$par) <- glue(
-      "  real<lower=0> sdcar{p};  // SD of the CAR structure\n"
-    )
-    str_add(out$prior) <- stan_prior(
-      prior, class = "sdcar", px = px, suffix = p
+    str_add_list(out) <- stan_prior(
+      prior, class = "sdcar", px = px, suffix = p,
+      type = "real<lower=0>", comment = "SD of the CAR structure"
     )
     str_add(out$loopeta) <- glue(" + rcar{p}[Jloc{p}[n]]")
     if (acef_car$type %in% c("escar", "esicar")) {
@@ -1308,17 +1326,17 @@ stan_ac <- function(bterms, data, prior, ...) {
     }
     if (acef_car$type == "escar") {
       str_add(out$par) <- glue(
-        "  real<lower=0, upper=1> car{p};\n",
         "  vector[Nloc{p}] rcar{p};\n"
+      )
+      str_add_list(out) <- stan_prior(
+        prior, class = "car", px = px, suffix = p,
+        type = "real<lower=0, upper=1>"
       )
       car_args <- c(
         "car", "sdcar", "Nloc", "Nedges", 
         "Nneigh", "eigenMcar", "edges1", "edges2"
       )
       car_args <- paste0(car_args, p, collapse = ", ")
-      str_add(out$prior) <- stan_prior(
-        prior, class = "car", px = px, suffix = p
-      )
       str_add(out$prior) <- glue(
         "  target += sparse_car_lpdf(\n", 
         "    rcar{p} | {car_args}\n",
@@ -1353,9 +1371,14 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // parameters for the ICAR structure\n",
         "  vector[Nloc{p}] zcar{p};\n"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
         "  // scaled parameters for the ICAR structure\n",
-        "  vector[Nloc{p}] rcar{p} = zcar{p} * sdcar{p};\n"
+        "  vector[Nloc{p}] rcar{p};\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute scaled parameters for the ICAR structure\n",
+        "  rcar{p} = zcar{p} * sdcar{p};\n"
       )
       str_add(out$prior) <- glue(
         "  // improper prior on the spatial CAR component\n",
@@ -1374,16 +1397,21 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // parameters for the BYM2 structure\n",
         "  vector[Nloc{p}] zcar{p};  // spatial part\n",
         "  vector[Nloc{p}] nszcar{p};  // non-spatial part\n",
-        "  // proportion of variance in the spatial part\n",
-        "  real<lower=0,upper=1> rhocar{p};\n"
+        "  // proportion of variance in the spatial part\n"
       )
+      str_add_list(out) <- stan_prior(
+        prior, class = "rhocar", px = px, suffix = p,
+        type = "real<lower=0,upper=1>"
+      )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // join the spatial and the non-spatial CAR component\n",
-        "  vector[Nloc{p}] rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
-        " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
+        "  // scaled parameters for the BYM2 structure\n",
+        "  vector[Nloc{p}] rcar{p};\n"
       )
-      str_add(out$prior) <- stan_prior(
-        prior, class = "rhocar", px = px, suffix = p
+      str_add(out$tpar_comp) <- glue(
+        "  // join the spatial and the non-spatial CAR component\n",
+        "  rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
+        " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
       )
       str_add(out$prior) <- glue(
         "  // improper prior on the spatial BYM2 component\n",
@@ -1471,13 +1499,13 @@ stan_Xme <- function(meef, prior) {
       "  vector[{Nme}] Xn_{K};  // noisy values\n",
       "  vector<lower=0>[{Nme}] noise_{K};  // measurement noise\n"
     )
-    str_add(out$par) <- cglue(
-      "  vector[Mme_{i}] meanme_{i};  // latent means\n",
-      "  vector<lower=0>[Mme_{i}] sdme_{i};  // latent SDs\n"
+    str_add_list(out) <- stan_prior(
+      prior, "meanme", coef = coefs[K], suffix = usc(i),
+      type = glue("vector[Mme_{i}]"), comment = "latent means"
     )
-    str_add(out$prior) <- glue(
-      stan_prior(prior, "meanme", coef = coefs[K], suffix = usc(i)),
-      stan_prior(prior, "sdme", coef = coefs[K], suffix = usc(i))
+    str_add_list(out) <- stan_prior(
+      prior, "sdme", coef = coefs[K], suffix = usc(i),
+      type = glue("vector<lower=0>[Mme_{i}]"), comment = "latent SDs"
     )
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(Xn_{K} | Xme_{K}, noise_{K});\n"
@@ -1487,23 +1515,31 @@ stan_Xme <- function(meef, prior) {
         "  int<lower=1> NCme_{i};  // number of latent correlations\n"
       )
       str_add(out$par) <- glue(
-        "  matrix[Mme_{i}, {Nme}] zme_{i};  // standardized latent values\n",
-        "  // cholesky factor of the latent correlation matrix\n",
-        "  cholesky_factor_corr[Mme_{i}] Lme_{i};\n"
+        "  matrix[Mme_{i}, {Nme}] zme_{i};  // standardized latent values\n"
       )
+      str_add_list(out) <- stan_prior(
+        prior, "Lme", group = g, suffix = usc(i),
+        type = glue("cholesky_factor_corr[Mme_{i}]"),
+        comment = "cholesky factor of the latent correlation matrix"
+      )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // obtain the actual latent values\n",
-        "  matrix[{Nme}, Mme_{i}] Xme{i}", 
-        " = rep_matrix(meanme_{i}', {Nme}) ", 
+        "  matrix[{Nme}, Mme_{i}] Xme{i};  // actual latent values\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute actual latent values\n",
+        "  Xme{i} = rep_matrix(meanme_{i}', {Nme}) ", 
         " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
       )
       str_add(out$tpar_def) <- cglue(
         "  // using separate vectors increases efficiency\n",
-        "  vector[{Nme}] Xme_{K} = Xme{i}[, {K}];\n"
+        "  vector[{Nme}] Xme_{K};\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  Xme_{K} = Xme{i}[, {K}];\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n",
-        stan_prior(prior, "Lme", group = g, suffix = usc(i))
+        "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // obtain latent correlation matrix\n",
@@ -1518,10 +1554,13 @@ stan_Xme <- function(meef, prior) {
       str_add(out$par) <- cglue(
         "  vector[{Nme}] zme_{K};  // standardized latent values\n"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  // obtain the actual latent values\n",
-        "  vector[{Nme}] Xme_{K} = ",
-        "meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
+        "  vector[{Nme}] Xme_{K};  // actual latent values\n"
+      )
+      str_add(out$tpar_def) <- cglue(
+        "  // compute actual latent values\n",
+        "  Xme_{K} = meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
       )
       str_add(out$prior) <- cglue(
         "  target += normal_lpdf(zme_{K} | 0, 1);\n"
@@ -1722,7 +1761,7 @@ stan_center_X <- function(x) {
 # @param suffix optional suffix of the parameter name
 # @param family optional brmsfamily object
 # @param fixed should the parameter be fixed to a certain value?
-stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
+stan_dpar_types <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   fixed <- as_one_logical(fixed)
@@ -1740,95 +1779,94 @@ stan_dpar_defs <- function(dpar, suffix = "", family = NULL, fixed = FALSE) {
     ub <- if (!is.na(ub)) glue("upper={ub}")
     bounds <- paste0(c(lb, ub), collapse = ",")
     if (nzchar(bounds)) bounds <- glue("<{bounds}>")
-    def <- glue("  real{bounds} {dpar}{suffix};\n")
-    return(def)
+    return(glue("real{bounds}"))
   }
   if (fixed) {
     min_Y <- glue("min(Y{suffix})")
   } else {
     min_Y <- glue("min_Y{suffix}")
   }
-  default_defs <- list(
-    sigma = c(
-      "  real<lower=0> ", 
-      ";  // residual SD\n"
+  default_types <- list(
+    sigma = list(
+      type = "real<lower=0>", 
+      comment = "residual SD"
     ),
-    shape = c(
-      "  real<lower=0> ", 
-      ";  // shape parameter\n"
+    shape = list(
+      type = "real<lower=0>", 
+      comment = "shape parameter"
     ),
-    nu = c(
-      "  real<lower=1> ", 
-      ";  // degrees of freedom or shape\n"
+    nu = list(
+      type = "real<lower=1>", 
+      comment = "degrees of freedom or shape"
     ),
-    phi = c(
-      "  real<lower=0> ", 
-      ";  // precision parameter\n"
+    phi = list(
+      type = "real<lower=0>", 
+      comment = "precision parameter"
     ),
-    kappa = c(
-      "  real<lower=0> ", 
-      ";  // precision parameter\n"
+    kappa = list(
+      type = "real<lower=0>", 
+      comment = "precision parameter"
     ),
-    beta = c(
-      "  real<lower=0> ", 
-      ";  // scale parameter\n"
+    beta = list(
+      type = "real<lower=0>", 
+      comment = "scale parameter"
     ),
-    zi = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // zero-inflation probability\n"
+    zi = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "zero-inflation probability"
     ), 
-    hu = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // hurdle probability\n"
+    hu = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "hurdle probability"
     ),
-    zoi = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // zero-one-inflation probability\n"
+    zoi = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "zero-one-inflation probability"
     ), 
-    coi = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // conditional one-inflation probability\n"
+    coi = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "conditional one-inflation probability"
     ),
-    bs = c(
-      "  real<lower=0> ", 
-      ";  // boundary separation parameter\n"
+    bs = list(
+      type = "real<lower=0>", 
+      comment = "boundary separation parameter"
     ),
-    ndt = c(
-      glue("  real<lower=0,upper={min_Y}> "), 
-      ";  // non-decision time parameter\n"
+    ndt = list(
+      type = glue("real<lower=0,upper={min_Y}>"), 
+      comment = "non-decision time parameter"
     ),
-    bias = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // initial bias parameter\n"
+    bias = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "initial bias parameter"
     ),
-    disc = c(
-      "  real<lower=0> ", 
-      ";  // discrimination parameters\n"
+    disc = list(
+      type = "real<lower=0>", 
+      comment = "discrimination parameters"
     ),
-    quantile = c(
-      "  real<lower=0,upper=1> ", 
-      ";  // quantile parameter\n"
+    quantile = list(
+      type = "real<lower=0,upper=1>", 
+      comment = "quantile parameter"
     ),
-    xi = c(
-      "  real ", 
-      ";  // shape parameter\n"
+    xi = list(
+      type = "real", 
+      comment = "shape parameter"
     ),
-    alpha = c(
-      "  real ",
-      ";  // skewness parameter\n"
+    alpha = list(
+      type = "real",
+      comment = "skewness parameter"
     )
   )
-  def <- default_defs[[dpar_class(dpar)]]
-  if (!is.null(def)) {
-    def <- paste0(def[1], dpar, suffix, def[2])
-  } else {
-    def <- ""
+  out <- ""
+  types <- default_types[[dpar_class(dpar)]]
+  if (!is.null(types)) {
+    out <- types$type
+    attr(out, "comment") <- types$comment
   }
-  def
+  out
 }
 
 # default Stan definitions for temporary distributional parameters
-stan_dpar_defs_tmp <- function(dpar, suffix = "", family = NULL) {
+stan_dpar_tmp_types <- function(dpar, suffix = "", family = NULL) {
   dpar <- as_one_character(dpar)
   suffix <- as_one_character(suffix)
   if (is.mixfamily(family)) {
@@ -1837,19 +1875,19 @@ stan_dpar_defs_tmp <- function(dpar, suffix = "", family = NULL) {
   if (is.customfamily(family)) {
     return("")  # no temporary parameters in custom families
   }
-  default_defs <- list(
-    xi = c(
-      "  real tmp_", 
-      ";  // unscaled shape parameter\n"
+  default_types <- list(
+    xi = list(
+      type = "real", 
+      comment = "unscaled shape parameter"
     )
   )
-  def <- default_defs[[dpar_class(dpar)]]
-  if (!is.null(def)) {
-    def <- paste0(def[1], dpar, suffix, def[2])
-  } else {
-    def <- ""
+  out <- ""
+  types <- default_types[[dpar_class(dpar)]]
+  if (!is.null(types)) {
+    out <- types$type
+    attr(out, "comment") <- types$comment
   }
-  def
+  out
 }
 
 # Stan code for transformations of distributional parameters

@@ -216,3 +216,13 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   }
   out
 }
+
+# prepare a string to be used as comment in Stan
+stan_comment <- function(comment, wsp = 2) {
+  comment <- as.character(comment)
+  wsp <- wsp(nsp = wsp)
+  if (!length(comment)) {
+    return(character(0))
+  }
+  ifelse(nzchar(comment), paste0(wsp, "// ", comment), "")
+}

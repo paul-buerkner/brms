@@ -2,6 +2,7 @@
 
 ### New Features
 
+* Fix parameters to constants via the `prior` argument. (#783)
 * Specify autocorrelation terms directly in the model formula. (#708)
 * Estimate `sigma` in combination with fixed correlation matrices
 via autocorrelation term `fcor`.
