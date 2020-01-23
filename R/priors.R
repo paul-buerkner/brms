@@ -992,6 +992,7 @@ prior_ac <- function(bterms, def_scale_prior, ...) {
 def_dprior <- function(x, dpar, data = NULL) {
   stopifnot(is.brmsterms(x))
   dpar <- as_one_character(dpar)
+  resp <- usc(x$resp)
   dpar_class <- dpar_class(dpar, family = x)
   link <- x$dpars[[dpar]]$family$link
   if (is.null(link)) {
@@ -1014,7 +1015,7 @@ def_dprior <- function(x, dpar, data = NULL) {
       zoi = "beta(1, 1)",
       coi = "beta(1, 1)",
       bs = "gamma(1, 1)", 
-      ndt = "uniform(0, min_Y)", 
+      ndt = glue("uniform(0, min_Y{resp})"), 
       bias = "beta(1, 1)", 
       quantile = "beta(1, 1)",
       xi = "normal(0, 2.5)",
@@ -1548,8 +1549,10 @@ rcols_prior <- function() {
 # upper and lower bounds for parameter classes
 # @param par name of a distributional parameter
 # @param bound optional Stan code of boundaries to extract values from 
+# @param resp optional name of the response variable
 # @return A named list with elements 'lb and 'ub'
-par_bounds <- function(par, bound = "") {
+par_bounds <- function(par, bound = "", resp = "") {
+  resp <- usc(resp)
   out <- switch(par,
     sigma = list(lb = 0, ub = Inf),
     shape = list(lb = 0, ub = Inf),
@@ -1562,7 +1565,7 @@ par_bounds <- function(par, bound = "") {
     zoi = list(lb = 0, ub = 1),
     coi = list(lb = 0, ub = 1),
     bs = list(lb = 0, ub = Inf),
-    ndt = list(lb = 0, ub = "min_Y"), 
+    ndt = list(lb = 0, ub = glue("min_Y{resp}")), 
     bias = list(lb = 0, ub = 1), 
     disc = list(lb = 0, ub = Inf),
     quantile = list(lb = 0, ub = 1),

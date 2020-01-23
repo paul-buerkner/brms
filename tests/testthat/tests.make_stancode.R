@@ -1044,6 +1044,12 @@ test_that("Stan code of response times models is correct", {
   
   scode <- make_stancode(count | cens(cens) ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lcdf(Y[n] - ndt | mu[n], sigma)")
+  
+  # test issue #837
+  scode <- make_stancode(mvbind(count, zBase) ~ Trt, data = dat,
+                         family = shifted_lognormal())
+  expect_match2(scode, "target += uniform_lpdf(ndt_count | 0, min_Y_count)")
+  expect_match2(scode, "target += uniform_lpdf(ndt_zBase | 0, min_Y_zBase)")
 })
 
 test_that("Stan code of wiener diffusion models is correct", {

@@ -82,7 +82,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     str_add_list(out) <- stan_coef_prior(
       prior, par = par, coef = coef, px = px,
       base_prior = base_prior, bound = bound,
-      broadcast = broadcast
+      broadcast = broadcast, resp = px$resp[1]
     )
   } else if (nzchar(base_prior)) {
     ncoef <- length(coef)
@@ -95,7 +95,8 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     } else {
       base_target_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, 
-        broadcast = broadcast, bound = bound
+        broadcast = broadcast, bound = bound,
+        resp = px$resp[1]
       )
       str_add(out$prior) <- paste0(tp(), base_target_prior, ";\n")
     }
@@ -199,7 +200,7 @@ stan_base_prior <- function(prior) {
 # @param ... arguments silently ignored in this function
 # @return a character string defining the prior in Stan language
 stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
-                              bound = "", ...) {
+                              bound = "", resp = "", ...) {
   prior <- gsub("[[:space:]]+\\(", "(", prior)
   prior_name <- get_matches(
     "^[^\\(]+(?=\\()", prior, perl = TRUE, simplify = FALSE
@@ -221,7 +222,7 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   
   out <- glue("{prior_name}_lpdf({par} | {prior_args}")
   par_class <- unique(get_matches("^[^_]+", par))
-  par_bound <- par_bounds(par_class, bound)
+  par_bound <- par_bounds(par_class, bound, resp = resp)
   prior_bound <- prior_bounds(prior_name)
   trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
   trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
