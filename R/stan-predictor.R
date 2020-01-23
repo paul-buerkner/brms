@@ -632,12 +632,10 @@ stan_re <- function(ranef, prior, ...) {
         rdef <- glue(
           "as_matrix(kronecker(Lcov_{id},", 
           " diag_pre_multiply(sd_{id}, L_{id})) *",
-          " to_vector(z_{id}), N_{id}, M_{id});\n"
+          " to_vector(z_{id}), N_{id}, M_{id})"
         )
       } else {
-        rdef <- glue(
-          "(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})';\n"
-        )
+        rdef <- glue("(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})'")
       }
       # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
