@@ -38,11 +38,11 @@ empty_prior()
 (i.e. population-level effects). 
 See 'Details' for other valid parameter classes.}
 
-\item{coef}{Name of the (population- or group-level) parameter.}
+\item{coef}{Name of the coefficient within the parameter class.}
 
-\item{group}{Grouping factor of group-level parameters.}
+\item{group}{Grouping factor for group-level parameters.}
 
-\item{resp}{Name of the response variable / category.
+\item{resp}{Name of the response variable.
 Only used in multivariate models.}
 
 \item{dpar}{Name of a distributional parameter.
@@ -69,7 +69,7 @@ An object of class \code{brmsprior} to be used in the \code{prior}
   argument of \code{\link{brm}}.
 }
 \description{
-Define priors for specific parameters or classes of parameters
+Define priors for specific parameters or classes of parameters.
 }
 \details{
 \code{set_prior} is used to define prior distributions for parameters 
@@ -209,8 +209,8 @@ Define priors for specific parameters or classes of parameters
   
   If there is more than one group-level effect per grouping factor, 
   the correlations between those effects have to be estimated. 
-  The prior \code{"lkj_corr_cholesky(eta)"} or in short 
-  \code{"lkj(eta)"} with \code{eta > 0} 
+  The prior \code{lkj_corr_cholesky(eta)} or in short 
+  \code{lkj(eta)} with \code{eta > 0} 
   is essentially the only prior for (Cholesky factors) of correlation matrices. 
   If \code{eta = 1} (the default) all correlations matrices 
   are equally likely a priori. If \code{eta > 1}, extreme correlations 
@@ -303,11 +303,11 @@ Define priors for specific parameters or classes of parameters
   in the same way as the group-level standard deviations.
   Further, family \code{student} needs the parameter 
   \code{nu} representing the degrees of freedom of students-t distribution. 
-  By default, \code{nu} has prior \code{"gamma(2, 0.1)"}
+  By default, \code{nu} has prior \code{gamma(2, 0.1)}
   and a fixed lower bound of \code{1}.
   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
   \code{negbinomial} need a \code{shape} parameter that has a 
-  \code{"gamma(0.01, 0.01)"} prior by default. 
+  \code{gamma(0.01, 0.01)} prior by default. 
   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
   and \code{acat}, and only if \code{threshold = "equidistant"}, 
   the parameter \code{delta} is used to model the distance between 
@@ -315,18 +315,24 @@ Define priors for specific parameters or classes of parameters
   By default, \code{delta} has an improper flat prior over the reals.
   The \code{von_mises} family needs the parameter \code{kappa}, representing
   the concentration parameter. By default, \code{kappa} has prior 
-  \code{"gamma(2, 0.01)"}. \cr
+  \code{gamma(2, 0.01)}. \cr
   Every family specific parameter has its own prior class, so that
   \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
   All of these priors are chosen to be weakly informative,
   having only minimal influence on the estimations,
   while improving convergence and sampling efficiency.
+  
+  Fixing parameters to constants is possible by using the \code{constant}
+  function, for example, \code{constant(1)} to fix a parameter to 1.
+  Broadcasting to vectors and matrices is done automatically.
+  A limitation of the current implementation is that the same parameter
+  vector cannot contain estimated and fixed values at the same time,
+  but this will be possible in the future.
 
-  Often, it may not be immediately clear, 
-  which parameters are present in the model.
-  To get a full list of parameters and parameter classes for which 
-  priors can be specified (depending on the model) 
-  use function \code{\link{get_prior}}.
+  Often, it may not be immediately clear, which parameters are present in the
+  model. To get a full list of parameters and parameter classes for which
+  priors can be specified (depending on the model) use function
+  \code{\link{get_prior}}.
 }
 \section{Functions}{
 \itemize{
@@ -350,32 +356,34 @@ specify arguments as strings.
 identical(prior1, prior2)
 identical(prior1, prior3)
 
-## check which parameters can have priors
+# check which parameters can have priors
 get_prior(rating ~ treat + period + carry + (1|subject),
           data = inhaler, family = cumulative())
          
-## define some priors          
-prior <- c(prior_string("normal(0,10)", class = "b"),
-           prior(normal(1,2), class = b, coef = treat),
-           prior_(~cauchy(0,2), class = ~sd, 
-                  group = ~subject, coef = ~Intercept))
+# define some priors          
+bprior <- c(prior_string("normal(0,10)", class = "b"),
+            prior(normal(1,2), class = b, coef = treat),
+            prior_(~cauchy(0,2), class = ~sd, 
+                   group = ~subject, coef = ~Intercept))
               
-## verify that the priors indeed found their way into Stan's model code
+# verify that the priors indeed found their way into Stan's model code
 make_stancode(rating ~ treat + period + carry + (1|subject),
               data = inhaler, family = cumulative(),
-              prior = prior)
+              prior = bprior)
               
-## use the horseshoe prior to model sparsity in population-level effects
+# use the horseshoe prior to model sparsity in regression coefficients
 make_stancode(count ~ zAge + zBase * Trt,
               data = epilepsy, family = poisson(),
               prior = set_prior("horseshoe(3)"))
               
-## alternatively use the lasso prior
-make_stancode(count ~ zAge + zBase * Trt,
-              data = epilepsy, family = poisson(),
-              prior = set_prior("lasso(1)"))
+# fix certain priors to constants
+bprior <- prior(constant(1), class = "b") +
+  prior(constant(2), class = "b", coef = "zBase") +
+  prior(constant(0.5), class = "sd")
+make_stancode(count ~ zAge + zBase + (1 | patient),
+              data = epilepsy, prior = bprior)
 
-## pass priors to Stan without checking
+# pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 make_stancode(count ~ Trt, data = epilepsy, prior = prior)
 
