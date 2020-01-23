@@ -539,8 +539,8 @@ stan_re <- function(ranef, prior, ...) {
   }
   if (has_ccov) {
     str_add(out$data) <- glue(
-      "  // cholesky factor of known covariance matrix\n",
-      "  matrix[N_{id}, N_{id}] Lcov_{id};\n"
+      "  matrix[N_{id}, N_{id}] Lcov_{id};",
+      "  // cholesky factor of known covariance matrix\n"
     )
   }
   J <- seq_rows(r)
@@ -611,10 +611,11 @@ stan_re <- function(ranef, prior, ...) {
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
       str_add(out$tpar_comp) <- glue(
+        "  // compute actual group-level effects",
         "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$gen_def) <- cglue(
-        "  // group-level correlations\n",
+        "  // compute group-level correlations\n",
         "  corr_matrix[M_{id}] Cor_{id}_{Nby}",
         " = multiply_lower_tri_self_transpose(L_{id}[{Nby}]);\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id}_{Nby};\n"
@@ -646,7 +647,7 @@ stan_re <- function(ranef, prior, ...) {
         "  r_{id} = {dfm}{rdef};\n"
       )
       str_add(out$gen_def) <- glue(
-        "  // group-level correlations\n",
+        "  // compute group-level correlations\n",
         "  corr_matrix[M_{id}] Cor_{id}",
         " = multiply_lower_tri_self_transpose(L_{id});\n",
         "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
@@ -667,8 +668,8 @@ stan_re <- function(ranef, prior, ...) {
   } else {
     # single or uncorrelated group-level effects
     str_add(out$par) <- glue(
-      "  // standardized group-level effects\n",
-      "  vector[N_{id}] z_{id}[M_{id}];\n"
+      "  vector[N_{id}] z_{id}[M_{id}];",
+      "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(z_{id}[{seq_rows(r)}] | 0, 1);\n"
