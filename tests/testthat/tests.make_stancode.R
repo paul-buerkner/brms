@@ -229,6 +229,57 @@ test_that("special shrinkage priors appear in the Stan code", {
                "Setting boundaries on coefficients is not allowed")
 })
 
+test_that("priors can be fixed to constants", {
+  dat <- data.frame(y = 1:12, x1 = rnorm(12), x2 = rnorm(12), 
+                    g = rep(1:6, each = 2), h = factor(rep(1:2, each = 6)))
+  
+  prior <- prior(constant(3), coef = x1) +
+    prior(constant(-1), coef = x2) +
+    prior(constant(10), Intercept) + 
+    prior(constant(1), sd, group = g) + 
+    prior(constant(2), sd, group = g, coef = x1) +
+    prior(constant(0.3), sigma)
+  scode <- make_stancode(y ~ x1*x2 + (x1*x2 | g), dat, prior = prior)
+  expect_match2(scode, "b[1] = 3;")
+  expect_match2(scode, "b[2] = -1;")
+  expect_match2(scode, "Intercept = 1")
+  expect_match2(scode, "sd_1[1] = 1;")
+  expect_match2(scode, "sd_1[2] = 2;")
+  expect_match2(scode, "sigma = 0.3;")
+  
+  prior <- prior(constant(3))
+  scode <- make_stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
+                         prior = prior)
+  expect_match2(scode, "b = rep_vector(3, rows(b));")
+  expect_match2(scode, "bcs = rep_matrix(3, rows(bcs), cols(bcs));")
+  
+  prior <- prior(constant(3)) +
+    prior(constant(-1), coef = g)
+  scode <- make_stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
+                         prior = prior)
+  expect_match2(scode, "b = rep_vector(3, rows(b));")
+  expect_match2(scode, "bcs[1] = rep_row_vector(-1, cols(bcs[1]));")
+  
+  prior <- prior(constant(3), class = "sd", group = "g") +
+    prior("constant([[1, 0], [0, 1]])", class = "cor")
+  scode <- make_stancode(y ~ x1 + (x1 | gr(g, by = h)), dat, prior = prior)
+  expect_match2(scode, "sd_1 = rep_matrix(3, rows(sd_1), cols(sd_1));")
+  expect_match2(scode, "L_1[2] = [[1, 0], [0, 1]];")
+  
+  prior <- prior(constant(0.5), class = lscale, coef = gpx1h1) +
+    prior(constant(1), class = lscale, coef = gpx1h2)
+  scode <- make_stancode(y ~ gp(x1, by = h), dat, prior = prior)
+  expect_match2(scode, "lscale_1[1][1] = 0.5;")
+  expect_match2(scode, "lscale_1[2][1] = 1;")
+  
+  # test error messages
+  prior <- prior(normal(0, 1)) + prior(constant(3), coef = x1)
+  expect_error(
+    make_stancode(y ~ x1 + x2, data = dat, prior = prior),
+    "you can either estimate or fix all values"
+  )
+})
+
 test_that("link functions appear in the Stan code", {
   dat <- data.frame(y = 1:10, x = rnorm(10))
   expect_match2(make_stancode(y ~ s(x), dat, family = poisson()), 

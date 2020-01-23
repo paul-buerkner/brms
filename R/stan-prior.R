@@ -81,7 +81,8 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     # array broadcasting is done by setting priors on each coefficient
     str_add_list(out) <- stan_coef_prior(
       prior, par = par, coef = coef, px = px,
-      base_prior = base_prior, bound = bound
+      base_prior = base_prior, bound = bound,
+      broadcast = broadcast
     )
   } else if (nzchar(base_prior)) {
     ncoef <- length(coef)
@@ -213,7 +214,7 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   for (i in seq_along(prior)) {
     prior_args[i] <- sub(glue("^{prior_name[i]}\\("), "", prior[i])
   }
-  if (broadcast == "matrix") {
+  if (broadcast == "matrix" && ncoef > 0) {
     # apply a scalar prior to all elements of a matrix 
     par <- glue("to_vector({par})")
   }
@@ -258,11 +259,19 @@ stan_constant_prior <- function(prior, par, ncoef = 0,
                                 broadcast = "vector", ...) {
   stopifnot(grepl("^constant\\(", prior))
   prior_args <- gsub("(^constant\\()|(\\)$)", "", prior)
-  if (ncoef > 0) {
-    if (broadcast == "vector") {
+  if (broadcast == "vector") {
+    if (ncoef > 0) {
+      # broadcast the scalar prior on the whole parameter vector
       prior_args <- glue("rep_vector({prior_args}, rows({par}))")
-    } else if (broadcast == "matrix") {
+    }
+    # no action required for individual coefficients of vectors
+  } else if (broadcast == "matrix") {
+    if (ncoef > 0) {
+      # broadcast the scalar prior on the whole parameter matrix 
       prior_args <- glue("rep_matrix({prior_args}, rows({par}), cols({par}))")
+    } else {
+      # single coefficient is a row in the parameter matrix
+      prior_args <- glue("rep_row_vector({prior_args}, cols({par}))")
     }
   }
   glue("  {par} = {prior_args}")

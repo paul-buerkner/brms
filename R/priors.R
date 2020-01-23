@@ -1192,14 +1192,16 @@ check_prior_content <- function(prior, warn = TRUE) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
       } else if (prior$class[i] %in% cormat_pars) {
-        if (nzchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
+        regex <- "^((lkj)|(constant))"
+        if (nzchar(prior$prior[i]) && !grepl(regex, prior$prior[i])) {
           stop2(
             "The only supported prior for correlation matrices is ", 
             "the 'lkj' prior. See help(set_prior) for more details."
           )
         }
       } else if (prior$class[i] %in% c("simo", "theta")) {
-        if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
+        regex <- "^((dirichlet)|(constant))\\("
+        if (nchar(prior$prior[i]) && !grepl(regex, prior$prior[i])) {
           stop2(
             "Currently 'dirichlet' is the only valid prior for ", 
             "simplex parameters. See help(set_prior) for more details."
