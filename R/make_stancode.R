@@ -124,8 +124,12 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$tpar_def,
       scode_Xme$tpar_def,
       collapse_stanvars(stanvars, block = "tparameters"),
+      scode_predictor$tpar_prior,
+      scode_ranef$tpar_prior,
+      scode_Xme$tpar_prior,
       scode_predictor$tpar_comp,
       scode_ranef$tpar_comp,
+      scode_Xme$tpar_comp,
     "}\n"
   )
   # generate model block

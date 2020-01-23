@@ -545,7 +545,7 @@ test_that("Stan code for multivariate models is correct", {
   bprior <- prior(normal(0, 5), resp = y1) +
     prior(normal(0, 10), resp = y2)
   scode <- make_stancode(bform, dat, prior = bprior)
-  expect_match2(scode, "vector[N_1] r_1_y2_3 = r_1[, 3]")
+  expect_match2(scode, "r_1_y2_3 = r_1[, 3]")
   expect_match2(scode, "err_y1[n] = Y_y1[n] - mu_y1[n]")
   expect_match2(scode, "target += normal_lccdf(Y_y1[n] | mu_y1[n], sigma_y1)")
   expect_match2(scode, "target += skew_normal_lpdf(Y_y2 | mu_y2, omega_y2, alpha_y2)")
@@ -760,7 +760,7 @@ test_that("Stan code of ordinal models is correct", {
     bf(y ~ 1, mu1 ~ x1, mu2 ~ 1), data = dat, 
     family = mixture(cumulative(), nmix = 2, order = "mu")
   )
-  expect_match2(scode, "ordered[nthres] Intercept_mu2 = fixed_Intercept;")
+  expect_match2(scode, "Intercept_mu2 = fixed_Intercept;")
   expect_match2(scode, "target += student_t_lpdf(fixed_Intercept | 3, 0, 10);")
 })
 
@@ -1205,7 +1205,7 @@ test_that("noise-free terms appear in the Stan code", {
   scode <- make_stancode(mvbind(y, z) ~ me(x, xsd), dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
-  expect_match2(scode, "vector[N] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
+  expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
   
   # noise-free terms with grouping factors
   bform <- bf(y ~ me(x, xsd, ID) + (me(x, xsd, ID) | ID))
@@ -1215,7 +1215,7 @@ test_that("noise-free terms appear in the Stan code", {
   
   bform <- bform + set_mecor(FALSE)
   scode <- make_stancode(bform, dat)
-  expect_match2(scode, "vector[Nme_1] Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
+  expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
 })
 
 test_that("Stan code of multi-membership models is correct", {
@@ -1689,7 +1689,7 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
   expect_match2(scode, "target += normal_lpdf(sum(zcar) | 0, 0.001 * Nloc)")
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
-  expect_match2(scode, "vector[Nloc] rcar = zcar * sdcar")
+  expect_match2(scode, "rcar = zcar * sdcar")
   
   scode <- make_stancode(y ~ x + car(W, type = "bym2"), dat)
   expect_match2(scode, "target += -0.5 * dot_self(zcar[edges1] - zcar[edges2])")
@@ -1697,7 +1697,7 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "mu[n] += rcar[Jloc[n]]")
   expect_match2(scode, "target += beta_lpdf(rhocar | 1, 1)")
   expect_match2(scode, paste0(
-    "vector[Nloc] rcar = (sqrt(1 - rhocar) * nszcar + ", 
+    "rcar = (sqrt(1 - rhocar) * nszcar + ", 
     "sqrt(rhocar * inv(car_scale)) * zcar) * sdcar"
   ))
   
@@ -1947,7 +1947,7 @@ test_that("likelihood of distributional beta models is correct", {
 
 test_that("student-t group-level effects work without errors", {
   scode <- make_stancode(count ~ Trt + (1|gr(patient, dist = "st")), epilepsy)
-  expect_match2(scode, "vector[N_1] dfm_1 = sqrt(df_1 * udf_1);")
+  expect_match2(scode, "dfm_1 = sqrt(df_1 * udf_1);")
   expect_match2(scode, "dfm_1 .* (sd_1[1] * (z_1[1]));")
   expect_match2(scode, "target += gamma_lpdf(df_1 | 2, 0.1);")
   expect_match2(scode, "target += inv_chi_square_lpdf(udf_1 | df_1);")

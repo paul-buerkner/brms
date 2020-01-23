@@ -479,8 +479,12 @@ stan_re <- function(ranef, prior, ...) {
       str_add(out$prior) <- glue(
         "  target += inv_chi_square_lpdf(udf{g} | df{g});\n"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  vector[N_{id}] dfm{g} = sqrt(df{g} * udf{g});\n"
+        "  vector[N_{id}] dfm{g};\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  dfm{g} = sqrt(df{g} * udf{g});\n"
       )
     }
   }
@@ -602,10 +606,12 @@ stan_re <- function(ranef, prior, ...) {
         comment = "cholesky factor of correlation matrix",
         broadcast = "array"
       ) 
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // actual group-level effects\n",
-        "  matrix[N_{id}, M_{id}] r_{id}", 
-        " = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
+        "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // group-level correlations\n",
@@ -633,9 +639,13 @@ stan_re <- function(ranef, prior, ...) {
           "(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})';\n"
         )
       }
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // actual group-level effects\n",
-        "  matrix[N_{id}, M_{id}] r_{id} = {dfm}{rdef}"
+        "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute actual group-level effects\n",
+        "  r_{id} = {dfm}{rdef};\n"
       )
       str_add(out$gen_def) <- glue(
         "  // group-level correlations\n",
@@ -647,10 +657,14 @@ stan_re <- function(ranef, prior, ...) {
         cor = glue("cor_{id}"), ncol = glue("M_{id}")
       )
     }
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- 
       "  // using vectors speeds up indexing in loops\n"
     str_add(out$tpar_def) <- cglue(
-      "  vector[N_{id}] r_{idp}_{r$cn} = r_{id}[, {J}];\n"
+      "  vector[N_{id}] r_{idp}_{r$cn};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  r_{idp}_{r$cn} = r_{id}[, {J}];\n"
     )
   } else {
     # single or uncorrelated group-level effects
@@ -661,20 +675,25 @@ stan_re <- function(ranef, prior, ...) {
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(z_{id}[{seq_rows(r)}] | 0, 1);\n"
     )
-    str_add(out$tpar_def) <- "  // actual group-level effects\n" 
     Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
       dfm <- glue("dfm_{tr$ggn[1]} .* ")
     }
     if (has_by) {
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
+        "  vector[N_{id}] r_{idp}_{r$cn};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  r_{idp}_{r$cn} = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
       )
     } else {
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  vector[N_{id}] r_{idp}_{r$cn}",
-        " = {dfm}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
+        "  vector[N_{id}] r_{idp}_{r$cn};  // actual group-level effects\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  r_{idp}_{r$cn} = {dfm}(sd_{id}[{J}] * ({Lcov}z_{id}[{J}]));\n"
       )
     }
   }
@@ -733,10 +752,14 @@ stan_sm <- function(bterms, data, prior, ...) {
         comment = "standard deviations of spline coefficients"
       ) 
     }
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- cglue(
       "  // actual spline coefficients\n",
-      "  vector[knots{pi}[{nb}]] s{pi}_{nb}", 
-      " = sds{pi}_{nb} * zs{pi}_{nb};\n"
+      "  vector[knots{pi}[{nb}]] s{pi}_{nb};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  // compute actual spline coefficients\n",
+      "  s{pi}_{nb} = sds{pi}_{nb} * zs{pi}_{nb};\n"
     )
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(zs{pi}_{nb} | 0, 1);\n"
@@ -1348,9 +1371,14 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // parameters for the ICAR structure\n",
         "  vector[Nloc{p}] zcar{p};\n"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
         "  // scaled parameters for the ICAR structure\n",
-        "  vector[Nloc{p}] rcar{p} = zcar{p} * sdcar{p};\n"
+        "  vector[Nloc{p}] rcar{p};\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute scaled parameters for the ICAR structure\n",
+        "  rcar{p} = zcar{p} * sdcar{p};\n"
       )
       str_add(out$prior) <- glue(
         "  // improper prior on the spatial CAR component\n",
@@ -1375,9 +1403,14 @@ stan_ac <- function(bterms, data, prior, ...) {
         prior, class = "rhocar", px = px, suffix = p,
         type = "real<lower=0,upper=1>"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
+        "  // scaled parameters for the BYM2 structure\n",
+        "  vector[Nloc{p}] rcar{p};\n"
+      )
+      str_add(out$tpar_comp) <- glue(
         "  // join the spatial and the non-spatial CAR component\n",
-        "  vector[Nloc{p}] rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
+        "  rcar{p} = (sqrt(1 - rhocar{p}) * nszcar{p}", 
         " + sqrt(rhocar{p} * inv(car_scale{p})) * zcar{p}) * sdcar{p};\n"
       )
       str_add(out$prior) <- glue(
@@ -1489,15 +1522,21 @@ stan_Xme <- function(meef, prior) {
         type = glue("cholesky_factor_corr[Mme_{i}]"),
         comment = "cholesky factor of the latent correlation matrix"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
-        "  // obtain the actual latent values\n",
-        "  matrix[{Nme}, Mme_{i}] Xme{i}", 
-        " = rep_matrix(meanme_{i}', {Nme}) ", 
+        "  matrix[{Nme}, Mme_{i}] Xme{i};  // actual latent values\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  // compute actual latent values\n",
+        "  Xme{i} = rep_matrix(meanme_{i}', {Nme}) ", 
         " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
       )
       str_add(out$tpar_def) <- cglue(
         "  // using separate vectors increases efficiency\n",
-        "  vector[{Nme}] Xme_{K} = Xme{i}[, {K}];\n"
+        "  vector[{Nme}] Xme_{K};\n"
+      )
+      str_add(out$tpar_comp) <- cglue(
+        "  Xme_{K} = Xme{i}[, {K}];\n"
       )
       str_add(out$prior) <- glue(
         "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n"
@@ -1515,10 +1554,13 @@ stan_Xme <- function(meef, prior) {
       str_add(out$par) <- cglue(
         "  vector[{Nme}] zme_{K};  // standardized latent values\n"
       )
+      # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- cglue(
-        "  // obtain the actual latent values\n",
-        "  vector[{Nme}] Xme_{K} = ",
-        "meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
+        "  vector[{Nme}] Xme_{K};  // actual latent values\n"
+      )
+      str_add(out$tpar_def) <- cglue(
+        "  // compute actual latent values\n",
+        "  Xme_{K} = meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
       )
       str_add(out$prior) <- cglue(
         "  target += normal_lpdf(zme_{K} | 0, 1);\n"

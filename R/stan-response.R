@@ -223,9 +223,14 @@ stan_thres <- function(bterms, data, prior, ...) {
     if (has_equidistant_thres(family)) {
       stop2("Cannot use equidistant and fixed thresholds at the same time.")
     }
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- cglue(
+      "  // ordinal thresholds\n",
+      "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
       "  // fix thresholds across ordinal mixture components\n",
-      "  {type}[nthres{resp}{grb}] Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
+      "  Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
     )
   } else {
     if (has_equidistant_thres(family)) {
@@ -360,6 +365,7 @@ stan_mixture <- function(bterms, data, prior) {
     )
     str_add(out$model_comp_mix) <- "  }\n"
   } else if (length(theta_fix)) {
+    # fix mixture proportions
     if (length(theta_fix) != nmix) {
       stop2("Can only fix no or all mixing proportions.")
     }
@@ -368,6 +374,7 @@ stan_mixture <- function(bterms, data, prior) {
       "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
     )
   } else {
+    # estimate mixture proportions
     str_add(out$data) <- glue(
       "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
     )
@@ -377,9 +384,13 @@ stan_mixture <- function(bterms, data, prior) {
     str_add(out$prior) <- glue(
       "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
     )
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"
     str_add(out$tpar_def) <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
+      "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
     )
   }
   if (order_intercepts(bterms)) {

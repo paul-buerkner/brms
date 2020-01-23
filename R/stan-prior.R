@@ -91,7 +91,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         base_prior, par = par, ncoef = ncoef, 
         broadcast = broadcast
       )
-      str_add(out$tpar_comp) <- paste0(base_constant_prior, ";\n")
+      str_add(out$tpar_prior) <- paste0(base_constant_prior, ";\n")
     } else {
       base_target_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, 
@@ -152,7 +152,7 @@ stan_coef_prior <- function(prior, par, coef, px, base_prior = "", ...) {
         par_ij <- paste0(par, index)
         if (stan_is_constant_prior(coef_prior)) {
           coef_prior <- stan_constant_prior(coef_prior, par_ij, ...)
-          str_add(out$tpar_comp) <- paste0(coef_prior, ";\n")
+          str_add(out$tpar_prior) <- paste0(coef_prior, ";\n")
         } else {
           coef_prior <- stan_target_prior(coef_prior, par_ij, ...)
           str_add(out$prior) <- paste0(tp(), coef_prior, ";\n") 
@@ -160,7 +160,7 @@ stan_coef_prior <- function(prior, par, coef, px, base_prior = "", ...) {
       }
     }
   }
-  if (isTRUE(nzchar(out$prior)) && isTRUE(nzchar(out$tpar_comp))) {
+  if (isTRUE(nzchar(out$prior)) && isTRUE(nzchar(out$tpar_prior))) {
     stop2("Currently, you can either estimate or fix all values of a ",
           "parameter vector of class '", prior$class[1], "'.' ",  
           "Combining both will be possible in the future.")
@@ -361,7 +361,7 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
       hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
     )
-    str_add(out$tpar_comp) <- glue(
+    str_add(out$tpar_prior) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
