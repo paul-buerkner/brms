@@ -899,14 +899,14 @@ test_that("ordinal model with grouped thresholds works correctly", {
 })
 
 test_that("Fixing parameters to constants works correctly", {
-  bprior <- prior(constant(1), class = "b") +
+  bprior <- prior(normal(0, 1), class = "b") +
     prior(constant(2), class = "b", coef = "zBase") +
     prior(constant(0.5), class = "sd")
   
   fit <- brm(count ~ zAge + zBase + (1 | patient),
              data = epilepsy, prior = bprior)
   print(summary(fit))
-  expect_range(waic(fit)$estimates[3, 1], 1800, 1850)
+  expect_range(waic(fit)$estimates[3, 1], 1790, 1840)
   ce <- conditional_effects(fit)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
 })

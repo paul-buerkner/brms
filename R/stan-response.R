@@ -211,6 +211,7 @@ stan_thres <- function(bterms, data, prior, ...) {
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   type <- str_if(has_ordered_thres(family), "ordered", "vector")
+  coef_type <- str_if(has_ordered_thres(family), "", "real")
   gr <- grb <- ""
   groups <- get_thres_groups(bterms)
   if (has_thres_groups(bterms)) {
@@ -265,7 +266,7 @@ stan_thres <- function(bterms, data, prior, ...) {
           prior, class = "Intercept", group = groups[i], 
           coef = get_thres(bterms, group = groups[i]), 
           type = glue("{type}[nthres{resp}{grb[i]}]"),
-          px = px, suffix = glue("{p}{gr[i]}"),
+          coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
           comment = "temporary thresholds for centered predictors"
         )
       }
@@ -410,11 +411,13 @@ stan_mixture <- function(bterms, data, prior) {
       grb <- paste0("[", seq_along(groups), "]")
     }
     type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
+    coef_type <- str_if(has_ordered_thres(bterms), "", "real")
     for (i in seq_along(groups)) {
       str_add_list(out) <- stan_prior(
-        prior, class = "Intercept", px = px,  
+        prior, class = "Intercept", 
         coef = get_thres(bterms, group = groups[i]), 
-        type = glue("{type}[nthres{p}{grb[i]}]"),
+        type = glue("{type}[nthres{p}{grb[i]}]"), 
+        coef_type = coef_type, px = px, 
         prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
         comment = "thresholds fixed over mixture components"
       )

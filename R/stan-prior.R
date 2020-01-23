@@ -11,14 +11,22 @@
 # @param dim stan array dimension to be specified after the parameter name
 #   cannot be merged with 'suffix' as the latter should apply to 
 #   individual coefficients while 'dim' should not
+#   TODO: decide whether to support arrays for parameters at all
+#   an alternative would be to specify elements directly as parameters
+# @param coef_type Stan type used in the definition of individual parameter
+#   coefficients; only relevant when mixing estimated and fixed coefficients
 # @param prefix a prefix to put at the parameter class
 # @param suffix a suffix to put at the parameter class
 # @param broadcast Stan type to which the prior should be broadcasted 
 #   in order to handle vectorized prior statements
+#   supported values are 'vector' or 'matrix'
+# @param comment character string containing a comment for the parameter
+# @param px list or data.frame after which to subset 'prior'
 # @return a named list of character strings in Stan language
 stan_prior <- function(prior, class, coef = NULL, group = NULL, 
-                       type = "real", dim = "", prefix = "", suffix = "", 
-                       broadcast = "vector", comment = "", px = list()) {
+                       type = "real", dim = "", coef_type = "real",
+                       prefix = "", suffix = "", broadcast = "vector", 
+                       comment = "", px = list()) {
   prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
@@ -77,12 +85,13 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   }
 
   has_coef_prior <- any(with(prior, nzchar(coef) & nzchar(prior)))
-  if (has_coef_prior || broadcast == "array" && length(coef)) {
-    # array broadcasting is done by setting priors on each coefficient
+  if (has_coef_prior || nzchar(dim) && length(coef)) {
+    # priors are always set on individual coefficients of arrays
     str_add_list(out) <- stan_coef_prior(
       prior, par = par, coef = coef, px = px,
       base_prior = base_prior, bound = bound,
-      broadcast = broadcast, resp = px$resp[1]
+      coef_type = coef_type, broadcast = broadcast, 
+      resp = px$resp[1]
     )
   } else if (nzchar(base_prior)) {
     ncoef <- length(coef)
@@ -118,28 +127,30 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
 # @param base_prior stan code for the default global prior of the class
 # @param ... further arguments passed to the underlying functions
 # @return a named list of character strings in Stan language
-stan_coef_prior <- function(prior, par, coef, px, base_prior = "", ...) {
+stan_coef_prior <- function(prior, par, coef, px, base_prior = "",
+                            coef_type = "real", ...) {
   stopifnot(is.brmsprior(prior))
   stopifnot(length(unique(prior$class)) == 1L)
   par <- as_one_character(par)
   base_prior <- as_one_character(base_prior)
+  coef_type <- as_one_character(coef_type)
   stopifnot(length(coef) > 0L)
   index_two_dims <- is.matrix(coef)
   coef <- as.matrix(coef)
   prior <- subset2(prior, coef = coef, ls = px)
   
-  out <- list()
+  out <- estimated_coef_indices <- list()
   for (i in seq_rows(coef)) {
     for (j in seq_cols(coef)) {
-      index <- glue("[{i}]")
+      index <- i
       if (index_two_dims) {
-        str_add(index) <- glue("[{j}]")
+        c(index) <- j
       }
       prior_ij <- subset2(prior, coef = coef[i, j])
       if (NROW(px) > 1L) {
-        # TODO: find a better solution to handle this case
         # disambiguate priors of coefficients with the same name
         # coming from different model components
+        stopifnot(NROW(px) == NROW(coef))
         prior_ij <- subset2(prior_ij, ls = px[i, ])
       }
       # zero rows can happen if only global priors present
@@ -150,11 +161,12 @@ stan_coef_prior <- function(prior, par, coef, px, base_prior = "", ...) {
       }
       if (nzchar(coef_prior)) {
         # implies a proper prior or constant
-        par_ij <- paste0(par, index)
+        par_ij <- paste0(par, collapse("[", index, "]"))
         if (stan_is_constant_prior(coef_prior)) {
           coef_prior <- stan_constant_prior(coef_prior, par_ij, ...)
           str_add(out$tpar_prior) <- paste0(coef_prior, ";\n")
         } else {
+          c(estimated_coef_indices) <- list(index)
           coef_prior <- stan_target_prior(coef_prior, par_ij, ...)
           str_add(out$prior) <- paste0(tp(), coef_prior, ";\n") 
         }
@@ -162,9 +174,21 @@ stan_coef_prior <- function(prior, par, coef, px, base_prior = "", ...) {
     }
   }
   if (isTRUE(nzchar(out$prior)) && isTRUE(nzchar(out$tpar_prior))) {
-    stop2("Currently, you can either estimate or fix all values of a ",
-          "parameter vector of class '", prior$class[1], "'.' ",  
-          "Combining both will be possible in the future.")
+    # both estimated and fixed parameter values are present
+    if (!nzchar(coef_type)) {
+      stop2("Can either estimate or fix all values of parameter '", par, "'.")
+    }
+    for (i in seq_along(estimated_coef_indices)) {
+      index <- estimated_coef_indices[[i]]
+      iu <- paste0(index, collapse = "_")
+      str_add(out$par) <- glue(
+        "  {coef_type} par_{par}_{iu};\n"
+      )
+      ib <- collapse("[", index, "]")
+      str_add(out$tpar_prior) <- cglue(
+        "  {par}{ib} = par_{par}_{iu};\n"
+      ) 
+    }
   }
   out
 }

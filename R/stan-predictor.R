@@ -147,14 +147,14 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       dp_tmp_type <- stan_dpar_tmp_types(dp, resp, family = x$family)
       if (nzchar(dp_tmp_type)) {
         # distributional parameter has a temporary definition
-        dp_comment <- stan_comment(attr(dp_tmp_type, "comment"))
+        dp_comment <- attr(dp_tmp_type, "comment")
         str_add_list(out) <- stan_prior(
           prior, dp, type = dp_tmp_type, prefix = "tmp_", 
           suffix = resp, px = px, comment = dp_comment
         )
       } else if (nzchar(dp_type)) {
         # distributional parameter has a regular definition
-        dp_comment <- stan_comment(attr(dp_type, "comment"))
+        dp_comment <- attr(dp_type, "comment")
         str_add_list(out) <- stan_prior(
           prior, dp, type = dp_type, suffix = resp, 
           px = px, comment = dp_comment
@@ -332,6 +332,7 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
     # prepare population-level coefficients
     b_bound <- get_bound(prior, class = "b", px = px)
     b_type <- glue("vector{b_bound}[K{ct}{p}]")
+    b_coef_type <- glue("real{b_bound}")
     use_horseshoe <- stan_use_horseshoe(bterms, prior)
     if (decomp == "none") {
       b_suffix <- ""
@@ -340,8 +341,8 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
         str_add(out$tpar_def) <- glue("  {b_type} b{p};  // {b_comment}\n")
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "b", type = b_type, 
-          coef = fixef, px = px, suffix = p,
+          prior, class = "b", coef = fixef, type = b_type, 
+          coef_type = b_coef_type, px = px, suffix = p,
           comment = b_comment
         )
       }
@@ -356,8 +357,9 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
         str_add(out$tpar_def) <- glue("  {b_type} bQ{p};  // {b_comment}\n")
       } else {
         str_add_list(out) <- stan_prior(
-          prior, class = "b", type = b_type, coef = fixef, 
-          px = px, suffix = glue("Q{p}"), comment = b_comment
+          prior, class = "b", coef = fixef, type = b_type,
+          coef_type = b_coef_type, px = px, suffix = glue("Q{p}"), 
+          comment = b_comment
         )
       }
       str_add(out$gen_def) <- glue(
@@ -564,6 +566,7 @@ stan_re <- function(ranef, prior, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "sd", group = r$group[1], coef = r$coef,
       type = glue("matrix<lower=0>[M_{id}, Nby_{id}]"),
+      coef_type = glue("row_vector<lower=0>[Nby_{id}]"),
       suffix = glue("_{id}"), px = px, broadcast = "matrix",
       comment = "group-level standard deviations"
     )
@@ -571,6 +574,7 @@ stan_re <- function(ranef, prior, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "sd", group = r$group[1], coef = r$coef,
       type = glue("vector<lower=0>[M_{id}]"), 
+      coef_type = "real<lower=0>",
       suffix = glue("_{id}"), px = px, 
       comment = "group-level standard deviations"
     )
@@ -601,10 +605,10 @@ stan_re <- function(ranef, prior, ...) {
       }
       str_add_list(out) <- stan_prior(
         prior, class = "L", group = r$group[1], coef = Nby, 
-        type = glue("cholesky_factor_corr[M_{id}]"), 
+        type = glue("cholesky_factor_corr[M_{id}]"),
+        coef_type = glue("cholesky_factor_corr[M_{id}]"),
         suffix = glue("_{id}"), dim = glue("[Nby_{id}]"), 
-        comment = "cholesky factor of correlation matrix",
-        broadcast = "array"
+        comment = "cholesky factor of correlation matrix"
       ) 
       # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
@@ -719,8 +723,9 @@ stan_sm <- function(bterms, data, prior, ...) {
     )
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = Xs_names,
-      type = glue("vector[Ks{p}]"), suffix = glue("s{p}"),
-      px = px, comment = "spline coefficients"
+      type = glue("vector[Ks{p}]"), 
+      suffix = glue("s{p}"), px = px, 
+      comment = "spline coefficients"
     )
     str_add(out$eta) <- glue(" + Xs{p} * bs{p}")
   }
@@ -746,7 +751,7 @@ stan_sm <- function(bterms, data, prior, ...) {
     for (j in nb) {
       str_add_list(out) <- stan_prior(
         prior, class = "sds", coef = smef$term[i], 
-        type = glue("real<lower=0>"),
+        type = "real<lower=0>", coef_type = "real<lower=0>",
         suffix = glue("{pi}_{j}"), px = px, 
         comment = "standard deviations of spline coefficients"
       ) 
@@ -788,6 +793,7 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = csef,
       type = glue("matrix{bound}[Kcs{p}, nthres{resp}]"),
+      coef_type = glue("row_vector{bound}[nthres{resp}]"),
       suffix = "cs", px = px, broadcast = "matrix",
       comment = "category specific effects"
     )
@@ -897,6 +903,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "b", coef = spef$coef, 
       type = glue("vector{bound}[Ksp{p}]"),
+      coef_type = glue("real{bound}"),
       px = px, suffix = glue("sp{p}"),
       comment = "special effects coefficients"
     )
@@ -964,7 +971,7 @@ stan_gp <- function(bterms, data, prior, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "sdgp", coef = sfx1, 
       type = glue("vector<lower=0>[Kgp{pi}]"),
-      px = px, suffix = pi, 
+      coef_type = "real<lower=0>", px = px, suffix = pi, 
       comment = "GP standard deviation parameters"
     )
     if (gpef$iso[i]) {
@@ -993,10 +1000,9 @@ stan_gp <- function(bterms, data, prior, ...) {
       )
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2, 
-        type = lscale_type, dim = lscale_dim,
-        suffix = glue("{pi}"), px = px,
-        comment = lscale_comment,
-        broadcast = "array"
+        type = lscale_type, coef_type = "real<lower=0>",
+        dim = lscale_dim, suffix = glue("{pi}"), px = px,
+        comment = lscale_comment
       )
       if (gr) {
         str_add(out$data) <- glue(
@@ -1052,10 +1058,9 @@ stan_gp <- function(bterms, data, prior, ...) {
       # no by-factor variable
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2, 
-        type = lscale_type, dim = lscale_dim, 
-        suffix = glue("{pi}"), px = px,
-        comment = lscale_comment,
-        broadcast = "array"
+        type = lscale_type, coef_type = "real<lower=0>",
+        dim = lscale_dim, suffix = glue("{pi}"), px = px,
+        comment = lscale_comment
       )
       Nsubgp <- str_if(gr, glue("Nsubgp{pi}"), glue("N{resp}"))
       if (gr) {
@@ -1175,6 +1180,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         prior, class = "ar", px = px, suffix = p,
         coef = seq_along(acef_arma$p),
         type = glue("vector{ar_bound}[Kar{p}]"),
+        coef_type = glue("real{ar_bound}"),
         comment = "autoregressive coefficients"
       )
     }
@@ -1185,6 +1191,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         prior, class = "ma", px = px, suffix = p,
         coef = seq_along(acef_arma$q),
         type = glue("vector{ma_bound}[Kma{p}]"),
+        coef_type = glue("real{ma_bound}"),
         comment = "moving-average coefficients"
       )
     }
@@ -1504,7 +1511,8 @@ stan_Xme <- function(meef, prior) {
     )
     str_add_list(out) <- stan_prior(
       prior, "sdme", coef = coefs[K], suffix = usc(i),
-      type = glue("vector<lower=0>[Mme_{i}]"), comment = "latent SDs"
+      type = glue("vector<lower=0>[Mme_{i}]"), 
+      coef_type = "real<lower=0>", comment = "latent SDs"
     )
     str_add(out$prior) <- cglue(
       "  target += normal_lpdf(Xn_{K} | Xme_{K}, noise_{K});\n"
