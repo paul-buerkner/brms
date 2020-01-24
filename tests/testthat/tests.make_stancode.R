@@ -1639,6 +1639,14 @@ test_that("Stan code for Gaussian processes is correct", {
   )
   expect_match2(scode, "target += gamma_lpdf(lscale_a_1[3][1] | 2, 2);")
   expect_match2(scode, "target += normal_lpdf(zgp_a_1_3 | 0, 1);")
+  
+  # test warnings 
+  prior <- prior(normal(0, 1), lscale)
+  expect_warning(
+    make_stancode(y ~ gp(x1), data = dat, prior = prior),
+    "The global prior 'normal(0, 1)' of class 'lscale' will not be used",
+    fixed = TRUE
+  )
 })
 
 test_that("Stan code for SAR models is correct", {

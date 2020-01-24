@@ -791,7 +791,7 @@ prior_gp <- function(bterms, data, def_scale_prior, ...) {
     prior <- prior +
       brmsprior(class = "sdgp", prior = def_scale_prior, ls = px) +
       brmsprior(class = "sdgp", coef = unlist(gpef$sfx1), ls = px) +
-      brmsprior(class = "lscale", prior = "normal(0, 0.5)", ls = px) +
+      brmsprior(class = "lscale", ls = px) +
       brmsprior(class = "lscale", prior = lscale_prior, 
                 coef = names(lscale_prior), ls = px)
   }
@@ -818,13 +818,13 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
       c(0, 0), .opt_fun, lb = lb, ub = ub,
       control = list(allowSingular = TRUE)
     )
-    str <- ""
+    prior <- "normal(0, 0.5)"
     if (opt_res$termcd %in% 1:2) {
       # use the inverse-gamma prior only in case of convergence
       pars <- exp(opt_res$x)
-      str <- paste0("inv_gamma(", sargs(round(pars, 6)), ")") 
+      prior <- paste0("inv_gamma(", sargs(round(pars, 6)), ")") 
     }
-    return(str)
+    return(prior)
   }
   p <- usc(combine_prefix(bterms))
   gpef <- tidy_gpef(bterms, data)
@@ -1146,6 +1146,22 @@ check_prior <- function(prior, formula, data,
   prior <- c(all_priors, prior, replace = TRUE)
   prior <- check_prior_special(prior, bterms = bterms, data = data)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
+  # check and warn about valid but unused priors
+  for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
+    ls <- prior[i, c("class", "group", "resp", "dpar", "nlpar")]
+    class(ls) <- "data.frame"
+    prior_sub_coef <- subset2(prior, ls = ls)
+    prior_sub_coef <- prior_sub_coef[nzchar(prior_sub_coef$coef), ]
+    if (nrow(prior_sub_coef) && all(nzchar(prior_sub_coef$prior))) {
+      warning2(
+        "The global prior '", prior$prior[i], "' of class '", prior$class[i], 
+        "' will not be used in the model as all related coefficients have ", 
+        "individual priors already. If you did not set those ",
+        "priors yourself, then maybe brms has assigned default priors. ",
+        "See ?set_prior and ?get_prior for more details."
+      )
+    }
+  }
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
