@@ -957,8 +957,8 @@ stan_gp <- function(bterms, data, prior, ...) {
     sfx2 <- gpef$sfx2[[i]]
     str_add(out$data) <- glue(
       "  // data related to GPs\n",
+      "  int<lower=1> Kgp{pi};", 
       "  // number of sub-GPs (equal to 1 unless 'by' was used)\n",
-      "  int<lower=1> Kgp{pi};\n",
       "  int<lower=1> Dgp{pi};  // GP dimension\n"
     )
     if (!isNA(k)) {
@@ -1079,20 +1079,17 @@ stan_gp <- function(bterms, data, prior, ...) {
           "  vector[Dgp{pi}] slambda{pi}[NBgp{pi}];\n"
         )
         str_add(out$par) <- glue(
-          "  // latent variables of the GP\n",
-          "  vector[NBgp{pi}] zgp{pi};\n"
+          "  vector[NBgp{pi}] zgp{pi};  // latent variables of the GP\n"
         )
         gp_call <- glue(
           "gpa(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi}, slambda{pi})"
         )
       } else {
         str_add(out$data) <- glue(
-          "  // covariates of the GP\n",
-          "  vector[Dgp{pi}] Xgp{pi}[{Nsubgp}];\n"
+          "  vector[Dgp{pi}] Xgp{pi}[{Nsubgp}];  // covariates of the GP\n"
         ) 
         str_add(out$par) <- glue(
-          "  // latent variables of the GP\n",
-          "  vector[{Nsubgp}] zgp{pi};\n"
+          "  vector[{Nsubgp}] zgp{pi};  // latent variables of the GP\n"
         )
         gp_call <- glue(
           "gp(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi})"
