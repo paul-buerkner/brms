@@ -77,7 +77,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 data_predictor.btnl <- function(x, data, data2 = list(), 
                                 old_sdata = NULL, ...) {
   out <- list()
-  c(out) <- data_nlc(x, data)
+  c(out) <- data_cnl(x, data)
   c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
   out
 }
@@ -772,7 +772,7 @@ data_offset <- function(bterms, data) {
 # data for covariates in non-linear models
 # @param x a btnl object
 # @return a named list of data passed to Stan
-data_nlc <- function(bterms, data) {
+data_cnl <- function(bterms, data) {
   stopifnot(is.btnl(bterms))
   out <- list()
   covars <- all.vars(bterms$covars)
@@ -782,7 +782,7 @@ data_nlc <- function(bterms, data) {
   p <- usc(combine_prefix(bterms))
   for (i in seq_along(covars)) {
     cvalues <- get(covars[i], data)
-    if (is.factor(cvalues)) {
+    if (is_like_factor(cvalues)) {
       # need to apply factor contrasts
       cform <- str2formula(covars[i])
       cvalues <- get_model_matrix(cform, data, cols2remove = "(Intercept)")

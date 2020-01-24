@@ -49,12 +49,12 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = c("", ""), ...) {
   if (length(covars)) {
     p <- usc(combine_prefix(x))
     new_covars <- rep(NA, length(covars))
-    data_nlc <- data_nlc(x, data)
+    data_cnl <- data_cnl(x, data)
     str_add(out$data) <- glue( 
       "  // covariate vectors for non-linear functions\n"
     )
     for (i in seq_along(covars)) {
-      is_integer <- is.integer(data_nlc[[glue("C{p}_{i}")]])
+      is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
       pfx_type <- str_if(is_integer, "int", glue("vector[N{resp}]"))
       sfx_type <- str_if(is_integer, glue("[N{resp}]"), "")
       str_add(out$data) <- glue(
