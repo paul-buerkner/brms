@@ -4,6 +4,8 @@
 
 * Fix parameters to constants via the `prior` argument. (#783)
 * Specify autocorrelation terms directly in the model formula. (#708)
+* Translate integer covariates in non-linear formulas to integer
+arrays in Stan.
 * Estimate `sigma` in combination with fixed correlation matrices
 via autocorrelation term `fcor`.
 * Use argument `data2` in `brm` and related functions to pass

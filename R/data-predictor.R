@@ -77,17 +77,7 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 data_predictor.btnl <- function(x, data, data2 = list(), 
                                 old_sdata = NULL, ...) {
   out <- list()
-  C <- get_model_matrix(x$covars, data = data)
-  if (length(all.vars(x$covars)) != NCOL(C)) {
-    stop2("Factors with more than two levels are not allowed as covariates.")
-  }
-  # fixes issue #127 occuring for factorial covariates
-  colnames(C) <- all.vars(x$covars)
-  p <- usc(combine_prefix(x))
-  if (NCOL(C)) {
-    out[[paste0("KC", p)]] <- NCOL(C)
-    out[[paste0("C", p)]] <- C
-  }
+  c(out) <- data_nlc(x, data)
   c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
   out
 }
@@ -775,6 +765,33 @@ data_offset <- function(bterms, data) {
       offset <- rep(offset, nrow(data))
     }
     out[[paste0("offset", p)]] <- as.array(offset)
+  }
+  out
+}
+
+# data for covariates in non-linear models
+# @param x a btnl object
+# @return a named list of data passed to Stan
+data_nlc <- function(bterms, data) {
+  stopifnot(is.btnl(bterms))
+  out <- list()
+  covars <- all.vars(bterms$covars)
+  if (!length(covars)) {
+    return(out)
+  }
+  p <- usc(combine_prefix(bterms))
+  for (i in seq_along(covars)) {
+    cvalues <- get(covars[i], data)
+    if (is.factor(cvalues)) {
+      # need to apply factor contrasts
+      cform <- str2formula(covars[i])
+      cvalues <- get_model_matrix(cform, data, cols2remove = "(Intercept)")
+      if (NCOL(cvalues) > 1) {
+        stop2("Factors with more than two levels are not allowed as covariates.")
+      }
+      cvalues <- cvalues[, 1]
+    }
+    out[[paste0("C", p, "_", i)]] <- cvalues
   }
   out
 }

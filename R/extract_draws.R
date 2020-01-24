@@ -199,10 +199,11 @@ extract_draws.btnl <- function(x, samples, sdata, ...) {
   )
   class(draws) <- "bdrawsnl"
   p <- usc(combine_prefix(x))
-  C <- sdata[[paste0("C", p)]]
-  for (cov in colnames(C)) {
-    dim <- c(nrow(samples), nrow(C))
-    draws$C[[cov]] <- as_draws_matrix(C[, cov], dim = dim)
+  covars <- all.vars(x$covars)
+  dim <- c(draws$nsamples, draws$nobs)
+  for (i in seq_along(covars)) {
+    cvalues <- sdata[[paste0("C", p, "_", i)]]
+    draws$C[[covars[i]]] <- as_draws_matrix(cvalues, dim = dim)
   }
   draws
 }

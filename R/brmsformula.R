@@ -382,6 +382,12 @@
 #'   non-linear parameters (provided that the resulting model is still 
 #'   scientifically reasonable). 
 #'   
+#'   By default, non-linear covariates are treated as real vectors in Stan.
+#'   However, if the data of the covariates is of type `integer` in \R (which
+#'   can be enforced by the `as.integer` function), the Stan type will be
+#'   changed to an integer array. That way, covariates can also be used
+#'   for indexing purposes in Stan.
+#'   
 #'   Non-linear models may not be uniquely identified and / or show bad convergence.
 #'   For this reason it is mandatory to specify priors on the non-linear parameters.
 #'   For instructions on how to do that, see \code{\link{set_prior}}.

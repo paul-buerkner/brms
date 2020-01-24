@@ -35,7 +35,7 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
 # @param names of the non-linear parameters
 # @param ilink character vector of length 2 defining the link to be applied
 #' @export
-stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
+stan_predictor.btnl <- function(x, data, nlpars, ilink = c("", ""), ...) {
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -44,20 +44,24 @@ stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
   n <- str_if(x$loop, "[n] ", " ")
   new_nlpars <- glue(" nlp{usc(x$resp)}_{nlpars}{n}")
   # covariates in the non-linear model
-  covars <- wsp(all.vars(rhs(x$covars)))
+  covars <- all.vars(x$covars)
   new_covars <- NULL
   if (length(covars)) {
     p <- usc(combine_prefix(x))
-    str_add(out$data) <- glue(
-      "  int<lower=1> KC{p};  // number of covariates\n",
-      "  matrix[N{resp}, KC{p}] C{p};  // matrix of covariates\n"
+    new_covars <- rep(NA, length(covars))
+    data_nlc <- data_nlc(x, data)
+    str_add(out$data) <- glue( 
+      "  // covariate vectors for non-linear functions\n"
     )
-    kc <- seq_along(covars)
-    str_add(out$tdata_def) <- glue( 
-      "  // extract covariate vectors for faster indexing\n",
-      cglue("  vector[N{resp}] C{p}_{kc} = C{p}[, {kc}];\n")
-    )
-    new_covars <- glue(" C{p}_{kc}{n}")
+    for (i in seq_along(covars)) {
+      is_integer <- is.integer(data_nlc[[glue("C{p}_{i}")]])
+      pfx_type <- str_if(is_integer, "int", glue("vector[N{resp}]"))
+      sfx_type <- str_if(is_integer, glue("[N{resp}]"), "")
+      str_add(out$data) <- glue(
+        "  {pfx_type} C{p}_{i}{sfx_type};\n"
+      )
+      new_covars[i] <- glue(" C{p}_{i}{n}")
+    }
   }
   # add whitespaces to be able to replace parameters and covariates
   syms <- c(
@@ -68,7 +72,7 @@ stan_predictor.btnl <- function(x, nlpars, ilink = c("", ""), ...) {
   out$eta <- rm_wsp(collapse(deparse(x$formula[[2]])))
   out$eta <- wsp(rename(out$eta, regex, wsp(syms), fixed = FALSE, perl = TRUE)) 
   out$eta <- rename(out$eta, 
-    c(wsp(nlpars), covars, " ( ", " ) "), 
+    c(wsp(nlpars), wsp(covars), " ( ", " ) "), 
     c(new_nlpars, new_covars, "(", ")")
   )
   str_add_list(out) <- stan_rate(x, loop = x$loop)
