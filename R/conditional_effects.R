@@ -729,7 +729,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
   trial_vars <- all_vars(bterms$adforms$trials)
   trial_vars <- trial_vars[!vars_specified(trial_vars, conditions)]
   if (length(trial_vars)) {
-    message("Setting the number of trials to 1 by ", 
+    message("Setting all 'trials' variables to 1 by ", 
             "default if not specified otherwise.")
     req_vars <- setdiff(req_vars, trial_vars)
     for (v in trial_vars) {
