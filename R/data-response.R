@@ -502,7 +502,7 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
 # @param data user specified data
 # @return a vector of category names
 extract_cat_names <- function(x, data) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x), has_cat(x))
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
   respform <- validate_resp_formula(x$formula)
   mr <- model.response(model.frame(respform, data))
   if (has_multicol(x)) {

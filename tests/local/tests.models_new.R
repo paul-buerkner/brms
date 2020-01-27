@@ -185,10 +185,14 @@ test_that("categorical models work correctly", {
   expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
   expect_equal(dim(fitted(fit2, scale = "linear")),
                c(nobs(fit2), 4, ncat - 1))
+  
   # tests with new data
   newd <- inhaler[1:10, ]
   newd$rating <- NULL
   expect_equal(dim(predict(fit2, newdata = newd)), c(10, ncat))
+  
+  ce <- conditional_effects(fit2, categorical = TRUE)
+  expect_ggplot(plot(ce, plot = FALSE)[[1]])
 })
 
 test_that("bridgesampling methods work correctly", {
@@ -817,6 +821,7 @@ test_that("multinomial models work correctly", {
   print(summary(fit))
   pred <- predict(fit)
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
   waic <- waic(fit)
   expect_range(waic$estimates[3, 1], 550, 600)
   ce <- conditional_effects(fit, categorical = TRUE)
@@ -836,6 +841,7 @@ test_that("dirichlet models work correctly", {
   expect_output(print(fit), "muy2 = logit")
   pred <- predict(fit)
   expect_equal(dim(pred), c(nobs(fit), 4, 3))
+  expect_equal(dimnames(pred)[[3]], c("y1", "y2", "y3"))
   waic <- waic(fit)
   expect_range(waic$estimates[3, 1], -530, -500)
   ce <- conditional_effects(fit, categorical = TRUE)

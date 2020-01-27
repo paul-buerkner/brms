@@ -144,6 +144,12 @@ restructure_v2 <- function(x) {
     # if multiple IDs are used for the same grouping factor (#835)
     x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
   }
+  if (version <= "2.11.4") {
+    # 'cats' is stored inside ordinal families again
+    if (is_ordinal(x$formula)) {
+      x$formula <- SW(validate_formula(x$formula, data = x$data))
+    }
+  }
   x
 }
 

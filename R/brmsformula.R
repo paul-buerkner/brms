@@ -1276,6 +1276,10 @@ validate_formula.brmsformula <- function(
       # for easy access of thresholds
       out$family$thres <- extract_thres_names(out, data)  
     }
+    if (is.null(get_cats(out)) && !is.null(data)) {
+      # for easy access of response categories (#838)
+      out$family$cats <- extract_cat_names(out, data)
+    }
     if (is.mixfamily(out$family)) {
       # every mixture family needs to know about response categories
       for (i in seq_along(out$family$mix)) {

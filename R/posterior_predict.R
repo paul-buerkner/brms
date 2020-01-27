@@ -136,7 +136,7 @@ posterior_predict.brmsdraws <- function(object, transform = NULL, sort = FALSE,
   } else if (has_multicol(object$family)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
-    dimnames(out)[[3]] <- object$data$cats
+    dimnames(out)[[3]] <- object$cats
   } else {
     out <- do_call(cbind, out) 
   }
@@ -151,7 +151,7 @@ posterior_predict.brmsdraws <- function(object, transform = NULL, sort = FALSE,
   if (!is.null(transform)) {
     out <- do_call(transform, list(out))
   }
-  attr(out, "levels") <- object$data$cats
+  attr(out, "levels") <- object$cats
   summary <- as_one_logical(summary)
   if (summary) {
     # only for compatibility with the 'predict' method

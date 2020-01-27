@@ -182,6 +182,8 @@ extract_draws.brmsterms <- function(x, samples, sdata, data, ...) {
       draws$bhaz <- extract_draws_bhaz(x$dpars$mu, samples, sdata, ...)
     }
   }
+  # response category names for categorical and ordinal models
+  draws$cats <- get_cats(x)
   # only include those autocor samples on the top-level 
   # of draws which imply covariance matrices on natural residuals
   draws$ac <- extract_draws_ac(x$dpars$mu, samples, sdata, nat_cov = TRUE, ...)
@@ -824,9 +826,6 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   if (length(stanvars)) {
     stopifnot(is.character(stanvars))
     draws[stanvars] <- sdata[stanvars]
-  }
-  if (has_cat(bterms)) {
-    draws$cats <- get_cats(bterms)
   }
   draws
 }

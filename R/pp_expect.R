@@ -475,7 +475,7 @@ pp_expect_categorical <- function(draws) {
   cats <- seq_len(draws$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$data$cats
+  dimnames(out)[[3]] <- draws$cats
   out
 }
 
@@ -489,7 +489,7 @@ pp_expect_multinomial <- function(draws) {
   trials <- draws$data$trials
   out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$data$cats
+  dimnames(out)[[3]] <- draws$cats
   out
 }
 
@@ -503,7 +503,7 @@ pp_expect_dirichlet <- function(draws) {
   cats <- seq_len(draws$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$data$cats
+  dimnames(out)[[3]] <- draws$cats
   out
 }
 
