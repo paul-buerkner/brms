@@ -293,8 +293,8 @@ posterior_linpred.brmsfit <- function(
   scale <- "linear"
   transform <- as_one_logical(transform)
   if (transform) {
-    warning2("posterior_linpred(transform = TRUE) is deprecated.",
-             "Please use pp_expect() instead.")
+    warning2("posterior_linpred(transform = TRUE) is deprecated. Please ",
+             "use pp_expect() instead, without the 'transform' argument.")
     scale <- "response"
   }
   contains_samples(object)
