@@ -251,14 +251,17 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' Posterior Samples of the Linear Predictor
 #' 
-#' Compute posterior samples of the linear predictor, This method is an alias of
-#' \code{\link{pp_expect.brmsfit}} with \code{scale = "linear"}.
+#' Compute posterior samples of the linear predictor, that is samples before
+#' applying any link functions or other transformations. Can be performed for
+#' the data used to fit the model (posterior predictive checks) or for new data.
 #' 
 #' @inheritParams pp_expect.brmsfit
 #' @param object An object of class \code{brmsfit}.
-#' @param transform Logical; alias of \code{scale}.
-#'  If \code{TRUE}, \code{scale} is set to \code{"response"}.
-#'  If \code{FALSE}, \code{scale} is set to \code{"linear"}. 
+#' @param transform (Deprecated) Logical; if \code{FALSE}
+#'  (the default), samples of the linear predictor are returned.
+#'  If \code{TRUE}, samples of transformed linear predictor,
+#'  that is, the mean of the posterior predictive distribution
+#'  are returned instead (see \code{\link{pp_expect}} for details).
 #'  Only implemented for compatibility with the 
 #'  \code{\link[rstantools:posterior_linpred]{posterior_linpred}}
 #'  generic. 
