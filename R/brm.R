@@ -413,8 +413,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
-      bterms, data = x$data, ranef = x$ranef, 
-      save_ranef = save_ranef, save_mevars = save_mevars,
+      x, save_ranef = save_ranef, 
+      save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
     x$model <- make_stancode(
