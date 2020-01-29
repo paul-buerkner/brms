@@ -178,9 +178,10 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
-    mi_respvars <- parse_resp(x$respform, check_names = FALSE)
+    mi_respcall <- parse_resp(x$respform, check_names = FALSE)
+    mi_respvars <- all_vars(mi_respcall)
     mi_advars <- all_vars(x$adforms$mi)
-    out <- unique(c(mi_respvars, mi_advars))
+    out <- unique(c(mi_respcall, mi_respvars, mi_advars))
   } else {
     out <- character(0)
   }

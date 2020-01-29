@@ -522,7 +522,7 @@ test_that("make_standata handles missing value terms", {
   
   dat$z <- rbeta(10, 1, 1)
   dat$z[miss] <- NA
-  bform <- bf(y ~ mi(z)*g) + bf(z | mi() ~ g, family = Beta()) + 
+  bform <- bf(exp(y) ~ mi(z)*g) + bf(z | mi() ~ g, family = Beta()) + 
     set_rescor(FALSE)
   sdata <- make_standata(bform, dat)
   expect_equal(sdata$Jmi_z, as.array(miss))
