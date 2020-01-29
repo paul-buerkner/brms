@@ -225,12 +225,13 @@ stan_thres <- function(bterms, data, prior, ...) {
       stop2("Cannot use equidistant and fixed thresholds at the same time.")
     }
     # separate definition from computation to support fixed parameters
+    str_add(out$tpar_def) <- "  // ordinal thresholds\n"
     str_add(out$tpar_def) <- cglue(
-      "  // ordinal thresholds\n",
       "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
     )
+    str_add(out$tpar_comp) <- 
+      "  // fix thresholds across ordinal mixture components\n"
     str_add(out$tpar_comp) <- cglue(
-      "  // fix thresholds across ordinal mixture components\n",
       "  Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
     )
   } else {
@@ -249,12 +250,14 @@ stan_thres <- function(bterms, data, prior, ...) {
           comment = "distance between thresholds"
         )
       }
+      str_add(out$tpar_def) <- 
+        "  // temporary thresholds for centered predictors\n"
       str_add(out$tpar_def) <- cglue(
-        "  // temporary thresholds for centered predictors\n",
         "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
       )
+      str_add(out$tpar_comp) <- 
+        "  // compute equidistant thresholds\n"
       str_add(out$tpar_comp) <- cglue(
-        "  // compute equidistant thresholds\n",
         "  for (k in 1:(nthres{resp}{grb})) {{\n",
         "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}", 
         " + (k - 1.0) * delta{p}{gr};\n",
@@ -290,8 +293,8 @@ stan_thres <- function(bterms, data, prior, ...) {
     # both implies adding <mean_X, b> to the temporary intercept
     sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
   }
-  str_add(out$gen_def) <- glue(
-    "  // compute actual thresholds\n",
+  str_add(out$gen_def) <- "  // compute actual thresholds\n"
+  str_add(out$gen_def) <- cglue(
     "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",  
     " = Intercept{p}{gr}{sub_X_means};\n" 
   )
