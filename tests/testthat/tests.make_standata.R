@@ -881,15 +881,36 @@ test_that("make_standata handles addition term 'rate' is correctly", {
 
 test_that("make_standata handles grouped ordinal thresholds correctly", {
   dat <- data.frame(
-    y = sample(1:6, 10, TRUE),
-    y2 = sample(1:6, 10, TRUE),
+    y = c(1:5, 1:4, 4),
     gr = rep(c("a", "b"), each = 5),
     th = rep(5:6, each = 5),
     x = rnorm(10)
   )
-  sdata <- make_standata(y | thres(th, gr) ~ x, data = dat, family = sratio())
+  
+  # thresholds without a grouping factor
+  sdata <- make_standata(y ~ x, dat, cumulative())
+  expect_equal(sdata$nthres, 4)
+  
+  sdata <- make_standata(y | thres(5) ~ x, dat, cumulative())
+  expect_equal(sdata$nthres, 5)
+  
+  expect_error(
+    make_standata(y | thres(th) ~ x, dat, cumulative()),
+    "Number of thresholds needs to be a single value"
+  )
+  
+  # thresholds with a grouping factor
+  sdata <- make_standata(y | thres(th, gr) ~ x, dat, cumulative())
   expect_equal(sdata$nthres, as.array(c(5, 6)))
   expect_equal(sdata$ngrthres, 2)
   expect_equal(unname(sdata$Jthres[1, ]), c(1, 5))
   expect_equal(unname(sdata$Jthres[10, ]), c(6, 11))
+  
+  sdata <- make_standata(y | thres(gr = gr) ~ x, dat, cumulative())
+  expect_equal(sdata$nthres, as.array(c(4, 3)))
+  expect_equal(sdata$ngrthres, 2)
+  
+  sdata <- make_standata(y | thres(6, gr = gr) ~ x, dat, cumulative())
+  expect_equal(sdata$nthres, as.array(c(6, 6)))
+  expect_equal(sdata$ngrthres, 2)
 })

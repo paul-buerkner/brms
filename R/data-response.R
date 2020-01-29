@@ -523,6 +523,7 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
+  
   if (is.null(x$adforms)) {
     x$adforms <- parse_ad(x$formula, x$family)
   }
@@ -538,34 +539,55 @@ extract_thres_names <- function(x, data) {
     }
     grthres <- factor(grthres)
     group <- levels(grthres)
-    if (length(nthres) == 1L) {
-      nthres <- rep(nthres, NROW(data))
-    }
-    for (g in group) {
-      # validate values of the same level
-      take <- grthres %in% g
-      if (length(unique(nthres[take])) > 1L) {
-        stop2("Number of thresholds should be unique for each group.")
+    if (!length(nthres)) {
+      # extract number of thresholds from the response values
+      nthres <- rep(NA, length(group))
+      for (i in seq_along(group)) {
+        take <- grthres %in% group[i]
+        nthres[i] <- extract_nthres(x$formula, data[take, , drop = FALSE])
       }
+    } else if (length(nthres) == 1L) {
+      # replicate number of thresholds across groups
+      nthres <- rep(nthres, length(group))
+    } else {
+      # number of thresholds is a variable in the data
+      for (i in seq_along(group)) {
+        # validate values of the same level
+        take <- grthres %in% group[i]
+        if (length(unique(nthres[take])) > 1L) {
+          stop2("Number of thresholds should be unique for each group.")
+        }
+      }
+      nthres <- get_one_value_per_group(nthres, grthres)
     }
-    thres <- get_one_value_per_group(nthres, grthres)
-    group <- rep(rename(group), thres)
-    thres <- ulapply(unname(thres), seq_len)
+    group <- rep(rename(group), nthres)
+    thres <- ulapply(unname(nthres), seq_len)
   } else {
     # no grouping variable was specified
     group <- ""
-    if (!is.null(nthres)) {
-      thres <- seq_len(nthres)
-    } else {
-      respform <- validate_resp_formula(x$formula)
-      mr <- model.response(model.frame(respform, data))
-      if (is.numeric(mr)) {
-        thres <- seq_len(max(mr))
-      } else {
-        thres <- seq_along(levels(factor(mr)))
-      }
-      thres <- thres[-length(thres)]
+    if (!length(nthres)) {
+      # extract number of thresholds from the response values
+      nthres <- extract_nthres(x$formula, data)
     }
+    if (length(nthres) > 1L) {
+      stop2("Number of thresholds needs to be a single value.")
+    }
+    thres <- seq_len(nthres)
   }
   data.frame(thres, group, stringsAsFactors = FALSE)
+}
+
+# extract threshold names from the response values
+# @param formula with the response on the LHS
+# @param data a data.frame from which to extract responses
+# @return a single value for the number of thresholds
+extract_nthres <- function(formula, data) {
+  respform <- validate_resp_formula(formula)
+  mr <- model.response(model.frame(respform, data))
+  if (is_like_factor(mr)) {
+    out <- length(levels(factor(mr))) - 1
+  } else {
+    out <- max(mr) - 1
+  }
+  out
 }
