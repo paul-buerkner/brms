@@ -1427,6 +1427,11 @@ is_dirichlet <- function(family) {
   "dirichlet" %in% family_info(family, "specials")
 }
 
+is_polytomous <- function(family) {
+  is_categorical(family) || is_ordinal(family) ||
+    is_multinomial(family) || is_dirichlet(family)
+}
+
 is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
 }

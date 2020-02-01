@@ -518,7 +518,7 @@ subset_thres <- function(draws, i) {
 # helper function of 'get_dpar' to decide if
 # the link function should be applied by default
 apply_dpar_ilink <- function(dpar, family) {
-  !((has_cat(family) || has_thres(family)) && dpar_class(dpar) == "mu") ||
+  !(is_polytomous(family) && dpar_class(dpar) == "mu") ||
     is.customfamily(family)
 }
 

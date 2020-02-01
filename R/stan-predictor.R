@@ -1713,7 +1713,7 @@ stan_eta_rsp <- function(r) {
 stan_eta_transform <- function(family, cens_or_trunc = FALSE) {
   transeta <- "transeta" %in% family_info(family, "specials")
   no_transform <- family$link == "identity" && !transeta || 
-    (has_cat(family) || has_thres(family)) && !is.customfamily(family)
+    is_polytomous(family) && !is.customfamily(family)
   !no_transform && !stan_has_built_in_fun(family, cens_or_trunc)
 }
 

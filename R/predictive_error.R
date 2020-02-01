@@ -116,7 +116,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   type <- match.arg(type, c("ordinary", "pearson"))
   resp <- validate_resp(resp, object)
   family <- family(object, resp = resp)
-  if (has_cat(family) || is_ordinal(family)) {
+  if (is_polytomous(family)) {
     stop2("Predictive errors are not defined for ordinal or categorical models.")
   }
   subset <- subset_samples(object, subset, nsamples)

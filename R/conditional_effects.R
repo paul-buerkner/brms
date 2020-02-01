@@ -380,7 +380,7 @@ conditional_effects.brmsterms <- function(
     if (method != "pp_expect") {
       stop2("Can only use 'categorical' with method = 'pp_expect'.")
     }
-    if (!(has_cat(x) || is_ordinal(x))) {
+    if (!is_polytomous(x)) {
       stop2("Argument 'categorical' may only be used ", 
             "for categorical or ordinal models.")
     }
