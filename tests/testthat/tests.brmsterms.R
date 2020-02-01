@@ -52,6 +52,13 @@ test_that("check_re_formula returns correct REs", {
   expect_equivalent(form, ~ (1 + Trt_c | gr(visit)))
   form <- check_re_formula(~ (0 + Trt_c | visit) + (1|patient), old_form)
   expect_equivalent(form, ~ (1|gr(patient)) + (0 + Trt_c | gr(visit)))
+  
+  # checks for fix of issue #844
+  old_form <- y ~ 0 + x1 + x2 + (0 + x1 + x2 | x3)
+  expect_error(
+    check_re_formula(~ (0 + x2 + x1 | x3), old_form),
+    "Order of terms in 're_formula' should match the original order"
+  )
 })
 
 test_that("update_re_terms works correctly", {

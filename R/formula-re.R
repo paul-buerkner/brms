@@ -332,15 +332,25 @@ check_re_formula <- function(re_formula, formula) {
         old_terms <- lapply(old$form[old$group == group], terms)
         j <- 1
         while (!found[i] && j <= length(old_terms)) {
+          new_term_labels <- attr(new_terms[[i]], "term.labels")
+          old_term_labels <- attr(old_terms[[j]], "term.labels")
+          new_intercept <- attr(new_terms[[i]], "intercept")
+          old_intercept <- attr(old_terms[[j]], "intercept")
           found[i] <- isTRUE(
-            all(attr(new_terms[[i]], "term.labels") %in% 
-                  attr(old_terms[[j]], "term.labels")) &&
-              attr(new_terms[[i]], "intercept") <=
-              attr(old_terms[[j]], "intercept")
+            all(new_term_labels %in% old_term_labels) &&
+              new_intercept <= old_intercept
           )
+          if (found[i]) {
+            # terms have to maintain the original order so that Z_* data
+            # and r_* parameters match in 'extract_draws' (fixes issue #844)
+            term_matches <- match(new_term_labels, old_term_labels)
+            if (is.unsorted(term_matches)) {
+              stop2("Order of terms in 're_formula' should match the original order.")
+            }
+          }
           j <- j + 1
         }
-      }  
+      }
       new <- new[found, ]
       if (NROW(new)) {
         forms <- ulapply(new$form, formula2str, rm = 1)

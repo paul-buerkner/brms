@@ -18,6 +18,8 @@ will be extended in future versions.
 thanks to Ivan Ukhov.
 * Fix selection of group-level terms via `re_formula` in
 multivariate models thanks to Maxime Dahirel. (#834)
+* Enforce correct ordering of terms in `re_formula` 
+thanks to @ferberkl. (#844)
 * Fix post-processing of multivariate multilevel models
 when multiple IDs are used for the same grouping factor
 thanks to @lott999. (#835)
