@@ -453,6 +453,9 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
 #' @export
 posterior_table <- function(x, levels = NULL) {
   x <- as.matrix(x)
+  if (anyNA(x)) {
+    warning2("NAs will be ignored in 'posterior_table'.")
+  }
   if (is.null(levels)) {
     levels <- sort(unique(as.vector(x)))
   }
@@ -461,11 +464,11 @@ posterior_table <- function(x, levels = NULL) {
     xlevels <- levels
   }
   out <- lapply(seq_len(ncol(x)), 
-                function(n) table(factor(x[, n], levels = levels))
+    function(n) table(factor(x[, n], levels = levels))
   )
   out <- do_call(rbind, out)
   # compute relative frequencies
-  out <- out / sum(out[1, ])
+  out <- out / rowSums(out)
   rownames(out) <- colnames(x)
   colnames(out) <- paste0("P(Y = ", xlevels, ")")
   out

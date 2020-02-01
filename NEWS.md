@@ -25,6 +25,8 @@ when multiple IDs are used for the same grouping factor
 thanks to @lott999. (#835)
 * Store response category names of ordinal models in the
 output of `posterior_predict` again thanks to Mattew Kay. (#838)
+* Handle `NA` values more consistently in `posterior_table`
+thanks to Anna Hake. (#845)
 
 
 # brms 2.11.1
