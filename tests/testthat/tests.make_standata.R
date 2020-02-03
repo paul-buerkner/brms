@@ -625,10 +625,10 @@ test_that("Cell-mean coding can be disabled", {
 test_that("make_standata correctly includes offsets", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   sdata <- make_standata(bf(y ~ x + offset(c), sigma ~ offset(c + 1)), data)
-  expect_equal(sdata$offset, as.array(data$c))
-  expect_equal(sdata$offset_sigma, as.array(data$c + 1))
+  expect_equal(sdata$offsets, as.array(data$c))
+  expect_equal(sdata$offsets_sigma, as.array(data$c + 1))
   sdata <- make_standata(y ~ x + offset(c) + offset(x), data)
-  expect_equal(sdata$offset, as.array(data$c + data$x))
+  expect_equal(sdata$offsets, as.array(data$c + data$x))
 })
 
 test_that("make_standata includes data for mixture models", {

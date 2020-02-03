@@ -773,7 +773,7 @@ extract_draws_ac <- function(bterms, samples, sdata, oos = NULL,
 
 extract_draws_offset <- function(bterms, sdata, ...) {
   p <- usc(combine_prefix(bterms))
-  sdata[[paste0("offset", p)]]
+  sdata[[paste0("offsets", p)]]
 }
 
 # extract draws of ordinal thresholds

@@ -1452,8 +1452,9 @@ stan_offset <- function(bterms, ...) {
   if (is.formula(bterms$offset)) {
     p <- usc(combine_prefix(bterms))
     resp <- usc(bterms$resp)
-    str_add(out$data) <- glue( "  vector[N{resp}] offset{p};\n")
-    str_add(out$eta) <- glue(" + offset{p}")
+    # use 'offsets' as 'offset' will be reserved in stanc3
+    str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
+    str_add(out$eta) <- glue(" + offsets{p}")
   }
   out
 }

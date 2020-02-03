@@ -28,6 +28,11 @@ output of `posterior_predict` again thanks to Mattew Kay. (#838)
 * Handle `NA` values more consistently in `posterior_table`
 thanks to Anna Hake. (#845)
 
+### Other Changes
+
+* Rename `offset` variables to `offsets` in the generated Stan
+code as the former will be reserved in the new stanc3 compiler.
+ 
 
 # brms 2.11.1
 

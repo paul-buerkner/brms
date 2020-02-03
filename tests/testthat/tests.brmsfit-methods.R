@@ -745,7 +745,7 @@ test_that("standata has reasonable outputs", {
   expect_equal(sort(names(standata(fit1))),
     sort(c("N", "Y",  "Kar", "Kma", "J_lag", "K", "X", "Ksp", "Imo", 
            "Xmo_1", "Jmo", "con_simo_1", "Z_1_1", "Z_1_2", "nb_1", 
-           "knots_1", "Zs_1_1", "Ks", "Xs", "offset", "K_sigma", 
+           "knots_1", "Zs_1_1", "Ks", "Xs", "offsets", "K_sigma", 
            "X_sigma", "J_1", "N_1", "M_1", "NC_1", "prior_only"))
   )
   expect_equal(sort(names(standata(fit2))),

@@ -764,7 +764,8 @@ data_offset <- function(bterms, data) {
     if (length(offset) == 1L) {
       offset <- rep(offset, nrow(data))
     }
-    out[[paste0("offset", p)]] <- as.array(offset)
+    # use 'offsets' as 'offset' will be reserved in stanc3
+    out[[paste0("offsets", p)]] <- as.array(offset)
   }
   out
 }
