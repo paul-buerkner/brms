@@ -946,7 +946,7 @@ stop_no_pw <- function() {
 # @param e vector of error terms, that is, y - mu
 student_t_cov_factor <- function(df, Cinv, e) {
   beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, Cinv, e)
-  (df + beta1 - 2) / (df + nrow(Cinv) - 2)
+  (df + beta1 - 2) / (df + nrow(Cinv) - 3)
 }
 
 # beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
