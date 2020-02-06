@@ -116,7 +116,7 @@ test_that("log_lik for ARMA models runs without errors", {
   draws$dpars <- list(
     mu = matrix(rnorm(ns*nobs), ncol = nobs),
     sigma = rchisq(ns, 3),
-    nu = rgamma(ns, 5)
+    nu = rgamma(ns, 5) + 15
   )
   draws$ac <- list(
     ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
@@ -128,16 +128,16 @@ test_that("log_lik for ARMA models runs without errors", {
   draws$family$fun <- "gaussian_time"
   ll <- brms:::log_lik_gaussian_time(1, draws = draws)
   expect_equal(dim(ll), c(ns, 4))
-  # draws$family$fun <- "student_time"
-  # ll <- brms:::log_lik_student_time(1, draws = draws)
-  # expect_equal(length(ll), ns)
+  draws$family$fun <- "student_time"
+  ll <- brms:::log_lik_student_time(1, draws = draws)
+  expect_equal(dim(ll), c(ns, 4))
 })
 
 test_that("log_lik for SAR models runs without errors", {
   draws <- structure(list(nsamples = 3, nobs = 10), class = "brmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(30), nrow = 3),
-    nu = rep(2, 3),
+    nu = rep(10, 3),
     sigma = rep(10, 3)
   )
   draws$ac <-  list(
@@ -148,15 +148,15 @@ test_that("log_lik for SAR models runs without errors", {
 
   ll <- brms:::log_lik_gaussian_lagsar(1, draws = draws)
   expect_equal(dim(ll), c(3, 10))
-  # ll <- brms:::log_lik_student_lagsar(1, draws = draws)
-  # expect_equal(length(ll), 3)
+  ll <- brms:::log_lik_student_lagsar(1, draws = draws)
+  expect_equal(dim(ll), c(3, 10))
 
   draws$ac$errorsar <- draws$ac$lagsar
   draws$ac$lagsar <- NULL
   ll <- brms:::log_lik_gaussian_errorsar(1, draws = draws)
   expect_equal(dim(ll), c(3, 10))
-  # ll <- brms:::log_lik_student_errorsar(1, draws = draws)
-  # expect_equal(length(ll), 3)
+  ll <- brms:::log_lik_student_errorsar(1, draws = draws)
+  expect_equal(dim(ll), c(3, 10))
 })
 
 test_that("log_lik for FCOR models runs without errors", {
@@ -165,14 +165,15 @@ test_that("log_lik for FCOR models runs without errors", {
   draws <- structure(list(nsamples = ns, nobs = nobs), class = "brmsdraws")
   draws$dpars <- list(
     mu = matrix(rnorm(nobs * ns), nrow = ns),
-    sigma = rep(1, ns), nu = rep(2, ns)
+    sigma = rep(1, ns), 
+    nu = rep(10, ns)
   )
   draws$ac <- list(Mfcor = diag(nobs))
   draws$data$Y <- rnorm(nobs)
   ll <- brms:::log_lik_gaussian_fcor(1, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
-  # ll <- brms:::log_lik_student_fcor(1, draws = draws)
-  # expect_equal(dim(ll), c(ns, nobs))
+  ll <- brms:::log_lik_student_fcor(1, draws = draws)
+  expect_equal(dim(ll), c(ns, nobs))
 })
 
 test_that("log_lik for count and survival models works correctly", {

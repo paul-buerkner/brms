@@ -11,6 +11,8 @@ via autocorrelation term `fcor`.
 * Use argument `data2` in `brm` and related functions to pass
 data objects which cannot be passed via `data`. The usage of `data2`
 will be extended in future versions.
+* Compute pointwise log-likelihood values via `log_lik` for
+non-factorizable Student-t models. (#705)
 
 ### Bug Fixes
 

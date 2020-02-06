@@ -238,8 +238,10 @@ log_lik_gaussian_time <- function(i, draws, data = data.frame()) {
   Sigma <- get_cov_matrix_ac(draws, obs)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
-    g <- solve(C, Y - mu[s, ])
-    cbar <- diag(solve(C))
+    Cinv <- solve(C)
+    e <- Y - mu[s, ]
+    g <- solve(C, e)
+    cbar <- diag(Cinv)
     yloo <- Y - g / cbar
     sdloo <- sqrt(1 / cbar)
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
@@ -249,7 +251,25 @@ log_lik_gaussian_time <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_time <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
+  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
+  Y <- as.numeric(draws$data$Y[obs])
+  nu <- as.matrix(get_dpar(draws, "nu", i = obs))
+  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
+  Sigma <- get_cov_matrix_ac(draws, obs)
+  .log_lik <- function(s) {
+    df <- nu[s, ]
+    C <- as.matrix(Sigma[s, , ])
+    Cinv <- solve(C)
+    e <- Y - mu[s, ]
+    g <- solve(C, e)
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    dfloo <- df + nrow(Cinv) - 1
+    ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
@@ -262,7 +282,8 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
   .log_lik <- function(s) {
     IB <- I - with(draws$ac, lagsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
-    g <- Cinv %*% (Y - solve(IB, mu[s, ]))
+    e <- Y - solve(IB, mu[s, ])
+    g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
     sdloo <- sqrt(1 / cbar)
@@ -273,7 +294,27 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
+  nu <- get_dpar(draws, "nu")
+  mu <- get_dpar(draws, "mu")
+  sigma <- get_dpar(draws, "sigma")
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  stopifnot(i == 1)
+  # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
+  .log_lik <- function(s) {
+    df <- nu[s]
+    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    e <- Y - solve(IB, mu[s, ])
+    g <- Cinv %*% e
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    dfloo <- df + nrow(Cinv) - 1
+    ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
@@ -285,7 +326,8 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
   .log_lik <- function(s) {
     IB <- I - with(draws$ac, errorsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
-    g <- Cinv %*% (Y - mu[s, ])
+    e <- Y - mu[s, ]
+    g <- Cinv %*% e
     cbar <- diag(Cinv)
     yloo <- Y - g / cbar
     sdloo <- sqrt(1 / cbar)
@@ -296,7 +338,26 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
+  stopifnot(i == 1)
+  nu <- get_dpar(draws, "nu")
+  mu <- get_dpar(draws, "mu")
+  sigma <- get_dpar(draws, "sigma")
+  Y <- as.numeric(draws$data$Y)
+  I <- diag(draws$nobs)
+  .log_lik <- function(s) {
+    df <- nu[s]
+    IB <- I - with(draws$ac, errorsar[s, ] * Msar)
+    Cinv <- t(IB) %*% IB / sigma[s]^2
+    e <- Y - mu[s, ]
+    g <- Cinv %*% e
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    dfloo <- df + nrow(Cinv) - 1
+    ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
@@ -306,8 +367,10 @@ log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
   Sigma <- get_cov_matrix_ac(draws)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
-    g <- solve(C, Y - mu[s, ])
-    cbar <- diag(solve(C))
+    Cinv <- solve(C)
+    e <- Y - mu[s, ]
+    g <- solve(C, e)
+    cbar <- diag(Cinv)
     yloo <- Y - g / cbar
     sdloo <- sqrt(1 / cbar)
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
@@ -317,7 +380,25 @@ log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
 }
 
 log_lik_student_fcor <- function(i, draws, data = data.frame()) {
-  stop_no_pw()
+  stopifnot(i == 1)
+  Y <- as.numeric(draws$data$Y)
+  nu <- get_dpar(draws, "nu")
+  mu <- get_dpar(draws, "mu")
+  Sigma <- get_cov_matrix_ac(draws)
+  .log_lik <- function(s) {
+    df <- nu[s]
+    C <- as.matrix(Sigma[s, , ])
+    Cinv <- solve(C)
+    e <- Y - mu[s, ]
+    g <- solve(C, e)
+    cbar <- diag(Cinv)
+    yloo <- Y - g / cbar
+    sdloo <- sqrt(1 / cbar * student_t_cov_factor(df, Cinv, e))
+    dfloo <- df + nrow(Cinv) - 1
+    ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
+    return(as.numeric(ll))
+  }
+  rblapply(seq_len(draws$nsamples), .log_lik)
 }
 
 log_lik_binomial <- function(i, draws, data = data.frame()) {
@@ -856,4 +937,35 @@ log_lik_weight <- function(x, i, draws) {
 stop_no_pw <- function() {
   stop2("Cannot yet compute pointwise log-likelihood for this model ",
         "because the observations are not conditionally independent.")
+}
+
+# multiplicate factor for conditional student-t models
+# see http://proceedings.mlr.press/v33/shah14.pdf
+# @param df degrees of freedom parameter
+# @param Cinv inverse of the full matrix
+# @param e vector of error terms, that is, y - mu
+student_t_cov_factor <- function(df, Cinv, e) {
+  beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, Cinv, e)
+  (df + beta1 - 2) / (df + nrow(Cinv) - 2)
+}
+
+# beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
+# @param i observation index to exclude in the submatrix
+# @param Cinv inverse of the full matrix
+# @param e vector of error terms, that is, y - mu
+# @param vector of length one
+student_t_beta1_i <- function(i, Cinv, e) {
+  sub_Cinv_i <- sub_inverse_symmetric(Cinv, i)
+  t(e[-i]) %*% sub_Cinv_i %*% e[-i]
+}
+
+# efficient submatrix inverse for a symmetric matrix
+# see http://www.scielo.org.mx/pdf/cys/v20n2/1405-5546-cys-20-02-00251.pdf
+# @param Cinv inverse of the full matrix
+# @param i observation index to exclude in the submatrix
+# @return inverse of the submatrix after removing observation i
+sub_inverse_symmetric <- function(Cinv, i) {
+  csub <- Cinv[i, -i]
+  D <- outer(csub, csub)
+  Cinv[-i, -i] - D / Cinv[i, i]
 }
