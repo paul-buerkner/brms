@@ -328,7 +328,7 @@ test_that("hypothesis has reasonable ouputs", {
     group = "visit", scope = "coef"
   )
   expect_equal(dim(hyp$hypothesis), c(8, 9))
-  expect_equal(hyp$hypothesis$Group[1], "1")
+  expect_equal(hyp$hypothesis$Group[1], factor(1, levels = 1:4))
   
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: \n'b_x'")
