@@ -249,6 +249,7 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out <- unlist(out, recursive = FALSE)
   out <- as.list(matrix(out, ncol = length(hypothesis), byrow = TRUE))
   out <- combine_hlist(out, class = "", alpha = alpha)
+  out$hypothesis$Group <- factor(out$hypothesis$Group, levels)
   out$hypothesis <- move2start(out$hypothesis, "Group")
   out
 }
