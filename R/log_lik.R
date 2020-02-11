@@ -941,6 +941,7 @@ stop_no_pw <- function() {
 
 # multiplicate factor for conditional student-t models
 # see http://proceedings.mlr.press/v33/shah14.pdf
+# note that brms parameterizes C instead of Cov(y) = df / (df - 2) * C
 # @param df degrees of freedom parameter
 # @param Cinv inverse of the full matrix
 # @param e vector of error terms, that is, y - mu
