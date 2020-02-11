@@ -945,18 +945,21 @@ stop_no_pw <- function() {
 # @param Cinv inverse of the full matrix
 # @param e vector of error terms, that is, y - mu
 student_t_cov_factor <- function(df, Cinv, e) {
-  beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, Cinv, e)
+  beta1 <- ulapply(seq_rows(Cinv), student_t_beta1_i, df, Cinv, e)
   (df + beta1 - 2) / (df + nrow(Cinv) - 3)
 }
 
 # beta1 in equation (6) of http://proceedings.mlr.press/v33/shah14.pdf
 # @param i observation index to exclude in the submatrix
+# @param df degrees of freedom parameter
 # @param Cinv inverse of the full matrix
 # @param e vector of error terms, that is, y - mu
 # @param vector of length one
-student_t_beta1_i <- function(i, Cinv, e) {
+student_t_beta1_i <- function(i, df, Cinv, e) {
   sub_Cinv_i <- sub_inverse_symmetric(Cinv, i)
-  t(e[-i]) %*% sub_Cinv_i %*% e[-i]
+  # (df - 2) / df factor as we do not parameterize cov(y) directly
+  # but rather have cov(y) = df / (df - 2) * C
+  (df - 2) / df * t(e[-i]) %*% sub_Cinv_i %*% e[-i]
 }
 
 # efficient submatrix inverse for a symmetric matrix
