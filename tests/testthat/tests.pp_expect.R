@@ -133,7 +133,7 @@ test_that("pp_expect_lagsar runs without errors", {
     dpars = list(mu = matrix(rnorm(30), nrow = 3)),
     ac = list(
       lagsar = matrix(c(0.3, 0.5, 0.7)), 
-      W = matrix(1:100, 10, 10)
+      Msar = matrix(1:100, 10, 10)
     ),
     nsamples = 3,
     nobs = 10,
