@@ -23,6 +23,9 @@
 #' @param scale Logical; Indicates whether weights should be scaled
 #'  so that the average weight equals one. Defaults to \code{FALSE}.
 #' @param y2 A vector specifying the upper bounds in interval censoring.
+#'  Will be ignored for non-interval censored observations. However, it 
+#'  should NOT be \code{NA} even for non-interval censored observations to
+#'  avoid accidental exclusion of these observations.
 #' @param lb A numeric vector or single numeric value specifying 
 #'   the lower truncation bound.
 #' @param ub A numeric vector or single numeric value specifying 
