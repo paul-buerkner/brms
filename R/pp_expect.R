@@ -584,11 +584,14 @@ pp_expect_ordinal <- function(draws) {
 # compute 'pp_expect' for lagsar models
 pp_expect_lagsar <- function(draws) {
   stopifnot(!is.null(draws$ac$lagsar))
+  I <- diag(draws$nobs)
   .pp_expect <- function(s) {
-    W_new <- with(draws, diag(nobs) - ac$lagsar[s, ] * ac$W)
-    as.numeric(solve(W_new) %*% draws$dpars$mu[s, ])
+    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
+    as.numeric(solve(IB, draws$dpars$mu[s, ]))
   }
-  do_call(rbind, lapply(1:draws$nsamples, .pp_expect))
+  out <- rblapply(seq_len(draws$nsamples), .pp_expect)
+  rownames(out) <- NULL
+  out
 }
 
 # expand data to dimension appropriate for
