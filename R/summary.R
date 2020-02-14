@@ -103,8 +103,8 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
-        "The model has not converged (some Rhats are > 1.05). ",
-        "Do not analyse the results! \nWe recommend running ", 
+        "Parts of the model have not converged (some Rhats are > 1.05). ",
+        "Be careful when analysing the results! We recommend running ", 
         "more iterations and/or setting stronger priors."
       )
     }
@@ -113,7 +113,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     if (div_trans > 0) {
       warning2(
         "There were ", div_trans, " divergent transitions after warmup. ", 
-        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
+        "Increasing adapt_delta above ", adapt_delta, " may help. See ",
         "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
       )
     }
