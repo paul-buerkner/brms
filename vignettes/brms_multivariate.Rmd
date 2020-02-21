@@ -146,7 +146,7 @@ normal (or student-t) model, anymore, estimating residual correlations is no
 longer possible. We make this explicit using the `set_rescor` function. Further,
 we investigate if the relationship of `back` and `hatchdate` is really linear as
 previously assumed by fitting a non-linear spline of `hatchdate`. On top of it,
-we model separate residual variances of `tarsus` for males and femals chicks.
+we model separate residual variances of `tarsus` for male and female chicks.
 
 ```{r fit3, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
