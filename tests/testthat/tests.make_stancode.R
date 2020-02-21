@@ -841,11 +841,13 @@ test_that("grouped ordinal thresholds appear in the Stan code", {
 })
 
 test_that("monotonic effects appear in the Stan code", {
+  dat <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
+                    x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE),
+                    g = rep(1:10, each = 12))
+  
   prior <- c(prior(normal(0,1), class = b, coef = mox1),
              prior(dirichlet(c(1,0.5,2)), simo, coef = mox11),
              prior(dirichlet(c(1,0.5,2)), simo, coef = mox21))
-  dat <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
-                    x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
   scode <- make_stancode(y ~ y*mo(x1)*mo(x2), dat, prior = prior)
   expect_match2(scode, "int Xmo_3[N];")
   expect_match2(scode, "simplex[Jmo[1]] simo_1;")
@@ -860,6 +862,10 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ mo(x1) + (mo(x1) | x2), dat)
   expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * mo(simo_1, Xmo_1[n])")
   expect_true(!grepl("Z_1_w", scode))
+  
+  # test issue reported in discourse post #12978
+  scode <- make_stancode(y ~ mo(x1) + (mo(x1) | x2) + (mo(x1) | g), dat)
+  expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]] + r_2_2[J_2[n]]) * mo(simo_1, Xmo_1[n])")
   
   # test issue #813
   scode <- make_stancode(y ~ mo(x1):y, dat)

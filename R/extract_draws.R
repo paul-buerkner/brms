@@ -274,6 +274,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   # extract general data and parameters for special effects
   bsp_pars <- paste0("bsp", p, "_", spef$coef)
   draws$bsp <- get_samples(samples, bsp_pars, fixed = TRUE)
+  colnames(draws$bsp) <- spef$coef
   # prepare draws specific to monotonic effects
   simo_coef <- get_simo_labels(spef)
   Jmo <- sdata[[paste0("Jmo", p)]]

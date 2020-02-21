@@ -154,14 +154,14 @@ predictor_sp <- function(draws, i) {
     eval_list[[paste0("Csp_", j)]] <- p(sp[["Csp"]][[j]], i, row = FALSE)
   }
   re <- draws[["re"]]
-  spef <- colnames(sp[["bsp"]])
-  for (j in seq_along(spef)) {
+  coef <- colnames(sp[["bsp"]])
+  for (j in seq_along(coef)) {
     # prepare special group-level effects
-    rsp <- named_list(names(re[["rsp"]][[spef[j]]]))
+    rsp <- named_list(names(re[["rsp"]][[coef[j]]]))
     for (g in names(rsp)) {
       rsp[[g]] <- .predictor_re(
         Z = p(re[["Zsp"]][[g]], i), 
-        r = re[["rsp"]][[spef[j]]][[g]]
+        r = re[["rsp"]][[coef[j]]][[g]]
       )
     }
     eta <- eta + .predictor_sp(

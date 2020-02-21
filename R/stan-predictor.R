@@ -882,7 +882,7 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
       str_add(eta) <- glue(" * Csp{p}_{spef$Ic[i]}[n]")
     }
     r <- subset2(ranef, coef = spef_coef[i])
-    rpars <- str_if(nrow(r), glue(" + {stan_eta_rsp(r)}"))
+    rpars <- str_if(nrow(r), cglue(" + {stan_eta_rsp(r)}"))
     str_add(out$loopeta) <- glue(" + (bsp{p}[{i}]{rpars}) * {eta}")
   }
   # prepare general Stan code

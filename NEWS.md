@@ -29,6 +29,8 @@ thanks to @lott999. (#835)
 output of `posterior_predict` again thanks to Mattew Kay. (#838)
 * Handle `NA` values more consistently in `posterior_table`
 thanks to Anna Hake. (#845)
+* Fix a bug in the Stan code of models with multiple monotonic 
+varying effects across different groups thanks to Julian Quandt.
 
 ### Other Changes
 
