@@ -48,6 +48,11 @@ validate_data <- function(data, bterms, na.action = na.omit2,
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
+  if (!isTRUE(nrow(data) > 0L)) {
+    stop2("All observations in the data were removed presumably because of ",
+          "NA values. If you are using the 'subset' addition term, please ",
+          "make sure that variables are not NA even if locally unused.") 
+  }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
