@@ -25,13 +25,13 @@
 #' fit1 <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), 
 #'             data = dat, chains = 2)
 #' summary(fit1)
-#' plot(marginal_smooths(fit1), ask = FALSE)
+#' plot(conditional_smooths(fit1), ask = FALSE)
 #' 
 #' # fit a more complicated smooth model
 #' fit2 <- brm(y ~ t2(x0, x1) + s(x2, by = x3), 
 #'             data = dat, chains = 2)
 #' summary(fit2)
-#' plot(marginal_smooths(fit2), ask = FALSE)
+#' plot(conditional_smooths(fit2), ask = FALSE)
 #' }
 #' 
 #' @export

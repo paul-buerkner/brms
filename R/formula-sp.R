@@ -79,7 +79,7 @@ me <- function(x, sdx, gr = NULL) {
 #'   bf(chl | mi() ~ age) + set_rescor(FALSE)
 #' fit <- brm(bform, data = nhanes)
 #' summary(fit)
-#' plot(marginal_effects(fit, resp = "bmi"), ask = FALSE)
+#' plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
 #' LOO(fit, newdata = na.omit(fit$data))
 #' } 
 #' 
@@ -131,7 +131,7 @@ mi <- function(x) {
 #' # summarise the model
 #' summary(fit1)
 #' plot(fit1, N = 6)
-#' plot(marginal_effects(fit1), points = TRUE)
+#' plot(conditional_effects(fit1), points = TRUE)
 #' 
 #' # model interaction with other variables
 #' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
@@ -139,7 +139,7 @@ mi <- function(x) {
 #' 
 #' # summarise the model
 #' summary(fit2)
-#' plot(marginal_effects(fit2), points = TRUE)
+#' plot(conditional_effects(fit2), points = TRUE)
 #' } 
 #'  
 #' @export
