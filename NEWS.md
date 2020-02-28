@@ -1,3 +1,11 @@
+# brms 2.12.0++
+
+### Bug Fixes
+
+* Fix issue in Stan code of models with multiple `me` terms 
+thanks to Chris Chatham. (#855)
+
+
 # brms 2.12.0
 
 ### New Features

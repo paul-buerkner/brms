@@ -1567,7 +1567,7 @@ stan_Xme <- function(meef, prior) {
       str_add(out$tpar_def) <- cglue(
         "  vector[{Nme}] Xme_{K};  // actual latent values\n"
       )
-      str_add(out$tpar_def) <- cglue(
+      str_add(out$tpar_comp) <- cglue(
         "  // compute actual latent values\n",
         "  Xme_{K} = meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
       )
