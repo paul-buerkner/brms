@@ -3,7 +3,7 @@
 ### Bug Fixes
 
 * Fix issue in Stan code of models with multiple `me` terms 
-thanks to Chris Chatham. (#855)
+thanks to Chris Chatham. (#855, #856)
 
 
 # brms 2.12.0

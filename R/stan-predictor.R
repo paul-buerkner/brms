@@ -1490,7 +1490,9 @@ stan_Xme <- function(meef, prior) {
   groups <- unique(meef$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
+    # K are the global and J the local (within group) indices
     K <- which(meef$grname %in% g)
+    J <- seq_along(K)
     if (nzchar(g)) {
       Nme <- glue("Nme_{i}")
       str_add(out$data) <- glue(
@@ -1545,7 +1547,7 @@ stan_Xme <- function(meef, prior) {
         "  vector[{Nme}] Xme_{K};\n"
       )
       str_add(out$tpar_comp) <- cglue(
-        "  Xme_{K} = Xme{i}[, {K}];\n"
+        "  Xme_{K} = Xme{i}[, {J}];\n"
       )
       str_add(out$prior) <- glue(
         "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n"
@@ -1569,7 +1571,7 @@ stan_Xme <- function(meef, prior) {
       )
       str_add(out$tpar_comp) <- cglue(
         "  // compute actual latent values\n",
-        "  Xme_{K} = meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
+        "  Xme_{K} = meanme_{i}[{J}] + sdme_{i}[{J}] * zme_{K};\n"
       )
       str_add(out$prior) <- cglue(
         "  target += normal_lpdf(zme_{K} | 0, 1);\n"
