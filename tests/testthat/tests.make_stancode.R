@@ -1233,7 +1233,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")
   
   # noise-free terms with grouping factors
-  bform <- bf(y ~ me(x, xsd, ID) + (me(x, xsd, ID) | ID))
+  bform <- bf(y ~ me(x, xsd, ID) + me(z, xsd) + (me(x, xsd, ID) | ID))
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "vector[Nme_1] Xn_1;")
   expect_match2(scode, "(bsp[1] + r_1_2[J_1[n]]) * Xme_1[Jme_1[n]]")
