@@ -1426,7 +1426,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
         "  // proper prior on the non-spatial BYM2 component\n",
-        "  target += normal_lpdf(nszcar | 0, 1);\n"
+        "  target += normal_lpdf(nszcar{p} | 0, 1);\n"
       )
     }
   }
