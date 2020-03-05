@@ -378,6 +378,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
   }
   # prepare covariates
   ncovars <- max(spef$Ic)
+  draws$Csp <- vector("list", ncovars)
   for (i in seq_len(ncovars)) {
     draws$Csp[[i]] <- sdata[[paste0("Csp", p, "_", i)]]
     draws$Csp[[i]] <- as_draws_matrix(draws$Csp[[i]], dim = dim)
