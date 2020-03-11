@@ -4,6 +4,9 @@
 
 * Fix issue in Stan code of models with multiple `me` terms 
 thanks to Chris Chatham. (#855, #856)
+* Fix scaling problems in the estimation of ordinal models with
+multiple threshold vectors thanks to Marta Kołczyńska and
+Rok Češnovar.
 
 
 # brms 2.12.0

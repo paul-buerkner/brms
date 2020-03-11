@@ -65,7 +65,7 @@ stan_response <- function(bterms, data) {
         "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
       )
       str_add(out$tdata_def) <- glue(
-        "  int<lower=1> nmthres{resp} = prod(nthres{resp});", 
+        "  int<lower=1> nmthres{resp} = sum(nthres{resp});", 
         "  // total number of thresholds\n",
         "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];", 
         "  // start index per threshold group\n",
