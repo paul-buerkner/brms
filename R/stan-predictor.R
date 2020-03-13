@@ -1764,7 +1764,7 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 # implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
-    !fix_intercepts(x) && !is_sparse(x$fe)
+    !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
 }
 
 # default Stan definitions for distributional parameters

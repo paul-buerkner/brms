@@ -46,9 +46,10 @@
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
 #' @param threshold A character string indicating the type 
 #'   of thresholds (i.e. intercepts) used in an ordinal model. 
-#'   \code{"flexible"} provides the standard unstructured thresholds and 
+#'   \code{"flexible"} provides the standard unstructured thresholds,
 #'   \code{"equidistant"} restricts the distance between 
-#'   consecutive thresholds to the same value.
+#'   consecutive thresholds to the same value, and
+#'   \code{"sum_to_zero"} ensures the thresholds sum to zero.
 #' @param refcat Optional name of the reference response category used in
 #'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
 #'   default), the first category is used as the reference. If \code{NA}, all
@@ -189,7 +190,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity", 
                        link_quantile = "logit",
-                       threshold = c("flexible", "equidistant"),
+                       threshold = "flexible",
                        refcat = NULL, bhaz = NULL) {
   slink <- substitute(link)
   .brmsfamily(
@@ -217,7 +218,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 # @param ... link functions (as character strings) of parameters
 # @return an object of 'brmsfamily' which inherits from 'family'
 .brmsfamily <- function(family, link = NULL, slink = link,
-                        threshold = c("flexible", "equidistant"),
+                        threshold = "flexible", 
                         refcat = NULL, bhaz = NULL, ...) {
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
@@ -278,7 +279,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     }
   }
   if (is_ordinal(out$family)) {
-    out$threshold <- match.arg(threshold)
+    # TODO: move specification of 'threshold' to the 'resp_thres' function?
+    thres_options <- c("flexible", "equidistant", "sum_to_zero")
+    out$threshold <- match.arg(threshold, thres_options)
   }
   if (conv_cats_dpars(out$family)) {
     if (!is.null(refcat)) {
@@ -735,8 +738,8 @@ multinomial <- function(link = "logit", refcat = NULL) {
 
 #' @rdname brmsfamily
 #' @export
-cumulative <- function(link = "logit", link_disc = "log",
-                       threshold = c("flexible", "equidistant")) {
+cumulative <- function(link = "logit", link_disc = "log", 
+                       threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("cumulative", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -745,7 +748,7 @@ cumulative <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 sratio <- function(link = "logit", link_disc = "log",
-                   threshold = c("flexible", "equidistant")) {
+                   threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("sratio", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -754,7 +757,7 @@ sratio <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 cratio <- function(link = "logit", link_disc = "log",
-                   threshold = c("flexible", "equidistant")) {
+                   threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("cratio", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -763,7 +766,7 @@ cratio <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 acat <- function(link = "logit", link_disc = "log",
-                 threshold = c("flexible", "equidistant")) {
+                 threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("acat", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -1031,7 +1034,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, specials = NULL, 
-                          threshold = c("flexible", "equidistant"),
+                          threshold = "flexible",
                           log_lik = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
@@ -1495,7 +1498,12 @@ has_thres <- function(family) {
 
 # indicate if family has equidistant thresholds
 has_equidistant_thres <- function(family) {
-  isTRUE(family_info(family, "threshold") == "equidistant")
+  "equidistant" %in% family_info(family, "threshold")
+}
+
+# indicate if family has sum-to-zero thresholds
+has_sum_to_zero_thres <- function(family) {
+  "sum_to_zero" %in% family_info(family, "threshold")
 }
 
 # indicate if family has ordered thresholds

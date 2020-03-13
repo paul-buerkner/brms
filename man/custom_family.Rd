@@ -14,7 +14,7 @@ custom_family(
   ub = NA,
   vars = NULL,
   specials = NULL,
-  threshold = c("flexible", "equidistant"),
+  threshold = "flexible",
   log_lik = NULL,
   predict = NULL,
   fitted = NULL,

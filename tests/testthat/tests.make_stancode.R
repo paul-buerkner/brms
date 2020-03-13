@@ -707,7 +707,7 @@ test_that("Stan code for intercept only models is correct", {
 
 test_that("Stan code of ordinal models is correct", {
   dat <- data.frame(y = c(rep(1:4, 2), 1, 1), x1 = rnorm(10), 
-                    x2 = rnorm(10), g = rep(1:2, 5))
+                    x2 = rnorm(10), g = factor(rep(1:2, 5)))
   
   scode <- make_stancode(
     y ~ x1, dat, family = cumulative(),
@@ -755,6 +755,15 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, 
     "target += acat_probit_lpmf(Y[n] | mu[n], disc, Intercept - mucs[n]');"
   )
+  
+  # sum-to-zero thresholds
+  scode <- make_stancode(
+    y ~ x1, dat, cumulative("probit", threshold = "sum_to_zero"),
+    prior = prior(normal(0, 2), Intercept)
+  )
+  expect_match2(scode, "Intercept_stz = Intercept - mean(Intercept);")
+  expect_match2(scode, "cumulative_probit_lpmf(Y[n] | mu[n], disc, Intercept_stz);")
+  expect_match2(scode, "vector[nthres] b_Intercept = Intercept_stz;")
   
   # non-linear ordinal models
   scode <- make_stancode(
@@ -815,10 +824,19 @@ test_that("grouped ordinal thresholds appear in the Stan code", {
     family = cumulative(threshold = "equidistant"), 
     prior = prior
   )
-  expect_match2(scode, "target += cumulative_logit_merged_lpmf(Y[n]")
+  expect_match2(scode, "target += ordered_logistic_merged_lpmf(Y[n]")
   expect_match2(scode, "real first_Intercept_1;")
   expect_match2(scode, "target += normal_lpdf(first_Intercept_2 | 0, 1);")
   expect_match2(scode, "Intercept_2[k] = first_Intercept_2 + (k - 1.0) * delta_2;")
+  
+  # sum-to-zero constraints
+  scode <- make_stancode(
+    y | thres(gr = gr) ~ x, data = dat, 
+    cumulative(threshold = "sum_to_zero"),
+    prior = prior(normal(0, 2), Intercept)
+  )
+  expect_match2(scode, "merged_Intercept_stz[Kthres_start[2]:Kthres_end[2]] = Intercept_stz_2;")
+  expect_match2(scode, "ordered_logistic_merged_lpmf(Y[n] | mu[n], merged_Intercept_stz, Jthres[n]);")
   
   # ordinal mixture model
   scode <- make_stancode(

@@ -1,5 +1,11 @@
 # brms 2.12.0++
 
+### New Features
+
+* Constrain ordinal thresholds to sum to zero via argument
+`threshold` in ordinal family functions thanks to the help of
+Marta Kołczyńska.
+
 ### Bug Fixes
 
 * Fix issue in Stan code of models with multiple `me` terms 
