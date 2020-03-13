@@ -395,7 +395,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     family <- get_element(formula, "family")
     bterms <- parse_bf(formula)
     data.name <- substitute_name(data)
-    data <- validate_data(data, bterms = bterms)
+    data <- validate_data(data, bterms = bterms, knots = knots)
     data2 <- validate_data2(
       data2, bterms = bterms, 
       get_data2_autocor(formula)
@@ -420,7 +420,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
       cov_ranef = cov_ranef, sample_prior = sample_prior, 
-      knots = knots, stanvars = stanvars, stan_funs = stan_funs, 
+      stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
@@ -428,7 +428,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     sdata <- make_standata(
       formula, data = data, prior = prior, data2 = data2,
       cov_ranef = cov_ranef, sample_prior = sample_prior,
-      knots = knots, stanvars = stanvars
+      stanvars = stanvars
     )
     stopifnot(is.list(stan_model_args))
     silence_stan_model <- !length(stan_model_args)

@@ -9,6 +9,7 @@ get_prior(
   data,
   family = gaussian(),
   autocor = NULL,
+  knots = NULL,
   sparse = NULL,
   internal = FALSE,
   ...
@@ -41,6 +42,10 @@ a description of the available correlation structures. Defaults to
 \code{autocor} might also be a list of autocorrelation structures.
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{knots}{Optional list containing user specified knot values to be used
+for basis construction of smoothing terms. See
+\code{\link[mgcv:gamm]{gamm}} for more details.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
