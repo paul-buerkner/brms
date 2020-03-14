@@ -25,12 +25,12 @@ data_predictor.mvbrmsterms <- function(x, data, old_sdata = NULL, ...) {
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL, 
+data_predictor.brmsterms <- function(x, data, prior, ranef, 
                                      old_sdata = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, knots, ...)
+  args_eff <- nlist(data, ranef, prior, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
@@ -51,19 +51,18 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 # @param data the data passed by the user
 # @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
-# @param knots optional knot values for smoothing terms
 # @param old_sdata see 'extract_old_standata'
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
-                               knots = NULL, old_sdata = NULL, ...) {
+                               old_sdata = NULL, ...) {
   c(data_fe(x, data),
     data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
-    data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
+    data_sm(x, data, smooths = old_sdata$smooths),
     data_gp(x, data, gps = old_sdata$gps),
     data_ac(x, data, data2 = data2, locations = old_sdata$locations),
     data_offset(x, data),
@@ -96,7 +95,7 @@ data_fe <- function(bterms, data) {
 }
 
 # data preparation for splines
-data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
+data_sm <- function(bterms, data, smooths = NULL) {
   out <- list()
   smterms <- all_terms(bterms[["sm"]])
   if (!length(smterms)) {
@@ -105,6 +104,7 @@ data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
   p <- usc(combine_prefix(bterms))
   new <- length(smooths) > 0L
   if (!new) {
+    knots <- get_knots(data)
     smooths <- named_list(smterms)
     for (i in seq_along(smterms)) {
       smooths[[i]] <- smoothCon(

@@ -70,7 +70,7 @@ tidy_smef <- function(x, data) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
-  sdata <- data_sm(x, data, knots = attr(data, "knots"))
+  sdata <- data_sm(x, data)
   bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)

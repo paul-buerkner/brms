@@ -76,7 +76,7 @@ make_standata <- function(formula, data, family = gaussian(),
     ranef <- tidy_ranef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2,
-      ranef = ranef, knots = knots, old_sdata = control$old_sdata
+      ranef = ranef, old_sdata = control$old_sdata
     )
     c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
@@ -167,14 +167,13 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     control$save_order <- TRUE
   }
   sample_prior <- attr(object$prior, "sample_prior")
-  knots <- attr(object$data, "knots")
   make_standata(
     formula = new_formula, data = newdata, 
     prior = object$prior, data2 = newdata2,
     cov_ranef = object$cov_ranef, 
     sample_prior = sample_prior, 
     stanvars = object$stanvars, 
-    knots = knots, control = control, ...
+    control = control, ...
   )
 }
 

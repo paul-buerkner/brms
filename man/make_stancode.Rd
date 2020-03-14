@@ -15,6 +15,7 @@ make_stancode(
   sample_prior = c("no", "yes", "only"),
   stanvars = NULL,
   stan_funs = NULL,
+  knots = NULL,
   save_model = NULL,
   silent = FALSE,
   ...
@@ -89,6 +90,10 @@ case, all parameters must have proper priors.}
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
 \code{stanvars} argument for this purpose, instead.}
+
+\item{knots}{Optional list containing user specified knot values to be used
+for basis construction of smoothing terms. See
+\code{\link[mgcv:gamm]{gamm}} for more details.}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

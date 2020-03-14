@@ -23,7 +23,8 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = c("no", "yes", "only"), 
                           stanvars = NULL, stan_funs = NULL, 
-                          save_model = NULL, silent = FALSE, ...) {
+                          knots = NULL, save_model = NULL, 
+                          silent = FALSE, ...) {
   dots <- list(...)
   silent <- as_one_logical(silent)
   # some input checks
@@ -40,12 +41,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     autocor = autocor, sparse = sparse
   )
   bterms <- parse_bf(formula)
+  data <- validate_data(data, bterms = bterms, knots = knots)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
     prior, formula = formula, data = data,
     sample_prior = sample_prior, warn = TRUE
   )
-  data <- validate_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
   stanvars <- validate_stanvars(stanvars)

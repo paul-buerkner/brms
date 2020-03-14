@@ -20,7 +20,7 @@ validate_data <- function(data, bterms, na.action = na.omit2,
     return(data)
   }
   if (is.null(knots)) {
-    knots <- attr(data, "knots", TRUE)
+    knots <- get_knots(data)
   }
   data <- try(as.data.frame(data), silent = TRUE)
   if (is(data, "try-error")) {
@@ -69,7 +69,6 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 # @return a validated named list of data objects
 validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
-  # TODO: specify 'knots' in 'data2'?
   if (isTRUE(attr(data2, "valid"))) {
     return(data2)
   }
@@ -276,6 +275,12 @@ get_one_value_per_group <- function(x, gr) {
   out <- x[not_dupl_gr][to_order]
   names(out) <- gr_unique
   out
+}
+
+# extract knots values for use in spline terms
+# knots are currently stored as an attribute of 'data'
+get_knots <- function(data) {
+  attr(data, "knots", TRUE)
 }
 
 #' Validate New Data
@@ -548,7 +553,7 @@ make_sm_list <- function(x, data, version = NULL, ...) {
   smterms <- all_terms(x[["sm"]])
   out <- named_list(smterms)
   if (length(smterms)) {
-    knots <- attr(data, "knots")
+    knots <- get_knots(data)
     data <- rm_attr(data, "terms")
     # the spline penality has changed in 2.8.7 (#646)
     diagonal.penalty <- !isTRUE(version <= "2.8.6")
