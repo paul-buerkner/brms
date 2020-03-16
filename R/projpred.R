@@ -35,10 +35,6 @@ get_refmodel_poc.brmsfit <- function(fit, newdata = NULL, resp = NULL,
   } else if (is.formula(bterms$adforms$weights)) {
     weights <- get_ad_values(bterms, "weights", "weights", newdata)
   }
-  # TODO: remove as soon as handled in projpred
-  if (!is.null(weights)) {
-    y <- y / weights
-  }
   
   # using default prediction functions from projpred is fine
   args <- nlist(
