@@ -5,6 +5,7 @@
 * Constrain ordinal thresholds to sum to zero via argument
 `threshold` in ordinal family functions thanks to the help of
 Marta Kołczyńska.
+* Support `posterior_linpred` as method in `conditional_effects`.
 
 ### Bug Fixes
 

@@ -11,9 +11,9 @@
 #' @inheritParams extract_draws
 #' @param object An object of class \code{brmsfit}.
 #' @param re.form Alias of \code{re_formula}.
-#' @param transform A function or a character string naming 
+#' @param transform (Deprecated) A function or a character string naming 
 #'   a function to be applied on the predicted responses
-#'   before summary statistics are computed.
+#'   before summary statistics are computed. 
 #' @param negative_rt Only relevant for Wiener diffusion models. 
 #'   A flag indicating whether response times of responses
 #'   on the lower boundary should be returned as negative values.
@@ -149,6 +149,9 @@ posterior_predict.brmsdraws <- function(object, transform = NULL, sort = FALSE,
   out <- reorder_obs(out, object$old_order, sort = sort)
   # transform predicted response samples before summarizing them 
   if (!is.null(transform)) {
+    # deprecated as of brms 2.12.3
+    warning2("Argument 'transform' is deprecated ", 
+             "and will be removed in the future.")
     out <- do_call(transform, list(out))
   }
   attr(out, "levels") <- object$cats
@@ -283,6 +286,8 @@ validate_pp_method <- function(method) {
     method <- "pp_expect"
   } else if (method %in% c("predictive_error", "residuals")) {
     method <- "predictive_error"
+  } else if (method %in% c("posterior_linpred")) {
+    method <- "posterior_linpred"
   } else {
     stop2("Posterior predictive method '", method, "' it not supported.")
   }

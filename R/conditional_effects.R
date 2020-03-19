@@ -373,6 +373,10 @@ conditional_effects.brmsterms <- function(
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
+  if (method != "posterior_predict") {
+    # 'transform' creates problems in 'posterior_linpred'
+    pred_args$transform <- NULL
+  }
   out <- do_call(method, pred_args)
   rownames(marg_data) <- NULL
   

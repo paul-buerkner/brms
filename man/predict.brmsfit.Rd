@@ -34,7 +34,7 @@ predictions of the grand mean when using sum coding.}
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
-\item{transform}{A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 

@@ -231,7 +231,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       Kthres_cumsum <- cumsum(nthres)
       Kthres_start <- c(1, Kthres_cumsum[-length(nthres)] + 1)
       Kthres_end <- Kthres_cumsum
-      Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, ]
+      Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, , drop = FALSE]
       out$Jthres <- Jthres
     } else {
       nthres <- max(thres$thres)

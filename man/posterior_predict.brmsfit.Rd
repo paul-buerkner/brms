@@ -35,7 +35,7 @@ if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
 
-\item{transform}{A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
