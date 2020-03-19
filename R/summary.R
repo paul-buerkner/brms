@@ -96,7 +96,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   
   pars <- parnames(object)
   # TODO: exclude more parameters?
-  excl_regex <- "^(r|s|zgp|Xme|prior|lp)_"
+  excl_regex <- "^(r|s|z|zs|zgp|Xme|L|prior|lp)_"
   pars <- pars[!grepl(excl_regex, pars)]
   fit_summary <- .summary(object, pars = pars, prob = prob)
   if (algorithm(object) == "sampling") {
