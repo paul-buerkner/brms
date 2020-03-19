@@ -230,6 +230,9 @@ extract_draws.btl <- function(x, samples, sdata, ...) {
 # extract draws of ordinary population-level effects
 extract_draws_fe <- function(bterms, samples, sdata, ...) {
   draws <- list()
+  if (is.null(bterms[["fe"]])) {
+    return(draws)
+  }
   p <- usc(combine_prefix(bterms))
   X <- sdata[[paste0("X", p)]]
   fixef <- colnames(X)
@@ -247,7 +250,9 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
                              trunc_bounds = NULL, ...) {
   draws <- list()
   spef <- tidy_spef(bterms, data)
-  if (!nrow(spef)) return(draws)
+  if (!nrow(spef)) {
+    return(draws)
+  }
   p <- usc(combine_prefix(bterms))
   resp <- usc(bterms$resp)
   # prepare calls evaluated in sp_predictor
