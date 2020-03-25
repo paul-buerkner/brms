@@ -619,7 +619,7 @@ stan_re <- function(ranef, prior, ...) {
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
       str_add(out$tpar_comp) <- glue(
-        "  // compute actual group-level effects",
+        "  // compute actual group-level effects\n",
         "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$gen_def) <- cglue(
