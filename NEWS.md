@@ -14,6 +14,7 @@ thanks to Chris Chatham. (#855, #856)
 * Fix scaling problems in the estimation of ordinal models with
 multiple threshold vectors thanks to Marta Kołczyńska and
 Rok Češnovar.
+* Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
 
 
 # brms 2.12.0

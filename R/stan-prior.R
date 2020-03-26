@@ -224,13 +224,17 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   prior_args <- rep(NA, length(prior))
   for (i in seq_along(prior)) {
     prior_args[i] <- sub(glue("^{prior_name[i]}\\("), "", prior[i])
+    prior_args[i] <- sub(")$", "", prior_args[i])
   }
   if (broadcast == "matrix" && ncoef > 0) {
     # apply a scalar prior to all elements of a matrix 
     par <- glue("to_vector({par})")
   }
   
-  out <- glue("{prior_name}_lpdf({par} | {prior_args}")
+  if (nzchar(prior_args)) {
+    str_add(prior_args, start = TRUE) <- " | "
+  }
+  out <- glue("{prior_name}_lpdf({par}{prior_args})")
   par_class <- unique(get_matches("^[^_]+", par))
   par_bound <- par_bounds(par_class, bound, resp = resp)
   prior_bound <- prior_bounds(prior_name)
@@ -242,17 +246,17 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
     ncoef <- max(1, ncoef)
     if (trunc_lb && !trunc_ub) {
       str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb} | {prior_args}"
+        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
       )
     } else if (!trunc_lb && trunc_ub) {
       str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub} | {prior_args}"
+        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
       )
     } else if (trunc_lb && trunc_ub) {
       str_add(out) <- glue(
         "\n{wsp}- {ncoef} * log_diff_exp(", 
-        "{prior_name}_lcdf({par_bound$ub} | {prior_args}, ",
-        "{prior_name}_lcdf({par_bound$lb} | {prior_args})"
+        "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
+        "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
       )
     }
   }
