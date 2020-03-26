@@ -6,6 +6,7 @@
 `threshold` in ordinal family functions thanks to the help of
 Marta Kołczyńska.
 * Support `posterior_linpred` as method in `conditional_effects`.
+* Use `std_normal` in the Stan code for improved efficiency.
 
 ### Bug Fixes
 

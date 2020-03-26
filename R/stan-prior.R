@@ -318,7 +318,7 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
     c2_args <- glue("0.5 * hs_df_slab{p}")
     c2_args <- sargs(c2_args, c2_args)
     str_add(out$prior) <- glue(
-      "{tp}normal_lpdf(hs_global{p}[1] | 0, 1)\n",
+      "{tp}std_normal_lpdf(hs_global{p}[1])\n",
       "    - 1 * log(0.5);\n",
       "{tp}inv_gamma_lpdf(hs_global{p}[2] | {global_args});\n",
       "{tp}inv_gamma_lpdf(hs_c2{p} | {c2_args});\n"
@@ -381,8 +381,8 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     local_args <- glue("0.5 * hs_df{p}")
     local_args <- sargs(local_args, local_args)
     str_add(out$prior) <- glue(
-      "{tp}normal_lpdf(zb{sp} | 0, 1);\n",
-      "{tp}normal_lpdf(hs_local{sp}[1] | 0, 1)\n", 
+      "{tp}std_normal_lpdf(zb{sp});\n",
+      "{tp}std_normal_lpdf(hs_local{sp}[1])\n", 
       "    - {ncoef} * log(0.5);\n",
       "{tp}inv_gamma_lpdf(hs_local{sp}[2] | {local_args});\n"
     )
@@ -420,6 +420,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D <- data.frame(prior = prior[nzchar(prior)])
   pars_regex <- "(?<=(_lpdf\\())[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
+  # 'std_normal' has no '|' and thus the above regex matches too much
+  np <- !grepl("\\|", D$prior)
+  np_regex <- ".+(?=\\)$)"
+  D$par[np] <- get_matches(np_regex, D$par[np], perl = TRUE, first = TRUE)
   # 'to_vector' should be removed from the parameter names
   has_tv <- grepl("^to_vector\\(", D$par)
   tv_regex <- "(^to_vector\\()|(\\)(?=((\\[[[:digit:]]+\\])?)$))"
@@ -450,6 +454,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$dist <- sub("corr_cholesky$", "corr", D$dist)
   args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
   D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
+  # 'std_normal_rng' does not exist in Stan
+  has_std_normal <- D$dist == "std_normal"
+  D$dist[has_std_normal] <- "normal"
+  D$args[has_std_normal] <- "0,1"
   
   # extract information from the initial parameter definition
   par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))

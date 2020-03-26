@@ -595,7 +595,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- glue(
-      "  target += normal_lpdf(to_vector(z_{id}) | 0, 1);\n"
+      "  target += std_normal_lpdf(to_vector(z_{id}));\n"
     )
     if (has_rows(tr)) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
@@ -680,7 +680,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- cglue(
-      "  target += normal_lpdf(z_{id}[{seq_rows(r)}] | 0, 1);\n"
+      "  target += std_normal_lpdf(z_{id}[{seq_rows(r)}]);\n"
     )
     Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
@@ -770,7 +770,7 @@ stan_sm <- function(bterms, data, prior, ...) {
       "  s{pi}_{nb} = sds{pi}_{nb} * zs{pi}_{nb};\n"
     )
     str_add(out$prior) <- cglue(
-      "  target += normal_lpdf(zs{pi}_{nb} | 0, 1);\n"
+      "  target += std_normal_lpdf(zs{pi}_{nb});\n"
     )
     str_add(out$eta) <- cglue(
       " + Zs{pi}_{nb} * s{pi}_{nb}"
@@ -1056,7 +1056,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         "  {eta} = {eta} + {gp_call}{Jgp};\n"
       )
       str_add(out$prior) <- cglue(
-        "{tp()}normal_lpdf(zgp{pi}_{J} | 0, 1);\n"
+        "{tp()}std_normal_lpdf(zgp{pi}_{J});\n"
       )
     } else {
       # no by-factor variable
@@ -1109,7 +1109,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       Jgp <- str_if(gr, glue("[Jgp{pi}]"))
       str_add(out$eta) <- glue(" + {Cgp}{gp_call}{Jgp}")
       str_add(out$prior) <- glue(
-        "{tp()}normal_lpdf(zgp{pi} | 0, 1);\n"
+        "{tp()}std_normal_lpdf(zgp{pi});\n"
       )
     }
   }
@@ -1272,7 +1272,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(zerr{p} | 0, 1);\n"
+        "  target += std_normal_lpdf(zerr{p});\n"
       )
       str_add(out$eta) <- glue(" + err{p}")
     }
@@ -1426,7 +1426,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
         "  // proper prior on the non-spatial BYM2 component\n",
-        "  target += normal_lpdf(nszcar{p} | 0, 1);\n"
+        "  target += std_normal_lpdf(nszcar{p});\n"
       )
     }
   }
@@ -1550,7 +1550,7 @@ stan_Xme <- function(meef, prior) {
         "  Xme_{K} = Xme{i}[, {J}];\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n"
+        "  target += std_normal_lpdf(to_vector(zme_{i}));\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // obtain latent correlation matrix\n",
@@ -1574,7 +1574,7 @@ stan_Xme <- function(meef, prior) {
         "  Xme_{K} = meanme_{i}[{J}] + sdme_{i}[{J}] * zme_{K};\n"
       )
       str_add(out$prior) <- cglue(
-        "  target += normal_lpdf(zme_{K} | 0, 1);\n"
+        "  target += std_normal_lpdf(zme_{K});\n"
       )
     }
   }
