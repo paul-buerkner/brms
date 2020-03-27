@@ -4,7 +4,7 @@
 \alias{mm}
 \title{Set up multi-membership grouping terms in \pkg{brms}}
 \usage{
-mm(..., weights = NULL, scale = TRUE, dist = "gaussian")
+mm(..., weights = NULL, scale = TRUE, cor = TRUE, id = NA, dist = "gaussian")
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
@@ -17,6 +17,13 @@ If \code{NULL} (the default), equally weights are used.}
 weights are standardized in order to sum to one per row.
 If negative weights are specified, \code{scale} needs
 to be set to \code{FALSE}.}
+
+\item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
+modelled as correlated.}
+
+\item{id}{Optional character string. All group-level terms across the model
+with the same \code{id} will be modeled as correlated (if \code{cor} is
+\code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
 \item{dist}{Name of the distribution of the group-level effects.
 Currently \code{"gaussian"} is the only option.}

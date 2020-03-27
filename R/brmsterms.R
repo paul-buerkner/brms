@@ -360,15 +360,12 @@ parse_re <- function(formula) {
   out <- allvars <- vector("list", length(re_terms))
   type <- attr(re_terms, "type")
   for (i in seq_along(re_terms)) {
-    id <- gsub("\\|", "", re_parts$mid[i])
-    if (!nzchar(id)) id <- NA
     gcall <- eval2(re_parts$rhs[i])
     form <- str2formula(re_parts$lhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(
-      group = group, gtype = gcall$type, 
-      gn = i, id = id, type = type[i],
-      cor = substr(re_parts$mid[i], 1, 2) != "||",
+      group = group, gtype = gcall$type, gn = i, 
+      id = gcall$id, type = type[i], cor = gcall$cor,
       stringsAsFactors = FALSE
     )
     out[[i]]$gcall <- list(gcall)

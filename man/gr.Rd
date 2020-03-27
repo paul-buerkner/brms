@@ -4,16 +4,22 @@
 \alias{gr}
 \title{Set up basic grouping terms in \pkg{brms}}
 \usage{
-gr(..., by = NULL, dist = "gaussian")
+gr(..., by = NULL, cor = TRUE, id = NA, dist = "gaussian")
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
 
-\item{by}{An optional factor variable, specifying sub-populations
-of the groups. For each level of the \code{by} variable, 
-a separate variance-covariance matrix will be fitted. 
-Levels of the grouping factor must be nested in levels 
-of the \code{by} variable.}
+\item{by}{An optional factor variable, specifying sub-populations of the
+groups. For each level of the \code{by} variable, a separate
+variance-covariance matrix will be fitted. Levels of the grouping factor
+must be nested in levels of the \code{by} variable.}
+
+\item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
+modelled as correlated.}
+
+\item{id}{Optional character string. All group-level terms across the model
+with the same \code{id} will be modeled as correlated (if \code{cor} is
+\code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
 \item{dist}{Name of the distribution of the group-level effects.
 Currently \code{"gaussian"} is the only option.}

@@ -351,7 +351,8 @@ test_that("customized covariances appear in the Stan code", {
   )
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
   
-  scode <- make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
+  scode <- make_stancode(rating ~ treat + period + carry + 
+                           (1 + carry | gr(subject, cor = FALSE)), 
                          data = inhaler, cov_ranef = list(subject = 1))
   expect_match2(scode, " r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]));")
   expect_match2(scode, " r_1_2 = (sd_1[2] * (Lcov_1 * z_1[2]));")
@@ -582,7 +583,7 @@ test_that("Stan code for categorical models is correct", {
     prior(cauchy(0, 1), "Intercept", dpar = mu2) +
     prior(normal(0, 2), "Intercept", dpar = mu3)
   
-  scode <- make_stancode(y ~ x + (1 |ID| .g), data = dat, 
+  scode <- make_stancode(y ~ x + (1 | gr(.g, id = "ID")), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
   expect_match2(scode, "mu[n] = [0, mu2[n], mu3[n], muab[n]]';")
@@ -592,6 +593,7 @@ test_that("Stan code for categorical models is correct", {
   expect_match2(scode, "target += normal_lpdf(b_muab | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(Intercept_mu2 | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(Intercept_mu3 | 0, 2);")
+  expect_match2(scode, "r_1 = (diag_pre_multiply(sd_1, L_1) * z_1)';")
   
   scode <- make_stancode(y ~ x + (1 |ID| .g), data = dat, 
                          family = categorical(refcat = NA))

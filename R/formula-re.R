@@ -10,13 +10,17 @@
 #' and there is usually no need to call it directly.
 #' 
 #' @param ... One or more terms containing grouping factors.
-#' @param by An optional factor variable, specifying sub-populations
-#'   of the groups. For each level of the \code{by} variable, 
-#'   a separate variance-covariance matrix will be fitted. 
-#'   Levels of the grouping factor must be nested in levels 
-#'   of the \code{by} variable.
+#' @param by An optional factor variable, specifying sub-populations of the
+#'   groups. For each level of the \code{by} variable, a separate
+#'   variance-covariance matrix will be fitted. Levels of the grouping factor
+#'   must be nested in levels of the \code{by} variable.
+#' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
+#'   modelled as correlated.
+#' @param id Optional character string. All group-level terms across the model
+#'   with the same \code{id} will be modeled as correlated (if \code{cor} is
+#'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
 #' @param dist Name of the distribution of the group-level effects.
-#'   Currently \code{"gaussian"} is the only option.
+#' Currently \code{"gaussian"} is the only option.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
@@ -36,13 +40,15 @@
 #' }
 #' 
 #' @export
-gr <- function(..., by = NULL, dist = "gaussian") {
+gr <- function(..., by = NULL, cor = TRUE, id = NA, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
   }
   stopif_illegal_group(groups[1])
+  cor <- as_one_logical(cor)
+  id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
     by <- all.vars(by)
@@ -54,7 +60,7 @@ gr <- function(..., by = NULL, dist = "gaussian") {
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   allvars <- str2formula(c(groups, by))
-  nlist(groups, allvars, label, by, dist, type = "")
+  nlist(groups, allvars, label, by, cor, id, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -99,7 +105,8 @@ gr <- function(..., by = NULL, dist = "gaussian") {
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
+mm <- function(..., weights = NULL, scale = TRUE,
+               cor = TRUE, id = NA, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -108,6 +115,8 @@ mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
   for (i in seq_along(groups)) {
     stopif_illegal_group(groups[i])
   }
+  cor <- as_one_logical(cor)
+  id <- as_one_character(id, allow_na = TRUE)
   dist <- match.arg(dist, c("gaussian", "student"))
   scale <- as_one_logical(scale)
   weights <- substitute(weights)
@@ -120,7 +129,7 @@ mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
   }
   nlist(
     groups, weights, weightvars, allvars, 
-    label, by = "", dist, type = "mm"
+    label, by = "", cor, id, dist, type = "mm"
   )
 }
 
@@ -212,7 +221,7 @@ re_parts <- function(re_terms) {
 }
 
 # split nested group-level terms and check for special effects terms
-# @param re_terms character vector of RE terms in lme4 syntax
+# @param re_terms character vector of RE terms in extended lme4 syntax
 split_re_terms <- function(re_terms) {
   if (!length(re_terms)) {
     return(re_terms)
@@ -265,19 +274,35 @@ split_re_terms <- function(re_terms) {
     fe_form <- parse_fe(lhs_form)
     fe_terms <- all_terms(fe_form)
     has_intercept <- attr(terms(fe_form), "intercept")
-    if (length(fe_terms) || has_intercept && !"cs" %in% type[[i]]) {
+    # the intercept lives within not outside of 'cs' terms
+    has_intercept <- has_intercept && !"cs" %in% type[[i]]
+    if (length(fe_terms) || has_intercept) {
       new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
     }
-    if (length(new_lhs) > 1 && re_parts$mid[i] != "||") {
+    # extract information from the mid section of the terms
+    rhs_call <- str2lang(re_parts$rhs[i])
+    if (re_parts$mid[i] == "||") {
+      # ||-syntax overwrites the 'cor' argument
+      rhs_call$cor <- FALSE
+    }
+    gcall <- eval(rhs_call)
+    if (gcall$cor) {
       id <- gsub("\\|", "", re_parts$mid[i])
-      if (!nzchar(id)) {
+      if (nzchar(id)) {
+        # ID-syntax overwrites the 'id' argument
+        rhs_call$id <- id
+      } else {
+        id <- gcall$id
+      }
+      if (length(new_lhs) > 1 && isNA(id)) {
         # ID is required to model coefficients as correlated 
         # if multiple types are provided within the same term
-        id <- collapse(sample(0:9, 10, TRUE))
-        re_parts$mid[i] <- paste0("|", id, "|")
+        rhs_call$id <- collapse(sample(0:9, 10, TRUE))
       }
     }
+    re_parts$mid[i] <- "|"
+    re_parts$rhs[i] <- deparse_combine(rhs_call)
     new_re_terms[[i]] <- paste0(new_lhs, re_parts$mid[i], re_parts$rhs[i])
     new_re_terms[[i]] <- new_re_terms[[i]][order(type[[i]])]
     type[[i]] <- sort(type[[i]])

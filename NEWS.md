@@ -7,6 +7,8 @@
 Marta Kołczyńska.
 * Support `posterior_linpred` as method in `conditional_effects`.
 * Use `std_normal` in the Stan code for improved efficiency.
+* Add arguments `cor` and `id` to the functions `gr` and `mm`
+for easy specification of group-level correlation structures.
 
 ### Bug Fixes
 
