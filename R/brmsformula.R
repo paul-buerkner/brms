@@ -65,32 +65,38 @@
 #'   The \code{formula} argument accepts formulas of the following syntax:
 #'   
 #'   \code{response | aterms ~ pterms + (gterms | group)} 
-#'   
-#'   The \code{pterms} part contains effects that are assumed to be the 
-#'   same across observations. We call them 'population-level' effects
+#'
+#'   The \code{pterms} part contains effects that are assumed to be the same
+#'   across observations. We call them 'population-level' or 'overall' effects,
 #'   or (adopting frequentist vocabulary) 'fixed' effects. The optional
-#'   \code{gterms} part may contain effects that are assumed to vary
-#'   across grouping variables specified in \code{group}. We
-#'   call them 'group-level' effects or (adopting frequentist 
-#'   vocabulary) 'random' effects, although the latter name is misleading
-#'   in a Bayesian context. For more details type 
-#'   \code{vignette("brms_overview")} and \code{vignette("brms_multilevel")}. 
+#'   \code{gterms} part may contain effects that are assumed to vary across
+#'   grouping variables specified in \code{group}. We call them 'group-level' or
+#'   'varying' effects, or (adopting frequentist vocabulary) 'random' effects,
+#'   although the latter name is misleading in a Bayesian context. For more
+#'   details type \code{vignette("brms_overview")} and
+#'   \code{vignette("brms_multilevel")}.
 #'   
 #'   \bold{Group-level terms}
 #'   
-#'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. (Of course we can also run models without any
-#'   group-level effects.) 
-#'   Instead of \code{|} you may use \code{||} in grouping terms
-#'   to prevent correlations from being modeled. 
-#'   Alternatively, it is possible to model different group-level terms of 
-#'   the same grouping factor as correlated (even across different formulas,
-#'   e.g., in non-linear models) by using \code{|<ID>|} instead of \code{|}.
-#'   All group-level terms sharing the same ID will be modeled as correlated.
-#'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
-#'   \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
-#'   correlations between the corresponding group-level effects 
-#'   will be estimated.
+#'   Multiple grouping factors each with multiple group-level effects are
+#'   possible. (Of course we can also run models without any group-level
+#'   effects.) Instead of \code{|} you may use \code{||} in grouping terms to
+#'   prevent correlations from being modeled. Equivalently, the \code{cor}
+#'   argument of the \code{\link{gr}} function can be used for this purpose, 
+#'   for example, \code{(1 + x || g)} is equivalent to 
+#'   \code{(1 + x | gr(g, cor = FALSE))}.
+#'   
+#'   It is also possible to model different group-level terms of the same
+#'   grouping factor as correlated (even across different formulas, e.g., in
+#'   non-linear models) by using \code{|<ID>|} instead of \code{|}. All
+#'   group-level terms sharing the same ID will be modeled as correlated. If,
+#'   for instance, one specifies the terms \code{(1+x|i|g)} and \code{(1+z|i|g)}
+#'   somewhere in the formulas passed to \code{brmsformula}, correlations
+#'   between the corresponding group-level effects will be estimated. In the
+#'   above example, \code{i} is not a variable in the data but just a symbol to
+#'   indicate correlations between multiple group-level terms. Equivalently, the
+#'   \code{id} argument of the \code{\link{gr}} function can be used as well,
+#'   for example, \code{(1 + x | gr(g, id = "i"))}.
 #'   
 #'   If levels of the grouping factor belong to different sub-populations,
 #'   it may be reasonable to assume a different covariance matrix for each 
@@ -113,7 +119,7 @@
 #'   
 #'   \bold{Special predictor terms}
 #'   
-#'   Smoothing terms can modeled using the \code{\link{s}}
+#'   Flexible non-linear smooth terms can modeled using the \code{\link{s}}
 #'   and \code{\link{t2}} functions in the \code{pterms} part 
 #'   of the model formula. This allows to fit generalized additive mixed
 #'   models (GAMMs) with \pkg{brms}. The implementation is similar to that 
@@ -125,7 +131,7 @@
 #'   smooth terms, Gaussian processes can be used to model complex non-linear
 #'   relationships, for instance temporal or spatial autocorrelation. 
 #'   However, they are computationally demanding and are thus not recommended 
-#'   for very large datasets.
+#'   for very large datasets or approximations need to be used.
 #'   
 #'   The \code{pterms} and \code{gterms} parts may contain four non-standard
 #'   effect types namely monotonic, measurement error, missing value, and 
@@ -193,8 +199,8 @@
 #'   
 #'   \bold{Autocorrelation terms}
 #'   
-#'   Autocorrelation terms can be directly specified inside the formula
-#'   as well. Details can be found in \code{\link{autocor-terms}}.
+#'   Autocorrelation terms can be directly specified inside the \code{pterms}
+#'   part as well. Details can be found in \code{\link{autocor-terms}}.
 #'   
 #'   \bold{Additional response information}
 #'   
@@ -562,7 +568,10 @@
 #' bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 #' 
 #' # correlated group-level effects across parameters
-#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 |2| g), a2 ~ x + (x |2| g), nl = TRUE)
+#' # alternative but equivalent way to specify the above model
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | gr(g, id = 2)), 
+#'    a2 ~ x + (x | gr(g, id = 2)), nl = TRUE)
 #' 
 #' # define a multivariate model
 #' bf(mvbind(y1, y2) ~ x * z + (1|g))
