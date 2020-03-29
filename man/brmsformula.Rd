@@ -646,6 +646,10 @@ bf(y1 ~ x + (1|g)) +
   gaussian() + cor_ar(~1|g) +
   bf(y2 ~ z) + poisson()
   
+# specify correlated residuals of a gaussian and a poisson model
+form1 <- bf(y1 ~ 1 + x + (1|c|obs), sigma = 1) + gaussian()
+form2 <- bf(y2 ~ 1 + x + (1|c|obs)) + poisson()
+  
 # model missing values in predictors
 bf(bmi ~ age * mi(chl)) +
   bf(chl | mi() ~ age) + 
