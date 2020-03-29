@@ -160,7 +160,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
 # @return a data.frame with one row per GP term
 tidy_gpef <- function(x, data) {
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+    x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["gp"]]
   if (!is.formula(form)) {

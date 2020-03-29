@@ -525,7 +525,7 @@ extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
   
   if (is.null(x$adforms)) {
-    x$adforms <- parse_ad(x$formula, x$family)
+    x$adforms <- terms_ad(x$formula, x$family)
   }
   nthres <- get_ad_values(x, "thres", "thres", data)
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {

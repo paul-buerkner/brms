@@ -35,7 +35,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   object <- restructure(object)
-  bterms <- parse_bf(object$formula)
+  bterms <- brmsterms(object$formula)
   out <- list(
     formula = object$formula,
     data.name = object$data.name, 

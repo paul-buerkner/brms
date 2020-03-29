@@ -50,7 +50,7 @@ t2 <- function(...) {
 # @param data data.frame containing the covariates
 tidy_smef <- function(x, data) {
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+    x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sm"]] 
   if (!is.formula(form)) {

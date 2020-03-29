@@ -36,7 +36,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     internal = TRUE, ...
   )
   new_formula <- update_re_terms(x$formula, re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
   old_sdata <- trunc_bounds <- NULL

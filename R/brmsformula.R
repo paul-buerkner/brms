@@ -729,7 +729,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out$family <- check_family(family)
   }
   if (!is.null(lhs(formula))) {
-    out$resp <- parse_resp(formula)
+    out$resp <- terms_resp(formula)
   }
   # add default values for unspecified elements
   defs <- list(pforms = list(), pfix = list(), family = NULL, resp = NULL)
@@ -872,7 +872,7 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
 #' @rdname brmsformula-helpers
 #' @export
 acformula <- function(autocor, resp = NULL) {
-  autocor <- parse_ac(as.formula(autocor))
+  autocor <- terms_ac(as.formula(autocor))
   if (!is.formula(autocor)) {
     stop2("'autocor' must contain at least one autocorrelation term.")
   }
@@ -967,7 +967,7 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 # which uses mvbind on the left-hand side to specify MV models
 split_bf <- function(x) {
   stopifnot(is.brmsformula(x))
-  resp <- parse_resp(x$formula, check_names = FALSE)
+  resp <- terms_resp(x$formula, check_names = FALSE)
   str_adform <- formula2str(x$formula)
   str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
   if (length(resp) > 1L) {
@@ -1358,7 +1358,7 @@ validate_formula.mvbrmsformula <- function(
   if (is.null(formula$rescor)) {
     # with 'mi' terms we usually don't want rescor to be estimated
     miforms <- ulapply(formula$forms, function(f)
-      parse_ad(f$formula, f$family, FALSE)[["mi"]]
+      terms_ad(f$formula, f$family, FALSE)[["mi"]]
     )
     formula$rescor <- allow_rescor && !length(miforms)
     message("Setting 'rescor' to ", formula$rescor, " by default for this model")

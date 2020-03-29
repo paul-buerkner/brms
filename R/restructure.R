@@ -58,7 +58,7 @@ restructure <- function(x, rstr_summary = FALSE) {
 restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   x$formula <- update_old_family(x$formula)
-  bterms <- SW(parse_bf(x$formula))
+  bterms <- SW(brmsterms(x$formula))
   pars <- parnames(x)
   version <- get_restructure_version(x)
   if (version <= "2.1.1") {
@@ -169,7 +169,7 @@ restructure_v1 <- function(x) {
     autocor = x$autocor, threshold = x$threshold
   ))
   x$nonlinear <- x$partial <- x$threshold <- NULL
-  bterms <- parse_bf(formula(x))
+  bterms <- brmsterms(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
   x$data <- validate_data(x$data, bterms) 
   x$ranef <- tidy_ranef(bterms, model.frame(x))
@@ -533,7 +533,7 @@ rescale_old_mo <- function(x, ...) {
 
 #' @export
 rescale_old_mo.brmsfit <- function(x, ...) {
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   rescale_old_mo(bterms, fit = x, ...)
 }
 

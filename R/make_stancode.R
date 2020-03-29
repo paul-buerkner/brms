@@ -40,7 +40,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     formula, data = data, family = family, 
     autocor = autocor, sparse = sparse
   )
-  bterms <- parse_bf(formula)
+  bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
   sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(

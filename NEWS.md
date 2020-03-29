@@ -19,6 +19,10 @@ multiple threshold vectors thanks to Marta Kołczyńska and
 Rok Češnovar.
 * Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
 
+### Other Changes
+
+* Rename `parse_bf` to `brmsterms` and deprecate the former function.
+
 
 # brms 2.12.0
 

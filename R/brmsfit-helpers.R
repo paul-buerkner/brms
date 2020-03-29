@@ -550,7 +550,7 @@ insert_refcat  <- function(eta, family) {
 # @return names of validated response variables
 validate_resp <- function(resp, x, multiple = TRUE) {
   if (is.brmsfit(x)) {
-    x <- parse_bf(x$formula)$responses
+    x <- brmsterms(x$formula)$responses
   }
   x <- as.character(x)
   if (!length(x)) {

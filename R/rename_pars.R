@@ -6,7 +6,7 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
   pars <- parnames(x)

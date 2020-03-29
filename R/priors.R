@@ -492,7 +492,7 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
     formula, data = data, family = family, 
     autocor = autocor, sparse = sparse
   )
-  bterms <- parse_bf(formula)
+  bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
@@ -1105,7 +1105,7 @@ check_prior <- function(prior, formula, data,
     attr(prior, "sample_prior") <- sample_prior
     return(prior)
   }
-  bterms <- parse_bf(formula)
+  bterms <- brmsterms(formula)
   all_priors <- get_prior(formula, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  

@@ -48,7 +48,7 @@ make_standata <- function(formula, data, family = gaussian(),
   formula <- validate_formula(
     formula, data = data, family = family, autocor = autocor
   )
-  bterms <- parse_bf(formula)
+  bterms <- brmsterms(formula)
   sample_prior <- check_sample_prior(sample_prior)
   check_prior_content(prior, warn = FALSE)
   prior <- check_prior_special(
@@ -132,7 +132,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     newdata2 <- object$data2
   }
   new_formula <- update_re_terms(object$formula, re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   newdata2 <- validate_data2(newdata2, bterms = bterms)
   version <- object$version$brms
   if (is_old_data) {

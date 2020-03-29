@@ -261,7 +261,7 @@ split_re_terms <- function(re_terms) {
     valid_types <- c("sp", "cs", "mmc")
     invalid_types <- c("sm", "gp")
     for (t in c(valid_types, invalid_types)) {
-      lhs_tform <- do_call(paste0("parse_", t), list(lhs_form))
+      lhs_tform <- do_call(paste0("terms_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
         if (t %in% invalid_types) {
           stop2("Cannot handle splines or GPs in group-level terms.")
@@ -271,7 +271,7 @@ split_re_terms <- function(re_terms) {
       }
     }
     # prepare effects of basic terms
-    fe_form <- parse_fe(lhs_form)
+    fe_form <- terms_fe(lhs_form)
     fe_terms <- all_terms(fe_form)
     has_intercept <- attr(terms(fe_form), "intercept")
     # the intercept lives within not outside of 'cs' terms
@@ -346,8 +346,8 @@ check_re_formula <- function(re_formula, formula) {
     re_formula <- ~1
   } else {
     re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
-    new <- parse_bf(re_formula, check_response = FALSE)$dpars$mu[["re"]]
-    old <- parse_bf(old_re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    new <- brmsterms(re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    old <- brmsterms(old_re_formula, check_response = FALSE)$dpars$mu[["re"]]
     if (NROW(new) && NROW(old)) {
       # compare old and new ranefs
       new_terms <- lapply(new$form, terms)
@@ -683,7 +683,7 @@ get_group_vars.brmsfit <- function(x, ...) {
 
 #' @export
 get_group_vars.default <- function(x, ...) {
-  get_group_vars(parse_bf(x), ...)
+  get_group_vars(brmsterms(x), ...)
 }
 
 #' @export

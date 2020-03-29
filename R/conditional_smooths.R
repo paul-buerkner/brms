@@ -60,7 +60,7 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
   subset <- subset_samples(x, subset, nsamples)
   # call as.matrix only once to save time and memory
   samples <- as.matrix(x, subset = subset)
-  bterms <- parse_bf(exclude_terms(x$formula, smooths_only = TRUE))
+  bterms <- brmsterms(exclude_terms(x$formula, smooths_only = TRUE))
   out <- conditional_smooths(
     bterms, fit = x, samples = samples, smooths = smooths, 
     conditions = conditions, int_conditions = int_conditions, 

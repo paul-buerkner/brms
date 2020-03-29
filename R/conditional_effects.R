@@ -236,7 +236,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   if (length(probs) != 2L) {
     stop2("Arguments 'probs' must be of length 2.")
   }
@@ -702,7 +702,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   mf <- model.frame(fit)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   if (any(grepl_expr("^(as\\.)?factor(.+)$", bterms$allvars))) {
     # conditions are chosen based the variables stored in the data
     # this approach cannot take into account possible transformations

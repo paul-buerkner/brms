@@ -63,7 +63,7 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 
 # validate the 'data2' argument
 # @param data2 a named list of data objects
-# @param bterms object returned by 'parse_bf'
+# @param bterms object returned by 'brmsterms'
 # @param ... more named list to pass objects to data2 from other sources
 #   only required for backwards compatibility with deprecated arguments
 # @return a validated named list of data objects
@@ -321,7 +321,7 @@ validate_newdata <- function(
   object <- exclude_terms(object, incl_autocor = incl_autocor)
   resp <- validate_resp(resp, object)
   new_formula <- update_re_terms(formula(object), re_formula)
-  bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
+  bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
     # variables not used in the included model parts
     # do not need to be specified in newdata

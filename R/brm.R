@@ -393,7 +393,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       autocor = autocor, sparse = sparse
     )
     family <- get_element(formula, "family")
-    bterms <- parse_bf(formula)
+    bterms <- brmsterms(formula)
     data.name <- substitute_name(data)
     data <- validate_data(data, bterms = bterms, knots = knots)
     data2 <- validate_data2(

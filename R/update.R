@@ -178,7 +178,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    bterms <- parse_bf(object$formula)
+    bterms <- brmsterms(object$formula)
     object$data <- validate_data(dots$data, bterms = bterms)
     object$data2 <- validate_data2(dots$data2, bterms = bterms)
     object$family <- get_element(object$formula, "family")

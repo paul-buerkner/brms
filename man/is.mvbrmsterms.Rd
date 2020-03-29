@@ -13,5 +13,5 @@ is.mvbrmsterms(x)
 Checks if argument is a \code{mvbrmsterms} object
 }
 \seealso{
-\code{\link[brms:parse_bf]{parse_bf}}
+\code{\link[brms:brmsterms]{brmsterms}}
 }

@@ -299,7 +299,7 @@ prepare_cens <- function(x) {
 get_cens <- function(x, resp = NULL, newdata = NULL) {
   stopifnot(is.brmsfit(x))
   resp <- validate_resp(resp, x, multiple = FALSE)
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   if (!is.null(resp)) {
     bterms <- bterms$terms[[resp]]
   }

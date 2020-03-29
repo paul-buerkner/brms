@@ -393,7 +393,7 @@ validate_autocor <- function(autocor) {
   }
   autocor <- as.formula(autocor)
   att <- attributes(autocor)
-  autocor <- parse_ac(autocor)
+  autocor <- terms_ac(autocor)
   if (!is.null(autocor) && !is.formula(autocor)) {
     stop2("Argument 'autocor' must be coercible to a formula.")
   }
@@ -409,7 +409,7 @@ tidy_acef <- function(x, ...) {
 
 #' @export
 tidy_acef.default <- function(x, ...) {
-  x <- parse_bf(x, check_response = FALSE)
+  x <- brmsterms(x, check_response = FALSE)
   tidy_acef(x, ...)
 }
 
