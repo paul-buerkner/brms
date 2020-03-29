@@ -7,6 +7,7 @@ SW <- brms:::SW
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
                     g = rep(1:5, 2), h = factor(rep(1:5, each = 2)))
+  
   prior <- c(prior(std_normal(), coef = x1),
              prior(normal(0,2), coef = x2),
              prior(normal(0,5), Intercept),
@@ -63,7 +64,8 @@ test_that("specified priors appear in the Stan code", {
   prior <- c(prior(lkj(2), rescor),
              prior(cauchy(0, 5), sigma, resp = y),
              prior(cauchy(0, 1), sigma, resp = x1))
-  scode <- make_stancode(mvbind(y, x1) ~ x2, dat, prior = prior, 
+  form <- bf(mvbind(y, x1) ~ x2) + set_rescor(TRUE)
+  scode <- make_stancode(form, dat, prior = prior, 
                          sample_prior = TRUE)
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_sigma_y = cauchy_rng(0,5)")
@@ -295,7 +297,8 @@ test_that("link functions appear in the Stan code", {
   dat <- data.frame(y = 1:10, x = rnorm(10))
   expect_match2(make_stancode(y ~ s(x), dat, family = poisson()), 
                "target += poisson_log_lpmf(Y | mu);")
-  expect_match2(make_stancode(mvbind(y, y + 1) ~ x, dat, family = gaussian("log")), 
+  expect_match2(make_stancode(mvbind(y, y + 1) ~ x, dat, 
+                              family = skew_normal("log")), 
                "mu_y[n] = exp(mu_y[n]);")
   expect_match2(make_stancode(y ~ x, dat, family = von_mises(tan_half)), 
                "mu[n] = inv_tan_half(mu[n]);")
@@ -502,8 +505,9 @@ test_that("invalid combinations of modeling options are detected", {
     make_stancode(y1 | cens(ci) ~ y2 + ar(cov = TRUE), data = data),
     "Invalid addition arguments for this model"
   )
+  form <- bf(mvbind(y1, y2) ~ 1 + ar(cov = TRUE)) + set_rescor(TRUE)
   expect_error(
-    make_stancode(mvbind(y1, y2) ~ 1 + ar(cov = TRUE), data = data),
+    make_stancode(form, data = data),
     "Explicit covariance terms cannot be modeled when 'rescor'"
   )
   expect_error(
@@ -519,9 +523,10 @@ test_that("Stan code for multivariate models is correct", {
     censi = sample(0:1, 10, TRUE)
   )
   # models with residual correlations
+  form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
   prior <- prior(horseshoe(2), resp = "y1") + 
     prior(horseshoe(2), resp = "y2")
-  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, prior = prior)
+  scode <- make_stancode(form, dat, prior = prior)
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
   expect_match2(scode, "target += std_normal_lpdf(hs_local_y1[1])")
@@ -530,9 +535,10 @@ test_that("Stan code for multivariate models is correct", {
   )
   expect_match2(scode, "rescor[choose(k - 1, 2) + j] = Rescor[j, k];")
   
+  form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
   prior <- prior(lasso(2, 10), resp = "y1") + 
     prior(lasso(2, 10), resp = "y2")
-  scode <- make_stancode(mvbind(y1, y2) ~ x, dat, student(), prior = prior)
+  scode <- make_stancode(form, dat, student(), prior = prior)
   expect_match2(scode, "target += multi_student_t_lpdf(Y | nu, Mu, Sigma);")
   expect_match2(scode, "matrix[nresp, nresp] Sigma = multiply_lower")
   expect_match2(scode, "target += gamma_lpdf(nu | 2, 0.1)")
@@ -542,7 +548,10 @@ test_that("Stan code for multivariate models is correct", {
   expect_match2(scode, 
     "target += chi_square_lpdf(lasso_inv_lambda_y2 | lasso_df_y2)"
   )
-  expect_match2(make_stancode(mvbind(y1, y2) | weights(x) ~ 1, dat),
+  
+  form <- bf(mvbind(y1, y2) |  weights(x) ~ 1) + set_rescor(TRUE)
+  scode <- make_stancode(form, dat)
+  expect_match2(scode,
     "target += weights[n] * multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);"
   )
   
@@ -1199,6 +1208,7 @@ test_that("noise-free terms appear in the Stan code", {
     xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
     ID = rep(1:5, each = N / 5)
   )
+  
   me_prior <- prior(normal(0,5)) + 
     prior(normal(0, 10), "meanme") +
     prior(cauchy(0, 5), "sdme", coef = "mez") +
@@ -1246,8 +1256,9 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "nlp_a[n] += (bsp_a[1]) * Xme_1[n]")
   expect_match2(scode, "nlp_b[n] += (bsp_b[1]) * Xme_1[n]")
   
-  bform <- bf(mvbind(y, z) ~ me(x, xsd)) + set_mecor(FALSE)
-  scode <- make_stancode(mvbind(y, z) ~ me(x, xsd), dat)
+  bform <- bf(mvbind(y, z) ~ me(x, xsd)) + 
+    set_rescor(TRUE) + set_mecor(FALSE)
+  scode <- make_stancode(bform, dat)
   expect_match2(scode, "mu_y[n] += (bsp_y[1]) * Xme_1[n]")
   expect_match2(scode, "mu_z[n] += (bsp_z[1]) * Xme_1[n]")
   expect_match2(scode, "Xme_1 = meanme_1[1] + sdme_1[1] * zme_1;")

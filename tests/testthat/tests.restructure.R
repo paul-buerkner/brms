@@ -53,7 +53,7 @@ test_that("change_prior returns expected lists", {
 
 test_that("change_old_re and change_old_re2 return expected lists", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
-  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), 
+  bterms <- brmsterms(bf(y ~ a, a ~ x + (1+x|g), 
                         family = gaussian(), nl = TRUE))
   ranef <- brms:::tidy_ranef(bterms, data = data)
   target <- list(
@@ -131,13 +131,13 @@ test_that("change_old_sm return expected lists", {
             paste0("s_sx1kEQ9[", 1:9, "]"))
   dims <- list(sds_sigma_t2x0 = numeric(0), sds_sx1kEQ9 = numeric(0),
                s_sigma_t2x0 = 6, s_sx1kEQ9 = 9)
-  bterms <- parse_bf(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)), family = gaussian())
+  bterms <- brmsterms(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)), family = gaussian())
   dat <- data.frame(y = rnorm(100), x1 = rnorm(100), x0 = rnorm(100))
   expect_equivalent(brms:::change_old_sm(bterms, dat, pars, dims), target)
 })
 
 test_that("change_old_mo returns expected lists", {
-  bterms <- parse_bf(bf(y ~ mo(x), sigma ~ mo(x)), family = gaussian())
+  bterms <- brmsterms(bf(y ~ mo(x), sigma ~ mo(x)), family = gaussian())
   data <- data.frame(y = rnorm(10), x = rep(1:5, 2))
   pars <- c(
     "bmo_x", "bmo_sigma_x", 
@@ -172,7 +172,7 @@ test_that("change_old_categorical works correctly", {
   )
   fam <- categorical()
   fam$dpars <- c("mucat2", "mucat3")
-  bterms <- parse_bf(bf(y ~ x) + fam)
+  bterms <- brmsterms(bf(y ~ x) + fam)
   pars <- c("b_cat2_Intercept", "b_cat3_Intercept", 
             "b_cat2_x", "b_cat3_x")
   res <- brms:::change_old_categorical(bterms, dat, pars)

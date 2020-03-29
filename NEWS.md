@@ -22,6 +22,7 @@ Rok Češnovar.
 ### Other Changes
 
 * Rename `parse_bf` to `brmsterms` and deprecate the former function.
+* Deprecate using a model-dependent `rescor` default.
 
 
 # brms 2.12.0

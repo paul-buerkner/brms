@@ -88,8 +88,10 @@ test_that(paste("make_standata accepts correct response variables",
                as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
                              family = "exponential")$Y, as.array(seq(1,10,0.1)))
+  
   dat <- data.frame(y1 = 1:10, y2 = 11:20, x = rep(0,10))
-  sdata <- make_standata(mvbind(y1, y2) ~ x, data = dat)
+  form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1, as.array(1:10))
   expect_equal(sdata$Y_y2, as.array(11:20))
 })
@@ -189,15 +191,18 @@ test_that("make_standata handles multivariate models", {
     tim = 10:1, w = 1:10
   )
   
-  sdata <- make_standata(mvbind(y1, y2) | weights(w) ~ x, data = dat)
+  form <- bf(mvbind(y1, y2) | weights(w) ~ x) + set_rescor(TRUE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1, as.array(dat$y1))
   expect_equal(sdata$Y_y2, as.array(dat$y2))
   expect_equal(sdata$weights_y1, as.array(1:10))
   
-  expect_error(make_standata(mvbind(y1, y2, y2) ~ x, data = dat),
+  expect_error(make_standata(bf(mvbind(y1, y2, y2) ~ x) + set_resor(FALSE), 
+                             data = dat),
                "Cannot use the same response variable twice")
   
-  sdata <- make_standata(mvbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
+  form <- bf(mvbind(y1 / y2, y2, y1 * 3) ~ x) + set_rescor(FALSE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1y2, as.array(dat$y1 / dat$y2))
   
   sdata <- suppressWarnings(
@@ -266,8 +271,8 @@ test_that("make_standata allows to retrieve the initial data order", {
   expect_equal(dat$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   
   # multivariate model
-  sdata2 <- make_standata(mvbind(y1, y2) ~ ma(time, id), data = dat, 
-                          control = list(save_order = TRUE))
+  form <- bf(mvbind(y1, y2) ~ ma(time, id)) + set_rescor(FALSE)
+  sdata2 <- make_standata(form, data = dat, control = list(save_order = TRUE))
   expect_equal(sdata2$Y_y1[attr(sdata2, "old_order")], as.array(dat$y1))
   expect_equal(sdata2$Y_y2[attr(sdata2, "old_order")], as.array(dat$y2))
 })

@@ -1362,6 +1362,13 @@ validate_formula.mvbrmsformula <- function(
     )
     formula$rescor <- allow_rescor && !length(miforms)
     message("Setting 'rescor' to ", formula$rescor, " by default for this model")
+    if (formula$rescor) {
+      warning2(
+        "In the future, 'rescor' will be set to FALSE by default for ", 
+        "all models. It is thus recommended to explicitely set ",
+        "'rescor' via 'set_recor' instead of using the default."
+      ) 
+    }
   }
   formula$rescor <- as_one_logical(formula$rescor)
   if (formula$rescor) {
