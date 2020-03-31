@@ -8,6 +8,20 @@
 #' @param x A brmsfit object.
 #' @return A brmfit object with adjusted parameter names.
 #' 
+#' @details
+#' \dontrun{
+#' # fit a model manually via rstan
+#' scode <- make_stancode(count ~ Trt, data = epilepsy)
+#' sdata <- make_standata(count ~ Trt, data = epilepsy)
+#' stanfit <- rstan::stan(model_code = scode, data = sdata)
+#' 
+#' # feed the Stan model back into brms
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+#' fit$fit <- stanfit
+#' fit <- rename_pars(fit)
+#' summary(fit)
+#' }
+#' 
 #' @export
 rename_pars <- function(x) {
   if (!length(x$fit@sim)) {

@@ -341,11 +341,11 @@
 #' 
 #' 
 #' # fit a model manually via rstan
-#' scode <- make_stancode(count ~ Trt, epilepsy)
-#' sdata <- make_standata(count ~ Trt, epilepsy)
+#' scode <- make_stancode(count ~ Trt, data = epilepsy)
+#' sdata <- make_standata(count ~ Trt, data = epilepsy)
 #' stanfit <- rstan::stan(model_code = scode, data = sdata)
 #' # feed the Stan model back into brms
-#' fit8 <- brm(count ~ Trt, epilepsy, empty = TRUE)
+#' fit8 <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
 #' fit8$fit <- stanfit
 #' fit8 <- rename_pars(fit8)
 #' summary(fit8)

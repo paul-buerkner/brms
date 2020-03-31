@@ -18,3 +18,17 @@ ensure reasonable parameter names. This function is usally called
 automatically by \code{\link{brm}} and users will rarely be required to call
 it themselves.
 }
+\details{
+\dontrun{
+# fit a model manually via rstan
+scode <- make_stancode(count ~ Trt, data = epilepsy)
+sdata <- make_standata(count ~ Trt, data = epilepsy)
+stanfit <- rstan::stan(model_code = scode, data = sdata)
+
+# feed the Stan model back into brms
+fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+fit$fit <- stanfit
+fit <- rename_pars(fit)
+summary(fit)
+}
+}
