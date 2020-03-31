@@ -1,7 +1,14 @@
-# rename parameters (and possibly change their dimensions) 
-# within the stanfit object to ensure reasonable parameter names
-# @param x a brmsfit obejct
-# @return a brmfit object with adjusted parameter names and dimensions
+#' Rename Parameters
+#' 
+#' Rename parameters within the \code{stanfit} object after model fitting to
+#' ensure reasonable parameter names. This function is usally called
+#' automatically by \code{\link{brm}} and users will rarely be required to call
+#' it themselves.
+#' 
+#' @param x A brmsfit object.
+#' @return A brmfit object with adjusted parameter names.
+#' 
+#' @export
 rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 

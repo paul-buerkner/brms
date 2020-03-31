@@ -9,6 +9,8 @@ Marta Kołczyńska.
 * Use `std_normal` in the Stan code for improved efficiency.
 * Add arguments `cor` and `id` to the functions `gr` and `mm`
 for easy specification of group-level correlation structures.
+* Improve workflow to feed back brms-created models which were
+fitted somewhere else back into brms. (#745)
 
 ### Bug Fixes
 

@@ -157,6 +157,10 @@
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
+#' @param empty Logical. If \code{TRUE}, the Stan model is not created
+#'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
+#'   object will be empty. This is useful if you have estimated a brms-created
+#'   Stan model outside of \pkg{brms} and want to feed it back into the package.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
 #' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether the
@@ -334,6 +338,17 @@
 #' library(future)
 #' plan(multiprocess)
 #' fit7 <- update(fit7, future = TRUE)
+#' 
+#' 
+#' # fit a model manually via rstan
+#' scode <- make_stancode(count ~ Trt, epilepsy)
+#' sdata <- make_standata(count ~ Trt, epilepsy)
+#' stanfit <- rstan::stan(model_code = scode, data = sdata)
+#' # feed the Stan model back into brms
+#' fit8 <- brm(count ~ Trt, epilepsy, empty = TRUE)
+#' fit8$fit <- stanfit
+#' fit8 <- rename_pars(fit8)
+#' summary(fit8)
 #' }
 #'
 #' @import parallel
@@ -353,7 +368,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                save_dso = TRUE, file = NULL, ...) {
+                save_dso = TRUE, file = NULL, empty = FALSE, ...) {
   
   if (!is.null(file)) {
     x <- read_brmsfit(file)
@@ -364,8 +379,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   
   # validate arguments later passed to Stan
   dots <- list(...)
-  testmode <- isTRUE(dots$testmode)
-  dots$testmode <- NULL
   algorithm <- match.arg(algorithm)
   silent <- as_one_logical(silent)
   iter <- as_one_numeric(iter)
@@ -375,6 +388,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   cores <- as_one_numeric(cores)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
+  empty <- as_one_logical(empty)
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
@@ -382,8 +396,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
-    icnames <- c("loo", "waic", "kfold", "R2", "marglik")
-    x[icnames] <- list(NULL)
+    x$criteria <- list()
     sdata <- standata(x)
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
@@ -430,6 +443,10 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       cov_ranef = cov_ranef, sample_prior = sample_prior,
       stanvars = stanvars
     )
+    if (empty) {
+      # return the brmsfit object with an empty 'fit' slot
+      return(x)
+    }
     stopifnot(is.list(stan_model_args))
     silence_stan_model <- !length(stan_model_args)
     stan_model_args$model_code <- x$model
@@ -485,9 +502,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # vb does not support parallel execution
     x$fit <- do_call(rstan::vb, args)
   }
-  if (!testmode) {
-    x <- rename_pars(x)
-  }
+  x <- rename_pars(x)
   if (!is.null(file)) {
     write_brmsfit(x, file)
   }

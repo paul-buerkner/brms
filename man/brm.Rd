@@ -36,6 +36,7 @@ brm(
   stan_model_args = list(),
   save_dso = TRUE,
   file = NULL,
+  empty = FALSE,
   ...
 )
 }
@@ -221,6 +222,11 @@ files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
+\item{empty}{Logical. If \code{TRUE}, the Stan model is not created
+and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
+object will be empty. This is useful if you have estimated a brms-created
+Stan model outside of \pkg{brms} and want to feed it back into the package.}
+
 \item{...}{Further arguments passed to Stan that is to
 \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}
 }
@@ -394,6 +400,17 @@ conditional_effects(fit7)
 library(future)
 plan(multiprocess)
 fit7 <- update(fit7, future = TRUE)
+
+
+# fit a model manually via rstan
+scode <- make_stancode(count ~ Trt, epilepsy)
+sdata <- make_standata(count ~ Trt, epilepsy)
+stanfit <- rstan::stan(model_code = scode, data = sdata)
+# feed the Stan model back into brms
+fit8 <- brm(count ~ Trt, epilepsy, empty = TRUE)
+fit8$fit <- stanfit
+fit8 <- rename_pars(fit8)
+summary(fit8)
 }
 
 }

@@ -51,7 +51,7 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
                     prior = empty_prior(), autocor = NULL, 
                     ranef = empty_ranef(), cov_ranef = NULL, 
                     criteria = list(), stanvars = NULL, stan_funs = NULL, 
-                    fit = NA, exclude = NULL, algorithm = "sampling",
+                    fit = NULL, exclude = NULL, algorithm = "sampling",
                     file = NULL) {
   version <- list(
     brms = utils::packageVersion("brms"),
