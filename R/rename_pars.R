@@ -8,7 +8,7 @@
 #' @param x A brmsfit object.
 #' @return A brmfit object with adjusted parameter names.
 #' 
-#' @details
+#' @examples
 #' \dontrun{
 #' # fit a model manually via rstan
 #' scode <- make_stancode(count ~ Trt, data = epilepsy)

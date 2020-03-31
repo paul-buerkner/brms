@@ -18,7 +18,7 @@ ensure reasonable parameter names. This function is usally called
 automatically by \code{\link{brm}} and users will rarely be required to call
 it themselves.
 }
-\details{
+\examples{
 \dontrun{
 # fit a model manually via rstan
 scode <- make_stancode(count ~ Trt, data = epilepsy)
@@ -31,4 +31,5 @@ fit$fit <- stanfit
 fit <- rename_pars(fit)
 summary(fit)
 }
+
 }
