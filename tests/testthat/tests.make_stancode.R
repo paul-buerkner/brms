@@ -343,22 +343,28 @@ test_that("Stan GLM primitives are applied correctly", {
 })
 
 test_that("customized covariances appear in the Stan code", {
-  scode <- make_stancode(rating ~ treat + period + carry + (1|subject), 
-                         data = inhaler, cov_ranef = list(subject = 1))
+  scode <- make_stancode(rating ~ treat + (1 | gr(subject, cov = M)), 
+                         data = inhaler)
   expect_match2(scode, "r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]))")
   
-  scode <- make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                         data = inhaler, cov_ranef = list(subject = 1))
+  scode <- make_stancode(rating ~ treat + (1 + treat | gr(subject, cov = M)), 
+                         data = inhaler)
   expect_match2(scode,
     "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)"
   )
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
   
-  scode <- make_stancode(rating ~ treat + period + carry + 
-                           (1 + carry | gr(subject, cor = FALSE)), 
-                         data = inhaler, cov_ranef = list(subject = 1))
+  scode <- make_stancode(rating ~ (1 + treat| gr(subject, cor = FALSE, cov = M)), 
+                         data = inhaler)
   expect_match2(scode, " r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]));")
   expect_match2(scode, " r_1_2 = (sd_1[2] * (Lcov_1 * z_1[2]));")
+  
+  expect_warning(
+    scode <- make_stancode(rating ~ treat + period + carry + (1|subject), 
+                           data = inhaler, cov_ranef = list(subject = 1)),
+    "Argument 'cov_ranef' is deprecated"
+  )
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]))")
 })
 
 test_that("truncation appears in the Stan code", {
@@ -493,9 +499,11 @@ test_that("self-defined functions appear in the Stan code", {
   )
   
   # kronecker products
-  expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                             data = inhaler, cov_ranef = list(subject = 1)), 
-              "matrix as_matrix.*matrix kronecker")
+  expect_match(
+    make_stancode(rating ~ treat + (treat | gr(subject, cov = M)), 
+                  data = inhaler), 
+    "matrix as_matrix.*matrix kronecker"
+  )
 })
 
 test_that("invalid combinations of modeling options are detected", {

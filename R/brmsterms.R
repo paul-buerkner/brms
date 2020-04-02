@@ -63,7 +63,8 @@ brmsterms.brmsformula <- function(formula, family = NULL, autocor = NULL,
   mecor <- isTRUE(x$mecor)
   formula <- x$formula
   family <- x$family
-  y <- nlist(formula, family, mv, rescor, mecor) 
+  y <- nlist(formula, family, mv, rescor, mecor)
+  y$cov_ranef <- x$cov_ranef
   class(y) <- "brmsterms"
   
   if (check_response) {
@@ -234,6 +235,7 @@ brmsterms.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...)
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
+  out$cov_ranef <- x$cov_ranef
   out
 }
 

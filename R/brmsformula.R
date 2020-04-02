@@ -728,7 +728,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     # for backwards compatibility with brms <= 2.11.0
     attr(out$formula, "autocor") <- validate_autocor(out$autocor)
     out$autocor <- NULL
-  } 
+  }
   if (!is.null(family)) {
     out$family <- check_family(family)
   }
@@ -1230,11 +1230,13 @@ validate_formula.default <- function(formula, ...) {
 # @param family optional 'family' object
 # @param autocor optional 'cor_brms' object
 # @param threshold (deprecated) threshold type for ordinal models
+# @param cov_ranef (deprecated) named list of group covariance matrices
 # @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
   formula, family = gaussian(), autocor = NULL, 
-  data = NULL, threshold = NULL, sparse = NULL, ...
+  data = NULL, threshold = NULL, sparse = NULL,
+  cov_ranef = NULL, ...
 ) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
@@ -1269,6 +1271,10 @@ validate_formula.brmsformula <- function(
         attr(out$pforms[[i]], "sparse") <- sparse
       }
     }
+  }
+  if (!is.null(cov_ranef)) {
+    # 'cov_ranef' is deprecated as of brms 2.12.5
+    out$cov_ranef <- validate_cov_ranef(cov_ranef)
   }
   out$mecor <- default_mecor(out$mecor)
   if (has_cat(out) && is.null(get_cats(out)) && !is.null(data)) {
@@ -1334,7 +1340,7 @@ validate_formula.brmsformula <- function(
 # allow passing lists of families or autocors
 #' @export
 validate_formula.mvbrmsformula <- function(
-  formula, family = NULL, autocor = NULL, ...
+  formula, family = NULL, autocor = NULL, cov_ranef = NULL, ...
 ) {
   nresp <- length(formula$forms)
   if (!is(family, "list")) {
@@ -1385,6 +1391,10 @@ validate_formula.mvbrmsformula <- function(
   formula$mecor <- default_mecor(formula$mecor)
   for (i in seq_along(formula$forms)) {
     formula$forms[[i]]$mecor <- formula$mecor
+  }
+  if (!is.null(cov_ranef)) {
+    # 'cov_ranef' is deprecated as of brms 2.12.5
+    formula$cov_ranef <- validate_cov_ranef(cov_ranef)
   }
   formula
 }

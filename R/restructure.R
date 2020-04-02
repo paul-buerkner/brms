@@ -150,6 +150,15 @@ restructure_v2 <- function(x) {
       x$formula <- SW(validate_formula(x$formula, data = x$data))
     }
   }
+  if (version <= "2.12.4") {
+    # 'cov_ranef' was integrated into the formula interface
+    if (length(x$cov_ranef)) {
+      x$formula <- SW(validate_formula(x$formula, cov_ranef = x$cov_ranef))
+      cov_ranef <- get_data2_cov_ranef(x$formula)
+      x$data2[names(cov_ranef)] <- cov_ranef
+      x$cov_ranef <- NULL 
+    }
+  }
   x
 }
 

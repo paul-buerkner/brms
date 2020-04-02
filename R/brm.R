@@ -35,7 +35,8 @@
 #'   for more help.
 #' @param data2 A named \code{list} of objects containing data, which
 #'   cannot be passed via argument \code{data}. Required for some objects 
-#'   used in autocorrelation structures to specify dependency structures.
+#'   used in autocorrelation structures to specify dependency structures
+#'   as well as for within-group covariance matrices.
 #' @param autocor (Deprecated) An optional \code{\link{cor_brms}} object
 #'   describing the correlation structure within the response variable (i.e.,
 #'   the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
@@ -50,12 +51,14 @@
 #'   memory. Sampling speed is currently not improved or even slightly
 #'   decreased. It is now recommended to use the \code{sparse} argument of
 #'   \code{\link{brmsformula}} and related functions.
-#' @param cov_ranef A list of matrices that are proportional to the (within)
-#'   covariance structure of the group-level effects. The names of the matrices
-#'   should correspond to columns in \code{data} that are used as grouping
-#'   factors. All levels of the grouping factor should appear as rownames of the
-#'   corresponding matrix. This argument can be used, among others to model
-#'   pedigrees and phylogenetic effects. See
+#' @param cov_ranef (Deprecated) A list of matrices that are proportional to the
+#'   (within) covariance structure of the group-level effects. The names of the
+#'   matrices should correspond to columns in \code{data} that are used as
+#'   grouping factors. All levels of the grouping factor should appear as
+#'   rownames of the corresponding matrix. This argument can be used, among
+#'   others to model pedigrees and phylogenetic effects. 
+#'   It is now recommended to specify those matrices in the formula
+#'   interface using the \code{\link{gr}} and related functions. See
 #'   \code{vignette("brms_phylogenetics")} for more details.
 #' @param save_ranef A flag to indicate if group-level effects for each level of
 #'   the grouping factor(s) should be saved (default is \code{TRUE}). Set to
@@ -163,11 +166,11 @@
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
-#' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether the
-#'   dynamic shared object (DSO) compiled from the C++ code for the model will
-#'   be saved or not. If \code{TRUE}, we can draw samples from the same model in
-#'   another \R session using the saved DSO (i.e., without compiling the C++
-#'   code again).
+#' @param save_dso (Deprecated) Logical, defaulting to \code{TRUE}, indicating
+#'   whether the dynamic shared object (DSO) compiled from the C++ code for the
+#'   model will be saved or not. If \code{TRUE}, we can draw samples from the
+#'   same model in another \R session using the saved DSO (i.e., without
+#'   compiling the C++ code again).
 #' @param ... Further arguments passed to Stan that is to
 #'   \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
 #' 
@@ -403,7 +406,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # build new model
     formula <- validate_formula(
       formula, data = data, family = family, 
-      autocor = autocor, sparse = sparse
+      autocor = autocor, sparse = sparse,
+      cov_ranef = cov_ranef
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
@@ -411,7 +415,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     data <- validate_data(data, bterms = bterms, knots = knots)
     data2 <- validate_data2(
       data2, bterms = bterms, 
-      get_data2_autocor(formula)
+      get_data2_autocor(formula),
+      get_data2_cov_ranef(formula)
     )
     prior <- check_prior(
       prior, formula = formula, data = data,
@@ -421,8 +426,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- brmsfit(
       formula = formula, family = family, data = data, 
       data.name = data.name, data2 = data2, prior = prior, 
-      cov_ranef = cov_ranef, stanvars = stanvars, 
-      stan_funs = stan_funs, algorithm = algorithm
+      stanvars = stanvars, stan_funs = stan_funs, 
+      algorithm = algorithm
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -432,7 +437,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- make_stancode(
       formula, data = data, prior = prior, 
-      cov_ranef = cov_ranef, sample_prior = sample_prior, 
+      sample_prior = sample_prior, 
       stanvars = stanvars, stan_funs = stan_funs, 
       save_model = save_model
     )
@@ -440,8 +445,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # unnecessary compilations in case of invalid data
     sdata <- make_standata(
       formula, data = data, prior = prior, data2 = data2,
-      cov_ranef = cov_ranef, sample_prior = sample_prior,
-      stanvars = stanvars
+      sample_prior = sample_prior, stanvars = stanvars
     )
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot

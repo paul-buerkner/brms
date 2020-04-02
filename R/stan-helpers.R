@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
+stan_global_defs <- function(bterms, prior, ranef) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -23,7 +23,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   if (any(nzchar(ranef$by))) {
     str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
   }
-  if (stan_needs_kronecker(ranef, names(cov_ranef))) {
+  if (stan_needs_kronecker(ranef)) {
     str_add(out$fun) <- glue(
       "  #include 'fun_as_matrix.stan'\n",
       "  #include 'fun_kronecker.stan'\n"
@@ -205,14 +205,13 @@ make_stan_names <- function(x) {
 
 # checks if a model needs the kronecker product
 # @param ranef output of tidy_ranef
-# @param names_cov_ranef: names 'cov_ranef'
 # @return a single logical value
-stan_needs_kronecker <- function(ranef, names_cov_ranef) {
+stan_needs_kronecker <- function(ranef) {
   ids <- unique(ranef$id)
   out <- FALSE
   for (id in ids) {
     r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && r$group[1] %in% names_cov_ranef
+    out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
   }
   out
 }

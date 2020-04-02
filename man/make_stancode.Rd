@@ -54,12 +54,14 @@ a description of the available correlation structures. Defaults to
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in \code{data} that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in \code{data} that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level

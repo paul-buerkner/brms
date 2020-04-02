@@ -279,25 +279,37 @@ test_that("make_standata allows to retrieve the initial data order", {
 
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
-  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                                  cov_ranef = list(visit = A))$Lcov_1, A)
-  B <- diag(1, 4)
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "Row names are required")
-  B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "Row names .* do not match")
+  sdata <- make_standata(count ~ Trt + (1|gr(visit, cov = A)),
+                         data = epilepsy, data2 = list(A = A))
+  expect_equivalent(sdata$Lcov_1, t(chol(A)))
+  
   B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
-  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B))$Lcov_1,
-                    t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
+  sdata <- make_standata(count ~ Trt + (1|gr(visit, cov = B)),
+                         data = epilepsy, data2 = list(B = B))
+  expect_equivalent(sdata$Lcov_1, t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
+  
+  B <- diag(1, 4)
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy, data2 = list(B = B)),
+               "Row or column names are required")
+  
+  B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy, data2 = list(B = B)),
+               "Levels of .* do not match")
+
   B <- A
   B[1,2] <- 0.5
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "not symmetric")
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy,  data2 = list(B = B)),
+               "must be symmetric")
+  
+  expect_warning(
+    sdata <- make_standata(count ~ Trt + (1|visit), data = epilepsy,
+                           cov_ranef = list(visit = A)),
+    "Argument 'cov_ranef' is deprecated"
+  )
+  expect_equivalent(sdata$Lcov_1, t(chol(A)))
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {

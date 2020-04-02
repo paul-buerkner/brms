@@ -38,7 +38,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   }
   formula <- validate_formula(
     formula, data = data, family = family, 
-    autocor = autocor, sparse = sparse
+    autocor = autocor, sparse = sparse,
+    cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
@@ -56,11 +57,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     ranef = ranef, meef = meef,
     stanvars = stanvars
   )
-  scode_ranef <- stan_re(ranef, prior = prior, cov_ranef = cov_ranef)
+  scode_ranef <- stan_re(ranef, prior = prior)
   scode_llh <- stan_llh(bterms, data = data)
-  scode_global_defs <- stan_global_defs(
-    bterms, prior = prior, ranef = ranef, cov_ranef = cov_ranef
-  )
+  scode_global_defs <- stan_global_defs(bterms, prior = prior, ranef = ranef)
   scode_Xme <- stan_Xme(meef, prior = prior)
     
   # get priors for all parameters in the model

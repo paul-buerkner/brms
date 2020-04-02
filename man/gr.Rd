@@ -4,7 +4,7 @@
 \alias{gr}
 \title{Set up basic grouping terms in \pkg{brms}}
 \usage{
-gr(..., by = NULL, cor = TRUE, id = NA, dist = "gaussian")
+gr(..., by = NULL, cor = TRUE, id = NA, cov = NULL, dist = "gaussian")
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
@@ -20,6 +20,13 @@ modelled as correlated.}
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
+
+\item{cov}{An optional matrix which is proportional to the withon-group
+covariance matrix of the group-level effects. All levels of the grouping
+factor should appear as rownames of the corresponding matrix. This argument
+can be used, among others, to model pedigrees and phylogenetic effects. See
+\code{vignette("brms_phylogenetics")} for more details. By default, levels
+of the same grouping factor are modeled as independent of each other.}
 
 \item{dist}{Name of the distribution of the group-level effects.
 Currently \code{"gaussian"} is the only option.}

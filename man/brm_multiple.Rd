@@ -51,7 +51,8 @@ for more help.}
 
 \item{data2}{A named \code{list} of objects containing data, which
 cannot be passed via argument \code{data}. Required for some objects 
-used in autocorrelation structures to specify dependency structures.}
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
 describing the correlation structure within the response variable (i.e.,
@@ -62,12 +63,14 @@ a description of the available correlation structures. Defaults to
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in \code{data} that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in \code{data} that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
 \item{sample_prior}{Indicate if samples from priors should be drawn 

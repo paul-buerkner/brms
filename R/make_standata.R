@@ -46,7 +46,8 @@ make_standata <- function(formula, data, family = gaussian(),
   internal <- isTRUE(control$internal)
   new <- isTRUE(control$new)
   formula <- validate_formula(
-    formula, data = data, family = family, autocor = autocor
+    formula, data = data, family = family, 
+    autocor = autocor, cov_ranef = cov_ranef
   )
   bterms <- brmsterms(formula)
   sample_prior <- check_sample_prior(sample_prior)
@@ -65,7 +66,8 @@ make_standata <- function(formula, data, family = gaussian(),
   data <- order_data(data, bterms = bterms)
   data2 <- validate_data2(
     data2, bterms = bterms, 
-    get_data2_autocor(formula)
+    get_data2_autocor(formula),
+    get_data2_cov_ranef(formula)
   )
   
   out <- data_response(
@@ -78,7 +80,7 @@ make_standata <- function(formula, data, family = gaussian(),
       bterms, data = data, prior = prior, data2 = data2,
       ranef = ranef, old_sdata = control$old_sdata
     )
-    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef, internal = internal)
+    c(out) <- data_gr_global(ranef, data2 = data2)
     meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
     c(out) <- data_Xme(meef, data = data)
   }
@@ -170,7 +172,6 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   make_standata(
     formula = new_formula, data = newdata, 
     prior = object$prior, data2 = newdata2,
-    cov_ranef = object$cov_ranef, 
     sample_prior = sample_prior, 
     stanvars = object$stanvars, 
     control = control, ...

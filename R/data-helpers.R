@@ -106,6 +106,12 @@ validate_data2 <- function(data2, bterms, ...) {
     data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
     attr(data2[[M]], "obs_based_matrix") <- TRUE
   }
+  # validate within-group covariance matrices
+  cov_names <- ulapply(get_re(bterms)$gcall, "[[", "cov")
+  cov_names <- cov_names[nzchar(cov_names)]
+  for (cov in cov_names) {
+    data2[[cov]] <- validate_recov_matrix(get_from_data2(cov, data2))
+  }
   structure(data2, valid = TRUE)
 }
 

@@ -467,7 +467,8 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
 stan_re <- function(ranef, prior, ...) {
   IDs <- unique(ranef$id)
   out <- list()
-  # special handling of student-t group effects
+  # special handling of student-t group effects as their 'df' parameters
+  # are defined on a per-group basis instead of a per-ID basis
   tranef <- get_dist_groups(ranef, "student")
   if (has_rows(tranef)) {
     str_add(out$par) <- 
@@ -504,11 +505,10 @@ stan_re <- function(ranef, prior, ...) {
 # @param id the ID of the grouping factor
 # @param ranef output of tidy_ranef
 # @param prior object of class brmsprior
-# @param cov_ranef optional list of custom covariance matrices 
-.stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
+.stan_re <- function(id, ranef, prior) {
   out <- list()
   r <- subset2(ranef, id = id)
-  has_ccov <- r$group[1] %in% names(cov_ranef)
+  has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
   Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
@@ -543,7 +543,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // by-factor indicator per observation\n" 
     )
   }
-  if (has_ccov) {
+  if (has_cov) {
     str_add(out$data) <- glue(
       "  matrix[N_{id}, N_{id}] Lcov_{id};",
       "  // cholesky factor of known covariance matrix\n"
@@ -601,7 +601,7 @@ stan_re <- function(ranef, prior, ...) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
     }
     if (has_by) {
-      if (has_ccov) {
+      if (has_cov) {
         stop2(
           "Cannot combine 'by' variables with customized covariance ",
           "matrices when fitting multiple group-level effects."
@@ -637,7 +637,7 @@ stan_re <- function(ranef, prior, ...) {
         type = glue("cholesky_factor_corr[M_{id}]"), 
         comment = "cholesky factor of correlation matrix"
       )
-      if (has_ccov) {
+      if (has_cov) {
         rdef <- glue(
           "as_matrix(kronecker(Lcov_{id},", 
           " diag_pre_multiply(sd_{id}, L_{id})) *",
@@ -682,7 +682,7 @@ stan_re <- function(ranef, prior, ...) {
     str_add(out$prior) <- cglue(
       "  target += std_normal_lpdf(z_{id}[{seq_rows(r)}]);\n"
     )
-    Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
+    Lcov <- str_if(has_cov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
       dfm <- glue("dfm_{tr$ggn[1]} .* ")
     }

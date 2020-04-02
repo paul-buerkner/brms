@@ -7,8 +7,8 @@
 Marta Kołczyńska.
 * Support `posterior_linpred` as method in `conditional_effects`.
 * Use `std_normal` in the Stan code for improved efficiency.
-* Add arguments `cor` and `id` to the functions `gr` and `mm`
-for easy specification of group-level correlation structures.
+* Add arguments `cor`, `id`, and `cov` to the functions `gr` and 
+`mm` for easy specification of group-level correlation structures.
 * Improve workflow to feed back brms-created models which were
 fitted somewhere else back into brms. (#745)
 
@@ -25,6 +25,7 @@ Rok Češnovar.
 
 * Rename `parse_bf` to `brmsterms` and deprecate the former function.
 * Deprecate using a model-dependent `rescor` default.
+* Deprecate argument `cov_ranef` in `brm` and related functions.
 
 
 # brms 2.12.0

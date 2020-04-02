@@ -273,25 +273,8 @@ data_gr_local <- function(bterms, data, ranef) {
 }
 
 # prepare global data for each group-level-ID
-# @param internal is the data for use in S3 methods only?
-data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
+data_gr_global <- function(ranef, data2) {
   out <- list()
-  if (!is.null(cov_ranef) && !internal) {
-    # check validity of cov_ranef
-    cr_names <- names(cov_ranef)
-    cr_is_named <- length(cr_names) && all(nzchar(cr_names))
-    if (!is.list(cov_ranef) || !cr_is_named) {
-      stop2("'cov_ranef' must be a named list.")
-    }
-    if (any(duplicated(cr_names))) {
-      stop2("Names of 'cov_ranef' must be unique.")
-    }
-    unused_cr_names <- setdiff(cr_names, ranef$group)
-    if (length(unused_cr_names)) {
-      stop2("The following elements of 'cov_ranef' are unused: ",
-            collapse_comma(unused_cr_names))
-    }
-  }
   for (id in unique(ranef$id)) {
     tmp <- list()
     id_ranef <- subset2(ranef, id = id)
@@ -309,29 +292,18 @@ data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
       tmp$Nby <- length(bylevels)
       tmp$Jby <- as.array(Jby)
     }
-    # prepare customized covariance matrices
-    if (group %in% names(cov_ranef)) {
-      cov_mat <- as.matrix(cov_ranef[[group]])
-      if (!isSymmetric(unname(cov_mat))) {
-        stop2("Covariance matrix of grouping factor '", 
-              group, "' is not symmetric.")
-      }
+    # prepare within-group covariance matrices
+    cov <- id_ranef$cov[1]
+    if (nzchar(cov)) {
+      # validation is only necessary here for compatibility with 'cov_ranef'
+      cov_mat <- validate_recov_matrix(data2[[cov]])
       found_levels <- rownames(cov_mat)
-      if (is.null(found_levels)) {
-        stop2("Row names are required for covariance matrix of '", group, "'.")
-      }
-      colnames(cov_mat) <- found_levels
       found <- levels %in% found_levels
       if (any(!found)) {
-        stop2("Row names of covariance matrix of '", group, 
+        stop2("Levels of the within-group covariance matrix for '", group, 
               "' do not match names of the grouping levels.")
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
-      evs <- eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values
-      if (min(evs) <= 0) {
-        stop2("Covariance matrix of grouping factor '", 
-              group, "' is not positive definite.")
-      }
       tmp$Lcov <- t(chol(cov_mat))
     }
     names(tmp) <- paste0(names(tmp), "_", id)
