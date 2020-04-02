@@ -11,7 +11,6 @@
 #' @param resp_rhs_all Logical; Indicates whether to also include response 
 #'   variables on the right-hand side of formula \code{.$allvars}, 
 #'   where \code{.} represents the output of \code{brmsterms}.
-#' @param mv Indicates if the univariate model is part of a multivariate model.
 #' @param ... Further arguments passed to or from other methods.
 #'  
 #' @return An object of class \code{brmsterms} or \code{mvbrmsterms} 
@@ -47,18 +46,16 @@ parse_bf <- function(x, ...) {
 
 #' @rdname brmsterms
 #' @export
-brmsterms.default <- function(formula, family = NULL, autocor = NULL, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
-  brmsterms(x, ...)
+brmsterms.default <- function(formula, ...) {
+  brmsterms(validate_formula(formula), ...)
 }
 
 #' @rdname brmsterms
 #' @export
-brmsterms.brmsformula <- function(formula, family = NULL, autocor = NULL, 
-                                  check_response = TRUE, resp_rhs_all = TRUE,
-                                  mv = FALSE, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
-  mv <- as_one_logical(mv)
+brmsterms.brmsformula <- function(formula, check_response = TRUE, 
+                                  resp_rhs_all = TRUE, ...) {
+  x <- validate_formula(formula)
+  mv <- isTRUE(x$mv)
   rescor <- mv && isTRUE(x$rescor)
   mecor <- isTRUE(x$mecor)
   formula <- x$formula
@@ -216,8 +213,8 @@ brmsterms.brmsformula <- function(formula, family = NULL, autocor = NULL,
 
 #' @rdname brmsterms
 #' @export
-brmsterms.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
+brmsterms.mvbrmsformula <- function(formula, ...) {
+  x <- validate_formula(formula)
   x$rescor <- isTRUE(x$rescor)
   x$mecor <- isTRUE(x$mecor)
   out <- structure(list(), class = "mvbrmsterms")
@@ -225,7 +222,8 @@ brmsterms.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...)
   for (i in seq_along(out$terms)) {
     x$forms[[i]]$rescor <- x$rescor
     x$forms[[i]]$mecor <- x$mecor
-    out$terms[[i]] <- brmsterms(x$forms[[i]], mv = TRUE, ...)
+    x$forms[[i]]$mv <- TRUE
+    out$terms[[i]] <- brmsterms(x$forms[[i]], ...)
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
   # required to find variables used solely in the response part
@@ -857,17 +855,13 @@ get_effect.mvbrmsterms <- function(x, ...) {
 # @param all logical; include effects of nlpars and dpars?
 # @return a list of formulas
 #' @export
-get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
-  if (all) {
-    out <- named_list(c(names(x$dpars), names(x$nlpars)))
-    for (dp in names(x$dpars)) {
-      out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
-    }
-    for (nlp in names(x$nlpars)) {
-      out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
-    }
-  } else {
-    out <- get_effect(x$dpars[["mu"]], target = target)
+get_effect.brmsterms <- function(x, target = "fe", ...) {
+  out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
+  }
+  for (nlp in names(x$nlpars)) {
+    out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
   }
   unlist(out, recursive = FALSE)
 }

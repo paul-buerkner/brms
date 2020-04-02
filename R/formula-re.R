@@ -480,21 +480,15 @@ get_re.default <- function(x, ...) {
 # @param bterms object of class 'brmsterms'
 # @param all logical; include ranefs of additional parameters?
 #' @export
-get_re.brmsterms <- function(x, all = TRUE, ...) {
-  if (all) {
-    re <- named_list(c(names(x$dpars), names(x$nlpars)))
-    for (dp in names(x$dpars)) {
-      re[[dp]] <- get_re(x$dpars[[dp]])
-    }
-    for (nlp in names(x$nlpars)) {
-      re[[nlp]] <- get_re(x$nlpars[[nlp]])
-    }
-    re <- do_call(rbind, re)
-  } else {
-    x$dpars[["mu"]]$nlpars <- NULL
-    re <- get_re(x$dpars[["mu"]])
+get_re.brmsterms <- function(x, ...) {
+  re <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    re[[dp]] <- get_re(x$dpars[[dp]])
   }
-  re
+  for (nlp in names(x$nlpars)) {
+    re[[nlp]] <- get_re(x$nlpars[[nlp]])
+  }
+  do_call(rbind, re)
 }
 
 #' @export
@@ -518,7 +512,6 @@ get_re.btl <- function(x, ...) {
 # gather information on group-level effects
 # @param bterms object of class brmsterms
 # @param data data.frame containing all model variables
-# @param all include REs of all parameters?
 # @param old_levels optional original levels of the grouping factors
 # @return a tidy data.frame with the following columns:
 #   id: ID of the group-level effect 
@@ -534,9 +527,9 @@ get_re.btl <- function(x, ...) {
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
 #   form: formula used to compute the effects
-tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
+tidy_ranef <- function(bterms, data, old_levels = NULL) {
   data <- combine_groups(data, get_group_vars(bterms))
-  re <- get_re(bterms, all = all)
+  re <- get_re(bterms)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
   id_groups <- list()
