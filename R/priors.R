@@ -453,10 +453,7 @@ prior_string <- function(prior, ...) {
 #' may be specified including default priors.
 #' 
 #' @inheritParams brm
-#' @param internal A flag indicating if the names of additional internal
-#'   parameters should be displayed. Setting priors on these parameters is not
-#'   recommended
-#' @param ... Currently ignored.
+#' @param ... Other arguments for internal usage only.
 #' 
 #' @return A data.frame with columns \code{prior}, \code{class}, \code{coef},
 #'   and \code{group} and several rows, each providing information on a
@@ -483,17 +480,23 @@ prior_string <- function(prior, ...) {
 #' 
 #' @export
 get_prior <- function(formula, data, family = gaussian(), autocor = NULL, 
-                      knots = NULL, sparse = NULL, internal = FALSE, ...) {
+                      knots = NULL, sparse = NULL, ...) {
   if (is.brmsfit(formula)) {
     stop2("Use 'prior_summary' to extract priors from 'brmsfit' objects.")
   }
-  internal <- as_one_logical(internal)
   formula <- validate_formula(
     formula, data = data, family = family, 
     autocor = autocor, sparse = sparse
   )
   bterms <- brmsterms(formula)
   data <- validate_data(data, bterms = bterms, knots = knots)
+  .get_prior(bterms, data, ...)
+}
+  
+# internal work function of 'get_prior'
+# @param internal return priors for internal use?
+# @return a brmsprior object
+.get_prior <- function(bterms, data, internal = FALSE, ...) {
   ranef <- tidy_ranef(bterms, data)
   meef <- tidy_meef(bterms, data)
   # initialize output
@@ -510,11 +513,12 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   )
   # priors for noise-free variables
   prior <- prior + prior_Xme(meef, internal = internal)
-  # do not remove unique(.)
+  # apply 'unique' as the same prior may have been included multiple times
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
   prior <- unique(prior[to_order, , drop = FALSE])
   rownames(prior) <- NULL
-  structure(prior, class = c("brmsprior", "data.frame"))
+  class(prior) <- c("brmsprior", "data.frame")
+  prior
 }
 
 # generate priors for predictor terms
@@ -534,7 +538,7 @@ prior_predictor.mvbrmsterms <- function(x, internal = FALSE, ...) {
     prior <- prior + prior_predictor(x$terms[[i]], ...) 
   }
   for (cl in c("b", "Intercept")) {
-    # deprecated; see warning in 'check_prior_special'
+    # deprecated; see warning in 'validate_prior_special'
     if (any(with(prior, class == cl & coef == ""))) {
       prior <- prior + brmsprior(class = cl)
     }
@@ -602,7 +606,7 @@ prior_predictor.brmsterms <- function(x, data, ...) {
     prior <- prior + nlp_prior
   }
   if (conv_cats_dpars(x$family)) {
-    # deprecated; see warning in 'check_prior_special'
+    # deprecated; see warning in 'validate_prior_special'
     for (cl in c("b", "Intercept")) {
       if (any(find_rows(prior, class = cl, coef = "", resp = x$resp))) {
         prior <- prior + brmsprior(class = cl, resp  = x$resp)
@@ -1091,27 +1095,19 @@ def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
   paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
 }
 
-# check priors supplied by the user
-# @inheritParams get_prior
-# @param warn: passed to 'check_prior_content'
+# validate priors supplied by the user
+# @param ... passed to 'validate_prior_special*
 # @return a 'brmsprior' object
-check_prior <- function(prior, formula, data, 
-                        sample_prior = c("no", "yes", "only"),
-                        warn = FALSE) {
-  sample_prior <- check_sample_prior(sample_prior)
-  if (isTRUE(attr(prior, "checked"))) {
-    # prior has already been checked; no need to do it twice
-    # attributes may still need to be updated
-    attr(prior, "sample_prior") <- sample_prior
-    return(prior)
-  }
-  bterms <- brmsterms(formula)
-  all_priors <- get_prior(formula, data, internal = TRUE)
+validate_prior <- function(prior, bterms, data, sample_prior = "no", ...) {
+  sample_prior <- validate_sample_prior(sample_prior)
+  all_priors <- .get_prior(bterms, data, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
   }
+  # when updating existing priors, invalid priors should be allowed
+  allow_invalid_prior <- isTRUE(attr(prior, "allow_invalid_prior"))
   # temporarily exclude priors that should not be checked
   no_checks <- !nzchar(prior$class)
   prior_no_checks <- prior[no_checks, ]
@@ -1124,12 +1120,13 @@ check_prior <- function(prior, formula, data,
   if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
   }
-  # check if parameters in prior are valid
+  # check for invalid priors
+  # it is good to let the user know beforehand that some of their priors
+  # were invalid in the model to avoid unecessary refits
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors, prior)))
-    invalid <- which(!seq_rows(prior) %in% (valid - nrow(all_priors)))
-    if (length(invalid)) {
-      msg_priors <- .print_prior(prior[invalid, ])
+    valid_ids <- which(duplicated(rbind(all_priors, prior)))
+    invalid <- !seq_rows(prior) %in% (valid_ids - nrow(all_priors))
+    if (any(invalid) && !allow_invalid_prior) {
       stop2(
         "The following priors do not correspond ", 
         "to any model parameter: \n",
@@ -1137,14 +1134,15 @@ check_prior <- function(prior, formula, data,
         "Function 'get_prior' might be helpful to you."
       )
     }
+    prior <- prior[!invalid, ]
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
-  check_prior_content(prior, warn = warn)
+  check_prior_content(prior)
   # merge user-specified priors with default priors
   prior$new <- rep(TRUE, nrow(prior))
   all_priors$new <- rep(FALSE, nrow(all_priors))
   prior <- c(all_priors, prior, replace = TRUE)
-  prior <- check_prior_special(prior, bterms = bterms, data = data)
+  prior <- validate_prior_special(prior, bterms = bterms, data = data, ...)
   prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
   # check and warn about valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
@@ -1165,14 +1163,12 @@ check_prior <- function(prior, formula, data,
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
-  attr(prior, "checked") <- TRUE
   prior
 }
 
 # try to check if prior distributions are reasonable
 # @param prior A brmsprior object
-# @param warn logical; print boundary warnings?
-check_prior_content <- function(prior, warn = TRUE) {
+check_prior_content <- function(prior) {
   if (!is.brmsprior(prior)) {
     return(invisible(TRUE))
   }
@@ -1234,7 +1230,7 @@ check_prior_content <- function(prior, warn = TRUE) {
         }
       }
     } 
-    if (nchar(lb_warning) && warn) {
+    if (nchar(lb_warning)) {
       warning2(
         "It appears as if you have specified a lower bounded ", 
         "prior on a parameter that has no natural lower bound.",
@@ -1243,7 +1239,7 @@ check_prior_content <- function(prior, warn = TRUE) {
         "\nWarning occurred for prior \n", lb_warning
       )
     }
-    if (nchar(ub_warning) && warn) {
+    if (nchar(ub_warning)) {
       warning2(
         "It appears as if you have specified an upper bounded ", 
         "prior on a parameter that has no natural upper bound.",
@@ -1258,30 +1254,32 @@ check_prior_content <- function(prior, warn = TRUE) {
 
 # prepare special priors for use in Stan
 # required for priors that are not natively supported by Stan
-check_prior_special <- function(x, ...) {
-  UseMethod("check_prior_special")
+validate_prior_special <- function(x, ...) {
+  UseMethod("validate_prior_special")
 }
 
 #' @export
-check_prior_special.default <- function(x, prior = empty_prior(), ...) {
+validate_prior_special.default <- function(x, prior = empty_prior(), ...) {
   prior
 }
 
 #' @export
-check_prior_special.brmsprior <- function(x, bterms, ...) {
-  if (!nrow(x) || isTRUE(attr(x, "checked"))) {
+validate_prior_special.brmsprior <- function(x, bterms, ...) {
+  if (!NROW(x)) {
     return(x) 
   }
-  if (is.null(x$new)) x$new <- TRUE
+  if (is.null(x$new)) {
+    x$new <- TRUE
+  }
   x$remove <- FALSE
-  x <- check_prior_special(bterms, prior = x, ...)
+  x <- validate_prior_special(bterms, prior = x, ...)
   x <- x[!x$remove, ]
   x$new <- x$remove <- NULL
   x
 }
 
 #' @export
-check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
+validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
   for (cl in c("b", "Intercept")) {
     # copy over the global population-level priors in MV models
     gi <- which(find_rows(prior, class = cl, coef = "", resp = ""))
@@ -1303,13 +1301,13 @@ check_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
     }
   }
   for (i in seq_along(x$terms)) {
-    prior <- check_prior_special(x$terms[[i]], prior = prior, ...)
+    prior <- validate_prior_special(x$terms[[i]], prior = prior, ...)
   }
   prior
 }
 
 #' @export
-check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
+validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   data <- subset_data(data, x)
   if (is.null(prior)) {
     prior <- empty_prior()
@@ -1344,13 +1342,13 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
   simple_sigma <- simple_sigma(x)
   for (dp in names(x$dpars)) {
     allow_autoscale <- dp == "mu" && simple_sigma
-    prior <- check_prior_special(
+    prior <- validate_prior_special(
       x$dpars[[dp]], prior = prior, data = data,
       allow_autoscale = allow_autoscale, ...
     )
   }
   for (nlp in names(x$nlpars)) {
-    prior <- check_prior_special(
+    prior <- validate_prior_special(
       x$nlpars[[nlp]], prior = prior, data = data,
       allow_autoscale = simple_sigma, ...
     )
@@ -1369,20 +1367,24 @@ check_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
 }
 
 #' @export
-check_prior_special.btnl <- function(x, prior, ...) {
+validate_prior_special.btnl <- function(x, prior, ...) {
   prior
 }
 
 # prepare special priors that cannot be passed to Stan as is
 # @param allow_autoscale allow autoscaling by parameter sigma?
+# @param require_nlpar_prior require priors on coefficients of nlpars?
 # @return a possibly updated brmsprior object with additional attributes
 #' @export
-check_prior_special.btl <- function(x, prior, data,
-                                    allow_autoscale = TRUE, ...) {
+validate_prior_special.btl <- function(x, prior, data,
+                                       allow_autoscale = TRUE,
+                                       require_nlpar_prior = TRUE, ...) {
+  allow_autoscale <- as_one_logical(allow_autoscale)
+  require_nlpar_prior <- as_one_logical(require_nlpar_prior)
   px <- check_prefix(x)
   if (is_nlpar(x) && no_center(x$fe)) {
     nlp_prior <- subset2(prior, ls = px)
-    if (!any(nzchar(nlp_prior$prior))) {
+    if (!any(nzchar(nlp_prior$prior)) && require_nlpar_prior) {
       stop2(
         "Priors on population-level coefficients are required in ",
         "non-linear models, but none were found for parameter ", 
@@ -1466,9 +1468,8 @@ check_prior_special.btl <- function(x, prior, data,
   prior
 }
 
-
 # validate argument 'sample_prior'
-check_sample_prior <- function(sample_prior) {
+validate_sample_prior <- function(sample_prior) {
   options <- c("no", "yes", "only")
   if (is.null(sample_prior)) {
     sample_prior <- "no"
@@ -1478,6 +1479,11 @@ check_sample_prior <- function(sample_prior) {
     sample_prior <- if (sample_prior) "yes" else "no"
   }
   match.arg(sample_prior, options)
+}
+
+# get stored 'sample_prior' argument
+get_sample_prior <- function(prior) {
+  validate_sample_prior(attr(prior, "sample_prior", TRUE))
 }
 
 # extract prior boundaries of a parameter

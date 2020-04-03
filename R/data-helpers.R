@@ -3,7 +3,7 @@
 # @param bterms object of class brmsterms
 # @param na.action function defining how to treat NAs
 # @param drop.unused.levels should unused factor levels be removed?
-# @param terms_attr a list of attributes of the terms object of 
+# @param attr_terms a list of attributes of the terms object of 
 #   the original model.frame; only used with newdata;
 #   this ensures that (1) calls to 'poly' work correctly
 #   and (2) that the number of variables matches the number 
@@ -11,13 +11,10 @@
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
 validate_data <- function(data, bterms, na.action = na.omit2,
-                          drop.unused.levels = TRUE,
-                          terms_attr = NULL, knots = NULL) {
+                          drop.unused.levels = TRUE, knots = NULL,
+                          attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
-  }
-  if (isTRUE(attr(data, "brmsframe"))) {
-    return(data)
   }
   if (is.null(knots)) {
     knots <- get_knots(data)
@@ -29,10 +26,10 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   if (!isTRUE(nrow(data) > 0L)) {
     stop2("Argument 'data' does not contain observations.")
   }
-  bterms$allvars <- terms(bterms$allvars)
-  attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
+  terms_all <- terms(bterms$allvars)
+  attributes(terms_all)[names(attr_terms)] <- attr_terms
   data <- data_rsv_intercept(data, bterms = bterms)
-  missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
+  missing_vars <- setdiff(all.vars(terms_all), names(data))
   if (length(missing_vars)) {
     stop2("The following variables are missing in 'data':\n",
           collapse_comma(missing_vars))
@@ -40,8 +37,10 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   for (v in intersect(vars_keep_na(bterms), names(data))) {
     attr(data[[v]], "keep_na") <- TRUE
   }
+  # 'terms' prevents correct validation in 'model.frame'
+  attr(data, "terms") <- NULL
   data <- model.frame(
-    bterms$allvars, data, na.action = na.action,
+    terms_all, data, na.action = na.action,
     drop.unused.levels = drop.unused.levels
   )
   if (any(grepl("__|_$", colnames(data)))) {
@@ -57,7 +56,6 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
-  attr(data, "brmsframe") <- TRUE
   data
 }
 
@@ -69,9 +67,6 @@ validate_data <- function(data, bterms, na.action = na.omit2,
 # @return a validated named list of data objects
 validate_data2 <- function(data2, bterms, ...) {
   # TODO: specify spline-related matrices in 'data2'
-  if (isTRUE(attr(data2, "valid"))) {
-    return(data2)
-  }
   if (is.null(data2)) {
     data2 <- list()
   }
@@ -112,7 +107,7 @@ validate_data2 <- function(data2, bterms, ...) {
   for (cov in cov_names) {
     data2[[cov]] <- validate_recov_matrix(get_from_data2(cov, data2))
   }
-  structure(data2, valid = TRUE)
+  data2
 }
 
 # get an object from the 'data2' argument
@@ -312,17 +307,10 @@ validate_newdata <- function(
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,
   all_group_vars = NULL, ...
 ) {
-  if (is.null(newdata)) {
-    newdata <- structure(object$data, valid = TRUE, old = TRUE)
-  }
-  if (isTRUE(attr(newdata, "valid"))) {
-    return(newdata)
-  }
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
-  newdata <- rm_attr(newdata, c("terms", "brmsframe"))
   object <- restructure(object)
   object <- exclude_terms(object, incl_autocor = incl_autocor)
   resp <- validate_resp(resp, object)
@@ -476,7 +464,27 @@ validate_newdata <- function(
       }
     } 
   }
-  structure(newdata, valid = TRUE)
+  # ensure correct handling of functions like 'poly' or 'scale'
+  old_terms <- attr(object$data, "terms")
+  attr_terms <- c("variables", "predvars")
+  attr_terms <- attributes(old_terms)[attr_terms]
+  newdata <- validate_data(
+    newdata, bterms = bterms, na.action = na.pass, 
+    drop.unused.levels = FALSE, attr_terms = attr_terms,
+    knots = get_knots(object$data)
+  )
+  newdata
+}
+
+# extract the current data set
+current_data <- function(object, newdata = NULL, ...) {
+  stopifnot(is.brmsfit(object))
+  if (is.null(newdata)) {
+    data <- object$data
+  } else {
+    data <- validate_newdata(newdata, object = object, ...)
+  }
+  data
 }
 
 # TODO: refactor preparation and storage of old standata

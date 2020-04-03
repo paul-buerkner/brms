@@ -266,13 +266,12 @@ test_that("make_standata allows to retrieve the initial data order", {
                           id = sample(1:10, 100, TRUE), 
                           time = sample(1:100, 100))
   # univariate model
-  sdata1 <- make_standata(y1 ~ ar(time, id), data = dat,
-                          control = list(save_order = TRUE))
+  sdata1 <- make_standata(y1 ~ ar(time, id), data = dat, internal = TRUE)
   expect_equal(dat$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   
   # multivariate model
   form <- bf(mvbind(y1, y2) ~ ma(time, id)) + set_rescor(FALSE)
-  sdata2 <- make_standata(form, data = dat, control = list(save_order = TRUE))
+  sdata2 <- make_standata(form, data = dat, internal = TRUE)
   expect_equal(sdata2$Y_y1[attr(sdata2, "old_order")], as.array(dat$y1))
   expect_equal(sdata2$Y_y2[attr(sdata2, "old_order")], as.array(dat$y2))
 })
@@ -674,12 +673,12 @@ test_that("make_standata includes data for Gaussian processes", {
   sdata <- make_standata(y ~ gp(x1, scale = FALSE), dat)
   expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 9)
   
-  sdata <- make_standata(y ~ gp(x1, by = z, gr = TRUE), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = z, gr = TRUE), dat))
   expect_equal(sdata$Igp_1_2, as.array(4))
   expect_equal(sdata$Jgp_1_4, as.array(1:5))
   expect_equal(sdata$Igp_1_4, as.array(6:10))
   
-  sdata <- make_standata(y ~ gp(x1, by = y, gr = TRUE), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = y, gr = TRUE), dat))
   expect_equal(sdata$Cgp_1, as.array(dat$y))
 })
 
@@ -692,7 +691,7 @@ test_that("make_standata includes data for approximate Gaussian processes", {
   expect_equal(dim(sdata$Xgp_1), c(10, 5))
   expect_equal(dim(sdata$slambda_1), c(5, 1))
   
-  sdata <- make_standata(y ~ gp(x1, by = z, k = 5, c = 5/4), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = z, k = 5, c = 5/4), dat))
   expect_equal(sdata$Igp_1_2, as.array(4))
   expect_equal(sdata$Cgp_1_2, as.array(1))
   expect_equal(sdata$Igp_1_4, as.array(6:10))

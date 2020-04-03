@@ -11,7 +11,6 @@ get_prior(
   autocor = NULL,
   knots = NULL,
   sparse = NULL,
-  internal = FALSE,
   ...
 )
 }
@@ -54,11 +53,7 @@ memory. Sampling speed is currently not improved or even slightly
 decreased. It is now recommended to use the \code{sparse} argument of
 \code{\link{brmsformula}} and related functions.}
 
-\item{internal}{A flag indicating if the names of additional internal
-parameters should be displayed. Setting priors on these parameters is not
-recommended}
-
-\item{...}{Currently ignored.}
+\item{...}{Other arguments for internal usage only.}
 }
 \value{
 A data.frame with columns \code{prior}, \code{class}, \code{coef},

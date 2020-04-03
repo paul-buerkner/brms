@@ -293,22 +293,14 @@ prepare_cens <- function(x) {
 }
 
 # extract information on censoring of the response variable
-# @param x a brmsfit object
-# @param resp optional names of response variables for which to extract values
 # @return vector of censoring indicators or NULL in case of no censoring
-get_cens <- function(x, resp = NULL, newdata = NULL) {
-  stopifnot(is.brmsfit(x))
-  resp <- validate_resp(resp, x, multiple = FALSE)
-  bterms <- brmsterms(x$formula)
+get_cens <- function(bterms, data, resp = NULL) {
   if (!is.null(resp)) {
     bterms <- bterms$terms[[resp]]
   }
-  if (is.null(newdata)) {
-    newdata <- model.frame(x)
-  }
   out <- NULL
   if (is.formula(bterms$adforms$cens)) {
-    out <- get_ad_values(bterms, "cens", "cens", newdata)
+    out <- get_ad_values(bterms, "cens", "cens", data)
     out <- prepare_cens(out)
   }
   out

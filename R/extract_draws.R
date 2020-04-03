@@ -22,25 +22,18 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   samples <- as.matrix(x, subset = subset)
   samples <- point_samples(samples, point = point)
   
-  # prepare (new) data and stan data 
-  newdata <- validate_newdata(
-    newdata, object = x, re_formula = re_formula, 
-    resp = resp, allow_new_levels = allow_new_levels, 
-    newdata2 = newdata2, ...
-  )
-  new <- !isTRUE(attr(newdata, "old"))
-  sdata <- standata(
-    x, newdata = newdata, re_formula = re_formula, 
-    newdata2 = newdata2, resp = resp, 
-    allow_new_levels = allow_new_levels, 
-    internal = TRUE, ...
-  )
   new_formula <- update_re_terms(x$formula, re_formula)
   bterms <- brmsterms(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
   old_sdata <- trunc_bounds <- NULL
+  new <- !is.null(newdata)
   if (new) {
+    newdata <- validate_newdata(
+      newdata, object = x, re_formula = re_formula, 
+      resp = resp, allow_new_levels = allow_new_levels, 
+      ...
+    )
     # extract_draws_re() also requires the levels from newdata
     # original level names are already passed via old_ranef
     used_levels <- attr(tidy_ranef(bterms, newdata), "levels")
@@ -54,6 +47,12 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       trunc_bounds <- trunc_bounds(bterms, data = newdata, incl_family = TRUE)
     }
   }
+  sdata <- standata(
+    x, newdata = newdata, re_formula = re_formula, 
+    newdata2 = newdata2, resp = resp, 
+    allow_new_levels = allow_new_levels, 
+    internal = TRUE, ...
+  )
   draws_ranef <- extract_draws_ranef(
     ranef = ranef, samples = samples, sdata = sdata, 
     resp = resp, old_ranef = x$ranef, 
@@ -63,7 +62,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     bterms, samples = samples, sdata = sdata, data = x$data, 
     draws_ranef = draws_ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
-    new = new, oos = oos, stanvars = names(x$stanvars), 
+    new = new, oos = oos, stanvars = x$stanvars, 
     old_sdata = old_sdata, trunc_bounds = trunc_bounds
   )
 }
@@ -814,7 +813,6 @@ extract_draws_bhaz <- function(bterms, samples, sdata, ...) {
 }
 
 # extract data mainly related to the response variable
-# @param stanvars: *names* of variables stored in slot 'stanvars'
 extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bterms))
   vars <- c(
@@ -831,8 +829,8 @@ extract_draws_data <- function(bterms, sdata, data, stanvars = NULL, ...) {
   vars <- union(vars, vl_vars)
   draws <- sdata[vars]
   if (length(stanvars)) {
-    stopifnot(is.character(stanvars))
-    draws[stanvars] <- sdata[stanvars]
+    stopifnot(is.stanvars(stanvars))
+    draws[names(stanvars)] <- sdata[names(stanvars)]
   }
   draws
 }

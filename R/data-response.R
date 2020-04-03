@@ -35,7 +35,8 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   } else {
     out <- sdata[[Ynames]]
   }
-  structure(out, old_order = attr(sdata, "old_order"))
+  attr(out, "old_order") <- attr(sdata, "old_order")
+  out
 }
 
 #' Prepare Response Data

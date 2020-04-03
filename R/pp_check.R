@@ -76,7 +76,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
           "Valid types are:\n", collapse_comma(valid_types))
   }
   ppc_fun <- get(paste0("ppc_", type), asNamespace("bayesplot"))
-  # validate arguments 'resp', 'group', and 'x'
+
   object <- restructure(object)
   stopifnot_resp(object, resp)
   family <- family(object, resp = resp)
@@ -127,10 +127,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  newdata <- validate_newdata(
-    newdata, object = object, resp = resp, 
-    re_formula = NA, check_response = TRUE, ...
-  )
+  
   y <- get_y(object, resp = resp, newdata = newdata, ...)
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
@@ -138,8 +135,14 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     subset = subset, sort = FALSE, ...
   )
   yrep <- do_call(method, pred_args)
+
+  data <- current_data(
+    object, newdata = newdata, resp = resp, 
+    re_formula = NA, check_response = TRUE, ...
+  )
   # censored responses are misleading when displayed in pp_check
-  cens <- get_cens(object, resp = resp, newdata = newdata)
+  bterms <- brmsterms(object$formula)
+  cens <- get_cens(bterms, data, resp = resp)
   if (!is.null(cens)) {
     warning2("Censored responses are not shown in 'pp_check'.")
     take <- !cens
@@ -162,16 +165,12 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
       do_call(compute_loo, c(pred_args, criterion = "psis"))
     )
   }
-  # allow using arguments 'group' and 'x' for new data
-  bterms <- brmsterms(object$formula)
-  mf <- validate_data(newdata, bterms, na.action = na.pass)
   if (!is.null(group)) {
-    ppc_args$group <- mf[[group]]
+    ppc_args$group <- data[[group]]
   }
   if (!is.null(x)) {
-    ppc_args$x <- mf[[x]]
+    ppc_args$x <- data[[x]]
     if (!is_like_factor(ppc_args$x)) {
-      # fixes issue #229
       ppc_args$x <- as.numeric(ppc_args$x)
     }
   }
