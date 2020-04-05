@@ -26,7 +26,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   bterms <- brmsterms(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  old_sdata <- trunc_bounds <- NULL
+  old_sdata <- NULL
   new <- !is.null(newdata)
   if (new) {
     newdata <- validate_newdata(
@@ -41,10 +41,6 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     if (length(get_effect(bterms, "gp"))) {
       # GPs for new data require the original data as well
       old_sdata <- standata(x, internal = TRUE, ...)
-    }
-    if (length(get_effect(bterms, "sp"))) {
-      # truncation bounds for imputing missing values in new data
-      trunc_bounds <- trunc_bounds(bterms, data = newdata, incl_family = TRUE)
     }
   }
   sdata <- standata(
@@ -63,7 +59,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     draws_ranef = draws_ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
     new = new, oos = oos, stanvars = x$stanvars, 
-    old_sdata = old_sdata, trunc_bounds = trunc_bounds
+    old_sdata = old_sdata,
   )
 }
 
@@ -245,8 +241,7 @@ extract_draws_fe <- function(bterms, samples, sdata, ...) {
 
 # extract draws of special effects terms
 extract_draws_sp <- function(bterms, samples, sdata, data, 
-                             meef = empty_meef(), new = FALSE,
-                             trunc_bounds = NULL, ...) {
+                             meef = empty_meef(), new = FALSE, ...) {
   draws <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) {
@@ -365,8 +360,8 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
           draws$Yl[[i]] <- rcontinuous(
             n = prod(dim), dist = "norm", 
             mean = Y, sd = sdy,
-            lb = trunc_bounds[[vmi]]$lb,
-            ub = trunc_bounds[[vmi]]$ub
+            lb = sdata[[paste0("lbmi_", vmi)]],
+            ub = sdata[[paste0("ubmi_", vmi)]]
           )
           draws$Yl[[i]] <- array(draws$Yl[[i]], dim)
         }

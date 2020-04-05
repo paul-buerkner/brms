@@ -370,6 +370,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         out$noise[which_mi] <- Inf
       }
     }
+    # bounds are required for predicting new missing values
+    # not required in Stan right now as bounds are hard-coded there
+    tbounds <- trunc_bounds(x, data, incl_family = TRUE)
+    out$lbmi <- tbounds$lb
+    out$ubmi <- tbounds$ub
     if (!internal) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected

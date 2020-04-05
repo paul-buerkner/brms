@@ -307,25 +307,16 @@ get_cens <- function(bterms, data, resp = NULL) {
 }
 
 # extract truncation boundaries
-trunc_bounds <- function(x, ...) {
-  UseMethod("trunc_bounds")
-}
-
-# @return a named list with one element per response variable
-#' @export
-trunc_bounds.mvbrmsterms <- function(x, ...) {
-  lapply(x$terms, trunc_bounds, ...)
-}
-
+# @param bterms a brmsterms object
 # @param data data.frame containing the truncation variables
 # @param incl_family include the family in the derivation of the bounds?
 # @param stan return bounds in form of Stan syntax?
-# @return a list with elements 'lb' and 'ub'
-#' @export
-trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE, 
-                                   stan = FALSE, ...) {
-  if (is.formula(x$adforms$trunc)) {
-    trunc <- eval_rhs(x$adforms$trunc)
+# @return a list with elements 'lb' and 'ub' or corresponding Stan code
+trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
+                         stan = FALSE, ...) {
+  stopifnot(is.brmsterms(bterms))
+  if (is.formula(bterms$adforms$trunc)) {
+    trunc <- eval_rhs(bterms$adforms$trunc)
   } else {
     trunc <- resp_trunc()
   }
@@ -334,7 +325,7 @@ trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE,
     ub = eval2(trunc$vars$ub, data)
   )
   if (incl_family) {
-    family_bounds <- family_bounds(x)
+    family_bounds <- family_bounds(bterms)
     out$lb <- max(out$lb, family_bounds$lb)
     out$ub <- min(out$ub, family_bounds$ub)
   }
