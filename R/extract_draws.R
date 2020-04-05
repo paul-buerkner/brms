@@ -29,15 +29,6 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   old_sdata <- NULL
   new <- !is.null(newdata)
   if (new) {
-    newdata <- validate_newdata(
-      newdata, object = x, re_formula = re_formula, 
-      resp = resp, allow_new_levels = allow_new_levels, 
-      ...
-    )
-    # extract_draws_re() also requires the levels from newdata
-    # original level names are already passed via old_ranef
-    used_levels <- attr(tidy_ranef(bterms, newdata), "levels")
-    attr(ranef, "levels") <- used_levels
     if (length(get_effect(bterms, "gp"))) {
       # GPs for new data require the original data as well
       old_sdata <- standata(x, internal = TRUE, ...)
@@ -308,6 +299,7 @@ extract_draws_sp <- function(bterms, samples, sdata, data,
       } else {
         # sample new values of latent variables
         if (nzchar(g)) {
+          # TODO: reuse existing levels in predictions?
           # represent all indices between 1 and length(unique(Jme))
           Jme <- as.numeric(factor(Jme))
           me_dim <- c(nrow(draws$bsp), max(Jme))
@@ -527,9 +519,9 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 # extract draws for all group level effects
 # needs to be separate from 'extract_draws_re' to take correlations
 # across responses and distributional parameters into account (#779)
-# @param ranef output of 'tidy_ranef' based on the new formula 
-#   and old data but storing levels obtained from new data
+# @param ranef output of 'tidy_ranef' based on the new formula and old data
 # @param old_ranef same as 'ranef' but based on the original formula
+# TODO: get rid of requirement for 'old_ranef'
 # @return a named list with one element per group containing posterior draws 
 #   of levels used in the data as well as additional meta-data
 extract_draws_ranef <- function(ranef, samples, sdata, old_ranef, resp = NULL,
@@ -545,7 +537,7 @@ extract_draws_ranef <- function(ranef, samples, sdata, old_ranef, resp = NULL,
     # prepare general variables related to group g
     ranef_g <- subset2(ranef, group = g)
     old_ranef_g <- subset2(old_ranef, group = g)
-    used_levels <- attr(ranef, "levels")[[g]]
+    used_levels <- attr(sdata, "levels")[[g]]
     old_levels <- attr(old_ranef, "levels")[[g]]
     nlevels <- length(old_levels) 
     nranef <- nrow(ranef_g)

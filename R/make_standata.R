@@ -95,7 +95,12 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     out[names(stanvars)] <- lapply(stanvars, "[[", "sdata")
   }
   if (internal) {
+    # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
+    # ensures current grouping levels are known in post-processing
+    attr(out, "levels") <- get_levels(
+      tidy_meef(bterms, data), tidy_ranef(bterms, data)
+    )
   }
   structure(out, class = "standata")
 }
@@ -134,9 +139,10 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       )
     }
   } else {
+    # TODO: move old_levels inside old_sdata
     old_levels <- get_levels(
-      tidy_ranef(bterms, object$data),
-      tidy_meef(bterms, object$data)
+      tidy_meef(bterms, object$data),
+      tidy_ranef(bterms, object$data)
     )
     old_sdata <- extract_old_standata(
       bterms, data = object$data, version = version
