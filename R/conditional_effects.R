@@ -860,7 +860,14 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   marg_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
   for (j in seq_rows(conditions)) {
-    data[[j]][, marg_vars] <- conditions[j, marg_vars]
+    for (v in marg_vars) {
+      cval <- conditions[j, v]
+      if (length(dim(cval)) == 2L) {
+        # matrix columns don't have automatic broadcasting apparently
+        cval <- matrix(cval, nrow(data[[j]]), ncol(cval), byrow = TRUE)
+      }
+      data[[j]][[v]] <- cval
+    }
     data[[j]]$cond__ <- cond__[j]
   }
   data <- do_call(rbind, data)
@@ -901,7 +908,9 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
-      not_na <- !(is.na(cond) | cond == "zero__")
+      # ensures correct handling of matrix columns
+      not_na <- function(x) !any(is.na(x) | x %in% "zero__")
+      not_na <- ulapply(cond, not_na)
       cond <- cond[, not_na, drop = FALSE]
       mf_tmp <- mf[, not_na, drop = FALSE]
       if (ncol(mf_tmp)) {

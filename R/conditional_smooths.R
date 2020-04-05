@@ -179,7 +179,14 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
       newdata <- newdata[!ex_too_far, ]  
     }
     other_vars <- setdiff(names(conditions), vars)
-    newdata[, other_vars] <- conditions[1, other_vars]
+    for (v in other_vars) {
+      cval <- conditions[1, v]
+      if (length(dim(cval)) == 2L) {
+        # matrix columns don't have automatic broadcasting apparently
+        cval <- matrix(cval, nrow(newdata), ncol(cval), byrow = TRUE)
+      }
+      newdata[[v]] <- cval
+    }
     sdata <- standata(
       fit, newdata, re_formula = NA, 
       internal = TRUE, check_response = FALSE
