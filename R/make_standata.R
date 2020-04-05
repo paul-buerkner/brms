@@ -56,14 +56,12 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 # @param check_response check validity of the response?
 # @param only_response extract data related to the response only?
 # @param internal prepare Stan data for use in post-processing methods?
-# @param old_sdata original Stan data as prepared by 'extract_old_standata'
-# @param old_levels named list of original group levels
+# @param basis original Stan data as prepared by 'standata_basis'
 # @param ... currently ignored
 # @return names list of data passed to Stan
 .make_standata <- function(bterms, data, prior, stanvars, data2, 
                            check_response = TRUE, only_response = FALSE, 
-                           internal = FALSE, old_sdata = NULL,
-                           old_levels = NULL, ...) {
+                           internal = FALSE, basis = NULL, ...) {
   
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
@@ -72,14 +70,14 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   data <- order_data(data, bterms = bterms)
   out <- data_response(
     bterms, data, check_response = check_response,
-    internal = internal, old_sdata = old_sdata
+    internal = internal, basis = basis
   )
   if (!only_response) {
-    ranef <- tidy_ranef(bterms, data, old_levels = old_levels)
-    meef <- tidy_meef(bterms, data, old_levels = old_levels)
+    ranef <- tidy_ranef(bterms, data, old_levels = basis$levels)
+    meef <- tidy_meef(bterms, data, old_levels = basis$levels)
     c(out) <- data_predictor(
       bterms, data = data, prior = prior, data2 = data2,
-      ranef = ranef, old_sdata = old_sdata
+      ranef = ranef, basis = basis
     )
     c(out) <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_Xme(meef, data = data)
@@ -122,6 +120,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                              newdata2 = NULL, new_objects = NULL,
                              incl_autocor = TRUE, ...) {
+  
   object <- restructure(object)
   object <- exclude_terms(object, incl_autocor = incl_autocor)
   version <- object$version$brms
@@ -129,25 +128,6 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   formula <- update_re_terms(object$formula, re_formula)
   bterms <- brmsterms(formula)
   data <- current_data(object, newdata, re_formula = re_formula, ...)
-  
-  old_sdata <- old_levels <- NULL
-  if (is.null(newdata)) {
-    if (version <= "2.8.6" && has_smooths(bterms)) {
-      # the spline penality has changed in 2.8.7 (#646)
-      old_sdata <- extract_old_standata(
-        bterms, data = object$data, version = version
-      )
-    }
-  } else {
-    # TODO: move old_levels inside old_sdata
-    old_levels <- get_levels(
-      tidy_meef(bterms, object$data),
-      tidy_ranef(bterms, object$data)
-    )
-    old_sdata <- extract_old_standata(
-      bterms, data = object$data, version = version
-    )
-  }
   stanvars <- object$stanvars
   if (is.null(newdata2)) {
     data2 <- object$data2
@@ -156,10 +136,17 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stanvars <- add_newdata_stanvars(stanvars, data2)
   }
   
+  basis <- NULL
+  # the spline penality has changed in 2.8.7 (#646)
+  use_old_penality <- has_smooths(bterms) && version <= "2.8.6"
+  if (!is.null(newdata) || use_old_penality) {
+    # 'basis' contains information from original Stan data 
+    # required to correctly predict from new data
+    basis <- standata_basis(bterms, data = object$data, version = version)
+  }
   .make_standata(
     bterms, data = data, prior = object$prior,
-    data2 = data2, stanvars = stanvars, 
-    old_sdata = old_sdata, old_levels = old_levels,
+    data2 = data2, stanvars = stanvars, basis = basis,
     ...
   )
 }
@@ -170,37 +157,38 @@ standata <- function(object, ...) {
   UseMethod("standata")
 }
 
-# TODO: refactor preparation and storage of old standata
-# helper function for validate_newdata to extract
-# old standata required for the computation of new standata
-extract_old_standata <- function(x, data, ...) {
-  UseMethod("extract_old_standata")
+# prepare basis data required for correct predictions from new data
+standata_basis <- function(x, data, ...) {
+  UseMethod("standata_basis")
 }
 
 #' @export
-extract_old_standata.default <- function(x, data, ...) {
-  NULL
+standata_basis.default <- function(x, data, ...) {
+  list()
 }
 
 #' @export
-extract_old_standata.mvbrmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$responses))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$terms[[i]], data, ...)
+standata_basis.mvbrmsterms <- function(x, data, ...) {
+  out <- list()
+  for (r in names(x$terms)) {
+    out$resps[[r]] <- standata_basis(x$terms[[r]], data, ...)
   }
+  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
   out
 }
 
 #' @export
-extract_old_standata.brmsterms <- function(x, data, ...) {
-  out <- named_list(c(names(x$dpars), names(x$nlpars)))
+standata_basis.brmsterms <- function(x, data, ...) {
+  out <- list()
   data <- subset_data(data, x)
   for (dp in names(x$dpars)) {
-    out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
+    out$dpars[[dp]] <- standata_basis(x$dpars[[dp]], data, ...)
   }
   for (nlp in names(x$nlpars)) {
-    out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
+    out$nlpars[[nlp]] <- standata_basis(x$nlpars[[nlp]], data, ...)
   }
+  # old levels are required to select the right indices for new levels
+  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
   if (has_trials(x$family)) {
     # trials should not be computed based on new data
     datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
@@ -208,44 +196,31 @@ extract_old_standata.brmsterms <- function(x, data, ...) {
     out$trials <- datr$trials
   }
   if (is_binary(x$family) || is_categorical(x$family)) {
-    Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$resp_levels <- levels(as.factor(Y))
-  }
-  if (is_cox(x$family)) {
-    # compute basis matrix of the baseline hazard for the Cox model
-    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
-    out$bhaz_basis <- bhaz_basis_matrix(datr$Y, args = x$family$bhaz)
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$resp_levels <- levels(as.factor(y))
   }
   out
 }
 
 #' @export
-extract_old_standata.btnl <- function(x, data, ...) {
-  NULL
+standata_basis.btnl <- function(x, data, ...) {
+  list()
 }
 
 #' @export
-extract_old_standata.btl <- function(x, data, ...) {
+standata_basis.btl <- function(x, data, ...) {
   out <- list()
-  out$smooths <- make_sm_list(x, data, ...)
-  out$gps <- make_gp_list(x, data, ...)
-  out$Jmo <- make_Jmo_list(x, data, ...)
-  if (has_ac_class(x, "car")) {
-    gr <- get_ac_vars(x, "gr", class = "car")
-    stopifnot(length(gr) <= 1L)
-    if (isTRUE(nzchar(gr))) {
-      out$locations <- levels(factor(get(gr, data)))
-    } else {
-      out$locations <- NA
-    }
-  }
+  out$sm <- standata_basis_sm(x, data, ...)
+  out$gp <- standata_basis_gp(x, data, ...)
+  out$sp <- standata_basis_sp(x, data, ...)
+  out$ac <- standata_basis_ac(x, data, ...)
+  out$bhaz <- standata_basis_bhaz(x, data, ...)
   out
 }
 
-# extract data related to smooth terms
-# for use in extract_old_standata
+# prepare basis data related to smooth terms
 # @param version optional brms version number
-make_sm_list <- function(x, data, version = NULL, ...) {
+standata_basis_sm <- function(x, data, version = NULL, ...) {
   stopifnot(is.btl(x))
   smterms <- all_terms(x[["sm"]])
   out <- named_list(smterms)
@@ -267,25 +242,49 @@ make_sm_list <- function(x, data, version = NULL, ...) {
   out
 }
 
-# extract data related to gaussian processes
-# for use in extract_old_standata
-make_gp_list <- function(x, data, ...) {
+# prepare basis data related to gaussian processes
+standata_basis_gp <- function(x, data, ...) {
   stopifnot(is.btl(x))
-  out <- data_gp(x, data, raw = TRUE)
-  out <- out[grepl("^(dmax)|(cmeans)", names(out))]
+  out <- data_gp(x, data, internal = TRUE)
+  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
   out
 }
 
-# extract data related to monotonic effects
-# for use in extract_old_standata
-make_Jmo_list <- function(x, data, ...) {
+# prepare basis data related to special terms
+standata_basis_sp <- function(x, data, ...) {
   stopifnot(is.btl(x))
-  out <- NULL
+  out <- list()
   if (length(attr(x$sp, "uni_mo"))) {
     # do it like data_sp()
     spef <- tidy_spef(x, data)
     Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
-    out <- as.array(ulapply(Xmo, max))
+    out$Jmo <- as.array(ulapply(Xmo, max))
+  }
+  out
+}
+
+# prepare basis data related to autocorrelation structures
+standata_basis_ac <- function(x, data, ...) {
+  out <- list()
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    stopifnot(length(gr) <= 1L)
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- levels(factor(get(gr, data)))
+    } else {
+      out$locations <- NA
+    }
+  }
+  out
+}
+
+# prepare basis data for baseline hazards of the cox model
+standata_basis_bhaz <- function(x, data, ...) {
+  out <- list()
+  if (is_cox(x$family)) {
+    # compute basis matrix of the baseline hazard for the Cox model
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
   }
   out
 }

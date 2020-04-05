@@ -26,14 +26,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   bterms <- brmsterms(new_formula)
   ranef <- tidy_ranef(bterms, x$data)
   meef <- tidy_meef(bterms, x$data)
-  old_sdata <- NULL
   new <- !is.null(newdata)
-  if (new) {
-    if (length(get_effect(bterms, "gp"))) {
-      # GPs for new data require the original data as well
-      old_sdata <- standata(x, internal = TRUE, ...)
-    }
-  }
   sdata <- standata(
     x, newdata = newdata, re_formula = re_formula, 
     newdata2 = newdata2, resp = resp, 
@@ -49,8 +42,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     bterms, samples = samples, sdata = sdata, data = x$data, 
     draws_ranef = draws_ranef, meef = meef, resp = resp, 
     sample_new_levels = sample_new_levels, nug = nug, 
-    new = new, oos = oos, stanvars = x$stanvars, 
-    old_sdata = old_sdata,
+    new = new, oos = oos, stanvars = x$stanvars
   )
 }
 
@@ -427,14 +419,10 @@ extract_draws_sm <- function(bterms, samples, sdata, data, ...) {
 # @param new is new data used?
 # @param nug small numeric value to avoid numerical problems in GPs
 extract_draws_gp <- function(bterms, samples, sdata, data,
-                             new = FALSE, nug = NULL,
-                             old_sdata = NULL, ...) {
+                             new = FALSE, nug = NULL, ...) {
   gpef <- tidy_gpef(bterms, data)
   if (!nrow(gpef)) {
     return(list())
-  }
-  if (new) {
-    stopifnot(!is.null(old_sdata))
   }
   p <- usc(combine_prefix(bterms))
   if (is.null(nug)) {
@@ -448,16 +436,14 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
       for (j in seq_along(cons)) {
         gp[[j]] <- .extract_draws_gp(
           gpef, samples = samples, sdata = sdata,
-          old_sdata = old_sdata, nug = nug, new = new,
-          byj = j, p = p, i = i
+          nug = nug, new = new, byj = j, p = p, i = i
         )
       }
       attr(gp, "byfac") <- TRUE
     } else {
       gp <- .extract_draws_gp(
         gpef, samples = samples, sdata = sdata,
-        old_sdata = old_sdata, nug = nug, new = new, 
-        p = p, i = i
+        nug = nug, new = new, p = p, i = i
       )
     }
     draws[[i]] <- gp
@@ -471,8 +457,8 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 # @param i indiex of the Gaussian process
 # @param byj index for the contrast of a categorical 'by' variable
 # @return a list to be evaluated by .predictor_gp()
-.extract_draws_gp <- function(gpef, samples, sdata, old_sdata,
-                              nug, new, p, i, byj = NULL) {
+.extract_draws_gp <- function(gpef, samples, sdata, nug, 
+                              new, p, i, byj = NULL) {
   sfx1 <- escape_all(gpef$sfx1[[i]])
   sfx2 <- escape_all(gpef$sfx2[[i]])
   if (is.null(byj)) {
@@ -495,8 +481,8 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
   Igp_name <- paste0("Igp", pi, j)
   Jgp_name <- paste0("Jgp", pi, j)
   if (new && isNA(gpef$k[i])) {
-    # approximate GPs don't differentiate between new and old data
-    gp$x <- old_sdata[[Xgp_name]]
+    # in exact GPs old covariate values are required for predictions
+    gp$x <- sdata[[paste0(Xgp_name, "_old")]]
     gp$nug <- 1e-11
     # computing GPs for new data requires the old GP terms
     gp$yL <- .predictor_gp(gp)
@@ -521,7 +507,6 @@ extract_draws_gp <- function(bterms, samples, sdata, data,
 # across responses and distributional parameters into account (#779)
 # @param ranef output of 'tidy_ranef' based on the new formula and old data
 # @param old_ranef same as 'ranef' but based on the original formula
-# TODO: get rid of requirement for 'old_ranef'
 # @return a named list with one element per group containing posterior draws 
 #   of levels used in the data as well as additional meta-data
 extract_draws_ranef <- function(ranef, samples, sdata, old_ranef, resp = NULL,

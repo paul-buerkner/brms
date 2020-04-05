@@ -56,11 +56,11 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
+data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    od <- old_sdata[[x$responses[i]]]
-    c(out) <- data_response(x$terms[[i]], old_sdata = od, ...)
+    bs <- basis$resps[[x$responses[i]]]
+    c(out) <- data_response(x$terms[[i]], basis = bs, ...)
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -71,14 +71,13 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    internal = FALSE, old_sdata = NULL, ...) {
-  # prepare data for the response variable
+                                    internal = FALSE, basis = NULL, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family) || is_categorical(x$family)) {
-    out$Y <- as_factor(out$Y, levels = old_sdata$resp_levels)
+    out$Y <- as_factor(out$Y, levels = basis$resp_levels)
     out$Y <- as.numeric(out$Y)
     if (is_binary(x$family)) {
       out$Y <- out$Y - 1
@@ -160,8 +159,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
           "Using 'binomial' families without specifying 'trials' ", 
           "on the left-hand side of the model formula is deprecated."
         )
-      } else if (!is.null(old_sdata$trials)) {
-        trials <- max(old_sdata$trials)
+      } else if (!is.null(basis$trials)) {
+        trials <- max(basis$trials)
       } else {
         stop2("Could not compute the number of trials.")
       }
@@ -453,8 +452,9 @@ data_bhaz <- function(bterms, data, basis = NULL) {
   }
   y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
   args <- bterms$family$bhaz 
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = basis)
-  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = basis)
+  bs <- basis$basis_matrix
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs) 
+  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
   out
 }

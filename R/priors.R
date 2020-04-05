@@ -832,7 +832,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   }
   p <- usc(combine_prefix(bterms))
   gpef <- tidy_gpef(bterms, data)
-  gp_dat <- data_gp(bterms, data, raw = TRUE)
+  data_gp <- data_gp(bterms, data, internal = TRUE)
   out <- vector("list", NROW(gpef))
   for (i in seq_along(out)) {
     pi <- paste0(p, "_", i)
@@ -840,7 +840,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
     cons <- gpef$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
-        Xgp <- gp_dat[[paste0("Xgp", pi, "_", j)]]
+        Xgp <- data_gp[[paste0("Xgp", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)
         } else {
@@ -848,7 +848,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
         }
       }
     } else {
-      Xgp <- gp_dat[[paste0("Xgp", pi)]]
+      Xgp <- data_gp[[paste0("Xgp", pi)]]
       if (iso) {
         out[[i]] <- .def_lscale_prior(Xgp)
       } else {
