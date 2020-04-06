@@ -24,8 +24,12 @@ Rok Češnovar.
 ### Other Changes
 
 * Rename `parse_bf` to `brmsterms` and deprecate the former function.
+* Rename `extract_draws` to `prepare_predictions` and deprecate 
+the former function.
 * Deprecate using a model-dependent `rescor` default.
 * Deprecate argument `cov_ranef` in `brm` and related functions.
+* Improve several internal interfaces. This should not have any
+user-visible changes.
 
 
 # brms 2.12.0

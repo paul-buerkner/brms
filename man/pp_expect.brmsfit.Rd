@@ -57,7 +57,7 @@ Indicating whether to return predicted values in the original
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

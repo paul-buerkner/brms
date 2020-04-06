@@ -137,18 +137,17 @@ stan_response <- function(bterms, data) {
     )
   }
   if (is.formula(bterms$adforms$mi)) {
+    # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
     Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
     sdy <- get_sdy(bterms, data)
     if (is.null(sdy)) {
       # response is modeled without measurement error
-      str_add(out$par) <- glue(
-        "  vector{Ybounds}[Nmi{resp}] Ymi{resp};",
-        "  // estimated missings\n"
-      )
       str_add(out$data) <- glue(
         "  int<lower=0> Nmi{resp};  // number of missings\n",
-        "  int<lower=1> Jmi{resp}[Nmi{resp}];",  
-        "  // positions of missings\n"
+        "  int<lower=1> Jmi{resp}[Nmi{resp}];  // positions of missings\n"
+      )
+      str_add(out$par) <- glue(
+        "  vector{Ybounds}[Nmi{resp}] Ymi{resp};  // estimated missings\n"
       )
       str_add(out$model_def) <- glue(
         "  // vector combining observed and missing responses\n",

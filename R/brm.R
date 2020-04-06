@@ -73,18 +73,19 @@
 #'   in Stan's \code{parameters} block should be saved (default is
 #'   \code{FALSE}). Saving these samples is required in order to apply the
 #'   methods \code{bridge_sampler}, \code{bayes_factor}, and \code{post_prob}.
-#' @param sample_prior Indicate if samples from priors should be drawn 
-#'   additionally to the posterior samples (defaults to \code{"no"}). Among 
-#'   others, these samples can be used to calculate Bayes factors for point 
-#'   hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-#'   are not sampled, including the default improper priors used by \code{brm}. 
-#'   See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-#'   that prior samples for the overall intercept are not obtained by default for 
-#'   technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-#'   for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-#'   are drawn solely from the priors ignoring the likelihood, which allows among 
-#'   others to generate samples from the prior predictive distribution. In this 
-#'   case, all parameters must have proper priors.
+#' @param sample_prior Indicate if samples from priors should be drawn
+#'   additionally to the posterior samples. Options are \code{"no"} (the
+#'   default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+#'   be used to calculate Bayes factors for point hypotheses via
+#'   \code{\link{hypothesis}}. Please note that improper priors are not sampled,
+#'   including the default improper priors used by \code{brm}. See
+#'   \code{\link{set_prior}} on how to set (proper) priors. Please also note
+#'   that prior samples for the overall intercept are not obtained by default
+#'   for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+#'   samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+#'   samples are drawn solely from the priors ignoring the likelihood, which
+#'   allows among others to generate samples from the prior predictive
+#'   distribution. In this case, all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be used
 #'   for basis construction of smoothing terms. See
 #'   \code{\link[mgcv:gamm]{gamm}} for more details.
@@ -94,7 +95,7 @@
 #' @param stan_funs (Deprecated) An optional character string containing
 #'   self-defined  \pkg{Stan} functions, which will be included in the functions
 #'   block of the generated \pkg{Stan} code. It is now recommended to use the
-#'   \code{stanvars} argument for this purpose, instead.
+#'   \code{stanvars} argument for this purpose instead.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous
 #'   fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the
 #'   compiled model associated with the fitted result is re-used and all
@@ -361,9 +362,8 @@
 #' @export
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, data2 = NULL, cov_ranef = NULL, 
-                sample_prior = c("no", "yes", "only"), 
-                sparse = NULL, knots = NULL, stanvars = NULL,
-                stan_funs = NULL, fit = NA, save_ranef = TRUE, 
+                sample_prior = "no", sparse = NULL, knots = NULL,
+                stanvars = NULL, stan_funs = NULL, fit = NA, save_ranef = TRUE, 
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
@@ -399,8 +399,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
-    x$criteria <- list()
     sdata <- standata(x)
+    x$criteria <- list()
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
@@ -411,23 +411,23 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
-    data.name <- substitute_name(data)
+    data_name <- substitute_name(data)
     data <- validate_data(data, bterms = bterms, knots = knots)
+    attr(data, "data_name") <- data_name
     data2 <- validate_data2(
       data2, bterms = bterms, 
       get_data2_autocor(formula),
       get_data2_cov_ranef(formula)
     )
-    prior <- check_prior(
-      prior, formula = formula, data = data,
-      sample_prior = sample_prior, warn = FALSE
+    prior <- validate_prior(
+      prior, bterms = bterms, data = data,
+      sample_prior = sample_prior
     )
+    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     # initialize S3 object
     x <- brmsfit(
-      formula = formula, family = family, data = data, 
-      data.name = data.name, data2 = data2, prior = prior, 
-      stanvars = stanvars, stan_funs = stan_funs, 
-      algorithm = algorithm
+      formula = formula, data = data, data2 = data2, prior = prior, 
+      stanvars = stanvars, algorithm = algorithm, family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -435,17 +435,15 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
-    x$model <- make_stancode(
-      formula, data = data, prior = prior, 
-      sample_prior = sample_prior, 
-      stanvars = stanvars, stan_funs = stan_funs, 
-      save_model = save_model
+    x$model <- .make_stancode(
+      bterms, data = data, prior = prior, 
+      stanvars = stanvars, save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
-    sdata <- make_standata(
-      formula, data = data, prior = prior, data2 = data2,
-      sample_prior = sample_prior, stanvars = stanvars
+    sdata <- .make_standata(
+      bterms, data = data, prior = prior, 
+      data2 = data2, stanvars = stanvars
     )
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot

@@ -38,7 +38,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   bterms <- brmsterms(object$formula)
   out <- list(
     formula = object$formula,
-    data.name = object$data.name, 
+    data_name = get_data_name(object$data), 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
     ngrps = ngrps(object), 
@@ -212,7 +212,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat("Formula: ")
   print(x$formula, wsp = 9)
   cat(paste0(
-    "   Data: ", x$data.name, 
+    "   Data: ", x$data_name, 
     " (Number of observations: ", x$nobs, ") \n"
   ))
   if (!isTRUE(nzchar(x$sampler))) {

@@ -14,7 +14,7 @@ model_weights(x, ...)
 
 \item{...}{More \code{brmsfit} objects or further arguments
 passed to the underlying post-processing functions.
-In particular, see \code{\link{extract_draws}} for further
+In particular, see \code{\link{prepare_predictions}} for further
 supported arguments.}
 
 \item{weights}{Name of the criterion to compute weights from. Should be one

@@ -809,8 +809,7 @@ validate_recov_matrix <- function(M) {
 # check validity of the 'cov_ranef' argument
 # argument 'cov_ranef' is deprecated as of version 2.12.5
 validate_cov_ranef <- function(cov_ranef) {
-  is_valid <- isTRUE(attr(cov_ranef, "valid"))
-  if (is.null(cov_ranef) || is_valid) {
+  if (is.null(cov_ranef)) {
     return(cov_ranef)
   }
   warning2(
@@ -825,7 +824,7 @@ validate_cov_ranef <- function(cov_ranef) {
   if (any(duplicated(cr_names))) {
     stop2("Names of 'cov_ranef' must be unique.")
   }
-  structure(cov_ranef, valid = TRUE)
+  cov_ranef
 }
 
 # update 'ranef' according to information in 'cov_ranef'

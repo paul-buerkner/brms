@@ -315,7 +315,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 #   ignored if family is a function or a family object
 # @param threshold optional character string specifying the threshold
 #   type in ordinal models
-check_family <- function(family, link = NULL, threshold = NULL) {
+validate_family <- function(family, link = NULL, threshold = NULL) {
   if (is.function(family)) {
     family <- family()   
   }
@@ -877,7 +877,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   family <- list(
     family = "mixture", 
     link = "identity",
-    mix = lapply(dots, check_family)
+    mix = lapply(dots, validate_family)
   )
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
@@ -1121,7 +1121,7 @@ valid_dpars.default <- function(family, ...) {
   if (!length(family)) {
     return("mu")
   }
-  family <- check_family(family) 
+  family <- validate_family(family) 
   family_info(family, "dpars", ...)
 }
 

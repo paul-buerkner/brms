@@ -179,20 +179,27 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
       newdata <- newdata[!ex_too_far, ]  
     }
     other_vars <- setdiff(names(conditions), vars)
-    newdata[, other_vars] <- conditions[1, other_vars]
+    for (v in other_vars) {
+      cval <- conditions[1, v]
+      if (length(dim(cval)) == 2L) {
+        # matrix columns don't have automatic broadcasting apparently
+        cval <- matrix(cval, nrow(newdata), ncol(cval), byrow = TRUE)
+      }
+      newdata[[v]] <- cval
+    }
     sdata <- standata(
       fit, newdata, re_formula = NA, 
       internal = TRUE, check_response = FALSE
     )
-    draws_args <- nlist(x, samples, sdata, data = mf)
-    draws <- do_call(extract_draws, draws_args)
+    prep_args <- nlist(x, samples, sdata, data = mf)
+    prep <- do_call(prepare_predictions, prep_args)
     J <- which(smef$termnum == i)
-    scs <- unlist(attr(draws$sm$fe$Xs, "smcols")[J])
-    draws$sm$fe$Xs <- draws$sm$fe$Xs[, scs, drop = FALSE]
-    draws$sm$fe$bs <- draws$sm$fe$bs[, scs, drop = FALSE]
-    draws$sm$re <- draws$sm$re[J]
-    draws$family <- brmsfamily("gaussian")
-    eta <- predictor(draws, i = NULL)
+    scs <- unlist(attr(prep$sm$fe$Xs, "smcols")[J])
+    prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
+    prep$sm$fe$bs <- prep$sm$fe$bs[, scs, drop = FALSE]
+    prep$sm$re <- prep$sm$re[J]
+    prep$family <- brmsfamily("gaussian")
+    eta <- predictor(prep, i = NULL)
     effects <- na.omit(sub_smef$covars[[1]][1:2])
     marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     if (length(byvars)) {

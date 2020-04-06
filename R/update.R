@@ -49,21 +49,21 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   testmode <- isTRUE(dots[["testmode"]])
   dots$testmode <- NULL
   object <- restructure(object)
-  object$file <- NULL
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
+  object$file <- NULL
+  
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop2("Please use argument 'newdata' to update the data.")
   }
   if (!is.null(newdata)) {
-    # TODO: update info stored in the families such as 'cats' or 'thres'
     dots$data <- newdata
-    data.name <- substitute_name(newdata)
+    data_name <- substitute_name(newdata)
   } else {
-    dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
-    data.name <- object$data.name
+    dots$data <- object$data
+    data_name <- get_data_name(object$data)
   }
   
   if (missing(formula.) || is.null(formula.)) {
@@ -106,25 +106,34 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- update(formula(object), dots$formula)
     }
   }
+  # update response categories and ordinal thresholds
   dots$formula <- validate_formula(dots$formula, data = dots$data)
   
   if (is.null(dots$prior)) {
     dots$prior <- object$prior
   } else {
-    # update existing priors
     if (!is.brmsprior(dots$prior)) { 
-      stop2("Invalid 'prior' argument.")
+      stop2("Argument 'prior' needs to be a 'brmsprior' object.")
     }
+    # update existing priors manually
     dots$prior <- rbind(dots$prior, object$prior)
     dupl_priors <- duplicated(dots$prior[, rcols_prior()])
     dots$prior <- dots$prior[!dupl_priors, ]
   }
+  # make sure potentially updated priors pass 'validate_prior'
+  attr(dots$prior, "allow_invalid_prior") <- TRUE
   if (is.null(dots$sample_prior)) {
     dots$sample_prior <- attr(object$prior, "sample_prior")
     if (is.null(dots$sample_prior)) {
       has_prior_pars <- any(grepl("^prior_", parnames(object)))
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
+  }
+  if (is.null(dots$data2)) {
+    dots$data2 <- object$data2
+  }
+  if (is.null(dots$stanvars)) {
+    dots$stanvars <- object$stanvars
   }
   if (is.null(dots$save_ranef)) {
     dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
@@ -138,9 +147,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
   }
-  arg_names <- c("data2", "cov_ranef", "stanvars", "stan_funs")
-  old_args <- setdiff(arg_names, names(dots))
-  dots[old_args] <- object[old_args]
   
   # update arguments controlling the sampling process
   if (is.null(dots$iter)) {
@@ -186,7 +192,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     object$ranef <- tidy_ranef(bterms, data = object$data)
     object$stanvars <- validate_stanvars(dots$stanvars)
     if (!is.null(dots$sample_prior)) {
-      dots$sample_prior <- check_sample_prior(dots$sample_prior)
+      dots$sample_prior <- validate_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
     object$exclude <- exclude_pars(
@@ -206,7 +212,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object <- do_call(brm, dots)
     }
   }
-  object$data.name <- data.name
+  attr(object$data, "data_name") <- data_name
   object
 }
 
@@ -246,7 +252,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   if (is.null(newdata)) {
     stop2("'newdata' is required when updating a 'brmsfit_multiple' object.")
   }
-  data.name <- substitute_name(newdata)
+  data_name <- substitute_name(newdata)
   if (inherits(newdata, "mids")) {
     require_package("mice", version = "3.0.0")
     newdata <- lapply(seq_len(newdata$m), mice::complete, data = newdata)
@@ -284,6 +290,6 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   args$recompile <- NULL
   
   out <- do_call(brm_multiple, args)
-  out$data.name <- data.name
+  attr(out$data, "data_name") <- data_name
   out
 }

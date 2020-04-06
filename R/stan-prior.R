@@ -403,16 +403,16 @@ stan_unchecked_prior <- function(prior) {
 }
 
 # Stan code to sample separately from priors
-# @param sample_prior take samples from priors?
 # @param prior character string taken from stan_prior
 # @param par_declars the parameters block of the Stan code
 #     required to extract boundaries
 # @param gen_quantities Stan code from the generated quantities block
 # @param prior_special a list of values pertaining to special priors
 #   such as horseshoe or lasso
-stan_rngprior <- function(sample_prior, prior, par_declars,
-                          gen_quantities, prior_special) {
-  if (!sample_prior %in% "yes") {
+# @param sample_prior take samples from priors?
+stan_rngprior <- function(prior, par_declars, gen_quantities, 
+                          prior_special, sample_prior = "yes") {
+  if (!is_equal(sample_prior, "yes")) {
     return(list())
   }
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]

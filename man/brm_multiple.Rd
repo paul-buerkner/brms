@@ -73,18 +73,19 @@ It is now recommended to specify those matrices in the formula
 interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to \code{"no"}). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-are not sampled, including the default improper priors used by \code{brm}. 
-See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.}
+\item{sample_prior}{Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+\code{\link{hypothesis}}. Please note that improper priors are not sampled,
+including the default improper priors used by \code{brm}. See
+\code{\link{set_prior}} on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -104,7 +105,7 @@ for basis construction of smoothing terms. See
 \item{stan_funs}{(Deprecated) An optional character string containing
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
-\code{stanvars} argument for this purpose, instead.}
+\code{stanvars} argument for this purpose instead.}
 
 \item{combine}{Logical; Indicates if the fitted models should be combined
 into a single fitted model object via \code{\link{combine_models}}.

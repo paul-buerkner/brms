@@ -156,8 +156,12 @@ restructure_v2 <- function(x) {
       x$formula <- SW(validate_formula(x$formula, cov_ranef = x$cov_ranef))
       cov_ranef <- get_data2_cov_ranef(x$formula)
       x$data2[names(cov_ranef)] <- cov_ranef
-      x$cov_ranef <- NULL 
     }
+  }
+  if (version <= "2.12.5") {
+    # minor structural changes as part of internal interface improvements
+    attr(x$data, "data_name") <- x$data.name
+    x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
   }
   x
 }
@@ -172,7 +176,7 @@ restructure_v1 <- function(x) {
       "refitting the model with the latest version of brms."
     )
   }
-  x$formula <- restructure_formula(formula(x), x$nonlinear)
+  x$formula <- restructure_formula_v1(formula(x), x$nonlinear)
   x$formula <- SW(validate_formula(
     formula(x), data = model.frame(x), family = family(x),
     autocor = x$autocor, threshold = x$threshold
@@ -251,7 +255,7 @@ get_restructure_version <- function(x) {
 }
 
 # convert old model formulas to brmsformula objects
-restructure_formula <- function(formula, nonlinear = NULL) {
+restructure_formula_v1 <- function(formula, nonlinear = NULL) {
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
@@ -608,7 +612,7 @@ update_old_family <- function(x, ...) {
 
 #' @export
 update_old_family.default <- function(x, ...) {
-  check_family(x)
+  validate_family(x)
 }
 
 #' @export

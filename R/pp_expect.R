@@ -49,12 +49,12 @@ pp_expect.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   contains_samples(object)
   object <- restructure(object)
-  draws <- extract_draws(
+  prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   pp_expect(
-    draws, scale = "response", dpar = dpar, 
+    prep, scale = "response", dpar = dpar, 
     nlpar = nlpar, sort = sort, summary = FALSE
   )
 }
@@ -66,15 +66,15 @@ pp_expect <- function(object, ...) {
 }
 
 #' @export
-pp_expect.mvbrmsdraws <- function(object, ...) {
+pp_expect.mvbrmsprep <- function(object, ...) {
   out <- lapply(object$resps, pp_expect, ...)
   along <- ifelse(length(out) > 1L, 3, 2)
   do_call(abind, c(out, along = along))
 }
 
 #' @export
-pp_expect.brmsdraws <- function(object, scale, dpar, nlpar, sort, 
-                                summary, robust, probs, ...) {
+pp_expect.brmsprep <- function(object, scale, dpar, nlpar, sort, 
+                               summary, robust, probs, ...) {
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
   if (length(dpar)) {
@@ -87,8 +87,8 @@ pp_expect.brmsdraws <- function(object, scale, dpar, nlpar, sort,
     if (length(nlpar)) {
       stop2("Cannot use 'dpar' and 'nlpar' at the same time.")
     }
-    predicted <- is.bdrawsl(object$dpars[[dpar]]) ||
-      is.bdrawsnl(object$dpars[[dpar]])
+    predicted <- is.bprepl(object$dpars[[dpar]]) ||
+      is.bprepnl(object$dpars[[dpar]])
     if (predicted) {
       # parameter varies across observations
       if (scale == "linear") {
@@ -145,7 +145,7 @@ pp_expect.brmsdraws <- function(object, scale, dpar, nlpar, sort,
         out <- get_dpar(object, dpar = mus, ilink = FALSE)
       } else {
         # multiple mu parameters in categorical or mixture models
-        out <- lapply(mus, get_dpar, draws = object, ilink = FALSE)
+        out <- lapply(mus, get_dpar, prep = object, ilink = FALSE)
         out <- abind::abind(out, along = 3)
       }
     }
@@ -239,12 +239,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   summary <- as_one_logical(summary)
   contains_samples(object)
   object <- restructure(object)
-  draws <- extract_draws(
+  prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   pp_expect(
-    draws, scale = scale, dpar = dpar, nlpar = nlpar, sort = sort, 
+    prep, scale = scale, dpar = dpar, nlpar = nlpar, sort = sort, 
     summary = summary, robust = robust, probs = probs
   )
 }
@@ -302,271 +302,271 @@ posterior_linpred.brmsfit <- function(
   }
   contains_samples(object)
   object <- restructure(object)
-  draws <- extract_draws(
+  prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     nsamples = nsamples, subset = subset, check_response = FALSE, ...
   )
   pp_expect(
-    draws, scale = scale, dpar = dpar, 
+    prep, scale = scale, dpar = dpar, 
     nlpar = nlpar, sort = sort, summary = FALSE
   )
 }
 
 # ------------------- family specific pp_expect methods ---------------------
 # All pp_expect_<family> functions have the same arguments structure
-# @param draws A named list returned by extract_draws containing 
-#   all required data and samples
+# @param prep A named list returned by prepare_predictions containing 
+#   all required data and draws
 # @return transformed linear predictor representing the mean
-#   of the response distribution
-pp_expect_gaussian <- function(draws) {
-  if (!is.null(draws$ac$lagsar)) {
-    draws$dpars$mu <- pp_expect_lagsar(draws)
+#   of the posterior predictive distribution
+pp_expect_gaussian <- function(prep) {
+  if (!is.null(prep$ac$lagsar)) {
+    prep$dpars$mu <- pp_expect_lagsar(prep)
   }
-  draws$dpars$mu
+  prep$dpars$mu
 }
 
-pp_expect_student <- function(draws) {
-  if (!is.null(draws$ac$lagsar)) {
-    draws$dpars$mu <- pp_expect_lagsar(draws)
+pp_expect_student <- function(prep) {
+  if (!is.null(prep$ac$lagsar)) {
+    prep$dpars$mu <- pp_expect_lagsar(prep)
   }
-  draws$dpars$mu
+  prep$dpars$mu
 }
 
-pp_expect_skew_normal <- function(draws) {
-  draws$dpars$mu
+pp_expect_skew_normal <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_lognormal <- function(draws) {
-  with(draws$dpars, exp(mu + sigma^2 / 2))
+pp_expect_lognormal <- function(prep) {
+  with(prep$dpars, exp(mu + sigma^2 / 2))
 }
 
-pp_expect_shifted_lognormal <- function(draws) {
-  with(draws$dpars, exp(mu + sigma^2 / 2) + ndt)
+pp_expect_shifted_lognormal <- function(prep) {
+  with(prep$dpars, exp(mu + sigma^2 / 2) + ndt)
 }
 
-pp_expect_binomial <- function(draws) {
-  trials <- as_draws_matrix(draws$data$trials, dim_mu(draws))
-  draws$dpars$mu * trials 
+pp_expect_binomial <- function(prep) {
+  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  prep$dpars$mu * trials 
 }
 
-pp_expect_bernoulli <- function(draws) {
-  draws$dpars$mu
+pp_expect_bernoulli <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_poisson <- function(draws) {
-  draws$dpars$mu
+pp_expect_poisson <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_negbinomial <- function(draws) {
-  draws$dpars$mu
+pp_expect_negbinomial <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_geometric <- function(draws) {
-  draws$dpars$mu
+pp_expect_geometric <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_discrete_weibull <- function(draws) {
-  mean_discrete_weibull(draws$dpars$mu, draws$dpars$shape)
+pp_expect_discrete_weibull <- function(prep) {
+  mean_discrete_weibull(prep$dpars$mu, prep$dpars$shape)
 }
 
-pp_expect_com_poisson <- function(draws) {
-  mean_com_poisson(draws$dpars$mu, draws$dpars$shape)
+pp_expect_com_poisson <- function(prep) {
+  mean_com_poisson(prep$dpars$mu, prep$dpars$shape)
 }
 
-pp_expect_exponential <- function(draws) {
-  draws$dpars$mu
+pp_expect_exponential <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_gamma <- function(draws) {
-  draws$dpars$mu
+pp_expect_gamma <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_weibull <- function(draws) {
-  draws$dpars$mu
+pp_expect_weibull <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_frechet <- function(draws) {
-  draws$dpars$mu
+pp_expect_frechet <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_gen_extreme_value <- function(draws) {
-  with(draws$dpars, mu + sigma * (gamma(1 - xi) - 1) / xi)
+pp_expect_gen_extreme_value <- function(prep) {
+  with(prep$dpars, mu + sigma * (gamma(1 - xi) - 1) / xi)
 }
 
-pp_expect_inverse.gaussian <- function(draws) {
-  draws$dpars$mu
+pp_expect_inverse.gaussian <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_exgaussian <- function(draws) {
-  draws$dpars$mu
+pp_expect_exgaussian <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_wiener <- function(draws) {
+pp_expect_wiener <- function(prep) {
   # mu is the drift rate
-  with(draws$dpars,
+  with(prep$dpars,
    ndt - bias / mu + bs / mu * 
      (exp(-2 * mu * bias) - 1) / (exp(-2 * mu * bs) - 1)
   )
 }
 
-pp_expect_beta <- function(draws) {
-  draws$dpars$mu
+pp_expect_beta <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_von_mises <- function(draws) {
-  draws$dpars$mu
+pp_expect_von_mises <- function(prep) {
+  prep$dpars$mu
 }
 
-pp_expect_asym_laplace <- function(draws) {
-  with(draws$dpars, 
+pp_expect_asym_laplace <- function(prep) {
+  with(prep$dpars, 
     mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
   )
 }
 
-pp_expect_zero_inflated_asym_laplace <- function(draws) {
-  pp_expect_asym_laplace(draws) * (1 - draws$dpars$zi)
+pp_expect_zero_inflated_asym_laplace <- function(prep) {
+  pp_expect_asym_laplace(prep) * (1 - prep$dpars$zi)
 }
 
-pp_expect_cox <- function(draws) {
+pp_expect_cox <- function(prep) {
   stop2("Cannot compute expected values of the posterior predictive ",
         "distribution for family 'cox'.")
 }
 
-pp_expect_hurdle_poisson <- function(draws) {
-  with(draws$dpars, mu / (1 - exp(-mu)) * (1 - hu))
+pp_expect_hurdle_poisson <- function(prep) {
+  with(prep$dpars, mu / (1 - exp(-mu)) * (1 - hu))
 }
 
-pp_expect_hurdle_negbinomial <- function(draws) {
-  with(draws$dpars, mu / (1 - (shape / (mu + shape))^shape) * (1 - hu))
+pp_expect_hurdle_negbinomial <- function(prep) {
+  with(prep$dpars, mu / (1 - (shape / (mu + shape))^shape) * (1 - hu))
 }
 
-pp_expect_hurdle_gamma <- function(draws) {
-  with(draws$dpars, mu * (1 - hu))
+pp_expect_hurdle_gamma <- function(prep) {
+  with(prep$dpars, mu * (1 - hu))
 }
 
-pp_expect_hurdle_lognormal <- function(draws) {
-  with(draws$dpars, exp(mu + sigma^2 / 2) * (1 - hu))
+pp_expect_hurdle_lognormal <- function(prep) {
+  with(prep$dpars, exp(mu + sigma^2 / 2) * (1 - hu))
 }
 
-pp_expect_zero_inflated_poisson <- function(draws) {
-  with(draws$dpars, mu * (1 - zi))
+pp_expect_zero_inflated_poisson <- function(prep) {
+  with(prep$dpars, mu * (1 - zi))
 }
 
-pp_expect_zero_inflated_negbinomial <- function(draws) {
-  with(draws$dpars, mu * (1 - zi))  
+pp_expect_zero_inflated_negbinomial <- function(prep) {
+  with(prep$dpars, mu * (1 - zi))  
 }
 
-pp_expect_zero_inflated_binomial <- function(draws) {
-  trials <- as_draws_matrix(draws$data$trials, dim_mu(draws))
-  draws$dpars$mu * trials * (1 - draws$dpars$zi)
+pp_expect_zero_inflated_binomial <- function(prep) {
+  trials <- as_draws_matrix(prep$data$trials, dim_mu(prep))
+  prep$dpars$mu * trials * (1 - prep$dpars$zi)
 }
 
-pp_expect_zero_inflated_beta <- function(draws) {
-  with(draws$dpars, mu * (1 - zi)) 
+pp_expect_zero_inflated_beta <- function(prep) {
+  with(prep$dpars, mu * (1 - zi)) 
 }
 
-pp_expect_zero_one_inflated_beta <- function(draws) {
-  with(draws$dpars, zoi * coi + mu * (1 - zoi))
+pp_expect_zero_one_inflated_beta <- function(prep) {
+  with(prep$dpars, zoi * coi + mu * (1 - zoi))
 }
 
-pp_expect_categorical <- function(draws) {
+pp_expect_categorical <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
-  eta <- abind(draws$dpars, along = 3)
-  cats <- seq_len(draws$data$ncat)
+  eta <- abind(prep$dpars, along = 3)
+  cats <- seq_len(prep$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$cats
+  dimnames(out)[[3]] <- prep$cats
   out
 }
 
-pp_expect_multinomial <- function(draws) {
+pp_expect_multinomial <- function(prep) {
   get_counts <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta) * trials[i]
   }
-  eta <- abind(draws$dpars, along = 3)
-  cats <- seq_len(draws$data$ncat)
-  trials <- draws$data$trials
+  eta <- abind(prep$dpars, along = 3)
+  cats <- seq_len(prep$data$ncat)
+  trials <- prep$data$trials
   out <- abind(lapply(seq_cols(eta), get_counts), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$cats
+  dimnames(out)[[3]] <- prep$cats
   out
 }
 
-pp_expect_dirichlet <- function(draws) {
+pp_expect_dirichlet <- function(prep) {
   get_probs <- function(i) {
-    eta <- insert_refcat(extract_col(eta, i), family = draws$family)
+    eta <- insert_refcat(extract_col(eta, i), family = prep$family)
     dcategorical(cats, eta = eta)
   }
-  eta <- draws$dpars[grepl("^mu", names(draws$dpars))]
+  eta <- prep$dpars[grepl("^mu", names(prep$dpars))]
   eta <- abind(eta, along = 3)
-  cats <- seq_len(draws$data$ncat)
+  cats <- seq_len(prep$data$ncat)
   out <- abind(lapply(seq_cols(eta), get_probs), along = 3)
   out <- aperm(out, perm = c(1, 3, 2))
-  dimnames(out)[[3]] <- draws$cats
+  dimnames(out)[[3]] <- prep$cats
   out
 }
 
-pp_expect_cumulative <- function(draws) {
-  pp_expect_ordinal(draws)
+pp_expect_cumulative <- function(prep) {
+  pp_expect_ordinal(prep)
 }
 
-pp_expect_sratio <- function(draws) {
-  pp_expect_ordinal(draws)
+pp_expect_sratio <- function(prep) {
+  pp_expect_ordinal(prep)
 }
 
-pp_expect_cratio <- function(draws) {
-  pp_expect_ordinal(draws)
+pp_expect_cratio <- function(prep) {
+  pp_expect_ordinal(prep)
 }
 
-pp_expect_acat <- function(draws) {
-  pp_expect_ordinal(draws)
+pp_expect_acat <- function(prep) {
+  pp_expect_ordinal(prep)
 }
 
-pp_expect_custom <- function(draws) {
-  pp_expect_fun <- draws$family$pp_expect
+pp_expect_custom <- function(prep) {
+  pp_expect_fun <- prep$family$pp_expect
   if (!is.function(pp_expect_fun)) {
-    pp_expect_fun <- paste0("pp_expect_", draws$family$name)
-    pp_expect_fun <- get(pp_expect_fun, draws$family$env)
+    pp_expect_fun <- paste0("pp_expect_", prep$family$name)
+    pp_expect_fun <- get(pp_expect_fun, prep$family$env)
   }
-  pp_expect_fun(draws)
+  pp_expect_fun(prep)
 }
 
-pp_expect_mixture <- function(draws) {
-  families <- family_names(draws$family)
-  draws$dpars$theta <- get_theta(draws)
+pp_expect_mixture <- function(prep) {
+  families <- family_names(prep$family)
+  prep$dpars$theta <- get_theta(prep)
   out <- 0
   for (j in seq_along(families)) {
     pp_expect_fun <- paste0("pp_expect_", families[j])
     pp_expect_fun <- get(pp_expect_fun, asNamespace("brms"))
-    tmp_draws <- pseudo_draws_for_mixture(draws, j)
-    if (length(dim(draws$dpars$theta)) == 3L) {
-      theta <- draws$dpars$theta[, , j]
+    tmp_prep <- pseudo_prep_for_mixture(prep, j)
+    if (length(dim(prep$dpars$theta)) == 3L) {
+      theta <- prep$dpars$theta[, , j]
     } else {
-      theta <- draws$dpars$theta[, j]
+      theta <- prep$dpars$theta[, j]
     }
-    out <- out + theta * pp_expect_fun(tmp_draws)
+    out <- out + theta * pp_expect_fun(tmp_prep)
   }
   out
 }
 
 # ------ pp_expect helper functions ------
 # compute 'pp_expect' for ordinal models
-pp_expect_ordinal <- function(draws) {
-  dens <- get(paste0("d", draws$family$family), mode = "function")
-  ncat_max <- max(draws$data$nthres) + 1
-  nact_min <- min(draws$data$nthres) + 1
-  zero_mat <- matrix(0, nrow = draws$nsamples, ncol = ncat_max - nact_min)
-  args <- list(link = draws$family$link)
-  out <- vector("list", draws$nobs)
+pp_expect_ordinal <- function(prep) {
+  dens <- get(paste0("d", prep$family$family), mode = "function")
+  ncat_max <- max(prep$data$nthres) + 1
+  nact_min <- min(prep$data$nthres) + 1
+  zero_mat <- matrix(0, nrow = prep$nsamples, ncol = ncat_max - nact_min)
+  args <- list(link = prep$family$link)
+  out <- vector("list", prep$nobs)
   for (i in seq_along(out)) {
     args_i <- args
-    args_i$eta <- extract_col(draws$dpars$mu, i)
-    args_i$disc <- extract_col(draws$dpars$disc, i)
-    args_i$thres <- subset_thres(draws, i)
+    args_i$eta <- extract_col(prep$dpars$mu, i)
+    args_i$disc <- extract_col(prep$dpars$disc, i)
+    args_i$thres <- subset_thres(prep, i)
     ncat_i <- NCOL(args_i$thres) + 1
     args_i$x <- seq_len(ncat_i)
     out[[i]] <- do_call(dens, args_i)
@@ -582,14 +582,14 @@ pp_expect_ordinal <- function(draws) {
 }
 
 # compute 'pp_expect' for lagsar models
-pp_expect_lagsar <- function(draws) {
-  stopifnot(!is.null(draws$ac$lagsar))
-  I <- diag(draws$nobs)
+pp_expect_lagsar <- function(prep) {
+  stopifnot(!is.null(prep$ac$lagsar))
+  I <- diag(prep$nobs)
   .pp_expect <- function(s) {
-    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
-    as.numeric(solve(IB, draws$dpars$mu[s, ]))
+    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
+    as.numeric(solve(IB, prep$dpars$mu[s, ]))
   }
-  out <- rblapply(seq_len(draws$nsamples), .pp_expect)
+  out <- rblapply(seq_len(prep$nsamples), .pp_expect)
   rownames(out) <- NULL
   out
 }
@@ -602,52 +602,52 @@ as_draws_matrix <- function(x, dim) {
 }
 
 # expected dimension of the main parameter 'mu'
-dim_mu <- function(draws) {
-  c(draws$nsamples, draws$nobs)
+dim_mu <- function(prep) {
+  c(prep$nsamples, prep$nobs)
 }
 
 # is the model truncated?
-is_trunc <- function(draws) {
-  stopifnot(is.brmsdraws(draws))
-  any(draws$data[["lb"]] > -Inf) || any(draws$data[["ub"]] < Inf)
+is_trunc <- function(prep) {
+  stopifnot(is.brmsprep(prep))
+  any(prep$data[["lb"]] > -Inf) || any(prep$data[["ub"]] < Inf)
 }
 
 # prepares data required for truncation and calles the 
 # family specific truncation function for pp_expect values
-pp_expect_trunc <- function(draws) {
-  stopifnot(is_trunc(draws))
-  lb <- as_draws_matrix(draws$data[["lb"]], dim_mu(draws))
-  ub <- as_draws_matrix(draws$data[["ub"]], dim_mu(draws))
-  pp_expect_trunc_fun <- paste0("pp_expect_trunc_", draws$family$family)
+pp_expect_trunc <- function(prep) {
+  stopifnot(is_trunc(prep))
+  lb <- as_draws_matrix(prep$data[["lb"]], dim_mu(prep))
+  ub <- as_draws_matrix(prep$data[["ub"]], dim_mu(prep))
+  pp_expect_trunc_fun <- paste0("pp_expect_trunc_", prep$family$family)
   pp_expect_trunc_fun <- try(
     get(pp_expect_trunc_fun, asNamespace("brms")), 
     silent = TRUE
   )
   if (is(pp_expect_trunc_fun, "try-error")) {
     stop2("pp_expect values on the respone scale not yet implemented ",
-          "for truncated '", draws$family$family, "' models.")
+          "for truncated '", prep$family$family, "' models.")
   }
-  trunc_args <- nlist(draws, lb, ub)
+  trunc_args <- nlist(prep, lb, ub)
   do_call(pp_expect_trunc_fun, trunc_args)
 }
 
 # ----- family specific truncation functions -----
-# @param draws output of 'extract_draws'
+# @param prep output of 'prepare_predictions'
 # @param lb lower truncation bound
 # @param ub upper truncation bound
 # @return samples of the truncated mean parameter
-pp_expect_trunc_gaussian <- function(draws, lb, ub) {
-  zlb <- (lb - draws$dpars$mu) / draws$dpars$sigma
-  zub <- (ub - draws$dpars$mu) / draws$dpars$sigma
+pp_expect_trunc_gaussian <- function(prep, lb, ub) {
+  zlb <- (lb - prep$dpars$mu) / prep$dpars$sigma
+  zub <- (ub - prep$dpars$mu) / prep$dpars$sigma
   # truncated mean of standard normal; see Wikipedia
   trunc_zmean <- (dnorm(zlb) - dnorm(zub)) / (pnorm(zub) - pnorm(zlb))  
-  draws$dpars$mu + trunc_zmean * draws$dpars$sigma  
+  prep$dpars$mu + trunc_zmean * prep$dpars$sigma  
 }
 
-pp_expect_trunc_student <- function(draws, lb, ub) {
-  zlb <- with(draws$dpars, (lb - mu) / sigma)
-  zub <- with(draws$dpars, (ub - mu) / sigma)
-  nu <- draws$dpars$nu
+pp_expect_trunc_student <- function(prep, lb, ub) {
+  zlb <- with(prep$dpars, (lb - mu) / sigma)
+  zub <- with(prep$dpars, (ub - mu) / sigma)
+  nu <- prep$dpars$nu
   # see Kim 2008: Moments of truncated Student-t distribution
   G1 <- gamma((nu - 1) / 2) * nu^(nu / 2) / 
     (2 * (pt(zub, df = nu) - pt(zlb, df = nu))
@@ -655,93 +655,93 @@ pp_expect_trunc_student <- function(draws, lb, ub) {
   A <- (nu + zlb^2) ^ (-(nu - 1) / 2)
   B <- (nu + zub^2) ^ (-(nu - 1) / 2)
   trunc_zmean <- G1 * (A - B)
-  draws$dpars$mu + trunc_zmean * draws$dpars$sigma 
+  prep$dpars$mu + trunc_zmean * prep$dpars$sigma 
 }
 
-pp_expect_trunc_lognormal <- function(draws, lb, ub) {
+pp_expect_trunc_lognormal <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
-  m1 <- with(draws$dpars, 
+  m1 <- with(prep$dpars, 
     exp(mu + sigma^2 / 2) * 
       (pnorm((log(ub) - mu) / sigma - sigma) - 
        pnorm((log(lb) - mu) / sigma - sigma))
   )
-  with(draws$dpars, 
+  with(prep$dpars, 
     m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) - 
           plnorm(lb, meanlog = mu, sdlog = sigma))
   )
 }
 
-pp_expect_trunc_gamma <- function(draws, lb, ub) {
+pp_expect_trunc_gamma <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
-  draws$dpars$scale <- draws$dpars$mu / draws$dpars$shape
+  prep$dpars$scale <- prep$dpars$mu / prep$dpars$shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  m1 <- with(draws$dpars, 
+  m1 <- with(prep$dpars, 
     scale / gamma(shape) * 
       (incgamma(1 + shape, ub / scale) - 
        incgamma(1 + shape, lb / scale))
   )
-  with(draws$dpars, 
+  with(prep$dpars, 
     m1 / (pgamma(ub, shape, scale = scale) - 
           pgamma(lb, shape, scale = scale))
   )
 }
 
-pp_expect_trunc_exponential <- function(draws, lb, ub) {
+pp_expect_trunc_exponential <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
-  inv_mu <- 1 / draws$dpars$mu
+  inv_mu <- 1 / prep$dpars$mu
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  m1 <- with(draws$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
+  m1 <- with(prep$dpars, mu * (incgamma(2, ub / mu) - incgamma(2, lb / mu)))
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
-pp_expect_trunc_weibull <- function(draws, lb, ub) {
+pp_expect_trunc_weibull <- function(prep, lb, ub) {
   lb <- ifelse(lb < 0, 0, lb)
-  draws$dpars$a <- 1 + 1 / draws$dpars$shape
-  draws$dpars$scale <- with(draws$dpars, mu / gamma(a))
+  prep$dpars$a <- 1 + 1 / prep$dpars$shape
+  prep$dpars$scale <- with(prep$dpars, mu / gamma(a))
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
-  m1 <- with(draws$dpars,
+  m1 <- with(prep$dpars,
     scale * (incgamma(a, (ub / scale)^shape) - 
              incgamma(a, (lb / scale)^shape))
   )
-  with(draws$dpars,
+  with(prep$dpars,
     m1 / (pweibull(ub, shape, scale = scale) - 
           pweibull(lb, shape, scale = scale))
   )
 }
 
-pp_expect_trunc_binomial <- function(draws, lb, ub) {
+pp_expect_trunc_binomial <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- max(draws$data$trials)
+  max_value <- max(prep$data$trials)
   ub <- ifelse(ub > max_value, max_value, ub)
-  trials <- draws$data$trials
+  trials <- prep$data$trials
   if (length(trials) > 1) {
-    trials <- as_draws_matrix(trials, dim_mu(draws))
+    trials <- as_draws_matrix(trials, dim_mu(prep))
   }
-  args <- list(size = trials, prob = draws$dpars$mu)
+  args <- list(size = trials, prob = prep$dpars$mu)
   pp_expect_trunc_discrete(dist = "binom", args = args, lb = lb, ub = ub)
 }
 
-pp_expect_trunc_poisson <- function(draws, lb, ub) {
+pp_expect_trunc_poisson <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$dpars$mu)
+  max_value <- 3 * max(prep$dpars$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(lambda = draws$dpars$mu)
+  args <- list(lambda = prep$dpars$mu)
   pp_expect_trunc_discrete(dist = "pois", args = args, lb = lb, ub = ub)
 }
 
-pp_expect_trunc_negbinomial <- function(draws, lb, ub) {
+pp_expect_trunc_negbinomial <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$dpars$mu)
+  max_value <- 3 * max(prep$dpars$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = draws$dpars$mu, size = draws$dpars$shape)
+  args <- list(mu = prep$dpars$mu, size = prep$dpars$shape)
   pp_expect_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
-pp_expect_trunc_geometric <- function(draws, lb, ub) {
+pp_expect_trunc_geometric <- function(prep, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$dpars$mu)
+  max_value <- 3 * max(prep$dpars$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
-  args <- list(mu = draws$dpars$mu, size = 1)
+  args <- list(mu = prep$dpars$mu, size = 1)
   pp_expect_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 

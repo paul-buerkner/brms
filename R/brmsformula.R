@@ -730,7 +730,7 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     out$autocor <- NULL
   }
   if (!is.null(family)) {
-    out$family <- check_family(family)
+    out$family <- validate_family(family)
   }
   if (!is.null(lhs(formula))) {
     out$resp <- terms_resp(formula)
@@ -1228,7 +1228,7 @@ validate_formula.default <- function(formula, ...) {
 # @param formula object of class 'formula' of 'brmsformula'
 # @param data optional data.frame to validate data related arguments
 # @param family optional 'family' object
-# @param autocor optional 'cor_brms' object
+# @param autocor (deprecated) optional 'cor_brms' object
 # @param threshold (deprecated) threshold type for ordinal models
 # @param cov_ranef (deprecated) named list of group covariance matrices
 # @return a brmsformula object compatible with the current version of brms
@@ -1240,21 +1240,76 @@ validate_formula.brmsformula <- function(
 ) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
-    out$family <- check_family(family)
-  }
-  if (is.null(attr(out$formula, "autocor")) && !is.null(autocor)) {
-    # 'autocor' interface has been changed in brms 2.11.1
-    warning2(
-      "Argument 'autocor' should be specified within the ", 
-      "'formula' argument. See ?brmsformula for help."
-    )
-    # store 'autocor' as an attribute to carry it around easier
-    attr(out$formula, "autocor") <- validate_autocor(autocor)
+    out$family <- validate_family(family)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
+  }
+  # allow 'me' terms to be correlated
+  out$mecor <- default_mecor(out$mecor)
+  if (has_cat(out) && !is.null(data)) {
+    # for easy access of response categories
+    # allow to update 'cats' with new data
+    out$family$cats <- extract_cat_names(out, data)
+  }
+  if (is_ordinal(out$family)) {
+    # thresholds and category names are data dependent
+    try_terms <- try(stats::terms(out$formula), silent = TRUE)
+    intercept <- attr(try_terms, "intercept", TRUE)
+    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
+      stop2("Cannot remove the intercept in an ordinal model.")
+    }
+    if (!is.null(data)) {
+      # for easy access of thresholds and response categories (#838)
+      # allow to update 'cats' and 'thres' with new data
+      out$family$thres <- extract_thres_names(out, data) 
+      out$family$cats <- extract_cat_names(out, data)
+    }
+    if (is.mixfamily(out$family)) {
+      # every mixture family needs to know about response categories
+      for (i in seq_along(out$family$mix)) {
+        out$family$mix[[i]]$thres <- out$family$thres
+      }
+    }
+  }
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !is.null(data)) {
+    # allow to update 'dpars' with new data
+    # define distributional parameters based on response categories
+    if (length(out$family$cats) < 2L) {
+      stop2("At least 2 response categories are required.")
+    }
+    if (is.null(out$family$refcat)) {
+      # the first level serves as the reference category
+      out$family$refcat <- out$family$cats[1]
+    }
+    if (isNA(out$family$refcat)) {
+      # implies predicting all categories
+      predcats <- out$family$cats
+    } else {
+      if (!out$family$refcat %in% out$family$cats) {
+        stop2("The reference response category must be one of ",
+              collapse_comma(out$family$cats), ".")
+      }
+      predcats <- setdiff(out$family$cats, out$family$refcat)
+    }
+    mu_dpars <- make_stan_names(paste0("mu", predcats))
+    if (any(duplicated(mu_dpars))) {
+      stop2("Invalid response category names. Please avoid ",
+            "using any special characters in the names.")
+    }
+    old_mu_dpars <- str_subset(out$family$dpars, "^mu")
+    out$family$dpars <- setdiff(out$family$dpars, old_mu_dpars)
+    out$family$dpars <- union(mu_dpars, out$family$dpars)
+  }
+  
+  # incorporate deprecated arguments
+  require_threshold <- is_ordinal(out$family) && is.null(out$family$threshold)
+  if (require_threshold && !is.null(threshold)) {
+    # slot 'threshold' is deprecated as of brms 1.7.0
+    out$family <- validate_family(out$family, threshold = threshold)
   }
   if (!is.null(sparse)) {
     # a global 'sparse' argument is deprecated as of brms 2.8.3
@@ -1272,66 +1327,18 @@ validate_formula.brmsformula <- function(
       }
     }
   }
+  if (is.null(attr(out$formula, "autocor")) && !is.null(autocor)) {
+    # 'autocor' interface has been changed in brms 2.11.1
+    warning2(
+      "Argument 'autocor' should be specified within the ", 
+      "'formula' argument. See ?brmsformula for help."
+    )
+    # store 'autocor' as an attribute to carry it around more easily
+    attr(out$formula, "autocor") <- validate_autocor(autocor)
+  }
   if (!is.null(cov_ranef)) {
     # 'cov_ranef' is deprecated as of brms 2.12.5
     out$cov_ranef <- validate_cov_ranef(cov_ranef)
-  }
-  out$mecor <- default_mecor(out$mecor)
-  if (has_cat(out) && is.null(get_cats(out)) && !is.null(data)) {
-    # for easy access of response categories
-    out$family$cats <- extract_cat_names(out, data)
-  }
-  if (is_ordinal(out$family)) {
-    if (is.null(out$family$threshold) && !is.null(threshold)) {
-      # slot 'threshold' is deprecated as of brms 1.7.0
-      out$family <- check_family(out$family, threshold = threshold)
-    }
-    try_terms <- try(stats::terms(out$formula), silent = TRUE)
-    intercept <- attr(try_terms, "intercept", TRUE)
-    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
-      stop2("Cannot remove the intercept in an ordinal model.")
-    }
-    if (is.null(get_thres(out)) && !is.null(data)) {
-      # for easy access of thresholds
-      out$family$thres <- extract_thres_names(out, data)  
-    }
-    if (is.null(get_cats(out)) && !is.null(data)) {
-      # for easy access of response categories (#838)
-      out$family$cats <- extract_cat_names(out, data)
-    }
-    if (is.mixfamily(out$family)) {
-      # every mixture family needs to know about response categories
-      for (i in seq_along(out$family$mix)) {
-        out$family$mix[[i]]$thres <- out$family$thres
-      }
-    }
-  }
-  mu_dpars <- str_subset(out$family$dpars, "^mu")
-  conv_cats_dpars <- conv_cats_dpars(out$family)
-  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
-    # define distributional parameters based on response categories
-    if (length(out$family$cats) < 2L) {
-      stop2("At least 2 response categories are required.")
-    }
-    if (is.null(out$family$refcat)) {
-      # the first level serves as the reference category
-      out$family$refcat <- out$family$cats[1]
-    } 
-    if (isNA(out$family$refcat)) {
-      predcats <- out$family$cats  # predict all categories
-    } else {
-      if (!out$family$refcat %in% out$family$cats) {
-        stop2("The reference response category must be one of ",
-              collapse_comma(out$family$cats), ".")
-      }
-      predcats <- setdiff(out$family$cats, out$family$refcat)
-    }
-    mu_dpars <- make_stan_names(paste0("mu", predcats))
-    if (any(duplicated(mu_dpars))) {
-      stop2("Invalid response category names. Please avoid ",
-            "using any special characters in the names.")
-    }
-    out$family$dpars <- c(mu_dpars, out$family$dpars)
   }
   bf(out)
 }
@@ -1392,6 +1399,7 @@ validate_formula.mvbrmsformula <- function(
   for (i in seq_along(formula$forms)) {
     formula$forms[[i]]$mecor <- formula$mecor
   }
+  # incorporate deprecated arguments
   if (!is.null(cov_ranef)) {
     # 'cov_ranef' is deprecated as of brms 2.12.5
     formula$cov_ranef <- validate_cov_ranef(cov_ranef)
