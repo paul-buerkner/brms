@@ -64,7 +64,7 @@ time series (\code{TRUE}).}
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

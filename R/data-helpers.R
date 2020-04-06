@@ -298,7 +298,7 @@ get_data_name <- function(data) {
 #' are a package developer, you will rarely need to call \code{validate_newdata}
 #' directly.
 #' 
-#' @inheritParams extract_draws
+#' @inheritParams prepare_predictions
 #' @param newdata A \code{data.frame} containing new data to be validated.
 #' @param object A \code{brmsfit} object.
 #' @param check_response Logical; Indicates if response variables should

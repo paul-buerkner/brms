@@ -167,20 +167,20 @@ get_cor_matrix <- function(cor, size = NULL, nsamples = NULL) {
 }
 
 # compute covariance matrices of autocor structures
-# @param draws a brmsdraws object
+# @param prep a brmsprep object
 # @param obs observations for which to compute the covariance matrix
 # @param latent compute covariance matrix for latent residuals?
-get_cov_matrix_ac <- function(draws, obs = NULL, latent = FALSE) {
+get_cov_matrix_ac <- function(prep, obs = NULL, latent = FALSE) {
   if (is.null(obs)) {
-    obs <- seq_len(draws$nobs) 
+    obs <- seq_len(prep$nobs) 
   }
   nobs <- length(obs)
-  nsamples <- draws$nsamples
-  acef <- draws$ac$acef
+  nsamples <- prep$nsamples
+  acef <- prep$ac$acef
   # prepare correlations
   if (has_ac_class(acef, "arma")) {
-    ar <- as.numeric(draws$ac$ar)
-    ma <- as.numeric(draws$ac$ma)
+    ar <- as.numeric(prep$ac$ar)
+    ma <- as.numeric(prep$ac$ma)
     if (length(ar) && !length(ma)) {
       cor <- get_cor_matrix_ar1(ar, nobs)
     } else if (!length(ar) && length(ma)) {
@@ -191,28 +191,28 @@ get_cov_matrix_ac <- function(draws, obs = NULL, latent = FALSE) {
       stop2("Neither 'ar' nor 'ma' were supplied. Please report a bug.")
     }
   } else if (has_ac_class(acef, "cosy")) {
-    cosy <- as.numeric(draws$ac$cosy)
+    cosy <- as.numeric(prep$ac$cosy)
     cor <- get_cor_matrix_cosy(cosy, nobs)
   } else if (has_ac_class(acef, "fcor")) {
-    cor <- get_cor_matrix_fcor(draws$ac$Mfcor, nsamples)
+    cor <- get_cor_matrix_fcor(prep$ac$Mfcor, nsamples)
   } else {
     cor <- get_cor_matrix_ident(nsamples, nobs)
   }
   # prepare known standard errors
-  if (!is.null(draws$data$se)) {
-    se2 <- draws$data$se[obs]^2
+  if (!is.null(prep$data$se)) {
+    se2 <- prep$data$se[obs]^2
     se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, nsamples))
     se2 <- aperm(se2, perm = c(3, 1, 2))
     # make sure not to add 'se' twice
-    draws$data$se <- NULL
+    prep$data$se <- NULL
   } else {
     se2 <- rep(0, nobs)
   }
   # prepare residual standard deviations
   if (latent) {
-    sigma2 <- as.numeric(draws$ac$sderr)^2
+    sigma2 <- as.numeric(prep$ac$sderr)^2
   } else {
-    sigma <- get_dpar(draws, "sigma", i = obs)
+    sigma <- get_dpar(prep, "sigma", i = obs)
     if (NCOL(sigma) > 1L) {
       # sigma varies across observations
       sigma2 <- array(dim = c(nsamples, nobs, nobs))
@@ -324,7 +324,7 @@ get_cor_matrix_ident <- function(nsamples, nobs) {
 }
 
 # get samples of a distributional parameter
-# @param x object to extract posterior samples from
+# @param prep a 'brmsprep' or 'mvbrmsprep' object
 # @param dpar name of the distributional parameter
 # @param i the current observation number
 # @param ilink should the inverse link function be applied?
@@ -334,15 +334,15 @@ get_cor_matrix_ident <- function(nsamples, nobs) {
 #   length(i) > 1, an S x N matrix.
 #   If the parameter it not predicted or length(i) == 1,
 #   a vector of length S.
-get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
-  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
-  x <- draws$dpars[[dpar]]
+get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
+  stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
+  x <- prep$dpars[[dpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
     # compute samples of a predicted parameter
-    out <- predictor(x, i = i, fdraws = draws)
+    out <- predictor(x, i = i, fprep = prep)
     if (is.null(ilink)) {
-      ilink <- apply_dpar_ilink(dpar, family = draws$family)
+      ilink <- apply_dpar_ilink(dpar, family = prep$family)
     }
     if (ilink) {
       out <- ilink(out, x$family$link)
@@ -356,7 +356,7 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
     out <- x
   }
   if (dpar == "sigma") {
-    out <- add_sigma_se(out, draws, i = i)
+    out <- add_sigma_se(out, prep, i = i)
   }
   out
 }
@@ -368,13 +368,13 @@ get_dpar <- function(draws, dpar, i = NULL, ilink = NULL) {
 # @return
 #   If i is NULL or length(i) > 1: an S x N matrix
 #   If length(i) == 1: a vector of length S
-get_nlpar <- function(draws, nlpar, i = NULL) {
-  stopifnot(is.brmsdraws(draws) || is.mvbrmsdraws(draws))
-  x <- draws$nlpars[[nlpar]]
+get_nlpar <- function(prep, nlpar, i = NULL) {
+  stopifnot(is.brmsprep(prep) || is.mvbrmsprep(prep))
+  x <- prep$nlpars[[nlpar]]
   stopifnot(!is.null(x))
   if (is.list(x)) {
     # compute samples of a predicted parameter
-    out <- predictor(x, i = i, fdraws = draws)
+    out <- predictor(x, i = i, fprep = prep)
     if (length(i) == 1L) {
       out <- extract_col(out, 1)
     }
@@ -387,19 +387,19 @@ get_nlpar <- function(draws, nlpar, i = NULL) {
 }
 
 # get the mixing proportions of mixture models
-get_theta <- function(draws, i = NULL) {
-  stopifnot(is.brmsdraws(draws))
-  if ("theta" %in% names(draws$dpars)) {
+get_theta <- function(prep, i = NULL) {
+  stopifnot(is.brmsprep(prep))
+  if ("theta" %in% names(prep$dpars)) {
     # theta was not predicted; no need to call get_dpar
-    theta <- draws$dpars$theta
+    theta <- prep$dpars$theta
   } else {
     # theta was predicted; apply softmax
-    mix_family <- draws$family
+    mix_family <- prep$family
     families <- family_names(mix_family)
     theta <- vector("list", length(families))
     for (j in seq_along(families)) {
-      draws$family <- mix_family$mix[[j]]
-      theta[[j]] <- as.matrix(get_dpar(draws, paste0("theta", j), i = i))
+      prep$family <- mix_family$mix[[j]]
+      theta[[j]] <- as.matrix(get_dpar(prep, paste0("theta", j), i = i))
     }
     theta <- abind(theta, along = 3)
     for (n in seq_len(dim(theta)[2])) {
@@ -414,11 +414,11 @@ get_theta <- function(draws, i = NULL) {
 
 # get posterior samples of multivariate mean vectors
 # only used in multivariate models with 'rescor'
-get_Mu <- function(draws, i = NULL) {
-  stopifnot(is.mvbrmsdraws(draws))
-  Mu <- draws$mvpars$Mu
+get_Mu <- function(prep, i = NULL) {
+  stopifnot(is.mvbrmsprep(prep))
+  Mu <- prep$mvpars$Mu
   if (is.null(Mu)) {
-    Mu <- lapply(draws$resps, get_dpar, "mu", i = i)
+    Mu <- lapply(prep$resps, get_dpar, "mu", i = i)
     if (length(i) == 1L) {
       Mu <- do_call(cbind, Mu)
     } else {
@@ -435,29 +435,29 @@ get_Mu <- function(draws, i = NULL) {
 
 # get posterior samples of residual covariance matrices
 # only used in multivariate models with 'rescor'
-get_Sigma <- function(draws, i = NULL) {
-  stopifnot(is.mvbrmsdraws(draws))
-  Sigma <- draws$mvpars$Sigma
+get_Sigma <- function(prep, i = NULL) {
+  stopifnot(is.mvbrmsprep(prep))
+  Sigma <- prep$mvpars$Sigma
   if (is.null(Sigma)) {
-    stopifnot(!is.null(draws$mvpars$rescor))
-    sigma <- lapply(draws$resps, get_dpar, "sigma", i = i)
+    stopifnot(!is.null(prep$mvpars$rescor))
+    sigma <- lapply(prep$resps, get_dpar, "sigma", i = i)
     is_matrix <- ulapply(sigma, is.matrix)
     if (!any(is_matrix)) {
       # happens if length(i) == 1 or if no sigma was predicted
       sigma <- do_call(cbind, sigma)
-      Sigma <- get_cov_matrix(sigma, draws$mvpars$rescor)
+      Sigma <- get_cov_matrix(sigma, prep$mvpars$rescor)
     } else {
       for (j in seq_along(sigma)) {
         # bring all sigmas to the same dimension
         if (!is_matrix[j]) {
-          sigma[[j]] <- array(sigma[[j]], dim = dim_mu(draws))
+          sigma[[j]] <- array(sigma[[j]], dim = dim_mu(prep))
         }
       }
       nsigma <- length(sigma)
       sigma <- abind(sigma, along = 3)
-      Sigma <- array(dim = c(dim_mu(draws), nsigma, nsigma))
+      Sigma <- array(dim = c(dim_mu(prep), nsigma, nsigma))
       for (n in seq_len(ncol(Sigma))) {
-        Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], draws$mvpars$rescor)
+        Sigma[, n, , ] <- get_cov_matrix(sigma[, n, ], prep$mvpars$rescor)
       }
     }
   } else {
@@ -472,15 +472,15 @@ get_Sigma <- function(draws, i = NULL) {
 }
 
 # extract user-defined standard errors
-get_se <- function(draws, i = NULL) {
-  stopifnot(is.brmsdraws(draws))
-  se <- as.vector(draws$data[["se"]])
+get_se <- function(prep, i = NULL) {
+  stopifnot(is.brmsprep(prep))
+  se <- as.vector(prep$data[["se"]])
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]
     }
     if (length(se) > 1L) {
-      dim <- c(draws$nsamples, length(se))
+      dim <- c(prep$nsamples, length(se))
       se <- as_draws_matrix(se, dim = dim)
     }
   } else {
@@ -490,13 +490,13 @@ get_se <- function(draws, i = NULL) {
 }
 
 # add user defined standard errors to 'sigma'
-add_sigma_se <- function(sigma, draws, i = NULL) {
-  needs_se <- "se" %in% names(draws$data) && 
+add_sigma_se <- function(sigma, prep, i = NULL) {
+  needs_se <- "se" %in% names(prep$data) && 
     !isTRUE(attr(sigma, "se_added")) &&
-    !isTRUE(grepl("_cov$", draws$family$fun))
+    !isTRUE(grepl("_cov$", prep$family$fun))
   if (needs_se) {
     # 'se' will be incorporated directly into 'sigma'
-    sigma <- sqrt(get_se(draws, i = i)^2 + sigma^2)
+    sigma <- sqrt(get_se(prep, i = i)^2 + sigma^2)
     # make sure not to add 'se' twice
     attr(sigma, "se_added") <- TRUE
   } 
@@ -504,11 +504,11 @@ add_sigma_se <- function(sigma, draws, i = NULL) {
 }
 
 # return samples of ordinal thresholds for observation i
-# @param draws a drawsl or drawsnl object
+# @param prep a bprepl or bprepnl object
 # @param i observation number
-subset_thres <- function(draws, i) {
-  thres <- draws$thres$thres
-  Jthres <- draws$thres$Jthres
+subset_thres <- function(prep, i) {
+  thres <- prep$thres$thres
+  Jthres <- prep$thres$Jthres
   if (!is.null(Jthres)) {
     thres <- thres[, Jthres[i, 1]:Jthres[i, 2], drop = FALSE]
   }
@@ -639,7 +639,7 @@ arg_names <- function(method) {
   opts <- c("posterior_predict", "pp_expect", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
-  c(out) <- names(formals(extract_draws.brmsfit))
+  c(out) <- names(formals(prepare_predictions.brmsfit))
   c(out) <- names(formals(validate_newdata))
   out <- unique(out)
   out <- setdiff(out, c("object", "x", "..."))

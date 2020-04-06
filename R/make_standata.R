@@ -112,7 +112,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 #' @param object An object of class \code{brmsfit}.
 #' @param ... More arguments passed to \code{\link{make_standata}}
 #'   and \code{\link{validate_newdata}}.
-#' @inheritParams extract_draws
+#' @inheritParams prepare_predictions
 #' 
 #' @return A named list containing the data originally passed to Stan.
 #' 

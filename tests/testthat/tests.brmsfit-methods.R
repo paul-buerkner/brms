@@ -811,7 +811,7 @@ test_that("update has reasonable outputs", {
   )
   up <- update(fit1, newdata = new_data, save_ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
-  expect_equal(up$data.name, "new_data")
+  expect_equal(attr(up$data, "data_name"), "new_data")
   # expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
   # expect_true("r_1_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")

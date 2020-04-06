@@ -78,20 +78,20 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   if (!is.mixfamily(family)) {
     stop2("Method 'pp_mixture' can only be applied to mixture models.")
   }
-  draws <- extract_draws(
+  prep <- prepare_predictions(
     x, newdata = newdata, re_formula = re_formula, resp = resp, 
     subset = subset, nsamples = nsamples, check_response = TRUE, ...
   )
-  stopifnot(is.brmsdraws(draws))
-  draws$pp_mixture <- TRUE
-  for (dp in names(draws$dpars)) {
-    draws$dpars[[dp]] <- get_dpar(draws, dpar = dp)
+  stopifnot(is.brmsprep(prep))
+  prep$pp_mixture <- TRUE
+  for (dp in names(prep$dpars)) {
+    prep$dpars[[dp]] <- get_dpar(prep, dpar = dp)
   }
-  N <- choose_N(draws)
-  out <- lapply(seq_len(N), log_lik_mixture, draws = draws)
+  N <- choose_N(prep)
+  out <- lapply(seq_len(N), log_lik_mixture, prep = prep)
   out <- abind(out, along = 3)
   out <- aperm(out, c(1, 3, 2))
-  old_order <- draws$old_order
+  old_order <- prep$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
   out <- reorder_obs(out, old_order, sort = sort)
   if (!log) {

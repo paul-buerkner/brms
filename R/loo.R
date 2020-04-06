@@ -9,7 +9,7 @@
 #' @param x A \code{brmsfit} object.
 #' @param ... More \code{brmsfit} objects or further arguments
 #'   passed to the underlying post-processing functions.
-#'   In particular, see \code{\link{extract_draws}} for further
+#'   In particular, see \code{\link{prepare_predictions}} for further
 #'   supported arguments.
 #' @param compare A flag indicating if the information criteria
 #'  of the models should be compared to each other
@@ -200,7 +200,7 @@ loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo_subsample", compare, resp, 
-    pointwise = TRUE, add_point_draws = TRUE
+    pointwise = TRUE, add_point_estimate = TRUE
   )
   do_call(compute_loos, args)
 }
@@ -842,19 +842,19 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
 # methods required in loo_subsample
 #' @importFrom loo .ndraws
 #' @export
-.ndraws.brmsdraws <- function(x, ...) {
+.ndraws.brmsprep <- function(x) {
   x$nsamples
 }
 
 #' @export
-.ndraws.mvbrmsdraws <- function(x, ...) {
+.ndraws.mvbrmsprep <- function(x) {
   x$nsamples
 }
 
 #' @importFrom loo .thin_draws
 #' @export
-.thin_draws.brmsdraws <- function(draws, loo_approximation_draws) {
-  # brmsdraws objects are too complex to implement a post-hoc subsetting method
+.thin_draws.brmsprep <- function(draws, loo_approximation_draws) {
+  # brmsprep objects are too complex to implement a post-hoc subsetting method
   if (length(loo_approximation_draws)) {
     stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
   }
@@ -862,7 +862,7 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
 }
 
 #' @export
-.thin_draws.mvbrmsdraws <- function(draws, loo_approximation_draws) {
+.thin_draws.mvbrmsprep <- function(draws, loo_approximation_draws) {
   if (length(loo_approximation_draws)) {
     stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
   }
@@ -871,15 +871,15 @@ r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
 
 #' @importFrom loo .compute_point_estimate
 #' @export
-.compute_point_estimate.brmsdraws <- function(x, ...) {
+.compute_point_estimate.brmsprep <- function(draws) {
   # point estimates are stored in the form of an attribute rather 
-  # than computed on the fly due to the complexity of brmsdraws objects
-  attr(x, "point_draws")
+  # than computed on the fly due to the complexity of brmsprep objects
+  attr(draws, "point_estimate")
 }
 
 #' @export
-.compute_point_estimate.mvbrmsdraws <- function(x, ...) {
-  attr(x, "point_draws")
+.compute_point_estimate.mvbrmsprep <- function(draws) {
+  attr(draws, "point_estimate")
 }
 
 # print the output of a list of loo objects

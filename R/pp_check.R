@@ -153,7 +153,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep[, take, drop = FALSE]
   }
   # most ... arguments are ment for the prediction function
-  for_pred <- names(dots) %in% names(formals(extract_draws.brmsfit))
+  for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
   ppc_args <- c(list(y, yrep), dots[!for_pred])
   if ("psis_object" %in% setdiff(names(formals(ppc_fun)), names(ppc_args))) {
     ppc_args$psis_object <- do_call(
