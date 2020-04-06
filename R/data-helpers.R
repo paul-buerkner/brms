@@ -279,9 +279,17 @@ get_one_value_per_group <- function(x, gr) {
 }
 
 # extract knots values for use in spline terms
-# knots are currently stored as an attribute of 'data'
 get_knots <- function(data) {
   attr(data, "knots", TRUE)
+}
+
+# extract name of the data as originally passed by the user
+get_data_name <- function(data) {
+  out <- attr(data, "data_name", TRUE)
+  if (is.null(out)) {
+    out <- "NULL"
+  }
+  out
 }
 
 #' Validate New Data

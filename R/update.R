@@ -60,10 +60,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   if (!is.null(newdata)) {
     dots$data <- newdata
-    data.name <- substitute_name(newdata)
+    data_name <- substitute_name(newdata)
   } else {
     dots$data <- object$data
-    data.name <- object$data.name
+    data_name <- get_data_name(object$data)
   }
   
   if (missing(formula.) || is.null(formula.)) {
@@ -129,6 +129,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$sample_prior <- if (has_prior_pars) "yes" else "no"
     }
   }
+  if (is.null(dots$data2)) {
+    dots$data2 <- object$data2
+  }
+  if (is.null(dots$stanvars)) {
+    dots$stanvars <- object$stanvars
+  }
   if (is.null(dots$save_ranef)) {
     dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
   }
@@ -141,9 +147,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$knots)) {
     dots$knots <- attr(object$data, "knots")
   }
-  arg_names <- c("data2", "cov_ranef", "stanvars", "stan_funs")
-  old_args <- setdiff(arg_names, names(dots))
-  dots[old_args] <- object[old_args]
   
   # update arguments controlling the sampling process
   if (is.null(dots$iter)) {
@@ -209,7 +212,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object <- do_call(brm, dots)
     }
   }
-  object$data.name <- data.name
+  attr(object$data, "data_name") <- data_name
   object
 }
 
@@ -249,7 +252,7 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   if (is.null(newdata)) {
     stop2("'newdata' is required when updating a 'brmsfit_multiple' object.")
   }
-  data.name <- substitute_name(newdata)
+  data_name <- substitute_name(newdata)
   if (inherits(newdata, "mids")) {
     require_package("mice", version = "3.0.0")
     newdata <- lapply(seq_len(newdata$m), mice::complete, data = newdata)
@@ -287,6 +290,6 @@ update.brmsfit_multiple <- function(object, formula., newdata = NULL, ...) {
   args$recompile <- NULL
   
   out <- do_call(brm_multiple, args)
-  out$data.name <- data.name
+  attr(out$data, "data_name") <- data_name
   out
 }

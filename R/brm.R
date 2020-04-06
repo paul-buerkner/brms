@@ -399,8 +399,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
-    x$criteria <- list()
     sdata <- standata(x)
+    x$criteria <- list()
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
@@ -411,8 +411,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
-    data.name <- substitute_name(data)
+    data_name <- substitute_name(data)
     data <- validate_data(data, bterms = bterms, knots = knots)
+    attr(data, "data_name") <- data_name
     data2 <- validate_data2(
       data2, bterms = bterms, 
       get_data2_autocor(formula),
@@ -425,9 +426,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     # initialize S3 object
     x <- brmsfit(
-      formula = formula, family = family, data = data, 
-      data.name = data.name, data2 = data2, prior = prior, 
-      stanvars = stanvars, algorithm = algorithm
+      formula = formula, data = data, data2 = data2, prior = prior, 
+      stanvars = stanvars, algorithm = algorithm, family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
