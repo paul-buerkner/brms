@@ -156,8 +156,12 @@ restructure_v2 <- function(x) {
       x$formula <- SW(validate_formula(x$formula, cov_ranef = x$cov_ranef))
       cov_ranef <- get_data2_cov_ranef(x$formula)
       x$data2[names(cov_ranef)] <- cov_ranef
-      x$cov_ranef <- NULL 
     }
+  }
+  if (version <= "2.12.5") {
+    # minor structural changes as part of internal interface improvements
+    attr(x$data, "data_name") <- x$data.name
+    x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
   }
   x
 }

@@ -16,48 +16,49 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 \section{Slots}{
 
 \describe{
-\item{\code{formula}}{A \code{\link{brmsformula}} object}
+\item{\code{formula}}{A \code{\link{brmsformula}} object.}
 
-\item{\code{family}}{(Deprecated) A \code{\link{brmsfamily}} object}
+\item{\code{data}}{A \code{data.frame} containing all variables used in the model.}
 
-\item{\code{data}}{A \code{data.frame} containing all variables used in the model}
-
-\item{\code{data.name}}{The name of \code{data} as specified by the user}
-
-\item{\code{data2}}{An optional \code{list} of data objects which cannot be passed
-via \code{data}}
-
-\item{\code{model}}{The model code in \pkg{Stan} language}
+\item{\code{data2}}{A \code{list} of data objects which cannot be passed
+via \code{data}.}
 
 \item{\code{prior}}{A \code{\link{brmsprior}} object containing
-information on the priors used in the model}
+information on the priors used in the model.}
 
-\item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing 
-the autocorrelation structure if specified}
+\item{\code{stanvars}}{A \code{\link{stanvars}} object.}
 
-\item{\code{ranef}}{A \code{data.frame} containing the group-level structure}
+\item{\code{model}}{The model code in \pkg{Stan} language.}
 
-\item{\code{cov_ranef}}{A \code{list} of customized group-level covariance matrices}
+\item{\code{ranef}}{A \code{data.frame} containing the group-level structure.}
 
-\item{\code{stanvars}}{A \code{\link{stanvars}} object or \code{NULL}}
+\item{\code{exclude}}{The names of the parameters for which samples are not saved.}
 
-\item{\code{stan_funs}}{A character string of length one or \code{NULL}}
+\item{\code{algorithm}}{The name of the algorithm used to fit the model.}
+
+\item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
+among others containing the posterior samples.}
 
 \item{\code{criteria}}{An empty \code{list} for adding model fit criteria
 after estimation of the model.}
 
-\item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
-among others containing the posterior samples}
-
-\item{\code{exclude}}{The names of the parameters for which samples are not saved}
-
-\item{\code{algorithm}}{The name of the algorithm used to fit the model}
+\item{\code{file}}{Optional name of a file in which the model object was stored in
+or loaded from.}
 
 \item{\code{version}}{The versions of \pkg{brms} and \pkg{rstan} with 
-which the model was fitted}
+which the model was fitted.}
 
-\item{\code{file}}{Optional name of a file in which the model object was stored in
-or loaded from}
+\item{\code{family}}{(Deprecated) A \code{\link{brmsfamily}} object.}
+
+\item{\code{autocor}}{(Deprecated) An \code{\link{cor_brms}} object containing 
+the autocorrelation structure if specified.}
+
+\item{\code{cov_ranef}}{(Deprecated) A \code{list} of customized group-level 
+covariance matrices.}
+
+\item{\code{stan_funs}}{(Deprecated) A character string of length one or \code{NULL}.}
+
+\item{\code{data.name}}{(Deprecated) The name of \code{data} as specified by the user.}
 }}
 
 \seealso{
