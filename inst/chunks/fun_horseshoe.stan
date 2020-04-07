@@ -1,19 +1,16 @@
   /* Efficient computation of the horseshoe prior
+   * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866
    * Args:
-   *   zb: standardized population-level coefficients
-   *   global: global horseshoe parameters
-   *   local: local horseshoe parameters
-   *   scale_global: global scale of the horseshoe prior
-   *   c2: positive real number for regularization
+   *   z: standardized population-level coefficients
+   *   lambda: local shrinkage parameters
+   *   tau: global shrinkage parameter
+   *   c2: slap regularization parameter
    * Returns:
    *   population-level coefficients following the horseshoe prior
    */
-  vector horseshoe(vector zb, vector[] local, real[] global,
-                   real scale_global, real c2) {
-    int K = rows(zb);
-    vector[K] lambda = local[1] .* sqrt(local[2]);
+  vector horseshoe(vector z, vector lambda, real tau, real c2) {
+    int K = rows(z);
     vector[K] lambda2 = square(lambda);
-    real tau = global[1] * sqrt(global[2]) * scale_global;
     vector[K] lambda_tilde = sqrt(c2 * lambda2 ./ (c2 + tau^2 * lambda2));
-    return zb .* lambda_tilde * tau;
+    return z .* lambda_tilde * tau;
   }

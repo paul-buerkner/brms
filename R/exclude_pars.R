@@ -101,7 +101,7 @@ exclude_pars.btl <- function(x, data, save_all_pars = FALSE, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_all_pars) {
     par_classes <- c(
-      "bQ", "hs_global", "hs_local", "zb", "hs_localsp", 
+      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp", 
       "zbsp", "Intercept", "first_Intercept", "merged_Intercept",
       "zcar", "nszcar", "zerr"
     )

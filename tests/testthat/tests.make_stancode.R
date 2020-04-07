@@ -124,45 +124,35 @@ test_that("special shrinkage priors appear in the Stan code", {
   scode <- make_stancode(y ~ x1*x2, data = dat, 
                          prior = set_prior(hs),
                          sample_prior = TRUE)
-  expect_match2(scode, "vector<lower=0>[Kc] hs_local[2];") 
-  expect_match2(scode, "real<lower=0> hs_global[2];") 
+  expect_match2(scode, "vector<lower=0>[Kc] hs_local;") 
+  expect_match2(scode, "real<lower=0> hs_global;") 
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_local[2] | 0.5 * hs_df, 0.5 * hs_df);"
+    "target += student_t_lpdf(hs_local | hs_df, 0, 1)"
   )
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_global[2] | 0.5 * hs_df_global, 0.5 * hs_df_global);"
+    "target += student_t_lpdf(hs_global | hs_df_global, 0, hs_scale_global * sigma)"
   )
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_c2 | 0.5 * hs_df_slab, 0.5 * hs_df_slab);"
+    "target += inv_gamma_lpdf(hs_slab | 0.5 * hs_df_slab, 0.5 * hs_df_slab)"
   )
   expect_match2(scode, 
-    paste0(
-      "b = horseshoe(zb, hs_local, hs_global, ", 
-      "hs_scale_global * sigma, hs_scale_slab^2 * hs_c2);"
-    )
+    "b = horseshoe(zb, hs_local, hs_global, hs_scale_slab^2 * hs_slab);"
   )
   
   scode <- make_stancode(y ~ x1*x2, data = dat, poisson(),
                          prior = prior(horseshoe(scale_global = 3)))
   expect_match2(scode, 
-    paste0(
-      "b = horseshoe(zb, hs_local, hs_global, ", 
-      "hs_scale_global, hs_scale_slab^2 * hs_c2);"
-    )
+    "b = horseshoe(zb, hs_local, hs_global, hs_scale_slab^2 * hs_slab);"
   )
   
   scode <- make_stancode(x1 ~ mo(y), dat, prior = prior(horseshoe()))
   expect_match2(scode, "target += std_normal_lpdf(zbsp);")
   expect_match2(scode,
-    "target += std_normal_lpdf(hs_localsp[1])\n    - 1 * log(0.5);"          
-  )
-  expect_match2(scode,
-    "target += inv_gamma_lpdf(hs_localsp[2] | 0.5 * hs_df, 0.5 * hs_df);"          
+    "target += student_t_lpdf(hs_localsp | hs_df, 0, 1)"
   )
   expect_match2(scode,
     paste0(
-      "bsp = horseshoe(zbsp, hs_localsp, hs_global, ", 
-      "hs_scale_global * sigma, hs_scale_slab^2 * hs_c2);"
+      "bsp = horseshoe(zbsp, hs_localsp, hs_global, hs_scale_slab^2 * hs_slab);"
     )
   )
   
@@ -189,22 +179,19 @@ test_that("special shrinkage priors appear in the Stan code", {
     prior = c(set_prior(hs_a1, nlpar = "a1"),
               set_prior(lasso_a2, nlpar = "a2"))
   )
-  expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1[2];")
-  expect_match2(scode, "real<lower=0> hs_global_a1[2];")
+  expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1;") 
+  expect_match2(scode, "real<lower=0> hs_global_a1;") 
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_local_a1[2] | 0.5 * hs_df_a1, 0.5 * hs_df_a1);"
+    "target += student_t_lpdf(hs_local_a1 | hs_df_a1, 0, 1)"
   )
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_global_a1[2] | 0.5 * hs_df_global_a1, 0.5 * hs_df_global_a1);"
+    "target += student_t_lpdf(hs_global_a1 | hs_df_global_a1, 0, hs_scale_global_a1 * sigma)"
   )
   expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_c2_a1 | 0.5 * hs_df_slab_a1, 0.5 * hs_df_slab_a1);"
+    "target += inv_gamma_lpdf(hs_slab_a1 | 0.5 * hs_df_slab_a1, 0.5 * hs_df_slab_a1)"
   )
   expect_match2(scode, 
-    paste0(
-      "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, ", 
-      "hs_scale_global_a1 * sigma, hs_scale_slab_a1^2 * hs_c2_a1);"
-    )
+    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, hs_scale_slab_a1^2 * hs_slab_a1);"
   )
   expect_match2(scode,
     "target += chi_square_lpdf(lasso_inv_lambda_a2 | lasso_df_a2);"
@@ -537,10 +524,8 @@ test_that("Stan code for multivariate models is correct", {
   scode <- make_stancode(form, dat, prior = prior)
   expect_match2(scode, "target += multi_normal_cholesky_lpdf(Y | Mu, LSigma);")
   expect_match2(scode, "LSigma = diag_pre_multiply(sigma, Lrescor);")
-  expect_match2(scode, "target += std_normal_lpdf(hs_local_y1[1])")
-  expect_match2(scode, 
-    "target += inv_gamma_lpdf(hs_local_y2[2] | 0.5 * hs_df_y2, 0.5 * hs_df_y2)"
-  )
+  expect_match2(scode, "target += student_t_lpdf(hs_local_y1 | hs_df_y1, 0, 1)")
+  expect_match2(scode, "target += student_t_lpdf(hs_local_y2 | hs_df_y2, 0, 1)")
   expect_match2(scode, "rescor[choose(k - 1, 2) + j] = Rescor[j, k];")
   
   form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
