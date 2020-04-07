@@ -30,6 +30,8 @@ the former function.
 * Deprecate argument `cov_ranef` in `brm` and related functions.
 * Improve several internal interfaces. This should not have any
 user-visible changes.
+* Simplify the parameterization of the horseshoe prior thanks
+to Aki Vehtari. (#873)
 
 
 # brms 2.12.0
