@@ -74,15 +74,15 @@
 #'   standard deviation 5 for \code{x1}, and a unit student-t prior with 10 
 #'   degrees of freedom for \code{x2}, we can specify this via
 #'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
-#'   \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
+#'   \code{set_prior("student_t(10, 0, 1)", class = "b", coef = "x2")}.
 #'   To put the same prior on all population-level effects at once, 
 #'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
 #'   This also leads to faster sampling, because priors can be vectorized in this case. 
 #'   Both ways of defining priors can be combined using for instance 
-#'   \code{set_prior("normal(0,2)", class = "b")} and \cr
-#'   \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
-#'   at the same time. This will set a \code{normal(0,10)} prior on 
-#'   the effect of \code{x1} and a \code{normal(0,2)} prior 
+#'   \code{set_prior("normal(0, 2)", class = "b")} and \cr
+#'   \code{set_prior("normal(0, 10)", class = "b", coef = "x1")}
+#'   at the same time. This will set a \code{normal(0, 10)} prior on 
+#'   the effect of \code{x1} and a \code{normal(0, 2)} prior 
 #'   on all other population-level effects. 
 #'   However, this will break vectorization and
 #'   may slow down the sampling procedure a bit.
@@ -1032,9 +1032,9 @@ def_dprior <- function(x, dpar, data = NULL) {
     out <- switch(dpar_class, "",
       mu = def_scale_prior(x, data, center = FALSE),
       sigma = def_scale_prior(x, data),
-      shape = "student_t(3, 0, 10)",
+      shape = "student_t(3, 0, 2.5)",
       nu = "normal(2.7, 0.8)", 
-      phi = "student_t(3, 0, 10)",
+      phi = "student_t(3, 0, 2.5)",
       kappa = "normal(5.0, 0.8)", 
       beta = "normal(1.7, 1.3)", 
       zi = "logistic(0, 1)", 
@@ -1067,32 +1067,32 @@ def_scale_prior.mvbrmsterms <- function(x, data, ...) {
 # @param center Should the prior be centererd around zero?
 #   If FALSE, the prior location is computed based on Y.
 #' @export
-def_scale_prior.brmsterms <- function(x, data, center = TRUE, ...) {
-  Y <- unname(model.response(model.frame(x$respform, data)))
-  prior_location <- 0
-  prior_scale <- 10
+def_scale_prior.brmsterms <- function(x, data, center = TRUE, df = 3,
+                                      location = 0, scale = 2.5, ...) {
+  y <- unname(model.response(model.frame(x$respform, data)))
   link <- x$family$link
   if (has_logscale(x$family)) {
     link <- "log"
   }
   tlinks <- c("identity", "log", "inverse", "sqrt", "1/mu^2")
-  if (link %in% tlinks && !is_like_factor(Y)) {
+  if (link %in% tlinks && !is_like_factor(y)) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
-      # avoid Inf in link(Y)
-      Y <- ifelse(Y == 0, Y + 0.1, Y) 
+      # avoid Inf in link(y)
+      y <- ifelse(y == 0, y + 0.1, y) 
     }
-    sgst_scale <- SW(round(mad(link(Y, link = link))))
-    if (is.finite(sgst_scale)) {
-      prior_scale <- max(prior_scale, sgst_scale)
+    y_link <- SW(link(y, link = link))
+    scale_y <- round(mad(y_link), 1)
+    if (is.finite(scale_y)) {
+      scale <- max(scale, scale_y)
     } 
     if (!center) {
-      sgst_location <- SW(round(median(link(Y, link = link))))
-      if (is.finite(sgst_location)) {
-        prior_location <- sgst_location
+      location_y <- round(median(y_link), 1)
+      if (is.finite(location_y)) {
+        location <- location_y
       }
     }
   }
-  paste0("student_t(", sargs("3", prior_location, prior_scale), ")")
+  paste0("student_t(", sargs(df, location, scale), ")")
 }
 
 # validate priors supplied by the user

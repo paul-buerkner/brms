@@ -5,20 +5,14 @@
 #' @param object An object of class \code{brmsfit}.
 #' @param formula. Changes to the formula; for details see 
 #'   \code{\link{update.formula}} and \code{\link{brmsformula}}.
-#' @param newdata Optional \code{data.frame} 
-#'   to update the model with new data.
+#' @param newdata Optional \code{data.frame} to update the model with new data.
+#'   Data-dependent default priors will not be updated automatically.
 #' @param recompile Logical, indicating whether the Stan model should 
 #'   be recompiled. If \code{NULL} (the default), \code{update} tries
 #'   to figure out internally, if recompilation is necessary. 
 #'   Setting it to \code{FALSE} will cause all Stan code changing 
 #'   arguments to be ignored. 
 #' @param ... Other arguments passed to \code{\link{brm}}.
-#'  
-#' @details Sometimes, when updating the model formula, 
-#'  it may happen that \R complains about a mismatch
-#'  between \code{model frame} and \code{formula}.
-#'  This error can be avoided by supplying your original data
-#'  again via argument \code{newdata}.
 #'  
 #' @examples 
 #' \dontrun{

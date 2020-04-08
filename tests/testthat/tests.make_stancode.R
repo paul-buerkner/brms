@@ -22,8 +22,8 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += cauchy_lpdf(sd_1[1] | 0, 1)")
   expect_match2(scode, "- 1 * cauchy_lccdf(0 | 0, 1)")
   expect_match2(scode, "target += cauchy_lpdf(sd_1[2] | 0, 2)")
-  expect_match2(scode, "target += student_t_lpdf(sigma | 3, 0, 10)")
-  expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 10)")
+  expect_match2(scode, "target += student_t_lpdf(sigma | 3, 0, 3.7)")
+  expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 3.7)")
   expect_match2(scode, "target += gamma_lpdf(sd_2 | 1, 1)")
   expect_match2(scode, "prior_b_1 = normal_rng(0,1);")
   expect_match2(scode, "prior_sd_1_1 = cauchy_rng(0,1)")
@@ -58,7 +58,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += cauchy_lpdf(sd_1[1] | 0, 1)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1 | 2)")
   expect_match2(scode, "prior_b_a = normal_rng(0,5)")
-  expect_match2(scode, "prior_sd_1_2 = student_t_rng(3,0,10)")
+  expect_match2(scode, "prior_sd_1_2 = student_t_rng(3,0,3.7)")
   expect_match2(scode, "prior_cor_1 = lkj_corr_rng(M_1,2)[1, 2]")
   
   prior <- c(prior(lkj(2), rescor),
@@ -720,7 +720,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, 
     "target += ordered_logistic_lpmf(Y[n] | mu[n], Intercept);"
   )
-  expect_match2(scode, "target += student_t_lpdf(Intercept[1] | 3, 0, 10);")
+  expect_match2(scode, "target += student_t_lpdf(Intercept[1] | 3, 0, 2.5);")
   expect_match2(scode, "target += normal_lpdf(Intercept[2] | 0, 2);")
   
   scode <- make_stancode(
@@ -785,7 +785,7 @@ test_that("Stan code of ordinal models is correct", {
     family = mixture(cumulative(), nmix = 2, order = "mu")
   )
   expect_match2(scode, "Intercept_mu2 = fixed_Intercept;")
-  expect_match2(scode, "target += student_t_lpdf(fixed_Intercept | 3, 0, 10);")
+  expect_match2(scode, "target += student_t_lpdf(fixed_Intercept | 3, 0, 2.5);")
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {
@@ -858,7 +858,7 @@ test_that("grouped ordinal thresholds appear in the Stan code", {
   bform <- bf(y | thres(th, gr) ~ x, family = sratio) +
     bf(y2 | thres(th, gr) ~ x, family = cumulative) 
   scode <- make_stancode(bform, data = dat)
-  expect_match2(scode, "target += student_t_lpdf(Intercept_y2_1 | 3, 0, 10);")
+  expect_match2(scode, "target += student_t_lpdf(Intercept_y2_1 | 3, 0, 2.5);")
   expect_match2(scode, "merged_Intercept_y[Kthres_start_y[2]:Kthres_end_y[2]] = Intercept_y_2;")
 })
 
@@ -1296,7 +1296,7 @@ test_that("by variables in grouping terms are handled correctly", {
   expect_match2(scode, "r_1_1 = (sd_1[1, Jby_1]' .* (z_1[1]));")
   scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
   expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
-  expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 10);")
+  expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 2.5);")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(L_1[5] | 1);")
 })
 

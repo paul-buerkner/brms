@@ -23,6 +23,8 @@ Rok Češnovar.
 
 ### Other Changes
 
+* Reduce minimal scale of several default priors from 10 to 2.5.
+The resulting priors should remain weakly informative.
 * Rename `parse_bf` to `brmsterms` and deprecate the former function.
 * Rename `extract_draws` to `prepare_predictions` and deprecate 
 the former function.

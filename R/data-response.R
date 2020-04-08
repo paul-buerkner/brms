@@ -74,6 +74,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
                                     internal = FALSE, basis = NULL, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
+  # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family) || is_categorical(x$family)) {

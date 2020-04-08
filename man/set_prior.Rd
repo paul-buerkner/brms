@@ -115,15 +115,15 @@ Define priors for specific parameters or classes of parameters.
   standard deviation 5 for \code{x1}, and a unit student-t prior with 10 
   degrees of freedom for \code{x2}, we can specify this via
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
-  \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
+  \code{set_prior("student_t(10, 0, 1)", class = "b", coef = "x2")}.
   To put the same prior on all population-level effects at once, 
   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
   This also leads to faster sampling, because priors can be vectorized in this case. 
   Both ways of defining priors can be combined using for instance 
-  \code{set_prior("normal(0,2)", class = "b")} and \cr
-  \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
-  at the same time. This will set a \code{normal(0,10)} prior on 
-  the effect of \code{x1} and a \code{normal(0,2)} prior 
+  \code{set_prior("normal(0, 2)", class = "b")} and \cr
+  \code{set_prior("normal(0, 10)", class = "b", coef = "x1")}
+  at the same time. This will set a \code{normal(0, 10)} prior on 
+  the effect of \code{x1} and a \code{normal(0, 2)} prior 
   on all other population-level effects. 
   However, this will break vectorization and
   may slow down the sampling procedure a bit.
