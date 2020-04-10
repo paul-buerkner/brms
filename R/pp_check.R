@@ -98,10 +98,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
   }
   if (type == "error_binned") {
-    if (is_ordinal(family)) {
-      stop2("Type '", type, "' is not available for ordinal models.")
+    if (is_polytomous(family)) {
+      stop2("Type '", type, "' is not available for polytomous models.")
     }
-    method <- "pp_expect"
+    method <- "posterior_epred"
   } else {
     method <- "posterior_predict"
   }

@@ -1,10 +1,10 @@
-context("Tests for pp_expect helper functions")
+context("Tests for posterior_epred helper functions")
 
 # to reduce testing time on CRAN
 skip_on_cran()
 
-test_that("pp_expect helper functions run without errors", {
-  # actually run pp_expect.brmsfit that call the helper functions
+test_that("posterior_epred helper functions run without errors", {
+  # actually run posterior_epred.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
   add_samples <- brms:::add_samples
   fit <- add_samples(fit, "shape", dist = "exp")
@@ -24,111 +24,111 @@ test_that("pp_expect helper functions run without errors", {
   # test preparation of truncated models
   prep$data$lb <- 0
   prep$data$ub <- 200
-  mu <- brms:::pp_expect_trunc(prep)
+  mu <- brms:::posterior_epred_trunc(prep)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # pseudo log-normal model
   fit$family <- fit$formula$family <- lognormal()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo shifted log-normal model
   fit$family <- fit$formula$family <- shifted_lognormal()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo skew-normal model
   fit$family <- fit$formula$family <- skew_normal()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo asym_laplace model
   fit$family <- fit$formula$family <- asym_laplace()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo zero_inflated_asym_laplace model
   fit$family <- fit$formula$family <- brmsfamily("zero_inflated_asym_laplace")
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo gen_extreme_value model
   fit$family <- fit$formula$family <- gen_extreme_value()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), 
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo weibull model
   fit$formula$pforms <- NULL
   fit$family <- fit$formula$family <- weibull()
-  expect_equal(dim(SW(pp_expect(fit, summary = FALSE))), c(nsamples, nobs))
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(nsamples, nobs))
   
   # pseudo binomial model
   fit$autocor <- brms:::cor_empty()
   fit$family <- fit$formula$family <- binomial()
-  expect_equal(dim(SW(pp_expect(fit, summary = FALSE))), c(nsamples, nobs))
+  expect_equal(dim(SW(posterior_epred(fit, summary = FALSE))), c(nsamples, nobs))
   
   # pseudo hurdle poisson model
   fit$family <- fit$formula$family <- hurdle_poisson()
   fit$formula <- bf(count ~ Trt*Age + mo(Exp) + offset(Age) + (1+Trt|visit),
                     family = family(fit))
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
   
   # pseudo zero-inflated poisson model
   fit$family <- fit$formula$family <- zero_inflated_poisson()
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
   
   # pseudo custom model
-  pp_expect_test <- function(prep) {
+  posterior_epred_test <- function(prep) {
     prep$dpars$mu
   }
   fit$family <- fit$formula$family <- custom_family(
     "test", dpars = "mu", links = c("logit"),
     type = "int", vars = "trials[n]"
   )
-  expect_equal(dim(pp_expect(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)), c(nsamples, nobs))
   
   # truncated continuous models
   prep$dpars$shape <- c(as.matrix(fit, pars = "^shape$"))
-  mu <- brms:::pp_expect_trunc_gaussian(prep, lb = 0, ub = 10)
+  mu <- brms:::posterior_epred_trunc_gaussian(prep, lb = 0, ub = 10)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- brms:::pp_expect_trunc_student(prep, lb = -Inf, ub = 15)
+  mu <- brms:::posterior_epred_trunc_student(prep, lb = -Inf, ub = 15)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- brms:::pp_expect_trunc_lognormal(prep, lb = 2, ub = 15)
+  mu <- brms:::posterior_epred_trunc_lognormal(prep, lb = 2, ub = 15)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   prep$dpars$mu <- exp(prep$dpars$mu)
-  mu <- brms:::pp_expect_trunc_gamma(prep, lb = 1, ub = 7)
+  mu <- brms:::posterior_epred_trunc_gamma(prep, lb = 1, ub = 7)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- brms:::pp_expect_trunc_exponential(prep, lb = 0, ub = Inf)
+  mu <- brms:::posterior_epred_trunc_exponential(prep, lb = 0, ub = Inf)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- SW(brms:::pp_expect_trunc_weibull(prep, lb = -Inf, ub = Inf))
+  mu <- SW(brms:::posterior_epred_trunc_weibull(prep, lb = -Inf, ub = Inf))
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # truncated discrete models
   data <- list(Y = sample(100, 10), trials = 1:10, N = 10)
   lb <- matrix(0, nrow = nsamples, ncol = nobs)
   ub <- matrix(100, nrow = nsamples, ncol = nobs)
-  mu <- brms:::pp_expect_trunc_poisson(prep, lb = lb, ub = ub)
+  mu <- brms:::posterior_epred_trunc_poisson(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- brms:::pp_expect_trunc_negbinomial(prep, lb = lb, ub = ub)
+  mu <- brms:::posterior_epred_trunc_negbinomial(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- brms:::pp_expect_trunc_geometric(prep, lb = lb, ub = ub)
+  mu <- brms:::posterior_epred_trunc_geometric(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   prep$data$trials <- 120
   lb <- matrix(-Inf, nrow = nsamples, ncol = nobs)
   prep$dpars$mu <- brms:::ilink(prep$dpars$mu, "logit")
-  mu <- brms:::pp_expect_trunc_binomial(prep, lb = lb, ub = ub)
+  mu <- brms:::posterior_epred_trunc_binomial(prep, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
 })
 
-test_that("pp_expect_lagsar runs without errors", {
+test_that("posterior_epred_lagsar runs without errors", {
   prep <- list(
     dpars = list(mu = matrix(rnorm(30), nrow = 3)),
     ac = list(
@@ -139,12 +139,12 @@ test_that("pp_expect_lagsar runs without errors", {
     nobs = 10,
     family = gaussian()
   )
-  mu_new <- brms:::pp_expect_lagsar(prep)
+  mu_new <- brms:::posterior_epred_lagsar(prep)
   expect_equal(dim(mu_new), dim(prep$dpars$mu))
   expect_true(!identical(mu_new, prep$dpars$mu))
 })
 
-test_that("pp_expect for advanced count data distributions runs without errors", {
+test_that("posterior_epred for advanced count data distributions runs without errors", {
   ns <- 15
   nobs <- 5
   ncat <- 3
@@ -154,15 +154,15 @@ test_that("pp_expect for advanced count data distributions runs without errors",
     shape = array(rexp(ns*nobs, 3), dim = c(ns, nobs))
   )
   prep$family <- brmsfamily("discrete_weibull")
-  pred <- suppressWarnings(brms:::pp_expect_discrete_weibull(prep))
+  pred <- suppressWarnings(brms:::posterior_epred_discrete_weibull(prep))
   expect_equal(dim(pred), c(ns, nobs))
   
   prep$family <- brmsfamily("com_poisson")
-  pred <- suppressWarnings(brms:::pp_expect_com_poisson(prep))
+  pred <- suppressWarnings(brms:::posterior_epred_com_poisson(prep))
   expect_equal(dim(pred), c(ns, nobs))
 })
 
-test_that("pp_expect for multinomial and dirichlet models runs without errors", {
+test_that("posterior_epred for multinomial and dirichlet models runs without errors", {
   ns <- 15
   nobs <- 8
   ncat <- 3
@@ -174,10 +174,10 @@ test_that("pp_expect for multinomial and dirichlet models runs without errors", 
   prep$data <- list(ncat = ncat, trials = sample(1:20, nobs))
  
   prep$family <- multinomial()
-  pred <- brms:::pp_expect_multinomial(prep = prep)
+  pred <- brms:::posterior_epred_multinomial(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
   
   prep$family <- dirichlet()
-  pred <- brms:::pp_expect_dirichlet(prep = prep)
+  pred <- brms:::posterior_epred_dirichlet(prep = prep)
   expect_equal(dim(pred), c(ns, nobs, ncat))
 })

@@ -14,7 +14,7 @@
 are performed only for the specified response variables.}
 
 \item{...}{Further arguments passed to 
-\code{\link[brms:pp_expect.brmsfit]{pp_expect}} and
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 \code{\link[brms:log_lik.brmsfit]{log_lik}},
 which are used in the computation of the R-squared values.}
 }

@@ -1926,18 +1926,16 @@ test_that("custom families are handled correctly", {
     y <- draws$data$Y[i]
     beta_binomial2_lpmf(y, mu, tau, trials)
   }
-  predict_beta_binomial2 <- function(i, draws, ...) {
+  posterior_predict_beta_binomial2 <- function(i, draws, ...) {
     mu <- draws$dpars$mu[, i]
     tau <- draws$dpars$tau
     trials <- draws$data$vint1[i]
     beta_binomial2_rng(mu, tau, trials)
   }
-  fitted_beta_binomial2 <- function(draws) {
+  posterior_epred_beta_binomial2 <- function(draws) {
     mu <- draws$dpars$mu
     trials <- draws$data$vint1
-    trials <- matrix(
-      trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE
-    )
+    trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
     mu * trials
   }
   beta_binomial2 <- custom_family(
@@ -1948,8 +1946,8 @@ test_that("custom families are handled correctly", {
     type = "int", 
     vars = c("vint1[n]", "vreal1[n]"),
     log_lik = log_lik_beta_binomial2,
-    fitted = fitted_beta_binomial2,
-    predict = predict_beta_binomial2
+    posterior_epred = posterior_epred_beta_binomial2,
+    posterior_predict = posterior_predict_beta_binomial2
   )
   # define custom stan functions
   # real R is just to also test the vreal addition argument

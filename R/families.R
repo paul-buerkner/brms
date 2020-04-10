@@ -966,19 +966,22 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param log_lik Optional function to compute log-likelihood values of
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
-#' @param predict Optional function to compute predicted values of
-#'   the model in \R. This is only relevant if one wants to ensure 
-#'   compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.  
-#' @param fitted Optional function to compute fitted values of
-#'   the model in \R. This is only relevant if one wants to ensure 
-#'   compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.     
+#' @param posterior_predict Optional function to compute posterior prediction of
+#'   the model in \R. This is only relevant if one wants to ensure compatibility
+#'   with method \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}.
+#' @param posterior_epred Optional function to compute expected values of the
+#'   posterior predictive distribution of the model in \R. This is only relevant
+#'   if one wants to ensure compatibility with method
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
+#' @param predict Deprecated alias of `posterior_predict`.
+#' @param fitted Deprecated alias of `posterior_epred`.
 #' @param env An \code{\link{environment}} in which certain post-processing 
 #'   functions related to the custom family can be found, if there were not 
 #'   directly passed to \code{custom_family}. This is only
 #'   relevant if one wants to ensure compatibility with the methods
-#'   \code{\link[brms:predict.brmsfit]{predict}}, 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
-#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
+#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
 #'   By default, \code{env} is the enviroment from which 
 #'   \code{custom_family} is called.
 #'   
@@ -1035,7 +1038,8 @@ custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, specials = NULL, 
                           threshold = "flexible",
-                          log_lik = NULL, predict = NULL, 
+                          log_lik = NULL, posterior_predict = NULL,
+                          posterior_epred = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
   dpars <- as.character(dpars)
@@ -1046,6 +1050,8 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   vars <- as.character(vars)
   specials <- as.character(specials)
   env <- as.environment(env)
+  posterior_predict <- use_alias(posterior_predict, predict)
+  posterior_epred <- use_alias(posterior_epred, fitted)
   if (any(duplicated(dpars))) {
     stop2("Duplicated 'dpars' are not allowed.")
   }
@@ -1076,19 +1082,19 @@ custom_family <- function(name, dpars = "mu", links = "identity",
             "should be 'i' and 'draws'.")
     }
   }
-  if (!is.null(predict)) {
-    predict <- as.function(predict)
-    args <- names(formals(predict))
+  if (!is.null(posterior_predict)) {
+    posterior_predict <- as.function(posterior_predict)
+    args <- names(formals(posterior_predict))
     if (!is_equal(args[1:3], c("i", "draws", "..."))) {
-      stop2("The first three arguments of 'predict' ", 
+      stop2("The first three arguments of 'posterior_predict' ", 
             "should be 'i', 'draws', and '...'.")
     }
   }
-  if (!is.null(fitted)) {
-    fitted <- as.function(fitted)
-    args <- names(formals(fitted))
+  if (!is.null(posterior_epred)) {
+    posterior_epred <- as.function(posterior_epred)
+    args <- names(formals(posterior_epred))
     if (!is_equal(args[1], "draws")) {
-      stop2("The first argument of 'fitted' should be 'draws'.")
+      stop2("The first argument of 'posterior_epred' should be 'draws'.")
     }
   }
   lb <- named_list(dpars, lb)
@@ -1098,7 +1104,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   out <- nlist(
     family = "custom", link, name, 
     dpars, lb, ub, type, vars, specials,
-    log_lik, predict, fitted, env
+    log_lik, posterior_predict, posterior_epred, env
   )
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]

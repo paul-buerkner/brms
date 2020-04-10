@@ -10,12 +10,12 @@ expect_ggplot <- function(object, ...) {
 SM <- suppressMessages
 SW <- suppressWarnings
 
-fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
-fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
-fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
-fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
-fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
-fit6 <- brms:::rename_pars(brms:::brmsfit_example6)
+fit1 <- rename_pars(brms:::brmsfit_example1)
+fit2 <- rename_pars(brms:::brmsfit_example2)
+fit3 <- rename_pars(brms:::brmsfit_example3)
+fit4 <- rename_pars(brms:::brmsfit_example4)
+fit5 <- rename_pars(brms:::brmsfit_example5)
+fit6 <- rename_pars(brms:::brmsfit_example6)
 
 # test S3 methods in alphabetical order
 test_that("as.data.frame has reasonable ouputs", {
@@ -178,7 +178,7 @@ test_that("plot of conditional_effects has reasonable outputs", {
   marg_results[["lower__"]] <- marg_results$estimate__ - 2
   marg_results[["upper__"]] <- marg_results$estimate__ + 2
   marg_results <- list(marg_results[order(marg_results$effect1__), ])
-  class(marg_results) <- "brmsMarginalEffects"
+  class(marg_results) <- "brms_conditional_effects"
   attr(marg_results[[1]], "response") <- "count"
   # test with 1 numeric predictor
   attr(marg_results[[1]], "effects") <- "P1"
@@ -606,8 +606,8 @@ test_that("pp_check has reasonable outputs", {
                "Type 'error_binned' is not available")
 })
 
-test_that("pp_expect has reasonable outputs", {
-  expect_equal(dim(pp_expect(fit1)), c(nsamples(fit1), nobs(fit1)))
+test_that("posterior_epred has reasonable outputs", {
+  expect_equal(dim(posterior_epred(fit1)), c(nsamples(fit1), nobs(fit1)))
 })
 
 test_that("pp_mixture has reasonable outputs", {

@@ -282,12 +282,12 @@ validate_pp_method <- function(method) {
   method <- as_one_character(method)
   if (method %in% c("posterior_predict", "predict", "pp")) {
     method <- "posterior_predict"
-  } else if (method %in% c("pp_expect", "fitted")) {
-    method <- "pp_expect"
-  } else if (method %in% c("predictive_error", "residuals")) {
-    method <- "predictive_error"
+  } else if (method %in% c("posterior_epred", "fitted", "pp_expect")) {
+    method <- "posterior_epred"
   } else if (method %in% c("posterior_linpred")) {
     method <- "posterior_linpred"
+  } else if (method %in% c("predictive_error", "residuals")) {
+    method <- "predictive_error"
   } else {
     stop2("Posterior predictive method '", method, "' it not supported.")
   }
@@ -823,7 +823,10 @@ posterior_predict_ordinal <- function(i, prep, ...) {
 }
 
 posterior_predict_custom <- function(i, prep, ...) {
-  pp_fun <- prep$family$predict
+  pp_fun <- prep$family$posterior_predict
+  if (is.null(pp_fun)) {
+    pp_fun <- prep$family$predict
+  }
   if (!is.function(pp_fun)) {
     pp_fun <- paste0("posterior_predict_", prep$family$name)
     pp_fun <- get(pp_fun, prep$family$env)

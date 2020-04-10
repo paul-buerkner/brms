@@ -16,6 +16,8 @@ custom_family(
   specials = NULL,
   threshold = "flexible",
   log_lik = NULL,
+  posterior_predict = NULL,
+  posterior_epred = NULL,
   predict = NULL,
   fitted = NULL,
   env = parent.frame()
@@ -57,21 +59,26 @@ Ignored for non-ordinal families.}
 the model in \R. This is only relevant if one wants to ensure 
 compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.}
 
-\item{predict}{Optional function to compute predicted values of
-the model in \R. This is only relevant if one wants to ensure 
-compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.}
+\item{posterior_predict}{Optional function to compute posterior prediction of
+the model in \R. This is only relevant if one wants to ensure compatibility
+with method \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}.}
 
-\item{fitted}{Optional function to compute fitted values of
-the model in \R. This is only relevant if one wants to ensure 
-compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.}
+\item{posterior_epred}{Optional function to compute expected values of the
+posterior predictive distribution of the model in \R. This is only relevant
+if one wants to ensure compatibility with method
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.}
+
+\item{predict}{Deprecated alias of `posterior_predict`.}
+
+\item{fitted}{Deprecated alias of `posterior_epred`.}
 
 \item{env}{An \code{\link{environment}} in which certain post-processing 
 functions related to the custom family can be found, if there were not 
 directly passed to \code{custom_family}. This is only
 relevant if one wants to ensure compatibility with the methods
-\code{\link[brms:predict.brmsfit]{predict}}, 
-\code{\link[brms:fitted.brmsfit]{fitted}}, or
-\code{\link[brms:log_lik.brmsfit]{log_lik}}.
+\code{\link[brms:log_lik.brmsfit]{log_lik}},
+\code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
 By default, \code{env} is the enviroment from which 
 \code{custom_family} is called.}
 }

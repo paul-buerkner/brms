@@ -43,7 +43,7 @@
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
 #' @param method Method use to obtain predictions. Either
-#'   \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+#'   \code{"posterior_epred"} (the default) or \code{"posterior_predict"}.
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
@@ -87,7 +87,7 @@
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{subset} or \code{nsamples}
 #'   passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}}.
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
@@ -223,7 +223,7 @@
 conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                         int_conditions = NULL, re_formula = NA, 
                                         robust = TRUE, probs = c(0.025, 0.975),
-                                        method = "pp_expect",
+                                        method = "posterior_epred",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
                                         transform = NULL, resolution = 100, 
@@ -381,8 +381,8 @@ conditional_effects.brmsterms <- function(
   rownames(marg_data) <- NULL
   
   if (categorical || ordinal) {
-    if (method != "pp_expect") {
-      stop2("Can only use 'categorical' with method = 'pp_expect'.")
+    if (method != "posterior_epred") {
+      stop2("Can only use 'categorical' with method = 'posterior_epred'.")
     }
     if (!is_polytomous(x)) {
       stop2("Argument 'categorical' may only be used ", 
@@ -408,7 +408,7 @@ conditional_effects.brmsterms <- function(
         "'conditional_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
-      if (method == "pp_expect") {
+      if (method == "posterior_epred") {
         out <- ordinal_probs_continuous(out)
       }
     }

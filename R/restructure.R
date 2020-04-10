@@ -625,6 +625,14 @@ update_old_family.brmsfamily <- function(x, ...) {
 
 #' @export
 update_old_family.customfamily <- function(x, ...) {
+  if (!is.null(x$predict)) {
+    x$posterior_predict <- x$predict 
+    x$predict <- NULL
+  }
+  if (!is.null(x$fitted)) {
+    x$posterior_epred <- x$fitted
+    x$fitted <- NULL
+  }
   x
 }
 
