@@ -726,7 +726,7 @@ log_lik_zero_one_inflated_beta <- function(i, prep) {
 
 log_lik_categorical <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
-  eta <- sapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   out <- dcategorical(prep$data$Y[i], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
@@ -734,7 +734,7 @@ log_lik_categorical <- function(i, prep) {
 
 log_lik_multinomial <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
-  eta <- sapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   out <- dmultinomial(prep$data$Y[i, ], eta = eta, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
@@ -743,7 +743,7 @@ log_lik_multinomial <- function(i, prep) {
 log_lik_dirichlet <- function(i, prep) {
   stopifnot(prep$family$link == "logit")
   mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  eta <- sapply(mu_dpars, get_dpar, prep = prep, i = i)
+  eta <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   phi <- get_dpar(prep, "phi", i = i)
   cats <- seq_len(prep$data$ncat)
