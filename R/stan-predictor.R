@@ -1202,9 +1202,14 @@ stan_ac <- function(bterms, data, prior, ...) {
   if (NROW(acef_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
+    # cosy correlations may be negative (#878)
+    str_add(out$tdata_def) <- glue(
+      "  real lb_cosy{p} = -1.0 / (max(nobs_tg{p}) - 1);",
+      "  // lower bound of the cosy correlation\n"
+    )
     str_add_list(out) <- stan_prior(
-      prior, class = "cosy", px = px, suffix = p,
-      type = "real<lower=0,upper=1>",
+      prior, class = "cosy", px = px, suffix = p, 
+      type = glue("real<lower=lb_cosy{p},upper=1>"), 
       comment = "compound symmetry correlation"
     )
   }
@@ -1222,6 +1227,10 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
+    str_add(out$tdata_def) <- glue(
+      "  int max_nobs_tg{p} = max(nobs_tg{p});",
+      "  // maximum dimension of the autocorrelation matrix\n"
+    )
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
@@ -1230,7 +1239,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     }
     str_add(out$tpar_def) <- glue(
       "  // cholesky factor of the autocorrelation matrix\n",
-      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"               
+      "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] chol_cor{p};\n"               
     )
     if (acef_time_cov$class == "arma") {
       if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
@@ -1249,7 +1258,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     }
     str_add(out$tpar_comp) <- glue(
       "  // compute residual covariance matrix\n",
-      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
+      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
     if (has_cor_latent_residuals) {
       err_msg <- "Latent residuals are not implemented"

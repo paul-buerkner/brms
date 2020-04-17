@@ -676,7 +676,7 @@ test_that("Stan code for ARMA models is correct", {
     y ~ x + ar(time, cov = TRUE), dat, family = poisson,
     prior = prior(cauchy(0, 10), class = sderr)
   )
-  expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max(nobs_tg));")
+  expect_match2(scode, "chol_cor = cholesky_cor_ar1(ar[1], max_nobs_tg);")
   expect_match2(scode, 
     "err = scale_time_err(zerr, sderr, chol_cor, nobs_tg, begin_tg, end_tg);"
   )
@@ -690,14 +690,15 @@ test_that("Stan code for compound symmetry models is correct", {
     y ~ x + cosy(time), dat,
     prior = prior(normal(0, 2), cosy)
   )
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
+  expect_match2(scode, "real<lower=lb_cosy,upper=1> cosy;")
+  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
   expect_match2(scode, "target += normal_lpdf(cosy | 0, 2);")
   
   scode <- make_stancode(bf(y ~ x + cosy(time), sigma ~ x), dat)
   expect_match2(scode, "normal_time_het_lpdf(Y | mu, sigma, chol_cor")
   
   scode <- make_stancode(y ~ x + cosy(time), dat, family = poisson)
-  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max(nobs_tg));")
+  expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
 })
 
 test_that("Stan code for intercept only models is correct", {
