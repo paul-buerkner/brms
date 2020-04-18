@@ -1202,14 +1202,15 @@ stan_ac <- function(bterms, data, prior, ...) {
   if (NROW(acef_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
-    # cosy correlations may be negative (#878)
-    str_add(out$tdata_def) <- glue(
-      "  real lb_cosy{p} = -1.0 / (max(nobs_tg{p}) - 1);",
-      "  // lower bound of the cosy correlation\n"
-    )
+    # cosy correlations may be negative in theory but 
+    # this causes problems divergent transitions (#878)
+    # str_add(out$tdata_def) <- glue(
+    #   "  real lb_cosy{p} = -1.0 / (max(nobs_tg{p}) - 1);",
+    #   "  // lower bound of the cosy correlation\n"
+    # )
     str_add_list(out) <- stan_prior(
       prior, class = "cosy", px = px, suffix = p, 
-      type = glue("real<lower=lb_cosy{p},upper=1>"), 
+      type = glue("real<lower=0,upper=1>"), 
       comment = "compound symmetry correlation"
     )
   }

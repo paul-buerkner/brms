@@ -11,7 +11,6 @@ Marta Kołczyńska.
 `mm` for easy specification of group-level correlation structures.
 * Improve workflow to feed back brms-created models which were
 fitted somewhere else back into brms. (#745)
-* Allow `cosy` correlations to be negative. (#878)
 
 ### Bug Fixes
 

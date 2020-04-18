@@ -690,7 +690,7 @@ test_that("Stan code for compound symmetry models is correct", {
     y ~ x + cosy(time), dat,
     prior = prior(normal(0, 2), cosy)
   )
-  expect_match2(scode, "real<lower=lb_cosy,upper=1> cosy;")
+  expect_match2(scode, "real<lower=0,upper=1> cosy;")
   expect_match2(scode, "chol_cor = cholesky_cor_cosy(cosy, max_nobs_tg);")
   expect_match2(scode, "target += normal_lpdf(cosy | 0, 2);")
   
