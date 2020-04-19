@@ -1743,10 +1743,13 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   if (stan_eta_transform(family, cens_or_trunc = cens_or_trunc)) {
     dpar_id <- dpar_id(dpar)
     pred_dpars <- names(bterms$dpars)
-    shape <- glue("shape{dpar_id}{resp}")
-    shape <- str_if(shape %in% pred_dpars, paste0(shape, "[n]"), shape)
-    nu <- glue("nu{dpar_id}{resp}")
-    nu <- str_if(nu %in% pred_dpars, paste0(nu, "[n]"), nu)
+    shape <- glue("shape{dpar_id}")
+    n_shape <- str_if(shape %in% pred_dpars, "[n]")
+    shape <- glue("{shape}{resp}{n_shape}")
+    nu <- glue("nu{dpar_id}")
+    n_nu <- str_if(nu %in% pred_dpars, "[n]")
+    nu <- glue("{nu}{resp}{n_nu}")
+    
     family_link <- str_if(
       family$family %in% c("gamma", "hurdle_gamma", "exponential"),
       paste0(family$family, "_", family$link), family$family

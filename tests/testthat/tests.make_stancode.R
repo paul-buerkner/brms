@@ -1840,6 +1840,12 @@ test_that("Stan code for missing value terms works correctly", {
   expect_match2(scode, 
     "target += beta_lpdf(Yl_x[n] | mu_x[n] * phi_x, (1 - mu_x[n]) * phi_x);"
   )
+  
+  bform <- bf(y | mi() ~ mi(x), shape ~ mi(x), family=weibull()) +
+    bf(x| mi() ~ z, family=gaussian()) + set_rescor(FALSE)
+  scode <- make_stancode(bform, data = dat)
+  expect_match2(scode, "mu_y[n] = exp(mu_y[n]) / tgamma(1 + 1 / shape_y[n]);")
+  expect_match2(scode, "shape_y[n] += (bsp_shape_y[1]) * Yl_x[n];")
 })
 
 test_that("Stan code for overimputation works correctly", {
