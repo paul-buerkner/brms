@@ -20,6 +20,8 @@ thanks to Chris Chatham. (#855, #856)
 multiple threshold vectors thanks to Marta Kołczyńska and
 Rok Češnovar.
 * Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
+* Fix Stan code of distributional models with `weibull`, `frechet`,
+or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
 
 ### Other Changes
 

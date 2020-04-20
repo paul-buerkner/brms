@@ -538,7 +538,8 @@ stan_llh_exgaussian <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
+  reqn <- stan_llh_adj(bterms) || nzchar(mix) ||
+    glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- str_if(reqn, "[n]")
