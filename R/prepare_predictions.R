@@ -8,11 +8,16 @@ prepare_predictions.brmsfit <- function(
   newdata2 = NULL, new_objects = NULL, point_estimate = NULL, ...
 ) {
   
+  x <- restructure(x)
+  # allows functions to fall back to old default behavior
+  # which was used when originally fitting the model
+  options(.brmsfit_version = x$version$brms)
+  on.exit(options(.brmsfit_version = NULL))
+  
   snl_options <- c("uncertainty", "gaussian", "old_levels")
   sample_new_levels <- match.arg(sample_new_levels, snl_options)
   warn_brmsfit_multiple(x, newdata = newdata)
   newdata2 <- use_alias(newdata2, new_objects)
-  x <- restructure(x)
   x <- exclude_terms(
     x, incl_autocor = incl_autocor, 
     offset = offset, smooths_only = smooths_only
@@ -419,7 +424,7 @@ prepare_predictions_sm <- function(bterms, samples, sdata, data, ...) {
 # @param new is new data used?
 # @param nug small numeric value to avoid numerical problems in GPs
 prepare_predictions_gp <- function(bterms, samples, sdata, data,
-                             new = FALSE, nug = NULL, ...) {
+                                   new = FALSE, nug = NULL, ...) {
   gpef <- tidy_gpef(bterms, data)
   if (!nrow(gpef)) {
     return(list())
@@ -458,7 +463,7 @@ prepare_predictions_gp <- function(bterms, samples, sdata, data,
 # @param byj index for the contrast of a categorical 'by' variable
 # @return a list to be evaluated by .predictor_gp()
 .prepare_predictions_gp <- function(gpef, samples, sdata, nug, 
-                              new, p, i, byj = NULL) {
+                                    new, p, i, byj = NULL) {
   sfx1 <- escape_all(gpef$sfx1[[i]])
   sfx2 <- escape_all(gpef$sfx2[[i]])
   if (is.null(byj)) {
@@ -584,7 +589,7 @@ prepare_predictions_ranef <- function(ranef, samples, sdata, old_ranef, resp = N
 # @param prep_ranef a named list with one element per group containing
 #   posterior draws of levels as well as additional meta-data
 prepare_predictions_re <- function(bterms, sdata, prep_ranef = list(),
-                             sample_new_levels = "uncertainty", ...) {
+                                   sample_new_levels = "uncertainty", ...) {
   out <- list()
   if (!length(prep_ranef)) {
     return(out) 

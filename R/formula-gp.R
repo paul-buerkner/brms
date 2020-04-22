@@ -21,7 +21,7 @@
 #'   predictors. In the latter case, predictors may have different smoothing.
 #'   Ignored if only a single predictors is supplied.
 #' @param gr Logical; Indicates if auto-grouping should be used (defaults 
-#'   to \code{FALSE}). If enabled, observations sharing the same 
+#'   to \code{TRUE}). If enabled, observations sharing the same 
 #'   predictor values will be represented by the same latent variable
 #'   in the GP. This will improve sampling efficiency
 #'   drastically if the number of unique predictor combinations is small
@@ -111,13 +111,19 @@
 #' @seealso \code{\link{brmsformula}}
 #' @export
 gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE, 
-               gr = FALSE, cmc = TRUE, scale = TRUE, c = NULL) {
+               gr = TRUE, cmc = TRUE, scale = TRUE, c = NULL) {
   cov <- match.arg(cov, choices = c("exp_quad"))
-  label <- deparse(match.call())
+  call <- match.call()
+  label <- deparse(call)
   vars <- as.list(substitute(list(...)))[-1]
   by <- deparse(substitute(by))
-  gr <- as_one_logical(gr)
   cmc <- as_one_logical(cmc)
+  if (is.null(call[["gr"]]) && require_old_default("2.12.8")) {
+    # the default of 'gr' has changed in version 2.12.8
+    gr <- FALSE
+  } else {
+    gr <- as_one_logical(gr)
+  }
   if (length(vars) > 1L) {
     iso <- as_one_logical(iso)
   } else {
@@ -126,7 +132,7 @@ gp <- function(..., by = NA, k = NA, cov = "exp_quad", iso = TRUE,
   if (!isNA(k)) {
     k <- as.integer(as_one_numeric(k))
     if (k < 1L) {
-      stop2("'k' must be postive.")
+      stop2("'k' must be positive.")
     }
     if (is.null(c)) {
       stop2(

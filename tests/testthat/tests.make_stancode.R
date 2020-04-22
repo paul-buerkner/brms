@@ -1634,7 +1634,7 @@ test_that("Stan code for Gaussian processes is correct", {
   expect_match2(scode, "target += inv_gamma_lpdf(lscale_1[4][2]")
   
   # Suppress Stan parser warnings that can currently not be avoided
-  scode <- make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), 
+  scode <- make_stancode(y ~ gp(x1, x2) + gp(x1, by = z, gr = FALSE), 
                          dat, silent = TRUE)
   expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, paste0(

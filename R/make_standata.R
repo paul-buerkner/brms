@@ -122,8 +122,12 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                              incl_autocor = TRUE, ...) {
   
   object <- restructure(object)
+  # allows functions to fall back to old default behavior
+  # which was used when originally fitting the model
+  options(.brmsfit_version = object$version$brms)
+  on.exit(options(.brmsfit_version = NULL))
+  
   object <- exclude_terms(object, incl_autocor = incl_autocor)
-  version <- object$version$brms
   newdata2 <- use_alias(newdata2, new_objects)
   formula <- update_re_terms(object$formula, re_formula)
   bterms <- brmsterms(formula)
@@ -137,12 +141,10 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   basis <- NULL
-  # the spline penality has changed in 2.8.7 (#646)
-  use_old_penality <- has_smooths(bterms) && version <= "2.8.6"
-  if (!is.null(newdata) || use_old_penality) {
+  if (!is.null(newdata)) {
     # 'basis' contains information from original Stan data 
     # required to correctly predict from new data
-    basis <- standata_basis(bterms, data = object$data, version = version)
+    basis <- standata_basis(bterms, data = object$data)
   }
   .make_standata(
     bterms, data = data, prior = object$prior,
@@ -219,8 +221,7 @@ standata_basis.btl <- function(x, data, ...) {
 }
 
 # prepare basis data related to smooth terms
-# @param version optional brms version number
-standata_basis_sm <- function(x, data, version = NULL, ...) {
+standata_basis_sm <- function(x, data, ...) {
   stopifnot(is.btl(x))
   smterms <- all_terms(x[["sm"]])
   out <- named_list(smterms)
@@ -228,7 +229,7 @@ standata_basis_sm <- function(x, data, version = NULL, ...) {
     knots <- get_knots(data)
     data <- rm_attr(data, "terms")
     # the spline penality has changed in 2.8.7 (#646)
-    diagonal.penalty <- !isTRUE(version <= "2.8.6")
+    diagonal.penalty <- !require_old_default("2.8.7")
     gam_args <- list(
       data = data, knots = knots, 
       absorb.cons = TRUE, modCon = 3,

@@ -685,6 +685,16 @@ check_brmsfit_file <- function(file) {
   file
 }
 
+# check if a function requires an old default setting
+# only used to ensure backwards compatibility 
+# @param version brms version in which the change to the default was made
+# @return TRUE or FALSE
+require_old_default <- function(version) {
+  version <- as.package_version(version)
+  brmsfit_version <- getOption(".brmsfit_version")
+  isTRUE(brmsfit_version < version)
+}
+
 # add dummy samples to a brmsfit object for use in unit tests
 # @param x a brmsfit object
 # @param newpar name of the new parameter to add

@@ -27,6 +27,7 @@ or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
 
 * Reduce minimal scale of several default priors from 10 to 2.5.
 The resulting priors should remain weakly informative.
+* Automatically group observations in `gp` for increased efficiency.
 * Rename `parse_bf` to `brmsterms` and deprecate the former function.
 * Rename `extract_draws` to `prepare_predictions` and deprecate 
 the former function.
