@@ -554,6 +554,9 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
     } else {
       dmax <- sqrt(max(diff_quad(Xgp)))
     }
+    if (!isTRUE(dmax > 0)) {
+      stop2("Could not scale GP covariates. Please set 'scale' to FALSE in 'gp'.")
+    }
     if (internal) {
       # required for scaling of GPs with new data
       out[[paste0("dmax", sfx)]] <- dmax
