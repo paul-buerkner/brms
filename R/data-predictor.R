@@ -454,27 +454,14 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
     Xgp <- do_call(cbind, Xgp)
-    if (gpef$scale[i]) {
-      # scale predictor for easier specification of priors
-      if (length(basis)) {
-        # scale Xgp based on the original data
-        dmax <- basis[[paste0("dmax", pi)]]
-      } else {
-        dmax <- sqrt(max(diff_quad(Xgp)))
-      }
-      if (internal) {
-        # required for scaling of GPs with new data
-        out[[paste0("dmax", pi)]] <- dmax
-      }
-      Xgp <- Xgp / dmax
-    }
     cmc <- gpef$cmc[i]
+    scale <- gpef$scale[i]
     gr <- gpef$gr[i]
     k <- gpef$k[i]
     c <- gpef$c[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
-      Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+      Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     }
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$cons[[i]]) > 0L
@@ -494,7 +481,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
         sfx <- paste0(pi, "_", j)
         tmp <- .data_gp(
           Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, 
-          internal = internal, basis = basis, ...
+          scale = scale, internal = internal, basis = basis, 
+          ...
         )
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
@@ -508,7 +496,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
       out[[paste0("Kgp", pi)]] <- 1L
       c(out) <- .data_gp(
         Xgp, k = k, gr = gr, sfx = pi, c = c, 
-        internal = internal, basis = basis, ...
+        scale = scale, internal = internal, basis = basis,
+        ...
       )
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
@@ -533,7 +522,7 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
 # @param Cgp optional vector of values belonging to
 #   a certain contrast of a factor 'by' variable
 .data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
-                     internal = FALSE, basis = NULL) {
+                     scale = TRUE, internal = FALSE, basis = NULL) {
   out <- list()
   if (!is.null(Cgp)) {
     Cgp <- unname(Cgp)
@@ -555,7 +544,21 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
     }
     out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
     not_dupl_Jgp <- !duplicated(Jgp)
-    Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+    Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
+  }
+  if (scale) {
+    # scale predictor for easier specification of priors
+    if (length(basis)) {
+      # scale Xgp based on the original data
+      dmax <- basis[[paste0("dmax", sfx)]]
+    } else {
+      dmax <- sqrt(max(diff_quad(Xgp)))
+    }
+    if (internal) {
+      # required for scaling of GPs with new data
+      out[[paste0("dmax", sfx)]] <- dmax
+    }
+    Xgp <- Xgp / dmax
   }
   if (length(basis)) {
     # center Xgp based on the original data
@@ -572,7 +575,7 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
     L <- choose_L(Xgp, c = c)
-    Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
     for (m in seq_rows(Ks)) {
