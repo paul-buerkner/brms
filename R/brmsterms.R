@@ -405,7 +405,7 @@ terms_cs <- function(formula) {
   if (!length(out)) {
     return(NULL)
   }
-  out <- ulapply(out, eval2)
+  out <- ulapply(out, eval2, envir = environment())
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
   # do not test whether variables were supplied to 'cs'
@@ -457,7 +457,7 @@ terms_gp <- function(formula) {
   if (!length(out)) {
     return(NULL)
   }
-  eterms <- lapply(out, eval2)
+  eterms <- lapply(out, eval2, envir = environment())
   covars <- lapply(eterms, "[[", "term")
   byvars <- lapply(eterms, "[[", "by")
   allvars <- str2formula(unlist(c(covars, byvars)))
@@ -477,7 +477,7 @@ terms_ac <- function(formula) {
   if (!length(out)) {
     return(NULL)
   }
-  eterms <- lapply(out, eval2)
+  eterms <- lapply(out, eval2, envir = environment())
   allvars <- unlist(c(
     lapply(eterms, "[[", "time"),
     lapply(eterms, "[[", "gr")
