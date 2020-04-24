@@ -545,7 +545,7 @@ test_that("Stan code for multivariate models is correct", {
   form <- bf(mvbind(y1, y2) |  weights(x) ~ 1) + set_rescor(TRUE)
   scode <- make_stancode(form, dat)
   expect_match2(scode,
-    "target += weights[n] * multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);"
+    "target += weights[n] * (multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma));"
   )
   
   # models without residual correlations
@@ -1002,7 +1002,7 @@ test_that("known standard errors appear in the Stan code", {
   scode <- make_stancode(time | se(age) ~ sex, data = kidney)
   expect_match2(scode, "target += normal_lpdf(Y | mu, se)")
   scode <- make_stancode(time | se(age) + weights(age) ~ sex, data = kidney)
-  expect_match2(scode, "target += weights[n] * normal_lpdf(Y[n] | mu[n], se[n])")
+  expect_match2(scode, "target += weights[n] * (normal_lpdf(Y[n] | mu[n], se[n]))")
   scode <- make_stancode(time | se(age, sigma = TRUE) ~ sex, data = kidney)
   expect_match2(scode, "target += normal_lpdf(Y | mu, sqrt(square(sigma) + se2))")
   scode <- make_stancode(bf(time | se(age, sigma = TRUE) ~ sex, sigma ~ sex), 
@@ -1161,11 +1161,11 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   dat <- data.frame(y = 1:9, x = rep(-1:1, 3), y2 = 10:18)
   
   scode <- make_stancode(y | weights(y2) ~ 1, dat, poisson())
-  expect_match2(scode, "target += weights[n] * poisson_log_lpmf(Y[n] | mu[n]);")
+  expect_match2(scode, "target += weights[n] * (poisson_log_lpmf(Y[n] | mu[n]));")
   
   scode <- make_stancode(y | trials(y2) + weights(y2) ~ 1, dat, binomial())
   expect_match2(scode, 
-    "target += weights[n] * binomial_logit_lpmf(Y[n] | trials[n], mu[n]);"
+    "target += weights[n] * (binomial_logit_lpmf(Y[n] | trials[n], mu[n]));"
   )
   
   expect_match2(make_stancode(y | cens(x, y2) ~ 1, dat, poisson()),
@@ -1191,7 +1191,7 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   expect_match2(scode, "  normal_lcdf(ub[n] | mu[n], sigma);")
   
   scode <- make_stancode(y | weights(x) + trunc(0, 30) ~ 1, dat)
-  expect_match2(scode, "target += weights[n] * normal_lpdf(Y[n] | mu[n], sigma) -")
+  expect_match2(scode, "target += weights[n] * (normal_lpdf(Y[n] | mu[n], sigma) -")
   expect_match2(scode, "  log_diff_exp(normal_lcdf(ub[n] | mu[n], sigma),")
 })
 
