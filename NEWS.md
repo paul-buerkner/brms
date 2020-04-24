@@ -22,6 +22,8 @@ Rok Češnovar.
 * Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
 * Fix Stan code of distributional models with `weibull`, `frechet`,
 or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
+* Fix Stan code of models which are truncated and weighted at the 
+same time thanks to Michael Thompson. (#884)
 
 ### Other Changes
 

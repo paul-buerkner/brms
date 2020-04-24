@@ -71,4 +71,4 @@ BugReports: https://github.com/paul-buerkner/brms/issues
 VignetteBuilder: 
     knitr,
     R.rsp
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0

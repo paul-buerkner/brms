@@ -138,8 +138,8 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   lpdf <- stan_llh_lpdf_name(bterms)
   Y <- stan_llh_Y_name(bterms)
   glue(
-    "{tp()}weights{resp}[n] * {llh$dist}_{lpdf}", 
-    "({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
+    "{tp()}weights{resp}[n] * ({llh$dist}_{lpdf}", 
+    "({Y}{resp}[n]{llh$shift} | {llh$args}){tr});\n"
   )
 }
 
