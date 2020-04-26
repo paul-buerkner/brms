@@ -25,16 +25,17 @@
 #'   \code{NA} values within factors are interpreted as if all dummy
 #'   variables of this factor are zero. This allows, for instance, to make
 #'   predictions of the grand mean when using sum coding.
-#' @param int_conditions An optional named \code{list} whose elements are numeric
-#'   vectors of values of the second variables in two-way interactions. 
+#' @param int_conditions An optional named \code{list} whose elements are
+#'   vectors of values of the variables specified in \code{effects}. 
 #'   At these values, predictions are evaluated. The names of 
 #'   \code{int_conditions} have to match the variable names exactly.
-#'   Additionally, the elements of the numeric vectors may be named themselves,
+#'   Additionally, the elements of the vectors may be named themselves,
 #'   in which case their names appear as labels for the conditions in the plots.
 #'   Instead of vectors, functions returning vectors may be passed and are
 #'   applied on the original values of the corresponding variable.
 #'   If \code{NULL} (the default), predictions are evaluated at the 
-#'   \eqn{mean} and at \eqn{mean +/- sd}. 
+#'   \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
+#'   all categories for factor-like predictors.
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the conditional predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
@@ -812,13 +813,13 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     # first predictor has pre-specified conditions
     int_cond <- int_conditions[[effects[1]]]
     if (is.function(int_cond)) {
-      int_cond <- int_cond(data[, effects[1]])
+      int_cond <- int_cond(data[[effects[1]]])
     }
     values <- int_cond
   } else if (pred_types[1] == "numeric") {
     # first predictor is numeric
-    min1 <- min(data[, effects[1]], na.rm = TRUE)
-    max1 <- max(data[, effects[1]], na.rm = TRUE)
+    min1 <- min(data[[effects[1]]], na.rm = TRUE)
+    max1 <- max(data[[effects[1]]], na.rm = TRUE)
     if (mono[1]) {
       values <- seq(min1, max1, by = 1)
     } else {
@@ -826,7 +827,7 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     }
   } else {
     # first predictor is factor-like
-    values <- unique(data[, effects[1]])
+    values <- unique(data[[effects[1]]])
   }
   if (length(effects) == 2L) {
     # handle second predictor
@@ -835,14 +836,14 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
       # second predictor has pre-specified conditions
       int_cond <- int_conditions[[effects[2]]]
       if (is.function(int_cond)) {
-        int_cond <- int_cond(data[, effects[2]])
+        int_cond <- int_cond(data[[effects[2]]])
       }
       values[[2]] <- int_cond
     } else if (pred_types[2] == "numeric") {
       # second predictor is numeric
       if (surface) {
-        min2 <- min(data[, effects[2]], na.rm = TRUE)
-        max2 <- max(data[, effects[2]], na.rm = TRUE)
+        min2 <- min(data[[effects[2]]], na.rm = TRUE)
+        max2 <- max(data[[effects[2]]], na.rm = TRUE)
         if (mono[2]) {
           values[[2]] <- seq(min2, max2, by = 1)
         } else {
@@ -850,18 +851,18 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
         }
       } else {
         if (mono[2]) {
-          median2 <- median(data[, effects[2]])
-          mad2 <- mad(data[, effects[2]])
+          median2 <- median(data[[effects[2]]])
+          mad2 <- mad(data[[effects[2]]])
           values[[2]] <- round((-1:1) * mad2 + median2)
         } else {
-          mean2 <- mean(data[, effects[2]], na.rm = TRUE)
-          sd2 <- sd(data[, effects[2]], na.rm = TRUE)
+          mean2 <- mean(data[[effects[2]]], na.rm = TRUE)
+          sd2 <- sd(data[[effects[2]]], na.rm = TRUE)
           values[[2]] <- (-1:1) * sd2 + mean2
         }
       }
     } else {
       # second predictor is factor-like
-      values[[2]] <- unique(data[, effects[2]]) 
+      values[[2]] <- unique(data[[effects[2]]]) 
     }
     data <- do_call(expand.grid, values)
   } else {

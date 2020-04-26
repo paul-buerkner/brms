@@ -157,7 +157,11 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
     }
     for (cv in byvars) {
       if (cv %in% names(int_conditions)) {
-        values[[cv]] <- int_conditions[[cv]]
+        int_cond <- int_conditions[[cv]]
+        if (is.function(int_cond)) {
+          int_cond <- int_cond(mf[[cv]])
+        }
+        values[[cv]] <- int_cond
       } else if (is.numeric(mf[[cv]])) {
         mean2 <- mean(mf[[cv]], na.rm = TRUE)
         sd2 <- sd(mf[[cv]], na.rm = TRUE)
