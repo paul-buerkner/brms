@@ -98,13 +98,13 @@ A named list of objects containing the required data
 Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 }
 \examples{
-data1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
-                       data = inhaler, family = "cumulative")
-str(data1)
+sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+                        data = inhaler, family = "cumulative")
+str(sdata1)
 
-data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
-                       data = epilepsy, family = "poisson")
-str(data2)
+sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
+                        data = epilepsy, family = "poisson")
+str(sdata2)
          
 }
 \author{
