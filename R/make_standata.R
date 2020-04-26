@@ -11,13 +11,13 @@
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
-#' data1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
-#'                        data = inhaler, family = "cumulative")
-#' names(data1)
+#' sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+#'                         data = inhaler, family = "cumulative")
+#' str(sdata1)
 #' 
-#' data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
-#'                        data = epilepsy, family = "poisson")
-#' names(data2)
+#' sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
+#'                         data = epilepsy, family = "poisson")
+#' str(sdata2)
 #'          
 #' @export
 make_standata <- function(formula, data, family = gaussian(), prior = NULL, 
