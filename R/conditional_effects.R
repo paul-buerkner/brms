@@ -807,7 +807,16 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     pred_types <- pred_types[new_order]
   }
   mono <- effects %in% int_vars
-  if (pred_types[1] == "numeric") {
+  # handle first predictor
+  if (effects[1] %in% names(int_conditions)) {
+    # first predictor has pre-specified conditions
+    int_cond <- int_conditions[[effects[1]]]
+    if (is.function(int_cond)) {
+      int_cond <- int_cond(data[, effects[1]])
+    }
+    values <- int_cond
+  } else if (pred_types[1] == "numeric") {
+    # first predictor is numeric
     min1 <- min(data[, effects[1]], na.rm = TRUE)
     max1 <- max(data[, effects[1]], na.rm = TRUE)
     if (mono[1]) {
@@ -816,11 +825,21 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
       values <- seq(min1, max1, length.out = resolution)
     }
   } else {
+    # first predictor is factor-like
     values <- unique(data[, effects[1]])
   }
   if (length(effects) == 2L) {
+    # handle second predictor
     values <- setNames(list(values, NA), effects)
-    if (pred_types[2] == "numeric") {
+    if (effects[2] %in% names(int_conditions)) {
+      # second predictor has pre-specified conditions
+      int_cond <- int_conditions[[effects[2]]]
+      if (is.function(int_cond)) {
+        int_cond <- int_cond(data[, effects[2]])
+      }
+      values[[2]] <- int_cond
+    } else if (pred_types[2] == "numeric") {
+      # second predictor is numeric
       if (surface) {
         min2 <- min(data[, effects[2]], na.rm = TRUE)
         max2 <- max(data[, effects[2]], na.rm = TRUE)
@@ -830,13 +849,7 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
           values[[2]] <- seq(min2, max2, length.out = resolution)
         }
       } else {
-        if (effects[2] %in% names(int_conditions)) {
-          int_cond <- int_conditions[[effects[2]]]
-          if (is.function(int_cond)) {
-            int_cond <- int_cond(data[, effects[2]])
-          }
-          values[[2]] <- int_cond
-        } else if (mono[2]) {
+        if (mono[2]) {
           median2 <- median(data[, effects[2]])
           mad2 <- mad(data[, effects[2]])
           values[[2]] <- round((-1:1) * mad2 + median2)
@@ -847,10 +860,12 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
         }
       }
     } else {
-      values[[2]] <- unique(data[, effects[2]])
+      # second predictor is factor-like
+      values[[2]] <- unique(data[, effects[2]]) 
     }
     data <- do_call(expand.grid, values)
   } else {
+    stopifnot(length(effects) == 1L)
     data <- structure(data.frame(values), names = effects)
   }
   # no need to have the same value combination more than once

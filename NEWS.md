@@ -11,6 +11,8 @@ Marta Kołczyńska.
 `mm` for easy specification of group-level correlation structures.
 * Improve workflow to feed back brms-created models which were
 fitted somewhere else back into brms. (#745)
+* Improve argument `int_conditions` in `conditional_effects` to
+work for all predictors not just interactions.
 
 ### Bug Fixes
 

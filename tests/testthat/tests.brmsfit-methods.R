@@ -130,11 +130,11 @@ test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = rnorm(5))
   )
-  expect_equal(nrow(me[[1]]), 200)
+  expect_equal(nrow(me[[1]]), 10)
   me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = quantile)
   )
-  expect_equal(nrow(me[[1]]), 200)
+  expect_equal(nrow(me[[1]]), 10)
   
   expect_error(conditional_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
