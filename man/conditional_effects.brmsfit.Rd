@@ -98,8 +98,10 @@ measure of central tendency. If \code{FALSE} the mean is used instead.}
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
-\item{method}{Method use to obtain predictions. Either
-\code{"posterior_epred"} (the default) or \code{"posterior_predict"}.}
+\item{method}{Method used to obtain predictions. Can be set to 
+\code{"posterior_epred"} (the default), \code{"posterior_predict"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
