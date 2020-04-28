@@ -1,8 +1,8 @@
 #' @export
-get_refmodel_poc.brmsfit <- function(fit, newdata = NULL, resp = NULL, 
-                                     folds = NULL, ...) {
-  resp <- validate_resp(resp, fit, multiple = FALSE)
-  formula <- formula(fit)
+get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
+                                 folds = NULL, ...) {
+  resp <- validate_resp(resp, object, multiple = FALSE)
+  formula <- formula(object)
   if (!is.null(resp)) {
     formula <- formula$forms[[resp]]
   }
@@ -11,7 +11,7 @@ get_refmodel_poc.brmsfit <- function(fit, newdata = NULL, resp = NULL,
   # only use the raw formula for selection of terms
   formula <- formula$formula
 
-  family <- family(fit, resp = resp)
+  family <- family(object, resp = resp)
   if (family$family == "bernoulli") {
     family$family <- "binomial"
   }
@@ -19,27 +19,52 @@ get_refmodel_poc.brmsfit <- function(fit, newdata = NULL, resp = NULL,
   family <- projpred::extend_family(family)
   
   if (is.null(newdata)) {
-    newdata <- model.frame(fit)
-    y <- get_y(fit)
+    newdata <- model.frame(object)
+    y <- get_y(object)
   } else {
-    newdata <- validate_newdata(newdata, fit, resp = resp, check_response = TRUE)
-    y <- get_y(fit, newdata = newdata)
+    newdata <- validate_newdata(
+      newdata, object, resp = resp, check_response = TRUE
+    )
+    y <- get_y(object, newdata = newdata)
   }
   
-  weights <- NULL
-  if (is.formula(bterms$adforms$trials)) {
-    if (is.formula(bterms$adforms$weights)) {
-      stop2("Cannot handle 'trials' and 'weights' at the same time in projpred.")
-    }
-    weights <- get_ad_values(bterms, "trials", "trials", newdata)
-  } else if (is.formula(bterms$adforms$weights)) {
-    weights <- get_ad_values(bterms, "weights", "weights", newdata)
+  # allows to handle additional arguments implicitely
+  extract_aux_data <- function(object, newdata = NULL, ...) {
+    .extract_aux_data(object, newdata = newdata, resp = resp, ...)
   }
   
   # using default prediction functions from projpred is fine
   args <- nlist(
-    fit, data = newdata, y, formula, family, folds, weights,
-    predfun = NULL, proj_predfun = NULL, mle = NULL, ...
+    object, data = newdata, y, formula, family, folds, weights,
+    ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
+    extract_aux_data = extract_aux_data, ...
   )
-  do_call(projpred::init_refmodel_poc, args)
+  do_call(projpred::init_refmodel, args)
+}
+
+# auxiliary data required in predictions via projpred
+# @return a named list with slots 'weights' and 'offset'
+.extract_aux_data <- function(object, newdata = NULL, resp = NULL, ...) {
+  stopifnot(is.brmsfit(object))
+  resp <- validate_resp(resp, object, multiple = FALSE)
+  
+  # call standata to ensure the correct format of the data
+  args <- nlist(
+    object, newdata, resp, re_formula = NA,
+    check_response = TRUE, internal = TRUE
+  )
+  sdata <- do_call(standata, args)
+  
+  # extract relevant auxiliary data
+  usc_resp <- usc(resp)
+  weights <- sdata[[paste0("weights", usc_resp)]]
+  trials <- sdata[[paste0("trials", usc_resp)]]
+  offset <- sdata[[paste0("offset", usc_resp)]]
+  if (!is.null(trials)) {
+    if (!is.null(weights)) {
+      stop2("Cannot handle 'trials' and 'weights' at the same time in projpred.") 
+    }
+    weights <- trials
+  }
+  nlist(weights, offset)
 }
