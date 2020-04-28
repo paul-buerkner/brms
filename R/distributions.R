@@ -1350,7 +1350,7 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
     if (!converged) {
       warning2(
         "Approximating the mean of the 'com_poisson' ",
-        "distribution failed and results be inaccurate."
+        "distribution failed and results may be inaccurate."
       )
     }
     out[use_exact] <- exp(log_num - log_Z)
