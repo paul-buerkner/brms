@@ -41,6 +41,8 @@ the former function.
 user-visible changes.
 * Simplify the parameterization of the horseshoe prior thanks
 to Aki Vehtari. (#873)
+* Store fixed distributional parameters as regular draws so that
+they behave as if they were estimated in post-processing methods.
 
 
 # brms 2.12.0

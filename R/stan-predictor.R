@@ -131,8 +131,11 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       # distributional parameter is fixed to a numeric value
       dp_type <- stan_dpar_types(dp, resp, family = x$family, fixed = TRUE)
       if (nzchar(dp_type)) {
+        dp_value <- x$fdpars[[dp]]$value
         dp_comment <- stan_comment(attr(dp_type, "comment"))
-        str_add(out$data) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n") 
+        str_add(out$tpar_def) <- glue(
+          "  {dp_type} {dp}{resp} = {dp_value};{dp_comment}\n"
+        ) 
       }
     } else if (is.character(x$fdpars[[dp]]$value)) {
       # distributional parameter is fixed to another distributional parameter
@@ -141,9 +144,14 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       }
       dp_type <- stan_dpar_types(dp, resp, family = x$family)
       if (nzchar(dp_type)) {
+        dp_value <- x$fdpars[[dp]]$value
         dp_comment <- stan_comment(attr(dp_type, "comment"))
-        str_add(out$tpar_def) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n")
-        str_add(out$tpar_comp) <- glue("  {dp}{resp} = {x$fdpars[[dp]]$value}{resp};\n") 
+        str_add(out$tpar_def) <- glue(
+          "  {dp_type} {dp}{resp};{dp_comment}\n"
+        )
+        str_add(out$tpar_comp) <- glue(
+          "  {dp}{resp} = {dp_value}{resp};\n"
+        ) 
       }
     } else {
       # distributional parameter is estimated as a scalar

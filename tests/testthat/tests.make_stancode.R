@@ -1110,7 +1110,7 @@ test_that("Stan code of wiener diffusion models is correct", {
   
   scode <- make_stancode(bf(q | dec(resp) ~ x, ndt = 0.5), 
                          data = dat, family = wiener())
-  expect_match2(scode, "real<lower=0,upper=min(Y)> ndt;")
+  expect_match2(scode, "real<lower=0,upper=min(Y)> ndt = 0.5;")
   
   expect_error(make_stancode(q ~ x, data = dat, family = wiener()),
                "Addition argument 'dec' is required for family 'wiener'")
@@ -1375,7 +1375,7 @@ test_that("predicting zi and hu works correctly", {
 
 test_that("fixing auxiliary parameters is possible", {
   scode <- make_stancode(bf(y ~ 1, sigma = 0.5), data = list(y = rnorm(10)))
-  expect_match(scode, "data \\{[^\\}]*real<lower=0> sigma;")
+  expect_match2(scode, "real<lower=0> sigma = 0.5;")
 })
 
 test_that("Stan code of quantile regression models is correct", {
@@ -1384,7 +1384,7 @@ test_that("Stan code of quantile regression models is correct", {
   expect_match2(scode, "target += asym_laplace_lpdf(Y[n] | mu[n], sigma, quantile)")
   
   scode <- make_stancode(bf(y ~ x, quantile = 0.75), data, family = asym_laplace())
-  expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> quantile;")
+  expect_match2(scode, "real<lower=0,upper=1> quantile = 0.75;")
   
   scode <- make_stancode(y | cens(c) ~ x, data, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile)")
@@ -1432,7 +1432,7 @@ test_that("Stan code of GEV models is correct", {
   expect_match2(scode, "xi[n] = expm1(xi[n])")
   
   scode <- make_stancode(bf(y ~ x, xi = 0), data, gen_extreme_value())
-  expect_match(scode, "data \\{[^\\}]*real xi;  // shape parameter")
+  expect_match2(scode, "real xi = 0;  // shape parameter")
   
   scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value())
   expect_match2(scode, "target += gen_extreme_value_lccdf(Y[n] | mu[n], sigma, xi)")

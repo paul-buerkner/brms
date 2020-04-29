@@ -107,10 +107,12 @@ prepare_predictions.brmsterms <- function(x, samples, sdata, data, ...) {
         x$dpars[[dp]], samples = samples, 
         sdata = sdata, data = data, ...
       )
-    } else if (is.numeric(x$fdpars[[dp]]$value)) {
-      out$dpars[[dp]] <- x$fdpars[[dp]]$value
     } else if (any(grepl(dp_regex, colnames(samples)))) {
       out$dpars[[dp]] <- as.vector(get_samples(samples, dp_regex))
+    } else if (is.numeric(x$fdpars[[dp]]$value)) {
+      # fixed dpars are stored as regular draws as of brms 2.12.9
+      # so this manual extraction is only required for older models
+      out$dpars[[dp]] <- x$fdpars[[dp]]$value
     }
   }
   out$nlpars <- named_list(names(x$nlpars))
