@@ -76,7 +76,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
   
-  data.name <- substitute_name(data)
+  data_name <- substitute_name(data)
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
     data <- lapply(seq_len(data$m), mice::complete, data = data)
@@ -121,7 +121,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   }
   if (combine) {
     fits <- combine_models(mlist = fits, check_data = FALSE)
-    fits$data.name <- data.name
+    attr(fits$data, "data_name") <- data_name
     fits$rhats <- do_call(rbind, rhats)
     class(fits) <- c("brmsfit_multiple", class(fits))
   }

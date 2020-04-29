@@ -2,14 +2,15 @@
 #' 
 #' Parse formulas objects for use in \pkg{brms}.
 #' 
+#' @aliases parse_bf
+#' 
 #' @inheritParams brm
 #' @param check_response Logical; Indicates whether the left-hand side 
 #'   of \code{formula} (i.e. response variables and addition arguments) 
 #'   should be parsed. If \code{FALSE}, \code{formula} may also be one-sided.
 #' @param resp_rhs_all Logical; Indicates whether to also include response 
 #'   variables on the right-hand side of formula \code{.$allvars}, 
-#'   where \code{.} represents the output of \code{parse_bf}.
-#' @param mv Indicates if the univariate model is part of a multivariate model.
+#'   where \code{.} represents the output of \code{brmsterms}.
 #' @param ... Further arguments passed to or from other methods.
 #'  
 #' @return An object of class \code{brmsterms} or \code{mvbrmsterms} 
@@ -31,43 +32,50 @@
 #'   \code{\link{mvbrmsformula}}
 #' 
 #' @export
-parse_bf <- function(formula, ...) {
-  UseMethod("parse_bf")
+brmsterms <- function(formula, ...) {
+  UseMethod("brmsterms")
 }
 
-#' @rdname parse_bf
+# the name 'parse_bf' is deprecated as of brms 2.12.4
+# remove it eventually in brms 3.0
 #' @export
-parse_bf.default <- function(formula, family = NULL, autocor = NULL, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
-  parse_bf(x, ...)
+parse_bf <- function(x, ...) {
+  warning2("Method 'parse_bf' is deprecated. Please use 'brmsterms' instead.")
+  UseMethod("brmsterms")
 }
 
-#' @rdname parse_bf
+#' @rdname brmsterms
 #' @export
-parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL, 
-                                 check_response = TRUE, resp_rhs_all = TRUE,
-                                 mv = FALSE, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
-  mv <- as_one_logical(mv)
+brmsterms.default <- function(formula, ...) {
+  brmsterms(validate_formula(formula), ...)
+}
+
+#' @rdname brmsterms
+#' @export
+brmsterms.brmsformula <- function(formula, check_response = TRUE, 
+                                  resp_rhs_all = TRUE, ...) {
+  x <- validate_formula(formula)
+  mv <- isTRUE(x$mv)
   rescor <- mv && isTRUE(x$rescor)
   mecor <- isTRUE(x$mecor)
   formula <- x$formula
   family <- x$family
-  y <- nlist(formula, family, mv, rescor, mecor) 
+  y <- nlist(formula, family, mv, rescor, mecor)
+  y$cov_ranef <- x$cov_ranef
   class(y) <- "brmsterms"
   
   if (check_response) {
     # extract response variables
     y$respform <- validate_resp_formula(formula, empty_ok = FALSE)
     if (mv) {
-      y$resp <- parse_resp(y$respform) 
+      y$resp <- terms_resp(y$respform) 
     } else {
       y$resp <- ""
     }
   }
   
   # extract addition arguments
-  adforms <- parse_ad(formula, family, check_response)
+  adforms <- terms_ad(formula, family, check_response)
   advars <- str2formula(ulapply(adforms, all_vars))
   y$adforms[names(adforms)] <- adforms
   
@@ -109,9 +117,9 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   y$dpars <- named_list(dpars)
   for (dp in dpars) {
     if (get_nl(dpar_forms[[dp]])) {
-      y$dpars[[dp]] <- parse_nlf(dpar_forms[[dp]], nlpars, resp)
+      y$dpars[[dp]] <- terms_nlf(dpar_forms[[dp]], nlpars, resp)
     } else {
-      y$dpars[[dp]] <- parse_lf(dpar_forms[[dp]])
+      y$dpars[[dp]] <- terms_lf(dpar_forms[[dp]])
     }
     y$dpars[[dp]]$family <- dpar_family(family, dp)
     y$dpars[[dp]]$dpar <- dp
@@ -132,9 +140,9 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
         attr(nlpar_forms[[nlp]], "center") <- FALSE
       }
       if (get_nl(nlpar_forms[[nlp]])) {
-        y$nlpars[[nlp]] <- parse_nlf(nlpar_forms[[nlp]], nlpars, resp)
+        y$nlpars[[nlp]] <- terms_nlf(nlpar_forms[[nlp]], nlpars, resp)
       } else {
-        y$nlpars[[nlp]] <- parse_lf(nlpar_forms[[nlp]])
+        y$nlpars[[nlp]] <- terms_lf(nlpar_forms[[nlp]])
       }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$resp <- resp
@@ -203,10 +211,10 @@ parse_bf.brmsformula <- function(formula, family = NULL, autocor = NULL,
   y
 }
 
-#' @rdname parse_bf
+#' @rdname brmsterms
 #' @export
-parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) {
-  x <- validate_formula(formula, family = family, autocor = autocor)
+brmsterms.mvbrmsformula <- function(formula, ...) {
+  x <- validate_formula(formula)
   x$rescor <- isTRUE(x$rescor)
   x$mecor <- isTRUE(x$mecor)
   out <- structure(list(), class = "mvbrmsterms")
@@ -214,7 +222,8 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   for (i in seq_along(out$terms)) {
     x$forms[[i]]$rescor <- x$rescor
     x$forms[[i]]$mecor <- x$mecor
-    out$terms[[i]] <- parse_bf(x$forms[[i]], mv = TRUE, ...)
+    x$forms[[i]]$mv <- TRUE
+    out$terms[[i]] <- brmsterms(x$forms[[i]], ...)
   }
   out$allvars <- allvars_formula(lapply(out$terms, get_allvars))
   # required to find variables used solely in the response part
@@ -224,18 +233,19 @@ parse_bf.mvbrmsformula <- function(formula, family = NULL, autocor = NULL, ...) 
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
+  out$cov_ranef <- x$cov_ranef
   out
 }
 
 # parse linear/additive formulas
 # @param formula an ordinary model formula
 # @return a 'btl' object
-parse_lf <- function(formula) {
+terms_lf <- function(formula) {
   formula <- rhs(as.formula(formula))
   y <- nlist(formula)
   types <- setdiff(all_term_types(), excluded_term_types(formula))
   for (t in types) {
-    tmp <- do_call(paste0("parse_", t), list(formula))
+    tmp <- do_call(paste0("terms_", t), list(formula))
     if (is.data.frame(tmp) || is.formula(tmp)) {
       y[[t]] <- tmp 
     }
@@ -255,7 +265,7 @@ parse_lf <- function(formula) {
 # @param nlpars names of all non-linear parameters
 # @param resp optional name of a response variable
 # @return a 'btnl' object
-parse_nlf <- function(formula, nlpars, resp = "") {
+terms_nlf <- function(formula, nlpars, resp = "") {
   if (!length(nlpars)) {
     stop2("No non-linear parameters specified.")
   }
@@ -267,7 +277,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
   covars <- setdiff(all_vars, nlpars)
   y$covars <- structure(str2formula(covars), int = FALSE)
   if (!"ac" %in% excluded_term_types(formula)) {
-    y$ac <- parse_ac(attr(formula, "autocor")) 
+    y$ac <- terms_ac(attr(formula, "autocor")) 
   }
   y$allvars <- allvars_formula(covars, get_allvars(y$ac))
   environment(y$allvars) <- environment(formula)
@@ -277,7 +287,7 @@ parse_nlf <- function(formula, nlpars, resp = "") {
 
 # extract addition arguments out of formula
 # @return a list of formulas each containg a single addition term
-parse_ad <- function(formula, family = NULL, check_response = TRUE) {
+terms_ad <- function(formula, family = NULL, check_response = TRUE) {
   x <- list()
   ad_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   ad_funs <- sub("^resp_", "", ad_funs)
@@ -323,7 +333,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
 }
 
 # extract fixed effects terms
-parse_fe <- function(formula) {
+terms_fe <- function(formula) {
   all_terms <- all_terms(formula)
   sp_terms <- find_terms(all_terms, "all", complete = FALSE)
   re_terms <- all_terms[grepl("\\|", all_terms)]
@@ -350,7 +360,7 @@ parse_fe <- function(formula) {
 
 # gather information of group-level terms
 # @return a data.frame with one row per group-level term
-parse_re <- function(formula) {
+terms_re <- function(formula) {
   re_terms <- get_re_terms(formula, brackets = FALSE)
   if (!length(re_terms)) {
     return(NULL)
@@ -360,15 +370,12 @@ parse_re <- function(formula) {
   out <- allvars <- vector("list", length(re_terms))
   type <- attr(re_terms, "type")
   for (i in seq_along(re_terms)) {
-    id <- gsub("\\|", "", re_parts$mid[i])
-    if (!nzchar(id)) id <- NA
     gcall <- eval2(re_parts$rhs[i])
     form <- str2formula(re_parts$lhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(
-      group = group, gtype = gcall$type, 
-      gn = i, id = id, type = type[i],
-      cor = substr(re_parts$mid[i], 1, 2) != "||",
+      group = group, gtype = gcall$type, gn = i, 
+      id = gcall$id, type = type[i], cor = gcall$cor,
       stringsAsFactors = FALSE
     )
     out[[i]]$gcall <- list(gcall)
@@ -393,12 +400,12 @@ parse_re <- function(formula) {
 }
 
 # extract category specific terms for ordinal models
-parse_cs <- function(formula) {
+terms_cs <- function(formula) {
   out <- find_terms(formula, "cs")
   if (!length(out)) {
     return(NULL)
   }
-  out <- ulapply(out, eval2)
+  out <- ulapply(out, eval2, envir = environment())
   out <- str2formula(out)
   attr(out, "allvars") <- allvars_formula(out)
   # do not test whether variables were supplied to 'cs'
@@ -408,7 +415,7 @@ parse_cs <- function(formula) {
 }
 
 # extract special effects terms 
-parse_sp <- function(formula) {
+terms_sp <- function(formula) {
   types <- c("mo", "me", "mi")
   out <- find_terms(formula, types, complete = FALSE)
   if (!length(out)) {
@@ -430,7 +437,7 @@ parse_sp <- function(formula) {
 }
 
 # extract spline terms
-parse_sm <- function(formula) {
+terms_sm <- function(formula) {
   out <- find_terms(formula, "sm")
   if (!length(out)) {
     return(NULL)
@@ -445,12 +452,12 @@ parse_sm <- function(formula) {
 }
 
 # extract gaussian process terms
-parse_gp <- function(formula) {
+terms_gp <- function(formula) {
   out <- find_terms(formula, "gp")
   if (!length(out)) {
     return(NULL)
   }
-  eterms <- lapply(out, eval2)
+  eterms <- lapply(out, eval2, envir = environment())
   covars <- lapply(eterms, "[[", "term")
   byvars <- lapply(eterms, "[[", "by")
   allvars <- str2formula(unlist(c(covars, byvars)))
@@ -464,13 +471,13 @@ parse_gp <- function(formula) {
 }
 
 # extract autocorrelation terms
-parse_ac <- function(formula) {
+terms_ac <- function(formula) {
   autocor <- attr(formula, "autocor")
   out <- c(find_terms(formula, "ac"), find_terms(autocor, "ac"))
   if (!length(out)) {
     return(NULL)
   }
-  eterms <- lapply(out, eval2)
+  eterms <- lapply(out, eval2, envir = environment())
   allvars <- unlist(c(
     lapply(eterms, "[[", "time"),
     lapply(eterms, "[[", "gr")
@@ -482,7 +489,7 @@ parse_ac <- function(formula) {
 }
 
 # extract offset terms
-parse_offset <- function(formula) {
+terms_offset <- function(formula) {
   terms <- terms(as.formula(formula))
   pos <- attr(terms, "offset")
   if (is.null(pos)) {
@@ -496,7 +503,7 @@ parse_offset <- function(formula) {
 }
 
 # extract multiple covariates in multi-membership terms
-parse_mmc <- function(formula) {
+terms_mmc <- function(formula) {
   out <- find_terms(formula, "mmc")
   if (!length(out)) {
     return(NULL)
@@ -510,7 +517,7 @@ parse_mmc <- function(formula) {
 
 # extract response variable names
 # assumes multiple response variables to be combined via mvbind
-parse_resp <- function(formula, check_names = TRUE) {
+terms_resp <- function(formula, check_names = TRUE) {
   formula <- lhs(as.formula(formula))
   if (is.null(formula)) {
     return(NULL)
@@ -543,7 +550,7 @@ parse_resp <- function(formula, check_names = TRUE) {
 #' 
 #' @param x An \R object
 #' 
-#' @seealso \code{\link[brms:parse_bf]{parse_bf}}
+#' @seealso \code{\link[brms:brmsterms]{brmsterms}}
 #' 
 #' @export
 is.brmsterms <- function(x) {
@@ -554,7 +561,7 @@ is.brmsterms <- function(x) {
 #' 
 #' @param x An \R object
 #' 
-#' @seealso \code{\link[brms:parse_bf]{parse_bf}}
+#' @seealso \code{\link[brms:brmsterms]{brmsterms}}
 #' 
 #' @export
 is.mvbrmsterms <- function(x) {
@@ -715,8 +722,8 @@ get_allvars <- function(x, type = "") {
   if (is.null(out) && is.formula(x)) {
     type <- as_one_character(type)
     type <- str_if(nzchar(type), type, "fe")
-    parse_fun <- get(paste0("parse_", type), mode = "function")
-    out <- attr(parse_fun(x), "allvars")
+    terms_fun <- get(paste0("terms_", type), mode = "function")
+    out <- attr(terms_fun(x), "allvars")
   }
   stopifnot(is.null(out) || is.formula(out))
   out
@@ -830,12 +837,12 @@ get_effect.brmsfit <- function(x, ...) {
 
 #' @export
 get_effect.brmsformula <- function(x, ...) {
-  get_effect(parse_bf(x), ...)
+  get_effect(brmsterms(x), ...)
 }
 
 #' @export
 get_effect.mvbrmsformula <- function(x, ...) {
-  get_effect(parse_bf(x), ...)
+  get_effect(brmsterms(x), ...)
 }
 
 #' @export
@@ -848,17 +855,13 @@ get_effect.mvbrmsterms <- function(x, ...) {
 # @param all logical; include effects of nlpars and dpars?
 # @return a list of formulas
 #' @export
-get_effect.brmsterms <- function(x, target = "fe", all = TRUE, ...) {
-  if (all) {
-    out <- named_list(c(names(x$dpars), names(x$nlpars)))
-    for (dp in names(x$dpars)) {
-      out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
-    }
-    for (nlp in names(x$nlpars)) {
-      out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
-    }
-  } else {
-    out <- get_effect(x$dpars[["mu"]], target = target)
+get_effect.brmsterms <- function(x, target = "fe", ...) {
+  out <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    out[[dp]] <- get_effect(x$dpars[[dp]], target = target)
+  }
+  for (nlp in names(x$nlpars)) {
+    out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
   }
   unlist(out, recursive = FALSE)
 }

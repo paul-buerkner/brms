@@ -138,8 +138,8 @@ stan_llh_weights <- function(llh, bterms, data, resp = "", ...) {
   lpdf <- stan_llh_lpdf_name(bterms)
   Y <- stan_llh_Y_name(bterms)
   glue(
-    "{tp()}weights{resp}[n] * {llh$dist}_{lpdf}", 
-    "({Y}{resp}[n]{llh$shift} | {llh$args}){tr};\n"
+    "{tp()}weights{resp}[n] * ({llh$dist}_{lpdf}", 
+    "({Y}{resp}[n]{llh$shift} | {llh$args}){tr});\n"
   )
 }
 
@@ -538,7 +538,8 @@ stan_llh_exgaussian <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_inverse.gaussian <- function(bterms, resp = "", mix = "") {
-  reqn <- stan_llh_adj(bterms) || nzchar(mix)
+  reqn <- stan_llh_adj(bterms) || nzchar(mix) ||
+    glue("shape{mix}") %in% names(bterms$dpars)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
   lpdf <- paste0("inv_gaussian", if (!reqn) "_vector")
   n <- str_if(reqn, "[n]")
@@ -581,18 +582,7 @@ stan_llh_cox <- function(bterms, resp = "", mix = "") {
 }
 
 stan_llh_cumulative <- function(bterms, resp = "", mix = "") {
-  simplify <- bterms$family$link == "logit" && 
-    !"disc" %in% names(bterms$dpars) && 
-    !has_cs(bterms) && !has_thres_groups(bterms)
-  if (simplify) {
-    prefix <- paste0(resp, if (nzchar(mix)) paste0("_mu", mix))
-    p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-    p$thres <- paste0("Intercept", prefix)
-    out <- sdist("ordered_logistic", p$mu, p$thres)
-  } else {
-    out <- stan_llh_ordinal(bterms, resp, mix)
-  }
-  out
+  stan_llh_ordinal(bterms, resp, mix)
 }
 
 stan_llh_sratio <- function(bterms, resp = "", mix = "") {
@@ -633,7 +623,12 @@ stan_llh_dirichlet <- function(bterms, resp = "", mix = "") {
 stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_llh_dpars(bterms, TRUE, resp, mix)
-  lpdf <- paste0(bterms$family$family, "_", bterms$family$link)
+  if (use_ordered_logistic(bterms)) {
+    lpdf <- "ordered_logistic"
+    p[grepl("^disc", names(p))] <- NULL
+  } else {
+    lpdf <- paste0(bterms$family$family, "_", bterms$family$link) 
+  }
   if (has_thres_groups(bterms)) {
     str_add(lpdf) <- "_merged"
     p$Jthres <- paste0("Jthres", resp, "[n]")
@@ -641,7 +636,10 @@ stan_llh_ordinal <- function(bterms, resp = "", mix = "") {
   } else {
     p$thres <- "Intercept"
   }
-  p$thres <- paste0(p$thres, prefix)
+  str_add(p$thres) <- prefix
+  if (has_sum_to_zero_thres(bterms)) {
+    str_add(p$thres) <- "_stz"
+  }
   if (has_cs(bterms)) {
     if (has_thres_groups(bterms)) {
       stop2("Cannot use category specific effects ", 
@@ -784,6 +782,15 @@ args_glm_primitive <- function(bterms, resp = "") {
     alpha = intercept,
     beta = paste0("b", sfx_b, resp)
   )
+}
+
+# use the ordered_logistic built-in functions
+use_ordered_logistic <- function(bterms) {
+  stopifnot(is.brmsterms(bterms))
+  isTRUE(bterms$family$family == "cumulative") &&
+    isTRUE(bterms$family$link == "logit") && 
+    isTRUE(bterms$fdpars$disc$value == 1) &&
+    !has_cs(bterms)
 }
 
 # prepare distribution and arguments for use in Stan

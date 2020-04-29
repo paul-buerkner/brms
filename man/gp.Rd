@@ -10,7 +10,7 @@ gp(
   k = NA,
   cov = "exp_quad",
   iso = TRUE,
-  gr = FALSE,
+  gr = TRUE,
   cmc = TRUE,
   scale = TRUE,
   c = NULL
@@ -37,7 +37,7 @@ predictors. In the latter case, predictors may have different smoothing.
 Ignored if only a single predictors is supplied.}
 
 \item{gr}{Logical; Indicates if auto-grouping should be used (defaults 
-to \code{FALSE}). If enabled, observations sharing the same 
+to \code{TRUE}). If enabled, observations sharing the same 
 predictor values will be represented by the same latent variable
 in the GP. This will improve sampling efficiency
 drastically if the number of unique predictor combinations is small

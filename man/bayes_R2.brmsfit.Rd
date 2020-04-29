@@ -33,7 +33,7 @@ Only used if \code{summary} is \code{TRUE}.}
 function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to 
-\code{\link[brms:pp_expect.brmsfit]{pp_expect}},
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}},
 which is used in the computation of the R-squared values.}
 }
 \value{

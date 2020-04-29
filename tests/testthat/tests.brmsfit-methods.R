@@ -10,12 +10,12 @@ expect_ggplot <- function(object, ...) {
 SM <- suppressMessages
 SW <- suppressWarnings
 
-fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
-fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
-fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
-fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
-fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
-fit6 <- brms:::rename_pars(brms:::brmsfit_example6)
+fit1 <- rename_pars(brms:::brmsfit_example1)
+fit2 <- rename_pars(brms:::brmsfit_example2)
+fit3 <- rename_pars(brms:::brmsfit_example3)
+fit4 <- rename_pars(brms:::brmsfit_example4)
+fit5 <- rename_pars(brms:::brmsfit_example5)
+fit6 <- rename_pars(brms:::brmsfit_example6)
 
 # test S3 methods in alphabetical order
 test_that("as.data.frame has reasonable ouputs", {
@@ -130,11 +130,11 @@ test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = rnorm(5))
   )
-  expect_equal(nrow(me[[1]]), 200)
+  expect_equal(nrow(me[[1]]), 10)
   me <- conditional_effects(
     fit1, "Age:Trt", int_conditions = list(Age = quantile)
   )
-  expect_equal(nrow(me[[1]]), 200)
+  expect_equal(nrow(me[[1]]), 10)
   
   expect_error(conditional_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
@@ -178,7 +178,7 @@ test_that("plot of conditional_effects has reasonable outputs", {
   marg_results[["lower__"]] <- marg_results$estimate__ - 2
   marg_results[["upper__"]] <- marg_results$estimate__ + 2
   marg_results <- list(marg_results[order(marg_results$effect1__), ])
-  class(marg_results) <- "brmsMarginalEffects"
+  class(marg_results) <- "brms_conditional_effects"
   attr(marg_results[[1]], "response") <- "count"
   # test with 1 numeric predictor
   attr(marg_results[[1]], "effects") <- "P1"
@@ -606,8 +606,8 @@ test_that("pp_check has reasonable outputs", {
                "Type 'error_binned' is not available")
 })
 
-test_that("pp_expect has reasonable outputs", {
-  expect_equal(dim(pp_expect(fit1)), c(nsamples(fit1), nobs(fit1)))
+test_that("posterior_epred has reasonable outputs", {
+  expect_equal(dim(posterior_epred(fit1)), c(nsamples(fit1), nobs(fit1)))
 })
 
 test_that("pp_mixture has reasonable outputs", {
@@ -811,7 +811,7 @@ test_that("update has reasonable outputs", {
   )
   up <- update(fit1, newdata = new_data, save_ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
-  expect_equal(up$data.name, "new_data")
+  expect_equal(attr(up$data, "data_name"), "new_data")
   # expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
   # expect_true("r_1_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")

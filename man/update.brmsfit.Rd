@@ -12,8 +12,8 @@
 \item{formula.}{Changes to the formula; for details see 
 \code{\link{update.formula}} and \code{\link{brmsformula}}.}
 
-\item{newdata}{Optional \code{data.frame} 
-to update the model with new data.}
+\item{newdata}{Optional \code{data.frame} to update the model with new data.
+Data-dependent default priors will not be updated automatically.}
 
 \item{recompile}{Logical, indicating whether the Stan model should 
 be recompiled. If \code{NULL} (the default), \code{update} tries
@@ -25,13 +25,6 @@ arguments to be ignored.}
 }
 \description{
 This method allows to update an existing \code{brmsfit} object.
-}
-\details{
-Sometimes, when updating the model formula, 
- it may happen that \R complains about a mismatch
- between \code{model frame} and \code{formula}.
- This error can be avoided by supplying your original data
- again via argument \code{newdata}.
 }
 \examples{
 \dontrun{

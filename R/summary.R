@@ -35,10 +35,10 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   object <- restructure(object)
-  bterms <- parse_bf(object$formula)
+  bterms <- brmsterms(object$formula)
   out <- list(
     formula = object$formula,
-    data.name = object$data.name, 
+    data_name = get_data_name(object$data), 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
     ngrps = ngrps(object), 
@@ -95,8 +95,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   pars <- parnames(object)
-  # TODO: exclude more parameters?
-  excl_regex <- "^(r|s|zgp|Xme|prior|lp)_"
+  excl_regex <- "^(r|s|z|zs|zgp|Xme|L|Lrescor|prior|lp)(_|$)"
   pars <- pars[!grepl(excl_regex, pars)]
   fit_summary <- .summary(object, pars = pars, prob = prob)
   if (algorithm(object) == "sampling") {
@@ -213,7 +212,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat("Formula: ")
   print(x$formula, wsp = 9)
   cat(paste0(
-    "   Data: ", x$data.name, 
+    "   Data: ", x$data_name, 
     " (Number of observations: ", x$nobs, ") \n"
   ))
   if (!isTRUE(nzchar(x$sampler))) {

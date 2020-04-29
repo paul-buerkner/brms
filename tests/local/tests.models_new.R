@@ -276,9 +276,9 @@ test_that("multivariate normal models work correctly", {
   expect_equal(dim(fitted(fit_mv1)), c(300, 4, 2))
   newdata <- data.frame(month = 1, y1 = 0, y2 = 0, x = 0, id = 1, tim = 1)
   expect_equal(dim(predict(fit_mv1, newdata = newdata)), c(1, 4, 2))
-  ms <- conditional_smooths(fit_mv1, nsamples = 750)
-  expect_equal(length(ms), 2)
-  expect_ggplot(plot(ms, ask = FALSE)[[2]])
+  cs <- conditional_smooths(fit_mv1, nsamples = 750)
+  expect_equal(length(cs), 2)
+  expect_ggplot(plot(cs, ask = FALSE)[[2]])
 
   fit_mv2 <- brm(mvbind(y1, y2) ~ 1, data = data,
                  prior = prior_(~lkj(5), class = "rescor"),
@@ -417,10 +417,10 @@ test_that("Multivariate GAMMs work correctly", {
   ce <- conditional_effects(fit_gam, surface = TRUE, too_far = 0.05)
   expect_ggplot(plot(ce, ask = FALSE, rug = TRUE)[[1]])
 
-  ms <- conditional_smooths(fit_gam, resolution = 25)
-  expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
-  ms <- conditional_smooths(fit_gam, resolution = 100, too_far = 0.05)
-  expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
+  cs <- conditional_smooths(fit_gam, resolution = 25)
+  expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
+  cs <- conditional_smooths(fit_gam, resolution = 100, too_far = 0.05)
+  expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
 
   expect_range(loo(fit_gam)$estimates[3, 1], 830, 870)
   expect_equal(dim(predict(fit_gam)), c(nobs(fit_gam), 4))
@@ -440,8 +440,8 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
 
   ce <- conditional_effects(fit_gam2, "x2:fac")
   expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
-  ms <- conditional_smooths(fit_gam2, res = 10)
-  expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
+  cs <- conditional_smooths(fit_gam2, res = 10)
+  expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
 
   fit_gam3 <- brm(y ~ fac + t2(x1, x2, by = fac), dat,
                   chains = 2, refresh = 0)
@@ -449,9 +449,9 @@ test_that("GAMMs with factor variable in 'by' work correctly", {
 
   ce <- conditional_effects(fit_gam3, "x2:fac")
   expect_ggplot(plot(ce, points = TRUE, ask = FALSE)[[1]])
-  ms <- conditional_smooths(fit_gam3, too_far = 0.1)
-  expect_ggplot(plot(ms, rug = TRUE, ask = FALSE)[[1]])
-  expect_ggplot(plot(ms, rug = TRUE, stype = "raster", ask = FALSE)[[1]])
+  cs <- conditional_smooths(fit_gam3, too_far = 0.1)
+  expect_ggplot(plot(cs, rug = TRUE, ask = FALSE)[[1]])
+  expect_ggplot(plot(cs, rug = TRUE, stype = "raster", ask = FALSE)[[1]])
 })
 
 test_that("generalized extreme value models work correctly", {
@@ -644,35 +644,37 @@ test_that("Gaussian processes work correctly", {
 
 test_that("Approximate Gaussian processes work correctly", {
   set.seed(1245)
-  dat <- mgcv::gamSim(4, n = 90, scale = 2)
+  dat <- mgcv::gamSim(4, n = 200, scale = 2)
   
   # isotropic approximate GP
   fit1 <- brm(
     y ~ gp(x1, x2, by = fac, k = 10, c = 5/4), 
-    data = dat, chains = 2, cores = 2, refresh = 0
+    data = dat, chains = 2, cores = 2, refresh = 0,
+    control = list(adapt_delta = 0.99)
   )
   print(fit1)
-  expect_range(bayes_R2(fit1)[1, 1], 0.50, 0.75) 
+  expect_range(bayes_R2(fit1)[1, 1], 0.45, 0.7) 
   ce <- conditional_effects(
     fit1, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit1)$estimates[3, 1], 390, 450)
+  expect_range(WAIC(fit1)$estimates[3, 1], 900, 1000)
   
   # non isotropic approximate GP
   fit2 <- brm(
     y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, iso = FALSE),
-    data = dat, chains = 2, cores = 2, refresh = 0
+    data = dat, chains = 2, cores = 2, refresh = 0,
+    control = list(adapt_delta = 0.99)
   )
   print(fit2)
-  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.58) 
+  expect_range(bayes_R2(fit2)[1, 1], 0.50, 0.62) 
   ce <- conditional_effects(
     fit2, "x2:x1", conditions = data.frame(fac = unique(dat$fac)),
     resolution = 20, surface = TRUE
   )
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
-  expect_range(WAIC(fit2)$estimates[3, 1], 420, 440)
+  expect_range(WAIC(fit2)$estimates[3, 1], 870, 970)
 })
 
 test_that("SAR models work correctly", {

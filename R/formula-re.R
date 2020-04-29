@@ -10,13 +10,23 @@
 #' and there is usually no need to call it directly.
 #' 
 #' @param ... One or more terms containing grouping factors.
-#' @param by An optional factor variable, specifying sub-populations
-#'   of the groups. For each level of the \code{by} variable, 
-#'   a separate variance-covariance matrix will be fitted. 
-#'   Levels of the grouping factor must be nested in levels 
-#'   of the \code{by} variable.
+#' @param by An optional factor variable, specifying sub-populations of the
+#'   groups. For each level of the \code{by} variable, a separate
+#'   variance-covariance matrix will be fitted. Levels of the grouping factor
+#'   must be nested in levels of the \code{by} variable.
+#' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
+#'   modelled as correlated.
+#' @param id Optional character string. All group-level terms across the model
+#'   with the same \code{id} will be modeled as correlated (if \code{cor} is
+#'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
+#' @param cov An optional matrix which is proportional to the withon-group
+#'   covariance matrix of the group-level effects. All levels of the grouping
+#'   factor should appear as rownames of the corresponding matrix. This argument
+#'   can be used, among others, to model pedigrees and phylogenetic effects. See
+#'   \code{vignette("brms_phylogenetics")} for more details. By default, levels
+#'   of the same grouping factor are modeled as independent of each other.
 #' @param dist Name of the distribution of the group-level effects.
-#'   Currently \code{"gaussian"} is the only option.
+#' Currently \code{"gaussian"} is the only option.
 #' 
 #' @seealso \code{\link{brmsformula}}
 #' 
@@ -36,13 +46,16 @@
 #' }
 #' 
 #' @export
-gr <- function(..., by = NULL, dist = "gaussian") {
+gr <- function(..., by = NULL, cor = TRUE, id = NA,
+               cov = NULL, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
   }
   stopif_illegal_group(groups[1])
+  cor <- as_one_logical(cor)
+  id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
     by <- all.vars(by)
@@ -52,9 +65,18 @@ gr <- function(..., by = NULL, dist = "gaussian") {
   } else {
     by <- ""
   }
+  cov <- substitute(cov)
+  if (!is.null(cov)) {
+    cov <- all.vars(cov)
+    if (length(cov) != 1L) {
+      stop2("Argument 'cov' must contain exactly one variable.")
+    }
+  } else {
+    cov <- ""
+  }
   dist <- match.arg(dist, c("gaussian", "student"))
   allvars <- str2formula(c(groups, by))
-  nlist(groups, allvars, label, by, dist, type = "")
+  nlist(groups, allvars, label, by, cor, id, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -99,7 +121,8 @@ gr <- function(..., by = NULL, dist = "gaussian") {
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
+mm <- function(..., weights = NULL, scale = TRUE, cor = TRUE, 
+               id = NA, cov = NULL, dist = "gaussian") {
   label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) < 2) {
@@ -107,6 +130,17 @@ mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
   }
   for (i in seq_along(groups)) {
     stopif_illegal_group(groups[i])
+  }
+  cor <- as_one_logical(cor)
+  id <- as_one_character(id, allow_na = TRUE)
+  cov <- substitute(cov)
+  if (!is.null(cov)) {
+    cov <- all.vars(cov)
+    if (length(cov) != 1L) {
+      stop2("Argument 'cov' must contain exactly one variable.")
+    }
+  } else {
+    cov <- ""
   }
   dist <- match.arg(dist, c("gaussian", "student"))
   scale <- as_one_logical(scale)
@@ -119,8 +153,8 @@ mm <- function(..., weights = NULL, scale = TRUE, dist = "gaussian") {
     weightvars <- str2formula(weightvars)
   }
   nlist(
-    groups, weights, weightvars, allvars, 
-    label, by = "", dist, type = "mm"
+    groups, weights, weightvars, allvars, label, 
+    by = "", cor, id, cov, dist, type = "mm"
   )
 }
 
@@ -212,7 +246,7 @@ re_parts <- function(re_terms) {
 }
 
 # split nested group-level terms and check for special effects terms
-# @param re_terms character vector of RE terms in lme4 syntax
+# @param re_terms character vector of RE terms in extended lme4 syntax
 split_re_terms <- function(re_terms) {
   if (!length(re_terms)) {
     return(re_terms)
@@ -252,7 +286,7 @@ split_re_terms <- function(re_terms) {
     valid_types <- c("sp", "cs", "mmc")
     invalid_types <- c("sm", "gp")
     for (t in c(valid_types, invalid_types)) {
-      lhs_tform <- do_call(paste0("parse_", t), list(lhs_form))
+      lhs_tform <- do_call(paste0("terms_", t), list(lhs_form))
       if (is.formula(lhs_tform)) {
         if (t %in% invalid_types) {
           stop2("Cannot handle splines or GPs in group-level terms.")
@@ -262,22 +296,38 @@ split_re_terms <- function(re_terms) {
       }
     }
     # prepare effects of basic terms
-    fe_form <- parse_fe(lhs_form)
+    fe_form <- terms_fe(lhs_form)
     fe_terms <- all_terms(fe_form)
     has_intercept <- attr(terms(fe_form), "intercept")
-    if (length(fe_terms) || has_intercept && !"cs" %in% type[[i]]) {
+    # the intercept lives within not outside of 'cs' terms
+    has_intercept <- has_intercept && !"cs" %in% type[[i]]
+    if (length(fe_terms) || has_intercept) {
       new_lhs <- c(new_lhs, formula2str(fe_form, rm = 1))
       type[[i]] <- c(type[[i]], "")
     }
-    if (length(new_lhs) > 1 && re_parts$mid[i] != "||") {
+    # extract information from the mid section of the terms
+    rhs_call <- str2lang(re_parts$rhs[i])
+    if (re_parts$mid[i] == "||") {
+      # ||-syntax overwrites the 'cor' argument
+      rhs_call$cor <- FALSE
+    }
+    gcall <- eval(rhs_call)
+    if (gcall$cor) {
       id <- gsub("\\|", "", re_parts$mid[i])
-      if (!nzchar(id)) {
+      if (nzchar(id)) {
+        # ID-syntax overwrites the 'id' argument
+        rhs_call$id <- id
+      } else {
+        id <- gcall$id
+      }
+      if (length(new_lhs) > 1 && isNA(id)) {
         # ID is required to model coefficients as correlated 
         # if multiple types are provided within the same term
-        id <- collapse(sample(0:9, 10, TRUE))
-        re_parts$mid[i] <- paste0("|", id, "|")
+        rhs_call$id <- collapse(sample(0:9, 10, TRUE))
       }
     }
+    re_parts$mid[i] <- "|"
+    re_parts$rhs[i] <- deparse_combine(rhs_call)
     new_re_terms[[i]] <- paste0(new_lhs, re_parts$mid[i], re_parts$rhs[i])
     new_re_terms[[i]] <- new_re_terms[[i]][order(type[[i]])]
     type[[i]] <- sort(type[[i]])
@@ -321,8 +371,8 @@ check_re_formula <- function(re_formula, formula) {
     re_formula <- ~1
   } else {
     re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
-    new <- parse_bf(re_formula, check_response = FALSE)$dpars$mu[["re"]]
-    old <- parse_bf(old_re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    new <- brmsterms(re_formula, check_response = FALSE)$dpars$mu[["re"]]
+    old <- brmsterms(old_re_formula, check_response = FALSE)$dpars$mu[["re"]]
     if (NROW(new) && NROW(old)) {
       # compare old and new ranefs
       new_terms <- lapply(new$form, terms)
@@ -430,21 +480,15 @@ get_re.default <- function(x, ...) {
 # @param bterms object of class 'brmsterms'
 # @param all logical; include ranefs of additional parameters?
 #' @export
-get_re.brmsterms <- function(x, all = TRUE, ...) {
-  if (all) {
-    re <- named_list(c(names(x$dpars), names(x$nlpars)))
-    for (dp in names(x$dpars)) {
-      re[[dp]] <- get_re(x$dpars[[dp]])
-    }
-    for (nlp in names(x$nlpars)) {
-      re[[nlp]] <- get_re(x$nlpars[[nlp]])
-    }
-    re <- do_call(rbind, re)
-  } else {
-    x$dpars[["mu"]]$nlpars <- NULL
-    re <- get_re(x$dpars[["mu"]])
+get_re.brmsterms <- function(x, ...) {
+  re <- named_list(c(names(x$dpars), names(x$nlpars)))
+  for (dp in names(x$dpars)) {
+    re[[dp]] <- get_re(x$dpars[[dp]])
   }
-  re
+  for (nlp in names(x$nlpars)) {
+    re[[nlp]] <- get_re(x$nlpars[[nlp]])
+  }
+  do_call(rbind, re)
 }
 
 #' @export
@@ -468,7 +512,6 @@ get_re.btl <- function(x, ...) {
 # gather information on group-level effects
 # @param bterms object of class brmsterms
 # @param data data.frame containing all model variables
-# @param all include REs of all parameters?
 # @param old_levels optional original levels of the grouping factors
 # @return a tidy data.frame with the following columns:
 #   id: ID of the group-level effect 
@@ -484,9 +527,9 @@ get_re.btl <- function(x, ...) {
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
 #   form: formula used to compute the effects
-tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
+tidy_ranef <- function(bterms, data, old_levels = NULL) {
   data <- combine_groups(data, get_group_vars(bterms))
-  re <- get_re(bterms, all = all)
+  re <- get_re(bterms)
   ranef <- vector("list", nrow(re))
   used_ids <- new_ids <- NULL
   id_groups <- list()
@@ -526,6 +569,7 @@ tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
       cor = re$cor[[i]],
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
+      cov = re$gcall[[i]]$cov,
       dist = re$gcall[[i]]$dist,
       stringsAsFactors = FALSE
     )
@@ -614,6 +658,8 @@ tidy_ranef <- function(bterms, data, all = TRUE, old_levels = NULL) {
       # for newdata numeration has to depend on the original levels
       attr(ranef, "levels") <- old_levels
     }
+    # incorporate deprecated 'cov_ranef' argument
+    ranef <- update_ranef_cov(ranef, bterms)
   }
   # ordering after IDs matches the order of the posterior samples 
   # if multiple IDs are used for the same grouping factor (#835)
@@ -658,7 +704,7 @@ get_group_vars.brmsfit <- function(x, ...) {
 
 #' @export
 get_group_vars.default <- function(x, ...) {
-  get_group_vars(parse_bf(x), ...)
+  get_group_vars(brmsterms(x), ...)
 }
 
 #' @export
@@ -736,4 +782,70 @@ get_rnames <- function(ranef, group = NULL, bylevels = NULL) {
     out <- outer(out, bylabels, paste, sep = ":")
   }
   out
+}
+
+# validate within-group covariance matrices
+# @param M a matrix to be validated
+validate_recov_matrix <- function(M) {
+  M <- as.matrix(M)
+  if (!isSymmetric(unname(M))) {
+    stop2("Within-group covariance matrices must be symmetric.")
+  }
+  found_levels <- rownames(M)
+  if (is.null(found_levels)) {
+    found_levels <- colnames(M)
+  }
+  if (is.null(found_levels)) {
+    stop2("Row or column names are required for within-group covariance matrices.")
+  }
+  rownames(M) <- colnames(M) <- found_levels
+  evs <- eigen(M, symmetric = TRUE, only.values = TRUE)$values
+  if (min(evs) <= 0) {
+    stop2("Within-group covariance matrices must be positive definite.")
+  }
+  M
+}
+
+# check validity of the 'cov_ranef' argument
+# argument 'cov_ranef' is deprecated as of version 2.12.5
+validate_cov_ranef <- function(cov_ranef) {
+  if (is.null(cov_ranef)) {
+    return(cov_ranef)
+  }
+  warning2(
+    "Argument 'cov_ranef' is deprecated and will be removed in the future. ",
+    "Please use argument 'cov' in function 'gr' instead."
+  )
+  cr_names <- names(cov_ranef)
+  cr_is_named <- length(cr_names) && all(nzchar(cr_names))
+  if (!is.list(cov_ranef) || !cr_is_named) {
+    stop2("'cov_ranef' must be a named list.")
+  }
+  if (any(duplicated(cr_names))) {
+    stop2("Names of 'cov_ranef' must be unique.")
+  }
+  cov_ranef
+}
+
+# update 'ranef' according to information in 'cov_ranef'
+# argument 'cov_ranef' is deprecated as of version 2.12.5
+update_ranef_cov <- function(ranef, bterms) {
+  cr_names <- names(bterms$cov_ranef)
+  if (!length(cr_names)) {
+    return(ranef)
+  }
+  unused_names <- setdiff(cr_names, ranef$group)
+  if (length(unused_names)) {
+    stop2("The following elements of 'cov_ranef' are unused: ",
+          collapse_comma(unused_names))
+  }
+  has_cov <- ranef$group %in% cr_names
+  ranef$cov[has_cov] <- ranef$group[has_cov]
+  ranef
+}
+
+# extract 'cov_ranef' for storage in 'data2'
+# @param x a list-like object
+get_data2_cov_ranef <- function(x) {
+  x[["cov_ranef"]]
 }

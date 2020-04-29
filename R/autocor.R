@@ -518,7 +518,7 @@ autocor <- function(object, ...) {
 # extract variables for autocorrelation structures
 # @param autocor object of class 'cor_brms'
 # @return a list with elements 'time', and 'group'
-parse_autocor <- function(autocor) {
+terms_autocor <- function(autocor) {
   out <- list()
   formula <- autocor$formula
   if (is.null(formula)) {
@@ -560,7 +560,7 @@ as_formula_cor_brms <- function(x) {
     return(NULL)
   }
   args <- data2 <- list()
-  pac <- parse_autocor(x)
+  pac <- terms_autocor(x)
   if (is.cor_arma(x)) {
     fun <- "arma"
     args$time <- pac$time

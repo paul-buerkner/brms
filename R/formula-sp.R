@@ -160,7 +160,7 @@ vars_keep_na <- function(x, ...) {
 #' @export
 vars_keep_na.mvbrmsterms <- function(x, ...) {
   resps <- get_element(x, "respform")
-  resps <- ulapply(resps, parse_resp, check_names = FALSE)
+  resps <- ulapply(resps, terms_resp, check_names = FALSE)
   out <- lapply(x$terms, vars_keep_na, responses = resps, ...)
   vars_mi <- unique(ulapply(out, attr, "vars_mi"))
   out <- unique(unlist(out))
@@ -178,7 +178,7 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
-    mi_respcall <- parse_resp(x$respform, check_names = FALSE)
+    mi_respcall <- terms_resp(x$respform, check_names = FALSE)
     mi_respvars <- all_vars(mi_respcall)
     mi_advars <- all_vars(x$adforms$mi)
     out <- unique(c(mi_respcall, mi_respvars, mi_advars))
@@ -289,7 +289,7 @@ get_sp_vars <- function(x, type) {
 # @return a data.frame with one row per special term
 tidy_spef <- function(x, data) {
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+    x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sp"]]
   if (!is.formula(form)) {
@@ -334,7 +334,7 @@ tidy_spef <- function(x, data) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
       out$vars_mi[[i]] <- all_vars(str2formula(out$calls_mi[[i]]))
-      # do it like parse_resp to ensure correct matching
+      # do it like terms_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
     has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])

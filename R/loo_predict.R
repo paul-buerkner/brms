@@ -121,7 +121,7 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' 
 #' @inheritParams posterior_predict.brmsfit
 #' @param ... Further arguments passed to 
-#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}} and
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}} and
 #'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
 #'   which are used in the computation of the R-squared values.
 #' 
@@ -176,7 +176,7 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
     # assumes expectations of different responses to be independent
     args_ypred$resp <- args_y$resp <- resp[i]
     y <- do_call(get_y, args_y)
-    ypred <- do.call(pp_expect, args_ypred)
+    ypred <- do_call(posterior_epred, args_ypred)
     ll <- do_call(log_lik, args_ypred)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)

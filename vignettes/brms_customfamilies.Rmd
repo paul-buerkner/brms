@@ -208,7 +208,7 @@ summary(fit2)
 
 Some post-proecssing methods such as `summary` or `plot` work out of the box for
 custom family models. However, there are three particularily important methods,
-which require additional input by the user. These are `pp_expect`,
+which require additional input by the user. These are `posterior_epred`,
 `posterior_predict` and `log_lik` computing predicted mean values, predicted
 response values, and log-likelihood values, respectively. They are not only
 relevant for their own sake, but also provide the basis of many other
@@ -271,7 +271,7 @@ posterior_predict_beta_binomial2 <- function(i, draws, ...) {
 ```
 
 The `posterior_predict` function looks pretty similar to the corresponding
-`log_lik` function, except that we are now creating random samples of the
+`log_lik` function, except that we are now creating random draws of the
 response instead of log-liklihood values. Again, we are using an exposed
 **Stan** function for convenience. Make sure to add a `...` argument to your
 `posterior_predict` function even if you are not using it, since some families
@@ -282,15 +282,15 @@ engage for instance in posterior-predictive checking:
 pp_check(fit2)
 ```
 
-When defining the `pp_expect` function, you have to keep in mind that it has only a
-`draws` argument and should compute the mean response values for all
+When defining the `posterior_epred` function, you have to keep in mind that it
+has only a `draws` argument and should compute the mean response values for all
 observations at once. Since the mean of the beta-binomial distribution is
-$\text{E}(y) = \mu T$ definition of the corresponding `pp_expect` function is not
-too complicated, but we need to get the dimension of parameters and data in
-line.
+$\text{E}(y) = \mu T$ definition of the corresponding `posterior_epred` function
+is not too complicated, but we need to get the dimension of parameters and data
+in line.
 
-```{r pp_expect}
-pp_expect_beta_binomial2 <- function(draws) {
+```{r posterior_epred}
+posterior_epred_beta_binomial2 <- function(draws) {
   mu <- draws$dpars$mu
   trials <- draws$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
@@ -298,8 +298,8 @@ pp_expect_beta_binomial2 <- function(draws) {
 }
 ```
 
-A post-processing method relying directly on `pp_expect` is `conditional_effects`,
-which allows to visualize effects of predictors.
+A post-processing method relying directly on `posterior_epred` is
+`conditional_effects`, which allows to visualize effects of predictors.
 
 ```{r conditional_effects}
 conditional_effects(fit2, conditions = data.frame(size = 1))
@@ -328,6 +328,6 @@ around `.brmsfamily`.
 likelihood of the family in Stan language.
 * If necessary, add self-defined Stan functions in separate files under
 `inst/chunks`.
-* Add functions `posterior_predict_foo`, `pp_expect_foo` and `log_lik_foo` to
-`posterior_predict.R`, `pp_expect.R` and `log_lik.R`, respectively.
+* Add functions `posterior_predict_foo`, `posterior_epred_foo` and `log_lik_foo`
+to `posterior_predict.R`, `posterior_epred.R` and `log_lik.R`, respectively.
 * If necessary, add distribution functions to `distributions.R`.

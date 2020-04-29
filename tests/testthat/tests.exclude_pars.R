@@ -1,3 +1,5 @@
+context("Tests for exclude_pars helper functions")
+
 test_that("exclude_pars returns expected parameter names", {
   ranef <- data.frame(
     id = c(1, 1, 2), group = c("g1", "g1", "g2"),

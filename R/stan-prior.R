@@ -224,13 +224,17 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
   prior_args <- rep(NA, length(prior))
   for (i in seq_along(prior)) {
     prior_args[i] <- sub(glue("^{prior_name[i]}\\("), "", prior[i])
+    prior_args[i] <- sub(")$", "", prior_args[i])
   }
   if (broadcast == "matrix" && ncoef > 0) {
     # apply a scalar prior to all elements of a matrix 
     par <- glue("to_vector({par})")
   }
   
-  out <- glue("{prior_name}_lpdf({par} | {prior_args}")
+  if (nzchar(prior_args)) {
+    str_add(prior_args, start = TRUE) <- " | "
+  }
+  out <- glue("{prior_name}_lpdf({par}{prior_args})")
   par_class <- unique(get_matches("^[^_]+", par))
   par_bound <- par_bounds(par_class, bound, resp = resp)
   prior_bound <- prior_bounds(prior_name)
@@ -242,17 +246,17 @@ stan_target_prior <- function(prior, par, ncoef = 0, broadcast = "vector",
     ncoef <- max(1, ncoef)
     if (trunc_lb && !trunc_ub) {
       str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb} | {prior_args}"
+        "\n{wsp}- {ncoef} * {prior_name}_lccdf({par_bound$lb}{prior_args})"
       )
     } else if (!trunc_lb && trunc_ub) {
       str_add(out) <- glue(
-        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub} | {prior_args}"
+        "\n{wsp}- {ncoef} * {prior_name}_lcdf({par_bound$ub}{prior_args})"
       )
     } else if (trunc_lb && trunc_ub) {
       str_add(out) <- glue(
         "\n{wsp}- {ncoef} * log_diff_exp(", 
-        "{prior_name}_lcdf({par_bound$ub} | {prior_args}, ",
-        "{prior_name}_lcdf({par_bound$lb} | {prior_args})"
+        "{prior_name}_lcdf({par_bound$ub}{prior_args}), ",
+        "{prior_name}_lcdf({par_bound$lb}{prior_args}))"
       )
     }
   }
@@ -306,18 +310,17 @@ stan_special_prior_global <- function(bterms, data, prior, ...) {
     )
     str_add(out$par) <- glue(
       "  // horseshoe shrinkage parameters\n",
-      "  real<lower=0> hs_global{p}[2];  // global shrinkage parameters\n",
-      "  real<lower=0> hs_c2{p};  // slab regularization parameter\n"
+      "  real<lower=0> hs_global{p};  // global shrinkage parameters\n",
+      "  real<lower=0> hs_slab{p};  // slab regularization parameter\n"
     )
-    global_args <- glue("0.5 * hs_df_global{p}")
-    global_args <- sargs(global_args, global_args)
-    c2_args <- glue("0.5 * hs_df_slab{p}")
-    c2_args <- sargs(c2_args, c2_args)
+    hs_scale_global <- glue("hs_scale_global{p}")
+    if (isTRUE(special[["hs_autoscale"]])) {
+      str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
+    }
     str_add(out$prior) <- glue(
-      "{tp}normal_lpdf(hs_global{p}[1] | 0, 1)\n",
+      "{tp}student_t_lpdf(hs_global{p} | hs_df_global{p}, 0, {hs_scale_global})\n",
       "    - 1 * log(0.5);\n",
-      "{tp}inv_gamma_lpdf(hs_global{p}[2] | {global_args});\n",
-      "{tp}inv_gamma_lpdf(hs_c2{p} | {c2_args});\n"
+      "{tp}inv_gamma_lpdf(hs_slab{p} | 0.5 * hs_df_slab{p}, 0.5 * hs_df_slab{p});\n"
     )
   }
   if (!is.null(special[["lasso_df"]])) {
@@ -360,27 +363,20 @@ stan_special_prior_local <- function(prior, class, ncoef, px,
     str_add(out$par) <- glue(
       "  // local parameters for horseshoe prior\n",
       "  vector[K{ct}{sp}] zb{sp};\n",
-      "  vector<lower=0>[K{ct}{sp}] hs_local{sp}[2];\n"
+      "  vector<lower=0>[K{ct}{sp}] hs_local{sp};\n"
     )
-    hs_scale_global <- glue("hs_scale_global{p}")
-    if (isTRUE(special[["hs_autoscale"]])) {
-      str_add(hs_scale_global) <- glue(" * sigma{usc(px$resp)}")
-    }
     hs_args <- sargs(
       glue("zb{sp}"), glue("hs_local{sp}"), glue("hs_global{p}"), 
-      hs_scale_global, glue("hs_scale_slab{p}^2 * hs_c2{p}")
+      glue("hs_scale_slab{p}^2 * hs_slab{p}")
     )
     str_add(out$tpar_prior) <- glue(
       "  // compute actual regression coefficients\n",
       "  b{sp}{suffix} = horseshoe({hs_args});\n"
     )
-    local_args <- glue("0.5 * hs_df{p}")
-    local_args <- sargs(local_args, local_args)
     str_add(out$prior) <- glue(
-      "{tp}normal_lpdf(zb{sp} | 0, 1);\n",
-      "{tp}normal_lpdf(hs_local{sp}[1] | 0, 1)\n", 
-      "    - {ncoef} * log(0.5);\n",
-      "{tp}inv_gamma_lpdf(hs_local{sp}[2] | {local_args});\n"
+      "{tp}std_normal_lpdf(zb{sp});\n",
+      "{tp}student_t_lpdf(hs_local{sp} | hs_df{p}, 0, 1)\n",
+      "    - rows(hs_local{sp}) * log(0.5);\n"
     )
   }
   out
@@ -399,16 +395,16 @@ stan_unchecked_prior <- function(prior) {
 }
 
 # Stan code to sample separately from priors
-# @param sample_prior take samples from priors?
 # @param prior character string taken from stan_prior
 # @param par_declars the parameters block of the Stan code
 #     required to extract boundaries
 # @param gen_quantities Stan code from the generated quantities block
 # @param prior_special a list of values pertaining to special priors
 #   such as horseshoe or lasso
-stan_rngprior <- function(sample_prior, prior, par_declars,
-                          gen_quantities, prior_special) {
-  if (!sample_prior %in% "yes") {
+# @param sample_prior take samples from priors?
+stan_rngprior <- function(prior, par_declars, gen_quantities, 
+                          prior_special, sample_prior = "yes") {
+  if (!is_equal(sample_prior, "yes")) {
     return(list())
   }
   prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
@@ -416,6 +412,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D <- data.frame(prior = prior[nzchar(prior)])
   pars_regex <- "(?<=(_lpdf\\())[^|]+" 
   D$par <- get_matches(pars_regex, D$prior, perl = TRUE, first = TRUE)
+  # 'std_normal' has no '|' and thus the above regex matches too much
+  np <- !grepl("\\|", D$prior)
+  np_regex <- ".+(?=\\)$)"
+  D$par[np] <- get_matches(np_regex, D$par[np], perl = TRUE, first = TRUE)
   # 'to_vector' should be removed from the parameter names
   has_tv <- grepl("^to_vector\\(", D$par)
   tv_regex <- "(^to_vector\\()|(\\)(?=((\\[[[:digit:]]+\\])?)$))"
@@ -446,6 +446,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   D$dist <- sub("corr_cholesky$", "corr", D$dist)
   args_regex <- "(?<=\\|)[^$\\|]+(?=\\)($|-))"
   D$args <- get_matches(args_regex, D$prior, perl = TRUE, first = TRUE)
+  # 'std_normal_rng' does not exist in Stan
+  has_std_normal <- D$dist == "std_normal"
+  D$dist[has_std_normal] <- "normal"
+  D$args[has_std_normal] <- "0,1"
   
   # extract information from the initial parameter definition
   par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))

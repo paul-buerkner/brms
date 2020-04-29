@@ -131,20 +131,33 @@ collapse_stanvars <- function(x, block = NULL) {
   collapse(ulapply(x, "[[", "scode"), "\n")
 }
 
-validate_stanvars <- function(x) {
-  if (!is.null(x) && !is.stanvars(x)) {
+# validate 'stanvars' objects
+validate_stanvars <- function(x, stan_funs = NULL) {
+  if (is.null(x)) {
+    x <- empty_stanvars()
+  }
+  if (!is.stanvars(x)) {
     stop2("Argument 'stanvars' is invalid. See ?stanvar for help.")
+  }
+  if (length(stan_funs) > 0) {
+    warning2("Argument 'stan_funs' is deprecated. Please use argument ", 
+             "'stanvars' instead. See ?stanvar for more help.")
+    stan_funs <- as_one_character(stan_funs)
+    x <- x + stanvar(scode = stan_funs, block = "functions")
   }
   x
 }
 
-# add new stanvars to a brmsfit object
-add_new_stanvars <- function(x, newdata2) {
-  stopifnot(is.brmsfit(x))
-  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
+# add new data to stanvars
+# @param x a 'stanvars' object
+# @param newdata2 a list with new 'data2' objects
+# @return a 'stanvars' object
+add_newdata_stanvars <- function(x, newdata2) {
+  stopifnot(is.stanvars(x))
+  stanvars_data <- subset_stanvars(x, block = "data")
   for (name in names(stanvars_data)) {
     if (name %in% names(newdata2)) {
-      x$stanvars[[name]]$sdata <- newdata2[[name]]
+      x[[name]]$sdata <- newdata2[[name]]
     }
   }
   x
@@ -169,4 +182,8 @@ c.stanvars <- function(x, ...) {
 
 is.stanvars <- function(x) {
   inherits(x, "stanvars")
+}
+
+empty_stanvars <- function() {
+  structure(list(), class = "stanvars")
 }

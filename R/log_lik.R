@@ -15,8 +15,8 @@
 #'   observation. The latter option is rarely useful when
 #'   calling \code{log_lik} directly, but rather when computing
 #'   \code{\link{waic}} or \code{\link{loo}}.
-#' @param add_point_draws For internal use only. Ensures compatibility with the
-#'   \code{\link{loo_subsample}} method.
+#' @param add_point_estimate For internal use only. Ensures compatibility 
+#'   with the \code{\link{loo_subsample}} method.
 #' 
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood
 #'  samples, where S is the number of samples and N is the number 
@@ -35,34 +35,35 @@
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             resp = NULL, nsamples = NULL, subset = NULL, 
                             pointwise = FALSE, combine = TRUE,
-                            add_point_draws = FALSE, ...) {
+                            add_point_estimate = FALSE, ...) {
   pointwise <- as_one_logical(pointwise)
   combine <- as_one_logical(combine)
-  add_point_draws <- as_one_logical(add_point_draws)
+  add_point_estimate <- as_one_logical(add_point_estimate)
   contains_samples(object)
   object <- restructure(object)
-  draws <- extract_draws(
+  prep <- prepare_predictions(
     object, newdata = newdata, re_formula = re_formula, resp = resp, 
     subset = subset, nsamples = nsamples, check_response = TRUE, ...
   )
-  if (add_point_draws) {
+  if (add_point_estimate) {
     # required for the loo_subsample method
-    # Computing a point estimate based on the full draws object is too
+    # Computing a point estimate based on the full prep object is too
     # difficult due to its highly nested structure. As an alternative, a second
-    # draws object is created from the point estimates of the samples directly.
-    attr(draws, "point_draws") <- extract_draws(
+    # prep object is created from the point estimates of the samples directly.
+    attr(prep, "point_estimate") <- prepare_predictions(
       object, newdata = newdata, re_formula = re_formula, resp = resp, 
       subset = subset, nsamples = nsamples, check_response = TRUE, 
-      point = "median", ...
+      point_estimate = "median", ...
     )
   }
   if (pointwise) {
     stopifnot(combine)
     log_lik <- log_lik_pointwise
-    attr(log_lik, "draws") <- draws
-    attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(draws)))
+    # names need to be 'data' and 'draws' as per ?loo::loo.function
+    attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(prep)))
+    attr(log_lik, "draws") <- prep
   } else {
-    log_lik <- log_lik(draws, combine = combine)
+    log_lik <- log_lik(prep, combine = combine)
     if (anyNA(log_lik)) {
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
@@ -85,11 +86,11 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 }
 
 #' @export
-log_lik.mvbrmsdraws <- function(object, combine = TRUE, ...) {
+log_lik.mvbrmsprep <- function(object, combine = TRUE, ...) {
   if (length(object$mvpars$rescor)) {
     object$mvpars$Mu <- get_Mu(object)
     object$mvpars$Sigma <- get_Sigma(object)
-    out <- log_lik.brmsdraws(object, ...)
+    out <- log_lik.brmsprep(object, ...)
   } else {
     out <- lapply(object$resps, log_lik, ...)
     if (combine) {
@@ -103,7 +104,7 @@ log_lik.mvbrmsdraws <- function(object, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik.brmsdraws <- function(object, ...) {
+log_lik.brmsprep <- function(object, ...) {
   log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
   for (nlp in names(object$nlpars)) {
@@ -113,7 +114,7 @@ log_lik.brmsdraws <- function(object, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-  out <- cblapply(seq_len(N), log_lik_fun, draws = object)
+  out <- cblapply(seq_len(N), log_lik_fun, prep = object)
   colnames(out) <- NULL
   old_order <- object$old_order
   sort <- isTRUE(ncol(out) != length(old_order))
@@ -121,10 +122,11 @@ log_lik.brmsdraws <- function(object, ...) {
 }
 
 # evaluate log_lik in a pointwise manner
-# cannot be an S3 method since 'i' must be the first argument
+# cannot be an S3 method since 'data_i' must be the first argument
+# names must be 'data_i' and 'draws' as per ?loo::loo.function
 log_lik_pointwise <- function(data_i, draws, ...) {
   i <- data_i$i
-  if (is.mvbrmsdraws(draws) && !length(draws$mvpars$rescor)) {
+  if (is.mvbrmsprep(draws) && !length(draws$mvpars$rescor)) {
     out <- lapply(draws$resps, log_lik_pointwise, i = i)
     out <- Reduce("+", out)
   } else {
@@ -136,106 +138,104 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 }
 
 # All log_lik_<family> functions have the same arguments structure
-# @param i the column of draws to use the the ith obervation 
-#   in the initial data.frame 
-# @param draws A named list returned by extract_draws containing 
-#   all required data and samples
-# @param data (ignored) included for compatibility with loo::loo.function      
-# @return a vector of length draws$nsamples containing the pointwise 
-#   log-likelihood fo the ith observation 
-log_lik_gaussian <- function(i, draws, data = data.frame()) {
+# @param i index of the observatio for which to compute log-lik values
+# @param prep A named list returned by prepare_predictions containing 
+#   all required data and posterior draws
+# @return a vector of length prep$nsamples containing the pointwise 
+#   log-likelihood for the ith observation 
+log_lik_gaussian <- function(i, prep) {
   args <- list(
-    mean = get_dpar(draws, "mu", i = i), 
-    sd = get_dpar(draws, "sigma", i = i)
+    mean = get_dpar(prep, "mu", i = i), 
+    sd = get_dpar(prep, "sigma", i = i)
   )
   # log_lik_censor computes the conventional log_lik in case of no censoring 
-  out <- log_lik_censor(dist = "norm", args = args, i = i, draws = draws)
+  out <- log_lik_censor(dist = "norm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pnorm, args = args, i = i, draws = draws
+    out, cdf = pnorm, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_student <- function(i, draws, data = data.frame()) {
+log_lik_student <- function(i, prep) {
   args <- list(
-    df = get_dpar(draws, "nu", i = i), 
-    mu = get_dpar(draws, "mu", i = i), 
-    sigma = get_dpar(draws, "sigma", i = i)
+    df = get_dpar(prep, "nu", i = i), 
+    mu = get_dpar(prep, "mu", i = i), 
+    sigma = get_dpar(prep, "sigma", i = i)
   )
   out <- log_lik_censor(
-    dist = "student_t", args = args, i = i, draws = draws
+    dist = "student_t", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pstudent_t, args = args, i = i, draws = draws
+    out, cdf = pstudent_t, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_lognormal <- function(i, draws, data = data.frame()) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  args <- list(meanlog = get_dpar(draws, "mu", i), sdlog = sigma)
-  out <- log_lik_censor(dist = "lnorm", args = args, i = i, draws = draws)
+log_lik_lognormal <- function(i, prep) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  args <- list(meanlog = get_dpar(prep, "mu", i), sdlog = sigma)
+  out <- log_lik_censor(dist = "lnorm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = plnorm, args = args, i = i, draws = draws
+    out, cdf = plnorm, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_shifted_lognormal <- function(i, draws, data = data.frame()) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  ndt <- get_dpar(draws, "ndt", i = i)
-  args <- list(meanlog = get_dpar(draws, "mu", i), sdlog = sigma, shift = ndt)
-  out <- log_lik_censor("shifted_lnorm", args, i = i, draws = draws)
-  out <- log_lik_truncate(out, pshifted_lnorm, args, i = i, draws = draws)
-  log_lik_weight(out, i = i, draws = draws)
+log_lik_shifted_lognormal <- function(i, prep) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  ndt <- get_dpar(prep, "ndt", i = i)
+  args <- list(meanlog = get_dpar(prep, "mu", i), sdlog = sigma, shift = ndt)
+  out <- log_lik_censor("shifted_lnorm", args, i = i, prep = prep)
+  out <- log_lik_truncate(out, pshifted_lnorm, args, i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_skew_normal <- function(i, draws, data = data.frame()) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  alpha <- get_dpar(draws, "alpha", i = i)
-  mu <- get_dpar(draws, "mu", i)
+log_lik_skew_normal <- function(i, prep) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
+  mu <- get_dpar(prep, "mu", i)
   args <- nlist(mu, sigma, alpha)
   out <- log_lik_censor(
-    dist = "skew_normal", args = args, i = i, draws = draws
+    dist = "skew_normal", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pskew_normal, args = args, i = i, draws = draws
+    out, cdf = pskew_normal, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_gaussian_mv <- function(i, draws, data = data.frame()) {
-  Mu <- get_Mu(draws, i = i)
-  Sigma <- get_Sigma(draws, i = i)
+log_lik_gaussian_mv <- function(i, prep) {
+  Mu <- get_Mu(prep, i = i)
+  Sigma <- get_Sigma(prep, i = i)
   dmn <- function(s) {
     dmulti_normal(
-      draws$data$Y[i, ], mu = Mu[s, ],
+      prep$data$Y[i, ], mu = Mu[s, ],
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
-  out <- sapply(1:draws$nsamples, dmn)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- sapply(1:prep$nsamples, dmn)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_student_mv <- function(i, draws, data = data.frame()) {
-  nu <- get_dpar(draws, "nu", i = i)
-  Mu <- get_Mu(draws, i = i)
-  Sigma <- get_Sigma(draws, i = i)
+log_lik_student_mv <- function(i, prep) {
+  nu <- get_dpar(prep, "nu", i = i)
+  Mu <- get_Mu(prep, i = i)
+  Sigma <- get_Sigma(prep, i = i)
   dmst <- function(s) {
     dmulti_student_t(
-      draws$data$Y[i, ], df = nu[s], mu = Mu[s, ],
+      prep$data$Y[i, ], df = nu[s], mu = Mu[s, ],
       Sigma = Sigma[s, , ], log = TRUE
     )
   }
-  out <- sapply(1:draws$nsamples, dmst)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- sapply(1:prep$nsamples, dmst)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_gaussian_time <- function(i, draws, data = data.frame()) {
-  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
-  Y <- as.numeric(draws$data$Y[obs])
-  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(draws, obs)
+log_lik_gaussian_time <- function(i, prep) {
+  obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Y <- as.numeric(prep$data$Y[obs])
+  mu <- as.matrix(get_dpar(prep, "mu", i = obs))
+  Sigma <- get_cov_matrix_ac(prep, obs)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     Cinv <- solve(C)
@@ -247,15 +247,15 @@ log_lik_gaussian_time <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_student_time <- function(i, draws, data = data.frame()) {
-  obs <- with(draws$ac, begin_tg[i]:end_tg[i])
-  Y <- as.numeric(draws$data$Y[obs])
-  nu <- as.matrix(get_dpar(draws, "nu", i = obs))
-  mu <- as.matrix(get_dpar(draws, "mu", i = obs))
-  Sigma <- get_cov_matrix_ac(draws, obs)
+log_lik_student_time <- function(i, prep) {
+  obs <- with(prep$ac, begin_tg[i]:end_tg[i])
+  Y <- as.numeric(prep$data$Y[obs])
+  nu <- as.matrix(get_dpar(prep, "nu", i = obs))
+  mu <- as.matrix(get_dpar(prep, "mu", i = obs))
+  Sigma <- get_cov_matrix_ac(prep, obs)
   .log_lik <- function(s) {
     df <- nu[s, ]
     C <- as.matrix(Sigma[s, , ])
@@ -269,18 +269,18 @@ log_lik_student_time <- function(i, draws, data = data.frame()) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  Y <- as.numeric(draws$data$Y)
-  I <- diag(draws$nobs)
+log_lik_gaussian_lagsar <- function(i, prep) {
+  mu <- get_dpar(prep, "mu")
+  sigma <- get_dpar(prep, "sigma")
+  Y <- as.numeric(prep$data$Y)
+  I <- diag(prep$nobs)
   stopifnot(i == 1)
   # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
-    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
+    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     e <- Y - solve(IB, mu[s, ])
     g <- Cinv %*% e
@@ -290,20 +290,20 @@ log_lik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
-  nu <- get_dpar(draws, "nu")
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  Y <- as.numeric(draws$data$Y)
-  I <- diag(draws$nobs)
+log_lik_student_lagsar <- function(i, prep) {
+  nu <- get_dpar(prep, "nu")
+  mu <- get_dpar(prep, "mu")
+  sigma <- get_dpar(prep, "sigma")
+  Y <- as.numeric(prep$data$Y)
+  I <- diag(prep$nobs)
   stopifnot(i == 1)
   # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
     df <- nu[s]
-    IB <- I - with(draws$ac, lagsar[s, ] * Msar)
+    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     e <- Y - solve(IB, mu[s, ])
     g <- Cinv %*% e
@@ -314,17 +314,17 @@ log_lik_student_lagsar <- function(i, draws, data = data.frame()) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
+log_lik_gaussian_errorsar <- function(i, prep) {
   stopifnot(i == 1)
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  Y <- as.numeric(draws$data$Y)
-  I <- diag(draws$nobs)
+  mu <- get_dpar(prep, "mu")
+  sigma <- get_dpar(prep, "sigma")
+  Y <- as.numeric(prep$data$Y)
+  I <- diag(prep$nobs)
   .log_lik <- function(s) {
-    IB <- I - with(draws$ac, errorsar[s, ] * Msar)
+    IB <- I - with(prep$ac, errorsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     e <- Y - mu[s, ]
     g <- Cinv %*% e
@@ -334,19 +334,19 @@ log_lik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
+log_lik_student_errorsar <- function(i, prep) {
   stopifnot(i == 1)
-  nu <- get_dpar(draws, "nu")
-  mu <- get_dpar(draws, "mu")
-  sigma <- get_dpar(draws, "sigma")
-  Y <- as.numeric(draws$data$Y)
-  I <- diag(draws$nobs)
+  nu <- get_dpar(prep, "nu")
+  mu <- get_dpar(prep, "mu")
+  sigma <- get_dpar(prep, "sigma")
+  Y <- as.numeric(prep$data$Y)
+  I <- diag(prep$nobs)
   .log_lik <- function(s) {
     df <- nu[s]
-    IB <- I - with(draws$ac, errorsar[s, ] * Msar)
+    IB <- I - with(prep$ac, errorsar[s, ] * Msar)
     Cinv <- t(IB) %*% IB / sigma[s]^2
     e <- Y - mu[s, ]
     g <- Cinv %*% e
@@ -357,14 +357,14 @@ log_lik_student_errorsar <- function(i, draws, data = data.frame()) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
+log_lik_gaussian_fcor <- function(i, prep) {
   stopifnot(i == 1)
-  Y <- as.numeric(draws$data$Y)
-  mu <- get_dpar(draws, "mu")
-  Sigma <- get_cov_matrix_ac(draws)
+  Y <- as.numeric(prep$data$Y)
+  mu <- get_dpar(prep, "mu")
+  Sigma <- get_cov_matrix_ac(prep)
   .log_lik <- function(s) {
     C <- as.matrix(Sigma[s, , ])
     Cinv <- solve(C)
@@ -376,15 +376,15 @@ log_lik_gaussian_fcor <- function(i, draws, data = data.frame()) {
     ll <- dnorm(Y, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_student_fcor <- function(i, draws, data = data.frame()) {
+log_lik_student_fcor <- function(i, prep) {
   stopifnot(i == 1)
-  Y <- as.numeric(draws$data$Y)
-  nu <- get_dpar(draws, "nu")
-  mu <- get_dpar(draws, "mu")
-  Sigma <- get_cov_matrix_ac(draws)
+  Y <- as.numeric(prep$data$Y)
+  nu <- get_dpar(prep, "nu")
+  mu <- get_dpar(prep, "mu")
+  Sigma <- get_cov_matrix_ac(prep)
   .log_lik <- function(s) {
     df <- nu[s]
     C <- as.matrix(Sigma[s, , ])
@@ -398,389 +398,389 @@ log_lik_student_fcor <- function(i, draws, data = data.frame()) {
     ll <- dstudent_t(Y, dfloo, yloo, sdloo, log = TRUE)
     return(as.numeric(ll))
   }
-  rblapply(seq_len(draws$nsamples), .log_lik)
+  rblapply(seq_len(prep$nsamples), .log_lik)
 }
 
-log_lik_binomial <- function(i, draws, data = data.frame()) {
-  trials <- draws$data$trials[i]
-  args <- list(size = trials, prob = get_dpar(draws, "mu", i))
+log_lik_binomial <- function(i, prep) {
+  trials <- prep$data$trials[i]
+  args <- list(size = trials, prob = get_dpar(prep, "mu", i))
   out <- log_lik_censor(
-    dist = "binom", args = args, i = i, draws = draws
+    dist = "binom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pbinom, args = args, i = i, draws = draws
+    out, cdf = pbinom, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }  
 
-log_lik_bernoulli <- function(i, draws, data = data.frame()) {
-  args <- list(size = 1, prob = get_dpar(draws, "mu", i))
+log_lik_bernoulli <- function(i, prep) {
+  args <- list(size = 1, prob = get_dpar(prep, "mu", i))
   out <- log_lik_censor(
-    dist = "binom", args = args, i = i, draws = draws
+    dist = "binom", args = args, i = i, prep = prep
   )
   # no truncation allowed
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_poisson <- function(i, draws, data = data.frame()) {
-  args <- list(lambda = get_dpar(draws, "mu", i))
+log_lik_poisson <- function(i, prep) {
+  args <- list(lambda = get_dpar(prep, "mu", i))
   out <- log_lik_censor(
-    dist = "pois", args = args, i = i, draws = draws
+    dist = "pois", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = ppois, args = args, i = i, draws = draws
+    out, cdf = ppois, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_negbinomial <- function(i, draws, data = data.frame()) {
-  shape <- get_dpar(draws, "shape", i = i)
-  args <- list(mu = get_dpar(draws, "mu", i), size = shape)
+log_lik_negbinomial <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  args <- list(mu = get_dpar(prep, "mu", i), size = shape)
   out <- log_lik_censor(
-    dist = "nbinom", args = args, i = i, draws = draws
+    dist = "nbinom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pnbinom, args = args, i = i, draws = draws
+    out, cdf = pnbinom, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_geometric <- function(i, draws, data = data.frame()) {
-  args <- list(mu = get_dpar(draws, "mu", i), size = 1)
+log_lik_geometric <- function(i, prep) {
+  args <- list(mu = get_dpar(prep, "mu", i), size = 1)
   out <- log_lik_censor(
-    dist = "nbinom", args = args, i = i, draws = draws
+    dist = "nbinom", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pnbinom, args = args, i = i, draws = draws
+    out, cdf = pnbinom, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_discrete_weibull <- function(i, draws, data = data.frame()) {
+log_lik_discrete_weibull <- function(i, prep) {
   args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    shape = get_dpar(draws, "shape", i = i)
+    mu = get_dpar(prep, "mu", i), 
+    shape = get_dpar(prep, "shape", i = i)
   )
   out <- log_lik_censor(
-    dist = "discrete_weibull", args = args, i = i, draws = draws
+    dist = "discrete_weibull", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pdiscrete_weibull, args = args, i = i, draws = draws
+    out, cdf = pdiscrete_weibull, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_com_poisson <- function(i, draws, data = data.frame()) {
+log_lik_com_poisson <- function(i, prep) {
   args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    shape = get_dpar(draws, "shape", i = i)
+    mu = get_dpar(prep, "mu", i), 
+    shape = get_dpar(prep, "shape", i = i)
   )
   # no censoring or truncation allowed yet
-  out <- do_call(dcom_poisson, c(draws$data$Y[i], args, log = TRUE))
-  log_lik_weight(out, i = i, draws = draws)
+  out <- do_call(dcom_poisson, c(prep$data$Y[i], args, log = TRUE))
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_exponential <- function(i, draws, data = data.frame()) {
-  args <- list(rate = 1 / get_dpar(draws, "mu", i))
-  out <- log_lik_censor(dist = "exp", args = args, i = i, draws = draws)
+log_lik_exponential <- function(i, prep) {
+  args <- list(rate = 1 / get_dpar(prep, "mu", i))
+  out <- log_lik_censor(dist = "exp", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pexp, args = args, i = i, draws = draws
+    out, cdf = pexp, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_gamma <- function(i, draws, data = data.frame()) {
-  shape <- get_dpar(draws, "shape", i = i)
-  scale <- get_dpar(draws, "mu", i) / shape
+log_lik_gamma <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i) / shape
   args <- nlist(shape, scale)
-  out <- log_lik_censor(dist = "gamma", args = args, i = i, draws = draws)
+  out <- log_lik_censor(dist = "gamma", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pgamma, args = args, i = i, draws = draws
+    out, cdf = pgamma, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_weibull <- function(i, draws, data = data.frame()) {
-  shape <- get_dpar(draws, "shape", i = i)
-  scale <- get_dpar(draws, "mu", i = i) / gamma(1 + 1 / shape)
+log_lik_weibull <- function(i, prep) {
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i = i) / gamma(1 + 1 / shape)
   args <- list(shape = shape, scale = scale)
   out <- log_lik_censor(
-    dist = "weibull", args = args, i = i, draws = draws
+    dist = "weibull", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pweibull, args = args, i = i, draws = draws
+    out, cdf = pweibull, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_frechet <- function(i, draws, data = data.frame()) {
-  nu <- get_dpar(draws, "nu", i = i)
-  scale <- get_dpar(draws, "mu", i = i) / gamma(1 - 1 / nu)
+log_lik_frechet <- function(i, prep) {
+  nu <- get_dpar(prep, "nu", i = i)
+  scale <- get_dpar(prep, "mu", i = i) / gamma(1 - 1 / nu)
   args <- list(scale = scale, shape = nu)
   out <- log_lik_censor(
-    dist = "frechet", args = args, i = i, draws = draws
+    dist = "frechet", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pfrechet, args = args, i = i, draws = draws
+    out, cdf = pfrechet, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_gen_extreme_value <- function(i, draws, data = data.frame()) {
-  sigma <- get_dpar(draws, "sigma", i = i)
-  xi <- get_dpar(draws, "xi", i = i)
-  mu <- get_dpar(draws, "mu", i)
+log_lik_gen_extreme_value <- function(i, prep) {
+  sigma <- get_dpar(prep, "sigma", i = i)
+  xi <- get_dpar(prep, "xi", i = i)
+  mu <- get_dpar(prep, "mu", i)
   args <- nlist(mu, sigma, xi)
   out <- log_lik_censor(dist = "gen_extreme_value", args = args, 
-                       i = i, draws = draws)
+                       i = i, prep = prep)
   out <- log_lik_truncate(out, cdf = pgen_extreme_value, 
-                         args = args, i = i, draws = draws)
-  log_lik_weight(out, i = i, draws = draws)
+                         args = args, i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_inverse.gaussian <- function(i, draws, data = data.frame()) {
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               shape = get_dpar(draws, "shape", i = i))
+log_lik_inverse.gaussian <- function(i, prep) {
+  args <- list(mu = get_dpar(prep, "mu", i), 
+               shape = get_dpar(prep, "shape", i = i))
   out <- log_lik_censor(dist = "inv_gaussian", args = args, 
-                       i = i, draws = draws)
+                       i = i, prep = prep)
   out <- log_lik_truncate(out, cdf = pinv_gaussian, args = args,
-                         i = i, draws = draws)
-  log_lik_weight(out, i = i, draws = draws)
+                         i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_exgaussian <- function(i, draws, data = data.frame()) {
-  args <- list(mu = get_dpar(draws, "mu", i), 
-               sigma = get_dpar(draws, "sigma", i = i),
-               beta = get_dpar(draws, "beta", i = i))
+log_lik_exgaussian <- function(i, prep) {
+  args <- list(mu = get_dpar(prep, "mu", i), 
+               sigma = get_dpar(prep, "sigma", i = i),
+               beta = get_dpar(prep, "beta", i = i))
   out <- log_lik_censor(dist = "exgaussian", args = args, 
-                       i = i, draws = draws)
+                       i = i, prep = prep)
   out <- log_lik_truncate(out, cdf = pexgaussian, args = args,
-                         i = i, draws = draws)
-  log_lik_weight(out, i = i, draws = draws)
+                         i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_wiener <- function(i, draws, data = data.frame()) {
+log_lik_wiener <- function(i, prep) {
   args <- list(
-    delta = get_dpar(draws, "mu", i), 
-    alpha = get_dpar(draws, "bs", i = i),
-    tau = get_dpar(draws, "ndt", i = i),
-    beta = get_dpar(draws, "bias", i = i),
-    resp = draws$data[["dec"]][i]
+    delta = get_dpar(prep, "mu", i), 
+    alpha = get_dpar(prep, "bs", i = i),
+    tau = get_dpar(prep, "ndt", i = i),
+    beta = get_dpar(prep, "bias", i = i),
+    resp = prep$data[["dec"]][i]
   )
-  out <- do_call(dwiener, c(draws$data$Y[i], args, log = TRUE))
-  log_lik_weight(out, i = i, draws = draws)
+  out <- do_call(dwiener, c(prep$data$Y[i], args, log = TRUE))
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_beta <- function(i, draws, data = data.frame()) {
-  mu <- get_dpar(draws, "mu", i)
-  phi <- get_dpar(draws, "phi", i)
+log_lik_beta <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i)
+  phi <- get_dpar(prep, "phi", i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  out <- log_lik_censor(dist = "beta", args = args, i = i, draws = draws)
+  out <- log_lik_censor(dist = "beta", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
-    out, cdf = pbeta, args = args, i = i, draws = draws
+    out, cdf = pbeta, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_von_mises <- function(i, draws, data = data.frame()) {
+log_lik_von_mises <- function(i, prep) {
   args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    kappa = get_dpar(draws, "kappa", i = i)
+    mu = get_dpar(prep, "mu", i), 
+    kappa = get_dpar(prep, "kappa", i = i)
   )
   out <- log_lik_censor(
-    dist = "von_mises", args = args, i = i, draws = draws
+    dist = "von_mises", args = args, i = i, prep = prep
   )
   out <- log_lik_truncate(
-    out, cdf = pvon_mises, args = args, i = i, draws = draws
+    out, cdf = pvon_mises, args = args, i = i, prep = prep
   )
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_asym_laplace <- function(i, draws, ...) {
+log_lik_asym_laplace <- function(i, prep, ...) {
   args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    sigma = get_dpar(draws, "sigma", i),
-    quantile = get_dpar(draws, "quantile", i)
+    mu = get_dpar(prep, "mu", i), 
+    sigma = get_dpar(prep, "sigma", i),
+    quantile = get_dpar(prep, "quantile", i)
   )
-  out <- log_lik_censor(dist = "asym_laplace", args, i, draws)
-  out <- log_lik_truncate(out, pasym_laplace, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor(dist = "asym_laplace", args, i, prep)
+  out <- log_lik_truncate(out, pasym_laplace, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_inflated_asym_laplace <- function(i, draws, ...) {
+log_lik_zero_inflated_asym_laplace <- function(i, prep, ...) {
   args <- list(
-    mu = get_dpar(draws, "mu", i), 
-    sigma = get_dpar(draws, "sigma", i),
-    quantile = get_dpar(draws, "quantile", i),
-    zi = get_dpar(draws, "zi", i)
+    mu = get_dpar(prep, "mu", i), 
+    sigma = get_dpar(prep, "sigma", i),
+    quantile = get_dpar(prep, "quantile", i),
+    zi = get_dpar(prep, "zi", i)
   )
-  out <- log_lik_censor(dist = "zero_inflated_asym_laplace", args, i, draws)
-  out <- log_lik_truncate(out, pzero_inflated_asym_laplace, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor(dist = "zero_inflated_asym_laplace", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_asym_laplace, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_cox <- function(i, draws, ...) {
+log_lik_cox <- function(i, prep, ...) {
   args <- list(
-    mu = get_dpar(draws, "mu", i),
-    bhaz = draws$bhaz$bhaz[, i], 
-    cbhaz = draws$bhaz$cbhaz[, i]
+    mu = get_dpar(prep, "mu", i),
+    bhaz = prep$bhaz$bhaz[, i], 
+    cbhaz = prep$bhaz$cbhaz[, i]
   )
-  out <- log_lik_censor(dist = "cox", args = args, i = i, draws = draws)
-  out <- log_lik_truncate(out, cdf = pcox, args = args, i = i, draws = draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor(dist = "cox", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(out, cdf = pcox, args = args, i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_hurdle_poisson <- function(i, draws, data = data.frame()) {
-  hu <- get_dpar(draws, "hu", i)
-  lambda <- get_dpar(draws, "mu", i)
+log_lik_hurdle_poisson <- function(i, prep) {
+  hu <- get_dpar(prep, "hu", i)
+  lambda <- get_dpar(prep, "mu", i)
   args <- nlist(lambda, hu)
-  out <- log_lik_censor("hurdle_poisson", args, i, draws)
-  out <- log_lik_truncate(out, phurdle_poisson, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("hurdle_poisson", args, i, prep)
+  out <- log_lik_truncate(out, phurdle_poisson, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
-  hu <- get_dpar(draws, "hu", i)
-  mu <- get_dpar(draws, "mu", i)
-  shape <- get_dpar(draws, "shape", i = i)
+log_lik_hurdle_negbinomial <- function(i, prep) {
+  hu <- get_dpar(prep, "hu", i)
+  mu <- get_dpar(prep, "mu", i)
+  shape <- get_dpar(prep, "shape", i = i)
   args <- nlist(mu, shape, hu)
-  out <- log_lik_censor("hurdle_negbinomial", args, i, draws)
-  out <- log_lik_truncate(out, phurdle_negbinomial, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("hurdle_negbinomial", args, i, prep)
+  out <- log_lik_truncate(out, phurdle_negbinomial, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_hurdle_gamma <- function(i, draws, data = data.frame()) {
-  hu <- get_dpar(draws, "hu", i)
-  shape <- get_dpar(draws, "shape", i = i)
-  scale <- get_dpar(draws, "mu", i) / shape
+log_lik_hurdle_gamma <- function(i, prep) {
+  hu <- get_dpar(prep, "hu", i)
+  shape <- get_dpar(prep, "shape", i = i)
+  scale <- get_dpar(prep, "mu", i) / shape
   args <- nlist(shape, scale, hu)
-  out <- log_lik_censor("hurdle_gamma", args, i, draws)
-  out <- log_lik_truncate(out, phurdle_gamma, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("hurdle_gamma", args, i, prep)
+  out <- log_lik_truncate(out, phurdle_gamma, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
-  hu <- get_dpar(draws, "hu", i)
-  mu <- get_dpar(draws, "mu", i)
-  sigma <- get_dpar(draws, "sigma", i = i)
+log_lik_hurdle_lognormal <- function(i, prep) {
+  hu <- get_dpar(prep, "hu", i)
+  mu <- get_dpar(prep, "mu", i)
+  sigma <- get_dpar(prep, "sigma", i = i)
   args <- nlist(mu, sigma, hu)
-  out <- log_lik_censor("hurdle_lognormal", args, i, draws)
-  out <- log_lik_truncate(out, phurdle_lognormal, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("hurdle_lognormal", args, i, prep)
+  out <- log_lik_truncate(out, phurdle_lognormal, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
-  zi <- get_dpar(draws, "zi", i)
-  lambda <- get_dpar(draws, "mu", i)
+log_lik_zero_inflated_poisson <- function(i, prep) {
+  zi <- get_dpar(prep, "zi", i)
+  lambda <- get_dpar(prep, "mu", i)
   args <- nlist(lambda, zi)
-  out <- log_lik_censor("zero_inflated_poisson", args, i, draws)
-  out <- log_lik_truncate(out, pzero_inflated_poisson, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("zero_inflated_poisson", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_poisson, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
-  zi <- get_dpar(draws, "zi", i)
-  mu <- get_dpar(draws, "mu", i)
-  shape <- get_dpar(draws, "shape", i = i)
+log_lik_zero_inflated_negbinomial <- function(i, prep) {
+  zi <- get_dpar(prep, "zi", i)
+  mu <- get_dpar(prep, "mu", i)
+  shape <- get_dpar(prep, "shape", i = i)
   args <- nlist(mu, shape, zi)
-  out <- log_lik_censor("zero_inflated_negbinomial", args, i, draws)
-  out <- log_lik_truncate(out, pzero_inflated_negbinomial, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("zero_inflated_negbinomial", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_negbinomial, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
-  trials <- draws$data$trials[i] 
-  mu <- get_dpar(draws, "mu", i) 
-  zi <- get_dpar(draws, "zi", i)
+log_lik_zero_inflated_binomial <- function(i, prep) {
+  trials <- prep$data$trials[i] 
+  mu <- get_dpar(prep, "mu", i) 
+  zi <- get_dpar(prep, "zi", i)
   args <- list(size = trials, prob = mu, zi)
-  out <- log_lik_censor("zero_inflated_binomial", args, i, draws)
-  out <- log_lik_truncate(out, pzero_inflated_binomial, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("zero_inflated_binomial", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_binomial, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
-  zi <- get_dpar(draws, "zi", i)
-  mu <- get_dpar(draws, "mu", i)
-  phi <- get_dpar(draws, "phi", i)
+log_lik_zero_inflated_beta <- function(i, prep) {
+  zi <- get_dpar(prep, "zi", i)
+  mu <- get_dpar(prep, "mu", i)
+  phi <- get_dpar(prep, "phi", i)
   args <- nlist(shape1 = mu * phi, shape2 = (1 - mu) * phi, zi)
-  out <- log_lik_censor("zero_inflated_beta", args, i, draws)
-  out <- log_lik_truncate(out, pzero_inflated_beta, args, i, draws)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- log_lik_censor("zero_inflated_beta", args, i, prep)
+  out <- log_lik_truncate(out, pzero_inflated_beta, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
-  zoi <- get_dpar(draws, "zoi", i)
-  coi <- get_dpar(draws, "coi", i)
-  if (draws$data$Y[i] %in% c(0, 1)) {
+log_lik_zero_one_inflated_beta <- function(i, prep) {
+  zoi <- get_dpar(prep, "zoi", i)
+  coi <- get_dpar(prep, "coi", i)
+  if (prep$data$Y[i] %in% c(0, 1)) {
     out <- dbinom(1, size = 1, prob = zoi, log = TRUE) + 
-      dbinom(draws$data$Y[i], size = 1, prob = coi, log = TRUE)
+      dbinom(prep$data$Y[i], size = 1, prob = coi, log = TRUE)
   } else {
-    phi <- get_dpar(draws, "phi", i)
-    mu <- get_dpar(draws, "mu", i)
+    phi <- get_dpar(prep, "phi", i)
+    mu <- get_dpar(prep, "mu", i)
     args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
     out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
-      do_call(dbeta, c(draws$data$Y[i], args, log = TRUE))
+      do_call(dbeta, c(prep$data$Y[i], args, log = TRUE))
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_categorical <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$family$link == "logit")
-  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$family)
-  out <- dcategorical(draws$data$Y[i], eta = eta, log = TRUE)
-  log_lik_weight(out, i = i, draws = draws)
+log_lik_categorical <- function(i, prep) {
+  stopifnot(prep$family$link == "logit")
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- insert_refcat(eta, family = prep$family)
+  out <- dcategorical(prep$data$Y[i], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_multinomial <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$family$link == "logit")
-  eta <- sapply(names(draws$dpars), get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$family)
-  out <- dmultinomial(draws$data$Y[i, ], eta = eta, log = TRUE)
-  log_lik_weight(out, i = i, draws = draws)
+log_lik_multinomial <- function(i, prep) {
+  stopifnot(prep$family$link == "logit")
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- insert_refcat(eta, family = prep$family)
+  out <- dmultinomial(prep$data$Y[i, ], eta = eta, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_dirichlet <- function(i, draws, data = data.frame()) {
-  stopifnot(draws$family$link == "logit")
-  mu_dpars <- str_subset(names(draws$dpars), "^mu")
-  eta <- sapply(mu_dpars, get_dpar, draws = draws, i = i)
-  eta <- insert_refcat(eta, family = draws$family)
-  phi <- get_dpar(draws, "phi", i = i)
-  cats <- seq_len(draws$data$ncat)
+log_lik_dirichlet <- function(i, prep) {
+  stopifnot(prep$family$link == "logit")
+  mu_dpars <- str_subset(names(prep$dpars), "^mu")
+  eta <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
+  eta <- insert_refcat(eta, family = prep$family)
+  phi <- get_dpar(prep, "phi", i = i)
+  cats <- seq_len(prep$data$ncat)
   alpha <- dcategorical(cats, eta = eta) * phi
-  out <- ddirichlet(draws$data$Y[i, ], alpha = alpha, log = TRUE)
-  log_lik_weight(out, i = i, draws = draws)
+  out <- ddirichlet(prep$data$Y[i, ], alpha = alpha, log = TRUE)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_cumulative <- function(i, draws, data = data.frame()) {
-  disc <- get_dpar(draws, "disc", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  thres <- subset_thres(draws, i)
+log_lik_cumulative <- function(i, prep) {
+  disc <- get_dpar(prep, "disc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  thres <- subset_thres(prep, i)
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
-  y <- draws$data$Y[i]
+  y <- prep$data$Y[i]
   if (y == 1) { 
-    out <- log(ilink(eta[, 1], draws$family$link))
+    out <- log(ilink(eta[, 1], prep$family$link))
   } else if (y == nthres + 1) {
-    out <- log(1 - ilink(eta[, y - 1], draws$family$link)) 
+    out <- log(1 - ilink(eta[, y - 1], prep$family$link)) 
   } else {
     out <- log(
-      ilink(eta[, y], draws$family$link) - 
-        ilink(eta[, y - 1], draws$family$link)
+      ilink(eta[, y], prep$family$link) - 
+        ilink(eta[, y - 1], prep$family$link)
     )
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_sratio <- function(i, draws, data = data.frame()) {
-  disc <- get_dpar(draws, "disc", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  thres <- subset_thres(draws, i)
+log_lik_sratio <- function(i, prep) {
+  disc <- get_dpar(prep, "disc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  thres <- subset_thres(prep, i)
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
-  y <- draws$data$Y[i]
+  y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)), 
-    function(k) 1 - ilink(eta[, k], draws$family$link)
+    function(k) 1 - ilink(eta[, k], prep$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1]) 
@@ -791,18 +791,18 @@ log_lik_sratio <- function(i, draws, data = data.frame()) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_cratio <- function(i, draws, data = data.frame()) {
-  disc <- get_dpar(draws, "disc", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  thres <- subset_thres(draws, i)
+log_lik_cratio <- function(i, prep) {
+  disc <- get_dpar(prep, "disc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  thres <- subset_thres(prep, i)
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
-  y <- draws$data$Y[i]
+  y <- prep$data$Y[i]
   q <- sapply(seq_len(min(y, nthres)), 
-    function(k) ilink(eta[, k], draws$family$link)
+    function(k) ilink(eta[, k], prep$family$link)
   )
   if (y == 1) {
     out <- log(1 - q[, 1])
@@ -813,17 +813,17 @@ log_lik_cratio <- function(i, draws, data = data.frame()) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_acat <- function(i, draws, data = data.frame()) {
-  disc <- get_dpar(draws, "disc", i = i)
-  mu <- get_dpar(draws, "mu", i = i)
-  thres <- subset_thres(draws, i)
+log_lik_acat <- function(i, prep) {
+  disc <- get_dpar(prep, "disc", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  thres <- subset_thres(prep, i)
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
-  y <- draws$data$Y[i]
-  if (draws$family$link == "logit") { # more efficient calculation 
+  y <- prep$data$Y[i]
+  if (prep$family$link == "logit") { # more efficient calculation 
     q <- sapply(1:nthres, function(k) eta[, k])
     p <- cbind(rep(0, nrow(eta)), q[, 1], 
                matrix(0, nrow = nrow(eta), ncol = nthres - 1))
@@ -834,7 +834,7 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
     out <- p[, y] - log(rowSums(exp(p)))
   } else {
     q <- sapply(1:nthres, function(k) 
-      ilink(eta[, k], draws$family$link))
+      ilink(eta[, k], prep$family$link))
     p <- cbind(apply(1 - q[, 1:nthres], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = nthres))
     if (nthres > 1L) {
@@ -845,34 +845,34 @@ log_lik_acat <- function(i, draws, data = data.frame()) {
     p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
-log_lik_custom <- function(i, draws, data = data.frame()) {
-  log_lik_fun <- draws$family$log_lik
+log_lik_custom <- function(i, prep) {
+  log_lik_fun <- prep$family$log_lik
   if (!is.function(log_lik_fun)) {
-    log_lik_fun <- paste0("log_lik_", draws$family$name)
-    log_lik_fun <- get(log_lik_fun, draws$family$env)
+    log_lik_fun <- paste0("log_lik_", prep$family$name)
+    log_lik_fun <- get(log_lik_fun, prep$family$env)
   }
-  log_lik_fun(i = i, draws = draws)
+  log_lik_fun(i = i, prep = prep)
 }
 
-log_lik_mixture <- function(i, draws, data = data.frame()) {
-  families <- family_names(draws$family)
-  theta <- get_theta(draws, i = i)
+log_lik_mixture <- function(i, prep) {
+  families <- family_names(prep$family)
+  theta <- get_theta(prep, i = i)
   out <- array(NA, dim = dim(theta))
   for (j in seq_along(families)) {
     log_lik_fun <- paste0("log_lik_", families[j])
     log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
-    tmp_draws <- pseudo_draws_for_mixture(draws, j)
+    tmp_draws <- pseudo_prep_for_mixture(prep, j)
     out[, j] <- exp(log(theta[, j]) + log_lik_fun(i, tmp_draws))
   }
-  if (isTRUE(draws[["pp_mixture"]])) {
+  if (isTRUE(prep[["pp_mixture"]])) {
     out <- log(out) - log(rowSums(out))
   } else {
     out <- log(rowSums(out))
   }
-  log_lik_weight(out, i = i, draws = draws)
+  log_lik_weight(out, i = i, prep = prep)
 }
 
 # ----------- log_lik helper-functions -----------
@@ -880,13 +880,13 @@ log_lik_mixture <- function(i, draws, data = data.frame()) {
 # @param dist name of a distribution for which the functions
 #   d<dist> (pdf) and p<dist> (cdf) are available
 # @param args additional arguments passed to pdf and cdf
-# @param draws a brmsdraws object
+# @param prep a brmsprep object
 # @return vector of log_lik values
-log_lik_censor <- function(dist, args, i, draws) {
+log_lik_censor <- function(dist, args, i, prep) {
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
-  y <- draws$data$Y[i]
-  cens <- draws$data$cens[i]
+  y <- prep$data$Y[i]
+  cens <- prep$data$cens[i]
   if (is.null(cens) || cens == 0) {
     x <- do_call(pdf, c(y, args, log = TRUE))
   } else if (cens == 1) {
@@ -894,7 +894,7 @@ log_lik_censor <- function(dist, args, i, draws) {
   } else if (cens == -1) {
     x <- do_call(cdf, c(y, args, log.p = TRUE))
   } else if (cens == 2) {
-    rcens <- draws$data$rcens[i]
+    rcens <- prep$data$rcens[i]
     x <- log(do_call(cdf, c(rcens, args)) - do_call(cdf, c(y, args)))
   }
   x
@@ -905,11 +905,11 @@ log_lik_censor <- function(dist, args, i, draws) {
 # @param cdf a cumulative distribution function 
 # @param args arguments passed to cdf
 # @param i observation number
-# @param draws a brmsdraws object
+# @param prep a brmsprep object
 # @return vector of log_lik values
-log_lik_truncate <- function(x, cdf, args, i, draws) {
-  lb <- draws$data$lb[i]
-  ub <- draws$data$ub[i]
+log_lik_truncate <- function(x, cdf, args, i, prep) {
+  lb <- prep$data$lb[i]
+  ub <- prep$data$ub[i]
   if (!(is.null(lb) && is.null(ub))) {
     if (is.null(lb)) lb <- -Inf
     if (is.null(ub)) ub <- Inf
@@ -921,10 +921,10 @@ log_lik_truncate <- function(x, cdf, args, i, draws) {
 # weight log_lik values according to defined weights
 # @param x vector of log_lik values
 # @param i observation number
-# @param draws a brmsdraws object
+# @param prep a brmsprep object
 # @return vector of log_lik values
-log_lik_weight <- function(x, i, draws) {
-  weight <- draws$data$weights[i]
+log_lik_weight <- function(x, i, prep) {
+  weight <- prep$data$weights[i]
   if (!is.null(weight)) {
     x <- x * weight
   }

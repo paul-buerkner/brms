@@ -51,7 +51,8 @@ for more help.}
 
 \item{data2}{A named \code{list} of objects containing data, which
 cannot be passed via argument \code{data}. Required for some objects 
-used in autocorrelation structures to specify dependency structures.}
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
 
 \item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
 describing the correlation structure within the response variable (i.e.,
@@ -62,26 +63,29 @@ a description of the available correlation structures. Defaults to
 It is now recommend to specify autocorrelation terms directly
 within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in \code{data} that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in \code{data} that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to \code{"no"}). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-are not sampled, including the default improper priors used by \code{brm}. 
-See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.}
+\item{sample_prior}{Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+\code{\link{hypothesis}}. Please note that improper priors are not sampled,
+including the default improper priors used by \code{brm}. See
+\code{\link{set_prior}} on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -101,7 +105,7 @@ for basis construction of smoothing terms. See
 \item{stan_funs}{(Deprecated) An optional character string containing
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
-\code{stanvars} argument for this purpose, instead.}
+\code{stanvars} argument for this purpose instead.}
 
 \item{combine}{Logical; Indicates if the fitted models should be combined
 into a single fitted model object via \code{\link{combine_models}}.

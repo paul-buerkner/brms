@@ -35,7 +35,7 @@ if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
 
-\item{transform}{A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
@@ -64,7 +64,7 @@ time series (\code{TRUE}).}
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

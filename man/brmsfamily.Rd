@@ -56,7 +56,7 @@ brmsfamily(
   link_xi = "log1p",
   link_alpha = "identity",
   link_quantile = "logit",
-  threshold = c("flexible", "equidistant"),
+  threshold = "flexible",
   refcat = NULL,
   bhaz = NULL
 )
@@ -127,29 +127,13 @@ categorical(link = "logit", refcat = NULL)
 
 multinomial(link = "logit", refcat = NULL)
 
-cumulative(
-  link = "logit",
-  link_disc = "log",
-  threshold = c("flexible", "equidistant")
-)
+cumulative(link = "logit", link_disc = "log", threshold = "flexible")
 
-sratio(
-  link = "logit",
-  link_disc = "log",
-  threshold = c("flexible", "equidistant")
-)
+sratio(link = "logit", link_disc = "log", threshold = "flexible")
 
-cratio(
-  link = "logit",
-  link_disc = "log",
-  threshold = c("flexible", "equidistant")
-)
+cratio(link = "logit", link_disc = "log", threshold = "flexible")
 
-acat(
-  link = "logit",
-  link_disc = "log",
-  threshold = c("flexible", "equidistant")
-)
+acat(link = "logit", link_disc = "log", threshold = "flexible")
 }
 \arguments{
 \item{family}{A character string naming the distribution of the response
@@ -208,9 +192,10 @@ information on link functions supported by each family.}
 
 \item{threshold}{A character string indicating the type 
 of thresholds (i.e. intercepts) used in an ordinal model. 
-\code{"flexible"} provides the standard unstructured thresholds and 
+\code{"flexible"} provides the standard unstructured thresholds,
 \code{"equidistant"} restricts the distance between 
-consecutive thresholds to the same value.}
+consecutive thresholds to the same value, and
+\code{"sum_to_zero"} ensures the thresholds sum to zero.}
 
 \item{refcat}{Optional name of the reference response category used in
 categorical, multinomial, and dirichlet models. If \code{NULL} (the

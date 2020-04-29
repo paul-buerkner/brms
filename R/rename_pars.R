@@ -1,12 +1,33 @@
-# rename parameters (and possibly change their dimensions) 
-# within the stanfit object to ensure reasonable parameter names
-# @param x a brmsfit obejct
-# @return a brmfit object with adjusted parameter names and dimensions
+#' Rename Parameters
+#' 
+#' Rename parameters within the \code{stanfit} object after model fitting to
+#' ensure reasonable parameter names. This function is usally called
+#' automatically by \code{\link{brm}} and users will rarely be required to call
+#' it themselves.
+#' 
+#' @param x A brmsfit object.
+#' @return A brmfit object with adjusted parameter names.
+#' 
+#' @examples
+#' \dontrun{
+#' # fit a model manually via rstan
+#' scode <- make_stancode(count ~ Trt, data = epilepsy)
+#' sdata <- make_standata(count ~ Trt, data = epilepsy)
+#' stanfit <- rstan::stan(model_code = scode, data = sdata)
+#' 
+#' # feed the Stan model back into brms
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+#' fit$fit <- stanfit
+#' fit <- rename_pars(fit)
+#' summary(fit)
+#' }
+#' 
+#' @export
 rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
   pars <- parnames(x)

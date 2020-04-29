@@ -15,31 +15,31 @@ data_predictor <- function(x, ...) {
 }
 
 #' @export
-data_predictor.mvbrmsterms <- function(x, data, old_sdata = NULL, ...) {
+data_predictor.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   out <- list(N = nrow(data))
-  for (i in seq_along(x$terms)) {
-    od <- old_sdata[[x$responses[i]]]
-    c(out) <- data_predictor(x$terms[[i]], data = data, old_sdata = od, ...)
+  for (r in names(x$terms)) {
+    bs <- basis$resps[[r]]
+    c(out) <- data_predictor(x$terms[[r]], data = data, basis = bs, ...)
   }
   out
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL, 
-                                     old_sdata = NULL, ...) {
+data_predictor.brmsterms <- function(x, data, prior, ranef, 
+                                     basis = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, knots, ...)
+  args_eff <- nlist(data, ranef, prior, ...)
   for (dp in names(x$dpars)) {
-    args_eff_spec <- list(x = x$dpars[[dp]], old_sdata = old_sdata[[dp]])
+    args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
     out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
   }
   for (nlp in names(x$nlpars)) {
-    args_eff_spec <- list(x = x$nlpars[[nlp]], old_sdata = old_sdata[[nlp]])
+    args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
@@ -51,23 +51,23 @@ data_predictor.brmsterms <- function(x, data, prior, ranef, knots = NULL,
 # @param data the data passed by the user
 # @param ranef object retuend by 'tidy_ranef'
 # @param prior an object of class brmsprior
-# @param knots optional knot values for smoothing terms
-# @param old_sdata see 'extract_old_standata'
+# @param basis information from original Stan data used to correctly 
+#   predict from new data. See 'standata_basis' for details.
 # @param ... currently ignored
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, ranef = empty_ranef(), 
                                prior = brmsprior(), data2 = list(),
-                               knots = NULL, old_sdata = NULL, ...) {
+                               basis = NULL, ...) {
   c(data_fe(x, data),
-    data_sp(x, data, prior = prior, Jmo = old_sdata$Jmo),
+    data_sp(x, data, prior = prior, basis = basis$sp),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
-    data_sm(x, data, knots = knots, smooths = old_sdata$smooths),
-    data_gp(x, data, gps = old_sdata$gps),
-    data_ac(x, data, data2 = data2, locations = old_sdata$locations),
+    data_sm(x, data, basis = basis$sm),
+    data_gp(x, data, basis = basis$gp),
+    data_ac(x, data, data2 = data2, basis = basis$ac),
     data_offset(x, data),
-    data_bhaz(x, data, basis = old_sdata$base_basis),
+    data_bhaz(x, data, basis = basis$bhaz),
     data_prior(x, data, prior = prior)
   )
 }
@@ -75,10 +75,10 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
 # prepare data for non-linear parameters for use in Stan
 #' @export 
 data_predictor.btnl <- function(x, data, data2 = list(), 
-                                old_sdata = NULL, ...) {
+                                basis = NULL, ...) {
   out <- list()
   c(out) <- data_cnl(x, data)
-  c(out) <- data_ac(x, data, data2 = data2, locations = old_sdata$locations)
+  c(out) <- data_ac(x, data, data2 = data2, basis = basis$ac)
   out
 }
 
@@ -96,32 +96,35 @@ data_fe <- function(bterms, data) {
 }
 
 # data preparation for splines
-data_sm <- function(bterms, data, knots = NULL, smooths = NULL) {
+data_sm <- function(bterms, data, basis = NULL) {
   out <- list()
   smterms <- all_terms(bterms[["sm"]])
   if (!length(smterms)) {
     return(out)
   }
   p <- usc(combine_prefix(bterms))
-  new <- length(smooths) > 0L
+  new <- length(basis) > 0L
   if (!new) {
-    smooths <- named_list(smterms)
+    knots <- get_knots(data)
+    basis <- named_list(smterms)
     for (i in seq_along(smterms)) {
-      smooths[[i]] <- smoothCon(
+      # the spline penality has changed in 2.8.7 (#646)
+      diagonal.penalty <- !require_old_default("2.8.7")
+      basis[[i]] <- smoothCon(
         eval2(smterms[i]), data = data, 
         knots = knots, absorb.cons = TRUE,
-        diagonal.penalty = TRUE
+        diagonal.penalty = diagonal.penalty
       )
     }
   }
   bylevels <- named_list(smterms)
   ns <- 0
   lXs <- list()
-  for (i in seq_along(smooths)) {
+  for (i in seq_along(basis)) {
     # may contain multiple terms when 'by' is a factor
-    for (j in seq_along(smooths[[i]])) {
+    for (j in seq_along(basis[[i]])) {
       ns <- ns + 1
-      sm <- smooths[[i]][[j]]
+      sm <- basis[[i]][[j]]
       if (length(sm$by.level)) {
         bylevels[[i]][j] <- sm$by.level
       }
@@ -273,25 +276,8 @@ data_gr_local <- function(bterms, data, ranef) {
 }
 
 # prepare global data for each group-level-ID
-# @param internal is the data for use in S3 methods only?
-data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
+data_gr_global <- function(ranef, data2) {
   out <- list()
-  if (!is.null(cov_ranef) && !internal) {
-    # check validity of cov_ranef
-    cr_names <- names(cov_ranef)
-    cr_is_named <- length(cr_names) && all(nzchar(cr_names))
-    if (!is.list(cov_ranef) || !cr_is_named) {
-      stop2("'cov_ranef' must be a named list.")
-    }
-    if (any(duplicated(cr_names))) {
-      stop2("Names of 'cov_ranef' must be unique.")
-    }
-    unused_cr_names <- setdiff(cr_names, ranef$group)
-    if (length(unused_cr_names)) {
-      stop2("The following elements of 'cov_ranef' are unused: ",
-            collapse_comma(unused_cr_names))
-    }
-  }
   for (id in unique(ranef$id)) {
     tmp <- list()
     id_ranef <- subset2(ranef, id = id)
@@ -309,29 +295,18 @@ data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
       tmp$Nby <- length(bylevels)
       tmp$Jby <- as.array(Jby)
     }
-    # prepare customized covariance matrices
-    if (group %in% names(cov_ranef)) {
-      cov_mat <- as.matrix(cov_ranef[[group]])
-      if (!isSymmetric(unname(cov_mat))) {
-        stop2("Covariance matrix of grouping factor '", 
-              group, "' is not symmetric.")
-      }
+    # prepare within-group covariance matrices
+    cov <- id_ranef$cov[1]
+    if (nzchar(cov)) {
+      # validation is only necessary here for compatibility with 'cov_ranef'
+      cov_mat <- validate_recov_matrix(data2[[cov]])
       found_levels <- rownames(cov_mat)
-      if (is.null(found_levels)) {
-        stop2("Row names are required for covariance matrix of '", group, "'.")
-      }
-      colnames(cov_mat) <- found_levels
       found <- levels %in% found_levels
       if (any(!found)) {
-        stop2("Row names of covariance matrix of '", group, 
+        stop2("Levels of the within-group covariance matrix for '", group, 
               "' do not match names of the grouping levels.")
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
-      evs <- eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values
-      if (min(evs) <= 0) {
-        stop2("Covariance matrix of grouping factor '", 
-              group, "' is not positive definite.")
-      }
       tmp$Lcov <- t(chol(cov_mat))
     }
     names(tmp) <- paste0(names(tmp), "_", id)
@@ -341,7 +316,7 @@ data_gr_global <- function(ranef, cov_ranef = NULL, internal = FALSE) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
+data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -363,8 +338,10 @@ data_sp <- function(bterms, data, prior = brmsprior(), Jmo = NULL) {
     Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
     Xmo_names <- paste0("Xmo", p, "_", seq_along(Xmo))
     c(out) <- setNames(Xmo, Xmo_names)
-    compute_Jmo <- is.null(Jmo)
-    if (!length(Jmo)) {
+    if (!is.null(basis$Jmo)) {
+      # take information from original data
+      Jmo <- basis$Jmo
+    } else {
       Jmo <- as.array(ulapply(Xmo, max))
     }
     out[[paste0("Jmo", p)]] <- Jmo
@@ -457,11 +434,11 @@ data_Xme <- function(meef, data) {
 }
 
 # prepare data for Gaussian process terms
-# @param raw store certain intermediate data for further processing?
+# @param internal store some intermediate data for internal post-processing?
 # @param ... passed to '.data_gp'
-data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
+data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
   out <- list()
-  raw <- as_one_logical(raw)
+  internal <- as_one_logical(internal)
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   gpef <- tidy_gpef(bterms, data)
@@ -477,27 +454,14 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
       stop2("Predictors of Gaussian processes should be numeric vectors.")
     }
     Xgp <- do_call(cbind, Xgp)
-    if (gpef$scale[i]) {
-      # scale predictor for easier specification of priors
-      if (length(gps)) {
-        # scale Xgp based on the original data
-        dmax <- gps[[paste0("dmax", pi)]]
-      } else {
-        dmax <- sqrt(max(diff_quad(Xgp)))
-      }
-      if (raw) {
-        # required for scaling of GPs with new data
-        out[[paste0("dmax", pi)]] <- dmax
-      }
-      Xgp <- Xgp / dmax
-    }
     cmc <- gpef$cmc[i]
+    scale <- gpef$scale[i]
     gr <- gpef$gr[i]
     k <- gpef$k[i]
     c <- gpef$c[[i]]
     if (!isNA(k)) {
       out[[paste0("NBgp", pi)]] <- k ^ D
-      Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+      Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     }
     byvar <- gpef$byvars[[i]]
     byfac <- length(gpef$cons[[i]]) > 0L
@@ -516,8 +480,9 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
         Cgp <- con_mat[, j]
         sfx <- paste0(pi, "_", j)
         tmp <- .data_gp(
-          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, 
-          c = c, raw = raw, gps = gps, ...
+          Xgp, k = k, gr = gr, sfx = sfx, Cgp = Cgp, c = c, 
+          scale = scale, internal = internal, basis = basis, 
+          ...
         )
         Ngp[[j]] <- attributes(tmp)[["Ngp"]]
         Nsubgp[[j]] <- attributes(tmp)[["Nsubgp"]]
@@ -530,14 +495,21 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
     } else {
       out[[paste0("Kgp", pi)]] <- 1L
       c(out) <- .data_gp(
-        Xgp, k = k, gr = gr, sfx = pi, 
-        c = c, raw = raw, gps = gps, ...
+        Xgp, k = k, gr = gr, sfx = pi, c = c, 
+        scale = scale, internal = internal, basis = basis,
+        ...
       )
       if (bynum) {
         Cgp <- as.numeric(get(byvar, data))
         out[[paste0("Cgp", pi)]] <- as.array(Cgp)
       }
     }
+  }
+  if (length(basis)) {
+    # original covariate values are required in new GP prediction
+    Xgp_old <- basis[grepl("^Xgp", names(basis))]
+    names(Xgp_old) <- paste0(names(Xgp_old), "_old")
+    out[names(Xgp_old)] <- Xgp_old
   }
   out
 }
@@ -550,7 +522,7 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
 # @param Cgp optional vector of values belonging to
 #   a certain contrast of a factor 'by' variable
 .data_gp <- function(Xgp, k, gr, sfx, Cgp = NULL, c = NULL, 
-                     raw = FALSE, gps = NULL) {
+                     scale = TRUE, internal = FALSE, basis = NULL) {
   out <- list()
   if (!is.null(Cgp)) {
     Cgp <- unname(Cgp)
@@ -572,26 +544,41 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
     }
     out[[paste0("Jgp", sfx)]] <- as.array(Jgp)
     not_dupl_Jgp <- !duplicated(Jgp)
-    Xgp <-  Xgp[not_dupl_Jgp, , drop = FALSE]
+    Xgp <- Xgp[not_dupl_Jgp, , drop = FALSE]
   }
-  if (length(gps)) {
+  if (scale) {
+    # scale predictor for easier specification of priors
+    if (length(basis)) {
+      # scale Xgp based on the original data
+      dmax <- basis[[paste0("dmax", sfx)]]
+    } else {
+      dmax <- sqrt(max(diff_quad(Xgp)))
+    }
+    if (!isTRUE(dmax > 0)) {
+      stop2("Could not scale GP covariates. Please set 'scale' to FALSE in 'gp'.")
+    }
+    if (internal) {
+      # required for scaling of GPs with new data
+      out[[paste0("dmax", sfx)]] <- dmax
+    }
+    Xgp <- Xgp / dmax
+  }
+  if (length(basis)) {
     # center Xgp based on the original data
-    cmeans <- gps[[paste0("cmeans", sfx)]]
+    cmeans <- basis[[paste0("cmeans", sfx)]]
   } else {
     cmeans <- colMeans(Xgp)
   }
-  if (raw) {
-    out[[paste0("Xgp", sfx)]] <- Xgp
-    # required for centering of GPs with new data
+  if (internal) {
+    # required for centering of approximate GPs with new data
     out[[paste0("cmeans", sfx)]] <- cmeans
-    return(out)
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables
     Xgp <- sweep(Xgp, 2, cmeans)
     D <- NCOL(Xgp)
     L <- choose_L(Xgp, c = c)
-    Ks <- as.matrix(do.call(expand.grid, repl(seq_len(k), D)))
+    Ks <- as.matrix(do_call(expand.grid, repl(seq_len(k), D)))
     XgpL <- matrix(nrow = NROW(Xgp), ncol = NROW(Ks))
     slambda <- matrix(nrow = NROW(Ks), ncol = D)
     for (m in seq_rows(Ks)) {
@@ -608,7 +595,7 @@ data_gp <- function(bterms, data, raw = FALSE, gps = NULL, ...) {
 
 # data for autocorrelation variables
 # @param locations optional original locations for CAR models
-data_ac <- function(bterms, data, data2, locations = NULL, ...) {
+data_ac <- function(bterms, data, data2, basis = NULL, ...) {
   out <- list()
   N <- nrow(data)
   acef <- tidy_acef(bterms)
@@ -663,12 +650,15 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
   }
   if (has_ac_class(acef, "car")) {
     acef_car <- subset2(acef, class = "car")
-    needs_locations <- is.null(locations)
+    locations <- NULL
+    if (length(basis)) {
+      locations <- basis$locations 
+    }
     M <- data2[[acef_car$M]]
     if (acef_car$gr != "NA") {
       loc_data <- get(acef_car$gr, data)
       new_locations <- levels(factor(loc_data))
-      if (needs_locations) {
+      if (is.null(locations)) {
         locations <- new_locations
       } else {
         invalid_locations <- setdiff(new_locations, locations)
@@ -696,12 +686,12 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
       Nloc <- N
       Jloc <- as.array(seq_len(Nloc))
       if (!is_equal(dim(M), rep(Nloc, 2))) {
-        if (needs_locations) {
-          stop2("Dimensions of 'M' for CAR terms must be equal ", 
-                "to the number of observations.") 
+        if (length(basis)) {
+          stop2("Cannot handle new data in CAR terms ",
+                "without a grouping factor.")
         } else {
-          stop2("Cannot handle new data in CAR models ",
-                "without a grouping factor.") 
+          stop2("Dimensions of 'M' for CAR terms must be equal ", 
+                "to the number of observations.")
         }
       }
     }
@@ -715,7 +705,7 @@ data_ac <- function(bterms, data, data2, locations = NULL, ...) {
     )
     if (acef_car$type %in% c("escar", "esicar")) {
       Nneigh <- Matrix::colSums(M)
-      if (any(Nneigh == 0) && needs_locations) {
+      if (any(Nneigh == 0) && !length(basis)) {
         stop2(
           "For exact sparse CAR, all locations should have at ", 
           "least one neighbor within the provided data set. ",

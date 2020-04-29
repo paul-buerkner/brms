@@ -293,47 +293,30 @@ prepare_cens <- function(x) {
 }
 
 # extract information on censoring of the response variable
-# @param x a brmsfit object
-# @param resp optional names of response variables for which to extract values
 # @return vector of censoring indicators or NULL in case of no censoring
-get_cens <- function(x, resp = NULL, newdata = NULL) {
-  stopifnot(is.brmsfit(x))
-  resp <- validate_resp(resp, x, multiple = FALSE)
-  bterms <- parse_bf(x$formula)
+get_cens <- function(bterms, data, resp = NULL) {
   if (!is.null(resp)) {
     bterms <- bterms$terms[[resp]]
   }
-  if (is.null(newdata)) {
-    newdata <- model.frame(x)
-  }
   out <- NULL
   if (is.formula(bterms$adforms$cens)) {
-    out <- get_ad_values(bterms, "cens", "cens", newdata)
+    out <- get_ad_values(bterms, "cens", "cens", data)
     out <- prepare_cens(out)
   }
   out
 }
 
 # extract truncation boundaries
-trunc_bounds <- function(x, ...) {
-  UseMethod("trunc_bounds")
-}
-
-# @return a named list with one element per response variable
-#' @export
-trunc_bounds.mvbrmsterms <- function(x, ...) {
-  lapply(x$terms, trunc_bounds, ...)
-}
-
+# @param bterms a brmsterms object
 # @param data data.frame containing the truncation variables
 # @param incl_family include the family in the derivation of the bounds?
 # @param stan return bounds in form of Stan syntax?
-# @return a list with elements 'lb' and 'ub'
-#' @export
-trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE, 
-                                   stan = FALSE, ...) {
-  if (is.formula(x$adforms$trunc)) {
-    trunc <- eval_rhs(x$adforms$trunc)
+# @return a list with elements 'lb' and 'ub' or corresponding Stan code
+trunc_bounds <- function(bterms, data = NULL, incl_family = FALSE, 
+                         stan = FALSE, ...) {
+  stopifnot(is.brmsterms(bterms))
+  if (is.formula(bterms$adforms$trunc)) {
+    trunc <- eval_rhs(bterms$adforms$trunc)
   } else {
     trunc <- resp_trunc()
   }
@@ -342,7 +325,7 @@ trunc_bounds.brmsterms <- function(x, data = NULL, incl_family = FALSE,
     ub = eval2(trunc$vars$ub, data)
   )
   if (incl_family) {
-    family_bounds <- family_bounds(x)
+    family_bounds <- family_bounds(bterms)
     out$lb <- max(out$lb, family_bounds$lb)
     out$ub <- min(out$ub, family_bounds$ub)
   }

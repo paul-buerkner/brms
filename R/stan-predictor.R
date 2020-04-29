@@ -131,8 +131,11 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       # distributional parameter is fixed to a numeric value
       dp_type <- stan_dpar_types(dp, resp, family = x$family, fixed = TRUE)
       if (nzchar(dp_type)) {
+        dp_value <- x$fdpars[[dp]]$value
         dp_comment <- stan_comment(attr(dp_type, "comment"))
-        str_add(out$data) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n") 
+        str_add(out$tpar_def) <- glue(
+          "  {dp_type} {dp}{resp} = {dp_value};{dp_comment}\n"
+        ) 
       }
     } else if (is.character(x$fdpars[[dp]]$value)) {
       # distributional parameter is fixed to another distributional parameter
@@ -141,9 +144,14 @@ stan_predictor.brmsterms <- function(x, data, prior, rescor = FALSE, ...) {
       }
       dp_type <- stan_dpar_types(dp, resp, family = x$family)
       if (nzchar(dp_type)) {
+        dp_value <- x$fdpars[[dp]]$value
         dp_comment <- stan_comment(attr(dp_type, "comment"))
-        str_add(out$tpar_def) <- glue("  {dp_type} {dp}{resp};{dp_comment}\n")
-        str_add(out$tpar_comp) <- glue("  {dp}{resp} = {x$fdpars[[dp]]$value}{resp};\n") 
+        str_add(out$tpar_def) <- glue(
+          "  {dp_type} {dp}{resp};{dp_comment}\n"
+        )
+        str_add(out$tpar_comp) <- glue(
+          "  {dp}{resp} = {dp_value}{resp};\n"
+        ) 
       }
     } else {
       # distributional parameter is estimated as a scalar
@@ -467,7 +475,8 @@ stan_fe <- function(bterms, data, prior, stanvars, ...) {
 stan_re <- function(ranef, prior, ...) {
   IDs <- unique(ranef$id)
   out <- list()
-  # special handling of student-t group effects
+  # special handling of student-t group effects as their 'df' parameters
+  # are defined on a per-group basis instead of a per-ID basis
   tranef <- get_dist_groups(ranef, "student")
   if (has_rows(tranef)) {
     str_add(out$par) <- 
@@ -504,11 +513,10 @@ stan_re <- function(ranef, prior, ...) {
 # @param id the ID of the grouping factor
 # @param ranef output of tidy_ranef
 # @param prior object of class brmsprior
-# @param cov_ranef optional list of custom covariance matrices 
-.stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
+.stan_re <- function(id, ranef, prior) {
   out <- list()
   r <- subset2(ranef, id = id)
-  has_ccov <- r$group[1] %in% names(cov_ranef)
+  has_cov <- nzchar(r$cov[1])
   has_by <- nzchar(r$by[[1]])
   Nby <- seq_along(r$bylevels[[1]]) 
   ng <- seq_along(r$gcall[[1]]$groups)
@@ -543,7 +551,7 @@ stan_re <- function(ranef, prior, ...) {
       "  // by-factor indicator per observation\n" 
     )
   }
-  if (has_ccov) {
+  if (has_cov) {
     str_add(out$data) <- glue(
       "  matrix[N_{id}, N_{id}] Lcov_{id};",
       "  // cholesky factor of known covariance matrix\n"
@@ -595,13 +603,13 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- glue(
-      "  target += normal_lpdf(to_vector(z_{id}) | 0, 1);\n"
+      "  target += std_normal_lpdf(to_vector(z_{id}));\n"
     )
     if (has_rows(tr)) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
     }
     if (has_by) {
-      if (has_ccov) {
+      if (has_cov) {
         stop2(
           "Cannot combine 'by' variables with customized covariance ",
           "matrices when fitting multiple group-level effects."
@@ -619,7 +627,7 @@ stan_re <- function(ranef, prior, ...) {
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
       str_add(out$tpar_comp) <- glue(
-        "  // compute actual group-level effects",
+        "  // compute actual group-level effects\n",
         "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
       )
       str_add(out$gen_def) <- cglue(
@@ -637,7 +645,7 @@ stan_re <- function(ranef, prior, ...) {
         type = glue("cholesky_factor_corr[M_{id}]"), 
         comment = "cholesky factor of correlation matrix"
       )
-      if (has_ccov) {
+      if (has_cov) {
         rdef <- glue(
           "as_matrix(kronecker(Lcov_{id},", 
           " diag_pre_multiply(sd_{id}, L_{id})) *",
@@ -680,9 +688,9 @@ stan_re <- function(ranef, prior, ...) {
       "  // standardized group-level effects\n"
     )
     str_add(out$prior) <- cglue(
-      "  target += normal_lpdf(z_{id}[{seq_rows(r)}] | 0, 1);\n"
+      "  target += std_normal_lpdf(z_{id}[{seq_rows(r)}]);\n"
     )
-    Lcov <- str_if(has_ccov, glue("Lcov_{id} * "))
+    Lcov <- str_if(has_cov, glue("Lcov_{id} * "))
     if (has_rows(tr)) {
       dfm <- glue("dfm_{tr$ggn[1]} .* ")
     }
@@ -770,7 +778,7 @@ stan_sm <- function(bterms, data, prior, ...) {
       "  s{pi}_{nb} = sds{pi}_{nb} * zs{pi}_{nb};\n"
     )
     str_add(out$prior) <- cglue(
-      "  target += normal_lpdf(zs{pi}_{nb} | 0, 1);\n"
+      "  target += std_normal_lpdf(zs{pi}_{nb});\n"
     )
     str_add(out$eta) <- cglue(
       " + Zs{pi}_{nb} * s{pi}_{nb}"
@@ -1056,7 +1064,7 @@ stan_gp <- function(bterms, data, prior, ...) {
         "  {eta} = {eta} + {gp_call}{Jgp};\n"
       )
       str_add(out$prior) <- cglue(
-        "{tp()}normal_lpdf(zgp{pi}_{J} | 0, 1);\n"
+        "{tp()}std_normal_lpdf(zgp{pi}_{J});\n"
       )
     } else {
       # no by-factor variable
@@ -1109,7 +1117,7 @@ stan_gp <- function(bterms, data, prior, ...) {
       Jgp <- str_if(gr, glue("[Jgp{pi}]"))
       str_add(out$eta) <- glue(" + {Cgp}{gp_call}{Jgp}")
       str_add(out$prior) <- glue(
-        "{tp()}normal_lpdf(zgp{pi} | 0, 1);\n"
+        "{tp()}std_normal_lpdf(zgp{pi});\n"
       )
     }
   }
@@ -1202,9 +1210,15 @@ stan_ac <- function(bterms, data, prior, ...) {
   if (NROW(acef_cosy)) {
     # compound symmetry correlation structure
     # most code is shared with ARMA covariance models
+    # cosy correlations may be negative in theory but 
+    # this causes problems divergent transitions (#878)
+    # str_add(out$tdata_def) <- glue(
+    #   "  real lb_cosy{p} = -1.0 / (max(nobs_tg{p}) - 1);",
+    #   "  // lower bound of the cosy correlation\n"
+    # )
     str_add_list(out) <- stan_prior(
-      prior, class = "cosy", px = px, suffix = p,
-      type = "real<lower=0,upper=1>",
+      prior, class = "cosy", px = px, suffix = p, 
+      type = glue("real<lower=0,upper=1>"), 
       comment = "compound symmetry correlation"
     )
   }
@@ -1222,6 +1236,10 @@ stan_ac <- function(bterms, data, prior, ...) {
       "  int<lower=1> end_tg{p}[N_tg{p}];\n", 
       "  int<lower=1> nobs_tg{p}[N_tg{p}];\n"
     )
+    str_add(out$tdata_def) <- glue(
+      "  int max_nobs_tg{p} = max(nobs_tg{p});",
+      "  // maximum dimension of the autocorrelation matrix\n"
+    )
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
@@ -1230,7 +1248,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     }
     str_add(out$tpar_def) <- glue(
       "  // cholesky factor of the autocorrelation matrix\n",
-      "  matrix[max(nobs_tg{p}), max(nobs_tg{p})] chol_cor{p};\n"               
+      "  matrix[max_nobs_tg{p}, max_nobs_tg{p}] chol_cor{p};\n"               
     )
     if (acef_time_cov$class == "arma") {
       if (acef_time_cov$p > 0 && acef_time_cov$q == 0) {
@@ -1249,7 +1267,7 @@ stan_ac <- function(bterms, data, prior, ...) {
     }
     str_add(out$tpar_comp) <- glue(
       "  // compute residual covariance matrix\n",
-      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max(nobs_tg{p}));\n"
+      "  chol_cor{p} = cholesky_cor_{cor_fun}({cor_args}, max_nobs_tg{p});\n"
     )
     if (has_cor_latent_residuals) {
       err_msg <- "Latent residuals are not implemented"
@@ -1272,7 +1290,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "zerr{p}, sderr{p}, chol_cor{p}, nobs_tg{p}, begin_tg{p}, end_tg{p});\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(zerr{p} | 0, 1);\n"
+        "  target += std_normal_lpdf(zerr{p});\n"
       )
       str_add(out$eta) <- glue(" + err{p}")
     }
@@ -1426,7 +1444,7 @@ stan_ac <- function(bterms, data, prior, ...) {
         "  // soft sum-to-zero constraint\n",
         "  target += normal_lpdf(sum(zcar{p}) | 0, 0.001 * Nloc{p});\n",
         "  // proper prior on the non-spatial BYM2 component\n",
-        "  target += normal_lpdf(nszcar | 0, 1);\n"
+        "  target += std_normal_lpdf(nszcar{p});\n"
       )
     }
   }
@@ -1490,7 +1508,9 @@ stan_Xme <- function(meef, prior) {
   groups <- unique(meef$grname)
   for (i in seq_along(groups)) {
     g <- groups[i]
+    # K are the global and J the local (within group) indices
     K <- which(meef$grname %in% g)
+    J <- seq_along(K)
     if (nzchar(g)) {
       Nme <- glue("Nme_{i}")
       str_add(out$data) <- glue(
@@ -1545,10 +1565,10 @@ stan_Xme <- function(meef, prior) {
         "  vector[{Nme}] Xme_{K};\n"
       )
       str_add(out$tpar_comp) <- cglue(
-        "  Xme_{K} = Xme{i}[, {K}];\n"
+        "  Xme_{K} = Xme{i}[, {J}];\n"
       )
       str_add(out$prior) <- glue(
-        "  target += normal_lpdf(to_vector(zme_{i}) | 0, 1);\n"
+        "  target += std_normal_lpdf(to_vector(zme_{i}));\n"
       )
       str_add(out$gen_def) <- cglue(
         "  // obtain latent correlation matrix\n",
@@ -1567,12 +1587,12 @@ stan_Xme <- function(meef, prior) {
       str_add(out$tpar_def) <- cglue(
         "  vector[{Nme}] Xme_{K};  // actual latent values\n"
       )
-      str_add(out$tpar_def) <- cglue(
+      str_add(out$tpar_comp) <- cglue(
         "  // compute actual latent values\n",
-        "  Xme_{K} = meanme_{i}[{K}] + sdme_{i}[{K}] * zme_{K};\n"
+        "  Xme_{K} = meanme_{i}[{J}] + sdme_{i}[{J}] * zme_{K};\n"
       )
       str_add(out$prior) <- cglue(
-        "  target += normal_lpdf(zme_{K} | 0, 1);\n"
+        "  target += std_normal_lpdf(zme_{K});\n"
       )
     }
   }
@@ -1731,10 +1751,13 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
   if (stan_eta_transform(family, cens_or_trunc = cens_or_trunc)) {
     dpar_id <- dpar_id(dpar)
     pred_dpars <- names(bterms$dpars)
-    shape <- glue("shape{dpar_id}{resp}")
-    shape <- str_if(shape %in% pred_dpars, paste0(shape, "[n]"), shape)
-    nu <- glue("nu{dpar_id}{resp}")
-    nu <- str_if(nu %in% pred_dpars, paste0(nu, "[n]"), nu)
+    shape <- glue("shape{dpar_id}")
+    n_shape <- str_if(shape %in% pred_dpars, "[n]")
+    shape <- glue("{shape}{resp}{n_shape}")
+    nu <- glue("nu{dpar_id}")
+    n_nu <- str_if(nu %in% pred_dpars, "[n]")
+    nu <- glue("{nu}{resp}{n_nu}")
+    
     family_link <- str_if(
       family$family %in% c("gamma", "hurdle_gamma", "exponential"),
       paste0(family$family, "_", family$link), family$family
@@ -1762,7 +1785,7 @@ stan_eta_ilink <- function(dpar, bterms, resp = "") {
 # implies a temporary shift in the intercept of the model
 stan_center_X <- function(x) {
   is.btl(x) && !no_center(x$fe) && has_intercept(x$fe) && 
-    !fix_intercepts(x) && !is_sparse(x$fe)
+    !fix_intercepts(x) && !is_sparse(x$fe) && !has_sum_to_zero_thres(x)
 }
 
 # default Stan definitions for distributional parameters

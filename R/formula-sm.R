@@ -50,7 +50,7 @@ t2 <- function(...) {
 # @param data data.frame containing the covariates
 tidy_smef <- function(x, data) {
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+    x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sm"]] 
   if (!is.formula(form)) {
@@ -70,7 +70,7 @@ tidy_smef <- function(x, data) {
   }
   out$label <- paste0(out$sfun, rename(ulapply(out$vars, collapse)))
   # prepare information inferred from the data
-  sdata <- data_sm(x, data, knots = attr(data, "knots"))
+  sdata <- data_sm(x, data)
   bylevels <- attr(sdata$Xs, "bylevels")
   nby <- lengths(bylevels)
   tmp <- vector("list", nterms)

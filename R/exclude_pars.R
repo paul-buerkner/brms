@@ -19,7 +19,7 @@ exclude_pars.brmsfit <- function(x, save_ranef = TRUE, save_mevars = FALSE,
   save_mevars <- as_one_logical(save_mevars)
   save_all_pars <- as_one_logical(save_all_pars)
   out <- character(0)
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   c(out) <- exclude_pars(
     bterms, data = x$data, save_ranef = save_ranef, 
     save_all_pars = save_all_pars, save_mevars = save_mevars, ...
@@ -101,7 +101,7 @@ exclude_pars.btl <- function(x, data, save_all_pars = FALSE, ...) {
   c(out) <- paste0("chol_cor", p)
   if (!save_all_pars) {
     par_classes <- c(
-      "bQ", "hs_global", "hs_local", "zb", "hs_localsp", 
+      "bQ", "hs_global", "hs_local", "hs_slab", "zb", "hs_localsp", 
       "zbsp", "Intercept", "first_Intercept", "merged_Intercept",
       "zcar", "nszcar", "zerr"
     )

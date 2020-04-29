@@ -25,16 +25,17 @@
 #'   \code{NA} values within factors are interpreted as if all dummy
 #'   variables of this factor are zero. This allows, for instance, to make
 #'   predictions of the grand mean when using sum coding.
-#' @param int_conditions An optional named \code{list} whose elements are numeric
-#'   vectors of values of the second variables in two-way interactions. 
+#' @param int_conditions An optional named \code{list} whose elements are
+#'   vectors of values of the variables specified in \code{effects}. 
 #'   At these values, predictions are evaluated. The names of 
 #'   \code{int_conditions} have to match the variable names exactly.
-#'   Additionally, the elements of the numeric vectors may be named themselves,
+#'   Additionally, the elements of the vectors may be named themselves,
 #'   in which case their names appear as labels for the conditions in the plots.
 #'   Instead of vectors, functions returning vectors may be passed and are
 #'   applied on the original values of the corresponding variable.
 #'   If \code{NULL} (the default), predictions are evaluated at the 
-#'   \eqn{mean} and at \eqn{mean +/- sd}. 
+#'   \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
+#'   all categories for factor-like predictors.
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the conditional predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
@@ -42,8 +43,10 @@
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
-#' @param method Method use to obtain predictions. Either
-#'   \code{"pp_expect"} (the default) or \code{"posterior_predict"}.
+#' @param method Method used to obtain predictions. Can be set to 
+#'   \code{"posterior_epred"} (the default), \code{"posterior_predict"},
+#'   or \code{"posterior_linpred"}. For more details, see the respective
+#'   function documentations.
 #' @param spaghetti Logical. Indicates if predictions should
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
@@ -87,7 +90,7 @@
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{subset} or \code{nsamples}
 #'   passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}}.
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
@@ -223,7 +226,7 @@
 conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                         int_conditions = NULL, re_formula = NA, 
                                         robust = TRUE, probs = c(0.025, 0.975),
-                                        method = "pp_expect",
+                                        method = "posterior_epred",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
                                         transform = NULL, resolution = 100, 
@@ -236,7 +239,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   if (length(probs) != 2L) {
     stop2("Arguments 'probs' must be of length 2.")
   }
@@ -373,12 +376,16 @@ conditional_effects.brmsterms <- function(
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
+  if (method != "posterior_predict") {
+    # 'transform' creates problems in 'posterior_linpred'
+    pred_args$transform <- NULL
+  }
   out <- do_call(method, pred_args)
   rownames(marg_data) <- NULL
   
   if (categorical || ordinal) {
-    if (method != "pp_expect") {
-      stop2("Can only use 'categorical' with method = 'pp_expect'.")
+    if (method != "posterior_epred") {
+      stop2("Can only use 'categorical' with method = 'posterior_epred'.")
     }
     if (!is_polytomous(x)) {
       stop2("Argument 'categorical' may only be used ", 
@@ -404,7 +411,7 @@ conditional_effects.brmsterms <- function(
         "'conditional_effects' by default which is likely invalid ", 
         "for ordinal families. Please set 'categorical' to TRUE."
       )
-      if (method == "pp_expect") {
+      if (method == "posterior_epred") {
         out <- ordinal_probs_continuous(out)
       }
     }
@@ -698,7 +705,7 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   mf <- model.frame(fit)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  bterms <- parse_bf(new_formula)
+  bterms <- brmsterms(new_formula)
   if (any(grepl_expr("^(as\\.)?factor(.+)$", bterms$allvars))) {
     # conditions are chosen based the variables stored in the data
     # this approach cannot take into account possible transformations
@@ -803,50 +810,65 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     pred_types <- pred_types[new_order]
   }
   mono <- effects %in% int_vars
-  if (pred_types[1] == "numeric") {
-    min1 <- min(data[, effects[1]], na.rm = TRUE)
-    max1 <- max(data[, effects[1]], na.rm = TRUE)
+  # handle first predictor
+  if (effects[1] %in% names(int_conditions)) {
+    # first predictor has pre-specified conditions
+    int_cond <- int_conditions[[effects[1]]]
+    if (is.function(int_cond)) {
+      int_cond <- int_cond(data[[effects[1]]])
+    }
+    values <- int_cond
+  } else if (pred_types[1] == "numeric") {
+    # first predictor is numeric
+    min1 <- min(data[[effects[1]]], na.rm = TRUE)
+    max1 <- max(data[[effects[1]]], na.rm = TRUE)
     if (mono[1]) {
       values <- seq(min1, max1, by = 1)
     } else {
       values <- seq(min1, max1, length.out = resolution)
     }
   } else {
-    values <- unique(data[, effects[1]])
+    # first predictor is factor-like
+    values <- unique(data[[effects[1]]])
   }
   if (length(effects) == 2L) {
+    # handle second predictor
     values <- setNames(list(values, NA), effects)
-    if (pred_types[2] == "numeric") {
+    if (effects[2] %in% names(int_conditions)) {
+      # second predictor has pre-specified conditions
+      int_cond <- int_conditions[[effects[2]]]
+      if (is.function(int_cond)) {
+        int_cond <- int_cond(data[[effects[2]]])
+      }
+      values[[2]] <- int_cond
+    } else if (pred_types[2] == "numeric") {
+      # second predictor is numeric
       if (surface) {
-        min2 <- min(data[, effects[2]], na.rm = TRUE)
-        max2 <- max(data[, effects[2]], na.rm = TRUE)
+        min2 <- min(data[[effects[2]]], na.rm = TRUE)
+        max2 <- max(data[[effects[2]]], na.rm = TRUE)
         if (mono[2]) {
           values[[2]] <- seq(min2, max2, by = 1)
         } else {
           values[[2]] <- seq(min2, max2, length.out = resolution)
         }
       } else {
-        if (effects[2] %in% names(int_conditions)) {
-          int_cond <- int_conditions[[effects[2]]]
-          if (is.function(int_cond)) {
-            int_cond <- int_cond(data[, effects[2]])
-          }
-          values[[2]] <- int_cond
-        } else if (mono[2]) {
-          median2 <- median(data[, effects[2]])
-          mad2 <- mad(data[, effects[2]])
+        if (mono[2]) {
+          median2 <- median(data[[effects[2]]])
+          mad2 <- mad(data[[effects[2]]])
           values[[2]] <- round((-1:1) * mad2 + median2)
         } else {
-          mean2 <- mean(data[, effects[2]], na.rm = TRUE)
-          sd2 <- sd(data[, effects[2]], na.rm = TRUE)
+          mean2 <- mean(data[[effects[2]]], na.rm = TRUE)
+          sd2 <- sd(data[[effects[2]]], na.rm = TRUE)
           values[[2]] <- (-1:1) * sd2 + mean2
         }
       }
     } else {
-      values[[2]] <- unique(data[, effects[2]])
+      # second predictor is factor-like
+      values[[2]] <- unique(data[[effects[2]]]) 
     }
     data <- do_call(expand.grid, values)
   } else {
+    stopifnot(length(effects) == 1L)
     data <- structure(data.frame(values), names = effects)
   }
   # no need to have the same value combination more than once
@@ -856,7 +878,14 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   marg_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
   for (j in seq_rows(conditions)) {
-    data[[j]][, marg_vars] <- conditions[j, marg_vars]
+    for (v in marg_vars) {
+      cval <- conditions[j, v]
+      if (length(dim(cval)) == 2L) {
+        # matrix columns don't have automatic broadcasting apparently
+        cval <- matrix(cval, nrow(data[[j]]), ncol(cval), byrow = TRUE)
+      }
+      data[[j]][[v]] <- cval
+    }
     data[[j]]$cond__ <- cond__[j]
   }
   data <- do_call(rbind, data)
@@ -897,7 +926,9 @@ make_point_frame <- function(bterms, mf, effects, conditions,
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
-      not_na <- !(is.na(cond) | cond == "zero__")
+      # ensures correct handling of matrix columns
+      not_na <- function(x) !any(is.na(x) | x %in% "zero__")
+      not_na <- ulapply(cond, not_na)
       cond <- cond[, not_na, drop = FALSE]
       mf_tmp <- mf[, not_na, drop = FALSE]
       if (ncol(mf_tmp)) {

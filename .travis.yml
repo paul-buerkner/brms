@@ -3,7 +3,7 @@ r: devel
 sudo: FALSE
 
 cache:
-  - packages
+  # - packages
   - ccache
 
 warnings_are_errors: TRUE

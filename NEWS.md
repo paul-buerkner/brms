@@ -1,3 +1,50 @@
+# brms 2.12.0++
+
+### New Features
+
+* Constrain ordinal thresholds to sum to zero via argument
+`threshold` in ordinal family functions thanks to the help of
+Marta Kołczyńska.
+* Support `posterior_linpred` as method in `conditional_effects`.
+* Use `std_normal` in the Stan code for improved efficiency.
+* Add arguments `cor`, `id`, and `cov` to the functions `gr` and 
+`mm` for easy specification of group-level correlation structures.
+* Improve workflow to feed back brms-created models which were
+fitted somewhere else back into brms. (#745)
+* Improve argument `int_conditions` in `conditional_effects` to
+work for all predictors not just interactions.
+
+### Bug Fixes
+
+* Fix issue in Stan code of models with multiple `me` terms 
+thanks to Chris Chatham. (#855, #856)
+* Fix scaling problems in the estimation of ordinal models with
+multiple threshold vectors thanks to Marta Kołczyńska and
+Rok Češnovar.
+* Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
+* Fix Stan code of distributional models with `weibull`, `frechet`,
+or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
+* Fix Stan code of models which are truncated and weighted at the 
+same time thanks to Michael Thompson. (#884)
+
+### Other Changes
+
+* Reduce minimal scale of several default priors from 10 to 2.5.
+The resulting priors should remain weakly informative.
+* Automatically group observations in `gp` for increased efficiency.
+* Rename `parse_bf` to `brmsterms` and deprecate the former function.
+* Rename `extract_draws` to `prepare_predictions` and deprecate 
+the former function.
+* Deprecate using a model-dependent `rescor` default.
+* Deprecate argument `cov_ranef` in `brm` and related functions.
+* Improve several internal interfaces. This should not have any
+user-visible changes.
+* Simplify the parameterization of the horseshoe prior thanks
+to Aki Vehtari. (#873)
+* Store fixed distributional parameters as regular draws so that
+they behave as if they were estimated in post-processing methods.
+
+
 # brms 2.12.0
 
 ### New Features

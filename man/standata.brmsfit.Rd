@@ -12,8 +12,6 @@
   newdata2 = NULL,
   new_objects = NULL,
   incl_autocor = TRUE,
-  internal = FALSE,
-  control = list(),
   ...
 )
 
@@ -42,12 +40,8 @@ used in autocorrelation structures, or \code{\link{stanvars}}.}
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
 
-\item{internal}{Logical, indicates if the data should be prepared 
-for internal use in other post-processing methods.}
-
-\item{control}{A named list currently for internal usage only.}
-
-\item{...}{More arguments passed to \code{\link{make_standata}}.}
+\item{...}{More arguments passed to \code{\link{make_standata}}
+and \code{\link{validate_newdata}}.}
 }
 \value{
 A named list containing the data originally passed to Stan.

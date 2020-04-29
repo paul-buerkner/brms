@@ -88,8 +88,10 @@ test_that(paste("make_standata accepts correct response variables",
                as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
                              family = "exponential")$Y, as.array(seq(1,10,0.1)))
+  
   dat <- data.frame(y1 = 1:10, y2 = 11:20, x = rep(0,10))
-  sdata <- make_standata(mvbind(y1, y2) ~ x, data = dat)
+  form <- bf(mvbind(y1, y2) ~ x) + set_rescor(TRUE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1, as.array(1:10))
   expect_equal(sdata$Y_y2, as.array(11:20))
 })
@@ -189,15 +191,18 @@ test_that("make_standata handles multivariate models", {
     tim = 10:1, w = 1:10
   )
   
-  sdata <- make_standata(mvbind(y1, y2) | weights(w) ~ x, data = dat)
+  form <- bf(mvbind(y1, y2) | weights(w) ~ x) + set_rescor(TRUE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1, as.array(dat$y1))
   expect_equal(sdata$Y_y2, as.array(dat$y2))
   expect_equal(sdata$weights_y1, as.array(1:10))
   
-  expect_error(make_standata(mvbind(y1, y2, y2) ~ x, data = dat),
+  expect_error(make_standata(bf(mvbind(y1, y2, y2) ~ x) + set_resor(FALSE), 
+                             data = dat),
                "Cannot use the same response variable twice")
   
-  sdata <- make_standata(mvbind(y1 / y2, y2, y1 * 3) ~ x, data = dat)
+  form <- bf(mvbind(y1 / y2, y2, y1 * 3) ~ x) + set_rescor(FALSE)
+  sdata <- make_standata(form, data = dat)
   expect_equal(sdata$Y_y1y2, as.array(dat$y1 / dat$y2))
   
   sdata <- suppressWarnings(
@@ -261,38 +266,49 @@ test_that("make_standata allows to retrieve the initial data order", {
                           id = sample(1:10, 100, TRUE), 
                           time = sample(1:100, 100))
   # univariate model
-  sdata1 <- make_standata(y1 ~ ar(time, id), data = dat,
-                          control = list(save_order = TRUE))
+  sdata1 <- make_standata(y1 ~ ar(time, id), data = dat, internal = TRUE)
   expect_equal(dat$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   
   # multivariate model
-  sdata2 <- make_standata(mvbind(y1, y2) ~ ma(time, id), data = dat, 
-                          control = list(save_order = TRUE))
+  form <- bf(mvbind(y1, y2) ~ ma(time, id)) + set_rescor(FALSE)
+  sdata2 <- make_standata(form, data = dat, internal = TRUE)
   expect_equal(sdata2$Y_y1[attr(sdata2, "old_order")], as.array(dat$y1))
   expect_equal(sdata2$Y_y2[attr(sdata2, "old_order")], as.array(dat$y2))
 })
 
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
-  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                                  cov_ranef = list(visit = A))$Lcov_1, A)
-  B <- diag(1, 4)
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "Row names are required")
-  B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "Row names .* do not match")
+  sdata <- make_standata(count ~ Trt + (1|gr(visit, cov = A)),
+                         data = epilepsy, data2 = list(A = A))
+  expect_equivalent(sdata$Lcov_1, t(chol(A)))
+  
   B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
-  expect_equivalent(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B))$Lcov_1,
-                    t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
+  sdata <- make_standata(count ~ Trt + (1|gr(visit, cov = B)),
+                         data = epilepsy, data2 = list(B = B))
+  expect_equivalent(sdata$Lcov_1, t(chol(B[c(1,3,5,4), c(1,3,5,4)])))
+  
+  B <- diag(1, 4)
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy, data2 = list(B = B)),
+               "Row or column names are required")
+  
+  B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy, data2 = list(B = B)),
+               "Levels of .* do not match")
+
   B <- A
   B[1,2] <- 0.5
-  expect_error(make_standata(count ~ Trt + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "not symmetric")
+  expect_error(make_standata(count ~ Trt + (1|gr(visit, cov = B)), 
+                             data = epilepsy,  data2 = list(B = B)),
+               "must be symmetric")
+  
+  expect_warning(
+    sdata <- make_standata(count ~ Trt + (1|visit), data = epilepsy,
+                           cov_ranef = list(visit = A)),
+    "Argument 'cov_ranef' is deprecated"
+  )
+  expect_equivalent(sdata$Lcov_1, t(chol(A)))
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {
@@ -650,19 +666,19 @@ test_that("make_standata includes data for mixture models", {
 })
 
 test_that("make_standata includes data for Gaussian processes", {
-  dat <- data.frame(y = rnorm(10), x1 = sample(1:10, 10),
+  dat <- data.frame(y = rnorm(10), x1 = rnorm(10),
                     z = factor(c(2, 2, 2, 3, 4, rep(5, 5))))
   sdata <- make_standata(y ~ gp(x1), dat)
   expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 1) 
   sdata <- make_standata(y ~ gp(x1, scale = FALSE), dat)
-  expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 9)
+  expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), max(dat$x1) - min(dat$x1))
   
-  sdata <- make_standata(y ~ gp(x1, by = z, gr = TRUE), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = z, gr = TRUE, scale = FALSE), dat))
   expect_equal(sdata$Igp_1_2, as.array(4))
   expect_equal(sdata$Jgp_1_4, as.array(1:5))
   expect_equal(sdata$Igp_1_4, as.array(6:10))
   
-  sdata <- make_standata(y ~ gp(x1, by = y, gr = TRUE), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = y, gr = TRUE), dat))
   expect_equal(sdata$Cgp_1, as.array(dat$y))
 })
 
@@ -675,7 +691,7 @@ test_that("make_standata includes data for approximate Gaussian processes", {
   expect_equal(dim(sdata$Xgp_1), c(10, 5))
   expect_equal(dim(sdata$slambda_1), c(5, 1))
   
-  sdata <- make_standata(y ~ gp(x1, by = z, k = 5, c = 5/4), dat)
+  sdata <- SW(make_standata(y ~ gp(x1, by = z, k = 5, c = 5/4, scale = FALSE), dat))
   expect_equal(sdata$Igp_1_2, as.array(4))
   expect_equal(sdata$Cgp_1_2, as.array(1))
   expect_equal(sdata$Igp_1_4, as.array(6:10))
