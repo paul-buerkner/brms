@@ -10,7 +10,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   }
   
   # check if the model is supported by projpred
-  bterms <- parse_bf(formula)
+  bterms <- brmsterms(formula)
   if (length(bterms$dpars) > 1L) {
     stop2("Projpred does not support distributional models.")
   }
@@ -33,13 +33,22 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     family$family <- "binomial"
   }
   family <- get(family$family, mode = "function")(link = family$link)
-  family <- projpred::extend_family(family)
+  family <- projpred:::extend_family(family)
   
   # projpred requires the dispersion parameter if present
   dis <- NULL
   if (family$family == "gaussian") {
     dis <- paste0("sigma", usc(resp))
     dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
+  }
+  
+  if (!is.null(newdata)) {
+    newdata <- validate_newdata(
+      newdata, object, resp = resp, 
+      check_response = TRUE
+    ) 
+  } else {
+    newdata <- rm_attr(object$data, "terms")
   }
   
   # allows to handle additional arguments implicitely
@@ -64,17 +73,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # call standata to ensure the correct format of the data
   args <- nlist(
-    object, newdata, resp, re_formula = NA,
-    check_response = TRUE, internal = TRUE
+    object, newdata, resp,
+    check_response = TRUE, 
+    internal = TRUE
   )
   sdata <- do_call(standata, args)
   
   # extract relevant auxiliary data
   usc_resp <- usc(resp)
-  y <- sdata[[paste0("Y", usc_resp)]]
-  weights <- sdata[[paste0("weights", usc_resp)]]
-  trials <- sdata[[paste0("trials", usc_resp)]]
-  offset <- sdata[[paste0("offset", usc_resp)]]
+  y <- as.vector(sdata[[paste0("Y", usc_resp)]])
+  weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
+  trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
+  offset <- as.vector(sdata[[paste0("offset", usc_resp)]])
   if (!is.null(trials)) {
     if (!is.null(weights)) {
       stop2("Projpred cannot handle 'trials' and 'weights' at the same time.") 
