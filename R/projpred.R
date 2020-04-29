@@ -42,14 +42,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     dis <- as.data.frame(object, pars = dis, fixed = TRUE)[[dis]]
   }
   
-  if (!is.null(newdata)) {
-    newdata <- validate_newdata(
-      newdata, object, resp = resp, 
-      check_response = TRUE
-    ) 
-  } else {
-    newdata <- rm_attr(object$data, "terms")
-  }
+  # prepare data passed to projpred
+  data <- current_data(object, newdata, resp = resp, check_response = TRUE)
   
   # allows to handle additional arguments implicitely
   extract_model_data <- function(object, newdata = NULL, ...) {
@@ -58,7 +52,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # using default prediction functions from projpred is fine
   args <- nlist(
-    object, data = newdata, formula, family, folds, dis,
+    object, data, formula, family, folds, dis,
     ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
     extract_model_data = extract_model_data, ...
   )
