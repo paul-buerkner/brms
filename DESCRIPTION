@@ -21,6 +21,7 @@ Imports:
     shinystan (>= 2.4.0),
     projpred (>= 2.0.0),
     bridgesampling (>= 0.3-0),
+    projpred (>= 2.0.0),
     glue (>= 1.3.0),
     matrixStats,
     nleqslv,

@@ -1,3 +1,5 @@
+#' @importFrom projpred get_refmodel
+#' @export get_refmodel
 #' @export
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL, 
                                  folds = NULL, ...) {
@@ -22,6 +24,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # only use the raw formula for selection of terms
   formula <- formula$formula
+  # LHS should only contain the response variable
+  formula[[2]] <- bterms$respform[[2]]
 
   # prepare the family object for use in projpred
   family <- family(object, resp = resp)
