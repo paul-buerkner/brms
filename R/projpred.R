@@ -44,6 +44,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   
   # prepare data passed to projpred
   data <- current_data(object, newdata, resp = resp, check_response = TRUE)
+  attr(data, "terms") <- NULL
   
   # allows to handle additional arguments implicitely
   extract_model_data <- function(object, newdata = NULL, ...) {
