@@ -637,6 +637,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     M <- data2[[acef_sar$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
+      class(rmd_rows) <- NULL
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (!is_equal(dim(M), rep(N, 2))) {
@@ -725,6 +726,7 @@ data_ac <- function(bterms, data, data2, basis = NULL, ...) {
     M <- data2[[acef_fcor$M]]
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
+      class(rmd_rows) <- NULL
       M <- M[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (nrow(M) != N) {

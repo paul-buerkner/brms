@@ -4,8 +4,7 @@
 \name{kidney}
 \alias{kidney}
 \title{Infections in kidney patients}
-\format{
-A data frame of 76 observations containing 
+\format{A data frame of 76 observations containing 
   information on the following 7 variables.
 \describe{
  \item{time}{The time to first or second recurrence of the infection, 
@@ -20,8 +19,7 @@ A data frame of 76 observations containing
  \item{sex}{The sex of the patient}
  \item{disease}{A factor of levels \code{other, GN, AN}, 
    and \code{PKD} specifying the type of disease}
-}
-}
+}}
 \source{
 McGilchrist, C. A., & Aisbett, C. W. (1991). 
   Regression with frailty in survival analysis. 

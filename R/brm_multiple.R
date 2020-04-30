@@ -7,9 +7,19 @@
 #' package.
 #' 
 #' @inheritParams brm
-#' @param data A list of data.frames each of which will be used to fit a
+#' @param data A \emph{list} of data.frames each of which will be used to fit a
 #'   separate model. Alternatively, a \code{mids} object from the \pkg{mice}
 #'   package.
+#' @param data2 A \emph{list} of named lists each of which will be used to fit a
+#'   separate model. Each of the named lists contains objects representing data
+#'   which cannot be passed via argument \code{data} (see \code{\link{brm}} for
+#'   examples). The length of the outer list should match the length of the list
+#'   passed to the \code{data} argument.
+#' @param recompile Logical, indicating whether the Stan model should be
+#'   recompiled for every imputed data set. Defaults to \code{FALSE}. If
+#'   \code{NULL}, \code{brm_multiple} tries to figure out internally, if recompilation
+#'   is necessary, for example because data-dependent priors have changed.
+#'   Using the default of no recompilation should be fine in most cases.
 #' @param combine Logical; Indicates if the fitted models should be combined
 #'   into a single fitted model object via \code{\link{combine_models}}.
 #'   Defaults to \code{TRUE}.
@@ -62,8 +72,10 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          data2 = NULL, autocor = NULL, cov_ranef = NULL, 
                          sample_prior = c("no", "yes", "only"), 
                          sparse = NULL, knots = NULL, stanvars = NULL,
-                         stan_funs = NULL, combine = TRUE, fit = NA,
+                         stan_funs = NULL, recompile = FALSE,
+                         combine = TRUE, fit = NA,
                          seed = NA, file = NULL, ...) {
+  
   combine <- as_one_logical(combine)
   if (!is.null(file)) {
     # optionally load saved model object
@@ -76,6 +88,7 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     }
   }
   
+  recompile <- as_one_logical(recompile)
   data_name <- substitute_name(data)
   if (inherits(data, "mids")) {
     require_package("mice", version = "3.0.0")
@@ -83,14 +96,23 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   } else if (!is_data_list(data)) {
     stop2("'data' must be a list of data.frames.")
   }
+  if (!is.null(data2)) {
+    if (!is_data2_list(data2)) {
+      stop2("'data2' must be a list of named lists.")
+    }
+    if (length(data2) != length(data)) {
+      stop2("'data2' must have the same length as 'data'.")
+    }
+  }
   
   if (is.brmsfit(fit)) {
     # avoid complications when updating the model
     class(fit) <- setdiff(class(fit), "brmsfit_multiple")
   } else {
     args <- nlist(
-      formula, data = data[[1]], family, prior, data2, autocor, cov_ranef,
-      sample_prior, sparse, knots, stanvars, stan_funs, seed, ...
+      formula, data = data[[1]], family, prior, data2 = data2[[1]], 
+      autocor, cov_ranef, sample_prior, sparse, knots, stanvars, 
+      stan_funs, seed, ...
     )
     args$chains <- 0
     message("Compiling the C++ model")
@@ -107,7 +129,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   fits <- futures <- rhats <- vector("list", length(data))
   for (i in seq_along(data)) {
     futures[[i]] <- future::future(
-      update(fit, newdata = data[[i]], recompile = FALSE, ...),
+      update(fit, newdata = data[[i]], data2 = data2[[i]],
+             recompile = recompile, ...),
       packages = "brms"
     )
   }
@@ -184,9 +207,14 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
   models[[1]]
 }
 
-# validity check for data input of 'brm_multiple'
+# validity check for 'data' input of 'brm_multiple'
 is_data_list <- function(x) {
   is.list(x) && is.vector(x)
+}
+
+# validity check for 'data2' input of 'brm_multiple'
+is_data2_list <- function(x) {
+  is.list(x) && all(ulapply(x, function(y) is.list(y) && is_named(y)))
 }
 
 warn_brmsfit_multiple <- function(x, newdata = NULL) {
