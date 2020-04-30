@@ -14,7 +14,7 @@ fitted somewhere else back into brms. (#745)
 * Improve argument `int_conditions` in `conditional_effects` to
 work for all predictors not just interactions.
 * Support multiple imputation of data passed via `data2` in 
-`brm_multiple`.
+`brm_multiple`. (#886)
 
 ### Bug Fixes
 
