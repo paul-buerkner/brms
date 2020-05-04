@@ -65,6 +65,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 .extract_model_data <- function(object, newdata = NULL, resp = NULL, ...) {
   stopifnot(is.brmsfit(object))
   resp <- validate_resp(resp, object, multiple = FALSE)
+  family <- family(object, resp = resp)
   
   # call standata to ensure the correct format of the data
   args <- nlist(
@@ -77,9 +78,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # extract relevant auxiliary data
   usc_resp <- usc(resp)
   y <- as.vector(sdata[[paste0("Y", usc_resp)]])
+  offset <- as.vector(sdata[[paste0("offset", usc_resp)]])
   weights <- as.vector(sdata[[paste0("weights", usc_resp)]])
   trials <- as.vector(sdata[[paste0("trials", usc_resp)]])
-  offset <- as.vector(sdata[[paste0("offset", usc_resp)]])
+  if (is_binary(family)) {
+    trials <- rep(1, length(y))
+  }
   if (!is.null(trials)) {
     if (!is.null(weights)) {
       stop2("Projpred cannot handle 'trials' and 'weights' at the same time.") 
