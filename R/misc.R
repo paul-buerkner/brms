@@ -383,6 +383,18 @@ all_vars <- function(expr, ...) {
   all.vars(expr, ...)
 }
 
+# reimplemented for older R versions
+# see ?parse in R 3.6 or higher
+str2expression <- function(x) {
+  parse(text = x, keep.source = FALSE)
+}
+
+# reimplemented for older R versions
+# see ?parse in R 3.6 or higher
+str2lang <- function(x) {
+  str2expression(x)[[1]]
+}
+
 # append list(...) to x
 lc <- function(x, ...) {
   dots <- rmNULL(list(...), recursive = FALSE)

@@ -4,7 +4,7 @@
 #' performed for the data used to fit the model (posterior predictive checks) or
 #' for new data. By definition, these samples have higher variance than samples
 #' of the means of the posterior predictive distribution computed by
-#' \code{\link{posterior_predict.brmsfit}}. This is because the residual error
+#' \code{\link{posterior_epred.brmsfit}}. This is because the residual error
 #' is incorporated in \code{posterior_predict}. However, the estimated means of
 #' both methods averaged across samples should be very similar.
 #' 

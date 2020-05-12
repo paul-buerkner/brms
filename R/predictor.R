@@ -276,11 +276,11 @@ predictor_gp <- function(prep, i) {
       zgp = zgp, slambda = slambda
     ))
   }
-  if (!is.null(gp[["Cgp"]])) {
-    eta <- eta * as_draws_matrix(gp[["Cgp"]], dim = dim(eta))
-  }
   if (!is.null(gp[["Jgp"]])) {
     eta <- eta[, gp[["Jgp"]], drop = FALSE]
+  }
+  if (!is.null(gp[["Cgp"]])) {
+    eta <- eta * as_draws_matrix(gp[["Cgp"]], dim = dim(eta))
   }
   eta
 }

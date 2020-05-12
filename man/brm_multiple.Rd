@@ -17,6 +17,7 @@ brm_multiple(
   knots = NULL,
   stanvars = NULL,
   stan_funs = NULL,
+  recompile = FALSE,
   combine = TRUE,
   fit = NA,
   seed = NA,
@@ -31,7 +32,7 @@ be coerced to that classes): A symbolic description of the model to be
 fitted. The details of model specification are explained in
 \code{\link{brmsformula}}.}
 
-\item{data}{A list of data.frames each of which will be used to fit a
+\item{data}{A \emph{list} of data.frames each of which will be used to fit a
 separate model. Alternatively, a \code{mids} object from the \pkg{mice}
 package.}
 
@@ -49,10 +50,11 @@ linear \code{gaussian} model is applied. In multivariate models,
 \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 for more help.}
 
-\item{data2}{A named \code{list} of objects containing data, which
-cannot be passed via argument \code{data}. Required for some objects 
-used in autocorrelation structures to specify dependency structures
-as well as for within-group covariance matrices.}
+\item{data2}{A \emph{list} of named lists each of which will be used to fit a
+separate model. Each of the named lists contains objects representing data
+which cannot be passed via argument \code{data} (see \code{\link{brm}} for
+examples). The length of the outer list should match the length of the list
+passed to the \code{data} argument.}
 
 \item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
 describing the correlation structure within the response variable (i.e.,
@@ -106,6 +108,12 @@ for basis construction of smoothing terms. See
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
 \code{stanvars} argument for this purpose instead.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled for every imputed data set. Defaults to \code{FALSE}. If
+\code{NULL}, \code{brm_multiple} tries to figure out internally, if recompilation
+is necessary, for example because data-dependent priors have changed.
+Using the default of no recompilation should be fine in most cases.}
 
 \item{combine}{Logical; Indicates if the fitted models should be combined
 into a single fitted model object via \code{\link{combine_models}}.
