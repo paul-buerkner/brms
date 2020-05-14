@@ -857,7 +857,7 @@ data_prior <- function(bterms, data, prior) {
 # @param cols2remove names of the columns to remove from 
 #   the model matrix; mainly used for intercepts
 # @param rename rename column names via rename()?
-# @param ... currently ignored
+# @param ... passed to stats::model.matrix
 # @return
 #   The design matrix for the given formula and data.
 #   For details see ?stats::model.matrix
@@ -871,7 +871,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   if (no_int(terms)) {
     cols2remove <- union(cols2remove, "(Intercept)")
   }
-  X <- stats::model.matrix(terms, data)
+  X <- stats::model.matrix(terms, data, ...)
   cols2remove <- which(colnames(X) %in% cols2remove)
   if (length(cols2remove)) {
     X <- X[, -cols2remove, drop = FALSE]

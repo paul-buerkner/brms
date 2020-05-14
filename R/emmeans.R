@@ -45,16 +45,17 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
   contr <- lapply(object$data, function(.) attr(., "contrasts"))
   contr <- contr[!sapply(contr, is.null)]
-  X <- model.matrix(trms, m, contrasts.arg = contr) 
-  nm <- rename(colnames(X))
+  p <- combine_prefix(bterms)
+  cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
+  X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
+  nm <- paste0(usc(p, "suffix"), colnames(X))
   V <- vcov(object)[nm, nm, drop = FALSE]
   # we are assuming no rank deficiency
   nbasis <- matrix(NA)
   dfargs <- list()
   dffun <- function(k, dfargs) Inf
   misc <- emmeans::.std.link.labels(bterms$family, list())
-  p <- usc(combine_prefix(bterms))
-  post.beta <- as.matrix(object, pars = paste0("b", p, "_", nm), fixed = TRUE)
+  post.beta <- as.matrix(object, pars = paste0("b_", nm), fixed = TRUE)
   bhat <- apply(post.beta, 2, mean)
   nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
 }
@@ -63,6 +64,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
 .extract_par_terms <- function(object, resp = NULL, dpar = NULL, 
                                nlpar = NULL) {
   resp <- validate_resp(resp, object, multiple = FALSE)
+  stopifnot_resp(object, resp)
   bterms <- brmsterms(formula(object))
   if (is.mvbrmsterms(bterms)) {
     bterms <- bterms$terms[[resp]]
@@ -75,7 +77,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     if (!nlpar %in% names(bterms$nlpars)) {
       stop2("Parameter '", nlpar, "' is not part of the model.")
     }
-    out <- bterms$nlpars[[dpar]]
+    out <- bterms$nlpars[[nlpar]]
   } else if (!is.null(dpar)) {
     dpar <- as_one_character(dpar)
     if (!dpar %in% names(bterms$dpars)) {
@@ -86,7 +88,11 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
     out <- bterms$dpars[["mu"]]
   }
   if (!is.btl(out)) {
-    stop2("Extracted terms do originate from linear formula.")
+    stop2(
+      "The select parameter is not predicted by a linear formula. ",
+      "Use the 'dpar' and 'nlpar' arguments to select the ",
+      "parameter for which marginal means should be computed."
+    )
   }
   out
 }
