@@ -43,8 +43,8 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
                               dpar = NULL, nlpar = NULL, ...) {
   bterms <- .extract_par_terms(object, resp, dpar, nlpar)
   m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
-  contr <- lapply(object$data, function(.) attr(., "contrasts"))
-  contr <- contr[!sapply(contr, is.null)]
+  contr <- lapply(object$data, function(x) attr(x, "contrasts"))
+  contr <- contr[!ulapply(contr, is.null)]
   p <- combine_prefix(bterms)
   cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
   X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
@@ -69,29 +69,41 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   if (is.mvbrmsterms(bterms)) {
     bterms <- bterms$terms[[resp]]
   }
+  all_dpars <- names(bterms$dpars)
+  all_nlpars <- names(bterms$nlpars)
   if (!is.null(nlpar)) {
     if (!is.null(dpar)) {
       stop2("'dpar' and 'nlpar' cannot be specified at the same time.")
     }
     nlpar <- as_one_character(nlpar)
-    if (!nlpar %in% names(bterms$nlpars)) {
-      stop2("Parameter '", nlpar, "' is not part of the model.")
+    if (!nlpar %in% all_nlpars) {
+      stop2(
+        "Non-linear parameter '", nlpar, "' is not part of the model.",
+        "\nSupported parameters are: ", collapse_comma(all_nlpars)
+      )
     }
     out <- bterms$nlpars[[nlpar]]
   } else if (!is.null(dpar)) {
     dpar <- as_one_character(dpar)
-    if (!dpar %in% names(bterms$dpars)) {
-      stop2("Parameter '", dpar, "' is not part of the model.")
+    if (!dpar %in% all_dpars) {
+      stop2(
+        "Distributional parameter '", dpar, "' is not part of the model.",
+        "\nSupported parameters are: ", collapse_comma(all_dpars)
+      )
     }
     out <- bterms$dpars[[dpar]]
   } else {
     out <- bterms$dpars[["mu"]]
   }
   if (!is.btl(out)) {
+    btl_dpars <- all_dpars[ulapply(bterms$dpars, is.btl)]
+    btl_nlpars <- all_nlpars[ulapply(bterms$nlpars, is.btl)]
     stop2(
       "The select parameter is not predicted by a linear formula. ",
       "Use the 'dpar' and 'nlpar' arguments to select the ",
-      "parameter for which marginal means should be computed."
+      "parameter for which marginal means should be computed.",
+      "\nPredicted distributional parameters are: ", collapse_comma(btl_dpars),
+      "\nPredicted non-linear parameters are: ", collapse_comma(btl_nlpars)
     )
   }
   out
