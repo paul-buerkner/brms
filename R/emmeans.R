@@ -1,0 +1,92 @@
+#' Support Functions for \pkg{emmeans}
+#' 
+#' Functions required for compatibility of \pkg{brms} with \pkg{emmeans}.
+#' Users are not required to call these functions themselves. Instead,
+#' they will be called automatically by the \code{emmeans} function
+#' of the \pkg{emmeans} package.
+#' 
+#' @name emmeans-brms-helpers
+#' 
+#' @inheritParams posterior_epred.brmsfit
+#' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
+#' @param ... Additional arguments passed to \pkg{emmeans}.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
+#'             data = kidney, family = lognormal())
+#' summary(fit)           
+#'
+#' # summarize via 'emmeans'
+#' library(emmeans)
+#' rg <- ref_grid(fit)
+#' em <- emmeans(rg, "disease")
+#' summary(em, point.est = mean)
+#' }
+NULL
+
+# recover the predictors used in the population-level part of the model
+#' @rdname emmeans-brms-helpers
+recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
+                                 nlpar = NULL, ...) {
+  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
+  trms <- attr(model.frame(bterms$fe, data = object$data), "terms")
+  # brms has no call component so the call is just a dummy
+  emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
+}
+
+# Calculate the basis for making predictions. This is essentially the
+# inside of the predict() function with new data on the link scale. 
+# Transforming to response scale, if desired, is handled by emmeans.
+#' @rdname emmeans-brms-helpers
+emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
+                              dpar = NULL, nlpar = NULL, ...) {
+  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
+  m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
+  contr <- lapply(object$data, function(.) attr(., "contrasts"))
+  contr <- contr[!sapply(contr, is.null)]
+  X <- model.matrix(trms, m, contrasts.arg = contr) 
+  nm <- rename(colnames(X))
+  V <- vcov(object)[nm, nm, drop = FALSE]
+  # we are assuming no rank deficiency
+  nbasis <- matrix(NA)
+  dfargs <- list()
+  dffun <- function(k, dfargs) Inf
+  misc <- emmeans::.std.link.labels(bterms$family, list())
+  p <- usc(combine_prefix(bterms))
+  post.beta <- as.matrix(object, pars = paste0("b", p, "_", nm), fixed = TRUE)
+  bhat <- apply(post.beta, 2, mean)
+  nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
+}
+
+# extract terms of a specific predicted parameter in the model
+.extract_par_terms <- function(object, resp = NULL, dpar = NULL, 
+                               nlpar = NULL) {
+  resp <- validate_resp(resp, object, multiple = FALSE)
+  bterms <- brmsterms(formula(object))
+  if (is.mvbrmsterms(bterms)) {
+    bterms <- bterms$terms[[resp]]
+  }
+  if (!is.null(nlpar)) {
+    if (!is.null(dpar)) {
+      stop2("'dpar' and 'nlpar' cannot be specified at the same time.")
+    }
+    nlpar <- as_one_character(nlpar)
+    if (!nlpar %in% names(bterms$nlpars)) {
+      stop2("Parameter '", nlpar, "' is not part of the model.")
+    }
+    out <- bterms$nlpars[[dpar]]
+  } else if (!is.null(dpar)) {
+    dpar <- as_one_character(dpar)
+    if (!dpar %in% names(bterms$dpars)) {
+      stop2("Parameter '", dpar, "' is not part of the model.")
+    }
+    out <- bterms$dpars[[dpar]]
+  } else {
+    out <- bterms$dpars[["mu"]]
+  }
+  if (!is.btl(out)) {
+    stop2("Extracted terms do originate from linear formula.")
+  }
+  out
+}

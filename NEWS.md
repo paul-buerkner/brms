@@ -15,6 +15,8 @@ fitted somewhere else back into brms. (#745)
 work for all predictors not just interactions.
 * Support multiple imputation of data passed via `data2` in 
 `brm_multiple`. (#886)
+* Fully support the `emmeans` package thanks to the help 
+of Russell V. Lenth. (#418)
 
 ### Bug Fixes
 

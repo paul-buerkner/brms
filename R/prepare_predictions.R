@@ -387,7 +387,7 @@ prepare_predictions_cs <- function(bterms, samples, sdata, data, ...) {
   csef <- colnames(get_model_matrix(bterms$cs, data))
   if (length(csef)) {
     p <- usc(combine_prefix(bterms))
-    cs_pars <- paste0("^bcs", p, "_", csef, "\\[")
+    cs_pars <- paste0("^bcs", p, "_", escape_all(csef), "\\[")
     out$bcs <- get_samples(samples, cs_pars)
     out$Xcs <- sdata[[paste0("Xcs", p)]]
   }

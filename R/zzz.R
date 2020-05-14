@@ -19,14 +19,3 @@
 #   rstan::stan_model(stanc_ret = model)
 # }
 # new_stan_functions <- new_stan_functions()
-
-
-# The following code dynamically registers the recover_data and emm_basis
-# methods needed by emmeans, if that package is installed.
-
-.onLoad <- function(libname, pkgname) {
-    if (requireNamespace("emmeans", quietly = TRUE)) {
-        emmeans::.emm_register(c("brmsfit"), pkgname)
-    }
-    invisible()
-}

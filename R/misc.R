@@ -991,6 +991,14 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   invisible(NULL)
 }
 
+# code to execute when loading brms
 .onLoad <- function(libname, pkgname) {
+  # ensure compatibility with older R versions
   backports::import(pkgname)
+  # dynamically register the 'recover_data' and 'emm_basis'
+  # methods needed by 'emmeans', if that package is installed
+  if (requireNamespace("emmeans", quietly = TRUE)) {
+    emmeans::.emm_register("brmsfit", pkgname)
+  }
+  invisible(NULL)
 }
