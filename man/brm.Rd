@@ -28,8 +28,8 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1L),
   control = NULL,
-  algorithm = c("sampling", "meanfield", "fullrank"),
-  backend = c("rstan", "cmdstanr"),
+  algorithm = getOption("stan_algorithm", "sampling"),
+  backend = getOption("stan_backend", "rstan"),
   future = getOption("future", FALSE),
   silent = TRUE,
   seed = NA,
@@ -183,14 +183,16 @@ section below. For a comprehensive overview see
 \code{\link[rstan:stan]{stan}}.}
 
 \item{algorithm}{Character string naming the estimation approach to use.
-Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
-distribution.}
+distribution. Can be set globally for the current \R session via the
+\code{"stan_algorithm"} option (see \code{\link{options}}).}
 
-\item{backend}{Character string naming the package to use
-as the backend for fiting the Stan model. Can be \code{"rstan"}
-(the default) or \code{"cmdstanr"}.}
+\item{backend}{Character string naming the package to use as the backend for
+fiting the Stan model. Options are \code{"rstan"} (the default) or
+\code{"cmdstanr"}. Can be set globally for the current \R session via the
+\code{"stan_backend"} option (see \code{\link{options}}).}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 package is used for parallel execution of the chains and argument

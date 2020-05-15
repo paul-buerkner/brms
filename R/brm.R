@@ -128,13 +128,15 @@
 #'   chains). For non-Windows OS in non-interactive \R sessions, forking is used
 #'   instead of PSOCK clusters.
 #' @param algorithm Character string naming the estimation approach to use.
-#'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+#'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
 #'   \code{"fullrank"} for variational inference with a multivariate normal
-#'   distribution.
-#' @param backend Character string naming the package to use
-#'   as the backend for fiting the Stan model. Can be \code{"rstan"}
-#'   (the default) or \code{"cmdstanr"}.
+#'   distribution. Can be set globally for the current \R session via the
+#'   \code{"stan_algorithm"} option (see \code{\link{options}}).
+#' @param backend Character string naming the package to use as the backend for
+#'   fiting the Stan model. Options are \code{"rstan"} (the default) or
+#'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
+#'   \code{"stan_backend"} option (see \code{\link{options}}).
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
@@ -366,8 +368,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1L), control = NULL,
-                algorithm = c("sampling", "meanfield", "fullrank"),
-                backend = c("rstan", "cmdstanr"),
+                algorithm = getOption("stan_algorithm", "sampling"),
+                backend = getOption("stan_backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, empty = FALSE, ...) {
@@ -382,8 +384,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   
   # validate arguments later passed to Stan
   dots <- list(...)
-  algorithm <- match.arg(algorithm)
-  backend <- match.arg(backend)
+  algorithm <- match.arg(algorithm, algorithm_choices())
+  backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)

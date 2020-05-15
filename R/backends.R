@@ -203,3 +203,13 @@ compiled_model <- function(x) {
   }
   out
 }
+
+# supported Stan backends
+backend_choices <- function() {
+  c("rstan", "cmdstanr")
+}
+
+# supported Stan algorithms
+algorithm_choices <- function() {
+  c("sampling", "meanfield", "fullrank")
+}

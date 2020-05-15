@@ -53,11 +53,11 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars,
                            parse = getOption("parse_stancode", FALSE), 
-                           backend = c("rstan", "cmdstanr"), silent = TRUE, 
-                           save_model = NULL, ...) {
+                           backend = getOption("stan_backend", "rstan"),
+                           silent = TRUE, save_model = NULL, ...) {
  
   parse <- as_one_logical(parse)
-  backend <- match.arg(backend)
+  backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
