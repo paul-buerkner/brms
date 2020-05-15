@@ -163,6 +163,10 @@ restructure_v2 <- function(x) {
     attr(x$data, "data_name") <- x$data.name
     x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
   }
+  if (version < "2.12.11") {
+    # added support for 'cmdstanr' as additional backend
+    x$backend <- "rstan"
+  }
   x
 }
 

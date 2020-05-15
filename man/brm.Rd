@@ -29,12 +29,12 @@ brm(
   cores = getOption("mc.cores", 1L),
   control = NULL,
   algorithm = c("sampling", "meanfield", "fullrank"),
+  backend = c("rstan", "cmdstanr"),
   future = getOption("future", FALSE),
   silent = TRUE,
   seed = NA,
   save_model = NULL,
   stan_model_args = list(),
-  save_dso = TRUE,
   file = NULL,
   empty = FALSE,
   ...
@@ -182,11 +182,15 @@ The most important control parameters are discussed in the 'Details'
 section below. For a comprehensive overview see
 \code{\link[rstan:stan]{stan}}.}
 
-\item{algorithm}{Character string indicating the estimation approach to use.
+\item{algorithm}{Character string naming the estimation approach to use.
 Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
 distribution.}
+
+\item{backend}{Character string naming the package to use
+as the backend for fiting the Stan model. Can be \code{"rstan"}
+(the default) or \code{"cmdstanr"}.}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 package is used for parallel execution of the chains and argument
@@ -210,12 +214,6 @@ named after the string supplied in \code{save_model}.}
 
 \item{stan_model_args}{A \code{list} of further arguments passed to
 \code{\link[rstan:stan_model]{stan_model}}.}
-
-\item{save_dso}{(Deprecated) Logical, defaulting to \code{TRUE}, indicating
-whether the dynamic shared object (DSO) compiled from the C++ code for the
-model will be saved or not. If \code{TRUE}, we can draw samples from the
-same model in another \R session using the saved DSO (i.e., without
-compiling the C++ code again).}
 
 \item{file}{Either \code{NULL} or a character string. In the latter case, the
 fitted model object is saved via \code{\link{saveRDS}} in a file named

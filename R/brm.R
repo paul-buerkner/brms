@@ -127,11 +127,14 @@
 #'   be as many processors as the hardware and RAM allow (up to the number of
 #'   chains). For non-Windows OS in non-interactive \R sessions, forking is used
 #'   instead of PSOCK clusters.
-#' @param algorithm Character string indicating the estimation approach to use.
+#' @param algorithm Character string naming the estimation approach to use.
 #'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
 #'   \code{"fullrank"} for variational inference with a multivariate normal
 #'   distribution.
+#' @param backend Character string naming the package to use
+#'   as the backend for fiting the Stan model. Can be \code{"rstan"}
+#'   (the default) or \code{"cmdstanr"}.
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
@@ -167,11 +170,6 @@
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
-#' @param save_dso (Deprecated) Logical, defaulting to \code{TRUE}, indicating
-#'   whether the dynamic shared object (DSO) compiled from the C++ code for the
-#'   model will be saved or not. If \code{TRUE}, we can draw samples from the
-#'   same model in another \R session using the saved DSO (i.e., without
-#'   compiling the C++ code again).
 #' @param ... Further arguments passed to Stan that is to
 #'   \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
 #' 
@@ -369,10 +367,12 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
+                backend = c("rstan", "cmdstanr"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                save_dso = TRUE, file = NULL, empty = FALSE, ...) {
+                file = NULL, empty = FALSE, ...) {
   
+  # optionally load brmsfit from file
   if (!is.null(file)) {
     x <- read_brmsfit(file)
     if (!is.null(x)) {
@@ -383,6 +383,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   # validate arguments later passed to Stan
   dots <- list(...)
   algorithm <- match.arg(algorithm)
+  backend <- match.arg(backend)
   silent <- as_one_logical(silent)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
@@ -396,12 +397,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
   
+  # initialize brmsfit object
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
     sdata <- standata(x)
     x$criteria <- list()
-    x$fit <- rstan::get_stanmodel(x$fit)
+    # TODO: support cmdstanr
+    model <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
     formula <- validate_formula(
@@ -427,7 +430,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # initialize S3 object
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
-      stanvars = stanvars, algorithm = algorithm, family = family
+      stanvars = stanvars, algorithm = algorithm, backend = backend,
+      family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -449,61 +453,22 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       # return the brmsfit object with an empty 'fit' slot
       return(x)
     }
-    stopifnot(is.list(stan_model_args))
-    silence_stan_model <- !length(stan_model_args)
-    stan_model_args$model_code <- x$model
-    if (!isTRUE(save_dso)) {
-      warning2("'save_dso' is deprecated. Please use 'stan_model_args'.")
-      stan_model_args$save_dso <- save_dso
-    }
-    message("Compiling the C++ model")
-    x$fit <- eval_silent(
-      do_call(rstan::stan_model, stan_model_args),
-      silent = silence_stan_model, type = "message"
-    )
+    # compile the Stan model
+    compile_args <- stan_model_args
+    compile_args$model <- x$model
+    compile_args$backend <- backend
+    model <- do_call(compile_model, compile_args)
   }
   
-  args <- nlist(
-    object = x$fit, data = sdata, pars = x$exclude, 
-    include = FALSE, algorithm, iter, seed
+  # fit the Stan model
+  fit_args <- nlist(
+    model, sdata, algorithm, backend, iter, warmup, thin, chains, 
+    cores, inits, exclude = x$exclude, control, future, seed, 
+    silent, ...
   )
-  args[names(dots)] <- dots
-  message("Start sampling")
-  if (args$algorithm == "sampling") {
-    args$algorithm <- NULL
-    c(args) <- nlist(
-      init = inits, warmup, thin, control, 
-      show_messages = !silent
-    )
-    if (future) {
-      if (cores > 1L) {
-        warning2("Argument 'cores' is ignored when using 'future'.")
-      }
-      args$chains <- 1L
-      futures <- fits <- vector("list", chains)
-      for (i in seq_len(chains)) {
-        args$chain_id <- i
-        if (is.list(inits)) {
-          args$init <- inits[i]
-        }
-        futures[[i]] <- future::future(
-          brms::do_call(rstan::sampling, args), 
-          packages = "rstan"
-        )
-      }
-      for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]]) 
-      }
-      x$fit <- rstan::sflist2stanfit(fits)
-      rm(futures, fits)
-    } else {
-      c(args) <- nlist(chains, cores)
-      x$fit <- do_call(rstan::sampling, args) 
-    }
-  } else {
-    # vb does not support parallel execution
-    x$fit <- do_call(rstan::vb, args)
-  }
+  x$fit <- do_call(fit_model, fit_args)
+
+  # rename parameters to have human readable names
   x <- rename_pars(x)
   if (!is.null(file)) {
     write_brmsfit(x, file)
