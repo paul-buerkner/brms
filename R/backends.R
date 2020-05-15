@@ -184,8 +184,22 @@ fit_model <- function(model, backend, ...) {
   } else {
     stop2("Algorithm '", algorithm, "' is not supported.")
   }
-  # TODO: store the cmdstan model somewhere to allow for updating?
   # transform into stanfit object for consistent output structure
   out <- rstan::read_stan_csv(out$output_files())
+  # allow updating the model without recompilation
+  attributes(out)$CmdStanModel <- model
+  out
+}
+
+# extract the compiled model
+# @param x brmsfit object
+compiled_model <- function(x) {
+  stopifnot(is.brmsfit(x))
+  backend <- x$backend %||% "rstan"
+  if (backend == "rstan") {
+    out <- rstan::get_stanmodel(x$fit)
+  } else if (backend == "cmdstanr") {
+    out <- attributes(x$fit)$CmdStanModel
+  }
   out
 }

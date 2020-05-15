@@ -401,10 +401,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
-    sdata <- standata(x)
     x$criteria <- list()
-    # TODO: support cmdstanr
-    model <- rstan::get_stanmodel(x$fit)
+    sdata <- standata(x)
+    model <- compiled_model(x)
   } else {  
     # build new model
     formula <- validate_formula(
