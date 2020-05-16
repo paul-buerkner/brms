@@ -140,6 +140,8 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' }
 #' 
 #' @method loo_R2 brmsfit
+#' @importFrom rstantools loo_R2
+#' @export loo_R2
 #' @export
 loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   contains_samples(object)
@@ -186,10 +188,4 @@ loo_R2.brmsfit <- function(object, resp = NULL, ...) {
   R2 <- unlist(R2)
   names(R2) <- paste0("R2", resp)
   R2
-}
-
-# temporary generic until available in loo
-#' @export
-loo_R2 <- function(object, ...) {
-  UseMethod("loo_R2")
 }
