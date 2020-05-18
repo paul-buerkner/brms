@@ -20,6 +20,9 @@
 #'  \code{'tdata'} (transformed data), \code{'parameters'},
 #'  \code{'tparameters'} (transformed parameters), \code{'model'},
 #'  \code{'genquant'} (generated quantities) or \code{'functions'}.
+#' @param position Name of the position within the block where the
+#'  Stan code should be placed. Currently allowed are \code{'start'}
+#'  (the default) and \code{'end'} of the block.
 #'  
 #' @return An object of class \code{stanvars}.
 #' 
@@ -46,12 +49,14 @@
 #' 
 #' @export
 stanvar <- function(x = NULL, name = NULL, scode = NULL,
-                    block = "data") {
+                    block = "data", position = "start") {
   vblocks <- c(
     "data", "tdata", "parameters", "tparameters", 
     "model", "genquant", "functions"
   )
   block <- match.arg(block, vblocks)
+  vpositions <- c("start", "end")
+  position <- match.arg(position, vpositions)
   if (block == "data") {
     if (is.null(x)) {
       stop2("Argument 'x' is required if block = 'data'.")
@@ -104,7 +109,10 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
       stop2("Argument 'scode' is required if block is not 'data'.")
     }
   }
-  out <- nlist(name, sdata = x, scode, block)
+  if (position == "end" && block %in% c("functions", "data", "model")) {
+    stop2("Position '", position, "' is not sensible for block '", block, "'.")
+  }
+  out <- nlist(name, sdata = x, scode, block, position)
   structure(setNames(list(out), name), class = "stanvars")
 }
 
@@ -117,13 +125,16 @@ subset_stanvars <- function(x, ...) {
 }
 
 # collapse Stan code provided in a stanvars object
-collapse_stanvars <- function(x, block = NULL) {
+collapse_stanvars <- function(x, block = NULL, position = NULL) {
   x <- validate_stanvars(x)
   if (!length(x)) {
     return(character(0))
   }
   if (!is.null(block)) {
     x <- subset_stanvars(x, block = block)
+  }
+  if (!is.null(position)) {
+    x <- subset_stanvars(x, position = position)
   }
   if (!length(x)) {
     return("")

@@ -1902,6 +1902,13 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
+  # add transformation at the end of a block
+  stanvars <- stanvar(scode = "  r_1_1 = r_1_1 * 2;", 
+                      block = "tparameters", position = "end")
+  scode <- make_stancode(count ~ Trt + (1 | patient), epilepsy,
+                         stanvars = stanvars)
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (z_1[1]));\n  r_1_1 = r_1_1 * 2;")
+  
   # use the non-centered parameterization for 'b'
   # unofficial feature not supported anymore for the time being
   # bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
