@@ -17,6 +17,8 @@ work for all predictors not just interactions.
 `brm_multiple`. (#886)
 * Fully support the `emmeans` package thanks to the help 
 of Russell V. Lenth. (#418)
+* Control the within-block position of Stan code added via 
+`stanvar` using the `position` argument.
 
 ### Bug Fixes
 
