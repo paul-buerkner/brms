@@ -831,7 +831,7 @@ posterior_predict_custom <- function(i, prep, ...) {
     pp_fun <- paste0("posterior_predict_", prep$family$name)
     pp_fun <- get(pp_fun, prep$family$env)
   }
-  pp_fun(i = i, prep = prep, ...)
+  pp_fun(i, prep, ...)
 }
 
 posterior_predict_mixture <- function(i, prep, ...) {
