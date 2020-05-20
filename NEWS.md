@@ -32,7 +32,9 @@ Rok Češnovar.
 or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
 * Fix Stan code of models which are truncated and weighted at the 
 same time thanks to Michael Thompson. (#884)
-
+* Fix Stan code of multivariate models with custom families and
+data variables passed to the likelihood thanks to Raoul Wolf. (#906)
+ 
 ### Other Changes
 
 * Reduce minimal scale of several default priors from 10 to 2.5.

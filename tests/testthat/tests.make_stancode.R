@@ -2005,6 +2005,16 @@ test_that("custom families are handled correctly", {
   expect_match2(scode, 
     "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, vint1[n], vreal1[n]);"
   )
+  
+  # check custom families in multivariate models
+  bform <- bf(
+    y | vint(size) + vreal(size) + trials(size) ~ x,
+    family = beta_binomial2
+  ) + bf(x ~ 1, family = gaussian())
+  scode <- make_stancode(bform, data = dat, stanvars = stanvars)
+  expect_match2(scode,
+    "target += beta_binomial2_lpmf(Y_y[n] | mu_y[n], tau_y, vint1_y[n], vreal1_y[n]);"
+  )
 })
 
 test_that("likelihood of distributional beta models is correct", {
