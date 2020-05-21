@@ -4,7 +4,8 @@
 \name{inhaler}
 \alias{inhaler}
 \title{Clarity of inhaler instructions}
-\format{A data frame of 572 observations containing 
+\format{
+A data frame of 572 observations containing 
   information on the following 5 variables. 
 \describe{
  \item{subject}{The subject number}
@@ -14,7 +15,8 @@
    the two inhaler devices was used} 
  \item{period}{A contrast to indicate the time of administration}
  \item{carry}{A contrast to indicate possible carry over effects}
-}}
+}
+}
 \source{
 Ezzet, F., & Whitehead, J. (1991). 
   A random effects model for ordinal responses from a crossover trial. 
