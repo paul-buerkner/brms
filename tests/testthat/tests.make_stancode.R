@@ -1906,6 +1906,13 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
+  # add transformation at the end of a block
+  stanvars <- stanvar(scode = "  r_1_1 = r_1_1 * 2;", 
+                      block = "tparameters", position = "end")
+  scode <- make_stancode(count ~ Trt + (1 | patient), epilepsy,
+                         stanvars = stanvars)
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (z_1[1]));\n  r_1_1 = r_1_1 * 2;")
+  
   # use the non-centered parameterization for 'b'
   # unofficial feature not supported anymore for the time being
   # bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
@@ -2001,6 +2008,16 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode, 
     "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, vint1[n], vreal1[n]);"
+  )
+  
+  # check custom families in multivariate models
+  bform <- bf(
+    y | vint(size) + vreal(size) + trials(size) ~ x,
+    family = beta_binomial2
+  ) + bf(x ~ 1, family = gaussian())
+  scode <- make_stancode(bform, data = dat, stanvars = stanvars)
+  expect_match2(scode,
+    "target += beta_binomial2_lpmf(Y_y[n] | mu_y[n], tau_y, vint1_y[n], vreal1_y[n]);"
   )
 })
 

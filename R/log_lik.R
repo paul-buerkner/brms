@@ -854,7 +854,7 @@ log_lik_custom <- function(i, prep) {
     log_lik_fun <- paste0("log_lik_", prep$family$name)
     log_lik_fun <- get(log_lik_fun, prep$family$env)
   }
-  log_lik_fun(i = i, prep = prep)
+  log_lik_fun(i, prep)
 }
 
 log_lik_mixture <- function(i, prep) {

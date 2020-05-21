@@ -218,8 +218,9 @@ approximate leave-one-out cross-validation implemented in method `loo`, which in
 turn requires `log_lik` to be working.
 
 The `log_lik` function of a family should be named `log_lik_<family-name>` and
-have the two arguments `i` (indicating observations) and `draws`. You don't have
-to worry too much about how `draws` is created. Instead, all you need to know is
+have the two arguments `i` (indicating observations) and `prep`. You don't have
+to worry too much about how `prep` is created (if you are interested, check
+out the `prepare_predictions` function). Instead, all you need to know is
 that parameters are stored in slot `dpars` and data are stored in slot `data`.
 Generally, parameters take on the form of a $S \times N$ matrix (with $S =$
 number of posterior samples and $N =$ number of observations) if they are
@@ -239,11 +240,11 @@ expose_functions(fit2, vectorize = TRUE)
 and define the required `log_lik` functions with a few lines of code.
 
 ```{r log_lik}
-log_lik_beta_binomial2 <- function(i, draws) {
-  mu <- draws$dpars$mu[, i]
-  phi <- draws$dpars$phi
-  trials <- draws$data$vint1[i]
-  y <- draws$data$Y[i]
+log_lik_beta_binomial2 <- function(i, prep) {
+  mu <- prep$dpars$mu[, i]
+  phi <- prep$dpars$phi
+  trials <- prep$data$vint1[i]
+  y <- prep$data$Y[i]
   beta_binomial2_lpmf(y, mu, phi, trials)
 }
 ```
@@ -262,10 +263,10 @@ that the difference is not that substantial.
 Next, we will define the function necessary for the `posterior_predict` method:
 
 ```{r posterior_predict}
-posterior_predict_beta_binomial2 <- function(i, draws, ...) {
-  mu <- draws$dpars$mu[, i]
-  phi <- draws$dpars$phi
-  trials <- draws$data$vint1[i]
+posterior_predict_beta_binomial2 <- function(i, prep, ...) {
+  mu <- prep$dpars$mu[, i]
+  phi <- prep$dpars$phi
+  trials <- prep$data$vint1[i]
   beta_binomial2_rng(mu, phi, trials)
 }
 ```
@@ -283,16 +284,16 @@ pp_check(fit2)
 ```
 
 When defining the `posterior_epred` function, you have to keep in mind that it
-has only a `draws` argument and should compute the mean response values for all
+has only a `prep` argument and should compute the mean response values for all
 observations at once. Since the mean of the beta-binomial distribution is
 $\text{E}(y) = \mu T$ definition of the corresponding `posterior_epred` function
 is not too complicated, but we need to get the dimension of parameters and data
 in line.
 
 ```{r posterior_epred}
-posterior_epred_beta_binomial2 <- function(draws) {
-  mu <- draws$dpars$mu
-  trials <- draws$data$vint1
+posterior_epred_beta_binomial2 <- function(prep) {
+  mu <- prep$dpars$mu
+  trials <- prep$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
 }

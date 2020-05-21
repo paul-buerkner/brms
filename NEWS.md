@@ -17,6 +17,8 @@ work for all predictors not just interactions.
 `brm_multiple`. (#886)
 * Fully support the `emmeans` package thanks to the help 
 of Russell V. Lenth. (#418)
+* Control the within-block position of Stan code added via 
+`stanvar` using the `position` argument.
 
 ### Bug Fixes
 
@@ -30,7 +32,9 @@ Rok Češnovar.
 or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
 * Fix Stan code of models which are truncated and weighted at the 
 same time thanks to Michael Thompson. (#884)
-
+* Fix Stan code of multivariate models with custom families and
+data variables passed to the likelihood thanks to Raoul Wolf. (#906)
+ 
 ### Other Changes
 
 * Reduce minimal scale of several default priors from 10 to 2.5.

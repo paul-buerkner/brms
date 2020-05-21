@@ -83,7 +83,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs$fun,
-      collapse_stanvars(stanvars, block = "functions"),
+      collapse_stanvars(stanvars, "functions"),
     "}\n"
   )
   # generate data block
@@ -93,7 +93,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored?\n",
-    collapse_stanvars(stanvars, block = "data"),
+    collapse_stanvars(stanvars, "data"),
     "}\n"
   )
   # generate transformed parameters block
@@ -101,8 +101,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     "transformed data {\n",
        scode_global_defs$tdata_def,
        scode_predictor$tdata_def,
-       collapse_stanvars(stanvars, block = "tdata"),
+       collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor$tdata_comp,
+       collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
   # generate parameters block
@@ -122,7 +123,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "parameters {\n",
       scode_parameters,
       scode_rngprior$par,
-      collapse_stanvars(stanvars, block = "parameters"),
+      collapse_stanvars(stanvars, "parameters"),
     "}\n"
   )
   # generate transformed parameters block
@@ -131,20 +132,21 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$tpar_def,
       scode_ranef$tpar_def,
       scode_Xme$tpar_def,
-      collapse_stanvars(stanvars, block = "tparameters"),
+      collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor$tpar_prior,
       scode_ranef$tpar_prior,
       scode_Xme$tpar_prior,
       scode_predictor$tpar_comp,
       scode_ranef$tpar_comp,
       scode_Xme$tpar_comp,
+      collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
   # generate model block
   scode_model <- paste0(
     "model {\n",
       scode_predictor$model_def,
-      collapse_stanvars(stanvars, block = "model"),
+      collapse_stanvars(stanvars, "model", "start"),
       scode_predictor$model_comp_basic,
       scode_predictor$model_comp_eta_loop,
       scode_predictor$model_comp_dpar_link,
@@ -161,6 +163,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_llh, 
       "  }\n", 
       scode_rngprior$model,
+      collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )
   # generate generated quantities block
@@ -170,11 +173,12 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$gen_def,
       scode_Xme$gen_def,
       scode_rngprior$gen_def,
-      collapse_stanvars(stanvars, block = "genquant"),
+      collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor$gen_comp,
       scode_ranef$gen_comp,
       scode_rngprior$gen_comp,
       scode_Xme$gen_comp,
+      collapse_stanvars(stanvars, "genquant", "end"),
     "}\n"
   )
   # combine all elements into a complete Stan model

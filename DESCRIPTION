@@ -3,7 +3,7 @@ Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
 Version: 2.12.11
-Date: 2020-05-15
+Date: 2020-05-18
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -16,7 +16,7 @@ Imports:
     loo (>= 2.2.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
-    rstantools (>= 1.5.1),
+    rstantools (>= 2.0.0),
     bayesplot (>= 1.5.0),
     shinystan (>= 2.4.0),
     bridgesampling (>= 0.3-0),

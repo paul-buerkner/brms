@@ -40,7 +40,7 @@ values returned by the respective methods. For \code{"stacking"} and
 obtain weights. For \code{"bma"}, method \code{\link{post_prob}} will be
 used to compute Bayesian model averaging weights based on log marginal
 likelihood values (make sure to specify reasonable priors in this case).
-Some some method, \code{weights} may also be be a numeric vector of
+Some method, \code{weights} may also be a numeric vector of
 pre-specified weights.}
 
 \item{nsamples}{Total number of posterior samples to use.}
