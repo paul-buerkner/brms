@@ -37,6 +37,7 @@ brm(
   save_dso = TRUE,
   file = NULL,
   empty = FALSE,
+  rename = TRUE,
   ...
 )
 }
@@ -230,6 +231,8 @@ is stored in the \code{brmsfit} object for later usage.}
 and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 object will be empty. This is useful if you have estimated a brms-created
 Stan model outside of \pkg{brms} and want to feed it back into the package.}
+
+\item{rename}{For internal use only.}
 
 \item{...}{Further arguments passed to Stan that is to
 \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}

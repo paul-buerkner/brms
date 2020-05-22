@@ -1,4 +1,4 @@
-# brms 2.12.0++
+# brms 2.13.0
 
 ### New Features
 

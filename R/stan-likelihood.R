@@ -732,7 +732,7 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   # addition terms contain the response in their variable name
   var_names <- sub("\\[.+$", "", family$vars)
   var_indices <- sub("^.+(?=\\[)", "", family$vars, perl = TRUE)
-  is_var_adterms <- var_names %in% c("se", "trials", "dec") ||
+  is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
   vars <- paste0(var_names, var_resps, var_indices)
