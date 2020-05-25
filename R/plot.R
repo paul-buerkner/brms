@@ -263,3 +263,21 @@ pairs.brmsfit <- function(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...)
   samples$iter <- NULL
   bayesplot::mcmc_pairs(samples, ...)
 }
+
+#' Default \pkg{bayesplot} Theme for \pkg{ggplot2} Graphics
+#' 
+#' This theme is imported from the \pkg{bayesplot} package.
+#' See \code{\link[bayesplot:theme_default]{theme_default}}
+#' for a complete documentation.
+#' 
+#' @name theme_default
+#' 
+#' @param base_size base font size
+#' @param base_family base font family
+#' 
+#' @return A \code{theme} object used in \pkg{ggplot2} graphics.
+#' 
+#' @importFrom bayesplot theme_default
+#' @export theme_default
+NULL
+

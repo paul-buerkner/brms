@@ -1,21 +1,4 @@
-#' Default \pkg{bayesplot} Theme for \pkg{ggplot2} Graphics
-#' 
-#' This theme is imported from the \pkg{bayesplot} package.
-#' See \code{\link[bayesplot:theme_default]{theme_default}}
-#' for a complete documentation.
-#' 
-#' @name theme_default
-#' 
-#' @param base_size base font size
-#' @param base_family base font family
-#' 
-#' @return A \code{theme} object used in \pkg{ggplot2} graphics.
-#' 
-#' @importFrom bayesplot theme_default
-#' @export theme_default
-NULL
-
-#' Black Theme for \pkg{ggplot2} Graphics
+#' (Deprecated) Black Theme for \pkg{ggplot2} Graphics
 #' 
 #' A black theme for ggplot graphics inspired by a blog post of Jon Lefcheck
 #' (\url{https://jonlefcheck.net/2013/03/11/black-theme-for-ggplot2-2/}).
@@ -50,6 +33,8 @@ NULL
 #' 
 #' @export
 theme_black = function(base_size = 12, base_family = "") {
+  warning2("'theme_black' is deprecated. Please use the 'ggdark' package ",
+           "for dark ggplot themes.")
   theme_grey(base_size = base_size, base_family = base_family) %+replace%
     theme(
       # axis options

@@ -1019,15 +1019,9 @@ plot.brms_conditional_effects <- function(
     warning2("'jitter_width' is deprecated. Please use ",
              "'point_args = list(width = <width>)' instead.")
   }
-  if (!is.null(theme)) {
-    if (!is.theme(theme)) {
+  if (!is.null(theme) && !is.theme(theme)) {
       stop2("Argument 'theme' should be a 'theme' object.")
-    }
-    pb_colour <- theme$plot.background$colour
-  } else {
-    pb_colour <- theme_get()$plot.background$colour
   }
-  is_theme_black <- isTRUE(pb_colour == "black")
   if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
@@ -1102,8 +1096,6 @@ plot.brms_conditional_effects <- function(
         if (is_like_factor(df_points[, gvar])) {
           .point_args$mapping[c("colour", "fill")] <- 
             aes_string(colour = gvar, fill = gvar)
-        } else if (is_theme_black) {
-          .point_args$colour <- "white"
         }
         replace_args(.point_args, dont_replace) <- point_args
         plots[[i]] <- plots[[i]] + 
@@ -1147,8 +1139,6 @@ plot.brms_conditional_effects <- function(
           if (is_like_factor(df_points[, gvar])) {
             .point_args$mapping[c("colour", "fill")] <- 
               aes_string(colour = gvar, fill = gvar)
-          } else if (is_theme_black) {
-            .rug_args$colour <- "white"
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] + 
@@ -1164,9 +1154,6 @@ plot.brms_conditional_effects <- function(
           position = position_dodge(width = 0.4), 
           width = 0.3
         )
-        if (is.null(gvar) && is_theme_black) {
-          .cat_args$colour <- .errorbar_args$colour <- "white"
-        }
         replace_args(.cat_args, dont_replace) <- cat_args
         replace_args(.errorbar_args, dont_replace) <- errorbar_args
         plots[[i]] <- plots[[i]] + 
