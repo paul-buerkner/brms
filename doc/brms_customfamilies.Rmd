@@ -237,7 +237,7 @@ For the purpose of the present vignette, we will go with the latter approach
 expose_functions(fit2, vectorize = TRUE)
 ```
 
-and define the required `log_lik` functions with a few lines of code.
+and define the required `log_lik` functions with a few lines of code[^phi].
 
 ```{r log_lik}
 log_lik_beta_binomial2 <- function(i, prep) {
@@ -248,6 +248,9 @@ log_lik_beta_binomial2 <- function(i, prep) {
   beta_binomial2_lpmf(y, mu, phi, trials)
 }
 ```
+
+[^phi]: The presented post-processing functions need to be adjusted if you
+predict `phi` in your model as well by writing `phi <- prep$dpars$phi[, i]`.
 
 With that being done, all of the post-processing methods requiring `log_lik`
 will work as well. For instance, model comparison can simply be performed via
