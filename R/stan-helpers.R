@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
+stan_global_defs <- function(bterms, prior, ranef) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -23,7 +23,7 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
   if (any(nzchar(ranef$by))) {
     str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
   }
-  if (stan_needs_kronecker(ranef, names(cov_ranef))) {
+  if (stan_needs_kronecker(ranef)) {
     str_add(out$fun) <- glue(
       "  #include 'fun_as_matrix.stan'\n",
       "  #include 'fun_kronecker.stan'\n"
@@ -54,25 +54,21 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
     str_add(out$fun) <- "  #include 'fun_gaussian_process.stan'\n"
     str_add(out$fun) <- "  #include 'fun_gaussian_process_approx.stan'\n"
   }
-  # functions related to autocorrelation structures
-  if (is.brmsterms(bterms)) {
-    autocors <- list(bterms$autocor)
-  } else {
-    autocors <- lapply(bterms$terms, "[[", "autocor")
-  }
-  if (any(ulapply(autocors, use_cov))) {
+  acterms <- get_effect(bterms, "ac")
+  acefs <- lapply(acterms, tidy_acef)
+  if (any(ulapply(acefs, has_ac_subset, dim = "time", cov = TRUE))) {
     # TODO: include functions selectively
     str_add(out$fun) <- glue(
-      "  #include 'fun_normal_cov.stan'\n",
-      "  #include 'fun_student_t_cov.stan'\n",
-      "  #include 'fun_scale_cov_err.stan'\n",
+      "  #include 'fun_normal_time.stan'\n",
+      "  #include 'fun_student_t_time.stan'\n",
+      "  #include 'fun_scale_time_err.stan'\n",
       "  #include 'fun_cholesky_cor_ar1.stan'\n",
       "  #include 'fun_cholesky_cor_ma1.stan'\n",
       "  #include 'fun_cholesky_cor_arma1.stan'\n",
       "  #include 'fun_cholesky_cor_cosy.stan'\n"
     )
   }
-  if (any(ulapply(autocors, is.cor_sar))) {
+  if (any(ulapply(acefs, has_ac_class, "sar"))) {
     if ("gaussian" %in% families) {
       str_add(out$fun) <- glue(
         "  #include 'fun_normal_lagsar.stan'\n",
@@ -86,10 +82,16 @@ stan_global_defs <- function(bterms, prior, ranef, cov_ranef) {
       )
     }
   }
-  if (any(ulapply(autocors, is.cor_car))) {
+  if (any(ulapply(acefs, has_ac_class, "car"))) {
     str_add(out$fun) <- glue(
       "  #include 'fun_sparse_car_lpdf.stan'\n",      
       "  #include 'fun_sparse_icar_lpdf.stan'\n"
+    )
+  }
+  if (any(ulapply(acefs, has_ac_class, "fcor"))) {
+    str_add(out$fun) <- glue(
+      "  #include 'fun_normal_fcor.stan'\n",
+      "  #include 'fun_student_t_fcor.stan'\n"
     )
   }
   out
@@ -203,14 +205,23 @@ make_stan_names <- function(x) {
 
 # checks if a model needs the kronecker product
 # @param ranef output of tidy_ranef
-# @param names_cov_ranef: names 'cov_ranef'
 # @return a single logical value
-stan_needs_kronecker <- function(ranef, names_cov_ranef) {
+stan_needs_kronecker <- function(ranef) {
   ids <- unique(ranef$id)
   out <- FALSE
   for (id in ids) {
     r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && r$group[1] %in% names_cov_ranef
+    out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
   }
   out
+}
+
+# prepare a string to be used as comment in Stan
+stan_comment <- function(comment, wsp = 2) {
+  comment <- as.character(comment)
+  wsp <- wsp(nsp = wsp)
+  if (!length(comment)) {
+    return(character(0))
+  }
+  ifelse(nzchar(comment), paste0(wsp, "// ", comment), "")
 }

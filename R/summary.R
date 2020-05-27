@@ -35,10 +35,10 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   object <- restructure(object)
-  bterms <- parse_bf(object$formula)
+  bterms <- brmsterms(object$formula)
   out <- list(
     formula = object$formula,
-    data.name = object$data.name, 
+    data_name = get_data_name(object$data), 
     group = unique(object$ranef$group), 
     nobs = nobs(object), 
     ngrps = ngrps(object), 
@@ -95,16 +95,15 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
   }
   
   pars <- parnames(object)
-  # TODO: exclude more parameters?
-  excl_regex <- "^(r|s|zgp|Xme|prior|lp)_"
+  excl_regex <- "^(r|s|z|zs|zgp|Xme|L|Lrescor|prior|lp)(_|$)"
   pars <- pars[!grepl(excl_regex, pars)]
   fit_summary <- .summary(object, pars = pars, prob = prob)
   if (algorithm(object) == "sampling") {
     Rhats <- fit_summary[, "Rhat"]
     if (any(Rhats > 1.05, na.rm = TRUE)) {
       warning2(
-        "The model has not converged (some Rhats are > 1.05). ",
-        "Do not analyse the results! \nWe recommend running ", 
+        "Parts of the model have not converged (some Rhats are > 1.05). ",
+        "Be careful when analysing the results! We recommend running ", 
         "more iterations and/or setting stronger priors."
       )
     }
@@ -113,7 +112,7 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
     if (div_trans > 0) {
       warning2(
         "There were ", div_trans, " divergent transitions after warmup. ", 
-        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
+        "Increasing adapt_delta above ", adapt_delta, " may help. See ",
         "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
       )
     }
@@ -213,7 +212,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat("Formula: ")
   print(x$formula, wsp = 9)
   cat(paste0(
-    "   Data: ", x$data.name, 
+    "   Data: ", x$data_name, 
     " (Number of observations: ", x$nobs, ") \n"
   ))
   if (!isTRUE(nzchar(x$sampler))) {
@@ -278,9 +277,9 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0("Samples were drawn using ", x$sampler, ". "))
     if (x$algorithm == "sampling") {
       cat(paste0(
-        "For each parameter, Eff.Sample \n",
-        "is a crude measure of effective sample size, ", 
-        "and Rhat is the potential \n",
+        "For each parameter, Bulk_ESS\n",
+        "and Tail_ESS are effective sample size measures, ",
+        "and Rhat is the potential\n", 
         "scale reduction factor on split chains ",
         "(at convergence, Rhat = 1)."
       ))
@@ -453,6 +452,9 @@ get_estimate <- function(coef, samples, margin = 2, ...) {
 #' @export
 posterior_table <- function(x, levels = NULL) {
   x <- as.matrix(x)
+  if (anyNA(x)) {
+    warning2("NAs will be ignored in 'posterior_table'.")
+  }
   if (is.null(levels)) {
     levels <- sort(unique(as.vector(x)))
   }
@@ -461,11 +463,11 @@ posterior_table <- function(x, levels = NULL) {
     xlevels <- levels
   }
   out <- lapply(seq_len(ncol(x)), 
-                function(n) table(factor(x[, n], levels = levels))
+    function(n) table(factor(x[, n], levels = levels))
   )
   out <- do_call(rbind, out)
   # compute relative frequencies
-  out <- out / sum(out[1, ])
+  out <- out / rowSums(out)
   rownames(out) <- colnames(x)
   colnames(out) <- paste0("P(Y = ", xlevels, ")")
   out

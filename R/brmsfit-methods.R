@@ -366,7 +366,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     tmp <- list()
   }
   # include residual variances in the output as well
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   if (is.brmsterms(bterms)) {
     if (simple_sigma(bterms) && !is.mixfamily(x$family)) {
       tmp_resid <- list(rnames = bterms$resp, sd_pars = "sigma")
@@ -439,7 +439,7 @@ nsamples.brmsfit <- function(object, subset = NULL,
 nobs.brmsfit <- function(object, resp = NULL, ...) {
   if (is_mv(object) && length(resp)) {
     resp <- validate_resp(resp, object, multiple = FALSE)
-    bterms <- parse_bf(object$formula$forms[[resp]])
+    bterms <- brmsterms(object$formula$forms[[resp]])
     out <- nrow(subset_data(model.frame(object), bterms))
   } else {
     out <- nrow(model.frame(object))
@@ -511,39 +511,6 @@ family.brmsfit <- function(object, resp = NULL, ...) {
     }
   }
   family
-}
-
-#' Extract Autocorrelation Objects
-#' 
-#' @inheritParams posterior_predict.brmsfit
-#' @param ... Currently unused.
-#' 
-#' @return A \code{cor_brms} object
-#' or a list of such objects for multivariate models.
-#' 
-#' @export
-autocor.brmsfit <- function(object, resp = NULL, ...) {
-  resp <- validate_resp(resp, object)
-  if (!is.null(resp)) {
-    # multivariate model
-    autocor <- lapply(object$formula$forms[resp], "[[", "autocor")
-    if (length(resp) == 1L) {
-      autocor <- autocor[[1]]
-    }
-  } else {
-    # univariate model
-    autocor <- object$formula$autocor
-    if (is.null(autocor)) {
-      autocor <- object$autocor
-    }
-  }
-  autocor
-}
-
-#' @rdname autocor.brmsfit
-#' @export
-autocor <- function(object, ...) {
-  UseMethod("autocor")
 }
 
 #' Expose user-defined \pkg{Stan} functions

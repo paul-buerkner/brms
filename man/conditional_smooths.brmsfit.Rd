@@ -29,16 +29,17 @@ conditional_smooths(x, ...)
 to display. If \code{NULL} (the default) all smooth terms
 are shown.}
 
-\item{int_conditions}{An optional named \code{list} whose elements are numeric
-vectors of values of the second variables in two-way interactions. 
+\item{int_conditions}{An optional named \code{list} whose elements are
+vectors of values of the variables specified in \code{effects}. 
 At these values, predictions are evaluated. The names of 
 \code{int_conditions} have to match the variable names exactly.
-Additionally, the elements of the numeric vectors may be named themselves,
+Additionally, the elements of the vectors may be named themselves,
 in which case their names appear as labels for the conditions in the plots.
 Instead of vectors, functions returning vectors may be passed and are
 applied on the original values of the corresponding variable.
 If \code{NULL} (the default), predictions are evaluated at the 
-\eqn{mean} and at \eqn{mean +/- sd}.}
+\eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
+all categories for factor-like predictors.}
 
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}

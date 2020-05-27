@@ -1,4 +1,7 @@
-#' Correlation structure classes for the \pkg{brms} package
+# All functions in this file belong to the deprecated 'cor_brms' class
+# for specifying autocorrelation structures. They will be removed in brms 3.
+
+#' (Deprecated) Correlation structure classes for the \pkg{brms} package
 #' 
 #' Classes of correlation structures available in the \pkg{brms} package. 
 #' \code{cor_brms} is not a correlation structure itself, 
@@ -25,8 +28,9 @@
 #' 
 NULL
 
-#' ARMA(p,q) correlation structure
+#' (Deprecated) ARMA(p,q) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{arma}} for the new syntax.
 #' This functions is a constructor for the \code{cor_arma} class, representing 
 #' an autoregression-moving average correlation structure of order (p, q).
 #' 
@@ -64,7 +68,7 @@ NULL
 #' cor_arma(~ visit | patient, p = 2, q = 2)
 #' 
 #' @export
-cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
+cor_arma <- function(formula = ~1, p = 0, q = 0, r = 0, cov = FALSE) {
   formula <- as.formula(formula)
   p <- as_one_numeric(p)
   q <- as_one_numeric(q)
@@ -90,8 +94,9 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   x
 }
 
-#' AR(p) correlation structure
+#' (Deprecated) AR(p) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{ar}} for the new syntax.
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for autoregression terms only.
 #' 
@@ -112,12 +117,13 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 #' cor_ar(~visit|patient, p = 2)
 #' 
 #' @export
-cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
+cor_ar <- function(formula = ~1, p = 1, cov = FALSE) {
   cor_arma(formula = formula, p = p, q = 0, cov = cov)
 }
   
-#' MA(q) correlation structure
+#' (Deprecated) MA(q) correlation structure
 #' 
+#' This function is deprecated. Please see \code{\link{ma}} for the new syntax.
 #' This function is a constructor for the \code{cor_arma} class, 
 #' allowing for moving average terms only.
 #' 
@@ -134,7 +140,7 @@ cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
 #' cor_ma(~visit|patient, q = 2)
 #' 
 #' @export
-cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
+cor_ma <- function(formula = ~1, q = 1, cov = FALSE) {
   cor_arma(formula = formula, p = 0, q = q, cov = cov)
 }
 
@@ -146,12 +152,13 @@ cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
 #' 
 #' @keywords internal
 #' @export
-cor_arr <- function(formula = ~ 1, r = 1) {
+cor_arr <- function(formula = ~1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
-#' Compound Symmetry (COSY) Correlation Structure
+#' (Deprecated) Compound Symmetry (COSY) Correlation Structure
 #' 
+#' This function is deprecated. Please see \code{\link{cosy}} for the new syntax.
 #' This functions is a constructor for the \code{cor_cosy} class, representing 
 #' a compound symmetry structure corresponding to uniform correlation.
 #' 
@@ -166,16 +173,17 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 #' cor_cosy(~ visit | patient)
 #' 
 #' @export 
-cor_cosy <- function(formula = ~ 1) {
+cor_cosy <- function(formula = ~1) {
   formula <- as.formula(formula)
   x <- nlist(formula)
   class(x) <- c("cor_cosy", "cor_brms")
   x
 }
 
-#' Spatial simultaneous autoregressive (SAR) structures
+#' (Deprecated) Spatial simultaneous autoregressive (SAR) structures
 #' 
-#' These functions are constructors for the \code{cor_sar} class
+#' Thse functions are deprecated. Please see \code{\link{sar}} for the new
+#' syntax. These functions are constructors for the \code{cor_sar} class
 #' implementing spatial simultaneous autoregressive structures.
 #' The \code{lagsar} structure implements SAR of the response values:
 #' \deqn{y = \rho W y + \eta + e}
@@ -218,7 +226,7 @@ cor_cosy <- function(formula = ~ 1) {
 cor_sar <- function(W, type = c("lag", "error")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
-  W <- sar_weights(W)
+  W <- validate_sar_matrix(W)
   structure(
     nlist(W, W_name, type), 
     class = c("cor_sar", "cor_brms")
@@ -241,24 +249,10 @@ cor_errorsar <- function(W) {
   out
 }
 
-# helper function to prepare spatial weights matrices
-sar_weights <- function(W) {
-  if (is(W, "listw")) {
-    require_package("spdep")
-    W <- spdep::listw2mat(W)
-  } else if (is(W, "nb")) {
-    require_package("spdep")
-    W <- spdep::nb2mat(W)
-  }
-  if (!is.matrix(W)) {
-    stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
-  }
-  W
-}
-
-#' Spatial conditional autoregressive (CAR) structures
+#' (Deprecated) Spatial conditional autoregressive (CAR) structures
 #' 
-#' These functions are constructors for the \code{cor_car} class
+#' These function are deprecated. Please see \code{\link{car}} for the new
+#' syntax. These functions are constructors for the \code{cor_car} class
 #' implementing spatial conditional autoregressive structures.
 #' 
 #' @param W Adjacency matrix of locations. 
@@ -319,15 +313,7 @@ cor_car <- function(W, formula = ~1, type = "escar") {
   options <- c("escar", "esicar", "icar", "bym2")
   type <- match.arg(type, options)
   W_name <- deparse(substitute(W))
-  W <- Matrix::Matrix(W, sparse = TRUE)
-  if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {
-    stop2("'W' must be symmetric.")
-  }
-  not_binary <- !(W == 0 | W == 1)
-  if (any(not_binary)) {
-    message("Converting all non-zero values in 'W' to 1")
-    W[not_binary] <- 1
-  }
+  W <- validate_car_matrix(W)
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
     stop2("'formula' should be a one-sided formula.")
@@ -349,10 +335,11 @@ cor_icar <- function(W, formula = ~1) {
   out
 }
 
-#' Fixed user-defined covariance matrices 
+#' (Deprecated) Fixed user-defined covariance matrices 
 #' 
-#' Define a fixed covariance matrix of the response variable
-#' for instance to model multivariate effect sizes in meta-analysis.
+#' This function is deprecated. Please see \code{\link{fcor}} for the new
+#' syntax. Define a fixed covariance matrix of the response variable for
+#' instance to model multivariate effect sizes in meta-analysis.
 #' 
 #' @aliases cov_fixed
 #'
@@ -371,6 +358,7 @@ cor_icar <- function(W, formula = ~1) {
 #' 
 #' @export
 cor_fixed <- function(V) {
+  V_name <- deparse(substitute(V))
   if (is.vector(V)) {
     V <- diag(V)
   } else {
@@ -379,7 +367,7 @@ cor_fixed <- function(V) {
   if (!isSymmetric(unname(V))) {
     stop2("'V' must be symmetric")
   }
-  structure(list(V = V), class = c("cor_fixed", "cor_brms"))
+  structure(nlist(V, V_name), class = c("cor_fixed", "cor_brms"))
 }
 
 #' (Defunct) Basic Bayesian Structural Time Series
@@ -438,33 +426,31 @@ is.cor_fixed <- function(x) {
 
 #' @export
 print.cor_empty <- function(x, ...) {
-  cat("empty()")
+  cat("empty()\n")
 }
 
 #' @export
 print.cor_arma <- function(x, ...) {
-  cat(paste0("arma(", formula2str(x$formula), ", ", 
-             get_ar(x), ", ", get_ma(x), ")"))
+  cat(paste0("arma(", formula2str(x$formula), ", ", x$p, ", ", x$q, ")\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_cosy <- function(x, ...) {
-  cat(paste0("cosy(", formula2str(x$formula), ")"))
+  cat(paste0("cosy(", formula2str(x$formula), ")\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_sar <- function(x, ...) {
-  cat(paste0("sar(", x$W_name, ", '", x$type, "')"))
+  cat(paste0("sar(", x$W_name, ", '", x$type, "')\n"))
   invisible(x)
 }
 
 #' @export
 print.cor_car <- function(x, ...) {
-  cat(paste0(
-    "car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"
-  ))
+  form <- formula2str(x$formula)
+  cat(paste0("car(", x$W_name, ", ", form, ", '", x$type, "')\n"))
   invisible(x)
 }
 
@@ -479,40 +465,6 @@ print.cor_fixed <- function(x, ...) {
 print.cov_fixed <- function(x, ...) {
   class(x) <- "cor_fixed"
   print.cor_fixed(x)
-}
-
-# get AR (autoregressive effects of residuals) order
-get_ar <- function(x) {
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$p), 0, x$p)
-}
-
-# get MA (moving-average) order
-get_ma <- function(x) {
-  stop_not_cor_brms(x)
-  ifelse(is.null(x$q), 0, x$q)
-}
-
-# has only AR correlations?
-has_ar_only <- function(x) {
-  get_ar(x) && !get_ma(x)
-} 
-
-# has only MA correlations?
-has_ma_only <- function(x) {
-  get_ma(x) && !get_ar(x)
-} 
-
-# use the covariance parameterization of a correlation structure?
-use_cov <- function(x) {
-  stop_not_cor_brms(x)
-  out <- FALSE
-  if (is.cor_arma(x)) {
-    out <- isTRUE(x$cov)
-  } else if (is.cor_cosy(x)) {
-    out <- TRUE
-  }
-  out
 }
 
 stop_not_cor_brms <- function(x) {
@@ -531,110 +483,152 @@ is.cor_empty <- function(x) {
   inherits(x, "cor_empty")
 }
 
-# check validity of the autocor argument
-check_autocor <- function(autocor) {
-  if (is.null(autocor))  {
-    autocor <- cor_empty()
+#' (Deprecated) Extract Autocorrelation Objects
+#' 
+#' @inheritParams posterior_predict.brmsfit
+#' @param ... Currently unused.
+#' 
+#' @return A \code{cor_brms} object or a list of such objects for multivariate 
+#'   models. Not supported for models fitted with brms 2.11.1 or higher.
+#' 
+#' @export
+autocor.brmsfit <- function(object, resp = NULL, ...) {
+  warning2("Method 'autocor' is deprecated and will be removed in the future.")
+  object <- restructure(object)
+  resp <- validate_resp(resp, object)
+  if (!is.null(resp)) {
+    # multivariate model
+    autocor <- object$autocor[resp]
+    if (length(resp) == 1L) {
+      autocor <- autocor[[1]]
+    }
+  } else {
+    # univariate model
+    autocor <- object$autocor
   }
-  stop_not_cor_brms(autocor)
   autocor
 }
 
-# remove autocorrelation structures
-# @param x a brmsfit object
-remove_autocor <- function(x) {
-  stopifnot(is.brmsfit(x))
-  if (is_mv(x)) {
-    for (r in names(x$formula$forms)) {
-      x$autocor[[r]] <- x$formula$forms[[r]]$autocor <- cor_empty()
-    }
+#' @rdname autocor.brmsfit
+#' @export
+autocor <- function(object, ...) {
+  UseMethod("autocor")
+}
+
+# extract variables for autocorrelation structures
+# @param autocor object of class 'cor_brms'
+# @return a list with elements 'time', and 'group'
+terms_autocor <- function(autocor) {
+  out <- list()
+  formula <- autocor$formula
+  if (is.null(formula)) {
+    formula <- ~1 
+  }
+  if (!is.null(lhs(formula))) {
+    stop2("Autocorrelation formulas must be one-sided.")
+  }
+  formula <- formula2str(formula)
+  time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
+  time_vars <- all_vars(time)
+  if (is.cor_car(autocor) && length(time_vars) > 0L) {
+    stop2("The CAR structure should not contain a 'time' variable.")
+  }
+  if (length(time_vars) > 1L) {
+    stop2("Autocorrelation structures may only contain 1 time variable.")
+  }
+  if (length(time_vars)) {
+    out$time <- time_vars
   } else {
-    x$autocor <- x$formula$autocor <- cor_empty()
+    out$time <- NA
   }
-  x
-}
-
-# subset matrices stored in 'cor_brms' objects
-# @param x a brmsfit object to be updated
-# @param subset indices of observations to keep
-# @param autocor optional (list of) 'cor_brms' objects 
-#   from which to take matrices
-# @param incl_car also subset adjacency matrices of CAR models?
-#   see 'add_new_objects' for why we often need to ignore CAR models
-# @return an updated brmsfit object
-subset_autocor <- function(x, subset, autocor = NULL, incl_car = FALSE) {
-  .subset_autocor <- function(autocor) {
-    if (is.cor_sar(autocor) || is.cor_car(autocor)) {
-      autocor$W <- autocor$W[subset, subset, drop = FALSE]
-    } else if (is.cor_fixed(autocor)) {
-      autocor$V <- autocor$V[subset, subset, drop = FALSE]
-    }
-    return(autocor)
-  }
-  if (is.null(autocor)) {
-    autocor <- autocor(x)
-  }
-  if (is_mv(x)) {
-    for (i in seq_along(x$formula$forms)) {
-      dont_subset <- is.cor_car(autocor[[i]]) && !incl_car
-      if (!dont_subset) {
-        new_autocor <- .subset_autocor(autocor[[i]])
-        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-      }
-    }
+  group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
+  stopif_illegal_group(group)
+  group_vars <- all_vars(group)
+  if (length(group_vars)) {
+    out$group <- paste0(group_vars, collapse = ":")
   } else {
-    dont_subset <- is.cor_car(autocor) && !incl_car
-    if (!dont_subset) {
-      x$formula$autocor <- x$autocor <- .subset_autocor(autocor) 
-    }
+    out$group <- NA
   }
-  # prevents double updating in add_new_objects()
-  structure(x, autocor_updated = TRUE)
+  out
 }
 
-# extract variable names used in autocor structures
-get_autocor_vars <- function(x, ...) {
-  UseMethod("get_autocor_vars")
+# transform a 'cor_brms' object into a formula
+# this ensure compatibility with brms <= 2.11
+as_formula_cor_brms <- function(x) {
+  stop_not_cor_brms(x)
+  if (is.cor_empty(x))  {
+    return(NULL)
+  }
+  args <- data2 <- list()
+  pac <- terms_autocor(x)
+  if (is.cor_arma(x)) {
+    fun <- "arma"
+    args$time <- pac$time
+    args$gr <- pac$group
+    args$p <- x$p
+    args$q <- x$q
+    args$cov <- x$cov
+    out <- paste0(names(args), " = ", args, collapse = ", ")
+    out <- paste0("arma(", out, ")")
+  } else if (is.cor_cosy(x)) {
+    fun <- "cosy"
+    args$time <- pac$time
+    args$gr <- pac$group
+  } else if (is.cor_sar(x)) {
+    fun <- "sar"
+    args$M <- make_M_names(x$W_name)
+    args$type <- paste0("'", x$type, "'")
+    data2[[args$M]] <- x$W
+  } else if (is.cor_car(x)) {
+    fun <- "car"
+    args$M <- make_M_names(x$W_name)
+    args$gr <- pac$group
+    args$type <- paste0("'", x$type, "'")
+    data2[[args$M]] <- x$W
+  } else if (is.cor_fixed(x)) {
+    fun <- "fcor"
+    args$M <- make_M_names(x$V_name)
+    data2[[args$M]] <- x$V
+  }
+  out <- paste0(names(args), " = ", args, collapse = ", ")
+  out <- paste0(fun, "(", out, ")")
+  out <- str2formula(out)
+  attr(out, "data2") <- data2
+  class(out) <- c("cor_brms_formula", "formula")
+  out
+}
+
+# ensures covariance matrix inputs are named reasonably
+make_M_names <- function(x) {
+  out <- make.names(x)
+  if (!length(out)) {
+    # likely unique random name for the matrix argument
+    out <- paste0("M", collapse(sample(0:9, 5, TRUE)))
+  }
+  out
+}
+
+# get data objects from 'autocor' for use in 'data2'
+# for backwards compatibility with brms <= 2.11
+get_data2_autocor <- function(x, ...) {
+  UseMethod("get_data2_autocor")
 }
 
 #' @export
-get_autocor_vars.cor_brms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x)) parse_time(x)[[var]]
+get_data2_autocor.brmsformula <- function(x, ...) {
+  attr(attr(x$formula, "autocor"), "data2")
 }
 
 #' @export
-get_autocor_vars.brmsterms <- function(x, var = "time", incl_car = TRUE, ...) {
-  if (incl_car || !is.cor_car(x$autocor)) x$time[[var]]
+get_data2_autocor.mvbrmsformula <- function(x, ...) {
+  ulapply(x$forms, get_data2_autocor, recursive = FALSE)
 }
 
 #' @export
-get_autocor_vars.brmsformula <- function(x, ...) {
-  get_autocor_vars(x$autocor, ...)
-}
-
-#' @export
-get_autocor_vars.mvbrmsformula <- function(x, ...) {
-  unique(ulapply(x$forms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.mvbrmsterms <- function(x, ...) {
-  unique(ulapply(x$terms, get_autocor_vars, ...))
-}
-
-#' @export
-get_autocor_vars.brmsfit <- function(x, ...) {
-  get_autocor_vars(x$formula, ...)
-}
-
-# convenient wrapper around 'get_autocor_vars'
-get_ac_groups <- function(x, ...) {
-  get_autocor_vars(x, var = "group", ...)
-}
-
-# regex to extract all parameter names of autocorrelation structures
-regex_autocor_pars <- function() {
-  p <- c("ar", "ma", "sderr", "cosy", "lagsar", "errorsar", "car", "sdcar")
-  p <- paste0("(", p, ")", collapse = "|")
-  paste0("^(", p, ")(\\[|_|$)")
+print.cor_brms_formula <- function(x, ...) {
+  y <- x
+  attr(y, "data2") <- NULL
+  class(y) <- "formula"
+  print(y)
+  invisible(x)
 }

@@ -16,7 +16,7 @@
   re_formula = NA,
   robust = TRUE,
   probs = c(0.025, 0.975),
-  method = "pp_expect",
+  method = "posterior_epred",
   spaghetti = FALSE,
   surface = FALSE,
   categorical = FALSE,
@@ -76,16 +76,17 @@ using their means and factors will get their reference level assigned.
 variables of this factor are zero. This allows, for instance, to make
 predictions of the grand mean when using sum coding.}
 
-\item{int_conditions}{An optional named \code{list} whose elements are numeric
-vectors of values of the second variables in two-way interactions. 
+\item{int_conditions}{An optional named \code{list} whose elements are
+vectors of values of the variables specified in \code{effects}. 
 At these values, predictions are evaluated. The names of 
 \code{int_conditions} have to match the variable names exactly.
-Additionally, the elements of the numeric vectors may be named themselves,
+Additionally, the elements of the vectors may be named themselves,
 in which case their names appear as labels for the conditions in the plots.
 Instead of vectors, functions returning vectors may be passed and are
 applied on the original values of the corresponding variable.
 If \code{NULL} (the default), predictions are evaluated at the 
-\eqn{mean} and at \eqn{mean +/- sd}.}
+\eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
+all categories for factor-like predictors.}
 
 \item{re_formula}{A formula containing random effects to be considered 
 in the conditional predictions. If \code{NULL}, include all random effects; 
@@ -97,8 +98,10 @@ measure of central tendency. If \code{FALSE} the mean is used instead.}
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
-\item{method}{Method use to obtain predictions. Either
-\code{"pp_expect"} (the default) or \code{"posterior_predict"}.}
+\item{method}{Method used to obtain predictions. Can be set to 
+\code{"posterior_epred"} (the default), \code{"posterior_predict"},
+or \code{"posterior_linpred"}. For more details, see the respective
+function documentations.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
@@ -151,7 +154,7 @@ grid points are used. Ignored for non-surface plots.}
 
 \item{...}{Further arguments such as \code{subset} or \code{nsamples}
 passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-\code{\link[brms:pp_expect.brmsfit]{pp_expect}}.}
+\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.}
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based

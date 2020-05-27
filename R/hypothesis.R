@@ -249,6 +249,7 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out <- unlist(out, recursive = FALSE)
   out <- as.list(matrix(out, ncol = length(hypothesis), byrow = TRUE))
   out <- combine_hlist(out, class = "", alpha = alpha)
+  out$hypothesis$Group <- factor(out$hypothesis$Group, levels)
   out$hypothesis <- move2start(out$hypothesis, "Group")
   out
 }
@@ -503,7 +504,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
   plot <- use_alias(plot, dots$do_plot)
   if (is.null(colors)) {
-    colors <- bayesplot::color_scheme_get()[c(6, 2)]
+    colors <- bayesplot::color_scheme_get()[c(4, 2)]
     colors <- unname(unlist(colors))
   }
   if (length(colors) != 2L) {
@@ -511,17 +512,26 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
   
   .plot_fun <- function(samples) {
-    ggplot(samples, aes_string(x = "values")) + 
+    gg <- ggplot(samples, aes_string(x = "values")) + 
       facet_wrap("ind", ncol = 1, scales = "free") +
-      geom_density(aes_string(fill = "Type"), 
-                   alpha = 0.7, na.rm = TRUE) + 
-      scale_fill_manual(values = colors) + 
-      xlab("") + ylab("") + theme
+      xlab("") + ylab("") + theme +
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank())
+    if (ignore_prior) {
+      gg <- gg +
+        geom_density(alpha = 0.7, fill = colors[1], na.rm = TRUE)
+    } else {
+      gg <- gg +
+        geom_density(aes_string(fill = "Type"), alpha = 0.7, na.rm = TRUE) + 
+        scale_fill_manual(values = colors)
+    }
+    return(gg)
   }
   
   samples <- cbind(x$samples, Type = "Posterior")
   if (!ignore_prior) {
-    samples <- rbind(samples, cbind(x$prior_samples, Type = "Prior"))
+    prior_samples <- cbind(x$prior_samples, Type = "Prior")
+    samples <- rbind(samples, prior_samples)
   }
   if (plot) {
     default_ask <- devAskNewPage()

@@ -10,37 +10,12 @@
 #'   (or one that can be coerced to that class): 
 #'   a symbolic description of the model to be fitted. 
 #'   The details of model specification are given in 'Details'.
-#' @param ... Additional \code{formula} objects to specify 
-#'   predictors of non-linear and distributional parameters. 
-#'   Formulas can either be named directly or contain
-#'   names on their left-hand side. 
-#'   The following are distributional parameters of specific families
-#'   (all other parameters are treated as non-linear parameters):
-#'   \code{sigma} (residual standard deviation or scale of
-#'   the \code{gaussian}, \code{student}, \code{skew_normal}, 
-#'   \code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
-#'   \code{shape} (shape parameter of the \code{Gamma},
-#'   \code{weibull}, \code{negbinomial}, and related
-#'   zero-inflated / hurdle families); \code{nu} (degrees of freedom 
-#'   parameter of the \code{student} and \code{frechet} families);
-#'   \code{phi} (precision parameter of the \code{beta} 
-#'   and \code{zero_inflated_beta} families);
-#'   \code{kappa} (precision parameter of the \code{von_mises} family);
-#'   \code{beta} (mean parameter of the exponential component
-#'   of the \code{exgaussian} family);
-#'   \code{quantile} (quantile parameter of the \code{asym_laplace} family);
-#'   \code{zi} (zero-inflation probability); 
-#'   \code{hu} (hurdle probability);
-#'   \code{zoi} (zero-one-inflation probability);
-#'   \code{coi} (conditional one-inflation probability);
-#'   \code{disc} (discrimination) for ordinal models;
-#'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
-#'   non-decision time, and initial bias of the \code{wiener}
-#'   diffusion model).
-#'   By default, distributional parameters are modeled 
-#'   on the log scale if they can be positive only or on the 
-#'   logit scale if the can only be within the unit interval.
-#'   See 'Details' for more explanation.
+#' @param ... Additional \code{formula} objects to specify predictors of
+#'   non-linear and distributional parameters. Formulas can either be named
+#'   directly or contain names on their left-hand side. Alternatively,
+#'   it is possible to fix parameters to certain values by passing
+#'   numbers or character strings in which case arguments have to be named
+#'   to provide the parameter names. See 'Details' for more information.
 #' @param flist Optional list of formulas, which are treated in the 
 #'   same way as formulas passed via the \code{...} argument.
 #' @param nl Logical; Indicates whether \code{formula} should be
@@ -70,10 +45,12 @@
 #'   with highly correlated predictors.
 #' @param family Same argument as in \code{\link{brm}}.
 #'   If \code{family} is specified in \code{brmsformula}, it will 
-#'   overwrite the value specified in \code{\link{brm}}.
-#' @param autocor Same argument as in \code{\link{brm}}.
+#'   overwrite the value specified in other functions.
+#' @param autocor An optional \code{formula} which contains
+#'   autocorrelation terms as described in \code{\link{autocor-terms}}
+#'   or alternatively a \code{\link{cor_brms}} object (deprecated).
 #'   If \code{autocor} is specified in \code{brmsformula}, it will 
-#'   overwrite the value specified in \code{\link{brm}}.
+#'   overwrite the value specified in other functions.
 #' 
 #' @return An object of class \code{brmsformula}, which
 #'   is essentially a \code{list} containing all model
@@ -88,32 +65,38 @@
 #'   The \code{formula} argument accepts formulas of the following syntax:
 #'   
 #'   \code{response | aterms ~ pterms + (gterms | group)} 
-#'   
-#'   The \code{pterms} part contains effects that are assumed to be the 
-#'   same across observations. We call them 'population-level' effects
+#'
+#'   The \code{pterms} part contains effects that are assumed to be the same
+#'   across observations. We call them 'population-level' or 'overall' effects,
 #'   or (adopting frequentist vocabulary) 'fixed' effects. The optional
-#'   \code{gterms} part may contain effects that are assumed to vary
-#'   across grouping variables specified in \code{group}. We
-#'   call them 'group-level' effects or (adopting frequentist 
-#'   vocabulary) 'random' effects, although the latter name is misleading
-#'   in a Bayesian context. For more details type 
-#'   \code{vignette("brms_overview")} and \code{vignette("brms_multilevel")}. 
+#'   \code{gterms} part may contain effects that are assumed to vary across
+#'   grouping variables specified in \code{group}. We call them 'group-level' or
+#'   'varying' effects, or (adopting frequentist vocabulary) 'random' effects,
+#'   although the latter name is misleading in a Bayesian context. For more
+#'   details type \code{vignette("brms_overview")} and
+#'   \code{vignette("brms_multilevel")}.
 #'   
 #'   \bold{Group-level terms}
 #'   
-#'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. (Of course we can also run models without any
-#'   group-level effects.) 
-#'   Instead of \code{|} you may use \code{||} in grouping terms
-#'   to prevent correlations from being modeled. 
-#'   Alternatively, it is possible to model different group-level terms of 
-#'   the same grouping factor as correlated (even across different formulas,
-#'   e.g., in non-linear models) by using \code{|<ID>|} instead of \code{|}.
-#'   All group-level terms sharing the same ID will be modeled as correlated.
-#'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
-#'   \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
-#'   correlations between the corresponding group-level effects 
-#'   will be estimated.
+#'   Multiple grouping factors each with multiple group-level effects are
+#'   possible. (Of course we can also run models without any group-level
+#'   effects.) Instead of \code{|} you may use \code{||} in grouping terms to
+#'   prevent correlations from being modeled. Equivalently, the \code{cor}
+#'   argument of the \code{\link{gr}} function can be used for this purpose, 
+#'   for example, \code{(1 + x || g)} is equivalent to 
+#'   \code{(1 + x | gr(g, cor = FALSE))}.
+#'   
+#'   It is also possible to model different group-level terms of the same
+#'   grouping factor as correlated (even across different formulas, e.g., in
+#'   non-linear models) by using \code{|<ID>|} instead of \code{|}. All
+#'   group-level terms sharing the same ID will be modeled as correlated. If,
+#'   for instance, one specifies the terms \code{(1+x|i|g)} and \code{(1+z|i|g)}
+#'   somewhere in the formulas passed to \code{brmsformula}, correlations
+#'   between the corresponding group-level effects will be estimated. In the
+#'   above example, \code{i} is not a variable in the data but just a symbol to
+#'   indicate correlations between multiple group-level terms. Equivalently, the
+#'   \code{id} argument of the \code{\link{gr}} function can be used as well,
+#'   for example, \code{(1 + x | gr(g, id = "i"))}.
 #'   
 #'   If levels of the grouping factor belong to different sub-populations,
 #'   it may be reasonable to assume a different covariance matrix for each 
@@ -136,7 +119,7 @@
 #'   
 #'   \bold{Special predictor terms}
 #'   
-#'   Smoothing terms can modeled using the \code{\link{s}}
+#'   Flexible non-linear smooth terms can modeled using the \code{\link{s}}
 #'   and \code{\link{t2}} functions in the \code{pterms} part 
 #'   of the model formula. This allows to fit generalized additive mixed
 #'   models (GAMMs) with \pkg{brms}. The implementation is similar to that 
@@ -148,7 +131,7 @@
 #'   smooth terms, Gaussian processes can be used to model complex non-linear
 #'   relationships, for instance temporal or spatial autocorrelation. 
 #'   However, they are computationally demanding and are thus not recommended 
-#'   for very large datasets.
+#'   for very large datasets or approximations need to be used.
 #'   
 #'   The \code{pterms} and \code{gterms} parts may contain four non-standard
 #'   effect types namely monotonic, measurement error, missing value, and 
@@ -213,6 +196,11 @@
 #'   as an additional response with corresponding predictors and the 
 #'   addition term \code{mi()}. In our example, we could write
 #'   \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+#'   
+#'   \bold{Autocorrelation terms}
+#'   
+#'   Autocorrelation terms can be directly specified inside the \code{pterms}
+#'   part as well. Details can be found in \code{\link{autocor-terms}}.
 #'   
 #'   \bold{Additional response information}
 #'   
@@ -400,6 +388,12 @@
 #'   non-linear parameters (provided that the resulting model is still 
 #'   scientifically reasonable). 
 #'   
+#'   By default, non-linear covariates are treated as real vectors in Stan.
+#'   However, if the data of the covariates is of type `integer` in \R (which
+#'   can be enforced by the `as.integer` function), the Stan type will be
+#'   changed to an integer array. That way, covariates can also be used
+#'   for indexing purposes in Stan.
+#'   
 #'   Non-linear models may not be uniquely identified and / or show bad convergence.
 #'   For this reason it is mandatory to specify priors on the non-linear parameters.
 #'   For instructions on how to do that, see \code{\link{set_prior}}.
@@ -407,12 +401,41 @@
 #'   
 #'   \bold{Formula syntax for predicting distributional parameters}
 #'   
-#'   It is also possible to predict parameters of the response
-#'   distribution such as the residual standard deviation \code{sigma} 
-#'   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
-#'   The syntax closely resembles that of a non-linear 
-#'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}. 
-#'   For some examples of distributional models, see \code{vignette("brms_distreg")}.
+#'   It is also possible to predict parameters of the response distribution such
+#'   as the residual standard deviation \code{sigma} in gaussian models or the
+#'   hurdle probability \code{hu} in hurdle models. The syntax closely resembles
+#'   that of a non-linear parameter, for instance \code{sigma ~ x + s(z) +
+#'   (1+x|g)}. For some examples of distributional models, see
+#'   \code{vignette("brms_distreg")}.
+#'   
+#'   Parameter \code{mu} exists for every family and can be used as an
+#'   alternative to specifying terms in \code{formula}. If both \code{mu} and
+#'   \code{formula} are given, the right-hand side of \code{formula} is ignored.
+#'   Accordingly, specifying terms on the right-hand side of both \code{formula} 
+#'   and \code{mu} at the same time is deprecated. In future versions,
+#'   \code{formula} might be updated by \code{mu}. 
+#'   
+#'   The following are
+#'   distributional parameters of specific families (all other parameters are
+#'   treated as non-linear parameters): \code{sigma} (residual standard
+#'   deviation or scale of the \code{gaussian}, \code{student},
+#'   \code{skew_normal}, \code{lognormal} \code{exgaussian}, and
+#'   \code{asym_laplace} families); \code{shape} (shape parameter of the
+#'   \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
+#'   / hurdle families); \code{nu} (degrees of freedom parameter of the
+#'   \code{student} and \code{frechet} families); \code{phi} (precision
+#'   parameter of the \code{beta} and \code{zero_inflated_beta} families);
+#'   \code{kappa} (precision parameter of the \code{von_mises} family);
+#'   \code{beta} (mean parameter of the exponential component of the
+#'   \code{exgaussian} family); \code{quantile} (quantile parameter of the
+#'   \code{asym_laplace} family); \code{zi} (zero-inflation probability);
+#'   \code{hu} (hurdle probability); \code{zoi} (zero-one-inflation
+#'   probability); \code{coi} (conditional one-inflation probability);
+#'   \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
+#'   \code{bias} (boundary separation, non-decision time, and initial bias of
+#'   the \code{wiener} diffusion model). By default, distributional parameters
+#'   are modeled on the log scale if they can be positive only or on the logit
+#'   scale if the can only be within the unit interval.
 #'   
 #'   Alternatively, one may fix distributional parameters to certain values.
 #'   However, this is mainly useful when models become too 
@@ -545,7 +568,10 @@
 #' bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 #' 
 #' # correlated group-level effects across parameters
-#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 |2| g), a2 ~ x + (x |2| g), nl = TRUE)
+#' # alternative but equivalent way to specify the above model
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | gr(g, id = 2)), 
+#'    a2 ~ x + (x | gr(g, id = 2)), nl = TRUE)
 #' 
 #' # define a multivariate model
 #' bf(mvbind(y1, y2) ~ x * z + (1|g))
@@ -592,6 +618,10 @@
 #' bf(y1 ~ x + (1|g)) + 
 #'   gaussian() + cor_ar(~1|g) +
 #'   bf(y2 ~ z) + poisson()
+#'   
+#' # specify correlated residuals of a gaussian and a poisson model
+#' form1 <- bf(y1 ~ 1 + x + (1|c|obs), sigma = 1) + gaussian()
+#' form2 <- bf(y2 ~ 1 + x + (1|c|obs)) + poisson()
 #'   
 #' # model missing values in predictors
 #' bf(bmi ~ age * mi(chl)) +
@@ -692,20 +722,21 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(decomp)) {
     attr(out$formula, "decomp") <- match.arg(decomp, decomp_opts())
   }
-  if (!is.null(family)) {
-    out$family <- check_family(family)
-  }
   if (!is.null(autocor)) {
-    out$autocor <- check_autocor(autocor)
+    attr(out$formula, "autocor") <- validate_autocor(autocor)
+  } else if (!is.null(out$autocor)) {
+    # for backwards compatibility with brms <= 2.11.0
+    attr(out$formula, "autocor") <- validate_autocor(out$autocor)
+    out$autocor <- NULL
+  }
+  if (!is.null(family)) {
+    out$family <- validate_family(family)
   }
   if (!is.null(lhs(formula))) {
-    out$resp <- parse_resp(formula)
+    out$resp <- terms_resp(formula)
   }
   # add default values for unspecified elements
-  defs <- list(
-    pforms = list(), pfix = list(), family = NULL, 
-    autocor = NULL, resp = NULL
-  )
+  defs <- list(pforms = list(), pfix = list(), family = NULL, resp = NULL)
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
   class(out) <- c("brmsformula", "bform")
@@ -741,6 +772,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #' @param resp Optional character string specifying the response 
 #'   variable to which the formulas passed via \code{...} and
 #'   \code{flist} belong. Only relevant in multivariate models.
+#' @param autocor A one sided formula containing autocorrelation
+#'   terms. All none autocorrelation terms in \code{autocor} will
+#'   be silently ignored.
 #' @param rescor Logical; Indicates if residual correlation between
 #'   the response variables should be modeled. Currently this is only
 #'   possible in multivariate \code{gaussian} and \code{student} models.
@@ -773,6 +807,9 @@ bf <- function(formula, ..., flist = NULL, family = NULL, autocor = NULL,
 #' bf(y1 ~ x + (1|g)) + 
 #'   bf(y2 ~ z) +
 #'   set_rescor(TRUE)
+#'   
+#' # add autocorrelation terms
+#' bf(y ~ x) + acformula(~ arma(p = 1, q = 1) + car(W))
 NULL
 
 #' @rdname brmsformula-helpers
@@ -834,6 +871,19 @@ lf <- function(..., flist = NULL, dpar = NULL, resp = NULL,
     }
   }
   structure(out, resp = resp)
+}
+
+#' @rdname brmsformula-helpers
+#' @export
+acformula <- function(autocor, resp = NULL) {
+  autocor <- terms_ac(as.formula(autocor))
+  if (!is.formula(autocor)) {
+    stop2("'autocor' must contain at least one autocorrelation term.")
+  }
+  if (!is.null(resp)) {
+    resp <- as_one_character(resp)
+  }
+  structure(autocor, resp = resp, class = c("acformula", "formula"))
 }
 
 #' @rdname brmsformula-helpers
@@ -921,7 +971,7 @@ mvbf <- function(..., flist = NULL, rescor = NULL) {
 # which uses mvbind on the left-hand side to specify MV models
 split_bf <- function(x) {
   stopifnot(is.brmsformula(x))
-  resp <- parse_resp(x$formula, check_names = FALSE)
+  resp <- terms_resp(x$formula, check_names = FALSE)
   str_adform <- formula2str(x$formula)
   str_adform <- get_matches("\\|[^~]*(?=~)", str_adform, perl = TRUE)
   if (length(resp) > 1L) {
@@ -1002,7 +1052,7 @@ plus_brmsformula <- function(e1, e2) {
   } 
   if (is.family(e2)) {
     e1 <- bf(e1, family = e2)
-  } else if (is.cor_brms(e2)) {
+  } else if (is.cor_brms(e2) || inherits(e2, "acformula")) {
     e1 <- bf(e1, autocor = e2)
   } else if (inherits(e2, "setnl")) {
     dpar <- attr(e2, "dpar")
@@ -1178,25 +1228,88 @@ validate_formula.default <- function(formula, ...) {
 # @param formula object of class 'formula' of 'brmsformula'
 # @param data optional data.frame to validate data related arguments
 # @param family optional 'family' object
-# @param autocor optional 'cor_brms' object
+# @param autocor (deprecated) optional 'cor_brms' object
 # @param threshold (deprecated) threshold type for ordinal models
+# @param cov_ranef (deprecated) named list of group covariance matrices
 # @return a brmsformula object compatible with the current version of brms
 #' @export
 validate_formula.brmsformula <- function(
-  formula, family = gaussian(), autocor = cor_empty(), 
-  data = NULL, threshold = NULL, sparse = NULL, ...
+  formula, family = gaussian(), autocor = NULL, 
+  data = NULL, threshold = NULL, sparse = NULL,
+  cov_ranef = NULL, ...
 ) {
   out <- bf(formula)
   if (is.null(out$family) && !is.null(family)) {
-    out$family <- check_family(family)
-  }
-  if (is.null(out$autocor) || is.cor_empty(out$autocor)) {
-    out$autocor <- check_autocor(autocor)
+    out$family <- validate_family(family)
   }
   # allow the '.' symbol in the formulas
   out$formula <- expand_dot_formula(out$formula, data)
   for (i in seq_along(out$pforms)) {
     out$pforms[[i]] <- expand_dot_formula(out$pforms[[i]], data)
+  }
+  # allow 'me' terms to be correlated
+  out$mecor <- default_mecor(out$mecor)
+  if (has_cat(out) && !is.null(data)) {
+    # for easy access of response categories
+    # allow to update 'cats' with new data
+    out$family$cats <- extract_cat_names(out, data)
+  }
+  if (is_ordinal(out$family)) {
+    # thresholds and category names are data dependent
+    try_terms <- try(stats::terms(out$formula), silent = TRUE)
+    intercept <- attr(try_terms, "intercept", TRUE)
+    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
+      stop2("Cannot remove the intercept in an ordinal model.")
+    }
+    if (!is.null(data)) {
+      # for easy access of thresholds and response categories (#838)
+      # allow to update 'cats' and 'thres' with new data
+      out$family$thres <- extract_thres_names(out, data) 
+      out$family$cats <- extract_cat_names(out, data)
+    }
+    if (is.mixfamily(out$family)) {
+      # every mixture family needs to know about response categories
+      for (i in seq_along(out$family$mix)) {
+        out$family$mix[[i]]$thres <- out$family$thres
+      }
+    }
+  }
+  conv_cats_dpars <- conv_cats_dpars(out$family)
+  if (conv_cats_dpars && !is.null(data)) {
+    # allow to update 'dpars' with new data
+    # define distributional parameters based on response categories
+    if (length(out$family$cats) < 2L) {
+      stop2("At least 2 response categories are required.")
+    }
+    if (is.null(out$family$refcat)) {
+      # the first level serves as the reference category
+      out$family$refcat <- out$family$cats[1]
+    }
+    if (isNA(out$family$refcat)) {
+      # implies predicting all categories
+      predcats <- out$family$cats
+    } else {
+      if (!out$family$refcat %in% out$family$cats) {
+        stop2("The reference response category must be one of ",
+              collapse_comma(out$family$cats), ".")
+      }
+      predcats <- setdiff(out$family$cats, out$family$refcat)
+    }
+    mu_dpars <- make_stan_names(paste0("mu", predcats))
+    if (any(duplicated(mu_dpars))) {
+      stop2("Invalid response category names. Please avoid ",
+            "using any special characters in the names.")
+    }
+    old_mu_dpars <- str_subset(out$family$dpars, "^mu")
+    out$family$dpars <- setdiff(out$family$dpars, old_mu_dpars)
+    out$family$dpars <- union(mu_dpars, out$family$dpars)
+  }
+  
+  # incorporate deprecated arguments
+  require_threshold <- is_ordinal(out$family) && is.null(out$family$threshold)
+  if (require_threshold && !is.null(threshold)) {
+    # slot 'threshold' is deprecated as of brms 1.7.0
+    out$family <- validate_family(out$family, threshold = threshold)
   }
   if (!is.null(sparse)) {
     # a global 'sparse' argument is deprecated as of brms 2.8.3
@@ -1214,58 +1327,18 @@ validate_formula.brmsformula <- function(
       }
     }
   }
-  out$mecor <- default_mecor(out$mecor)
-  if (has_cat(out) && is.null(get_cats(out)) && !is.null(data)) {
-    # for easy access of response categories
-    out$family$cats <- extract_cat_names(out, data)
+  if (is.null(attr(out$formula, "autocor")) && !is.null(autocor)) {
+    # 'autocor' interface has been changed in brms 2.11.1
+    warning2(
+      "Argument 'autocor' should be specified within the ", 
+      "'formula' argument. See ?brmsformula for help."
+    )
+    # store 'autocor' as an attribute to carry it around more easily
+    attr(out$formula, "autocor") <- validate_autocor(autocor)
   }
-  if (is_ordinal(out$family)) {
-    if (is.null(out$family$threshold) && !is.null(threshold)) {
-      # slot 'threshold' is deprecated as of brms 1.7.0
-      out$family <- check_family(out$family, threshold = threshold)
-    }
-    try_terms <- try(stats::terms(out$formula), silent = TRUE)
-    intercept <- attr(try_terms, "intercept", TRUE)
-    if (!is(try_terms, "try-error") && isTRUE(intercept == 0)) {
-      stop2("Cannot remove the intercept in an ordinal model.")
-    }
-    if (is.null(get_thres(out)) && !is.null(data)) {
-      # for easy access of thresholds
-      out$family$thres <- extract_thres_names(out, data)  
-    }
-    if (is.mixfamily(out$family)) {
-      # every mixture family needs to know about response categories
-      for (i in seq_along(out$family$mix)) {
-        out$family$mix[[i]]$thres <- out$family$thres
-      }
-    }
-  }
-  mu_dpars <- str_subset(out$family$dpars, "^mu")
-  conv_cats_dpars <- conv_cats_dpars(out$family)
-  if (conv_cats_dpars && !length(mu_dpars) && !is.null(data)) {
-    # define distributional parameters based on response categories
-    if (length(out$family$cats) < 2L) {
-      stop2("At least 2 response categories are required.")
-    }
-    if (is.null(out$family$refcat)) {
-      # the first level serves as the reference category
-      out$family$refcat <- out$family$cats[1]
-    } 
-    if (isNA(out$family$refcat)) {
-      predcats <- out$family$cats  # predict all categories
-    } else {
-      if (!out$family$refcat %in% out$family$cats) {
-        stop2("The reference response category must be one of ",
-              collapse_comma(out$family$cats), ".")
-      }
-      predcats <- setdiff(out$family$cats, out$family$refcat)
-    }
-    mu_dpars <- make_stan_names(paste0("mu", predcats))
-    if (any(duplicated(mu_dpars))) {
-      stop2("Invalid response category names. Please avoid ",
-            "using any special characters in the names.")
-    }
-    out$family$dpars <- c(mu_dpars, out$family$dpars)
+  if (!is.null(cov_ranef)) {
+    # 'cov_ranef' is deprecated as of brms 2.12.5
+    out$cov_ranef <- validate_cov_ranef(cov_ranef)
   }
   bf(out)
 }
@@ -1274,7 +1347,7 @@ validate_formula.brmsformula <- function(
 # allow passing lists of families or autocors
 #' @export
 validate_formula.mvbrmsformula <- function(
-  formula, family = NULL, autocor = NULL, ...
+  formula, family = NULL, autocor = NULL, cov_ranef = NULL, ...
 ) {
   nresp <- length(formula$forms)
   if (!is(family, "list")) {
@@ -1302,10 +1375,17 @@ validate_formula.mvbrmsformula <- function(
   if (is.null(formula$rescor)) {
     # with 'mi' terms we usually don't want rescor to be estimated
     miforms <- ulapply(formula$forms, function(f)
-      parse_ad(f$formula, f$family, FALSE)[["mi"]]
+      terms_ad(f$formula, f$family, FALSE)[["mi"]]
     )
     formula$rescor <- allow_rescor && !length(miforms)
     message("Setting 'rescor' to ", formula$rescor, " by default for this model")
+    if (formula$rescor) {
+      warning2(
+        "In the future, 'rescor' will be set to FALSE by default for ", 
+        "all models. It is thus recommended to explicitely set ",
+        "'rescor' via 'set_recor' instead of using the default."
+      ) 
+    }
   }
   formula$rescor <- as_one_logical(formula$rescor)
   if (formula$rescor) {
@@ -1318,6 +1398,11 @@ validate_formula.mvbrmsformula <- function(
   formula$mecor <- default_mecor(formula$mecor)
   for (i in seq_along(formula$forms)) {
     formula$forms[[i]]$mecor <- formula$mecor
+  }
+  # incorporate deprecated arguments
+  if (!is.null(cov_ranef)) {
+    # 'cov_ranef' is deprecated as of brms 2.12.5
+    formula$cov_ranef <- validate_cov_ranef(cov_ranef)
   }
   formula
 }
@@ -1338,20 +1423,20 @@ update.brmsformula <- function(object, formula.,
                                ...) {
   mode <- match.arg(mode)
   object <- bf(object)
-  up_family <- formula.[["family"]]
-  if (is.null(up_family)) {
-    up_family <- object[["family"]]
-  }
-  up_autocor <- formula.[["autocor"]]
-  if (is.null(up_autocor)) {
-    up_autocor <- object[["autocor"]]
-  }
-  up_nl <- get_nl(formula, aol = FALSE)
+  up_nl <- get_nl(formula., aol = FALSE)
   if (is.null(up_nl)) {
     up_nl <- get_nl(object)
   }
   # already use up_nl here to avoid ordinary parsing of NL formulas
   formula. <- bf(formula., nl = up_nl)
+  up_family <- formula.[["family"]]
+  if (is.null(up_family)) {
+    up_family <- object[["family"]]
+  }
+  up_autocor <- attr(formula.$formula, "autocor")
+  if (is.null(up_autocor)) {
+    up_autocor <- attr(object$formula, "autocor")
+  }
   old_form <- object$formula
   up_form <- formula.$formula
   if (mode == "update") {
@@ -1435,6 +1520,11 @@ update_adterms <- function(formula, adform, action = c("update", "replace")) {
 print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
   str_wsp <- collapse(rep(" ", wsp))
+  autocor <- attr(x$formula, "autocor")
+  if (!is.null(autocor)) {
+    autocor <- formula2str(autocor, rm = 1, space = "trim")
+    cat(paste0(str_wsp, "autocor ~ ", autocor, "\n"))
+  }
   pforms <- x$pforms
   if (length(pforms)) {
     pforms <- ulapply(pforms, formula2str, space = "trim")
@@ -1489,4 +1579,97 @@ warn_dpar <- function(dpar) {
     warning2("Argument 'dpar' is no longer necessary and ignored.")
   }
   NULL
+}
+
+# return the right-hand side of a formula
+rhs <- function(x) {
+  attri <- attributes(x)
+  x <- as.formula(x)
+  x <- if (length(x) == 3) x[-2] else x
+  do_call(structure, c(list(x), attri))
+}
+
+# return the left-hand side of a formula
+lhs <- function(x) {
+  x <- as.formula(x)
+  if (length(x) == 3L) update(x, . ~ 1) else NULL
+}
+
+# convert a string to a formula
+# @param x vector of strings to be converted
+# @param ... passed to formula()
+str2formula <- function(x, ..., collapse = "+") {
+  has_chars <- nzchar(x)
+  if (length(x) && any(has_chars)) {
+    out <- paste(x[has_chars], collapse = collapse) 
+  } else {
+    out <- "1"
+  }
+  out <- formula(paste("~", out), ...)
+  environment(out) <- parent.frame()
+  out
+}
+
+# convert a formula to a character string
+# @param formula a model formula
+# @param rm a vector of to elements indicating how many characters 
+#   should be removed at the beginning and end of the string respectively
+# @param space how should whitespaces be treated?
+# @return a single character string or NULL
+formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+  if (is.null(formula)) {
+    return(NULL)
+  }
+  formula <- as.formula(formula)
+  space <- match.arg(space)
+  if (anyNA(rm[2])) rm[2] <- 0
+  x <- Reduce(paste, deparse(formula))
+  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  if (space == "trim") {
+    x <- gsub(" {1,}", " ", x, perl = TRUE)
+  } else {
+    x <- gsub(" ", "", x, perl = TRUE) 
+  }
+  substr(x, 1 + rm[1], nchar(x) - rm[2])
+}
+
+# right-hand side of a formula as a character string
+str_rhs <- function(x) {
+  formula2str(rhs(x), rm = c(1, 0))
+}
+
+# left-hand side of a formula as a character string
+str_lhs <- function(x) {
+  formula2str(lhs(x), rm = c(0, 2))
+}
+
+is.formula <- function(x) {
+  inherits(x, "formula")
+}
+
+# wrapper around as.formula with additional checks
+as_formula <- function(x) {
+  x <- as.formula(x)
+  # fixes issue #749
+  rhs <- rhs(x)[[2]]
+  if (isTRUE(is.call(rhs) && rhs[[1]] == "~")) {
+    stop2("Nested formulas are not allowed. Did you use '~~' somewhere?")
+  }
+  x
+}
+
+# expand the '.' variable in formula using stats::terms
+expand_dot_formula <- function(formula, data = NULL) {
+  if (isTRUE("." %in% all.vars(formula))) {
+    att <- attributes(formula)
+    try_terms <- try(
+      stats::terms(formula, data = data), 
+      silent = TRUE
+    )
+    if (!is(try_terms, "try-error")) {
+      formula <- formula(try_terms)
+    }
+    attributes(formula) <- att
+  }
+  formula
 }

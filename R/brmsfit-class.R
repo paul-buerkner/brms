@@ -11,29 +11,32 @@
 #' @details 
 #' See \code{methods(class = "brmsfit")} for an overview of available methods.
 #' 
-#' @slot formula A \code{\link{brmsformula}} object
-#' @slot family A \code{\link{brmsfamily}} object
-#' @slot data A \code{data.frame} containing all variables used in the model
-#' @slot data.name The name of \code{data} as specified by the user 
-#' @slot model The model code in \pkg{Stan} language
+#' @slot formula A \code{\link{brmsformula}} object.
+#' @slot data A \code{data.frame} containing all variables used in the model.
+#' @slot data2 A \code{list} of data objects which cannot be passed
+#'   via \code{data}.
 #' @slot prior A \code{\link{brmsprior}} object containing
-#'   information on the priors used in the model
-#' @slot autocor An \code{\link{cor_brms}} object containing 
-#'   the autocorrelation structure if specified
-#' @slot ranef A \code{data.frame} containing the group-level structure
-#' @slot cov_ranef A \code{list} of customized group-level covariance matrices
-#' @slot stanvars A \code{\link{stanvars}} object or \code{NULL}
-#' @slot stan_funs A character string of length one or \code{NULL}
+#'   information on the priors used in the model.
+#' @slot stanvars A \code{\link{stanvars}} object.
+#' @slot model The model code in \pkg{Stan} language.
+#' @slot ranef A \code{data.frame} containing the group-level structure.
+#' @slot exclude The names of the parameters for which samples are not saved.
+#' @slot algorithm The name of the algorithm used to fit the model.
+#' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
+#'   among others containing the posterior samples.
 #' @slot criteria An empty \code{list} for adding model fit criteria
 #'   after estimation of the model.
-#' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
-#'   among others containing the posterior samples
-#' @slot exclude The names of the parameters for which samples are not saved
-#' @slot algorithm The name of the algorithm used to fit the model
-#' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
-#'   which the model was fitted
 #' @slot file Optional name of a file in which the model object was stored in
-#'   or loaded from
+#'   or loaded from.
+#' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
+#'   which the model was fitted.
+#' @slot family (Deprecated) A \code{\link{brmsfamily}} object.
+#' @slot autocor (Deprecated) An \code{\link{cor_brms}} object containing 
+#'   the autocorrelation structure if specified.
+#' @slot cov_ranef (Deprecated) A \code{list} of customized group-level 
+#'   covariance matrices.
+#' @slot stan_funs (Deprecated) A character string of length one or \code{NULL}.
+#' @slot data.name (Deprecated) The name of \code{data} as specified by the user.
 #' 
 #' @seealso 
 #'   \code{\link{brms}}, 
@@ -44,20 +47,20 @@
 NULL
 
 # brmsfit class
-brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
-                    data.name = "", model = "", prior = empty_prior(), 
-                    autocor = NULL, ranef = empty_ranef(), cov_ranef = NULL, 
-                    criteria = list(), stanvars = NULL, stan_funs = NULL, 
-                    fit = NA, exclude = NULL, algorithm = "sampling",
-                    file = NULL) {
+brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
+                    data2 = list(), stanvars = NULL, model = "", 
+                    ranef = empty_ranef(), exclude = NULL, 
+                    algorithm = "sampling", fit = NULL, criteria = list(), 
+                    file = NULL, family = NULL, autocor = NULL, 
+                    cov_ranef = NULL, stan_funs = NULL, data.name = "") {
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")
   )
   x <- nlist(
-    formula, family, data, data.name, model, prior,
-    autocor, ranef, cov_ranef, stanvars, stan_funs, 
-    fit, exclude, algorithm, version, file
+    formula, data, prior, data2, stanvars, model, ranef, 
+    exclude, algorithm, fit, criteria, file, version,
+    family, autocor, cov_ranef, stan_funs, data.name
   )
   class(x) <- "brmsfit"
   x

@@ -4,7 +4,8 @@
 \name{epilepsy}
 \alias{epilepsy}
 \title{Epileptic seizure counts}
-\format{A data frame of 236 observations containing information 
+\format{
+A data frame of 236 observations containing information 
   on the following 9 variables. 
 \describe{
  \item{Age}{The age of the patients in years}
@@ -19,7 +20,8 @@
    a unique identifier for each observation}
  \item{zAge}{Standardized \code{Age}}
  \item{zBase}{Standardized \code{Base}}
-}}
+}
+}
 \source{
 Thall, P. F., & Vail, S. C. (1990). 
  Some covariance models for longitudinal count data with overdispersion. 

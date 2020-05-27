@@ -3,7 +3,7 @@
 \name{cor_brms}
 \alias{cor_brms}
 \alias{cor_brms-class}
-\title{Correlation structure classes for the \pkg{brms} package}
+\title{(Deprecated) Correlation structure classes for the \pkg{brms} package}
 \description{
 Classes of correlation structures available in the \pkg{brms} package. 
 \code{cor_brms} is not a correlation structure itself, 

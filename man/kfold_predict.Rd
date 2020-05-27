@@ -17,7 +17,7 @@ or \code{"fitted"}. See \code{\link{predict.brmsfit}} for details.}
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

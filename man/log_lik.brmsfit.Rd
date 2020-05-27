@@ -15,7 +15,7 @@
   subset = NULL,
   pointwise = FALSE,
   combine = TRUE,
-  add_point_draws = FALSE,
+  add_point_estimate = FALSE,
   ...
 )
 }
@@ -55,10 +55,10 @@ Indicates if the log-likelihoods of the submodels should
 be combined per observation (i.e. added together; the default) 
 or if the log-likelihoods should be returned separately.}
 
-\item{add_point_draws}{For internal use only. Ensures compatibility with the
-\code{\link{loo_subsample}} method.}
+\item{add_point_estimate}{For internal use only. Ensures compatibility 
+with the \code{\link{loo_subsample}} method.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

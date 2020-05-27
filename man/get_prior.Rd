@@ -9,8 +9,8 @@ get_prior(
   data,
   family = gaussian(),
   autocor = NULL,
+  knots = NULL,
   sparse = NULL,
-  internal = FALSE,
   ...
 )
 }
@@ -33,12 +33,18 @@ details of supported families see \code{\link{brmsfamily}}. By default, a
 linear \code{gaussian} model is applied. In multivariate models,
 \code{family} might also be a list of families.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-description of the available correlation structures. Defaults to
+\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+a description of the available correlation structures. Defaults to
 \code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.}
+\code{autocor} might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{knots}{Optional list containing user specified knot values to be used
+for basis construction of smoothing terms. See
+\code{\link[mgcv:gamm]{gamm}} for more details.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -47,11 +53,7 @@ memory. Sampling speed is currently not improved or even slightly
 decreased. It is now recommended to use the \code{sparse} argument of
 \code{\link{brmsformula}} and related functions.}
 
-\item{internal}{A flag indicating if the names of additional internal
-parameters should be displayed. Setting priors on these parameters is not
-recommended}
-
-\item{...}{Currently ignored.}
+\item{...}{Other arguments for internal usage only.}
 }
 \value{
 A data.frame with columns \code{prior}, \code{class}, \code{coef},

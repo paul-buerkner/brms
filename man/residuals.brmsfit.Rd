@@ -70,7 +70,7 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{

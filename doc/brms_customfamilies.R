@@ -63,11 +63,11 @@ summary(fit2)
 expose_functions(fit2, vectorize = TRUE)
 
 ## ----log_lik----------------------------------------------------------------------------
-log_lik_beta_binomial2 <- function(i, draws) {
-  mu <- draws$dpars$mu[, i]
-  phi <- draws$dpars$phi
-  trials <- draws$data$vint1[i]
-  y <- draws$data$Y[i]
+log_lik_beta_binomial2 <- function(i, prep) {
+  mu <- prep$dpars$mu[, i]
+  phi <- prep$dpars$phi
+  trials <- prep$data$vint1[i]
+  y <- prep$data$Y[i]
   beta_binomial2_lpmf(y, mu, phi, trials)
 }
 
@@ -75,20 +75,20 @@ log_lik_beta_binomial2 <- function(i, draws) {
 loo(fit1, fit2)
 
 ## ----posterior_predict------------------------------------------------------------------
-posterior_predict_beta_binomial2 <- function(i, draws, ...) {
-  mu <- draws$dpars$mu[, i]
-  phi <- draws$dpars$phi
-  trials <- draws$data$vint1[i]
+posterior_predict_beta_binomial2 <- function(i, prep, ...) {
+  mu <- prep$dpars$mu[, i]
+  phi <- prep$dpars$phi
+  trials <- prep$data$vint1[i]
   beta_binomial2_rng(mu, phi, trials)
 }
 
 ## ----pp_check---------------------------------------------------------------------------
 pp_check(fit2)
 
-## ----pp_expect--------------------------------------------------------------------------
-pp_expect_beta_binomial2 <- function(draws) {
-  mu <- draws$dpars$mu
-  trials <- draws$data$vint1
+## ----posterior_epred--------------------------------------------------------------------
+posterior_epred_beta_binomial2 <- function(prep) {
+  mu <- prep$dpars$mu
+  trials <- prep$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
 }

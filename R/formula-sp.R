@@ -1,6 +1,157 @@
 # This file contains functions dealing with the extended 
 # formula syntax to specify special effects terms
 
+#' Predictors with Measurement Error in \pkg{brms} Models
+#' 
+#' Specify predictors with measurement error. The function does not evaluate its
+#' arguments -- it exists purely to help set up a model.
+#' 
+#' @param x The variable measured with error.
+#' @param sdx Known measurement error of \code{x}
+#'   treated as standard deviation.
+#' @param gr Optional grouping factor to specify which
+#'   values of \code{x} correspond to the same value of the
+#'   latent variable. If \code{NULL} (the default) each
+#'   observation will have its own value of the latent variable.
+#' 
+#' @details 
+#' For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' By default, latent noise-free variables are assumed
+#' to be correlated. To change that, add \code{set_mecor(FALSE)}
+#' to your model formula object (see examples).
+#' 
+#' @seealso 
+#' \code{\link{brmsformula}}, \code{\link{brmsformula-helpers}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # sample some data
+#' N <- 100
+#' dat <- data.frame(
+#'   y = rnorm(N), x1 = rnorm(N), 
+#'   x2 = rnorm(N), sdx = abs(rnorm(N, 1))
+#'  )
+#' # fit a simple error-in-variables model 
+#' fit1 <- brm(y ~ me(x1, sdx) + me(x2, sdx), data = dat, 
+#'            save_mevars = TRUE)
+#' summary(fit1)
+#' 
+#' # turn off modeling of correlations
+#' bform <- bf(y ~ me(x1, sdx) + me(x2, sdx)) + set_mecor(FALSE)
+#' fit2 <- brm(bform, data = dat, save_mevars = TRUE)
+#' summary(fit2)
+#' } 
+#' 
+#' @export
+me <- function(x, sdx, gr = NULL) {
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  sdx <- deparse(substitute(sdx))
+  gr <- substitute(gr)
+  if (!is.null(gr)) {
+    gr <- deparse_combine(gr)
+    stopif_illegal_group(gr)
+  } else {
+    gr <- ""
+  }
+  label <- deparse(match.call())
+  out <- nlist(term, sdx, gr, label)
+  class(out) <- c("me_term", "sp_term")
+  out
+}
+
+#' Predictors with Missing Values in \pkg{brms} Models
+#' 
+#' Specify predictor term with missing values in \pkg{brms}. The function does
+#' not evaluate its arguments -- it exists purely to help set up a model.
+#' 
+#' @param x The variable containing missings.
+#' 
+#' @details For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' @seealso \code{\link{brmsformula}}
+#'   
+#' @examples 
+#' \dontrun{
+#' data("nhanes", package = "mice")
+#' bform <- bf(bmi | mi() ~ age * mi(chl)) +
+#'   bf(chl | mi() ~ age) + set_rescor(FALSE)
+#' fit <- brm(bform, data = nhanes)
+#' summary(fit)
+#' plot(conditional_effects(fit, resp = "bmi"), ask = FALSE)
+#' LOO(fit, newdata = na.omit(fit$data))
+#' } 
+#' 
+#' @export
+mi <- function(x) {
+  # use 'term' for consistency with other special terms
+  term <- substitute(x)
+  vars <- all.vars(term)
+  term <- deparse(term)
+  if (!is_equal(term, vars)) {
+    stop2("'mi' only accepts single untransformed variables.")
+  }
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mi_term", "sp_term")
+  out
+}
+
+#' Monotonic Predictors in \pkg{brms} Models
+#' 
+#' Specify a monotonic predictor term in \pkg{brms}. The function does not
+#' evaluate its arguments -- it exists purely to help set up a model.
+#' 
+#' @param x An integer variable or an ordered factor to be modeled as monotonic.
+#'  
+#' @details For detailed documentation see \code{help(brmsformula)}
+#'   as well as \code{vignette("brms_monotonic")}.
+#' 
+#' @seealso \code{\link{brmsformula}}
+#' 
+#' @references 
+#' Bürkner P. C. & Charpentier, E. (in review). Monotonic Effects: A Principled 
+#' Approach for Including Ordinal Predictors in Regression Models. PsyArXiv 
+#' preprint.
+#'   
+#' @examples   
+#' \dontrun{
+#' # generate some data
+#' income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
+#' income <- factor(sample(income_options, 100, TRUE), 
+#'                  levels = income_options, ordered = TRUE)
+#' mean_ls <- c(30, 60, 70, 75)
+#' ls <- mean_ls[income] + rnorm(100, sd = 7)
+#' dat <- data.frame(income, ls)
+#' 
+#' # fit a simple monotonic model
+#' fit1 <- brm(ls ~ mo(income), data = dat)
+#' 
+#' # summarise the model
+#' summary(fit1)
+#' plot(fit1, N = 6)
+#' plot(conditional_effects(fit1), points = TRUE)
+#' 
+#' # model interaction with other variables
+#' dat$x <- sample(c("a", "b", "c"), 100, TRUE)
+#' fit2 <- brm(ls ~ mo(income)*x, data = dat)
+#' 
+#' # summarise the model
+#' summary(fit2)
+#' plot(conditional_effects(fit2), points = TRUE)
+#' } 
+#'  
+#' @export
+mo <- function(x) {
+  # use 'term' for consistency with other special terms
+  term <- deparse(substitute(x))
+  label <- deparse(match.call())
+  out <- nlist(term, label)
+  class(out) <- c("mo_term", "sp_term")
+  out
+}
+
 # find variable names for which to keep NAs
 vars_keep_na <- function(x, ...) {
   UseMethod("vars_keep_na")
@@ -9,7 +160,7 @@ vars_keep_na <- function(x, ...) {
 #' @export
 vars_keep_na.mvbrmsterms <- function(x, ...) {
   resps <- get_element(x, "respform")
-  resps <- ulapply(resps, parse_resp, check_names = FALSE)
+  resps <- ulapply(resps, terms_resp, check_names = FALSE)
   out <- lapply(x$terms, vars_keep_na, responses = resps, ...)
   vars_mi <- unique(ulapply(out, attr, "vars_mi"))
   out <- unique(unlist(out))
@@ -27,9 +178,10 @@ vars_keep_na.mvbrmsterms <- function(x, ...) {
 #' @export
 vars_keep_na.brmsterms <- function(x, responses = NULL, ...) {
   if (is.formula(x$adforms$mi)) {
-    mi_respvars <- parse_resp(x$respform, check_names = FALSE)
+    mi_respcall <- terms_resp(x$respform, check_names = FALSE)
+    mi_respvars <- all_vars(mi_respcall)
     mi_advars <- all_vars(x$adforms$mi)
-    out <- unique(c(mi_respvars, mi_advars))
+    out <- unique(c(mi_respcall, mi_respvars, mi_advars))
   } else {
     out <- character(0)
   }
@@ -72,43 +224,47 @@ get_uni_me <- function(x) {
 # save all me-terms within a tidy data.frame
 tidy_meef <- function(bterms, data, old_levels = NULL) {
   uni_me <- get_uni_me(bterms)
-  if (length(uni_me)) {
-    if (has_subset(bterms)) {
-      # 'Xme' variables need to be the same across univariate models
-      stop2("Argument 'subset' is not supported when using 'me' terms.")
-    }
-    out <- data.frame(
-      term = uni_me, xname = "", grname = "", 
-      stringsAsFactors = FALSE
-    )
-    levels <- vector("list", nrow(out))
-    for (i in seq_rows(out)) {
-      tmp <- eval2(out$term[i])
-      out$xname[i] <- tmp$term
-      if (isTRUE(nzchar(tmp$gr))) {
-        out$grname[i] <- tmp$gr
-        if (length(old_levels)) {
-          levels[[i]] <- old_levels[[tmp$gr]]
-        } else {
-          levels[[i]] <- levels(factor(get(tmp$gr, data)))
-        } 
-      }
-    }
-    out$coef <- rename(paste0("me", out$xname))
-    out$cor <- isTRUE(bterms$mecor)
-    names(levels) <- out$grname
-    levels <- levels[lengths(levels) > 0L]
-    if (length(levels)) {
-      levels <- levels[!duplicated(names(levels))]
-      attr(out, "levels") <- levels
-    }
-  } else {
-    out <- data.frame(
-      term = character(0), xname = character(0),
-      grname = character(0), cor = logical(0),
-      stringsAsFactors = FALSE
-    )
+  if (!length(uni_me)) {
+    return(empty_meef()) 
   }
+  if (has_subset(bterms)) {
+    # 'Xme' variables need to be the same across univariate models
+    stop2("Argument 'subset' is not supported when using 'me' terms.")
+  }
+  out <- data.frame(
+    term = uni_me, xname = "", grname = "", 
+    stringsAsFactors = FALSE
+  )
+  levels <- vector("list", nrow(out))
+  for (i in seq_rows(out)) {
+    tmp <- eval2(out$term[i])
+    out$xname[i] <- tmp$term
+    if (isTRUE(nzchar(tmp$gr))) {
+      out$grname[i] <- tmp$gr
+      if (length(old_levels)) {
+        levels[[i]] <- old_levels[[tmp$gr]]
+      } else {
+        levels[[i]] <- levels(factor(get(tmp$gr, data)))
+      } 
+    }
+  }
+  out$coef <- rename(paste0("me", out$xname))
+  out$cor <- isTRUE(bterms$mecor)
+  names(levels) <- out$grname
+  levels <- levels[lengths(levels) > 0L]
+  if (length(levels)) {
+    levels <- levels[!duplicated(names(levels))]
+    attr(out, "levels") <- levels
+  }
+  structure(out, class = c("meef_frame", "data.frame"))
+}
+
+empty_meef <- function() {
+  out <- data.frame(
+    term = character(0), xname = character(0),
+    grname = character(0), cor = logical(0),
+    stringsAsFactors = FALSE
+  )
   structure(out, class = c("meef_frame", "data.frame"))
 }
 
@@ -133,7 +289,7 @@ get_sp_vars <- function(x, type) {
 # @return a data.frame with one row per special term
 tidy_spef <- function(x, data) {
   if (is.formula(x)) {
-    x <- parse_bf(x, check_response = FALSE)$dpars$mu
+    x <- brmsterms(x, check_response = FALSE)$dpars$mu
   }
   form <- x[["sp"]]
   if (!is.formula(form)) {
@@ -178,15 +334,16 @@ tidy_spef <- function(x, data) {
       mi_parts <- terms_split[[i]][take_mi]
       out$calls_mi[[i]] <- get_matches_expr(regex_sp("mi"), mi_parts)
       out$vars_mi[[i]] <- all_vars(str2formula(out$calls_mi[[i]]))
-      # do it like parse_resp to ensure correct matching
+      # do it like terms_resp to ensure correct matching
       out$vars_mi[[i]] <- gsub("\\.|_", "", make.names(out$vars_mi[[i]]))
     }
-    sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
-    sp_calls <- sub("^I\\(", "(", terms_split[[i]][sp_calls])
+    has_sp_calls <- grepl_expr(regex_sp(all_sp_types()), terms_split[[i]])
+    sp_calls <- sub("^I\\(", "(", terms_split[[i]][has_sp_calls])
     out$joint_call[[i]] <- paste0(sp_calls, collapse = " * ")
+    out$Ic[i] <- any(!has_sp_calls)
   }
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  out$Ic <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+  out$Ic <- cumsum(out$Ic | not_one)
   out
 }
 

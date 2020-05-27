@@ -4,7 +4,7 @@
 #' 
 #' @inheritParams predict.brmsfit
 #' @param ... Further arguments passed to 
-#'   \code{\link[brms:pp_expect.brmsfit]{pp_expect}},
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}},
 #'   which is used in the computation of the R-squared values.
 #' 
 #' @return If \code{summary = TRUE} a 1 x C matrix is returned
@@ -76,7 +76,7 @@ bayes_R2.brmsfit <- function(object, resp = NULL, summary = TRUE,
     # assumes expectations of different responses to be independent
     args_ypred$resp <- args_y$resp <- resp[i]
     y <- do_call(get_y, args_y)
-    ypred <- do.call(pp_expect, args_ypred)
+    ypred <- do_call(posterior_epred, args_ypred)
     if (is_ordinal(family(object, resp = resp[i]))) {
       ypred <- ordinal_probs_continuous(ypred)
     }

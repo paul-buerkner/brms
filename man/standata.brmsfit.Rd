@@ -9,10 +9,9 @@
   object,
   newdata = NULL,
   re_formula = NULL,
+  newdata2 = NULL,
+  new_objects = NULL,
   incl_autocor = TRUE,
-  new_objects = list(),
-  internal = FALSE,
-  control = list(),
   ...
 )
 
@@ -31,21 +30,18 @@ predictions of the grand mean when using sum coding.}
 the prediction. If \code{NULL} (default), include all group-level effects;
 if \code{NA}, include no group-level effects.}
 
+\item{newdata2}{A named \code{list} of objects containing new data, which
+cannot be passed via argument \code{newdata}. Required for some objects 
+used in autocorrelation structures, or \code{\link{stanvars}}.}
+
+\item{new_objects}{Deprecated alias of \code{newdata2}.}
+
 \item{incl_autocor}{A flag indicating if correlation structures originally
 specified via \code{autocor} should be included in the predictions.
 Defaults to \code{TRUE}.}
 
-\item{new_objects}{A named \code{list} of objects containing new data, which
-cannot be passed via argument \code{newdata}. Required for objects passed
-via \code{\link{stanvars}} and for \code{\link[brms:cor_sar]{cor_sar}} and
-\code{\link[brms:cor_fixed]{cor_fixed}} correlation structures.}
-
-\item{internal}{Logical, indicates if the data should be prepared 
-for internal use in other post-processing methods.}
-
-\item{control}{A named list currently for internal usage only.}
-
-\item{...}{More arguments passed to \code{\link{make_standata}}.}
+\item{...}{More arguments passed to \code{\link{make_standata}}
+and \code{\link{validate_newdata}}.}
 }
 \value{
 A named list containing the data originally passed to Stan.

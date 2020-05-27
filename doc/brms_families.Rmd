@@ -70,10 +70,8 @@ $$
 f(y) = {N \choose y} \mu^{y} (1-\mu)^{N - y}
 $$
 where $N$ is the number of trials and $y \in \{0, ... , N\}$. When all
-$N$ are $1$ (i.e., $y \in \{0,1\}$), the bernoulli distribution for binary
-data arises. **binomial** and **bernoulli** families are distinguished in
-brms as the bernoulli distribution has its own implementation in Stan
-that is computationlly more efficient.
+$N$ are $1$ (i.e., $y \in \{0,1\}$), the **bernoulli** distribution for binary
+data arises.
 
 For $y \in \mathbb{N}_0$, the density of the **poisson** family is given by
 $$

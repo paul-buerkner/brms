@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
-Version: 2.11.0
-Date: 2019-01-10
+Version: 2.13.0
+Date: 2020-05-22
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -13,10 +13,10 @@ Depends:
 Imports: 
     rstan (>= 2.19.2),
     ggplot2 (>= 2.0.0),
-    loo (>= 2.1.0),
+    loo (>= 2.2.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
-    rstantools (>= 1.5.1),
+    rstantools (>= 2.0.0),
     bayesplot (>= 1.5.0),
     shinystan (>= 2.4.0),
     bridgesampling (>= 0.3-0),
@@ -34,6 +34,7 @@ Imports:
     backports
 Suggests: 
     testthat (>= 0.9.1),
+    emmeans (>= 1.4.2),
     RWiener,
     mice,
     spdep,
@@ -71,4 +72,4 @@ BugReports: https://github.com/paul-buerkner/brms/issues
 VignetteBuilder: 
     knitr,
     R.rsp
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0

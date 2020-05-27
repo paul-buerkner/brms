@@ -83,7 +83,7 @@
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
 #' # perform 10-fold cross validation
-#' (kfold1 <- kfold(fit1, chains = 1)
+#' (kfold1 <- kfold(fit1, chains = 1))
 #' 
 #' # use the future package for parallelization
 #' library(future)
@@ -211,14 +211,14 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       omitted <- predicted <- which(folds == k)
     }
     mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit <- subset_autocor(x, -omitted, incl_car = TRUE)
+    fit <- x
     up_args$object <- fit
     up_args$newdata <- mf_omitted
+    up_args$data2 <- subset_data2(x$data2, -omitted)
     fit <- SW(do_call(update, up_args))
-    # allow predictions for matrix based correlation structures
-    fit <- subset_autocor(fit, predicted, autocor = x$autocor)
     ll_args$object <- fit
     ll_args$newdata <- mf[predicted, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(x$data2, predicted)
     lppds <- do_call(log_lik, ll_args)
     out <- nlist(lppds, omitted, predicted)
     if (save_fits) out$fit <- fit

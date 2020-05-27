@@ -27,15 +27,15 @@ stan_model_args <- list(save_dso = FALSE)
 library(brms)
 brmsfit_example1 <- brm(
   bf(count ~ Trt*Age + mo(Exp) + s(Age) +
-      offset(Age) + (1+Trt|visit), sigma ~ Trt),
+      offset(Age) + (1+Trt|visit) + arma(visit, patient),
+     sigma ~ Trt),
   data = dat, family = student(), 
-  autocor = cor_arma(~visit|patient, 1, 1),
   prior = set_prior("normal(0,2)", class = "b") +
     set_prior("cauchy(0,2)", class = "sd") +
     set_prior("normal(0,3)", dpar = "sigma"),
   sample_prior = TRUE, 
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example2 <- brm(
@@ -46,7 +46,7 @@ brmsfit_example2 <- brm(
     set_prior("normal(0,3)", nlpar = "b"),
   sample_prior = TRUE, 
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example3 <- brm(
@@ -54,14 +54,14 @@ brmsfit_example3 <- brm(
   data = dat[1:30, ], prior = prior(normal(0, 10)), 
   save_mevars = TRUE, 
   warmup = warmup, iter = iter, chains = chains, 
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example4 <- brm(
   bf(rating ~ x1 + cs(x2) + (cs(x2)||subject), disc ~ 1),
   data = dat2, family = sratio(),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example5 <- brm(
@@ -71,7 +71,7 @@ brmsfit_example5 <- brm(
     prior(normal(0, 1), Intercept, dpar = mu2) +
     prior(normal(0, 1), dpar = mu2),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 brmsfit_example6 <- brm(
@@ -81,7 +81,7 @@ brmsfit_example6 <- brm(
   prior = prior(normal(0, 0.25), lscale, resp = volume) +
     prior(normal(0, 10), sdgp, resp = volume),
   warmup = warmup, iter = iter, chains = chains,
-  stan_model_args = stan_model_args, testmode = TRUE
+  stan_model_args = stan_model_args, rename = FALSE
 )
 
 # easy loading of unchanged models to avoid refitting all of them

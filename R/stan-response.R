@@ -65,7 +65,7 @@ stan_response <- function(bterms, data) {
         "  int<lower=1> Jthres{resp}[N{resp}, 2];  // threshold indices\n"
       )
       str_add(out$tdata_def) <- glue(
-        "  int<lower=1> nmthres{resp} = prod(nthres{resp});", 
+        "  int<lower=1> nmthres{resp} = sum(nthres{resp});", 
         "  // total number of thresholds\n",
         "  int<lower=1> Kthres_start{resp}[ngrthres{resp}];", 
         "  // start index per threshold group\n",
@@ -137,18 +137,17 @@ stan_response <- function(bterms, data) {
     )
   }
   if (is.formula(bterms$adforms$mi)) {
+    # TODO: pass 'Ybounds' via 'standata' instead of hardcoding them
     Ybounds <- trunc_bounds(bterms, data, incl_family = TRUE, stan = TRUE)
     sdy <- get_sdy(bterms, data)
     if (is.null(sdy)) {
       # response is modeled without measurement error
-      str_add(out$par) <- glue(
-        "  vector{Ybounds}[Nmi{resp}] Ymi{resp};",
-        "  // estimated missings\n"
-      )
       str_add(out$data) <- glue(
         "  int<lower=0> Nmi{resp};  // number of missings\n",
-        "  int<lower=1> Jmi{resp}[Nmi{resp}];",  
-        "  // positions of missings\n"
+        "  int<lower=1> Jmi{resp}[Nmi{resp}];  // positions of missings\n"
+      )
+      str_add(out$par) <- glue(
+        "  vector{Ybounds}[Nmi{resp}] Ymi{resp};  // estimated missings\n"
       )
       str_add(out$model_def) <- glue(
         "  // vector combining observed and missing responses\n",
@@ -203,14 +202,14 @@ stan_response <- function(bterms, data) {
 stan_thres <- function(bterms, data, prior, ...) {
   stopifnot(is.btl(bterms) || is.btnl(bterms))
   out <- list()
-  family <- bterms$family
-  if (!is_ordinal(family)) {
+  if (!is_ordinal(bterms)) {
     return(out)
   }
   px <- check_prefix(bterms)
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
-  type <- str_if(has_ordered_thres(family), "ordered", "vector")
+  type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
+  coef_type <- str_if(has_ordered_thres(bterms), "", "real")
   gr <- grb <- ""
   groups <- get_thres_groups(bterms)
   if (has_thres_groups(bterms)) {
@@ -220,64 +219,81 @@ stan_thres <- function(bterms, data, prior, ...) {
   }
   if (fix_intercepts(bterms)) {
     # identify ordinal mixtures by fixing their thresholds to the same values
-    if (has_equidistant_thres(family)) {
+    if (has_equidistant_thres(bterms)) {
       stop2("Cannot use equidistant and fixed thresholds at the same time.")
     }
+    # separate definition from computation to support fixed parameters
+    str_add(out$tpar_def) <- "  // ordinal thresholds\n"
     str_add(out$tpar_def) <- cglue(
-      "  // fix thresholds across ordinal mixture components\n",
-      "  {type}[nthres{resp}{grb}] Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
+      "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
+    )
+    str_add(out$tpar_comp) <- 
+      "  // fix thresholds across ordinal mixture components\n"
+    str_add(out$tpar_comp) <- cglue(
+      "  Intercept{p}{gr} = fixed_Intercept{resp}{gr};\n"
     )
   } else {
-    if (has_equidistant_thres(family)) {
+    if (has_equidistant_thres(bterms)) {
       bound <- subset2(prior, class = "delta", group = "", ls = px)$bound
-      str_add(out$par) <- cglue(
-        "  real first_Intercept{p}{gr};  // first threshold\n",
-        "  real{bound} delta{p}{gr};  // distance between thresholds\n"
-      )
+      for (i in seq_along(groups)) {
+        str_add_list(out) <- stan_prior(
+          prior, class = "Intercept", group = groups[i], 
+          type = "real", prefix = "first_",
+          suffix = glue("{p}{gr[i]}"), px = px, 
+          comment = "first threshold"
+        )
+        str_add_list(out) <- stan_prior(
+          prior, class = "delta", group = groups[i], 
+          type = glue("real{bound}"), px = px, suffix = gr[i], 
+          comment = "distance between thresholds"
+        )
+      }
+      str_add(out$tpar_def) <- 
+        "  // temporary thresholds for centered predictors\n"
       str_add(out$tpar_def) <- cglue(
-        "  // temporary thresholds for centered predictors\n",
         "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
       )
+      str_add(out$tpar_comp) <- 
+        "  // compute equidistant thresholds\n"
       str_add(out$tpar_comp) <- cglue(
-        "  // compute equidistant thresholds\n",
         "  for (k in 1:(nthres{resp}{grb})) {{\n",
         "    Intercept{p}{gr}[k] = first_Intercept{p}{gr}", 
         " + (k - 1.0) * delta{p}{gr};\n",
         "  }}\n"
       )
-      for (i in seq_along(groups)) {
-        str_add(out$prior) <- stan_prior(
-          prior, class = "delta", group = groups[i], 
-          px = px, suffix = gr[i]
-        )
-        str_add(out$prior) <- stan_prior(
-          prior, class = "Intercept", group = groups[i], 
-          px = px, prefix = "first_", suffix = glue("{p}{gr[i]}")
-        )
-      }
     } else {
-      str_add(out$par) <- cglue(
-        "  // temporary thresholds for centered predictors\n",
-        "  {type}[nthres{resp}{grb}] Intercept{p}{gr};\n"
-      )
       for (i in seq_along(groups)) {
-        str_add(out$prior) <- stan_prior(
+        str_add_list(out) <- stan_prior(
           prior, class = "Intercept", group = groups[i], 
           coef = get_thres(bterms, group = groups[i]), 
-          px = px, suffix = glue("{p}{gr[i]}")
+          type = glue("{type}[nthres{resp}{grb[i]}]"),
+          coef_type = coef_type, px = px, suffix = glue("{p}{gr[i]}"),
+          comment = "temporary thresholds for centered predictors"
         )
       }
     }
   }
+  stz <- ""
+  if (has_sum_to_zero_thres(bterms)) {
+    stz <- "_stz"
+    str_add(out$tpar_def) <- cglue(
+      "  vector[nthres{resp}{grb}] Intercept{p}_stz{gr};",
+      "  // sum-to-zero constraint thresholds\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  // compute sum-to-zero constraint thresholds\n",
+      "  Intercept{p}_stz{gr} = Intercept{p}{gr} - mean(Intercept{p}{gr});\n"
+    ) 
+  }
   if (has_thres_groups(bterms)) {
     # merge all group specific thresholds into one vector
     str_add(out$model_def) <- glue(
-      "  vector[nmthres{resp}] merged_Intercept{p};  // merged thresholds\n"
+      "  vector[nmthres{resp}] merged_Intercept{p}{stz};  // merged thresholds\n"
     )
     grj <- seq_along(groups)
     grj <- glue("Kthres_start{resp}[{grj}]:Kthres_end{resp}[{grj}]")
     str_add(out$model_comp_basic) <- cglue(
-      "  merged_Intercept{p}[{grj}] = Intercept{p}{gr};\n"
+      "  merged_Intercept{p}{stz}[{grj}] = Intercept{p}{stz}{gr};\n"
     )
   }
   sub_X_means <- ""
@@ -287,10 +303,10 @@ stan_thres <- function(bterms, data, prior, ...) {
     # both implies adding <mean_X, b> to the temporary intercept
     sub_X_means <- glue(" + dot_product(means_X{p}, b{p})")
   }
-  str_add(out$gen_def) <- glue(
-    "  // compute actual thresholds\n",
+  str_add(out$gen_def) <- "  // compute actual thresholds\n"
+  str_add(out$gen_def) <- cglue(
     "  vector[nthres{resp}{grb}] b{p}_Intercept{gr}",  
-    " = Intercept{p}{gr}{sub_X_means};\n" 
+    " = Intercept{p}{stz}{gr}{sub_X_means};\n" 
   )
   out
 }
@@ -313,8 +329,10 @@ stan_bhaz <- function(bterms, prior, ...) {
     "  // design matrix of the cumulative baseline function\n",
     "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
   )
-  str_add(out$par) <- glue(
-    "  vector<lower=0>[Kbhaz{resp}] sbhaz; // baseline coefficients\n"
+  str_add_list(out) <- stan_prior(
+    prior, class = "sbhaz", suffix = resp, px = px, 
+    type = glue("vector<lower=0>[Kbhaz{resp}]"),
+    comment = "baseline coefficients"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",
@@ -322,7 +340,6 @@ stan_bhaz <- function(bterms, prior, ...) {
     "  // compute values of cumulative baseline function\n",
     "  vector[N{resp}] cbhaz{resp} = Zcbhaz{resp} * sbhaz{resp};\n"
   )
-  str_add(out$prior) <- stan_prior(prior, class = "sbhaz", px = px)
   out
 }
 
@@ -362,6 +379,7 @@ stan_mixture <- function(bterms, data, prior) {
     )
     str_add(out$model_comp_mix) <- "  }\n"
   } else if (length(theta_fix)) {
+    # fix mixture proportions
     if (length(theta_fix) != nmix) {
       stop2("Can only fix no or all mixing proportions.")
     }
@@ -370,6 +388,7 @@ stan_mixture <- function(bterms, data, prior) {
       "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
     )
   } else {
+    # estimate mixture proportions
     str_add(out$data) <- glue(
       "  vector[{nmix}] con_theta{p};  // prior concentration\n"                  
     )
@@ -379,9 +398,13 @@ stan_mixture <- function(bterms, data, prior) {
     str_add(out$prior) <- glue(
       "  target += dirichlet_lpdf(theta{p} | con_theta{p});\n"                
     )
+    # separate definition from computation to support fixed parameters
     str_add(out$tpar_def) <- "  // mixing proportions\n"
     str_add(out$tpar_def) <- cglue(
-      "  real<lower=0,upper=1> theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
+      "  real<lower=0,upper=1> theta{1:nmix}{p};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  theta{1:nmix}{p} = theta{p}[{1:nmix}];\n"
     )
   }
   if (order_intercepts(bterms)) {
@@ -401,15 +424,15 @@ stan_mixture <- function(bterms, data, prior) {
       grb <- paste0("[", seq_along(groups), "]")
     }
     type <- str_if(has_ordered_thres(bterms), "ordered", "vector")
-    str_add(out$par) <- cglue( 
-      "  // thresholds fixed over mixture components\n",
-      "  {type}[nthres{p}{grb}] fixed_Intercept{p}{gr};\n"
-    )
+    coef_type <- str_if(has_ordered_thres(bterms), "", "real")
     for (i in seq_along(groups)) {
-      str_add(out$prior) <- stan_prior(
-        prior, class = "Intercept", px = px,  
+      str_add_list(out) <- stan_prior(
+        prior, class = "Intercept", 
         coef = get_thres(bterms, group = groups[i]), 
-        prefix = "fixed_", suffix = glue("{p}{gr[i]}")
+        type = glue("{type}[nthres{p}{grb[i]}]"), 
+        coef_type = coef_type, px = px, 
+        prefix = "fixed_", suffix = glue("{p}{gr[i]}"),
+        comment = "thresholds fixed over mixture components"
       )
     }
   }
@@ -509,7 +532,6 @@ stan_ordinal_lpmf <- function(family, link) {
   }
   # lpdf function for multiple merged thresholds
   str_add(out) <- glue(
-    # TODO: include order_logistic_merged_lpdf
     "  /* {family}-{link} log-PDF for a single response and merged thresholds\n",
     "   * Args:\n",
     "   *   y: response category\n",
@@ -525,5 +547,23 @@ stan_ordinal_lpmf <- function(family, link) {
     "     return {family}_{link}_lpmf(y | mu, disc, thres[j[1]:j[2]]);\n",
     "   }}\n"
   )
+  if (family == "cumulative" && link == "logit") {
+    # use the more efficient 'ordered_logistic' built-in function 
+    str_add(out) <- glue(
+      "  /* ordered-logistic log-PDF for a single response and merged thresholds\n",
+      "   * Args:\n",
+      "   *   y: response category\n",
+      "   *   mu: latent mean parameter\n",
+      "   *   thres: vector of merged ordinal thresholds\n",
+      "   *   j: start and end index for the applid threshold within 'thres'\n",
+      "   * Returns:\n", 
+      "   *   a scalar to be added to the log posterior\n",
+      "   */\n",
+      "   real ordered_logistic_merged_lpmf(", 
+      "int y, real mu, vector thres, int[] j) {{\n",
+      "     return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);\n",
+      "   }}\n"
+    )
+  }
   out
 }

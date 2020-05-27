@@ -25,48 +25,25 @@ brmsformula(
 a symbolic description of the model to be fitted. 
 The details of model specification are given in 'Details'.}
 
-\item{...}{Additional \code{formula} objects to specify 
-predictors of non-linear and distributional parameters. 
-Formulas can either be named directly or contain
-names on their left-hand side. 
-The following are distributional parameters of specific families
-(all other parameters are treated as non-linear parameters):
-\code{sigma} (residual standard deviation or scale of
-the \code{gaussian}, \code{student}, \code{skew_normal}, 
-\code{lognormal} \code{exgaussian}, and \code{asym_laplace} families);
-\code{shape} (shape parameter of the \code{Gamma},
-\code{weibull}, \code{negbinomial}, and related
-zero-inflated / hurdle families); \code{nu} (degrees of freedom 
-parameter of the \code{student} and \code{frechet} families);
-\code{phi} (precision parameter of the \code{beta} 
-and \code{zero_inflated_beta} families);
-\code{kappa} (precision parameter of the \code{von_mises} family);
-\code{beta} (mean parameter of the exponential component
-of the \code{exgaussian} family);
-\code{quantile} (quantile parameter of the \code{asym_laplace} family);
-\code{zi} (zero-inflation probability); 
-\code{hu} (hurdle probability);
-\code{zoi} (zero-one-inflation probability);
-\code{coi} (conditional one-inflation probability);
-\code{disc} (discrimination) for ordinal models;
-\code{bs}, \code{ndt}, and \code{bias} (boundary separation,
-non-decision time, and initial bias of the \code{wiener}
-diffusion model).
-By default, distributional parameters are modeled 
-on the log scale if they can be positive only or on the 
-logit scale if the can only be within the unit interval.
-See 'Details' for more explanation.}
+\item{...}{Additional \code{formula} objects to specify predictors of
+non-linear and distributional parameters. Formulas can either be named
+directly or contain names on their left-hand side. Alternatively,
+it is possible to fix parameters to certain values by passing
+numbers or character strings in which case arguments have to be named
+to provide the parameter names. See 'Details' for more information.}
 
 \item{flist}{Optional list of formulas, which are treated in the 
 same way as formulas passed via the \code{...} argument.}
 
 \item{family}{Same argument as in \code{\link{brm}}.
 If \code{family} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
-\item{autocor}{Same argument as in \code{\link{brm}}.
+\item{autocor}{An optional \code{formula} which contains
+autocorrelation terms as described in \code{\link{autocor-terms}}
+or alternatively a \code{\link{cor_brms}} object (deprecated).
 If \code{autocor} is specified in \code{brmsformula}, it will 
-overwrite the value specified in \code{\link{brm}}.}
+overwrite the value specified in other functions.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 
@@ -115,32 +92,38 @@ models for all parameters of the assumed response distribution.
   The \code{formula} argument accepts formulas of the following syntax:
   
   \code{response | aterms ~ pterms + (gterms | group)} 
-  
-  The \code{pterms} part contains effects that are assumed to be the 
-  same across observations. We call them 'population-level' effects
+
+  The \code{pterms} part contains effects that are assumed to be the same
+  across observations. We call them 'population-level' or 'overall' effects,
   or (adopting frequentist vocabulary) 'fixed' effects. The optional
-  \code{gterms} part may contain effects that are assumed to vary
-  across grouping variables specified in \code{group}. We
-  call them 'group-level' effects or (adopting frequentist 
-  vocabulary) 'random' effects, although the latter name is misleading
-  in a Bayesian context. For more details type 
-  \code{vignette("brms_overview")} and \code{vignette("brms_multilevel")}. 
+  \code{gterms} part may contain effects that are assumed to vary across
+  grouping variables specified in \code{group}. We call them 'group-level' or
+  'varying' effects, or (adopting frequentist vocabulary) 'random' effects,
+  although the latter name is misleading in a Bayesian context. For more
+  details type \code{vignette("brms_overview")} and
+  \code{vignette("brms_multilevel")}.
   
   \bold{Group-level terms}
   
-  Multiple grouping factors each with multiple group-level effects 
-  are possible. (Of course we can also run models without any
-  group-level effects.) 
-  Instead of \code{|} you may use \code{||} in grouping terms
-  to prevent correlations from being modeled. 
-  Alternatively, it is possible to model different group-level terms of 
-  the same grouping factor as correlated (even across different formulas,
-  e.g., in non-linear models) by using \code{|<ID>|} instead of \code{|}.
-  All group-level terms sharing the same ID will be modeled as correlated.
-  If, for instance, one specifies the terms \code{(1+x|2|g)} and 
-  \code{(1+z|2|g)} somewhere in the formulas passed to \code{brmsformula},
-  correlations between the corresponding group-level effects 
-  will be estimated.
+  Multiple grouping factors each with multiple group-level effects are
+  possible. (Of course we can also run models without any group-level
+  effects.) Instead of \code{|} you may use \code{||} in grouping terms to
+  prevent correlations from being modeled. Equivalently, the \code{cor}
+  argument of the \code{\link{gr}} function can be used for this purpose, 
+  for example, \code{(1 + x || g)} is equivalent to 
+  \code{(1 + x | gr(g, cor = FALSE))}.
+  
+  It is also possible to model different group-level terms of the same
+  grouping factor as correlated (even across different formulas, e.g., in
+  non-linear models) by using \code{|<ID>|} instead of \code{|}. All
+  group-level terms sharing the same ID will be modeled as correlated. If,
+  for instance, one specifies the terms \code{(1+x|i|g)} and \code{(1+z|i|g)}
+  somewhere in the formulas passed to \code{brmsformula}, correlations
+  between the corresponding group-level effects will be estimated. In the
+  above example, \code{i} is not a variable in the data but just a symbol to
+  indicate correlations between multiple group-level terms. Equivalently, the
+  \code{id} argument of the \code{\link{gr}} function can be used as well,
+  for example, \code{(1 + x | gr(g, id = "i"))}.
   
   If levels of the grouping factor belong to different sub-populations,
   it may be reasonable to assume a different covariance matrix for each 
@@ -163,7 +146,7 @@ models for all parameters of the assumed response distribution.
   
   \bold{Special predictor terms}
   
-  Smoothing terms can modeled using the \code{\link{s}}
+  Flexible non-linear smooth terms can modeled using the \code{\link{s}}
   and \code{\link{t2}} functions in the \code{pterms} part 
   of the model formula. This allows to fit generalized additive mixed
   models (GAMMs) with \pkg{brms}. The implementation is similar to that 
@@ -175,7 +158,7 @@ models for all parameters of the assumed response distribution.
   smooth terms, Gaussian processes can be used to model complex non-linear
   relationships, for instance temporal or spatial autocorrelation. 
   However, they are computationally demanding and are thus not recommended 
-  for very large datasets.
+  for very large datasets or approximations need to be used.
   
   The \code{pterms} and \code{gterms} parts may contain four non-standard
   effect types namely monotonic, measurement error, missing value, and 
@@ -240,6 +223,11 @@ models for all parameters of the assumed response distribution.
   as an additional response with corresponding predictors and the 
   addition term \code{mi()}. In our example, we could write
   \code{x | mi() ~ z}. See \code{\link{mi}} for examples with real data.
+  
+  \bold{Autocorrelation terms}
+  
+  Autocorrelation terms can be directly specified inside the \code{pterms}
+  part as well. Details can be found in \code{\link{autocor-terms}}.
   
   \bold{Additional response information}
   
@@ -427,6 +415,12 @@ models for all parameters of the assumed response distribution.
   non-linear parameters (provided that the resulting model is still 
   scientifically reasonable). 
   
+  By default, non-linear covariates are treated as real vectors in Stan.
+  However, if the data of the covariates is of type `integer` in \R (which
+  can be enforced by the `as.integer` function), the Stan type will be
+  changed to an integer array. That way, covariates can also be used
+  for indexing purposes in Stan.
+  
   Non-linear models may not be uniquely identified and / or show bad convergence.
   For this reason it is mandatory to specify priors on the non-linear parameters.
   For instructions on how to do that, see \code{\link{set_prior}}.
@@ -434,12 +428,41 @@ models for all parameters of the assumed response distribution.
   
   \bold{Formula syntax for predicting distributional parameters}
   
-  It is also possible to predict parameters of the response
-  distribution such as the residual standard deviation \code{sigma} 
-  in gaussian models or the hurdle probability \code{hu} in hurdle models. 
-  The syntax closely resembles that of a non-linear 
-  parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}. 
-  For some examples of distributional models, see \code{vignette("brms_distreg")}.
+  It is also possible to predict parameters of the response distribution such
+  as the residual standard deviation \code{sigma} in gaussian models or the
+  hurdle probability \code{hu} in hurdle models. The syntax closely resembles
+  that of a non-linear parameter, for instance \code{sigma ~ x + s(z) +
+  (1+x|g)}. For some examples of distributional models, see
+  \code{vignette("brms_distreg")}.
+  
+  Parameter \code{mu} exists for every family and can be used as an
+  alternative to specifying terms in \code{formula}. If both \code{mu} and
+  \code{formula} are given, the right-hand side of \code{formula} is ignored.
+  Accordingly, specifying terms on the right-hand side of both \code{formula} 
+  and \code{mu} at the same time is deprecated. In future versions,
+  \code{formula} might be updated by \code{mu}. 
+  
+  The following are
+  distributional parameters of specific families (all other parameters are
+  treated as non-linear parameters): \code{sigma} (residual standard
+  deviation or scale of the \code{gaussian}, \code{student},
+  \code{skew_normal}, \code{lognormal} \code{exgaussian}, and
+  \code{asym_laplace} families); \code{shape} (shape parameter of the
+  \code{Gamma}, \code{weibull}, \code{negbinomial}, and related zero-inflated
+  / hurdle families); \code{nu} (degrees of freedom parameter of the
+  \code{student} and \code{frechet} families); \code{phi} (precision
+  parameter of the \code{beta} and \code{zero_inflated_beta} families);
+  \code{kappa} (precision parameter of the \code{von_mises} family);
+  \code{beta} (mean parameter of the exponential component of the
+  \code{exgaussian} family); \code{quantile} (quantile parameter of the
+  \code{asym_laplace} family); \code{zi} (zero-inflation probability);
+  \code{hu} (hurdle probability); \code{zoi} (zero-one-inflation
+  probability); \code{coi} (conditional one-inflation probability);
+  \code{disc} (discrimination) for ordinal models; \code{bs}, \code{ndt}, and
+  \code{bias} (boundary separation, non-decision time, and initial bias of
+  the \code{wiener} diffusion model). By default, distributional parameters
+  are modeled on the log scale if they can be positive only or on the logit
+  scale if the can only be within the unit interval.
   
   Alternatively, one may fix distributional parameters to certain values.
   However, this is mainly useful when models become too 
@@ -572,7 +595,10 @@ bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE)
 bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 
 # correlated group-level effects across parameters
-bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
+bf(y ~ a1 - a2^x, a1 ~ 1 + (1 |2| g), a2 ~ x + (x |2| g), nl = TRUE)
+# alternative but equivalent way to specify the above model
+bf(y ~ a1 - a2^x, a1 ~ 1 + (1 | gr(g, id = 2)), 
+   a2 ~ x + (x | gr(g, id = 2)), nl = TRUE)
 
 # define a multivariate model
 bf(mvbind(y1, y2) ~ x * z + (1|g))
@@ -619,6 +645,10 @@ bf(y ~ 1) +
 bf(y1 ~ x + (1|g)) + 
   gaussian() + cor_ar(~1|g) +
   bf(y2 ~ z) + poisson()
+  
+# specify correlated residuals of a gaussian and a poisson model
+form1 <- bf(y1 ~ 1 + x + (1|c|obs), sigma = 1) + gaussian()
+form2 <- bf(y2 ~ 1 + x + (1|c|obs)) + poisson()
   
 # model missing values in predictors
 bf(bmi ~ age * mi(chl)) +

@@ -46,9 +46,10 @@
 #' @param link_xi Link of auxiliary parameter \code{xi} if being predicted.
 #' @param threshold A character string indicating the type 
 #'   of thresholds (i.e. intercepts) used in an ordinal model. 
-#'   \code{"flexible"} provides the standard unstructured thresholds and 
+#'   \code{"flexible"} provides the standard unstructured thresholds,
 #'   \code{"equidistant"} restricts the distance between 
-#'   consecutive thresholds to the same value.
+#'   consecutive thresholds to the same value, and
+#'   \code{"sum_to_zero"} ensures the thresholds sum to zero.
 #' @param refcat Optional name of the reference response category used in
 #'   categorical, multinomial, and dirichlet models. If \code{NULL} (the
 #'   default), the first category is used as the reference. If \code{NA}, all
@@ -189,7 +190,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_bias = "logit", link_xi = "log1p",
                        link_alpha = "identity", 
                        link_quantile = "logit",
-                       threshold = c("flexible", "equidistant"),
+                       threshold = "flexible",
                        refcat = NULL, bhaz = NULL) {
   slink <- substitute(link)
   .brmsfamily(
@@ -217,7 +218,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 # @param ... link functions (as character strings) of parameters
 # @return an object of 'brmsfamily' which inherits from 'family'
 .brmsfamily <- function(family, link = NULL, slink = link,
-                        threshold = c("flexible", "equidistant"),
+                        threshold = "flexible", 
                         refcat = NULL, bhaz = NULL, ...) {
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
@@ -278,7 +279,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     }
   }
   if (is_ordinal(out$family)) {
-    out$threshold <- match.arg(threshold)
+    # TODO: move specification of 'threshold' to the 'resp_thres' function?
+    thres_options <- c("flexible", "equidistant", "sum_to_zero")
+    out$threshold <- match.arg(threshold, thres_options)
   }
   if (conv_cats_dpars(out$family)) {
     if (!is.null(refcat)) {
@@ -312,7 +315,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
 #   ignored if family is a function or a family object
 # @param threshold optional character string specifying the threshold
 #   type in ordinal models
-check_family <- function(family, link = NULL, threshold = NULL) {
+validate_family <- function(family, link = NULL, threshold = NULL) {
   if (is.function(family)) {
     family <- family()   
   }
@@ -735,8 +738,8 @@ multinomial <- function(link = "logit", refcat = NULL) {
 
 #' @rdname brmsfamily
 #' @export
-cumulative <- function(link = "logit", link_disc = "log",
-                       threshold = c("flexible", "equidistant")) {
+cumulative <- function(link = "logit", link_disc = "log", 
+                       threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("cumulative", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -745,7 +748,7 @@ cumulative <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 sratio <- function(link = "logit", link_disc = "log",
-                   threshold = c("flexible", "equidistant")) {
+                   threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("sratio", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -754,7 +757,7 @@ sratio <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 cratio <- function(link = "logit", link_disc = "log",
-                   threshold = c("flexible", "equidistant")) {
+                   threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("cratio", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -763,7 +766,7 @@ cratio <- function(link = "logit", link_disc = "log",
 #' @rdname brmsfamily
 #' @export
 acat <- function(link = "logit", link_disc = "log",
-                 threshold = c("flexible", "equidistant")) {
+                 threshold = "flexible") {
   slink <- substitute(link)
   .brmsfamily("acat", link = link, slink = slink,
               link_disc = link_disc, threshold = threshold)
@@ -874,7 +877,7 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   family <- list(
     family = "mixture", 
     link = "identity",
-    mix = lapply(dots, check_family)
+    mix = lapply(dots, validate_family)
   )
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
@@ -963,19 +966,22 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 #' @param log_lik Optional function to compute log-likelihood values of
 #'   the model in \R. This is only relevant if one wants to ensure 
 #'   compatibility with method \code{\link[brms:log_lik.brmsfit]{log_lik}}.
-#' @param predict Optional function to compute predicted values of
-#'   the model in \R. This is only relevant if one wants to ensure 
-#'   compatibility with method \code{\link[brms:predict.brmsfit]{predict}}.  
-#' @param fitted Optional function to compute fitted values of
-#'   the model in \R. This is only relevant if one wants to ensure 
-#'   compatibility with method \code{\link[brms:fitted.brmsfit]{fitted}}.     
+#' @param posterior_predict Optional function to compute posterior prediction of
+#'   the model in \R. This is only relevant if one wants to ensure compatibility
+#'   with method \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}.
+#' @param posterior_epred Optional function to compute expected values of the
+#'   posterior predictive distribution of the model in \R. This is only relevant
+#'   if one wants to ensure compatibility with method
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
+#' @param predict Deprecated alias of `posterior_predict`.
+#' @param fitted Deprecated alias of `posterior_epred`.
 #' @param env An \code{\link{environment}} in which certain post-processing 
 #'   functions related to the custom family can be found, if there were not 
 #'   directly passed to \code{custom_family}. This is only
 #'   relevant if one wants to ensure compatibility with the methods
-#'   \code{\link[brms:predict.brmsfit]{predict}}, 
-#'   \code{\link[brms:fitted.brmsfit]{fitted}}, or
-#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}.
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}},
+#'   \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}}, or
+#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
 #'   By default, \code{env} is the enviroment from which 
 #'   \code{custom_family} is called.
 #'   
@@ -1031,8 +1037,9 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
 custom_family <- function(name, dpars = "mu", links = "identity",
                           type = c("real", "int"), lb = NA, ub = NA,
                           vars = NULL, specials = NULL, 
-                          threshold = c("flexible", "equidistant"),
-                          log_lik = NULL, predict = NULL, 
+                          threshold = "flexible",
+                          log_lik = NULL, posterior_predict = NULL,
+                          posterior_epred = NULL, predict = NULL, 
                           fitted = NULL, env = parent.frame()) {
   name <- as_one_character(name)
   dpars <- as.character(dpars)
@@ -1043,6 +1050,8 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   vars <- as.character(vars)
   specials <- as.character(specials)
   env <- as.environment(env)
+  posterior_predict <- use_alias(posterior_predict, predict)
+  posterior_epred <- use_alias(posterior_epred, fitted)
   if (any(duplicated(dpars))) {
     stop2("Duplicated 'dpars' are not allowed.")
   }
@@ -1073,19 +1082,19 @@ custom_family <- function(name, dpars = "mu", links = "identity",
             "should be 'i' and 'draws'.")
     }
   }
-  if (!is.null(predict)) {
-    predict <- as.function(predict)
-    args <- names(formals(predict))
+  if (!is.null(posterior_predict)) {
+    posterior_predict <- as.function(posterior_predict)
+    args <- names(formals(posterior_predict))
     if (!is_equal(args[1:3], c("i", "draws", "..."))) {
-      stop2("The first three arguments of 'predict' ", 
+      stop2("The first three arguments of 'posterior_predict' ", 
             "should be 'i', 'draws', and '...'.")
     }
   }
-  if (!is.null(fitted)) {
-    fitted <- as.function(fitted)
-    args <- names(formals(fitted))
+  if (!is.null(posterior_epred)) {
+    posterior_epred <- as.function(posterior_epred)
+    args <- names(formals(posterior_epred))
     if (!is_equal(args[1], "draws")) {
-      stop2("The first argument of 'fitted' should be 'draws'.")
+      stop2("The first argument of 'posterior_epred' should be 'draws'.")
     }
   }
   lb <- named_list(dpars, lb)
@@ -1095,7 +1104,7 @@ custom_family <- function(name, dpars = "mu", links = "identity",
   out <- nlist(
     family = "custom", link, name, 
     dpars, lb, ub, type, vars, specials,
-    log_lik, predict, fitted, env
+    log_lik, posterior_predict, posterior_epred, env
   )
   if (length(dpars) > 1L) {
     out[paste0("link_", dpars[!is_mu])] <- links[!is_mu]
@@ -1118,7 +1127,7 @@ valid_dpars.default <- function(family, ...) {
   if (!length(family)) {
     return("mu")
   }
-  family <- check_family(family) 
+  family <- validate_family(family) 
   family_info(family, "dpars", ...)
 }
 
@@ -1364,7 +1373,7 @@ summarise_links.mvbrmsformula <- function(x, wsp = 0, ...) {
 
 #' @export
 summarise_links.brmsformula <- function(x, mv = FALSE, ...) {
-  x <- parse_bf(x)
+  x <- brmsterms(x)
   dpars <- valid_dpars(x)
   links <- setNames(rep("identity", length(dpars)), dpars)
   links_pred <- ulapply(x$dpars, function(x) x$family$link)
@@ -1425,6 +1434,11 @@ is_multinomial <- function(family) {
 
 is_dirichlet <- function(family) {
   "dirichlet" %in% family_info(family, "specials")
+}
+
+is_polytomous <- function(family) {
+  is_categorical(family) || is_ordinal(family) ||
+    is_multinomial(family) || is_dirichlet(family)
 }
 
 is_cox <- function(family) {
@@ -1490,7 +1504,12 @@ has_thres <- function(family) {
 
 # indicate if family has equidistant thresholds
 has_equidistant_thres <- function(family) {
-  isTRUE(family_info(family, "threshold") == "equidistant")
+  "equidistant" %in% family_info(family, "threshold")
+}
+
+# indicate if family has sum-to-zero thresholds
+has_sum_to_zero_thres <- function(family) {
+  "sum_to_zero" %in% family_info(family, "threshold")
 }
 
 # indicate if family has ordered thresholds
@@ -1548,14 +1567,14 @@ no_sigma <- function(bterms) {
   if (is.formula(bterms$adforms$se)) {
     se <- eval_rhs(bterms$adforms$se)
     se_only <- isFALSE(se$flags$sigma)
-    if (se_only && use_cov(bterms$autocor)) {
+    if (se_only && use_ac_cov_time(bterms)) {
       stop2("Please set argument 'sigma' of function 'se' ",
-            "to TRUE when modeling ARMA covariance matrices.")
+            "to TRUE when modeling time-series covariance matrices.")
     }
   } else {
     se_only <- FALSE
   }
-  se_only || is.cor_fixed(bterms$autocor)
+  se_only
 }
 
 # has the model a non-predicted but estimated sigma parameter?
@@ -1570,22 +1589,32 @@ pred_sigma <- function(bterms) {
   "sigma" %in% dpar_class(names(bterms$dpars))
 }
 
-# has the model latent residuals to be used in autocor structures
-has_latent_residuals <- function(bterms) {
-  !has_natural_residuals(bterms) && 
-    (is.cor_arma(bterms$autocor) || is.cor_cosy(bterms$autocor))
-}
-
-# should natural residuals be modeled as correlated?
-has_cor_natural_residuals <- function(bterms) {
-  has_natural_residuals(bterms) &&
-    (use_cov(bterms$autocor) || is.cor_sar(bterms$autocor))
-}
-
 # do not include a 'nu' parameter in a univariate model?
 no_nu <- function(bterms) {
   # the multi_student_t family only has a single 'nu' parameter
   isTRUE(bterms$rescor) && "student" %in% family_names(bterms)
+}
+
+# prepare for calling family specific post-processing functions
+prepare_family <- function(x) {
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
+  family <- x$family
+  acef <- tidy_acef(x)
+  if (use_ac_cov_time(acef) && has_natural_residuals(x)) {
+    family$fun <- paste0(family$family, "_time")
+  } else if (has_ac_class(acef, "sar")) {
+    acef_sar <- subset2(acef, class = "sar")
+    if (has_ac_subset(acef_sar, type = "lag")) {
+      family$fun <- paste0(family$family, "_lagsar")
+    } else if (has_ac_subset(acef_sar, type = "error")) {
+      family$fun <- paste0(family$family, "_errorsar")
+    }
+  } else if (has_ac_class(acef, "fcor")) {
+    family$fun <- paste0(family$family, "_fcor")
+  } else {
+    family$fun <- family$family
+  }
+  family
 }
 
 # order intercepts to help identifying mixture components?

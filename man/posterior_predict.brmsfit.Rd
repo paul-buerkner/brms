@@ -35,7 +35,7 @@ if \code{NA}, include no group-level effects.}
 
 \item{re.form}{Alias of \code{re_formula}.}
 
-\item{transform}{A function or a character string naming 
+\item{transform}{(Deprecated) A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
@@ -64,7 +64,7 @@ time series (\code{TRUE}).}
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
-\item{...}{Further arguments passed to \code{\link{extract_draws}}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{
@@ -79,7 +79,7 @@ Compute posterior samples of the posterior predictive distribution. Can be
 performed for the data used to fit the model (posterior predictive checks) or
 for new data. By definition, these samples have higher variance than samples
 of the means of the posterior predictive distribution computed by
-\code{\link{posterior_predict.brmsfit}}. This is because the residual error
+\code{\link{posterior_epred.brmsfit}}. This is because the residual error
 is incorporated in \code{posterior_predict}. However, the estimated means of
 both methods averaged across samples should be very similar.
 }

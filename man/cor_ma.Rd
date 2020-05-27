@@ -2,7 +2,7 @@
 % Please edit documentation in R/autocor.R
 \name{cor_ma}
 \alias{cor_ma}
-\title{MA(q) correlation structure}
+\title{(Deprecated) MA(q) correlation structure}
 \usage{
 cor_ma(formula = ~1, q = 1, cov = FALSE)
 }
@@ -34,6 +34,7 @@ An object of class \code{cor_arma} containing solely moving
 average terms.
 }
 \description{
+This function is deprecated. Please see \code{\link{ma}} for the new syntax.
 This function is a constructor for the \code{cor_arma} class, 
 allowing for moving average terms only.
 }

@@ -35,7 +35,8 @@ get_y <- function(x, resp = NULL, warn = FALSE, ...) {
   } else {
     out <- sdata[[Ynames]]
   }
-  structure(out, old_order = attr(sdata, "old_order"))
+  attr(out, "old_order") <- attr(sdata, "old_order")
+  out
 }
 
 #' Prepare Response Data
@@ -55,11 +56,11 @@ data_response <- function(x, ...) {
 }
 
 #' @export
-data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
+data_response.mvbrmsterms <- function(x, basis = NULL, ...) {
   out <- list()
   for (i in seq_along(x$terms)) {
-    od <- old_sdata[[x$responses[i]]]
-    c(out) <- data_response(x$terms[[i]], old_sdata = od, ...)
+    bs <- basis$resps[[x$responses[i]]]
+    c(out) <- data_response(x$terms[[i]], basis = bs, ...)
   }
   if (x$rescor) {
     out$nresp <- length(x$responses)
@@ -70,14 +71,14 @@ data_response.mvbrmsterms <- function(x, old_sdata = NULL, ...) {
 
 #' @export
 data_response.brmsterms <- function(x, data, check_response = TRUE,
-                                    internal = FALSE, old_sdata = NULL, ...) {
-  # prepare data for the response variable
+                                    internal = FALSE, basis = NULL, ...) {
   data <- subset_data(data, x)
   N <- nrow(data)
+  # TODO: rename 'Y' to 'y'
   Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
   out <- list(N = N, Y = unname(Y))
   if (is_binary(x$family) || is_categorical(x$family)) {
-    out$Y <- as_factor(out$Y, levels = old_sdata$resp_levels)
+    out$Y <- as_factor(out$Y, levels = basis$resp_levels)
     out$Y <- as.numeric(out$Y)
     if (is_binary(x$family)) {
       out$Y <- out$Y - 1
@@ -159,8 +160,8 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
           "Using 'binomial' families without specifying 'trials' ", 
           "on the left-hand side of the model formula is deprecated."
         )
-      } else if (!is.null(old_sdata$trials)) {
-        trials <- max(old_sdata$trials)
+      } else if (!is.null(basis$trials)) {
+        trials <- max(basis$trials)
       } else {
         stop2("Could not compute the number of trials.")
       }
@@ -231,7 +232,7 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
       Kthres_cumsum <- cumsum(nthres)
       Kthres_start <- c(1, Kthres_cumsum[-length(nthres)] + 1)
       Kthres_end <- Kthres_cumsum
-      Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, ]
+      Jthres <- cbind(Kthres_start, Kthres_end)[Jgrthres, , drop = FALSE]
       out$Jthres <- Jthres
     } else {
       nthres <- max(thres$thres)
@@ -369,6 +370,11 @@ data_response.brmsterms <- function(x, data, check_response = TRUE,
         out$noise[which_mi] <- Inf
       }
     }
+    # bounds are required for predicting new missing values
+    # not required in Stan right now as bounds are hard-coded there
+    tbounds <- trunc_bounds(x, data, incl_family = TRUE)
+    out$lbmi <- tbounds$lb
+    out$ubmi <- tbounds$ub
     if (!internal) {
       # Stan does not allow NAs in data
       # use Inf to that min(Y) is not affected
@@ -447,8 +453,9 @@ data_bhaz <- function(bterms, data, basis = NULL) {
   }
   y <- model.response(model.frame(bterms$respform, data, na.action = na.pass))
   args <- bterms$family$bhaz 
-  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = basis)
-  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = basis)
+  bs <- basis$basis_matrix
+  out$Zbhaz <- bhaz_basis_matrix(y, args, basis = bs) 
+  out$Zcbhaz <- bhaz_basis_matrix(y, args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
   out
 }
@@ -502,7 +509,7 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
 # @param data user specified data
 # @return a vector of category names
 extract_cat_names <- function(x, data) {
-  stopifnot(is.brmsformula(x) || is.brmsterms(x), has_cat(x))
+  stopifnot(is.brmsformula(x) || is.brmsterms(x))
   respform <- validate_resp_formula(x$formula)
   mr <- model.response(model.frame(respform, data))
   if (has_multicol(x)) {
@@ -523,8 +530,9 @@ extract_cat_names <- function(x, data) {
 # @return a data.frame with columns 'thres' and 'group'
 extract_thres_names <- function(x, data) {
   stopifnot(is.brmsformula(x) || is.brmsterms(x), has_thres(x))
+  
   if (is.null(x$adforms)) {
-    x$adforms <- parse_ad(x$formula, x$family)
+    x$adforms <- terms_ad(x$formula, x$family)
   }
   nthres <- get_ad_values(x, "thres", "thres", data)
   if (any(!is_wholenumber(nthres) | nthres < 1L)) {
@@ -538,34 +546,55 @@ extract_thres_names <- function(x, data) {
     }
     grthres <- factor(grthres)
     group <- levels(grthres)
-    if (length(nthres) == 1L) {
-      nthres <- rep(nthres, NROW(data))
-    }
-    for (g in group) {
-      # validate values of the same level
-      take <- grthres %in% g
-      if (length(unique(nthres[take])) > 1L) {
-        stop2("Number of thresholds should be unique for each group.")
+    if (!length(nthres)) {
+      # extract number of thresholds from the response values
+      nthres <- rep(NA, length(group))
+      for (i in seq_along(group)) {
+        take <- grthres %in% group[i]
+        nthres[i] <- extract_nthres(x$formula, data[take, , drop = FALSE])
       }
+    } else if (length(nthres) == 1L) {
+      # replicate number of thresholds across groups
+      nthres <- rep(nthres, length(group))
+    } else {
+      # number of thresholds is a variable in the data
+      for (i in seq_along(group)) {
+        # validate values of the same level
+        take <- grthres %in% group[i]
+        if (length(unique(nthres[take])) > 1L) {
+          stop2("Number of thresholds should be unique for each group.")
+        }
+      }
+      nthres <- get_one_value_per_group(nthres, grthres)
     }
-    thres <- get_one_value_per_group(nthres, grthres)
-    group <- rep(rename(group), thres)
-    thres <- ulapply(unname(thres), seq_len)
+    group <- rep(rename(group), nthres)
+    thres <- ulapply(unname(nthres), seq_len)
   } else {
     # no grouping variable was specified
     group <- ""
-    if (!is.null(nthres)) {
-      thres <- seq_len(nthres)
-    } else {
-      respform <- validate_resp_formula(x$formula)
-      mr <- model.response(model.frame(respform, data))
-      if (is.numeric(mr)) {
-        thres <- seq_len(max(mr))
-      } else {
-        thres <- seq_along(levels(factor(mr)))
-      }
-      thres <- thres[-length(thres)]
+    if (!length(nthres)) {
+      # extract number of thresholds from the response values
+      nthres <- extract_nthres(x$formula, data)
     }
+    if (length(nthres) > 1L) {
+      stop2("Number of thresholds needs to be a single value.")
+    }
+    thres <- seq_len(nthres)
   }
   data.frame(thres, group, stringsAsFactors = FALSE)
+}
+
+# extract threshold names from the response values
+# @param formula with the response on the LHS
+# @param data a data.frame from which to extract responses
+# @return a single value for the number of thresholds
+extract_nthres <- function(formula, data) {
+  respform <- validate_resp_formula(formula)
+  mr <- model.response(model.frame(respform, data))
+  if (is_like_factor(mr)) {
+    out <- length(levels(factor(mr))) - 1
+  } else {
+    out <- max(mr) - 1
+  }
+  out
 }

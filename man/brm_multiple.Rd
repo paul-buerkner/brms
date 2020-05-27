@@ -9,6 +9,7 @@ brm_multiple(
   data,
   family = gaussian(),
   prior = NULL,
+  data2 = NULL,
   autocor = NULL,
   cov_ranef = NULL,
   sample_prior = c("no", "yes", "only"),
@@ -16,6 +17,7 @@ brm_multiple(
   knots = NULL,
   stanvars = NULL,
   stan_funs = NULL,
+  recompile = FALSE,
   combine = TRUE,
   fit = NA,
   seed = NA,
@@ -30,7 +32,7 @@ be coerced to that classes): A symbolic description of the model to be
 fitted. The details of model specification are explained in
 \code{\link{brmsformula}}.}
 
-\item{data}{A list of data.frames each of which will be used to fit a
+\item{data}{A \emph{list} of data.frames each of which will be used to fit a
 separate model. Alternatively, a \code{mids} object from the \pkg{mice}
 package.}
 
@@ -48,33 +50,44 @@ linear \code{gaussian} model is applied. In multivariate models,
 \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 for more help.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-description of the available correlation structures. Defaults to
-\code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.}
+\item{data2}{A \emph{list} of named lists each of which will be used to fit a
+separate model. Each of the named lists contains objects representing data
+which cannot be passed via argument \code{data} (see \code{\link{brm}} for
+examples). The length of the outer list should match the length of the list
+passed to the \code{data} argument.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in \code{data} that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+a description of the available correlation structures. Defaults to
+\code{NULL}, corresponding to no correlations. In multivariate models,
+\code{autocor} might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within \code{formula}. See \code{\link{brmsformula}} for more details.}
+
+\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in \code{data} that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to \code{"no"}). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-are not sampled, including the default improper priors used by \code{brm}. 
-See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.}
+\item{sample_prior}{Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+\code{\link{hypothesis}}. Please note that improper priors are not sampled,
+including the default improper priors used by \code{brm}. See
+\code{\link{set_prior}} on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -94,7 +107,13 @@ for basis construction of smoothing terms. See
 \item{stan_funs}{(Deprecated) An optional character string containing
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
-\code{stanvars} argument for this purpose, instead.}
+\code{stanvars} argument for this purpose instead.}
+
+\item{recompile}{Logical, indicating whether the Stan model should be
+recompiled for every imputed data set. Defaults to \code{FALSE}. If
+\code{NULL}, \code{brm_multiple} tries to figure out internally, if recompilation
+is necessary, for example because data-dependent priors have changed.
+Using the default of no recompilation should be fine in most cases.}
 
 \item{combine}{Logical; Indicates if the fitted models should be combined
 into a single fitted model object via \code{\link{combine_models}}.

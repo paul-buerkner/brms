@@ -3,24 +3,21 @@
 # @param bterms object of class brmsterms
 # @param na.action function defining how to treat NAs
 # @param drop.unused.levels should unused factor levels be removed?
-# @param terms_attr a list of attributes of the terms object of 
+# @param attr_terms a list of attributes of the terms object of 
 #   the original model.frame; only used with newdata;
 #   this ensures that (1) calls to 'poly' work correctly
 #   and (2) that the number of variables matches the number 
 #   of variable names; fixes issue #73
 # @param knots: a list of knot values for GAMMs
 # @return model.frame for use in brms functions
-update_data <- function(data, bterms, na.action = na.omit2,
-                        drop.unused.levels = TRUE,
-                        terms_attr = NULL, knots = NULL) {
+validate_data <- function(data, bterms, na.action = na.omit2,
+                          drop.unused.levels = TRUE, knots = NULL,
+                          attr_terms = NULL) {
   if (missing(data)) {
     stop2("Data must be specified using the 'data' argument.")
   }
-  if (isTRUE(attr(data, "brmsframe"))) {
-    return(data)
-  }
   if (is.null(knots)) {
-    knots <- attr(data, "knots", TRUE)
+    knots <- get_knots(data)
   }
   data <- try(as.data.frame(data), silent = TRUE)
   if (is(data, "try-error")) {
@@ -29,10 +26,10 @@ update_data <- function(data, bterms, na.action = na.omit2,
   if (!isTRUE(nrow(data) > 0L)) {
     stop2("Argument 'data' does not contain observations.")
   }
-  bterms$allvars <- terms(bterms$allvars)
-  attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
+  terms_all <- terms(bterms$allvars)
+  attributes(terms_all)[names(attr_terms)] <- attr_terms
   data <- data_rsv_intercept(data, bterms = bterms)
-  missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
+  missing_vars <- setdiff(all.vars(terms_all), names(data))
   if (length(missing_vars)) {
     stop2("The following variables are missing in 'data':\n",
           collapse_comma(missing_vars))
@@ -40,20 +37,104 @@ update_data <- function(data, bterms, na.action = na.omit2,
   for (v in intersect(vars_keep_na(bterms), names(data))) {
     attr(data[[v]], "keep_na") <- TRUE
   }
+  # 'terms' prevents correct validation in 'model.frame'
+  attr(data, "terms") <- NULL
   data <- model.frame(
-    bterms$allvars, data, na.action = na.action,
+    terms_all, data, na.action = na.action,
     drop.unused.levels = drop.unused.levels
   )
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
+  if (!isTRUE(nrow(data) > 0L)) {
+    stop2("All observations in the data were removed presumably because of ",
+          "NA values. If you are using the 'subset' addition term, please ",
+          "make sure that variables are not NA even if locally unused.") 
+  }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
   data <- fix_factor_contrasts(data, ignore = groups)
   attr(data, "knots") <- knots
-  attr(data, "brmsframe") <- TRUE
   data
+}
+
+# validate the 'data2' argument
+# @param data2 a named list of data objects
+# @param bterms object returned by 'brmsterms'
+# @param ... more named list to pass objects to data2 from other sources
+#   only required for backwards compatibility with deprecated arguments
+# @return a validated named list of data objects
+validate_data2 <- function(data2, bterms, ...) {
+  # TODO: specify spline-related matrices in 'data2'
+  if (is.null(data2)) {
+    data2 <- list()
+  }
+  if (!is.list(data2)) {
+    stop2("'data2' must be a list.")
+  }
+  if (length(data2) && !is_named(data2)) {
+    stop2("All elements of 'data2' must be named.")
+  }
+  dots <- list(...)
+  for (i in seq_along(dots)) {
+    if (length(dots[[i]])) {
+      stopifnot(is.list(dots[[i]]), is_named(dots[[i]]))
+      data2[names(dots[[i]])] <- dots[[i]]
+    }
+  }
+  # validate autocorrelation matrices
+  acef <- tidy_acef(bterms)
+  sar_M_names <- get_ac_vars(acef, "M", class = "sar")
+  for (M in sar_M_names) {
+    data2[[M]] <- validate_sar_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
+  }
+  car_M_names <- get_ac_vars(acef, "M", class = "car")
+  for (M in car_M_names) {
+    data2[[M]] <- validate_car_matrix(get_from_data2(M, data2))
+    # observation based CAR matrices are deprecated and
+    # there is no need to label them as observation based
+  }
+  fcor_M_names <- get_ac_vars(acef, "M", class = "fcor")
+  for (M in fcor_M_names) {
+    data2[[M]] <- validate_fcor_matrix(get_from_data2(M, data2))
+    attr(data2[[M]], "obs_based_matrix") <- TRUE
+  }
+  # validate within-group covariance matrices
+  cov_names <- ulapply(get_re(bterms)$gcall, "[[", "cov")
+  cov_names <- cov_names[nzchar(cov_names)]
+  for (cov in cov_names) {
+    data2[[cov]] <- validate_recov_matrix(get_from_data2(cov, data2))
+  }
+  data2
+}
+
+# get an object from the 'data2' argument
+get_from_data2 <- function(x, data2) {
+  if (!x %in% names(data2)) {
+    stop2("Object '", x, "' was not found in 'data2'.")
+  }
+  get(x, data2)
+}
+
+# index observation based elements in 'data2' 
+# @param data2 a named list of objects 
+# @param i observation based indices
+# @return data2 with potentially indexed elements
+subset_data2 <- function(data2, i) {
+  if (!length(data2)) {
+    return(data2)
+  }
+  stopifnot(is.list(data2), is_named(data2))
+  for (var in names(data2)) {
+    if (isTRUE(attr(data2[[var]], "obs_based_matrix"))) {
+      # matrices with dimensions equal to the number of observations
+      data2[[var]] <- data2[[var]][i, i, drop = FALSE]
+      attr(data2[[var]], "obs_based_matrix") <- TRUE
+    }
+  }
+  data2
 }
 
 # add the reserved intercept variables to the data
@@ -127,18 +208,18 @@ fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
 # @param bterms brmsterms of mvbrmsterms object
 # @return 'data' potentially ordered differently
 order_data <- function(data, bterms) {
-  time <- get_autocor_vars(bterms, "time")
-  # ordering does not matter for the CAR structure
-  group <- get_autocor_vars(bterms, "group", incl_car = FALSE)
-  if (length(time) > 1L || length(group) > 1L) {
-    stop2("All autocorrelation structures must have the same ",
-          "time and group variables.")
+  # ordering does only matter for time-series models
+  time <- get_ac_vars(bterms, "time", dim = "time")
+  gr <- get_ac_vars(bterms, "gr", dim = "time")
+  if (length(time) > 1L || length(gr) > 1L) {
+    stop2("All time-series structures must have the same ",
+          "'time' and 'gr' variables.")
   }
-  if (length(time) || length(group)) {
-    if (length(group)) {
-      gv <- data[[group]]
+  if (length(time) || length(gr)) {
+    if (length(gr)) {
+      gv <- data[[gr]]
     } else {
-      gv <- rep(1, nrow(data))
+      gv <- rep(1L, nrow(data))
     }
     if (length(time)) {
       tv <- data[[time]]
@@ -197,13 +278,27 @@ get_one_value_per_group <- function(x, gr) {
   out
 }
 
+# extract knots values for use in spline terms
+get_knots <- function(data) {
+  attr(data, "knots", TRUE)
+}
+
+# extract name of the data as originally passed by the user
+get_data_name <- function(data) {
+  out <- attr(data, "data_name", TRUE)
+  if (is.null(out)) {
+    out <- "NULL"
+  }
+  out
+}
+
 #' Validate New Data
 #' 
 #' Validate new data passed to post-processing methods of \pkg{brms}. Unless you
 #' are a package developer, you will rarely need to call \code{validate_newdata}
 #' directly.
 #' 
-#' @inheritParams extract_draws
+#' @inheritParams prepare_predictions
 #' @param newdata A \code{data.frame} containing new data to be validated.
 #' @param object A \code{brmsfit} object.
 #' @param check_response Logical; Indicates if response variables should
@@ -220,24 +315,15 @@ validate_newdata <- function(
   resp = NULL, check_response = TRUE, incl_autocor = TRUE,
   all_group_vars = NULL, ...
 ) {
-  if (is.null(newdata)) {
-    newdata <- structure(object$data, valid = TRUE, old = TRUE)
-  }
-  if (isTRUE(attr(newdata, "valid"))) {
-    return(newdata)
-  }
   newdata <- try(as.data.frame(newdata), silent = TRUE)
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
-  newdata <- rm_attr(newdata, c("terms", "brmsframe"))
-  stopifnot(is.brmsfit(object))
+  object <- restructure(object)
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
   resp <- validate_resp(resp, object)
-  if (!incl_autocor) {
-    object <- remove_autocor(object) 
-  }
   new_formula <- update_re_terms(formula(object), re_formula)
-  bterms <- parse_bf(new_formula, resp_rhs_all = FALSE)
+  bterms <- brmsterms(new_formula, resp_rhs_all = FALSE)
   if (is.mvbrmsterms(bterms) && !is.null(resp)) {
     # variables not used in the included model parts
     # do not need to be specified in newdata
@@ -307,6 +393,7 @@ validate_newdata <- function(
         new_levels <- levels(new_factor)
         old_levels <- levels(factors[[i]])
         old_contrasts <- contrasts(factors[[i]])
+        old_ordered <- is.ordered(factors[[i]])
         to_zero <- is.na(new_factor) | new_factor %in% "zero__"
         # don't add the 'zero__' level to response variables
         is_resp <- factor_names[i] %in% all.vars(bterms$respform)
@@ -323,7 +410,8 @@ validate_newdata <- function(
             "\nLevels found: ", collapse_comma(new_levels)
           )
         }
-        newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
+        newdata[[factor_names[i]]] <- 
+          factor(new_factor, old_levels, ordered = old_ordered)
         # don't use contrasts(.) here to avoid dimension checks
         attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
       }
@@ -384,182 +472,25 @@ validate_newdata <- function(
       }
     } 
   }
-  structure(newdata, valid = TRUE)
-}
-
-# allows for updating of objects containing new data
-# which cannot be passed via argument 'newdata'
-# @param x object of class 'brmsfit'
-# @param new_objects: optional named list of new objects
-# @return a possibly updated 'brmsfit' object
-add_new_objects <- function(x, newdata, new_objects = list()) {
-  stopifnot(is.brmsfit(x), is.data.frame(newdata))
-  # update autocor variables with new objects
-  # do not include 'cor_car' here as the adjacency matrix
-  # (or subsets of it) should be the same for newdata
-  .update_autocor <- function(autocor, resp = "") {
-    resp <- usc(resp)
-    if (is.cor_sar(autocor)) {
-      W_name <- paste0("W", resp)
-      if (W_name %in% names(new_objects)) {
-        autocor$W <- cor_sar(new_objects[[W_name]])$W
-      } else {
-        message("Using the identity matrix as weighting matrix by default")
-        autocor$W <- diag(nrow(newdata))
-      }
-    } else if (is.cor_fixed(autocor)) {
-      V_name <- paste0("V", resp)
-      if (V_name %in% names(new_objects)) {
-        autocor$V <- cor_fixed(new_objects[[V_name]])$V
-      } else {
-        message("Using the median variance by default")
-        median_V <- median(diag(autocor$V), na.rm = TRUE)
-        autocor$V <- diag(median_V, nrow(newdata)) 
-      }
-    }
-    return(autocor)
-  }
-  if (!isTRUE(attr(x, "autocor_updated"))) {
-    # attribute is set by subset_autocor() to prevent double updating
-    if (is_mv(x)) {
-      resps <- names(x$formula$forms)
-      for (i in seq_along(resps)) {
-        new_autocor <- autocor(x, resp = resps[i])
-        new_autocor <- .update_autocor(new_autocor, resps[i])
-        x$formula$forms[[i]]$autocor <- x$autocor[[i]] <- new_autocor
-      }
-    } else {
-      x$formula$autocor <- x$autocor <- .update_autocor(autocor(x))
-    }
-  }
-  stanvars_data <- subset_stanvars(x$stanvars, block = "data")
-  for (name in names(stanvars_data)) {
-    if (name %in% names(new_objects)) {
-      x$stanvars[[name]]$sdata <- new_objects[[name]]
-    }
-  }
-  x
-}
-
-# helper function for validate_newdata to extract
-# old standata required for the computation of new standata
-extract_old_standata <- function(x, data, ...) {
-  UseMethod("extract_old_standata")
-}
-
-#' @export
-extract_old_standata.default <- function(x, data, ...) {
-  NULL
-}
-
-#' @export
-extract_old_standata.mvbrmsterms <- function(x, data, ...) {
-  out <- named_list(names(x$responses))
-  for (i in seq_along(out)) {
-    out[[i]] <- extract_old_standata(x$terms[[i]], data, ...)
-  }
-  out
-}
-
-#' @export
-extract_old_standata.brmsterms <- function(x, data, ...) {
-  out <- named_list(c(names(x$dpars), names(x$nlpars)))
-  data <- subset_data(data, x)
-  for (dp in names(x$dpars)) {
-    out[[dp]] <- extract_old_standata(x$dpars[[dp]], data, ...)
-  }
-  for (nlp in names(x$nlpars)) {
-    out[[nlp]] <- extract_old_standata(x$nlpars[[nlp]], data, ...)
-  }
-  if (has_trials(x$family) || has_cat(x$family) || has_thres(x$family)) {
-    # trials, ncat, and nthres should not be computed based on new data
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
-    # partially match via $ to be independent of the response suffix
-    out$trials <- data_response$trials
-  }
-  if (is_binary(x$family) || is_categorical(x$family)) {
-    Y <- model.response(model.frame(x$respform, data, na.action = na.pass))
-    out$resp_levels <- levels(as.factor(Y))
-  }
-  if (is.cor_car(x$autocor)) {
-    if (isTRUE(nzchar(x$time$group))) {
-      out$locations <- levels(factor(get(x$time$group, data)))
-    } else {
-      out$locations <- NA
-    }
-  }
-  if (is_cox(x$family)) {
-    # compute basis matrix of the baseline hazard for the Cox model
-    data_response <- data_response(
-      x, data, check_response = FALSE, not4stan = TRUE
-    )
-    out$bhaz_basis <- bhaz_basis_matrix(
-      data_response$Y, args = x$family$bhaz
-    )
-  }
-  out
-}
-
-#' @export
-extract_old_standata.btnl <- function(x, data, ...) {
-  NULL
-}
-
-#' @export
-extract_old_standata.btl <- function(x, data, ...) {
-  list(
-    smooths = make_sm_list(x, data, ...),
-    gps = make_gp_list(x, data, ...),
-    Jmo = make_Jmo_list(x, data, ...)
+  # ensure correct handling of functions like 'poly' or 'scale'
+  old_terms <- attr(object$data, "terms")
+  attr_terms <- c("variables", "predvars")
+  attr_terms <- attributes(old_terms)[attr_terms]
+  newdata <- validate_data(
+    newdata, bterms = bterms, na.action = na.pass, 
+    drop.unused.levels = FALSE, attr_terms = attr_terms,
+    knots = get_knots(object$data)
   )
+  newdata
 }
 
-# extract data related to smooth terms
-# for use in extract_old_standata
-# @param version optional brms version number
-make_sm_list <- function(x, data, version = NULL, ...) {
-  stopifnot(is.btl(x))
-  smterms <- all_terms(x[["sm"]])
-  out <- named_list(smterms)
-  if (length(smterms)) {
-    knots <- attr(data, "knots")
-    data <- rm_attr(data, "terms")
-    # the spline penality has changed in 2.8.7 (#646)
-    diagonal.penalty <- !isTRUE(version <= "2.8.6")
-    gam_args <- list(
-      data = data, knots = knots, 
-      absorb.cons = TRUE, modCon = 3,
-      diagonal.penalty = diagonal.penalty
-    )
-    for (i in seq_along(smterms)) {
-      sc_args <- c(list(eval2(smterms[i])), gam_args)
-      out[[i]] <- do_call(smoothCon, sc_args)
-    }
+# extract the current data set
+current_data <- function(object, newdata = NULL, ...) {
+  stopifnot(is.brmsfit(object))
+  if (is.null(newdata)) {
+    data <- object$data
+  } else {
+    data <- validate_newdata(newdata, object = object, ...)
   }
-  out
-}
-
-# extract data related to gaussian processes
-# for use in extract_old_standata
-make_gp_list <- function(x, data, ...) {
-  stopifnot(is.btl(x))
-  out <- data_gp(x, data, raw = TRUE)
-  out <- out[grepl("^(dmax)|(cmeans)", names(out))]
-  out
-}
-
-# extract data related to monotonic effects
-# for use in extract_old_standata
-make_Jmo_list <- function(x, data, ...) {
-  stopifnot(is.btl(x))
-  out <- NULL
-  if (length(attr(x$sp, "uni_mo"))) {
-    # do it like data_sp()
-    spef <- tidy_spef(x, data)
-    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
-    out <- as.array(ulapply(Xmo, max))
-  }
-  out
+  data
 }
