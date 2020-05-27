@@ -12,20 +12,20 @@
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Estimating Non-Linear Models with brms">
-<meta property="og:description" content="">
+<meta property="og:description" content="brms">
 <meta property="og:image" content="/logo.png">
-<meta name="twitter:card" content="summary">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body>
+<body data-spy="scroll" data-target="#toc">
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -119,10 +119,10 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1>Estimating Non-Linear Models with brms</h1>
+      <h1 data-toc-skip>Estimating Non-Linear Models with brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2020-01-11</h4>
+            <h4 class="date">2020-05-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_nonlinear.Rmd"><code>vignettes/brms_nonlinear.Rmd</code></a></small>
       <div class="hidden name"><code>brms_nonlinear.Rmd</code></div>
@@ -144,19 +144,19 @@
 <h2 class="hasAnchor">
 <a href="#a-simple-non-linear-model" class="anchor"></a>A Simple Non-Linear Model</h2>
 <p>We begin with a simple example using simulated data.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">b &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">2</span>, <span class="fl">0.75</span>)</a>
-<a class="sourceLine" id="cb1-2" title="2">x &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb1-3" title="3">y &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">100</span>, <span class="dt">mean =</span> b[<span class="dv">1</span>] <span class="op">*</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(b[<span class="dv">2</span>] <span class="op">*</span><span class="st"> </span>x))</a>
-<a class="sourceLine" id="cb1-4" title="4">dat1 &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(x, y)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="no">b</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">2</span>, <span class="fl">0.75</span>)
+<span class="no">x</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="fl">100</span>)
+<span class="no">y</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="fl">100</span>, <span class="kw">mean</span> <span class="kw">=</span> <span class="no">b</span>[<span class="fl">1</span>] * <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(<span class="no">b</span>[<span class="fl">2</span>] * <span class="no">x</span>))
+<span class="no">dat1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="no">x</span>, <span class="no">y</span>)</pre></body></html></div>
 <p>As stated above, we cannot use a generalized linear model to estimate <span class="math inline">\(b\)</span> so we go ahead an specify a non-linear model.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">prior1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="dt">nlpar =</span> <span class="st">"b1"</span>) <span class="op">+</span></a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="st">  </span><span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="dt">nlpar =</span> <span class="st">"b2"</span>)</a>
-<a class="sourceLine" id="cb2-3" title="3">fit1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(<span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(y <span class="op">~</span><span class="st"> </span>b1 <span class="op">*</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(b2 <span class="op">*</span><span class="st"> </span>x), b1 <span class="op">+</span><span class="st"> </span>b2 <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">nl =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb2-4" title="4">            <span class="dt">data =</span> dat1, <span class="dt">prior =</span> prior1)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="no">prior1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">1</span>, <span class="fl">2</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"b1"</span>) +
+  <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">0</span>, <span class="fl">2</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"b2"</span>)
+<span class="no">fit1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(<span class="fu"><a href="../reference/brmsformula.html">bf</a></span>(<span class="no">y</span> ~ <span class="no">b1</span> * <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(<span class="no">b2</span> * <span class="no">x</span>), <span class="no">b1</span> + <span class="no">b2</span> ~ <span class="fl">1</span>, <span class="kw">nl</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
+            <span class="kw">data</span> <span class="kw">=</span> <span class="no">dat1</span>, <span class="kw">prior</span> <span class="kw">=</span> <span class="no">prior1</span>)</pre></body></html></div>
 <p>When looking at the above code, the first thing that becomes obvious is that we changed the <code>formula</code> syntax to display the non-linear formula including predictors (i.e., <code>x</code>) and parameters (i.e., <code>b1</code> and <code>b2</code>) wrapped in a call to <code>bf</code>. This stands in contrast to classical <strong>R</strong> formulas, where only predictors are given and parameters are implicit. The argument <code>b1 + b2 ~ 1</code> serves two purposes. First, it provides information, which variables in <code>formula</code> are parameters, and second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict <code>b1</code> and <code>b2</code> and thus we just fit intercepts that represent our estimates of <span class="math inline">\(b_1\)</span> and <span class="math inline">\(b_2\)</span> in the model equation above. The formula <code>b1 + b2 ~ 1</code> is a short form of <code>b1 ~ 1, b2 ~ 1</code> that can be used if multiple non-linear parameters share the same formula. Setting <code>nl = TRUE</code> tells <strong>brms</strong> that the formula should be treated as non-linear.</p>
 <p>In contrast to generalized linear models, priors on population-level parameters (i.e., ‘fixed effects’) are often mandatory to identify a non-linear model. Thus, <strong>brms</strong> requires the user to explicitely specify these priors. In the present example, we used a <code>normal(1, 2)</code> prior on (the population-level intercept of) <code>b1</code>, while we used a <code>normal(0, 2)</code> prior on (the population-level intercept of) <code>b2</code>. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting a non-linear model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an idenfication problem and one solution is to set stronger (i.e., more narrow) priors.</p>
 <p>To obtain summaries of the fitted model, we apply</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit1)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit1</span>)</pre></body></html></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: y ~ b1 * exp(b2 * x) 
@@ -168,24 +168,24 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-b1_Intercept     1.86      0.12     1.63     2.08 1.00     1503     1490
-b2_Intercept     0.77      0.05     0.68     0.87 1.00     1466     1631
+b1_Intercept     1.89      0.10     1.68     2.08 1.00     1593     1926
+b2_Intercept     0.81      0.04     0.74     0.88 1.00     1623     2230
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     1.03      0.07     0.90     1.18 1.00     2584     2289
+sigma     0.90      0.07     0.78     1.03 1.00     2193     2134
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(fit1)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="no">fit1</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-3-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(<span class="no">fit1</span>), <span class="kw">points</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-3-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The <code>summary</code> method reveals that we were able to recover the true parameter values pretty nicely. According to the <code>plot</code> method, our MCMC chains have converged well and to the same posterior. The <code>conditional_effects</code> method visualizes the model-implied (non-linear) regression line.</p>
 <p>We might be also interested in comparing our non-linear model to a classical linear model.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">fit2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(y <span class="op">~</span><span class="st"> </span>x, <span class="dt">data =</span> dat1)</a></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit2)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">fit2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(<span class="no">y</span> ~ <span class="no">x</span>, <span class="kw">data</span> <span class="kw">=</span> <span class="no">dat1</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit2</span>)</pre></body></html></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: y ~ x 
@@ -195,35 +195,42 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     2.42      0.13     2.18     2.67 1.00     3795     2914
-x             1.68      0.12     1.45     1.92 1.00     3867     2638
+Intercept     2.53      0.13     2.29     2.79 1.00     3614     2795
+x             1.96      0.13     1.71     2.22 1.00     3993     3050
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     1.25      0.09     1.09     1.44 1.00     3256     2740
+sigma     1.23      0.09     1.07     1.42 1.00     3614     2939
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>To investigate and compare model fit, we can apply graphical posterior predictive checks, which make use of the <strong>bayesplot</strong> package on the backend.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(fit1)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(<span class="no">fit1</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-6-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(fit2)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="fu"><a href="../reference/pp_check.brmsfit.html">pp_check</a></span>(<span class="no">fit2</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-6-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>We can also easily compare model fit using leave-one-out cross-validation.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit1, fit2)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span>(<span class="no">fit1</span>, <span class="no">fit2</span>)</pre></body></html></div>
 <pre><code>Output of model 'fit1':
 
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -145.1  6.9
-p_loo         2.5  0.4
-looic       290.3 13.8
+elpd_loo   -131.7  7.4
+p_loo         2.9  0.8
+looic       263.3 14.8
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
-All Pareto k estimates are good (k &lt; 0.5).
+Pareto k diagnostic values:
+                         Count Pct.    Min. n_eff
+(-Inf, 0.5]   (good)     99    99.0%   1440      
+ (0.5, 0.7]   (ok)        1     1.0%   976       
+   (0.7, 1]   (bad)       0     0.0%   &lt;NA&gt;      
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
+
+All Pareto k estimates are ok (k &lt; 0.7).
 See help('pareto-k-diagnostic') for details.
 
 Output of model 'fit2':
@@ -231,29 +238,34 @@ Output of model 'fit2':
 Computed from 4000 by 100 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -165.0  7.0
-p_loo         3.4  0.7
-looic       330.1 14.1
+elpd_loo   -165.7 12.8
+p_loo         6.4  3.3
+looic       331.4 25.6
 ------
-Monte Carlo SE of elpd_loo is 0.0.
+Monte Carlo SE of elpd_loo is NA.
 
-All Pareto k estimates are good (k &lt; 0.5).
+Pareto k diagnostic values:
+                         Count Pct.    Min. n_eff
+(-Inf, 0.5]   (good)     99    99.0%   541       
+ (0.5, 0.7]   (ok)        0     0.0%   &lt;NA&gt;      
+   (0.7, 1]   (bad)       1     1.0%   48        
+   (1, Inf)   (very bad)  0     0.0%   &lt;NA&gt;      
 See help('pareto-k-diagnostic') for details.
 
 Model comparisons:
      elpd_diff se_diff
 fit1   0.0       0.0  
-fit2 -19.9       6.5  </code></pre>
+fit2 -34.0      13.9  </code></pre>
 <p>Since smaller <code>LOOIC</code> values indicate better model fit, it is immediately evident that the non-linear model fits the data better, which is of course not too surpirsing since we simulated the data from exactly that model.</p>
 </div>
 <div id="a-real-world-non-linear-model" class="section level2">
 <h2 class="hasAnchor">
 <a href="#a-real-world-non-linear-model" class="anchor"></a>A Real-World Non-Linear model</h2>
-<p>On his blog, Markus Gesmann predicts the growth of cumulative insurance loss payments over time, originated from different origin years (see <a href="http://www.magesblog.com/post/2015/11/loss-developments-via-growth-curves-and.html" class="uri">http://www.magesblog.com/post/2015/11/loss-developments-via-growth-curves-and.html</a>). We will use a slightly simplified version of his model for demonstration purposes here. It looks as follows:</p>
+<p>On his blog, Markus Gesmann predicts the growth of cumulative insurance loss payments over time, originated from different origin years (see <a href="https://www.magesblog.com/post/2015-11-03-loss-developments-via-growth-curves-and/" class="uri">https://www.magesblog.com/post/2015-11-03-loss-developments-via-growth-curves-and/</a>). We will use a slightly simplified version of his model for demonstration purposes here. It looks as follows:</p>
 <p><span class="math display">\[cum_{AY, dev} \sim N(\mu_{AY, dev}, \sigma)\]</span> <span class="math display">\[\mu_{AY, dev} = ult_{AY} \left(1 - \exp\left(- \left( \frac{dev}{\theta} \right)^\omega \right) \right)\]</span></p>
 <p>The cumulative insurance payments <span class="math inline">\(cum\)</span> will grow over time, and we model this dependency using the variable <span class="math inline">\(dev\)</span>. Further, <span class="math inline">\(ult_{AY}\)</span> is the (to be estimated) ultimate loss of accident each year. It constitutes a non-linear parameter in our framework along with the parameters <span class="math inline">\(\theta\)</span> and <span class="math inline">\(\omega\)</span>, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">loss &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"https://paul-buerkner.github.io/data/loss.csv"</span>)</a>
-<a class="sourceLine" id="cb14-2" title="2"><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(loss)</a></code></pre></div>
+<div class="sourceCode" id="cb14"><html><body><pre class="r"><span class="no">loss</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"https://paul-buerkner.github.io/data/loss.csv"</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">loss</span>)</pre></body></html></div>
 <pre><code>    AY dev      cum premium
 1 1991   6  357.848   10000
 2 1991  18 1124.788   10000
@@ -262,20 +274,20 @@ fit2 -19.9       6.5  </code></pre>
 5 1991  54 2745.596   10000
 6 1991  66 3319.994   10000</code></pre>
 <p>and translate the proposed model into a non-linear <strong>brms</strong> model.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">fit_loss &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
-<a class="sourceLine" id="cb16-2" title="2">  <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(cum <span class="op">~</span><span class="st"> </span>ult <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(<span class="op">-</span>(dev<span class="op">/</span>theta)<span class="op">^</span>omega)),</a>
-<a class="sourceLine" id="cb16-3" title="3">     ult <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>AY), omega <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, theta <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, </a>
-<a class="sourceLine" id="cb16-4" title="4">     <span class="dt">nl =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb16-5" title="5">  <span class="dt">data =</span> loss, <span class="dt">family =</span> <span class="kw"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span>(),</a>
-<a class="sourceLine" id="cb16-6" title="6">  <span class="dt">prior =</span> <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(</a>
-<a class="sourceLine" id="cb16-7" title="7">    <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">5000</span>, <span class="dv">1000</span>), <span class="dt">nlpar =</span> <span class="st">"ult"</span>),</a>
-<a class="sourceLine" id="cb16-8" title="8">    <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="dt">nlpar =</span> <span class="st">"omega"</span>),</a>
-<a class="sourceLine" id="cb16-9" title="9">    <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">45</span>, <span class="dv">10</span>), <span class="dt">nlpar =</span> <span class="st">"theta"</span>)</a>
-<a class="sourceLine" id="cb16-10" title="10">  ),</a>
-<a class="sourceLine" id="cb16-11" title="11">  <span class="dt">control =</span> <span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">adapt_delta =</span> <span class="fl">0.9</span>)</a>
-<a class="sourceLine" id="cb16-12" title="12">)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><html><body><pre class="r"><span class="no">fit_loss</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(
+  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span>(<span class="no">cum</span> ~ <span class="no">ult</span> * (<span class="fl">1</span> - <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(-(<span class="no">dev</span>/<span class="no">theta</span>)^<span class="no">omega</span>)),
+     <span class="no">ult</span> ~ <span class="fl">1</span> + (<span class="fl">1</span><span class="kw">|</span><span class="no">AY</span>), <span class="no">omega</span> ~ <span class="fl">1</span>, <span class="no">theta</span> ~ <span class="fl">1</span>,
+     <span class="kw">nl</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
+  <span class="kw">data</span> <span class="kw">=</span> <span class="no">loss</span>, <span class="kw">family</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span>(),
+  <span class="kw">prior</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(
+    <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">5000</span>, <span class="fl">1000</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"ult"</span>),
+    <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">1</span>, <span class="fl">2</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"omega"</span>),
+    <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">45</span>, <span class="fl">10</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"theta"</span>)
+  ),
+  <span class="kw">control</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="kw">adapt_delta</span> <span class="kw">=</span> <span class="fl">0.9</span>)
+)</pre></body></html></div>
 <p>We estimate a group-level effect of accident year (variable <code>AY</code>) for the ultimate loss <code>ult</code>. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of <code>ult</code>, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit_loss)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit_loss</span>)</pre></body></html></div>
 <pre><code> Family: gaussian 
   Links: mu = identity; sigma = identity 
 Formula: cum ~ ult * (1 - exp(-(dev/theta)^omega)) 
@@ -289,33 +301,33 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 Group-Level Effects: 
 ~AY (Number of levels: 10) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(ult_Intercept)   732.69    215.24   419.12  1263.69 1.00     1210     1960
+sd(ult_Intercept)   747.52    242.95   420.62  1340.88 1.00     1140     1720
 
 Population-Level Effects: 
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-ult_Intercept    5305.84    293.88  4738.54  5906.00 1.00     1040     1319
-omega_Intercept     1.33      0.05     1.23     1.43 1.00     2615     2287
-theta_Intercept    46.29      2.29    42.37    51.23 1.00     2437     1977
+ult_Intercept    5313.84    287.81  4755.42  5890.40 1.00     1100     1700
+omega_Intercept     1.33      0.05     1.24     1.43 1.00     2704     2349
+theta_Intercept    46.28      2.19    42.42    51.11 1.00     2723     2407
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma   140.84     15.97   114.63   175.94 1.00     2351     2254
+sigma   140.58     15.38   113.98   174.56 1.00     3106     2559
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(fit_loss, <span class="dt">N =</span> <span class="dv">3</span>, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb19"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="no">fit_loss</span>, <span class="kw">N</span> <span class="kw">=</span> <span class="fl">3</span>, <span class="kw">ask</span> <span class="kw">=</span> <span class="fl">FALSE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;"><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-2.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit_loss)</a></code></pre></div>
+<div class="sourceCode" id="cb20"><html><body><pre class="r"><span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(<span class="no">fit_loss</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-10-3.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Next, we show marginal effects separately for each year.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">conditions &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="dt">AY =</span> <span class="kw"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(loss<span class="op">$</span>AY))</a>
-<a class="sourceLine" id="cb21-2" title="2"><span class="kw"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span>(conditions) &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(loss<span class="op">$</span>AY)</a>
-<a class="sourceLine" id="cb21-3" title="3">me_loss &lt;-<span class="st"> </span><span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(</a>
-<a class="sourceLine" id="cb21-4" title="4">  fit_loss, <span class="dt">conditions =</span> conditions, </a>
-<a class="sourceLine" id="cb21-5" title="5">  <span class="dt">re_formula =</span> <span class="ot">NULL</span>, <span class="dt">method =</span> <span class="st">"predict"</span></a>
-<a class="sourceLine" id="cb21-6" title="6">)</a>
-<a class="sourceLine" id="cb21-7" title="7"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(me_loss, <span class="dt">ncol =</span> <span class="dv">5</span>, <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb21"><html><body><pre class="r"><span class="no">conditions</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="kw">AY</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(<span class="no">loss</span>$<span class="no">AY</span>))
+<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span>(<span class="no">conditions</span>) <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(<span class="no">loss</span>$<span class="no">AY</span>)
+<span class="no">me_loss</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(
+  <span class="no">fit_loss</span>, <span class="kw">conditions</span> <span class="kw">=</span> <span class="no">conditions</span>,
+  <span class="kw">re_formula</span> <span class="kw">=</span> <span class="kw">NULL</span>, <span class="kw">method</span> <span class="kw">=</span> <span class="st">"predict"</span>
+)
+<span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="no">me_loss</span>, <span class="kw">ncol</span> <span class="kw">=</span> <span class="fl">5</span>, <span class="kw">points</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-11-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>It is evident that there is some variation in cumulative loss across accident years, for instance due to natural disasters happening only in certain years. Further, we see that the uncertainty in the predicted cumulative loss is larger for later years with fewer available data points.</p>
 </div>
@@ -323,15 +335,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <h2 class="hasAnchor">
 <a href="#advanced-item-response-models" class="anchor"></a>Advanced Item-Response Models</h2>
 <p>As a third example, we want to show how to model more advanced item-response models using the non-linear model framework of <strong>brms</strong>. For simplicity, suppose we have a single forced choice item with three alternatives of which only one is correct. Our response variable is whether a person answers the item correctly (1) or not (0). Person are assumed to vary in their ability to answer the item correctly. However, every person has a 33% chance of getting the item right just by guessing. We thus simulate some data to reflect this situation.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1">inv_logit &lt;-<span class="st"> </span><span class="cf">function</span>(x) <span class="dv">1</span> <span class="op">/</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">+</span><span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(<span class="op">-</span>x))</a>
-<a class="sourceLine" id="cb22-2" title="2">ability &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="dv">300</span>)</a>
-<a class="sourceLine" id="cb22-3" title="3">p &lt;-<span class="st"> </span><span class="fl">0.33</span> <span class="op">+</span><span class="st"> </span><span class="fl">0.67</span> <span class="op">*</span><span class="st"> </span><span class="kw">inv_logit</span>(ability)</a>
-<a class="sourceLine" id="cb22-4" title="4">answer &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span>(<span class="dv">300</span>, <span class="dv">0</span>, <span class="dv">1</span>) <span class="op">&lt;</span><span class="st"> </span>p, <span class="dv">1</span>, <span class="dv">0</span>)</a>
-<a class="sourceLine" id="cb22-5" title="5">dat_ir &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(ability, answer)</a></code></pre></div>
+<div class="sourceCode" id="cb22"><html><body><pre class="r"><span class="no">inv_logit</span> <span class="kw">&lt;-</span> <span class="kw">function</span>(<span class="no">x</span>) <span class="fl">1</span> / (<span class="fl">1</span> + <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span>(-<span class="no">x</span>))
+<span class="no">ability</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span>(<span class="fl">300</span>)
+<span class="no">p</span> <span class="kw">&lt;-</span> <span class="fl">0.33</span> + <span class="fl">0.67</span> * <span class="fu">inv_logit</span>(<span class="no">ability</span>)
+<span class="no">answer</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span>(<span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span>(<span class="fl">300</span>, <span class="fl">0</span>, <span class="fl">1</span>) <span class="kw">&lt;</span> <span class="no">p</span>, <span class="fl">1</span>, <span class="fl">0</span>)
+<span class="no">dat_ir</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="no">ability</span>, <span class="no">answer</span>)</pre></body></html></div>
 <p>The most basic item-response model is equivalent to a simple logistic regression model.</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1">fit_ir1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(answer <span class="op">~</span><span class="st"> </span>ability, <span class="dt">data =</span> dat_ir, <span class="dt">family =</span> <span class="kw"><a href="../reference/brmsfamily.html">bernoulli</a></span>())</a></code></pre></div>
+<div class="sourceCode" id="cb23"><html><body><pre class="r"><span class="no">fit_ir1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(<span class="no">answer</span> ~ <span class="no">ability</span>, <span class="kw">data</span> <span class="kw">=</span> <span class="no">dat_ir</span>, <span class="kw">family</span> <span class="kw">=</span> <span class="fu"><a href="../reference/brmsfamily.html">bernoulli</a></span>())</pre></body></html></div>
 <p>However, this model completely ignores the guessing probability and will thus likely come to biased estimates and predictions.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit_ir1)</a></code></pre></div>
+<div class="sourceCode" id="cb24"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit_ir1</span>)</pre></body></html></div>
 <pre><code> Family: bernoulli 
   Links: mu = logit 
 Formula: answer ~ ability 
@@ -341,23 +353,23 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept     0.76      0.13     0.51     1.02 1.00     3519     2774
-ability       0.59      0.14     0.32     0.86 1.00     3044     2608
+Intercept     0.73      0.13     0.47     1.00 1.00     2821     2502
+ability       0.88      0.16     0.58     1.19 1.00     2258     2110
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit_ir1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb26"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(<span class="no">fit_ir1</span>), <span class="kw">points</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-14-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>A more sophisticated approach incorporating the guessing probability looks as follows:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">fit_ir2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
-<a class="sourceLine" id="cb27-2" title="2">  <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(answer <span class="op">~</span><span class="st"> </span><span class="fl">0.33</span> <span class="op">+</span><span class="st"> </span><span class="fl">0.67</span> <span class="op">*</span><span class="st"> </span><span class="kw">inv_logit</span>(eta),</a>
-<a class="sourceLine" id="cb27-3" title="3">     eta <span class="op">~</span><span class="st"> </span>ability, <span class="dt">nl =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb27-4" title="4">  <span class="dt">data =</span> dat_ir, <span class="dt">family =</span> <span class="kw"><a href="../reference/brmsfamily.html">bernoulli</a></span>(<span class="st">"identity"</span>), </a>
-<a class="sourceLine" id="cb27-5" title="5">  <span class="dt">prior =</span> <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="dt">nlpar =</span> <span class="st">"eta"</span>)</a>
-<a class="sourceLine" id="cb27-6" title="6">)</a></code></pre></div>
+<div class="sourceCode" id="cb27"><html><body><pre class="r"><span class="no">fit_ir2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(
+  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span>(<span class="no">answer</span> ~ <span class="fl">0.33</span> + <span class="fl">0.67</span> * <span class="fu">inv_logit</span>(<span class="no">eta</span>),
+     <span class="no">eta</span> ~ <span class="no">ability</span>, <span class="kw">nl</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
+  <span class="kw">data</span> <span class="kw">=</span> <span class="no">dat_ir</span>, <span class="kw">family</span> <span class="kw">=</span> <span class="fu"><a href="../reference/brmsfamily.html">bernoulli</a></span>(<span class="st">"identity"</span>),
+  <span class="kw">prior</span> <span class="kw">=</span> <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">0</span>, <span class="fl">5</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"eta"</span>)
+)</pre></body></html></div>
 <p>It is very important to set the link function of the <code>bernoulli</code> family to <code>identity</code> or else we will apply two link functions. This is because our non-linear predictor term already contains the desired link function (<code>0.33 + 0.67 * inv_logit</code>), but the <code>bernoulli</code> family applies the default <code>logit</code> link on top of it. This will of course lead to strange and uninterpretable results. Thus, please make sure that you set the link function to <code>identity</code>, whenever your non-linear predictor term already contains the desired link function.</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit_ir2)</a></code></pre></div>
+<div class="sourceCode" id="cb28"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit_ir2</span>)</pre></body></html></div>
 <pre><code> Family: bernoulli 
   Links: mu = identity 
 Formula: answer ~ 0.33 + 0.67 * inv_logit(eta) 
@@ -368,24 +380,24 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-eta_Intercept     0.03      0.18    -0.32     0.36 1.00     2879     2388
-eta_ability       0.78      0.20     0.41     1.19 1.00     3324     2550
+eta_Intercept    -0.04      0.19    -0.43     0.32 1.00     2096     2085
+eta_ability       1.17      0.23     0.74     1.64 1.00     2170     2197
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit_ir2), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb30"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(<span class="no">fit_ir2</span>), <span class="kw">points</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-16-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Comparing model fit via leave-one-out cross-validation</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1"><span class="kw"><a href="../reference/loo.brmsfit.html">loo</a></span>(fit_ir1, fit_ir2)</a></code></pre></div>
+<div class="sourceCode" id="cb31"><html><body><pre class="r"><span class="fu"><a href="../reference/loo.brmsfit.html">loo</a></span>(<span class="no">fit_ir1</span>, <span class="no">fit_ir2</span>)</pre></body></html></div>
 <pre><code>Output of model 'fit_ir1':
 
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -183.0  7.1
-p_loo         2.1  0.2
-looic       365.9 14.3
+elpd_loo   -174.6  7.7
+p_loo         2.0  0.2
+looic       349.2 15.4
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -397,9 +409,9 @@ Output of model 'fit_ir2':
 Computed from 4000 by 300 log-likelihood matrix
 
          Estimate   SE
-elpd_loo   -183.5  7.0
-p_loo         2.0  0.2
-looic       367.0 14.1
+elpd_loo   -175.9  7.5
+p_loo         1.9  0.2
+looic       351.8 14.9
 ------
 Monte Carlo SE of elpd_loo is 0.0.
 
@@ -409,19 +421,19 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
         elpd_diff se_diff
 fit_ir1  0.0       0.0   
-fit_ir2 -0.5       0.7   </code></pre>
+fit_ir2 -1.3       1.2   </code></pre>
 <p>shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don’t know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" title="1">fit_ir3 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/brm.html">brm</a></span>(</a>
-<a class="sourceLine" id="cb33-2" title="2">  <span class="kw"><a href="../reference/brmsformula.html">bf</a></span>(answer <span class="op">~</span><span class="st"> </span>guess <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>guess) <span class="op">*</span><span class="st"> </span><span class="kw">inv_logit</span>(eta), </a>
-<a class="sourceLine" id="cb33-3" title="3">    eta <span class="op">~</span><span class="st"> </span><span class="dv">0</span> <span class="op">+</span><span class="st"> </span>ability, guess <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">nl =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb33-4" title="4">  <span class="dt">data =</span> dat_ir, <span class="dt">family =</span> <span class="kw"><a href="../reference/brmsfamily.html">bernoulli</a></span>(<span class="st">"identity"</span>), </a>
-<a class="sourceLine" id="cb33-5" title="5">  <span class="dt">prior =</span> <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(</a>
-<a class="sourceLine" id="cb33-6" title="6">    <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw">normal</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="dt">nlpar =</span> <span class="st">"eta"</span>),</a>
-<a class="sourceLine" id="cb33-7" title="7">    <span class="kw"><a href="../reference/set_prior.html">prior</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/Special.html">beta</a></span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="dt">nlpar =</span> <span class="st">"guess"</span>, <span class="dt">lb =</span> <span class="dv">0</span>, <span class="dt">ub =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb33-8" title="8">  )</a>
-<a class="sourceLine" id="cb33-9" title="9">)</a></code></pre></div>
+<div class="sourceCode" id="cb33"><html><body><pre class="r"><span class="no">fit_ir3</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/brm.html">brm</a></span>(
+  <span class="fu"><a href="../reference/brmsformula.html">bf</a></span>(<span class="no">answer</span> ~ <span class="no">guess</span> + (<span class="fl">1</span> - <span class="no">guess</span>) * <span class="fu">inv_logit</span>(<span class="no">eta</span>),
+    <span class="no">eta</span> ~ <span class="fl">0</span> + <span class="no">ability</span>, <span class="no">guess</span> ~ <span class="fl">1</span>, <span class="kw">nl</span> <span class="kw">=</span> <span class="fl">TRUE</span>),
+  <span class="kw">data</span> <span class="kw">=</span> <span class="no">dat_ir</span>, <span class="kw">family</span> <span class="kw">=</span> <span class="fu"><a href="../reference/brmsfamily.html">bernoulli</a></span>(<span class="st">"identity"</span>),
+  <span class="kw">prior</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(
+    <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu">normal</span>(<span class="fl">0</span>, <span class="fl">5</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"eta"</span>),
+    <span class="fu"><a href="../reference/set_prior.html">prior</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/Special.html">beta</a></span>(<span class="fl">1</span>, <span class="fl">1</span>), <span class="kw">nlpar</span> <span class="kw">=</span> <span class="st">"guess"</span>, <span class="kw">lb</span> <span class="kw">=</span> <span class="fl">0</span>, <span class="kw">ub</span> <span class="kw">=</span> <span class="fl">1</span>)
+  )
+)</pre></body></html></div>
 <p>Here, we model the guessing probability as a non-linear parameter making sure that it cannot exceed the interval <span class="math inline">\([0, 1]\)</span>. We did not estimate an intercept for <code>eta</code>, as this will lead to a bias in the estimated guessing parameter (try it out; this is an excellent example of how careful one has to be in non-linear models).</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" title="1"><span class="kw"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(fit_ir3)</a></code></pre></div>
+<div class="sourceCode" id="cb34"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span>(<span class="no">fit_ir3</span>)</pre></body></html></div>
 <pre><code> Family: bernoulli 
   Links: mu = identity 
 Formula: answer ~ guess + (1 - guess) * inv_logit(eta) 
@@ -433,33 +445,25 @@ Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 
 Population-Level Effects: 
                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-eta_ability         0.77      0.20     0.40     1.17 1.00     3211     2793
-guess_Intercept     0.33      0.05     0.22     0.43 1.00     3137     2567
+eta_ability         1.14      0.22     0.73     1.59 1.00     2929     2650
+guess_Intercept     0.30      0.05     0.19     0.40 1.00     2668     2188
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(fit_ir3)</a></code></pre></div>
+<div class="sourceCode" id="cb36"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="no">fit_ir3</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1"><span class="kw"><a href="https://rdrr.io/r/graphics/plot.html">plot</a></span>(<span class="kw"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(fit_ir3), <span class="dt">points =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb37"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/plot.html">plot</a></span>(<span class="fu"><a href="../reference/conditional_effects.brmsfit.html">conditional_effects</a></span>(<span class="no">fit_ir3</span>), <span class="kw">points</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
 <p><img src="brms_nonlinear_files/figure-html/unnamed-chunk-19-2.png" width="60%" style="display: block; margin: auto;"></p>
 <p>The results show that we are able to recover the simulated model parameters with this non-linear model. Of course, real item-response data have multiple items so that accounting for item and person variability (e.g., using a multilevel model with varying intercepts) becomes necessary as we have multiple observations per item and person. Luckily, this can all be done within the non-linear framework of <strong>brms</strong> and I hope that this vignette serves as a good starting point.</p>
 </div>
   </div>
 
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-        <div id="tocnav">
-      <h2 class="hasAnchor">
-<a href="#tocnav" class="anchor"></a>Contents</h2>
-      <ul class="nav nav-pills nav-stacked">
-<li><a href="#introduction">Introduction</a></li>
-      <li><a href="#a-simple-non-linear-model">A Simple Non-Linear Model</a></li>
-      <li><a href="#a-real-world-non-linear-model">A Real-World Non-Linear model</a></li>
-      <li><a href="#advanced-item-response-models">Advanced Item-Response Models</a></li>
-      </ul>
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
 </div>
-      </div>
 
 </div>
 
@@ -470,7 +474,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

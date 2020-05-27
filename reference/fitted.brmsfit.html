@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -43,10 +47,9 @@
 
 
 <meta property="og:title" content="Expected Values of the Posterior Predictive Distribution — fitted.brmsfit" />
-<meta property="og:description" content="This method is an alias of pp_expect.brmsfit
+<meta property="og:description" content="This method is an alias of posterior_epred.brmsfit
 with additional arguments for obtaining summaries of the computed samples." />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -64,7 +67,7 @@ with additional arguments for obtaining summaries of the computed samples." />
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -78,7 +81,7 @@ with additional arguments for obtaining summaries of the computed samples." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -160,12 +163,12 @@ with additional arguments for obtaining summaries of the computed samples." />
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Expected Values of the Posterior Predictive Distribution</h1>
-    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/pp_expect.R'><code>R/pp_expect.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/paul-buerkner/brms/blob/master/R/posterior_epred.R'><code>R/posterior_epred.R</code></a></small>
     <div class="hidden name"><code>fitted.brmsfit.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This method is an alias of <code><a href='pp_expect.brmsfit.html'>pp_expect.brmsfit</a></code>
+    <p>This method is an alias of <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>
 with additional arguments for obtaining summaries of the computed samples.</p>
     </div>
 
@@ -225,12 +228,12 @@ are performed only for the specified response variables.</p></td>
     <tr>
       <th>dpar</th>
       <td><p>Optional name of a predicted distributional parameter.
-If specified, fitted values of this parameters are returned.</p></td>
+If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
       <th>nlpar</th>
       <td><p>Optional name of a predicted non-linear parameter.
-If specified, fitted values of this parameters are returned.</p></td>
+If specified, expected predictions of this parameters are returned.</p></td>
     </tr>
     <tr>
       <th>nsamples</th>
@@ -270,7 +273,7 @@ function. Only used if <code>summary</code> is <code>TRUE</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Further arguments passed to <code><a href='extract_draws.html'>extract_draws</a></code>
+      <td><p>Further arguments passed to <code><a href='prepare_predictions.html'>prepare_predictions</a></code>
 that control several aspects of data validation and prediction.</p></td>
     </tr>
     </table>
@@ -279,7 +282,7 @@ that control several aspects of data validation and prediction.</p></td>
 
     <p>An <code>array</code> of predicted <em>mean</em> response values.
   If <code>summary = FALSE</code> the output resembles those of 
-  <code><a href='pp_expect.brmsfit.html'>pp_expect.brmsfit</a></code>.</p>
+  <code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code>.</p>
 <p>If <code>summary = TRUE</code> the output depends on the family: For categorical
   and ordinal families, the output is an N x E x C array, where N is the
   number of observations, E is the number of summary statistics, and C is the
@@ -295,7 +298,7 @@ that control several aspects of data validation and prediction.</p></td>
   which indexes along the different response variables.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='pp_expect.brmsfit.html'>pp_expect.brmsfit</a></code></p></div>
+    <div class='dont-index'><p><code><a href='posterior_epred.brmsfit.html'>posterior_epred.brmsfit</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
@@ -303,24 +306,19 @@ that control several aspects of data validation and prediction.</p></td>
 <span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='brm.html'>brm</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
            <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>)
 
-<span class='co'>## extract fitted values</span>
+<span class='co'>## compute expected predictions</span>
 <span class='no'>fitted_values</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/fitted.values.html'>fitted</a></span>(<span class='no'>fit</span>)
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>fitted_values</span>)
 
-<span class='co'>## plot fitted means against actual response</span>
+<span class='co'>## plot expected predictions against actual response</span>
 <span class='no'>dat</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/cbind.html'>cbind</a></span>(<span class='kw'>Y</span> <span class='kw'>=</span> <span class='fu'><a href='standata.brmsfit.html'>standata</a></span>(<span class='no'>fit</span>)$<span class='no'>Y</span>, <span class='no'>fitted_values</span>))
 <span class='fu'>ggplot</span>(<span class='no'>dat</span>) + <span class='fu'>geom_point</span>(<span class='fu'>aes</span>(<span class='kw'>x</span> <span class='kw'>=</span> <span class='no'>Estimate</span>, <span class='kw'>y</span> <span class='kw'>=</span> <span class='no'>Y</span>))
 }</div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#see-also">See also</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -331,7 +329,7 @@ that control several aspects of data validation and prediction.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -44,7 +48,6 @@
 
 <meta property="og:title" content="Function reference" />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -62,7 +65,7 @@
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-index">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -76,7 +79,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -175,6 +178,11 @@
           <p class="section-desc"></p>
         </th>
       </tr>
+      
+      
+    </tbody><tbody>
+      
+      
       <tr>
         
         <td>
@@ -190,9 +198,21 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="add_ic.html">add_loo()</a></code> <code><a href="add_ic.html">add_waic()</a></code> <code><a href="add_ic.html">add_ic()</a></code> <code><a href="add_ic.html">`add_ic<-`()</a></code> </p>
+          <p><code><a href="add_ic.html">add_loo()</a></code> <code><a href="add_ic.html">add_waic()</a></code> <code><a href="add_ic.html">add_ic()</a></code> <code><a href="add_ic.html">`add_ic&lt;-`()</a></code> </p>
         </td>
         <td><p>Add model fit criteria to model objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="ar.html">ar()</a></code> </p>
+        </td>
+        <td><p>Set up AR(p) correlation structures</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="arma.html">arma()</a></code> </p>
+        </td>
+        <td><p>Set up ARMA(p,q) correlation structures</p></td>
       </tr><tr>
         
         <td>
@@ -208,9 +228,15 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="autocor-terms.html">autocor-terms</a></code> </p>
+        </td>
+        <td><p>Autocorrelation structures</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="autocor.brmsfit.html">autocor()</a></code> </p>
         </td>
-        <td><p>Extract Autocorrelation Objects</p></td>
+        <td><p>(Deprecated) Extract Autocorrelation Objects</p></td>
       </tr><tr>
         
         <td>
@@ -256,7 +282,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="brmsformula-helpers.html">nlf()</a></code> <code><a href="brmsformula-helpers.html">lf()</a></code> <code><a href="brmsformula-helpers.html">set_nl()</a></code> <code><a href="brmsformula-helpers.html">set_rescor()</a></code> <code><a href="brmsformula-helpers.html">set_mecor()</a></code> </p>
+          <p><code><a href="brmsformula-helpers.html">nlf()</a></code> <code><a href="brmsformula-helpers.html">lf()</a></code> <code><a href="brmsformula-helpers.html">acformula()</a></code> <code><a href="brmsformula-helpers.html">set_nl()</a></code> <code><a href="brmsformula-helpers.html">set_rescor()</a></code> <code><a href="brmsformula-helpers.html">set_mecor()</a></code> </p>
         </td>
         <td><p>Linear and Non-linear formulas in <span class="pkg">brms</span></p></td>
       </tr><tr>
@@ -274,9 +300,21 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="brmsterms.html">brmsterms()</a></code> </p>
+        </td>
+        <td><p>Parse Formulas of <span class="pkg">brms</span> Models</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="brm_multiple.html">brm_multiple()</a></code> </p>
         </td>
         <td><p>Run the same <span class="pkg">brms</span> model on multiple datasets</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="car.html">car()</a></code> </p>
+        </td>
+        <td><p>Spatial conditional autoregressive (CAR) structures</p></td>
       </tr><tr>
         
         <td>
@@ -318,49 +356,55 @@
         <td>
           <p><code><a href="cor_ar.html">cor_ar()</a></code> </p>
         </td>
-        <td><p>AR(p) correlation structure</p></td>
+        <td><p>(Deprecated) AR(p) correlation structure</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_arma.html">cor_arma()</a></code> </p>
         </td>
-        <td><p>ARMA(p,q) correlation structure</p></td>
+        <td><p>(Deprecated) ARMA(p,q) correlation structure</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_brms.html">cor_brms</a></code> </p>
         </td>
-        <td><p>Correlation structure classes for the <span class="pkg">brms</span> package</p></td>
+        <td><p>(Deprecated) Correlation structure classes for the <span class="pkg">brms</span> package</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_car.html">cor_car()</a></code> <code><a href="cor_car.html">cor_icar()</a></code> </p>
         </td>
-        <td><p>Spatial conditional autoregressive (CAR) structures</p></td>
+        <td><p>(Deprecated) Spatial conditional autoregressive (CAR) structures</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_cosy.html">cor_cosy()</a></code> </p>
         </td>
-        <td><p>Compound Symmetry (COSY) Correlation Structure</p></td>
+        <td><p>(Deprecated) Compound Symmetry (COSY) Correlation Structure</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_fixed.html">cor_fixed()</a></code> </p>
         </td>
-        <td><p>Fixed user-defined covariance matrices</p></td>
+        <td><p>(Deprecated) Fixed user-defined covariance matrices</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_ma.html">cor_ma()</a></code> </p>
         </td>
-        <td><p>MA(q) correlation structure</p></td>
+        <td><p>(Deprecated) MA(q) correlation structure</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="cor_sar.html">cor_sar()</a></code> <code><a href="cor_sar.html">cor_lagsar()</a></code> <code><a href="cor_sar.html">cor_errorsar()</a></code> </p>
         </td>
-        <td><p>Spatial simultaneous autoregressive (SAR) structures</p></td>
+        <td><p>(Deprecated) Spatial simultaneous autoregressive (SAR) structures</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="cosy.html">cosy()</a></code> </p>
+        </td>
+        <td><p>Set up COSY correlation structures</p></td>
       </tr><tr>
         
         <td>
@@ -394,6 +438,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="emmeans-brms-helpers.html">recover_data.brmsfit()</a></code> <code><a href="emmeans-brms-helpers.html">emm_basis.brmsfit()</a></code> </p>
+        </td>
+        <td><p>Support Functions for <span class="pkg">emmeans</span></p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="epilepsy.html">epilepsy</a></code> </p>
         </td>
         <td><p>Epileptic seizure counts</p></td>
@@ -418,15 +468,15 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="extract_draws.html">extract_draws()</a></code> </p>
-        </td>
-        <td><p>Extract Data and Posterior Draws</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="family.brmsfit.html">family(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Extract Model Family Objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="fcor.html">fcor()</a></code> </p>
+        </td>
+        <td><p>Fixed residual correlation (FCOR) structures</p></td>
       </tr><tr>
         
         <td>
@@ -640,6 +690,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="ma.html">ma()</a></code> </p>
+        </td>
+        <td><p>Set up MA(q) correlation structures</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="make_conditions.html">make_conditions()</a></code> </p>
         </td>
         <td><p>Prepare Fully Crossed Conditions</p></td>
@@ -754,12 +810,6 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="parse_bf.html">parse_bf()</a></code> </p>
-        </td>
-        <td><p>Parse Formulas of <span class="pkg">brms</span> Models</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="plot.brmsfit.html">plot(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Trace and Density Plots for MCMC Samples</p></td>
@@ -769,6 +819,12 @@
           <p><code><a href="posterior_average.brmsfit.html">posterior_average()</a></code> </p>
         </td>
         <td><p>Posterior samples of parameters averaged across models</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="posterior_epred.brmsfit.html">posterior_epred()</a></code> </p>
+        </td>
+        <td><p>Expected Values of the Posterior Predictive Distribution</p></td>
       </tr><tr>
         
         <td>
@@ -826,12 +882,6 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="pp_expect.brmsfit.html">pp_expect()</a></code> </p>
-        </td>
-        <td><p>Expected Values of the Posterior Predictive Distribution</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="pp_mixture.brmsfit.html">pp_mixture()</a></code> </p>
         </td>
         <td><p>Posterior Probabilities of Mixture Component Memberships</p></td>
@@ -853,6 +903,12 @@
           <p><code><a href="predictive_interval.brmsfit.html">predictive_interval(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Predictive Intervals</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="prepare_predictions.html">prepare_predictions()</a></code> </p>
+        </td>
+        <td><p>Prepare Predictions</p></td>
       </tr><tr>
         
         <td>
@@ -892,6 +948,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="rename_pars.html">rename_pars()</a></code> </p>
+        </td>
+        <td><p>Rename Parameters</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="residuals.brmsfit.html">residuals(<i>&lt;brmsfit&gt;</i>)</a></code> </p>
         </td>
         <td><p>Posterior Samples of Residuals/Predictive Errors</p></td>
@@ -913,6 +975,12 @@
           <p><code><a href="s.html">s()</a></code> <code><a href="s.html">t2()</a></code> </p>
         </td>
         <td><p>Defining smooths in <span class="pkg">brms</span> formulas</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="sar.html">sar()</a></code> </p>
+        </td>
+        <td><p>Spatial simultaneous autoregressive (SAR) structures</p></td>
       </tr><tr>
         
         <td>
@@ -966,7 +1034,7 @@
         <td>
           <p><code><a href="theme_black.html">theme_black()</a></code> </p>
         </td>
-        <td><p>Black Theme for <span class="pkg">ggplot2</span> Graphics</p></td>
+        <td><p>(Deprecated) Black Theme for <span class="pkg">ggplot2</span> Graphics</p></td>
       </tr><tr>
         
         <td>
@@ -1038,11 +1106,10 @@
     </table>
   </div>
 
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -1053,7 +1120,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

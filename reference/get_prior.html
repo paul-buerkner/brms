@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -46,7 +50,6 @@
 <meta property="og:description" content="Get information on all parameters (and parameter classes) for which priors 
 may be specified including default priors." />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -64,7 +67,7 @@ may be specified including default priors." />
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -78,7 +81,7 @@ may be specified including default priors." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -174,8 +177,8 @@ may be specified including default priors.</p>
   <span class='no'>data</span>,
   <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
   <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>internal</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='no'>...</span>
 )</pre>
 
@@ -208,12 +211,20 @@ linear <code>gaussian</code> model is applied. In multivariate models,
     </tr>
     <tr>
       <th>autocor</th>
-      <td><p>An optional <code><a href='cor_brms.html'>cor_brms</a></code> object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for a
-description of the available correlation structures. Defaults to
+      <td><p>(Deprecated) An optional <code><a href='cor_brms.html'>cor_brms</a></code> object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for
+a description of the available correlation structures. Defaults to
 <code>NULL</code>, corresponding to no correlations. In multivariate models,
-<code>autocor</code> might also be a list of autocorrelation structures.</p></td>
+<code>autocor</code> might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within <code>formula</code>. See <code><a href='brmsformula.html'>brmsformula</a></code> for more details.</p></td>
+    </tr>
+    <tr>
+      <th>knots</th>
+      <td><p>Optional list containing user specified knot values to be used
+for basis construction of smoothing terms. See
+<code><a href='https://rdrr.io/pkg/mgcv/man/gamm.html'>gamm</a></code> for more details.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -225,14 +236,8 @@ decreased. It is now recommended to use the <code>sparse</code> argument of
 <code><a href='brmsformula.html'>brmsformula</a></code> and related functions.</p></td>
     </tr>
     <tr>
-      <th>internal</th>
-      <td><p>A flag indicating if the names of additional internal
-parameters should be displayed. Setting priors on these parameters is not
-recommended</p></td>
-    </tr>
-    <tr>
       <th>...</th>
-      <td><p>Currently ignored.</p></td>
+      <td><p>Other arguments for internal usage only.</p></td>
     </tr>
     </table>
 
@@ -249,18 +254,18 @@ recommended</p></td>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## get all parameters and parameters classes to define priors on</span>
 (<span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'>get_prior</span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
-                    <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>()))</div><div class='output co'>#&gt;                  prior     class       coef   group resp dpar nlpar bound
-#&gt; 1                              b                                         
-#&gt; 2                              b       Trt1                              
-#&gt; 3                              b       zAge                              
-#&gt; 4                              b      zBase                              
-#&gt; 5                              b zBase:Trt1                              
-#&gt; 6  student_t(3, 1, 10) Intercept                                         
-#&gt; 7  student_t(3, 0, 10)        sd                                         
-#&gt; 8                             sd                obs                      
-#&gt; 9                             sd  Intercept     obs                      
-#&gt; 10                            sd            patient                      
-#&gt; 11                            sd  Intercept patient                      </div><div class='input'>
+                    <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>()))</div><div class='output co'>#&gt;                     prior     class       coef   group resp dpar nlpar bound
+#&gt; 1                                 b                                         
+#&gt; 2                                 b       Trt1                              
+#&gt; 3                                 b       zAge                              
+#&gt; 4                                 b      zBase                              
+#&gt; 5                                 b zBase:Trt1                              
+#&gt; 6  student_t(3, 1.4, 2.5) Intercept                                         
+#&gt; 7    student_t(3, 0, 2.5)        sd                                         
+#&gt; 8                                sd                obs                      
+#&gt; 9                                sd  Intercept     obs                      
+#&gt; 10                               sd            patient                      
+#&gt; 11                               sd  Intercept patient                      </div><div class='input'>
 <span class='co'>## define a prior on all population-level effects a once</span>
 <span class='no'>prior</span>$<span class='no'>prior</span>[<span class='fl'>1</span>] <span class='kw'>&lt;-</span> <span class='st'>"normal(0,10)"</span>
 
@@ -270,7 +275,7 @@ recommended</p></td>
 <span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>) + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>obs</span>),
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.11.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -303,20 +308,17 @@ recommended</p></td>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   // temporary intercept for centered predictors
-#&gt;   real Intercept;
+#&gt;   real Intercept;  // temporary intercept for centered predictors
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
-#&gt;   // standardized group-level effects
-#&gt;   vector[N_1] z_1[M_1];
+#&gt;   vector[N_1] z_1[M_1];  // standardized group-level effects
 #&gt;   vector&lt;lower=0&gt;[M_2] sd_2;  // group-level standard deviations
-#&gt;   // standardized group-level effects
-#&gt;   vector[N_2] z_2[M_2];
+#&gt;   vector[N_2] z_2[M_2];  // standardized group-level effects
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   // actual group-level effects
-#&gt;   vector[N_1] r_1_1 = (sd_1[1] * (z_1[1]));
-#&gt;   // actual group-level effects
-#&gt;   vector[N_2] r_2_1 = (sd_2[1] * (z_2[1]));
+#&gt;   vector[N_1] r_1_1;  // actual group-level effects
+#&gt;   vector[N_2] r_2_1;  // actual group-level effects
+#&gt;   r_1_1 = (sd_1[1] * (z_1[1]));
+#&gt;   r_2_1 = (sd_2[1] * (z_2[1]));
 #&gt; }
 #&gt; model {
 #&gt;   // initialize linear predictor term
@@ -330,13 +332,13 @@ recommended</p></td>
 #&gt;   target += normal_lpdf(b[2] | 0,10);
 #&gt;   target += normal_lpdf(b[3] | 0,10);
 #&gt;   target += student_t_lpdf(b[4] | 10, 0, 5);
-#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
-#&gt;   target += student_t_lpdf(sd_1 | 3, 0, 10)
-#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
-#&gt;   target += normal_lpdf(z_1[1] | 0, 1);
-#&gt;   target += student_t_lpdf(sd_2 | 3, 0, 10)
-#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
-#&gt;   target += normal_lpdf(z_2[1] | 0, 1);
+#&gt;   target += student_t_lpdf(Intercept | 3, 1.4, 2.5);
+#&gt;   target += student_t_lpdf(sd_1 | 3, 0, 2.5)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+#&gt;   target += std_normal_lpdf(z_1[1]);
+#&gt;   target += student_t_lpdf(sd_2 | 3, 0, 2.5)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+#&gt;   target += std_normal_lpdf(z_2[1]);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
 #&gt;     target += poisson_log_lpmf(Y | mu);
@@ -348,15 +350,10 @@ recommended</p></td>
 #&gt; }</div><div class='input'>
 </div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#see-also">See also</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -367,7 +364,7 @@ recommended</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

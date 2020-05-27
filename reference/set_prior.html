@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -43,9 +47,8 @@
 
 
 <meta property="og:title" content="Prior Definitions for <span class="pkg">brms</span> Models — set_prior" />
-<meta property="og:description" content="Define priors for specific parameters or classes of parameters" />
+<meta property="og:description" content="Define priors for specific parameters or classes of parameters." />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -63,7 +66,7 @@
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -77,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -164,7 +167,7 @@
     </div>
 
     <div class="ref-description">
-    <p>Define priors for specific parameters or classes of parameters</p>
+    <p>Define priors for specific parameters or classes of parameters.</p>
     </div>
 
     <pre class="usage"><span class='fu'>set_prior</span>(
@@ -203,15 +206,15 @@ See 'Details' for other valid parameter classes.</p></td>
     </tr>
     <tr>
       <th>coef</th>
-      <td><p>Name of the (population- or group-level) parameter.</p></td>
+      <td><p>Name of the coefficient within the parameter class.</p></td>
     </tr>
     <tr>
       <th>group</th>
-      <td><p>Grouping factor of group-level parameters.</p></td>
+      <td><p>Grouping factor for group-level parameters.</p></td>
     </tr>
     <tr>
       <th>resp</th>
-      <td><p>Name of the response variable / category.
+      <td><p>Name of the response variable.
 Only used in multivariate models.</p></td>
     </tr>
     <tr>
@@ -227,14 +230,12 @@ Only used in non-linear models.</p></td>
     <tr>
       <th>lb</th>
       <td><p>Lower bound for parameter restriction. Currently only allowed
-for classes <code>"b"</code>, <code>"ar"</code>, <code>"ma"</code>, and <code>"arr"</code>.
-Defaults to <code>NULL</code>, that is no restriction.</p></td>
+for classes <code>"b"</code>. Defaults to <code>NULL</code>, that is no restriction.</p></td>
     </tr>
     <tr>
       <th>ub</th>
       <td><p>Upper bound for parameter restriction. Currently only allowed
-for classes <code>"b"</code>, <code>"ar"</code>, <code>"ma"</code>, and <code>"arr"</code>.
-Defaults to <code>NULL</code>, that is no restriction.</p></td>
+for classes <code>"b"</code>. Defaults to <code>NULL</code>, that is no restriction.</p></td>
     </tr>
     <tr>
       <th>check</th>
@@ -294,15 +295,15 @@ to the Stan code as is, and all other arguments are ignored.</p></td>
   standard deviation 5 for <code>x1</code>, and a unit student-t prior with 10 
   degrees of freedom for <code>x2</code>, we can specify this via
   <code>set_prior("normal(0,5)", class = "b", coef = "x1")</code> and <br />
-  <code>set_prior("student_t(10,0,1)", class = "b", coef = "x2")</code>.
+  <code>set_prior("student_t(10, 0, 1)", class = "b", coef = "x2")</code>.
   To put the same prior on all population-level effects at once, 
   we may write as a shortcut <code>set_prior("&lt;prior&gt;", class = "b")</code>. 
   This also leads to faster sampling, because priors can be vectorized in this case. 
   Both ways of defining priors can be combined using for instance 
-  <code>set_prior("normal(0,2)", class = "b")</code> and <br />
-  <code>set_prior("normal(0,10)", class = "b", coef = "x1")</code>
-  at the same time. This will set a <code>normal(0,10)</code> prior on 
-  the effect of <code>x1</code> and a <code>normal(0,2)</code> prior 
+  <code>set_prior("normal(0, 2)", class = "b")</code> and <br />
+  <code>set_prior("normal(0, 10)", class = "b", coef = "x1")</code>
+  at the same time. This will set a <code>normal(0, 10)</code> prior on 
+  the effect of <code>x1</code> and a <code>normal(0, 2)</code> prior 
   on all other population-level effects. 
   However, this will break vectorization and
   may slow down the sampling procedure a bit.</p>  
@@ -379,8 +380,8 @@ to the Stan code as is, and all other arguments are ignored.</p></td>
 <p>3. Correlations of group-level ('random') effects</p>  
 <p>If there is more than one group-level effect per grouping factor, 
   the correlations between those effects have to be estimated. 
-  The prior <code>"lkj_corr_cholesky(eta)"</code> or in short 
-  <code>"lkj(eta)"</code> with <code>eta &gt; 0</code> 
+  The prior <code>lkj_corr_cholesky(eta)</code> or in short 
+  <code>lkj(eta)</code> with <code>eta &gt; 0</code> 
   is essentially the only prior for (Cholesky factors) of correlation matrices. 
   If <code>eta = 1</code> (the default) all correlations matrices 
   are equally likely a priori. If <code>eta &gt; 1</code>, extreme correlations 
@@ -462,11 +463,11 @@ to the Stan code as is, and all other arguments are ignored.</p></td>
   in the same way as the group-level standard deviations.
   Further, family <code>student</code> needs the parameter 
   <code>nu</code> representing the degrees of freedom of students-t distribution. 
-  By default, <code>nu</code> has prior <code>"gamma(2, 0.1)"</code>
+  By default, <code>nu</code> has prior <code><a href='https://rdrr.io/r/base/Special.html'>gamma(2, 0.1)</a></code>
   and a fixed lower bound of <code>1</code>.
   Families <code>gamma</code>, <code>weibull</code>, <code>inverse.gaussian</code>, and
   <code>negbinomial</code> need a <code>shape</code> parameter that has a 
-  <code>"gamma(0.01, 0.01)"</code> prior by default. 
+  <code><a href='https://rdrr.io/r/base/Special.html'>gamma(0.01, 0.01)</a></code> prior by default. 
   For families <code>cumulative</code>, <code>cratio</code>, <code>sratio</code>, 
   and <code>acat</code>, and only if <code>threshold = "equidistant"</code>, 
   the parameter <code>delta</code> is used to model the distance between 
@@ -474,17 +475,22 @@ to the Stan code as is, and all other arguments are ignored.</p></td>
   By default, <code>delta</code> has an improper flat prior over the reals.
   The <code>von_mises</code> family needs the parameter <code>kappa</code>, representing
   the concentration parameter. By default, <code>kappa</code> has prior 
-  <code>"gamma(2, 0.01)"</code>. <br />
+  <code><a href='https://rdrr.io/r/base/Special.html'>gamma(2, 0.01)</a></code>. <br />
   Every family specific parameter has its own prior class, so that
   <code>set_prior("&lt;prior&gt;", class = "&lt;parameter&gt;")</code> is the right way to go.
   All of these priors are chosen to be weakly informative,
   having only minimal influence on the estimations,
-  while improving convergence and sampling efficiency.</p>
-<p>Often, it may not be immediately clear, 
-  which parameters are present in the model.
-  To get a full list of parameters and parameter classes for which 
-  priors can be specified (depending on the model) 
-  use function <code><a href='get_prior.html'>get_prior</a></code>.</p>
+  while improving convergence and sampling efficiency.</p>  
+<p>Fixing parameters to constants is possible by using the <code>constant</code>
+  function, for example, <code>constant(1)</code> to fix a parameter to 1.
+  Broadcasting to vectors and matrices is done automatically.
+  A limitation of the current implementation is that the same parameter
+  vector cannot contain estimated and fixed values at the same time,
+  but this will be possible in the future.</p>
+<p>Often, it may not be immediately clear, which parameters are present in the
+  model. To get a full list of parameters and parameter classes for which
+  priors can be specified (depending on the model) use function
+  <code><a href='get_prior.html'>get_prior</a></code>.</p>
     <h2 class="hasAnchor" id="functions"><a class="anchor" href="#functions"></a>Functions</h2>
 
     
@@ -508,30 +514,30 @@ specify arguments as strings.</p></li>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## use alias functions</span>
 (<span class='no'>prior1</span> <span class='kw'>&lt;-</span> <span class='fu'>prior</span>(<span class='fu'>cauchy</span>(<span class='fl'>0</span>, <span class='fl'>1</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>sd</span>))</div><div class='output co'>#&gt; sd ~ cauchy(0, 1)</div><div class='input'>(<span class='no'>prior2</span> <span class='kw'>&lt;-</span> <span class='fu'>prior_</span>(~<span class='fu'>cauchy</span>(<span class='fl'>0</span>, <span class='fl'>1</span>), <span class='kw'>class</span> <span class='kw'>=</span> ~<span class='no'>sd</span>))</div><div class='output co'>#&gt; sd ~ cauchy(0, 1)</div><div class='input'>(<span class='no'>prior3</span> <span class='kw'>&lt;-</span> <span class='fu'>prior_string</span>(<span class='st'>"cauchy(0, 1)"</span>, <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"sd"</span>))</div><div class='output co'>#&gt; sd ~ cauchy(0, 1)</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/identical.html'>identical</a></span>(<span class='no'>prior1</span>, <span class='no'>prior2</span>)</div><div class='output co'>#&gt; [1] TRUE</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/identical.html'>identical</a></span>(<span class='no'>prior1</span>, <span class='no'>prior3</span>)</div><div class='output co'>#&gt; [1] TRUE</div><div class='input'>
-<span class='co'>## check which parameters can have priors</span>
+<span class='co'># check which parameters can have priors</span>
 <span class='fu'><a href='get_prior.html'>get_prior</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
-          <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>())</div><div class='output co'>#&gt;                  prior     class      coef   group resp dpar nlpar bound
-#&gt; 1                              b                                        
-#&gt; 2                              b     carry                              
-#&gt; 3                              b    period                              
-#&gt; 4                              b     treat                              
-#&gt; 5  student_t(3, 0, 10) Intercept                                        
-#&gt; 6                      Intercept         1                              
-#&gt; 7                      Intercept         2                              
-#&gt; 8                      Intercept         3                              
-#&gt; 9  student_t(3, 0, 10)        sd                                        
-#&gt; 10                            sd           subject                      
-#&gt; 11                            sd Intercept subject                      </div><div class='input'>
-<span class='co'>## define some priors          </span>
-<span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fu'>prior_string</span>(<span class='st'>"normal(0,10)"</span>, <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"b"</span>),
-           <span class='fu'>prior</span>(<span class='fu'>normal</span>(<span class='fl'>1</span>,<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>b</span>, <span class='kw'>coef</span> <span class='kw'>=</span> <span class='no'>treat</span>),
-           <span class='fu'>prior_</span>(~<span class='fu'>cauchy</span>(<span class='fl'>0</span>,<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> ~<span class='no'>sd</span>,
-                  <span class='kw'>group</span> <span class='kw'>=</span> ~<span class='no'>subject</span>, <span class='kw'>coef</span> <span class='kw'>=</span> ~<span class='no'>Intercept</span>))
+          <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>())</div><div class='output co'>#&gt;                   prior     class      coef   group resp dpar nlpar bound
+#&gt; 1                               b                                        
+#&gt; 2                               b     carry                              
+#&gt; 3                               b    period                              
+#&gt; 4                               b     treat                              
+#&gt; 5  student_t(3, 0, 2.5) Intercept                                        
+#&gt; 6                       Intercept         1                              
+#&gt; 7                       Intercept         2                              
+#&gt; 8                       Intercept         3                              
+#&gt; 9  student_t(3, 0, 2.5)        sd                                        
+#&gt; 10                             sd           subject                      
+#&gt; 11                             sd Intercept subject                      </div><div class='input'>
+<span class='co'># define some priors          </span>
+<span class='no'>bprior</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fu'>prior_string</span>(<span class='st'>"normal(0,10)"</span>, <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"b"</span>),
+            <span class='fu'>prior</span>(<span class='fu'>normal</span>(<span class='fl'>1</span>,<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='no'>b</span>, <span class='kw'>coef</span> <span class='kw'>=</span> <span class='no'>treat</span>),
+            <span class='fu'>prior_</span>(~<span class='fu'>cauchy</span>(<span class='fl'>0</span>,<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> ~<span class='no'>sd</span>,
+                   <span class='kw'>group</span> <span class='kw'>=</span> ~<span class='no'>subject</span>, <span class='kw'>coef</span> <span class='kw'>=</span> ~<span class='no'>Intercept</span>))
 
-<span class='co'>## verify that the priors indeed found their way into Stan's model code</span>
+<span class='co'># verify that the priors indeed found their way into Stan's model code</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>rating</span> ~ <span class='no'>treat</span> + <span class='no'>period</span> + <span class='no'>carry</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>subject</span>),
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>cumulative</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.11.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
 #&gt; functions {
 #&gt;   /* cumulative-logit log-PDF for a single response
 #&gt;    * Args:
@@ -568,6 +574,18 @@ specify arguments as strings.</p></li>
 #&gt;    real cumulative_logit_merged_lpmf(int y, real mu, real disc, vector thres, int[] j) {
 #&gt;      return cumulative_logit_lpmf(y | mu, disc, thres[j[1]:j[2]]);
 #&gt;    }
+#&gt;   /* ordered-logistic log-PDF for a single response and merged thresholds
+#&gt;    * Args:
+#&gt;    *   y: response category
+#&gt;    *   mu: latent mean parameter
+#&gt;    *   thres: vector of merged ordinal thresholds
+#&gt;    *   j: start and end index for the applid threshold within 'thres'
+#&gt;    * Returns:
+#&gt;    *   a scalar to be added to the log posterior
+#&gt;    */
+#&gt;    real ordered_logistic_merged_lpmf(int y, real mu, vector thres, int[] j) {
+#&gt;      return ordered_logistic_lpmf(y | mu, thres[j[1]:j[2]]);
+#&gt;    }
 #&gt; }
 #&gt; data {
 #&gt;   int&lt;lower=1&gt; N;  // number of observations
@@ -575,7 +593,6 @@ specify arguments as strings.</p></li>
 #&gt;   int&lt;lower=2&gt; nthres;  // number of thresholds
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
-#&gt;   real&lt;lower=0&gt; disc;  // discrimination parameters
 #&gt;   // data for group-level effects of ID 1
 #&gt;   int&lt;lower=1&gt; N_1;  // number of grouping levels
 #&gt;   int&lt;lower=1&gt; M_1;  // number of coefficients per level
@@ -595,15 +612,14 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   // temporary thresholds for centered predictors
-#&gt;   ordered[nthres] Intercept;
+#&gt;   ordered[nthres] Intercept;  // temporary thresholds for centered predictors
 #&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
-#&gt;   // standardized group-level effects
-#&gt;   vector[N_1] z_1[M_1];
+#&gt;   vector[N_1] z_1[M_1];  // standardized group-level effects
 #&gt; }
 #&gt; transformed parameters {
-#&gt;   // actual group-level effects
-#&gt;   vector[N_1] r_1_1 = (sd_1[1] * (z_1[1]));
+#&gt;   real&lt;lower=0&gt; disc = 1;  // discrimination parameters
+#&gt;   vector[N_1] r_1_1;  // actual group-level effects
+#&gt;   r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
 #&gt;   // initialize linear predictor term
@@ -616,10 +632,10 @@ specify arguments as strings.</p></li>
 #&gt;   target += normal_lpdf(b[1] | 1, 2);
 #&gt;   target += normal_lpdf(b[2] | 0,10);
 #&gt;   target += normal_lpdf(b[3] | 0,10);
-#&gt;   target += student_t_lpdf(Intercept | 3, 0, 10);
-#&gt;   target += cauchy_lpdf(sd_1 | 0, 2)
+#&gt;   target += student_t_lpdf(Intercept | 3, 0, 2.5);
+#&gt;   target += cauchy_lpdf(sd_1[1] | 0, 2)
 #&gt;     - 1 * cauchy_lccdf(0 | 0, 2);
-#&gt;   target += normal_lpdf(z_1[1] | 0, 1);
+#&gt;   target += std_normal_lpdf(z_1[1]);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
 #&gt;     for (n in 1:N) {
@@ -631,30 +647,27 @@ specify arguments as strings.</p></li>
 #&gt;   // compute actual thresholds
 #&gt;   vector[nthres] b_Intercept = Intercept + dot_product(means_X, b);
 #&gt; }</div><div class='input'>
-<span class='co'>## use the horseshoe prior to model sparsity in population-level effects</span>
+<span class='co'># use the horseshoe prior to model sparsity in regression coefficients</span>
 <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
               <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.11.0
+              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"horseshoe(3)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.13.0
 #&gt; functions {
 #&gt; 
 #&gt;   /* Efficient computation of the horseshoe prior
+#&gt;    * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866
 #&gt;    * Args:
-#&gt;    *   zb: standardized population-level coefficients
-#&gt;    *   global: global horseshoe parameters
-#&gt;    *   local: local horseshoe parameters
-#&gt;    *   scale_global: global scale of the horseshoe prior
-#&gt;    *   c2: positive real number for regularization
+#&gt;    *   z: standardized population-level coefficients
+#&gt;    *   lambda: local shrinkage parameters
+#&gt;    *   tau: global shrinkage parameter
+#&gt;    *   c2: slap regularization parameter
 #&gt;    * Returns:
 #&gt;    *   population-level coefficients following the horseshoe prior
 #&gt;    */
-#&gt;   vector horseshoe(vector zb, vector[] local, real[] global,
-#&gt;                    real scale_global, real c2) {
-#&gt;     int K = rows(zb);
-#&gt;     vector[K] lambda = local[1] .* sqrt(local[2]);
+#&gt;   vector horseshoe(vector z, vector lambda, real tau, real c2) {
+#&gt;     int K = rows(z);
 #&gt;     vector[K] lambda2 = square(lambda);
-#&gt;     real tau = global[1] * sqrt(global[2]) * scale_global;
 #&gt;     vector[K] lambda_tilde = sqrt(c2 * lambda2 ./ (c2 + tau^2 * lambda2));
-#&gt;     return zb .* lambda_tilde * tau;
+#&gt;     return z .* lambda_tilde * tau;
 #&gt;   }
 #&gt; }
 #&gt; data {
@@ -682,29 +695,26 @@ specify arguments as strings.</p></li>
 #&gt; parameters {
 #&gt;   // local parameters for horseshoe prior
 #&gt;   vector[Kc] zb;
-#&gt;   vector&lt;lower=0&gt;[Kc] hs_local[2];
-#&gt;   // temporary intercept for centered predictors
-#&gt;   real Intercept;
+#&gt;   vector&lt;lower=0&gt;[Kc] hs_local;
+#&gt;   real Intercept;  // temporary intercept for centered predictors
 #&gt;   // horseshoe shrinkage parameters
-#&gt;   real&lt;lower=0&gt; hs_global[2];  // global shrinkage parameters
-#&gt;   real&lt;lower=0&gt; hs_c2;  // slab regularization parameter
+#&gt;   real&lt;lower=0&gt; hs_global;  // global shrinkage parameters
+#&gt;   real&lt;lower=0&gt; hs_slab;  // slab regularization parameter
 #&gt; }
 #&gt; transformed parameters {
 #&gt;   vector[Kc] b;  // population-level effects
 #&gt;   // compute actual regression coefficients
-#&gt;   b = horseshoe(zb, hs_local, hs_global, hs_scale_global, hs_scale_slab^2 * hs_c2);
+#&gt;   b = horseshoe(zb, hs_local, hs_global, hs_scale_slab^2 * hs_slab);
 #&gt; }
 #&gt; model {
 #&gt;   // priors including all constants
-#&gt;   target += normal_lpdf(zb | 0, 1);
-#&gt;   target += normal_lpdf(hs_local[1] | 0, 1)
-#&gt;     - 4 * log(0.5);
-#&gt;   target += inv_gamma_lpdf(hs_local[2] | 0.5 * hs_df, 0.5 * hs_df);
-#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
-#&gt;   target += normal_lpdf(hs_global[1] | 0, 1)
+#&gt;   target += std_normal_lpdf(zb);
+#&gt;   target += student_t_lpdf(hs_local | hs_df, 0, 1)
+#&gt;     - rows(hs_local) * log(0.5);
+#&gt;   target += student_t_lpdf(Intercept | 3, 1.4, 2.5);
+#&gt;   target += student_t_lpdf(hs_global | hs_df_global, 0, hs_scale_global)
 #&gt;     - 1 * log(0.5);
-#&gt;   target += inv_gamma_lpdf(hs_global[2] | 0.5 * hs_df_global, 0.5 * hs_df_global);
-#&gt;   target += inv_gamma_lpdf(hs_c2 | 0.5 * hs_df_slab, 0.5 * hs_df_slab);
+#&gt;   target += inv_gamma_lpdf(hs_slab | 0.5 * hs_df_slab, 0.5 * hs_df_slab);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
 #&gt;     target += poisson_log_glm_lpmf(Y | Xc, Intercept, b);
@@ -714,20 +724,25 @@ specify arguments as strings.</p></li>
 #&gt;   // actual population-level intercept
 #&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
-<span class='co'>## alternatively use the lasso prior</span>
-<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> * <span class='no'>Trt</span>,
-              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>poisson</a></span>(),
-              <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'>set_prior</span>(<span class='st'>"lasso(1)"</span>))</div><div class='output co'>#&gt; // generated with brms 2.11.0
+<span class='co'># fix certain priors to constants</span>
+<span class='no'>bprior</span> <span class='kw'>&lt;-</span> <span class='fu'>prior</span>(<span class='fu'>constant</span>(<span class='fl'>1</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"b"</span>) +
+  <span class='fu'>prior</span>(<span class='fu'>constant</span>(<span class='fl'>2</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"b"</span>, <span class='kw'>coef</span> <span class='kw'>=</span> <span class='st'>"zBase"</span>) +
+  <span class='fu'>prior</span>(<span class='fu'>constant</span>(<span class='fl'>0.5</span>), <span class='kw'>class</span> <span class='kw'>=</span> <span class='st'>"sd"</span>)
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>zAge</span> + <span class='no'>zBase</span> + (<span class='fl'>1</span> <span class='kw'>|</span> <span class='no'>patient</span>),
+              <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
 #&gt;   int&lt;lower=1&gt; N;  // number of observations
-#&gt;   int Y[N];  // response variable
+#&gt;   vector[N] Y;  // response variable
 #&gt;   int&lt;lower=1&gt; K;  // number of population-level effects
 #&gt;   matrix[N, K] X;  // population-level design matrix
-#&gt;   // data for the lasso prior
-#&gt;   real&lt;lower=0&gt; lasso_df;  // prior degrees of freedom
-#&gt;   real&lt;lower=0&gt; lasso_scale;  // prior scale
+#&gt;   // data for group-level effects of ID 1
+#&gt;   int&lt;lower=1&gt; N_1;  // number of grouping levels
+#&gt;   int&lt;lower=1&gt; M_1;  // number of coefficients per level
+#&gt;   int&lt;lower=1&gt; J_1[N];  // grouping indicator per observation
+#&gt;   // group-level predictor values
+#&gt;   vector[N] Z_1_1;
 #&gt;   int prior_only;  // should the likelihood be ignored?
 #&gt; }
 #&gt; transformed data {
@@ -740,31 +755,43 @@ specify arguments as strings.</p></li>
 #&gt;   }
 #&gt; }
 #&gt; parameters {
-#&gt;   vector[Kc] b;  // population-level effects
-#&gt;   // temporary intercept for centered predictors
-#&gt;   real Intercept;
-#&gt;   // lasso shrinkage parameter
-#&gt;   real&lt;lower=0&gt; lasso_inv_lambda;
+#&gt;   real Intercept;  // temporary intercept for centered predictors
+#&gt;   real&lt;lower=0&gt; sigma;  // residual SD
+#&gt;   vector[N_1] z_1[M_1];  // standardized group-level effects
 #&gt; }
 #&gt; transformed parameters {
+#&gt;   vector[Kc] b;  // population-level effects
+#&gt;   vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
+#&gt;   vector[N_1] r_1_1;  // actual group-level effects
+#&gt;   b[1] = 1;
+#&gt;   b[2] = 2;
+#&gt;   sd_1 = rep_vector(0.5, rows(sd_1));
+#&gt;   r_1_1 = (sd_1[1] * (z_1[1]));
 #&gt; }
 #&gt; model {
+#&gt;   // initialize linear predictor term
+#&gt;   vector[N] mu = Intercept + Xc * b;
+#&gt;   for (n in 1:N) {
+#&gt;     // add more terms to the linear predictor
+#&gt;     mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+#&gt;   }
 #&gt;   // priors including all constants
-#&gt;   target += double_exponential_lpdf(b | 0, lasso_scale * lasso_inv_lambda);
-#&gt;   target += student_t_lpdf(Intercept | 3, 1, 10);
-#&gt;   target += chi_square_lpdf(lasso_inv_lambda | lasso_df);
+#&gt;   target += student_t_lpdf(Intercept | 3, 4, 4.4);
+#&gt;   target += student_t_lpdf(sigma | 3, 0, 4.4)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
+#&gt;   target += std_normal_lpdf(z_1[1]);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
-#&gt;     target += poisson_log_glm_lpmf(Y | Xc, Intercept, b);
+#&gt;     target += normal_lpdf(Y | mu, sigma);
 #&gt;   }
 #&gt; }
 #&gt; generated quantities {
 #&gt;   // actual population-level intercept
 #&gt;   real b_Intercept = Intercept - dot_product(means_X, b);
 #&gt; }</div><div class='input'>
-<span class='co'>## pass priors to Stan without checking</span>
+<span class='co'># pass priors to Stan without checking</span>
 <span class='no'>prior</span> <span class='kw'>&lt;-</span> <span class='fu'>prior_string</span>(<span class='st'>"target += normal_lpdf(b[1] | 0, 1)"</span>, <span class='kw'>check</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.11.0
+<span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>prior</span>)</div><div class='output co'>#&gt; // generated with brms 2.13.0
 #&gt; functions {
 #&gt; }
 #&gt; data {
@@ -785,17 +812,16 @@ specify arguments as strings.</p></li>
 #&gt; }
 #&gt; parameters {
 #&gt;   vector[Kc] b;  // population-level effects
-#&gt;   // temporary intercept for centered predictors
-#&gt;   real Intercept;
+#&gt;   real Intercept;  // temporary intercept for centered predictors
 #&gt;   real&lt;lower=0&gt; sigma;  // residual SD
 #&gt; }
 #&gt; transformed parameters {
 #&gt; }
 #&gt; model {
 #&gt;   // priors including all constants
-#&gt;   target += student_t_lpdf(Intercept | 3, 4, 10);
-#&gt;   target += student_t_lpdf(sigma | 3, 0, 10)
-#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 10);
+#&gt;   target += student_t_lpdf(Intercept | 3, 4, 4.4);
+#&gt;   target += student_t_lpdf(sigma | 3, 0, 4.4)
+#&gt;     - 1 * student_t_lccdf(0 | 3, 0, 4.4);
 #&gt;   target += normal_lpdf(b[1] | 0, 1);
 #&gt;   // likelihood including all constants
 #&gt;   if (!prior_only) {
@@ -808,18 +834,10 @@ specify arguments as strings.</p></li>
 #&gt; }</div><div class='input'>
 </div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#details">Details</a></li>
-      <li><a href="#functions">Functions</a></li>
-      <li><a href="#references">References</a></li>
-      <li><a href="#see-also">See also</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -830,7 +848,7 @@ specify arguments as strings.</p></li>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

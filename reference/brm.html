@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -57,7 +61,6 @@ users to apply prior distributions that actually reflect their beliefs.
 In addition, model fit can easily be assessed and compared with
 posterior predictive checks and leave-one-out cross-validation." />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -75,7 +78,7 @@ posterior predictive checks and leave-one-out cross-validation." />
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -89,7 +92,7 @@ posterior predictive checks and leave-one-out cross-validation." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -197,8 +200,9 @@ posterior predictive checks and leave-one-out cross-validation.</p>
   <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
   <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>data2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"no"</span>, <span class='st'>"yes"</span>, <span class='st'>"only"</span>),
+  <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='st'>"no"</span>,
   <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -222,6 +226,8 @@ posterior predictive checks and leave-one-out cross-validation.</p>
   <span class='kw'>stan_model_args</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(),
   <span class='kw'>save_dso</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>empty</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>rename</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='no'>...</span>
 )</pre>
 
@@ -261,37 +267,49 @@ for more help.</p></td>
     </tr>
     <tr>
       <th>autocor</th>
-      <td><p>An optional <code><a href='cor_brms.html'>cor_brms</a></code> object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for a
-description of the available correlation structures. Defaults to
+      <td><p>(Deprecated) An optional <code><a href='cor_brms.html'>cor_brms</a></code> object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for
+a description of the available correlation structures. Defaults to
 <code>NULL</code>, corresponding to no correlations. In multivariate models,
-<code>autocor</code> might also be a list of autocorrelation structures.</p></td>
+<code>autocor</code> might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within <code>formula</code>. See <code><a href='brmsformula.html'>brmsformula</a></code> for more details.</p></td>
+    </tr>
+    <tr>
+      <th>data2</th>
+      <td><p>A named <code>list</code> of objects containing data, which
+cannot be passed via argument <code>data</code>. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.</p></td>
     </tr>
     <tr>
       <th>cov_ranef</th>
-      <td><p>A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in <code>data</code> that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+      <td><p>(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in <code>data</code> that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the <code><a href='gr.html'>gr</a></code> and related functions. See
 <code><a href='../articles/brms_phylogenetics.html'>vignette("brms_phylogenetics")</a></code> for more details.</p></td>
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to <code>"no"</code>). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via <code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors 
-are not sampled, including the default improper priors used by <code>brm</code>. 
-See <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior samples 
-for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.</p></td>
+      <td><p>Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are <code>"no"</code> (the
+default), <code>"yes"</code>, and <code>"only"</code>. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+<code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors are not sampled,
+including the default improper priors used by <code>brm</code>. See
+<code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior
+samples for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -319,7 +337,7 @@ for basis construction of smoothing terms. See
       <td><p>(Deprecated) An optional character string containing
 self-defined  <span class="pkg">Stan</span> functions, which will be included in the functions
 block of the generated <span class="pkg">Stan</span> code. It is now recommended to use the
-<code>stanvars</code> argument for this purpose, instead.</p></td>
+<code>stanvars</code> argument for this purpose instead.</p></td>
     </tr>
     <tr>
       <th>fit</th>
@@ -446,11 +464,11 @@ named after the string supplied in <code>save_model</code>.</p></td>
     </tr>
     <tr>
       <th>save_dso</th>
-      <td><p>Logical, defaulting to <code>TRUE</code>, indicating whether the
-dynamic shared object (DSO) compiled from the C++ code for the model will
-be saved or not. If <code>TRUE</code>, we can draw samples from the same model in
-another <span style="R">R</span> session using the saved DSO (i.e., without compiling the C++
-code again).</p></td>
+      <td><p>(Deprecated) Logical, defaulting to <code>TRUE</code>, indicating
+whether the dynamic shared object (DSO) compiled from the C++ code for the
+model will be saved or not. If <code>TRUE</code>, we can draw samples from the
+same model in another <span style="R">R</span> session using the saved DSO (i.e., without
+compiling the C++ code again).</p></td>
     </tr>
     <tr>
       <th>file</th>
@@ -462,6 +480,17 @@ return the saved model object instead of refitting the model. As existing
 files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the <code>brmsfit</code> object for later usage.</p></td>
+    </tr>
+    <tr>
+      <th>empty</th>
+      <td><p>Logical. If <code>TRUE</code>, the Stan model is not created
+and compiled and the corresponding <code>'fit'</code> slot of the <code>brmsfit</code>
+object will be empty. This is useful if you have estimated a brms-created
+Stan model outside of <span class="pkg">brms</span> and want to feed it back into the package.</p></td>
+    </tr>
+    <tr>
+      <th>rename</th>
+      <td><p>For internal use only.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -548,13 +577,13 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit1</span>)
 
 <span class='co'># plot the MCMC chains as well as the posterior distributions</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='no'>fit1</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit1</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 <span class='co'># predict responses based on the fitted model</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span>(<span class='no'>fit1</span>))
 
 <span class='co'># plot conditional effects for each predictor</span>
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit1</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 <span class='co'># investigate model fit</span>
 <span class='fu'><a href='loo.brmsfit.html'>loo</a></span>(<span class='no'>fit1</span>)
@@ -567,7 +596,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>inhaler</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>sratio</a></span>(<span class='st'>"logit"</span>),
             <span class='kw'>prior</span> <span class='kw'>=</span> <span class='fu'><a href='set_prior.html'>set_prior</a></span>(<span class='st'>"normal(0,5)"</span>), <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>2</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit2</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='no'>fit2</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit2</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 <span class='fu'><a href='waic.brmsfit.html'>WAIC</a></span>(<span class='no'>fit2</span>)
 
 
@@ -576,8 +605,8 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='no'>fit3</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>time</span> <span class='kw'>|</span> <span class='fu'>cens</span>(<span class='no'>censored</span>) ~ <span class='no'>age</span> * <span class='no'>sex</span> + <span class='no'>disease</span> + (<span class='fl'>1</span><span class='kw'>|</span><span class='no'>patient</span>),
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>kidney</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='brmsfamily.html'>lognormal</a></span>())
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit3</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='no'>fit3</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit3</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit3</span>, <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit3</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 
 <span class='co'># Probit regression using the binomial family</span>
@@ -599,7 +628,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='no'>fit5</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>a1</span> - <span class='no'>a2</span>^<span class='no'>x</span>, <span class='no'>a1</span> + <span class='no'>a2</span> ~ <span class='fl'>1</span>, <span class='kw'>nl</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>),
             <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data5</span>, <span class='kw'>prior</span> <span class='kw'>=</span> <span class='no'>bprior5</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit5</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit5</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit5</span>), <span class='kw'>ask</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 
 
 <span class='co'># Normal model with heterogeneous variances</span>
@@ -609,7 +638,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 )
 <span class='no'>fit6</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='fu'><a href='brmsformula.html'>bf</a></span>(<span class='no'>y</span> ~ <span class='no'>x</span>, <span class='no'>sigma</span> ~ <span class='fl'>0</span> + <span class='no'>x</span>), <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>data_het</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit6</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='no'>fit6</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit6</span>)
 <span class='fu'><a href='conditional_effects.brmsfit.html'>conditional_effects</a></span>(<span class='no'>fit6</span>)
 
 <span class='co'># extract estimated residual SDs of both groups</span>
@@ -629,21 +658,23 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 <span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>future</span>)
 <span class='fu'><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></span>(<span class='no'>multiprocess</span>)
 <span class='no'>fit7</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/update.html'>update</a></span>(<span class='no'>fit7</span>, <span class='kw'>future</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+
+
+<span class='co'># fit a model manually via rstan</span>
+<span class='no'>scode</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_stancode.html'>make_stancode</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
+<span class='no'>sdata</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='make_standata.html'>make_standata</a></span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>)
+<span class='no'>stanfit</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>rstan</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan.html'>stan</a></span>(<span class='kw'>model_code</span> <span class='kw'>=</span> <span class='no'>scode</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>sdata</span>)
+<span class='co'># feed the Stan model back into brms</span>
+<span class='no'>fit8</span> <span class='kw'>&lt;-</span> <span class='fu'>brm</span>(<span class='no'>count</span> ~ <span class='no'>Trt</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>epilepsy</span>, <span class='kw'>empty</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>fit8</span>$<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='no'>stanfit</span>
+<span class='no'>fit8</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='rename_pars.html'>rename_pars</a></span>(<span class='no'>fit8</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit8</span>)
 }</div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#details">Details</a></li>
-      <li><a href="#references">References</a></li>
-      <li><a href="#see-also">See also</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
-    <h2>Author</h2>
-    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -654,7 +685,7 @@ with the R Package brms. <em>The R Journal</em>. 10(1), 395–411.
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

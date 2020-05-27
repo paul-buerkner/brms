@@ -17,23 +17,27 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -49,7 +53,6 @@ multiple missing value imputation, where the same model is fitted on multiple
 imputed data sets. Models can be run in parallel using the future
 package." />
 <meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -67,7 +70,7 @@ package." />
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -81,7 +84,7 @@ package." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -180,6 +183,7 @@ package.</p>
   <span class='no'>data</span>,
   <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span>(),
   <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>data2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>autocor</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>cov_ranef</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>sample_prior</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"no"</span>, <span class='st'>"yes"</span>, <span class='st'>"only"</span>),
@@ -187,6 +191,7 @@ package.</p>
   <span class='kw'>knots</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>stanvars</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>stan_funs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>recompile</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>combine</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>fit</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
   <span class='kw'>seed</span> <span class='kw'>=</span> <span class='fl'>NA</span>,
@@ -207,7 +212,7 @@ fitted. The details of model specification are explained in
     </tr>
     <tr>
       <th>data</th>
-      <td><p>A list of data.frames each of which will be used to fit a
+      <td><p>A <em>list</em> of data.frames each of which will be used to fit a
 separate model. Alternatively, a <code>mids</code> object from the <span class="pkg">mice</span>
 package.</p></td>
     </tr>
@@ -230,38 +235,51 @@ linear <code>gaussian</code> model is applied. In multivariate models,
 for more help.</p></td>
     </tr>
     <tr>
+      <th>data2</th>
+      <td><p>A <em>list</em> of named lists each of which will be used to fit a
+separate model. Each of the named lists contains objects representing data
+which cannot be passed via argument <code>data</code> (see <code><a href='brm.html'>brm</a></code> for
+examples). The length of the outer list should match the length of the list
+passed to the <code>data</code> argument.</p></td>
+    </tr>
+    <tr>
       <th>autocor</th>
-      <td><p>An optional <code><a href='cor_brms.html'>cor_brms</a></code> object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for a
-description of the available correlation structures. Defaults to
+      <td><p>(Deprecated) An optional <code><a href='cor_brms.html'>cor_brms</a></code> object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of <code><a href='cor_brms.html'>cor_brms</a></code> for
+a description of the available correlation structures. Defaults to
 <code>NULL</code>, corresponding to no correlations. In multivariate models,
-<code>autocor</code> might also be a list of autocorrelation structures.</p></td>
+<code>autocor</code> might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within <code>formula</code>. See <code><a href='brmsformula.html'>brmsformula</a></code> for more details.</p></td>
     </tr>
     <tr>
       <th>cov_ranef</th>
-      <td><p>A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in <code>data</code> that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+      <td><p>(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in <code>data</code> that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the <code><a href='gr.html'>gr</a></code> and related functions. See
 <code><a href='../articles/brms_phylogenetics.html'>vignette("brms_phylogenetics")</a></code> for more details.</p></td>
     </tr>
     <tr>
       <th>sample_prior</th>
-      <td><p>Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to <code>"no"</code>). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via <code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors 
-are not sampled, including the default improper priors used by <code>brm</code>. 
-See <code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior samples 
-for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.</p></td>
+      <td><p>Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are <code>"no"</code> (the
+default), <code>"yes"</code>, and <code>"only"</code>. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+<code><a href='hypothesis.brmsfit.html'>hypothesis</a></code>. Please note that improper priors are not sampled,
+including the default improper priors used by <code>brm</code>. See
+<code><a href='set_prior.html'>set_prior</a></code> on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See <code><a href='brmsformula.html'>brmsformula</a></code> how to obtain prior
+samples for the intercept. If <code>sample_prior</code> is set to <code>"only"</code>,
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -289,7 +307,15 @@ for basis construction of smoothing terms. See
       <td><p>(Deprecated) An optional character string containing
 self-defined  <span class="pkg">Stan</span> functions, which will be included in the functions
 block of the generated <span class="pkg">Stan</span> code. It is now recommended to use the
-<code>stanvars</code> argument for this purpose, instead.</p></td>
+<code>stanvars</code> argument for this purpose instead.</p></td>
+    </tr>
+    <tr>
+      <th>recompile</th>
+      <td><p>Logical, indicating whether the Stan model should be
+recompiled for every imputed data set. Defaults to <code>FALSE</code>. If
+<code>NULL</code>, <code>brm_multiple</code> tries to figure out internally, if recompilation
+is necessary, for example because data-dependent priors have changed.
+Using the default of no recompilation should be fine in most cases.</p></td>
     </tr>
     <tr>
       <th>combine</th>
@@ -355,7 +381,7 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
 <span class='co'># fit the model using brms</span>
 <span class='no'>fit_imp2</span> <span class='kw'>&lt;-</span> <span class='fu'>brm_multiple</span>(<span class='no'>bmi</span> ~ <span class='no'>age</span> + <span class='no'>hyp</span> + <span class='no'>chl</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='no'>imp</span>, <span class='kw'>chains</span> <span class='kw'>=</span> <span class='fl'>1</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit_imp2</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.html'>plot</a></span>(<span class='no'>fit_imp2</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='st'>"^b_"</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/plot.html'>plot</a></span>(<span class='no'>fit_imp2</span>, <span class='kw'>pars</span> <span class='kw'>=</span> <span class='st'>"^b_"</span>)
 <span class='co'># investigate convergence of the original models</span>
 <span class='no'>fit_imp2</span>$<span class='no'>rhats</span>
 
@@ -366,17 +392,10 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span>(<span class='no'>fit_imp3</span>)
 }</div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#details">Details</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
-    <h2>Author</h2>
-    <p>Paul-Christian Buerkner <a href='mailto:paul.buerkner@gmail.com'>paul.buerkner@gmail.com</a></p>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -387,7 +406,7 @@ is stored in the <code>brmsfit</code> object for later usage.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

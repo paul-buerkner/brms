@@ -12,20 +12,20 @@
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Parameterization of Response Distributions in brms">
-<meta property="og:description" content="">
+<meta property="og:description" content="brms">
 <meta property="og:image" content="/logo.png">
-<meta name="twitter:card" content="summary">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body>
+<body data-spy="scroll" data-target="#toc">
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">brms</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.13.0</span>
       </span>
     </div>
 
@@ -119,10 +119,10 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1>Parameterization of Response Distributions in brms</h1>
+      <h1 data-toc-skip>Parameterization of Response Distributions in brms</h1>
                         <h4 class="author">Paul Bürkner</h4>
             
-            <h4 class="date">2020-01-11</h4>
+            <h4 class="date">2020-05-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_families.Rmd"><code>vignettes/brms_families.Rmd</code></a></small>
       <div class="hidden name"><code>brms_families.Rmd</code></div>
@@ -135,7 +135,7 @@
 <div id="notation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#notation" class="anchor"></a>Notation</h2>
-<p>Throughout this vignette, we denote values of the response variable as <span class="math inline">\(y\)</span>, a density function as <span class="math inline">\(f\)</span>, and use <span class="math inline">\(\mu\)</span> to refer to the main model parameter, which is usually the mean of the response distribution or some closely related quantity. In a regression framework, <span class="math inline">\(\mu\)</span> is not estimated directly but computed as <span class="math inline">\(\mu = g(\eta)\)</span>, where <span class="math inline">\(\eta\)</span> is a predictor term (see <code><a href="https://rdrr.io/r/utils/help.html">help(brmsformula)</a></code> for details) and <span class="math inline">\(g\)</span> is the response function (i.e., inverse of the link function).</p>
+<p>Throughout this vignette, we denote values of the response variable as <span class="math inline">\(y\)</span>, a density function as <span class="math inline">\(f\)</span>, and use <span class="math inline">\(\mu\)</span> to refer to the main model parameter, which is usually the mean of the response distribution or some closely related quantity. In a regression framework, <span class="math inline">\(\mu\)</span> is not estimated directly but computed as <span class="math inline">\(\mu = g(\eta)\)</span>, where <span class="math inline">\(\eta\)</span> is a predictor term (see <code><a href="../reference/brmsformula.html">help(brmsformula)</a></code> for details) and <span class="math inline">\(g\)</span> is the response function (i.e., inverse of the link function).</p>
 </div>
 <div id="location-shift-models" class="section level2">
 <h2 class="hasAnchor">
@@ -164,7 +164,7 @@ f(y) = \frac{1}{\sqrt{2\pi}\sigma}
 <a href="#binary-and-count-data-models" class="anchor"></a>Binary and count data models</h2>
 <p>The density of the <strong>binomial</strong> family is given by <span class="math display">\[
 f(y) = {N \choose y} \mu^{y} (1-\mu)^{N - y}
-\]</span> where <span class="math inline">\(N\)</span> is the number of trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>. When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y \in \{0,1\}\)</span>), the bernoulli distribution for binary data arises. <strong>binomial</strong> and <strong>bernoulli</strong> families are distinguished in brms as the bernoulli distribution has its own implementation in Stan that is computationlly more efficient.</p>
+\]</span> where <span class="math inline">\(N\)</span> is the number of trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>. When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y \in \{0,1\}\)</span>), the <strong>bernoulli</strong> distribution for binary data arises.</p>
 <p>For <span class="math inline">\(y \in \mathbb{N}_0\)</span>, the density of the <strong>poisson</strong> family is given by <span class="math display">\[
 f(y) = \frac{\mu^{y}}{y!} \exp(-\mu)
 \]</span> The density of the <strong>negbinomial</strong> (negative binomial) family is <span class="math display">\[
@@ -267,7 +267,7 @@ f(y) = \frac{\prod_{k=1}^{y} g(\eta - \tau_{k})
 \]</span> For the logit link, this can be simplified to <span class="math display">\[
 f(y) = \frac{\exp \left(\sum_{k=1}^{y} (\eta - \tau_{k}) \right)}
   {\sum_{k=0}^K \exp\left(\sum_{j=1}^k (\eta - \tau_{j}) \right)}
-\]</span> The linear predictor <span class="math inline">\(\eta\)</span> can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads to category specific effects (for details on how to specify them see <code><a href="https://rdrr.io/r/utils/help.html">help(brm)</a></code>). Note that <strong>cumulative</strong> and <strong>sratio</strong> models use <span class="math inline">\(\tau - \eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong> use <span class="math inline">\(\eta - \tau\)</span>. This is done to ensure that larger values of <span class="math inline">\(\eta\)</span> increase the probability of <em>higher</em> reponse categories.</p>
+\]</span> The linear predictor <span class="math inline">\(\eta\)</span> can be generalized to also depend on the category <span class="math inline">\(k\)</span> for a subset of predictors. This leads to category specific effects (for details on how to specify them see <code><a href="../reference/brm.html">help(brm)</a></code>). Note that <strong>cumulative</strong> and <strong>sratio</strong> models use <span class="math inline">\(\tau - \eta\)</span>, whereas <strong>cratio</strong> and <strong>acat</strong> use <span class="math inline">\(\eta - \tau\)</span>. This is done to ensure that larger values of <span class="math inline">\(\eta\)</span> increase the probability of <em>higher</em> reponse categories.</p>
 <p>The <strong>categorical</strong> family is currently only implemented with the multivariate logit link function and has density <span class="math display">\[
 f(y) = \mu_{y} = \frac{\exp(\eta_{y})}{\sum_{k = 1}^{K} \exp(\eta_{k})}
 \]</span> Note that <span class="math inline">\(\eta\)</span> does also depend on the category <span class="math inline">\(k\)</span>. For reasons of identifiability, <span class="math inline">\(\eta_{1}\)</span> is set to <span class="math inline">\(0\)</span>. A generalization of the <strong>categorical</strong> family to more than one trial is the <strong>multinomial</strong> family with density <span class="math display">\[
@@ -294,26 +294,11 @@ f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
 </div>
   </div>
 
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-        <div id="tocnav">
-      <h2 class="hasAnchor">
-<a href="#tocnav" class="anchor"></a>Contents</h2>
-      <ul class="nav nav-pills nav-stacked">
-<li><a href="#notation">Notation</a></li>
-      <li><a href="#location-shift-models">Location shift models</a></li>
-      <li><a href="#binary-and-count-data-models">Binary and count data models</a></li>
-      <li><a href="#survival-models">Survival models</a></li>
-      <li><a href="#extreme-value-models">Extreme value models</a></li>
-      <li><a href="#response-time-models">Response time models</a></li>
-      <li><a href="#quantile-regression">Quantile regression</a></li>
-      <li><a href="#probability-models">Probability models</a></li>
-      <li><a href="#circular-models">Circular models</a></li>
-      <li><a href="#ordinal-and-categorical-models">Ordinal and categorical models</a></li>
-      <li><a href="#zero-inflated-and-hurdle-models">Zero-inflated and hurdle models</a></li>
-      </ul>
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
 </div>
-      </div>
 
 </div>
 
@@ -324,7 +309,7 @@ f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>
