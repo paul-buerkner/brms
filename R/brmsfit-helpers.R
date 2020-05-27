@@ -636,7 +636,7 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 
 # extract argument names of a post-processing method
 arg_names <- function(method) {
-  opts <- c("posterior_predict", "pp_expect", "log_lik")
+  opts <- c("posterior_predict", "posterior_epred", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
   c(out) <- names(formals(prepare_predictions.brmsfit))
