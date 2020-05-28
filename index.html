@@ -136,29 +136,30 @@
 
 <p><br><br><br></p>
 <div style="text-align:left; padding:-40px;">
-<a href="http://mc-stan.org"> <img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width="100" alt="Stan Logo"></a>
+<a href="http://mc-stan.org"> <img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width="100" alt="Stan Logo"><img src="https://raw.githubusercontent.com/paul-buerkner/brms/master/man/figures/brms.png" width="100" alt="brms Logo"></a>
 <h2>
 <strong>brms</strong>
 </h2>
 <h4>
 Bayesian regression models using Stan
 </h4>
-<img src="https://raw.githubusercontent.com/paul-buerkner/brms/master/man/figures/brms.png" align="right" width="100" alt="brms Logo">
 </div>
 <hr>
 <p>The <strong>brms</strong> package provides an interface to fit Bayesian generalized (non-)linear multivariate multilevel models using Stan. The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses.</p>
-<p>A wide range of distributions and link functions are supported, allowing users to fit – among others – linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, missing value imputation, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Multivariate models (i.e. models with multiple response variables) can be fitted, as well. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks, leave-one-out cross-validation, and Bayes factors.</p>
+<p>A wide range of distributions and link functions are supported, allowing users to fit – among others – linear, robust linear, count data, survival, response times, ordinal, zero-inflated, hurdle, and even self-defined mixture models all in a multilevel context. Further modeling options include non-linear and smooth terms, auto-correlation structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. Model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation.</p>
 <div id="getting-started" class="section level2">
 <h2 class="hasAnchor">
 <a href="#getting-started" class="anchor"></a>Getting Started</h2>
-<p>If you are new to <strong>brms</strong> we recommend starting with the <a href="http://mc-stan.org/brms/articles/">vignettes</a> and these other resources:</p>
+<p>If you are new to <strong>brms</strong> we recommend starting with the <a href="https://paul-buerkner.github.io/brms/articles/">vignettes</a> and these other resources:</p>
 <ul>
 <li>
 <a href="https://www.jstatsoft.org/article/view/v080i01">Introduction to brms</a> (Journal of Statistical Software)</li>
 <li>
-<a href="https://arxiv.org/abs/1705.11123">Advanced multilevel modeling with brms</a> (arXiv preprint)</li>
+<a href="https://journal.r-project.org/archive/2018/RJ-2018-017/index.html">Advanced multilevel modeling with brms</a> (The R Journal)</li>
 <li>
-<a href="https://paul-buerkner.github.io/blog/old-brms-blogposts/">Blog posts</a> (List of blog posts about brms)</li>
+<a href="https://paul-buerkner.github.io/blog/brms-blogposts/">Blog posts</a> (List of blog posts about brms)</li>
+<li>
+<a href="http://discourse.mc-stan.org/">Ask a question</a> (Stan Forums on Discourse)</li>
 </ul>
 </div>
 <div id="installation" class="section level2">
@@ -170,8 +171,8 @@ Bayesian regression models using Stan
 <div class="sourceCode" id="cb2"><pre class="r"><span class="kw">if</span> (!<span class="fu"><a href="https://rdrr.io/r/base/library.html">require</a></span>(<span class="no">devtools</span>)) {
   <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"devtools"</span>)
 }
-<span class="kw pkg">devtools</span><span class="kw ns">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span>(<span class="st">"stan-dev/brms"</span>, <span class="kw">build_vignettes</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></div>
-<p>You can also set <code>build_vignettes=FALSE</code> for a faster installation from GitHub (the vignettes can always be accessed online anytime at <a href="http://mc-stan.org/brms/articles/">mc-stan.org/brms/articles</a>).</p>
+<span class="kw pkg">devtools</span><span class="kw ns">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span>(<span class="st">"paul-buerkner/brms"</span>, <span class="kw">build_vignettes</span> <span class="kw">=</span> <span class="fl">FALSE</span>)</pre></div>
+<p>You can also set <code>build_vignettes=TRUE</code> but this will slow down the installation drastically (the vignettes can always be accessed online anytime at <a href="https://paul-buerkner.github.io/brms/articles/">paul-buerkner.github.io/brms/articles</a>).</p>
 </div>
 
   </div>
