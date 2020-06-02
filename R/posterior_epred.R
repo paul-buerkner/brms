@@ -41,7 +41,11 @@
 #' str(ppe)
 #' }
 #' 
-#' @export 
+#' @aliases posterior_epred
+#' @method posterior_epred brmsfit
+#' @importFrom rstantools posterior_epred
+#' @export
+#' @export posterior_epred
 posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     re.form = NULL, resp = NULL, dpar = NULL,
                                     nlpar = NULL, nsamples = NULL, subset = NULL, 
@@ -60,12 +64,6 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     prep, scale = "response", dpar = dpar, 
     nlpar = nlpar, sort = sort, summary = FALSE
   )
-}
-
-#' @rdname posterior_epred.brmsfit
-#' @export
-posterior_epred <- function(object, ...) {
-  UseMethod("posterior_epred")
 }
 
 #' @export

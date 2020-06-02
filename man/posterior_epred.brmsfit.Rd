@@ -19,8 +19,6 @@
   sort = FALSE,
   ...
 )
-
-posterior_epred(object, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
