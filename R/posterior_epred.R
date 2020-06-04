@@ -355,15 +355,15 @@ posterior_epred_bernoulli <- function(prep) {
 }
 
 posterior_epred_poisson <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_negbinomial <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_geometric <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_discrete_weibull <- function(prep) {

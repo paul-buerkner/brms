@@ -1,3 +1,12 @@
+# brms 2.13.0++
+
+### Other Changes
+
+* Adjust behavior of the `rate` addition term so that it also
+affects the `shape` parameter in `negbinomial` models thanks to
+Edward Abraham. (#915)
+
+
 # brms 2.13.0
 
 ### New Features
