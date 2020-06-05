@@ -39,7 +39,7 @@ predictors that are on an ordinal or higher scale (Bürkner & Charpentier, in
 review). A predictor, which we want to model as monotonic (i.e., having a
 monotonically increasing or decreasing relationship with the response), must
 either be integer valued or an ordered factor. As opposed to a continuous
-predictor, predictor categories (or integers) are not assumend to be equidistant
+predictor, predictor categories (or integers) are not assumed to be equidistant
 with respect to their effect on the response variable. Instead, the distance
 between adjacent predictor categories (or integers) is estimated from the data
 and may vary across categories. This is realized by parameterizing as follows:
@@ -130,7 +130,7 @@ loo(fit1, fit2, fit3)
 
 The monotonic model fits better than the continuous model, which is not
 surprising given that the relationship between `income` and `ls` is non-linear.
-The monotonic and the unorderd factor model have almost identical fit in this
+The monotonic and the unordered factor model have almost identical fit in this
 example, but this may not be the case for other data sets.
 
 ## Setting Prior Distributions
@@ -139,7 +139,7 @@ In the previous monotonic model, we have implicitly assumed that all differences
 between adjacent categories were a-priori the same, or formulated correctly, had
 the same prior distribution. In the following, we want to show how to change
 this assumption. The canonical prior distribution of a simplex parameter is the
-Dirchlet distribution, a multivariate generalization of the beta distribution.
+Dirichlet distribution, a multivariate generalization of the beta distribution.
 It is non-zero for all valid simplexes (i.e., $\zeta_i \in [0,1]$ and $\sum_{i =
 1}^D \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single
 parameter $\alpha$ of the same length as $\zeta$. The higher $\alpha_i$ the
