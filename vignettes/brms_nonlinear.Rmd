@@ -100,7 +100,7 @@ formula should be treated as non-linear.
 
 In contrast to generalized linear models, priors on population-level parameters
 (i.e., 'fixed effects') are often mandatory to identify a non-linear model.
-Thus, **brms** requires the user to explicitely specify these priors. In the
+Thus, **brms** requires the user to explicitly specify these priors. In the
 present example, we used a `normal(1, 2)` prior on (the population-level
 intercept of) `b1`, while we used a `normal(0, 2)` prior on (the
 population-level intercept of) `b2`. Setting priors is a non-trivial task in all
@@ -108,7 +108,7 @@ kinds of models, especially in non-linear models, so you should always invest
 some time to think of appropriate priors. Quite often, you may be forced to
 change your priors after fitting a non-linear model for the first time, when you
 observe different MCMC chains converging to different posterior regions. This is
-a clear sign of an idenfication problem and one solution is to set stronger
+a clear sign of an identification problem and one solution is to set stronger
 (i.e., more narrow) priors.
 
 To obtain summaries of the fitted model, we apply
@@ -151,7 +151,7 @@ loo(fit1, fit2)
 
 Since smaller `LOOIC` values indicate better model fit, it is immediately
 evident that the non-linear model fits the data better, which is of course not
-too surpirsing since we simulated the data from exactly that model.
+too surprising since we simulated the data from exactly that model.
 
 ## A Real-World Non-Linear model
 
