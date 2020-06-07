@@ -13,7 +13,8 @@ r_check_args: '--ignore-vignettes'
 
 r_github_packages: 
   - stan-dev/cmdstanr
-
+  - stan-dev/rstantools
+  
 addons:
   apt:
     packages:
