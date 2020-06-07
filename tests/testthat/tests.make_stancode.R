@@ -271,6 +271,12 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "lscale_1[2][1] = par_lscale_1_2_1;")
   expect_match2(scode, "target += normal_lpdf(lscale_1[2][1] | 0, 10)")
   
+  # test that improper base priors are correctly recognized (#919)
+  prior <- prior(constant(-1), b, coef = x2)
+  scode <- make_stancode(y ~ x1*x2, dat, prior = prior)
+  expect_match2(scode, "real par_b_1;")
+  expect_match2(scode, "b[3] = par_b_3;")
+  
   # test error messages
   prior <- prior(normal(0, 1), Intercept) + 
     prior(constant(3), Intercept, coef = 2)

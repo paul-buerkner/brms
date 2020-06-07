@@ -1,5 +1,10 @@
 # brms 2.13.0++
 
+### Bug Fixes
+
+* Fix generated Stan Code of models with improper global priors and
+`constant` priors on some coefficients thanks to Frank Weber. (#919)
+
 ### Other Changes
 
 * Adjust behavior of the `rate` addition term so that it also
