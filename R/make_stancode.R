@@ -246,6 +246,8 @@ stancode <- function(object, ...) {
 expand_include_statements <- function(model) {
   path <- system.file("chunks", package = "brms")
   includes <- get_matches("#include '[^']+'", model)
+  # removal of duplicates could make code generation easier in the future
+  includes <- unique(includes)
   files <- gsub("(#include )|(')", "", includes)
   for (i in seq_along(includes)) {
     code <- readLines(paste0(path, "/", files[i]))
