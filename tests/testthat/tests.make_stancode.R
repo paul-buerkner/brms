@@ -275,6 +275,12 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "lscale_1[2][1] = par_lscale_1_2_1;")
   expect_match2(scode, "target += normal_lpdf(lscale_1[2][1] | 0, 10)")
   
+  # test that improper base priors are correctly recognized (#919)
+  prior <- prior(constant(-1), b, coef = x2)
+  scode <- make_stancode(y ~ x1*x2, dat, prior = prior)
+  expect_match2(scode, "real par_b_1;")
+  expect_match2(scode, "b[3] = par_b_3;")
+  
   # test error messages
   prior <- prior(normal(0, 1), Intercept) + 
     prior(constant(3), Intercept, coef = 2)
@@ -1406,21 +1412,16 @@ test_that("Stan code of quantile regression models is correct", {
 test_that("Stan code of addition term 'rate' is correct", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   scode <- make_stancode(y | rate(time) ~ x, data, poisson())
-  expect_match2(scode, "mu = Intercept + Xc * b + log_denom;")
+  expect_match2(scode, "target += poisson_log_lpmf(Y | mu + log_denom);")
   
-  scode <- make_stancode(
-    bf(y | rate(time) ~ a, a ~ x, nl = TRUE), 
-    data = data, family = poisson(),
-    prior = prior(normal(0, 1), nlpar = "a")
-  )
-  expect_match2(scode, "mu[n] = nlp_a[n]  + log_denom[n];")
+  scode <- make_stancode(y | rate(time) ~ x, data, poisson("identity"))
+  expect_match2(scode, "target += poisson_lpmf(Y | mu .* denom);")
   
-  scode <- make_stancode(
-    bf(y | rate(time) ~ a, a ~ x, nl = TRUE, loop = FALSE), 
-    data = data, family = poisson(),
-    prior = prior(normal(0, 1), nlpar = "a")
-  )
-  expect_match2(scode, "mu = nlp_a  + log_denom;")
+  scode <- make_stancode(y | rate(time) ~ x, data, negbinomial())
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
+  
+  scode <- make_stancode(y | rate(time) + cens(1) ~ x, data, geometric())
+  expect_match2(scode, "target += neg_binomial_2_lpmf(Y[n] | mu[n] * denom[n], 1 * denom[n]);")
 })
 
 test_that("Stan code of GEV models is correct", {

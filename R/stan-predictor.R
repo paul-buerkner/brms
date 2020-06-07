@@ -21,7 +21,6 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
     stan_gp(x, ...),
     stan_ac(x, ...),
     stan_offset(x, ...),
-    stan_rate(x, ...),
     stan_bhaz(x, ...),
     stan_special_prior_global(x, ...)
   )
@@ -75,7 +74,6 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = c("", ""), ...) {
     c(wsp(nlpars), wsp(covars), " ( ", " ) "), 
     c(new_nlpars, new_covars, "(", ")")
   )
-  str_add_list(out) <- stan_rate(x, loop = x$loop)
   # possibly transform eta in the transformed params block
   str_add(out$model_def) <- glue(
     "  // initialize non-linear predictor term\n",
@@ -1473,23 +1471,6 @@ stan_offset <- function(bterms, ...) {
     # use 'offsets' as 'offset' will be reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
     str_add(out$eta) <- glue(" + offsets{p}")
-  }
-  out
-}
-
-# add the denominator of a rate response to the Stan predictor term
-# @param loop is the denominator added within a loop over observations?
-stan_rate <- function(bterms, loop = FALSE, ...) {
-  loop <- as_one_logical(loop)
-  out <- list()
-  if (is.formula(bterms$adforms$rate)) {
-    # TODO: support other link functions as well?
-    if (bterms$family$link != "log") {
-      stop2("The 'rate' addition term requires a log-link.")
-    }
-    resp <- usc(bterms$resp)
-    n <- str_if(loop, "[n]")
-    str_add(out$eta) <- glue(" + log_denom{resp}{n}")
   }
   out
 }

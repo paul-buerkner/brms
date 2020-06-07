@@ -170,6 +170,7 @@
 #'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
 #'   object will be empty. This is useful if you have estimated a brms-created
 #'   Stan model outside of \pkg{brms} and want to feed it back into the package.
+#' @param rename For internal use only. 
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
 #' @param ... Further arguments passed to Stan that is to
@@ -372,7 +373,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 backend = getOption("stan_backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                file = NULL, empty = FALSE, ...) {
+                file = NULL, empty = FALSE, rename = TRUE, ...) {
   
   # optionally load brmsfit from file
   if (!is.null(file)) {
@@ -395,6 +396,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
+  rename <- as_one_logical(rename)
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
@@ -470,7 +472,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   x$fit <- do_call(fit_model, fit_args)
 
   # rename parameters to have human readable names
-  x <- rename_pars(x)
+  if (rename) {
+    x <- rename_pars(x) 
+  }
   if (!is.null(file)) {
     write_brmsfit(x, file)
   }

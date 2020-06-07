@@ -165,7 +165,7 @@ test_that("conditional_effects has reasonable ouputs", {
 })
 
 test_that("plot of conditional_effects has reasonable outputs", {
-  ggplot2::theme_set(theme_black())
+  SW(ggplot2::theme_set(theme_black()))
   N <- 90
   marg_results <- data.frame(
     effect1__ = rpois(N, 20), 

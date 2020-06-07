@@ -297,7 +297,11 @@ terms_ad <- function(formula, family = NULL, check_response = TRUE) {
     ad <- get_matches("(?<=\\|)[^~]*(?=~)", str_formula, perl = TRUE)
     valid_ads <- family_info(family, "ad")
     if (length(ad)) {
-      ad_terms <- attr(terms(formula(paste("~", ad))), "term.labels")
+      ad_terms <- terms(str2formula(ad))
+      if (length(attr(ad_terms, "offset"))) {
+        stop2("Offsets are not allowed in addition terms.")
+      }
+      ad_terms <- attr(ad_terms, "term.labels")
       for (a in ad_funs) {
         matches <- grep(paste0("^(resp_)?", a, "\\(.*\\)$"), ad_terms)
         if (length(matches) == 1L) {

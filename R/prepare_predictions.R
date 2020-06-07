@@ -796,7 +796,7 @@ prepare_predictions_data <- function(bterms, sdata, data, stanvars = NULL, ...) 
   resp <- usc(combine_prefix(bterms))
   vars <- c(
     "Y", "trials", "ncat", "nthres", "se", "weights", 
-    "dec", "cens", "rcens", "lb", "ub"
+    "denom", "dec", "cens", "rcens", "lb", "ub"
   )
   vars <- paste0(vars, resp)
   vars <- intersect(vars, names(sdata))

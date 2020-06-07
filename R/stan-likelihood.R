@@ -261,17 +261,38 @@ stan_llh_dpar_usc_logit <- function(dpar, bterms) {
   str_if(usc_logit && !cens_or_trunc, "_logit")
 }
 
-# prepare the code for 'sigma' in the likelihood statement
+# add 'se' to 'sigma' within the Stan likelihood
 stan_llh_add_se <- function(sigma, bterms, reqn, resp = "") {
-  if (is.formula(bterms$adforms$se)) {
-    nse <- str_if(reqn, "[n]")
-    if (no_sigma(bterms)) {
-      sigma <- glue("se{resp}{nse}") 
-    } else {
-      sigma <- glue("sqrt(square({sigma}) + se2{resp}{nse})")
-    }
+  if (!is.formula(bterms$adforms$se)) {
+    return(sigma) 
+  }
+  nse <- str_if(reqn, "[n]")
+  if (no_sigma(bterms)) {
+    sigma <- glue("se{resp}{nse}") 
+  } else {
+    sigma <- glue("sqrt(square({sigma}) + se2{resp}{nse})")
   }
   sigma
+}
+
+# multiply 'dpar' by the 'rate' denominator within the Stan likelihood
+# @param log add the rate denominator on the log scale if sensible?
+stan_llh_multiply_rate_denom <- function(dpar, bterms, reqn, resp = "", 
+                                         log = FALSE) {
+  if (!is.formula(bterms$adforms$rate)) {
+    return(dpar)
+  }
+  ndenom <- str_if(reqn, "[n]")
+  denom <- glue("denom{resp}{ndenom}")
+  cens_or_trunc <- stan_llh_adj(bterms, c("cens", "trunc"))
+  if (log && bterms$family$link == "log" && !cens_or_trunc) {
+    denom <- glue("log_{denom}")
+    operator <- "+"
+  } else {
+    is_pred <- dpar %in% c("mu", names(bterms$dpars))
+    operator <- str_if(reqn || !is_pred, "*", ".*")
+  }
+  glue("{dpar} {operator} {denom}")
 }
 
 # check if the log-liklihood needs to be adjused
@@ -441,6 +462,7 @@ stan_llh_poisson <- function(bterms, resp = "", mix = "") {
     reqn <- stan_llh_adj(bterms) || nzchar(mix)
     p <- stan_llh_dpars(bterms, reqn, resp, mix)
     lpdf <- stan_llh_simple_lpdf("poisson", "log", bterms)
+    p$mu <- stan_llh_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
     out <- sdist(lpdf, p$mu)
   }
   out
@@ -454,6 +476,8 @@ stan_llh_negbinomial <- function(bterms, resp = "", mix = "") {
   } else {
     reqn <- stan_llh_adj(bterms) || nzchar(mix)
     p <- stan_llh_dpars(bterms, reqn, resp, mix)
+    p$mu <- stan_llh_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
+    p$shape <- stan_llh_multiply_rate_denom(p$shape, bterms, reqn, resp)
     lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
     out <- sdist(lpdf, p$mu, p$shape)
   }
@@ -463,8 +487,11 @@ stan_llh_negbinomial <- function(bterms, resp = "", mix = "") {
 stan_llh_geometric <- function(bterms, resp = "", mix = "") {
   reqn <- stan_llh_adj(bterms) || nzchar(mix)
   p <- stan_llh_dpars(bterms, reqn, resp, mix)
+  p$shape <- "1"
+  p$mu <- stan_llh_multiply_rate_denom(p$mu, bterms, reqn, resp, log = TRUE)
+  p$shape <- stan_llh_multiply_rate_denom(p$shape, bterms, reqn, resp)
   lpdf <- stan_llh_simple_lpdf("neg_binomial_2", "log", bterms)
-  sdist(lpdf, p$mu, "1")
+  sdist(lpdf, p$mu, p$shape)
 }
 
 stan_llh_binomial <- function(bterms, resp = "", mix = "") {
@@ -732,7 +759,7 @@ stan_llh_custom <- function(bterms, resp = "", mix = "") {
   # addition terms contain the response in their variable name
   var_names <- sub("\\[.+$", "", family$vars)
   var_indices <- sub("^.+(?=\\[)", "", family$vars, perl = TRUE)
-  is_var_adterms <- var_names %in% c("se", "trials", "dec") ||
+  is_var_adterms <- var_names %in% c("se", "trials", "dec") |
     grepl("^((vint)|(vreal))[[:digit:]]+$", var_names)
   var_resps <- ifelse(is_var_adterms, resp, "")
   vars <- paste0(var_names, var_resps, var_indices)

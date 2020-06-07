@@ -226,8 +226,8 @@ test_that("bridgesampling methods work correctly", {
 })
 
 test_that("varying slopes without overall effects work", {
-  fit1 <- brm(count ~ zAge + zBase * Trt +
-                (as.numeric(visit) | patient),
+  epilepsy$visit_num <- as.numeric(epilepsy$visit)
+  fit1 <- brm(count ~ zAge + zBase * Trt + (visit_num | patient),
               data = epilepsy, family = gaussian(),
               chains = 2, refresh = 0)
   print(fit1)

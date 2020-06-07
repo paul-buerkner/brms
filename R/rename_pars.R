@@ -571,7 +571,7 @@ compute_xi.brmsfit <- function(x, ...) {
 }
 
 #' @export
-compute_xi.mvbrmsdraws <- function(x, fit, ...) {
+compute_xi.mvbrmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   for (resp in names(x$resps)) {
     fit <- compute_xi(x$resps[[resp]], fit = fit, ...)
@@ -580,7 +580,7 @@ compute_xi.mvbrmsdraws <- function(x, fit, ...) {
 }
 
 #' @export
-compute_xi.brmsdraws <- function(x, fit, ...) {
+compute_xi.brmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
   tmp_xi_name <- paste0("tmp_xi", resp)

@@ -355,9 +355,6 @@ get_dpar <- function(prep, dpar, i = NULL, ilink = NULL) {
   } else {
     out <- x
   }
-  if (dpar == "sigma") {
-    out <- add_sigma_se(out, prep, i = i)
-  }
   out
 }
 
@@ -490,17 +487,41 @@ get_se <- function(prep, i = NULL) {
 }
 
 # add user defined standard errors to 'sigma'
+# @param sigma draws of the 'sigma' parameter
 add_sigma_se <- function(sigma, prep, i = NULL) {
-  needs_se <- "se" %in% names(prep$data) && 
-    !isTRUE(attr(sigma, "se_added")) &&
-    !isTRUE(grepl("_cov$", prep$family$fun))
-  if (needs_se) {
-    # 'se' will be incorporated directly into 'sigma'
-    sigma <- sqrt(get_se(prep, i = i)^2 + sigma^2)
-    # make sure not to add 'se' twice
-    attr(sigma, "se_added") <- TRUE
+  if ("se" %in% names(prep$data)) {
+    se <- get_se(prep, i = i)
+    sigma <- sqrt(se^2 + sigma^2)
   } 
   sigma
+}
+
+# extract user-defined rate denominators
+get_rate_denom <- function(prep, i = NULL) {
+  stopifnot(is.brmsprep(prep))
+  denom <- as.vector(prep$data[["denom"]])
+  if (!is.null(denom)) {
+    if (!is.null(i)) {
+      denom <- denom[i]
+    }
+    if (length(denom) > 1L) {
+      dim <- c(prep$nsamples, length(denom))
+      denom <- as_draws_matrix(denom, dim = dim)
+    }
+  } else {
+    denom <- 1
+  }
+  denom
+}
+
+# multiply a parameter with the 'rate' denominator
+# @param dpar draws of the distributional parameter
+multiply_dpar_rate_denom <- function(dpar, prep, i = NULL) {
+  if ("denom" %in% names(prep$data)) {
+    denom <- get_rate_denom(prep, i = i)
+    dpar <- dpar * denom
+  }
+  dpar
 }
 
 # return samples of ordinal thresholds for observation i
@@ -636,7 +657,7 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
 
 # extract argument names of a post-processing method
 arg_names <- function(method) {
-  opts <- c("posterior_predict", "pp_expect", "log_lik")
+  opts <- c("posterior_predict", "posterior_epred", "log_lik")
   method <- match.arg(method, opts)
   out <- names(formals(paste0(method, ".brmsfit")))
   c(out) <- names(formals(prepare_predictions.brmsfit))

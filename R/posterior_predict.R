@@ -303,20 +303,24 @@ validate_pp_method <- function(method) {
 # @param A vector of length prep$nsamples containing samples
 #   from the posterior predictive distribution
 posterior_predict_gaussian <- function(i, prep, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
   rcontinuous(
     n = prep$nsamples, dist = "norm",
-    mean = get_dpar(prep, "mu", i = i), 
-    sd = get_dpar(prep, "sigma", i = i),
+    mean = mu, sd = sigma,
     lb = prep$data$lb[i], ub = prep$data$ub[i]
   )
 }
 
 posterior_predict_student <- function(i, prep, ...) {
+  nu <- get_dpar(prep, "nu", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
   rcontinuous(
     n = prep$nsamples, dist = "student_t", 
-    df = get_dpar(prep, "nu", i = i), 
-    mu = get_dpar(prep, "mu", i = i), 
-    sigma = get_dpar(prep, "sigma", i = i),
+    df = nu, mu = mu, sigma = sigma,
     lb = prep$data$lb[i], ub = prep$data$ub[i]
   )
 }
@@ -341,11 +345,13 @@ posterior_predict_shifted_lognormal <- function(i, prep, ...) {
 }
 
 posterior_predict_skew_normal <- function(i, prep, ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
   rcontinuous(
     n = prep$nsamples, dist = "skew_normal",
-    mu = get_dpar(prep, "mu", i = i),
-    sigma = get_dpar(prep, "sigma", i = i),
-    alpha = get_dpar(prep, "alpha", i = i),
+    mu = mu, sigma = sigma, alpha = alpha,
     lb = prep$data$lb[i], ub = prep$data$ub[i]
   )
 }
@@ -479,28 +485,36 @@ posterior_predict_bernoulli <- function(i, prep, ...) {
 }
 
 posterior_predict_poisson <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
   rdiscrete(
-    n = prep$nsamples, dist = "pois",
-    lambda = get_dpar(prep, "mu", i = i),
+    n = prep$nsamples, dist = "pois", lambda = mu,
     lb = prep$data$lb[i], ub = prep$data$ub[i],
     ntrys = ntrys
   )
 }
 
 posterior_predict_negbinomial <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  shape <- get_dpar(prep, "shape", i)
+  shape <- multiply_dpar_rate_denom(shape, prep, i = i)
   rdiscrete(
     n = prep$nsamples, dist = "nbinom",
-    mu = get_dpar(prep, "mu", i = i), 
-    size = get_dpar(prep, "shape", i = i),
+    mu = mu, size = shape,
     lb = prep$data$lb[i], ub = prep$data$ub[i],
     ntrys = ntrys
   )
 }
 
 posterior_predict_geometric <- function(i, prep, ntrys = 5, ...) {
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  shape <- 1
+  shape <- multiply_dpar_rate_denom(shape, prep, i = i)
   rdiscrete(
     n = prep$nsamples, dist = "nbinom",
-    mu = get_dpar(prep, "mu", i = i), size = 1,
+    mu = mu, size = shape,
     lb = prep$data$lb[i], ub = prep$data$ub[i], 
     ntrys = ntrys
   )
