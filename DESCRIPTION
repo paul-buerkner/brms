@@ -35,6 +35,7 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
+    cmdstanr,
     RWiener,
     mice,
     spdep,

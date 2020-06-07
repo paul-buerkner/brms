@@ -22,6 +22,7 @@
 #' @slot ranef A \code{data.frame} containing the group-level structure.
 #' @slot exclude The names of the parameters for which samples are not saved.
 #' @slot algorithm The name of the algorithm used to fit the model.
+#' @slot backend The name of the backend used to fit the model.
 #' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
 #'   among others containing the posterior samples.
 #' @slot criteria An empty \code{list} for adding model fit criteria
@@ -50,16 +51,23 @@ NULL
 brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     data2 = list(), stanvars = NULL, model = "", 
                     ranef = empty_ranef(), exclude = NULL, 
-                    algorithm = "sampling", fit = NULL, criteria = list(), 
+                    algorithm = "sampling", backend = "rstan",
+                    fit = NULL, criteria = list(), 
                     file = NULL, family = NULL, autocor = NULL, 
                     cov_ranef = NULL, stan_funs = NULL, data.name = "") {
   version <- list(
     brms = utils::packageVersion("brms"),
-    rstan = utils::packageVersion("rstan")
+    rstan = utils::packageVersion("rstan"),
+    stanHeaders = utils::packageVersion("stanHeaders")
   )
+  if (backend == "cmdstanr") {
+    require_package("cmdstanr")
+    version$cmdstanr <- utils::packageVersion("cmdstanr")
+    version$cmdstan <- as.package_version(cmdstanr::cmdstan_version())
+  }
   x <- nlist(
     formula, data, prior, data2, stanvars, model, ranef, 
-    exclude, algorithm, fit, criteria, file, version,
+    exclude, algorithm, backend, fit, criteria, file, version,
     family, autocor, cov_ranef, stan_funs, data.name
   )
   class(x) <- "brmsfit"

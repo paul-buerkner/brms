@@ -47,7 +47,8 @@ test_that("Ordinal model from brm doc works correctly", {
     rating ~ period + carry + cs(treat),
     data = inhaler, family = sratio("cloglog"),
     prior = set_prior("normal(0,5)"),
-    iter = 1000, chains = 2, refresh = 0
+    iter = 1000, chains = 2, refresh = 0,
+    backend = "cmdstanr"
   )
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
@@ -91,7 +92,8 @@ test_that("Non-linear model from brm doc works correctly", {
   fit5 <- brm(
     bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE), data = data5,
     prior = prior(normal(0, 2), nlpar = a1) +
-     prior(normal(0, 2), nlpar = a2), refresh = 0
+      prior(normal(0, 2), nlpar = a2), refresh = 0,
+    backend = "cmdstanr"
   )
   print(fit5)
   ce <- conditional_effects(fit5)

@@ -4,6 +4,10 @@ context("Tests for make_stancode")
 expect_match2 <- brms:::expect_match2
 SW <- brms:::SW
 
+# parsing the Stan code ensures syntactial correctness of models
+# setting this option to FALSE speeds up testing
+options(parse_stancode = TRUE)
+
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
                     g = rep(1:5, 2), h = factor(rep(1:5, each = 2)))

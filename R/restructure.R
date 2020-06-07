@@ -164,6 +164,8 @@ restructure_v2 <- function(x) {
     x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
   }
   if (version < "2.12.11") {
+    # added support for 'cmdstanr' as additional backend
+    x$backend <- "rstan"
     # argument 'position' was added to stanvars
     for (i in seq_along(x$stanvars)) {
       x$stanvars[[i]]$position <- "start"

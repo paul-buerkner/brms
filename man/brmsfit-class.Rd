@@ -36,6 +36,8 @@ information on the priors used in the model.}
 
 \item{\code{algorithm}}{The name of the algorithm used to fit the model.}
 
+\item{\code{backend}}{The name of the backend used to fit the model.}
+
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
 among others containing the posterior samples.}
 
