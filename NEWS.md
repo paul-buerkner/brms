@@ -1,5 +1,10 @@
 # brms 2.13.0++
 
+### New Features
+
+* Fix shape parameters across multiple monotonic terms via argument
+`id` in function `mo` to ensure conditionally monotonic effects. (#924)
+
 ### Bug Fixes
 
 * Fix generated Stan Code of models with improper global priors and

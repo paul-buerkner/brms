@@ -920,25 +920,44 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   }
   
   # include special Stan code for monotonic effects
-  I <- unlist(spef$Imo)
-  if (length(I)) {
-    I <- seq_len(max(I))
+  which_Imo <- which(lengths(spef$Imo) > 0)
+  if (any(which_Imo)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
-      "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n",
-      "  // monotonic variables\n",
-      cglue("  int Xmo{p}_{I}[N{resp}];\n"),
-      "  // prior concentration of monotonic simplexes\n",
-      cglue("  vector[Jmo{p}[{I}]] con_simo{p}_{I};\n")
+      "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n"
     )
-    str_add(out$par) <- glue(
-      "  // simplexes of monotonic effects\n",
-      cglue("  simplex[Jmo{p}[{I}]] simo{p}_{I};\n")
-    ) 
-    str_add(out$prior) <- cglue(
-      "  target += dirichlet_lpdf(simo{p}_{I} | con_simo{p}_{I});\n"
-    )
+    ids <- unlist(spef$ids_mo)
+    for (i in which_Imo) {
+      for (k in seq_along(spef$Imo[[i]])) {
+        j <- spef$Imo[[i]][[k]]
+        id <- spef$ids_mo[[i]][[k]]
+        # index of first ID appearance
+        j_id <- match(id, ids)
+        str_add(out$data) <- glue(
+          "  int Xmo{p}_{j}[N{resp}];  // monotonic variable\n"
+        )
+        if (is.na(id) || j_id == j) {
+          # no ID or first appearance of the ID
+          str_add(out$data) <- glue(
+            "  vector[Jmo{p}[{j}]] con_simo{p}_{j};", 
+            "  // prior concentration of monotonic simplex\n"
+          )
+          str_add(out$par) <- glue(
+            "  simplex[Jmo{p}[{j}]] simo{p}_{j};  // monotonic simplex\n"
+          )
+          str_add(out$prior) <- glue(
+            "  target += dirichlet_lpdf(simo{p}_{j} | con_simo{p}_{j});\n"
+          )
+        } else {
+          # use the simplex shared across all terms of the same ID
+          str_add(out$tpar_def) <- glue(
+            "  simplex[Jmo{p}[{j}]] simo{p}_{j} = simo{p}_{j_id};\n"
+          )
+        }
+      }
+    }
   }
+  
   stan_special_priors <- stan_special_prior_local(
     prior, class = "bsp", ncoef = nrow(spef), 
     px = px, center_X = FALSE

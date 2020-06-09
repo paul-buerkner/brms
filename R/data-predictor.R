@@ -346,22 +346,29 @@ data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
     }
     out[[paste0("Jmo", p)]] <- Jmo
     # prepare prior concentration of simplex parameters
-    simo_coef <- get_simo_labels(spef)
-    for (i in seq_along(simo_coef)) {
-      simo_prior <- subset2(prior, 
-        class = "simo", coef = simo_coef[i], ls = px
-      )
-      simo_prior <- simo_prior$prior
-      if (isTRUE(nzchar(simo_prior))) {
-        simo_prior <- eval_dirichlet(simo_prior)
-        if (length(simo_prior) != Jmo[i]) {
-          stop2("Invalid Dirichlet prior for the simplex of coefficient '",
-                simo_coef[i], "'. Expected input of length ", Jmo[i], ".")
+    simo_coef <- get_simo_labels(spef, use_id = TRUE)
+    ids <- unlist(spef$ids_mo)
+    for (j in seq_along(simo_coef)) {
+      # index of first ID appearance
+      j_id <- match(ids[j], ids)
+      if (is.na(ids[j]) || j_id == j) {
+        # only evaluate priors without ID or first appearance of the ID
+        # all other parameters will be copied over in the Stan code
+        simo_prior <- subset2(prior, 
+          class = "simo", coef = simo_coef[j], ls = px
+        )
+        simo_prior <- simo_prior$prior
+        if (isTRUE(nzchar(simo_prior))) {
+          simo_prior <- eval_dirichlet(simo_prior)
+          if (length(simo_prior) != Jmo[j]) {
+            stop2("Invalid Dirichlet prior for the simplex of coefficient '",
+                  simo_coef[j], "'. Expected input of length ", Jmo[j], ".")
+          }
+        } else {
+          simo_prior <- rep(1, Jmo[j])
         }
-      } else {
-        simo_prior <- rep(1, Jmo[i])
+        out[[paste0("con_simo", p, "_", j)]] <- as.array(simo_prior)
       }
-      out[[paste0("con_simo", p, "_", i)]] <- as.array(simo_prior)
     }
   }
   out

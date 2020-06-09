@@ -904,6 +904,16 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ mo(x1):y, dat)
   expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[n]) * Csp_1[n];")
   
+  # test issue #924 (conditional monotonicity)
+  prior <- c(prior(dirichlet(c(1,0.5,2)), simo, coef = "v"),
+             prior(dirichlet(c(1,0.5,2)), simo, coef = "w"))
+  scode <- make_stancode(y ~ y*mo(x1, id = "v")*mo(x2, id = "w"), 
+                         dat, prior = prior)
+  expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
+  expect_match2(scode, "target += dirichlet_lpdf(simo_2 | con_simo_2);")
+  expect_match2(scode, "simplex[Jmo[6]] simo_6 = simo_2;")
+  expect_match2(scode, "simplex[Jmo[7]] simo_7 = simo_1;")
+  
   expect_error(
     make_stancode(y ~ mo(x1) + (mo(x2) | x2), dat),
     "Special group-level terms require"

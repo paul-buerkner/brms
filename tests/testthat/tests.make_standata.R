@@ -367,6 +367,15 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
   expect_equal(sdata$con_simo_3, as.array(c(1, 0.5, 2)))
   
+  # test issue #924 (conditional monotonicity)
+  prior <- c(prior(dirichlet(c(1, 0.5, 2)), simo, coef = "v"),
+             prior(dirichlet(c(1,3)), simo, coef = "w"))
+  sdata <- make_standata(y ~ y*mo(x1, id = "v")*mo(x2, id = "w"), 
+                         data, prior = prior)
+  expect_equal(sdata$con_simo_1, as.array(c(1, 0.5, 2)))
+  expect_equal(sdata$con_simo_2, as.array(c(1, 3)))
+  expect_true(!"sdata$con_simo_3" %in% names(sdata))
+  
   expect_error(
     make_standata(y ~ mo(z), data = data),
     "Monotonic predictors must be integers or ordered factors"

@@ -730,7 +730,7 @@ prior_sp <- function(bterms, data, ...) {
     prior <- prior + brmsprior(
       class = "b", coef = c("", spef$coef), ls = px
     )
-    simo_coef <- get_simo_labels(spef)
+    simo_coef <- get_simo_labels(spef, use_id = TRUE)
     if (length(simo_coef)) {
       prior <- prior + brmsprior(
         class = "simo", coef = simo_coef, ls = px
