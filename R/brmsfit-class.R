@@ -58,7 +58,7 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan"),
-    stanHeaders = utils::packageVersion("stanHeaders")
+    stanHeaders = utils::packageVersion("StanHeaders")
   )
   if (backend == "cmdstanr") {
     require_package("cmdstanr")
