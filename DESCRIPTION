@@ -37,6 +37,7 @@ Suggests:
     emmeans (>= 1.4.2),
     cmdstanr,
     RWiener,
+    rtdists,
     mice,
     spdep,
     mnormt,

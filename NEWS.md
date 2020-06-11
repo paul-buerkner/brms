@@ -4,6 +4,8 @@
 
 * Fix shape parameters across multiple monotonic terms via argument
 `id` in function `mo` to ensure conditionally monotonic effects. (#924)
+* Support package `rtdists` as additional backend of `wiener`
+distribution functions thanks to the help of Henrik Singmann. (#385)
 
 ### Bug Fixes
 
