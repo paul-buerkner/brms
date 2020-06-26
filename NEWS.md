@@ -11,6 +11,8 @@ distribution functions thanks to the help of Henrik Singmann. (#385)
 
 * Fix generated Stan Code of models with improper global priors and
 `constant` priors on some coefficients thanks to Frank Weber. (#919)
+* Fix a bug in `conditional_effects` occuring for categorical
+models with matrix predictors thanks to Jamie Cranston. (#933)
 
 ### Other Changes
 

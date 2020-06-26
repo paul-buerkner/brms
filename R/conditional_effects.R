@@ -394,11 +394,12 @@ conditional_effects.brmsterms <- function(
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
-    catscale <- if (is_multinomial(x)) "Count" else "Probability"
+    catscale <- str_if(is_multinomial(x), "Count", "Probability")
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
-    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
-    marg_data <- cbind(marg_data, cats__ = cats)
+    marg_data <- repl(marg_data, length(cats))
+    marg_data <- do_call(rbind, marg_data)
+    marg_data$cats__ <- factor(rep(cats, each = ncol(out)), levels = cats)
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
