@@ -50,7 +50,10 @@ according to the contrasts set for the \code{by}-factor.}
 
 \item{scale}{Logical; If \code{TRUE} (the default), predictors are
 scaled so that the maximum Euclidean distance between two points
-is 1. This often improves sampling speed and convergence.}
+is 1. This often improves sampling speed and convergence.
+Scaling also affects the estimated length-scale parameters
+in that they resemble those of scaled predictors (not of the original
+predictors) if \code{scale} is \code{TRUE}.}
 
 \item{c}{Numeric value only used in approximate GPs. Defines the 
 multiplicative constant of the predictors' range over which
