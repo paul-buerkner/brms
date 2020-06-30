@@ -816,8 +816,10 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   }
   .def_lscale_prior <- function(X) {
     dq <- diff_quad(X)
-    lb <- sqrt(min(dq[dq > 0]))
     ub <- sqrt(max(dq))
+    lb <- sqrt(min(dq[dq > 0]))
+    # prevent extreme priors
+    lb <- max(lb, 0.01 * ub)
     opt_res <- nleqslv::nleqslv(
       c(0, 0), .opt_fun, lb = lb, ub = ub,
       control = list(allowSingular = TRUE)

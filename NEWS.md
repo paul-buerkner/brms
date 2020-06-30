@@ -19,6 +19,9 @@ models with matrix predictors thanks to Jamie Cranston. (#933)
 * Adjust behavior of the `rate` addition term so that it also
 affects the `shape` parameter in `negbinomial` models thanks to
 Edward Abraham. (#915)
+* Adjust the default inverse-gamma prior on length-scale parameters
+of Gaussian processes to be less extreme in edge cases thanks
+to Topi Paananen.
 
 
 # brms 2.13.0
