@@ -44,10 +44,13 @@ with respect to their effect on the response variable. Instead, the distance
 between adjacent predictor categories (or integers) is estimated from the data
 and may vary across categories. This is realized by parameterizing as follows:
 One parameter, $b$, takes care of the direction and size of the effect similar
-to an ordinary regression parameter, while an additional parameter vector,
+to an ordinary regression parameter. If the monotonic effect is used in a linear
+model, $b$ can be interpreted as the expected average difference between two
+adjacent categories of the ordinal predictor. An additional parameter vector,
 $\zeta$, estimates the normalized distances between consecutive predictor
-categories. For a single monotonic predictor, $x$, the linear predictor term of
-observation $n$ looks as follows:
+categories which thus defines the shape of the monotonic effect. For a single
+monotonic predictor, $x$, the linear predictor term of observation $n$ looks as
+follows:
 
 $$\eta_n = b D \sum_{i = 1}^{x_n} \zeta_i$$
 
