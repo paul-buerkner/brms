@@ -93,6 +93,9 @@ fit_model <- function(model, backend, ...) {
                              silent, future, ...) {
   
   # some input checks and housekeeping
+  if (is.character(inits) && !inits %in% c("random", "0")) {
+    inits <- get(inits, mode = "function", envir = parent.frame())
+  }
   args <- nlist(
     object = model, data = sdata, iter, seed, 
     init = inits, pars = exclude, include = FALSE

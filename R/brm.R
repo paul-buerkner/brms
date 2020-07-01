@@ -397,9 +397,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
-  }
   
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
