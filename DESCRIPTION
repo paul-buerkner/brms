@@ -35,7 +35,7 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     emmeans (>= 1.4.2),
-    cmdstanr,
+    cmdstanr (>= 0.0.0.9008),
     RWiener,
     rtdists,
     mice,

@@ -163,7 +163,6 @@ fit_model <- function(model, backend, ...) {
   }
   args <- nlist(data = sdata, seed, init = inits)
   # TODO: exclude variables via 'exclude'
-  # TODO: silence messages via 'silent'
   dots <- list(...)
   args[names(dots)] <- dots
   args[names(control)] <- control
@@ -174,7 +173,7 @@ fit_model <- function(model, backend, ...) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
       iter_warmup = warmup, 
-      chains, cores, thin
+      show_messages = !silent
     )
     out <- do_call(model$sample, args)
   } else if (algorithm %in% c("fullrank", "meanfield")) {
