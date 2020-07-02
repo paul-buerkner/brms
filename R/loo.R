@@ -505,7 +505,7 @@ add_criterion.brmsfit <- function(x, criterion, model_name = NULL,
     # remove previously stored criterion objects
     x$criteria[criterion] <- list(NULL)
   }
-  new_criteria <- criterion[ulapply(x[criterion], is.null)]
+  new_criteria <- criterion[ulapply(x$criteria[criterion], is.null)]
   args <- list(x, ...)
   for (fun in intersect(criterion, loo_options)) {
     args$model_names <- model_name
