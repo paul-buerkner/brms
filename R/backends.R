@@ -173,6 +173,8 @@ fit_model <- function(model, backend, ...) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
       iter_warmup = warmup, 
+      chains, thin, 
+      parallel_chains = cores,
       show_messages = !silent
     )
     out <- do_call(model$sample, args)
