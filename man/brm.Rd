@@ -155,7 +155,11 @@ constant. Generally, setting \code{inits = "0"} is worth a try, if chains
 do not behave well. Alternatively, \code{inits} can be a list of lists
 containing the initial values, or a function (or function name) generating
 initial values. The latter options are mainly implemented for internal
-testing.}
+testing but are available to users if necessary. If specifying initial 
+values using a list or a function then currently the parameter names must
+correspond to the names used in the generated Stan code (not the names
+used in \R). For more details on specifying initial values you can consult 
+the documentation of the selected \code{backend}.}
 
 \item{chains}{Number of Markov chains (defaults to 4).}
 
