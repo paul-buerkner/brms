@@ -197,7 +197,10 @@ distribution. Can be set globally for the current \R session via the
 \item{backend}{Character string naming the package to use as the backend for
 fitting the Stan model. Options are \code{"rstan"} (the default) or
 \code{"cmdstanr"}. Can be set globally for the current \R session via the
-\code{"stan_backend"} option (see \code{\link{options}}).}
+\code{"stan_backend"} option (see \code{\link{options}}). Details on the
+\pkg{rstan} and \pkg{cmdstanr} packages are available at
+\url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
+respectively.}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 package is used for parallel execution of the chains and argument
@@ -205,11 +208,11 @@ package is used for parallel execution of the chains and argument
 session via the \code{future} option. The execution type is controlled via
 \code{\link[future:plan]{plan}} (see the examples section below).}
 
-\item{silent}{logical; If \code{TRUE} (the default), most of the
+\item{silent}{Logical; If \code{TRUE} (the default), most of the
 informational messages of compiler and sampler are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
-as well. To stop Stan from opening additional progress bars, set
-\code{open_progress = FALSE}.}
+as well. If using \code{backend = "rstan"} you can also set
+\code{open_progress = FALSE} to prevent opening additional progress bars.}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
@@ -238,8 +241,12 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
 
-\item{...}{Further arguments passed to Stan that is to
-\code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}
+\item{...}{Further arguments passed to Stan. For \code{backend = "rstan"}
+the arguments are passed to
+\code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
+For \code{backend = "cmdstanr"} the arguments are passed to the
+\code{\link[cmdstanr:model-method-sample]{sample}} or 
+\code{\link[cmdstanr:model-method-variational]{variational}} method.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior
