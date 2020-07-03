@@ -191,7 +191,7 @@ distribution. Can be set globally for the current \R session via the
 \code{"stan_algorithm"} option (see \code{\link{options}}).}
 
 \item{backend}{Character string naming the package to use as the backend for
-fiting the Stan model. Options are \code{"rstan"} (the default) or
+fitting the Stan model. Options are \code{"rstan"} (the default) or
 \code{"cmdstanr"}. Can be set globally for the current \R session via the
 \code{"stan_backend"} option (see \code{\link{options}}).}
 
