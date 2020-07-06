@@ -4,8 +4,10 @@ Type: Package
 Title: Bayesian Regression Models using 'Stan'
 Version: 2.13.3
 Date: 2020-06-09
-Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
-  role = c("aut", "cre"))
+Authors@R: 
+    c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
+             role = c("aut", "cre")),
+      person("Jonah", "Gabry", role = c("ctb")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),

@@ -241,8 +241,8 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{rename}{For internal use only.}
 
-\item{...}{Further arguments passed to Stan. For \code{backend = "rstan"}
-the arguments are passed to
+\item{...}{Further arguments passed to Stan. 
+For \code{backend = "rstan"} the arguments are passed to
 \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
 For \code{backend = "cmdstanr"} the arguments are passed to the
 \code{\link[cmdstanr:model-method-sample]{sample}} or 
