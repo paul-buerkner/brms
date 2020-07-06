@@ -111,7 +111,11 @@
 #'   do not behave well. Alternatively, \code{inits} can be a list of lists
 #'   containing the initial values, or a function (or function name) generating
 #'   initial values. The latter options are mainly implemented for internal
-#'   testing.
+#'   testing but are available to users if necessary. If specifying initial 
+#'   values using a list or a function then currently the parameter names must
+#'   correspond to the names used in the generated Stan code (not the names
+#'   used in \R). For more details on specifying initial values you can consult 
+#'   the documentation of the selected \code{backend}.
 #' @param chains Number of Markov chains (defaults to 4).
 #' @param iter Number of total iterations per chain (including warmup; defaults
 #'   to 2000).
@@ -134,9 +138,12 @@
 #'   distribution. Can be set globally for the current \R session via the
 #'   \code{"stan_algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
-#'   fiting the Stan model. Options are \code{"rstan"} (the default) or
+#'   fitting the Stan model. Options are \code{"rstan"} (the default) or
 #'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
-#'   \code{"stan_backend"} option (see \code{\link{options}}).
+#'   \code{"stan_backend"} option (see \code{\link{options}}). Details on the
+#'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
+#'   \url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
+#'   respectively.
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
@@ -147,11 +154,11 @@
 #'   \code{cores} will be ignored. Can be set globally for the current \R
 #'   session via the \code{future} option. The execution type is controlled via
 #'   \code{\link[future:plan]{plan}} (see the examples section below).
-#' @param silent logical; If \code{TRUE} (the default), most of the
+#' @param silent Logical; If \code{TRUE} (the default), most of the
 #'   informational messages of compiler and sampler are suppressed. The actual
 #'   sampling progress is still printed. Set \code{refresh = 0} to turn this off
-#'   as well. To stop Stan from opening additional progress bars, set
-#'   \code{open_progress = FALSE}.
+#'   as well. If using \code{backend = "rstan"} you can also set
+#'   \code{open_progress = FALSE} to prevent opening additional progress bars.
 #' @param seed The seed for random number generation to make results
 #'   reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
 #'   randomly.
@@ -173,8 +180,12 @@
 #' @param rename For internal use only. 
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
-#' @param ... Further arguments passed to Stan that is to
+#' @param ... Further arguments passed to Stan. 
+#'   For \code{backend = "rstan"} the arguments are passed to
 #'   \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
+#'   For \code{backend = "cmdstanr"} the arguments are passed to the
+#'   \code{\link[cmdstanr:model-method-sample]{sample}} or 
+#'   \code{\link[cmdstanr:model-method-variational]{variational}} method.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior
 #'   samples along with many other useful information about the model. Use
