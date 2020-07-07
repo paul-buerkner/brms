@@ -28,7 +28,7 @@ on the method.}
 
 \item{k_threshold}{The threshold at which pareto \eqn{k} 
 estimates are treated as problematic. Defaults to \code{0.7}. 
-See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
+See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions. If

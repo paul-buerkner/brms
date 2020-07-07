@@ -37,7 +37,7 @@ Computing the marginal likelihood requires samples
   multiple times to check the stability of the results.
 
   More details are provided under
-  \code{\link[bridgesampling:bridge_sampler]{bridgesampling:bridge_sampler}}.
+  \code{\link[bridgesampling:bridge_sampler]{bridgesampling::bridge_sampler}}.
 }
 \examples{
 \dontrun{
@@ -65,7 +65,7 @@ bridge_sampler(fit2)
 }
 \seealso{
 \code{
-  \link[brms:bayes_factor]{bayes_factor},
-  \link[brms:post_prob]{post_prob}
+  \link[brms:bayes_factor.brmsfit]{bayes_factor},
+  \link[brms:post_prob.brmsfit]{post_prob}
 }
 }

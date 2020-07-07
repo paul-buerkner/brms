@@ -117,30 +117,30 @@
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @param line_args Only used in plots of continuous predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param cat_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_point]{geom_point}}.
+#'   \code{\link{geom_point}}.
 #' @param errorbar_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
+#'   \code{\link{geom_errorbar}}.
 #' @param surface_args Only used in surface plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
-#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
+#'   \code{\link{geom_contour}} or
+#'   \code{\link{geom_raster}}
 #'   (depending on argument \code{stype}).
 #' @param spaghetti_args Only used in spaghetti plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param point_args Only used if \code{points = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#'   \code{\link{geom_jitter}}.
 #' @param rug_args Only used if \code{rug = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   \code{\link{geom_rug}}.
 #' @param facet_args Only used if if multiple condtions are provided: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:facet_wrap]{facet_wrap}}.
+#'   \code{\link{facet_wrap}}.
 #' 
 #' @return An object of class \code{'brms_conditional_effects'}, which is a
 #'   named list with one data.frame per effect containing all information

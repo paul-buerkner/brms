@@ -171,7 +171,7 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' 
 #' A \code{brmshypothesis} object contains posterior samples
 #' as well as summary statistics of non-linear hypotheses as 
-#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' returned by \code{\link[brms:hypothesis.brmsfit]{hypothesis}}.
 #' 
 #' @name brmshypothesis
 #' 

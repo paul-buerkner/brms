@@ -482,7 +482,7 @@ posterior_table <- function(x, levels = NULL) {
 #'   returned, as given by a character vector or regular expressions. 
 #'   By default, all posterior samples of all parameters are extracted.
 #' @param ... More arguments passed to 
-#'   \code{\link[brms:as.matrix.brmsfit]{as.matrix.brmsfit}}.
+#'   \code{\link{as.matrix.brmsfit}}.
 #' 
 #' @return A \code{matrix} with lower and upper interval bounds
 #'   as columns and as many rows as selected parameters.

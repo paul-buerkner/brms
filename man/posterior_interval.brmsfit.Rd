@@ -18,7 +18,7 @@ By default, all posterior samples of all parameters are extracted.}
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{...}{More arguments passed to 
-\code{\link[brms:as.matrix.brmsfit]{as.matrix.brmsfit}}.}
+\code{\link{as.matrix.brmsfit}}.}
 }
 \value{
 A \code{matrix} with lower and upper interval bounds

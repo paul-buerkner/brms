@@ -28,11 +28,11 @@
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under
-#'   \code{\link[bridgesampling:bridge_sampler]{bridgesampling:bridge_sampler}}.
+#'   \code{\link[bridgesampling:bridge_sampler]{bridgesampling::bridge_sampler}}.
 #'   
 #' @seealso \code{
-#'   \link[brms:bayes_factor]{bayes_factor},
-#'   \link[brms:post_prob]{post_prob}
+#'   \link[brms:bayes_factor.brmsfit]{bayes_factor},
+#'   \link[brms:post_prob.brmsfit]{post_prob}
 #' }
 #' 
 #' @examples 
@@ -97,7 +97,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' @param x2 Another \code{brmsfit} object based on the same responses.
 #' @param log Report Bayes factors on the log-scale?
 #' @param ... Additional arguments passed to 
-#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#'   \code{\link[brms:bridge_sampler.brmsfit]{bridge_sampler}}.
 #' 
 #' @details Computing the marginal likelihood requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
@@ -115,11 +115,11 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under 
-#'   \code{\link[bridgesampling:bayes_factor]{bridgesampling:bayes_factor}}.
+#'   \code{\link[bridgesampling:bf]{bridgesampling::bayes_factor}}.
 #'  
 #' @seealso \code{
-#'   \link[brms:bridge_sampler]{bridge_sampler},
-#'   \link[brms:post_prob]{post_prob}
+#'   \link[brms:bridge_sampler.brmsfit]{bridge_sampler},
+#'   \link[brms:post_prob.brmsfit]{post_prob}
 #' }
 #' 
 #' @examples 
@@ -191,11 +191,11 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #'   multiple times to check the stability of the results.
 #' 
 #'   More details are provided under 
-#'   \code{\link[bridgesampling:post_prob]{bridgesampling:post_prob}}. 
+#'   \code{\link[bridgesampling:post_prob]{bridgesampling::post_prob}}. 
 #'   
 #' @seealso \code{
-#'   \link[brms:bridge_sampler]{bridge_sampler},
-#'   \link[brms:bayes_factor]{bayes_factor}
+#'   \link[brms:bridge_sampler.brmsfit]{bridge_sampler},
+#'   \link[brms:bayes_factor.brmsfit]{bayes_factor}
 #' }
 #' 
 #' @examples 

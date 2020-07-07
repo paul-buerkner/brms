@@ -187,37 +187,37 @@ Either \code{"contour"} or \code{"raster"}.}
 
 \item{line_args}{Only used in plots of continuous predictors:
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_smooth]{geom_smooth}}.}
+\code{\link{geom_smooth}}.}
 
 \item{cat_args}{Only used in plots of categorical predictors:
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_point]{geom_point}}.}
+\code{\link{geom_point}}.}
 
 \item{errorbar_args}{Only used in plots of categorical predictors:
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.}
+\code{\link{geom_errorbar}}.}
 
 \item{surface_args}{Only used in surface plots:
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_contour]{geom_contour}} or
-\code{\link[ggplot2:geom_raster]{geom_raster}}
+\code{\link{geom_contour}} or
+\code{\link{geom_raster}}
 (depending on argument \code{stype}).}
 
 \item{spaghetti_args}{Only used in spaghetti plots:
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_smooth]{geom_smooth}}.}
+\code{\link{geom_smooth}}.}
 
 \item{point_args}{Only used if \code{points = TRUE}: 
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_jitter]{geom_jitter}}.}
+\code{\link{geom_jitter}}.}
 
 \item{rug_args}{Only used if \code{rug = TRUE}: 
 A named list of arguments passed to 
-\code{\link[ggplot2:geom_rug]{geom_rug}}.}
+\code{\link{geom_rug}}.}
 
 \item{facet_args}{Only used if if multiple condtions are provided: 
 A named list of arguments passed to 
-\code{\link[ggplot2:facet_wrap]{facet_wrap}}.}
+\code{\link{facet_wrap}}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 

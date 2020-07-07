@@ -243,10 +243,10 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 
 \item{...}{Further arguments passed to Stan. 
 For \code{backend = "rstan"} the arguments are passed to
-\code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
+\code{\link[rstan:stanmodel-method-sampling]{sampling}} or
+\code{\link[rstan:stanmodel-method-vb]{vb}}.
 For \code{backend = "cmdstanr"} the arguments are passed to the
-\code{\link[cmdstanr:model-method-sample]{sample}} or 
-\code{\link[cmdstanr:model-method-variational]{variational}} method.}
+\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior
