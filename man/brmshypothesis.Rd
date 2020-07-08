@@ -59,7 +59,7 @@ Defaults to \code{TRUE}.}
 \description{
 A \code{brmshypothesis} object contains posterior samples
 as well as summary statistics of non-linear hypotheses as 
-returned by \code{\link[brms:hypothesis.brmsfit]{hypothesis}}.
+returned by \code{\link{hypothesis}}.
 }
 \details{
 The two most important elements of a \code{brmshypothesis} object are
@@ -68,5 +68,5 @@ of the hypotheses, and \code{samples}, which is a data.frame containing
 the corresponding posterior samples.
 }
 \seealso{
-\code{\link[brms:hypothesis]{hypothesis}}
+\code{\link{hypothesis}}
 }

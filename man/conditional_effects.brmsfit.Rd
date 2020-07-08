@@ -153,15 +153,14 @@ from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
 \item{...}{Further arguments such as \code{subset} or \code{nsamples}
-passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-\code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.}
+passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based
 on the number of rows of \code{conditions}.}
 
 \item{points}{Logical; indicating whether the original data points
-should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+should be added via \code{\link{geom_jitter}}.
 Default is \code{FALSE}. Note that only those data points will be added
 that match the specified conditions defined in \code{conditions}.
 For categorical predictors, the conditions have to match exactly. 
@@ -169,7 +168,7 @@ For numeric predictors, argument \code{select_points} is used to
 determine, which points do match a condition.}
 
 \item{rug}{Logical; indicating whether a rug representation of predictor
-values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
+values should be added via \code{\link{geom_rug}}.
 Default is \code{FALSE}. Depends on \code{select_points} in the same
 way as \code{points} does.}
 
@@ -244,7 +243,7 @@ An object of class \code{'brms_conditional_effects'}, which is a
   rows).
   
   The corresponding \code{plot} method returns a named 
-  list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
+  list of \code{\link{ggplot}} objects, which can be further 
   customized using the \pkg{ggplot2} package.
 }
 \description{
@@ -266,8 +265,7 @@ When creating \code{conditional_effects} for a particular predictor
   
   To fully change colors of the created plots, 
   one has to amend both \code{scale_colour} and \code{scale_fill}.
-  See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
-  \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
+  See \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}}
   for more details.
 }
 \examples{

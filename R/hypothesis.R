@@ -171,7 +171,7 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' 
 #' A \code{brmshypothesis} object contains posterior samples
 #' as well as summary statistics of non-linear hypotheses as 
-#' returned by \code{\link[brms:hypothesis.brmsfit]{hypothesis}}.
+#' returned by \code{\link{hypothesis}}.
 #' 
 #' @name brmshypothesis
 #' 
@@ -196,7 +196,7 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' of the hypotheses, and \code{samples}, which is a data.frame containing 
 #' the corresponding posterior samples.
 #' 
-#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
+#' @seealso \code{\link{hypothesis}}
 NULL
 
 # internal function to evaluate hypotheses
