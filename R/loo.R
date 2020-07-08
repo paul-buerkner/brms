@@ -272,6 +272,7 @@ compute_loo <- function(x, criterion = loo_criteria(),
                         reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
                         pointwise = FALSE, newdata = NULL, resp = NULL, 
                         model_name = "", use_stored = TRUE, ...) {
+  # TODO: replace this function with a set of criterion-specific functions
   criterion <- match.arg(criterion)
   model_name <- as_one_character(model_name)
   use_stored <- as_one_logical(use_stored)
@@ -312,6 +313,7 @@ compute_loo <- function(x, criterion = loo_criteria(),
   }
   attr(out, "model_name") <- model_name
   if (criterion == "loo") {
+    # TODO: include moment matching
     if (reloo) {
       c(reloo_args) <- nlist(
         x = out, fit = x, newdata, resp, 
