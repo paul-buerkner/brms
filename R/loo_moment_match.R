@@ -1,9 +1,10 @@
 #' Moment matching for efficient approximate leave-one-out cross-validation
 #' 
 #' Moment matching for efficient approximate leave-one-out cross-validation 
-#' (LOO-CV). See \code{\link[loo:mmloo]{mmloo}} for more details.
+#' (LOO-CV). See \code{\link[loo:loo_moment_match]{loo_moment_match}} 
+#' for more details.
 #' 
-#' @aliases mmloo
+#' @aliases loo_moment_match
 #' 
 #' @param x An object of class \code{brmsfit}.
 #' @param loo An object of class \code{loo} originally created from \code{x}.
@@ -12,9 +13,9 @@
 #' 
 #' @details The moment matching algorithm requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
-#'   to be saved. Otherwise \code{mmloo} cannot be computed.
+#'   to be saved. Otherwise \code{loo_moment_match} cannot be computed.
 #'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
-#'   if you are planning to apply \code{mmloo} to your models.
+#'   if you are planning to apply \code{loo_moment_match} to your models.
 #' 
 #' @examples 
 #' \dontrun{
@@ -23,28 +24,28 @@
 #'             save_all_pars = TRUE)
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
-#' (mmloo1 <- mmloo(fit1, loo = loo1, k_thres = 0.7))
+#' (mmloo1 <- loo_moment_match(fit1, loo = loo1, k_thres = 0.7))
 #' }
 #' 
-#' @importFrom loo mmloo
-#' @export mmloo
+#' @importFrom loo loo_moment_match
+#' @export loo_moment_match
 #' @export
-mmloo.brmsfit <- function(x, loo, ...) {
+loo_moment_match.brmsfit <- function(x, loo, ...) {
   # TODO: support more arguments such as 'newdata' or 'resp'
   # ensure compatibility with objects not created in the current R session
   x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
-  out <- try(loo::mmloo.default(
+  out <- try(loo::loo_moment_match.default(
     x, loo = loo, 
     post_draws = as.matrix, 
-    log_lik = .log_lik_i, 
+    log_lik_i = .log_lik_i, 
     unconstrain_pars = .unconstrain_pars,
     log_prob_upars = .log_prob_upars,
-    log_lik_upars = .log_lik_upars_i,
+    log_lik_i_upars = .log_lik_i_upars,
     ...
   ))
   if (is(out, "try-error")) {
     stop2(
-      "mmloo failed. Did you set 'save_all_pars' ",
+      "'loo_moment_match' failed. Did you set 'save_all_pars' ",
       "to TRUE when fitting your model?"
     )
   }
@@ -105,7 +106,7 @@ mmloo.brmsfit <- function(x, loo, ...) {
 }
 
 # compute log_lik values based on the unconstrained parameters
-.log_lik_upars_i <- function(x, upars, i, samples = NULL, 
+.log_lik_i_upars <- function(x, upars, i, samples = NULL, 
                              subset = NULL, ...) {
   # do not pass subset or nsamples further to avoid subsetting twice
   x <- .update_pars(x, upars = upars, ...)
