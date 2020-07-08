@@ -12,10 +12,14 @@
 
 \item{loo}{An object of class \code{loo} originally created from \code{x}.}
 
-\item{...}{Further arguments passed to the underlying methods.}
+\item{...}{Further arguments passed to the underlying methods.
+Additional arguments initially passed to \code{\link{loo}},
+for example, \code{newdata} or \code{resp} need to be passed
+again to \code{loo_moment_match} in order for the latter
+to work correctly.}
 }
 \value{
-An object of the class \code{loo}.
+An updated object of class \code{loo}.
 }
 \description{
 Moment matching for efficient approximate leave-one-out cross-validation 
@@ -34,9 +38,10 @@ The moment matching algorithm requires samples
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
             data = epilepsy, family = poisson(),
             save_all_pars = TRUE)
+            
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
-(mmloo1 <- loo_moment_match(fit1, loo = loo1, k_thres = 0.7))
+(mmloo1 <- loo_moment_match(fit1, loo = loo1))
 }
 
 }

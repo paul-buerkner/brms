@@ -9,7 +9,11 @@
 #' @param x An object of class \code{brmsfit}.
 #' @param loo An object of class \code{loo} originally created from \code{x}.
 #' @param ... Further arguments passed to the underlying methods.
-#' @return An object of the class \code{loo}.
+#'   Additional arguments initially passed to \code{\link{loo}},
+#'   for example, \code{newdata} or \code{resp} need to be passed
+#'   again to \code{loo_moment_match} in order for the latter
+#'   to work correctly.
+#' @return An updated object of class \code{loo}.
 #' 
 #' @details The moment matching algorithm requires samples 
 #'   of all variables defined in Stan's \code{parameters} block
@@ -22,16 +26,26 @@
 #' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #'             data = epilepsy, family = poisson(),
 #'             save_all_pars = TRUE)
+#'             
 #' # throws warning about some pareto k estimates being too high
 #' (loo1 <- loo(fit1))
-#' (mmloo1 <- loo_moment_match(fit1, loo = loo1, k_thres = 0.7))
+#' (mmloo1 <- loo_moment_match(fit1, loo = loo1))
 #' }
 #' 
 #' @importFrom loo loo_moment_match
 #' @export loo_moment_match
 #' @export
 loo_moment_match.brmsfit <- function(x, loo, ...) {
-  # TODO: support more arguments such as 'newdata' or 'resp'
+  .loo_moment_match(x, loo, ...)
+}
+
+# internal function of loo_moment_match.brmsfit
+.loo_moment_match <- function(x, loo, newdata = NULL, ...) {
+  if (is.null(newdata)) {
+    newdata <- model.frame(x) 
+  } else {
+    newdata <- as.data.frame(newdata)
+  }
   # ensure compatibility with objects not created in the current R session
   x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
   out <- try(loo::loo_moment_match.default(
@@ -41,20 +55,20 @@ loo_moment_match.brmsfit <- function(x, loo, ...) {
     unconstrain_pars = .unconstrain_pars,
     log_prob_upars = .log_prob_upars,
     log_lik_i_upars = .log_lik_i_upars,
-    ...
+    newdata = newdata, ...
   ))
   if (is(out, "try-error")) {
     stop2(
-      "'loo_moment_match' failed. Did you set 'save_all_pars' ",
-      "to TRUE when fitting your model?"
+      "Moment matching failed. Perhaps you did not set ", 
+      "'save_all_pars' to TRUE when fitting your model?"
     )
   }
   out
 }
 
 # compute a vector of log-likelihood values for the ith observation
-.log_lik_i <- function(x, i, ...) {
-  as.vector(log_lik(x, newdata = x$data[i, , drop = FALSE], ...))
+.log_lik_i <- function(x, i, newdata, ...) {
+  as.vector(log_lik(x, newdata = newdata[i, , drop = FALSE], ...))
 }
 
 # transform parameters to the unconstraint space
