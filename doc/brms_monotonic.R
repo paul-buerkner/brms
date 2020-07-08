@@ -33,7 +33,7 @@ fit1 <- brm(ls ~ mo(income), data = dat)
 ## ---------------------------------------------------------------------------------------
 summary(fit1)
 plot(fit1, pars = "simo")
-plot(marginal_effects(fit1))
+plot(conditional_effects(fit1))
 
 ## ---- results='hide'--------------------------------------------------------------------
 dat$income_num <- as.numeric(dat$income)
@@ -71,7 +71,7 @@ fit5 <- brm(ls ~ mo(income)*age, data = dat)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit5)
-marginal_effects(fit5, "income:age")
+conditional_effects(fit5, "income:age")
 
 ## ---------------------------------------------------------------------------------------
 dat$city <- rep(1:10, each = 10)

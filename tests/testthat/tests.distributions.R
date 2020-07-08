@@ -178,3 +178,23 @@ test_that("hurdle distribution functions run without errors", {
   res <- phurdle_lognormal(x, mu = 2, sigma = 5, hu = 0.1)
   expect_true(length(res) == n)
 })
+
+test_that("wiener distribution functions run without errors", {
+  set.seed(1234)
+  n <- 10
+  x <- seq(0.1, 1, 0.1)
+  alpha <- rexp(n)
+  tau <- 0.05
+  beta <- 0.5
+  delta <- rnorm(n)
+  resp <- sample(c(0, 1), n, TRUE)
+  
+  d1 <- dwiener(x, alpha, tau, beta, delta, resp, backend = "Rwiener")
+  d2 <- dwiener(x, alpha, tau, beta, delta, resp, backend = "rtdists")
+  expect_equal(d1, d2)
+  
+  r1 <- rwiener(n, alpha, tau, beta, delta, backend = "Rwiener")
+  r2 <- rwiener(n, alpha, tau, beta, delta, backend = "rtdists")
+  expect_equal(names(r1), names(r2))
+  expect_equal(dim(r1), dim(r2))
+})

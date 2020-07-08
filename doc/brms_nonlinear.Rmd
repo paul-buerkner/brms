@@ -116,12 +116,12 @@ To obtain summaries of the fitted model, we apply
 ```{r}
 summary(fit1)
 plot(fit1)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 ```
 
 The `summary` method reveals that we were able to recover the true parameter
 values pretty nicely. According to the `plot` method, our MCMC chains have
-converged well and to the same posterior. The `marginal_effects` method
+converged well and to the same posterior. The `conditional_effects` method
 visualizes the model-implied (non-linear) regression line.
 
 We might be also interested in comparing our non-linear model to a classical
@@ -203,7 +203,7 @@ identifiability. We summarize the model using well known methods.
 ```{r}
 summary(fit_loss)
 plot(fit_loss, N = 3, ask = FALSE)
-marginal_effects(fit_loss)
+conditional_effects(fit_loss)
 ```
 
 Next, we show marginal effects separately for each year.
@@ -211,7 +211,7 @@ Next, we show marginal effects separately for each year.
 ```{r}
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-me_loss <- marginal_effects(
+me_loss <- conditional_effects(
   fit_loss, conditions = conditions, 
   re_formula = NULL, method = "predict"
 )
@@ -253,7 +253,7 @@ likely come to biased estimates and predictions.
 
 ```{r}
 summary(fit_ir1)
-plot(marginal_effects(fit_ir1), points = TRUE)
+plot(conditional_effects(fit_ir1), points = TRUE)
 ```
 
 A more sophisticated approach incorporating the guessing probability looks as
@@ -278,7 +278,7 @@ your non-linear predictor term already contains the desired link function.
 
 ```{r}
 summary(fit_ir2)
-plot(marginal_effects(fit_ir2), points = TRUE)
+plot(conditional_effects(fit_ir2), points = TRUE)
 ```
 
 Comparing model fit via leave-one-out cross-validation 
@@ -314,7 +314,7 @@ models).
 ```{r}
 summary(fit_ir3)
 plot(fit_ir3)
-plot(marginal_effects(fit_ir3), points = TRUE)
+plot(conditional_effects(fit_ir3), points = TRUE)
 ```
 
 The results show that we are able to recover the simulated model parameters with

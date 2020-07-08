@@ -100,7 +100,7 @@ formula should be treated as non-linear.
 
 In contrast to generalized linear models, priors on population-level parameters
 (i.e., 'fixed effects') are often mandatory to identify a non-linear model.
-Thus, **brms** requires the user to explicitely specify these priors. In the
+Thus, **brms** requires the user to explicitly specify these priors. In the
 present example, we used a `normal(1, 2)` prior on (the population-level
 intercept of) `b1`, while we used a `normal(0, 2)` prior on (the
 population-level intercept of) `b2`. Setting priors is a non-trivial task in all
@@ -108,7 +108,7 @@ kinds of models, especially in non-linear models, so you should always invest
 some time to think of appropriate priors. Quite often, you may be forced to
 change your priors after fitting a non-linear model for the first time, when you
 observe different MCMC chains converging to different posterior regions. This is
-a clear sign of an idenfication problem and one solution is to set stronger
+a clear sign of an identification problem and one solution is to set stronger
 (i.e., more narrow) priors.
 
 To obtain summaries of the fitted model, we apply
@@ -116,12 +116,12 @@ To obtain summaries of the fitted model, we apply
 ```{r}
 summary(fit1)
 plot(fit1)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 ```
 
 The `summary` method reveals that we were able to recover the true parameter
 values pretty nicely. According to the `plot` method, our MCMC chains have
-converged well and to the same posterior. The `marginal_effects` method
+converged well and to the same posterior. The `conditional_effects` method
 visualizes the model-implied (non-linear) regression line.
 
 We might be also interested in comparing our non-linear model to a classical
@@ -151,13 +151,13 @@ loo(fit1, fit2)
 
 Since smaller `LOOIC` values indicate better model fit, it is immediately
 evident that the non-linear model fits the data better, which is of course not
-too surpirsing since we simulated the data from exactly that model.
+too surprising since we simulated the data from exactly that model.
 
 ## A Real-World Non-Linear model
 
 On his blog, Markus Gesmann predicts the growth of cumulative insurance loss
 payments over time, originated from different origin years (see
-http://www.magesblog.com/post/2015/11/loss-developments-via-growth-curves-and.html).
+https://www.magesblog.com/post/2015-11-03-loss-developments-via-growth-curves-and/).
 We will use a slightly simplified version of his model for demonstration
 purposes here. It looks as follows:
 
@@ -203,7 +203,7 @@ identifiability. We summarize the model using well known methods.
 ```{r}
 summary(fit_loss)
 plot(fit_loss, N = 3, ask = FALSE)
-marginal_effects(fit_loss)
+conditional_effects(fit_loss)
 ```
 
 Next, we show marginal effects separately for each year.
@@ -211,7 +211,7 @@ Next, we show marginal effects separately for each year.
 ```{r}
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-me_loss <- marginal_effects(
+me_loss <- conditional_effects(
   fit_loss, conditions = conditions, 
   re_formula = NULL, method = "predict"
 )
@@ -253,7 +253,7 @@ likely come to biased estimates and predictions.
 
 ```{r}
 summary(fit_ir1)
-plot(marginal_effects(fit_ir1), points = TRUE)
+plot(conditional_effects(fit_ir1), points = TRUE)
 ```
 
 A more sophisticated approach incorporating the guessing probability looks as
@@ -278,7 +278,7 @@ your non-linear predictor term already contains the desired link function.
 
 ```{r}
 summary(fit_ir2)
-plot(marginal_effects(fit_ir2), points = TRUE)
+plot(conditional_effects(fit_ir2), points = TRUE)
 ```
 
 Comparing model fit via leave-one-out cross-validation 
@@ -314,7 +314,7 @@ models).
 ```{r}
 summary(fit_ir3)
 plot(fit_ir3)
-plot(marginal_effects(fit_ir3), points = TRUE)
+plot(conditional_effects(fit_ir3), points = TRUE)
 ```
 
 The results show that we are able to recover the simulated model parameters with

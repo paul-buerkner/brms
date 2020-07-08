@@ -3,10 +3,7 @@
 #' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 #'
 #' @inheritParams brm
-#' @param check_response Logical; check validity of the response?
-#' @param only_response Logical; extract data related to the response only?
-#' @param control A named list currently for internal usage only
-#' @param ... Other potential arguments
+#' @param ... Other arguments for internal use.
 #' 
 #' @return A named list of objects containing the required data 
 #'   to fit a \pkg{brms} model with \pkg{Stan}. 
@@ -14,75 +11,78 @@
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
-#' data1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
-#'                        data = inhaler, family = "cumulative")
-#' names(data1)
+#' sdata1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+#'                         data = inhaler, family = "cumulative")
+#' str(sdata1)
 #' 
-#' data2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
-#'                        data = epilepsy, family = "poisson")
-#' names(data2)
+#' sdata2 <- make_standata(count ~ zAge + zBase * Trt + (1|patient),
+#'                         data = epilepsy, family = "poisson")
+#' str(sdata2)
 #'          
 #' @export
-make_standata <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, cov_ranef = NULL,
-                          sample_prior = c("no", "yes", "only"), 
-                          stanvars = NULL, knots = NULL, 
-                          check_response = TRUE, only_response = FALSE, 
-                          control = list(), ...) {
-  # internal control arguments:
-  #   new: is make_standata is called with new data?
-  #   not4stan: is make_standata called for use in S3 methods?
-  #   save_order: should the initial order of the data be saved?
-  #   old_sdata: list of stan data computed from the orginal data
-  #   terms_attr: list of attributes of the original model.frame
-  dots <- list(...)
-  # some input checks
+make_standata <- function(formula, data, family = gaussian(), prior = NULL, 
+                          autocor = NULL, data2 = NULL, cov_ranef = NULL, 
+                          sample_prior = "no", stanvars = NULL, knots = NULL, 
+                          ...) {
+
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
   }
+  formula <- validate_formula(
+    formula, data = data, family = family, 
+    autocor = autocor, cov_ranef = cov_ranef
+  )
+  bterms <- brmsterms(formula)
+  data <- validate_data(data, bterms = bterms, knots = knots)
+  prior <- validate_prior(
+    prior, bterms = bterms, data = data,
+    sample_prior = sample_prior,
+    require_nlpar_prior = FALSE
+  )
+  data2 <- validate_data2(
+    data2, bterms = bterms, 
+    get_data2_autocor(formula),
+    get_data2_cov_ranef(formula)
+  )
+  stanvars <- validate_stanvars(stanvars)
+  .make_standata(
+    bterms, data = data, prior = prior,
+    data2 = data2, stanvars = stanvars,
+    ...
+  )
+}
+
+# internal work function of 'make_stancode'
+# @param check_response check validity of the response?
+# @param only_response extract data related to the response only?
+# @param internal prepare Stan data for use in post-processing methods?
+# @param basis original Stan data as prepared by 'standata_basis'
+# @param ... currently ignored
+# @return names list of data passed to Stan
+.make_standata <- function(bterms, data, prior, stanvars, data2, 
+                           check_response = TRUE, only_response = FALSE, 
+                           internal = FALSE, basis = NULL, ...) {
+  
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
-  not4stan <- isTRUE(control$not4stan)
-  new <- isTRUE(control$new)
-  formula <- validate_formula(
-    formula, data = data, family = family, autocor = autocor
-  )
-  bterms <- parse_bf(formula)
-  sample_prior <- check_sample_prior(sample_prior)
-  check_prior_content(prior, warn = FALSE)
-  prior <- check_prior_special(
-    prior, bterms = bterms, data = data, 
-    check_nlpar_prior = FALSE
-  )
-  na_action <- if (new) na.pass else na.omit2
-  data <- update_data(
-    data, bterms = bterms, na.action = na_action, 
-    drop.unused.levels = !new, knots = knots,
-    terms_attr = control$terms_attr
-  )
+  internal <- as_one_logical(internal)
   # order data for use in autocorrelation models
   data <- order_data(data, bterms = bterms)
-  
   out <- data_response(
     bterms, data, check_response = check_response,
-    not4stan = not4stan, new = new, 
-    old_sdata = control$old_sdata
+    internal = internal, basis = basis
   )
   if (!only_response) {
-    ranef <- tidy_ranef(
-      bterms, data, old_levels = control$old_levels,
-      old_sdata = control$old_sdata  
-    )
+    ranef <- tidy_ranef(bterms, data, old_levels = basis$levels)
+    meef <- tidy_meef(bterms, data, old_levels = basis$levels)
     c(out) <- data_predictor(
-      bterms, data = data, prior = prior, ranef = ranef, knots = knots, 
-      not4stan = not4stan, old_sdata = control$old_sdata
+      bterms, data = data, prior = prior, data2 = data2,
+      ranef = ranef, basis = basis
     )
-    c(out) <- data_gr_global(ranef, cov_ranef = cov_ranef)
-    meef <- tidy_meef(bterms, data, old_levels = control$old_levels)
+    c(out) <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_Xme(meef, data = data)
   }
-  out$prior_only <- as.integer(identical(sample_prior, "only"))
-  stanvars <- validate_stanvars(stanvars)
+  out$prior_only <- as.integer(is_equal(get_sample_prior(prior), "only"))
   if (is.stanvars(stanvars)) {
     stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))
@@ -92,8 +92,200 @@ make_standata <- function(formula, data, family = gaussian(),
     }
     out[names(stanvars)] <- lapply(stanvars, "[[", "sdata")
   }
-  if (isTRUE(control$save_order)) {
+  if (internal) {
+    # allows to recover the original order of the data
     attr(out, "old_order") <- attr(data, "old_order")
+    # ensures current grouping levels are known in post-processing
+    attr(out, "levels") <- get_levels(
+      tidy_meef(bterms, data), tidy_ranef(bterms, data)
+    )
   }
   structure(out, class = "standata")
+}
+
+#' Extract data passed to Stan
+#' 
+#' Extract all data that was used by Stan to fit the model.
+#' 
+#' @aliases standata.brmsfit
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param ... More arguments passed to \code{\link{make_standata}}
+#'   and \code{\link{validate_newdata}}.
+#' @inheritParams prepare_predictions
+#' 
+#' @return A named list containing the data originally passed to Stan.
+#' 
+#' @export
+standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                             newdata2 = NULL, new_objects = NULL,
+                             incl_autocor = TRUE, ...) {
+  
+  object <- restructure(object)
+  # allows functions to fall back to old default behavior
+  # which was used when originally fitting the model
+  options(.brmsfit_version = object$version$brms)
+  on.exit(options(.brmsfit_version = NULL))
+  
+  object <- exclude_terms(object, incl_autocor = incl_autocor)
+  newdata2 <- use_alias(newdata2, new_objects)
+  formula <- update_re_terms(object$formula, re_formula)
+  bterms <- brmsterms(formula)
+  data <- current_data(object, newdata, re_formula = re_formula, ...)
+  stanvars <- object$stanvars
+  if (is.null(newdata2)) {
+    data2 <- object$data2
+  } else {
+    data2 <- validate_data2(newdata2, bterms = bterms)
+    stanvars <- add_newdata_stanvars(stanvars, data2)
+  }
+  
+  basis <- NULL
+  if (!is.null(newdata)) {
+    # 'basis' contains information from original Stan data 
+    # required to correctly predict from new data
+    basis <- standata_basis(bterms, data = object$data)
+  }
+  .make_standata(
+    bterms, data = data, prior = object$prior,
+    data2 = data2, stanvars = stanvars, basis = basis,
+    ...
+  )
+}
+
+#' @rdname standata.brmsfit
+#' @export
+standata <- function(object, ...) {
+  UseMethod("standata")
+}
+
+# prepare basis data required for correct predictions from new data
+standata_basis <- function(x, data, ...) {
+  UseMethod("standata_basis")
+}
+
+#' @export
+standata_basis.default <- function(x, data, ...) {
+  list()
+}
+
+#' @export
+standata_basis.mvbrmsterms <- function(x, data, ...) {
+  out <- list()
+  for (r in names(x$terms)) {
+    out$resps[[r]] <- standata_basis(x$terms[[r]], data, ...)
+  }
+  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
+  out
+}
+
+#' @export
+standata_basis.brmsterms <- function(x, data, ...) {
+  out <- list()
+  data <- subset_data(data, x)
+  for (dp in names(x$dpars)) {
+    out$dpars[[dp]] <- standata_basis(x$dpars[[dp]], data, ...)
+  }
+  for (nlp in names(x$nlpars)) {
+    out$nlpars[[nlp]] <- standata_basis(x$nlpars[[nlp]], data, ...)
+  }
+  # old levels are required to select the right indices for new levels
+  out$levels <- get_levels(tidy_meef(x, data), tidy_ranef(x, data))
+  if (has_trials(x$family)) {
+    # trials should not be computed based on new data
+    datr <- data_response(x, data, check_response = FALSE, internal = TRUE)
+    # partially match via $ to be independent of the response suffix
+    out$trials <- datr$trials
+  }
+  if (is_binary(x$family) || is_categorical(x$family)) {
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$resp_levels <- levels(as.factor(y))
+  }
+  out
+}
+
+#' @export
+standata_basis.btnl <- function(x, data, ...) {
+  list()
+}
+
+#' @export
+standata_basis.btl <- function(x, data, ...) {
+  out <- list()
+  out$sm <- standata_basis_sm(x, data, ...)
+  out$gp <- standata_basis_gp(x, data, ...)
+  out$sp <- standata_basis_sp(x, data, ...)
+  out$ac <- standata_basis_ac(x, data, ...)
+  out$bhaz <- standata_basis_bhaz(x, data, ...)
+  out
+}
+
+# prepare basis data related to smooth terms
+standata_basis_sm <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  smterms <- all_terms(x[["sm"]])
+  out <- named_list(smterms)
+  if (length(smterms)) {
+    knots <- get_knots(data)
+    data <- rm_attr(data, "terms")
+    # the spline penality has changed in 2.8.7 (#646)
+    diagonal.penalty <- !require_old_default("2.8.7")
+    gam_args <- list(
+      data = data, knots = knots, 
+      absorb.cons = TRUE, modCon = 3,
+      diagonal.penalty = diagonal.penalty
+    )
+    for (i in seq_along(smterms)) {
+      sc_args <- c(list(eval2(smterms[i])), gam_args)
+      out[[i]] <- do_call(smoothCon, sc_args)
+    }
+  }
+  out
+}
+
+# prepare basis data related to gaussian processes
+standata_basis_gp <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  out <- data_gp(x, data, internal = TRUE)
+  out <- out[grepl("^((Xgp)|(dmax)|(cmeans))", names(out))]
+  out
+}
+
+# prepare basis data related to special terms
+standata_basis_sp <- function(x, data, ...) {
+  stopifnot(is.btl(x))
+  out <- list()
+  if (length(attr(x$sp, "uni_mo"))) {
+    # do it like data_sp()
+    spef <- tidy_spef(x, data)
+    Xmo <- lapply(unlist(spef$calls_mo), get_mo_values, data = data)
+    out$Jmo <- as.array(ulapply(Xmo, max))
+  }
+  out
+}
+
+# prepare basis data related to autocorrelation structures
+standata_basis_ac <- function(x, data, ...) {
+  out <- list()
+  if (has_ac_class(x, "car")) {
+    gr <- get_ac_vars(x, "gr", class = "car")
+    stopifnot(length(gr) <= 1L)
+    if (isTRUE(nzchar(gr))) {
+      out$locations <- levels(factor(get(gr, data)))
+    } else {
+      out$locations <- NA
+    }
+  }
+  out
+}
+
+# prepare basis data for baseline hazards of the cox model
+standata_basis_bhaz <- function(x, data, ...) {
+  out <- list()
+  if (is_cox(x$family)) {
+    # compute basis matrix of the baseline hazard for the Cox model
+    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    out$basis_matrix <- bhaz_basis_matrix(y, args = x$family$bhaz)
+  }
+  out
 }

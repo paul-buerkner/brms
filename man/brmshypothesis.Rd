@@ -48,18 +48,18 @@ modifying the appearance of the plots.
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 and \code{\link[bayesplot:theme_default]{theme_default}}.}
 
-\item{ask}{logical; indicates if the user is prompted 
+\item{ask}{Logical; indicates if the user is prompted 
 before a new page is plotted. 
 Only used if \code{plot} is \code{TRUE}.}
 
-\item{plot}{logical; indicates if plots should be
+\item{plot}{Logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }
 \description{
 A \code{brmshypothesis} object contains posterior samples
 as well as summary statistics of non-linear hypotheses as 
-returned by \code{\link[brms:hypothesis]{hypothesis}}.
+returned by \code{\link{hypothesis}}.
 }
 \details{
 The two most important elements of a \code{brmshypothesis} object are
@@ -68,5 +68,5 @@ of the hypotheses, and \code{samples}, which is a data.frame containing
 the corresponding posterior samples.
 }
 \seealso{
-\code{\link[brms:hypothesis]{hypothesis}}
+\code{\link{hypothesis}}
 }

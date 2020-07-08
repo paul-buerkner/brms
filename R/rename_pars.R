@@ -1,12 +1,33 @@
-# rename parameters (and possibly change their dimensions) 
-# within the stanfit object to ensure reasonable parameter names
-# @param x a brmsfit obejct
-# @return a brmfit object with adjusted parameter names and dimensions
+#' Rename Parameters
+#' 
+#' Rename parameters within the \code{stanfit} object after model fitting to
+#' ensure reasonable parameter names. This function is usally called
+#' automatically by \code{\link{brm}} and users will rarely be required to call
+#' it themselves.
+#' 
+#' @param x A brmsfit object.
+#' @return A brmfit object with adjusted parameter names.
+#' 
+#' @examples
+#' \dontrun{
+#' # fit a model manually via rstan
+#' scode <- make_stancode(count ~ Trt, data = epilepsy)
+#' sdata <- make_standata(count ~ Trt, data = epilepsy)
+#' stanfit <- rstan::stan(model_code = scode, data = sdata)
+#' 
+#' # feed the Stan model back into brms
+#' fit <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+#' fit$fit <- stanfit
+#' fit <- rename_pars(fit)
+#' summary(fit)
+#' }
+#' 
+#' @export
 rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   data <- model.frame(x)
   meef <- tidy_meef(bterms, data)
   pars <- parnames(x)
@@ -73,7 +94,8 @@ change_effects.btl <- function(x, data, pars, ...) {
     change_sm(x, data, pars),
     change_cs(x, data, pars),
     change_sp(x, data, pars),
-    change_gp(x, data, pars))
+    change_gp(x, data, pars),
+    change_thres(x, pars))
 }
 
 # helps in renaming fixed effects parameters
@@ -85,7 +107,7 @@ change_fe <- function(bterms, data, pars) {
     fixef <- setdiff(fixef, "Intercept")
   }
   if (length(fixef)) {
-    b <- paste0("b", usc(combine_prefix(px), "prefix"))
+    b <- paste0("b", usc(combine_prefix(px)))
     pos <- grepl(paste0("^", b, "\\["), pars)
     bnames <- paste0(b, "_", fixef)
     lc(out) <- clist(pos, bnames)
@@ -135,6 +157,26 @@ change_cs <- function(bterms, data, pars) {
       grepl(paste0("^", bcsp, "\\["), pars), csenames, sort = sort_cse
     )
     c(out) <- change_prior(bcsp, pars, names = csef)
+  }
+  out
+}
+
+# rename threshold parameters in ordinal models
+change_thres <- function(bterms, pars) {
+  out <- list()
+  # renaming is only required if multiple threshold were estimated
+  if (!has_thres_groups(bterms)) {
+    return(out)
+  }
+  px <- check_prefix(bterms)
+  p <- usc(combine_prefix(px))
+  int <- paste0("b", p, "_Intercept")
+  groups <- get_thres_groups(bterms)
+  for (i in seq_along(groups)) {
+    thres <- get_thres(bterms, groups[i])
+    pos <- grepl(glue("^{int}_{i}\\["), pars)
+    int_names <- glue("{int}[{groups[i]},{thres}]")
+    lc(out) <- clist(pos, int_names)
   }
   out
 }
@@ -464,7 +506,7 @@ do_renaming <- function(x, change) {
 reorder_pars <- function(x) {
   all_classes <- unique(c(
     "b", "bs", "bsp", "bcs", "ar", "ma", "lagsar", "errorsar", 
-    "car", "sdcar", "sigmaLL", "sd", "cor", "df", "sds", "sdgp", 
+    "car", "sdcar", "cosy", "sd", "cor", "df", "sds", "sdgp", 
     "lscale", valid_dpars(x), "Intercept", "tmp", "rescor", 
     "delta", "lasso", "simo", "r", "s", "zgp", "rcar", "sbhaz", 
     "Ymi", "Yl", "meanme", "sdme", "corme", "Xme", "prior", "lp"
@@ -473,7 +515,7 @@ reorder_pars <- function(x) {
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(
     factor(class, levels = all_classes),
-    !grepl("_Intercept$", x$fit@sim$pars_oi)
+    !grepl("_Intercept(_[[:digit:]]+)?$", x$fit@sim$pars_oi)
   )
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[new_order]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
@@ -529,7 +571,7 @@ compute_xi.brmsfit <- function(x, ...) {
 }
 
 #' @export
-compute_xi.mvbrmsdraws <- function(x, fit, ...) {
+compute_xi.mvbrmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   for (resp in names(x$resps)) {
     fit <- compute_xi(x$resps[[resp]], fit = fit, ...)
@@ -538,7 +580,7 @@ compute_xi.mvbrmsdraws <- function(x, fit, ...) {
 }
 
 #' @export
-compute_xi.brmsdraws <- function(x, fit, ...) {
+compute_xi.brmsprep <- function(x, fit, ...) {
   stopifnot(is.brmsfit(fit))
   resp <- usc(x$resp)
   tmp_xi_name <- paste0("tmp_xi", resp)

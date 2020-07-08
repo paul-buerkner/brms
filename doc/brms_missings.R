@@ -40,7 +40,7 @@ plot(fit_imp1, pars = "^b")
 round(fit_imp1$rhats, 2)
 
 ## ---------------------------------------------------------------------------------------
-marginal_effects(fit_imp1, "age:chl")
+conditional_effects(fit_imp1, "age:chl")
 
 ## ---- results = 'hide', message = FALSE-------------------------------------------------
 bform <- bf(bmi | mi() ~ age * mi(chl)) +
@@ -49,5 +49,5 @@ fit_imp2 <- brm(bform, data = nhanes)
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_imp2)
-marginal_effects(fit_imp2, "age:chl", resp = "bmi")
+conditional_effects(fit_imp2, "age:chl", resp = "bmi")
 

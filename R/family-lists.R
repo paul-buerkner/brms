@@ -169,7 +169,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
+    ad = c("weights", "subset", "cens", "trunc", "mi"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -179,7 +179,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "shape"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
+    ad = c("weights", "subset", "cens", "trunc", "mi"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -189,7 +189,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = "mu", type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
+    ad = c("weights", "subset", "cens", "trunc", "mi"),
     specials = "transeta"  # see stan_eta_ilink()
   )
 }
@@ -199,7 +199,7 @@
     links = c("log", "identity", "inverse", "softplus"),
     dpars = c("mu", "nu"), type = "real",
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
+    ad = c("weights", "subset", "cens", "trunc", "mi"),
     include = "fun_logm1.stan",
     specials = "transeta"  # see stan_eta_ilink()
   )
@@ -220,7 +220,7 @@
     links = c("identity", "inverse"),
     dpars = c("mu", "sigma"), type = "real", 
     ybounds = c(0, Inf), closed = c(FALSE, NA),
-    ad = c("weights", "subset", "cens", "trunc", "mi", "rate"),
+    ad = c("weights", "subset", "cens", "trunc", "mi"),
     specials = "logscale"
   )
 }
@@ -313,7 +313,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "ordered_thres", "thres_minus_eta")
   )
 }
@@ -326,7 +326,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "thres_minus_eta")
   )
 }
@@ -339,7 +339,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
@@ -352,7 +352,7 @@
     ),
     dpars = c("mu", "disc"), type = "int", 
     ybounds = c(-Inf, Inf), closed = c(NA, NA),
-    ad = c("weights", "subset", "cat"), 
+    ad = c("weights", "subset", "thres", "cat"), 
     specials = c("ordinal", "cs", "eta_minus_thres")
   )
 }
@@ -459,8 +459,8 @@
 
 .family_custom <- function() {
   list(
-    ad = c("weights", "subset", "se", "cens", "trunc",
-           "trials", "cat", "dec", "mi", "vreal", "vint"),
+    ad = c("weights", "subset", "se", "cens", "trunc", "trials", 
+           "thres", "cat", "dec", "mi", "vreal", "vint"),
     ybounds = c(-Inf, Inf), closed = c(NA, NA)
   )
 }

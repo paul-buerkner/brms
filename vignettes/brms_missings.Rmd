@@ -59,8 +59,8 @@ head(nhanes)
 There are many approaches allowing us to impute missing data before the actual
 model fitting takes place. From a statistical perspective, multiple imputation
 is one of the best solutions. Each missing value is not imputed once but
-\code{m} times leading to a total of \code{m} fully imputed data sets. The model
-can then be fitted to each of those data sets separetely and results are pooled
+`m` times leading to a total of `m` fully imputed data sets. The model
+can then be fitted to each of those data sets separately and results are pooled
 across models, afterwards. One widely applied package for multiple imputation is
 **mice** (Buuren & Groothuis-Oudshoorn, 2010) and we will use it in the
 following in combination with **brms**. Here, we apply the default settings of
@@ -120,11 +120,11 @@ round(fit_imp1$rhats, 2)
 ```
 
 The convergence of each of the submodels looks good. Accordingly, we can proceed
-with further post-processing and interpreation of the results. For instance, we
+with further post-processing and interpretation of the results. For instance, we
 could investigate the combined effect of `age` and `chl`.
 
 ```{r}
-marginal_effects(fit_imp1, "age:chl")
+conditional_effects(fit_imp1, "age:chl")
 ```
 
 To summarize, the advantages of multiple imputation are obvious: One can apply
@@ -171,18 +171,18 @@ rather than excluded by adding `| mi()` on the left-hand side of the
 formulas[^2]. We write `mi(chl)` on the right-hand side of the formula for `bmi`
 to ensure that the estimated missing values of `chl` will be used in the
 prediction of `bmi`. The summary is a bit more cluttered as we get coefficients
-for both response variables, but apart from that we can interprete coefficients
+for both response variables, but apart from that we can interpret coefficients
 in the usual way.
 
 ```{r}
 summary(fit_imp2)
-marginal_effects(fit_imp2, "age:chl", resp = "bmi")
+conditional_effects(fit_imp2, "age:chl", resp = "bmi")
 ```
 
 The results look pretty similar to those obtained from multiple imputation, but
 be aware that this may not be generally the case. In multiple imputation, the
 default is to impute all variables based on all other variables, while in the
-'one-step' approach, we have to explictly specify the variables used in the
+'one-step' approach, we have to explicitly specify the variables used in the
 imputation. Thus, arguably, multiple imputation is easier to apply. An obvious
 advantage of the 'one-step' approach is that the model needs to be fitted only
 once instead of `m` times. Also, within the **brms** framework, we can use

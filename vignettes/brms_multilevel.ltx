@@ -187,15 +187,15 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 A graphical summary is available through
 
 \begin{Sinput}
-marginal_effects(fit_zinb1)
+conditional_effects(fit_zinb1)
 \end{Sinput}
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.99\textwidth,keepaspectratio]{me_zinb1.pdf}
-	\caption{Marginal effects plots of the \code{fit\_zinb1} model.}
+	\caption{Conditional effects plots of the \code{fit\_zinb1} model.}
 	\label{me_zinb1}
 \end{figure}
-(see Figure \ref{me_zinb1}). In fact, the \code{marginal\_effects} method turned out to be so powerful in visualizing effects of predictors that I am using it almost as frequently as \code{summary}. According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability \code{zi} is pretty large with a mean of 41\%. Please note that the probability of catching no fish is actually higher than 41\%, but parts of this probability are already modeled by the Poisson distribution itself (hence the name zero-\emph{inflation}). If you want to treat all zeros as originating from a separate process, you can use hurdle models instead (not shown here). 
+(see Figure \ref{me_zinb1}). In fact, the \code{conditional\_effects} method turned out to be so powerful in visualizing effects of predictors that I am using it almost as frequently as \code{summary}. According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability \code{zi} is pretty large with a mean of 41\%. Please note that the probability of catching no fish is actually higher than 41\%, but parts of this probability are already modeled by the Poisson distribution itself (hence the name zero-\emph{inflation}). If you want to treat all zeros as originating from a separate process, you can use hurdle models instead (not shown here). 
 
 Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to not even try catching fish, since children often lack the patience required for fishing. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to make full use of the data.
 
@@ -313,14 +313,14 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 For models including splines, the output of \code{summary} is not tremendously helpful, but we get at least some information. Firstly, the credible intervals of the standard deviations of the coefficients forming the splines (under \code{'Smooth Terms'}) are sufficiently far away from zero to indicate non-linearity in the (combined) effect of \code{area} and \code{yearc}. Secondly, even after controlling for these predictors, districts still vary with respect to rent per square meter by a sizable amount as visible under \code{'Group-Level Effects'} in the output. To further understand the effect of the predictor, we apply graphical methods:
 
 \begin{Sinput}
-marginal_effects(fit_rent1, surface = TRUE)
+conditional_effects(fit_rent1, surface = TRUE)
 \end{Sinput}
-In Figure \ref{me_rent1}, the marginal effects of both predictors are displayed, while the respective other predictor is fixed at its mean. In Figure \ref{me_rent2}, the combined effect is shown, clearly demonstrating an interaction between the variables. In particular, housing rents appear to be highest for small and relatively new apartments.
+In Figure \ref{me_rent1}, the conditional effects of both predictors are displayed, while the respective other predictor is fixed at its mean. In Figure \ref{me_rent2}, the combined effect is shown, clearly demonstrating an interaction between the variables. In particular, housing rents appear to be highest for small and relatively new apartments.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.99\textwidth,keepaspectratio]{me_rent1.pdf}
-	\caption{Marginal effects plots of the \code{fit\_rent1} model for single predictors.}
+	\caption{Conditional effects plots of the \code{fit\_rent1} model for single predictors.}
 	\label{me_rent1}
 \end{figure}
 
@@ -348,10 +348,10 @@ sd(Intercept)                      0.60      0.06     0.49     0.73        744 1
 sd(sigma_Intercept)                0.11      0.02     0.06     0.15        751 1.00
 cor(Intercept,sigma_Intercept)     0.72      0.17     0.35     0.98        648 1.00
 \end{Sinput}
-As visible from the positive correlation of the intercepts, districts with overall higher rent per square meter have higher variation at the same time. Lastly, we want to turn our attention to the splines. While \code{marginal\_effects} is used to visualize effects of predictors on the expected response, \code{marginal\_smooths} is used to show just the spline parts of the model:
+As visible from the positive correlation of the intercepts, districts with overall higher rent per square meter have higher variation at the same time. Lastly, we want to turn our attention to the splines. While \code{conditional\_effects} is used to visualize effects of predictors on the expected response, \code{conditional\_smooths} is used to show just the spline parts of the model:
 
 \begin{Sinput}
-marginal_smooths(fit_rent2)
+conditional_smooths(fit_rent2)
 \end{Sinput} 
 The plot on the left-hand side of Figure \ref{me_rent3} resembles the one in Figure \ref{me_rent2}, but the scale is different since only the spline is plotted. The right-hand side of \ref{me_rent3} shows the spline for \code{sigma}. Since we apply the log-link on \code{sigma} by default the spline is on the log-scale as well. As visible in the plot, the variation in the rent per square meter is highest for relatively small and old apartments, while the variation is smallest for medium to large apartments build around the 1960s.
 
@@ -445,12 +445,12 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 as well as
 
 \begin{Sinput}
-marginal_effects(fit_loss1)
+conditional_effects(fit_loss1)
 \end{Sinput}
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.7\textwidth,keepaspectratio]{me_loss1.pdf}
-	\caption{Marginal effects plots of the \code{fit\_loss1} model.}
+	\caption{Conditional effects plots of the \code{fit\_loss1} model.}
 	\label{me_loss1}
 \end{figure}
 (see Figure \ref{me_loss1}). We can also visualize the cumulative insurance loss over time separately for each year.
@@ -458,14 +458,14 @@ marginal_effects(fit_loss1)
 \begin{Sinput}
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-me_year <- marginal_effects(fit_loss1, conditions = conditions, 
-                            re_formula = NULL, method = "predict")
+me_year <- conditional_effects(fit_loss1, conditions = conditions, 
+                               re_formula = NULL, method = "predict")
 plot(me_year, ncol = 5, points = TRUE)
 \end{Sinput}
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.99\textwidth,keepaspectratio]{me_loss1_year.pdf}
-	\caption{Marginal effects plots of the \code{fit\_loss1} model separately for each accident year.}
+	\caption{Conditional effects plots of the \code{fit\_loss1} model separately for each accident year.}
 	\label{me_loss1_year}
 \end{figure}
 (see Figure \ref{me_loss1_year}). It is evident that there is some variation in cumulative loss across accident years, for instance due to natural disasters happening only in certain years. Further, we see that the uncertainty in the predicted cumulative loss is larger for later years with fewer available data points. 

@@ -30,7 +30,7 @@ fit1 <- brm(
 )
 
 ## ----summary1, warning=FALSE------------------------------------------------------------
-add_ic(fit1) <- "loo"
+fit1 <- add_criterion(fit1, "loo")
 summary(fit1)
 
 ## ----pp_check1, message=FALSE-----------------------------------------------------------
@@ -46,7 +46,7 @@ bf_back <- bf(back ~ hatchdate + (1|p|fosternest) + (1|q|dam))
 fit2 <- brm(bf_tarsus + bf_back, data = BTdata, chains = 2, cores = 2)
 
 ## ----summary2, warning=FALSE------------------------------------------------------------
-add_ic(fit2) <- "loo"
+fit2 <- add_criterion(fit2, "loo")
 summary(fit2)
 
 ## ----loo12------------------------------------------------------------------------------
@@ -57,6 +57,7 @@ bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
 bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
   gaussian()
+
 fit3 <- brm(
   bf_tarsus + bf_back + set_rescor(FALSE), 
   data = BTdata, chains = 2, cores = 2,
@@ -64,9 +65,9 @@ fit3 <- brm(
 )
 
 ## ----summary3, warning=FALSE------------------------------------------------------------
-add_ic(fit3) <- "loo"
+fit3 <- add_criterion(fit3, "loo")
 summary(fit3)
 
 ## ----me3--------------------------------------------------------------------------------
-marginal_effects(fit3, "hatchdate", resp = "back")
+conditional_effects(fit3, "hatchdate", resp = "back")
 

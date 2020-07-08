@@ -40,7 +40,7 @@ model, in which we can specify predictor terms for all parameters of the assumed
 response distribution. In the vast majority of regression model implementations,
 only the location parameter (usually the mean) of the response distribution
 depends on the predictors and corresponding regression parameters. Other
-parameters (e.g., scale or shape parameters) are estimated as auxilliary
+parameters (e.g., scale or shape parameters) are estimated as auxiliary
 parameters assuming them to be constant across observations. This assumption is
 so common that most researchers applying regression models are often (in my
 experience) not aware of the possibility of relaxing it. This is understandable
@@ -74,8 +74,8 @@ linear predictor can be any real number.
 
 Unequal variance models are possibly the most simple, but nevertheless very
 important application of distributional models. Suppose we have two groups of
-patients: One group recieves a treatment (e.g., an antidepressive drug) and
-another group recieves placebo. Since the treatment may not work equally well
+patients: One group receives a treatment (e.g., an antidepressive drug) and
+another group receives placebo. Since the treatment may not work equally well
 for all patients, the symptom variance of the treatment group may be larger than
 the symptom variance of the placebo group after some weeks of treatment. For
 simplicity, assume that we only investigate the post-treatment values.
@@ -100,13 +100,13 @@ Useful summary statistics and plots can be obtained via
 ```{r, results='hide'}
 summary(fit1)
 plot(fit1, N = 2, ask = FALSE)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 ```
 
 The population-level effect `sigma_grouptreat`, which is the contrast of the two
 residual standard deviations on the log-scale, reveals that the variances of
 both groups are indeed different. This impression is confirmed when looking at
-the `marginal_effects` of `group`. Going one step further, we can compute the
+the `conditional_effects` of `group`. Going one step further, we can compute the
 residual standard deviations on the original scale using the `hypothesis`
 method.
 
@@ -169,15 +169,15 @@ Again, we summarize the results using the usual methods.
 
 ```{r}
 summary(fit_zinb1)
-plot(marginal_effects(fit_zinb1), ask = FALSE)
+plot(conditional_effects(fit_zinb1), ask = FALSE)
 ```
 
 According to the parameter estimates, larger groups catch more fish, campers
 catch more fish than non-campers, and groups with more children catch less fish.
 The zero-inflation probability `zi` is pretty large with a mean of 41%. Please
 note that the probability of catching no fish is actually higher than 41%, but
-parts of this probability are already modeled by the poisson distribution itself
-(hence the name zero-*inflation*). If you want to treat all zeros as origniating
+parts of this probability are already modeled by the Poisson distribution itself
+(hence the name zero-*inflation*). If you want to treat all zeros as originating
 from a separate process, you can use hurdle models instead (not shown here).
 
 Now, we try to additionally predict the zero-inflation probability by the number
@@ -195,7 +195,7 @@ fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
 
 ```{r}
 summary(fit_zinb2)
-plot(marginal_effects(fit_zinb2), ask = FALSE)
+plot(conditional_effects(fit_zinb2), ask = FALSE)
 ```
 
 To transform the linear predictor of `zi` into a probability, **brms** applies
@@ -246,7 +246,7 @@ fit_smooth1 <- brm(
 
 ```{r}
 summary(fit_smooth1)
-plot(marginal_effects(fit_smooth1), points = TRUE, ask = FALSE)
+plot(conditional_effects(fit_smooth1), points = TRUE, ask = FALSE)
 ```
 
 This model is likely an overkill for the data at hand, but nicely demonstrates

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2019-07-15" />
+<meta name="date" content="2020-05-19" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -31,9 +31,6 @@ padding-right: 2em;
 font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 font-size: 14px;
 line-height: 1.35;
-}
-#header {
-text-align: center;
 }
 #TOC {
 clear: both;
@@ -202,7 +199,8 @@ code > span.st { color: #d14; }
 code > span.co { color: #888888; font-style: italic; } 
 code > span.ot { color: #007020; } 
 code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
 
 
@@ -217,7 +215,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author">Paul Bürkner</h4>
-<h4 class="date">2019-07-15</h4>
+<h4 class="date">2020-05-19</h4>
 
 
 <div id="TOC">
@@ -266,7 +264,7 @@ f(y) = \frac{1}{\sqrt{2\pi}\sigma}
 <h2>Binary and count data models</h2>
 <p>The density of the <strong>binomial</strong> family is given by <span class="math display">\[
 f(y) = {N \choose y} \mu^{y} (1-\mu)^{N - y}
-\]</span> where <span class="math inline">\(N\)</span> is the number of trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>. When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y \in \{0,1\}\)</span>), the bernoulli distribution for binary data arises. <strong>binomial</strong> and <strong>bernoulli</strong> families are distinguished in brms as the bernoulli distribution has its own implementation in Stan that is computationlly more efficient.</p>
+\]</span> where <span class="math inline">\(N\)</span> is the number of trials and <span class="math inline">\(y \in \{0, ... , N\}\)</span>. When all <span class="math inline">\(N\)</span> are <span class="math inline">\(1\)</span> (i.e., <span class="math inline">\(y \in \{0,1\}\)</span>), the <strong>bernoulli</strong> distribution for binary data arises.</p>
 <p>For <span class="math inline">\(y \in \mathbb{N}_0\)</span>, the density of the <strong>poisson</strong> family is given by <span class="math display">\[
 f(y) = \frac{\mu^{y}}{y!} \exp(-\mu)
 \]</span> The density of the <strong>negbinomial</strong> (negative binomial) family is <span class="math display">\[
@@ -387,6 +385,9 @@ f_{\alpha, \gamma}(y) = (1 - \alpha) f(y) \quad \text{if } y \notin \{0, 1\}
 \]</span> where <span class="math inline">\(\alpha\)</span> is the zero-one-inflation probability (i.e. the probability that zero or one occurs) and <span class="math inline">\(\gamma\)</span> is the conditional one-inflation probability (i.e. the probability that one occurs rather than zero). Currently implemented families are <strong>zero_one_inflated_beta</strong>.</p>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->

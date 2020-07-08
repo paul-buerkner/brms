@@ -24,20 +24,26 @@ restructure <- function(x, rstr_summary = FALSE) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
-  if (x$version$brms >= utils::packageVersion("brms")) {
+  current_version <- utils::packageVersion("brms") 
+  restr_version <- restructure_version(x)
+  if (restr_version >= current_version) {
+    # object is up to date with the current brms version
     return(x)
-  } 
-  if (!isTRUE(attr(x, "restructured"))) {
-    if (x$version$brms < "2.0.0") {
-      x <- restructure_v1(x)
-    }
-    if (x$version$brms < "3.0.0") {
-      x <- restructure_v2(x)
-    }
   }
+  if (restr_version < "2.0.0") {
+    x <- restructure_v1(x)
+  }
+  if (restr_version < "3.0.0") {
+    x <- restructure_v2(x)
+  }
+  # remember the version with which the object was restructured
+  x$version$restructure <- current_version
+  # remove unused attribute
+  attr(x, "restructured") <- NULL
+  # optionally also restructure the rstan summary
+  # TODO: remove at some point as summary.brmsfit no longer requires it
   stan_env <- attributes(x$fit)$.MISC
   if (rstr_summary && exists("summary", stan_env)) {
-    # TODO: remove at some point as summary.brmsfit no longer requires it
     stan_summary <- get("summary", stan_env)
     old_parnames <- rownames(stan_summary$msd)
     if (!identical(old_parnames, parnames(x))) {
@@ -46,29 +52,29 @@ restructure <- function(x, rstr_summary = FALSE) {
       remove("summary", pos = stan_env)
     }
   }
-  structure(x, restructured = TRUE)
+  x
 }
 
 restructure_v2 <- function(x) {
   # restructure models fitted with brms 2.x
   x$formula <- update_old_family(x$formula)
-  bterms <- parse_bf(x$formula)
+  bterms <- SW(brmsterms(x$formula))
   pars <- parnames(x)
-  version <- x$version$brms
-  if (version <= "2.1.1") {
+  version <- restructure_version(x)
+  if (version < "2.1.2") {
     x <- do_renaming(x, change_old_bsp(pars))
   }
-  if (version <= "2.1.2") {
+  if (version < "2.1.3") {
     if ("weibull" %in% family_names(x)) {
       stop_parameterization_changed("weibull", "2.1.3")
     }
   }
-  if (version <= "2.1.7") {
+  if (version < "2.1.8") {
     if ("exgaussian" %in% family_names(x)) {
       stop_parameterization_changed("exgaussian", "2.1.8")
     }
   }
-  if (version <= "2.1.8") {
+  if (version < "2.1.9") {
     # reworked 'me' terms (#372)
     meef <- tidy_meef(bterms, model.frame(x))
     if (isTRUE(nrow(meef) > 0)) {
@@ -79,45 +85,100 @@ restructure_v2 <- function(x) {
       )
     }
   }
-  if (version <= "2.2.3") {
+  if (version < "2.2.4") {
     # added 'dist' argument to grouping terms
     x$ranef <- tidy_ranef(bterms, model.frame(x))
   }
-  if (version <= "2.3.6") {
+  if (version < "2.3.7") {
     check_old_nl_dpars(bterms)
   }
-  if (version <= "2.8.2") {
+  if (version < "2.8.3") {
     # argument 'sparse' is now specified within 'formula'
     sparse <- if (grepl("sparse matrix", stancode(x))) TRUE
-    x$formula <- SW(validate_formula(
-      formula(x), data = model.frame(x), sparse = sparse
-    ))
+    x$formula <- SW(validate_formula(x$formula, data = x$data, sparse = sparse))
   }
-  if (version <= "2.8.3") {
+  if (version < "2.8.4") {
     x <- rescale_old_mo(x)
   }
-  if (version <= "2.8.4") {
+  if (version < "2.8.5") {
     if (any(grepl("^arr(\\[|_|$)", pars))) {
       warning2("ARR structures are no longer supported.")
     }
   }
-  if (version <= "2.8.5") {
+  if (version < "2.8.6") {
     # internal handling of special effects terms has changed
     # this requires updating the 'terms' attribute of the data
     x$data <- rm_attr(x$data, c("brmsframe", "terms"))
-    x$data <- update_data(x$data, bterms) 
+    x$data <- validate_data(x$data, bterms) 
   }
-  if (version <= "2.8.8") {
+  if (version < "2.8.9") {
     if (any(grepl("^loclev(\\[|_|$)", pars))) {
       warning2("BSTS structures are no longer supported.")
     }
+  }
+  if (version < "2.10.4") {
+    # model fit criteria have been moved to x$criteria 
+    criterion_names <- c("loo", "waic", "kfold", "R2", "marglik")
+    criteria <- x[intersect(criterion_names, names(x))]
+    x[criterion_names] <- NULL
+    # rename 'R2' to 'bayes_R2' according to #793
+    names(criteria)[names(criteria) == "R2"] <- "bayes_R2"
+    x$criteria <- criteria
+  }
+  if (version < "2.10.5") {
+    # new slot 'thres' stored inside ordinal families
+    if (is_ordinal(x$formula)) {
+      x$formula <- SW(validate_formula(x$formula, data = x$data))
+    }
+  }
+  if (version < "2.11.2") {
+    # 'autocor' was integrated into the formula interface
+    x$formula <- SW(validate_formula(x$formula))
+    x$data2 <- validate_data2(
+      data2 = list(), bterms = bterms, 
+      get_data2_autocor(x$formula)
+    )
+  }
+  if (version < "2.11.3") {
+    # ordering after IDs matches the order of the posterior samples 
+    # if multiple IDs are used for the same grouping factor (#835)
+    x$ranef <- x$ranef[order(x$ranef$id), , drop = FALSE]
+  }
+  if (version < "2.11.5") {
+    # 'cats' is stored inside ordinal families again
+    if (is_ordinal(x$formula)) {
+      x$formula <- SW(validate_formula(x$formula, data = x$data))
+    }
+  }
+  if (version < "2.12.5") {
+    # 'cov_ranef' was integrated into the formula interface
+    if (length(x$cov_ranef)) {
+      x$formula <- SW(validate_formula(x$formula, cov_ranef = x$cov_ranef))
+      cov_ranef <- get_data2_cov_ranef(x$formula)
+      x$data2[names(cov_ranef)] <- cov_ranef
+    }
+  }
+  if (version < "2.12.6") {
+    # minor structural changes as part of internal interface improvements
+    attr(x$data, "data_name") <- x$data.name
+    x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
+  }
+  if (version < "2.12.11") {
+    # argument 'position' was added to stanvars
+    for (i in seq_along(x$stanvars)) {
+      x$stanvars[[i]]$position <- "start"
+    }
+  }
+  if (version < "2.13.2") {
+    # added support for 'cmdstanr' as additional backend
+    x$backend <- "rstan"
   }
   x
 }
 
 # restructure models fitted with brms 1.x
 restructure_v1 <- function(x) {
-  version <- x$version$brms
+  version <- restructure_version(x)
   if (version < "1.0.0") {
     warning2(
       "Models fitted with brms < 1.0 are no longer offically ",
@@ -125,15 +186,15 @@ restructure_v1 <- function(x) {
       "refitting the model with the latest version of brms."
     )
   }
-  x$formula <- restructure_formula(formula(x), x$nonlinear)
+  x$formula <- restructure_formula_v1(formula(x), x$nonlinear)
   x$formula <- SW(validate_formula(
     formula(x), data = model.frame(x), family = family(x),
     autocor = x$autocor, threshold = x$threshold
   ))
   x$nonlinear <- x$partial <- x$threshold <- NULL
-  bterms <- parse_bf(formula(x))
+  bterms <- brmsterms(formula(x))
   x$data <- rm_attr(x$data, "brmsframe")
-  x$data <- update_data(x$data, bterms) 
+  x$data <- validate_data(x$data, bterms) 
   x$ranef <- tidy_ranef(bterms, model.frame(x))
   if ("prior_frame" %in% class(x$prior)) {
     class(x$prior) <- c("brmsprior", "data.frame") 
@@ -142,7 +203,7 @@ restructure_v1 <- function(x) {
     # deprecated as of brms 1.4.0
     class(x$autocor) <- "cor_fixed"
   }
-  if (version <= "0.10.0.9000") {
+  if (version < "0.10.1") {
     if (length(bterms$dpars$mu$nlpars)) {
       # nlpar and group have changed positions
       change <- change_old_re(x$ranef, parnames(x), x$fit@sim$dims_oi)
@@ -154,7 +215,7 @@ restructure_v1 <- function(x) {
     change <- change_old_re2(x$ranef, parnames(x), x$fit@sim$dims_oi)
     x <- do_renaming(x, change)
   }
-  if (version <= "1.0.1") {
+  if (version < "1.0.1.1") {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
     change <- change_old_sm(
@@ -162,7 +223,7 @@ restructure_v1 <- function(x) {
     )
     x <- do_renaming(x, change)
   }
-  if (version <= "1.8.0") {
+  if (version < "1.8.0.1") {
     att <- attributes(x$exclude)
     if (is.null(att$save_ranef)) {
       attr(x$exclude, "save_ranef") <- 
@@ -173,10 +234,10 @@ restructure_v1 <- function(x) {
         any(grepl("^Xme_", parnames(x)))
     }
   }
-  if (version <= "1.8.0.1") {
+  if (version < "1.8.0.2") {
     x$prior[, c("resp", "dpar")] <- ""
   }
-  if (version <= "1.9.0.3") {
+  if (version < "1.9.0.4") {
     # names of monotonic parameters had to be changed after
     # allowing for interactions in monotonic terms
     change <- change_old_mo(bterms, x$data, pars = parnames(x))
@@ -189,8 +250,22 @@ restructure_v1 <- function(x) {
   x
 }
 
+# get version with which a brmsfit object was restructured
+restructure_version <- function(x) {
+  stopifnot(is.brmsfit(x))
+  out <- x$version$restructure
+  if (!is.package_version(out)) {
+    # models restructured with brms 2.11.1 store it as an attribute
+    out <- attr(x, "restructured", exact = TRUE) 
+  }
+  if (!is.package_version(out)) {
+    out <- x$version$brms
+  }
+  out
+}
+
 # convert old model formulas to brmsformula objects
-restructure_formula <- function(formula, nonlinear = NULL) {
+restructure_formula_v1 <- function(formula, nonlinear = NULL) {
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
@@ -481,7 +556,7 @@ rescale_old_mo <- function(x, ...) {
 
 #' @export
 rescale_old_mo.brmsfit <- function(x, ...) {
-  bterms <- parse_bf(x$formula)
+  bterms <- brmsterms(x$formula)
   rescale_old_mo(bterms, fit = x, ...)
 }
 
@@ -547,7 +622,7 @@ update_old_family <- function(x, ...) {
 
 #' @export
 update_old_family.default <- function(x, ...) {
-  check_family(x)
+  validate_family(x)
 }
 
 #' @export
@@ -560,6 +635,14 @@ update_old_family.brmsfamily <- function(x, ...) {
 
 #' @export
 update_old_family.customfamily <- function(x, ...) {
+  if (!is.null(x$predict)) {
+    x$posterior_predict <- x$predict 
+    x$predict <- NULL
+  }
+  if (!is.null(x$fitted)) {
+    x$posterior_epred <- x$fitted
+    x$fitted <- NULL
+  }
   x
 }
 

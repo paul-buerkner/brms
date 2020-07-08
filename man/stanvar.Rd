@@ -5,13 +5,19 @@
 \alias{stanvars}
 \title{User-defined variables passed to Stan}
 \usage{
-stanvar(x = NULL, name = NULL, scode = NULL, block = "data")
+stanvar(
+  x = NULL,
+  name = NULL,
+  scode = NULL,
+  block = "data",
+  position = "start"
+)
 }
 \arguments{
 \item{x}{An \R object containing data to be passed to Stan.
 Only required if \code{block = 'data'} and ignored otherwise.}
 
-\item{name}{Optinal character string providing the desired variable 
+\item{name}{Optional character string providing the desired variable 
 name of the object in \code{x}. If \code{NULL} (the default)
 the variable name is directly infered from \code{x}.}
 
@@ -24,6 +30,10 @@ which the variable should be defined. Can be \code{'data'},
 \code{'tdata'} (transformed data), \code{'parameters'},
 \code{'tparameters'} (transformed parameters), \code{'model'},
 \code{'genquant'} (generated quantities) or \code{'functions'}.}
+
+\item{position}{Name of the position within the block where the
+Stan code should be placed. Currently allowed are \code{'start'}
+(the default) and \code{'end'} of the block.}
 }
 \value{
 An object of class \code{stanvars}.

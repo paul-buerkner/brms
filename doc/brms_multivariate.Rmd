@@ -68,7 +68,7 @@ corresponding relatedness matrices, but this is not the focus of this vignette
 summarized via
 
 ```{r summary1, warning=FALSE}
-add_ic(fit1) <- "loo"
+fit1 <- add_criterion(fit1, "loo")
 summary(fit1)
 ```
 
@@ -122,7 +122,7 @@ which is in this case equivalent to writing `mvbf(bf_tarsus, bf_back)`. See
 syntax. Again, we summarize the model first.
 
 ```{r summary2, warning=FALSE}
-add_ic(fit2) <- "loo"
+fit2 <- add_criterion(fit2, "loo")
 summary(fit2)
 ```
 
@@ -153,6 +153,7 @@ bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
 bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
   gaussian()
+
 fit3 <- brm(
   bf_tarsus + bf_back + set_rescor(FALSE), 
   data = BTdata, chains = 2, cores = 2,
@@ -163,7 +164,7 @@ fit3 <- brm(
 Again, we summarize the model and look at some posterior-predictive checks.
 
 ```{r summary3, warning=FALSE}
-add_ic(fit3) <- "loo"
+fit3 <- add_criterion(fit3, "loo")
 summary(fit3)
 ```
 
@@ -173,7 +174,7 @@ chicks. Further, we see from the negative `alpha` (skewness) parameter of
 `tarsus` that the residuals are indeed slightly left-skewed. Lastly, running
 
 ```{r me3}
-marginal_effects(fit3, "hatchdate", resp = "back")
+conditional_effects(fit3, "hatchdate", resp = "back")
 ```
 
 reveals a non-linear relationship of `hatchdate` on the `back` color, which

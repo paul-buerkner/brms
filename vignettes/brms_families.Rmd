@@ -70,10 +70,8 @@ $$
 f(y) = {N \choose y} \mu^{y} (1-\mu)^{N - y}
 $$
 where $N$ is the number of trials and $y \in \{0, ... , N\}$. When all
-$N$ are $1$ (i.e., $y \in \{0,1\}$), the bernoulli distribution for binary
-data arises. **binomial** and **bernoulli** families are distinguished in
-brms as the bernoulli distribution has its own implementation in Stan
-that is computationlly more efficient.
+$N$ are $1$ (i.e., $y \in \{0,1\}$), the **bernoulli** distribution for binary
+data arises.
 
 For $y \in \mathbb{N}_0$, the density of the **poisson** family is given by
 $$
@@ -156,20 +154,20 @@ $$
 f(y) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\xi + \sigma^2 / \beta - 2 y \right) \right) \text{erfc}\left(\frac{\xi + \sigma^2 / \beta - y}{\sqrt{2} \sigma} \right)
 $$
 where $\beta$ is the scale (inverse rate) of the exponential component, $\xi$ is
-the mean of the Gaussian componenent, $\sigma$ is the standard deviation of the
+the mean of the Gaussian component, $\sigma$ is the standard deviation of the
 Gaussian component, and $\text{erfc}$ is the complementary error function. We
 parameterize $\mu = \xi + \beta$ so that the main predictor term equals the
 mean of the distribution.
 
-Another family well suited for modelling response times is the
+Another family well suited for modeling response times is the
 **shifted_lognormal** distribution. It's density equals that of the
 **lognormal** distribution except that the whole distribution is shifted to the
 right by a positive parameter called *ndt* (for consistency with the **wiener**
 diffusion model explained below).
 
-A family concerned with the combined modelling of reaction times and
+A family concerned with the combined modeling of reaction times and
 corresponding binary responses is the **wiener** diffusion model. It has four
-model parameters each with a natural interpreation. The parameter $\alpha > 0$
+model parameters each with a natural interpretation. The parameter $\alpha > 0$
 describes the separation between two boundaries of the diffusion process, 
 $\tau > 0$ describes the non-decision time (e.g., due to image or motor processing),
 $\beta \in [0, 1]$ describes the initial bias in favor of the upper alternative,
@@ -275,7 +273,7 @@ $k$ for a subset of predictors. This leads to category specific
 effects (for details on how to specify them see `help(brm)`). Note that
 **cumulative** and **sratio** models use $\tau - \eta$, whereas **cratio** and
 **acat** use $\eta - \tau$. This is done to ensure that larger values of $\eta$
-increase the probability of *higher* reponse categories.
+increase the probability of *higher* response categories.
 
 The **categorical** family is currently only implemented with the multivariate
 logit link function and has density
@@ -296,7 +294,7 @@ function shown above.
 ## Zero-inflated and hurdle models
 
 **Zero-inflated** and **hurdle** families extend existing families by adding
-special processes for responses that are zero. The densitiy of a
+special processes for responses that are zero. The density of a
 **zero-inflated** family is given by
 $$
 f_z(y) = z + (1 - z) f(0) \quad \text{if } y = 0 \\

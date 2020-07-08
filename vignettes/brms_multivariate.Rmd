@@ -60,7 +60,7 @@ modeled as correlated. This makes sense since we actually have two model parts,
 one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be
 replaced by other symbols that comes into your mind (for details about the
 multilevel syntax of **brms**, see `help("brmsformula")` and
-`vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates
+`vignette("brms_multilevel")`). Similarly, the term `(1|q|dam)` indicates
 correlated varying effects of the genetic mother of the chicks. Alternatively,
 we could have also modeled the genetic similarities through pedigrees and
 corresponding relatedness matrices, but this is not the focus of this vignette
@@ -68,7 +68,7 @@ corresponding relatedness matrices, but this is not the focus of this vignette
 summarized via
 
 ```{r summary1, warning=FALSE}
-add_ic(fit1) <- "loo"
+fit1 <- add_criterion(fit1, "loo")
 summary(fit1)
 ```
 
@@ -81,7 +81,7 @@ characteristics. Further, the small residual correlation `rescor(tarsus, back)`
 on the bottom of the output indicates that there is little unmodeled dependency
 between tarsus length and back color. Although not necessary at this point, we
 have already computed and stored the LOO information criterion of `fit1`, which
-we will use for model comparions. Next, let's take a look at some
+we will use for model comparisons. Next, let's take a look at some
 posterior-predictive checks, which give us a first impression of the model fit.
 
 ```{r pp_check1, message=FALSE}
@@ -122,7 +122,7 @@ which is in this case equivalent to writing `mvbf(bf_tarsus, bf_back)`. See
 syntax. Again, we summarize the model first.
 
 ```{r summary2, warning=FALSE}
-add_ic(fit2) <- "loo"
+fit2 <- add_criterion(fit2, "loo")
 summary(fit2)
 ```
 
@@ -146,13 +146,14 @@ normal (or student-t) model, anymore, estimating residual correlations is no
 longer possible. We make this explicit using the `set_rescor` function. Further,
 we investigate if the relationship of `back` and `hatchdate` is really linear as
 previously assumed by fitting a non-linear spline of `hatchdate`. On top of it,
-we model separate residual variances of `tarsus` for males and femals chicks.
+we model separate residual variances of `tarsus` for male and female chicks.
 
 ```{r fit3, message=FALSE, warning=FALSE, results='hide'}
 bf_tarsus <- bf(tarsus ~ sex + (1|p|fosternest) + (1|q|dam)) +
   lf(sigma ~ 0 + sex) + skew_normal()
 bf_back <- bf(back ~ s(hatchdate) + (1|p|fosternest) + (1|q|dam)) +
   gaussian()
+
 fit3 <- brm(
   bf_tarsus + bf_back + set_rescor(FALSE), 
   data = BTdata, chains = 2, cores = 2,
@@ -163,7 +164,7 @@ fit3 <- brm(
 Again, we summarize the model and look at some posterior-predictive checks.
 
 ```{r summary3, warning=FALSE}
-add_ic(fit3) <- "loo"
+fit3 <- add_criterion(fit3, "loo")
 summary(fit3)
 ```
 
@@ -173,7 +174,7 @@ chicks. Further, we see from the negative `alpha` (skewness) parameter of
 `tarsus` that the residuals are indeed slightly left-skewed. Lastly, running
 
 ```{r me3}
-marginal_effects(fit3, "hatchdate", resp = "back")
+conditional_effects(fit3, "hatchdate", resp = "back")
 ```
 
 reveals a non-linear relationship of `hatchdate` on the `back` color, which

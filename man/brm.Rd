@@ -10,8 +10,9 @@ brm(
   family = gaussian(),
   prior = NULL,
   autocor = NULL,
+  data2 = NULL,
   cov_ranef = NULL,
-  sample_prior = c("no", "yes", "only"),
+  sample_prior = "no",
   sparse = NULL,
   knots = NULL,
   stanvars = NULL,
@@ -27,14 +28,16 @@ brm(
   thin = 1,
   cores = getOption("mc.cores", 1L),
   control = NULL,
-  algorithm = c("sampling", "meanfield", "fullrank"),
+  algorithm = getOption("stan_algorithm", "sampling"),
+  backend = getOption("stan_backend", "rstan"),
   future = getOption("future", FALSE),
   silent = TRUE,
   seed = NA,
   save_model = NULL,
   stan_model_args = list(),
-  save_dso = TRUE,
   file = NULL,
+  empty = FALSE,
+  rename = TRUE,
   ...
 )
 }
@@ -62,33 +65,43 @@ linear \code{gaussian} model is applied. In multivariate models,
 \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 for more help.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the
-correlation structure within the response variable (i.e., the
-'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-description of the available correlation structures. Defaults to
+\item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
+describing the correlation structure within the response variable (i.e.,
+the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+a description of the available correlation structures. Defaults to
 \code{NULL}, corresponding to no correlations. In multivariate models,
-\code{autocor} might also be a list of autocorrelation structures.}
+\code{autocor} might also be a list of autocorrelation structures.
+It is now recommend to specify autocorrelation terms directly
+within \code{formula}. See \code{\link{brmsformula}} for more details.}
 
-\item{cov_ranef}{A list of matrices that are proportional to the (within)
-covariance structure of the group-level effects. The names of the matrices
-should correspond to columns in \code{data} that are used as grouping
-factors. All levels of the grouping factor should appear as rownames of the
-corresponding matrix. This argument can be used, among others to model
-pedigrees and phylogenetic effects. See
+\item{data2}{A named \code{list} of objects containing data, which
+cannot be passed via argument \code{data}. Required for some objects 
+used in autocorrelation structures to specify dependency structures
+as well as for within-group covariance matrices.}
+
+\item{cov_ranef}{(Deprecated) A list of matrices that are proportional to the
+(within) covariance structure of the group-level effects. The names of the
+matrices should correspond to columns in \code{data} that are used as
+grouping factors. All levels of the grouping factor should appear as
+rownames of the corresponding matrix. This argument can be used, among
+others to model pedigrees and phylogenetic effects. 
+It is now recommended to specify those matrices in the formula
+interface using the \code{\link{gr}} and related functions. See
 \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{Indicate if samples from priors should be drawn 
-additionally to the posterior samples (defaults to \code{"no"}). Among 
-others, these samples can be used to calculate Bayes factors for point 
-hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-are not sampled, including the default improper priors used by \code{brm}. 
-See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-that prior samples for the overall intercept are not obtained by default for 
-technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-are drawn solely from the priors ignoring the likelihood, which allows among 
-others to generate samples from the prior predictive distribution. In this 
-case, all parameters must have proper priors.}
+\item{sample_prior}{Indicate if samples from priors should be drawn
+additionally to the posterior samples. Options are \code{"no"} (the
+default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+be used to calculate Bayes factors for point hypotheses via
+\code{\link{hypothesis}}. Please note that improper priors are not sampled,
+including the default improper priors used by \code{brm}. See
+\code{\link{set_prior}} on how to set (proper) priors. Please also note
+that prior samples for the overall intercept are not obtained by default
+for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+samples are drawn solely from the priors ignoring the likelihood, which
+allows among others to generate samples from the prior predictive
+distribution. In this case, all parameters must have proper priors.}
 
 \item{sparse}{(Deprecated) Logical; indicates whether the population-level
 design matrices should be treated as sparse (defaults to \code{FALSE}). For
@@ -108,7 +121,7 @@ for basis construction of smoothing terms. See
 \item{stan_funs}{(Deprecated) An optional character string containing
 self-defined  \pkg{Stan} functions, which will be included in the functions
 block of the generated \pkg{Stan} code. It is now recommended to use the
-\code{stanvars} argument for this purpose, instead.}
+\code{stanvars} argument for this purpose instead.}
 
 \item{fit}{An instance of S3 class \code{brmsfit} derived from a previous
 fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the
@@ -142,7 +155,11 @@ constant. Generally, setting \code{inits = "0"} is worth a try, if chains
 do not behave well. Alternatively, \code{inits} can be a list of lists
 containing the initial values, or a function (or function name) generating
 initial values. The latter options are mainly implemented for internal
-testing.}
+testing but are available to users if necessary. If specifying initial 
+values using a list or a function then currently the parameter names must
+correspond to the names used in the generated Stan code (not the names
+used in \R). For more details on specifying initial values you can consult 
+the documentation of the selected \code{backend}.}
 
 \item{chains}{Number of Markov chains (defaults to 4).}
 
@@ -170,11 +187,20 @@ The most important control parameters are discussed in the 'Details'
 section below. For a comprehensive overview see
 \code{\link[rstan:stan]{stan}}.}
 
-\item{algorithm}{Character string indicating the estimation approach to use.
-Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+\item{algorithm}{Character string naming the estimation approach to use.
+Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
-distribution.}
+distribution. Can be set globally for the current \R session via the
+\code{"stan_algorithm"} option (see \code{\link{options}}).}
+
+\item{backend}{Character string naming the package to use as the backend for
+fitting the Stan model. Options are \code{"rstan"} (the default) or
+\code{"cmdstanr"}. Can be set globally for the current \R session via the
+\code{"stan_backend"} option (see \code{\link{options}}). Details on the
+\pkg{rstan} and \pkg{cmdstanr} packages are available at
+\url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
+respectively.}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 package is used for parallel execution of the chains and argument
@@ -182,11 +208,11 @@ package is used for parallel execution of the chains and argument
 session via the \code{future} option. The execution type is controlled via
 \code{\link[future:plan]{plan}} (see the examples section below).}
 
-\item{silent}{logical; If \code{TRUE} (the default), most of the
+\item{silent}{Logical; If \code{TRUE} (the default), most of the
 informational messages of compiler and sampler are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
-as well. To stop Stan from opening additional progress bars, set
-\code{open_progress = FALSE}.}
+as well. If using \code{backend = "rstan"} you can also set
+\code{open_progress = FALSE} to prevent opening additional progress bars.}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
@@ -199,12 +225,6 @@ named after the string supplied in \code{save_model}.}
 \item{stan_model_args}{A \code{list} of further arguments passed to
 \code{\link[rstan:stan_model]{stan_model}}.}
 
-\item{save_dso}{Logical, defaulting to \code{TRUE}, indicating whether the
-dynamic shared object (DSO) compiled from the C++ code for the model will
-be saved or not. If \code{TRUE}, we can draw samples from the same model in
-another \R session using the saved DSO (i.e., without compiling the C++
-code again).}
-
 \item{file}{Either \code{NULL} or a character string. In the latter case, the
 fitted model object is saved via \code{\link{saveRDS}} in a file named
 after the string supplied in \code{file}. The \code{.rds} extension is
@@ -214,8 +234,19 @@ files won't be overwritten, you have to manually remove the file in order
 to refit and save the model under an existing file name. The file name
 is stored in the \code{brmsfit} object for later usage.}
 
-\item{...}{Further arguments passed to Stan that is to
-\code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.}
+\item{empty}{Logical. If \code{TRUE}, the Stan model is not created
+and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
+object will be empty. This is useful if you have estimated a brms-created
+Stan model outside of \pkg{brms} and want to feed it back into the package.}
+
+\item{rename}{For internal use only.}
+
+\item{...}{Further arguments passed to Stan. 
+For \code{backend = "rstan"} the arguments are passed to
+\code{\link[rstan:stanmodel-method-sampling]{sampling}} or
+\code{\link[rstan:stanmodel-method-vb]{vb}}.
+For \code{backend = "cmdstanr"} the arguments are passed to the
+\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior
@@ -376,7 +407,7 @@ ggplot(stack(sigmas), aes(values)) +
   geom_density(aes(fill = ind))
 
 
-# Quantile regression predicting the 25%-quantile
+# Quantile regression predicting the 25\%-quantile
 fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
@@ -387,6 +418,17 @@ conditional_effects(fit7)
 library(future)
 plan(multiprocess)
 fit7 <- update(fit7, future = TRUE)
+
+
+# fit a model manually via rstan
+scode <- make_stancode(count ~ Trt, data = epilepsy)
+sdata <- make_standata(count ~ Trt, data = epilepsy)
+stanfit <- rstan::stan(model_code = scode, data = sdata)
+# feed the Stan model back into brms
+fit8 <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+fit8$fit <- stanfit
+fit8 <- rename_pars(fit8)
+summary(fit8)
 }
 
 }

@@ -242,7 +242,7 @@ On the top of the output, some general information on the model is given, such a
 In general, every parameter is summarized using the mean (\code{Estimate}) and the standard deviation (\code{Est.Error}) of the posterior distribution as well as two-sided 95\% Credible intervals (\code{l-95\% CI} and \code{u-95\% CI}) based on quantiles. 
 The \code{Eff.Sample} value is an estimation of the effective sample size; that is the number of independent samples from the posterior distribution that would be expected to yield the same standard error of the posterior mean as is obtained from the dependent samples returned by the MCMC algorithm. The \code{Rhat} value provides information on the convergence of the algorithm (cf., \citeauthor{gelman1992}, \citeyear{gelman1992}). If \code{Rhat} is considerably greater than 1 (i.e., $> 1.1$), the chains have not yet converged and it is necessary to run more iterations and/or set stronger priors.
 
-To visually investigate the chains as well as the posterior distribution, the \code{plot} method can be used (see Figure~\ref{kidney_plot}). An even more detailed investigation can be achieved by applying the \pkg{shinystan} package \citep{gabry2015} through method \code{launch_shiny}. With respect to the above summary, \code{sexfemale} seems to be the only population-level effect with considerable influence on the response. Because the mean of \code{sexfemale} is positive, the model predicts longer periods without an infection for females than for males. Effects of population-level predictors can also be visualized with the \code{marginal_effects} method (see Figure~\ref{kidney_marginal_effects}).
+To visually investigate the chains as well as the posterior distribution, the \code{plot} method can be used (see Figure~\ref{kidney_plot}). An even more detailed investigation can be achieved by applying the \pkg{shinystan} package \citep{gabry2015} through method \code{launch_shiny}. With respect to the above summary, \code{sexfemale} seems to be the only population-level effect with considerable influence on the response. Because the mean of \code{sexfemale} is positive, the model predicts longer periods without an infection for females than for males. Effects of population-level predictors can also be visualized with the \code{conditional_effects} method (see Figure~\ref{kidney_conditional_effects}).
 
 \begin{figure}[ht]
   \centering
@@ -253,9 +253,9 @@ To visually investigate the chains as well as the posterior distribution, the \c
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[height=0.90\textheight]{kidney_marginal_effects.pdf}
-	\caption{Marginal effects plots of all population-level predictors of the kidney model discussed in Section~\ref{software}.}
-	\label{kidney_marginal_effects}
+  \includegraphics[height=0.90\textheight]{kidney_conditional_effects.pdf}
+	\caption{Conditional effects plots of all population-level predictors of the kidney model discussed in Section~\ref{software}.}
+	\label{kidney_conditional_effects}
 \end{figure}
 
 Looking at the group-level effects, the standard deviation parameter of \code{age} is suspiciously small. To test whether it is smaller than the standard deviation parameter of \code{Intercept}, we apply the \code{hypothesis} method:

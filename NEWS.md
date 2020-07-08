@@ -1,4 +1,146 @@
-# brms 2.10.0++
+# brms 2.13.3
+
+### New Features
+
+* Fix shape parameters across multiple monotonic terms via argument
+`id` in function `mo` to ensure conditionally monotonic effects. (#924)
+* Support package `rtdists` as additional backend of `wiener`
+distribution functions thanks to the help of Henrik Singmann. (#385)
+
+### Bug Fixes
+
+* Fix generated Stan Code of models with improper global priors and
+`constant` priors on some coefficients thanks to Frank Weber. (#919)
+* Fix a bug in `conditional_effects` occuring for categorical
+models with matrix predictors thanks to Jamie Cranston. (#933)
+
+### Other Changes
+
+* Adjust behavior of the `rate` addition term so that it also
+affects the `shape` parameter in `negbinomial` models thanks to
+Edward Abraham. (#915)
+* Adjust the default inverse-gamma prior on length-scale parameters
+of Gaussian processes to be less extreme in edge cases thanks
+to Topi Paananen.
+
+
+# brms 2.13.0
+
+### New Features
+
+* Constrain ordinal thresholds to sum to zero via argument
+`threshold` in ordinal family functions thanks to the help of
+Marta Kołczyńska.
+* Support `posterior_linpred` as method in `conditional_effects`.
+* Use `std_normal` in the Stan code for improved efficiency.
+* Add arguments `cor`, `id`, and `cov` to the functions `gr` and 
+`mm` for easy specification of group-level correlation structures.
+* Improve workflow to feed back brms-created models which were
+fitted somewhere else back into brms. (#745)
+* Improve argument `int_conditions` in `conditional_effects` to
+work for all predictors not just interactions.
+* Support multiple imputation of data passed via `data2` in 
+`brm_multiple`. (#886)
+* Fully support the `emmeans` package thanks to the help 
+of Russell V. Lenth. (#418)
+* Control the within-block position of Stan code added via 
+`stanvar` using the `position` argument.
+
+### Bug Fixes
+
+* Fix issue in Stan code of models with multiple `me` terms 
+thanks to Chris Chatham. (#855, #856)
+* Fix scaling problems in the estimation of ordinal models with
+multiple threshold vectors thanks to Marta Kołczyńska and
+Rok Češnovar.
+* Allow usage of `std_normal` in `set_prior` thanks to Ben Goodrich. (#867)
+* Fix Stan code of distributional models with `weibull`, `frechet`,
+or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
+* Fix Stan code of models which are truncated and weighted at the 
+same time thanks to Michael Thompson. (#884)
+* Fix Stan code of multivariate models with custom families and
+data variables passed to the likelihood thanks to Raoul Wolf. (#906)
+ 
+### Other Changes
+
+* Reduce minimal scale of several default priors from 10 to 2.5.
+The resulting priors should remain weakly informative.
+* Automatically group observations in `gp` for increased efficiency.
+* Rename `parse_bf` to `brmsterms` and deprecate the former function.
+* Rename `extract_draws` to `prepare_predictions` and deprecate 
+the former function.
+* Deprecate using a model-dependent `rescor` default.
+* Deprecate argument `cov_ranef` in `brm` and related functions.
+* Improve several internal interfaces. This should not have any
+user-visible changes.
+* Simplify the parameterization of the horseshoe prior thanks
+to Aki Vehtari. (#873)
+* Store fixed distributional parameters as regular draws so that
+they behave as if they were estimated in post-processing methods.
+
+
+# brms 2.12.0
+
+### New Features
+
+* Fix parameters to constants via the `prior` argument. (#783)
+* Specify autocorrelation terms directly in the model formula. (#708)
+* Translate integer covariates in non-linear formulas to integer
+arrays in Stan.
+* Estimate `sigma` in combination with fixed correlation matrices
+via autocorrelation term `fcor`.
+* Use argument `data2` in `brm` and related functions to pass
+data objects which cannot be passed via `data`. The usage of `data2`
+will be extended in future versions.
+* Compute pointwise log-likelihood values via `log_lik` for
+non-factorizable Student-t models. (#705)
+
+### Bug Fixes
+
+* Fix output of `posterior_predict` for `multinomial` models
+thanks to Ivan Ukhov.
+* Fix selection of group-level terms via `re_formula` in
+multivariate models thanks to Maxime Dahirel. (#834)
+* Enforce correct ordering of terms in `re_formula` 
+thanks to @ferberkl. (#844)
+* Fix post-processing of multivariate multilevel models
+when multiple IDs are used for the same grouping factor
+thanks to @lott999. (#835)
+* Store response category names of ordinal models in the
+output of `posterior_predict` again thanks to Mattew Kay. (#838)
+* Handle `NA` values more consistently in `posterior_table`
+thanks to Anna Hake. (#845)
+* Fix a bug in the Stan code of models with multiple monotonic 
+varying effects across different groups thanks to Julian Quandt.
+
+### Other Changes
+
+* Rename `offset` variables to `offsets` in the generated Stan
+code as the former will be reserved in the new stanc3 compiler.
+ 
+
+# brms 2.11.1
+
+### Bug Fixes
+
+* Fix version requirement of the `loo` package.
+* Fix effective sample size note in the `summary` output. (#824)
+* Fix an edge case in the handling of covariates in 
+special terms thanks to Andrew Milne. (#823)
+* Allow restructuring objects multiple times with different
+brms versions thanks to Jonathan A. Nations. (#828)
+* Fix validation of ordered factors in `newdata` 
+thanks to Andrew Milne. (#830)
+
+# brms 2.11.0
+
+### New Features
+
+* Support grouped ordinal threshold vectors via addition 
+argument `resp_thres`. (#675)
+* Support method `loo_subsample` for performing approximate
+leave-one-out cross-validation for large data.
+* Allow storing more model fit critera via `add_criterion`. (#793)
 
 ### Bug Fixes
 
@@ -15,11 +157,27 @@ more than one step ahead.
 * Fix problems when using `reloo` or `kfold` with CAR models.
 * Fix problems when using `fitted(..., scale = "linear")` with 
 multinomial models thanks to Santiago Olivella. (#770)
+* Fix problems in the `as.mcmc` method for thinned models 
+thanks to @hoxo-m. (#811)
+* Fix problems in parsing covariates of special effects terms
+thanks to Riccardo Fusaroli (#813)
 
 ### Other Changes
 
 * Rename `marginal_effects` to `conditional_effects` and
 `marginal_smooths` to `conditional_smooths`. (#735)
+* Rename `stanplot` to `mcmc_plot`.
+* Add method `pp_expect` as an alias of `fitted`. (#644)
+* Model fit criteria computed via `add_criterion` are now 
+stored in the `brmsfit$criteria` slot.
+* Deprecate `resp_cat` in favor of `resp_thres`.
+* Deprecate specifying global priors on regression coefficients
+in categorical and multivariate models.
+* Improve names of weighting methods in `model_weights`.
+* Deprecate reserved variable `intercept` in favor of `Intercept`.
+* Deprecate argument `exact_match` in favor of `fixed`.
+* Deprecate functions `add_loo` and `add_waic`
+in favor of `add_criterion`.
 
 # brms 2.10.0
 

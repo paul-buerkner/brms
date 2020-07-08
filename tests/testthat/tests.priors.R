@@ -18,7 +18,7 @@ test_that("get_prior finds all classes for which priors can be specified", {
         family = sratio(threshold = "equidistant")
       )$class
     ),
-    sort(c(rep("b", 4), "delta", rep("Intercept", 2)))
+    sort(c(rep("b", 4), "delta", rep("Intercept", 1)))
   )
 })
 
@@ -76,7 +76,7 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
 test_that("get_prior returns correct priors for multivariate models", {
   dat <- data.frame(y1 = rnorm(10), y2 = c(1, rep(1:3, 3)), 
                     x = rnorm(10), g = rep(1:2, 5))
-  bform <- bf(mvbind(y1, y2) ~ x + (x|ID1|g))
+  bform <- bf(mvbind(y1, y2) ~ x + (x|ID1|g)) + set_rescor(TRUE)
   
   # check global priors
   prior <- get_prior(bform, dat, family = gaussian())
@@ -85,8 +85,8 @@ test_that("get_prior returns correct priors for multivariate models", {
   
   # check family and autocor specific priors
   family <- list(gaussian, Beta())
-  autocor <- list(cor_ar(), NULL)
-  prior <- get_prior(bform, dat, family = family, autocor = autocor)
+  bform <- bf(y1 ~ x + (x|ID1|g) + ar()) + bf(y2 ~ 1)
+  prior <- get_prior(bform, dat, family = family)
   expect_true(any(with(prior, class == "sigma" & resp == "y1")))
   expect_true(any(with(prior, class == "ar" & resp == "y1")))
   expect_true(any(with(prior, class == "phi" & resp == "y2")))

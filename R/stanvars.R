@@ -9,7 +9,7 @@
 #'  
 #' @param x An \R object containing data to be passed to Stan.
 #'   Only required if \code{block = 'data'} and ignored otherwise.
-#' @param name Optinal character string providing the desired variable 
+#' @param name Optional character string providing the desired variable 
 #'  name of the object in \code{x}. If \code{NULL} (the default)
 #'  the variable name is directly infered from \code{x}.
 #' @param scode Line of Stan code to define the variable
@@ -20,6 +20,9 @@
 #'  \code{'tdata'} (transformed data), \code{'parameters'},
 #'  \code{'tparameters'} (transformed parameters), \code{'model'},
 #'  \code{'genquant'} (generated quantities) or \code{'functions'}.
+#' @param position Name of the position within the block where the
+#'  Stan code should be placed. Currently allowed are \code{'start'}
+#'  (the default) and \code{'end'} of the block.
 #'  
 #' @return An object of class \code{stanvars}.
 #' 
@@ -46,12 +49,14 @@
 #' 
 #' @export
 stanvar <- function(x = NULL, name = NULL, scode = NULL,
-                    block = "data") {
+                    block = "data", position = "start") {
   vblocks <- c(
     "data", "tdata", "parameters", "tparameters", 
     "model", "genquant", "functions"
   )
   block <- match.arg(block, vblocks)
+  vpositions <- c("start", "end")
+  position <- match.arg(position, vpositions)
   if (block == "data") {
     if (is.null(x)) {
       stop2("Argument 'x' is required if block = 'data'.")
@@ -104,7 +109,10 @@ stanvar <- function(x = NULL, name = NULL, scode = NULL,
       stop2("Argument 'scode' is required if block is not 'data'.")
     }
   }
-  out <- nlist(name, sdata = x, scode, block)
+  if (position == "end" && block %in% c("functions", "data", "model")) {
+    stop2("Position '", position, "' is not sensible for block '", block, "'.")
+  }
+  out <- nlist(name, sdata = x, scode, block, position)
   structure(setNames(list(out), name), class = "stanvars")
 }
 
@@ -117,7 +125,7 @@ subset_stanvars <- function(x, ...) {
 }
 
 # collapse Stan code provided in a stanvars object
-collapse_stanvars <- function(x, block = NULL) {
+collapse_stanvars <- function(x, block = NULL, position = NULL) {
   x <- validate_stanvars(x)
   if (!length(x)) {
     return(character(0))
@@ -125,15 +133,43 @@ collapse_stanvars <- function(x, block = NULL) {
   if (!is.null(block)) {
     x <- subset_stanvars(x, block = block)
   }
+  if (!is.null(position)) {
+    x <- subset_stanvars(x, position = position)
+  }
   if (!length(x)) {
     return("")
   }
   collapse(ulapply(x, "[[", "scode"), "\n")
 }
 
-validate_stanvars <- function(x) {
-  if (!is.null(x) && !is.stanvars(x)) {
+# validate 'stanvars' objects
+validate_stanvars <- function(x, stan_funs = NULL) {
+  if (is.null(x)) {
+    x <- empty_stanvars()
+  }
+  if (!is.stanvars(x)) {
     stop2("Argument 'stanvars' is invalid. See ?stanvar for help.")
+  }
+  if (length(stan_funs) > 0) {
+    warning2("Argument 'stan_funs' is deprecated. Please use argument ", 
+             "'stanvars' instead. See ?stanvar for more help.")
+    stan_funs <- as_one_character(stan_funs)
+    x <- x + stanvar(scode = stan_funs, block = "functions")
+  }
+  x
+}
+
+# add new data to stanvars
+# @param x a 'stanvars' object
+# @param newdata2 a list with new 'data2' objects
+# @return a 'stanvars' object
+add_newdata_stanvars <- function(x, newdata2) {
+  stopifnot(is.stanvars(x))
+  stanvars_data <- subset_stanvars(x, block = "data")
+  for (name in names(stanvars_data)) {
+    if (name %in% names(newdata2)) {
+      x[[name]]$sdata <- newdata2[[name]]
+    }
   }
   x
 }
@@ -157,4 +193,8 @@ c.stanvars <- function(x, ...) {
 
 is.stanvars <- function(x) {
   inherits(x, "stanvars")
+}
+
+empty_stanvars <- function() {
+  structure(list(), class = "stanvars")
 }

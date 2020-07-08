@@ -17,8 +17,7 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{summary}{Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
 
 \item{robust}{If \code{FALSE} (the default) the mean is used as 
@@ -36,10 +35,10 @@ By default, all coefficients are extracted.}
 \item{...}{Currently ignored.}
 }
 \value{
-If \code{summary} is \code{TRUE}, a matrix with one row per 
-  population-level effect and one column per calculated estimate. 
+If \code{summary} is \code{TRUE}, a matrix returned
+  by \code{\link{posterior_summary}} for the population-level effects.
   If \code{summary} is \code{FALSE}, a matrix with one row per 
-  posterior sample and one column per population-level effect.
+  posterior draw and one column per population-level effect.
 }
 \description{
 Extract the population-level ('fixed') effects 
@@ -54,7 +53,4 @@ fixef(fit)
 fixef(fit, pars = c("age", "sex"))
 }
 
-}
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

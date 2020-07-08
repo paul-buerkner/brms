@@ -120,22 +120,58 @@
 #' }
 #' 
 #' @export
+hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
+                               scope = c("standard", "ranef", "coef"),
+                               alpha = 0.05, seed = NULL, ...) {
+  # use a seed as prior_samples.brmsfit randomly permutes samples
+  if (!is.null(seed)) {
+    set.seed(seed) 
+  }
+  contains_samples(x)
+  x <- restructure(x)
+  group <- as_one_character(group)
+  scope <- match.arg(scope)
+  if (scope == "standard") {
+    if (!length(class)) {
+      class <- "" 
+    }
+    class <- as_one_character(class)
+    if (nzchar(group)) {
+      class <- paste0(class, "_", group, "__")
+    } else if (nzchar(class)) {
+      class <- paste0(class, "_")
+    }
+    out <- .hypothesis(
+      x, hypothesis, class = class, alpha = alpha, ...
+    )
+  } else {
+    co <- do_call(scope, list(x, summary = FALSE))
+    if (!group %in% names(co)) {
+      stop2("'group' should be one of ", collapse_comma(names(co)))
+    }
+    out <- hypothesis_coef(co[[group]], hypothesis, alpha = alpha, ...)
+  }
+  out
+}
+
+#' @rdname hypothesis.brmsfit
+#' @export
 hypothesis <- function(x, ...) {
   UseMethod("hypothesis")
 }
 
-#' @rdname hypothesis
+#' @rdname hypothesis.brmsfit
 #' @export
 hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
   x <- as.data.frame(x)
-  hypothesis_internal(x, hypothesis, class = "", alpha = alpha, ...)
+  .hypothesis(x, hypothesis, class = "", alpha = alpha, ...)
 }
 
 #' Descriptions of \code{brmshypothesis} Objects
 #' 
 #' A \code{brmshypothesis} object contains posterior samples
 #' as well as summary statistics of non-linear hypotheses as 
-#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' returned by \code{\link{hypothesis}}.
 #' 
 #' @name brmshypothesis
 #' 
@@ -160,7 +196,7 @@ hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
 #' of the hypotheses, and \code{samples}, which is a data.frame containing 
 #' the corresponding posterior samples.
 #' 
-#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
+#' @seealso \code{\link{hypothesis}}
 NULL
 
 # internal function to evaluate hypotheses
@@ -170,8 +206,7 @@ NULL
 # @param class prefix of the parameters in the hypotheses
 # @param alpha the 'alpha-level' as understood by frequentist statistics
 # @return a 'brmshypothesis' object
-hypothesis_internal <- function(x, hypothesis, class, alpha,
-                                combine = TRUE, ...) {
+.hypothesis <- function(x, hypothesis, class, alpha, combine = TRUE, ...) {
   if (!is.character(hypothesis) || !length(hypothesis)) {
     stop2("Argument 'hypothesis' must be a character vector.")
   }
@@ -203,7 +238,7 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   )
   out <- vector("list", length(levels))
   for (l in seq_along(levels)) {
-    out[[l]] <- hypothesis_internal(
+    out[[l]] <- .hypothesis(
       x[[l]], hypothesis, class = "", 
       alpha = alpha, combine = FALSE, ...
     )
@@ -214,6 +249,7 @@ hypothesis_coef <- function(x, hypothesis, alpha, ...) {
   out <- unlist(out, recursive = FALSE)
   out <- as.list(matrix(out, ncol = length(hypothesis), byrow = TRUE))
   out <- combine_hlist(out, class = "", alpha = alpha)
+  out$hypothesis$Group <- factor(out$hypothesis$Group, levels)
   out$hypothesis <- move2start(out$hypothesis, "Group")
   out
 }
@@ -260,10 +296,10 @@ eval_hypothesis <- function(h, x, class, alpha, name = NULL) {
   # get posterior and prior samples
   pattern <- c(paste0("^", class), ":", "\\[", "\\]", ",")
   repl <- c("", "___", ".", ".", "..")
-  samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
+    samples <- posterior_samples(x, pars = parsH, fixed = TRUE)
   names(samples) <- rename(names(samples), pattern, repl, fixed = FALSE)
   samples <- as.matrix(eval2(h_renamed, samples))
-  prior_samples <- prior_samples(x, pars = parsH, exact_match = TRUE)
+  prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
   if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
     names(prior_samples) <- rename(
       names(prior_samples), pattern, repl, fixed = FALSE
@@ -468,7 +504,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
   plot <- use_alias(plot, dots$do_plot)
   if (is.null(colors)) {
-    colors <- bayesplot::color_scheme_get()[c(6, 2)]
+    colors <- bayesplot::color_scheme_get()[c(4, 2)]
     colors <- unname(unlist(colors))
   }
   if (length(colors) != 2L) {
@@ -476,17 +512,26 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   }
   
   .plot_fun <- function(samples) {
-    ggplot(samples, aes_string(x = "values")) + 
+    gg <- ggplot(samples, aes_string(x = "values")) + 
       facet_wrap("ind", ncol = 1, scales = "free") +
-      geom_density(aes_string(fill = "Type"), 
-                   alpha = 0.7, na.rm = TRUE) + 
-      scale_fill_manual(values = colors) + 
-      xlab("") + ylab("") + theme
+      xlab("") + ylab("") + theme +
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank())
+    if (ignore_prior) {
+      gg <- gg +
+        geom_density(alpha = 0.7, fill = colors[1], na.rm = TRUE)
+    } else {
+      gg <- gg +
+        geom_density(aes_string(fill = "Type"), alpha = 0.7, na.rm = TRUE) + 
+        scale_fill_manual(values = colors)
+    }
+    return(gg)
   }
   
   samples <- cbind(x$samples, Type = "Posterior")
   if (!ignore_prior) {
-    samples <- rbind(samples, cbind(x$prior_samples, Type = "Prior"))
+    prior_samples <- cbind(x$prior_samples, Type = "Prior")
+    samples <- rbind(samples, prior_samples)
   }
   if (plot) {
     default_ask <- devAskNewPage()

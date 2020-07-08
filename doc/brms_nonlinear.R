@@ -34,7 +34,7 @@ fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
 ## ---------------------------------------------------------------------------------------
 summary(fit1)
 plot(fit1)
-plot(marginal_effects(fit1), points = TRUE)
+plot(conditional_effects(fit1), points = TRUE)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit2 <- brm(y ~ x, data = dat1)
@@ -70,12 +70,12 @@ fit_loss <- brm(
 ## ---------------------------------------------------------------------------------------
 summary(fit_loss)
 plot(fit_loss, N = 3, ask = FALSE)
-marginal_effects(fit_loss)
+conditional_effects(fit_loss)
 
 ## ---------------------------------------------------------------------------------------
 conditions <- data.frame(AY = unique(loss$AY))
 rownames(conditions) <- unique(loss$AY)
-me_loss <- marginal_effects(
+me_loss <- conditional_effects(
   fit_loss, conditions = conditions, 
   re_formula = NULL, method = "predict"
 )
@@ -93,7 +93,7 @@ fit_ir1 <- brm(answer ~ ability, data = dat_ir, family = bernoulli())
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_ir1)
-plot(marginal_effects(fit_ir1), points = TRUE)
+plot(conditional_effects(fit_ir1), points = TRUE)
 
 ## ---- results='hide'--------------------------------------------------------------------
 fit_ir2 <- brm(
@@ -105,7 +105,7 @@ fit_ir2 <- brm(
 
 ## ---------------------------------------------------------------------------------------
 summary(fit_ir2)
-plot(marginal_effects(fit_ir2), points = TRUE)
+plot(conditional_effects(fit_ir2), points = TRUE)
 
 ## ---------------------------------------------------------------------------------------
 loo(fit_ir1, fit_ir2)
@@ -124,5 +124,5 @@ fit_ir3 <- brm(
 ## ---------------------------------------------------------------------------------------
 summary(fit_ir3)
 plot(fit_ir3)
-plot(marginal_effects(fit_ir3), points = TRUE)
+plot(conditional_effects(fit_ir3), points = TRUE)
 

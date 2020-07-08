@@ -74,8 +74,10 @@ Now we are ready to fit our first phylogenetic multilevel model:
 
 ```{r, results='hide'}
 model_simple <- brm(
-  phen ~ cofactor + (1|phylo), data = data_simple, 
-  family = gaussian(), cov_ranef = list(phylo = A),
+  phen ~ cofactor + (1|gr(phylo, cov = A)), 
+  data = data_simple, 
+  family = gaussian(), 
+  data2 = list(A = A),
   prior = c(
     prior(normal(0, 10), "b"),
     prior(normal(0, 50), "Intercept"),
@@ -85,17 +87,20 @@ model_simple <- brm(
 )
 ```
 
-With the exception of `cov_ranef = list(phylo = A)` this is a basic multilevel
-model with a varying intercept over species (`phylo` is an indicator of species
-in this data set). However, by using the `cov_ranef` argument, we make sure that
-species are correlated as specified by the covariance matrix `A`. Setting priors
-is not required for achieving good convergence for this model, but it improves
-sampling speed a bit. After fitting, the results can be investigated in detail.
+With the exception of `(1|gr(phylo, cov = A))` instead of `(1|phylo)` this is a
+basic multilevel model with a varying intercept over species (`phylo` is an
+indicator of species in this data set). However, by using `cov = A` in the `gr`
+function, we make sure that species are correlated as specified by the
+covariance matrix `A`. We pass `A` itself via the `data2` argument which can be
+used for any kinds of data that does not fit into the regular structure of the
+`data` argument. Setting priors is not required for achieving good convergence
+for this model, but it improves sampling speed a bit. After fitting, the results
+can be investigated in detail.
 
 ```{r}
 summary(model_simple)
 plot(model_simple, N = 2, ask = FALSE)
-plot(marginal_effects(model_simple), points = TRUE) 
+plot(conditional_effects(model_simple), points = TRUE) 
 ```
 
 The so called phylogenetic signal (often symbolize by $\lambda$) can be computed
@@ -132,9 +137,10 @@ follows:
 
 ```{r, results='hide'}
 model_repeat1 <- brm(
-  phen ~ spec_mean_cf + (1|phylo) + (1|species), 
-  data = data_repeat, family = gaussian(), 
-  cov_ranef = list(phylo = A),
+  phen ~ spec_mean_cf + (1|gr(phylo, cov = A)) + (1|species), 
+  data = data_repeat, 
+  family = gaussian(), 
+  data2 = list(A = A),
   prior = c(
     prior(normal(0,10), "b"),
     prior(normal(0,50), "Intercept"),
@@ -203,7 +209,7 @@ hyp <- paste(
 
 ## A Phylogenetic Meta-Analysis
 
-Let's say we have Fisher's z-transformated correlation coefficients $Zr$ per
+Let's say we have Fisher's z-transformed correlation coefficients $Zr$ per
 species along with corresponding sample sizes (e.g., correlations between male
 coloration and reproductive success):
 
@@ -226,9 +232,9 @@ a meta-analytic model.
 
 ```{r, results='hide'}
 model_fisher <- brm(
-  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
+  Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|gr(phylo, cov = A)) + (1|obs), 
   data = data_fisher, family = gaussian(), 
-  cov_ranef = list(phylo = A),
+  data2 = list(A = A),
   prior = c(
     prior(normal(0, 10), "Intercept"),
     prior(student_t(3, 0, 10), "sd")
@@ -254,7 +260,7 @@ according to the model.
 
 Suppose that we analyze a phenotype that consists of counts instead of being a
 continuous variable. In such a case, the normality assumption will likely not be
-justified and it is recommended to use a distribution explicitely suited for
+justified and it is recommended to use a distribution explicitly suited for
 count data, for instance the Poisson distribution. The following data set (again
 retrieved from mpcm-evolution.org) provides an example.
 
@@ -267,15 +273,15 @@ data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
 
-As the poisson distribution does not have a natural overdispersion parameter, we
+As the Poisson distribution does not have a natural overdispersion parameter, we
 model the residual variance via the group-level effects of `obs` (e.g., see
 Lawless, 1987).
 
 ```{r, results='hide'}
 model_pois <- brm(
-  phen_pois ~ cofactor + (1|phylo) + (1|obs), 
+  phen_pois ~ cofactor + (1|gr(phylo, cov = A)) + (1|obs), 
   data = data_pois, family = poisson("log"), 
-  cov_ranef = list(phylo = A),
+  data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
   control = list(adapt_delta = 0.95)
 )
@@ -285,7 +291,7 @@ Again, we obtain a summary of the fitted model via
 
 ```{r}
 summary(model_pois)
-plot(marginal_effects(model_pois), points = TRUE) 
+plot(conditional_effects(model_pois), points = TRUE) 
 ```
 
 Now, assume we ignore the fact that the phenotype is count data and fit a linear
@@ -293,9 +299,9 @@ normal model instead.
 
 ```{r, results='hide'}
 model_normal <- brm(
-  phen_pois ~ cofactor + (1|phylo), 
+  phen_pois ~ cofactor + (1|gr(phylo, cov = A)), 
   data = data_pois, family = gaussian(), 
-  cov_ranef = list(phylo = A),
+  data2 = list(A = A),
   chains = 2, cores = 2, iter = 4000,
   control = list(adapt_delta = 0.95)
 )

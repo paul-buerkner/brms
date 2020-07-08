@@ -33,24 +33,32 @@
 #'   \code{\link{set_prior}} or related functions and combined using the
 #'   \code{c} method or the \code{+} operator. See also  \code{\link{get_prior}}
 #'   for more help.
-#' @param autocor An optional \code{\link{cor_brms}} object describing the
-#'   correlation structure within the response variable (i.e., the
-#'   'autocorrelation'). See the documentation of \code{\link{cor_brms}} for a
-#'   description of the available correlation structures. Defaults to
+#' @param data2 A named \code{list} of objects containing data, which
+#'   cannot be passed via argument \code{data}. Required for some objects 
+#'   used in autocorrelation structures to specify dependency structures
+#'   as well as for within-group covariance matrices.
+#' @param autocor (Deprecated) An optional \code{\link{cor_brms}} object
+#'   describing the correlation structure within the response variable (i.e.,
+#'   the 'autocorrelation'). See the documentation of \code{\link{cor_brms}} for
+#'   a description of the available correlation structures. Defaults to
 #'   \code{NULL}, corresponding to no correlations. In multivariate models,
 #'   \code{autocor} might also be a list of autocorrelation structures.
+#'   It is now recommend to specify autocorrelation terms directly
+#'   within \code{formula}. See \code{\link{brmsformula}} for more details.
 #' @param sparse (Deprecated) Logical; indicates whether the population-level
 #'   design matrices should be treated as sparse (defaults to \code{FALSE}). For
 #'   design matrices with many zeros, this can considerably reduce required
 #'   memory. Sampling speed is currently not improved or even slightly
 #'   decreased. It is now recommended to use the \code{sparse} argument of
 #'   \code{\link{brmsformula}} and related functions.
-#' @param cov_ranef A list of matrices that are proportional to the (within)
-#'   covariance structure of the group-level effects. The names of the matrices
-#'   should correspond to columns in \code{data} that are used as grouping
-#'   factors. All levels of the grouping factor should appear as rownames of the
-#'   corresponding matrix. This argument can be used, among others to model
-#'   pedigrees and phylogenetic effects. See
+#' @param cov_ranef (Deprecated) A list of matrices that are proportional to the
+#'   (within) covariance structure of the group-level effects. The names of the
+#'   matrices should correspond to columns in \code{data} that are used as
+#'   grouping factors. All levels of the grouping factor should appear as
+#'   rownames of the corresponding matrix. This argument can be used, among
+#'   others to model pedigrees and phylogenetic effects. 
+#'   It is now recommended to specify those matrices in the formula
+#'   interface using the \code{\link{gr}} and related functions. See
 #'   \code{vignette("brms_phylogenetics")} for more details.
 #' @param save_ranef A flag to indicate if group-level effects for each level of
 #'   the grouping factor(s) should be saved (default is \code{TRUE}). Set to
@@ -65,18 +73,19 @@
 #'   in Stan's \code{parameters} block should be saved (default is
 #'   \code{FALSE}). Saving these samples is required in order to apply the
 #'   methods \code{bridge_sampler}, \code{bayes_factor}, and \code{post_prob}.
-#' @param sample_prior Indicate if samples from priors should be drawn 
-#'   additionally to the posterior samples (defaults to \code{"no"}). Among 
-#'   others, these samples can be used to calculate Bayes factors for point 
-#'   hypotheses via \code{\link{hypothesis}}. Please note that improper priors 
-#'   are not sampled, including the default improper priors used by \code{brm}. 
-#'   See \code{\link{set_prior}} on how to set (proper) priors. Please also note
-#'   that prior samples for the overall intercept are not obtained by default for 
-#'   technical reasons. See \code{\link{brmsformula}} how to obtain prior samples 
-#'   for the intercept. If \code{sample_prior} is set to \code{"only"}, samples 
-#'   are drawn solely from the priors ignoring the likelihood, which allows among 
-#'   others to generate samples from the prior predictive distribution. In this 
-#'   case, all parameters must have proper priors.
+#' @param sample_prior Indicate if samples from priors should be drawn
+#'   additionally to the posterior samples. Options are \code{"no"} (the
+#'   default), \code{"yes"}, and \code{"only"}. Among others, these samples can
+#'   be used to calculate Bayes factors for point hypotheses via
+#'   \code{\link{hypothesis}}. Please note that improper priors are not sampled,
+#'   including the default improper priors used by \code{brm}. See
+#'   \code{\link{set_prior}} on how to set (proper) priors. Please also note
+#'   that prior samples for the overall intercept are not obtained by default
+#'   for technical reasons. See \code{\link{brmsformula}} how to obtain prior
+#'   samples for the intercept. If \code{sample_prior} is set to \code{"only"},
+#'   samples are drawn solely from the priors ignoring the likelihood, which
+#'   allows among others to generate samples from the prior predictive
+#'   distribution. In this case, all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be used
 #'   for basis construction of smoothing terms. See
 #'   \code{\link[mgcv:gamm]{gamm}} for more details.
@@ -86,7 +95,7 @@
 #' @param stan_funs (Deprecated) An optional character string containing
 #'   self-defined  \pkg{Stan} functions, which will be included in the functions
 #'   block of the generated \pkg{Stan} code. It is now recommended to use the
-#'   \code{stanvars} argument for this purpose, instead.
+#'   \code{stanvars} argument for this purpose instead.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous
 #'   fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the
 #'   compiled model associated with the fitted result is re-used and all
@@ -102,7 +111,11 @@
 #'   do not behave well. Alternatively, \code{inits} can be a list of lists
 #'   containing the initial values, or a function (or function name) generating
 #'   initial values. The latter options are mainly implemented for internal
-#'   testing.
+#'   testing but are available to users if necessary. If specifying initial 
+#'   values using a list or a function then currently the parameter names must
+#'   correspond to the names used in the generated Stan code (not the names
+#'   used in \R). For more details on specifying initial values you can consult 
+#'   the documentation of the selected \code{backend}.
 #' @param chains Number of Markov chains (defaults to 4).
 #' @param iter Number of total iterations per chain (including warmup; defaults
 #'   to 2000).
@@ -118,11 +131,19 @@
 #'   be as many processors as the hardware and RAM allow (up to the number of
 #'   chains). For non-Windows OS in non-interactive \R sessions, forking is used
 #'   instead of PSOCK clusters.
-#' @param algorithm Character string indicating the estimation approach to use.
-#'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+#' @param algorithm Character string naming the estimation approach to use.
+#'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
 #'   \code{"fullrank"} for variational inference with a multivariate normal
-#'   distribution.
+#'   distribution. Can be set globally for the current \R session via the
+#'   \code{"stan_algorithm"} option (see \code{\link{options}}).
+#' @param backend Character string naming the package to use as the backend for
+#'   fitting the Stan model. Options are \code{"rstan"} (the default) or
+#'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
+#'   \code{"stan_backend"} option (see \code{\link{options}}). Details on the
+#'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
+#'   \url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
+#'   respectively.
 #' @param control A named \code{list} of parameters to control the sampler's
 #'   behavior. It defaults to \code{NULL} so all the default values are used.
 #'   The most important control parameters are discussed in the 'Details'
@@ -133,11 +154,11 @@
 #'   \code{cores} will be ignored. Can be set globally for the current \R
 #'   session via the \code{future} option. The execution type is controlled via
 #'   \code{\link[future:plan]{plan}} (see the examples section below).
-#' @param silent logical; If \code{TRUE} (the default), most of the
+#' @param silent Logical; If \code{TRUE} (the default), most of the
 #'   informational messages of compiler and sampler are suppressed. The actual
 #'   sampling progress is still printed. Set \code{refresh = 0} to turn this off
-#'   as well. To stop Stan from opening additional progress bars, set
-#'   \code{open_progress = FALSE}.
+#'   as well. If using \code{backend = "rstan"} you can also set
+#'   \code{open_progress = FALSE} to prevent opening additional progress bars.
 #' @param seed The seed for random number generation to make results
 #'   reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
 #'   randomly.
@@ -152,15 +173,19 @@
 #'   files won't be overwritten, you have to manually remove the file in order
 #'   to refit and save the model under an existing file name. The file name
 #'   is stored in the \code{brmsfit} object for later usage.
+#' @param empty Logical. If \code{TRUE}, the Stan model is not created
+#'   and compiled and the corresponding \code{'fit'} slot of the \code{brmsfit}
+#'   object will be empty. This is useful if you have estimated a brms-created
+#'   Stan model outside of \pkg{brms} and want to feed it back into the package.
+#' @param rename For internal use only. 
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{stan_model}}.
-#' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether the
-#'   dynamic shared object (DSO) compiled from the C++ code for the model will
-#'   be saved or not. If \code{TRUE}, we can draw samples from the same model in
-#'   another \R session using the saved DSO (i.e., without compiling the C++
-#'   code again).
-#' @param ... Further arguments passed to Stan that is to
-#'   \code{\link[rstan:sampling]{sampling}} or \code{\link[rstan:vb]{vb}}.
+#' @param ... Further arguments passed to Stan. 
+#'   For \code{backend = "rstan"} the arguments are passed to
+#'   \code{\link[rstan:stanmodel-method-sampling]{sampling}} or
+#'   \code{\link[rstan:stanmodel-method-vb]{vb}}.
+#'   For \code{backend = "cmdstanr"} the arguments are passed to the
+#'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior
 #'   samples along with many other useful information about the model. Use
@@ -329,6 +354,17 @@
 #' library(future)
 #' plan(multiprocess)
 #' fit7 <- update(fit7, future = TRUE)
+#' 
+#' 
+#' # fit a model manually via rstan
+#' scode <- make_stancode(count ~ Trt, data = epilepsy)
+#' sdata <- make_standata(count ~ Trt, data = epilepsy)
+#' stanfit <- rstan::stan(model_code = scode, data = sdata)
+#' # feed the Stan model back into brms
+#' fit8 <- brm(count ~ Trt, data = epilepsy, empty = TRUE)
+#' fit8$fit <- stanfit
+#' fit8 <- rename_pars(fit8)
+#' summary(fit8)
 #' }
 #'
 #' @import parallel
@@ -337,19 +373,20 @@
 #' @import Rcpp
 #' @export
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
-                autocor = NULL, cov_ranef = NULL, 
-                sample_prior = c("no", "yes", "only"), 
-                sparse = NULL, knots = NULL, stanvars = NULL,
-                stan_funs = NULL, fit = NA, save_ranef = TRUE, 
+                autocor = NULL, data2 = NULL, cov_ranef = NULL, 
+                sample_prior = "no", sparse = NULL, knots = NULL,
+                stanvars = NULL, stan_funs = NULL, fit = NA, save_ranef = TRUE, 
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1L), control = NULL,
-                algorithm = c("sampling", "meanfield", "fullrank"),
+                algorithm = getOption("stan_algorithm", "sampling"),
+                backend = getOption("stan_backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
-                save_dso = TRUE, file = NULL, ...) {
+                file = NULL, empty = FALSE, rename = TRUE, ...) {
   
+  # optionally load brmsfit from file
   if (!is.null(file)) {
     x <- read_brmsfit(file)
     if (!is.null(x)) {
@@ -359,9 +396,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   
   # validate arguments later passed to Stan
   dots <- list(...)
-  testmode <- isTRUE(dots$testmode)
-  dots$testmode <- NULL
-  algorithm <- match.arg(algorithm)
+  algorithm <- match.arg(algorithm, algorithm_choices())
+  backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   iter <- as_one_numeric(iter)
   warmup <- as_one_numeric(warmup)
@@ -370,117 +406,82 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   cores <- as_one_numeric(cores)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
-  if (is.character(inits) && !inits %in% c("random", "0")) {
-    inits <- get(inits, mode = "function", envir = parent.frame())
-  }
+  empty <- as_one_logical(empty)
+  rename <- as_one_logical(rename)
   
+  # initialize brmsfit object
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
-    icnames <- c("loo", "waic", "kfold", "R2", "marglik")
-    x[icnames] <- list(NULL)
+    x$criteria <- list()
     sdata <- standata(x)
-    x$fit <- rstan::get_stanmodel(x$fit)
+    model <- compiled_model(x)
   } else {  
     # build new model
     formula <- validate_formula(
       formula, data = data, family = family, 
-      autocor = autocor, sparse = sparse
+      autocor = autocor, sparse = sparse,
+      cov_ranef = cov_ranef
     )
     family <- get_element(formula, "family")
-    autocor <- get_element(formula, "autocor")
-    bterms <- parse_bf(formula)
-    data.name <- substitute_name(data)
-    data <- update_data(data, bterms = bterms)
-    prior <- check_prior(
-      prior, formula = formula, data = data,
-      sample_prior = sample_prior, warn = FALSE
+    bterms <- brmsterms(formula)
+    data_name <- substitute_name(data)
+    data <- validate_data(data, bterms = bterms, knots = knots)
+    attr(data, "data_name") <- data_name
+    data2 <- validate_data2(
+      data2, bterms = bterms, 
+      get_data2_autocor(formula),
+      get_data2_cov_ranef(formula)
     )
+    prior <- validate_prior(
+      prior, bterms = bterms, data = data,
+      sample_prior = sample_prior
+    )
+    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     # initialize S3 object
     x <- brmsfit(
-      formula = formula, family = family, data = data, 
-      data.name = data.name, prior = prior, 
-      autocor = autocor, cov_ranef = cov_ranef, 
-      stanvars = stanvars, stan_funs = stan_funs,
-      algorithm = algorithm
+      formula = formula, data = data, data2 = data2, prior = prior, 
+      stanvars = stanvars, algorithm = algorithm, backend = backend,
+      family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
-      bterms, data = x$data, ranef = x$ranef, 
-      save_ranef = save_ranef, save_mevars = save_mevars,
+      x, save_ranef = save_ranef, 
+      save_mevars = save_mevars,
       save_all_pars = save_all_pars
     )
-    x$model <- make_stancode(
-      formula, data = data, prior = prior, 
-      cov_ranef = cov_ranef,
-      sample_prior = sample_prior, knots = knots, 
-      stanvars = stanvars, stan_funs = stan_funs, 
-      save_model = save_model
+    x$model <- .make_stancode(
+      bterms, data = data, prior = prior, 
+      stanvars = stanvars, save_model = save_model
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
-    sdata <- make_standata(
-      formula, data = data, prior = prior, 
-      cov_ranef = cov_ranef, sample_prior = sample_prior,
-      knots = knots, stanvars = stanvars
+    sdata <- .make_standata(
+      bterms, data = data, prior = prior, 
+      data2 = data2, stanvars = stanvars
     )
-    stopifnot(is.list(stan_model_args))
-    silence_stan_model <- !length(stan_model_args)
-    stan_model_args$model_code <- x$model
-    if (!isTRUE(save_dso)) {
-      warning2("'save_dso' is deprecated. Please use 'stan_model_args'.")
-      stan_model_args$save_dso <- save_dso
+    if (empty) {
+      # return the brmsfit object with an empty 'fit' slot
+      return(x)
     }
-    message("Compiling the C++ model")
-    x$fit <- eval_silent(
-      do_call(rstan::stan_model, stan_model_args),
-      silent = silence_stan_model, type = "message"
-    )
+    # compile the Stan model
+    compile_args <- stan_model_args
+    compile_args$model <- x$model
+    compile_args$backend <- backend
+    model <- do_call(compile_model, compile_args)
   }
   
-  args <- nlist(
-    object = x$fit, data = sdata, pars = x$exclude, 
-    include = FALSE, algorithm, iter, seed
+  # fit the Stan model
+  fit_args <- nlist(
+    model, sdata, algorithm, backend, iter, warmup, thin, chains, 
+    cores, inits, exclude = x$exclude, control, future, seed, 
+    silent, ...
   )
-  args[names(dots)] <- dots
-  message("Start sampling")
-  if (args$algorithm == "sampling") {
-    args$algorithm <- NULL
-    c(args) <- nlist(
-      init = inits, warmup, thin, control, 
-      show_messages = !silent
-    )
-    if (future) {
-      if (cores > 1L) {
-        warning2("Argument 'cores' is ignored when using 'future'.")
-      }
-      args$chains <- 1L
-      futures <- fits <- vector("list", chains)
-      for (i in seq_len(chains)) {
-        args$chain_id <- i
-        if (is.list(inits)) {
-          args$init <- inits[i]
-        }
-        futures[[i]] <- future::future(
-          brms::do_call(rstan::sampling, args), 
-          packages = "rstan"
-        )
-      }
-      for (i in seq_len(chains)) {
-        fits[[i]] <- future::value(futures[[i]]) 
-      }
-      x$fit <- rstan::sflist2stanfit(fits)
-      rm(futures, fits)
-    } else {
-      c(args) <- nlist(chains, cores)
-      x$fit <- do_call(rstan::sampling, args) 
-    }
-  } else {
-    # vb does not support parallel execution
-    x$fit <- do_call(rstan::vb, args)
-  }
-  if (!testmode) {
-    x <- rename_pars(x)
+  x$fit <- do_call(fit_model, fit_args)
+
+  # rename parameters to have human readable names
+  if (rename) {
+    x <- rename_pars(x) 
   }
   if (!is.null(file)) {
     write_brmsfit(x, file)
