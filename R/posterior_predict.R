@@ -29,27 +29,24 @@
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #' 
-#' @return An \code{array} of predicted response values. If \code{summary =
-#'   FALSE}, the output is as an S x N matrix, where S is the number of
-#'   posterior samples and N is the number of observations. In multivariate
-#'   models, an additional dimension is added to the output which indexes along
-#'   the different response variables.
-#' 
-#' @details \code{NA} values within factors in \code{newdata}, 
-#'   are interpreted as if all dummy variables of this factor are 
-#'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding.  
-#' 
-#'   For truncated discrete models only: In the absence of any general algorithm
-#'   to sample from truncated discrete distributions, rejection sampling is
-#'   applied in this special case. This means that values are sampled until a
-#'   value lies within the defined truncation boundaries. In practice, this
-#'   procedure may be rather slow (especially in \R). Thus, we try to do
-#'   approximate rejection sampling by sampling each value \code{ntrys} times
-#'   and then select a valid value. If all values are invalid, the closest
-#'   boundary is used, instead. If there are more than a few of these
-#'   pathological cases, a warning will occur suggesting to increase argument
-#'   \code{ntrys}.
+#' @return An \code{array} of predicted response values. In univariate models,
+#'   the output is as an S x N matrix, where S is the number of posterior
+#'   samples and N is the number of observations. In multivariate models, an
+#'   additional dimension is added to the output which indexes along the
+#'   different response variables.
+#'   
+#' @template details-newdata-na
+#' @template details-allow_new_levels
+#' @details For truncated discrete models only: In the absence of any general
+#'   algorithm to sample from truncated discrete distributions, rejection
+#'   sampling is applied in this special case. This means that values are
+#'   sampled until a value lies within the defined truncation boundaries. In
+#'   practice, this procedure may be rather slow (especially in \R). Thus, we
+#'   try to do approximate rejection sampling by sampling each value
+#'   \code{ntrys} times and then select a valid value. If all values are
+#'   invalid, the closest boundary is used, instead. If there are more than a
+#'   few of these pathological cases, a warning will occur suggesting to
+#'   increase argument \code{ntrys}.
 #' 
 #' @examples 
 #' \dontrun{
