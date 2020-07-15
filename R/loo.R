@@ -176,49 +176,6 @@ WAIC <- function(x, ...) {
   UseMethod("WAIC")
 }
 
-#' Efficient approximate leave-one-out cross-validation (LOO) using subsampling
-#' 
-#' @aliases loo_subsample
-#' 
-#' @inheritParams loo.brmsfit
-#' 
-#' @details More details can be found on
-#' \code{\link[loo:loo_subsample]{loo_subsample}}.
-#' 
-#' @examples
-#' \dontrun{
-#' # model with population-level effects only
-#' fit1 <- brm(rating ~ treat + period + carry,
-#'             data = inhaler)
-#' (loo1 <- loo_subsample(fit1))
-#' 
-#' # model with an additional varying intercept for subjects
-#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'             data = inhaler)
-#' (loo2 <- loo_subsample(fit2))   
-#' 
-#' # compare both models
-#' loo_compare(loo1, loo2)                      
-#' }
-#' 
-#' @importFrom loo loo_subsample
-#' @export loo_subsample
-#' @export
-loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                                  model_names = NULL) {
-  args <- split_dots(x, ..., model_names = model_names)
-  c(args) <- nlist(
-    criterion = "loo_subsample", compare, resp, 
-    add_point_estimate = TRUE
-  )
-  do_call(compute_loolist, args)
-}
-
-# possible criteria to evaluate via the loo package
-loo_criteria <- function() {
-  c("loo", "waic", "psis", "kfold", "loo_subsample")
-}
-
 # helper function used to create (lists of) 'loo' objects
 # @param models list of brmsfit objects
 # @param criterion name of the criterion to compute
@@ -288,6 +245,11 @@ compute_loo <- function(x, criterion, newdata = NULL, resp = NULL,
   out
 }
 
+# possible criteria to evaluate via the loo package
+loo_criteria <- function() {
+  c("loo", "waic", "psis", "kfold", "loo_subsample")
+}
+
 # compute 'loo' criterion using the 'loo' package
 .loo <- function(x, pointwise, k_threshold, moment_match, reloo, 
                  moment_match_args, reloo_args, newdata, 
@@ -323,16 +285,6 @@ compute_loo <- function(x, criterion, newdata = NULL, resp = NULL,
     pointwise = pointwise, ...
   )
   do_call("waic", loo_args, pkg = "loo")
-}
-
-# compute 'loo_subsample' criterion using the 'loo' package
-# @param model_name ignored but included to avoid being passed to '...'
-.loo_subsample <- function(x, newdata, resp, model_name, ...) {
-  loo_args <- prepare_loo_args(
-    x, newdata = newdata, resp = resp, 
-    pointwise = TRUE, ...
-  )
-  do_call("loo_subsample", loo_args, pkg = "loo")
 }
 
 # compute 'psis' criterion using the 'loo' package
@@ -653,169 +605,6 @@ validate_models <- function(models, model_names, sub_names) {
   models
 }
 
-#' Compute exact cross-validation for problematic observations
-#' 
-#' Compute exact cross-validation for problematic observations for which
-#' approximate leave-one-out cross-validation may return incorrect results.
-#' Models for problematic observations can be run in parallel using the
-#' \pkg{future} package.
-#' 
-#' @inheritParams predict.brmsfit
-#' @param x An \R object of class \code{brmsfit} or \code{loo} depending
-#'   on the method.
-#' @param loo An \R object of class \code{loo}.
-#' @param fit An \R object of class \code{brmsfit}.
-#' @param k_threshold The threshold at which Pareto \eqn{k} 
-#'   estimates are treated as problematic. Defaults to \code{0.7}. 
-#'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
-#'   for more details.
-#' @param check Logical; If \code{TRUE} (the default), some checks
-#'   check are performed if the \code{loo} object was generated
-#'   from the \code{brmsfit} object passed to argument \code{fit}.
-#' @param ... Further arguments passed to 
-#'   \code{\link{update.brmsfit}} and \code{\link{log_lik.brmsfit}}.
-#'   
-#' @return An object of the class \code{loo}.
-#' 
-#' @details 
-#' Warnings about Pareto \eqn{k} estimates indicate observations
-#' for which the approximation to LOO is problematic (this is described in
-#' detail in Vehtari, Gelman, and Gabry (2017) and the 
-#' \pkg{\link[loo:loo-package]{loo}} package documentation).
-#' If there are \eqn{J} observations with \eqn{k} estimates above
-#' \code{k_threshold}, then \code{reloo} will refit the original model 
-#' \eqn{J} times, each time leaving out one of the \eqn{J} 
-#' problematic observations. The pointwise contributions of these observations
-#' to the total ELPD are then computed directly and substituted for the
-#' previous estimates from these \eqn{J} observations that are stored in the
-#' original \code{loo} object.
-#' 
-#' @seealso \code{\link{loo}}, \code{\link{kfold}}
-#' 
-#' @examples 
-#' \dontrun{
-#' fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-#'             data = epilepsy, family = poisson())
-#' # throws warning about some pareto k estimates being too high
-#' (loo1 <- loo(fit1))
-#' (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
-#' }
-#' 
-#' @export
-reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
-                          resp = NULL, check = TRUE, ...) {
-  stopifnot(is.loo(loo), is.brmsfit(x))
-  if (is.brmsfit_multiple(x)) {
-    warn_brmsfit_multiple(x)
-    class(x) <- "brmsfit"
-  }
-  if (is.null(newdata)) {
-    mf <- model.frame(x) 
-  } else {
-    mf <- as.data.frame(newdata)
-  }
-  mf <- rm_attr(mf, c("terms", "brmsframe"))
-  if (NROW(mf) != NROW(loo$pointwise)) {
-    stop2("Number of observations in 'loo' and 'x' do not match.")
-  }
-  check <- as_one_logical(check)
-  if (check) {
-    yhash_loo <- attr(loo, "yhash")
-    yhash_fit <- hash_response(x, newdata = newdata)
-    if (!is_equal(yhash_loo, yhash_fit)) {
-      stop2(
-        "Response values used in 'loo' and 'x' do not match. ",
-        "If this is a false positive, please set 'check' to FALSE."
-      )
-    }
-  }
-  if (is.null(loo$diagnostics$pareto_k)) {
-    stop2("No Pareto k estimates found in the 'loo' object.")
-  }
-  obs <- loo::pareto_k_ids(loo, k_threshold)
-  J <- length(obs)
-  if (J == 0L) {
-    message(
-      "No problematic observations found. ",
-      "Returning the original 'loo' object."
-    )
-    return(loo)
-  }
-  
-  # split dots for use in log_lik and update
-  dots <- list(...)
-  ll_arg_names <- arg_names("log_lik")
-  ll_args <- dots[intersect(names(dots), ll_arg_names)]
-  ll_args$allow_new_levels <- TRUE
-  ll_args$resp <- resp
-  ll_args$combine <- TRUE
-  up_args <- dots[setdiff(names(dots), ll_arg_names)]
-  up_args$refresh <- 0
-  
-  .reloo <- function(j) {
-    omitted <- obs[j]
-    mf_omitted <- mf[-omitted, , drop = FALSE]
-    fit_j <- x
-    up_args$object <- fit_j
-    up_args$newdata <- mf_omitted
-    up_args$data2 <- subset_data2(x$data2, -omitted)
-    fit_j <- SW(do_call(update, up_args))
-    ll_args$object <- fit_j
-    ll_args$newdata <- mf[omitted, , drop = FALSE]
-    ll_args$newdata2 <- subset_data2(x$data2, omitted)
-    return(do_call(log_lik, ll_args))
-  }
-  
-  lls <- futures <- vector("list", J)
-  message(
-    J, " problematic observation(s) found.", 
-    "\nThe model will be refit ", J, " times."
-  )
-  for (j in seq_len(J)) {
-    message(
-      "\nFitting model ", j, " out of ", J,
-      " (leaving out observation ", obs[j], ")"
-    )
-    futures[[j]] <- future::future(.reloo(j), packages = "brms")
-  }
-  for (j in seq_len(J)) {
-    lls[[j]] <- future::value(futures[[j]])
-  }
-  # most of the following code is taken from rstanarm:::reloo
-  # compute elpd_{loo,j} for each of the held out observations
-  elpd_loo <- ulapply(lls, log_mean_exp)
-  # compute \hat{lpd}_j for each of the held out observations (using log-lik
-  # matrix from full posterior, not the leave-one-out posteriors)
-  mf_obs <- mf[obs, , drop = FALSE]
-  data2_obs <- subset_data2(x$data2, obs)
-  ll_x <- log_lik(x, newdata = mf_obs, newdata2 = data2_obs)
-  hat_lpd <- apply(ll_x, 2, log_mean_exp)
-  # compute effective number of parameters
-  p_loo <- hat_lpd - elpd_loo
-  # replace parts of the loo object with these computed quantities
-  sel <- c("elpd_loo", "p_loo", "looic")
-  loo$pointwise[obs, sel] <- cbind(elpd_loo, p_loo, -2 * elpd_loo)
-  new_pw <- loo$pointwise[, sel, drop = FALSE]
-  loo$estimates[, 1] <- colSums(new_pw)
-  loo$estimates[, 2] <- sqrt(nrow(loo$pointwise) * apply(new_pw, 2, var))
-  # what should we do about pareto-k? for now setting them to 0
-  loo$diagnostics$pareto_k[obs] <- 0
-  loo
-}
-
-#' @rdname reloo.brmsfit
-#' @export
-reloo.loo <- function(x, fit, ...) {
-  reloo(fit, loo = x, ...)
-}
-
-# the generic will eventually be moved to 'loo'
-#' @rdname reloo.brmsfit
-#' @export
-reloo <- function(x, ...) {
-  UseMethod("reloo")
-}
-
 # recommend options if approximate loo fails for some observations
 # @param moment_match has moment matching already been performed?
 recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE, 
@@ -887,49 +676,6 @@ r_eff_helper <- function(x, fit, allow_na = TRUE) {
 # of likelihood draws based on log-likelihood draws
 r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
   r_eff_helper(exp(log_lik), fit = fit, allow_na = allow_na)
-}
-
-# methods required in loo_subsample
-#' @importFrom loo .ndraws
-#' @export
-.ndraws.brmsprep <- function(x) {
-  x$nsamples
-}
-
-#' @export
-.ndraws.mvbrmsprep <- function(x) {
-  x$nsamples
-}
-
-#' @importFrom loo .thin_draws
-#' @export
-.thin_draws.brmsprep <- function(draws, loo_approximation_draws) {
-  # brmsprep objects are too complex to implement a post-hoc subsetting method
-  if (length(loo_approximation_draws)) {
-    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
-  }
-  draws
-}
-
-#' @export
-.thin_draws.mvbrmsprep <- function(draws, loo_approximation_draws) {
-  if (length(loo_approximation_draws)) {
-    stop2("'loo_approximation_draws' is not supported for brmsfit objects.")
-  }
-  draws
-}
-
-#' @importFrom loo .compute_point_estimate
-#' @export
-.compute_point_estimate.brmsprep <- function(draws) {
-  # point estimates are stored in the form of an attribute rather 
-  # than computed on the fly due to the complexity of brmsprep objects
-  attr(draws, "point_estimate")
-}
-
-#' @export
-.compute_point_estimate.mvbrmsprep <- function(draws) {
-  attr(draws, "point_estimate")
 }
 
 # print the output of a list of loo objects
