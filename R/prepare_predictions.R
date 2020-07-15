@@ -958,76 +958,83 @@ get_new_rsamples <- function(ranef, gf, rsamples, used_levels, old_levels,
   for (i in seq_along(gf)) {
     has_new_levels <- any(gf[[i]] > nlevels)
     if (has_new_levels) {
-      if (sample_new_levels %in% c("old_levels", "gaussian")) {
-        new_indices <- sort(setdiff(gf[[i]], seq_len(nlevels)))
-        out[[i]] <- matrix(NA, nrow(rsamples), nranef * length(new_indices))
-        if (sample_new_levels == "old_levels") {
-          for (j in seq_along(new_indices)) {
-            # choose an existing person to take the parameters from
-            if (length(old_by_per_level)) {
-              new_by <- used_by_per_level[used_levels == new_levels[j]]
-              possible_levels <- old_levels[old_by_per_level == new_by]
-              possible_levels <- which(old_levels %in% possible_levels)
-              take_level <- sample(possible_levels, 1)
-            } else {
-              take_level <- sample(seq_len(nlevels), 1)
-            }
-            for (k in seq_len(nranef)) {
-              take <- (take_level - 1) * nranef + k
-              out[[i]][, (j - 1) * nranef + k] <- rsamples[, take]
-            }
+      new_indices <- sort(setdiff(gf[[i]], seq_len(nlevels)))
+      out[[i]] <- matrix(NA, nrow(rsamples), nranef * length(new_indices))
+      if (sample_new_levels == "uncertainty") {
+        for (j in seq_along(new_indices)) {
+          # selected levels need to be the same for all varying effects
+          # to correctly take their correlations into account
+          if (length(old_by_per_level)) {
+            # select from all levels matching the 'by' variable
+            new_by <- used_by_per_level[used_levels == new_levels[j]]
+            possible_levels <- old_levels[old_by_per_level == new_by]
+            possible_levels <- which(old_levels %in% possible_levels)
+            sel_levels <- sample(possible_levels, NROW(rsamples), TRUE)
+          } else {
+            # select from all levels
+            sel_levels <- sample(seq_len(nlevels), NROW(rsamples), TRUE)
           }
-        } else if (sample_new_levels == "gaussian") {
-          if (any(!ranef$dist %in% "gaussian")) {
-            stop2("Option sample_new_levels = 'gaussian' is not ",
-                  "available for non-gaussian group-level effects.")
-          }
-          for (j in seq_along(new_indices)) {
-            # extract hyperparameters used to compute the covariance matrix
-            if (length(old_by_per_level)) {
-              new_by <- used_by_per_level[used_levels == new_levels[j]]
-              rnames <- as.vector(get_rnames(ranef, bylevels = new_by))
-            } else {
-              rnames <- get_rnames(ranef)
+          for (k in seq_len(nranef)) {
+            for (s in seq_rows(rsamples)) {
+              sel <- (sel_levels[s] - 1) * nranef + k
+              out[[i]][s, (j - 1) * nranef + k] <- rsamples[s, sel]
             }
-            sd_pars <- paste0("sd_", g, "__", rnames)
-            sd_samples <- get_samples(samples, sd_pars, fixed = TRUE)
-            cor_type <- paste0("cor_", g)
-            cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
-            cor_samples <- matrix(0, nrow(sd_samples), length(cor_pars))
-            for (k in seq_along(cor_pars)) {
-              if (cor_pars[k] %in% colnames(samples)) {
-                cor_samples[, k] <- get_samples(
-                  samples, cor_pars[k], fixed = TRUE
-                )
-              }
-            }
-            cov_matrix <- get_cov_matrix(sd_samples, cor_samples)
-            # sample new levels from the normal distribution
-            # implied by the covariance matrix
-            indices <- ((j - 1) * nranef + 1):(j * nranef)
-            out[[i]][, indices] <- t(apply(
-              cov_matrix, 1, rmulti_normal, 
-              n = 1, mu = rep(0, length(sd_pars))
-            ))
           }
         }
-        max_level <- max_level + length(new_indices)
-      } else if (sample_new_levels == "uncertainty") {
-        out[[i]] <- matrix(nrow = nrow(rsamples), ncol = nranef)
-        # selected levels need to be the same for all varying effects
-        # to correctly take their correlations into account
-        sel_levels <- sample(seq_len(nlevels), NROW(rsamples), TRUE)
-        for (k in seq_len(nranef)) {
-          indices <- seq(k, nlevels * nranef, by = nranef)
-          tmp <- rsamples[, indices, drop = FALSE]
-          for (j in seq_rows(tmp)) {
-            out[[i]][j, k] <- tmp[j, sel_levels[j]]
+      } else if (sample_new_levels == "old_levels") {
+        for (j in seq_along(new_indices)) {
+          # choose an existing person to take the parameters from
+          if (length(old_by_per_level)) {
+            # select from all levels matching the 'by' variable
+            new_by <- used_by_per_level[used_levels == new_levels[j]]
+            possible_levels <- old_levels[old_by_per_level == new_by]
+            possible_levels <- which(old_levels %in% possible_levels)
+            sel_level <- sample(possible_levels, 1)
+          } else {
+            # select from all levels
+            sel_level <- sample(seq_len(nlevels), 1)
+          }
+          for (k in seq_len(nranef)) {
+            sel <- (sel_level - 1) * nranef + k
+            out[[i]][, (j - 1) * nranef + k] <- rsamples[, sel]
           }
         }
-        max_level <- max_level + 1
-        gf[[i]][gf[[i]] > nlevels] <- max_level
+      } else if (sample_new_levels == "gaussian") {
+        if (any(!ranef$dist %in% "gaussian")) {
+          stop2("Option sample_new_levels = 'gaussian' is not ",
+                "available for non-gaussian group-level effects.")
+        }
+        for (j in seq_along(new_indices)) {
+          # extract hyperparameters used to compute the covariance matrix
+          if (length(old_by_per_level)) {
+            new_by <- used_by_per_level[used_levels == new_levels[j]]
+            rnames <- as.vector(get_rnames(ranef, bylevels = new_by))
+          } else {
+            rnames <- get_rnames(ranef)
+          }
+          sd_pars <- paste0("sd_", g, "__", rnames)
+          sd_samples <- get_samples(samples, sd_pars, fixed = TRUE)
+          cor_type <- paste0("cor_", g)
+          cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
+          cor_samples <- matrix(0, nrow(sd_samples), length(cor_pars))
+          for (k in seq_along(cor_pars)) {
+            if (cor_pars[k] %in% colnames(samples)) {
+              cor_samples[, k] <- get_samples(
+                samples, cor_pars[k], fixed = TRUE
+              )
+            }
+          }
+          cov_matrix <- get_cov_matrix(sd_samples, cor_samples)
+          # sample new levels from the normal distribution
+          # implied by the covariance matrix
+          indices <- ((j - 1) * nranef + 1):(j * nranef)
+          out[[i]][, indices] <- t(apply(
+            cov_matrix, 1, rmulti_normal, 
+            n = 1, mu = rep(0, length(sd_pars))
+          ))
+        }
       }
+      max_level <- max_level + length(new_indices)
     } else { 
       out[[i]] <- matrix(nrow = nrow(rsamples), ncol = 0)
     }

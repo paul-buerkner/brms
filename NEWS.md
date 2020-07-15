@@ -5,6 +5,12 @@
 * Support method `loo_moment_match`, which can be used to
 update a `loo` object when Pareto k estimates are large.
 
+### Other Changes
+
+* Improve the prediction behavior in post-processing methods 
+when sampling new levels of grouping factors via 
+`sample_new_levels = "uncertainty"`. (#956)
+
 
 # brms 2.13.3
 
