@@ -5,12 +5,38 @@
 \alias{loo_moment_match}
 \title{Moment matching for efficient approximate leave-one-out cross-validation}
 \usage{
-\method{loo_moment_match}{brmsfit}(x, loo, ...)
+\method{loo_moment_match}{brmsfit}(
+  x,
+  loo,
+  k_threshold = 0.7,
+  newdata = NULL,
+  resp = NULL,
+  check = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
 \item{loo}{An object of class \code{loo} originally created from \code{x}.}
+
+\item{k_threshold}{The threshold at which Pareto \eqn{k} 
+estimates are treated as problematic. Defaults to \code{0.7}. 
+See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
+for more details.}
+
+\item{newdata}{An optional data.frame for which to evaluate predictions. If
+\code{NULL} (default), the original data of the model is used.
+\code{NA} values within factors are interpreted as if all dummy
+variables of this factor are zero. This allows, for instance, to make
+predictions of the grand mean when using sum coding.}
+
+\item{resp}{Optional names of response variables. If specified, predictions
+are performed only for the specified response variables.}
+
+\item{check}{Logical; If \code{TRUE} (the default), some checks
+check are performed if the \code{loo} object was generated
+from the \code{brmsfit} object passed to argument \code{fit}.}
 
 \item{...}{Further arguments passed to the underlying methods.
 Additional arguments initially passed to \code{\link{loo}},
@@ -44,4 +70,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 (mmloo1 <- loo_moment_match(fit1, loo = loo1))
 }
 
+}
+\references{
+Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2020). 
+  Implicitly Adaptive Importance Sampling. preprint arXiv:1906.08850
 }

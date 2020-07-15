@@ -19,12 +19,16 @@
 #'  The latter approach is usually considerably slower but 
 #'  requires much less working memory. Accordingly, if one runs 
 #'  into memory issues, \code{pointwise = TRUE} is the way to go.
+#' @param moment_match Logical; Indicate whether \code{\link{loo_moment_match}} 
+#'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #' @param reloo Logical; Indicate whether \code{\link{reloo}} 
 #'  should be applied on problematic observations. Defaults to \code{FALSE}.
 #' @param k_threshold The threshold at which pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   Only used if argument \code{reloo} is \code{TRUE}.
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.
+#' @param moment_match_args Optional \code{list} of additional arguments passed to
+#'   \code{\link{loo_moment_match}}.
 #' @param reloo_args Optional \code{list} of additional arguments passed to
 #'   \code{\link{reloo}}.
 #' @param model_names If \code{NULL} (the default) will use model names 
@@ -73,20 +77,25 @@
 #' @export loo
 #' @export
 loo.brmsfit <-  function(x, ..., compare = TRUE, resp = NULL,
-                         pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-                         reloo_args = list(), model_names = NULL) {
+                         pointwise = FALSE, moment_match = FALSE,
+                         reloo = FALSE, k_threshold = 0.7,
+                         moment_match_args = list(), reloo_args = list(), 
+                         model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo", pointwise, compare, 
-    resp, k_threshold, reloo, reloo_args
+    resp, k_threshold, moment_match, reloo, 
+    moment_match_args, reloo_args
   )
-  do_call(compute_loos, args)
+  do_call(compute_loolist, args)
 }
 
 #' @export
 LOO.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
-                        pointwise = FALSE, reloo = FALSE, k_threshold = 0.7,
-                        reloo_args = list(), model_names = NULL) {
+                        pointwise = FALSE, moment_match = FALSE,
+                        reloo = FALSE, k_threshold = 0.7,
+                        moment_match_args = list(), reloo_args = list(), 
+                        model_names = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(loo)
   eval(cl, parent.frame())
@@ -151,7 +160,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                          pointwise = FALSE, model_names = NULL) {
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(criterion = "waic", pointwise, compare, resp)
-  do_call(compute_loos, args)
+  do_call(compute_loolist, args)
 }
 
 #' @export
@@ -200,9 +209,9 @@ loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo_subsample", compare, resp, 
-    pointwise = TRUE, add_point_estimate = TRUE
+    add_point_estimate = TRUE
   )
-  do_call(compute_loos, args)
+  do_call(compute_loolist, args)
 }
 
 # possible criteria to evaluate via the loo package
@@ -218,11 +227,9 @@ loo_criteria <- function() {
 # @param ... more arguments passed to compute_loo
 # @return If length(models) > 1 an object of class 'loolist'
 #   If length(models) == 1 an object of class 'loo'
-compute_loos <- function(
-  models, criterion = loo_criteria(),
-  use_stored = TRUE, compare = TRUE, ...
-) {
-  criterion <- match.arg(criterion)
+compute_loolist <- function(models, criterion, use_stored = TRUE, 
+                            compare = TRUE, ...) {
+  criterion <- match.arg(criterion, loo_criteria())
   args <- nlist(criterion, ...)
   for (i in seq_along(models)) {
     models[[i]] <- restructure(models[[i]]) 
@@ -257,75 +264,103 @@ compute_loos <- function(
   out
 }
 
-# compute information criteria using the 'loo' package
+# compute model fit criteria using the 'loo' package
 # @param x an object of class brmsfit
 # @param criterion the criterion to be computed
+# @param newdata optional data.frame of new data
+# @param resp optional names of the predicted response variables
 # @param model_name original variable name of object 'x'
 # @param use_stored use precomputed criterion objects if possible?
-# @param newdata optional data.frame of new data
-# @param reloo call 'reloo' after computing 'loo'?
-# @param reloo_args list of arguments passed to 'reloo'
-# @param pointwise compute log-likelihood point-by-point?
-# @param ... passed to other post-processing methods
+# @param ... passed to the individual methods
 # @return an object of class 'loo'
-compute_loo <- function(x, criterion = loo_criteria(),
-                        reloo = FALSE, k_threshold = 0.7, reloo_args = list(),
-                        pointwise = FALSE, newdata = NULL, resp = NULL, 
+compute_loo <- function(x, criterion, newdata = NULL, resp = NULL, 
                         model_name = "", use_stored = TRUE, ...) {
-  # TODO: replace this function with a set of criterion-specific functions
-  criterion <- match.arg(criterion)
+  criterion <- match.arg(criterion, loo_criteria())
   model_name <- as_one_character(model_name)
   use_stored <- as_one_logical(use_stored)
   out <- get_criterion(x, criterion)
   if (!(use_stored && is.loo(out))) {
-    # compute the criterion
-    if (criterion == "kfold") {
-      kfold_args <- nlist(x, newdata, resp, ...)
-      out <- do_call(.kfold, kfold_args)
-    } else {
-      contains_samples(x)
-      pointwise <- as_one_logical(pointwise)
-      loo_args <- list(...)
-      ll_args <- nlist(object = x, newdata, pointwise, resp, ...)
-      loo_args$x <- do_call(log_lik, ll_args)
-      if (pointwise) {
-        loo_args$draws <- attr(loo_args$x, "draws")
-        loo_args$data <- attr(loo_args$x, "data")
-        # TODO: how to include r_eff here?
-      } else {
-        loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
-      }
-      if (criterion == "psis") {
-        if (pointwise) {
-          stop2("Cannot use pointwise evaluation for 'psis'.")
-        }
-        loo_args$log_ratios <- -loo_args$x
-        loo_args$x <- NULL
-      }
-      if (criterion == "loo_subsample") {
-        if (!pointwise) {
-          stop2("Can only use pointwise evaluation in 'loo_subsample'.")
-        }
-      }
-      out <- SW(do_call(criterion, loo_args, pkg = "loo"))
-    }
+    args <- nlist(x, newdata, resp, model_name, ...)
+    out <- do_call(paste0(".", criterion), args)
     attr(out, "yhash") <- hash_response(x, newdata = newdata, resp = resp)
   }
   attr(out, "model_name") <- model_name
-  if (criterion == "loo") {
-    # TODO: include moment matching
-    if (reloo) {
-      c(reloo_args) <- nlist(
-        x = out, fit = x, newdata, resp, 
-        k_threshold, check = FALSE, ...
-      )
-      out <- do_call("reloo", reloo_args)
-    } else {
-      n_bad_obs <- length(loo::pareto_k_ids(out, threshold = k_threshold))
-      recommend_loo_options(n_bad_obs, k_threshold, model_name) 
-    }
-  }
   out
+}
+
+# compute 'loo' criterion using the 'loo' package
+.loo <- function(x, pointwise, k_threshold, moment_match, reloo, 
+                 moment_match_args, reloo_args, newdata, 
+                 resp, model_name, ...) {
+  loo_args <- prepare_loo_args(
+    x, newdata = newdata, resp = resp, 
+    pointwise = pointwise, ...
+  )
+  out <- SW(do_call("loo", loo_args, pkg = "loo"))
+  if (moment_match) {
+    c(moment_match_args) <- nlist(
+      x, loo = out, newdata, resp, 
+      k_threshold, check = FALSE, ...
+    )
+    out <- do_call("loo_moment_match", moment_match_args)
+  }
+  if (reloo) {
+    c(reloo_args) <- nlist(
+      x, loo = out, newdata, resp, 
+      k_threshold, check = FALSE, ...
+    )
+    out <- do_call("reloo", reloo_args)
+  }
+  recommend_loo_options(out, k_threshold, moment_match, model_name) 
+  out
+}
+
+# compute 'waic' criterion using the 'loo' package
+# @param model_name ignored but included to avoid being passed to '...'
+.waic <- function(x, pointwise, newdata, resp, model_name, ...) {
+  loo_args <- prepare_loo_args(
+    x, newdata = newdata, resp = resp, 
+    pointwise = pointwise, ...
+  )
+  do_call("waic", loo_args, pkg = "loo")
+}
+
+# compute 'loo_subsample' criterion using the 'loo' package
+# @param model_name ignored but included to avoid being passed to '...'
+.loo_subsample <- function(x, newdata, resp, model_name, ...) {
+  loo_args <- prepare_loo_args(
+    x, newdata = newdata, resp = resp, 
+    pointwise = TRUE, ...
+  )
+  do_call("loo_subsample", loo_args, pkg = "loo")
+}
+
+# compute 'psis' criterion using the 'loo' package
+# @param model_name ignored but included to avoid being passed to '...'
+.psis <- function(x, newdata, resp, model_name, ...) {
+  loo_args <- prepare_loo_args(
+    x, newdata = newdata, resp = resp, 
+    pointwise = FALSE, ...
+  )
+  loo_args$log_ratios <- -loo_args$x
+  loo_args$x <- NULL
+  do_call("psis", loo_args, pkg = "loo")
+}
+
+# prepare arguments passed to the methods of the `loo` package
+prepare_loo_args <- function(x, newdata, resp, pointwise, ...) {
+  pointwise <- as_one_logical(pointwise)
+  loo_args <- list(...)
+  ll_args <- nlist(object = x, newdata, resp, pointwise, ...)
+  loo_args$x <- do_call(log_lik, ll_args)
+  if (pointwise) {
+    loo_args$draws <- attr(loo_args$x, "draws")
+    loo_args$data <- attr(loo_args$x, "data")
+    # TODO: how to include r_eff here?
+  } else {
+    loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
+  }
+  loo_args
 }
 
 #' Model comparison with the \pkg{loo} package
@@ -630,7 +665,7 @@ validate_models <- function(models, model_names, sub_names) {
 #'   on the method.
 #' @param loo An \R object of class \code{loo}.
 #' @param fit An \R object of class \code{brmsfit}.
-#' @param k_threshold The threshold at which pareto \eqn{k} 
+#' @param k_threshold The threshold at which Pareto \eqn{k} 
 #'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 #'   for more details.
@@ -683,6 +718,7 @@ reloo.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
   if (NROW(mf) != NROW(loo$pointwise)) {
     stop2("Number of observations in 'loo' and 'x' do not match.")
   }
+  check <- as_one_logical(check)
   if (check) {
     yhash_loo <- attr(loo, "yhash")
     yhash_fit <- hash_response(x, newdata = newdata)
@@ -781,11 +817,23 @@ reloo <- function(x, ...) {
 }
 
 # recommend options if approximate loo fails for some observations
-recommend_loo_options <- function(n, k_threshold, model_name = "") {
-  model_name <- if (isTRUE(nzchar(model_name))) {
-    paste0(" in model '", model_name, "'")
+# @param moment_match has moment matching already been performed?
+recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE, 
+                                  model_name = "") {
+  if (isTRUE(nzchar(model_name))) {
+    model_name <- paste0(" in model '", model_name, "'")
+  } else {
+    model_name <- ""
   }
-  if (n > 0 && n <= 10) {
+  n <- length(loo::pareto_k_ids(loo, threshold = k_threshold))
+  if (!moment_match && n > 0) {
+    warning2(
+      "Found ", n, " observations with a pareto_k > ", k_threshold,
+      model_name, ". It is recommended to set 'moment_match = TRUE' in order ", 
+      "to perform moment matching for problematic observations. "
+    )
+    out <- "loo_moment_match"
+  } else if (n > 0 && n <= 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > ", k_threshold,
       model_name, ". It is recommended to set 'reloo = TRUE' in order to ", 

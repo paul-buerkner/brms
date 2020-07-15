@@ -13,8 +13,10 @@
   compare = TRUE,
   resp = NULL,
   pointwise = FALSE,
+  moment_match = FALSE,
   reloo = FALSE,
   k_threshold = 0.7,
+  moment_match_args = list(),
   reloo_args = list(),
   model_names = NULL
 )
@@ -40,6 +42,9 @@ The latter approach is usually considerably slower but
 requires much less working memory. Accordingly, if one runs 
 into memory issues, \code{pointwise = TRUE} is the way to go.}
 
+\item{moment_match}{Logical; Indicate whether \code{\link{loo_moment_match}} 
+should be applied on problematic observations. Defaults to \code{FALSE}.}
+
 \item{reloo}{Logical; Indicate whether \code{\link{reloo}} 
 should be applied on problematic observations. Defaults to \code{FALSE}.}
 
@@ -47,6 +52,9 @@ should be applied on problematic observations. Defaults to \code{FALSE}.}
 estimates are treated as problematic. Defaults to \code{0.7}. 
 Only used if argument \code{reloo} is \code{TRUE}.
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}} for more details.}
+
+\item{moment_match_args}{Optional \code{list} of additional arguments passed to
+\code{\link{loo_moment_match}}.}
 
 \item{reloo_args}{Optional \code{list} of additional arguments passed to
 \code{\link{reloo}}.}

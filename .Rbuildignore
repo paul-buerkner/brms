@@ -1,5 +1,6 @@
 ^Meta$
 ^doc$
+^man-roxygen$
 ^.*\.Rproj$
 ^.*\.RData$
 ^.*\.Rhistory$

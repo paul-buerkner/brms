@@ -6,8 +6,16 @@
 #' 
 #' @aliases loo_moment_match
 #' 
+#' @inheritParams predict.brmsfit
 #' @param x An object of class \code{brmsfit}.
 #' @param loo An object of class \code{loo} originally created from \code{x}.
+#' @param k_threshold The threshold at which Pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
+#'   for more details.
+#' @param check Logical; If \code{TRUE} (the default), some checks
+#'   check are performed if the \code{loo} object was generated
+#'   from the \code{brmsfit} object passed to argument \code{fit}.
 #' @param ... Further arguments passed to the underlying methods.
 #'   Additional arguments initially passed to \code{\link{loo}},
 #'   for example, \code{newdata} or \code{resp} need to be passed
@@ -20,6 +28,10 @@
 #'   to be saved. Otherwise \code{loo_moment_match} cannot be computed.
 #'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
 #'   if you are planning to apply \code{loo_moment_match} to your models.
+#'   
+#' @references 
+#'   Paananen, T., Piironen, J., Buerkner, P.-C., Vehtari, A. (2020). 
+#'   Implicitly Adaptive Importance Sampling. preprint arXiv:1906.08850
 #' 
 #' @examples 
 #' \dontrun{
@@ -35,16 +47,24 @@
 #' @importFrom loo loo_moment_match
 #' @export loo_moment_match
 #' @export
-loo_moment_match.brmsfit <- function(x, loo, ...) {
-  .loo_moment_match(x, loo, ...)
-}
-
-# internal function of loo_moment_match.brmsfit
-.loo_moment_match <- function(x, loo, newdata = NULL, ...) {
+loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL, 
+                                     resp = NULL, check = TRUE, ...) {
+  stopifnot(is.loo(loo), is.brmsfit(x))
   if (is.null(newdata)) {
     newdata <- model.frame(x) 
   } else {
     newdata <- as.data.frame(newdata)
+  }
+  check <- as_one_logical(check)
+  if (check) {
+    yhash_loo <- attr(loo, "yhash")
+    yhash_fit <- hash_response(x, newdata = newdata)
+    if (!is_equal(yhash_loo, yhash_fit)) {
+      stop2(
+        "Response values used in 'loo' and 'x' do not match. ",
+        "If this is a false positive, please set 'check' to FALSE."
+      )
+    }
   }
   # ensure compatibility with objects not created in the current R session
   x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
@@ -55,7 +75,9 @@ loo_moment_match.brmsfit <- function(x, loo, ...) {
     unconstrain_pars = .unconstrain_pars,
     log_prob_upars = .log_prob_upars,
     log_lik_i_upars = .log_lik_i_upars,
-    newdata = newdata, ...
+    k_threshold = k_threshold,
+    newdata = newdata, 
+    resp = resp, ...
   ))
   if (is(out, "try-error")) {
     stop2(

@@ -26,7 +26,7 @@ on the method.}
 
 \item{loo}{An \R object of class \code{loo}.}
 
-\item{k_threshold}{The threshold at which pareto \eqn{k} 
+\item{k_threshold}{The threshold at which Pareto \eqn{k} 
 estimates are treated as problematic. Defaults to \code{0.7}. 
 See \code{\link[loo:pareto-k-diagnostic]{pareto_k_ids}}
 for more details.}
