@@ -1,3 +1,11 @@
+# brms 2.13.3++
+
+### New Features
+
+* Support method `loo_moment_match`, which can be used to
+update a `loo` object when Pareto k estimates are large.
+
+
 # brms 2.13.3
 
 ### New Features

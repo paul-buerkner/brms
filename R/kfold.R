@@ -109,14 +109,14 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     criterion = "kfold", K, Ksub, folds, group, 
     compare, resp, save_fits, use_stored
   )
-  do_call(compute_loos, args)
+  do_call(compute_loolist, args)
 }
 
 # helper function to perform k-fold cross-validation
 # @inheritParams kfold.brmsfit
-.kfold <- function(x, K = 10, Ksub = NULL, folds = NULL, 
-                   group = NULL, newdata = NULL, resp = NULL,
-                   save_fits = FALSE, ...) {
+# @param model_name ignored but included to avoid being passed to '...'
+.kfold <- function(x, K, Ksub, folds, group, save_fits,
+                   newdata, resp, model_name,  ...) {
   stopifnot(is.brmsfit(x))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)

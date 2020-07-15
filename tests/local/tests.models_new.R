@@ -9,6 +9,7 @@ test_that("Poisson model from brm doc works correctly", {
     data = epilepsy, family = poisson(),
     prior = prior(student_t(5,0,10), class = b) +
       prior(cauchy(0,2), class = sd),
+    save_all_pars = TRUE,
     refresh = 0
   )
   print(fit1)
@@ -26,9 +27,10 @@ test_that("Poisson model from brm doc works correctly", {
   ## investigate model fit
   expect_range(WAIC(fit1)$estimates[3, 1], 1120, 1160)
   expect_ggplot(pp_check(fit1))
+  
   # test kfold
   kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
-  expect_range(kfold1$kfoldic, 1210, 1260)
+  expect_range(kfold1$estimates[3, 1], 1210, 1260)
   # define a loss function
   rmse <- function(y, yrep) {
     yrep_mean <- colMeans(yrep)
@@ -38,6 +40,11 @@ test_that("Poisson model from brm doc works correctly", {
   kfp1 <- kfold_predict(kfold1)
   rmse1 <- rmse(y = kfp1$y, yrep = kfp1$yrep)
   expect_range(rmse1, 6, 7)
+  
+  # test loo_moment_match
+  loo1 <- loo(fit1)
+  mmloo1 <- loo_moment_match(fit1, loo1, k_threshold = 1, cores = 1)
+  expect_is(mmloo1, "loo")
 })
 
 test_that("Ordinal model from brm doc works correctly", {
