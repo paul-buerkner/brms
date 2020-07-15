@@ -26,6 +26,9 @@
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior samples.
+#'  
+#' @template details-newdata-na
+#' @template details-allow_new_levels
 #' 
 #' @aliases log_lik
 #' @method log_lik brmsfit
