@@ -43,7 +43,7 @@ test_that("Poisson model from brm doc works correctly", {
   
   # test loo_moment_match
   loo1 <- loo(fit1)
-  mmloo1 <- loo_moment_match(fit1, loo1, k_threshold = 1)
+  mmloo1 <- loo_moment_match(fit1, loo1, k_threshold = 1, cores = 1)
   expect_is(mmloo1, "loo")
 })
 
