@@ -173,6 +173,12 @@ restructure_v2 <- function(x) {
     # added support for 'cmdstanr' as additional backend
     x$backend <- "rstan"
   }
+  if (version < "2.13.5") {
+    # see issue #962 for discussion
+    if ("cox" %in% family_names(x)) {
+      stop_parameterization_changed("cox", "2.13.5")
+    }
+  }
   x
 }
 
@@ -667,8 +673,7 @@ update_old_family.mvbrmsformula <- function(x, ...) {
 stop_parameterization_changed <- function(family, version) {
   stop2(
     "The parameterization of '", family, "' models has changed in brms ",
-    version, " to be consistent with other model classes. ", 
-    "Please refit your model with the current version of brms."
+    version, ". Please refit your model with the current version of brms."
   )
 }
 

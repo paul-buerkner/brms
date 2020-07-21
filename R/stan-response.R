@@ -327,12 +327,15 @@ stan_bhaz <- function(bterms, prior, ...) {
     "  // design matrix of the baseline function\n",
     "  matrix[N{resp}, Kbhaz{resp}] Zbhaz{resp};\n",
     "  // design matrix of the cumulative baseline function\n",
-    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n"
+    "  matrix[N{resp}, Kbhaz{resp}] Zcbhaz{resp};\n",
+    "  // a-priori concentration vector of baseline coefficients\n",
+    "  vector<lower=0>[Kbhaz{resp}] con_sbhaz{resp};\n"
   )
-  str_add_list(out) <- stan_prior(
-    prior, class = "sbhaz", suffix = resp, px = px, 
-    type = glue("vector<lower=0>[Kbhaz{resp}]"),
-    comment = "baseline coefficients"
+  str_add(out$par) <- glue(
+    "  simplex[Kbhaz{resp}] sbhaz{resp};  // baseline coefficients\n"
+  )
+  str_add(out$prior) <- glue(
+    "  target += dirichlet_lpdf(sbhaz{resp} | con_sbhaz{resp});\n"
   )
   str_add(out$model_def) <- glue(
     "  // compute values of baseline function\n",

@@ -25,12 +25,12 @@ data_predictor.mvbrmsterms <- function(x, data, basis = NULL, ...) {
 }
 
 #' @export
-data_predictor.brmsterms <- function(x, data, prior, ranef, 
+data_predictor.brmsterms <- function(x, data, data2, prior, ranef, 
                                      basis = NULL, ...) {
   out <- list()
   data <- subset_data(data, x)
   resp <- usc(combine_prefix(x))
-  args_eff <- nlist(data, ranef, prior, ...)
+  args_eff <- nlist(data, data2, ranef, prior, ...)
   for (dp in names(x$dpars)) {
     args_eff_spec <- list(x = x$dpars[[dp]], basis = basis$dpars[[dp]])
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
@@ -43,7 +43,7 @@ data_predictor.brmsterms <- function(x, data, prior, ranef,
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   c(out) <- data_gr_local(x, data = data, ranef = ranef)
-  c(out) <- data_mixture(x, prior = prior)
+  c(out) <- data_mixture(x, data2 = data2, prior = prior)
   out
 }
 
@@ -60,14 +60,14 @@ data_predictor.btl <- function(x, data, ranef = empty_ranef(),
                                prior = brmsprior(), data2 = list(),
                                basis = NULL, ...) {
   c(data_fe(x, data),
-    data_sp(x, data, prior = prior, basis = basis$sp),
+    data_sp(x, data, data2 = data2, prior = prior, basis = basis$sp),
     data_re(x, data, ranef = ranef),
     data_cs(x, data),
     data_sm(x, data, basis = basis$sm),
     data_gp(x, data, basis = basis$gp),
     data_ac(x, data, data2 = data2, basis = basis$ac),
     data_offset(x, data),
-    data_bhaz(x, data, basis = basis$bhaz),
+    data_bhaz(x, data, data2 = data2, prior = prior, basis = basis$bhaz),
     data_prior(x, data, prior = prior)
   )
 }
@@ -316,7 +316,7 @@ data_gr_global <- function(ranef, data2) {
 }
 
 # prepare data for special effects for use in Stan
-data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
+data_sp <- function(bterms, data, data2, prior, basis = NULL) {
   out <- list()
   spef <- tidy_spef(bterms, data)
   if (!nrow(spef)) return(out)
@@ -357,17 +357,8 @@ data_sp <- function(bterms, data, prior = brmsprior(), basis = NULL) {
         simo_prior <- subset2(prior, 
           class = "simo", coef = simo_coef[j], ls = px
         )
-        simo_prior <- simo_prior$prior
-        if (isTRUE(nzchar(simo_prior))) {
-          simo_prior <- eval_dirichlet(simo_prior)
-          if (length(simo_prior) != Jmo[j]) {
-            stop2("Invalid Dirichlet prior for the simplex of coefficient '",
-                  simo_coef[j], "'. Expected input of length ", Jmo[j], ".")
-          }
-        } else {
-          simo_prior <- rep(1, Jmo[j])
-        }
-        out[[paste0("con_simo", p, "_", j)]] <- as.array(simo_prior)
+        con_simo <- eval_dirichlet(simo_prior$prior, Jmo[j], data2)
+        out[[paste0("con_simo", p, "_", j)]] <- as.array(con_simo)
       }
     }
   }

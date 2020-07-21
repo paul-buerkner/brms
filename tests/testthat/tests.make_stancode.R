@@ -1456,16 +1456,14 @@ test_that("Stan code of GEV models is correct", {
 test_that("Stan code of Cox models is correct", {
   data <- data.frame(y = rexp(100), ce = sample(0:1, 100, TRUE), x = rnorm(100))
   bform <- bf(y | cens(ce) ~ x)
-  bprior <- prior(normal(0, 2), sbhaz)
-  scode <- make_stancode(bform, data, brmsfamily("cox"), prior = bprior)
+  scode <- make_stancode(bform, data, brmsfamily("cox"))
   expect_match2(scode, "target += cox_log_lpdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
   expect_match2(scode, "vector[N] cbhaz = Zcbhaz * sbhaz;")
-  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 2);")
-  expect_match2(scode, "vector<lower=0>[Kbhaz] sbhaz;")
+  expect_match2(scode, "target += dirichlet_lpdf(sbhaz | con_sbhaz);")
+  expect_match2(scode, "simplex[Kbhaz] sbhaz;")
   
   scode <- make_stancode(bform, data, brmsfamily("cox", "identity"))
   expect_match2(scode, "target += cox_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
-  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 1);")
 })
 
 test_that("offsets appear in the Stan code", {

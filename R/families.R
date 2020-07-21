@@ -299,10 +299,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     }
     # set default arguments
     if (is.null(out$bhaz$df)) {
-      out$bhaz$df <- 4L
+      out$bhaz$df <- 5L
     }
     if (is.null(out$bhaz$intercept)) {
-      out$bhaz$intercept <- FALSE
+      out$bhaz$intercept <- TRUE
     }
   }
   out

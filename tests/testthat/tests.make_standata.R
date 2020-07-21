@@ -230,7 +230,7 @@ test_that("make_standata handles multivariate models", {
     "Zs_y2_1_1", "Y_y2", "con_theta_x", "X_mu2_x"
   )
   expect_true(all(sdata_names %in% names(sdata)))
-  expect_equal(sdata$con_theta_x, c(2, 1))
+  expect_equal(sdata$con_theta_x, as.array(c(2, 1)))
   
   # test addition argument 'subset'
   bform <- bf(y1 | subset(censi) ~ x + y2 + (x|2|g)) + 
@@ -384,8 +384,7 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simo", coef = "mox21"))
   expect_error(
     make_standata(y ~ mo(x2), data = data, prior = prior),
-    "Invalid Dirichlet prior for the simplex of coefficient 'mox21'", 
-    fixed = TRUE
+    "Invalid Dirichlet prior"
   )
 })
 
@@ -660,13 +659,13 @@ test_that("make_standata includes data for mixture models", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   form <- bf(y ~ x, mu1 ~ 1, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data)
-  expect_equal(sdata$con_theta, c(1, 1))
+  expect_equal(sdata$con_theta, as.array(c(1, 1)))
   expect_equal(dim(sdata$X_mu1), c(10, 1))
   expect_equal(dim(sdata$X_mu2), c(10, 2))
   
   form <- bf(y ~ x, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data, prior = prior(dirichlet(10, 2), theta))
-  expect_equal(sdata$con_theta, c(10, 2))
+  expect_equal(sdata$con_theta, as.array(c(10, 2)))
   
   form <- bf(y ~ x, theta1 = 1, theta2 = 3, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data)
@@ -889,9 +888,11 @@ test_that("data for multinomial and dirichlet models is correct", {
 test_that("make_standata handles cox models correctly", {
   data <- data.frame(y = rexp(100), x = rnorm(100))
   bform <- bf(y ~ x)
-  sdata <- make_standata(bform, data, brmsfamily("cox"))
-  expect_equal(dim(sdata$Zbhaz), c(100, 4))
-  expect_equal(dim(sdata$Zcbhaz), c(100, 4))
+  bprior <- prior(dirichlet(3), sbhaz)
+  sdata <- make_standata(bform, data, brmsfamily("cox"), prior = bprior)
+  expect_equal(dim(sdata$Zbhaz), c(100, 5))
+  expect_equal(dim(sdata$Zcbhaz), c(100, 5))
+  expect_equal(sdata$con_sbhaz, as.array(rep(3, 5)))
   
   sdata <- make_standata(bform, data, brmsfamily("cox", bhaz = list(df = 6)))
   expect_equal(dim(sdata$Zbhaz), c(100, 6))

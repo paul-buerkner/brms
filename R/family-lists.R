@@ -298,7 +298,7 @@
   list(
     links = c("log", "identity"),
     dpars = c("mu"), type = "real",
-    ybounds = c(0, Inf), closed = c(FALSE, NA),
+    ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
     include = "fun_cox.stan",
     specials = c("cox")
