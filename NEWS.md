@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Support the Cox proportional hazards model for 
+time-to-event data via family `cox`. (#230, #962)
 * Support method `loo_moment_match`, which can be used to
 update a `loo` object when Pareto k estimates are large.
 

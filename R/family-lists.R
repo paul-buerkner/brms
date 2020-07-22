@@ -296,7 +296,7 @@
 
 .family_cox <- function() {
   list(
-    links = c("log", "identity"),
+    links = c("log", "identity", "softplus"),
     dpars = c("mu"), type = "real",
     ybounds = c(0, Inf), closed = c(TRUE, NA),
     ad = c("weights", "subset", "cens", "trunc"),
