@@ -128,6 +128,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       y$dpars[[dp]]$respform <- y$respform
       y$dpars[[dp]]$adforms <- y$adforms
     }
+    check_cs(y$dpars[[dp]])
   }
   
   y$nlpars <- named_list(nlpars)
@@ -146,6 +147,7 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
       }
       y$nlpars[[nlp]]$nlpar <- nlp
       y$nlpars[[nlp]]$resp <- resp
+      check_cs(y$nlpars[[nlp]])
     }
     used_nlpars <- ulapply(c(y$dpars, y$nlpars), "[[", "used_nlpars")
     unused_nlpars <- setdiff(nlpars, used_nlpars)
@@ -192,11 +194,6 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
     y$fdpars[[dp]] <- list(value = x$pfix[[dp]], dpar = dp)
   }
   check_fdpars(y$fdpars)
-  # check for illegal use of cs terms
-  if (has_cs(y) && !(is.null(family) || allow_cs(family))) {
-    stop2("Category specific effects require families ", 
-          "'sratio', 'cratio', or 'acat'.")
-  }
   
   # make a formula containing all required variables
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
@@ -1019,10 +1016,25 @@ rsv_vars <- function(bterms) {
   out
 }
 
-# check if category specific effects are present in the model
+# are category specific effects present?
 has_cs <- function(bterms) {
   length(get_effect(bterms, target = "cs")) > 0L ||
     any(get_re(bterms)$type %in% "cs")
+}
+
+# check if category specific effects are allowed
+check_cs <- function(bterms) {
+  stopifnot(is.btl(bterms) || is.btnl(bterms))
+  if (has_cs(bterms)) {
+    if (!is_equal(dpar_class(bterms$dpar), "mu")) {
+      stop2("Category specific effects are only supported ", 
+            "for the main parameter 'mu'.")
+    }
+    if (!(is.null(bterms$family) || allow_cs(bterms$family))) {
+      stop2("Category specific effects are not supported for this family.")
+    }
+  }
+  invisible(NULL)
 }
 
 # extract elements from objects

@@ -475,7 +475,7 @@ test_that("make_standata handles category specific effects", {
                          data = inhaler, family = cratio())
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
   expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "cumulative"), "require families")
+                             family = "cumulative"), "not supported")
   expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")

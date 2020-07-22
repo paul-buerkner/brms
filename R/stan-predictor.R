@@ -804,7 +804,7 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
       prior, class = "b", coef = csef,
       type = glue("matrix{bound}[Kcs{p}, nthres{resp}]"),
       coef_type = glue("row_vector{bound}[nthres{resp}]"),
-      suffix = "cs", px = px, broadcast = "matrix",
+      suffix = glue("cs{p}"), px = px, broadcast = "matrix",
       comment = "category specific effects"
     )
     str_add(out$model_def) <- glue(
