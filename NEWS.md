@@ -1,4 +1,4 @@
-# brms 2.13.3++
+# brms 2.13.5
 
 ### New Features
 
@@ -12,6 +12,10 @@ update a `loo` object when Pareto k estimates are large.
 * Improve the prediction behavior in post-processing methods 
 when sampling new levels of grouping factors via 
 `sample_new_levels = "uncertainty"`. (#956)
+
+### Bug Fixes
+
+* Fix minor problems with MKL on CRAN.
 
 
 # brms 2.13.3
