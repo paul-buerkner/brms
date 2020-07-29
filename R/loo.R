@@ -308,10 +308,11 @@ prepare_loo_args <- function(x, newdata, resp, pointwise, ...) {
   if (pointwise) {
     loo_args$draws <- attr(loo_args$x, "draws")
     loo_args$data <- attr(loo_args$x, "data")
-    # TODO: how to include r_eff here?
-  } else {
-    loo_args$r_eff <- r_eff_log_lik(loo_args$x, fit = x)
   }
+  # compute pointwise relative efficiencies
+  r_eff_args <- loo_args
+  r_eff_args$fit <- x
+  loo_args$r_eff <- do_call(r_eff_log_lik, r_eff_args)
   loo_args
 }
 
@@ -404,7 +405,7 @@ loo_model_weights.brmsfit <- function(x, ..., model_names = NULL) {
   )
   args$x <- log_lik_list
   args$r_eff_list <- mapply(
-    r_eff_log_lik, log_lik = log_lik_list, 
+    r_eff_log_lik, log_lik_list, 
     fit = models, SIMPLIFY = FALSE
   )
   out <- do_call(loo::loo_model_weights, args)
@@ -650,20 +651,11 @@ recommend_loo_options <- function(loo, k_threshold, moment_match = FALSE,
 # @param fit a brmsfit object to extract metadata from
 # @param allow_na allow NA values in the output?
 # @return a numeric vector of length NCOL(x)
-r_eff_helper <- function(x, fit, allow_na = TRUE) {
-  if (is.brmsfit_multiple(fit)) {
-    # due to stacking of chains from multiple models
-    # efficiency computations will likely be incorrect
-    # assume relative efficiency of 1 for now
-    return(rep(1, NCOL(x)))
-  }
-  stopifnot(is.matrix(x), is.brmsfit(fit))
-  chains <- fit$fit@sim$chains
-  chain_id <- rep(seq_len(chains), each = nrow(x) / chains)
-  out <- loo::relative_eff(x, chain_id = chain_id)
+r_eff_helper <- function(x, chain_id, allow_na = TRUE, ...) {
+  out <- loo::relative_eff(x, chain_id = chain_id, ...)
   if (!allow_na && anyNA(out)) {
     # avoid error in loo if some but not all r_effs are NA
-    out <- rep(1, NCOL(x))
+    out <- rep(1, length(out))
     warning2(
       "Ignoring relative efficiencies as some were NA. ",
       "See argument 'r_eff' in ?loo::loo for more details."
@@ -674,8 +666,58 @@ r_eff_helper <- function(x, fit, allow_na = TRUE) {
 
 # wrapper around r_eff_helper to compute efficiency 
 # of likelihood draws based on log-likelihood draws
-r_eff_log_lik <- function(log_lik, fit, allow_na = FALSE) {
-  r_eff_helper(exp(log_lik), fit = fit, allow_na = allow_na)
+r_eff_log_lik <- function(x, ...) {
+  UseMethod("r_eff_log_lik")
+}
+
+#' @export
+r_eff_log_lik.matrix <- function(x, fit, allow_na = FALSE, ...) {
+  if (is.brmsfit_multiple(fit)) {
+    # due to stacking of chains from multiple models
+    # efficiency computations will likely be incorrect
+    # assume relative efficiency of 1 for now
+    return(rep(1, ncol(x)))
+  }
+  chain_id <- get_chain_id(nrow(x), fit)
+  r_eff_helper(
+    exp(x), 
+    chain_id = chain_id, 
+    allow_na = allow_na, 
+    ...
+  )
+}
+
+#' @export
+r_eff_log_lik.function <- function(x, fit, draws, allow_na = FALSE, ...) {
+  if (is.brmsfit_multiple(fit)) {
+    # due to stacking of chains from multiple models
+    # efficiency computations will likely be incorrect
+    # assume relative efficiency of 1 for now
+    return(rep(1, draws$nobs))
+  }
+  lik_fun <- function(data_i, draws, ...) {
+    exp(x(data_i, draws, ...))
+  }
+  chain_id <- get_chain_id(draws$nsamples, fit)
+  r_eff_helper(
+    lik_fun, 
+    chain_id = chain_id, 
+    draws = draws, 
+    allow_na = allow_na, 
+    ...
+  )
+}
+
+# get chain IDs per posterior draw
+get_chain_id <- function(nsamples, fit) {
+  if (nsamples != nsamples(fit)) {
+    # don't know the chain IDs of a subset of draws
+    chain_id <- rep(1L, nsamples)
+  } else {
+    nchains <- fit$fit@sim$chains
+    chain_id <- rep(seq_len(nchains), each = nsamples / nchains) 
+  }
+  chain_id
 }
 
 # print the output of a list of loo objects
