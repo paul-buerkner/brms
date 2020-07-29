@@ -226,7 +226,7 @@ brmsterms.mvbrmsformula <- function(formula, ...) {
   # required to find variables used solely in the response part
   lhs_resp <- function(x) deparse_combine(lhs(x$respform)[[2]])
   out$respform <- paste0(ulapply(out$terms, lhs_resp), collapse = ",")
-  out$respform <- formula(paste0("cbind(", out$respform, ") ~ 1"))
+  out$respform <- formula(paste0("mvbind(", out$respform, ") ~ 1"))
   out$responses <- ulapply(out$terms, "[[", "resp")
   out$rescor <- x$rescor
   out$mecor <- x$mecor
