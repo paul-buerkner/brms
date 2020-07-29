@@ -18,6 +18,7 @@ addons:
   apt:
     packages:
       - libudunits2-dev
+      - libv8-dev
       - libgsl-dev
       - libgdal-dev
       - libproj-dev
