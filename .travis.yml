@@ -1,18 +1,17 @@
 language: r
 r: devel
 sudo: FALSE
+compiler: clang
 
 cache:
-  - packages
-  - ccache
+  apt: true
+  packages: true
+  ccache: true
 
 warnings_are_errors: TRUE
 
 r_build_args: '--no-build-vignettes'
 r_check_args: '--ignore-vignettes'
-
-r_github_packages: 
-  - stan-dev/rstantools
   
 addons:
   apt:
@@ -22,11 +21,6 @@ addons:
       - libgsl-dev
       - libgdal-dev
       - libproj-dev
-  
-before_install:
-  - mkdir -p ~/.R
-  - echo "CXX14FLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function  -Wno-macro-redefined" >> ~/.R/Makevars
-  - echo "CXX14=g++ -std=c++1y -fPIC" >> ~/.R/Makevars
   
 after_success:
   - travis_wait 30 Rscript -e 'covr::codecov()'
