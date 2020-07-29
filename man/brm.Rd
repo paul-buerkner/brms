@@ -326,12 +326,12 @@ Fit a generalized (non-)linear multivariate multilevel model via
 \examples{
 \dontrun{
 # Poisson regression for the number of seizures in epileptic patients
-# using student_t priors for population-level effects
-# and half cauchy priors for standard deviations of group-level effects
-bprior1 <- prior(student_t(5,0,10), class = b) +
+# using normal priors for population-level effects
+# and half-cauchy priors for standard deviations of group-level effects
+prior1 <- prior(normal(0,10), class = b) +
   prior(cauchy(0,2), class = sd)
 fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
-            data = epilepsy, family = poisson(), prior = bprior1)
+            data = epilepsy, family = poisson(), prior = prior1)
 
 # generate a summary of the results
 summary(fit1)
@@ -383,10 +383,10 @@ summary(fit4)
 x <- rnorm(100)
 y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
 data5 <- data.frame(x, y)
-bprior5 <- prior(normal(0, 2), nlpar = a1) +
+prior5 <- prior(normal(0, 2), nlpar = a1) +
   prior(normal(0, 2), nlpar = a2)
 fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),
-            data = data5, prior = bprior5)
+            data = data5, prior = prior5)
 summary(fit5)
 plot(conditional_effects(fit5), ask = FALSE)
 
