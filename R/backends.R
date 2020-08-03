@@ -49,13 +49,9 @@ compile_model <- function(model, backend, ...) {
 # @return model compiled with rstan
 .compile_model_rstan <- function(model, ...) {
   args <- list(...)
-  silent <- !length(args)
   args$model_code <- model
   message("Compiling Stan program...")
-  eval_silent(
-    do_call(rstan::stan_model, args),
-    silent = silent, type = "message"
-  )
+  do_call(rstan::stan_model, args)
 }
 
 # compile Stan model with cmdstanr
@@ -64,12 +60,8 @@ compile_model <- function(model, backend, ...) {
 .compile_model_cmdstanr <- function(model, ...) {
   require_package("cmdstanr")
   args <- list(...)
-  silent <- !length(args)
   args$stan_file <- cmdstanr::write_stan_tempfile(model)
-  eval_silent(
-    do_call(cmdstanr::cmdstan_model, args),
-    silent = silent, type = "message"
-  )
+  do_call(cmdstanr::cmdstan_model, args)
 }
 
 # fit Stan model

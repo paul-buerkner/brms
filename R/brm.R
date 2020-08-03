@@ -452,7 +452,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     )
     x$model <- .make_stancode(
       bterms, data = data, prior = prior, 
-      stanvars = stanvars, save_model = save_model
+      stanvars = stanvars, save_model = save_model,
+      backend = backend
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
