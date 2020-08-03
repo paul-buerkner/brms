@@ -1,3 +1,10 @@
+# brms 2.13.5++
+
+### New Features
+
+* Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
+
+
 # brms 2.13.5
 
 ### New Features

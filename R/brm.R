@@ -133,9 +133,10 @@
 #'   instead of PSOCK clusters.
 #' @param algorithm Character string naming the estimation approach to use.
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
-#'   variational inference with independent normal distributions, or
+#'   variational inference with independent normal distributions,
 #'   \code{"fullrank"} for variational inference with a multivariate normal
-#'   distribution. Can be set globally for the current \R session via the
+#'   distribution, or \code{"fixed_param"} for sampling from fixed parameter
+#'   values. Can be set globally for the current \R session via the
 #'   \code{"stan_algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
 #'   fitting the Stan model. Options are \code{"rstan"} (the default) or

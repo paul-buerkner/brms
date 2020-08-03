@@ -94,8 +94,11 @@ fit_model <- function(model, backend, ...) {
   
   # do the actual sampling
   message("Start sampling")
-  if (algorithm == "sampling") {
+  if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(warmup, thin, control, show_messages = !silent)
+    if (algorithm == "fixed_param") {
+      args$algorithm <- "Fixed_param"
+    }
     if (future) {
       if (cores > 1L) {
         warning2("Argument 'cores' is ignored when using 'future'.")
@@ -161,13 +164,14 @@ fit_model <- function(model, backend, ...) {
   
   # do the actual sampling
   message("Start sampling")
-  if (algorithm == "sampling") {
+  if (algorithm %in% c("sampling", "fixed_param")) {
     c(args) <- nlist(
       iter_sampling = iter - warmup,
       iter_warmup = warmup, 
       chains, thin, 
       parallel_chains = cores,
-      show_messages = !silent
+      show_messages = !silent,
+      fixed_param = algorithm == "fixed_param"
     )
     out <- do_call(model$sample, args)
   } else if (algorithm %in% c("fullrank", "meanfield")) {
@@ -204,5 +208,5 @@ backend_choices <- function() {
 
 # supported Stan algorithms
 algorithm_choices <- function() {
-  c("sampling", "meanfield", "fullrank")
+  c("sampling", "meanfield", "fullrank", "fixed_param")
 }
