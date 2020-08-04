@@ -38,11 +38,11 @@ launch_shinystan.brmsfit <- function(
   sampler_params <- rstan::get_sampler_params(object$fit, inc_warmup = FALSE)
   control <- object$fit@stan_args[[1]]$control
   if (is.null(control)) {
-    max_td <- 11
+    max_td <- 10
   } else {
     max_td <- control$max_treedepth
     if (is.null(max_td)) {
-      max_td <- 11 
+      max_td <- 10
     }
   }
   sso <- shinystan::as.shinystan(
