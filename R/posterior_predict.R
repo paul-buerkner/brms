@@ -26,6 +26,8 @@
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
+#'  @param cores Number of cores (defaults to \code{1}).
+#'    Can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.
 #' 
@@ -80,7 +82,8 @@
 posterior_predict.brmsfit <- function(
   object, newdata = NULL, re_formula = NULL, re.form = NULL, 
   transform = NULL, resp = NULL, negative_rt = FALSE, 
-  nsamples = NULL, subset = NULL, sort = FALSE, ntrys = 5, ...
+  nsamples = NULL, subset = NULL, sort = FALSE, ntrys = 5,
+  cores = getOption("mc.cores", 1), ...
 ) {
   cl <- match.call()
   if ("re.form" %in% names(cl)) {
@@ -94,7 +97,7 @@ posterior_predict.brmsfit <- function(
   )
   posterior_predict(
     prep, transform = transform, sort = sort, ntrys = ntrys, 
-    negative_rt = negative_rt, summary = FALSE
+    negative_rt = negative_rt, cores = cores, summary = FALSE
   )
 }
 
@@ -115,7 +118,8 @@ posterior_predict.mvbrmsprep <- function(object, ...) {
 #' @export
 posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
                                        summary = FALSE, robust = FALSE, 
-                                       probs = c(0.025, 0.975), ...) {
+                                       probs = c(0.025, 0.975), 
+                                       cores = 1, ...) {
   for (nlp in names(object$nlpars)) {
     object$nlpars[[nlp]] <- get_nlpar(object, nlpar = nlp)
   }
@@ -125,7 +129,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   pp_fun <- paste0("posterior_predict_", object$family$fun)
   pp_fun <- get(pp_fun, asNamespace("brms"))
   N <- choose_N(object)
-  out <- lapply(seq_len(N), pp_fun, prep = object, ...)
+  out <- plapply(seq_len(N), pp_fun, cores = cores, prep = object, ...)
   if (grepl("_mv$", object$family$fun)) {
     out <- do_call(abind, c(out, along = 3))
     out <- aperm(out, perm = c(1, 3, 2))
@@ -230,6 +234,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, resp = NULL, 
                             negative_rt = FALSE, nsamples = NULL, 
                             subset = NULL, sort = FALSE, ntrys = 5, 
+                            cores = getOption("mc.cores", 1),
                             summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
@@ -240,7 +245,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   posterior_predict(
     prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt, 
-    sort = sort, summary = summary, robust = robust, probs = probs
+    sort = sort, cores = cores, summary = summary, robust = robust, 
+    probs = probs
   )
 }
 

@@ -38,7 +38,8 @@
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             resp = NULL, nsamples = NULL, subset = NULL, 
                             pointwise = FALSE, combine = TRUE,
-                            add_point_estimate = FALSE, ...) {
+                            add_point_estimate = FALSE, 
+                            cores = getOption("mc.cores", 1), ...) {
   pointwise <- as_one_logical(pointwise)
   combine <- as_one_logical(combine)
   add_point_estimate <- as_one_logical(add_point_estimate)
@@ -66,7 +67,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     attr(log_lik, "data") <- data.frame(i = seq_len(choose_N(prep)))
     attr(log_lik, "draws") <- prep
   } else {
-    log_lik <- log_lik(prep, combine = combine)
+    log_lik <- log_lik(prep, combine = combine, cores = cores)
     if (anyNA(log_lik)) {
       warning2(
         "NAs were found in the log-likelihood. Possibly this is because ",
@@ -82,7 +83,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            resp = NULL, nsamples = NULL, subset = NULL, 
-                           pointwise = FALSE, combine = TRUE, ...) {
+                           pointwise = FALSE, combine = TRUE,
+                           cores = getOption("mc.cores", 1), ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -107,7 +109,7 @@ log_lik.mvbrmsprep <- function(object, combine = TRUE, ...) {
 }
 
 #' @export
-log_lik.brmsprep <- function(object, ...) {
+log_lik.brmsprep <- function(object, cores = 1, ...) {
   log_lik_fun <- paste0("log_lik_", object$family$fun)
   log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
   for (nlp in names(object$nlpars)) {
@@ -117,7 +119,8 @@ log_lik.brmsprep <- function(object, ...) {
     object$dpars[[dp]] <- get_dpar(object, dpar = dp)
   }
   N <- choose_N(object)
-  out <- cblapply(seq_len(N), log_lik_fun, prep = object)
+  out <- plapply(seq_len(N), log_lik_fun, cores = cores, prep = object)
+  out <- do_call(cbind, out)
   colnames(out) <- NULL
   old_order <- object$old_order
   sort <- isTRUE(ncol(out) != length(old_order))

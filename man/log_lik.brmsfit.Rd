@@ -16,6 +16,7 @@
   pointwise = FALSE,
   combine = TRUE,
   add_point_estimate = FALSE,
+  cores = getOption("mc.cores", 1),
   ...
 )
 }

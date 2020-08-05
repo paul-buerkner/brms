@@ -375,6 +375,27 @@ cblapply <- function(X, FUN, ...) {
   do_call(cbind, lapply(X, FUN, ...))
 }
 
+# parallel lapply sensitive to the operating system
+plapply <- function(X, FUN, cores = 1, ...) {
+  if (cores == 1) {
+    out <- lapply(X, FUN, ...)
+  } else {
+    if (!os_is_windows()) {
+      out <- parallel::mclapply(X = X, FUN = FUN, mc.cores = cores, ...)
+    } else {
+      cl <- parallel::makePSOCKcluster(cores)
+      on.exit(parallel::stopCluster(cl))
+      out <- parallel::parLapply(cl = cl, X = X, fun = FUN, ...)
+    }
+  }
+  out
+}
+
+# check if the operating system is Windows
+os_is_windows <- function() {
+  isTRUE(Sys.info()[['sysname']] == "Windows")
+}
+
 # find variables in a character string or expression
 all_vars <- function(expr, ...) {
   if (is.character(expr)) {
@@ -634,6 +655,7 @@ do_call <- function(what, args, pkg = NULL) {
   eval2(call, envir = args, enclos = parent.frame())
 }
 
+# create an empty data frame
 empty_data_frame <- function() {
   as.data.frame(matrix(nrow = 0, ncol = 0))
 }

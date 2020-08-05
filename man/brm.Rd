@@ -26,7 +26,7 @@ brm(
   iter = 2000,
   warmup = floor(iter/2),
   thin = 1,
-  cores = getOption("mc.cores", 1L),
+  cores = getOption("mc.cores", 1),
   control = NULL,
   algorithm = getOption("stan_algorithm", "sampling"),
   backend = getOption("stan_backend", "rstan"),
