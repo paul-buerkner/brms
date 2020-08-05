@@ -46,11 +46,11 @@
 #' @export
 conditional_smooths.brmsfit <- function(x, smooths = NULL,
                                         int_conditions = NULL,
-                                        probs = c(0.025, 0.975),
-                                        spaghetti = FALSE,
+                                        prob = 0.95, spaghetti = FALSE,
                                         resolution = 100, too_far = 0,
                                         subset = NULL, nsamples = NULL,
-                                        ...) {
+                                        probs = NULL, ...) {
+  probs <- validate_ci_bounds(prob, probs = probs)
   spaghetti <- as_one_logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)

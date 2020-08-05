@@ -41,8 +41,10 @@
 #'   if \code{NA} (default), include no random effects.
 #' @param robust If \code{TRUE} (the default) the median is used as the 
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
-#' @param probs The quantiles to be used in the computation of credible
-#'   intervals (defaults to 2.5 and 97.5 percent quantiles)
+#' @param prob prob A value between 0 and 1 indicating the desired probability 
+#'   to be covered by the uncertainty intervals. The default is 0.95.
+#' @param probs (Deprecated) The quantiles to be used in the computation of
+#'   credible intervals.
 #' @param method Method used to obtain predictions. Can be set to 
 #'   \code{"posterior_epred"} (the default), \code{"posterior_predict"},
 #'   or \code{"posterior_linpred"}. For more details, see the respective
@@ -223,12 +225,14 @@
 #' @export
 conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                         int_conditions = NULL, re_formula = NA, 
-                                        robust = TRUE, probs = c(0.025, 0.975),
+                                        prob = 0.95, robust = TRUE, 
                                         method = "posterior_epred",
                                         spaghetti = FALSE, surface = FALSE,
                                         categorical = FALSE, ordinal = FALSE,
                                         transform = NULL, resolution = 100, 
-                                        select_points = 0, too_far = 0, ...) {
+                                        select_points = 0, too_far = 0,
+                                        probs = NULL, ...) {
+  probs <- validate_ci_bounds(prob, probs = probs)
   method <- validate_pp_method(method)
   spaghetti <- as_one_logical(spaghetti)
   surface <- as_one_logical(surface)
@@ -238,9 +242,7 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   bterms <- brmsterms(new_formula)
-  if (length(probs) != 2L) {
-    stop2("Arguments 'probs' must be of length 2.")
-  }
+  
   if (!is.null(transform) && method != "posterior_predict") {
     stop2("'transform' is only allowed if 'method = posterior_predict'.")
   }

@@ -14,8 +14,8 @@
   conditions = NULL,
   int_conditions = NULL,
   re_formula = NA,
+  prob = 0.95,
   robust = TRUE,
-  probs = c(0.025, 0.975),
   method = "posterior_epred",
   spaghetti = FALSE,
   surface = FALSE,
@@ -25,6 +25,7 @@
   resolution = 100,
   select_points = 0,
   too_far = 0,
+  probs = NULL,
   ...
 )
 
@@ -92,11 +93,11 @@ all categories for factor-like predictors.}
 in the conditional predictions. If \code{NULL}, include all random effects; 
 if \code{NA} (default), include no random effects.}
 
+\item{prob}{prob A value between 0 and 1 indicating the desired probability 
+to be covered by the uncertainty intervals. The default is 0.95.}
+
 \item{robust}{If \code{TRUE} (the default) the median is used as the 
 measure of central tendency. If \code{FALSE} the mean is used instead.}
-
-\item{probs}{The quantiles to be used in the computation of credible
-intervals (defaults to 2.5 and 97.5 percent quantiles)}
 
 \item{method}{Method used to obtain predictions. Can be set to 
 \code{"posterior_epred"} (the default), \code{"posterior_predict"},
@@ -151,6 +152,9 @@ far away from the actual data points can be excluded from the plot.
 the unit square and then grid points more than \code{too_far} 
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
+
+\item{probs}{(Deprecated) The quantiles to be used in the computation of
+credible intervals.}
 
 \item{...}{Further arguments such as \code{subset} or \code{nsamples}
 passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}

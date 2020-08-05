@@ -5,6 +5,12 @@
 * Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
 * No longer remove `NA` values in `data` if there are unused because of
 the `subset` addition argument. (#895)
+* Add argument `robust` to the `summary` method. (#976)
+
+### Other Changes
+
+* Deprecate argument `probs` in the `conditional_effects` method
+in favor of argument `prob`.
 
 
 # brms 2.13.5

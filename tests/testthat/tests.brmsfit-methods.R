@@ -789,7 +789,7 @@ test_that("summary has reasonable outputs", {
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   
-  summary5 <- SW(summary(fit5))
+  summary5 <- SW(summary(fit5, robust = TRUE))
   expect_output(print(summary5), "sigma1")
   expect_output(print(summary5), "theta1")
   

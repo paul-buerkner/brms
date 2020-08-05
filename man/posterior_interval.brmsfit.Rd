@@ -8,7 +8,7 @@
 \method{posterior_interval}{brmsfit}(object, pars = NA, prob = 0.95, ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
 \item{pars}{Names of parameters for which posterior samples should be 
 returned, as given by a character vector or regular expressions. 
