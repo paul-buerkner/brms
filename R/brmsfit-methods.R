@@ -531,6 +531,7 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 #' @export
 expose_functions.brmsfit <- function(x, vectorize = FALSE, 
                                      env = globalenv(), ...) {
+  require_backend("rstan", x)
   vectorize <- as_one_logical(vectorize)
   if (vectorize) {
     funs <- rstan::expose_stan_functions(x$fit, env = environment(), ...)

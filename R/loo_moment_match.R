@@ -66,6 +66,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
       )
     }
   }
+  require_backend("rstan", x)
   # ensure compatibility with objects not created in the current R session
   x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
   out <- try(loo::loo_moment_match.default(

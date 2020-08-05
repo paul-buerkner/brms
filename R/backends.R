@@ -210,3 +210,13 @@ backend_choices <- function() {
 algorithm_choices <- function() {
   c("sampling", "meanfield", "fullrank", "fixed_param")
 }
+
+# check if the model was fit the the required backend
+require_backend <- function(backend, x) {
+  stopifnot(is.brmsfit(x))
+  backend <- match.arg(backend, backend_choices())
+  if (isTRUE(x$backend != backend)) {
+    stop2("Backend '", backend, "' is required for this method.")
+  }
+  invisible(TRUE)
+}
