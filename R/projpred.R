@@ -46,16 +46,26 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   data <- current_data(object, newdata, resp = resp, check_response = TRUE)
   attr(data, "terms") <- NULL
   
-  # allows to handle additional arguments implicitely
+  # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
     .extract_model_data(object, newdata = newdata, resp = resp, ...)
+  }
+  
+  # extract a list of K-fold sub-models
+  cvfun <- function(folds) {
+    cvres <- kfold(
+      object, K = max(folds),
+      save_fits = TRUE, folds = folds
+    )
+    fits <- cvres$fits[, "fit"]
+    return(fits)
   }
   
   # using default prediction functions from projpred is fine
   args <- nlist(
     object, data, formula, family, folds, dis,
     ref_predfun = NULL, proj_predfun = NULL, div_minimizer = NULL, 
-    extract_model_data = extract_model_data, ...
+    cvfun = cvfun, extract_model_data = extract_model_data, ...
   )
   do_call(projpred::init_refmodel, args)
 }
