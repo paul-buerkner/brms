@@ -163,6 +163,22 @@ restructure_v2 <- function(x) {
     attr(x$data, "data_name") <- x$data.name
     x$stanvars <- SW(validate_stanvars(x$stanvars, stan_funs = x$stan_funs))
   }
+  if (version < "2.12.11") {
+    # argument 'position' was added to stanvars
+    for (i in seq_along(x$stanvars)) {
+      x$stanvars[[i]]$position <- "start"
+    }
+  }
+  if (version < "2.13.2") {
+    # added support for 'cmdstanr' as additional backend
+    x$backend <- "rstan"
+  }
+  if (version < "2.13.5") {
+    # see issue #962 for discussion
+    if ("cox" %in% family_names(x)) {
+      stop_parameterization_changed("cox", "2.13.5")
+    }
+  }
   x
 }
 
@@ -657,8 +673,7 @@ update_old_family.mvbrmsformula <- function(x, ...) {
 stop_parameterization_changed <- function(family, version) {
   stop2(
     "The parameterization of '", family, "' models has changed in brms ",
-    version, " to be consistent with other model classes. ", 
-    "Please refit your model with the current version of brms."
+    version, ". Please refit your model with the current version of brms."
   )
 }
 

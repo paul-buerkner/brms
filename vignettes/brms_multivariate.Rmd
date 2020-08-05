@@ -60,7 +60,7 @@ modeled as correlated. This makes sense since we actually have two model parts,
 one for `tarsus` and one for `back`. The indicator `p` is arbitrary and can be
 replaced by other symbols that comes into your mind (for details about the
 multilevel syntax of **brms**, see `help("brmsformula")` and
-`vignette("brms_multilevel")`). Similarily, the term `(1|q|dam)` indicates
+`vignette("brms_multilevel")`). Similarly, the term `(1|q|dam)` indicates
 correlated varying effects of the genetic mother of the chicks. Alternatively,
 we could have also modeled the genetic similarities through pedigrees and
 corresponding relatedness matrices, but this is not the focus of this vignette
@@ -81,7 +81,7 @@ characteristics. Further, the small residual correlation `rescor(tarsus, back)`
 on the bottom of the output indicates that there is little unmodeled dependency
 between tarsus length and back color. Although not necessary at this point, we
 have already computed and stored the LOO information criterion of `fit1`, which
-we will use for model comparions. Next, let's take a look at some
+we will use for model comparisons. Next, let's take a look at some
 posterior-predictive checks, which give us a first impression of the model fit.
 
 ```{r pp_check1, message=FALSE}

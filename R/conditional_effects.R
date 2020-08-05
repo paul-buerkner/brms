@@ -89,21 +89,20 @@
 #'   from the values in \code{conditions} are excluded. 
 #'   By default, all points are used.
 #' @param ... Further arguments such as \code{subset} or \code{nsamples}
-#'   passed to \code{\link[brms:posterior_predict.brmsfit]{posterior_predict}} or 
-#'   \code{\link[brms:posterior_epred.brmsfit]{posterior_epred}}.
+#'   passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.
 #' @inheritParams plot.brmsfit
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{conditions}.
 #' @param points Logical; indicating whether the original data points
-#'   should be added via \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#'   should be added via \code{\link{geom_jitter}}.
 #'   Default is \code{FALSE}. Note that only those data points will be added
 #'   that match the specified conditions defined in \code{conditions}.
 #'   For categorical predictors, the conditions have to match exactly. 
 #'   For numeric predictors, argument \code{select_points} is used to
 #'   determine, which points do match a condition.
 #' @param rug Logical; indicating whether a rug representation of predictor
-#'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   values should be added via \code{\link{geom_rug}}.
 #'   Default is \code{FALSE}. Depends on \code{select_points} in the same
 #'   way as \code{points} does.
 #' @param mean Logical; only relevant for spaghetti plots.
@@ -117,30 +116,30 @@
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @param line_args Only used in plots of continuous predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param cat_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_point]{geom_point}}.
+#'   \code{\link{geom_point}}.
 #' @param errorbar_args Only used in plots of categorical predictors:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_errorbar]{geom_errorbar}}.
+#'   \code{\link{geom_errorbar}}.
 #' @param surface_args Only used in surface plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_contour]{geom_contour}} or
-#'   \code{\link[ggplot2:geom_raster]{geom_raster}}
+#'   \code{\link{geom_contour}} or
+#'   \code{\link{geom_raster}}
 #'   (depending on argument \code{stype}).
 #' @param spaghetti_args Only used in spaghetti plots:
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_smooth]{geom_smooth}}.
+#'   \code{\link{geom_smooth}}.
 #' @param point_args Only used if \code{points = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_jitter]{geom_jitter}}.
+#'   \code{\link{geom_jitter}}.
 #' @param rug_args Only used if \code{rug = TRUE}: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   \code{\link{geom_rug}}.
 #' @param facet_args Only used if if multiple condtions are provided: 
 #'   A named list of arguments passed to 
-#'   \code{\link[ggplot2:facet_wrap]{facet_wrap}}.
+#'   \code{\link{facet_wrap}}.
 #' 
 #' @return An object of class \code{'brms_conditional_effects'}, which is a
 #'   named list with one data.frame per effect containing all information
@@ -153,7 +152,7 @@
 #'   rows).
 #'   
 #'   The corresponding \code{plot} method returns a named 
-#'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
+#'   list of \code{\link{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
 #' @details When creating \code{conditional_effects} for a particular predictor 
@@ -170,8 +169,7 @@
 #'   
 #'   To fully change colors of the created plots, 
 #'   one has to amend both \code{scale_colour} and \code{scale_fill}.
-#'   See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
-#'   \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
+#'   See \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}}
 #'   for more details.
 #' 
 #' @examples 
@@ -394,11 +392,12 @@ conditional_effects.brmsterms <- function(
     if (categorical && ordinal) {
       stop2("Please use argument 'categorical' instead of 'ordinal'.")
     }
-    catscale <- if (is_multinomial(x)) "Count" else "Probability"
+    catscale <- str_if(is_multinomial(x), "Count", "Probability")
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
-    cats <- factor(rep(cats, each = ncol(out)), levels = cats)
-    marg_data <- cbind(marg_data, cats__ = cats)
+    marg_data <- repl(marg_data, length(cats))
+    marg_data <- do_call(rbind, marg_data)
+    marg_data$cats__ <- factor(rep(cats, each = ncol(out)), levels = cats)
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
@@ -586,7 +585,7 @@ get_int_vars.mvbrmsterms <- function(x, ...) {
 
 #' @export
 get_int_vars.brmsterms <- function(x, ...) {
-  advars <- ulapply(rmNULL(x$adforms[c("trials", "thres")]), all_vars)
+  advars <- ulapply(rmNULL(x$adforms[c("trials", "thres", "vint")]), all_vars)
   unique(c(advars, get_sp_vars(x, "mo")))
 }
 
@@ -1019,15 +1018,9 @@ plot.brms_conditional_effects <- function(
     warning2("'jitter_width' is deprecated. Please use ",
              "'point_args = list(width = <width>)' instead.")
   }
-  if (!is.null(theme)) {
-    if (!is.theme(theme)) {
+  if (!is.null(theme) && !is.theme(theme)) {
       stop2("Argument 'theme' should be a 'theme' object.")
-    }
-    pb_colour <- theme$plot.background$colour
-  } else {
-    pb_colour <- theme_get()$plot.background$colour
   }
-  is_theme_black <- isTRUE(pb_colour == "black")
   if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
@@ -1102,8 +1095,6 @@ plot.brms_conditional_effects <- function(
         if (is_like_factor(df_points[, gvar])) {
           .point_args$mapping[c("colour", "fill")] <- 
             aes_string(colour = gvar, fill = gvar)
-        } else if (is_theme_black) {
-          .point_args$colour <- "white"
         }
         replace_args(.point_args, dont_replace) <- point_args
         plots[[i]] <- plots[[i]] + 
@@ -1147,8 +1138,6 @@ plot.brms_conditional_effects <- function(
           if (is_like_factor(df_points[, gvar])) {
             .point_args$mapping[c("colour", "fill")] <- 
               aes_string(colour = gvar, fill = gvar)
-          } else if (is_theme_black) {
-            .rug_args$colour <- "white"
           }
           replace_args(.rug_args, dont_replace) <- rug_args
           plots[[i]] <- plots[[i]] + 
@@ -1164,9 +1153,6 @@ plot.brms_conditional_effects <- function(
           position = position_dodge(width = 0.4), 
           width = 0.3
         )
-        if (is.null(gvar) && is_theme_black) {
-          .cat_args$colour <- .errorbar_args$colour <- "white"
-        }
         replace_args(.cat_args, dont_replace) <- cat_args
         replace_args(.errorbar_args, dont_replace) <- errorbar_args
         plots[[i]] <- plots[[i]] + 

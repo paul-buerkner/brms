@@ -98,6 +98,10 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           used_base_prior <- TRUE
           coef_prior <- base_prior
         }
+        if (!stan_is_constant_prior(coef_prior)) {
+          # all parameters with non-constant priors are estimated 
+          c(estimated_coef_indices) <- list(index)
+        }
         if (nzchar(coef_prior)) {
           # implies a proper prior or constant
           par_ij <- paste0(par, collapse("[", index, "]"))
@@ -107,7 +111,6 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             )
             str_add(out$tpar_prior) <- paste0(coef_prior, ";\n")
           } else {
-            c(estimated_coef_indices) <- list(index)
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast, 
               bound = bound, resp = px$resp[1]
@@ -117,7 +120,10 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
         }
       }
     }
-    has_estimated_priors <- isTRUE(nzchar(out$prior))
+    # the base prior may be improper flat in which no Stan code is added
+    # but we still have estimated coefficients if the base prior is used
+    has_estimated_priors <- isTRUE(nzchar(out$prior)) ||
+      used_base_prior && !stan_is_constant_prior(base_prior)
     has_constant_priors <- isTRUE(nzchar(out$tpar_prior))
     if (has_estimated_priors && has_constant_priors) {
       # need to mix definition in the parameters and transformed parameters block

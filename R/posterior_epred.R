@@ -25,10 +25,8 @@
 #'   categories. In multivariate models, an additional dimension is added to the
 #'   output which indexes along the different response variables.
 #'   
-#' @details \code{NA} values within factors in \code{newdata}, 
-#'   are interpreted as if all dummy variables of this factor are 
-#'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding.
+#' @template details-newdata-na
+#' @template details-allow_new_levels
 #'
 #' @examples 
 #' \dontrun{
@@ -41,7 +39,11 @@
 #' str(ppe)
 #' }
 #' 
-#' @export 
+#' @aliases posterior_epred
+#' @method posterior_epred brmsfit
+#' @importFrom rstantools posterior_epred
+#' @export posterior_epred
+#' @export
 posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     re.form = NULL, resp = NULL, dpar = NULL,
                                     nlpar = NULL, nsamples = NULL, subset = NULL, 
@@ -60,12 +62,6 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     prep, scale = "response", dpar = dpar, 
     nlpar = nlpar, sort = sort, summary = FALSE
   )
-}
-
-#' @rdname posterior_epred.brmsfit
-#' @export
-posterior_epred <- function(object, ...) {
-  UseMethod("posterior_epred")
 }
 
 #' @export
@@ -357,15 +353,15 @@ posterior_epred_bernoulli <- function(prep) {
 }
 
 posterior_epred_poisson <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_negbinomial <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_geometric <- function(prep) {
-  prep$dpars$mu
+  multiply_dpar_rate_denom(prep$dpars$mu, prep)
 }
 
 posterior_epred_discrete_weibull <- function(prep) {

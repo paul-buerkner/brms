@@ -19,8 +19,6 @@
   sort = FALSE,
   ...
 )
-
-posterior_epred(object, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -85,6 +83,14 @@ similar.
   are interpreted as if all dummy variables of this factor are 
   zero. This allows, for instance, to make predictions of the grand mean 
   when using sum coding.
+
+In multilevel models, it is possible to 
+allow new levels of grouping factors to be used in the predictions.
+This can be controlled via argument \code{allow_new_levels}.
+New levels can be sampled in multiple ways, which can be controlled
+via argument \code{sample_new_levels}. Both of these arguments are
+documented in \code{\link{prepare_predictions}} along with several
+other useful arguments to control specific aspects of the predictions.
 }
 \examples{
 \dontrun{

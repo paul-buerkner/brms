@@ -1,7 +1,7 @@
   /* distribution functions of the Cox proportional hazards model
    * parameterize hazard(t) = baseline(t) * mu 
    * so that higher values of 'mu' imply lower survival times
-   * Args:.
+   * Args:
    *   y: the response value; currently ignored as the relevant 
    *     information is passed via 'bhaz' and 'cbhaz'
    *   mu: positive location parameter

@@ -568,7 +568,8 @@ prior_predictor.brmsterms <- function(x, data, ...) {
       # individual theta parameters should not have a prior in this case
       theta_dpars <- str_subset(valid_dpars, "^theta[[:digit:]]+")
       valid_dpars <- setdiff(valid_dpars, theta_dpars)
-      prior <- prior + brmsprior(class = "theta", resp = x$resp)
+      prior <- prior + 
+        brmsprior(prior = "dirichlet(1)", class = "theta", resp = x$resp)
     }
     if (fix_intercepts(x)) {
       # fixing thresholds across mixture componenents 
@@ -716,8 +717,8 @@ prior_bhaz <- function(bterms, ...) {
   }
   px <- check_prefix(bterms)
   # the scale of sbhaz is not identified when an intercept is part of mu
-  # thus a prior on sbhaz is necessary to define its scale
-  prior <- prior + brmsprior("normal(0, 1)", class = "sbhaz", ls = px)
+  # thus a sum-to-one constraint ensures identification
+  prior <- prior + brmsprior("dirichlet(1)", class = "sbhaz", ls = px)
   prior
 }
 
@@ -730,10 +731,11 @@ prior_sp <- function(bterms, data, ...) {
     prior <- prior + brmsprior(
       class = "b", coef = c("", spef$coef), ls = px
     )
-    simo_coef <- get_simo_labels(spef)
+    simo_coef <- get_simo_labels(spef, use_id = TRUE)
     if (length(simo_coef)) {
       prior <- prior + brmsprior(
-        class = "simo", coef = simo_coef, ls = px
+        prior  = "dirichlet(1)", class = "simo", 
+        coef = simo_coef, ls = px
       ) 
     }
   }
@@ -816,8 +818,10 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
   }
   .def_lscale_prior <- function(X) {
     dq <- diff_quad(X)
-    lb <- sqrt(min(dq[dq > 0]))
     ub <- sqrt(max(dq))
+    lb <- sqrt(min(dq[dq > 0]))
+    # prevent extreme priors
+    lb <- max(lb, 0.01 * ub)
     opt_res <- nleqslv::nleqslv(
       c(0, 0), .opt_fun, lb = lb, ub = ub,
       control = list(allowSingular = TRUE)
@@ -1220,7 +1224,7 @@ check_prior_content <- function(prior) {
             "the 'lkj' prior. See help(set_prior) for more details."
           )
         }
-      } else if (prior$class[i] %in% c("simo", "theta")) {
+      } else if (prior$class[i] %in% c("simo", "theta", "sbhaz")) {
         regex <- "^((dirichlet)|(constant))\\("
         if (nchar(prior$prior[i]) && !grepl(regex, prior$prior[i])) {
           stop2(
@@ -1353,16 +1357,6 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
       allow_autoscale = simple_sigma, ...
     )
   }
-  # prepare priors for mixture probabilities
-  if (is.mixfamily(x$family)) {
-    take <- find_rows(prior, class = "theta", resp = x$resp)
-    theta_prior <- prior$prior[take]
-    if (isTRUE(nzchar(theta_prior))) {
-      # hard code prior concentration
-      theta_prior <- paste0(eval_dirichlet(theta_prior), collapse = ", ")
-      prior$prior[take] <- paste0("dirichlet(c(", theta_prior, "))")
-    }
-  }
   prior
 }
 
@@ -1390,19 +1384,6 @@ validate_prior_special.btl <- function(x, prior, data,
         "non-linear models, but none were found for parameter ", 
         "'", px$nlpar, "'. See help(set_prior) for more details."
       )
-    }
-  }
-  # prepare priors of monotonic effects
-  spef <- tidy_spef(x, data)
-  monef <- spef[lengths(spef$calls_mo) > 0, "coef"]
-  for (mo in monef) {
-    take <- find_rows(prior, class = "simo", coef = mo, ls = px)
-    simo_prior <- prior$prior[take]
-    if (isTRUE(nzchar(simo_prior))) {
-      # hard code prior concentration 
-      # in order not to depend on external objects
-      simo_prior <- paste0(eval_dirichlet(simo_prior), collapse = ", ")
-      prior$prior[take] <- paste0("dirichlet(c(", simo_prior, "))")
     }
   }
   # prepare special priors such as horseshoe or lasso
@@ -1704,15 +1685,35 @@ duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
 
 # evaluate the dirichlet prior of simplex parameters
 # avoid name clashing with the dirichlet family
-eval_dirichlet <- function(prior) {
+# @param prior a character vector of the form 'dirichlet(...)'
+# @param len desired length of the prior concentration vector
+# @param env environment in which to search for data
+# @return a numeric vector of prior concentration values
+eval_dirichlet <- function(prior, len = NULL, env = NULL) {
   dirichlet <- function(...) {
-    out <- as.numeric(c(...))
+    out <- try(as.numeric(c(...)))
+    if (is(out, "try-error")) {
+      stop2("Something went wrong. Did you forget to store ", 
+            "auxiliary data in the 'data2' argument?")
+    }
     if (anyNA(out) || any(out <= 0)) {
       stop2("The dirichlet prior expects positive values.")
     }
-    out
+    if (!is.null(len)) {
+      if (length(out) == 1L) {
+        out <- rep(out, len)
+      } 
+      if (length(out) != len) {
+        stop2("Invalid Dirichlet prior. Expected input of length ", len, ".")
+      } 
+    }
+    return(out)
   }
-  eval2(prior)
+  prior <- as_one_character(prior)
+  if (!nzchar(prior)) {
+    prior <- "dirichlet(1)"
+  }
+  eval2(prior, envir = env, enclos = environment())
 }
 
 #' Regularized horseshoe priors in \pkg{brms}

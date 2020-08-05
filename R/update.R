@@ -129,6 +129,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   if (is.null(dots$stanvars)) {
     dots$stanvars <- object$stanvars
   }
+  if (is.null(dots$algorithm)) {
+    dots$algorithm <- object$algorithm
+  }
+  if (is.null(dots$backend)) {
+    dots$backend <- object$backend
+  }
   if (is.null(dots$save_ranef)) {
     dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
   }
@@ -160,7 +166,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     # stan code may differ just because of the version number (#288)
     new_stancode <- sub("^[^\n]+\n", "", new_stancode)
     old_stancode <- stancode(object, version = FALSE)
-    recompile <- !is_equal(new_stancode, old_stancode)
+    recompile <- !is_equal(new_stancode, old_stancode) ||
+      !is_equal(dots$backend, object$backend)
     if (recompile) {
       message("The desired updates require recompiling the model") 
     }
@@ -194,13 +201,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       save_mevars = dots$save_mevars,
       save_all_pars = dots$save_all_pars
     )
-    if (!is.null(dots$algorithm)) {
-      aopts <- c("sampling", "meanfield", "fullrank")
-      algorithm <- match.arg(dots$algorithm, aopts)
-      dots$algorithm <- object$algorithm <- algorithm
-    } else if (!is.null(object$algorithm)) {
-      dots$algorithm <- object$algorithm
-    }
+    algorithm <- match.arg(dots$algorithm, algorithm_choices())
+    dots$algorithm <- object$algorithm <- algorithm
+    # can only avoid recompilation when using the old backend
+    dots$backend <- object$backend
     if (!testmode) {
       dots$fit <- object
       object <- do_call(brm, dots)

@@ -31,7 +31,7 @@
 #' 
 #' @details For a detailed explanation of each of the ppc functions, 
 #' see the \code{\link[bayesplot:PPC-overview]{PPC}} 
-#' documentation of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} 
+#' documentation of the \pkg{\link[bayesplot:bayesplot-package]{bayesplot}} 
 #' package.
 #' 
 #' @examples

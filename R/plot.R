@@ -28,7 +28,7 @@
 #'   should be plotted to a new page. 
 #'   Only used if \code{plot} is \code{TRUE}.
 #' @param ... Further arguments passed to 
-#'   \code{\link[bayesplot:mcmc_combo]{mcmc_combo}}.
+#'   \code{\link[bayesplot:MCMC-combos]{mcmc_combo}}.
 #' 
 #' @return An invisible list of 
 #'   \code{\link[gtable:gtable]{gtable}} objects.
@@ -238,10 +238,10 @@ stanplot.brmsfit <- function(object, ...) {
 #' @param x An object of class \code{brmsfit}
 #' @inheritParams plot.brmsfit
 #' @param ... Further arguments to be passed to 
-#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+#'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 #'  
 #' @details For a detailed description see  
-#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+#'   \code{\link[bayesplot:MCMC-scatterplots]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{
@@ -263,3 +263,21 @@ pairs.brmsfit <- function(x, pars = NA, fixed = FALSE, exact_match = FALSE, ...)
   samples$iter <- NULL
   bayesplot::mcmc_pairs(samples, ...)
 }
+
+#' Default \pkg{bayesplot} Theme for \pkg{ggplot2} Graphics
+#' 
+#' This theme is imported from the \pkg{bayesplot} package.
+#' See \code{\link[bayesplot:theme_default]{theme_default}}
+#' for a complete documentation.
+#' 
+#' @name theme_default
+#' 
+#' @param base_size base font size
+#' @param base_family base font family
+#' 
+#' @return A \code{theme} object used in \pkg{ggplot2} graphics.
+#' 
+#' @importFrom bayesplot theme_default
+#' @export theme_default
+NULL
+

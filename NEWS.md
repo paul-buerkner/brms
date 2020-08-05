@@ -1,4 +1,59 @@
-# brms 2.12.0++
+# brms 2.13.5++
+
+### New Features
+
+* Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
+* No longer remove `NA` values in `data` if there are unused because of
+the `subset` addition argument. (#895)
+
+
+# brms 2.13.5
+
+### New Features
+
+* Support the Cox proportional hazards model for 
+time-to-event data via family `cox`. (#230, #962)
+* Support method `loo_moment_match`, which can be used to
+update a `loo` object when Pareto k estimates are large.
+
+### Other Changes
+
+* Improve the prediction behavior in post-processing methods 
+when sampling new levels of grouping factors via 
+`sample_new_levels = "uncertainty"`. (#956)
+
+### Bug Fixes
+
+* Fix minor problems with MKL on CRAN.
+
+
+# brms 2.13.3
+
+### New Features
+
+* Fix shape parameters across multiple monotonic terms via argument
+`id` in function `mo` to ensure conditionally monotonic effects. (#924)
+* Support package `rtdists` as additional backend of `wiener`
+distribution functions thanks to the help of Henrik Singmann. (#385)
+
+### Bug Fixes
+
+* Fix generated Stan Code of models with improper global priors and
+`constant` priors on some coefficients thanks to Frank Weber. (#919)
+* Fix a bug in `conditional_effects` occuring for categorical
+models with matrix predictors thanks to Jamie Cranston. (#933)
+
+### Other Changes
+
+* Adjust behavior of the `rate` addition term so that it also
+affects the `shape` parameter in `negbinomial` models thanks to
+Edward Abraham. (#915)
+* Adjust the default inverse-gamma prior on length-scale parameters
+of Gaussian processes to be less extreme in edge cases thanks
+to Topi Paananen.
+
+
+# brms 2.13.0
 
 ### New Features
 
@@ -15,6 +70,10 @@ fitted somewhere else back into brms. (#745)
 work for all predictors not just interactions.
 * Support multiple imputation of data passed via `data2` in 
 `brm_multiple`. (#886)
+* Fully support the `emmeans` package thanks to the help 
+of Russell V. Lenth. (#418)
+* Control the within-block position of Stan code added via 
+`stanvar` using the `position` argument.
 
 ### Bug Fixes
 
@@ -28,7 +87,9 @@ Rok Češnovar.
 or `inverse.gaussian` families thanks to Brian Huey and Jack Caster. (#879)
 * Fix Stan code of models which are truncated and weighted at the 
 same time thanks to Michael Thompson. (#884)
-
+* Fix Stan code of multivariate models with custom families and
+data variables passed to the likelihood thanks to Raoul Wolf. (#906)
+ 
 ### Other Changes
 
 * Reduce minimal scale of several default priors from 10 to 2.5.

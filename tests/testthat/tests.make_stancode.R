@@ -4,6 +4,10 @@ context("Tests for make_stancode")
 expect_match2 <- brms:::expect_match2
 SW <- brms:::SW
 
+# parsing the Stan code ensures syntactial correctness of models
+# setting this option to FALSE speeds up testing
+options(parse_stancode = TRUE)
+
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
                     g = rep(1:5, 2), h = factor(rep(1:5, each = 2)))
@@ -270,6 +274,12 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "lscale_1[1][1] = 0.5;")
   expect_match2(scode, "lscale_1[2][1] = par_lscale_1_2_1;")
   expect_match2(scode, "target += normal_lpdf(lscale_1[2][1] | 0, 10)")
+  
+  # test that improper base priors are correctly recognized (#919)
+  prior <- prior(constant(-1), b, coef = x2)
+  scode <- make_stancode(y ~ x1*x2, dat, prior = prior)
+  expect_match2(scode, "real par_b_1;")
+  expect_match2(scode, "b[3] = par_b_3;")
   
   # test error messages
   prior <- prior(normal(0, 1), Intercept) + 
@@ -894,6 +904,16 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ mo(x1):y, dat)
   expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[n]) * Csp_1[n];")
   
+  # test issue #924 (conditional monotonicity)
+  prior <- c(prior(dirichlet(c(1,0.5,2)), simo, coef = "v"),
+             prior(dirichlet(c(1,0.5,2)), simo, coef = "w"))
+  scode <- make_stancode(y ~ y*mo(x1, id = "v")*mo(x2, id = "w"), 
+                         dat, prior = prior)
+  expect_match2(scode, "target += dirichlet_lpdf(simo_1 | con_simo_1);")
+  expect_match2(scode, "target += dirichlet_lpdf(simo_2 | con_simo_2);")
+  expect_match2(scode, "simplex[Jmo[6]] simo_6 = simo_2;")
+  expect_match2(scode, "simplex[Jmo[7]] simo_7 = simo_1;")
+  
   expect_error(
     make_stancode(y ~ mo(x1) + (mo(x2) | x2), dat),
     "Special group-level terms require"
@@ -1402,21 +1422,16 @@ test_that("Stan code of quantile regression models is correct", {
 test_that("Stan code of addition term 'rate' is correct", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   scode <- make_stancode(y | rate(time) ~ x, data, poisson())
-  expect_match2(scode, "mu = Intercept + Xc * b + log_denom;")
+  expect_match2(scode, "target += poisson_log_lpmf(Y | mu + log_denom);")
   
-  scode <- make_stancode(
-    bf(y | rate(time) ~ a, a ~ x, nl = TRUE), 
-    data = data, family = poisson(),
-    prior = prior(normal(0, 1), nlpar = "a")
-  )
-  expect_match2(scode, "mu[n] = nlp_a[n]  + log_denom[n];")
+  scode <- make_stancode(y | rate(time) ~ x, data, poisson("identity"))
+  expect_match2(scode, "target += poisson_lpmf(Y | mu .* denom);")
   
-  scode <- make_stancode(
-    bf(y | rate(time) ~ a, a ~ x, nl = TRUE, loop = FALSE), 
-    data = data, family = poisson(),
-    prior = prior(normal(0, 1), nlpar = "a")
-  )
-  expect_match2(scode, "mu = nlp_a  + log_denom;")
+  scode <- make_stancode(y | rate(time) ~ x, data, negbinomial())
+  expect_match2(scode, "target += neg_binomial_2_log_lpmf(Y | mu + log_denom, shape * denom);")
+  
+  scode <- make_stancode(y | rate(time) + cens(1) ~ x, data, geometric())
+  expect_match2(scode, "target += neg_binomial_2_lpmf(Y[n] | mu[n] * denom[n], 1 * denom[n]);")
 })
 
 test_that("Stan code of GEV models is correct", {
@@ -1441,16 +1456,14 @@ test_that("Stan code of GEV models is correct", {
 test_that("Stan code of Cox models is correct", {
   data <- data.frame(y = rexp(100), ce = sample(0:1, 100, TRUE), x = rnorm(100))
   bform <- bf(y | cens(ce) ~ x)
-  bprior <- prior(normal(0, 2), sbhaz)
-  scode <- make_stancode(bform, data, brmsfamily("cox"), prior = bprior)
+  scode <- make_stancode(bform, data, brmsfamily("cox"))
   expect_match2(scode, "target += cox_log_lpdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
   expect_match2(scode, "vector[N] cbhaz = Zcbhaz * sbhaz;")
-  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 2);")
-  expect_match2(scode, "vector<lower=0>[Kbhaz] sbhaz;")
+  expect_match2(scode, "target += dirichlet_lpdf(sbhaz | con_sbhaz);")
+  expect_match2(scode, "simplex[Kbhaz] sbhaz;")
   
   scode <- make_stancode(bform, data, brmsfamily("cox", "identity"))
   expect_match2(scode, "target += cox_lccdf(Y[n] | mu[n], bhaz[n], cbhaz[n]);")
-  expect_match2(scode, "target += normal_lpdf(sbhaz | 0, 1);")
 })
 
 test_that("offsets appear in the Stan code", {
@@ -1902,6 +1915,13 @@ test_that("argument 'stanvars' is handled correctly", {
   expect_match2(scode, "real<lower=0> tau;")
   expect_match2(scode, "target += normal_lpdf(b | 0, tau);")
   
+  # add transformation at the end of a block
+  stanvars <- stanvar(scode = "  r_1_1 = r_1_1 * 2;", 
+                      block = "tparameters", position = "end")
+  scode <- make_stancode(count ~ Trt + (1 | patient), epilepsy,
+                         stanvars = stanvars)
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (z_1[1]));\n  r_1_1 = r_1_1 * 2;")
+  
   # use the non-centered parameterization for 'b'
   # unofficial feature not supported anymore for the time being
   # bprior <- set_prior("target += normal_lpdf(zb | 0, 1)", check = FALSE) +
@@ -1997,6 +2017,16 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode, 
     "log(theta2) + beta_binomial2_lpmf(Y[n] | mu2[n], tau2, vint1[n], vreal1[n]);"
+  )
+  
+  # check custom families in multivariate models
+  bform <- bf(
+    y | vint(size) + vreal(size) + trials(size) ~ x,
+    family = beta_binomial2
+  ) + bf(x ~ 1, family = gaussian())
+  scode <- make_stancode(bform, data = dat, stanvars = stanvars)
+  expect_match2(scode,
+    "target += beta_binomial2_lpmf(Y_y[n] | mu_y[n], tau_y, vint1_y[n], vreal1_y[n]);"
   )
 })
 

@@ -92,7 +92,7 @@ basic multilevel model with a varying intercept over species (`phylo` is an
 indicator of species in this data set). However, by using `cov = A` in the `gr`
 function, we make sure that species are correlated as specified by the
 covariance matrix `A`. We pass `A` itself via the `data2` argument which can be
-used for any kinds of data that does not fit into the reqular structure of the
+used for any kinds of data that does not fit into the regular structure of the
 `data` argument. Setting priors is not required for achieving good convergence
 for this model, but it improves sampling speed a bit. After fitting, the results
 can be investigated in detail.
@@ -209,7 +209,7 @@ hyp <- paste(
 
 ## A Phylogenetic Meta-Analysis
 
-Let's say we have Fisher's z-transformated correlation coefficients $Zr$ per
+Let's say we have Fisher's z-transformed correlation coefficients $Zr$ per
 species along with corresponding sample sizes (e.g., correlations between male
 coloration and reproductive success):
 
@@ -260,7 +260,7 @@ according to the model.
 
 Suppose that we analyze a phenotype that consists of counts instead of being a
 continuous variable. In such a case, the normality assumption will likely not be
-justified and it is recommended to use a distribution explicitely suited for
+justified and it is recommended to use a distribution explicitly suited for
 count data, for instance the Poisson distribution. The following data set (again
 retrieved from mpcm-evolution.org) provides an example.
 
@@ -273,7 +273,7 @@ data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
 
-As the poisson distribution does not have a natural overdispersion parameter, we
+As the Poisson distribution does not have a natural overdispersion parameter, we
 model the residual variance via the group-level effects of `obs` (e.g., see
 Lawless, 1987).
 

@@ -21,7 +21,6 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
     stan_gp(x, ...),
     stan_ac(x, ...),
     stan_offset(x, ...),
-    stan_rate(x, ...),
     stan_bhaz(x, ...),
     stan_special_prior_global(x, ...)
   )
@@ -75,7 +74,6 @@ stan_predictor.btnl <- function(x, data, nlpars, ilink = c("", ""), ...) {
     c(wsp(nlpars), wsp(covars), " ( ", " ) "), 
     c(new_nlpars, new_covars, "(", ")")
   )
-  str_add_list(out) <- stan_rate(x, loop = x$loop)
   # possibly transform eta in the transformed params block
   str_add(out$model_def) <- glue(
     "  // initialize non-linear predictor term\n",
@@ -806,7 +804,7 @@ stan_cs <- function(bterms, data, prior, ranef, ...) {
       prior, class = "b", coef = csef,
       type = glue("matrix{bound}[Kcs{p}, nthres{resp}]"),
       coef_type = glue("row_vector{bound}[nthres{resp}]"),
-      suffix = "cs", px = px, broadcast = "matrix",
+      suffix = glue("cs{p}"), px = px, broadcast = "matrix",
       comment = "category specific effects"
     )
     str_add(out$model_def) <- glue(
@@ -922,25 +920,44 @@ stan_sp <- function(bterms, data, prior, stanvars, ranef, meef, ...) {
   }
   
   # include special Stan code for monotonic effects
-  I <- unlist(spef$Imo)
-  if (length(I)) {
-    I <- seq_len(max(I))
+  which_Imo <- which(lengths(spef$Imo) > 0)
+  if (any(which_Imo)) {
     str_add(out$data) <- glue(
       "  int<lower=1> Imo{p};  // number of monotonic variables\n",
-      "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n",
-      "  // monotonic variables\n",
-      cglue("  int Xmo{p}_{I}[N{resp}];\n"),
-      "  // prior concentration of monotonic simplexes\n",
-      cglue("  vector[Jmo{p}[{I}]] con_simo{p}_{I};\n")
+      "  int<lower=1> Jmo{p}[Imo{p}];  // length of simplexes\n"
     )
-    str_add(out$par) <- glue(
-      "  // simplexes of monotonic effects\n",
-      cglue("  simplex[Jmo{p}[{I}]] simo{p}_{I};\n")
-    ) 
-    str_add(out$prior) <- cglue(
-      "  target += dirichlet_lpdf(simo{p}_{I} | con_simo{p}_{I});\n"
-    )
+    ids <- unlist(spef$ids_mo)
+    for (i in which_Imo) {
+      for (k in seq_along(spef$Imo[[i]])) {
+        j <- spef$Imo[[i]][[k]]
+        id <- spef$ids_mo[[i]][[k]]
+        # index of first ID appearance
+        j_id <- match(id, ids)
+        str_add(out$data) <- glue(
+          "  int Xmo{p}_{j}[N{resp}];  // monotonic variable\n"
+        )
+        if (is.na(id) || j_id == j) {
+          # no ID or first appearance of the ID
+          str_add(out$data) <- glue(
+            "  vector[Jmo{p}[{j}]] con_simo{p}_{j};", 
+            "  // prior concentration of monotonic simplex\n"
+          )
+          str_add(out$par) <- glue(
+            "  simplex[Jmo{p}[{j}]] simo{p}_{j};  // monotonic simplex\n"
+          )
+          str_add(out$prior) <- glue(
+            "  target += dirichlet_lpdf(simo{p}_{j} | con_simo{p}_{j});\n"
+          )
+        } else {
+          # use the simplex shared across all terms of the same ID
+          str_add(out$tpar_def) <- glue(
+            "  simplex[Jmo{p}[{j}]] simo{p}_{j} = simo{p}_{j_id};\n"
+          )
+        }
+      }
+    }
   }
+  
   stan_special_priors <- stan_special_prior_local(
     prior, class = "bsp", ncoef = nrow(spef), 
     px = px, center_X = FALSE
@@ -1473,23 +1490,6 @@ stan_offset <- function(bterms, ...) {
     # use 'offsets' as 'offset' will be reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
     str_add(out$eta) <- glue(" + offsets{p}")
-  }
-  out
-}
-
-# add the denominator of a rate response to the Stan predictor term
-# @param loop is the denominator added within a loop over observations?
-stan_rate <- function(bterms, loop = FALSE, ...) {
-  loop <- as_one_logical(loop)
-  out <- list()
-  if (is.formula(bterms$adforms$rate)) {
-    # TODO: support other link functions as well?
-    if (bterms$family$link != "log") {
-      stop2("The 'rate' addition term requires a log-link.")
-    }
-    resp <- usc(bterms$resp)
-    n <- str_if(loop, "[n]")
-    str_add(out$eta) <- glue(" + log_denom{resp}{n}")
   }
   out
 }

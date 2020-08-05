@@ -6,7 +6,7 @@
 \alias{brmsfit}
 \title{Class \code{brmsfit} of models fitted with the \pkg{brms} package}
 \description{
-Models fitted with the \code{\link[brms:brms]{brms}} package are 
+Models fitted with the \code{\link[brms:brms-package]{brms}} package are 
 represented as a \code{brmsfit} object, which contains the posterior 
 samples, model formula, Stan code, relevant data, and other information.
 }
@@ -36,7 +36,9 @@ information on the priors used in the model.}
 
 \item{\code{algorithm}}{The name of the algorithm used to fit the model.}
 
-\item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
+\item{\code{backend}}{The name of the backend used to fit the model.}
+
+\item{\code{fit}}{An object of class \code{\link[rstan:stanfit-class]{stanfit}}
 among others containing the posterior samples.}
 
 \item{\code{criteria}}{An empty \code{list} for adding model fit criteria

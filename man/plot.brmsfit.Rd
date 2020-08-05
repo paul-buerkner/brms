@@ -57,7 +57,7 @@ should be plotted to a new page.
 Only used if \code{plot} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to 
-\code{\link[bayesplot:mcmc_combo]{mcmc_combo}}.}
+\code{\link[bayesplot:MCMC-combos]{mcmc_combo}}.}
 }
 \value{
 An invisible list of 

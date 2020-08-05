@@ -47,11 +47,17 @@ make_stancode <- function(formula, data, family = gaussian(),
  ) 
 }
 
+# internal work function of 'make_stancode'
+# @param parse parse the Stan model for automatic syntax checking
+# @param backend name of the backend used for parsing
+# @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars,
-                           save_model = NULL, parse = TRUE, 
-                           silent = TRUE, ...) {
+                           parse = getOption("parse_stancode", FALSE), 
+                           backend = getOption("stan_backend", "rstan"),
+                           silent = TRUE, save_model = NULL, ...) {
  
   parse <- as_one_logical(parse)
+  backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
   ranef <- tidy_ranef(bterms, data = data)
   meef <- tidy_meef(bterms, data = data)
@@ -77,7 +83,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs$fun,
-      collapse_stanvars(stanvars, block = "functions"),
+      collapse_stanvars(stanvars, "functions"),
     "}\n"
   )
   # generate data block
@@ -87,7 +93,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_ranef$data,
     scode_Xme$data,
     "  int prior_only;  // should the likelihood be ignored?\n",
-    collapse_stanvars(stanvars, block = "data"),
+    collapse_stanvars(stanvars, "data"),
     "}\n"
   )
   # generate transformed parameters block
@@ -95,8 +101,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     "transformed data {\n",
        scode_global_defs$tdata_def,
        scode_predictor$tdata_def,
-       collapse_stanvars(stanvars, block = "tdata"),
+       collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor$tdata_comp,
+       collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
   # generate parameters block
@@ -116,7 +123,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     "parameters {\n",
       scode_parameters,
       scode_rngprior$par,
-      collapse_stanvars(stanvars, block = "parameters"),
+      collapse_stanvars(stanvars, "parameters"),
     "}\n"
   )
   # generate transformed parameters block
@@ -125,20 +132,21 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$tpar_def,
       scode_ranef$tpar_def,
       scode_Xme$tpar_def,
-      collapse_stanvars(stanvars, block = "tparameters"),
+      collapse_stanvars(stanvars, "tparameters", "start"),
       scode_predictor$tpar_prior,
       scode_ranef$tpar_prior,
       scode_Xme$tpar_prior,
       scode_predictor$tpar_comp,
       scode_ranef$tpar_comp,
       scode_Xme$tpar_comp,
+      collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
   # generate model block
   scode_model <- paste0(
     "model {\n",
       scode_predictor$model_def,
-      collapse_stanvars(stanvars, block = "model"),
+      collapse_stanvars(stanvars, "model", "start"),
       scode_predictor$model_comp_basic,
       scode_predictor$model_comp_eta_loop,
       scode_predictor$model_comp_dpar_link,
@@ -155,6 +163,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_llh, 
       "  }\n", 
       scode_rngprior$model,
+      collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )
   # generate generated quantities block
@@ -164,11 +173,12 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_ranef$gen_def,
       scode_Xme$gen_def,
       scode_rngprior$gen_def,
-      collapse_stanvars(stanvars, block = "genquant"),
+      collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor$gen_comp,
       scode_ranef$gen_comp,
       scode_rngprior$gen_comp,
       scode_Xme$gen_comp,
+      collapse_stanvars(stanvars, "genquant", "end"),
     "}\n"
   )
   # combine all elements into a complete Stan model
@@ -182,26 +192,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_generated_quantities
   )
   
-  if (parse) { 
-    # expand '#include' statements by calling rstan::stanc_builder
-    temp_file <- tempfile(fileext = ".stan")
-    cat(scode, file = temp_file) 
-    isystem <- system.file("chunks", package = "brms")
-    # get rid of diagnostic messages from parser
-    scode <- eval_silent(
-      rstan::stanc_builder(
-        file = temp_file, isystem = isystem,
-        obfuscate_model_name = TRUE
-      ),
-      type = "message", 
-      try = TRUE, 
-      silent = silent
-    )
-    scode <- scode$model_code
-    str_add(scode) <- "\n"
-    if (is.character(save_model)) {
-      cat(scode, file = save_model)
-    }
+  scode <- expand_include_statements(scode)
+  if (parse) {
+    scode <- parse_model(scode, backend, silent = silent)
+  }
+  if (is.character(save_model)) {
+    cat(scode, file = save_model)
   }
   class(scode) <- c("character", "brmsmodel")
   scode
@@ -240,4 +236,24 @@ stancode.brmsfit <- function(object, version = TRUE, ...) {
 #' @export
 stancode <- function(object, ...) {
   UseMethod("stancode")
+}
+
+# expand '#include' statements
+# This could also be done automatically by Stan at compilation time
+# but would result in Stan code that is not self-contained until compilation
+# @param model Stan code potentially including '#include' statements
+# @return Stan code with '#include' statements expanded
+expand_include_statements <- function(model) {
+  path <- system.file("chunks", package = "brms")
+  includes <- get_matches("#include '[^']+'", model)
+  # removal of duplicates could make code generation easier in the future
+  includes <- unique(includes)
+  files <- gsub("(#include )|(')", "", includes)
+  for (i in seq_along(includes)) {
+    code <- readLines(paste0(path, "/", files[i]))
+    code <- paste0(code, collapse = "\n")
+    pattern <- paste0(" *", escape_all(includes[i]))
+    model <- sub(pattern, code, model)
+  }
+  model
 }

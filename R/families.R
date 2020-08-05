@@ -82,9 +82,10 @@
 #'   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
 #'   leads to ordinal regression.} 
 #'   
-#'   \item{Families \code{Gamma}, \code{weibull}, \code{exponential}, 
-#'   \code{lognormal}, \code{frechet}, and \code{inverse.gaussian} can be 
-#'   used (among others) for survival regression.}
+#'   \item{Families \code{Gamma}, \code{weibull}, \code{exponential},
+#'   \code{lognormal}, \code{frechet}, \code{inverse.gaussian}, and \code{cox}
+#'   (Cox proportional hazards model) can be used (among others) for
+#'   time-to-event regression also known as survival regression.}
 #'   
 #'   \item{Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
 #'   ('generalized extreme value') allow for modeling extremes.}
@@ -151,6 +152,9 @@
 #'   
 #'   \item{Family \code{von_mises} supports \code{tan_half} and 
 #'   \code{identity}.}
+#'   
+#'   \item{Family \code{cox} supports \code{log}, \code{identity},
+#'   and \code{softplus} for the proportional hazards parameter.}
 #'   
 #'   \item{Family \code{wiener} supports \code{identity}, \code{log}, 
 #'   and \code{softplus} for the main parameter which represents the
@@ -299,10 +303,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     }
     # set default arguments
     if (is.null(out$bhaz$df)) {
-      out$bhaz$df <- 4L
+      out$bhaz$df <- 5L
     }
     if (is.null(out$bhaz$intercept)) {
-      out$bhaz$intercept <- FALSE
+      out$bhaz$intercept <- TRUE
     }
   }
   out
@@ -636,9 +640,8 @@ zero_inflated_asym_laplace <- function(link = "identity", link_sigma = "log",
               link_zi = link_zi)
 }
 
-# do not export yet!
-# @rdname brmsfamily
-# @export
+#' @rdname brmsfamily
+#' @export
 cox <- function(link = "log", bhaz = NULL) {
   slink <- substitute(link)
   .brmsfamily("cox", link = link, bhaz = bhaz)

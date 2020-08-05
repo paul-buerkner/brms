@@ -26,6 +26,9 @@
 #'  If \code{pointwise = TRUE}, the output is a function
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior samples.
+#'  
+#' @template details-newdata-na
+#' @template details-allow_new_levels
 #' 
 #' @aliases log_lik
 #' @method log_lik brmsfit
@@ -144,10 +147,10 @@ log_lik_pointwise <- function(data_i, draws, ...) {
 # @return a vector of length prep$nsamples containing the pointwise 
 #   log-likelihood for the ith observation 
 log_lik_gaussian <- function(i, prep) {
-  args <- list(
-    mean = get_dpar(prep, "mu", i = i), 
-    sd = get_dpar(prep, "sigma", i = i)
-  )
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
+  args <- list(mean = mu, sd = sigma)
   # log_lik_censor computes the conventional log_lik in case of no censoring 
   out <- log_lik_censor(dist = "norm", args = args, i = i, prep = prep)
   out <- log_lik_truncate(
@@ -157,11 +160,11 @@ log_lik_gaussian <- function(i, prep) {
 }
 
 log_lik_student <- function(i, prep) {
-  args <- list(
-    df = get_dpar(prep, "nu", i = i), 
-    mu = get_dpar(prep, "mu", i = i), 
-    sigma = get_dpar(prep, "sigma", i = i)
-  )
+  nu <- get_dpar(prep, "nu", i = i)
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
+  args <- list(df = nu, mu = mu, sigma = sigma)
   out <- log_lik_censor(
     dist = "student_t", args = args, i = i, prep = prep
   )
@@ -191,9 +194,10 @@ log_lik_shifted_lognormal <- function(i, prep) {
 }
 
 log_lik_skew_normal <- function(i, prep) {
-  sigma <- get_dpar(prep, "sigma", i = i)
-  alpha <- get_dpar(prep, "alpha", i = i)
   mu <- get_dpar(prep, "mu", i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  sigma <- add_sigma_se(sigma, prep, i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
   args <- nlist(mu, sigma, alpha)
   out <- log_lik_censor(
     dist = "skew_normal", args = args, i = i, prep = prep
@@ -423,7 +427,9 @@ log_lik_bernoulli <- function(i, prep) {
 }
 
 log_lik_poisson <- function(i, prep) {
-  args <- list(lambda = get_dpar(prep, "mu", i))
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  args <- list(lambda = mu)
   out <- log_lik_censor(
     dist = "pois", args = args, i = i, prep = prep
   )
@@ -434,8 +440,11 @@ log_lik_poisson <- function(i, prep) {
 }
 
 log_lik_negbinomial <- function(i, prep) {
-  shape <- get_dpar(prep, "shape", i = i)
-  args <- list(mu = get_dpar(prep, "mu", i), size = shape)
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  shape <- get_dpar(prep, "shape", i)
+  shape <- multiply_dpar_rate_denom(shape, prep, i = i)
+  args <- list(mu = mu, size = shape)
   out <- log_lik_censor(
     dist = "nbinom", args = args, i = i, prep = prep
   )
@@ -446,7 +455,11 @@ log_lik_negbinomial <- function(i, prep) {
 }
 
 log_lik_geometric <- function(i, prep) {
-  args <- list(mu = get_dpar(prep, "mu", i), size = 1)
+  mu <- get_dpar(prep, "mu", i)
+  mu <- multiply_dpar_rate_denom(mu, prep, i = i)
+  shape <- 1
+  shape <- multiply_dpar_rate_denom(shape, prep, i = i)
+  args <- list(mu = mu, size = shape)
   out <- log_lik_censor(
     dist = "nbinom", args = args, i = i, prep = prep
   )
@@ -854,7 +867,7 @@ log_lik_custom <- function(i, prep) {
     log_lik_fun <- paste0("log_lik_", prep$family$name)
     log_lik_fun <- get(log_lik_fun, prep$family$env)
   }
-  log_lik_fun(i = i, prep = prep)
+  log_lik_fun(i, prep)
 }
 
 log_lik_mixture <- function(i, prep) {
