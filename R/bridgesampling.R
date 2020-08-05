@@ -75,7 +75,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "usable in method 'bridge_sampler'."
     )
   }
-  require_backend("rstan", x)
+  require_backend("rstan", samples)
   # otherwise bridge_sampler might not work in a new R session
   samples$fit@.MISC <- suppressMessages(brm(fit = samples, chains = 0))$fit@.MISC
   out <- try(bridge_sampler(samples$fit, ...))

@@ -62,10 +62,11 @@ order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
 \item{ntrys}{Parameter used in rejection sampling 
- for truncated discrete models only 
- (defaults to \code{5}). See Details for more information.
-@param cores Number of cores (defaults to \code{1}).
-  Can be set globally via the \code{mc.cores} option.}
+for truncated discrete models only 
+(defaults to \code{5}). See Details for more information.}
+
+\item{cores}{Number of cores (defaults to \code{1}).
+Can be set globally via the \code{mc.cores} option.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

@@ -26,7 +26,7 @@
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
-#'  @param cores Number of cores (defaults to \code{1}).
+#' @param cores Number of cores (defaults to \code{1}).
 #'    Can be set globally via the \code{mc.cores} option.
 #' @param ... Further arguments passed to \code{\link{prepare_predictions}}
 #'   that control several aspects of data validation and prediction.

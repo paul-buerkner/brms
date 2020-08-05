@@ -59,6 +59,9 @@ or if the log-likelihoods should be returned separately.}
 \item{add_point_estimate}{For internal use only. Ensures compatibility 
 with the \code{\link{loo_subsample}} method.}
 
+\item{cores}{Number of cores (defaults to \code{1}).
+Can be set globally via the \code{mc.cores} option.}
+
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
