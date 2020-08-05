@@ -26,31 +26,28 @@ validate_data <- function(data, bterms, na.action = na.omit2,
   if (!isTRUE(nrow(data) > 0L)) {
     stop2("Argument 'data' does not contain observations.")
   }
-  terms_all <- terms(bterms$allvars)
-  attributes(terms_all)[names(attr_terms)] <- attr_terms
+  all_terms <- terms(bterms$allvars)
+  attributes(all_terms)[names(attr_terms)] <- attr_terms
   data <- data_rsv_intercept(data, bterms = bterms)
-  missing_vars <- setdiff(all.vars(terms_all), names(data))
+  missing_vars <- setdiff(all_vars(all_terms), names(data))
   if (length(missing_vars)) {
     stop2("The following variables are missing in 'data':\n",
           collapse_comma(missing_vars))
   }
-  for (v in intersect(vars_keep_na(bterms), names(data))) {
-    attr(data[[v]], "keep_na") <- TRUE
-  }
   # 'terms' prevents correct validation in 'model.frame'
   attr(data, "terms") <- NULL
   data <- model.frame(
-    terms_all, data, na.action = na.action,
+    all_terms, data, na.action = na.pass,
     drop.unused.levels = drop.unused.levels
   )
+  data <- na.action(data, bterms = bterms)
   if (any(grepl("__|_$", colnames(data)))) {
     stop2("Variable names may not contain double underscores ",
           "or underscores at the end.")
   }
   if (!isTRUE(nrow(data) > 0L)) {
-    stop2("All observations in the data were removed presumably because of ",
-          "NA values. If you are using the 'subset' addition term, please ",
-          "make sure that variables are not NA even if locally unused.") 
+    stop2("All observations in the data were removed ", 
+          "presumably because of NA values.") 
   }
   groups <- get_group_vars(bterms)
   data <- combine_groups(data, groups)
@@ -167,11 +164,11 @@ combine_groups <- function(data, ...) {
   for (i in seq_along(group)) {
     sgroup <- unlist(strsplit(group[[i]], ":"))
     if (length(sgroup) > 1L && !group[[i]] %in% names(data)) {
-      new.var <- get(sgroup[1], data)
+      new_var <- get(sgroup[1], data)
       for (j in 2:length(sgroup)) {
-        new.var <- paste0(new.var, "_", get(sgroup[j], data))
+        new_var <- paste0(new_var, "_", get(sgroup[j], data))
       }
-      data[[group[[i]]]] <- new.var
+      data[[group[[i]]]] <- new_var
     }
   } 
   data
@@ -255,12 +252,66 @@ subset_data <- function(data, bterms) {
     stop2(
       "All rows of 'data' were removed via 'subset'. ",
       "Please make sure that variables do not contain NAs ",
-      "even in rows unused by the subsetted model. ",
+      "for observations in which they are supposed to be used. ",
       "Please also make sure that each subset variable is ",
       "TRUE for at least one observation."
     )
   }
   data
+}
+
+# like stats:::na.omit.data.frame but allows to certain NA values
+na.omit2 <- function(object, bterms, ...) {
+  stopifnot(is.data.frame(object))
+  nobs <- nrow(object)
+  if (is.mvbrmsterms(bterms)) {
+    responses <- names(bterms$terms)
+    subsets <- lapply(bterms$terms, get_ad_values, "subset", "subset", object)
+    vars_sub <- lapply(bterms$terms, function(x) all_vars(x$allvars)) 
+  } else {
+    responses <- NULL
+  }
+  vars_keep_na <- vars_keep_na(bterms)
+  omit <- logical(nobs)
+  for (v in names(object)) {
+    x <- object[[v]]
+    vars_v <- all_vars(v)
+    keep_all_na <- all(vars_v %in% vars_keep_na)
+    if (!is.atomic(x) || keep_all_na) {
+      next
+    } 
+    keep_na <- rep(TRUE, nobs)
+    for (r in responses) {
+      if (any(vars_v %in% vars_sub[[r]])) {
+        if (!is.null(subsets[[r]])) {
+          # keep NAs ignored because of 'subset'
+          keep_na <- keep_na & !subsets[[r]]
+        } else {
+          # remove all NAs in this variable
+          keep_na <- keep_na & FALSE
+        }
+      }
+    }
+    is_na <- is.na(x)
+    d <- dim(is_na)
+    if (is.null(d) || length(d) != 2L) {
+      omit <- omit | (is_na & !keep_na)
+    } else {
+      for (ii in seq_len(d[2L])) {
+        omit <- omit | (is_na[, ii] & !keep_na)
+      } 
+    }
+  }
+  if (any(omit > 0L)) {
+    out <- object[!omit, , drop = FALSE]
+    temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
+    attr(temp, "class") <- "omit"
+    attr(out, "na.action") <- temp
+    warning2("Rows containing NAs were excluded from the model.")
+  } else {
+    out <- object
+  }
+  out
 }
 
 # get a single value per group 

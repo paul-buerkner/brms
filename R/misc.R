@@ -472,39 +472,6 @@ cglue <- function(..., envir = parent.frame()) {
   glue(..., envir = envir, collapse = "")
 }
 
-# like stats:::na.omit.data.frame but allows to ignore variables
-# keeps NAs in variables with attribute keep_na = TRUE
-na.omit2 <- function(object, ...) {
-  stopifnot(is.data.frame(object))
-  omit <- logical(nrow(object))
-  for (j in seq_along(object)) {
-    x <- object[[j]]
-    keep_na <- isTRUE(attr(x, "keep_na", TRUE))
-    if (!is.atomic(x) || keep_na) {
-      next
-    } 
-    x <- is.na(x)
-    d <- dim(x)
-    if (is.null(d) || length(d) != 2L) {
-      omit <- omit | x
-    } else {
-      for (ii in seq_len(d[2L])) {
-        omit <- omit | x[, ii]
-      } 
-    } 
-  }
-  if (any(omit > 0L)) {
-    out <- object[!omit, , drop = FALSE]
-    temp <- setNames(seq(omit)[omit], attr(object, "row.names")[omit])
-    attr(temp, "class") <- "omit"
-    attr(out, "na.action") <- temp
-    warning2("Rows containing NAs were excluded from the model.")
-  } else {
-    out <- object
-  }
-  out
-}
-
 # check if a certain package is installed
 # @param package package name
 # @param version optional minimal version number to require

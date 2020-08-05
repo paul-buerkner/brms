@@ -294,6 +294,7 @@ test_that("posterior_predict for ordinal models runs without erros", {
 })
 
 test_that("posterior_predict for categorical and related models runs without erros", {
+  set.seed(1234)
   ns <- 50
   nobs <- 8
   ncat <- 3

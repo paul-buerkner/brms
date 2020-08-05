@@ -3,6 +3,8 @@
 ### New Features
 
 * Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
+* No longer remove `NA` values in `data` if there are unused because of
+the `subset` addition argument. (#895)
 
 
 # brms 2.13.5
