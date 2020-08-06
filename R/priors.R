@@ -399,9 +399,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     # prior will be added to the log-posterior as is
     class <- coef <- group <- resp <- dpar <- nlpar <- bound <- ""
   }
-  do_call(brmsprior, 
-    nlist(prior, class, coef, group, resp, dpar, nlpar, bound)
-  )
+  source <- "user"
+  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, bound)
+  do_call(brmsprior, out)
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to 
@@ -513,6 +513,8 @@ get_prior <- function(formula, data, family = gaussian(), autocor = NULL,
   )
   # priors for noise-free variables
   prior <- prior + prior_Xme(meef, internal = internal)
+  # explicitly label default priors as such
+  prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
   to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef))
   prior <- unique(prior[to_order, , drop = FALSE])
@@ -1487,15 +1489,12 @@ get_bound <- function(prior, class = "b", coef = "",
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "", 
                       resp = "", dpar = "", nlpar = "", bound = "",
-                      ls = list()) {
+                      source = "", ls = list()) {
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
     }
-    names <- c(
-      "prior", "class", "coef", "group", 
-      "resp", "dpar", "nlpar", "bound"
-    )
+    names <- all_cols_prior()
     if (!all(names(ls) %in% names)) {
       stop("Names of 'ls' must some of ", collapse_comma(names))
     }
@@ -1504,7 +1503,8 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
     }
   }
   out <- data.frame(
-    prior, class, coef, group, resp, dpar, nlpar, bound, 
+    prior, class, coef, group, 
+    resp, dpar, nlpar, bound, source,  
     stringsAsFactors = FALSE
   )
   class(out) <- c("brmsprior", "data.frame")
@@ -1516,9 +1516,9 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
 empty_prior <- function() {
   char0 <- character(0)
   brmsprior(
-    prior = char0, class = char0, coef = char0, 
-    group = char0, resp = char0, dpar = char0,
-    nlpar = char0, bound = char0
+    prior = char0, source = char0, class = char0,
+    coef = char0, group = char0, resp = char0, 
+    dpar = char0, nlpar = char0, bound = char0
   )
 }
 
@@ -1542,6 +1542,12 @@ prior_bounds <- function(prior) {
     von_mises = list(lb = -pi, ub = pi),
     list(lb = -Inf, ub = Inf)
   )
+}
+
+# all columns of brmsprior objects
+all_cols_prior <- function() {
+  c("prior", "class", "coef", "group", "resp", 
+    "dpar", "nlpar", "bound", "source")
 }
 
 # relevant columns for duplication checks in brmsprior objects
@@ -1617,14 +1623,32 @@ is.brmsprior <- function(x) {
 #' @param ... Currently ignored.
 #' 
 #' @export
-print.brmsprior <- function(x, show_df, ...) {
-  if (missing(show_df)) {
+print.brmsprior <- function(x, show_df = NULL, ...) {
+  if (is.null(show_df)) {
     show_df <- nrow(x) > 1L
   }
+  y <- x
+  y$source[!nzchar(y$source)] <- "(unknown)"
+  # column names to vectorize over
+  cols <- c("group", "nlpar", "dpar", "resp", "class")
+  empty_strings <- rep("", 4)
+  for (i in which(!nzchar(x$prior))) {
+    ls <- x[i, cols]
+    ls <- rbind(ls, c(empty_strings, ls$class))
+    ls <- as.list(ls)
+    sub_prior <- subset2(x, ls = ls)
+    base_prior <- stan_base_prior(sub_prior)
+    if (nzchar(base_prior)) {
+      y$prior[i] <- base_prior
+      y$source[i] <- "(vectorized)"
+    } else {
+      y$prior[i] <- "(flat)"
+    }
+  }
   if (show_df) {
-    NextMethod()
+    print.data.frame(y, ...)
   } else {
-    cat(collapse(.print_prior(x), "\n"))
+    cat(collapse(.print_prior(y), "\n"))
   }
   invisible(x)
 }
@@ -1641,7 +1665,7 @@ print.brmsprior <- function(x, show_df, ...) {
   }
   bound <- ifelse(nzchar(x$bound), paste0(x$bound, " "), "")
   tilde <- ifelse(nzchar(x$class) | nzchar(group) | nzchar(coef), " ~ ", "")
-  prior <- ifelse(nzchar(x$prior), x$prior, "(no prior)")
+  prior <- ifelse(nzchar(x$prior), x$prior, "(flat)")
   paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)
 }
 
