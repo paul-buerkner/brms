@@ -8,6 +8,8 @@ the `subset` addition argument. (#895)
 * Add argument `robust` to the `summary` method. (#976)
 * Parallelize evaluation of the `posterior_predict` and `log_lik` 
 methods via argument `cores`. (#819)
+* Show prior sources and vectorization in the `print` output 
+of `brmsprior` objects. (#761)
 
 ### Other Changes
 
