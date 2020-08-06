@@ -961,6 +961,11 @@ warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) 
   invisible(NULL)
 }
 
+# check if verbose mode is activated
+is_verbose <- function() {
+  as_one_logical(getOption("brms.verbose", FALSE))
+}
+
 viridis6 <- function() {
   c("#440154", "#414487", "#2A788E", "#22A884", "#7AD151", "#FDE725")
 }

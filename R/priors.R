@@ -1169,6 +1169,16 @@ validate_prior <- function(prior, bterms, data, sample_prior = "no", ...) {
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
+  if (is_verbose()) {
+    # show default priors used in the model
+    # TODO: don't show default priors which are actually unused
+    def_prior <- prepare_print_prior(prior)
+    def_prior <- subset2(def_prior, source = "default")
+    if (nrow(def_prior)) {
+      message("The following priors were automatically added to the model:")
+      print(def_prior, show_df = TRUE) 
+    }
+  }
   prior
 }
 
@@ -1627,8 +1637,20 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
   if (is.null(show_df)) {
     show_df <- nrow(x) > 1L
   }
-  y <- x
-  y$source[!nzchar(y$source)] <- "(unknown)"
+  show_df <- as_one_logical(show_df)
+  y <- prepare_print_prior(x)
+  if (show_df) {
+    print.data.frame(y, ...)
+  } else {
+    cat(collapse(.print_prior(y), "\n"))
+  }
+  invisible(x)
+}
+
+# prepare pretty printing of brmsprior objects
+prepare_print_prior <- function(x) {
+  stopifnot(is.brmsprior(x))
+  x$source[!nzchar(x$source)] <- "(unknown)"
   # column names to vectorize over
   cols <- c("group", "nlpar", "dpar", "resp", "class")
   empty_strings <- rep("", 4)
@@ -1639,18 +1661,13 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
     sub_prior <- subset2(x, ls = ls)
     base_prior <- stan_base_prior(sub_prior)
     if (nzchar(base_prior)) {
-      y$prior[i] <- base_prior
-      y$source[i] <- "(vectorized)"
+      x$prior[i] <- base_prior
+      x$source[i] <- "(vectorized)"
     } else {
-      y$prior[i] <- "(flat)"
+      x$prior[i] <- "(flat)"
     }
   }
-  if (show_df) {
-    print.data.frame(y, ...)
-  } else {
-    cat(collapse(.print_prior(y), "\n"))
-  }
-  invisible(x)
+  x
 }
 
 # prepare text for print.brmsprior
