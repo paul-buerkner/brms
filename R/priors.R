@@ -1170,8 +1170,7 @@ validate_prior <- function(prior, bterms, data, sample_prior = "no", ...) {
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
   if (is_verbose()) {
-    # show default priors used in the model
-    # TODO: don't show default priors which are actually unused
+    # show remaining default priors added to the model
     def_prior <- prepare_print_prior(prior)
     def_prior <- subset2(def_prior, source = "default")
     if (nrow(def_prior)) {
@@ -1640,7 +1639,7 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
   show_df <- as_one_logical(show_df)
   y <- prepare_print_prior(x)
   if (show_df) {
-    print.data.frame(y, ...)
+    print.data.frame(y, row.names = FALSE, ...)
   } else {
     cat(collapse(.print_prior(y), "\n"))
   }
