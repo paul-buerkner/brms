@@ -1426,7 +1426,6 @@ validate_prior_special.btl <- function(x, prior, data,
       }
       if (is_special_prior(b_prior, "horseshoe")) {
         hs <- eval2(b_prior)
-        prior$prior[b_index] <- ""
         hs_obj_names <- c(
           "df", "df_global", "df_slab", "scale_global", 
           "scale_slab", "par_ratio", "autoscale"
