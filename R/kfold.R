@@ -116,19 +116,25 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 # @inheritParams kfold.brmsfit
 # @param model_name ignored but included to avoid being passed to '...'
 .kfold <- function(x, K, Ksub, folds, group, save_fits,
-                   newdata, resp, model_name,  ...) {
+                   newdata, resp, model_name, 
+                   newdata2 = NULL, ...) {
   stopifnot(is.brmsfit(x))
   if (is.brmsfit_multiple(x)) {
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
   }
   if (is.null(newdata)) {
-    mf <- model.frame(x) 
+    newdata <- x$data
   } else {
-    mf <- as.data.frame(newdata)
+    newdata <- as.data.frame(newdata)
   }
-  mf <- rm_attr(mf, c("terms", "brmsframe"))
-  N <- nrow(mf)
+  if (is.null(newdata2)) {
+    newdata2 <- x$data2
+  } else {
+    bterms <- brmsterms(x$formula)
+    newdata2 <- validate_data2(newdata2, bterms)
+  }
+  N <- nrow(newdata)
   # validate argument 'group'
   if (!is.null(group)) {
     valid_groups <- get_cat_vars(x)
@@ -136,7 +142,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
       stop2("Group '", group, "' is not a valid grouping factor. ",
             "Valid groups are: \n", collapse_comma(valid_groups))
     }
-    gvar <- factor(get(group, mf))
+    gvar <- factor(get(group, newdata))
   }
   # validate argument 'folds'
   if (is.null(folds)) {
@@ -210,15 +216,15 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     } else {
       omitted <- predicted <- which(folds == k)
     }
-    mf_omitted <- mf[-omitted, , drop = FALSE]
+    newdata_omitted <- newdata[-omitted, , drop = FALSE]
     fit <- x
     up_args$object <- fit
-    up_args$newdata <- mf_omitted
-    up_args$data2 <- subset_data2(x$data2, -omitted)
+    up_args$newdata <- newdata_omitted
+    up_args$data2 <- subset_data2(newdata2, -omitted)
     fit <- SW(do_call(update, up_args))
     ll_args$object <- fit
-    ll_args$newdata <- mf[predicted, , drop = FALSE]
-    ll_args$newdata2 <- subset_data2(x$data2, predicted)
+    ll_args$newdata <- newdata[predicted, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(newdata2, predicted)
     lppds <- do_call(log_lik, ll_args)
     out <- nlist(lppds, omitted, predicted)
     if (save_fits) out$fit <- fit
@@ -251,17 +257,30 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   elpds <- elpds[order(unlist(obs_order))]
   elpd_kfold <- sum(elpds)
   se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
+  # compute effective number of parameters
+  ll_args$object <- x
+  ll_args$newdata <- newdata
+  ll_args$newdata2 <- newdata2
+  ll_full <- do_call(log_lik, ll_args)
+  lpds <- apply(ll_full, 2, log_mean_exp)
+  ps <- lpds - elpds
+  p_kfold <- sum(ps)
+  se_p_kfold <- sqrt(length(ps) * var(ps))
+  # compute summary estimates
   rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
   cnames <- c("Estimate", "SE")
   estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
   estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
+  estimates[2, ] <- c(p_kfold, se_p_kfold)
   estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
-  out <- nlist(estimates, pointwise = cbind(elpd_kfold = elpds))
+  # put everything together in a loo object
+  pointwise <- cbind(elpd_kfold = elpds, p_kfold = ps, kfoldic = -2 * elpds)
+  out <- nlist(estimates, pointwise)
   atts <- nlist(K, Ksub, group, folds, fold_type)
   attributes(out)[names(atts)] <- atts
   if (save_fits) {
     out$fits <- fits
-    out$data <- mf
+    out$data <- newdata
   }
   structure(out, class = c("kfold", "loo"))
 }
