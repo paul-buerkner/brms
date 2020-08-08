@@ -16,7 +16,8 @@ brmsformula(
   center = NULL,
   cmc = NULL,
   sparse = NULL,
-  decomp = NULL
+  decomp = NULL,
+  unused = NULL
 )
 }
 \arguments{
@@ -75,6 +76,11 @@ population-level design matrix. Defaults to \code{NULL} that is
 no decomposition. Other options currently available are
 \code{"QR"} for the QR decomposition that helps in fitting models
 with highly correlated predictors.}
+
+\item{unused}{An optional \code{formula} which contains variables
+that are unused in the model but should still be stored in the
+model's data frame. This can be useful, for example,
+if those variables are required for post-processing the model.}
 }
 \value{
 An object of class \code{brmsformula}, which

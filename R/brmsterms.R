@@ -196,10 +196,12 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   check_fdpars(y$fdpars)
   
   # make a formula containing all required variables
+  unused_vars <- all_vars(attr(x$formula, "unused"))
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
   y$allvars <- allvars_formula(
     lhsvars, advars, lapply(y$dpars, get_allvars), 
-    lapply(y$nlpars, get_allvars), y$time$allvars
+    lapply(y$nlpars, get_allvars), y$time$allvars,
+    unused_vars
   )
   if (check_response) {
     y$allvars <- update(y$respform, y$allvars) 

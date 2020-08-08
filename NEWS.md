@@ -10,6 +10,8 @@ the `subset` addition argument. (#895)
 methods via argument `cores`. (#819)
 * Show prior sources and vectorization in the `print` output 
 of `brmsprior` objects. (#761)
+* Store unused variables in the model's data frame via 
+argument `unused` of function `brmsformula`.
 
 ### Other Changes
 
