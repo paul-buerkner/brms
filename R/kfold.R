@@ -252,11 +252,11 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     lppds[[ks]] <- tmp$lppds
   }
   
-  elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
+  lppds <- do_call(cbind, lppds)
+  elpds <- apply(lppds, 2, log_mean_exp)
   # make sure elpds are put back in the right order
-  elpds <- elpds[order(unlist(obs_order))]
-  elpd_kfold <- sum(elpds)
-  se_elpd_kfold <- sqrt(length(elpds) * var(elpds))
+  obs_order <- unlist(obs_order)
+  elpds <- elpds[order(obs_order)]
   # compute effective number of parameters
   ll_args$object <- x
   ll_args$newdata <- newdata
@@ -264,17 +264,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   ll_full <- do_call(log_lik, ll_args)
   lpds <- apply(ll_full, 2, log_mean_exp)
   ps <- lpds - elpds
-  p_kfold <- sum(ps)
-  se_p_kfold <- sqrt(length(ps) * var(ps))
-  # compute summary estimates
-  rnames <- c("elpd_kfold", "p_kfold", "kfoldic")
-  cnames <- c("Estimate", "SE")
-  estimates <- matrix(nrow = 3, ncol = 2, dimnames = list(rnames, cnames))
-  estimates[1, ] <- c(elpd_kfold, se_elpd_kfold)
-  estimates[2, ] <- c(p_kfold, se_p_kfold)
-  estimates[3, ] <- c(-2 * elpd_kfold, 2 * se_elpd_kfold)
   # put everything together in a loo object
   pointwise <- cbind(elpd_kfold = elpds, p_kfold = ps, kfoldic = -2 * elpds)
+  est <- colSums(pointwise)
+  se_est <- sqrt(nrow(pointwise) * apply(pointwise, 2, var))
+  estimates <- cbind(Estimate = est, SE = se_est)
+  rownames(estimates) <- colnames(pointwise)
   out <- nlist(estimates, pointwise)
   atts <- nlist(K, Ksub, group, folds, fold_type)
   attributes(out)[names(atts)] <- atts
