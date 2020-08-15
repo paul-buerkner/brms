@@ -27,9 +27,10 @@ brm(
   warmup = floor(iter/2),
   thin = 1,
   cores = getOption("mc.cores", 1),
+  threads = 1,
   control = NULL,
-  algorithm = getOption("stan_algorithm", "sampling"),
-  backend = getOption("stan_backend", "rstan"),
+  algorithm = getOption("brms.algorithm", "sampling"),
+  backend = getOption("brms.backend", "rstan"),
   future = getOption("future", FALSE),
   silent = TRUE,
   seed = NA,
@@ -181,6 +182,8 @@ be as many processors as the hardware and RAM allow (up to the number of
 chains). For non-Windows OS in non-interactive \R sessions, forking is used
 instead of PSOCK clusters.}
 
+\item{threads}{TODO}
+
 \item{control}{A named \code{list} of parameters to control the sampler's
 behavior. It defaults to \code{NULL} so all the default values are used.
 The most important control parameters are discussed in the 'Details'
@@ -193,12 +196,12 @@ variational inference with independent normal distributions,
 \code{"fullrank"} for variational inference with a multivariate normal
 distribution, or \code{"fixed_param"} for sampling from fixed parameter
 values. Can be set globally for the current \R session via the
-\code{"stan_algorithm"} option (see \code{\link{options}}).}
+\code{"brms.algorithm"} option (see \code{\link{options}}).}
 
 \item{backend}{Character string naming the package to use as the backend for
 fitting the Stan model. Options are \code{"rstan"} (the default) or
 \code{"cmdstanr"}. Can be set globally for the current \R session via the
-\code{"stan_backend"} option (see \code{\link{options}}). Details on the
+\code{"brms.backend"} option (see \code{\link{options}}). Details on the
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
 \url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
 respectively.}

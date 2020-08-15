@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef) {
+stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -32,10 +32,6 @@ stan_global_defs <- function(bterms, prior, ranef) {
   family_files <- family_info(bterms, "include")
   if (length(family_files)) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
-  }
-  const <- family_info(bterms, "const")
-  if (length(const)) {
-    str_add(out$tdata_def) <- cglue("  {const};\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
   if (any(is_ordinal)) {
@@ -93,6 +89,9 @@ stan_global_defs <- function(bterms, prior, ranef) {
       "  #include 'fun_normal_fcor.stan'\n",
       "  #include 'fun_student_t_fcor.stan'\n"
     )
+  }
+  if (threads > 1) {
+    str_add(out$fun) <- "  #include 'fun_sequence.stan'\n"
   }
   out
 }
@@ -214,6 +213,19 @@ stan_needs_kronecker <- function(ranef) {
     out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
   }
   out
+}
+
+# functions to handle indexing when threading
+stan_slice <- function(threads) {
+  str_if(threads > 1, "[start:end]")
+}
+
+stan_nn <- function(threads) {
+  str_if(threads > 1, "[nn]", "[n]")
+}
+
+stan_nn_def <- function(threads) {
+  str_if(threads > 1, "    int nn = n + start - 1;\n")
 }
 
 # prepare a string to be used as comment in Stan

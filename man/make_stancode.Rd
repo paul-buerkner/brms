@@ -16,6 +16,7 @@ make_stancode(
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
+  threads = 1,
   save_model = NULL,
   ...
 )
@@ -96,6 +97,8 @@ block of the generated \pkg{Stan} code. It is now recommended to use the
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See
 \code{\link[mgcv:gamm]{gamm}} for more details.}
+
+\item{threads}{TODO}
 
 \item{save_model}{Either \code{NULL} or a character string. In the latter
 case, the model's Stan code is saved via \code{\link{cat}} in a text file

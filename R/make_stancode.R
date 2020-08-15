@@ -19,9 +19,9 @@
 make_stancode <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL,
                           cov_ranef = NULL, sparse = NULL, 
-                          sample_prior = "no", 
-                          stanvars = NULL, stan_funs = NULL, 
-                          knots = NULL, save_model = NULL, 
+                          sample_prior = "no", stanvars = NULL, 
+                          stan_funs = NULL, knots = NULL, 
+                          threads = 1, save_model = NULL, 
                           ...) {
   
   if (is.brmsfit(formula)) {
@@ -42,7 +42,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   
  .make_stancode(
    bterms, data = data, prior = prior, 
-   stanvars = stanvars, save_model = save_model,
+   stanvars = stanvars, threads = threads,
+   save_model = save_model,
    ...
  ) 
 }
@@ -51,9 +52,9 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param parse parse the Stan model for automatic syntax checking
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
-.make_stancode <- function(bterms, data, prior, stanvars,
-                           parse = getOption("parse_stancode", FALSE), 
-                           backend = getOption("stan_backend", "rstan"),
+.make_stancode <- function(bterms, data, prior, stanvars, threads,
+                           parse = getOption("brms.parse_stancode", FALSE), 
+                           backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {
  
   parse <- as_one_logical(parse)
@@ -64,12 +65,92 @@ make_stancode <- function(formula, data, family = gaussian(),
   scode_predictor <- stan_predictor(
     bterms, data = data, prior = prior, 
     ranef = ranef, meef = meef,
-    stanvars = stanvars
+    stanvars = stanvars, threads = threads
   )
-  scode_ranef <- stan_re(ranef, prior = prior)
-  scode_llh <- stan_llh(bterms, data = data)
-  scode_global_defs <- stan_global_defs(bterms, prior = prior, ranef = ranef)
-  scode_Xme <- stan_Xme(meef, prior = prior)
+  scode_ranef <- stan_re(ranef, prior = prior, threads = threads)
+  scode_Xme <- stan_Xme(meef, prior = prior, threads = threads)
+  scode_global_defs <- stan_global_defs(
+    bterms, prior = prior, ranef = ranef, threads = threads
+  )
+  
+  # extend Stan's likelihood part
+  # TODO: move this part to a separate function?
+  if (threads > 1) {
+    for (i in seq_along(scode_predictor)) {
+      resp <- usc(names(scode_predictor)[i])
+      resp_type <- scode_predictor[[i]]$resp_type
+      pll_header <- paste0(
+        scode_predictor[[i]]$pll_header,
+        scode_ranef$pll_header,
+        scode_Xme$pll_header
+      )
+      partial_log_lik <- paste0(
+        scode_predictor[[i]]$pll_def,
+        scode_predictor[[i]]$model_def,
+        scode_predictor[[i]]$model_comp_basic,
+        scode_predictor[[i]]$model_comp_eta_loop,
+        scode_predictor[[i]]$model_comp_dpar_link,
+        scode_predictor[[i]]$model_comp_mu_link,
+        scode_predictor[[i]]$model_comp_dpar_trans,
+        scode_predictor[[i]]$model_comp_mix,
+        scode_predictor[[i]]$model_comp_arma,
+        scode_predictor[[i]]$model_comp_catjoin,
+        scode_predictor[[i]]$model_comp_mvjoin,
+        scode_predictor[[i]]$model_log_lik
+      )
+      partial_log_lik <- gsub(" target \\+=", " ptarget +=", partial_log_lik)
+      partial_log_lik <- paste0(
+        "// compute partial sums of the log-likelihood\n",
+        "real partial_log_lik", resp, "(int[] seq, ", 
+        "int start, int end", pll_header, ") {\n",
+        "  real ptarget = 0;\n",
+        "  int N = end - start + 1;\n",
+        partial_log_lik, 
+        "  return ptarget;\n",
+        "}\n"
+      )
+      partial_log_lik <- wsp_per_line(partial_log_lik, 2)
+      scode_predictor[[i]]$partial_log_lik <- partial_log_lik
+      # function arguments are just the header without variable types
+      pll_args <- unlist(strsplit(pll_header, " +"))
+      pll_args <- pll_args[seq(1, length(pll_args), 2)]
+      pll_args <- paste0(pll_args, collapse = " ")
+      scode_predictor[[i]]$model <- paste0(
+        "  // likelihood including all constants\n",
+        "  if (!prior_only) {\n",
+        "    int seq[N", resp, "] = sequence(1, N", resp, ");\n",
+        "    target += reduce_sum(", 
+        "partial_log_lik", resp, ", seq, 1", pll_args, ");\n",
+        "  }\n"
+      ) 
+    }
+    scode_predictor <- collapse_lists(ls = scode_predictor)
+    scode_predictor$model <- paste0(
+      collapse_stanvars(stanvars, "model", "start"),
+      scode_predictor$model,
+      collapse_stanvars(stanvars, "model", "end")
+    )
+  } else {
+    scode_predictor <- collapse_lists(ls = scode_predictor)
+    scode_predictor$model <- paste0(
+      scode_predictor$model_def,
+      collapse_stanvars(stanvars, "model", "start"),
+      scode_predictor$model_comp_basic,
+      scode_predictor$model_comp_eta_loop,
+      scode_predictor$model_comp_dpar_link,
+      scode_predictor$model_comp_mu_link,
+      scode_predictor$model_comp_dpar_trans,
+      scode_predictor$model_comp_mix,
+      scode_predictor$model_comp_arma,
+      scode_predictor$model_comp_catjoin,
+      scode_predictor$model_comp_mvjoin,
+      "  // likelihood including all constants\n",
+      "  if (!prior_only) {\n",
+      scode_predictor$model_log_lik,
+      "  }\n", 
+      collapse_stanvars(stanvars, "model", "end")
+    )
+  }
     
   # get priors for all parameters in the model
   scode_prior <- paste0(
@@ -78,17 +159,21 @@ make_stancode <- function(formula, data, family = gaussian(),
     scode_Xme$prior,
     stan_unchecked_prior(prior)
   )
+  
   # generate functions block
   scode_functions <- paste0(
     "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions {\n",
       scode_global_defs$fun,
+      scode_predictor$partial_log_lik,
       collapse_stanvars(stanvars, "functions"),
     "}\n"
   )
+  
   # generate data block
   scode_data <- paste0(
     "data {\n",
+    "  int<lower=1> N;  // total number of observations\n",
     scode_predictor$data,
     scode_ranef$data,
     scode_Xme$data,
@@ -96,6 +181,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     collapse_stanvars(stanvars, "data"),
     "}\n"
   )
+  
   # generate transformed parameters block
   scode_transformed_data <- paste0(
     "transformed data {\n",
@@ -106,12 +192,14 @@ make_stancode <- function(formula, data, family = gaussian(),
        collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
+  
   # generate parameters block
   scode_parameters <- paste0(
     scode_predictor$par,
     scode_ranef$par,
     scode_Xme$par
   )
+  # prepare additional sampling from priors
   scode_rngprior <- stan_rngprior(
     prior = scode_prior,
     par_declars = scode_parameters,
@@ -126,6 +214,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       collapse_stanvars(stanvars, "parameters"),
     "}\n"
   )
+  
   # generate transformed parameters block
   scode_transformed_parameters <- paste0(
     "transformed parameters {\n",
@@ -142,28 +231,14 @@ make_stancode <- function(formula, data, family = gaussian(),
       collapse_stanvars(stanvars, "tparameters", "end"),
     "}\n"
   )
-  # generate model block
+  
+  # combine likelihood with prior part
   scode_model <- paste0(
     "model {\n",
-      scode_predictor$model_def,
-      collapse_stanvars(stanvars, "model", "start"),
-      scode_predictor$model_comp_basic,
-      scode_predictor$model_comp_eta_loop,
-      scode_predictor$model_comp_dpar_link,
-      scode_predictor$model_comp_mu_link,
-      scode_predictor$model_comp_dpar_trans,
-      scode_predictor$model_comp_mix,
-      scode_predictor$model_comp_arma,
-      scode_predictor$model_comp_catjoin,
-      scode_predictor$model_comp_mvjoin,
+      scode_predictor$model,
       "  // priors including all constants\n", 
       scode_prior, 
-      "  // likelihood including all constants\n",
-      "  if (!prior_only) {\n",
-      scode_llh, 
-      "  }\n", 
       scode_rngprior$model,
-      collapse_stanvars(stanvars, "model", "end"),
     "}\n"
   )
   # generate generated quantities block

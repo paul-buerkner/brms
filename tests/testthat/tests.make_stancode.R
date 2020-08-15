@@ -6,7 +6,7 @@ SW <- brms:::SW
 
 # parsing the Stan code ensures syntactial correctness of models
 # setting this option to FALSE speeds up testing
-options(parse_stancode = TRUE)
+options(brms.parse_stancode = TRUE)
 
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
@@ -1785,21 +1785,21 @@ test_that("Stan code for skew_normal models is correct", {
   dat = data.frame(y = rnorm(10), x = rnorm(10))
   scode <- make_stancode(y ~ x, dat, skew_normal())
   expect_match2(scode, "delta = alpha / sqrt(1 + alpha^2);")
-  expect_match2(scode, "omega = sigma / sqrt(1 - sqrt_2_div_pi^2 * delta^2);")
-  expect_match2(scode, "mu[n] = mu[n] - omega * delta * sqrt_2_div_pi;")
+  expect_match2(scode, "omega = sigma / sqrt(1 - sqrt(2 / pi())^2 * delta^2);")
+  expect_match2(scode, "mu[n] = mu[n] - omega * delta * sqrt(2 / pi());")
   
   scode <- make_stancode(bf(y ~ x, sigma ~ x), dat, skew_normal())
-  expect_match2(scode, "omega[n] = sigma[n] / sqrt(1 - sqrt_2_div_pi^2 * delta^2);")
-  expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta * sqrt_2_div_pi;")
+  expect_match2(scode, "omega[n] = sigma[n] / sqrt(1 - sqrt(2 / pi())^2 * delta^2);")
+  expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta * sqrt(2 / pi());")
   
   scode <- make_stancode(bf(y | se(x) ~ x, alpha ~ x), dat, skew_normal())
   expect_match2(scode, "delta[n] = alpha[n] / sqrt(1 + alpha[n]^2);")
-  expect_match2(scode, "omega[n] = se[n] / sqrt(1 - sqrt_2_div_pi^2 * delta[n]^2);")
-  expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta[n] * sqrt_2_div_pi;")
+  expect_match2(scode, "omega[n] = se[n] / sqrt(1 - sqrt(2 / pi())^2 * delta[n]^2);")
+  expect_match2(scode, "mu[n] = mu[n] - omega[n] * delta[n] * sqrt(2 / pi());")
   
   scode <- make_stancode(y ~ x, dat, mixture(skew_normal, nmix = 2))
-  expect_match2(scode, "omega1 = sigma1 / sqrt(1 - sqrt_2_div_pi^2 * delta1^2);")
-  expect_match2(scode, "mu2[n] = mu2[n] - omega2 * delta2 * sqrt_2_div_pi;")
+  expect_match2(scode, "omega1 = sigma1 / sqrt(1 - sqrt(2 / pi())^2 * delta1^2);")
+  expect_match2(scode, "mu2[n] = mu2[n] - omega2 * delta2 * sqrt(2 / pi());")
 })
 
 test_that("Stan code for missing value terms works correctly", {

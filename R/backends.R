@@ -47,7 +47,7 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with rstan
 # @param model Stan model code
 # @return model compiled with rstan
-.compile_model_rstan <- function(model, ...) {
+.compile_model_rstan <- function(model, threads = 1, ...) {
   args <- list(...)
   args$model_code <- model
   message("Compiling Stan program...")
@@ -57,10 +57,13 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with cmdstanr
 # @param model Stan model code
 # @return model compiled with cmdstanr
-.compile_model_cmdstanr <- function(model, ...) {
+.compile_model_cmdstanr <- function(model, threads = 1, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_tempfile(model)
+  if (threads > 1) {
+    args$cpp_options$stan_threads <- TRUE
+  }
   do_call(cmdstanr::cmdstan_model, args)
 }
 
@@ -78,10 +81,13 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_rstan <- function(model, sdata, algorithm, iter, warmup, thin, 
-                             chains, cores, inits, exclude, seed, control, 
-                             silent, future, ...) {
+                             chains, cores, threads, inits, exclude, seed, 
+                             control, silent, future, ...) {
   
   # some input checks and housekeeping
+  if (threads > 1) {
+    stop2("Threading is not yet supported by backend 'rstan'.")
+  }
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
@@ -139,8 +145,8 @@ fit_model <- function(model, backend, ...) {
 # @param sdata named list to be passed to Stan as data
 # @return a fitted Stan model
 .fit_model_cmdstanr <- function(model, sdata, algorithm, iter, warmup, thin, 
-                                chains, cores, inits, exclude, seed, control, 
-                                silent, future, ...) {
+                                chains, cores, threads, inits, exclude, seed, 
+                                control, silent, future, ...) {
   
   require_package("cmdstanr")
   # some input checks and housekeeping
@@ -157,6 +163,10 @@ fit_model <- function(model, backend, ...) {
     stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
   }
   args <- nlist(data = sdata, seed, init = inits)
+  if (threads > 1) {
+    # avoid warning when threads = 1
+    args$threads_per_chain <- threads
+  }
   # TODO: exclude variables via 'exclude'
   dots <- list(...)
   args[names(dots)] <- dots
