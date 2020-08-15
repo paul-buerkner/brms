@@ -949,7 +949,7 @@ test_that("Stan code for non-linear models is correct", {
   scode <- make_stancode(bf(y ~ a - exp(b + z), flist = flist, 
                             nl = TRUE, loop = FALSE), 
                          data = data, prior = prior)
-  expect_match2(scode, "\n  mu = nlp_a - exp(nlp_b + C_1);")
+  expect_match2(scode, "mu = nlp_a - exp(nlp_b + C_1);")
   
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
@@ -1188,10 +1188,12 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
     "target += weights[n] * (binomial_logit_lpmf(Y[n] | trials[n], mu[n]));"
   )
   
-  expect_match2(make_stancode(y | cens(x, y2) ~ 1, dat, poisson()),
-                "target += poisson_lpmf(Y[n] | mu[n]);")
-  expect_match2(make_stancode(y | cens(x) ~ 1, dat, weibull()), 
-                "target += weibull_lccdf(Y[n] | shape, mu[n]);")
+  scode <- make_stancode(y | cens(x, y2) ~ 1, dat, poisson())
+  expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
+  
+  scode <- make_stancode(y | cens(x) ~ 1, dat, weibull())
+  expect_match2(scode, "target += weibull_lccdf(Y[n] | shape, mu[n]);")
+  
   dat$x[1] <- 2
   scode <- make_stancode(y | cens(x, y2) ~ 1, dat, gaussian())
   expect_match2(scode, paste0(

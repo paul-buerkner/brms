@@ -135,18 +135,18 @@ stan_response <- function(bterms, data) {
     str_add(out$pll_args) <- glue(", int[] cens{resp}")
     if (cens$vars$y2 != "NA") {
       # interval censoring is required
-      str_add(out$data) <- "  // right censor points for interval censoring\n"
       if (rtype == "int") {
         str_add(out$data) <- glue(
-          "  int rcens{resp}[N{resp}];\n"
+          "  int rcens{resp}[N{resp}];"
         )
         str_add(out$pll_args) <- glue(", int[] rcens{resp}")
       } else {
         str_add(out$data) <- glue(
-          "  vector[N{resp}] rcens{resp};\n"
+          "  vector[N{resp}] rcens{resp};"
         )
         str_add(out$pll_args) <- glue(", vector rcens{resp}")
       }
+      str_add(out$data) <- "  // right censor points for interval censoring\n"
     }
   }
   bounds <- trunc_bounds(bterms, data = data)

@@ -38,8 +38,8 @@ stan_log_lik.family <- function(x, bterms, data, threads,
     out <- paste0(
       "  for (n in 1:N", resp, ") {\n", 
       "  ", stan_nn_def(threads), 
-      "    ", out, 
-      "    }\n"
+      "  ", out, 
+      "  }\n"
     )
   }
   out
@@ -67,21 +67,21 @@ stan_log_lik.mixfamily <- function(x, bterms, threads, ...) {
   weights <- str_if(has_weights, glue("weights{resp}{n} * "))
   out <- glue(
     "  // likelihood of the mixture model\n",
-    "    for (n in 1:N{resp}) {{\n",
-    "      ", stan_nn_def(threads),
-    "      real ps[{length(ll)}];\n"
+    "  for (n in 1:N{resp}) {{\n",
+    stan_nn_def(threads),
+    "    real ps[{length(ll)}];\n"
   )
   str_add(out) <- collapse("    ", ll)
   str_add(out) <- glue(
-    "    {tp()}{weights}log_sum_exp(ps);\n",
-    "    }}\n"
+    "  {tp()}{weights}log_sum_exp(ps);\n",
+    "  }}\n"
   )
   out
 }
 
 #' @export
 stan_log_lik.brmsterms <- function(x, ...) {
-  paste0("  ", stan_log_lik(x$family, bterms = x, ...))
+  stan_log_lik(x$family, bterms = x, ...)
 }
 
 #' @export
@@ -108,7 +108,7 @@ stan_log_lik_general <- function(ll, bterms, data, threads, resp = "", ...) {
 # censored likelihood in Stan language
 stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
   stopifnot(is.sdist(ll))
-  s <- wsp(nsp = 6)
+  s <- wsp(nsp = 4)
   cens <- eval_rhs(bterms$adforms$cens)
   lpdf <- stan_log_lik_lpdf_name(bterms)
   has_weights <- is.formula(bterms$adforms$weights)
@@ -118,7 +118,7 @@ stan_log_lik_cens <- function(ll, bterms, data, threads, resp = "", ...) {
   tr <- stan_log_lik_trunc(ll, bterms, data, resp = resp, threads = threads)
   tp <- tp()
   out <- glue(
-    "  // special treatment of censored data\n",
+    "// special treatment of censored data\n",
     s, "if (cens{resp}{n} == 0) {{\n", 
     s, "{tp}{w}{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
     s, "}} else if (cens{resp}{n} == 1) {{\n",         
@@ -168,9 +168,9 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
   if (is.formula(bterms$adforms$cens)) {
     # mostly copied over from stan_log_lik_cens
     cens <- eval_rhs(bterms$adforms$cens)
-    s <- wsp(nsp = 6)
+    s <- wsp(nsp = 4)
     out <- glue(
-      "  // special treatment of censored data\n",
+      "// special treatment of censored data\n",
       s, "if (cens{resp}{n} == 0) {{\n", 
       s, "  ps[{mix}] = {theta} + ", 
       "{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n",
@@ -219,7 +219,7 @@ stan_log_lik_trunc <- function(ll, bterms, data, threads,resp = "",
     out <- glue(" T[{lb}, {ub}]")
   } else {
     # truncation making use of _lcdf functions
-    ms <- paste0(" -\n", wsp(nsp = 8))
+    ms <- paste0(" -\n", wsp(nsp = 6))
     if (any(bounds$lb > -Inf) && !any(bounds$ub < Inf)) {
       out <- glue("{ms}{ll$dist}_lccdf({lb} | {ll$args})")
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
