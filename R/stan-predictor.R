@@ -241,13 +241,13 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
     }
     miforms <- rmNULL(lapply(adforms, "[[", "mi"))
     if (length(miforms)) {
-      str_add(out$model_global_def) <- "  vector[nresp] Yl[N] = Y;\n"
+      str_add(out$model_no_pll_def) <- "  vector[nresp] Yl[N] = Y;\n"
       str_add(out$pll_args) <- ", vector[] Yl"
       for (i in seq_along(miforms)) {
         j <- match(names(miforms)[i], resp)
         # needs to happen outside of reduce_sum 
         # to maintain consistency of indexing Yl
-        str_add(out$model_global_comp_mvjoin) <- glue(
+        str_add(out$model_no_pll_comp_mvjoin) <- glue(
           "    Yl[n][{j}] = Yl_{resp[j]}[n];\n"
         )
       }
@@ -319,11 +319,11 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
       out$model_comp_mvjoin, 
       "  }\n"
     )
-    if (isTRUE(nzchar(out$model_global_comp_mvjoin))) {
-      out$model_global_comp_mvjoin <- paste0(
+    if (isTRUE(nzchar(out$model_no_pll_comp_mvjoin))) {
+      out$model_no_pll_comp_mvjoin <- paste0(
         "  // combine univariate parameters\n",
         "  for (n in 1:N) {\n", 
-        out$model_global_comp_mvjoin, 
+        out$model_no_pll_comp_mvjoin, 
         "  }\n"
       )
     }
@@ -1053,6 +1053,7 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
     byfac <- length(cons) > 0L
     bynum <- !is.null(byvar) && !byfac 
     k <- gpef$k[i]
+    is_approx <- !isNA(k)
     iso <- gpef$iso[i]
     gr <- gpef$gr[i]
     sfx1 <- gpef$sfx1[[i]]
@@ -1063,8 +1064,7 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
       "  // number of sub-GPs (equal to 1 unless 'by' was used)\n",
       "  int<lower=1> Dgp{pi};  // GP dimension\n"
     )
-    if (!isNA(k)) {
-      # !isNA(k) indicates the use of approximate GPs
+    if (is_approx) {
       str_add(out$data) <- glue(
         "  // number of basis functions of an approximate GP\n",
         "  int<lower=1> NBgp{pi};\n"
@@ -1073,8 +1073,7 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
     str_add_list(out) <- stan_prior(
       prior, class = "sdgp", coef = sfx1, 
       type = glue("vector<lower=0>[Kgp{pi}]"),
-      coef_type = "real<lower=0>", px = px, 
-      header_type = "vector", suffix = pi, 
+      coef_type = "real<lower=0>", px = px, suffix = pi, 
       comment = "GP standard deviation parameters"
     )
     if (gpef$iso[i]) {
@@ -1101,11 +1100,12 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         "  int<lower=1> {Igp}[{Ngp}[{J}]];\n",
         "  vector[{Ngp}[{J}]] Cgp{pi}_{J};\n"
       )
+      str_add(out$pll_args) <- cglue(", int[] {Igp}, vector Cgp{pi}_{J}")
       str_add_list(out) <- stan_prior(
         prior, class = "lscale", coef = sfx2, 
         type = lscale_type, coef_type = "real<lower=0>",
         dim = lscale_dim, suffix = glue("{pi}"), px = px,
-        header_type = "vector[]", comment = lscale_comment
+        comment = lscale_comment
       )
       if (gr) {
         str_add(out$data) <- glue(
@@ -1118,8 +1118,7 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         )
         str_add(out$pll_args) <- cglue(", int[] Jgp{pi}_{J}")
       }
-      gp_call <- glue("Cgp{pi}_{J} .* ")
-      if (!isNA(k)) {
+      if (is_approx) {
         str_add(out$data) <- 
           "  // approximate GP basis matrices and eigenvalues\n"
         str_add(out$data) <- cglue(
@@ -1130,14 +1129,12 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         str_add(out$par) <- cglue(
           "  vector[NBgp{pi}] zgp{pi}_{J};\n"
         )
-        str_add(out$pll_args) <- cglue(
-          ", matrix Xgp{pi}_{J}, vector[] slambda{pi}_{J}, vector zgp{pi}_{J}"
-        )
-        str_add(gp_call) <- glue(
-          "gpa(Xgp{pi}_{J}, sdgp{pi}[{J}], ", 
+        gp_call <- glue(
+          "gpa(Xgp{pi}_{J}, sdgp{pi}[{J}], ",
           "lscale{pi}[{J}], zgp{pi}_{J}, slambda{pi}_{J})"
         )
       } else {
+        # exact GPs
         str_add(out$data) <- "  // covariates of the GP\n"
         str_add(out$data) <- cglue(
           "  vector[Dgp{pi}] Xgp{pi}_{J}[{Nsubgp}[{J}]];\n"
@@ -1146,20 +1143,23 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         str_add(out$par) <- cglue(
           "  vector[{Nsubgp}[{J}]] zgp{pi}_{J};\n"
         )
-        str_add(out$pll_args) <- cglue(
-          ", vector[] Xgp{pi}_{J}, vector zgp{pi}_{J}"
-        )
-        str_add(gp_call) <- glue(
-          "gp(Xgp{pi}_{J}, sdgp{pi}[{J}], ", 
-          "lscale{pi}[{J}], zgp{pi}_{J})"
+        gp_call <- glue(
+          "gp(Xgp{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}], zgp{pi}_{J})"
         )
       }
-      Jgp <- str_if(gr, glue("[Jgp{pi}_{J}{slice}]"))
+      # adding to subsets of 'eta' prevents use of reduce_sum
+      # TODO: add all GP elements to 'eta' at the same time
       eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
-      eta <- glue("{eta}[{Igp}]")
+      eta <- glue("{eta}[{Igp}{slice}]")
+      str_add(out$model_no_pll_def) <- cglue(
+        "  vector[{Nsubgp}[{J}]] gp_pred{pi}_{J} = {gp_call};\n"
+      )
+      str_add(out$pll_args) <- cglue(", vector gp_pred{pi}_{J}")
+      Cgp <- glue("Cgp{pi}_{J}{slice} .* ")
+      Jgp <- str_if(gr, glue("[Jgp{pi}_{J}{slice}]"), slice)
       # compound '+=' statement currently causes a parser failure
       str_add(out$model_comp_basic) <- glue(
-        "  {eta} = {eta} + {gp_call}{Jgp};\n"
+        "  {eta} += {Cgp}gp_pred{pi}_{J}{Jgp};\n"
       )
       str_add(out$prior) <- cglue(
         "{tp()}std_normal_lpdf(zgp{pi}_{J});\n"
@@ -1170,10 +1170,11 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         prior, class = "lscale", coef = sfx2, 
         type = lscale_type, coef_type = "real<lower=0>",
         dim = lscale_dim, suffix = glue("{pi}"), px = px,
-        header_type = "vector[]", comment = lscale_comment
+        comment = lscale_comment
       )
-      Nsubgp <- str_if(gr, glue("Nsubgp{pi}"), glue("N{resp}"))
+      Nsubgp <- glue("N{resp}")
       if (gr) {
+        Nsubgp <- glue("Nsubgp{pi}")
         str_add(out$data) <- glue(
           "  // number of latent GP groups\n",
           "  int<lower=1> {Nsubgp};\n",
@@ -1182,7 +1183,16 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         )
         str_add(out$pll_args) <- glue(", int[] Jgp{pi}")
       }
-      if (!isNA(k)) {
+      Cgp <- ""
+      if (bynum) {
+        str_add(out$data) <- glue(
+          "  // numeric by-variable of the GP\n",
+          "  vector[N{resp}] Cgp{pi};\n"
+        )
+        str_add(out$pll_args) <- glue(", vector Cgp{pi}")
+        Cgp <- glue("Cgp{pi}{slice} .* ")
+      }
+      if (is_approx) {
         str_add(out$data) <- glue(
           "  // approximate GP basis matrices\n",
           "  matrix[{Nsubgp}, NBgp{pi}] Xgp{pi};\n",
@@ -1192,34 +1202,45 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         str_add(out$par) <- glue(
           "  vector[NBgp{pi}] zgp{pi};  // latent variables of the GP\n"
         )
-        str_add(out$pll_args) <- glue(
-          ", matrix Xgp{pi}, vector[] slambda{pi}, vector zgp{pi}"
-        )
-        gp_call <- glue(
-          "gpa(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi}, slambda{pi})"
-        )
+        gp_args <- glue("sdgp{pi}[1], lscale{pi}[1], zgp{pi}, slambda{pi}")
+        if (gr) {
+          # grouping prevents GPs to be computed efficiently inside reduce_sum
+          gp_call <- glue("gpa(Xgp{pi}, {gp_args})")
+          str_add(out$model_no_pll_def) <- glue(
+            "  vector[{Nsubgp}] gp_pred{pi} = {gp_call};\n"
+          )
+          str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}[Jgp{pi}{slice}]")
+          str_add(out$pll_args) <- glue(", vector gp_pred{pi}")
+        } else {
+          # efficient computation of approx GPs inside reduce_sum is possible
+          gp_call <- glue("gpa(Xgp{pi}{slice}, {gp_args})")
+          str_add(out$model_def) <- glue(
+            "  vector[N{resp}] gp_pred{pi} = {gp_call};\n"
+          )
+          str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}")
+          str_add(out$pll_args) <- glue(
+            ", matrix Xgp{pi}, vector sdgp{pi}, vector[] lscale{pi}", 
+            ", vector zgp{pi}, vector[] slambda{pi}"
+          )
+        }
       } else {
+        # exact GPs
         str_add(out$data) <- glue(
           "  vector[Dgp{pi}] Xgp{pi}[{Nsubgp}];  // covariates of the GP\n"
         ) 
         str_add(out$par) <- glue(
           "  vector[{Nsubgp}] zgp{pi};  // latent variables of the GP\n"
         )
-        str_add(out$pll_args) <- glue(", vector[] Xgp{pi}, vector zgp{pi}")
-        gp_call <- glue(
-          "gp(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi})"
+        gp_call <- glue("gp(Xgp{pi}, sdgp{pi}[1], lscale{pi}[1], zgp{pi})")
+        # exact GPs are kernel based methods which
+        # need to be computed outside of reduce_sum 
+        str_add(out$model_no_pll_def) <- glue(
+          "  vector[{Nsubgp}] gp_pred{pi} = {gp_call};\n"
         )
+        Jgp <- str_if(gr, glue("[Jgp{pi}{slice}]"), slice)
+        str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}{Jgp}")
+        str_add(out$pll_args) <- glue(", vector gp_pred{pi}")
       }
-      if (bynum) {
-        str_add(out$data) <- glue(
-          "  // numeric by-variable of the GP\n",
-          "  vector[N{resp}] Cgp{pi};\n"
-        )
-        str_add(out$pll_args) <- glue(", vector Cgp{pi}")
-      }
-      Cgp <- str_if(bynum, glue("Cgp{pi} .* "))
-      Jgp <- str_if(gr, glue("[Jgp{pi}{slice}]"))
-      str_add(out$eta) <- glue(" + {Cgp}{gp_call}{Jgp}")
       str_add(out$prior) <- glue(
         "{tp()}std_normal_lpdf(zgp{pi});\n"
       )

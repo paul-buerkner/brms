@@ -175,11 +175,11 @@ stan_response <- function(bterms, data) {
       str_add(out$par) <- glue(
         "  vector{Ybounds}[Nmi{resp}] Ymi{resp};  // estimated missings\n"
       )
-      str_add(out$model_global_def) <- glue(
+      str_add(out$model_no_pll_def) <- glue(
         "  // vector combining observed and missing responses\n",
         "  vector[N{resp}] Yl{resp} = Y{resp};\n" 
       )
-      str_add(out$model_global_comp_basic) <- glue(
+      str_add(out$model_no_pll_comp_basic) <- glue(
         "  Yl{resp}[Jmi{resp}] = Ymi{resp};\n"
       )
       str_add(out$pll_args) <- glue(", vector Yl{resp}")

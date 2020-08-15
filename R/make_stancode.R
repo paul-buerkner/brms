@@ -112,19 +112,27 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- wsp_per_line(partial_log_lik, 2)
       scode_predictor[[i]]$partial_log_lik <- partial_log_lik
       scode_predictor[[i]]$model_lik <- paste0(
-        "  ", tp(), "reduce_sum(partial_log_lik", resp, 
-        ", seq, 1", pll_args$plain, ");\n"
+        "  target += reduce_sum(partial_log_lik", resp, 
+        ", seq", resp, ", 1", pll_args$plain, ");\n"
       )
       str_add(scode_predictor[[i]]$tdata_def) <- glue(
         "  int seq{resp}[N{resp}] = sequence(1, N{resp});\n"
       )
     }
     scode_predictor <- collapse_lists(ls = scode_predictor)
+    scode_predictor$model_lik <- paste0(
+      scode_predictor$model_no_pll_def,
+      scode_predictor$model_no_pll_comp_basic,
+      scode_predictor$model_no_pll_comp_mvjoin,
+      scode_predictor$model_lik
+    )
   } else {
     # threading is not activated
     scode_predictor <- collapse_lists(ls = scode_predictor)
-    model_lik <- paste0(
+    scode_predictor$model_lik <- paste0(
+      scode_predictor$model_no_pll_def,
       scode_predictor$model_def,
+      scode_predictor$model_no_pll_comp_basic,
       scode_predictor$model_comp_basic,
       scode_predictor$model_comp_eta_loop,
       scode_predictor$model_comp_dpar_link,
@@ -133,12 +141,12 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$model_comp_mix,
       scode_predictor$model_comp_arma,
       scode_predictor$model_comp_catjoin,
+      scode_predictor$model_no_pll_comp_mvjoin,
       scode_predictor$model_comp_mvjoin,
       scode_predictor$model_log_lik
     )
-    model_lik <- wsp_per_line(model_lik, 2)
-    scode_predictor$model_lik <- model_lik
   }
+  scode_predictor$model_lik <- wsp_per_line(scode_predictor$model_lik, 2)
     
   # get priors for all parameters in the model
   scode_prior <- paste0(
@@ -223,10 +231,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   # combine likelihood with prior part
   scode_model <- paste0(
     "model {\n",
-      scode_predictor$model_global_def,
       collapse_stanvars(stanvars, "model", "start"),
-      scode_predictor$model_global_comp_basic,
-      scode_predictor$model_global_comp_mvjoin,
       "  // likelihood including all constants\n",
       "  if (!prior_only) {\n",
       scode_predictor$model_lik,
