@@ -1044,7 +1044,6 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
   resp <- usc(px$resp)
   slice <- stan_slice(threads)
   gpef <- tidy_gpef(bterms, data)
-  # TODO: decide which GPs to evaluate inside partial_log_lik
   # kernel methods cannot simply be split up into partial sums
   for (i in seq_rows(gpef)) {
     pi <- glue("{p}_{i}")
