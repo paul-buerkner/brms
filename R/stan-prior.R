@@ -172,7 +172,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       str_add(out$par) <- par_definition
     }
     if (nzchar(header_type)) {
-      str_add(out$pll_header) <- glue(", {header_type} {par}") 
+      str_add(out$pll_args) <- glue(", {header_type} {par}") 
     }
   } else {
     if (has_constant_priors) {

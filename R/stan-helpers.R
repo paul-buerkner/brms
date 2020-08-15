@@ -228,6 +228,23 @@ stan_nn_def <- function(threads) {
   str_if(threads > 1, "    int nn = n + start - 1;\n")
 }
 
+# clean up arguments for partial_log_lik
+# @param ... strings containing arguments of the form ', type identifier'
+# @return named list of two elements:
+#   typed: types + identifiers for use in the function header
+#   plain: identifiers only for use in the function call
+stan_clean_pll_args <- function(...) {
+  args <- paste0(...)
+  # split up header to remove duplicates
+  typed <- unlist(strsplit(args, ", +"))[-1]
+  typed <- unique(typed)
+  plain <- unlist(strsplit(typed, " +"))
+  plain <- plain[seq(2, length(plain), 2)]
+  typed <- collapse(", ", typed)
+  plain <- collapse(", ", plain)
+  nlist(typed, plain)
+}
+
 # prepare a string to be used as comment in Stan
 stan_comment <- function(comment, wsp = 2) {
   comment <- as.character(comment)

@@ -74,15 +74,15 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # extend Stan's likelihood part
-  # TODO: move this part to a separate function?
   if (threads > 1) {
+    # threading is activated
     for (i in seq_along(scode_predictor)) {
       resp <- usc(names(scode_predictor)[i])
       resp_type <- scode_predictor[[i]]$resp_type
-      pll_header <- paste0(
-        scode_predictor[[i]]$pll_header,
-        scode_ranef$pll_header,
-        scode_Xme$pll_header
+      pll_args <- stan_clean_pll_args(
+        scode_predictor[[i]]$pll_args,
+        scode_ranef$pll_args,
+        scode_Xme$pll_args
       )
       partial_log_lik <- paste0(
         scode_predictor[[i]]$pll_def,
@@ -102,7 +102,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       partial_log_lik <- paste0(
         "// compute partial sums of the log-likelihood\n",
         "real partial_log_lik", resp, "(int[] seq, ", 
-        "int start, int end", pll_header, ") {\n",
+        "int start, int end", pll_args$typed, ") {\n",
         "  real ptarget = 0;\n",
         "  int N = end - start + 1;\n",
         partial_log_lik, 
@@ -111,31 +111,34 @@ make_stancode <- function(formula, data, family = gaussian(),
       )
       partial_log_lik <- wsp_per_line(partial_log_lik, 2)
       scode_predictor[[i]]$partial_log_lik <- partial_log_lik
-      # function arguments are just the header without variable types
-      pll_args <- unlist(strsplit(pll_header, " +"))
-      pll_args <- pll_args[seq(1, length(pll_args), 2)]
-      pll_args <- paste0(pll_args, collapse = " ")
       scode_predictor[[i]]$model <- paste0(
         "  // likelihood including all constants\n",
         "  if (!prior_only) {\n",
         "    int seq[N", resp, "] = sequence(1, N", resp, ");\n",
         "    target += reduce_sum(", 
-        "partial_log_lik", resp, ", seq, 1", pll_args, ");\n",
+        "partial_log_lik", resp, ", seq, 1", pll_args$plain, ");\n",
         "  }\n"
       ) 
     }
     scode_predictor <- collapse_lists(ls = scode_predictor)
     scode_predictor$model <- paste0(
+      scode_predictor$model_global_def,
       collapse_stanvars(stanvars, "model", "start"),
+      scode_predictor$model_global_comp_basic,
+      scode_predictor$model_global_comp_mvjoin,
       scode_predictor$model,
       collapse_stanvars(stanvars, "model", "end")
     )
   } else {
+    # TODO: move more stuff into the prior_only if clause
+    # threading is not activated
     scode_predictor <- collapse_lists(ls = scode_predictor)
     scode_predictor$model <- paste0(
       scode_predictor$model_def,
+      scode_predictor$model_global_def,
       collapse_stanvars(stanvars, "model", "start"),
       scode_predictor$model_comp_basic,
+      scode_predictor$model_global_comp_basic,
       scode_predictor$model_comp_eta_loop,
       scode_predictor$model_comp_dpar_link,
       scode_predictor$model_comp_mu_link,
@@ -144,6 +147,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$model_comp_arma,
       scode_predictor$model_comp_catjoin,
       scode_predictor$model_comp_mvjoin,
+      scode_predictor$model_global_comp_mvjoin,
       "  // likelihood including all constants\n",
       "  if (!prior_only) {\n",
       scode_predictor$model_log_lik,

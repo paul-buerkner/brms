@@ -1,24 +1,22 @@
 # unless otherwise specified, functions return a single character 
 # string defining the likelihood of the model in Stan language
 
-# TODO: rename main argument
 # TODO: adjust white spaces
-stan_log_lik <- function(family, ...) {
+stan_log_lik <- function(x, ...) {
   UseMethod("stan_log_lik")
 }
 
 # Stan code for the model likelihood 
-# @param family the model family
 # @param bterms object of class brmsterms
 # @param data data passed by the user
 # @param mix optional mixture component ID
 # @param ptheta are mixing proportions predicted?
 #' @export
-stan_log_lik.family <- function(family, bterms, data, threads, 
+stan_log_lik.family <- function(x, bterms, data, threads, 
                                 mix = "", ptheta = FALSE, ...) {
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
-  bterms$family <- family
+  bterms$family <- x
   resp <- usc(combine_prefix(bterms))
   # prepare family part of the likelihood
   log_lik_args <- nlist(bterms, resp, mix, threads)
@@ -48,27 +46,29 @@ stan_log_lik.family <- function(family, bterms, data, threads,
 }
 
 #' @export
-stan_log_lik.mixfamily <- function(family, bterms, ...) {
-  # TODO: support reduce_sum
+stan_log_lik.mixfamily <- function(x, bterms, threads, ...) {
   dp_ids <- dpar_id(names(bterms$dpars))
   fdp_ids <- dpar_id(names(bterms$fdpars))
   resp <- usc(bterms$resp)
   ptheta <- any(dpar_class(names(bterms$dpars)) %in% "theta")
-  ll <- rep(NA, length(family$mix))
-  for (i in seq_along(family$mix)) {
+  ll <- rep(NA, length(x$mix))
+  for (i in seq_along(x$mix)) {
     sbterms <- bterms
     sbterms$dpars <- sbterms$dpars[dp_ids == i]
     sbterms$fdpars <- sbterms$fdpars[fdp_ids == i]
     ll[i] <- stan_log_lik(
-      family$mix[[i]], sbterms, mix = i, ptheta = ptheta, ...
+      x$mix[[i]], sbterms, mix = i, ptheta = ptheta, 
+      threads = threads, ...
     )
   }
   resp <- usc(combine_prefix(bterms))
+  n <- stan_nn(threads)
   has_weights <- is.formula(bterms$adforms$weights)  
-  weights <- str_if(has_weights, glue("weights{resp}[n] * "))
+  weights <- str_if(has_weights, glue("weights{resp}{n} * "))
   out <- glue(
     "  // likelihood of the mixture model\n",
     "    for (n in 1:N{resp}) {{\n",
+    "      ", stan_nn_def(threads),
     "      real ps[{length(ll)}];\n"
   )
   str_add(out) <- collapse("    ", ll)
@@ -80,16 +80,16 @@ stan_log_lik.mixfamily <- function(family, bterms, ...) {
 }
 
 #' @export
-stan_log_lik.brmsterms <- function(family, ...) {
-  paste0("  ", stan_log_lik(family$family, bterms = family, ...))
+stan_log_lik.brmsterms <- function(x, ...) {
+  paste0("  ", stan_log_lik(x$family, bterms = x, ...))
 }
 
 #' @export
-stan_log_lik.mvbrmsterms <- function(family, ...) {
-  if (family$rescor) {
-    out <- stan_log_lik(as.brmsterms(family), ...)
+stan_log_lik.mvbrmsterms <- function(x, ...) {
+  if (x$rescor) {
+    out <- stan_log_lik(as.brmsterms(x), ...)
   } else {
-    out <- ulapply(family$terms, stan_log_lik, ...) 
+    out <- ulapply(x$terms, stan_log_lik, ...) 
   }
   out
 }
