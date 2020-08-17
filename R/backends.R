@@ -232,19 +232,20 @@ require_backend <- function(backend, x) {
 
 #' Threading in Stan
 #' 
-#' Use threads for within-chain parallelization in Stan.
+#' Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
+#' interface.
 #' 
 #' @param threads TODO
 #' @param grainsize TODO
 #' @param static Logical. TODO
 #' 
-#' @return A \code{stanthreads} object which can be passed to the
-#'   \code{threads} argument of \code{brms} and related functions.
+#' @return A \code{brmsthreads} object which can be passed to the
+#'   \code{threads} argument of \code{brm} and related functions.
 #' 
 #' @export
-stanthreads <- function(threads = NULL, grainsize = NULL, static = FALSE) {
+threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {
   out <- list(threads = NULL, grainsize = NULL)
-  class(out) <- "stanthreads"
+  class(out) <- "brmsthreads"
   if (!is.null(threads)) {
     threads <- as_one_numeric(threads)
     if (!is_wholenumber(threads) || threads < 1) {
@@ -263,19 +264,20 @@ stanthreads <- function(threads = NULL, grainsize = NULL, static = FALSE) {
   out
 }
 
-is.stanthreads <- function(x) {
-  inherits(x, "stanthreads")
+is.brmsthreads <- function(x) {
+  inherits(x, "brmsthreads")
 }
 
 # validate 'thread' argument
 validate_threads <- function(threads) {
   if (is.null(threads)) {
-    threads <- stanthreads()
+    threads <- threading()
   } else if (is.numeric(threads)) {
     threads <- as_one_numeric(threads)
-    threads <- stanthreads(threads)
-  } else if (!is.stanthreads(threads)) {
-    stop2("Argument 'threads' needs to be numeric or of class 'stanthreads'.")
+    threads <- threading(threads)
+  } else if (!is.brmsthreads(threads)) {
+    stop2("Argument 'threads' needs to be numeric or ", 
+          "specified via the 'threading' function.")
   }
   threads
 }

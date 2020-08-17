@@ -61,7 +61,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 # @param ... currently ignored
 # @return names list of data passed to Stan
 .make_standata <- function(bterms, data, prior, stanvars, data2, 
-                           threads = stanthreads(), check_response = TRUE, 
+                           threads = threading(), check_response = TRUE, 
                            only_response = FALSE, internal = FALSE,
                            basis = NULL, ...) {
   

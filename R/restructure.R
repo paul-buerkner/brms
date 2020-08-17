@@ -186,8 +186,8 @@ restructure_v2 <- function(x) {
     x$prior <- x$prior[, cols_prior]
   }
   if (version < "2.13.10") {
-    # threading was added
-    x$threads <- stanthreads()
+    # added support for threading
+    x$threads <- threading()
   }
   x
 }

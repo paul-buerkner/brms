@@ -54,7 +54,7 @@ make_stancode <- function(formula, data, family = gaussian(),
 # @param backend name of the backend used for parsing
 # @param silent silence parsing messages
 .make_stancode <- function(bterms, data, prior, stanvars, 
-                           threads = stanthreads(), 
+                           threads = threading(), 
                            parse = getOption("brms.parse_stancode", FALSE), 
                            backend = getOption("brms.backend", "rstan"),
                            silent = TRUE, save_model = NULL, ...) {

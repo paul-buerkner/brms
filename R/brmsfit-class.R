@@ -52,7 +52,7 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
                     data2 = list(), stanvars = NULL, model = "", 
                     ranef = empty_ranef(), exclude = NULL, 
                     algorithm = "sampling", backend = "rstan",
-                    threads = stanthreads(), fit = NULL, criteria = list(), 
+                    threads = threading(), fit = NULL, criteria = list(), 
                     file = NULL, family = NULL, autocor = NULL, 
                     cov_ranef = NULL, stan_funs = NULL, data.name = "") {
   version <- list(
