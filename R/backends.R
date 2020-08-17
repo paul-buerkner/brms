@@ -47,7 +47,7 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with rstan
 # @param model Stan model code
 # @return model compiled with rstan
-.compile_model_rstan <- function(model, threads = 1, ...) {
+.compile_model_rstan <- function(model, threads, ...) {
   args <- list(...)
   args$model_code <- model
   message("Compiling Stan program...")
@@ -57,11 +57,11 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with cmdstanr
 # @param model Stan model code
 # @return model compiled with cmdstanr
-.compile_model_cmdstanr <- function(model, threads = 1, ...) {
+.compile_model_cmdstanr <- function(model, threads = NULL, ...) {
   require_package("cmdstanr")
   args <- list(...)
-  args$stan_file <- cmdstanr::write_stan_tempfile(model)
-  if (threads > 1) {
+  args$stan_file <- cmdstanr::write_stan_file(model)
+  if (use_threading(threads)) {
     args$cpp_options$stan_threads <- TRUE
   }
   do_call(cmdstanr::cmdstan_model, args)
@@ -85,7 +85,7 @@ fit_model <- function(model, backend, ...) {
                              control, silent, future, ...) {
   
   # some input checks and housekeeping
-  if (threads > 1) {
+  if (use_threading(threads)) {
     stop2("Threading is not yet supported by backend 'rstan'.")
   }
   if (is.character(inits) && !inits %in% c("random", "0")) {
@@ -163,9 +163,8 @@ fit_model <- function(model, backend, ...) {
     stop2("Argument 'future' is not supported by backend 'cmdstanr'.")
   }
   args <- nlist(data = sdata, seed, init = inits)
-  if (threads > 1) {
-    # avoid warning when threads = 1
-    args$threads_per_chain <- threads
+  if (use_threading(threads)) {
+    args$threads_per_chain <- threads$threads
   }
   # TODO: exclude variables via 'exclude'
   dots <- list(...)
@@ -229,4 +228,59 @@ require_backend <- function(backend, x) {
     stop2("Backend '", backend, "' is required for this method.")
   }
   invisible(TRUE)
+}
+
+#' Threading in Stan
+#' 
+#' Use threads for within-chain parallelization in Stan.
+#' 
+#' @param threads TODO
+#' @param grainsize TODO
+#' @param static Logical. TODO
+#' 
+#' @return A \code{stanthreads} object which can be passed to the
+#'   \code{threads} argument of \code{brms} and related functions.
+#' 
+#' @export
+stanthreads <- function(threads = NULL, grainsize = NULL, static = FALSE) {
+  out <- list(threads = NULL, grainsize = NULL)
+  class(out) <- "stanthreads"
+  if (!is.null(threads)) {
+    threads <- as_one_numeric(threads)
+    if (!is_wholenumber(threads) || threads < 1) {
+      stop2("Number of threads needs to be positive.")
+    }
+    out$threads <- threads
+  }
+  if (!is.null(grainsize)) {
+    grainsize <- as_one_numeric(grainsize)
+    if (!is_wholenumber(grainsize) || grainsize < 1) {
+      stop2("The grainsize needs to be positive.")
+    }
+    out$grainsize <- grainsize
+  }
+  out$static <- as_one_logical(static)
+  out
+}
+
+is.stanthreads <- function(x) {
+  inherits(x, "stanthreads")
+}
+
+# validate 'thread' argument
+validate_threads <- function(threads) {
+  if (is.null(threads)) {
+    threads <- stanthreads()
+  } else if (is.numeric(threads)) {
+    threads <- as_one_numeric(threads)
+    threads <- stanthreads(threads)
+  } else if (!is.stanthreads(threads)) {
+    stop2("Argument 'threads' needs to be numeric or of class 'stanthreads'.")
+  }
+  threads
+}
+
+# is threading activated?
+use_threading <- function(threads) {
+  isTRUE(validate_threads(threads)$threads > 0)
 }

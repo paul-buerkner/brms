@@ -21,7 +21,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           cov_ranef = NULL, sparse = NULL, 
                           sample_prior = "no", stanvars = NULL, 
                           stan_funs = NULL, knots = NULL, 
-                          threads = 1, save_model = NULL, 
+                          threads = NULL, save_model = NULL, 
                           ...) {
   
   if (is.brmsfit(formula)) {
@@ -39,6 +39,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     sample_prior = sample_prior
   )
   stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
+  threads <- validate_threads(threads)
   
  .make_stancode(
    bterms, data = data, prior = prior, 
@@ -74,7 +75,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   )
   
   # extend Stan's likelihood part
-  if (threads > 1) {
+  if (use_threading(threads)) {
     # threading is activated
     for (i in seq_along(scode_predictor)) {
       resp <- usc(names(scode_predictor)[i])
@@ -111,9 +112,10 @@ make_stancode <- function(formula, data, family = gaussian(),
       )
       partial_log_lik <- wsp_per_line(partial_log_lik, 2)
       scode_predictor[[i]]$partial_log_lik <- partial_log_lik
+      static <- str_if(threads$static, "_static")
       scode_predictor[[i]]$model_lik <- paste0(
-        "  target += reduce_sum(partial_log_lik", resp, 
-        ", seq", resp, ", 1", pll_args$plain, ");\n"
+        "  target += reduce_sum", static, "(partial_log_lik", resp, 
+        ", seq", resp, ", grainsize", pll_args$plain, ");\n"
       )
       str_add(scode_predictor[[i]]$tdata_def) <- glue(
         "  int seq{resp}[N{resp}] = sequence(1, N{resp});\n"
@@ -126,6 +128,8 @@ make_stancode <- function(formula, data, family = gaussian(),
       scode_predictor$model_no_pll_comp_mvjoin,
       scode_predictor$model_lik
     )
+    str_add(scode_predictor$data) <- 
+      "  int grainsize;  // grainsize for threading\n" 
   } else {
     # threading is not activated
     scode_predictor <- collapse_lists(ls = scode_predictor)

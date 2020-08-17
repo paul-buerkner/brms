@@ -382,7 +382,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1), 
-                threads = 1, control = NULL,
+                threads = NULL, control = NULL,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
@@ -407,7 +407,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   thin <- as_one_numeric(thin)
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
-  threads <- as_one_numeric(threads)
+  threads <- validate_threads(threads)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
@@ -446,7 +446,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
       stanvars = stanvars, algorithm = algorithm, backend = backend,
-      family = family
+      threads = threads, family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -463,7 +463,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # unnecessary compilations in case of invalid data
     sdata <- .make_standata(
       bterms, data = data, prior = prior, 
-      data2 = data2, stanvars = stanvars
+      data2 = data2, stanvars = stanvars, 
+      threads = threads
     )
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot

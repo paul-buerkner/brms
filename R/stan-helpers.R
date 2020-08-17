@@ -90,7 +90,7 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
       "  #include 'fun_student_t_fcor.stan'\n"
     )
   }
-  if (threads > 1) {
+  if (use_threading(threads)) {
     str_add(out$fun) <- "  #include 'fun_sequence.stan'\n"
   }
   out
@@ -217,15 +217,15 @@ stan_needs_kronecker <- function(ranef) {
 
 # functions to handle indexing when threading
 stan_slice <- function(threads) {
-  str_if(threads > 1, "[start:end]")
+  str_if(use_threading(threads), "[start:end]")
 }
 
 stan_nn <- function(threads) {
-  str_if(threads > 1, "[nn]", "[n]")
+  str_if(use_threading(threads), "[nn]", "[n]")
 }
 
 stan_nn_def <- function(threads) {
-  str_if(threads > 1, "    int nn = n + start - 1;\n")
+  str_if(use_threading(threads), "    int nn = n + start - 1;\n")
 }
 
 # clean up arguments for partial_log_lik

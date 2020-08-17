@@ -22,8 +22,8 @@
 #' @export
 make_standata <- function(formula, data, family = gaussian(), prior = NULL, 
                           autocor = NULL, data2 = NULL, cov_ranef = NULL, 
-                          sample_prior = "no", stanvars = NULL, knots = NULL, 
-                          ...) {
+                          sample_prior = "no", stanvars = NULL,
+                          threads = NULL, knots = NULL, ...) {
 
   if (is.brmsfit(formula)) {
     stop2("Use 'standata' to extract Stan data from 'brmsfit' objects.")
@@ -45,10 +45,11 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     get_data2_cov_ranef(formula)
   )
   stanvars <- validate_stanvars(stanvars)
+  threads <- validate_threads(threads)
   .make_standata(
     bterms, data = data, prior = prior,
     data2 = data2, stanvars = stanvars,
-    ...
+    threads = threads, ...
   )
 }
 
@@ -59,7 +60,7 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 # @param basis original Stan data as prepared by 'standata_basis'
 # @param ... currently ignored
 # @return names list of data passed to Stan
-.make_standata <- function(bterms, data, prior, stanvars, data2, 
+.make_standata <- function(bterms, data, prior, stanvars, data2, threads,
                            check_response = TRUE, only_response = FALSE, 
                            internal = FALSE, basis = NULL, ...) {
   
@@ -82,7 +83,14 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
     c(out) <- data_gr_global(ranef, data2 = data2)
     c(out) <- data_Xme(meef, data = data)
   }
-  out$prior_only <- as.integer(is_equal(get_sample_prior(prior), "only"))
+  out$prior_only <- as.integer(is_prior_only(prior))
+  if (use_threading(threads)) {
+    out$grainsize <- threads$grainsize
+    if (is.null(out$grainsize)) {
+      # TODO: choose a better default rule
+      out$grainsize <- ceiling(out$N / threads$threads)
+    }
+  }
   if (is.stanvars(stanvars)) {
     stanvars <- subset_stanvars(stanvars, block = "data")
     inv_names <- intersect(names(stanvars), names(out))

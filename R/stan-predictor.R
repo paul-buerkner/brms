@@ -36,6 +36,7 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
 #' @export
 stan_predictor.btnl <- function(x, data, nlpars, threads,
                                 ilink = c("", ""), ...) {
+  # TODO: move most of the code to a separate function
   stopifnot(length(ilink) == 2L)
   out <- list()
   resp <- usc(x$resp)
@@ -365,7 +366,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, ...) {
       if (decomp != "none") {
         stop2("Cannot use ", decomp, " decomposition for sparse matrices.")
       }
-      if (threads > 1) {
+      if (use_threading(threads)) {
         stop2("Cannot use threading and sparse matrices at the same time.")
       }
       str_add(out$tdata_def) <- glue(
@@ -1212,6 +1213,7 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
           str_add(out$pll_args) <- glue(", vector gp_pred{pi}")
         } else {
           # efficient computation of approx GPs inside reduce_sum is possible
+          # TODO: split up computation inside gpa for better parallelization?
           gp_call <- glue("gpa(Xgp{pi}{slice}, {gp_args})")
           str_add(out$model_def) <- glue(
             "  vector[N{resp}] gp_pred{pi} = {gp_call};\n"
@@ -1263,7 +1265,7 @@ stan_ac <- function(bterms, data, prior, threads, ...) {
   # validity of the autocor terms has already been checked in 'tidy_acef'
   acef_arma <- subset2(acef, class = "arma")
   if (NROW(acef_arma)) {
-    if (threads > 1 && (!acef_arma$cov || has_natural_residuals)) {
+    if (use_threading(threads) && (!acef_arma$cov || has_natural_residuals)) {
       stop2("Threading is not supported for this ARMA model.")
     }
     str_add(out$data) <- glue( 
@@ -1433,7 +1435,7 @@ stan_ac <- function(bterms, data, prior, threads, ...) {
     if (!has_natural_residuals) {
       stop2("SAR terms are not implemented for this family.")
     }
-    if (threads > 1) {
+    if (use_threading(threads)) {
       stop2("Threading is not supported for SAR models.")
     }
     str_add(out$data) <- glue(
@@ -1590,7 +1592,7 @@ stan_ac <- function(bterms, data, prior, threads, ...) {
     if (!has_natural_residuals) {
       stop2("FCOR terms are not implemented for this family.")
     }
-    if (threads > 1) {
+    if (use_threading(threads)) {
       stop2("Threading is not supported for FCOR models.")
     }
     str_add(out$data) <- glue( 

@@ -27,7 +27,7 @@ brm(
   warmup = floor(iter/2),
   thin = 1,
   cores = getOption("mc.cores", 1),
-  threads = 1,
+  threads = NULL,
   control = NULL,
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),

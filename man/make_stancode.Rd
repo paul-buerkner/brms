@@ -16,7 +16,7 @@ make_stancode(
   stanvars = NULL,
   stan_funs = NULL,
   knots = NULL,
-  threads = 1,
+  threads = NULL,
   save_model = NULL,
   ...
 )
