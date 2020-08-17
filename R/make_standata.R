@@ -60,9 +60,10 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
 # @param basis original Stan data as prepared by 'standata_basis'
 # @param ... currently ignored
 # @return names list of data passed to Stan
-.make_standata <- function(bterms, data, prior, stanvars, data2, threads,
-                           check_response = TRUE, only_response = FALSE, 
-                           internal = FALSE, basis = NULL, ...) {
+.make_standata <- function(bterms, data, prior, stanvars, data2, 
+                           threads = stanthreads(), check_response = TRUE, 
+                           only_response = FALSE, internal = FALSE,
+                           basis = NULL, ...) {
   
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
