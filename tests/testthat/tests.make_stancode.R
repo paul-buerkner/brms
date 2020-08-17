@@ -1663,7 +1663,9 @@ test_that("Stan code for Gaussian processes is correct", {
     data = dat
   )
   expect_match2(scode, "target += inv_gamma_lpdf(lscale_1")
-  expect_match2(scode, "gpa(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1, slambda_1)")
+  expect_match2(scode, 
+    "rgp_1 = sqrt(spd_cov_exp_quad(slambda_1, sdgp_1[1], lscale_1[1])) .* zgp_1;"
+  )
   expect_match2(scode, "Cgp_2 .* gp_pred_2[Jgp_2]")
   
   prior <- c(prior(normal(0, 10), lscale, coef = gpx1, nlpar = a),

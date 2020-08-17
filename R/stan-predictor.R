@@ -1058,10 +1058,12 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         str_add(out$par) <- cglue(
           "  vector[NBgp{pi}] zgp{pi}_{J};\n"
         )
-        gp_call <- glue(
-          "gpa(Xgp{pi}_{J}, sdgp{pi}[{J}], ",
-          "lscale{pi}[{J}], zgp{pi}_{J}, slambda{pi}_{J})"
+        str_add(out$model_no_pll_def) <- "  // scale latent variables of the GP\n"
+        str_add(out$model_no_pll_def) <- cglue(
+          "  vector[NBgp{pi}] rgp{pi}_{J} = sqrt(spd_cov_exp_quad(", 
+          "slambda{pi}_{J}, sdgp{pi}[{J}], lscale{pi}[{J}])) .* zgp{pi}_{J};\n"
         )
+        gp_call <- glue("Xgp{pi}_{J} * rgp{pi}_{J}")
       } else {
         # exact GPs
         str_add(out$data) <- "  // covariates of the GP\n"
@@ -1131,27 +1133,25 @@ stan_gp <- function(bterms, data, prior, threads, ...) {
         str_add(out$par) <- glue(
           "  vector[NBgp{pi}] zgp{pi};  // latent variables of the GP\n"
         )
-        gp_args <- glue("sdgp{pi}[1], lscale{pi}[1], zgp{pi}, slambda{pi}")
+        str_add(out$model_no_pll_def) <- glue(
+          "  // scale latent variables of the GP\n",
+          "  vector[NBgp{pi}] rgp{pi} = sqrt(spd_cov_exp_quad(", 
+          "slambda{pi}, sdgp{pi}[1], lscale{pi}[1])) .* zgp{pi};\n"
+        )
         if (gr) {
           # grouping prevents GPs to be computed efficiently inside reduce_sum
-          gp_call <- glue("gpa(Xgp{pi}, {gp_args})")
           str_add(out$model_no_pll_def) <- glue(
-            "  vector[{Nsubgp}] gp_pred{pi} = {gp_call};\n"
+            "  vector[{Nsubgp}] gp_pred{pi} = Xgp{pi} * rgp{pi};\n"
           )
           str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}[Jgp{pi}{slice}]")
           str_add(out$pll_args) <- glue(", vector gp_pred{pi}")
         } else {
           # efficient computation of approx GPs inside reduce_sum is possible
-          # TODO: split up computation inside gpa for better parallelization?
-          gp_call <- glue("gpa(Xgp{pi}{slice}, {gp_args})")
           str_add(out$model_def) <- glue(
-            "  vector[N{resp}] gp_pred{pi} = {gp_call};\n"
+            "  vector[N{resp}] gp_pred{pi} = Xgp{pi}{slice} * rgp{pi};\n"
           )
           str_add(out$eta) <- glue(" + {Cgp}gp_pred{pi}")
-          str_add(out$pll_args) <- glue(
-            ", matrix Xgp{pi}, vector sdgp{pi}, vector[] lscale{pi}", 
-            ", vector zgp{pi}, vector[] slambda{pi}"
-          )
+          str_add(out$pll_args) <- glue(", matrix Xgp{pi}, vector rgp{pi}")
         }
       } else {
         # exact GPs
