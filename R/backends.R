@@ -25,7 +25,7 @@ parse_model <- function(model, backend, ...) {
 # @return validated Stan model code
 .parse_model_cmdstanr <- function(model, silent = TRUE, ...) {
   require_package("cmdstanr")
-  temp_file <- cmdstanr::write_stan_tempfile(model)
+  temp_file <- cmdstanr::write_stan_file(model)
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
     type = "message", 
