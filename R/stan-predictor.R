@@ -31,85 +31,14 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
 }
 
 # prepare Stan code for non-linear models
-# @param names of the non-linear parameters
-# @param ilink character vector of length 2 defining the link to be applied
 #' @export
-stan_predictor.btnl <- function(x, data, nlpars, threads,
-                                ilink = c("", ""), ...) {
-  # TODO: move most of the code to a separate function
-  stopifnot(length(ilink) == 2L)
-  out <- list()
-  resp <- usc(x$resp)
-  par <- combine_prefix(x, keep_mu = TRUE, nlp = TRUE)
-  # prepare non-linear model
-  n <- str_if(x$loop, stan_nn(threads)) 
-  n <- paste0(n, " ")
-  new_nlpars <- glue(" nlp{usc(x$resp)}_{nlpars}{n}")
-  # covariates in the non-linear model
-  covars <- all.vars(x$covars)
-  new_covars <- NULL
-  if (length(covars)) {
-    p <- usc(combine_prefix(x))
-    new_covars <- rep(NA, length(covars))
-    data_cnl <- data_cnl(x, data)
-    str_add(out$data) <- glue( 
-      "  // covariate vectors for non-linear functions\n"
-    )
-    for (i in seq_along(covars)) {
-      is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
-      if (is_integer) {
-        str_add(out$data) <- glue(
-          "  int C{p}_{i}[N{resp}];\n"
-        )
-        str_add(out$pll_args) <- glue(", int[] C{p}_{i}")
-      } else {
-        str_add(out$data) <- glue(
-          "  vector[N{resp}] C{p}_{i};\n"
-        )
-        str_add(out$pll_args) <- glue(", vector C{p}_{i}")
-      }
-      new_covars[i] <- glue(" C{p}_{i}{n}")
-    }
-  }
-  # add white spaces to be able to replace parameters and covariates
-  syms <- c(
-    "+", "-", "*", "/", "%", "^", ".*", "./", "'", ")", "(", 
-    ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||" 
+stan_predictor.btnl <- function(x, ...) {
+  collapse_lists(
+    stan_nl(x, ...),
+    stan_thres(x, ...),
+    stan_bhaz(x, ...),
+    stan_ac(x, ...)
   )
-  regex <- glue("(?<!\\.){escape_all(syms)}(?!=)")
-  out$eta <- rm_wsp(collapse(deparse(x$formula[[2]])))
-  out$eta <- wsp(rename(out$eta, regex, wsp(syms), fixed = FALSE, perl = TRUE)) 
-  out$eta <- rename(out$eta, 
-    c(wsp(nlpars), wsp(covars), " ( ", " ) "), 
-    c(new_nlpars, new_covars, "(", ")")
-  )
-  # possibly transform eta in the transformed params block
-  str_add(out$model_def) <- glue(
-    "  // initialize non-linear predictor term\n",
-    "  vector[N{resp}] {par};\n"
-  )
-  # make sure mu comes last as it might depend on other parameters
-  is_mu <- isTRUE("mu" %in% dpar_class(x[["dpar"]]))
-  position <- str_if(is_mu, "model_comp_mu_link", "model_comp_dpar_link")
-  if (x$loop) {
-    str_add(out[[position]]) <- glue(
-      "  for (n in 1:N{resp}) {{\n",
-      stan_nn_def(threads),
-      "    // compute non-linear predictor values\n",
-      "    {par}[n] = {ilink[1]}{trimws(out$eta)}{ilink[2]};\n",
-      "  }}\n"
-    )
-  } else {
-    str_add(out[[position]]) <- glue(
-      "  // compute non-linear predictor values\n",
-      "  {par} = {ilink[1]}{trimws(out$eta)}{ilink[2]};\n"
-    )
-  }
-  out$eta <- NULL
-  str_add_list(out) <- stan_thres(x, threads = threads, ...)
-  str_add_list(out) <- stan_bhaz(x, threads = threads, ...)
-  str_add_list(out) <- stan_ac(x, threads = threads, ...)
-  out
 }
 
 # Stan code for distributional parameters
@@ -1615,6 +1544,78 @@ stan_offset <- function(bterms, threads, ...) {
     # use 'offsets' as 'offset' will be reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
     str_add(out$eta) <- glue(" + offsets{p}{slice}")
+  }
+  out
+}
+
+# Stan code for non-linear predictor terms
+# @param nlpars names of the non-linear parameters
+# @param ilink character vector of length 2 defining the link to be applied
+stan_nl <- function(bterms, data, nlpars, threads, ilink = rep("", 2), ...) {
+  stopifnot(length(ilink) == 2L)
+  out <- list()
+  resp <- usc(bterms$resp)
+  par <- combine_prefix(bterms, keep_mu = TRUE, nlp = TRUE)
+  # prepare non-linear model
+  n <- str_if(bterms$loop, stan_nn(threads)) 
+  n <- paste0(n, " ")
+  new_nlpars <- glue(" nlp{resp}_{nlpars}{n}")
+  # covariates in the non-linear model
+  covars <- all.vars(bterms$covars)
+  new_covars <- NULL
+  if (length(covars)) {
+    p <- usc(combine_prefix(bterms))
+    new_covars <- rep(NA, length(covars))
+    data_cnl <- data_cnl(bterms, data)
+    str_add(out$data) <- "  // covariate vectors for non-linear functions\n"
+    for (i in seq_along(covars)) {
+      is_integer <- is.integer(data_cnl[[glue("C{p}_{i}")]])
+      if (is_integer) {
+        str_add(out$data) <- glue(
+          "  int C{p}_{i}[N{resp}];\n"
+        )
+        str_add(out$pll_args) <- glue(", int[] C{p}_{i}")
+      } else {
+        str_add(out$data) <- glue(
+          "  vector[N{resp}] C{p}_{i};\n"
+        )
+        str_add(out$pll_args) <- glue(", vector C{p}_{i}")
+      }
+      new_covars[i] <- glue(" C{p}_{i}{n}")
+    }
+  }
+  # add white spaces to be able to replace parameters and covariates
+  syms <- c(
+    "+", "-", "*", "/", "%", "^", ".*", "./", "'", ")", "(", 
+    ",", "==", "!=", "<=", ">=", "<", ">", "!", "&&", "||" 
+  )
+  regex <- glue("(?<!\\.){escape_all(syms)}(?!=)")
+  eta <- rm_wsp(collapse(deparse(bterms$formula[[2]])))
+  eta <- wsp(rename(eta, regex, wsp(syms), fixed = FALSE, perl = TRUE)) 
+  vars <- c(wsp(nlpars), wsp(covars), " ( ", " ) ")
+  new_vars <- c(new_nlpars, new_covars, "(", ")")
+  eta <- trimws(rename(eta, vars, new_vars))
+  # possibly transform eta in the transformed params block
+  str_add(out$model_def) <- glue(
+    "  // initialize non-linear predictor term\n",
+    "  vector[N{resp}] {par};\n"
+  )
+  # make sure mu comes last as it might depend on other parameters
+  is_mu <- isTRUE("mu" %in% dpar_class(bterms[["dpar"]]))
+  position <- str_if(is_mu, "model_comp_mu_link", "model_comp_dpar_link")
+  if (bterms$loop) {
+    str_add(out[[position]]) <- glue(
+      "  for (n in 1:N{resp}) {{\n",
+      stan_nn_def(threads),
+      "    // compute non-linear predictor values\n",
+      "    {par}[n] = {ilink[1]}{eta}{ilink[2]};\n",
+      "  }}\n"
+    )
+  } else {
+    str_add(out[[position]]) <- glue(
+      "  // compute non-linear predictor values\n",
+      "  {par} = {ilink[1]}{eta}{ilink[2]};\n"
+    )
   }
   out
 }
