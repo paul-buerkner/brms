@@ -1471,7 +1471,7 @@ test_that("Stan code of Cox models is correct", {
 test_that("offsets appear in the Stan code", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   scode <- make_stancode(y ~ x + offset(c), data)
-  expect_match2(scode, "Intercept + Xc * b + offsets;")
+  expect_match2(scode, "+ offsets;")
   scode <- make_stancode(bf(y ~ a, a ~ offset(log(c + 1)), nl = TRUE),
                          data, prior = prior(normal(0,1), nlpar = a))
   expect_match2(scode, "X_a * b_a + offsets_a;")

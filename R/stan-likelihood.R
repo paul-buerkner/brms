@@ -816,6 +816,7 @@ use_glm_primitive <- function(bterms) {
     return(FALSE)
   }
   # supported families and link functions
+  # TODO: support ordered_logistic and categorical_logit primitives
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
     poisson = "log", negbinomial = "log"
@@ -823,10 +824,7 @@ use_glm_primitive <- function(bterms) {
   if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
     return(FALSE)
   }
-  # can only use GLM primitives if solely 'fixed effects' are present
-  special_term_names <- c("sp", "cs", "sm", "gp", "offset")
-  length(all_terms(mu$fe)) && !is_sparse(mu$fe) &&
-    !NROW(mu$re) && !any(lengths(mu[special_term_names]))
+  length(all_terms(mu$fe)) > 0 && !is_sparse(mu$fe)
 }
 
 # standard arguments for primitive Stan GLM functions
@@ -844,16 +842,19 @@ args_glm_primitive <- function(bterms, resp = "", threads = 1) {
   } else if (center_X) {
     sfx_X <- "c"
   }
-  if (center_X) {
-    intercept <- paste0("Intercept", resp)
+  x <- glue("X{sfx_X}{resp}{slice}")
+  beta <- glue("b{sfx_b}{resp}")
+  if (has_special_terms(bterms)) {
+    # the intercept vector will contain all the remaining terms
+    alpha <- glue("mu{resp}")
   } else {
-    intercept <- "0"
+    if (center_X) {
+      alpha <- glue("Intercept{resp}")
+    } else {
+      alpha <- "0"
+    } 
   }
-  list(
-    x = paste0("X", sfx_X, slice, resp),
-    alpha = intercept,
-    beta = paste0("b", sfx_b, resp)
-  )
+  nlist(x, alpha, beta)
 }
 
 # use the ordered_logistic built-in functions

@@ -7,11 +7,9 @@ stan_predictor <- function(x, ...) {
 }
 
 # combine effects for the predictors of a single (non-linear) parameter
-# @param primitive set to TRUE only if primitive Stan GLM functions should 
-#   be used which compute the predictor term internally
 # @param ... arguments passed to the underlying effect-specific functions
 #' @export
-stan_predictor.btl <- function(x, primitive = FALSE, ...) {
+stan_predictor.btl <- function(x, ...) {
   out <- collapse_lists(
     stan_fe(x, ...),
     stan_thres(x, ...),
@@ -24,10 +22,7 @@ stan_predictor.btl <- function(x, primitive = FALSE, ...) {
     stan_bhaz(x, ...),
     stan_special_prior_global(x, ...)
   )
-  if (!primitive) {
-    out <- stan_eta_combine(out, bterms = x, ...) 
-  }
-  out
+  stan_eta_combine(out, bterms = x, ...) 
 }
 
 # prepare Stan code for non-linear models
@@ -264,7 +259,7 @@ stan_predictor.mvbrmsterms <- function(x, prior, ...) {
 }
 
 # Stan code for population-level effects
-stan_fe <- function(bterms, data, prior, stanvars, threads, ...) {
+stan_fe <- function(bterms, data, prior, stanvars, threads, primitive, ...) {
   out <- list()
   family <- bterms$family
   fixef <- colnames(data_fe(bterms, data)$X)
@@ -438,7 +433,7 @@ stan_fe <- function(bterms, data, prior, stanvars, threads, ...) {
       "  XR{p}_inv = inverse(XR{p});\n"
     )
   }
-  str_add(out$eta) <- stan_eta_fe(fixef, bterms, threads)
+  str_add(out$eta) <- stan_eta_fe(fixef, bterms, threads, primitive)
   out
 }
 
@@ -1732,12 +1727,18 @@ stan_Xme <- function(meef, prior, threads) {
 # @param out list of character strings containing Stan code
 # @param bterms btl object
 # @param ranef output of tidy_ranef
+# @param primitive use Stan's GLM likelihood primitives?
 # @param ilink character vector of length 2 defining the link to be applied
 # @param ... currently unused
 # @return list of character strings containing Stan code
-stan_eta_combine <- function(out, bterms, ranef, threads, 
+stan_eta_combine <- function(out, bterms, ranef, threads, primitive,
                              ilink = c("", ""), ...) {
   stopifnot(is.list(out), is.btl(bterms), length(ilink) == 2L)
+  if (primitive && !has_special_terms(bterms)) {
+    # only overall effects and perhaps an intercept are present
+    # which will be evaluated directly in the GLM primitive likelihood
+    return(out)
+  }
   px <- check_prefix(bterms)
   resp <- usc(bterms$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
@@ -1778,9 +1779,10 @@ stan_eta_combine <- function(out, bterms, ranef, threads,
 # define Stan code to compute the fixef part of eta
 # @param fixef names of the population-level effects
 # @param bterms object of class 'btl'
+# @param primitive use Stan's GLM likelihood primitives?
 # @return a single character string
-stan_eta_fe <- function(fixef, bterms, threads) {
-  if (length(fixef)) {
+stan_eta_fe <- function(fixef, bterms, threads, primitive) {
+  if (length(fixef) && !primitive) {
     p <- usc(combine_prefix(bterms))
     center_X <- stan_center_X(bterms)
     decomp <- get_decomp(bterms$fe)
