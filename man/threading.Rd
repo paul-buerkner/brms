@@ -7,11 +7,13 @@
 threading(threads = NULL, grainsize = NULL, static = FALSE)
 }
 \arguments{
-\item{threads}{TODO}
+\item{threads}{Number of threads to use in within-chain parallelization.}
 
-\item{grainsize}{TODO}
+\item{grainsize}{Number of observations evaluated together in one chunk
+on one of the CPUs used for threading.}
 
-\item{static}{Logical. TODO}
+\item{static}{Logical. Apply the static (non-adaptive) version of
+\code{reduce_sum}? Defaults to \code{FALSE}.}
 }
 \value{
 A \code{brmsthreads} object which can be passed to the
@@ -19,5 +21,19 @@ A \code{brmsthreads} object which can be passed to the
 }
 \description{
 Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
-interface.
+interface. Within-chain parallelization is experimental! We recommend its use
+only if you are experienced with Stan's \code{reduce_sum} function and have a
+slow running model that cannot be sped up by any other means.
+}
+\examples{
+\dontrun{
+# this model just serves as an illustration
+# threading may not actually speed things up here
+fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
+           data = epilepsy, family = negbinomial(),
+           chains = 1, threads = threading(2, grainsize = 100),
+           backend = "cmdstanr")
+summary(fit)
+}
+
 }

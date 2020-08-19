@@ -85,7 +85,12 @@ distribution. In this case, all parameters must have proper priors.}
 \code{\link{stanvar}} to define additional variables for use in
 \pkg{Stan}'s program blocks.}
 
-\item{threads}{TODO}
+\item{threads}{Number of threads to use in within-chain parallelization. For
+more control over the threading process, \code{threads} may also be a
+\code{brmsthreads} object created by \code{\link{threading}}. Within-chain
+parallelization is experimental! We recommend its use only if you are
+experienced with Stan's \code{reduce_sum} function and have a slow running
+model that cannot be sped up by any other means.}
 
 \item{knots}{Optional list containing user specified knot values to be used
 for basis construction of smoothing terms. See

@@ -233,14 +233,29 @@ require_backend <- function(backend, x) {
 #' Threading in Stan
 #' 
 #' Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
-#' interface.
+#' interface. Within-chain parallelization is experimental! We recommend its use
+#' only if you are experienced with Stan's \code{reduce_sum} function and have a
+#' slow running model that cannot be sped up by any other means.
 #' 
-#' @param threads TODO
-#' @param grainsize TODO
-#' @param static Logical. TODO
+#' @param threads Number of threads to use in within-chain parallelization.
+#' @param grainsize Number of observations evaluated together in one chunk
+#'   on one of the CPUs used for threading. 
+#' @param static Logical. Apply the static (non-adaptive) version of
+#'   \code{reduce_sum}? Defaults to \code{FALSE}.
 #' 
 #' @return A \code{brmsthreads} object which can be passed to the
 #'   \code{threads} argument of \code{brm} and related functions.
+#'   
+#' @examples 
+#' \dontrun{
+#' # this model just serves as an illustration
+#' # threading may not actually speed things up here
+#' fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
+#'            data = epilepsy, family = negbinomial(),
+#'            chains = 1, threads = threading(2, grainsize = 100),
+#'            backend = "cmdstanr")
+#' summary(fit)
+#' }
 #' 
 #' @export
 threading <- function(threads = NULL, grainsize = NULL, static = FALSE) {

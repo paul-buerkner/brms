@@ -131,7 +131,12 @@
 #'   be as many processors as the hardware and RAM allow (up to the number of
 #'   chains). For non-Windows OS in non-interactive \R sessions, forking is used
 #'   instead of PSOCK clusters.
-#' @param threads TODO
+#' @param threads Number of threads to use in within-chain parallelization. For
+#'   more control over the threading process, \code{threads} may also be a
+#'   \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
+#'   parallelization is experimental! We recommend its use only if you are
+#'   experienced with Stan's \code{reduce_sum} function and have a slow running
+#'   model that cannot be sped up by any other means.
 #' @param algorithm Character string naming the estimation approach to use.
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
