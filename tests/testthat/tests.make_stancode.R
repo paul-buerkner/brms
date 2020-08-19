@@ -1474,7 +1474,7 @@ test_that("offsets appear in the Stan code", {
   expect_match2(scode, "+ offsets;")
   scode <- make_stancode(bf(y ~ a, a ~ offset(log(c + 1)), nl = TRUE),
                          data, prior = prior(normal(0,1), nlpar = a))
-  expect_match2(scode, "X_a * b_a + offsets_a;")
+  expect_match2(scode, "+ offsets_a;")
 })
 
 test_that("prior only models are correctly checked", {
