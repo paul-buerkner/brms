@@ -826,7 +826,7 @@ use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
-    poisson = "log", negbinomial = "log",
+    poisson = "log", negbinomial = "log"
     # rstan does not yet support 'ordered_logistic_glm'
     # cumulative = "logit"
   )
