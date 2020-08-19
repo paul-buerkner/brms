@@ -637,7 +637,13 @@ stan_log_lik_cox <- function(bterms, resp = "", mix = "", threads = 1,
   sdist(lpdf, p$mu, p$bhaz, p$cbhaz)
 }
 
-stan_log_lik_cumulative <- function(bterms, resp = "", mix = "", ...) {
+stan_log_lik_cumulative <- function(bterms, resp = "", mix = "",
+                                    threads = 1, ...) {
+  if (use_glm_primitive(bterms, allow_special_terms = FALSE)) {
+    p <- args_glm_primitive(bterms$dpars$mu, resp = resp, threads = threads)
+    out <- sdist("ordered_logistic_glm", p$x, p$beta, p$alpha)
+    return(out)
+  } 
   stan_log_lik_ordinal(bterms, resp, mix)
 }
 
@@ -680,6 +686,7 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
   prefix <- paste0(str_if(nzchar(mix), paste0("_mu", mix)), resp)
   p <- stan_log_lik_dpars(bterms, TRUE, resp, mix)
   if (use_ordered_logistic(bterms)) {
+    # TODO: support 'ordered_probit' as well
     lpdf <- "ordered_logistic"
     p[grepl("^disc", names(p))] <- NULL
   } else {
@@ -805,7 +812,7 @@ stan_log_lik_custom <- function(bterms, resp = "", mix = "", ...) {
 # use Stan GLM primitive functions?
 # @param bterms a brmsterms object
 # @return TRUE or FALSE
-use_glm_primitive <- function(bterms) {
+use_glm_primitive <- function(bterms, allow_special_terms = TRUE) {
   stopifnot(is.brmsterms(bterms))
   # the model can only have a single predicted parameter
   # and no additional residual or autocorrelation structure
@@ -816,12 +823,19 @@ use_glm_primitive <- function(bterms) {
     return(FALSE)
   }
   # supported families and link functions
-  # TODO: support ordered_logistic and categorical_logit primitives
+  # TODO: support categorical_logit primitive
   glm_links <- list(
     gaussian = "identity", bernoulli = "logit",
-    poisson = "log", negbinomial = "log"
+    poisson = "log", negbinomial = "log",
+    # rstan does not yet support 'ordered_logistic_glm'
+    # cumulative = "logit"
   )
   if (!isTRUE(glm_links[[mu$family$family]] == mu$family$link)) {
+    return(FALSE)
+  }
+  if (!allow_special_terms && has_special_terms(mu)) {
+    # some primitives do not support special terms in the way
+    # required by brms' Stan code generation
     return(FALSE)
   }
   length(all_terms(mu$fe)) > 0 && !is_sparse(mu$fe)
