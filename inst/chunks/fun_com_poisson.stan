@@ -33,7 +33,7 @@
       reject("nu must be positive");
     }
     if (nu == positive_infinity()) {
-      reject("nu must be finite")
+      reject("nu must be finite");
     }
     if (log_mu * nu >= log(1.5) && log_mu >= log(1.5)) {
       return log_Z_com_poisson_approx(log_mu, nu);
@@ -43,7 +43,7 @@
     log_thres = log(1e-16);
     // check if the Mth term of the series is small enough
     if (nu * (M * log_mu - lgamma(M + 1)) > log_thres) {
-      reject("nu is too close to zero.")
+      reject("nu is too close to zero.");
     }
     log_Z = log1p_exp(nu * log_mu);  // first 2 terms of the series
     lfac = 0;
@@ -89,11 +89,11 @@
       reject("nu must be positive");
     }
     if (nu == positive_infinity()) {
-      reject("nu must be finite")
+      reject("nu must be finite");
     }
     M = 10000;
     if (y > M) {
-      reject("cannot handle y > 10000")
+      reject("cannot handle y > 10000");
     }
     log_thres = log(1e-16);
     log_mu = log(mu);
