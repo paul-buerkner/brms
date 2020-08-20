@@ -37,7 +37,7 @@ stan_log_lik.family <- function(x, bterms, data, threads,
     # loop over likelihood if it cannot be vectorized
     out <- paste0(
       "  for (n in 1:N", resp, ") {\n", 
-      "  ", stan_nn_def(threads), 
+      stan_nn_def(threads), 
       "  ", out, 
       "  }\n"
     )
