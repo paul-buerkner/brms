@@ -80,7 +80,6 @@ make_stancode <- function(formula, data, family = gaussian(),
     # threading is activated
     for (i in seq_along(scode_predictor)) {
       resp <- usc(names(scode_predictor)[i])
-      resp_type <- scode_predictor[[i]]$resp_type
       pll_args <- stan_clean_pll_args(
         scode_predictor[[i]]$pll_args,
         scode_ranef$pll_args,
