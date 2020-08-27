@@ -1806,7 +1806,7 @@ stan_eta_fe <- function(fixef, bterms, threads, primitive) {
     }
   } else { 
     resp <- usc(bterms$resp)
-    eta_fe <- glue("rep_vector(0, N{resp})")
+    eta_fe <- glue("rep_vector(0.0, N{resp})")
   }
   glue(" + {eta_fe}")
 }
