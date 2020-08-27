@@ -387,7 +387,7 @@ test_that("truncation appears in the Stan code", {
 test_that("make_stancode handles models without fixed effects", {
   expect_match2(make_stancode(count ~ 0 + (1|patient) + (1+Trt|visit), 
                              data = epilepsy, family = "poisson"), 
-               "mu = rep_vector(0, N);")
+               "mu = rep_vector(0.0, N);")
 })
 
 test_that("make_stancode correctly restricts FE parameters", {
@@ -1530,7 +1530,7 @@ test_that("Stan code of mixture model is correct", {
   scode <- make_stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x), 
                          data = data, family = fam)
   expect_match2(scode, "log_sum_exp_theta = log(exp(theta1[n]) + exp(theta2[n]) + exp(theta3[n]));")
-  expect_match2(scode, "theta2 = rep_vector(0, N);")
+  expect_match2(scode, "theta2 = rep_vector(0.0, N);")
   expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
   expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
   

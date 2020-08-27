@@ -1300,7 +1300,7 @@ stan_ac <- function(bterms, data, prior, threads, ...) {
     if (!is.formula(bterms$adforms$se)) {
       str_add(out$tdata_def) <- glue(
         "  // no known standard errors specified by the user\n",
-        "  vector[N{resp}] se2{p} = rep_vector(0, N{resp});\n"
+        "  vector[N{resp}] se2{p} = rep_vector(0.0, N{resp});\n"
       )
     }
     str_add(out$tpar_def) <- glue(

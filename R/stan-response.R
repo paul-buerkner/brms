@@ -406,7 +406,7 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
     }
     missing_id <- setdiff(1:nmix, dpar_id(names(theta_pred)))
     str_add(out$model_def) <- glue(
-      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0, N{p});\n",                   
+      "  vector[N{p}] theta{missing_id}{p} = rep_vector(0.0, N{p});\n",                   
       "  real log_sum_exp_theta;\n"      
     )
     sum_exp_theta <- glue("exp(theta{1:nmix}{p}{n})", collapse = " + ")
