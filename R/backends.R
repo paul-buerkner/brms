@@ -13,9 +13,7 @@ parse_model <- function(model, backend, ...) {
 .parse_model_rstan <- function(model, silent = TRUE, ...) {
   out <- eval_silent(
     rstan::stanc(model_code = model, ...),
-    type = "message", 
-    try = TRUE, 
-    silent = silent
+    type = "message", try = TRUE, silent = silent
   )
   out$model_code
 }
@@ -28,10 +26,9 @@ parse_model <- function(model, backend, ...) {
   temp_file <- cmdstanr::write_stan_file(model)
   out <- eval_silent(
     cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
-    type = "message", 
-    try = TRUE, 
-    silent = silent
+    type = "message", try = TRUE, silent = silent
   )
+  out$check_syntax(quiet = TRUE)
   collapse(out$code(), "\n")
 }
 
