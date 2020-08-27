@@ -403,7 +403,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   }
   
   # validate arguments later passed to Stan
-  dots <- list(...)
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
