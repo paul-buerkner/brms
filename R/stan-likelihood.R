@@ -194,7 +194,7 @@ stan_log_lik_mix <- function(ll, bterms, data, mix, ptheta, threads,
     str_add(out) <- glue(s, "}}\n")
   } else {
     out <- glue(
-      "  ps[{mix}] = {theta} + ", 
+      "ps[{mix}] = {theta} + ", 
       "{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     ) 
   }

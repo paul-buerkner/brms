@@ -412,7 +412,7 @@ stan_mixture <- function(bterms, data, prior, threads, ...) {
     sum_exp_theta <- glue("exp(theta{1:nmix}{p}{n})", collapse = " + ")
     str_add(out$model_comp_mix) <- glue(
       "  for (n in 1:N{p}) {{\n",
-      "    ", stan_nn_def(threads),
+      stan_nn_def(threads),
       "    // scale theta to become a probability vector\n",
       "    log_sum_exp_theta = log({sum_exp_theta});\n"
     )
