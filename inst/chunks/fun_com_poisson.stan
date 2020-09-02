@@ -15,16 +15,16 @@
   }
   // log normalizing constant of the COM Poisson distribution
   // implementation inspired by code of Ben Goodrich
+  // improved following suggestions of Sebastian Weber (#892)
   // Args:
   //   log_mu: log location parameter
   //   shape: positive shape parameter
   real log_Z_com_poisson(real log_mu, real nu) {
     real log_Z;
-    real lfac;
-    real term;
-    real k;
-    int M;
-    real log_thres;
+    int k = 2;
+    int M = 10000;
+    int converged = 0;
+    int num_terms = 50;
     if (nu == 1) {
       return exp(log_mu);
     }
@@ -33,27 +33,33 @@
       reject("nu must be positive");
     }
     if (nu == positive_infinity()) {
-      reject("nu must be finite")
+      reject("nu must be finite");
     }
     if (log_mu * nu >= log(1.5) && log_mu >= log(1.5)) {
       return log_Z_com_poisson_approx(log_mu, nu);
     }
     // direct computation of the truncated series
-    M = 10000;
-    log_thres = log(1e-16);
     // check if the Mth term of the series is small enough
-    if (nu * (M * log_mu - lgamma(M + 1)) > log_thres) {
-      reject("nu is too close to zero.")
+    if (nu * (M * log_mu - lgamma(M + 1)) > -36.0) {
+      reject("nu is too close to zero.");
     }
-    log_Z = log1p_exp(nu * log_mu);  // first 2 terms of the series
-    lfac = 0;
-    term = 0;
-    k = 2;
-    while (term > log_thres) { 
-      lfac += log(k);
-      term = nu * (k * log_mu - lfac);
-      log_Z = log_sum_exp(log_Z, term);
-      k += 1;
+    // first 2 terms of the series
+    log_Z = log1p_exp(nu * log_mu);
+    while (converged == 0) {
+      // adding terms in batches simplifies the AD tape
+      vector[num_terms + 1] log_Z_terms;
+      int i = 1;
+      log_Z_terms[1] = log_Z;
+      while (i <= num_terms) {
+        log_Z_terms[i + 1] = nu * (k * log_mu - lgamma(k + 1));
+        k += 1;
+        if (log_Z_terms[i + 1] <= -36.0) {
+          converged = 1;
+          break;
+        }
+        i += 1;
+      }
+      log_Z = log_sum_exp(log_Z_terms[1:i]);
     }
     return log_Z;
   }
@@ -73,14 +79,9 @@
   }
   // COM Poisson log-CDF for a single response
   real com_poisson_lcdf(int y, real mu, real nu) {
-    int M;
-    real log_thres;
     real log_mu;
-    real log_num;  // log numerator
     real log_Z;  // log denominator
-    real lfac;
-    real term;
-    real k;
+    vector[y] log_num_terms;  // terms of the log numerator
     if (nu == 1) {
       return poisson_lcdf(y | mu);
     }
@@ -89,15 +90,13 @@
       reject("nu must be positive");
     }
     if (nu == positive_infinity()) {
-      reject("nu must be finite")
+      reject("nu must be finite");
     }
-    M = 10000;
-    if (y > M) {
-      reject("cannot handle y > 10000")
+    if (y > 10000) {
+      reject("cannot handle y > 10000");
     }
-    log_thres = log(1e-16);
     log_mu = log(mu);
-    if (nu * (y * log_mu - lgamma(y + 1)) <= log_thres) {
+    if (nu * (y * log_mu - lgamma(y + 1)) <= -36.0) {
       // y is large enough for the CDF to be very close to 1;
       return 0;
     }
@@ -106,20 +105,12 @@
       return -log_Z; 
     }
     // first 2 terms of the series
-    log_num = log1p_exp(nu * log_mu);
-    if (y == 1) {
-      return log_num - log_Z;
+    log_num_terms[1] = log1p_exp(nu * log_mu);
+    // remaining terms of the series until y
+    for (k in 2:y) {
+      log_num_terms[k] = nu * (k * log_mu - lgamma(k + 1));
     }
-    lfac = 0;
-    term = 0;
-    k = 2;
-    while (k <= y) {
-      lfac += log(k);
-      term = nu * (k * log_mu - lfac);
-      log_num = log_sum_exp(log_num, term);
-      k += 1;
-    }
-    return log_num - log_Z;
+    return log_sum_exp(log_num_terms) - log_Z;
   }
   // COM Poisson log-CCDF for a single response
   real com_poisson_lccdf(int y, real mu, real nu) {
