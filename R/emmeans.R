@@ -56,6 +56,7 @@ emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
   dffun <- function(k, dfargs) Inf
   misc <- emmeans::.std.link.labels(bterms$family, list())
   post.beta <- as.matrix(object, pars = paste0("b_", nm), fixed = TRUE)
+  attr(post.beta, "n.chains") = object$fit@sim$chains
   bhat <- apply(post.beta, 2, mean)
   nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
 }
