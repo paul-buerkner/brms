@@ -142,6 +142,7 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   bterms <- brmsterms(formula)
   data <- current_data(object, newdata, re_formula = re_formula, ...)
   stanvars <- object$stanvars
+  threads <- object$threads
   if (is.null(newdata2)) {
     data2 <- object$data2
   } else {
@@ -157,8 +158,8 @@ standata.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   .make_standata(
     bterms, data = data, prior = object$prior,
-    data2 = data2, stanvars = stanvars, basis = basis,
-    ...
+    data2 = data2, stanvars = stanvars, 
+    threads = threads, basis = basis, ...
   )
 }
 
