@@ -13,7 +13,9 @@ threading(threads = NULL, grainsize = NULL, static = FALSE)
 on one of the CPUs used for threading.}
 
 \item{static}{Logical. Apply the static (non-adaptive) version of
-\code{reduce_sum}? Defaults to \code{FALSE}.}
+\code{reduce_sum}? Defaults to \code{FALSE}. Setting it to \code{TRUE}
+is required to achieve exact reproducibility of the model results
+(if the random seed is set as well).}
 }
 \value{
 A \code{brmsthreads} object which can be passed to the
@@ -24,6 +26,19 @@ Use threads for within-chain parallelization in \pkg{Stan} via the \pkg{brms}
 interface. Within-chain parallelization is experimental! We recommend its use
 only if you are experienced with Stan's \code{reduce_sum} function and have a
 slow running model that cannot be sped up by any other means.
+}
+\details{
+The adaptive scheduling procedure used by \code{reduce_sum} will
+  prevent the results to be exactly reproducible even if you set the random
+  seed. If you need exact reproducibility, you have to set argument
+  \code{static = TRUE} which may reduce efficiency a bit.
+
+  To ensure that chunks (whose size is defined by \code{grainsize}) require
+  roughly the same amount of computing time, we recommend storing
+  observations in random order in the data. At least, please avoid sorting
+  observations after the response values. This is because the latter often
+  cause variations in the computing time of the pointwise log-likelihood, 
+  which makes up a big part of the parallelized code.
 }
 \examples{
 \dontrun{
