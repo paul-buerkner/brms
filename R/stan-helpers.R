@@ -141,7 +141,7 @@ stan_ilink <- function(link) {
 
 # define a vector in Stan language
 stan_vector <- function(...) {
-  paste0("[", paste0(c(...), collapse = ", "), "]'")
+  paste0("transpose([", paste0(c(...), collapse = ", "), "])")
 }
 
 # prepare Stan code for correlations in the generated quantities block

@@ -650,7 +650,7 @@ stan_re <- function(ranef, prior, ...) {
           " to_vector(z_{id}), N_{id}, M_{id})"
         )
       } else {
-        rdef <- glue("(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})'")
+        rdef <- glue("transpose(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})")
       }
       # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(
@@ -698,7 +698,8 @@ stan_re <- function(ranef, prior, ...) {
         "  vector[N_{id}] r_{idp}_{r$cn};  // actual group-level effects\n"
       )
       str_add(out$tpar_comp) <- cglue(
-        "  r_{idp}_{r$cn} = {dfm}(sd_{id}[{J}, Jby_{id}]' .* ({Lcov}z_{id}[{J}]));\n"
+        "  r_{idp}_{r$cn} = {dfm}(transpose(sd_{id}[{J}, Jby_{id}])", 
+        " .* ({Lcov}z_{id}[{J}]));\n"
       )
     } else {
       # separate definition from computation to support fixed parameters
@@ -1557,8 +1558,8 @@ stan_Xme <- function(meef, prior) {
       )
       str_add(out$tpar_comp) <- glue(
         "  // compute actual latent values\n",
-        "  Xme{i} = rep_matrix(meanme_{i}', {Nme}) ", 
-        " + (diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i})';\n"
+        "  Xme{i} = rep_matrix(transpose(meanme_{i}), {Nme}) ", 
+        " + transpose(diag_pre_multiply(sdme_{i}, Lme_{i}) * zme_{i});\n"
       )
       str_add(out$tpar_def) <- cglue(
         "  // using separate vectors increases efficiency\n",
