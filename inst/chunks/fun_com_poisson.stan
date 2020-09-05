@@ -59,7 +59,7 @@
         }
         i += 1;
       }
-      log_Z = log_sum_exp(log_Z_terms[1:i]);
+      log_Z = log_sum_exp(log_Z_terms[1:(i + 1)]);
     }
     return log_Z;
   }

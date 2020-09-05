@@ -598,18 +598,18 @@ test_that("Stan code for categorical models is correct", {
   scode <- make_stancode(y ~ x + (1 | gr(.g, id = "ID")), data = dat, 
                          family = categorical(), prior = prior)
   expect_match2(scode, "target += categorical_logit_lpmf(Y[n] | mu[n]);")
-  expect_match2(scode, "mu[n] = [0, mu2[n], mu3[n], muab[n]]';")
+  expect_match2(scode, "mu[n] = transpose([0, mu2[n], mu3[n], muab[n]]);")
   expect_match2(scode, "mu2 = Intercept_mu2 + Xc_mu2 * b_mu2;")
   expect_match2(scode, "muab[n] += r_1_muab_3[J_1[n]] * Z_1_muab_3[n];")
   expect_match2(scode, "target += normal_lpdf(b_mu2 | 0, 10);")
   expect_match2(scode, "target += normal_lpdf(b_muab | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(Intercept_mu2 | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(Intercept_mu3 | 0, 2);")
-  expect_match2(scode, "r_1 = (diag_pre_multiply(sd_1, L_1) * z_1)';")
+  expect_match2(scode, "r_1 = transpose(diag_pre_multiply(sd_1, L_1) * z_1);")
   
   scode <- make_stancode(y ~ x + (1 |ID| .g), data = dat, 
                          family = categorical(refcat = NA))
-  expect_match2(scode, "mu[n] = [mu1[n], mu2[n], mu3[n], muab[n]]';")
+  expect_match2(scode, "mu[n] = transpose([mu1[n], mu2[n], mu3[n], muab[n]]);")
 })
 
 test_that("Stan code for multinomial models is correct", {
@@ -1243,7 +1243,7 @@ test_that("noise-free terms appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(meanme_1 | 0, 10)")
   expect_match2(scode, "target += cauchy_lpdf(sdme_1[2] | 0, 5)")
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lme_1 | 2)")
-  expect_match2(scode, "+ (diag_pre_multiply(sdme_1, Lme_1) * zme_1)'")
+  expect_match2(scode, "+ transpose(diag_pre_multiply(sdme_1, Lme_1) * zme_1)")
   expect_match2(scode, "corme_1[choose(k - 1, 2) + j] = Corme_1[j, k];")
   
   scode <- make_stancode(
@@ -1316,7 +1316,7 @@ test_that("by variables in grouping terms are handled correctly", {
     z = factor(rep(c(0, 4.5, 3, 2, 5), each = 20))
   )
   scode <- make_stancode(y ~ x + (1 | gr(g, by = z)), dat)
-  expect_match2(scode, "r_1_1 = (sd_1[1, Jby_1]' .* (z_1[1]));")
+  expect_match2(scode, "r_1_1 = (transpose(sd_1[1, Jby_1]) .* (z_1[1]));")
   scode <- make_stancode(y ~ x + (x | gr(g, by = z)), dat)
   expect_match2(scode, "r_1 = scale_r_cor_by(z_1, sd_1, L_1, Jby_1);")
   expect_match2(scode, "target += student_t_lpdf(to_vector(sd_1) | 3, 0, 2.5);")
@@ -1329,7 +1329,7 @@ test_that("Group syntax | and || is handled correctly,", {
   scode <- make_stancode(y ~ x + (1+x||g1) + (I(x/4)|g2), data)
   expect_match2(scode, "r_1_2 = (sd_1[2] * (z_1[2]));")
   expect_match2(scode, "r_2_1 = r_2[, 1];")
-  expect_match2(scode, "r_2 = (diag_pre_multiply(sd_2, L_2) * z_2)';")
+  expect_match2(scode, "r_2 = transpose(diag_pre_multiply(sd_2, L_2) * z_2);")
 })
 
 test_that("predicting zi and hu works correctly", {
@@ -1830,7 +1830,7 @@ test_that("Stan code for missing value terms works correctly", {
   bform <- bf(y ~ 1, sigma ~ 1) + bf(x | mi() ~ 1) + set_rescor(TRUE)
   scode <- make_stancode(bform, dat)
   expect_match2(scode, "Yl[n][2] = Yl_x[n];")
-  expect_match2(scode, "sigma[n] = [sigma_y[n], sigma_x]';")
+  expect_match2(scode, "sigma[n] = transpose([sigma_y[n], sigma_x]);")
   expect_match2(scode, "LSigma[n] = diag_pre_multiply(sigma[n], Lrescor);")
   
   bform <- bf(x | mi() ~ y, family = "lognormal")
@@ -2051,7 +2051,7 @@ test_that("student-t group-level effects work without errors", {
     epilepsy, prior = bprior
   )
   expect_match2(scode,
-    "rep_matrix(dfm_1, M_1) .* (diag_pre_multiply(sd_1, L_1) * z_1)';"
+    "rep_matrix(dfm_1, M_1) .* transpose(diag_pre_multiply(sd_1, L_1) * z_1);"
   )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
 })
