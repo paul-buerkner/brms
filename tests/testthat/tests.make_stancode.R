@@ -6,7 +6,7 @@ SW <- brms:::SW
 
 # parsing the Stan code ensures syntactial correctness of models
 # setting this option to FALSE speeds up testing
-options(brms.parse_stancode = TRUE)
+options(brms.parse_stancode = TRUE, brms.backend = "rstan")
 
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
@@ -755,7 +755,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "matrix[Kcs, nthres] bcs;")
   expect_match2(scode, "mucs = Xcs * bcs;")
   expect_match2(scode, 
-    "target += sratio_logit_lpmf(Y[n] | mu[n], disc, Intercept - mucs[n]');"
+    "target += sratio_logit_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));"
   )
   
   scode <- make_stancode(y ~ x1 + cse(x2) + (cse(1)|g), dat, family = acat())
@@ -768,7 +768,7 @@ test_that("Stan code of ordinal models is correct", {
     paste("mucs[n, 3] = mucs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
           "+ r_1_6[J_1[n]] * Z_1_6[n];"))
   expect_match2(scode, 
-    "target += acat_probit_lpmf(Y[n] | mu[n], disc, Intercept - mucs[n]');"
+    "target += acat_probit_lpmf(Y[n] | mu[n], disc, Intercept - transpose(mucs[n]));"
   )
   
   # sum-to-zero thresholds
@@ -2093,4 +2093,70 @@ test_that("to_vector() is correctly removed from prior of SD parameters", {
   )
   expect_match2(scode, "prior_sd_1_1 = normal_rng(0,0.1);")
   expect_match2(scode, "prior_sd_1_2 = normal_rng(0,0.01);")
+})
+
+test_that("threaded Stan code is correct", {
+  dat <- data.frame(
+    count = rpois(236, lambda = 20),
+    visit = rep(1:4, each = 59),
+    patient = factor(rep(1:59, 4)),
+    Age = rnorm(236), 
+    Trt = factor(sample(0:1, 236, TRUE)),
+    AgeSD = abs(rnorm(236, 1)),
+    Exp = sample(1:5, 236, TRUE),
+    volume = rnorm(236),
+    gender = factor(c(rep("m", 30), rep("f", 29)))
+  )
+  
+  options(brms.backend = "cmdstanr")
+  threads <- threading(2, grainsize = 20)
+  
+  bform <- bf(
+    count ~ Trt*Age + mo(Exp) + s(Age) + offset(Age) + (1+Trt|visit),
+    sigma ~ Trt + gp(Age)
+  )
+  scode <- make_stancode(bform, dat, family = student(), threads = threads)
+  expect_match2(scode, "real partial_log_lik(int[] seq, int start,")
+  expect_match2(scode, "mu[n] += (bsp[1]) * mo(simo_1, Xmo_1[nn])")
+  expect_match2(scode, "ptarget += student_t_lpdf(Y[start:end] | nu, mu, sigma);")
+  expect_match2(scode, "+ gp_pred_sigma_1[Jgp_sigma_1[start:end]]")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik, seq, grainsize, Y,")
+  
+  scode <- make_stancode(
+    visit ~ cs(Trt) + Age, dat, family = sratio(), 
+    threads = threads,
+  )
+  expect_match2(scode, "matrix[N, nthres] mucs = Xcs[start:end] * bcs;")
+  expect_match2(scode, 
+    "ptarget += sratio_logit_lpmf(Y[nn] | mu[n], disc, Intercept - transpose(mucs[n]));"
+  )
+  
+  scode <- make_stancode(
+    bf(visit ~ a * Trt ^ b, a ~ mo(Exp), b ~ s(Age), nl = TRUE),
+    data = dat, family = Gamma("log"), 
+    prior = set_prior("normal(0, 1)", nlpar = c("a", "b")),
+    threads = threads
+  )
+  expect_match2(scode, "mu[n] = shape * exp(-(nlp_a[nn] * C_1[nn] ^ nlp_b[nn]));")
+  expect_match2(scode, "ptarget += gamma_lpdf(Y[start:end] | shape, mu);")
+  
+  bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(TRUE)
+  scode <- make_stancode(bform, dat, gaussian(), threads = threads)
+  expect_match2(scode, "ptarget += multi_normal_cholesky_lpdf(Y[start:end] | Mu, LSigma);")
+  
+  bform <- bf(mvbind(count, Exp) ~ Trt) + set_rescor(FALSE)
+  scode <- make_stancode(bform, dat, gaussian(), threads = threads)
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_count, seq_count,")
+  expect_match2(scode, "target += reduce_sum(partial_log_lik_Exp, seq_Exp,")
+  expect_match2(scode, 
+    "ptarget += normal_id_glm_lpdf(Y_Exp[start:end] | Xc_Exp[start:end], Intercept_Exp, b_Exp, sigma_Exp);"
+  )
+  
+  scode <- make_stancode(
+    visit ~ Trt, dat, family = mixture(poisson(), nmix = 2),
+    threads = threading(4, grainsize = 10, static = TRUE)
+  )
+  expect_match2(scode, "ps[1] = log(theta1) + poisson_log_lpmf(Y[nn] | mu1[n]);")
+  expect_match2(scode, "ptarget += log_sum_exp(ps);")
+  expect_match2(scode, "target += reduce_sum_static(partial_log_lik,")
 })

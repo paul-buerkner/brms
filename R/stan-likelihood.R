@@ -708,7 +708,7 @@ stan_log_lik_ordinal <- function(bterms, resp = "", mix = "", ...) {
       stop2("Cannot use category specific effects ", 
             "in models with multiple thresholds.")
     }
-    str_add(p$thres) <- paste0(" - mucs", prefix, "[n]'")
+    str_add(p$thres) <- paste0(" - transpose(mucs", prefix, "[n])")
   }
   sdist(lpdf, p$mu, p$disc, p$thres, p$Jthres)
 }

@@ -1539,6 +1539,7 @@ stan_offset <- function(bterms, threads, ...) {
     slice <- stan_slice(threads)
     # use 'offsets' as 'offset' will be reserved in stanc3
     str_add(out$data) <- glue( "  vector[N{resp}] offsets{p};\n")
+    str_add(out$pll_args) <- glue(", vector offsets{p}")
     str_add(out$eta) <- glue(" + offsets{p}{slice}")
   }
   out
