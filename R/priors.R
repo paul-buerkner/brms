@@ -1303,7 +1303,8 @@ validate_prior_special.mvbrmsterms <- function(x, prior = NULL, ...) {
       # in the specification of default priors as it becomes unclear on which 
       # prior level they should be defined
       warning2("Specifying global priors for regression coefficients in ", 
-               "multivariate models is deprecated and may not work as expected.")
+               "multivariate models is deprecated. Please specify priors ",
+               "separately for each response variable.")
     }
     prior$remove[gi] <- TRUE
     for (r in x$responses) {
@@ -1338,7 +1339,8 @@ validate_prior_special.brmsterms <- function(x, data, prior = NULL, ...) {
         # in the specification of default priors as it becomes unclear on which 
         # prior level they should be defined
         warning2("Specifying global priors for regression coefficients in ", 
-                 "categorical models is deprecated and may not work as expected.")
+                 "categorical models is deprecated. Please specify priors ",
+                 "separately for each response category.")
       }
       prior$remove[gi] <- TRUE
       for (dp in names(x$dpars)) {
