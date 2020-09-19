@@ -9,8 +9,11 @@ threading(threads = NULL, grainsize = NULL, static = FALSE)
 \arguments{
 \item{threads}{Number of threads to use in within-chain parallelization.}
 
-\item{grainsize}{Number of observations evaluated together in one chunk
-on one of the CPUs used for threading.}
+\item{grainsize}{Number of observations evaluated together in one chunk on
+one of the CPUs used for threading. If \code{NULL} (the default),
+\code{grainsize} is currently chosen as \code{max(100, N / (2 *
+threads))}, where \code{N} is the number of observations in the data. This
+default is experimental and may change in the future without prior notice.}
 
 \item{static}{Logical. Apply the static (non-adaptive) version of
 \code{reduce_sum}? Defaults to \code{FALSE}. Setting it to \code{TRUE}

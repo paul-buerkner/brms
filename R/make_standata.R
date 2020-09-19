@@ -88,8 +88,8 @@ make_standata <- function(formula, data, family = gaussian(), prior = NULL,
   if (use_threading(threads)) {
     out$grainsize <- threads$grainsize
     if (is.null(out$grainsize)) {
-      # TODO: choose a better default rule
-      out$grainsize <- ceiling(out$N / threads$threads)
+      out$grainsize <- ceiling(out$N / (2 * threads$threads))
+      out$grainsize <- max(100, out$grainsize)
     }
   }
   if (is.stanvars(stanvars)) {
