@@ -54,7 +54,7 @@ compile_model <- function(model, backend, ...) {
 # compile Stan model with cmdstanr
 # @param model Stan model code
 # @return model compiled with cmdstanr
-.compile_model_cmdstanr <- function(model, threads = NULL, ...) {
+.compile_model_cmdstanr <- function(model, threads, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
