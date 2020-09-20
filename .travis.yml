@@ -5,7 +5,7 @@ compiler: clang
 
 cache:
   apt: true
-  packages: true
+  # packages: true
   ccache: true
 
 warnings_are_errors: TRUE
