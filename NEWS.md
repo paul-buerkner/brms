@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Experimentally support within-chain parallelizaion via `reduce_sum`
+using argument `threads` in `brm` thank to Sebastian Weber. (#892)
 * Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
 * No longer remove `NA` values in `data` if there are unused because of
 the `subset` addition argument. (#895)
@@ -16,6 +18,8 @@ argument `unused` of function `brmsformula`.
 
 ### Other Changes
 
+* Improve sampling efficiency for a lot of models by using Stan's
+GLM-primitives even in non-GLM cases.
 * Deprecate argument `probs` in the `conditional_effects` method
 in favor of argument `prob`.
 
