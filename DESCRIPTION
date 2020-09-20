@@ -7,7 +7,8 @@ Date: 2020-08-13
 Authors@R: 
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
-      person("Jonah", "Gabry", role = c("ctb")))
+      person("Jonah", "Gabry", role = c("ctb")),
+      person("Sebastian", "Weber", role = c("ctb")))
 Depends: 
     R (>= 3.5.0),
     Rcpp (>= 0.12.0),
