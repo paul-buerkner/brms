@@ -100,9 +100,8 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     out <- bterms$nlpars[[nlpar]]
   } else if (!is.null(dpar)) {
     dpar <- as_one_character(dpar)
-    if (dpar %in% all_dpars) {
-      out <- bterms$dpars[[dpar]]
-    } else if (dpar == "mean") {
+    if (dpar == "mean") {
+      # prepare posterior mean predictions as a special case
       # TODO: decide which variables to actually include in 'all_vars'
       all_vars <- NULL
       for (dp in all_dpars) {
@@ -124,10 +123,13 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
       out <- list(fe = terms_fe(str2formula(all_vars)))
       class(out) <- "btl"
     } else {
-      stop2(
-        "Distributional parameter '", dpar, "' is not part of the model.",
-        "\nSupported parameters are: ", collapse_comma(all_dpars)
-      )
+      if (!dpar %in% all_dpars) {
+        stop2(
+          "Distributional parameter '", dpar, "' is not part of the model.",
+          "\nSupported parameters are: ", collapse_comma(all_dpars)
+        )
+      }
+      out <- bterms$dpars[[dpar]]
     }
   } else {
     out <- bterms$dpars[["mu"]]
