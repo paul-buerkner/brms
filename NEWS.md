@@ -19,6 +19,11 @@ argument `unused` of function `brmsformula`.
 * Deprecate argument `probs` in the `conditional_effects` method
 in favor of argument `prob`.
 
+### Bug Fixes
+
+* Fix a problem in `pp_check` inducing wronger observation
+orders in time series models thanks to Fiona Seaton. (#1007)
+
 
 # brms 2.13.5
 

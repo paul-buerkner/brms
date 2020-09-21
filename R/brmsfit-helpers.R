@@ -635,24 +635,17 @@ split_dots <- function(x, ..., model_names = NULL, other = TRUE) {
 
 # reorder observations to be in the initial user-defined order
 # currently only relevant for autocorrelation models 
-# @param eta 'nsamples' x 'nobs' matrix
+# @param eta 'nsamples' x 'nobs' matrix or array
 # @param old_order optional vector to retrieve the initial data order
 # @param sort keep the new order as defined by the time-series?
 # @return the 'eta' matrix with possibly reordered columns
 reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   stopifnot(length(dim(eta)) %in% c(2L, 3L))
-  if (!is.null(old_order) && !sort) {
-    if (isTRUE(length(old_order) == ncol(eta))) {
-      if (length(dim(eta)) == 3L) {
-        eta <- eta[, old_order, , drop = FALSE]   
-      } else {
-        eta <- eta[, old_order, drop = FALSE]   
-      }
-    } else {
-      warning2("Cannot recover the original observation order.")
-    }
+  if (is.null(old_order) || sort) {
+    return(eta)
   }
-  eta
+  stopifnot(length(old_order) == NCOL(eta))
+  p(eta, old_order, row = FALSE)
 }
 
 # extract argument names of a post-processing method

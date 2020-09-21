@@ -132,7 +132,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   subset <- subset_samples(object, subset, nsamples)
   pred_args <- list(
     object, newdata = newdata, resp = resp, 
-    subset = subset, sort = FALSE, ...
+    subset = subset, ...
   )
   yrep <- do_call(method, pred_args)
 
