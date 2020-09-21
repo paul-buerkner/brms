@@ -6,9 +6,9 @@
 \alias{emm_basis.brmsfit}
 \title{Support Functions for \pkg{emmeans}}
 \usage{
-\method{recover_data}{brmsfit}(object, data, resp = NULL, dpar = NULL, nlpar = NULL, ...)
+recover_data.brmsfit(object, data, resp = NULL, dpar = NULL, nlpar = NULL, ...)
 
-\method{emm_basis}{brmsfit}(
+emm_basis.brmsfit(
   object,
   trms,
   xlev,

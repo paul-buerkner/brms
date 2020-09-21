@@ -35,55 +35,41 @@ NULL
 
 # recover the predictors used in the population-level part of the model
 #' @rdname emmeans-brms-helpers
-recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, nlpar = NULL, 
-                                  ...) 
-{
-  if(is.character(dpar) && dpar == "mean") {
-    preds <- all.vars(.extract_par_terms(object, resp, NULL, nlpar)$fe)
-    for (pf in object$formula$pforms)
-      preds <- union(preds, all.vars(pf[-2]))
-    bterms <- list(fe = reformulate(preds))
-  }
-  else {
-    bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  }
-  trms <- attr(model.frame(bterms$fe, data = object$data), 
-               "terms")
-  
+recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, 
+                                  nlpar = NULL, ...) {
+  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
+  trms <- attr(model.frame(bterms$fe, data = object$data), "terms")
+  # brms has no call component so the call is just a dummy
   emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
 }
-
 
 # Calculate the basis for making predictions. This is essentially the
 # inside of the predict() function with new data on the link scale. 
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
-emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, dpar = NULL, 
-                               nlpar = NULL, ...) 
-{
-  if (is.character(dpar) && dpar == "mean") {
+emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, 
+                               dpar = NULL, nlpar = NULL, ...) {
+  if (is_equal(dpar, "mean")) {
     post.beta <- posterior_epred(object, newdata = grid, re_formula = NA, ...)
     bhat <- apply(post.beta, 2, mean)
     V <- cov(post.beta)
     X <- diag(length(bhat))
     misc <- list()
-  }
-  else {
+  } else {
     bterms <- .extract_par_terms(object, resp, dpar, nlpar)
     m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
     contr <- lapply(object$data, function(x) attr(x, "contrasts"))
     contr <- contr[!ulapply(contr, is.null)]
     p <- combine_prefix(bterms)
-    cols2remove <- if (is_ordinal(bterms)) 
-      "(Intercept)"
+    cols2remove <- str_if(is_ordinal(bterms), "(Intercept)")
     X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
     nm <- paste0(usc(p, "suffix"), colnames(X))
     V <- vcov(object)[nm, nm, drop = FALSE]
     misc <- emmeans::.std.link.labels(bterms$family, list())
-    post.beta <- as.matrix(object, pars = paste0("b_", nm), 
-                           fixed = TRUE)
+    post.beta <- as.matrix(object, pars = paste0("b_", nm), fixed = TRUE)
     bhat <- apply(post.beta, 2, mean)
   }
+  attr(post.beta, "n.chains") <- object$fit@sim$chains
   nbasis <- matrix(NA)
   dfargs <- list()
   dffun <- function(k, dfargs) Inf
@@ -91,8 +77,7 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, dpa
 }
 
 # extract terms of a specific predicted parameter in the model
-.extract_par_terms <- function(object, resp = NULL, dpar = NULL, 
-                               nlpar = NULL) {
+.extract_par_terms <- function(object, resp = NULL, dpar = NULL, nlpar = NULL) {
   resp <- validate_resp(resp, object, multiple = FALSE)
   stopifnot_resp(object, resp)
   bterms <- brmsterms(formula(object))
@@ -115,13 +100,35 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, dpa
     out <- bterms$nlpars[[nlpar]]
   } else if (!is.null(dpar)) {
     dpar <- as_one_character(dpar)
-    if (!dpar %in% all_dpars) {
+    if (dpar %in% all_dpars) {
+      out <- bterms$dpars[[dpar]]
+    } else if (dpar == "mean") {
+      # TODO: decide which variables to actually include in 'all_vars'
+      all_vars <- NULL
+      for (dp in all_dpars) {
+        if (is.btl(bterms$dpars[[dp]])) {
+          vars <- bterms$dpars[[dp]]$fe
+        } else {
+          vars <- bterms$dpars[[dp]]$covars
+        }
+        all_vars <- union(all_vars, vars)
+      }
+      for (nlp in all_nlpars) {
+        if (is.btl(bterms$nlpars[[nlp]])) {
+          vars <- bterms$nlpars[[nlp]]$fe
+        } else {
+          vars <- bterms$nlpars[[nlp]]$covars
+        }
+        all_vars <- union(all_vars, vars)
+      } 
+      out <- list(fe = terms_fe(str2formula(all_vars)))
+      class(out) <- "btl"
+    } else {
       stop2(
         "Distributional parameter '", dpar, "' is not part of the model.",
         "\nSupported parameters are: ", collapse_comma(all_dpars)
       )
     }
-    out <- bterms$dpars[[dpar]]
   } else {
     out <- bterms$dpars[["mu"]]
   }

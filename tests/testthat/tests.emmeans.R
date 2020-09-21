@@ -20,3 +20,11 @@ test_that("emmeans returns expected output structure", {
   em <- summary(emmeans(fit4, "x1"))
   expect_equal(nrow(em), 1)
 })
+
+test_that("emmeans supports 'mean' predictions", {
+  em <- summary(emmeans(fit2, "Age", dpar = "mean"))
+  expect_equal(nrow(em), 1)
+  
+  em <- summary(emmeans(fit2, "Age", by = "Trt", dpar = "mean"))
+  expect_equal(nrow(em), 2)
+})
