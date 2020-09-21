@@ -6,9 +6,9 @@
 \alias{emm_basis.brmsfit}
 \title{Support Functions for \pkg{emmeans}}
 \usage{
-recover_data.brmsfit(object, data, resp = NULL, dpar = NULL, nlpar = NULL, ...)
+\method{recover_data}{brmsfit}(object, data, resp = NULL, dpar = NULL, nlpar = NULL, ...)
 
-emm_basis.brmsfit(
+\method{emm_basis}{brmsfit}(
   object,
   trms,
   xlev,
@@ -42,6 +42,11 @@ Users are not required to call these functions themselves. Instead,
 they will be called automatically by the \code{emmeans} function
 of the \pkg{emmeans} package.
 }
+\details{
+In addition to the usual choices for \code{dpar}, the special value
+\code{dpar = "mean"} requests that we use the expected values of the posterior 
+predictive distribution, obtained via \code{\link{posterior_epred.brmsfit}}.
+}
 \examples{
 \dontrun{
 fit <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
@@ -53,5 +58,8 @@ library(emmeans)
 rg <- ref_grid(fit)
 em <- emmeans(rg, "disease")
 summary(em, point.est = mean)
+
+epred <- emmeans(fit, "disease", dpar = "mean")
+summary(epred, point.est = mean)
 }
 }

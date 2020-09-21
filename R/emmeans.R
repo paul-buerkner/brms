@@ -5,11 +5,16 @@
 #' they will be called automatically by the \code{emmeans} function
 #' of the \pkg{emmeans} package.
 #' 
+#' In addition to the usual choices for \code{dpar}, the special value
+#' \code{dpar = "mean"} requests that we use the expected values of the posterior 
+#' predictive distribution, obtained via \code{\link{posterior_epred.brmsfit}}.
+#' 
 #' @name emmeans-brms-helpers
 #' 
 #' @inheritParams posterior_epred.brmsfit
 #' @param data,trms,xlev,grid,vcov. Arguments required by \pkg{emmeans}.
 #' @param ... Additional arguments passed to \pkg{emmeans}.
+#' 
 #' 
 #' @examples 
 #' \dontrun{
@@ -22,41 +27,66 @@
 #' rg <- ref_grid(fit)
 #' em <- emmeans(rg, "disease")
 #' summary(em, point.est = mean)
+#' 
+#' epred <- emmeans(fit, "disease", dpar = "mean")
+#' summary(epred, point.est = mean)
 #' }
 NULL
 
 # recover the predictors used in the population-level part of the model
 #' @rdname emmeans-brms-helpers
-recover_data.brmsfit <- function(object, data, resp = NULL, dpar = NULL, 
-                                 nlpar = NULL, ...) {
-  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  trms <- attr(model.frame(bterms$fe, data = object$data), "terms")
-  # brms has no call component so the call is just a dummy
+recover_data.brmsfit <- function (object, data, resp = NULL, dpar = NULL, nlpar = NULL, 
+                                  ...) 
+{
+  if(is.character(dpar) && dpar == "mean") {
+    preds <- all.vars(.extract_par_terms(object, resp, NULL, nlpar)$fe)
+    for (pf in object$formula$pforms)
+      preds <- union(preds, all.vars(pf[-2]))
+    bterms <- list(fe = reformulate(preds))
+  }
+  else {
+    bterms <- .extract_par_terms(object, resp, dpar, nlpar)
+  }
+  trms <- attr(model.frame(bterms$fe, data = object$data), 
+               "terms")
+  
   emmeans::recover_data(call("brms"), trms, "na.omit", object$data, ...)
 }
+
 
 # Calculate the basis for making predictions. This is essentially the
 # inside of the predict() function with new data on the link scale. 
 # Transforming to response scale, if desired, is handled by emmeans.
 #' @rdname emmeans-brms-helpers
-emm_basis.brmsfit <- function(object, trms, xlev, grid, vcov., resp = NULL,
-                              dpar = NULL, nlpar = NULL, ...) {
-  bterms <- .extract_par_terms(object, resp, dpar, nlpar)
-  m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
-  contr <- lapply(object$data, function(x) attr(x, "contrasts"))
-  contr <- contr[!ulapply(contr, is.null)]
-  p <- combine_prefix(bterms)
-  cols2remove <- if (is_ordinal(bterms)) "(Intercept)"
-  X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
-  nm <- paste0(usc(p, "suffix"), colnames(X))
-  V <- vcov(object)[nm, nm, drop = FALSE]
-  # we are assuming no rank deficiency
+emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL, dpar = NULL, 
+                               nlpar = NULL, ...) 
+{
+  if (is.character(dpar) && dpar == "mean") {
+    post.beta <- posterior_epred(object, newdata = grid, re_formula = NA, ...)
+    bhat <- apply(post.beta, 2, mean)
+    V <- cov(post.beta)
+    X <- diag(length(bhat))
+    misc <- list()
+  }
+  else {
+    bterms <- .extract_par_terms(object, resp, dpar, nlpar)
+    m <- model.frame(trms, grid, na.action = na.pass, xlev = xlev)
+    contr <- lapply(object$data, function(x) attr(x, "contrasts"))
+    contr <- contr[!ulapply(contr, is.null)]
+    p <- combine_prefix(bterms)
+    cols2remove <- if (is_ordinal(bterms)) 
+      "(Intercept)"
+    X <- get_model_matrix(trms, m, cols2remove, contrasts.arg = contr)
+    nm <- paste0(usc(p, "suffix"), colnames(X))
+    V <- vcov(object)[nm, nm, drop = FALSE]
+    misc <- emmeans::.std.link.labels(bterms$family, list())
+    post.beta <- as.matrix(object, pars = paste0("b_", nm), 
+                           fixed = TRUE)
+    bhat <- apply(post.beta, 2, mean)
+  }
   nbasis <- matrix(NA)
   dfargs <- list()
   dffun <- function(k, dfargs) Inf
-  misc <- emmeans::.std.link.labels(bterms$family, list())
-  post.beta <- as.matrix(object, pars = paste0("b_", nm), fixed = TRUE)
-  bhat <- apply(post.beta, 2, mean)
   nlist(X, bhat, nbasis, V, dffun, dfargs, misc, post.beta)
 }
 
