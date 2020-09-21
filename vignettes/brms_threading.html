@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Sebastian Weber, Paul Bürkner" />
+
+<meta name="date" content="2020-09-21" />
+
+<title>Running brms models with within-chain parallelization</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Running brms models with within-chain parallelization</h1>
+<h4 class="author">Sebastian Weber, Paul Bürkner</h4>
+<h4 class="date">2020-09-21</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#quick-summary">Quick summary</a></li>
+<li><a href="#within-chain-parallelization">Within-chain parallelization</a></li>
+<li><a href="#example-model">Example model</a></li>
+<li><a href="#managing-parallelization-overhead">Managing parallelization overhead</a></li>
+<li><a href="#parallelization-speedup">Parallelization speedup</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Full Bayesian inference is a computationally very demanding task and often we wish to run our models faster in shorter walltime. With modern computers we nowdays have multiple processors available on a given machine such that the use of running the inference in parallel will shorten the overall walltime. While between-chain parallelization is straightforward by merely launching multiple chains at the same time, the use of within-chain parallelization is more complicated in various ways. This vignette aims to introduce the user to within-chain parallelization with <strong>brms</strong>, since its efficient use depends on various aspects specific to the users model.</p>
+</div>
+<div id="quick-summary" class="section level2">
+<h2>Quick summary</h2>
+<p>Bullet-point quick and dirty summary</p>
+</div>
+<div id="within-chain-parallelization" class="section level2">
+<h2>Within-chain parallelization</h2>
+<p>The within-chain parallelization implemented in <strong>brms</strong> is based on the <code>reduce_sum</code> facility in Stan. The basic principle <code>reduce_sum</code> uses is to split a large summation into arbitrary smaller partial sums. Due to the commutativity and associativity of the sum operation these smaller partial sums can be evaluated in any order and in parallel from one another. <strong>brms</strong> leverages <code>reduce_sum</code> to evaluate the log-likelihood of the model in parallel as for example</p>
+<p><span class="math display">\[
+\begin{aligned}
+l(y|\theta) &amp;= \sum_{i=1}^N l_i(y_i| \theta) \\
+ &amp;= \sum_{i=1}^{S_1} l_i(y_i| \theta) + \sum_{i=S_1+1}^N l_i(y_i| \theta).
+\end{aligned}
+\]</span></p>
+<p>As a consequence, the within-chain parallelization requires independent log-likelihood terms from one another which restricts its applicability to some degree.</p>
+<p>Furthermore, the within-chain parallelization is only applicable to the evaluation of the data likelihood while all other parts of the model will remain running serially. Thus, only a partial fraction of the entire Stan model will run in parallel which limits the potential speedup one may obtain. The theoretical speedup for a partially in parallel running program is described by <a href="https://en.wikipedia.org/wiki/Amdahl%27s_law">Amdahl‘s law</a>. For example, with 90% of the computational load running in parallel one can essentially double the exectuion speed with 2 cores while 8 cores may only speedup the program by at most 5x. How large the computational cost of the log likelihood is in relation to the entire model is very dependend on the model of the user.</p>
+<p>In practice, the speedups are even smaller than the theoertical speedups. This is caused by the additional overhead implied by forming multiple smaller sums than just one large one. For example, for each partial sum formed the entire parameter vector <span class="math inline">\(\theta\)</span> has to be copied in memory for Stan to be able to calculate the gradient of the log likelihood. Hence, with more partial sums, more copying is necessary as opposed to evaluating just one large sum. Whether the additional copying is indeed relevant depends on the computational cost of the log-likelihood of each term and the number of parameters. For a model with a computationally cheap normal log-likelihood this effect is more important than for a model with a Poisson log likelihood and for hierarchical models with many random effects more copying is needed than for simpler fixed effect models. It may therefore be necessary to form sufficiently large partial sums to warrant an efficient parallel execution. The size of the partial sums is referred to as the <code>grainsize</code> which is set to a reasonable default value, but for some models this tuning parameter requires some attention from the user for optimal performance.</p>
+<p>Finally it is important to note that by default the exact size and order of the partial sums is not stable as it is adjusted to the load of the system. As a result, exact numerical reproducibility is not guranteed by default. In order to warrant the same size and order of the partial sums, the <code>static</code> option must be used.</p>
+</div>
+<div id="example-model" class="section level2">
+<h2>Example model</h2>
+<p>Introduce example toy model.</p>
+</div>
+<div id="managing-parallelization-overhead" class="section level2">
+<h2>Managing parallelization overhead</h2>
+<p>Vary number of chunks</p>
+</div>
+<div id="parallelization-speedup" class="section level2">
+<h2>Parallelization speedup</h2>
+<p>Show hard-scaling speedup</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
