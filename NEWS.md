@@ -13,6 +13,8 @@ methods via argument `cores`. (#819)
 of `brmsprior` objects. (#761)
 * Store unused variables in the model's data frame via 
 argument `unused` of function `brmsformula`.
+* Support posterior mean predictions in `emmeans` via 
+`dpar = "mean"` thanks to Russell V. Lenth. (#993)
 
 ### Other Changes
 
