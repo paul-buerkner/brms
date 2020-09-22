@@ -81,6 +81,7 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
   resp <- validate_resp(resp, object, multiple = FALSE)
   stopifnot_resp(object, resp)
   bterms <- brmsterms(formula(object))
+  allvars <- bterms$allvars
   if (is.mvbrmsterms(bterms)) {
     bterms <- bterms$terms[[resp]]
   }
@@ -102,25 +103,7 @@ emm_basis.brmsfit <- function (object, trms, xlev, grid, vcov., resp = NULL,
     dpar <- as_one_character(dpar)
     if (dpar == "mean") {
       # prepare posterior mean predictions as a special case
-      # TODO: decide which variables to actually include in 'all_vars'
-      all_vars <- NULL
-      for (dp in all_dpars) {
-        if (is.btl(bterms$dpars[[dp]])) {
-          vars <- bterms$dpars[[dp]]$fe
-        } else {
-          vars <- bterms$dpars[[dp]]$covars
-        }
-        all_vars <- union(all_vars, vars)
-      }
-      for (nlp in all_nlpars) {
-        if (is.btl(bterms$nlpars[[nlp]])) {
-          vars <- bterms$nlpars[[nlp]]$fe
-        } else {
-          vars <- bterms$nlpars[[nlp]]$covars
-        }
-        all_vars <- union(all_vars, vars)
-      } 
-      out <- list(fe = terms_fe(str2formula(all_vars)))
+      out <- list(fe = terms_fe(allvars))
       class(out) <- "btl"
     } else {
       if (!dpar %in% all_dpars) {
