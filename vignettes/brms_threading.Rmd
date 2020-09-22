@@ -32,6 +32,25 @@ library(brms)
 ggplot2::theme_set(theme_default())
 ```
 
+```{r, benchmark, include=FALSE}
+benchmark_threading <- function(model, cores=1, grainsize=1, iter=100, static=FALSE, init=0) {
+
+    outp <- capture.output(scaling_model  <- suppressWarnings(update(model, refresh=0, threads=threading(1, grainsize[1], static=static), iter=2, backend="cmdstanr")))
+
+    run_benchmark <- function(cores, size, iter) {
+        unname(system.time(outp <- capture.output(suppressWarnings(update(scaling_model, iter=iter, seed=1234, init=init, refresh=0,
+                                  threads=threading(cores, grainsize=size, static=static)))))["elapsed"])
+    }
+
+    cases <- expand.grid(cores=cores, grainsize=grainsize, iter=iter)
+    cases$runtime <- with(cases, mapply(run_benchmark, cores, grainsize, iter))
+    cases
+}
+testdef  <- function(x) {
+    x^2
+}
+```
+
 ## Introduction
 
 Full Bayesian inference is a computationally very demanding task and
@@ -48,6 +67,10 @@ various aspects specific to the users model.
 ## Quick summary
 
 Bullet-point quick and dirty summary
+
+```{r}
+testdef(5)
+```
 
 ## Within-chain parallelization
 
@@ -120,3 +143,8 @@ Vary number of chunks
 
 Show hard-scaling speedup
 
+## Appendix
+
+```{r, eval=FALSE}
+<<benchmark>>
+```
