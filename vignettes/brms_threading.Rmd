@@ -33,10 +33,10 @@ devtools::load_all("~/work/brms-wds15")
 ggplot2::theme_set(theme_default())
 ```
 
-```{r, fake-data-sim, include=FALSE}
+```{r, fake-data-sim, include=FALSE, eval=TRUE}
 set.seed(54647)
 ## number of observations
-N <- 1E3
+N <- 1E4
 ## number of group levels
 G <- round(N/10)
 ## number of predictors
@@ -56,33 +56,22 @@ fake <- transform(as.data.frame(fake),
 fake  <- merge(fake, data.frame(g=1:G, eta=rnorm(G)), by="g")
 
 ## linear predictor
-fake  <- transform(fake,
-                   mu = theta + eta)
+fake  <- transform(fake, mu = theta + eta)
 
-## sample Gaussian and Poisson data
-fake  <- transform(fake,
-                   y1 = rnorm(N, mu, 0.2),
-                   y2 = rpois(N, exp(mu)))
-```
-
-```{r, model-gaussian, include=FALSE, eval=FALSE}
-model_gaussian_serial <- brm(y1 ~ 1 + x1 + x2 + (1 | g),
-                             data=fake,
-                             family = gaussian,
-                             iter=100,
-                             prior=prior(normal(0,1), class=b) +
-                                 prior(constant(1), class=sd, group=g))
-
+## sample Poisson data
+fake  <- transform(fake, y = rpois(N, exp(mu)))
 ```
 
 ```{r, model-poisson, include=FALSE}
-model_poisson_serial <- brm(y2 ~ 1 + x1 + x2 + (1 | g),
-                            data = fake,
-                            family = poisson,
-                            iter=100,
-                            prior = prior(normal(0,1), class=b) +
-                                prior(constant(1), class=sd, group=g),
-                            backend="cmdstanr")
+model_poisson <- brm(y ~ 1 + x1 + x2 + (1 | g),
+                     data = fake,
+                     family = poisson,
+                     iter=100,          ## short sampling to speedup example
+                     prior = prior(normal(0,1), class=b) +
+                         prior(constant(1), class=sd, group=g),
+                     backend="cmdstanr",
+                     threads=threading(2)
+                     )
 
 ```
 
@@ -117,7 +106,22 @@ various aspects specific to the users model.
 
 ## Quick summary
 
-Bullet-point quick and dirty summary
+- Due to details of the model and data-set speedups with more cores
+  can be very limited. Not every model amends to within-chain
+  parallelization and an empirical evaluation is in some cases
+  advisable.
+- Doubling the execution speed with few cores is a lot easier than
+  obtaining larger speedups with even more cores.
+- Models with computationally expensive likelihoods are easier to
+  parallelize than less expensive likelihoods, e.g. the Poisson
+  distribution involves expensive $\log\Gamma$ functions whereas the
+  normal likelihood is very cheap to calculate in comparison.
+- Models with many parameters (hierarchical models with
+  random-effects) carry a large overhead when running in parallel.
+- With a larger overhead of the model, the likelihood must be
+  sufficiently expensive such that the relative computational cost of
+  likelihood to parallelization overhead is favorable.
+- Do not use hyper-threading as a default.
 
 ## Within-chain parallelization
 
@@ -180,24 +184,79 @@ and order of the partial sums, the `static` option must be used.
 
 ## Example model
 
-Introduce example toy model.
+As a toy demonstration we use here a hierarchical Poisson model. The
+model is a varying intercept model with $`r N`$ data observation which
+are grouped into $`r G`$ groups. Each data item has $`r P`$ continuous
+covariates. The simulation code for the fake data can be found in the
+appendix and it's first $10$ rows are:
 
 ```{r}
-kable(head(fake, 20), digits=3)
+kable(head(fake, 10), digits=3)
 ```
+
+The **brms** model fitting this data is:
+
+```{r, eval=FALSE}
+<<model-poisson>>
+```
+
+Here we have fixed the standard deviation of the between-group
+variation for the intercept to the true value of $1$ as used in the
+simulation. This is to avoid unfavorable geometry of the problem
+allowing us to concentrate on computational aspects alone.
+
+The Poisson likelihood is a relatively expensive likelihood due to the
+use of $\log\Gamma$ function as opposed to, for example, a normal
+likelihood which does is by far less expensive to evaluate
+computationally. Morever, this example is chosen in order to
+demonstrate parallelization overhead implied by a large number of
+random effects.
 
 ## Managing parallelization overhead
 
-Vary number of chunks
+As discussed above, the key mechanism to run Stan programs with
+parallelization is to split the large sum over independent log
+likelihood terms into arbitrary smaller *partial sums*. Creating more
+*partial sums* allows to increase simultaneous parallel computations
+in a granular way, but at the same time additional overhead is
+introduced through the requirement to copy the entire parameter vector
+for each *partial sum* formed along with further overhead due to
+splitting up a single large task into multipe smaller ones.
 
+By default **brms** will choose a sensible `grainsize` which defines
+how large a given *partial sum* will roughly be. The actual chunk size
+is automatically tuned whenever the default non-static scheduler is
+used, which is the recommended choice to start with. As noted before,
+only the static scheduler is giving fully determinstic results since
+the chunk size and order of partial sums will be the same between
+calls.
+
+While we expect that the default `grainsize` in **brms** is reasonably
+good for many models, it can improve performance if one tunes the
+`grainsize` specifically to a given model and data-set. We suggest to
+increase successivley the number of chunks a given data set is split
+into with the static scheduler and run this on a single core. This way
+one can control the number of *partial sum* accuratley and monitor the
+execution time as it increases. These experiements are run with only a
+single chain and very short iteration numbers as we are not interested
+in the statistical results, but rather aim to be able to explore the
+tuning parameter space of the chunk size as quickly as possible. The
+number of iterations needed to get reliable runtime estimates for a
+given chunk size will depend on many details and the easiest way to
+determine this is to run this benchmark with multiple number of
+iterations. Whenever their results match approximetly, then the
+iteration numbers are sufficient.
+
+Below is an example R code demonstrating such a benchmark. The utility
+function `benchmark_threading` is shown and explained in the appendix.
 
 ```{r, chunking-scale, message=FALSE, warning=FALSE, results='hide'}
 chunking_bench <- transform(data.frame(chunks=2^(0:4)), grainsize=ceiling(N/chunks))
 
-scaling_chunking <- benchmark_threading(model_poisson_serial,
+scaling_chunking <- benchmark_threading(model_poisson,
                                         1,                         ## use just one core
                                         chunking_bench$grainsize,  ## with various chunk sizes
-                                        iter=c(50,100),            ## very short and short runs
+                                        iter=c(25,50),             ## very short test runs
                                         static=TRUE)               ## with static partitioner
 
 ## for additional data munging please refer to the appendix
@@ -216,6 +275,19 @@ scaling_chunking <- transform(merge(scaling_chunking, single_chunk),
 
 ```
 
+Graphically summarizing the results shows that with more than 8 chunks
+the overhead is about 10% and increasing further with more chunks. For
+models without many random effects no such overhead should be
+observed. Furthermore, one can see that 25 and 50 iterations give
+similar results implying that 25 iterations suffice for stable runtime
+estimates for these (and the following) benchmarks. The overhead of up
+to 20% in this example with 16 chunks may seem large due to the
+scaling of the plot. One must not forget that when we start to use
+more CPU cores, the overhead is easily offset, but it limits the
+maximal speedup we can get. For example, some 2 units of computation
+become 2.4 units due to the overhead such that on 2 cores we don't
+quite double the execution speed, but rather get a 1.6x increase in
+speed instead of a 2x speedup.
 
 ```{r}
 ggplot(scaling_chunking, aes(chunks, slowdown, colour=iter, shape=iter)) +
@@ -227,16 +299,26 @@ ggplot(scaling_chunking, aes(chunks, slowdown, colour=iter, shape=iter)) +
 
 ## Parallelization speedup
 
-Show hard-scaling speedup
+In practice we are often interested in so-called "hard-scaling"
+properties of the parallelization system. That is, for a fixed problem
+size we would like to know how much faster we can execute the Stan
+program with increasing number of threads. As nowadays CPUs usually
+run with so-called hyper-threading it is also of interest if this
+technique is beneficial for Stan programs as well (spoiler alert: it's
+not useful). As we have seen before, the `grainsize` can have an
+impact on the performance and is as such a tuning parameter. Below we
+demonstrate some exemplary R code which runs a benchmark with varying
+number of CPU cores and varying number of `grainsizes`.
 
 ```{r, speedup-scale, message=FALSE, warning=FALSE, results='hide'}
 num_cpu <- detectCores(logical=FALSE)
+num_cpu_logical <- detectCores(logical=TRUE)
 grainsize_default <- ceiling(N/(2*num_cpu))
-cores  <- unique(c(2^seq(0, floor(log2(num_cpu))), num_cpu))
-scaling_cores <- benchmark_threading(model_poisson_serial,
+cores  <- sort(unique(c(2^seq(0, floor(log2(num_cpu_logical))), num_cpu, num_cpu_logical)))
+scaling_cores <- benchmark_threading(model_poisson,
                                      cores,
                                      round(c(2*grainsize_default, grainsize_default, grainsize_default/2)),
-                                     iter=c(50,100), static=FALSE)
+                                     iter=c(25), static=FALSE)
 
 single_core  <- transform(subset(scaling_cores, cores==1),
                           runtime_single=runtime, runtime=NULL, cores=NULL)
@@ -247,9 +329,17 @@ scaling_cores <- transform(merge(scaling_cores, single_core),
 
 ```
 
+It is important to consider the absolute runtime and the relative
+speedup vs running on a single core. The relative speedup can be
+misleading if the single core runtime is very slow in which case speed
+gains on more CPUs may look overly good. Considering instead the
+absolute runtime avoids this problem - and after all, we are
+interested in the shortest walltime we can get rather than any
+relative speedups.
+
 ```{r}
 ggplot(scaling_cores, aes(cores, runtime, shape=grainsize, color=grainsize)) +
-    facet_wrap(~iter, nrow=1, ncol=2, labeller=label_both, scales="free_y") +
+    geom_vline(xintercept=num_cpu, linetype=3) +
     geom_line() + geom_point() + 
     scale_x_log10(breaks=scaling_cores$cores) +
     scale_y_log10() +
@@ -257,16 +347,40 @@ ggplot(scaling_cores, aes(cores, runtime, shape=grainsize, color=grainsize)) +
     ggtitle("Runtime with varying number of cores")
 
 ggplot(scaling_cores, aes(cores, speedup, shape=grainsize, color=grainsize)) +
-    facet_wrap(~iter, nrow=1, ncol=2, labeller=label_both) +
     geom_abline(slope=1, intercept=0, linetype=2) +
+    geom_vline(xintercept=num_cpu, linetype=3) +
     geom_line() + geom_point() +
     scale_x_log10(breaks=scaling_cores$cores) +
     scale_y_log10(breaks=scaling_cores$cores) +
-    theme(aspect.ratio=1, legend.position=c(0.1, 0.8)) +
-    coord_fixed(xlim=c(1, num_cpu), ylim=c(1, num_cpu)) +
+    theme(aspect.ratio=1) +
+    coord_fixed(xlim=c(1, num_cpu_logical), ylim=c(1, num_cpu_logical)) +
     ggtitle("Relative speedup vs 1 core")
 
 ```
+
+The vertical dashed line marks the physical number of CPU cores on the
+machine this was run. We can see that there is no further reduction in
+execution time when increasing the thread count to be greater than the
+number of pyhsical CPUs. Hence, the use of hyperthreading is not
+helpful when aiming to maximize the speed of a Stan program. Moreover,
+we can see that for 2 - 4 CPU cores all the `grainsize`s perform
+similarily well. The overall speedups may not seem impressive in this
+case, which is attributed in this case to the large number of random
+effects. However, we still obtain a doubling in speed when using 4
+cores and on 2 cores and increase of 40% is reached.
+
+```{r}
+kable(scaling_cores, digits=2)
+```
+
+For a given Stan model one should usually choose the number of chains
+and the number of threads per chain to be equal to the number of
+(physical) cores one wishes to use. Only if different chains of the
+model have relativley different execution times (which they should not
+have, but it occurs in practice), then one may consider the use of
+hyper-threading. Doing so will share the ressources evenly accross all
+chains and whenever the fastest chain finishes, the freed ressources
+can be given to the still running chains.
 
 ## Appendix
 
@@ -274,13 +388,6 @@ ggplot(scaling_cores, aes(cores, speedup, shape=grainsize, color=grainsize)) +
 
 ```{r, eval=FALSE}
 <<fake-data-sim>>
-```
-
-### Gaussian example model
-
-
-```{r, eval=FALSE}
-<<model-gaussian>>
 ```
 
 ### Poisson example model
