@@ -648,6 +648,21 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   p(eta, old_order, row = FALSE)
 }
 
+# update .MISC environment of the stanfit object
+# allows to call log_prob and other C++ using methods
+# on objects not created in the current R session
+update_misc_env <- function(x) {
+  stopifnot(is.brmsfit(x))
+  if (!isTRUE(x$backend == "rstan")) {
+    # .MISC env is only relevant for rstan
+    return(x)
+  }
+  # TODO: detect when updating .MISC is not required
+  # TODO: find a more efficient way to update .MISC
+  x$fit@.MISC <- suppressMessages(brm(fit = x, chains = 0))$fit@.MISC
+  x
+}
+
 # extract argument names of a post-processing method
 arg_names <- function(method) {
   opts <- c("posterior_predict", "posterior_epred", "log_lik")
