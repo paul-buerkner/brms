@@ -294,7 +294,7 @@ tuning parameter space of the chunk size as quickly as possible. The
 number of iterations needed to get reliable runtime estimates for a
 given chunk size will depend on many details and the easiest way to
 determine this is to run this benchmark with multiple number of
-iterations. Whenever their results match approximetly, then the
+iterations. Whenever their results match approximately, then the
 iteration numbers are sufficient.
 
 Below is an example R code demonstrating such a benchmark. The utility
