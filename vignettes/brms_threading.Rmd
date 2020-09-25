@@ -60,6 +60,12 @@ fake  <- transform(fake, mu = theta + eta)
 
 ## sample Poisson data
 fake  <- transform(fake, y = rpois(N, exp(mu)))
+
+## shuffle order of data rows to ensure even distribution of computational effort
+fake <- fake[sample.int(N, N),]
+
+## drop not needed rownames
+rownames(fake) <- NULL
 ```
 
 ```{r, model-poisson, include=FALSE}
@@ -76,6 +82,12 @@ model_poisson <- brm(y ~ 1 + x1 + x2 + (1 | g),
 ```
 
 ```{r, benchmark, include=FALSE}
+## benchmarks given model with cross-product of tuning parameters CPU
+## cores, grainsize and iterations. Models are run with either static
+## or non-static scheduler and init is set by default to 0 on the
+## unconstrained scale. Function returns a data-frame with the
+## cross-product of the tuning parameters and as result colum the
+## respective runtime.
 benchmark_threading <- function(model, cores=1, grainsize=1, iter=100, static=FALSE, init=0) {
 
     scaling_model  <- update(model, refresh=0, threads=threading(1, grainsize=grainsize[1], static=static), chains=1, iter=2, backend="cmdstanr")
@@ -106,6 +118,41 @@ various aspects specific to the users model.
 
 ## Quick summary
 
+Assuming you have a **brms** model which you wish to evaluate faster
+by using more cores per chain, for example:
+
+```{r, eval=FALSE}
+fit_serial <- brm(count ~ zAge + zBase * Trt + (1|patient),
+                  data = epilepsy, family = poisson(),
+                  chains = 4, cores = 4, backend="cmdstanr"
+                  )
+```
+
+Then running this model with threading requires `cmdstanr` as backend
+and you can simply add threading support to an existing model with the
+`update` mechanism as:
+
+```{r, eval=FALSE}
+fit_parallel <- update(fit_serial, chains = 2, cores = 2, backend="cmdstanr",
+                       threads=threading(2))
+```
+
+The example above assumes that 4 cores are available which are best
+used without within-chain parallelization by running 4 chains in
+parallel. When using within chain parallelization it is still
+advisable to use just as many threads *in total* as you have CPU
+cores. It's thus sensible in this case to reduce the number of chains
+running in parallel to just 2, but allow each chain to use 2
+threads. Obviously this will reduce the number of iterations in the
+posterior here as we assumed a fixed amount of 4 cores.
+
+- Only apply within-chain parallelization to large problems which take
+  more than a few minutes at least to calculate. The `epilepsy`
+  example above is actually too small to gain in speed (less than 5s
+  per chain on this machine).
+- Within-chain parallelization is less efficient than between-chain
+  parallelization. So only use within-chain parallelism if more CPUs
+  can be used to run the entire analysis.
 - Due to details of the model and data-set speedups with more cores
   can be very limited. Not every model amends to within-chain
   parallelization and an empirical evaluation is in some cases
@@ -121,7 +168,10 @@ various aspects specific to the users model.
 - With a larger overhead of the model, the likelihood must be
   sufficiently expensive such that the relative computational cost of
   likelihood to parallelization overhead is favorable.
-- Do not use hyper-threading as a default.
+- Avoid using hyper-threading, i.e. only use as many threads as you
+  have physical cores available.
+- Ensure that the data is randomly sorted such that consecutive
+  subsets of the data are roughly of the same computational effort.
 
 ## Within-chain parallelization
 
@@ -153,22 +203,22 @@ parallel running program is described by [Amdahl‘s
 law](https://en.wikipedia.org/wiki/Amdahl%27s_law). For example, with
 90% of the computational load running in parallel one can essentially
 double the exectuion speed with 2 cores while 8 cores may only speedup
-the program by at most 5x. How large the computational cost of the log
-likelihood is in relation to the entire model is very dependend on the
-model of the user.
+the program by at most 5x. How large the computational cost of the
+log-likelihood is in relation to the entire model is very dependend on
+the model of the user.
 
 In practice, the speedups are even smaller than the theoertical
 speedups. This is caused by the additional overhead implied by forming
 multiple smaller sums than just one large one. For example, for each
 partial sum formed the entire parameter vector $\theta$ has to be
 copied in memory for Stan to be able to calculate the gradient of the
-log likelihood. Hence, with more partial sums, more copying is
+log-likelihood. Hence, with more partial sums, more copying is
 necessary as opposed to evaluating just one large sum. Whether the
 additional copying is indeed relevant depends on the computational
 cost of the log-likelihood of each term and the number of
 parameters. For a model with a computationally cheap normal
 log-likelihood this effect is more important than for a model with a
-Poisson log likelihood and for hierarchical models with many random
+Poisson log-likelihood and for hierarchical models with many random
 effects more copying is needed than for simpler fixed effect models.
 It may therefore be necessary to form sufficiently large partial sums
 to warrant an efficient parallel execution. The size of the partial
@@ -179,8 +229,9 @@ attention from the user for optimal performance.
 Finally it is important to note that by default the exact size and
 order of the partial sums is not stable as it is adjusted to the load
 of the system. As a result, exact numerical reproducibility is not
-guranteed by default. In order to warrant the same size
-and order of the partial sums, the `static` option must be used.
+guranteed by default. In order to warrant the same size and order of
+the partial sums, the `static` option must be used and set to `TRUE`
+which uses a deterministic scheduler for the parallel work.
 
 ## Example model
 
@@ -207,10 +258,9 @@ allowing us to concentrate on computational aspects alone.
 
 The Poisson likelihood is a relatively expensive likelihood due to the
 use of $\log\Gamma$ function as opposed to, for example, a normal
-likelihood which does is by far less expensive to evaluate
-computationally. Morever, this example is chosen in order to
-demonstrate parallelization overhead implied by a large number of
-random effects.
+likelihood which does is by far less expensive operations. Morever,
+this example is chosen in order to demonstrate parallelization
+overhead implied by a large number of random effects.
 
 ## Managing parallelization overhead
 
@@ -228,8 +278,8 @@ how large a given *partial sum* will roughly be. The actual chunk size
 is automatically tuned whenever the default non-static scheduler is
 used, which is the recommended choice to start with. As noted before,
 only the static scheduler is giving fully determinstic results since
-the chunk size and order of partial sums will be the same between
-calls.
+the chunk size and order of partial sums will be the same during
+sampling.
 
 While we expect that the default `grainsize` in **brms** is reasonably
 good for many models, it can improve performance if one tunes the
@@ -358,16 +408,17 @@ ggplot(scaling_cores, aes(cores, speedup, shape=grainsize, color=grainsize)) +
 
 ```
 
-The vertical dashed line marks the physical number of CPU cores on the
-machine this was run. We can see that there is no further reduction in
-execution time when increasing the thread count to be greater than the
-number of pyhsical CPUs. Hence, the use of hyperthreading is not
-helpful when aiming to maximize the speed of a Stan program. Moreover,
-we can see that for 2 - 4 CPU cores all the `grainsize`s perform
-similarily well. The overall speedups may not seem impressive in this
-case, which is attributed in this case to the large number of random
+The vertical dotted line marks the physical number of CPU cores on the
+machine this was run. The dashed lines marks the theoretical maximal
+speedup. We can see that there is no further reduction in execution
+time when increasing the thread count to be greater than the number of
+pyhsical CPUs. Hence, the use of hyper-threading is not helpful when
+aiming to maximize the speed of a Stan program. Moreover, we can see
+that for 2 - 4 CPU cores all the `grainsize`s perform similarily
+well. The overall speedups may not seem impressive in this case, which
+is attributed in this case to the large number of random
 effects. However, we still obtain a doubling in speed when using 4
-cores and on 2 cores and increase of 40% is reached.
+cores and with 2 cores an increase of 40% is reached.
 
 ```{r}
 kable(scaling_cores, digits=2)
@@ -377,10 +428,10 @@ For a given Stan model one should usually choose the number of chains
 and the number of threads per chain to be equal to the number of
 (physical) cores one wishes to use. Only if different chains of the
 model have relativley different execution times (which they should not
-have, but it occurs in practice), then one may consider the use of
-hyper-threading. Doing so will share the ressources evenly accross all
-chains and whenever the fastest chain finishes, the freed ressources
-can be given to the still running chains.
+have, but it occurs sometimes in practice), then one may consider the
+use of hyper-threading. Doing so will share the ressources evenly
+accross all chains and whenever the fastest chain finishes, the freed
+ressources can be given to the still running chains.
 
 ## Appendix
 
