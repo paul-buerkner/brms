@@ -286,7 +286,7 @@ good for many models, it can improve performance if one tunes the
 `grainsize` specifically to a given model and data-set. We suggest to
 increase successivley the number of chunks a given data set is split
 into with the static scheduler and run this on a single core. This way
-one can control the number of *partial sum* accuratley and monitor the
+one can control the number of *partial sum* accurately and monitor the
 execution time as it increases. These experiements are run with only a
 single chain and very short iteration numbers as we are not interested
 in the statistical results, but rather aim to be able to explore the
