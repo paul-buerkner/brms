@@ -429,7 +429,7 @@ and the number of threads per chain to be equal to the number of
 (physical) cores one wishes to use. Only if different chains of the
 model have relatively different execution times (which they should not
 have, but it occurs sometimes in practice), then one may consider the
-use of hyper-threading. Doing so will share the ressources evenly
+use of hyper-threading. Doing so will share the resources evenly
 accross all chains and whenever the fastest chain finishes, the freed
 ressources can be given to the still running chains.
 
