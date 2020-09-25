@@ -427,7 +427,7 @@ kable(scaling_cores, digits=2)
 For a given Stan model one should usually choose the number of chains
 and the number of threads per chain to be equal to the number of
 (physical) cores one wishes to use. Only if different chains of the
-model have relativley different execution times (which they should not
+model have relatively different execution times (which they should not
 have, but it occurs sometimes in practice), then one may consider the
 use of hyper-threading. Doing so will share the ressources evenly
 accross all chains and whenever the fastest chain finishes, the freed
