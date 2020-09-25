@@ -233,6 +233,12 @@ test_that("make_standata handles multivariate models", {
   expect_equal(sdata$con_theta_x, as.array(c(2, 1)))
 })
 
+test_that("make_standata removes NAs correctly", {
+  dat <- data.frame(y = c(rnorm(9), NA))
+  sdata <- make_standata(y ~ 1, dat)
+  expect_equal(as.numeric(sdata$Y), dat$y[1:9])
+})
+
 test_that("make_standata handles the 'subset' addition argument correctly", {
   dat1 <- data.frame(
     y1 = rnorm(15), y2 = NA,

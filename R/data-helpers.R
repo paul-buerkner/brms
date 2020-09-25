@@ -268,8 +268,6 @@ na.omit2 <- function(object, bterms, ...) {
     responses <- names(bterms$terms)
     subsets <- lapply(bterms$terms, get_ad_values, "subset", "subset", object)
     vars_sub <- lapply(bterms$terms, function(x) all_vars(x$allvars)) 
-  } else {
-    responses <- NULL
   }
   vars_keep_na <- vars_keep_na(bterms)
   omit <- logical(nobs)
@@ -279,16 +277,22 @@ na.omit2 <- function(object, bterms, ...) {
     keep_all_na <- all(vars_v %in% vars_keep_na)
     if (!is.atomic(x) || keep_all_na) {
       next
-    } 
-    keep_na <- rep(TRUE, nobs)
-    for (r in responses) {
-      if (any(vars_v %in% vars_sub[[r]])) {
-        if (!is.null(subsets[[r]])) {
-          # keep NAs ignored because of 'subset'
-          keep_na <- keep_na & !subsets[[r]]
-        } else {
-          # remove all NAs in this variable
-          keep_na <- keep_na & FALSE
+    }
+    if (!is.mvbrmsterms(bterms)) {
+      # remove all NAs in this variable
+      keep_na <- rep(FALSE, nobs)
+    } else {
+      # allow to retain NAs in subsetted variables
+      keep_na <- rep(TRUE, nobs)
+      for (r in responses) {
+        if (any(vars_v %in% vars_sub[[r]])) {
+          if (!is.null(subsets[[r]])) {
+            # keep NAs ignored because of 'subset'
+            keep_na <- keep_na & !subsets[[r]]
+          } else {
+            # remove all NAs in this variable
+            keep_na <- keep_na & FALSE
+          }
         }
       }
     }
