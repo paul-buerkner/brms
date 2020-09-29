@@ -422,6 +422,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # re-use existing model
     x <- fit
     x$criteria <- list()
+    backend <- x$backend
     sdata <- standata(x)
     model <- compiled_model(x)
   } else {  

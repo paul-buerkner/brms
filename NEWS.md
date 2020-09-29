@@ -29,6 +29,8 @@ in favor of argument `prob`.
 
 * Fix a problem in `pp_check` inducing wronger observation
 orders in time series models thanks to Fiona Seaton. (#1007)
+* Fix multiple problems with `loo_moment_match` that prevented
+it from working for some more complex models.
 
 
 # brms 2.13.5

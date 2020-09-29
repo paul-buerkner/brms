@@ -110,7 +110,7 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
 # transform parameters to the constraint space
 .update_pars <- function(x, upars, ...) {
   # list with one element per posterior draw
-  pars <- apply(upars, 1, rstan::constrain_pars, object = x$fit)
+  pars <- apply(upars, 1, .constrain_pars, x = x)
   # transform samples
   nsamples <- length(pars)
   pars <- unlist(pars)
@@ -143,6 +143,14 @@ loo_moment_match.brmsfit <- function(x, loo, k_threshold = 0.7, newdata = NULL,
     list(chain_id = 1, iter = nsamples, thin = 1, warmup = 0)
   )
   rename_pars(x)
+}
+
+# wrapper around rstan::constrain_pars
+# ensures that the right posterior samples are excluded
+.constrain_pars <- function(upars, x) {
+  out <- rstan::constrain_pars(upars, object = x$fit)
+  out[x$exclude] <- NULL
+  out
 }
 
 # compute log_lik values based on the unconstrained parameters
