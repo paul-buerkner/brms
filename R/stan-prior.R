@@ -26,7 +26,7 @@
 stan_prior <- function(prior, class, coef = NULL, group = NULL, 
                        type = "real", dim = "", coef_type = "real",
                        prefix = "", suffix = "", broadcast = "vector", 
-                       comment = "", px = list()) {
+                       header_type = "", comment = "", px = list()) {
   prior_only <- isTRUE(attr(prior, "sample_prior") == "only")
   prior <- subset2(
     prior, class = class, coef = c(coef, ""), 
@@ -170,6 +170,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     } else {
       # parameter can be defined in the parameters block
       str_add(out$par) <- par_definition
+    }
+    if (nzchar(header_type)) {
+      str_add(out$pll_args) <- glue(", {header_type} {par}") 
     }
   } else {
     if (has_constant_priors) {

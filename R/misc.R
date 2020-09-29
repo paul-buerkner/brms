@@ -894,9 +894,9 @@ round_largest_remainder <- function(x) {
   out
 }
 
-# add leading and trailing whitespaces
+# add leading and trailing white spaces
 # @param x object accepted by paste
-# @param nsp number of whitespaces to add
+# @param nsp number of white spaces to add
 wsp <- function(x = "", nsp = 1) {
   sp <- collapse(rep(" ", nsp))
   if (length(x)) {
@@ -905,6 +905,16 @@ wsp <- function(x = "", nsp = 1) {
     out <- NULL
   } 
   out
+}
+
+# add white space per line the the strings
+# @param x object accepted by paste
+# @param nsp number of white spaces to add
+wsp_per_line <- function(x, nsp) {
+  sp <- collapse(rep(" ", nsp))
+  x <- paste0(sp, x)
+  x <- gsub("\\n(?=.+)", paste0("\n", sp), x, perl = TRUE)
+  x
 }
 
 # remove whitespaces from strings

@@ -789,6 +789,15 @@ has_terms <- function(formula) {
     length(attr(terms, "offset")) 
 }
 
+# has a linear formula any terms except overall effects?
+has_special_terms <- function(x) {
+  if (!is.btl(x)) {
+    return(FALSE)
+  }
+  special_terms <- c("sp", "sm", "gp", "ac", "cs", "offset")
+  NROW(x[["re"]]) > 0 || any(lengths(x[special_terms]))
+}
+
 # indicate if the predictor term belongs to a non-linear parameter
 is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))

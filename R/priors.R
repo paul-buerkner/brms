@@ -1967,3 +1967,8 @@ is_special_prior <- function(prior, target = NULL) {
   regex <- paste0("^", regex_or(target), "\\(")
   grepl(regex, prior)
 }
+
+# check if parameters should be samples only from the prior
+is_prior_only <- function(prior) {
+  is_equal(get_sample_prior(prior), "only")
+}

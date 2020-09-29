@@ -962,3 +962,9 @@ test_that("make_standata handles grouped ordinal thresholds correctly", {
   expect_equal(sdata$nthres, as.array(c(6, 6)))
   expect_equal(sdata$ngrthres, 2)
 })
+
+test_that("information for threading is handled correctly", {
+  dat <- data.frame(y = 1:10)
+  sdata <- make_standata(y ~ 1, dat, threads = threading(2, grainsize = 3))
+  expect_equal(sdata$grainsize, 3)
+})

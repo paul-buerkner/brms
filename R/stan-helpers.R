@@ -2,7 +2,7 @@
 # of Stan code snippets to be pasted together later on
 
 # define Stan functions or globally used transformed data
-stan_global_defs <- function(bterms, prior, ranef) {
+stan_global_defs <- function(bterms, prior, ranef, threads) {
   families <- family_names(bterms)
   links <- family_info(bterms, "link")
   unique_combs <- !duplicated(paste0(families, ":", links))
@@ -32,10 +32,6 @@ stan_global_defs <- function(bterms, prior, ranef) {
   family_files <- family_info(bterms, "include")
   if (length(family_files)) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
-  }
-  const <- family_info(bterms, "const")
-  if (length(const)) {
-    str_add(out$tdata_def) <- cglue("  {const};\n")
   }
   is_ordinal <- ulapply(families, is_ordinal)
   if (any(is_ordinal)) {
@@ -93,6 +89,9 @@ stan_global_defs <- function(bterms, prior, ranef) {
       "  #include 'fun_normal_fcor.stan'\n",
       "  #include 'fun_student_t_fcor.stan'\n"
     )
+  }
+  if (use_threading(threads)) {
+    str_add(out$fun) <- "  #include 'fun_sequence.stan'\n"
   }
   out
 }
@@ -214,6 +213,36 @@ stan_needs_kronecker <- function(ranef) {
     out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
   }
   out
+}
+
+# functions to handle indexing when threading
+stan_slice <- function(threads) {
+  str_if(use_threading(threads), "[start:end]")
+}
+
+stan_nn <- function(threads) {
+  str_if(use_threading(threads), "[nn]", "[n]")
+}
+
+stan_nn_def <- function(threads) {
+  str_if(use_threading(threads), "    int nn = n + start - 1;\n")
+}
+
+# clean up arguments for partial_log_lik
+# @param ... strings containing arguments of the form ', type identifier'
+# @return named list of two elements:
+#   typed: types + identifiers for use in the function header
+#   plain: identifiers only for use in the function call
+stan_clean_pll_args <- function(...) {
+  args <- paste0(...)
+  # split up header to remove duplicates
+  typed <- unlist(strsplit(args, ", +"))[-1]
+  typed <- unique(typed)
+  plain <- unlist(strsplit(typed, " +"))
+  plain <- plain[seq(2, length(plain), 2)]
+  typed <- collapse(", ", typed)
+  plain <- collapse(", ", plain)
+  nlist(typed, plain)
 }
 
 # prepare a string to be used as comment in Stan

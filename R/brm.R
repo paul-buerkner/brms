@@ -131,17 +131,23 @@
 #'   be as many processors as the hardware and RAM allow (up to the number of
 #'   chains). For non-Windows OS in non-interactive \R sessions, forking is used
 #'   instead of PSOCK clusters.
+#' @param threads Number of threads to use in within-chain parallelization. For
+#'   more control over the threading process, \code{threads} may also be a
+#'   \code{brmsthreads} object created by \code{\link{threading}}. Within-chain
+#'   parallelization is experimental! We recommend its use only if you are
+#'   experienced with Stan's \code{reduce_sum} function and have a slow running
+#'   model that cannot be sped up by any other means.
 #' @param algorithm Character string naming the estimation approach to use.
 #'   Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions,
 #'   \code{"fullrank"} for variational inference with a multivariate normal
 #'   distribution, or \code{"fixed_param"} for sampling from fixed parameter
 #'   values. Can be set globally for the current \R session via the
-#'   \code{"stan_algorithm"} option (see \code{\link{options}}).
+#'   \code{"brms.algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
 #'   fitting the Stan model. Options are \code{"rstan"} (the default) or
 #'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
-#'   \code{"stan_backend"} option (see \code{\link{options}}). Details on the
+#'   \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 #'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
 #'   \url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
 #'   respectively.
@@ -380,9 +386,10 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 save_mevars = FALSE, save_all_pars = FALSE, 
                 inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1,
-                cores = getOption("mc.cores", 1), control = NULL,
-                algorithm = getOption("stan_algorithm", "sampling"),
-                backend = getOption("stan_backend", "rstan"),
+                cores = getOption("mc.cores", 1), 
+                threads = NULL, control = NULL,
+                algorithm = getOption("brms.algorithm", "sampling"),
+                backend = getOption("brms.backend", "rstan"),
                 future = getOption("future", FALSE), silent = TRUE, 
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, empty = FALSE, rename = TRUE, ...) {
@@ -396,7 +403,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   }
   
   # validate arguments later passed to Stan
-  dots <- list(...)
   algorithm <- match.arg(algorithm, algorithm_choices())
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
@@ -405,6 +411,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   thin <- as_one_numeric(thin)
   chains <- as_one_numeric(chains)
   cores <- as_one_numeric(cores)
+  threads <- validate_threads(threads)
   future <- as_one_logical(future) && chains > 0L
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
@@ -443,7 +450,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x <- brmsfit(
       formula = formula, data = data, data2 = data2, prior = prior, 
       stanvars = stanvars, algorithm = algorithm, backend = backend,
-      family = family
+      threads = threads, family = family
     )
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
@@ -454,13 +461,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$model <- .make_stancode(
       bterms, data = data, prior = prior, 
       stanvars = stanvars, save_model = save_model,
-      backend = backend
+      backend = backend, threads = threads
     )
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     sdata <- .make_standata(
       bterms, data = data, prior = prior, 
-      data2 = data2, stanvars = stanvars
+      data2 = data2, stanvars = stanvars, 
+      threads = threads
     )
     if (empty) {
       # return the brmsfit object with an empty 'fit' slot
@@ -470,13 +478,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args <- stan_model_args
     compile_args$model <- x$model
     compile_args$backend <- backend
+    compile_args$threads <- threads
     model <- do_call(compile_model, compile_args)
   }
   
   # fit the Stan model
   fit_args <- nlist(
     model, sdata, algorithm, backend, iter, warmup, thin, chains, 
-    cores, inits, exclude = x$exclude, control, future, seed, 
+    cores, threads, inits, exclude = x$exclude, control, future, seed, 
     silent, ...
   )
   x$fit <- do_call(fit_model, fit_args)
