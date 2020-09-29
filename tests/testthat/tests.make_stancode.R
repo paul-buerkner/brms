@@ -2108,7 +2108,9 @@ test_that("threaded Stan code is correct", {
     gender = factor(c(rep("m", 30), rep("f", 29)))
   )
   
-  options(brms.backend = "cmdstanr")
+  # parsing requires cmdstanr to be installed which is not the case
+  # on CRAN or travis yet
+  options(brms.parse_stancode = FALSE, brms.backend = "cmdstanr")
   threads <- threading(2, grainsize = 20)
   
   bform <- bf(
