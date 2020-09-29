@@ -619,9 +619,9 @@ stan_re <- function(ranef, prior, ...) {
       )
       if (has_cov) {
         rdef <- glue(
-          "as_matrix(kronecker(Lcov_{id},", 
-          " diag_pre_multiply(sd_{id}, L_{id})) *",
-          " to_vector(z_{id}), N_{id}, M_{id})"
+          "as_matrix(chol_kronecker_multiply(Lcov_{id},", 
+          " diag_pre_multiply(sd_{id}, L_{id}),",
+          " to_vector(z_{id})), N_{id}, M_{id})"
         )
       } else {
         rdef <- glue("transpose(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})")

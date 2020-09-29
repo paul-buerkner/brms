@@ -347,7 +347,7 @@ test_that("customized covariances appear in the Stan code", {
   scode <- make_stancode(rating ~ treat + (1 + treat | gr(subject, cov = M)), 
                          data = inhaler)
   expect_match2(scode,
-    "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)"
+    "chol_kronecker_multiply(Lcov_1, diag_pre_multiply(sd_1, L_1), to_vector(z_1))"
   )
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
   

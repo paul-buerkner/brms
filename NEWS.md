@@ -21,7 +21,9 @@ argument `unused` of function `brmsformula`.
 ### Other Changes
 
 * Improve sampling efficiency for a lot of models by using Stan's
-GLM-primitives even in non-GLM cases.
+GLM-primitives even in non-GLM cases. (#984)
+* Improve sampling efficiency of multilevel models with 
+within-group covariances thanks to David Westergaard. (#977)
 * Deprecate argument `probs` in the `conditional_effects` method
 in favor of argument `prob`.
 
