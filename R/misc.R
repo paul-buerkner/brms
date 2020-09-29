@@ -896,7 +896,7 @@ round_largest_remainder <- function(x) {
 
 # add leading and trailing white spaces
 # @param x object accepted by paste
-# @param nsp number of whites paces to add
+# @param nsp number of white spaces to add
 wsp <- function(x = "", nsp = 1) {
   sp <- collapse(rep(" ", nsp))
   if (length(x)) {

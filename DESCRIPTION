@@ -3,7 +3,7 @@ Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using 'Stan'
 Version: 2.13.10
-Date: 2020-08-13
+Date: 2020-09-29
 Authors@R: 
     c(person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
              role = c("aut", "cre")),
