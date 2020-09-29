@@ -680,6 +680,13 @@ arg_names <- function(method) {
 # @return a brmsfit object or NULL
 read_brmsfit <- function(file) {
   file <- check_brmsfit_file(file)
+  dir <- dirname(file)
+  if (!dir.exists(dir)) {
+    stop2(
+      "The directory '", dir, "' does not exist. Please choose an ",
+      "existing directory where the model can be saved after fitting."
+    )
+  }
   x <- suppressWarnings(try(readRDS(file), silent = TRUE))
   if (!is(x, "try-error")) {
     if (!is.brmsfit(x)) {
