@@ -20,14 +20,29 @@ stan_global_defs <- function(bterms, prior, ranef, threads) {
   if (any(nzchar(hs_dfs))) {
     str_add(out$fun) <- "  #include 'fun_horseshoe.stan'\n"
   }
-  if (any(nzchar(ranef$by))) {
-    str_add(out$fun) <- "  #include 'fun_scale_r_cor_by.stan'\n"
-  }
-  if (stan_needs_kronecker(ranef)) {
-    str_add(out$fun) <- glue(
-      "  #include 'fun_as_matrix.stan'\n",
-      "  #include 'fun_kronecker.stan'\n"
-    )
+  if (nrow(ranef)) {
+    r_funs <- NULL
+    ids <- unique(ranef$id)
+    for (id in ids) {
+      r <- ranef[ranef$id == id, ]
+      if (nrow(r) > 1L && r$cor[1]) {
+        c(r_funs) <- "  #include 'fun_as_matrix.stan'\n"
+        if (nzchar(r$by[1])) {
+          if (nzchar(r$cov[1])) { 
+            c(r_funs) <- "  #include 'fun_scale_r_cor_by_cov.stan'\n"
+          } else {
+            c(r_funs) <- "  #include 'fun_scale_r_cor_by.stan'\n"
+          }
+        } else {
+          if (nzchar(r$cov[1])) { 
+            c(r_funs) <- "  #include 'fun_scale_r_cor_cov.stan'\n"
+          } else {
+            c(r_funs) <- "  #include 'fun_scale_r_cor.stan'\n"
+          }
+        }
+      }
+    }
+    str_add(out$fun) <- collapse(unique(r_funs))
   }
   family_files <- family_info(bterms, "include")
   if (length(family_files)) {
@@ -200,19 +215,6 @@ stan_all_vars <- function(x) {
 # transform names to be used as variable names in Stan
 make_stan_names <- function(x) {
   gsub("\\.|_", "", make.names(x, unique = TRUE))
-}
-
-# checks if a model needs the kronecker product
-# @param ranef output of tidy_ranef
-# @return a single logical value
-stan_needs_kronecker <- function(ranef) {
-  ids <- unique(ranef$id)
-  out <- FALSE
-  for (id in ids) {
-    r <- ranef[ranef$id == id, ]
-    out <- out || nrow(r) > 1L && r$cor[1] && nzchar(r$cov[1])
-  }
-  out
 }
 
 # functions to handle indexing when threading

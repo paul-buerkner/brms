@@ -1,7 +1,6 @@
 # unless otherwise specified, functions return a single character 
 # string defining the likelihood of the model in Stan language
 
-# TODO: adjust white spaces
 stan_log_lik <- function(x, ...) {
   UseMethod("stan_log_lik")
 }

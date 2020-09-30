@@ -1,4 +1,5 @@
   /* turn a vector into a matrix of defined dimension 
+   * stores elements in row major order
    * Args: 
    *   X: a vector 
    *   N: first dimension of the desired matrix

@@ -346,15 +346,18 @@ test_that("customized covariances appear in the Stan code", {
   
   scode <- make_stancode(rating ~ treat + (1 + treat | gr(subject, cov = M)), 
                          data = inhaler)
-  expect_match2(scode,
-    "chol_kronecker_multiply(Lcov_1, diag_pre_multiply(sd_1, L_1), to_vector(z_1))"
-  )
+  expect_match2(scode, "r_1 = scale_r_cor_cov(z_1, sd_1, L_1, Lcov_1);")
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
   
-  scode <- make_stancode(rating ~ (1 + treat| gr(subject, cor = FALSE, cov = M)), 
+  scode <- make_stancode(rating ~ (1 + treat | gr(subject, cor = FALSE, cov = M)), 
                          data = inhaler)
-  expect_match2(scode, " r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]));")
-  expect_match2(scode, " r_1_2 = (sd_1[2] * (Lcov_1 * z_1[2]));")
+  expect_match2(scode, "r_1_1 = (sd_1[1] * (Lcov_1 * z_1[1]));")
+  expect_match2(scode, "r_1_2 = (sd_1[2] * (Lcov_1 * z_1[2]));")
+  
+  inhaler$by <- inhaler$subject %% 2
+  scode <- make_stancode(rating ~ (1 + treat | gr(subject, by = by, cov = M)), 
+                         data = inhaler)
+  expect_match2(scode, "r_1 = scale_r_cor_by_cov(z_1, sd_1, L_1, Jby_1, Lcov_1);")
   
   expect_warning(
     scode <- make_stancode(rating ~ treat + period + carry + (1|subject), 
@@ -494,13 +497,6 @@ test_that("self-defined functions appear in the Stan code", {
     make_stancode(time ~ age + arma(cov = TRUE), data = kidney),
     "matrix cholesky_cor_arma1(real ar, real ma"
   )
-  
-  # kronecker products
-  expect_match(
-    make_stancode(rating ~ treat + (treat | gr(subject, cov = M)), 
-                  data = inhaler), 
-    "matrix as_matrix.*matrix kronecker"
-  )
 })
 
 test_that("invalid combinations of modeling options are detected", {
@@ -605,7 +601,7 @@ test_that("Stan code for categorical models is correct", {
   expect_match2(scode, "target += normal_lpdf(b_muab | 0, 5);")
   expect_match2(scode, "target += cauchy_lpdf(Intercept_mu2 | 0, 1);")
   expect_match2(scode, "target += normal_lpdf(Intercept_mu3 | 0, 2);")
-  expect_match2(scode, "r_1 = transpose(diag_pre_multiply(sd_1, L_1) * z_1);")
+  expect_match2(scode, "r_1 = scale_r_cor(z_1, sd_1, L_1);")
   
   scode <- make_stancode(y ~ x + (1 |ID| .g), data = dat, 
                          family = categorical(refcat = NA))
@@ -1329,7 +1325,7 @@ test_that("Group syntax | and || is handled correctly,", {
   scode <- make_stancode(y ~ x + (1+x||g1) + (I(x/4)|g2), data)
   expect_match2(scode, "r_1_2 = (sd_1[2] * (z_1[2]));")
   expect_match2(scode, "r_2_1 = r_2[, 1];")
-  expect_match2(scode, "r_2 = transpose(diag_pre_multiply(sd_2, L_2) * z_2);")
+  expect_match2(scode, "r_2 = scale_r_cor(z_2, sd_2, L_2);")
 })
 
 test_that("predicting zi and hu works correctly", {
@@ -2051,7 +2047,7 @@ test_that("student-t group-level effects work without errors", {
     epilepsy, prior = bprior
   )
   expect_match2(scode,
-    "rep_matrix(dfm_1, M_1) .* transpose(diag_pre_multiply(sd_1, L_1) * z_1);"
+    "r_1 = rep_matrix(dfm_1, M_1) .* scale_r_cor(z_1, sd_1, L_1);"
   )
   expect_match2(scode, "target += normal_lpdf(df_1 | 20, 5);")
 })
@@ -2108,9 +2104,9 @@ test_that("threaded Stan code is correct", {
     gender = factor(c(rep("m", 30), rep("f", 29)))
   )
   
-  # parsing requires cmdstanr to be installed which is not the case
-  # on CRAN or travis yet
-  options(brms.parse_stancode = FALSE, brms.backend = "cmdstanr")
+  # only parse models if cmdstan can be found on the system
+  parse <- !is(try(cmdstan_version(), silent = TRUE), "try-error")
+  options(brms.parse_stancode = parse, brms.backend = "cmdstanr")
   threads <- threading(2, grainsize = 20)
   
   bform <- bf(

@@ -581,12 +581,6 @@ stan_re <- function(ranef, prior, ...) {
       dfm <- glue("rep_matrix(dfm_{tr$ggn[1]}, M_{id}) .* ")
     }
     if (has_by) {
-      if (has_cov) {
-        stop2(
-          "Cannot combine 'by' variables with customized covariance ",
-          "matrices when fitting multiple group-level effects."
-        )
-      }
       str_add_list(out) <- stan_prior(
         prior, class = "L", group = r$group[1], coef = Nby, 
         type = glue("cholesky_factor_corr[M_{id}]"),
@@ -598,10 +592,17 @@ stan_re <- function(ranef, prior, ...) {
       str_add(out$tpar_def) <- glue(
         "  matrix[N_{id}, M_{id}] r_{id};  // actual group-level effects\n"
       )
+      if (has_cov) {
+        rdef <- glue(
+          "scale_r_cor_by_cov(z_{id}, sd_{id}, L_{id}, Jby_{id}, Lcov_{id})"
+        )
+      } else {
+        rdef  <- glue("scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id})")      
+      }
       str_add(out$tpar_comp) <- glue(
         "  // compute actual group-level effects\n",
-        "  r_{id} = {dfm}scale_r_cor_by(z_{id}, sd_{id}, L_{id}, Jby_{id});\n"
-      )
+        "  r_{id} = {dfm}{rdef};\n"
+      ) 
       str_add(out$gen_def) <- cglue(
         "  // compute group-level correlations\n",
         "  corr_matrix[M_{id}] Cor_{id}_{Nby}",
@@ -618,13 +619,9 @@ stan_re <- function(ranef, prior, ...) {
         comment = "cholesky factor of correlation matrix"
       )
       if (has_cov) {
-        rdef <- glue(
-          "as_matrix(chol_kronecker_multiply(Lcov_{id},", 
-          " diag_pre_multiply(sd_{id}, L_{id}),",
-          " to_vector(z_{id})), N_{id}, M_{id})"
-        )
+        rdef <- glue("scale_r_cor_cov(z_{id}, sd_{id}, L_{id}, Lcov_{id})")
       } else {
-        rdef <- glue("transpose(diag_pre_multiply(sd_{id}, L_{id}) * z_{id})")
+        rdef <- glue("scale_r_cor(z_{id}, sd_{id}, L_{id})")
       }
       # separate definition from computation to support fixed parameters
       str_add(out$tpar_def) <- glue(

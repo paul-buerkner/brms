@@ -7,6 +7,8 @@ using argument `threads` in `brm` thanks to Sebastian Weber. (#892)
 * Add algorithm `fixed_param` to sample from fixed parameter values. (#973)
 * No longer remove `NA` values in `data` if there are unused because of
 the `subset` addition argument. (#895)
+* Combine `by` variables and within-group correlation matrices
+in group-level terms. (#674)
 * Add argument `robust` to the `summary` method. (#976)
 * Parallelize evaluation of the `posterior_predict` and `log_lik` 
 methods via argument `cores`. (#819)
