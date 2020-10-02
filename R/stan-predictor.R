@@ -2144,9 +2144,11 @@ stan_dpar_transform <- function(bterms) {
 # Stan code for sigma to incorporate addition argument 'se'
 stan_sigma_transform <- function(bterms, id = "") {
   if (nzchar(id)) {
+    # find the right family in mixture models
     family <- family_names(bterms)[as.integer(id)]
   } else {
     family <- bterms$family$family
+    stopifnot(!isTRUE(family == "mixture"))
   }
   p <- usc(combine_prefix(bterms))
   ns <- str_if(glue("sigma{id}") %in% names(bterms$dpars), "[n]")

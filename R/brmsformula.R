@@ -1027,8 +1027,10 @@ allow_rescor <- function(x) {
   parts <- if (is.mvbrmsformula(x)) x$forms else x$terms 
   families <- lapply(parts, "[[", "family")
   has_rescor <- ulapply(families, has_rescor)
+  is_mixture <- ulapply(families, is.mixfamily)
   family_names <- ulapply(families, "[[", "family")
-  all(has_rescor) && length(unique(family_names)) == 1L
+  all(has_rescor) && !any(is_mixture) &&
+    length(unique(family_names)) == 1L
 }
 
 #' @rdname brmsformula-helpers
