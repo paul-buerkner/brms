@@ -21,6 +21,8 @@ argument `unused` of function `brmsformula`.
 `dpar = "mean"` thanks to Russell V. Lenth. (#993)
 * Improve control of which parameters should be saved via 
 function `save_pars` and corresponding argument in `brm`. (#746)
+* Add method `posterior_smooths` to computing predictions
+of individual smooth terms. (#738)
 
 ### Other Changes
 

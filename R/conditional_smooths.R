@@ -58,14 +58,12 @@ conditional_smooths.brmsfit <- function(x, smooths = NULL,
   smooths <- rm_wsp(as.character(smooths))
   conditions <- prepare_conditions(x)
   subset <- subset_samples(x, subset, nsamples)
-  # call as.matrix only once to save time and memory
-  samples <- as.matrix(x, subset = subset)
   bterms <- brmsterms(exclude_terms(x$formula, smooths_only = TRUE))
   out <- conditional_smooths(
-    bterms, fit = x, samples = samples, smooths = smooths, 
+    bterms, fit = x, smooths = smooths,
     conditions = conditions, int_conditions = int_conditions, 
     too_far = too_far, resolution = resolution, probs = probs, 
-    spaghetti = spaghetti
+    spaghetti = spaghetti, subset = subset
   )
   if (!length(out)) {
     stop2("No valid smooth terms found in the model.")
@@ -114,10 +112,9 @@ conditional_smooths.brmsterms <- function(x, ...) {
 # @param ...: currently ignored
 # @return a named list with one element per smooth term
 #' @export
-conditional_smooths.btl <- function(x, fit, samples, smooths,
-                                    conditions, int_conditions, 
-                                    probs, resolution, too_far,
-                                    spaghetti, ...) {
+conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions, 
+                                    probs, resolution, too_far, spaghetti, 
+                                    ...) {
   stopifnot(is.brmsfit(fit))
   out <- list()
   mf <- model.frame(fit)
@@ -130,8 +127,8 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
   }
   for (i in I) {
     # loop over smooth terms and compute their predictions
-    term <- smterms[i]
-    sub_smef <- subset2(smef, term = term)
+    smooth <- smterms[i]
+    sub_smef <- subset2(smef, term = smooth)
     # extract raw variable names before transformations
     covars <- all_vars(sub_smef$covars[[1]])
     byvars <- all_vars(sub_smef$byvars[[1]])
@@ -183,27 +180,8 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
       newdata <- newdata[!ex_too_far, ]  
     }
     other_vars <- setdiff(names(conditions), vars)
-    for (v in other_vars) {
-      cval <- conditions[1, v]
-      if (length(dim(cval)) == 2L) {
-        # matrix columns don't have automatic broadcasting apparently
-        cval <- matrix(cval, nrow(newdata), ncol(cval), byrow = TRUE)
-      }
-      newdata[[v]] <- cval
-    }
-    sdata <- standata(
-      fit, newdata, re_formula = NA, 
-      internal = TRUE, check_response = FALSE
-    )
-    prep_args <- nlist(x, samples, sdata, data = mf)
-    prep <- do_call(prepare_predictions, prep_args)
-    J <- which(smef$termnum == i)
-    scs <- unlist(attr(prep$sm$fe$Xs, "smcols")[J])
-    prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
-    prep$sm$fe$bs <- prep$sm$fe$bs[, scs, drop = FALSE]
-    prep$sm$re <- prep$sm$re[J]
-    prep$family <- brmsfamily("gaussian")
-    eta <- predictor(prep, i = NULL)
+    newdata <- fill_newdata(newdata, other_vars, conditions)
+    eta <- posterior_smooths(x, fit, smooth, newdata, ...)
     effects <- na.omit(sub_smef$covars[[1]][1:2])
     marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     if (length(byvars)) {
@@ -223,7 +201,7 @@ conditional_smooths.btl <- function(x, fit, samples, smooths,
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
     eta <- cbind(marg_data, eta)
     response <- combine_prefix(x, keep_mu = TRUE)
-    response <- paste0(response, ": ", term)
+    response <- paste0(response, ": ", smooth)
     points <- mf[, vars, drop = FALSE]
     points <- add_effects__(points, covars)
     attr(eta, "response") <- response

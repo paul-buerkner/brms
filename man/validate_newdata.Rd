@@ -13,6 +13,7 @@ validate_newdata(
   check_response = TRUE,
   incl_autocor = TRUE,
   all_group_vars = NULL,
+  req_vars = NULL,
   ...
 )
 }
@@ -41,6 +42,10 @@ Defaults to \code{TRUE}.}
 
 \item{all_group_vars}{Optional names of grouping variables to be validated.
 Defaults to all grouping variables in the model.}
+
+\item{req_vars}{Optional names of variables required in \code{newdata}.
+If \code{NULL} (the default), all variables in the original data
+are required (unless ignored for some other reason).}
 
 \item{...}{Currently ignored.}
 }
