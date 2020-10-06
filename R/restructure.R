@@ -189,6 +189,18 @@ restructure_v2 <- function(x) {
     # added support for threading
     x$threads <- threading()
   }
+  if (version < "2.13.12") {
+    # added more control over which parameters to save
+    save_ranef <- isTRUE(attr(x$exclude, "save_ranef"))
+    save_mevars <- isTRUE(attr(x$exclude, "save_mevars"))
+    save_all_pars <- isTRUE(attr(x$exclude, "save_all_pars"))
+    x$save_pars <- SW(validate_save_pars(
+      save_pars(), save_ranef = save_ranef, 
+      save_mevars = save_mevars,
+      save_all_pars = save_all_pars
+    ))
+    x$exclude <- NULL
+  }
   x
 }
 

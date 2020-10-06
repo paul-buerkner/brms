@@ -19,6 +19,8 @@ of `brmsprior` objects. (#761)
 argument `unused` of function `brmsformula`.
 * Support posterior mean predictions in `emmeans` via 
 `dpar = "mean"` thanks to Russell V. Lenth. (#993)
+* Improve control of which parameters should be saved via 
+function `save_pars` and corresponding argument in `brm`. (#746)
 
 ### Other Changes
 
