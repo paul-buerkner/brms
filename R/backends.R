@@ -168,6 +168,17 @@ fit_model <- function(model, backend, ...) {
   args[names(dots)] <- dots
   args[names(control)] <- control
   
+  chains <- as_one_numeric(chains)
+  if (chains == 0) {
+    # fit the model with minimal amount of draws
+    # TODO: replace with a better solution
+    chains <- 1
+    iter <- 2
+    warmup <- 1
+    thin <- 1
+    cores <- 1
+  }
+  
   # do the actual sampling
   message("Start sampling")
   if (algorithm %in% c("sampling", "fixed_param")) {

@@ -85,11 +85,11 @@ exclude_pars.brmsterms <- function(x, save_pars, ...) {
     c(out) <- exclude_pars(x$nlpars[[nlp]], save_pars = save_pars, ...)
   }
   if (is.formula(x$adforms$mi)) {
-    if (isFALSE(save_pars$latent) || !x$resp %in% save_pars$latent) {
+    if (!(isTRUE(save_pars$latent) || x$resp %in% save_pars$latent)) {
       c(out) <- paste0("Yl", resp)
     }
   }
-  if (isFALSE(save_pars$group) || !".err" %in% save_pars$group) {
+  if (!(isTRUE(save_pars$group) || ".err" %in% save_pars$group)) {
     # latent residuals are like group-level effects
     c(out) <- paste0("err", resp)
   }

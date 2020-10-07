@@ -36,7 +36,9 @@ data_predictor.brmsterms <- function(x, data, data2, prior, ranef,
     c(out) <- do_call(data_predictor, c(args_eff_spec, args_eff))
   }
   for (dp in names(x$fdpars)) {
-    out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value
+    if (is.numeric(x$fdpars[[dp]]$value)) {
+      out[[paste0(dp, resp)]] <- x$fdpars[[dp]]$value 
+    }
   }
   for (nlp in names(x$nlpars)) {
     args_eff_spec <- list(x = x$nlpars[[nlp]], basis = basis$nlpars[[nlp]])
