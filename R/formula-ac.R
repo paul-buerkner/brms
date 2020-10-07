@@ -288,7 +288,7 @@ sar <- function(M, type = "lag") {
 #'   implemented based on the case study of Max Joseph
 #'   (\url{https://github.com/mbjoseph/CARstan}). The \code{icar} and 
 #'   \code{bym2} type is implemented based on the case study of Mitzi Morris
-#'   (\url{http://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
+#'   (\url{https://mc-stan.org/users/documentation/case-studies/icar_stan.html}).
 #'   
 #' @examples
 #' \dontrun{

@@ -214,7 +214,7 @@ fitting the Stan model. Options are \code{"rstan"} (the default) or
 \code{"cmdstanr"}. Can be set globally for the current \R session via the
 \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
-\url{https://mc-stan.org/rstan} and \url{https://mc-stan.org/cmdstanr},
+\url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
 respectively.}
 
 \item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}

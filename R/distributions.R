@@ -77,7 +77,7 @@ rstudent_t <- function(n, df, mu = 0, sigma = 1) {
 #'   should be performed. Defaults to \code{FALSE} to improve
 #'   efficiency.
 #'   
-#' @details See the Stan user's manual \url{http://mc-stan.org/documentation/}
+#' @details See the Stan user's manual \url{https://mc-stan.org/documentation/}
 #' for details on the parameterization
 #'   
 #' @export
