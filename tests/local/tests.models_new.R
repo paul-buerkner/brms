@@ -357,8 +357,6 @@ test_that("ZI and HU models work correctly", {
 })
 
 test_that("Non-linear models work correctly", {
-  load("data/loss.Rda")
-  head(loss)
   fit_loss <- brm(
     bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
        ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,

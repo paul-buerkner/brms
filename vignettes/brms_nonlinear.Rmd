@@ -169,10 +169,10 @@ dependency using the variable $dev$. Further, $ult_{AY}$ is the (to be
 estimated) ultimate loss of accident each year. It constitutes a non-linear
 parameter in our framework along with the parameters $\theta$ and $\omega$,
 which are responsible for the growth of the cumulative loss and are assumed to
-be the same across years. We load the data
+be the same across years. The data is already shipped with brms.
 
 ```{r}
-loss <- read.csv("https://paul-buerkner.github.io/data/loss.csv")
+data(loss)
 head(loss)
 ```
 

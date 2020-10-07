@@ -326,16 +326,21 @@
 #' summary(fit4)
 #'
 #'
-#' # Simple non-linear gaussian model
-#' x <- rnorm(100)
-#' y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
-#' data5 <- data.frame(x, y)
-#' prior5 <- prior(normal(0, 2), nlpar = a1) +
-#'   prior(normal(0, 2), nlpar = a2)
-#' fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),
-#'             data = data5, prior = prior5)
+#' # Non-linear Gaussian model
+#' fit5 <- brm(
+#'   bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+#'      ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+#'      nl = TRUE),
+#'   data = loss, family = gaussian(),
+#'   prior = c(
+#'     prior(normal(5000, 1000), nlpar = "ult"),
+#'     prior(normal(1, 2), nlpar = "omega"),
+#'     prior(normal(45, 10), nlpar = "theta")
+#'   ),
+#'   control = list(adapt_delta = 0.9)
+#' )
 #' summary(fit5)
-#' plot(conditional_effects(fit5), ask = FALSE)
+#' conditional_effects(fit5)
 #'
 #'
 #' # Normal model with heterogeneous variances

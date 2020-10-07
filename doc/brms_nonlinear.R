@@ -50,7 +50,7 @@ pp_check(fit2)
 loo(fit1, fit2)
 
 ## ---------------------------------------------------------------------------------------
-loss <- read.csv("https://paul-buerkner.github.io/data/loss.csv")
+data(loss)
 head(loss)
 
 ## ---- results='hide'--------------------------------------------------------------------
