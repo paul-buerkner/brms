@@ -23,6 +23,8 @@ argument `unused` of function `brmsformula`.
 function `save_pars` and corresponding argument in `brm`. (#746)
 * Add method `posterior_smooths` to computing predictions
 of individual smooth terms. (#738)
+* Allow to display grouping variables in `conditional_effects` 
+using the `effects` argument. (#1012)
 
 ### Other Changes
 

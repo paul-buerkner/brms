@@ -520,6 +520,7 @@ get_all_effects.brmsterms <- function(x, rsv_vars = NULL, comb_all = FALSE) {
   out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
   if (length(out) && comb_all) {
     out <- unique(unlist(out))
+    out <- c(out, get_group_vars(x))
     int <- expand.grid(out, out, stringsAsFactors = FALSE)
     int <- int[int[, 1] != int[, 2], ]
     int <- as.list(as.data.frame(t(int), stringsAsFactors = FALSE))

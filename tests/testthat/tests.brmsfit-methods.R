@@ -149,6 +149,10 @@ test_that("conditional_effects has reasonable ouputs", {
   me <- conditional_effects(fit2, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me$Age), exp_nrow)
   
+  me <- conditional_effects(fit2, effects = "Trt:patient", re_formula = NULL)
+  exp_nrow <- length(levels(fit2$data$Trt)) * length(levels(fit2$data$patient)) 
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
   expect_warning(
     me4 <- conditional_effects(fit4),
     "Predictions are treated as continuous variables"
