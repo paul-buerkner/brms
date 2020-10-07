@@ -1,4 +1,4 @@
-source("setup.R")
+source("setup_local_tests.R")
 
 test_that("Poisson model from brm doc works correctly", {
   ## Poisson regression for the number of seizures in epileptic patients
@@ -764,12 +764,11 @@ test_that("CAR models work correctly", {
 test_that("Missing value imputation works correctly", {
   library(mice)
   data("nhanes", package = "mice")
-  # brm_mutliple currently works better with rstan
-  options(brms.backend = "rstan")
   
   # missing value imputation via multiple imputation
   imp <- mice(nhanes)
-  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1, refresh = 0)
+  fit_imp1 <- brm_multiple(bmi ~ age * chl, imp, chains = 1, 
+                           backend = "rstan", refresh = 0)
   print(fit_imp1)
   expect_equal(nsamples(fit_imp1), 5000)
   expect_equal(dim(fit_imp1$rhats), c(5, length(parnames(fit_imp1))))
@@ -782,7 +781,7 @@ test_that("Missing value imputation works correctly", {
   # missing value imputation within Stan
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi() ~ age) + set_rescor(FALSE)
-  fit_imp2 <- brm(bform, data = nhanes, refresh = 0)
+  fit_imp2 <- brm(bform, data = nhanes, backend = "rstan", refresh = 0)
   print(fit_imp2)
   pred <- predict(fit_imp2)
   expect_true(!anyNA(pred))
@@ -796,7 +795,9 @@ test_that("Missing value imputation works correctly", {
   dat$sdy <- 5
   bform <- bf(bmi | mi() ~ age * mi(chl)) +
     bf(chl | mi(sdy) ~ age) + set_rescor(FALSE)
-  fit_imp3 <- brm(bform, data = dat, save_mevars = TRUE, refresh = 0)
+  fit_imp3 <- brm(bform, data = dat,
+                  save_pars = save_pars(latent = TRUE), 
+                  backend = "rstan", refresh = 0)
   print(fit_imp3)
   pred <- predict(fit_imp3)
   expect_true(!anyNA(pred))
@@ -804,8 +805,6 @@ test_that("Missing value imputation works correctly", {
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
   loo <- LOO(fit_imp3, newdata = na.omit(fit_imp3$data))
   expect_range(loo$estimates[3, 1], 200, 220)
-  
-  options(brms.backend = "cmdstanr")
 })
 
 test_that("student-t-distributed group-level effects work correctly", {
