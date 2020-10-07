@@ -554,7 +554,8 @@ validate_newdata <- function(
 # @param newdata data.frame to be filled
 # @param vars character vector of not required variables
 # @param olddata optional data.frame to take values from
-fill_newdata <- function(newdata, vars, olddata = NULL) {
+# @param n row number of olddata to extract values from
+fill_newdata <- function(newdata, vars, olddata = NULL, n = 1L) {
   stopifnot(is.data.frame(newdata), is.character(vars))
   vars <- setdiff(vars, names(newdata))
   if (is.null(olddata)) {
@@ -563,12 +564,12 @@ fill_newdata <- function(newdata, vars, olddata = NULL) {
     }
     return(newdata)
   }
-  stopifnot(is.data.frame(olddata))
+  stopifnot(is.data.frame(olddata), length(n) == 1L)
   for (v in vars) {
     # using NA for variables is not safe in all cases
     # for example when processing splines using mgcv
     # hence it is safer to use existing data values
-    cval <- olddata[1, v] %||% NA
+    cval <- olddata[n, v] %||% NA
     if (length(dim(cval)) == 2L) {
       # matrix columns don't have automatic broadcasting apparently
       cval <- matrix(cval, nrow(newdata), ncol(cval), byrow = TRUE)

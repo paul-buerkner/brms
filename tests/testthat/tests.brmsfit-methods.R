@@ -114,6 +114,10 @@ test_that("conditional_effects has reasonable ouputs", {
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
   
+  me <- conditional_effects(fit1, effects = "Age:visit", re_formula = NULL)
+  exp_nrow <- 100 * length(unique(fit1$data$visit)) 
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
   mdata = data.frame(
     Age = c(-0.3, 0, 0.3), 
     count = c(10, 20, 30), 
@@ -148,10 +152,6 @@ test_that("conditional_effects has reasonable ouputs", {
   expect_equal(nrow(conditional_effects(fit2)[[2]]), 100)
   me <- conditional_effects(fit2, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me$Age), exp_nrow)
-  
-  me <- conditional_effects(fit2, effects = "Trt:patient", re_formula = NULL)
-  exp_nrow <- length(levels(fit2$data$Trt)) * length(levels(fit2$data$patient)) 
-  expect_equal(nrow(me[[1]]), exp_nrow)
   
   expect_warning(
     me4 <- conditional_effects(fit4),

@@ -183,23 +183,23 @@ conditional_smooths.btl <- function(x, fit, smooths, conditions, int_conditions,
     newdata <- fill_newdata(newdata, other_vars, conditions)
     eta <- posterior_smooths(x, fit, smooth, newdata, ...)
     effects <- na.omit(sub_smef$covars[[1]][1:2])
-    marg_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
+    cond_data <- add_effects__(newdata[, vars, drop = FALSE], effects)
     if (length(byvars)) {
       # byvars will be plotted as facets
-      marg_data$cond__ <- rows2labels(marg_data[, byvars, drop = FALSE]) 
+      cond_data$cond__ <- rows2labels(cond_data[, byvars, drop = FALSE]) 
     } else {
-      marg_data$cond__ <- factor(1)
+      cond_data$cond__ <- factor(1)
     }
     spa_data <- NULL
     if (spaghetti && ncovars == 1L && is_numeric[1]) {
       sample <- rep(seq_rows(eta), each = ncol(eta))
       spa_data <- data.frame(as.numeric(t(eta)), factor(sample))
       colnames(spa_data) <- c("estimate__", "sample__")
-      spa_data <- cbind(marg_data, spa_data)
+      spa_data <- cbind(cond_data, spa_data)
     }
     eta <- posterior_summary(eta, robust = TRUE, probs = probs)
     colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-    eta <- cbind(marg_data, eta)
+    eta <- cbind(cond_data, eta)
     response <- combine_prefix(x, keep_mu = TRUE)
     response <- paste0(response, ": ", smooth)
     points <- mf[, vars, drop = FALSE]

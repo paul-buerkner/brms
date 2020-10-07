@@ -307,31 +307,32 @@ conditional_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     x, conditions = conditions, effects = effects, 
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_vars <- get_int_vars(bterms)
   int_conditions <- lapply(int_conditions, 
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
+  int_vars <- get_int_vars(bterms)
+  group_vars <- get_group_vars(bterms)
   out <- list()
   for (i in seq_along(effects)) {
     eff <- effects[[i]]
-    marg_data <- prepare_marg_data(
+    cond_data <- prepare_cond_data(
       mf[, eff, drop = FALSE], conditions = conditions, 
       int_conditions = int_conditions, int_vars = int_vars,
-      surface = surface, resolution = resolution, 
-      reorder = use_def_effects
+      group_vars = group_vars, surface = surface, 
+      resolution = resolution, reorder = use_def_effects
     )
     if (surface && length(eff) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
-        g1 = marg_data[[eff[1]]], 
-        g2 = marg_data[[eff[2]]], 
+        g1 = cond_data[[eff[1]]], 
+        g2 = cond_data[[eff[2]]], 
         d1 = mf[, eff[1]],
         d2 = mf[, eff[2]],
         dist = too_far)
-      marg_data <- marg_data[!ex_too_far, ]  
+      cond_data <- cond_data[!ex_too_far, ]  
     }
     c(out) <- conditional_effects(
-      bterms, fit = x, marg_data = marg_data, method = method, 
+      bterms, fit = x, cond_data = cond_data, method = method, 
       surface = surface, spaghetti = spaghetti, categorical = categorical, 
       ordinal = ordinal, re_formula = re_formula, transform = transform, 
       conditions = conditions, int_conditions = int_conditions, 
@@ -363,16 +364,16 @@ conditional_effects.mvbrmsterms <- function(x, resp = NULL, ...) {
 # @note argument 'resp' exists only to be excluded from '...' (#589)
 #' @export
 conditional_effects.brmsterms <- function(
-  x, fit, marg_data, int_conditions, method, surface, 
+  x, fit, cond_data, int_conditions, method, surface, 
   spaghetti, categorical, ordinal, probs, robust, 
   dpar = NULL, resp = NULL, ...
 ) {
   stopifnot(is.brmsfit(fit))
-  effects <- attr(marg_data, "effects")
-  types <- attr(marg_data, "types")
+  effects <- attr(cond_data, "effects")
+  types <- attr(cond_data, "types")
   catscale <- NULL
   pred_args <- list(
-    fit, newdata = marg_data, allow_new_levels = TRUE, 
+    fit, newdata = cond_data, allow_new_levels = TRUE, 
     dpar = dpar, resp = if (nzchar(x$resp)) x$resp,
     incl_autocor = FALSE, ...
   )
@@ -381,7 +382,7 @@ conditional_effects.brmsterms <- function(
     pred_args$transform <- NULL
   }
   out <- do_call(method, pred_args)
-  rownames(marg_data) <- NULL
+  rownames(cond_data) <- NULL
   
   if (categorical || ordinal) {
     if (method != "posterior_epred") {
@@ -397,9 +398,9 @@ conditional_effects.brmsterms <- function(
     catscale <- str_if(is_multinomial(x), "Count", "Probability")
     cats <- dimnames(out)[[3]]
     if (is.null(cats)) cats <- seq_dim(out, 3)
-    marg_data <- repl(marg_data, length(cats))
-    marg_data <- do_call(rbind, marg_data)
-    marg_data$cats__ <- factor(rep(cats, each = ncol(out)), levels = cats)
+    cond_data <- repl(cond_data, length(cats))
+    cond_data <- do_call(rbind, cond_data)
+    cond_data$cats__ <- factor(rep(cats, each = ncol(out)), levels = cats)
     effects[2] <- "cats__"
     types[2] <- "factor"
   } else {
@@ -423,15 +424,15 @@ conditional_effects.brmsterms <- function(
   both_numeric <- first_numeric && second_numeric
   if (second_numeric && !surface) {
     # can only be converted to factor after having called method
-    mde2 <- round(marg_data[[effects[2]]], 2)
+    mde2 <- round(cond_data[[effects[2]]], 2)
     levels2 <- sort(unique(mde2), TRUE)
-    marg_data[[effects[2]]] <- factor(mde2, levels = levels2)
+    cond_data[[effects[2]]] <- factor(mde2, levels = levels2)
     labels2 <- names(int_conditions[[effects[2]]])
     if (length(labels2) == length(levels2)) {
-      levels(marg_data[[effects[2]]]) <- labels2
+      levels(cond_data[[effects[2]]]) <- labels2
     }
   }
-  marg_data <- add_effects__(marg_data, effects)
+  cond_data <- add_effects__(cond_data, effects)
   
   spag <- NULL
   if (first_numeric && spaghetti) {
@@ -445,11 +446,11 @@ conditional_effects.brmsterms <- function(
     sample <- rep(seq_rows(spag), each = ncol(spag))
     if (length(types) == 2L) {
       # samples should be unique across plotting groups
-      sample <- paste0(sample, "_", marg_data[[effects[2]]])
+      sample <- paste0(sample, "_", cond_data[[effects[2]]])
     }
     spag <- data.frame(as.numeric(t(spag)), factor(sample))
     colnames(spag) <- c("estimate__", "sample__")
-    spag <- cbind(marg_data, spag)
+    spag <- cbind(cond_data, spag)
   }
   
   out <- posterior_summary(out, probs = probs, robust = robust)
@@ -457,7 +458,7 @@ conditional_effects.brmsterms <- function(
     out <- do_call(rbind, array2list(out))
   }
   colnames(out) <- c("estimate__", "se__", "lower__", "upper__")
-  out <- cbind(marg_data, out)
+  out <- cbind(cond_data, out)
   response <- if (is.null(dpar)) as.character(x$formula[2]) else dpar
   attr(out, "effects") <- effects
   attr(out, "response") <- response
@@ -795,23 +796,25 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
 # @param conditions see argument 'conditions' of conditional_effects
 # @param int_conditions see argument 'int_conditions' of conditional_effects
 # @param int_vars names of variables being treated as integers
+# @param group_vars names of grouping variables
 # @param surface generate surface plots later on?
 # @param resolution number of distinct points at which to evaluate
 #   the predictors of interest
 # @param reorder reorder predictors so that numeric ones come first?
-prepare_marg_data <- function(data, conditions, int_conditions = NULL,
-                              int_vars = NULL, surface = FALSE, 
-                              resolution = 100, reorder = TRUE) {
+prepare_cond_data <- function(data, conditions, int_conditions = NULL,
+                              int_vars = NULL, group_vars = NULL, 
+                              surface = FALSE, resolution = 100, 
+                              reorder = TRUE) {
   effects <- names(data)
   stopifnot(length(effects) %in% c(1L, 2L))
-  pred_types <- ifelse(ulapply(data, is_like_factor), "factor", "numeric")
+  is_factor <- ulapply(data, is_like_factor) | names(data) %in% group_vars
+  types <- ifelse(is_factor, "factor", "numeric")
   # numeric effects should come first
   if (reorder) {
-    new_order <- order(pred_types, decreasing = TRUE)
+    new_order <- order(types, decreasing = TRUE)
     effects <- effects[new_order]
-    pred_types <- pred_types[new_order]
+    types <- types[new_order]
   }
-  mono <- effects %in% int_vars
   # handle first predictor
   if (effects[1] %in% names(int_conditions)) {
     # first predictor has pre-specified conditions
@@ -820,18 +823,18 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
       int_cond <- int_cond(data[[effects[1]]])
     }
     values <- int_cond
-  } else if (pred_types[1] == "numeric") {
+  } else if (types[1] == "factor") {
+    # first predictor is factor-like
+    values <- factor(unique(data[[effects[1]]]))
+  } else {
     # first predictor is numeric
     min1 <- min(data[[effects[1]]], na.rm = TRUE)
     max1 <- max(data[[effects[1]]], na.rm = TRUE)
-    if (mono[1]) {
+    if (effects[1] %in% int_vars) {
       values <- seq(min1, max1, by = 1)
     } else {
       values <- seq(min1, max1, length.out = resolution)
     }
-  } else {
-    # first predictor is factor-like
-    values <- unique(data[[effects[1]]])
   }
   if (length(effects) == 2L) {
     # handle second predictor
@@ -843,18 +846,21 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
         int_cond <- int_cond(data[[effects[2]]])
       }
       values[[2]] <- int_cond
-    } else if (pred_types[2] == "numeric") {
+    } else if (types[2] == "factor") {
+      # second predictor is factor-like
+      values[[2]] <- factor(unique(data[[effects[2]]]))
+    } else {
       # second predictor is numeric
       if (surface) {
         min2 <- min(data[[effects[2]]], na.rm = TRUE)
         max2 <- max(data[[effects[2]]], na.rm = TRUE)
-        if (mono[2]) {
+        if (effects[2] %in% int_vars) {
           values[[2]] <- seq(min2, max2, by = 1)
         } else {
           values[[2]] <- seq(min2, max2, length.out = resolution)
         }
       } else {
-        if (mono[2]) {
+        if (effects[2] %in% int_vars) {
           median2 <- median(data[[effects[2]]])
           mad2 <- mad(data[[effects[2]]])
           values[[2]] <- round((-1:1) * mad2 + median2)
@@ -864,9 +870,6 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
           values[[2]] <- (-1:1) * sd2 + mean2
         }
       }
-    } else {
-      # second predictor is factor-like
-      values[[2]] <- unique(data[[effects[2]]]) 
     }
     data <- do_call(expand.grid, values)
   } else {
@@ -877,22 +880,15 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   data <- unique(data)
   data <- data[do_call(order, as.list(data)), , drop = FALSE]
   data <- replicate(nrow(conditions), data, simplify = FALSE)
-  marg_vars <- setdiff(names(conditions), effects)
+  cond_vars <- setdiff(names(conditions), effects)
   cond__ <- get_cond__(conditions)
   for (j in seq_rows(conditions)) {
-    for (v in marg_vars) {
-      cval <- conditions[j, v]
-      if (length(dim(cval)) == 2L) {
-        # matrix columns don't have automatic broadcasting apparently
-        cval <- matrix(cval, nrow(data[[j]]), ncol(cval), byrow = TRUE)
-      }
-      data[[j]][[v]] <- cval
-    }
+    data[[j]] <- fill_newdata(data[[j]], cond_vars, conditions, n = j)
     data[[j]]$cond__ <- cond__[j]
   }
   data <- do_call(rbind, data)
   data$cond__ <- factor(data$cond__, cond__)
-  structure(data, effects = effects, types = pred_types, mono = mono)
+  structure(data, effects = effects, types = types)
 }
 
 # which variables in 'vars' are specified in 'data'?
