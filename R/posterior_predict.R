@@ -141,7 +141,7 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
   } else {
     out <- do_call(cbind, out) 
   }
-  colnames(out) <- NULL
+  colnames(out) <- rownames(out) <- NULL
   if (use_int(object$family)) {
     out <- check_discrete_trunc_bounds(
       out, lb = object$data$lb, ub = object$data$ub
@@ -784,14 +784,14 @@ posterior_predict_zero_inflated_binomial <- function(i, prep, ...) {
 }
 
 posterior_predict_categorical <- function(i, prep, ...) {
-  eta <- sapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   p <- pcategorical(seq_len(prep$data$ncat), eta = eta)
   first_greater(p, target = runif(prep$nsamples, min = 0, max = 1))
 }
 
 posterior_predict_multinomial <- function(i, prep, ...) {
-  eta <- sapply(names(prep$dpars), get_dpar, prep = prep, i = i)
+  eta <- cblapply(names(prep$dpars), get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   p <- dcategorical(seq_len(prep$data$ncat), eta = eta)
   size <- prep$data$trials[i]
@@ -801,7 +801,7 @@ posterior_predict_multinomial <- function(i, prep, ...) {
 
 posterior_predict_dirichlet <- function(i, prep, ...) {
   mu_dpars <- str_subset(names(prep$dpars), "^mu")
-  eta <- sapply(mu_dpars, get_dpar, prep = prep, i = i)
+  eta <- cblapply(mu_dpars, get_dpar, prep = prep, i = i)
   eta <- insert_refcat(eta, family = prep$family)
   phi <- get_dpar(prep, "phi", i = i)
   cats <- seq_len(prep$data$ncat)

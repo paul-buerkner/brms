@@ -1966,7 +1966,7 @@ dcategorical <- function(x, eta, log = FALSE) {
   } else {
     out <- softmax(eta)
   }
-  out[, x]
+  out[, x, drop = FALSE]
 }
 
 # CDF of the categorical distribution with the softmax transform
@@ -1975,7 +1975,7 @@ dcategorical <- function(x, eta, log = FALSE) {
 # @param log.p return values on the log scale?
 pcategorical <- function(q, eta, log.p = FALSE) {
   p <- dcategorical(seq_len(max(q)), eta = eta)
-  out <- do_call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
+  out <- cblapply(q, function(j) rowSums(p[, 1:j, drop = FALSE]))
   if (log.p) {
     out <- log(out)
   }
@@ -2100,7 +2100,7 @@ pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   args <- nlist(x = seq_len(max(q)), eta, thres, disc, link)
   p <- do_call(paste0("d", family), args)
   .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
-  do_call(cbind, lapply(q, .fun))
+  cblapply(q, .fun)
 }
 
 # helper functions to shift arbitrary distributions
