@@ -155,7 +155,7 @@
 #'  \item{AY}{Origin year of the insurance (1991 to 2000)}
 #'  \item{dev}{Deviation from the origin year in months}
 #'  \item{cum}{Cumulative loss payments} 
-#'  \item{premimum}{Achieved premiums for the given origin year}
+#'  \item{premium}{Achieved premiums for the given origin year}
 #' } 
 #' 
 #' @source Gesmann M. & Morris J. (2020). Hierarchical Compartmental Reserving 
