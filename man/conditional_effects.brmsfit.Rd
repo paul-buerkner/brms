@@ -56,12 +56,12 @@ conditional_effects(x, ...)
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{effects}{An optional character vector naming effects
-(main effects or interactions) for which to compute conditional plots.
-Interactions are specified by a \code{:} between variable names.
-If \code{NULL} (the default), plots are generated for all main effects
-and two-way interactions estimated in the model. When specifying
-\code{effects} manually, \emph{all} two-way interactions may be plotted
+\item{effects}{An optional character vector naming effects (main effects or
+interactions) for which to compute conditional plots. Interactions are
+specified by a \code{:} between variable names. If \code{NULL} (the
+default), plots are generated for all main effects and two-way interactions
+estimated in the model. When specifying \code{effects} manually, \emph{all}
+two-way interactions (including grouping variables) may be plotted
 even if not originally modeled.}
 
 \item{conditions}{An optional \code{data.frame} containing variable values
@@ -72,7 +72,7 @@ is not given, the row names will be used for this purpose instead.
 It is recommended to only define a few rows in order to keep the plots clear.
 See \code{\link{make_conditions}} for an easy way to define conditions.
 If \code{NULL} (the default), numeric variables will be conditionalized by
-using their means and factors will get their reference level assigned.
+using their means and factors will get their first level assigned.
 \code{NA} values within factors are interpreted as if all dummy
 variables of this factor are zero. This allows, for instance, to make
 predictions of the grand mean when using sum coding.}
@@ -89,11 +89,11 @@ If \code{NULL} (the default), predictions are evaluated at the
 \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 all categories for factor-like predictors.}
 
-\item{re_formula}{A formula containing random effects to be considered 
-in the conditional predictions. If \code{NULL}, include all random effects; 
-if \code{NA} (default), include no random effects.}
+\item{re_formula}{A formula containing group-level effects to be considered
+in the conditional predictions. If \code{NULL}, include all group-level
+effects; if \code{NA} (default), include no group-level effects.}
 
-\item{prob}{prob A value between 0 and 1 indicating the desired probability 
+\item{prob}{A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{robust}{If \code{TRUE} (the default) the median is used as the 
@@ -108,7 +108,7 @@ function documentations.}
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 
-(e.g. \code{100}) in order to reduce computation time.}
+(e.g., \code{100}) in order to reduce computation time.}
 
 \item{surface}{Logical. Indicates if interactions or 
 two-dimensional smooths should be visualized as a surface. 
@@ -119,7 +119,7 @@ via argument \code{stype} of the related plotting method.}
 or ordinal models should be shown in terms of probabilities
 of response categories. Defaults to \code{FALSE}.}
 
-\item{ordinal}{Deprecated! Please use argument \code{categorical}.
+\item{ordinal}{(Deprecated) Please use argument \code{categorical}.
 Logical. Indicates if effects in ordinal models
 should be visualized as a raster with the response categories
 on the y-axis. Defaults to \code{FALSE}.}
@@ -154,7 +154,7 @@ from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
 \item{probs}{(Deprecated) The quantiles to be used in the computation of
-credible intervals.}
+uncertainty intervals. Please use argument \code{prob} instead.}
 
 \item{...}{Further arguments such as \code{subset} or \code{nsamples}
 passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
@@ -163,7 +163,7 @@ passed to \code{\link{posterior_predict}} or \code{\link{posterior_epred}}.}
 If \code{NULL} (default), \code{ncol} is computed internally based
 on the number of rows of \code{conditions}.}
 
-\item{points}{Logical; indicating whether the original data points
+\item{points}{Logical. Indicates if the original data points
 should be added via \code{\link{geom_jitter}}.
 Default is \code{FALSE}. Note that only those data points will be added
 that match the specified conditions defined in \code{conditions}.
@@ -171,12 +171,12 @@ For categorical predictors, the conditions have to match exactly.
 For numeric predictors, argument \code{select_points} is used to
 determine, which points do match a condition.}
 
-\item{rug}{Logical; indicating whether a rug representation of predictor
+\item{rug}{Logical. Indicates if a rug representation of predictor
 values should be added via \code{\link{geom_rug}}.
 Default is \code{FALSE}. Depends on \code{select_points} in the same
 way as \code{points} does.}
 
-\item{mean}{Logical; only relevant for spaghetti plots.
+\item{mean}{Logical. Only relevant for spaghetti plots.
 If \code{TRUE} (the default), display the mean regression 
 line on top of the regression lines for each sample.}
 
@@ -236,7 +236,7 @@ plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }
 \value{
-An object of class \code{'brms_conditional_effects'}, which is a
+An object of class \code{'brms_conditional_effects'} which is a
   named list with one data.frame per effect containing all information
   required to generate conditional effects plots. Among others, these
   data.frames contain some special variables, namely \code{estimate__}
@@ -255,22 +255,21 @@ Display conditional effects of one or more numeric and/or categorical
 predictors including two-way interaction effects.
 }
 \details{
-When creating \code{conditional_effects} for a particular predictor 
-  (or interaction of two predictors), one has to choose the values of all 
-  other predictors to condition on. 
-  By default, the mean is used for continuous variables
-  and the reference category is used for factors, but you may change these
-  values via argument \code{conditions}. 
-  This also has an implication for the \code{points} argument: 
-  In the created plots, only those points will be shown that correspond 
-  to the factor levels actually used in the conditioning, in order not 
-  to create the false impression of bad model fit, where it is just 
-  due to conditioning on certain factor levels.
+When creating \code{conditional_effects} for a particular predictor
+  (or interaction of two predictors), one has to choose the values of all
+  other predictors to condition on. By default, the mean is used for
+  continuous variables and the reference category is used for factors, but
+  you may change these values via argument \code{conditions}. This also has
+  an implication for the \code{points} argument: In the created plots, only
+  those points will be shown that correspond to the factor levels actually
+  used in the conditioning, in order not to create the false impression of
+  bad model fit, where it is just due to conditioning on certain factor
+  levels.
   
-  To fully change colors of the created plots, 
-  one has to amend both \code{scale_colour} and \code{scale_fill}.
-  See \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}}
-  for more details.
+  To fully change colors of the created plots, one has to amend both
+  \code{scale_colour} and \code{scale_fill}. See
+  \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}} for
+  more details.
 }
 \examples{
 \dontrun{
@@ -293,7 +292,7 @@ conditions <- data.frame(zAge = c(-1, 0, 1))
 plot(conditional_effects(fit, effects = "zBase:Trt", 
                          conditions = conditions))
                       
-## also incorporate random effects variance over patients
+## also incorporate group-level effects variance over patients
 ## also add data points and a rug representation of predictor values
 plot(conditional_effects(fit, effects = "zBase:Trt", 
                          conditions = conditions, re_formula = NULL), 

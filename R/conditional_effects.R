@@ -6,12 +6,12 @@
 #' @aliases marginal_effects marginal_effects.brmsfit
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param effects An optional character vector naming effects
-#'   (main effects or interactions) for which to compute conditional plots.
-#'   Interactions are specified by a \code{:} between variable names.
-#'   If \code{NULL} (the default), plots are generated for all main effects
-#'   and two-way interactions estimated in the model. When specifying
-#'   \code{effects} manually, \emph{all} two-way interactions may be plotted
+#' @param effects An optional character vector naming effects (main effects or
+#'   interactions) for which to compute conditional plots. Interactions are
+#'   specified by a \code{:} between variable names. If \code{NULL} (the
+#'   default), plots are generated for all main effects and two-way interactions
+#'   estimated in the model. When specifying \code{effects} manually, \emph{all}
+#'   two-way interactions (including grouping variables) may be plotted
 #'   even if not originally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to condition on. Each effect defined in \code{effects} will
@@ -21,7 +21,7 @@
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   See \code{\link{make_conditions}} for an easy way to define conditions.
 #'   If \code{NULL} (the default), numeric variables will be conditionalized by
-#'   using their means and factors will get their reference level assigned.
+#'   using their means and factors will get their first level assigned.
 #'   \code{NA} values within factors are interpreted as if all dummy
 #'   variables of this factor are zero. This allows, for instance, to make
 #'   predictions of the grand mean when using sum coding.
@@ -36,15 +36,15 @@
 #'   If \code{NULL} (the default), predictions are evaluated at the 
 #'   \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 #'   all categories for factor-like predictors.
-#' @param re_formula A formula containing random effects to be considered 
-#'   in the conditional predictions. If \code{NULL}, include all random effects; 
-#'   if \code{NA} (default), include no random effects.
+#' @param re_formula A formula containing group-level effects to be considered
+#'   in the conditional predictions. If \code{NULL}, include all group-level
+#'   effects; if \code{NA} (default), include no group-level effects.
 #' @param robust If \code{TRUE} (the default) the median is used as the 
 #'   measure of central tendency. If \code{FALSE} the mean is used instead.
-#' @param prob prob A value between 0 and 1 indicating the desired probability 
+#' @param prob A value between 0 and 1 indicating the desired probability 
 #'   to be covered by the uncertainty intervals. The default is 0.95.
 #' @param probs (Deprecated) The quantiles to be used in the computation of
-#'   credible intervals.
+#'   uncertainty intervals. Please use argument \code{prob} instead.
 #' @param method Method used to obtain predictions. Can be set to 
 #'   \code{"posterior_epred"} (the default), \code{"posterior_predict"},
 #'   or \code{"posterior_linpred"}. For more details, see the respective
@@ -53,7 +53,7 @@
 #'   be visualized via spaghetti plots. Only applied for numeric
 #'   predictors. If \code{TRUE}, it is recommended 
 #'   to set argument \code{nsamples} to a relatively small value 
-#'   (e.g. \code{100}) in order to reduce computation time.
+#'   (e.g., \code{100}) in order to reduce computation time.
 #' @param surface Logical. Indicates if interactions or 
 #'   two-dimensional smooths should be visualized as a surface. 
 #'   Defaults to \code{FALSE}. The surface type can be controlled 
@@ -61,7 +61,7 @@
 #' @param categorical Logical. Indicates if effects of categorical 
 #'   or ordinal models should be shown in terms of probabilities
 #'   of response categories. Defaults to \code{FALSE}.
-#' @param ordinal Deprecated! Please use argument \code{categorical}.
+#' @param ordinal (Deprecated) Please use argument \code{categorical}.
 #'   Logical. Indicates if effects in ordinal models
 #'   should be visualized as a raster with the response categories
 #'   on the y-axis. Defaults to \code{FALSE}.
@@ -96,18 +96,18 @@
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{conditions}.
-#' @param points Logical; indicating whether the original data points
+#' @param points Logical. Indicates if the original data points
 #'   should be added via \code{\link{geom_jitter}}.
 #'   Default is \code{FALSE}. Note that only those data points will be added
 #'   that match the specified conditions defined in \code{conditions}.
 #'   For categorical predictors, the conditions have to match exactly. 
 #'   For numeric predictors, argument \code{select_points} is used to
 #'   determine, which points do match a condition.
-#' @param rug Logical; indicating whether a rug representation of predictor
+#' @param rug Logical. Indicates if a rug representation of predictor
 #'   values should be added via \code{\link{geom_rug}}.
 #'   Default is \code{FALSE}. Depends on \code{select_points} in the same
 #'   way as \code{points} does.
-#' @param mean Logical; only relevant for spaghetti plots.
+#' @param mean Logical. Only relevant for spaghetti plots.
 #'   If \code{TRUE} (the default), display the mean regression 
 #'   line on top of the regression lines for each sample.
 #' @param jitter_width Only used if \code{points = TRUE}: 
@@ -143,7 +143,7 @@
 #'   A named list of arguments passed to 
 #'   \code{\link{facet_wrap}}.
 #' 
-#' @return An object of class \code{'brms_conditional_effects'}, which is a
+#' @return An object of class \code{'brms_conditional_effects'} which is a
 #'   named list with one data.frame per effect containing all information
 #'   required to generate conditional effects plots. Among others, these
 #'   data.frames contain some special variables, namely \code{estimate__}
@@ -157,22 +157,21 @@
 #'   list of \code{\link{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
-#' @details When creating \code{conditional_effects} for a particular predictor 
-#'   (or interaction of two predictors), one has to choose the values of all 
-#'   other predictors to condition on. 
-#'   By default, the mean is used for continuous variables
-#'   and the reference category is used for factors, but you may change these
-#'   values via argument \code{conditions}. 
-#'   This also has an implication for the \code{points} argument: 
-#'   In the created plots, only those points will be shown that correspond 
-#'   to the factor levels actually used in the conditioning, in order not 
-#'   to create the false impression of bad model fit, where it is just 
-#'   due to conditioning on certain factor levels.
+#' @details When creating \code{conditional_effects} for a particular predictor
+#'   (or interaction of two predictors), one has to choose the values of all
+#'   other predictors to condition on. By default, the mean is used for
+#'   continuous variables and the reference category is used for factors, but
+#'   you may change these values via argument \code{conditions}. This also has
+#'   an implication for the \code{points} argument: In the created plots, only
+#'   those points will be shown that correspond to the factor levels actually
+#'   used in the conditioning, in order not to create the false impression of
+#'   bad model fit, where it is just due to conditioning on certain factor
+#'   levels.
 #'   
-#'   To fully change colors of the created plots, 
-#'   one has to amend both \code{scale_colour} and \code{scale_fill}.
-#'   See \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}}
-#'   for more details.
+#'   To fully change colors of the created plots, one has to amend both
+#'   \code{scale_colour} and \code{scale_fill}. See
+#'   \code{\link{scale_colour_grey}} or \code{\link{scale_colour_gradient}} for
+#'   more details.
 #' 
 #' @examples 
 #' \dontrun{
@@ -195,7 +194,7 @@
 #' plot(conditional_effects(fit, effects = "zBase:Trt", 
 #'                          conditions = conditions))
 #'                       
-#' ## also incorporate random effects variance over patients
+#' ## also incorporate group-level effects variance over patients
 #' ## also add data points and a rug representation of predictor values
 #' plot(conditional_effects(fit, effects = "zBase:Trt", 
 #'                          conditions = conditions, re_formula = NULL), 

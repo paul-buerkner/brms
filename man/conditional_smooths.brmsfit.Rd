@@ -42,14 +42,14 @@ If \code{NULL} (the default), predictions are evaluated at the
 \eqn{mean} and at \eqn{mean +/- sd} for numeric predictors and at
 all categories for factor-like predictors.}
 
-\item{prob}{prob A value between 0 and 1 indicating the desired probability 
+\item{prob}{A value between 0 and 1 indicating the desired probability 
 to be covered by the uncertainty intervals. The default is 0.95.}
 
 \item{spaghetti}{Logical. Indicates if predictions should
 be visualized via spaghetti plots. Only applied for numeric
 predictors. If \code{TRUE}, it is recommended 
 to set argument \code{nsamples} to a relatively small value 
-(e.g. \code{100}) in order to reduce computation time.}
+(e.g., \code{100}) in order to reduce computation time.}
 
 \item{resolution}{Number of support points used to generate 
 the plots. Higher resolution leads to smoother plots. 
@@ -76,7 +76,7 @@ If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset} is not \code{NULL}.}
 
 \item{probs}{(Deprecated) The quantiles to be used in the computation of
-credible intervals.}
+uncertainty intervals. Please use argument \code{prob} instead.}
 
 \item{...}{Currently ignored.}
 }
