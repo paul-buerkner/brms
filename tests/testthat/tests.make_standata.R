@@ -235,7 +235,7 @@ test_that("make_standata handles multivariate models", {
 
 test_that("make_standata removes NAs correctly", {
   dat <- data.frame(y = c(rnorm(9), NA))
-  sdata <- make_standata(y ~ 1, dat)
+  sdata <- suppressWarnings(make_standata(y ~ 1, dat))
   expect_equal(as.numeric(sdata$Y), dat$y[1:9])
 })
 

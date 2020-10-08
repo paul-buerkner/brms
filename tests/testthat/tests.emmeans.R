@@ -1,5 +1,7 @@
 context("Tests for emmeans support")
 
+skip_on_cran()
+
 require(emmeans)
 
 SW <- suppressWarnings

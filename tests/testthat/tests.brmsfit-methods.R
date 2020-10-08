@@ -1,5 +1,8 @@
 context("Tests for brmsfit methods")
 
+# to reduce testing time on CRAN substantially
+skip_on_cran()
+
 expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
   testthat::expect_true(all(object >= lower & object <= upper), ...)
 }
@@ -815,7 +818,8 @@ test_that("update has reasonable outputs", {
     Trt = rep(0:1, 9), count = rep(c(5, 17, 28), 6),
     patient = 1, Exp = 4
   )
-  up <- update(fit1, newdata = new_data, save_ranef = FALSE, testmode = TRUE)
+  up <- update(fit1, newdata = new_data, save_pars = save_pars(group = FALSE), 
+               testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(attr(up$data, "data_name"), "new_data")
   # expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
@@ -834,10 +838,10 @@ test_that("update has reasonable outputs", {
   expect_error(update(fit1, formula. = ~ . + wrong_var),
                "New variables found: 'wrong_var'")
   
-  up <- update(fit1, save_ranef = FALSE, testmode = TRUE)
+  up <- update(fit1, save_pars = save_pars(group = FALSE), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   # expect_true("r_1_1" %in% up$exclude)
-  up <- update(fit3, save_mevars = FALSE, testmode = TRUE)
+  up <- update(fit3, save_pars = save_pars(latent = FALSE), testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   # expect_true("Xme_1" %in% up$exclude)
   

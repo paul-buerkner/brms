@@ -6,7 +6,8 @@ SW <- brms:::SW
 
 # parsing the Stan code ensures syntactial correctness of models
 # setting this option to FALSE speeds up testing
-options(brms.parse_stancode = TRUE, brms.backend = "rstan")
+not_cran <- identical(Sys.getenv("NOT_CRAN"), "true")
+options(brms.parse_stancode = not_cran, brms.backend = "rstan")
 
 test_that("specified priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
@@ -2105,8 +2106,9 @@ test_that("threaded Stan code is correct", {
   )
   
   # only parse models if cmdstan can be found on the system
-  parse <- !is(try(cmdstan_version(), silent = TRUE), "try-error")
-  options(brms.parse_stancode = parse, brms.backend = "cmdstanr")
+  found_cmdstan <- !is(try(cmdstan_version(), silent = TRUE), "try-error")
+  options(brms.parse_stancode = found_cmdstan && not_cran, 
+          brms.backend = "cmdstanr")
   threads <- threading(2, grainsize = 20)
   
   bform <- bf(
