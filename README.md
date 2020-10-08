@@ -10,8 +10,8 @@ Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://tra
 [![Coverage
 Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master)
 [![CRAN
-Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
-[![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
+Version](https://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
+[![Downloads](https://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://CRAN.R-project.org/package=brms)
 
 Overview
 --------
@@ -49,7 +49,7 @@ Resources
     with documentation and vignettes)
 -   [Blog posts](https://paul-buerkner.github.io/blog/brms-blogposts/)
     (List of blog posts about brms)
--   [Ask a question](http://discourse.mc-stan.org/) (Stan Forums on
+-   [Ask a question](https://discourse.mc-stan.org/) (Stan Forums on
     Discourse)
 -   [Open an issue](https://github.com/paul-buerkner/brms/issues)
     (GitHub issues for bug reports and feature requests)
@@ -334,7 +334,7 @@ see `help("brm")`.
 ### Where do I ask questions, propose a new feature, or report a bug?
 
 Questions can be asked on the [Stan
-forums](http://discourse.mc-stan.org/) on Discourse. To propose a new
+forums](https://discourse.mc-stan.org/) on Discourse. To propose a new
 feature or report a bug, please open an issue on
 [GitHub](https://github.com/paul-buerkner/brms).
 
