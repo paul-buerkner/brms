@@ -232,7 +232,6 @@ data_gr_local <- function(bterms, data, ranef) {
     levels <- attr(ranef, "levels")[[group]]
     if (id_ranef$gtype[1] == "mm") {
       # multi-membership grouping term
-      stopifnot(!nzchar(id_ranef$by[1]))
       gs <- id_ranef$gcall[[1]]$groups
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights

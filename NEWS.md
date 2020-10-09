@@ -1,3 +1,14 @@
+# brms 2.14.0++
+
+### New Features
+
+* Support `by` variables in multi-membership terms.
+
+### Bug Fixes
+
+* Allow multi-membership terms in threaded models.
+
+
 # brms 2.14.0
 
 ### New Features
