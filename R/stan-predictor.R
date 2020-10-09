@@ -503,6 +503,9 @@ stan_re <- function(ranef, prior, ...) {
         "  real W_{id}{res}_{ng}[N{res}];",
         "  // multi-membership weights\n"
       )
+      str_add(out$pll_args) <- cglue(
+        ", int[] J_{id}{res}_{ng}, real[] W_{id}{res}_{ng}"
+      )
     }
   } else {
     str_add(out$data) <- cglue(
@@ -534,6 +537,9 @@ stan_re <- function(ranef, prior, ...) {
       for (i in which(reqZ)) {
         str_add(out$data) <- cglue(
           "  vector[N{usc(r$resp[i])}] Z_{idp[i]}_{r$cn[i]}_{ng};\n"
+        )
+        str_add(out$pll_args) <- cglue(
+          ", vector Z_{idp[i]}_{r$cn[i]}_{ng}"
         )
       }
     } else {
