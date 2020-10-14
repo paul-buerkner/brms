@@ -7,6 +7,8 @@
 ### Bug Fixes
 
 * Allow multi-membership terms in threaded models.
+* Fix facet labels in `conditional_effects` thanks 
+to Isaac Petersen. (#1014)
 
 
 # brms 2.14.0

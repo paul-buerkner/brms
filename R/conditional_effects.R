@@ -786,11 +786,14 @@ prepare_conditions <- function(fit, conditions = NULL, effects = NULL,
       "part of the model:\n", collapse_comma(unused_vars)
     )
   }
-  validate_newdata(
+  cond__ <- conditions$cond__
+  conditions <- validate_newdata(
     conditions, fit, re_formula = re_formula,
     allow_new_levels = TRUE, check_response = FALSE,
     incl_autocor = FALSE
   )
+  conditions$cond__ <- cond__
+  conditions
 }
 
 # prepare data to be used in conditional_effects
