@@ -571,6 +571,8 @@ data_gp <- function(bterms, data, internal = FALSE, basis = NULL, ...) {
   if (internal) {
     # required for centering of approximate GPs with new data
     out[[paste0("cmeans", sfx)]] <- cmeans
+    # required to compute inverse-gamma priors for length-scales
+    out[[paste0("Xgp_prior", sfx)]] <- Xgp
   }
   if (!isNA(k)) {
     # basis function approach requires centered variables

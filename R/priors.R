@@ -846,7 +846,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
     cons <- gpef$cons[[i]]
     if (length(cons) > 0L) {
       for (j in seq_along(cons)) {
-        Xgp <- data_gp[[paste0("Xgp", pi, "_", j)]]
+        Xgp <- data_gp[[paste0("Xgp_prior", pi, "_", j)]]
         if (iso) {
           c(out[[i]]) <- .def_lscale_prior(Xgp)
         } else {
@@ -854,7 +854,7 @@ def_lscale_prior <- function(bterms, data, plb = 0.01, pub = 0.01) {
         }
       }
     } else {
-      Xgp <- data_gp[[paste0("Xgp", pi)]]
+      Xgp <- data_gp[[paste0("Xgp_prior", pi)]]
       if (iso) {
         out[[i]] <- .def_lscale_prior(Xgp)
       } else {
